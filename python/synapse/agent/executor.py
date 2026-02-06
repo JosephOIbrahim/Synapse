@@ -11,7 +11,7 @@ planning from execution.
 """
 
 import time
-from typing import Callable, Optional, List
+from typing import Any, Callable, Optional, List
 
 from ..core.protocol import SynapseCommand, SynapseResponse
 from ..core.gates import GateLevel, GateDecision, HumanGate
@@ -44,16 +44,19 @@ class AgentExecutor:
         command_fn: Optional[Callable[[SynapseCommand], SynapseResponse]] = None,
         memory: Optional[SynapseMemory] = None,
         gate: Optional[HumanGate] = None,
+        router: Optional[Any] = None,
     ):
         """
         Args:
             command_fn: Callback to execute commands (None = dry-run/planning mode).
             memory: For context retrieval and outcome storage.
             gate: For human approval routing.
+            router: Optional TieredRouter for introspection (set by router externally).
         """
         self._command_fn = command_fn
         self._memory = memory
         self._gate = gate
+        self._router = router
         self._tracker = OutcomeTracker(memory) if memory else None
 
     def prepare(

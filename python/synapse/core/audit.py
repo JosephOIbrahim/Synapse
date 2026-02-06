@@ -54,6 +54,7 @@ class AuditCategory(Enum):
     SYSTEM = "system"
     SYNAPSE = "synapse"
     ENGRAM = "engram"
+    COMPOSITING = "compositing"
 
 
 @dataclass

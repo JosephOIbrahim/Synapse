@@ -38,6 +38,9 @@ websocket = [
 encryption = [
     "cryptography>=41.0.0",
 ]
+routing = [
+    "anthropic>=0.40.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/JosephOIbrahim/Synapse"

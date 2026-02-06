@@ -144,6 +144,19 @@ from .agent.protocol import (
 from .agent.executor import AgentExecutor
 from .agent.learning import OutcomeTracker
 
+# Routing (always available — LLM deps optional)
+from .routing import (
+    TieredRouter,
+    RoutingResult,
+    RoutingTier,
+    RoutingConfig,
+    CommandParser,
+    KnowledgeIndex,
+    RecipeRegistry,
+    Recipe,
+)
+ROUTING_AVAILABLE = True
+
 # Server components (lazy load to avoid websockets dependency)
 try:
     from .server.websocket import SynapseServer
@@ -250,6 +263,17 @@ __all__ = [
     'EngramBridge',      # Backwards compat
     'get_bridge',
     'reset_bridge',
+
+    # Routing
+    'TieredRouter',
+    'RoutingResult',
+    'RoutingTier',
+    'RoutingConfig',
+    'CommandParser',
+    'KnowledgeIndex',
+    'RecipeRegistry',
+    'Recipe',
+    'ROUTING_AVAILABLE',
 
     # Agent
     'AgentTask',
