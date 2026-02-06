@@ -22,6 +22,7 @@ from ..memory.models import (
     LinkType,
 )
 from ..core.audit import AuditCategory
+from ..core.determinism import round_float
 
 if TYPE_CHECKING:
     from .protocol import AgentPlan
@@ -190,4 +191,4 @@ class OutcomeTracker:
             return 0.0
 
         successes = sum(1 for r in results if "success" in r.memory.tags)
-        return successes / len(results)
+        return round_float(successes / len(results))

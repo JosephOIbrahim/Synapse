@@ -117,6 +117,29 @@ def round_color(
     )
 
 
+def kahan_sum(values) -> float:
+    """
+    Kahan compensated summation for deterministic float aggregation.
+
+    Maintains a running error term to recover lost low-order bits,
+    reducing accumulated floating-point error from O(n) to O(1).
+
+    Args:
+        values: Iterable of float values to sum
+
+    Returns:
+        Deterministically rounded sum
+    """
+    total = 0.0
+    c = 0.0  # Compensation for lost low-order bits
+    for v in values:
+        y = v - c
+        t = total + y
+        c = (t - total) - y
+        total = t
+    return round_float(total)
+
+
 def deterministic_uuid(content: str, namespace: str = "synapse") -> str:
     """
     Generate deterministic UUID based on content hash.
@@ -266,6 +289,16 @@ def deterministic(func: Callable) -> Callable:
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
+        # Round float positional args
+        processed_args = []
+        for v in args:
+            if isinstance(v, float):
+                processed_args.append(round_float(v))
+            elif isinstance(v, tuple) and all(isinstance(x, float) for x in v):
+                processed_args.append(round_vector(v))
+            else:
+                processed_args.append(v)
+
         # Round float kwargs
         processed_kwargs = {}
         for k, v in kwargs.items():
@@ -276,7 +309,7 @@ def deterministic(func: Callable) -> Callable:
             else:
                 processed_kwargs[k] = v
 
-        return func(*args, **processed_kwargs)
+        return func(*processed_args, **processed_kwargs)
 
     return wrapper
 
