@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2025 Joe Ibrahim
+Copyright (c) 2025-2026 Joe Ibrahim
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,24 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+PATENT NOTICE
+
+Certain methods and systems implemented in this software are the subject of
+one or more pending patent applications filed by Joe Ibrahim. The MIT License
+granted above applies to the copyright in the software source code and does
+not grant any license, express or implied, under any patent claims.
+
+Patent Pending applies to, but is not limited to, the following aspects of
+this software:
+
+  - Tiered cognitive routing cascade with confidence-based tier forwarding
+  - Persistent memory tier architecture with cross-tier linking
+  - Deterministic state composition using priority-ordered resolution
+    semantics
+  - Agentic execution loop with gate-integrated outcome learning
+
+Users are free to use, modify, and distribute the software under the MIT
+License terms. However, practicing the patented methods in a commercial
+product or service may require a separate patent license once the patent(s)
+are granted.

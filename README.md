@@ -487,6 +487,19 @@ Synapse consolidates what were previously separate packages (Nexus, Engram, Hyph
 - [**Orchestra**](https://github.com/JosephOIbrahim/Orchestra) -- Cognitive orchestration framework (v7.1.0, 1,500+ tests). Synapse is the Houdini bridge; Orchestra is the cognitive engine.
 - **Cognitive Substrate** -- Theoretical foundation for deterministic state composition.
 
+## Patent Notice
+
+Certain methods and systems implemented in this software are the subject of a
+pending patent application. "Patent Pending" applies to, but is not limited to:
+
+- Tiered cognitive routing cascade with confidence-based tier forwarding
+- Persistent memory tier architecture with cross-tier linking
+- Deterministic state composition using priority-ordered resolution semantics
+- Agentic execution loop with gate-integrated outcome learning
+
+Use of this software under the MIT License does not grant any rights under
+the patent application(s). See [LICENSE](LICENSE) for details.
+
 ## License
 
-MIT License. Copyright (c) 2025 Joe Ibrahim.
+MIT License. Copyright (c) 2025-2026 Joe Ibrahim.
