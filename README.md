@@ -1,12 +1,16 @@
-# Synapse
+<p align="center">
+  <img src="assets/synapse_logo.png" alt="Synapse" width="300">
+</p>
 
-**AI-Houdini Bridge with Persistent Project Memory**
+<p align="center"><b>AI-Houdini Bridge with Persistent Project Memory</b></p>
 
-[![Version](https://img.shields.io/badge/version-4.2.0-blue.svg)](https://github.com/JosephOIbrahim/Synapse)
-[![Python](https://img.shields.io/badge/python-%3E%3D3.9-blue.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-158%20passing-brightgreen.svg)](tests/)
-[![Protocol](https://img.shields.io/badge/protocol-v4.0.0-orange.svg)](python/synapse/core/protocol.py)
+<p align="center">
+  <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-4.2.1-blue.svg" alt="Version"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-blue.svg" alt="Python"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-323%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="python/synapse/core/protocol.py"><img src="https://img.shields.io/badge/protocol-v4.0.0-orange.svg" alt="Protocol"></a>
+</p>
 
 ---
 
@@ -26,7 +30,7 @@ Extracted from [Nexus](https://github.com/JosephOIbrahim) (RadiantSuite) and Eng
 - **Tamper-Evident Audit** -- Append-only hash-chain log with daily JSONL rotation and chain verification
 - **Production Resilience** -- Rate limiter, circuit breaker, port failover, watchdog, backpressure controller
 - **Backwards Compatible** -- Full alias coverage for Nexus and Engram APIs; automatic storage migration
-- **Houdini Optional** -- All 158 tests run without Houdini; core library has zero required dependencies
+- **Houdini Optional** -- All tests run without Houdini; core library has zero required dependencies
 
 ## Quick Start
 
@@ -89,7 +93,7 @@ for r in results:
 
 ```
 +---------------------------------------------------------------+
-|                         Synapse v4.2.0                        |
+|                         Synapse v4.2.1                        |
 +---------------------------------------------------------------+
 |                                                               |
 |  +-- UI Layer (Qt) ----------------------------------------+ |
@@ -393,7 +397,7 @@ Legacy `ENGRAM_*` command names (e.g., `engram_context`) are automatically norma
 ## Testing
 
 ```bash
-# All 158 tests (no Houdini required)
+# All tests (no Houdini required)
 python -m pytest tests/ -v
 
 # Individual test modules
@@ -431,6 +435,13 @@ Synapse/
 │   │   ├── store.py                 # SynapseMemory high-level API
 │   │   ├── context.py               # ShotContext helpers
 │   │   └── markdown.py              # MarkdownSync (human-readable export)
+│   ├── routing/
+│   │   ├── __init__.py              # Public routing API
+│   │   ├── router.py                # TieredRouter (Cache→Recipe→Regex→Knowledge→LLM→Agent)
+│   │   ├── parser.py                # CommandParser (regex patterns, first-match-wins)
+│   │   ├── knowledge.py             # KnowledgeIndex (inverted keyword search from RAG)
+│   │   ├── recipes.py               # RecipeRegistry (multi-step command sequences)
+│   │   └── cache.py                 # ResponseCache (deterministic LRU with TTL)
 │   ├── agent/
 │   │   ├── protocol.py              # AgentTask, AgentPlan, AgentStep
 │   │   ├── executor.py              # prepare -> propose -> execute -> learn
@@ -448,7 +459,9 @@ Synapse/
 └── tests/
     ├── test_core.py                 # Foundation layer tests
     ├── test_agent.py                # Agent layer tests
-    └── test_resilience.py           # Resilience layer tests
+    ├── test_resilience.py           # Resilience layer tests
+    ├── test_crypto.py               # Encryption layer tests
+    └── test_routing.py              # Routing engine tests (323 tests)
 ```
 
 ## Backwards Compatibility
