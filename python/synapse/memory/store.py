@@ -29,6 +29,11 @@ try:
 except ImportError:
     HOU_AVAILABLE = False
 
+try:
+    from ..core.crypto import CryptoEngine, ENCRYPTION_AVAILABLE
+except ImportError:
+    ENCRYPTION_AVAILABLE = False
+
 from .models import (
     Memory,
     MemoryType,
@@ -84,6 +89,8 @@ class MemoryStore:
         if not self.memory_file.exists():
             return
 
+        crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+
         with self._lock:
             with open(self.memory_file, 'r', encoding='utf-8') as f:
                 for line_num, line in enumerate(f, 1):
@@ -91,6 +98,8 @@ class MemoryStore:
                     if not line:
                         continue
                     try:
+                        if crypto:
+                            line = crypto.decrypt_line(line)
                         data = json.loads(line)
                         memory = Memory.from_dict(data)
                         self._memories[memory.id] = memory
@@ -104,7 +113,10 @@ class MemoryStore:
             if self.index_file.exists():
                 try:
                     with open(self.index_file, 'r', encoding='utf-8') as f:
-                        self._index = json.load(f)
+                        content = f.read()
+                    if crypto:
+                        content = crypto.decrypt_file_content(content)
+                    self._index = json.loads(content)
                 except Exception as e:
                     print(f"[Synapse] Warning: Failed to load index: {e}")
 
@@ -143,16 +155,24 @@ class MemoryStore:
 
     def save(self):
         """Persist all memories to disk."""
+        crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+
         with self._lock:
             # Write memories (append-only format, but we rewrite for consistency)
             with open(self.memory_file, 'w', encoding='utf-8') as f:
                 for memory in self._memories.values():
-                    f.write(memory.to_json() + "\n")
+                    line = memory.to_json()
+                    if crypto:
+                        line = crypto.encrypt_line(line)
+                    f.write(line + "\n")
 
             # Write index
             self._index["updated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            index_content = json.dumps(self._index, indent=2)
+            if crypto:
+                index_content = crypto.encrypt_file_content(index_content)
             with open(self.index_file, 'w', encoding='utf-8') as f:
-                json.dump(self._index, f, indent=2)
+                f.write(index_content)
 
             self._dirty = False
 
@@ -164,8 +184,12 @@ class MemoryStore:
             self._dirty = True
 
             # Append to file immediately for durability
+            crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+            line = memory.to_json()
+            if crypto:
+                line = crypto.encrypt_line(line)
             with open(self.memory_file, 'a', encoding='utf-8') as f:
-                f.write(memory.to_json() + "\n")
+                f.write(line + "\n")
 
         return memory.id
 

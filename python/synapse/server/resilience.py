@@ -20,6 +20,11 @@ from typing import Dict, Optional, List, Callable, Any, Tuple
 from enum import Enum
 from collections import deque
 
+try:
+    from ..core.determinism import round_float
+except ImportError:
+    from synapse.core.determinism import round_float
+
 
 # =============================================================================
 # RATE LIMITER - Token Bucket Algorithm
@@ -62,7 +67,7 @@ class RateLimiter:
         elapsed = now - self._last_refill
         self._tokens = min(
             self.bucket_size,
-            self._tokens + (elapsed * self.tokens_per_second)
+            self._tokens + round_float(elapsed * self.tokens_per_second)
         )
         self._last_refill = now
 
@@ -78,7 +83,7 @@ class RateLimiter:
         elapsed = now - last_refill
         new_tokens = min(
             self.per_client_bucket,
-            tokens + (elapsed * (self.tokens_per_second / 5))  # Slower per-client refill
+            tokens + round_float(elapsed * (self.tokens_per_second / 5))  # Slower per-client refill
         )
         self._client_buckets[client_id] = (new_tokens, now)
         return new_tokens
@@ -98,7 +103,7 @@ class RateLimiter:
             # Check global limit
             if self._tokens < tokens:
                 self._rejected_requests += 1
-                wait_time = (tokens - self._tokens) / self.tokens_per_second
+                wait_time = round_float((tokens - self._tokens) / self.tokens_per_second)
                 return False, {
                     "reason": "global_rate_limit",
                     "retry_after": wait_time,
@@ -109,7 +114,7 @@ class RateLimiter:
             # Check per-client limit
             if client_tokens < tokens:
                 self._rejected_requests += 1
-                wait_time = (tokens - client_tokens) / (self.tokens_per_second / 5)
+                wait_time = round_float((tokens - client_tokens) / (self.tokens_per_second / 5))
                 return False, {
                     "reason": "client_rate_limit",
                     "retry_after": wait_time,

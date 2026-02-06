@@ -41,6 +41,31 @@ python -m pytest tests/ -v
 pip install -e ".[websocket]"
 ```
 
+### Encryption (Optional)
+
+Synapse supports optional Fernet (AES-128-CBC + HMAC-SHA256) encryption for all data at rest — memory, audit logs, gate proposals, and markdown files.
+
+```bash
+# Install encryption support
+pip install -e ".[encryption]"
+```
+
+**Key management** (priority order):
+1. `SYNAPSE_ENCRYPTION_KEY` environment variable (base64-encoded Fernet key)
+2. `~/.synapse/encryption.key` file (auto-created with `0600` permissions)
+3. Auto-generated on first use
+
+```python
+# Generate a key manually
+from cryptography.fernet import Fernet
+print(Fernet.generate_key().decode())
+
+# Or set via environment
+# export SYNAPSE_ENCRYPTION_KEY="your-base64-fernet-key"
+```
+
+Encryption is transparent: existing plaintext `.synapse/` directories load without migration. New writes are encrypted; reads auto-detect encrypted vs plaintext content.
+
 ```python
 from synapse import SynapseMemory
 
@@ -447,7 +472,7 @@ Synapse consolidates what were previously separate packages (Nexus, Engram, Hyph
 ## Related Projects
 
 - [**Orchestra**](https://github.com/JosephOIbrahim/Orchestra) -- Cognitive orchestration framework (v7.1.0, 1,500+ tests). Synapse is the Houdini bridge; Orchestra is the cognitive engine.
-- [**USD Cognitive Substrate**](https://github.com/JosephOIbrahim/usd-cognitive-substrate) -- USD composition semantics (LIVRPS) for cognitive state management. The theoretical foundation behind both Orchestra and Synapse.
+- **Cognitive Substrate** -- Theoretical foundation for deterministic state composition.
 
 ## License
 
