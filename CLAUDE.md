@@ -11,12 +11,14 @@ Synapse is the AI-Houdini Bridge — a standalone package providing:
 - **UI**: Qt panel with tabs for connection, context, decisions, activity, and search
 
 Extracted from Nexus (RadiantSuite) and Engram (Hyphae) into a self-contained package.
+Hyphae core (determinism, audit, gates) absorbed in v4.1.0.
 
 ## Development Commands
 
 ```bash
 # Run all tests (without Houdini)
 python tests/test_resilience.py    # Resilience layer (33 tests)
+python tests/test_core.py          # Foundation layer (determinism, audit, gates)
 python -m pytest tests/            # All tests
 
 # Install for development
@@ -28,10 +30,13 @@ pip install -e ".[dev]"
 ```
 python/synapse/
 ├── __init__.py         # Public API (SynapseServer, SynapseMemory, SynapseBridge)
-├── core/               # Protocol, queue, parameter aliases
+├── core/               # Protocol, queue, parameter aliases, foundation
 │   ├── protocol.py     # CommandType enum, SynapseCommand/Response, PROTOCOL_VERSION="4.0.0"
 │   ├── queue.py        # DeterministicCommandQueue, ResponseDeliveryQueue
-│   └── aliases.py      # Parameter name resolution
+│   ├── aliases.py      # Parameter name resolution
+│   ├── determinism.py  # Fixed-precision rounding, content-based IDs, deterministic operations
+│   ├── audit.py        # Tamper-evident logging with hash chain (~/.synapse/audit/)
+│   └── gates.py        # Human-in-the-loop approval (INFORM/REVIEW/APPROVE/CRITICAL, ~/.synapse/gates/)
 ├── memory/             # Persistent project memory
 │   ├── models.py       # Memory, MemoryType, MemoryTier, MemoryLink, MemoryQuery
 │   ├── store.py        # MemoryStore (low-level), SynapseMemory (high-level API)
@@ -58,6 +63,17 @@ PortManager      - Auto-failover across port range
 Watchdog         - Main thread freeze detection (Synapse-Watchdog thread)
 Backpressure     - NORMAL → ELEVATED → HIGH → CRITICAL load management
 HealthMonitor    - Aggregate system health
+```
+
+## Foundation Layer (from Hyphae core)
+
+```
+determinism.py   - Fixed-precision rounding (Decimal ROUND_HALF_UP), content-based UUIDs,
+                   DeterministicRandom (LCG), @deterministic decorator
+audit.py         - Append-only hash-chain log (AuditLog singleton), daily JSONL files,
+                   AuditLevel/AuditCategory enums, callback support
+gates.py         - Human-in-the-loop checkpoints (INFORM auto-approve, REVIEW batch,
+                   APPROVE block, CRITICAL full-stop), GateBatch for per-sequence review
 ```
 
 ## Storage Migration (3-tier)

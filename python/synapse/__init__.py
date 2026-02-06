@@ -14,11 +14,11 @@ Features:
 Storage: $HIP/.synapse/
 
 Author: Joe Ibrahim
-Version: 4.0.0
+Version: 4.1.0
 """
 
 __title__ = "Synapse"
-__version__ = "4.0.0"
+__version__ = "4.1.0"
 __author__ = "Joe Ibrahim"
 __license__ = "MIT"
 __product__ = "Synapse - AI-Houdini Bridge"
@@ -41,6 +41,35 @@ from .core.aliases import (
     resolve_param,
     resolve_param_with_default,
 )
+
+# Foundation (determinism, audit, gates)
+from .core.determinism import (
+    DeterministicConfig,
+    deterministic_uuid,
+    round_float,
+    deterministic,
+)
+
+from .core.audit import (
+    AuditLog,
+    AuditLevel,
+    AuditCategory,
+    AuditEntry,
+    audit_log,
+)
+
+from .core.gates import (
+    HumanGate,
+    GateLevel,
+    GateDecision,
+    GateProposal,
+    human_gate,
+    propose_change,
+)
+
+# Hyphae backwards compatibility (import from synapse instead of hyphae)
+HyphaeAuditLog = AuditLog
+HyphaeGate = HumanGate
 
 # Memory system
 from .memory.models import (
@@ -143,6 +172,25 @@ __all__ = [
     'PARAM_ALIASES',
     'resolve_param',
     'resolve_param_with_default',
+
+    # Foundation
+    'DeterministicConfig',
+    'deterministic_uuid',
+    'round_float',
+    'deterministic',
+    'AuditLog',
+    'AuditLevel',
+    'AuditCategory',
+    'AuditEntry',
+    'audit_log',
+    'HumanGate',
+    'GateLevel',
+    'GateDecision',
+    'GateProposal',
+    'human_gate',
+    'propose_change',
+    'HyphaeAuditLog',    # Backwards compat
+    'HyphaeGate',        # Backwards compat
 
     # Memory
     'Memory',
