@@ -19,6 +19,11 @@ from dataclasses import dataclass
 
 from .models import Memory, MemoryType, MemoryTier
 
+try:
+    from ..core.crypto import CryptoEngine, ENCRYPTION_AVAILABLE
+except ImportError:
+    ENCRYPTION_AVAILABLE = False
+
 
 # =============================================================================
 # MARKDOWN TEMPLATES
@@ -253,20 +258,36 @@ class MarkdownSync:
                 encoding='utf-8'
             )
 
+    def _get_crypto(self):
+        """Get crypto engine if available."""
+        if ENCRYPTION_AVAILABLE:
+            return CryptoEngine.get_instance()
+        return None
+
     def sync_decisions(self, decisions: List[Memory]):
         """Update decisions.md from memory store."""
         content = render_decisions_md(decisions)
+        crypto = self._get_crypto()
+        if crypto:
+            content = crypto.encrypt_file_content(content)
         self.decisions_file.write_text(content, encoding='utf-8')
         self._last_sync['decisions'] = time.time()
 
     def read_context(self) -> str:
         """Read the current context.md content."""
         if self.context_file.exists():
-            return self.context_file.read_text(encoding='utf-8')
+            content = self.context_file.read_text(encoding='utf-8')
+            crypto = self._get_crypto()
+            if crypto:
+                content = crypto.decrypt_file_content(content)
+            return content
         return ""
 
     def write_context(self, content: str):
         """Write to context.md."""
+        crypto = self._get_crypto()
+        if crypto:
+            content = crypto.encrypt_file_content(content)
         self.context_file.write_text(content, encoding='utf-8')
         self._last_sync['context'] = time.time()
 
@@ -276,17 +297,22 @@ class MarkdownSync:
 
         Combines context.md content with recent decisions summary.
         """
+        crypto = self._get_crypto()
         lines = []
 
         # Include context.md
         if self.context_file.exists():
             context = self.context_file.read_text(encoding='utf-8')
+            if crypto:
+                context = crypto.decrypt_file_content(context)
             lines.append(context)
             lines.append("")
 
         # Include recent decisions summary
         if self.decisions_file.exists():
             decisions_content = self.decisions_file.read_text(encoding='utf-8')
+            if crypto:
+                decisions_content = crypto.decrypt_file_content(decisions_content)
             # Extract just the decisions (first 5)
             parsed = parse_decisions_md(decisions_content)
             if parsed:
@@ -302,7 +328,10 @@ class MarkdownSync:
         if not self.decisions_file.exists():
             self.ensure_files()
 
+        crypto = self._get_crypto()
         current = self.decisions_file.read_text(encoding='utf-8')
+        if crypto:
+            current = crypto.decrypt_file_content(current)
 
         # Find the end of the header section (after ---)
         header_end = current.find('---')
@@ -318,12 +347,21 @@ class MarkdownSync:
                     new_decision +
                     current[next_newline + 1:]
                 )
+                if crypto:
+                    updated = crypto.encrypt_file_content(updated)
                 self.decisions_file.write_text(updated, encoding='utf-8')
                 return
 
         # Fallback: just append
-        with open(self.decisions_file, 'a', encoding='utf-8') as f:
-            f.write('\n' + render_decision_md(memory))
+        fallback_content = '\n' + render_decision_md(memory)
+        if crypto:
+            # Must rewrite entire file when encrypted
+            updated = current + fallback_content
+            updated = crypto.encrypt_file_content(updated)
+            self.decisions_file.write_text(updated, encoding='utf-8')
+        else:
+            with open(self.decisions_file, 'a', encoding='utf-8') as f:
+                f.write(fallback_content)
 
 
 # =============================================================================

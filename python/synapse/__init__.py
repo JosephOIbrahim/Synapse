@@ -47,6 +47,7 @@ from .core.determinism import (
     DeterministicConfig,
     deterministic_uuid,
     round_float,
+    kahan_sum,
     deterministic,
 )
 
@@ -70,6 +71,14 @@ from .core.gates import (
 # Hyphae backwards compatibility (import from synapse instead of hyphae)
 HyphaeAuditLog = AuditLog
 HyphaeGate = HumanGate
+
+# Encryption (lazy load to avoid cryptography dependency)
+try:
+    from .core.crypto import CryptoEngine, ENCRYPTION_AVAILABLE, get_crypto
+except ImportError:
+    ENCRYPTION_AVAILABLE = False
+    CryptoEngine = None
+    get_crypto = None
 
 # Memory system
 from .memory.models import (
@@ -190,6 +199,7 @@ __all__ = [
     'DeterministicConfig',
     'deterministic_uuid',
     'round_float',
+    'kahan_sum',
     'deterministic',
     'AuditLog',
     'AuditLevel',
@@ -269,6 +279,11 @@ __all__ = [
     'HealthMonitor',
     'HealthStatus',
     'SERVER_AVAILABLE',
+
+    # Encryption
+    'CryptoEngine',
+    'ENCRYPTION_AVAILABLE',
+    'get_crypto',
 
     # UI
     'SynapsePanel',

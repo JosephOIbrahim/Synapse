@@ -21,6 +21,11 @@ from enum import Enum
 
 from .determinism import deterministic_uuid, deterministic_dict_items
 
+try:
+    from .crypto import CryptoEngine, ENCRYPTION_AVAILABLE
+except ImportError:
+    ENCRYPTION_AVAILABLE = False
+
 
 class AuditLevel(Enum):
     """Severity/importance levels for audit entries"""
@@ -305,13 +310,18 @@ class AuditLog:
         return entry
 
     def _persist_entry(self, entry: AuditEntry) -> None:
-        """Write entry to disk"""
+        """Write entry to disk (hash computed on plaintext before encryption)"""
         # Daily log files
         date_str = entry.timestamp_utc[:10]
         log_file = self._log_dir / f"audit_{date_str}.jsonl"
 
+        line = json.dumps(entry.to_dict())
+        crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+        if crypto:
+            line = crypto.encrypt_line(line)
+
         with open(log_file, 'a', encoding='utf-8') as f:
-            f.write(json.dumps(entry.to_dict()) + '\n')
+            f.write(line + '\n')
 
     def get_entries(
         self,

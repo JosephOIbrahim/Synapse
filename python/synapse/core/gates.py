@@ -22,6 +22,11 @@ from enum import Enum
 from .determinism import deterministic_uuid
 from .audit import audit_log, AuditLevel, AuditCategory
 
+try:
+    from .crypto import CryptoEngine, ENCRYPTION_AVAILABLE
+except ImportError:
+    ENCRYPTION_AVAILABLE = False
+
 
 class GateLevel(Enum):
     """Approval requirement levels"""
@@ -536,8 +541,13 @@ class HumanGate:
         date_str = proposal.created_at[:10]
         file_path = self._storage_dir / f"proposals_{date_str}.jsonl"
 
+        line = json.dumps(proposal.to_dict())
+        crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+        if crypto:
+            line = crypto.encrypt_line(line)
+
         with open(file_path, 'a', encoding='utf-8') as f:
-            f.write(json.dumps(proposal.to_dict()) + '\n')
+            f.write(line + '\n')
 
     def clear_batch(self, sequence_id: str) -> None:
         """Clear batch after processing (keeps proposals in storage)"""
