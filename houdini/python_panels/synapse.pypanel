@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pythonPanelDocument>
+  <!-- Synapse - AI-Houdini Bridge
+       WebSocket communication + persistent project memory -->
+  <interface name="synapse" label="Synapse - AI Bridge" icon="MISC_python" showNetworkNavigationBar="false" help_url="">
+    <script><![CDATA[
+import sys
+import os
+import importlib
+
+try:
+    from PySide6 import QtWidgets, QtCore
+except ImportError:
+    from PySide2 import QtWidgets, QtCore
+
+import hou
+
+# One-time initialization
+if not hasattr(hou.session, "_synapse_initialized"):
+    hou.session._synapse_initialized = False
+
+if not hou.session._synapse_initialized:
+    synapse_root = os.environ.get("SYNAPSE_ROOT")
+    if not synapse_root:
+        QtWidgets.QMessageBox.critical(
+            None,
+            "Environment Error",
+            "SYNAPSE_ROOT environment variable not set.\n"
+            "Please check your Synapse package installation."
+        )
+    else:
+        python_dir = os.path.join(synapse_root, "python")
+        if os.path.isdir(python_dir) and python_dir not in sys.path:
+            sys.path.insert(0, python_dir)
+
+    hou.session._synapse_initialized = True
+
+# Start hrpyc server for external Python access (Claude Code, Gemini CLI, MCP)
+if not hasattr(hou.session, "_hrpyc_server_started"):
+    try:
+        import hrpyc
+        hrpyc.start_server(port=18118)
+        hou.session._hrpyc_server_started = True
+        print("[Synapse] hrpyc server started on port 18118")
+    except Exception as e:
+        print(f"[Synapse] hrpyc server failed to start: {e}")
+        hou.session._hrpyc_server_started = False
+
+# Force reload for development
+modules_to_clear = [k for k in sys.modules.keys() if k.startswith("synapse")]
+for mod in modules_to_clear:
+    del sys.modules[mod]
+
+try:
+    from synapse.ui import panel as synapse_panel
+    synapse_panel = importlib.reload(synapse_panel)
+except Exception as e:
+    QtWidgets.QMessageBox.critical(
+        None,
+        "Import Error",
+        f"Could not import synapse panel:\n{e}"
+    )
+    raise
+
+def onCreateInterface():
+    ui = synapse_panel.create_panel()
+    ui.setWindowFlags(QtCore.Qt.Widget)
+    return ui
+]]></script>
+    <includeInPaneTabMenu menu_position="0" create_separator="false"/>
+    <includeInToolbarMenu menu_position="504" create_separator="false"/>
+    <help><![CDATA[Synapse - AI-Houdini Bridge
+
+WebSocket server for AI assistant communication with persistent project memory.
+
+Features:
+- Real-time bidirectional communication
+- Rate limiting and circuit breaker protection
+- Persistent project memory with decisions and context
+- Human-readable markdown + structured JSON storage
+
+Storage: $HIP/.synapse/]]></help>
+  </interface>
+</pythonPanelDocument>
