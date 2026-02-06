@@ -12,6 +12,7 @@ Synapse is the AI-Houdini Bridge — a standalone package providing:
 
 Extracted from Nexus (RadiantSuite) and Engram (Hyphae) into a self-contained package.
 Hyphae core (determinism, audit, gates) absorbed in v4.1.0.
+Agent execution layer added in v4.2.0.
 
 ## Development Commands
 
@@ -42,6 +43,10 @@ python/synapse/
 │   ├── store.py        # MemoryStore (low-level), SynapseMemory (high-level API)
 │   ├── context.py      # ShotContext helpers
 │   └── markdown.py     # MarkdownSync, context.md/decisions.md/tasks.md
+├── agent/              # Agentic execution protocol
+│   ├── protocol.py     # AgentTask, AgentPlan, AgentStep, gate classification
+│   ├── executor.py     # AgentExecutor: prepare → propose → execute → learn
+│   └── learning.py     # OutcomeTracker: feedback memory for plan outcomes
 ├── server/             # WebSocket server + resilience
 │   ├── handlers.py     # CommandHandlerRegistry, SynapseHandler
 │   ├── websocket.py    # SynapseServer (WebSocket implementation)
@@ -74,6 +79,19 @@ audit.py         - Append-only hash-chain log (AuditLog singleton), daily JSONL 
                    AuditLevel/AuditCategory enums, callback support
 gates.py         - Human-in-the-loop checkpoints (INFORM auto-approve, REVIEW batch,
                    APPROVE block, CRITICAL full-stop), GateBatch for per-sequence review
+```
+
+## Agent Layer (v4.2.0)
+
+```
+AgentExecutor    - Core prepare → propose → execute → learn loop
+                   Works in dry-run mode (no Houdini) or with command_fn callback
+AgentTask        - Goal + context (populated from memory search)
+AgentPlan        - Ordered steps with status tracking and progress
+AgentStep        - Single action → SynapseCommand, with gate-level classification
+OutcomeTracker   - Records plan outcomes as FEEDBACK memories for learning
+Gate Classify    - Auto-classifies risk: reads→INFORM, creates→REVIEW,
+                   deletes→APPROVE, execute→CRITICAL
 ```
 
 ## Storage Migration (3-tier)

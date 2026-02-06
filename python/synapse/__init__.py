@@ -14,11 +14,11 @@ Features:
 Storage: $HIP/.synapse/
 
 Author: Joe Ibrahim
-Version: 4.1.0
+Version: 4.2.0
 """
 
 __title__ = "Synapse"
-__version__ = "4.1.0"
+__version__ = "4.2.0"
 __author__ = "Joe Ibrahim"
 __license__ = "MIT"
 __product__ = "Synapse - AI-Houdini Bridge"
@@ -121,6 +121,19 @@ from .session.tracker import (
     NexusBridge,
     EngramBridge,
 )
+
+# Agent protocol
+from .agent.protocol import (
+    AgentTask,
+    AgentPlan,
+    AgentStep,
+    StepStatus,
+    PlanStatus,
+    DEFAULT_GATE_LEVELS,
+    classify_gate_level,
+)
+from .agent.executor import AgentExecutor
+from .agent.learning import OutcomeTracker
 
 # Server components (lazy load to avoid websockets dependency)
 try:
@@ -227,6 +240,17 @@ __all__ = [
     'EngramBridge',      # Backwards compat
     'get_bridge',
     'reset_bridge',
+
+    # Agent
+    'AgentTask',
+    'AgentPlan',
+    'AgentStep',
+    'StepStatus',
+    'PlanStatus',
+    'DEFAULT_GATE_LEVELS',
+    'classify_gate_level',
+    'AgentExecutor',
+    'OutcomeTracker',
 
     # Server
     'SynapseServer',
