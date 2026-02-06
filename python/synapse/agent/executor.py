@@ -11,7 +11,7 @@ planning from execution.
 """
 
 import time
-from typing import Any, Callable, Optional, List
+from typing import Any, Callable, Optional, List, Union
 
 from ..core.protocol import SynapseCommand, SynapseResponse
 from ..core.gates import GateLevel, GateDecision, HumanGate
@@ -63,7 +63,7 @@ class AgentExecutor:
         self,
         goal: str,
         sequence_id: str,
-        category: str,
+        category: Union[str, Any],
         agent_id: str = "",
     ) -> AgentTask:
         """

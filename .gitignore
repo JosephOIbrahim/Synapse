@@ -3,10 +3,18 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyd
 *.egg-info/
 dist/
 build/
 *.egg
+
+# Cython / MSVC build artifacts
+python/synapse/**/*.c
+*.pyd
+*.lib
+*.exp
+*.obj
 
 # Virtual environments
 .venv/
