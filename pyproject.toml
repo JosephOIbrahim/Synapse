@@ -38,6 +38,10 @@ websocket = [
 encryption = [
     "cryptography>=41.0.0",
 ]
+mcp = [
+    "mcp>=1.0.0",
+    "websockets>=11.0",
+]
 routing = [
     "anthropic>=0.40.0",
 ]

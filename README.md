@@ -32,17 +32,72 @@ Extracted from [Nexus](https://github.com/JosephOIbrahim) (RadiantSuite) and Eng
 - **Backwards Compatible** -- Full alias coverage for Nexus and Engram APIs; automatic storage migration
 - **Houdini Optional** -- All tests run without Houdini; core library has zero required dependencies
 
-## Quick Start
+## Installation
+
+### Prerequisites
+
+- **Python** >= 3.9
+- **SideFX Houdini** 20.0+ (for scene manipulation; not required for memory/tests)
+- **pip** (any recent version)
+
+### 1. Clone & Install
 
 ```bash
-# Install
-pip install -e ".[dev]"
+git clone https://github.com/JosephOIbrahim/Synapse.git
+cd Synapse
+pip install -e .
+```
 
+### 2. Optional Dependencies
+
+```bash
+pip install -e ".[websocket]"     # WebSocket server (required for Houdini bridge)
+pip install -e ".[encryption]"    # Fernet encryption for data at rest
+pip install -e ".[mcp]"           # MCP server for Claude Code / Claude Desktop
+pip install -e ".[routing]"       # LLM-powered routing tier (Anthropic API)
+pip install -e ".[dev]"           # pytest + coverage for development
+```
+
+### 3. Houdini Setup
+
+Copy or symlink the panel definition into your Houdini user preferences:
+
+```bash
+# Windows
+mklink "%USERPROFILE%\Documents\houdini20.5\python_panels\synapse.pypanel" "%CD%\houdini\python_panels\synapse.pypanel"
+
+# macOS / Linux
+ln -s "$(pwd)/houdini/python_panels/synapse.pypanel" ~/houdini20.5/python_panels/synapse.pypanel
+```
+
+Or add the repo to your Houdini path:
+
+```bash
+# In houdini.env or shell profile
+HOUDINI_PATH = "/path/to/Synapse/houdini;&"
+```
+
+Then in Houdini: **Windows > Python Panel > Synapse**.
+
+### 4. Start the Server
+
+1. Open the Synapse panel in Houdini (Connection tab)
+2. Click **Start Server**
+3. The WebSocket server starts on `ws://localhost:9999`
+
+You can also start it programmatically from Houdini's Python shell:
+
+```python
+from synapse import SynapseServer
+server = SynapseServer(port=9999)
+server.start()
+```
+
+### 5. Verify
+
+```bash
 # Run tests (no Houdini needed)
 python -m pytest tests/ -v
-
-# Optional: WebSocket server support
-pip install -e ".[websocket]"
 ```
 
 ### Encryption (Optional)
@@ -50,7 +105,6 @@ pip install -e ".[websocket]"
 Synapse supports optional Fernet (AES-128-CBC + HMAC-SHA256) encryption for all data at rest — memory, audit logs, gate proposals, and markdown files.
 
 ```bash
-# Install encryption support
 pip install -e ".[encryption]"
 ```
 
@@ -63,9 +117,6 @@ pip install -e ".[encryption]"
 # Generate a key manually
 from cryptography.fernet import Fernet
 print(Fernet.generate_key().decode())
-
-# Or set via environment
-# export SYNAPSE_ENCRYPTION_KEY="your-base64-fernet-key"
 ```
 
 Encryption is transparent: existing plaintext `.synapse/` directories load without migration. New writes are encrypted; reads auto-detect encrypted vs plaintext content.
@@ -394,6 +445,78 @@ Parameter names are resolved through an alias system (38+ mappings). For example
 
 Legacy `ENGRAM_*` command names (e.g., `engram_context`) are automatically normalized to their current equivalents.
 
+## Claude Integration (MCP)
+
+Synapse includes an MCP (Model Context Protocol) server that bridges Claude to Houdini. This gives Claude 16 tools for scene manipulation and project memory — no copy-pasting needed.
+
+```
+Claude  <--[stdio/JSON-RPC]-->  mcp_server.py  <--[WebSocket]-->  Synapse (Houdini)
+```
+
+### Claude Code
+
+The repo includes `.mcp.json` — tools are automatically available when you open the Synapse project in Claude Code. No configuration needed.
+
+To add it globally (available from any project):
+
+```bash
+claude mcp add synapse -- python /path/to/Synapse/mcp_server.py
+```
+
+### Claude Desktop
+
+Add to your Claude Desktop config:
+
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "synapse": {
+      "command": "python",
+      "args": ["/path/to/Synapse/mcp_server.py"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop after editing. The 16 tools appear in the tool picker.
+
+### MCP Dependencies
+
+```bash
+pip install -e ".[mcp]"
+# Installs: mcp>=1.0.0, websockets>=11.0
+```
+
+### Available MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `synapse_ping` | Check Houdini connection |
+| `synapse_health` | System health + resilience status |
+| `houdini_scene_info` | HIP file, frame, FPS, frame range |
+| `houdini_get_selection` | Currently selected nodes |
+| `houdini_create_node` | Create a node (parent, type, optional name) |
+| `houdini_delete_node` | Delete a node by path |
+| `houdini_connect_nodes` | Connect node outputs to inputs |
+| `houdini_get_parm` | Read a parameter value |
+| `houdini_set_parm` | Set a parameter value |
+| `houdini_execute_python` | Run Python code in Houdini |
+| `houdini_stage_info` | USD stage prim listing |
+| `synapse_context` | Get project context from memory |
+| `synapse_search` | Search project memory |
+| `synapse_recall` | Recall relevant memories |
+| `synapse_decide` | Record a decision |
+| `synapse_add_memory` | Add a memory entry |
+
+### Configuration
+
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `SYNAPSE_PORT` | `9999` | WebSocket port to connect to |
+
 ## Testing
 
 ```bash
@@ -418,6 +541,8 @@ Synapse/
 ├── pyproject.toml
 ├── LICENSE
 ├── CLAUDE.md
+├── mcp_server.py                       # MCP server (Claude Code / Desktop bridge)
+├── .mcp.json                            # Claude Code project-level MCP config
 ├── houdini/
 │   └── python_panels/
 │       └── synapse.pypanel          # Houdini Qt panel definition
