@@ -27,8 +27,8 @@ class DecisionItem(QtWidgets.QFrame):
         self.setFrameStyle(QtWidgets.QFrame.StyledPanel)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setSpacing(6)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(10)
+        layout.setContentsMargins(10, 10, 10, 10)
 
         # Header with date
         header = QtWidgets.QHBoxLayout()
@@ -78,8 +78,8 @@ class DecisionsTab(QtWidgets.QWidget):
 
     def _setup_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(12, 16, 12, 12)
+        layout.setSpacing(12)
 
         # Header
         header = QtWidgets.QHBoxLayout()
@@ -94,9 +94,11 @@ class DecisionsTab(QtWidgets.QWidget):
 
         layout.addLayout(header)
 
-        # Add decision form
+        # Add decision form — wider internal spacing
         add_group = QtWidgets.QGroupBox("Record New Decision")
         add_layout = QtWidgets.QVBoxLayout(add_group)
+        add_layout.setSpacing(10)
+        add_layout.setContentsMargins(10, 14, 10, 10)
 
         self.decision_input = QtWidgets.QLineEdit()
         self.decision_input.setPlaceholderText("What did you decide?")
@@ -107,21 +109,24 @@ class DecisionsTab(QtWidgets.QWidget):
         self.reasoning_input.setMaximumHeight(80)
         add_layout.addWidget(self.reasoning_input)
 
+        # Alternatives + Tags on one row
+        extras_row = QtWidgets.QHBoxLayout()
+        extras_row.setSpacing(8)
+
         self.alternatives_input = QtWidgets.QLineEdit()
-        self.alternatives_input.setPlaceholderText("Alternatives considered (comma-separated)")
-        add_layout.addWidget(self.alternatives_input)
+        self.alternatives_input.setPlaceholderText("Alternatives (comma-sep)")
+        extras_row.addWidget(self.alternatives_input)
 
         self.tags_input = QtWidgets.QLineEdit()
-        self.tags_input.setPlaceholderText("Tags (comma-separated)")
-        add_layout.addWidget(self.tags_input)
+        self.tags_input.setPlaceholderText("Tags (comma-sep)")
+        self.tags_input.setFixedWidth(140)
+        extras_row.addWidget(self.tags_input)
 
-        add_btn_layout = QtWidgets.QHBoxLayout()
-        add_btn_layout.addStretch()
-        self.add_btn = QtWidgets.QPushButton("Record Decision")
+        self.add_btn = QtWidgets.QPushButton("Record")
         self.add_btn.clicked.connect(self._add_decision)
-        add_btn_layout.addWidget(self.add_btn)
-        add_layout.addLayout(add_btn_layout)
+        extras_row.addWidget(self.add_btn)
 
+        add_layout.addLayout(extras_row)
         layout.addWidget(add_group)
 
         # Decisions list
@@ -131,7 +136,8 @@ class DecisionsTab(QtWidgets.QWidget):
 
         self.decisions_container = QtWidgets.QWidget()
         self.decisions_layout = QtWidgets.QVBoxLayout(self.decisions_container)
-        self.decisions_layout.setSpacing(10)
+        self.decisions_layout.setSpacing(12)
+        self.decisions_layout.setContentsMargins(0, 4, 0, 4)
         self.decisions_layout.addStretch()
 
         self.decisions_scroll.setWidget(self.decisions_container)

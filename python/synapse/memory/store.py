@@ -59,7 +59,7 @@ class MemoryStore:
     - Basic search and filtering
     """
 
-    def __init__(self, storage_dir: Path):
+    def __init__(self, storage_dir: Path, background_load: bool = True):
         self.storage_dir = Path(storage_dir)
         self.memory_file = self.storage_dir / "memory.jsonl"
         self.index_file = self.storage_dir / "index.json"
@@ -76,9 +76,19 @@ class MemoryStore:
         }
         self._lock = threading.RLock()
         self._dirty = False
+        self._loaded = threading.Event()
 
         self._ensure_storage_dir()
-        self._load()
+
+        if background_load:
+            loader = threading.Thread(
+                target=self._load,
+                daemon=True,
+                name="Synapse-MemoryLoad",
+            )
+            loader.start()
+        else:
+            self._load()
 
     def _ensure_storage_dir(self):
         """Create storage directory if it doesn't exist."""
@@ -87,6 +97,7 @@ class MemoryStore:
     def _load(self):
         """Load memories from disk."""
         if not self.memory_file.exists():
+            self._loaded.set()
             return
 
         crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
@@ -121,6 +132,7 @@ class MemoryStore:
                     print(f"[Synapse] Warning: Failed to load index: {e}")
 
         print(f"[Synapse] Loaded {len(self._memories)} memories from {self.storage_dir}")
+        self._loaded.set()
 
     def _index_memory(self, memory: Memory):
         """Add memory to in-memory indices."""
@@ -152,6 +164,10 @@ class MemoryStore:
             link_entry = {"target": link.target_id, "type": link.link_type.value}
             if link_entry not in self._index["links"][memory.id]:
                 self._index["links"][memory.id].append(link_entry)
+
+    def _wait_loaded(self, timeout: float = 10.0):
+        """Block until background load completes (max timeout seconds)."""
+        self._loaded.wait(timeout=timeout)
 
     def save(self):
         """Persist all memories to disk."""
@@ -195,6 +211,7 @@ class MemoryStore:
 
     def get(self, memory_id: str) -> Optional[Memory]:
         """Get a memory by ID."""
+        self._wait_loaded()
         with self._lock:
             return self._memories.get(memory_id)
 
@@ -218,11 +235,13 @@ class MemoryStore:
 
     def all(self) -> List[Memory]:
         """Get all memories."""
+        self._wait_loaded()
         with self._lock:
             return list(self._memories.values())
 
     def count(self) -> int:
         """Get total memory count."""
+        self._wait_loaded()
         with self._lock:
             return len(self._memories)
 
@@ -244,6 +263,7 @@ class MemoryStore:
 
     def search(self, query: MemoryQuery) -> List[MemorySearchResult]:
         """Search memories based on query parameters."""
+        self._wait_loaded()
         with self._lock:
             results = []
 
@@ -330,18 +350,21 @@ class MemoryStore:
 
     def get_by_type(self, memory_type: MemoryType) -> List[Memory]:
         """Get all memories of a specific type."""
+        self._wait_loaded()
         with self._lock:
             ids = self._index["by_type"].get(memory_type.value, [])
             return [self._memories[id] for id in ids if id in self._memories]
 
     def get_by_tag(self, tag: str) -> List[Memory]:
         """Get all memories with a specific tag."""
+        self._wait_loaded()
         with self._lock:
             ids = self._index["by_tag"].get(tag.lower(), [])
             return [self._memories[id] for id in ids if id in self._memories]
 
     def get_linked(self, memory_id: str) -> List[Memory]:
         """Get all memories linked to a specific memory."""
+        self._wait_loaded()
         with self._lock:
             links = self._index["links"].get(memory_id, [])
             return [
@@ -352,6 +375,7 @@ class MemoryStore:
 
     def get_recent(self, limit: int = 10) -> List[Memory]:
         """Get most recent memories."""
+        self._wait_loaded()
         with self._lock:
             sorted_memories = sorted(
                 self._memories.values(),

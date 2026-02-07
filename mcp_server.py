@@ -65,7 +65,20 @@ async def _get_connection():
                     websockets.connect(SYNAPSE_URL),
                     timeout=5.0,
                 )
-                logger.info("Connected to Synapse at %s", SYNAPSE_URL)
+                # Consume the unsolicited connection_context message
+                # sent by SynapseServer on connect (websocket.py:250)
+                try:
+                    ctx_raw = await asyncio.wait_for(
+                        _ws_connection.recv(), timeout=5.0
+                    )
+                    ctx = json.loads(ctx_raw)
+                    logger.info(
+                        "Connected to Synapse at %s (protocol %s)",
+                        SYNAPSE_URL,
+                        ctx.get("protocol_version", "?"),
+                    )
+                except Exception:
+                    logger.info("Connected to Synapse at %s", SYNAPSE_URL)
                 return _ws_connection
             except Exception as e:
                 last_error = e
@@ -288,6 +301,105 @@ async def list_tools():
                 "required": [],
             },
         ),
+        Tool(
+            name="houdini_get_usd_attribute",
+            description="Read a USD attribute value from a prim on the stage. Returns value and type info.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {
+                        "type": "string",
+                        "description": "LOP node path. If omitted, uses current selection.",
+                    },
+                    "prim_path": {
+                        "type": "string",
+                        "description": "USD prim path (e.g. '/World/geo/mesh1')",
+                    },
+                    "attribute_name": {
+                        "type": "string",
+                        "description": "USD attribute name (e.g. 'xformOp:translate', 'visibility')",
+                    },
+                },
+                "required": ["prim_path", "attribute_name"],
+            },
+        ),
+        Tool(
+            name="houdini_set_usd_attribute",
+            description="Set a USD attribute on a prim. Creates a Python LOP node wired into the graph.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {
+                        "type": "string",
+                        "description": "LOP node to wire after. If omitted, uses current selection.",
+                    },
+                    "prim_path": {
+                        "type": "string",
+                        "description": "USD prim path (e.g. '/World/geo/mesh1')",
+                    },
+                    "attribute_name": {
+                        "type": "string",
+                        "description": "USD attribute name (e.g. 'xformOp:translate')",
+                    },
+                    "value": {
+                        "description": "Value to set (number, string, or array for vector types)",
+                    },
+                },
+                "required": ["prim_path", "attribute_name", "value"],
+            },
+        ),
+        Tool(
+            name="houdini_create_usd_prim",
+            description="Create a USD prim on the stage. Creates a Python LOP node wired into the graph.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {
+                        "type": "string",
+                        "description": "LOP node to wire after. If omitted, uses current selection.",
+                    },
+                    "prim_path": {
+                        "type": "string",
+                        "description": "USD prim path to create (e.g. '/World/lights/key_light')",
+                    },
+                    "prim_type": {
+                        "type": "string",
+                        "description": "USD prim type (e.g. 'Xform', 'Mesh', 'DomeLight', 'Material'). Default: Xform",
+                    },
+                },
+                "required": ["prim_path"],
+            },
+        ),
+        Tool(
+            name="houdini_modify_usd_prim",
+            description="Modify USD prim metadata: kind, purpose, or active state. Creates a Python LOP node.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {
+                        "type": "string",
+                        "description": "LOP node to wire after. If omitted, uses current selection.",
+                    },
+                    "prim_path": {
+                        "type": "string",
+                        "description": "USD prim path to modify",
+                    },
+                    "kind": {
+                        "type": "string",
+                        "description": "Model kind (e.g. 'component', 'group', 'assembly')",
+                    },
+                    "purpose": {
+                        "type": "string",
+                        "description": "Prim purpose (e.g. 'default', 'render', 'proxy', 'guide')",
+                    },
+                    "active": {
+                        "type": "boolean",
+                        "description": "Whether the prim is active (visible in composition)",
+                    },
+                },
+                "required": ["prim_path"],
+            },
+        ),
         # -- Memory --
         Tool(
             name="synapse_context",
@@ -423,6 +535,18 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "houdini_set_parm":      ("set_parm",        lambda a: {"node": a["node"], "parm": a["parm"], "value": a["value"]}),
     "houdini_execute_python":("execute_python",  _execute_python_payload),
     "houdini_stage_info":    ("get_stage_info",  _stage_info_payload),
+    "houdini_get_usd_attribute": ("get_usd_attribute", lambda a: {
+        k: a[k] for k in ("node", "prim_path", "attribute_name") if k in a
+    }),
+    "houdini_set_usd_attribute": ("set_usd_attribute", lambda a: {
+        k: a[k] for k in ("node", "prim_path", "attribute_name", "value") if k in a
+    }),
+    "houdini_create_usd_prim": ("create_usd_prim", lambda a: {
+        k: a[k] for k in ("node", "prim_path", "prim_type") if k in a
+    }),
+    "houdini_modify_usd_prim": ("modify_usd_prim", lambda a: {
+        k: a[k] for k in ("node", "prim_path", "kind", "purpose", "active") if k in a
+    }),
     "synapse_context":       ("context",         _passthrough),
     "synapse_search":        ("search",          lambda a: {"query": a["query"]}),
     "synapse_recall":        ("recall",          lambda a: {"query": a["query"]}),

@@ -5,7 +5,6 @@ WebSocket server for AI-Houdini communication.
 Provides real-time bidirectional communication with resilience features.
 """
 
-import asyncio
 import threading
 import json
 import time
@@ -13,11 +12,12 @@ from typing import Dict, Any, Optional, Set, Callable
 
 try:
     import websockets
-    from websockets.server import serve
+    from websockets.sync.server import serve as sync_serve
     WEBSOCKETS_AVAILABLE = True
 except ImportError:
     WEBSOCKETS_AVAILABLE = False
     websockets = None
+    sync_serve = None
 
 try:
     import hou
@@ -77,13 +77,14 @@ class SynapseServer:
         # Server state
         self._server = None
         self._running = False
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
 
-        # Connected clients
+        # Connected clients (guarded by _clients_lock — mutated from thread pool)
         self._clients: Set = set()
         self._client_sessions: Dict[Any, str] = {}  # websocket -> session_id
         self._client_ids: Dict[Any, str] = {}  # websocket -> client_id
+        self._clients_lock = threading.Lock()
+        self._client_counter = 0  # monotonic counter for deterministic IDs
 
         # Command processing
         self._command_queue = DeterministicCommandQueue()
@@ -171,43 +172,26 @@ class SynapseServer:
         if self._watchdog:
             self._watchdog.stop()
 
-        # Close all client connections
-        if self._loop and self._clients:
-            for client in list(self._clients):
-                try:
-                    asyncio.run_coroutine_threadsafe(
-                        client.close(),
-                        self._loop
-                    )
-                except:
-                    pass
-
-        # Stop the server
+        # Stop the sync server (this closes the listening socket)
         if self._server:
-            self._server.close()
-
-        # Stop the event loop
-        if self._loop:
-            self._loop.call_soon_threadsafe(self._loop.stop)
+            try:
+                self._server.shutdown()
+            except:
+                pass
 
         print("[SynapseServer] Stopped")
 
     def _run_server(self):
-        """Run the server event loop."""
+        """Run the sync WebSocket server (no asyncio — avoids Houdini's haio.py)."""
         try:
-            self._loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self._loop)
-
             # Try to bind to port with retries
             for attempt in range(MAX_PORT_RETRIES):
                 try:
                     port_to_try = self.port if attempt == 0 else self.port + attempt
-                    self._server = self._loop.run_until_complete(
-                        serve(
-                            self._handle_client,
-                            self.host,
-                            port_to_try
-                        )
+                    self._server = sync_serve(
+                        self._handle_client,
+                        self.host,
+                        port_to_try
                     )
                     self._actual_port = port_to_try
 
@@ -218,7 +202,7 @@ class SynapseServer:
                     break
 
                 except OSError as e:
-                    if "Address already in use" in str(e) or e.errno == 10048:  # Windows WSAEADDRINUSE
+                    if "Address already in use" in str(e) or e.errno == 10048:
                         print(f"[SynapseServer] Port {port_to_try} in use, trying next...")
                         if self._port_manager:
                             self._port_manager.mark_unhealthy(port_to_try, str(e))
@@ -229,66 +213,79 @@ class SynapseServer:
             if self._server is None:
                 raise RuntimeError(f"Failed to bind to any port after {MAX_PORT_RETRIES} attempts")
 
-            # Run until stopped
-            self._loop.run_forever()
+            # serve_forever blocks until shutdown() is called
+            self._server.serve_forever()
 
         except Exception as e:
+            import traceback
+            err_detail = traceback.format_exc()
             print(f"[SynapseServer] Error: {e}")
+            print(f"[SynapseServer] {err_detail}")
         finally:
-            if self._loop:
-                self._loop.close()
+            self._running = False
 
-    async def _handle_client(self, websocket):
-        """Handle a client connection."""
-        # Generate client ID
-        client_id = f"client_{int(time.time())}_{id(websocket)}"
-        self._clients.add(websocket)
-        self._client_ids[websocket] = client_id
+    def _handle_client(self, websocket):
+        """Handle a client connection (sync — runs in server thread pool)."""
+        # Deterministic client ID (monotonic counter, not time/memory address)
+        with self._clients_lock:
+            self._client_counter += 1
+            client_id = f"client_{PROTOCOL_VERSION}_{self._client_counter:05d}"
+            self._clients.add(websocket)
+            self._client_ids[websocket] = client_id
 
-        # Start session
-        bridge = get_bridge()
-        session_id = bridge.start_session(client_id)
-        self._client_sessions[websocket] = session_id
-        self._handler.set_session_id(session_id)
+        try:
+            # Start session
+            bridge = get_bridge()
+            session_id = bridge.start_session(client_id)
+            with self._clients_lock:
+                self._client_sessions[websocket] = session_id
+            self._handler.set_session_id(session_id)
 
-        print(f"[SynapseServer] Client connected: {client_id}")
+            print(f"[SynapseServer] Client connected: {client_id}")
 
-        # Notify callback
-        if self._on_client_connect:
+            # Notify callback
+            if self._on_client_connect:
+                try:
+                    self._on_client_connect(client_id)
+                except:
+                    pass
+
+            # Send initial context
             try:
-                self._on_client_connect(client_id)
-            except:
-                pass
+                context = bridge.get_connection_context()
+                websocket.send(json.dumps({
+                    "type": "connection_context",
+                    "protocol_version": PROTOCOL_VERSION,
+                    "context": context
+                }))
+            except Exception as e:
+                print(f"[SynapseServer] Failed to send context: {e}")
 
-        # Send initial context
-        try:
-            context = bridge.get_connection_context()
-            await websocket.send(json.dumps({
-                "type": "connection_context",
-                "protocol_version": PROTOCOL_VERSION,
-                "context": context
-            }))
-        except Exception as e:
-            print(f"[SynapseServer] Failed to send context: {e}")
+            for message in websocket:
+                self._handle_message(websocket, message, client_id)
 
-        try:
-            async for message in websocket:
-                await self._handle_message(websocket, message, client_id)
-        except websockets.exceptions.ConnectionClosed:
+        except websockets.exceptions.ConnectionClosedOK:
+            pass
+        except websockets.exceptions.ConnectionClosedError:
             pass
         except Exception as e:
             print(f"[SynapseServer] Error handling client: {e}")
         finally:
-            # End session
-            session_id = self._client_sessions.pop(websocket, None)
-            if session_id:
-                summary = bridge.end_session(session_id)
-                if summary:
-                    print(f"[SynapseServer] Session summary:\n{summary}")
+            # Cleanup under lock (guaranteed even if bridge.start_session fails)
+            with self._clients_lock:
+                session_id = self._client_sessions.pop(websocket, None)
+                self._clients.discard(websocket)
+                self._client_ids.pop(websocket, None)
 
-            # Cleanup
-            self._clients.discard(websocket)
-            self._client_ids.pop(websocket, None)
+            # End session
+            if session_id:
+                try:
+                    bridge = get_bridge()
+                    summary = bridge.end_session(session_id)
+                    if summary:
+                        print(f"[SynapseServer] Session summary:\n{summary}")
+                except:
+                    pass
 
             if self._rate_limiter:
                 self._rate_limiter.remove_client(client_id)
@@ -302,15 +299,15 @@ class SynapseServer:
                 except:
                     pass
 
-    async def _handle_message(self, websocket, message: str, client_id: str):
-        """Handle an incoming message."""
+    def _handle_message(self, websocket, message: str, client_id: str):
+        """Handle an incoming message (sync)."""
         try:
             # Parse command
             command = SynapseCommand.from_json(message)
 
             # Handle heartbeat without rate limiting
             if command.type == "heartbeat":
-                await websocket.send(SynapseResponse(
+                websocket.send(SynapseResponse(
                     id=command.id,
                     success=True,
                     data={"pong": True},
@@ -323,7 +320,7 @@ class SynapseServer:
                 # Rate limiting
                 allowed, info = self._rate_limiter.acquire(client_id)
                 if not allowed:
-                    await websocket.send(SynapseResponse(
+                    websocket.send(SynapseResponse(
                         id=command.id,
                         success=False,
                         error=f"Rate limited: {info.get('reason')}",
@@ -335,7 +332,7 @@ class SynapseServer:
                 # Circuit breaker
                 can_exec, cb_info = self._circuit_breaker.can_execute()
                 if not can_exec:
-                    await websocket.send(SynapseResponse(
+                    websocket.send(SynapseResponse(
                         id=command.id,
                         success=False,
                         error=f"Circuit breaker open: {cb_info.get('reason')}",
@@ -346,10 +343,11 @@ class SynapseServer:
 
                 # Backpressure
                 if not self._backpressure.should_accept():
-                    await websocket.send(SynapseResponse(
+                    websocket.send(SynapseResponse(
                         id=command.id,
                         success=False,
                         error=f"Backpressure: {self._backpressure.level.value}",
+                        data={"retry_after": 2.0},
                         sequence=command.sequence
                     ).to_json())
                     return
@@ -365,16 +363,19 @@ class SynapseServer:
                     self._circuit_breaker.record_failure()
 
             # Send response
-            await websocket.send(response.to_json())
+            websocket.send(response.to_json())
 
         except json.JSONDecodeError as e:
-            await websocket.send(SynapseResponse(
+            websocket.send(SynapseResponse(
                 id="unknown",
                 success=False,
                 error=f"Invalid JSON: {e}"
             ).to_json())
         except Exception as e:
-            await websocket.send(SynapseResponse(
+            # Notify circuit breaker on handler exceptions (service errors)
+            if self._circuit_breaker and is_service_error(e):
+                self._circuit_breaker.record_failure()
+            websocket.send(SynapseResponse(
                 id="unknown",
                 success=False,
                 error=str(e)

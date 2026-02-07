@@ -52,6 +52,7 @@ class SynapsePanel(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._synapse: Optional[SynapseMemory] = None
+        self._last_hip = ""
         self._setup_ui()
         self._init_synapse()
 
@@ -60,26 +61,27 @@ class SynapsePanel(QtWidgets.QWidget):
         self._refresh_timer.timeout.connect(self._on_timer)
         self._refresh_timer.start(1000)  # 1 second for heartbeat
 
-        self._last_hip = ""
-
     def _setup_ui(self):
         self.setWindowTitle("Synapse - AI Bridge")
-        self.setMinimumSize(350, 400)
+        self.setMinimumSize(380, 500)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(12, 12, 4, 12)
+        layout.setSpacing(12)
 
-        # Header section
+        # Header — compact single line
         header_layout = QtWidgets.QHBoxLayout()
+        header_layout.setSpacing(8)
 
         title = QtWidgets.QLabel("SYNAPSE")
-        title.setStyleSheet("font-size: 24px; font-weight: bold;")
+        title.setStyleSheet("font-size: 18px; font-weight: bold; letter-spacing: 2px;")
         header_layout.addWidget(title)
 
-        subtitle = QtWidgets.QLabel("AI-Houdini Bridge")
-        subtitle.setStyleSheet("color: palette(mid); font-size: 11px;")
-        header_layout.addWidget(subtitle)
+        self.status_indicator = QtWidgets.QLabel("No Project")
+        self.status_indicator.setStyleSheet(
+            "font-weight: bold; color: palette(mid); font-size: 11px;"
+        )
+        header_layout.addWidget(self.status_indicator)
 
         header_layout.addStretch()
 
@@ -89,51 +91,56 @@ class SynapsePanel(QtWidgets.QWidget):
 
         layout.addLayout(header_layout)
 
-        # Project status group
-        status_group = QtWidgets.QGroupBox("Memory Status")
-        status_layout = QtWidgets.QFormLayout(status_group)
-
-        self.status_indicator = QtWidgets.QLabel("No Project")
-        self.status_indicator.setStyleSheet("font-weight: bold; color: palette(mid);")
-        status_layout.addRow("Status:", self.status_indicator)
+        # Project info — compact row, no group box
+        info_layout = QtWidgets.QHBoxLayout()
+        info_layout.setSpacing(12)
 
         self.project_label = QtWidgets.QLabel("untitled")
-        status_layout.addRow("Project:", self.project_label)
+        self.project_label.setStyleSheet("font-size: 11px; font-weight: bold;")
+        info_layout.addWidget(self.project_label)
 
-        self.memory_count_label = QtWidgets.QLabel("0")
-        status_layout.addRow("Memories:", self.memory_count_label)
+        self.memory_count_label = QtWidgets.QLabel("0 memories")
+        self.memory_count_label.setStyleSheet("color: palette(mid); font-size: 11px;")
+        info_layout.addWidget(self.memory_count_label)
 
-        layout.addWidget(status_group)
+        info_layout.addStretch()
 
-        # Storage path group
-        storage_group = QtWidgets.QGroupBox("Storage Location")
-        storage_layout = QtWidgets.QVBoxLayout(storage_group)
-
-        self.storage_label = QtWidgets.QLabel("$HIP/.synapse/")
-        self.storage_label.setStyleSheet("font-family: monospace;")
-        self.storage_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
-        storage_layout.addWidget(self.storage_label)
-
-        open_folder_btn = QtWidgets.QPushButton("Open Folder")
+        open_folder_btn = QtWidgets.QPushButton("Open")
+        open_folder_btn.setFixedWidth(50)
         open_folder_btn.clicked.connect(self._open_folder)
-        storage_layout.addWidget(open_folder_btn)
+        info_layout.addWidget(open_folder_btn)
 
-        layout.addWidget(storage_group)
+        layout.addLayout(info_layout)
 
-        # Tabs - Communication first, then memory
+        # Storage path on its own row — prevents truncation
+        self.storage_label = QtWidgets.QLabel("$HIP/.synapse/")
+        self.storage_label.setStyleSheet(
+            "font-family: monospace; font-size: 10px; color: palette(mid);"
+        )
+        self.storage_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        layout.addWidget(self.storage_label)
+
+        # Separator
+        sep = QtWidgets.QFrame()
+        sep.setFrameShape(QtWidgets.QFrame.HLine)
+        sep.setFrameShadow(QtWidgets.QFrame.Sunken)
+        layout.addWidget(sep)
+
+        # Tabs — short labels for breathing room
         self.tabs = QtWidgets.QTabWidget()
+        self.tabs.setStyleSheet("QTabBar::tab { padding: 6px 14px; }")
 
         self.connection_tab = ConnectionTab()
-        self.tabs.addTab(self.connection_tab, "Connection")
+        self.tabs.addTab(self.connection_tab, "Server")
 
         self.context_tab = ContextTab()
         self.tabs.addTab(self.context_tab, "Context")
 
         self.decisions_tab = DecisionsTab()
-        self.tabs.addTab(self.decisions_tab, "Decisions")
+        self.tabs.addTab(self.decisions_tab, "Log")
 
         self.activity_tab = ActivityTab()
-        self.tabs.addTab(self.activity_tab, "Activity")
+        self.tabs.addTab(self.activity_tab, "Feed")
 
         self.search_tab = SearchTab()
         self.tabs.addTab(self.search_tab, "Search")
@@ -142,6 +149,7 @@ class SynapsePanel(QtWidgets.QWidget):
 
         # Footer controls
         controls = QtWidgets.QHBoxLayout()
+        controls.setContentsMargins(0, 4, 0, 0)
 
         self.reload_btn = QtWidgets.QPushButton("Reload")
         self.reload_btn.clicked.connect(self._reload_project)
@@ -173,20 +181,25 @@ class SynapsePanel(QtWidgets.QWidget):
             memory_count = self._synapse.store.count()
 
             self.status_indicator.setText("Active")
-            self.status_indicator.setStyleSheet("font-weight: bold; color: #4CAF50;")
+            self.status_indicator.setStyleSheet(
+                "font-weight: bold; color: #4CAF50; font-size: 11px;"
+            )
 
             self.project_label.setText(hip_name)
             self.storage_label.setText(str(self._synapse.storage_dir))
-            self.memory_count_label.setText(str(memory_count))
-            self._last_hip = str(project_path) if project_path else ""
+            self.memory_count_label.setText(f"{memory_count} memories")
+            # Store raw hou.hipFile.path() — same source as timer comparison
+            self._last_hip = hou.hipFile.path() if HOU_AVAILABLE else str(project_path)
 
             self.clear_btn.setEnabled(memory_count > 0)
         else:
             self.status_indicator.setText("No Project")
-            self.status_indicator.setStyleSheet("font-weight: bold; color: palette(mid);")
+            self.status_indicator.setStyleSheet(
+                "font-weight: bold; color: palette(mid); font-size: 11px;"
+            )
             self.project_label.setText("untitled")
             self.storage_label.setText("$HIP/.synapse/")
-            self.memory_count_label.setText("0")
+            self.memory_count_label.setText("0 memories")
             self.clear_btn.setEnabled(False)
 
         # Update tabs
@@ -200,12 +213,13 @@ class SynapsePanel(QtWidgets.QWidget):
         # Feed watchdog via connection tab
         self.connection_tab.heartbeat()
 
-        # Check for project change
+        # Check for project change (compare raw hou.hipFile.path() to itself — no normalization)
         if HOU_AVAILABLE:
             try:
-                current_hip = hou.hipFile.name()
+                current_hip = hou.hipFile.path()
                 if current_hip != self._last_hip:
-                    print(f"[Synapse] Project changed: {current_hip}")
+                    self._last_hip = current_hip  # Update immediately to prevent re-trigger
+                    print(f"[Synapse] Project changed: {Path(current_hip).name}")
                     self._reload_project()
             except:
                 pass

@@ -144,57 +144,117 @@ from .agent.protocol import (
 from .agent.executor import AgentExecutor
 from .agent.learning import OutcomeTracker
 
-# Routing (always available — LLM deps optional)
-from .routing import (
-    TieredRouter,
-    RoutingResult,
-    RoutingTier,
-    RoutingConfig,
-    CommandParser,
-    KnowledgeIndex,
-    RecipeRegistry,
-    Recipe,
-)
-ROUTING_AVAILABLE = True
+# Routing, Server, UI — all deferred to first access via __getattr__
+# This avoids importing ~3,000 lines of code (regex compilation, websockets,
+# Qt widgets) on every `import synapse`, keeping Houdini startup fast.
 
-# Server components (lazy load to avoid websockets dependency)
-try:
-    from .server.websocket import SynapseServer
-    from .server.handlers import SynapseHandler, CommandHandlerRegistry
-    from .server.resilience import (
-        RateLimiter,
-        CircuitBreaker,
-        CircuitBreakerConfig,
-        CircuitState,
-        PortManager,
-        Watchdog,
-        BackpressureController,
-        BackpressureLevel,
-        HealthMonitor,
-        HealthStatus,
-    )
-    # Backwards compatibility
-    NexusServer = SynapseServer
-    NexusHandler = SynapseHandler
-    SERVER_AVAILABLE = True
-except ImportError:
-    SERVER_AVAILABLE = False
-    SynapseServer = None
-    SynapseHandler = None
-    NexusServer = None
-    NexusHandler = None
+def __getattr__(name):
+    """Lazy-load heavy modules on first attribute access."""
+    # --- Routing ---
+    _routing_names = {
+        'TieredRouter', 'RoutingResult', 'RoutingTier', 'RoutingConfig',
+        'CommandParser', 'KnowledgeIndex', 'RecipeRegistry', 'Recipe',
+        'ROUTING_AVAILABLE',
+    }
+    if name in _routing_names:
+        from . import routing as _routing
+        _map = {
+            'TieredRouter': _routing.TieredRouter,
+            'RoutingResult': _routing.RoutingResult,
+            'RoutingTier': _routing.RoutingTier,
+            'RoutingConfig': _routing.RoutingConfig,
+            'CommandParser': _routing.CommandParser,
+            'KnowledgeIndex': _routing.KnowledgeIndex,
+            'RecipeRegistry': _routing.RecipeRegistry,
+            'Recipe': _routing.Recipe,
+            'ROUTING_AVAILABLE': True,
+        }
+        # Hoist into module namespace so subsequent access is O(1)
+        globals().update(_map)
+        return _map[name]
 
-# UI components (lazy load to avoid Qt dependency)
-try:
-    from .ui.panel import SynapsePanel, create_panel
-    # Backwards compatibility
-    NexusPanel = SynapsePanel
-    UI_AVAILABLE = True
-except ImportError:
-    UI_AVAILABLE = False
-    SynapsePanel = None
-    NexusPanel = None
-    create_panel = None
+    # --- Server ---
+    _server_names = {
+        'SynapseServer', 'SynapseHandler', 'CommandHandlerRegistry',
+        'RateLimiter', 'CircuitBreaker', 'CircuitBreakerConfig', 'CircuitState',
+        'PortManager', 'Watchdog', 'BackpressureController', 'BackpressureLevel',
+        'HealthMonitor', 'HealthStatus', 'SERVER_AVAILABLE',
+        'NexusServer', 'NexusHandler',
+    }
+    if name in _server_names:
+        try:
+            from .server.websocket import SynapseServer as _SynapseServer
+            from .server.handlers import SynapseHandler as _SynapseHandler, CommandHandlerRegistry as _CommandHandlerRegistry
+            from .server.resilience import (
+                RateLimiter as _RateLimiter,
+                CircuitBreaker as _CircuitBreaker,
+                CircuitBreakerConfig as _CircuitBreakerConfig,
+                CircuitState as _CircuitState,
+                PortManager as _PortManager,
+                Watchdog as _Watchdog,
+                BackpressureController as _BackpressureController,
+                BackpressureLevel as _BackpressureLevel,
+                HealthMonitor as _HealthMonitor,
+                HealthStatus as _HealthStatus,
+            )
+            _map = {
+                'SynapseServer': _SynapseServer,
+                'SynapseHandler': _SynapseHandler,
+                'CommandHandlerRegistry': _CommandHandlerRegistry,
+                'RateLimiter': _RateLimiter,
+                'CircuitBreaker': _CircuitBreaker,
+                'CircuitBreakerConfig': _CircuitBreakerConfig,
+                'CircuitState': _CircuitState,
+                'PortManager': _PortManager,
+                'Watchdog': _Watchdog,
+                'BackpressureController': _BackpressureController,
+                'BackpressureLevel': _BackpressureLevel,
+                'HealthMonitor': _HealthMonitor,
+                'HealthStatus': _HealthStatus,
+                'SERVER_AVAILABLE': True,
+                'NexusServer': _SynapseServer,
+                'NexusHandler': _SynapseHandler,
+            }
+            globals().update(_map)
+            return _map[name]
+        except ImportError:
+            _fallback = {
+                'SERVER_AVAILABLE': False,
+                'SynapseServer': None, 'SynapseHandler': None,
+                'NexusServer': None, 'NexusHandler': None,
+                'CommandHandlerRegistry': None,
+                'RateLimiter': None, 'CircuitBreaker': None,
+                'CircuitBreakerConfig': None, 'CircuitState': None,
+                'PortManager': None, 'Watchdog': None,
+                'BackpressureController': None, 'BackpressureLevel': None,
+                'HealthMonitor': None, 'HealthStatus': None,
+            }
+            globals().update(_fallback)
+            return _fallback.get(name)
+
+    # --- UI ---
+    _ui_names = {'SynapsePanel', 'NexusPanel', 'create_panel', 'UI_AVAILABLE'}
+    if name in _ui_names:
+        try:
+            from .ui.panel import SynapsePanel as _SynapsePanel, create_panel as _create_panel
+            _map = {
+                'SynapsePanel': _SynapsePanel,
+                'NexusPanel': _SynapsePanel,
+                'create_panel': _create_panel,
+                'UI_AVAILABLE': True,
+            }
+            globals().update(_map)
+            return _map[name]
+        except ImportError:
+            _fallback = {
+                'UI_AVAILABLE': False,
+                'SynapsePanel': None, 'NexusPanel': None,
+                'create_panel': None,
+            }
+            globals().update(_fallback)
+            return _fallback.get(name)
+
+    raise AttributeError(f"module 'synapse' has no attribute {name!r}")
 
 __all__ = [
     # Protocol

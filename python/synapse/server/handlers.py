@@ -172,6 +172,10 @@ class SynapseHandler:
 
         # USD/Solaris
         reg.register("get_stage_info", self._handle_get_stage_info)
+        reg.register("get_usd_attribute", self._handle_get_usd_attribute)
+        reg.register("set_usd_attribute", self._handle_set_usd_attribute)
+        reg.register("create_usd_prim", self._handle_create_usd_prim)
+        reg.register("modify_usd_prim", self._handle_modify_usd_prim)
 
         # Memory operations (new names)
         reg.register("context", self._handle_memory_context)
@@ -459,6 +463,171 @@ class SynapseHandler:
             "prims": prims,
         }
 
+    def _resolve_lop_node(self, node_path: str = None):
+        """Resolve a LOP node from path or selection."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError("Houdini not available")
+
+        if node_path:
+            node = hou.node(node_path)
+            if node is None:
+                raise ValueError(f"Node not found: {node_path}")
+            if not hasattr(node, 'stage'):
+                raise ValueError(f"Node is not a LOP node: {node_path}")
+            return node
+
+        # Search selection for a LOP node
+        for n in hou.selectedNodes():
+            if hasattr(n, 'stage'):
+                return n
+
+        raise ValueError("No LOP node found. Select a LOP node or specify node path.")
+
+    def _handle_get_usd_attribute(self, payload: Dict) -> Dict:
+        """Handle get_usd_attribute command — read a USD attribute from a prim."""
+        node = self._resolve_lop_node(
+            resolve_param(payload, "node", required=False)
+        )
+
+        prim_path = resolve_param(payload, "prim_path")
+        attr_name = resolve_param(payload, "usd_attribute")
+
+        stage = node.stage()
+        if stage is None:
+            raise ValueError("Node has no active stage")
+
+        prim = stage.GetPrimAtPath(prim_path)
+        if not prim.IsValid():
+            raise ValueError(f"Prim not found: {prim_path}")
+
+        attr = prim.GetAttribute(attr_name)
+        if not attr.IsValid():
+            # List available attributes to help the caller
+            attrs = [a.GetName() for a in prim.GetAttributes()][:30]
+            raise ValueError(
+                f"Attribute '{attr_name}' not found on {prim_path}. "
+                f"Available: {', '.join(attrs)}"
+            )
+
+        value = attr.Get()
+
+        return {
+            "node": node.path(),
+            "prim_path": prim_path,
+            "attribute": attr_name,
+            "value": _usd_to_json(value),
+            "type_name": str(attr.GetTypeName()),
+        }
+
+    def _handle_set_usd_attribute(self, payload: Dict) -> Dict:
+        """Handle set_usd_attribute command — set a USD attribute via Python LOP."""
+        node = self._resolve_lop_node(
+            resolve_param(payload, "node", required=False)
+        )
+
+        prim_path = resolve_param(payload, "prim_path")
+        attr_name = resolve_param(payload, "usd_attribute")
+        value = resolve_param(payload, "value")
+
+        parent = node.parent()
+        safe_name = f"set_{attr_name.replace(':', '_').replace('.', '_')}"
+        py_lop = parent.createNode("pythonscript", safe_name)
+        py_lop.setInput(0, node)
+        py_lop.moveToGoodPosition()
+
+        code = (
+            "from pxr import Sdf\n"
+            "stage = hou.pwd().editableStage()\n"
+            f"prim = stage.GetPrimAtPath('{prim_path}')\n"
+            "if prim:\n"
+            f"    attr = prim.GetAttribute('{attr_name}')\n"
+            "    if attr:\n"
+            f"        attr.Set({repr(value)})\n"
+        )
+        py_lop.parm("python").set(code)
+
+        return {
+            "created_node": py_lop.path(),
+            "prim_path": prim_path,
+            "attribute": attr_name,
+            "value": value,
+        }
+
+    def _handle_create_usd_prim(self, payload: Dict) -> Dict:
+        """Handle create_usd_prim command — define a USD prim via Python LOP."""
+        node = self._resolve_lop_node(
+            resolve_param(payload, "node", required=False)
+        )
+
+        prim_path = resolve_param(payload, "prim_path")
+        prim_type = resolve_param_with_default(payload, "prim_type", "Xform")
+
+        parent = node.parent()
+        safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
+        py_lop = parent.createNode("python", f"create_{safe_name}")
+        py_lop.setInput(0, node)
+        py_lop.moveToGoodPosition()
+
+        code = (
+            "stage = hou.pwd().editableStage()\n"
+            f"stage.DefinePrim('{prim_path}', '{prim_type}')\n"
+        )
+        py_lop.parm("python").set(code)
+
+        return {
+            "created_node": py_lop.path(),
+            "prim_path": prim_path,
+            "prim_type": prim_type,
+        }
+
+    def _handle_modify_usd_prim(self, payload: Dict) -> Dict:
+        """Handle modify_usd_prim command — set metadata/properties on a prim."""
+        node = self._resolve_lop_node(
+            resolve_param(payload, "node", required=False)
+        )
+
+        prim_path = resolve_param(payload, "prim_path")
+
+        # Collect optional modifications
+        kind = resolve_param(payload, "kind", required=False)
+        purpose = resolve_param(payload, "purpose", required=False)
+        active = resolve_param(payload, "active", required=False)
+
+        parent = node.parent()
+        safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
+        py_lop = parent.createNode("python", f"modify_{safe_name}")
+        py_lop.setInput(0, node)
+        py_lop.moveToGoodPosition()
+
+        lines = [
+            "from pxr import Usd, UsdGeom, Sdf, Kind",
+            "stage = hou.pwd().editableStage()",
+            f"prim = stage.GetPrimAtPath('{prim_path}')",
+            "if prim:",
+        ]
+        mods = {}
+        if kind is not None:
+            lines.append(f"    Usd.ModelAPI(prim).SetKind('{kind}')")
+            mods["kind"] = kind
+        if purpose is not None:
+            lines.append(f"    UsdGeom.Imageable(prim).GetPurposeAttr().Set('{purpose}')")
+            mods["purpose"] = purpose
+        if active is not None:
+            lines.append(f"    prim.SetActive({active})")
+            mods["active"] = active
+
+        if not mods:
+            raise ValueError("No modifications specified. Provide kind, purpose, or active.")
+
+        code = "\n".join(lines)
+        py_lop.parm("python").set(code)
+
+        return {
+            "created_node": py_lop.path(),
+            "prim_path": prim_path,
+            "modifications": mods,
+        }
+
     # =========================================================================
     # MEMORY HANDLERS
     # =========================================================================
@@ -487,6 +656,32 @@ class SynapseHandler:
         """Handle recall/engram_recall command."""
         bridge = self._get_bridge()
         return bridge.handle_memory_recall(payload)
+
+
+def _usd_to_json(value):
+    """Convert USD attribute values to JSON-serializable Python types."""
+    if value is None:
+        return None
+    # Scalars
+    if isinstance(value, (bool, int, float, str)):
+        return value
+    # Matrix types (GfMatrix4d, GfMatrix3d) — check BEFORE generic sequence
+    if hasattr(value, 'GetRow'):
+        try:
+            size = 4 if hasattr(value, 'IsIdentity') else 3
+            return [[float(value[r][c]) for c in range(size)] for r in range(size)]
+        except Exception:
+            pass
+    # Tuples/vectors (GfVec2f, GfVec3f, GfVec4f, GfQuatf, etc.)
+    if hasattr(value, '__len__') and hasattr(value, '__getitem__'):
+        try:
+            return [float(v) for v in value]
+        except (TypeError, ValueError):
+            return [_usd_to_json(v) for v in value]
+    # Asset paths
+    if hasattr(value, 'path'):
+        return str(value.path)
+    return str(value)
 
 
 def _run_compiled(compiled_code, globals_dict, locals_dict):

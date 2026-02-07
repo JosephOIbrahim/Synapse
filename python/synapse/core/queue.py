@@ -81,7 +81,9 @@ class ResponseDeliveryQueue:
     def get_responses(self, client: Any) -> List[SynapseResponse]:
         with self._lock:
             responses = self._responses.pop(client, [])
-            return responses
+            # He2025 batch invariance: deliver in sequence order regardless
+            # of enqueue arrival order from concurrent threads
+            return sorted(responses, key=lambda r: (r.sequence, r.id))
 
     def has_responses(self, client: Any) -> bool:
         with self._lock:

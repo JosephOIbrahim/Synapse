@@ -472,6 +472,7 @@ def test_watchdog_heartbeat():
     print("\n=== Testing Watchdog: Heartbeat ===")
 
     watchdog = Watchdog(heartbeat_interval=0.1, freeze_threshold=0.5)
+    watchdog.start()  # arm watchdog (lazy — thread starts on first heartbeat)
 
     # Send heartbeat
     watchdog.heartbeat()
@@ -481,6 +482,7 @@ def test_watchdog_heartbeat():
     assert not stats["is_frozen"], "Should not be frozen"
     print(f"  [PASS] Heartbeat recorded: count={stats['total_heartbeats']}")
 
+    watchdog.stop()
     return True
 
 
@@ -557,6 +559,7 @@ def test_watchdog_stats():
     print("\n=== Testing Watchdog: Stats ===")
 
     watchdog = Watchdog(heartbeat_interval=0.1, freeze_threshold=1.0)
+    watchdog.start()  # arm watchdog
 
     # Send some heartbeats with delays
     watchdog.heartbeat()
@@ -571,6 +574,7 @@ def test_watchdog_stats():
     assert "max_latency" in stats, "Should track max latency"
     print(f"  [PASS] Stats: count={stats['total_heartbeats']}, avg={stats['avg_latency']:.4f}s")
 
+    watchdog.stop()
     return True
 
 

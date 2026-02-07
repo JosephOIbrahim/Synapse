@@ -24,16 +24,12 @@ class SearchTab(QtWidgets.QWidget):
 
     def _setup_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(12, 16, 12, 12)
+        layout.setSpacing(12)
 
-        # Header
-        title = QtWidgets.QLabel("Search Memories")
-        title.setStyleSheet("font-size: 13px; font-weight: bold;")
-        layout.addWidget(title)
-
-        # Search input
+        # Search input row
         search_layout = QtWidgets.QHBoxLayout()
+        search_layout.setSpacing(8)
 
         self.search_input = QtWidgets.QLineEdit()
         self.search_input.setPlaceholderText("Search memories...")
@@ -41,7 +37,8 @@ class SearchTab(QtWidgets.QWidget):
         search_layout.addWidget(self.search_input)
 
         self.type_filter = QtWidgets.QComboBox()
-        self.type_filter.addItem("All Types", "")
+        self.type_filter.setFixedWidth(100)
+        self.type_filter.addItem("All", "")
         self.type_filter.addItem("Decisions", "decision")
         self.type_filter.addItem("Context", "context")
         self.type_filter.addItem("Actions", "action")
@@ -49,7 +46,8 @@ class SearchTab(QtWidgets.QWidget):
         self.type_filter.addItem("Errors", "error")
         search_layout.addWidget(self.type_filter)
 
-        search_btn = QtWidgets.QPushButton("Search")
+        search_btn = QtWidgets.QPushButton("Go")
+        search_btn.setFixedWidth(40)
         search_btn.clicked.connect(self._search)
         search_layout.addWidget(search_btn)
 
@@ -62,12 +60,14 @@ class SearchTab(QtWidgets.QWidget):
 
         # Results list
         self.results_list = QtWidgets.QListWidget()
+        self.results_list.setSpacing(2)
         self.results_list.itemDoubleClicked.connect(self._show_details)
         layout.addWidget(self.results_list)
 
         # Details panel
-        self.details_group = QtWidgets.QGroupBox("Memory Details")
+        self.details_group = QtWidgets.QGroupBox("Details")
         details_layout = QtWidgets.QVBoxLayout(self.details_group)
+        details_layout.setContentsMargins(10, 14, 10, 10)
 
         self.details_text = QtWidgets.QTextEdit()
         self.details_text.setReadOnly(True)

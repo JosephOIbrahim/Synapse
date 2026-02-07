@@ -124,7 +124,9 @@ class SynapseCommand:
             id=parsed.get("id", ""),
             payload=parsed.get("payload", {}),
             sequence=parsed.get("sequence", 0),
-            timestamp=parsed.get("timestamp", time.time()),
+            # He2025: preserve wire timestamp; 0.0 sentinel = "not provided"
+            # (avoids injecting nondeterministic time.time() on deserialization)
+            timestamp=parsed.get("timestamp", 0.0),
             protocol_version=parsed.get("protocol_version", "1.0.0")
         )
 
@@ -160,7 +162,8 @@ class SynapseResponse:
             data=parsed.get("data"),
             error=parsed.get("error"),
             sequence=parsed.get("sequence", 0),
-            timestamp=parsed.get("timestamp", time.time()),
+            # He2025: preserve wire timestamp; 0.0 sentinel = "not provided"
+            timestamp=parsed.get("timestamp", 0.0),
             protocol_version=parsed.get("protocol_version", "1.0.0")
         )
 

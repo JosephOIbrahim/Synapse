@@ -6,7 +6,6 @@
     <script><![CDATA[
 import sys
 import os
-import importlib
 
 try:
     from PySide6 import QtWidgets, QtCore
@@ -15,12 +14,22 @@ except ImportError:
 
 import hou
 
-# One-time initialization
+# One-time initialization: path setup + hrpyc
 if not hasattr(hou.session, "_synapse_initialized"):
-    hou.session._synapse_initialized = False
-
-if not hou.session._synapse_initialized:
     synapse_root = os.environ.get("SYNAPSE_ROOT")
+    if not synapse_root:
+        # Fallback: infer from this panel's location (houdini/python_panels/)
+        _panel_dir = os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else ""
+        _candidate = os.path.normpath(os.path.join(_panel_dir, "..", "..")) if _panel_dir else ""
+        if _candidate and os.path.isdir(os.path.join(_candidate, "python", "synapse")):
+            synapse_root = _candidate
+            os.environ["SYNAPSE_ROOT"] = synapse_root
+    if not synapse_root:
+        # Fallback 2: hardcoded known location
+        _known = "C:/Users/User/Synapse"
+        if os.path.isdir(os.path.join(_known, "python", "synapse")):
+            synapse_root = _known
+            os.environ["SYNAPSE_ROOT"] = synapse_root
     if not synapse_root:
         QtWidgets.QMessageBox.critical(
             None,
@@ -33,10 +42,7 @@ if not hou.session._synapse_initialized:
         if os.path.isdir(python_dir) and python_dir not in sys.path:
             sys.path.insert(0, python_dir)
 
-    hou.session._synapse_initialized = True
-
-# Start hrpyc server for external Python access (Claude Code, Gemini CLI, MCP)
-if not hasattr(hou.session, "_hrpyc_server_started"):
+    # Start hrpyc server for external Python access (Claude Code, Gemini CLI, MCP)
     try:
         import hrpyc
         hrpyc.start_server(port=18118)
@@ -46,21 +52,22 @@ if not hasattr(hou.session, "_hrpyc_server_started"):
         print(f"[Synapse] hrpyc server failed to start: {e}")
         hou.session._hrpyc_server_started = False
 
-# Force reload for development
-modules_to_clear = [k for k in sys.modules.keys() if k.startswith("synapse")]
-for mod in modules_to_clear:
-    del sys.modules[mod]
+    hou.session._synapse_initialized = True
 
-try:
-    from synapse.ui import panel as synapse_panel
-    synapse_panel = importlib.reload(synapse_panel)
-except Exception as e:
-    QtWidgets.QMessageBox.critical(
-        None,
-        "Import Error",
-        f"Could not import synapse panel:\n{e}"
-    )
-    raise
+# Import panel module once — no module nuke, no reload
+if not hasattr(hou.session, "_synapse_panel_module"):
+    try:
+        from synapse.ui import panel as synapse_panel
+        hou.session._synapse_panel_module = synapse_panel
+    except Exception as e:
+        QtWidgets.QMessageBox.critical(
+            None,
+            "Import Error",
+            f"Could not import synapse panel:\n{e}"
+        )
+        raise
+else:
+    synapse_panel = hou.session._synapse_panel_module
 
 def onCreateInterface():
     ui = synapse_panel.create_panel()

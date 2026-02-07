@@ -25,15 +25,20 @@ class ActivityTab(QtWidgets.QWidget):
 
     def _setup_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(12, 16, 12, 12)
+        layout.setSpacing(12)
 
         # Header
         header = QtWidgets.QHBoxLayout()
         title = QtWidgets.QLabel("Recent Activity")
         title.setStyleSheet("font-size: 13px; font-weight: bold;")
         header.addWidget(title)
+
         header.addStretch()
+
+        self.stats_label = QtWidgets.QLabel("")
+        self.stats_label.setStyleSheet("color: palette(mid); font-size: 11px;")
+        header.addWidget(self.stats_label)
 
         refresh_btn = QtWidgets.QPushButton("Refresh")
         refresh_btn.clicked.connect(self._refresh)
@@ -43,13 +48,12 @@ class ActivityTab(QtWidgets.QWidget):
 
         # Activity log
         self.activity_list = QtWidgets.QListWidget()
-        self.activity_list.setStyleSheet("font-family: monospace; font-size: 11px;")
+        self.activity_list.setStyleSheet(
+            "font-family: monospace; font-size: 11px;"
+            "QListWidget::item { padding: 4px 2px; }"
+        )
+        self.activity_list.setSpacing(2)
         layout.addWidget(self.activity_list)
-
-        # Stats
-        self.stats_label = QtWidgets.QLabel("")
-        self.stats_label.setStyleSheet("color: palette(mid); font-size: 11px;")
-        layout.addWidget(self.stats_label)
 
     def set_synapse(self, synapse: SynapseMemory):
         """Set the Synapse instance and load activity."""

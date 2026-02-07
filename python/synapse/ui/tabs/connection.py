@@ -12,6 +12,12 @@ except ImportError:
     from PySide2 import QtWidgets, QtCore, QtGui
 
 try:
+    import hou
+    _HOU = True
+except ImportError:
+    _HOU = False
+
+try:
     from ...server.websocket import SynapseServer
     SERVER_AVAILABLE = True
 except ImportError:
@@ -25,102 +31,117 @@ class ConnectionTab(QtWidgets.QWidget):
     server_started = QtCore.Signal()
     server_stopped = QtCore.Signal()
 
+    # How often the full UI refresh runs (every N heartbeats)
+    _UI_REFRESH_INTERVAL = 5  # 5s at 1s heartbeat
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._server: Optional['SynapseServer'] = None
+        self._tick = 0  # heartbeat counter
+        # Cached UI state for dirty-flag diffing (avoids redundant setStyleSheet)
+        self._ui_state = {
+            "status": None,
+            "clients": None,
+            "url": None,
+            "health_level": None,
+            "healthy": None,
+            "running": None,
+        }
         self._setup_ui()
 
     def _setup_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(12, 16, 12, 12)
+        layout.setSpacing(16)
 
-        # Header
-        header = QtWidgets.QHBoxLayout()
-        title = QtWidgets.QLabel("Server Status")
-        title.setStyleSheet("font-size: 13px; font-weight: bold;")
-        header.addWidget(title)
-        header.addStretch()
-        layout.addLayout(header)
+        # --- Status + Controls (merged) ---
+        server_group = QtWidgets.QGroupBox("WebSocket Server")
+        server_layout = QtWidgets.QVBoxLayout(server_group)
+        server_layout.setSpacing(12)
 
-        # Status group
-        status_group = QtWidgets.QGroupBox("Connection")
-        status_layout = QtWidgets.QFormLayout(status_group)
+        # Status row
+        status_row = QtWidgets.QHBoxLayout()
+        status_row.setSpacing(16)
 
         self.status_indicator = QtWidgets.QLabel("Stopped")
         self.status_indicator.setStyleSheet("font-weight: bold; color: palette(mid);")
-        status_layout.addRow("Status:", self.status_indicator)
+        status_row.addWidget(self.status_indicator)
 
-        self.port_label = QtWidgets.QLabel("9999")
-        status_layout.addRow("Port:", self.port_label)
+        self.clients_label = QtWidgets.QLabel("0 clients")
+        self.clients_label.setStyleSheet("color: palette(mid); font-size: 11px;")
+        status_row.addWidget(self.clients_label)
 
-        self.clients_label = QtWidgets.QLabel("0")
-        status_layout.addRow("Clients:", self.clients_label)
+        self.protocol_label = QtWidgets.QLabel("v4.0.0")
+        self.protocol_label.setStyleSheet("color: palette(mid); font-size: 10px;")
+        status_row.addWidget(self.protocol_label)
 
-        self.protocol_label = QtWidgets.QLabel("4.0.0")
-        status_layout.addRow("Protocol:", self.protocol_label)
+        status_row.addStretch()
+        server_layout.addLayout(status_row)
 
-        layout.addWidget(status_group)
+        # Port + buttons row
+        controls_row = QtWidgets.QHBoxLayout()
+        controls_row.setSpacing(8)
 
-        # Server controls
-        controls_group = QtWidgets.QGroupBox("Controls")
-        controls_layout = QtWidgets.QVBoxLayout(controls_group)
-
-        # Port input
-        port_row = QtWidgets.QHBoxLayout()
-        port_row.addWidget(QtWidgets.QLabel("Port:"))
+        controls_row.addWidget(QtWidgets.QLabel("Port:"))
         self.port_input = QtWidgets.QSpinBox()
         self.port_input.setRange(1024, 65535)
         self.port_input.setValue(9999)
-        port_row.addWidget(self.port_input)
-        port_row.addStretch()
-        controls_layout.addLayout(port_row)
+        self.port_input.setFixedWidth(80)
+        controls_row.addWidget(self.port_input)
 
-        # Start/Stop buttons
-        btn_row = QtWidgets.QHBoxLayout()
+        self.port_label = QtWidgets.QLabel("9999")
+        self.port_label.setVisible(False)
 
-        self.start_btn = QtWidgets.QPushButton("Start Server")
+        controls_row.addSpacing(12)
+
+        self.start_btn = QtWidgets.QPushButton("Start")
         self.start_btn.clicked.connect(self._start_server)
-        btn_row.addWidget(self.start_btn)
+        controls_row.addWidget(self.start_btn)
 
-        self.stop_btn = QtWidgets.QPushButton("Stop Server")
+        self.stop_btn = QtWidgets.QPushButton("Stop")
         self.stop_btn.clicked.connect(self._stop_server)
         self.stop_btn.setEnabled(False)
-        btn_row.addWidget(self.stop_btn)
+        controls_row.addWidget(self.stop_btn)
 
-        controls_layout.addLayout(btn_row)
+        controls_row.addStretch()
+        server_layout.addLayout(controls_row)
 
-        layout.addWidget(controls_group)
-
-        # Health status
-        health_group = QtWidgets.QGroupBox("Health")
-        health_layout = QtWidgets.QFormLayout(health_group)
-
-        self.health_indicator = QtWidgets.QLabel("Unknown")
-        health_layout.addRow("Level:", self.health_indicator)
-
-        self.rate_limit_label = QtWidgets.QLabel("-")
-        health_layout.addRow("Rate Limit:", self.rate_limit_label)
-
-        self.circuit_label = QtWidgets.QLabel("-")
-        health_layout.addRow("Circuit:", self.circuit_label)
-
-        layout.addWidget(health_group)
-
-        # Connection URL
-        url_group = QtWidgets.QGroupBox("Connect")
-        url_layout = QtWidgets.QVBoxLayout(url_group)
+        # URL row
+        url_row = QtWidgets.QHBoxLayout()
+        url_row.setSpacing(8)
 
         self.url_label = QtWidgets.QLabel("ws://localhost:9999")
-        self.url_label.setStyleSheet("font-family: monospace;")
+        self.url_label.setStyleSheet("font-family: monospace; font-size: 11px;")
         self.url_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
-        url_layout.addWidget(self.url_label)
+        url_row.addWidget(self.url_label)
 
         copy_btn = QtWidgets.QPushButton("Copy URL")
+        copy_btn.setMinimumWidth(64)
         copy_btn.clicked.connect(self._copy_url)
-        url_layout.addWidget(copy_btn)
+        url_row.addWidget(copy_btn)
 
-        layout.addWidget(url_group)
+        server_layout.addLayout(url_row)
+        layout.addWidget(server_group)
+
+        # --- Health (compact) ---
+        health_group = QtWidgets.QGroupBox("Health")
+        health_layout = QtWidgets.QHBoxLayout(health_group)
+        health_layout.setSpacing(20)
+
+        self.health_indicator = QtWidgets.QLabel("Unknown")
+        health_layout.addWidget(QtWidgets.QLabel("Level:"))
+        health_layout.addWidget(self.health_indicator)
+
+        self.rate_limit_label = QtWidgets.QLabel("-")
+        health_layout.addWidget(QtWidgets.QLabel("Rate:"))
+        health_layout.addWidget(self.rate_limit_label)
+
+        self.circuit_label = QtWidgets.QLabel("-")
+        health_layout.addWidget(QtWidgets.QLabel("Circuit:"))
+        health_layout.addWidget(self.circuit_label)
+
+        health_layout.addStretch()
+        layout.addWidget(health_group)
 
         layout.addStretch()
 
@@ -140,6 +161,19 @@ class ConnectionTab(QtWidgets.QWidget):
         if not SERVER_AVAILABLE:
             return
 
+        # Check for existing running server on hou.session first
+        if self._server is None and _HOU:
+            try:
+                if hasattr(hou.session, '_synapse_server'):
+                    srv = hou.session._synapse_server
+                    if srv and getattr(srv, 'is_running', False):
+                        self._server = srv
+                        self._update_status()
+                        self.server_started.emit()
+                        return
+            except:
+                pass
+
         if self._server is None:
             from ...server.websocket import SynapseServer
             port = self.port_input.value()
@@ -147,6 +181,12 @@ class ConnectionTab(QtWidgets.QWidget):
 
         if not self._server.is_running:
             self._server.start()
+            # Store on hou.session so it survives panel reloads
+            if _HOU:
+                try:
+                    hou.session._synapse_server = self._server
+                except:
+                    pass
             self._update_status()
             self.server_started.emit()
 
@@ -158,33 +198,61 @@ class ConnectionTab(QtWidgets.QWidget):
             self.server_stopped.emit()
 
     def _update_status(self):
-        """Update status display."""
+        """Update status display — uses dirty-flag diffing to skip redundant updates."""
         if self._server and self._server.is_running:
-            self.status_indicator.setText("Running")
-            self.status_indicator.setStyleSheet("font-weight: bold; color: #4CAF50;")
-            self.port_label.setText(str(self._server.actual_port))
-            self.clients_label.setText(str(self._server.client_count))
-            self.url_label.setText(f"ws://localhost:{self._server.actual_port}")
-            self.start_btn.setEnabled(False)
-            self.stop_btn.setEnabled(True)
-            self.port_input.setEnabled(False)
+            running = True
+            clients = f"{self._server.client_count} clients"
+            url = f"ws://localhost:{self._server.actual_port}"
 
-            # Health
+            # Health check only on full refresh ticks (expensive)
             health = self._server.get_health()
-            self.health_indicator.setText(health.get("level", "unknown"))
-            if health.get("healthy"):
-                self.health_indicator.setStyleSheet("color: #4CAF50;")
-            else:
-                self.health_indicator.setStyleSheet("color: #F44336;")
+            health_level = health.get("level", "unknown")
+            healthy = health.get("healthy", False)
         else:
-            self.status_indicator.setText("Stopped")
-            self.status_indicator.setStyleSheet("font-weight: bold; color: palette(mid);")
-            self.clients_label.setText("0")
-            self.start_btn.setEnabled(SERVER_AVAILABLE)
-            self.stop_btn.setEnabled(False)
-            self.port_input.setEnabled(True)
-            self.health_indicator.setText("-")
-            self.health_indicator.setStyleSheet("")
+            running = False
+            clients = "0 clients"
+            url = self._ui_state.get("url")  # keep last known
+            health_level = "-"
+            healthy = None
+
+        # Diff against cached state — only touch widgets that changed
+        prev = self._ui_state
+
+        if prev["running"] != running:
+            if running:
+                self.status_indicator.setText("Running")
+                self.status_indicator.setStyleSheet("font-weight: bold; color: #4CAF50;")
+                self.start_btn.setEnabled(False)
+                self.stop_btn.setEnabled(True)
+                self.port_input.setEnabled(False)
+            else:
+                self.status_indicator.setText("Stopped")
+                self.status_indicator.setStyleSheet("font-weight: bold; color: palette(mid);")
+                self.start_btn.setEnabled(SERVER_AVAILABLE)
+                self.stop_btn.setEnabled(False)
+                self.port_input.setEnabled(True)
+            prev["running"] = running
+
+        if prev["clients"] != clients:
+            self.clients_label.setText(clients)
+            prev["clients"] = clients
+
+        if running and prev["url"] != url:
+            self.url_label.setText(url)
+            prev["url"] = url
+
+        if prev["health_level"] != health_level:
+            self.health_indicator.setText(health_level)
+            prev["health_level"] = health_level
+
+        if prev["healthy"] != healthy:
+            if healthy is True:
+                self.health_indicator.setStyleSheet("color: #4CAF50;")
+            elif healthy is False:
+                self.health_indicator.setStyleSheet("color: #F44336;")
+            else:
+                self.health_indicator.setStyleSheet("")
+            prev["healthy"] = healthy
 
     def _copy_url(self):
         """Copy connection URL to clipboard."""
@@ -192,7 +260,23 @@ class ConnectionTab(QtWidgets.QWidget):
         clipboard.setText(self.url_label.text())
 
     def heartbeat(self):
-        """Called by timer to update status and feed watchdog."""
+        """Called by timer — fast path feeds watchdog, slow path updates UI."""
+        # Auto-discover server from hou.session (once, not every tick)
+        if self._server is None and _HOU:
+            try:
+                if hasattr(hou.session, '_synapse_server'):
+                    srv = hou.session._synapse_server
+                    if srv and srv.is_running:
+                        self._server = srv
+            except:
+                pass
+
         if self._server:
+            # Fast path: watchdog heartbeat only (lightweight — lock + timestamp)
             self._server.heartbeat()
-            self._update_status()
+
+            # Slow path: full UI refresh every N ticks
+            self._tick += 1
+            if self._tick >= self._UI_REFRESH_INTERVAL:
+                self._tick = 0
+                self._update_status()

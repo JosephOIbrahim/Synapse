@@ -20,10 +20,10 @@ from typing import Dict, Optional, List, Callable, Any, Tuple
 from enum import Enum
 from collections import deque
 
-try:
-    from ..core.determinism import round_float
-except ImportError:
-    from synapse.core.determinism import round_float
+# NOTE: round_float (Decimal-based) is intentionally NOT used here.
+# He2025 determinism applies to user-facing outputs, not internal timing.
+# Using Decimal for token-bucket math added ~2x overhead per command
+# with zero determinism benefit. Plain round() is sufficient.
 
 
 # =============================================================================
@@ -67,7 +67,7 @@ class RateLimiter:
         elapsed = now - self._last_refill
         self._tokens = min(
             self.bucket_size,
-            self._tokens + round_float(elapsed * self.tokens_per_second)
+            self._tokens + elapsed * self.tokens_per_second
         )
         self._last_refill = now
 
@@ -83,7 +83,7 @@ class RateLimiter:
         elapsed = now - last_refill
         new_tokens = min(
             self.per_client_bucket,
-            tokens + round_float(elapsed * (self.tokens_per_second / 5))  # Slower per-client refill
+            tokens + elapsed * (self.tokens_per_second / 5)  # Slower per-client refill
         )
         self._client_buckets[client_id] = (new_tokens, now)
         return new_tokens
@@ -103,7 +103,7 @@ class RateLimiter:
             # Check global limit
             if self._tokens < tokens:
                 self._rejected_requests += 1
-                wait_time = round_float((tokens - self._tokens) / self.tokens_per_second)
+                wait_time = round((tokens - self._tokens) / self.tokens_per_second, 3)
                 return False, {
                     "reason": "global_rate_limit",
                     "retry_after": wait_time,
@@ -114,7 +114,7 @@ class RateLimiter:
             # Check per-client limit
             if client_tokens < tokens:
                 self._rejected_requests += 1
-                wait_time = round_float((tokens - client_tokens) / (self.tokens_per_second / 5))
+                wait_time = round((tokens - client_tokens) / (self.tokens_per_second / 5), 3)
                 return False, {
                     "reason": "client_rate_limit",
                     "retry_after": wait_time,
@@ -533,11 +533,30 @@ class Watchdog:
         self._latencies: deque = deque(maxlen=100)
 
     def start(self):
-        """Start the watchdog monitor thread."""
+        """Arm the watchdog — actual monitoring begins on first heartbeat().
+
+        This avoids false freeze detection when no heartbeat source
+        (e.g. panel QTimer) is running yet.
+        """
         if self._running:
             return
-
         self._running = True
+        # Don't launch thread yet — _ensure_started() does that on first heartbeat
+
+    def stop(self):
+        """Stop the watchdog."""
+        was_running = self._running
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=2.0)
+            self._thread = None
+        if was_running:
+            print("[Watchdog] Stopped")
+
+    def _ensure_started(self):
+        """Launch monitor thread on first heartbeat (lazy start)."""
+        if self._thread is not None:
+            return
         self._last_heartbeat = time.time()
         self._thread = threading.Thread(
             target=self._monitor_loop,
@@ -547,18 +566,17 @@ class Watchdog:
         self._thread.start()
         print("[Watchdog] Started monitoring main thread")
 
-    def stop(self):
-        """Stop the watchdog."""
-        self._running = False
-        if self._thread:
-            self._thread.join(timeout=2.0)
-        print("[Watchdog] Stopped")
-
     def heartbeat(self):
         """
         Call this from main thread to signal it's alive.
         Should be called by QTimer in Synapse panel.
         """
+        if not self._running:
+            return
+
+        # Lazy start: first heartbeat spins up the monitor thread
+        self._ensure_started()
+
         now = time.time()
         with self._lock:
             latency = now - self._last_heartbeat

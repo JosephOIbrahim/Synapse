@@ -29,8 +29,8 @@ class ContextTab(QtWidgets.QWidget):
 
     def _setup_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(12, 16, 12, 12)
+        layout.setSpacing(12)
 
         # Header
         header_layout = QtWidgets.QHBoxLayout()
@@ -40,7 +40,7 @@ class ContextTab(QtWidgets.QWidget):
         header_layout.addStretch()
 
         self.status_label = QtWidgets.QLabel("No project loaded")
-        self.status_label.setStyleSheet("color: palette(mid);")
+        self.status_label.setStyleSheet("color: palette(mid); font-size: 11px;")
         header_layout.addWidget(self.status_label)
         layout.addLayout(header_layout)
 
@@ -51,7 +51,8 @@ class ContextTab(QtWidgets.QWidget):
 
         scroll_content = QtWidgets.QWidget()
         scroll_layout = QtWidgets.QVBoxLayout(scroll_content)
-        scroll_layout.setSpacing(15)
+        scroll_layout.setSpacing(20)
+        scroll_layout.setContentsMargins(0, 4, 0, 4)
 
         # Context sections
         self.sections = {}
