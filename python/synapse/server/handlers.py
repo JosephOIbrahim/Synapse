@@ -564,7 +564,7 @@ class SynapseHandler:
 
         parent = node.parent()
         safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
-        py_lop = parent.createNode("python", f"create_{safe_name}")
+        py_lop = parent.createNode("pythonscript", f"create_{safe_name}")
         py_lop.setInput(0, node)
         py_lop.moveToGoodPosition()
 
@@ -595,7 +595,7 @@ class SynapseHandler:
 
         parent = node.parent()
         safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
-        py_lop = parent.createNode("python", f"modify_{safe_name}")
+        py_lop = parent.createNode("pythonscript", f"modify_{safe_name}")
         py_lop.setInput(0, node)
         py_lop.moveToGoodPosition()
 
