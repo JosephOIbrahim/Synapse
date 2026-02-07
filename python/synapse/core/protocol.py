@@ -114,7 +114,7 @@ class SynapseCommand:
     protocol_version: str = PROTOCOL_VERSION
 
     def to_json(self) -> str:
-        return json.dumps(asdict(self))
+        return json.dumps(asdict(self), sort_keys=True)
 
     @classmethod
     def from_json(cls, data: str) -> 'SynapseCommand':
@@ -151,7 +151,7 @@ class SynapseResponse:
     protocol_version: str = PROTOCOL_VERSION
 
     def to_json(self) -> str:
-        return json.dumps(asdict(self))
+        return json.dumps(asdict(self), sort_keys=True)
 
     @classmethod
     def from_json(cls, data: str) -> 'SynapseResponse':

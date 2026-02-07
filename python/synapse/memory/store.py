@@ -221,7 +221,7 @@ class MemoryStore:
 
             # Write index
             self._index["updated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-            index_content = json.dumps(self._index, indent=2)
+            index_content = json.dumps(self._index, indent=2, sort_keys=True)
             if crypto:
                 index_content = crypto.encrypt_file_content(index_content)
             with open(self.index_file, 'w', encoding='utf-8') as f:
