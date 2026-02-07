@@ -65,7 +65,7 @@ class SynapseServer:
         self,
         host: str = "localhost",
         port: int = 9999,
-        enable_resilience: bool = True
+        enable_resilience: bool = False
     ):
         if not WEBSOCKETS_AVAILABLE:
             raise ImportError("websockets package required. Install with: pip install websockets")
@@ -191,7 +191,9 @@ class SynapseServer:
                     self._server = sync_serve(
                         self._handle_client,
                         self.host,
-                        port_to_try
+                        port_to_try,
+                        ping_interval=None,
+                        ping_timeout=None,
                     )
                     self._actual_port = port_to_try
 
@@ -365,12 +367,11 @@ class SynapseServer:
             # Process command
             response = self._handler.handle(command)
 
-            # Record success/failure for circuit breaker
-            if self._circuit_breaker:
-                if response.success:
-                    self._circuit_breaker.record_success()
-                elif response.error:
-                    self._circuit_breaker.record_failure()
+            # Record success for circuit breaker — failures are only
+            # recorded in the except block for actual service errors
+            # (not user errors like "Node not found")
+            if self._circuit_breaker and response.success:
+                self._circuit_breaker.record_success()
 
             # Send response
             websocket.send(response.to_json())

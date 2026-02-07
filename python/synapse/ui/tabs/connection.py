@@ -32,7 +32,7 @@ class ConnectionTab(QtWidgets.QWidget):
     server_stopped = QtCore.Signal()
 
     # How often the full UI refresh runs (every N heartbeats)
-    _UI_REFRESH_INTERVAL = 5  # 5s at 1s heartbeat
+    _UI_REFRESH_INTERVAL = 2  # 10s at 5s timer interval
 
     def __init__(self, parent=None):
         super().__init__(parent)

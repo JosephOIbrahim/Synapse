@@ -59,7 +59,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # Auto-refresh timer
         self._refresh_timer = QtCore.QTimer()
         self._refresh_timer.timeout.connect(self._on_timer)
-        self._refresh_timer.start(1000)  # 1 second for heartbeat
+        self._refresh_timer.start(5000)  # 5 seconds — minimal main-thread impact
 
     def _setup_ui(self):
         self.setWindowTitle("Synapse - AI Bridge")
