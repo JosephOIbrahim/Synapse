@@ -44,7 +44,7 @@ SYNAPSE_URL = f"ws://localhost:{SYNAPSE_PORT}{SYNAPSE_PATH}"
 PROTOCOL_VERSION = "4.0.0"
 MAX_RETRIES = 3
 RETRY_DELAY = 1.0
-COMMAND_TIMEOUT = 30.0
+COMMAND_TIMEOUT = 60.0  # Match protocol.py COMMAND_TIMEOUT
 
 logger = logging.getLogger("synapse-mcp")
 
@@ -586,7 +586,7 @@ async def call_tool(name: str, arguments: dict):
     try:
         payload = build_payload(arguments)
         data = await send_command(cmd_type, payload)
-        return [TextContent(type="text", text=json.dumps(data, indent=2))]
+        return [TextContent(type="text", text=_dumps(data))]
     except ConnectionError as e:
         return [TextContent(type="text", text=f"Connection error: {e}")]
     except RuntimeError as e:

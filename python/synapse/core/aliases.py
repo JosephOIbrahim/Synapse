@@ -49,6 +49,16 @@ PARAM_ALIASES: Dict[str, List[str]] = {
 }
 
 
+
+# Pre-computed reverse map: alias -> canonical (O(1) lookup)
+_REVERSE_ALIASES: Dict[str, str] = {}
+for _canonical, _aliases in PARAM_ALIASES.items():
+    for _alias in _aliases:
+        # First writer wins — earlier entries in PARAM_ALIASES take priority
+        if _alias not in _REVERSE_ALIASES:
+            _REVERSE_ALIASES[_alias] = _canonical
+
+
 def resolve_param(payload: Dict, canonical: str, required: bool = True) -> Any:
     """
     Resolve a parameter from payload using aliasing.
@@ -64,8 +74,12 @@ def resolve_param(payload: Dict, canonical: str, required: bool = True) -> Any:
     Raises:
         ValueError: If required parameter is not found
     """
-    aliases = PARAM_ALIASES.get(canonical, [canonical])
+    # Fast path: direct canonical key match
+    if canonical in payload:
+        return payload[canonical]
 
+    # Check known aliases for this canonical name
+    aliases = PARAM_ALIASES.get(canonical, [canonical])
     for alias in aliases:
         if alias in payload:
             return payload[alias]

@@ -114,7 +114,7 @@ class RateLimiter:
             # Check per-client limit
             if client_tokens < tokens:
                 self._rejected_requests += 1
-                wait_time = round((tokens - client_tokens) / (self.tokens_per_second / 5), 3)
+                wait_time = round((tokens - client_tokens) / (self.tokens_per_second / 2), 3)
                 return False, {
                     "reason": "client_rate_limit",
                     "retry_after": wait_time,
@@ -869,6 +869,8 @@ SERVICE_ERROR_TYPES = (
     ConnectionError,
     OSError,
     RuntimeError,
+    MemoryError,
+    RecursionError,
 )
 
 

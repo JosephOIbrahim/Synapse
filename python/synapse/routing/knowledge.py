@@ -148,19 +148,19 @@ class KnowledgeIndex:
 
         return KnowledgeLookupResult(found=False)
 
+    # Module-level constant — avoids re-allocating on every call
+    _STOPWORDS = frozenset({
+        "what", "is", "the", "a", "an", "how", "do", "i", "to", "in",
+        "on", "of", "for", "can", "you", "me", "my", "this", "that",
+        "with", "from", "about", "does", "it", "get", "show",
+    })
+
     def _tokenize(self, text: str) -> List[str]:
         """Extract meaningful words from text."""
-        # Remove common question words and stopwords
-        stopwords = {
-            "what", "is", "the", "a", "an", "how", "do", "i", "to", "in",
-            "on", "of", "for", "can", "you", "me", "my", "this", "that",
-            "with", "from", "about", "does", "it", "get", "show",
-        }
         words = []
         for word in text.split():
-            # Strip punctuation
             cleaned = word.strip("?!.,;:'\"")
-            if cleaned and cleaned not in stopwords and len(cleaned) > 1:
+            if cleaned and cleaned not in self._STOPWORDS and len(cleaned) > 1:
                 words.append(cleaned)
         return words
 

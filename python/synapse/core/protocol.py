@@ -11,6 +11,14 @@ from dataclasses import dataclass, field, asdict
 from typing import Dict, Any, Optional
 from enum import Enum
 
+try:
+    import orjson
+    def _to_json_str(data: dict) -> str:
+        return orjson.dumps(data, option=orjson.OPT_SORT_KEYS).decode()
+except ImportError:
+    def _to_json_str(data: dict) -> str:
+        return json.dumps(data, sort_keys=True)
+
 # Protocol version - bumped to 4.0.0 for standalone Synapse
 PROTOCOL_VERSION = "4.0.0"
 
@@ -114,7 +122,7 @@ class SynapseCommand:
     protocol_version: str = PROTOCOL_VERSION
 
     def to_json(self) -> str:
-        return json.dumps(asdict(self), sort_keys=True)
+        return _to_json_str(asdict(self))
 
     @classmethod
     def from_json(cls, data: str) -> 'SynapseCommand':
@@ -151,7 +159,7 @@ class SynapseResponse:
     protocol_version: str = PROTOCOL_VERSION
 
     def to_json(self) -> str:
-        return json.dumps(asdict(self), sort_keys=True)
+        return _to_json_str(asdict(self))
 
     @classmethod
     def from_json(cls, data: str) -> 'SynapseResponse':

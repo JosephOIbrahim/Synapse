@@ -14,6 +14,7 @@ Storage format:
 Migration: Automatically migrates .nexus/ or .engram/ to .synapse/ if needed.
 """
 
+import atexit
 import os
 import json
 import time
@@ -91,6 +92,9 @@ class MemoryStore:
         self._flusher_running = True
         self._flusher.start()
 
+        # Ensure buffered writes survive interpreter shutdown
+        atexit.register(self._shutdown_flush)
+
         self._ensure_storage_dir()
 
         if background_load:
@@ -125,6 +129,11 @@ class MemoryStore:
 
     def flush(self):
         """Force-flush any buffered writes (call on shutdown)."""
+        self._flush_writes()
+
+    def _shutdown_flush(self):
+        """atexit handler: stop flusher thread and drain buffer."""
+        self._flusher_running = False
         self._flush_writes()
 
     def _ensure_storage_dir(self):
@@ -202,8 +211,10 @@ class MemoryStore:
             if link_entry not in self._index["links"][memory.id]:
                 self._index["links"][memory.id].append(link_entry)
 
-    def _wait_loaded(self, timeout: float = 10.0):
+    def _wait_loaded(self, timeout: float = 2.0):
         """Block until background load completes (max timeout seconds)."""
+        if self._loaded.is_set():
+            return  # Fast path — already loaded
         self._loaded.wait(timeout=timeout)
 
     def save(self):

@@ -35,7 +35,7 @@ from ..core.protocol import (
     PORT_RETRY_DELAY,
 )
 from ..core.queue import DeterministicCommandQueue, ResponseDeliveryQueue
-from .handlers import SynapseHandler
+from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
 from .resilience import (
     RateLimiter,
     CircuitBreaker,
@@ -316,6 +316,15 @@ class SynapseServer:
                 websocket.send(response.to_json())
                 return
 
+            # Read-only commands bypass resilience — they're cheap reads
+            # that can't cause cascading failures
+            if self._enable_resilience and command.type in _READ_ONLY_COMMANDS:
+                response = self._handler.handle(command)
+                if self._circuit_breaker and response.success:
+                    self._circuit_breaker.record_success()
+                websocket.send(response.to_json())
+                return
+
             # Check resilience (if enabled)
             if self._enable_resilience:
                 # Rate limiting
@@ -360,7 +369,7 @@ class SynapseServer:
             if self._circuit_breaker:
                 if response.success:
                     self._circuit_breaker.record_success()
-                elif response.error and is_service_error(Exception(response.error)):
+                elif response.error:
                     self._circuit_breaker.record_failure()
 
             # Send response

@@ -5,8 +5,8 @@ Registry-based command handler system for the Synapse WebSocket server.
 Routes incoming commands to appropriate handler functions.
 """
 
-import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Any, Callable, Optional
 
 try:
@@ -24,6 +24,9 @@ from ..core.protocol import (
 )
 from ..core.aliases import resolve_param, resolve_param_with_default
 
+
+# Reuse 2 threads for fire-and-forget memory logging (avoids Thread() per command)
+_log_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="synapse-log")
 
 # Commands that don't modify state — skip memory logging for these
 _READ_ONLY_COMMANDS = frozenset({
@@ -130,12 +133,11 @@ class SynapseHandler:
                 bridge = self._get_bridge()
                 if bridge and self._session_id:
                     sid = self._session_id
-                    threading.Thread(
-                        target=bridge.log_action,
-                        args=(f"Executed: {cmd_type}",),
-                        kwargs={"session_id": sid},
-                        daemon=True,
-                    ).start()
+                    _log_executor.submit(
+                        bridge.log_action,
+                        f"Executed: {cmd_type}",
+                        session_id=sid,
+                    )
 
             return SynapseResponse(
                 id=command.id,

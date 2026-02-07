@@ -19,7 +19,7 @@ from dataclasses import dataclass, field, asdict
 from typing import Optional, List, Dict, Any, Callable, Tuple
 from enum import Enum
 
-from .determinism import deterministic_uuid, deterministic_dict_items
+from .determinism import deterministic_uuid
 
 try:
     from .crypto import CryptoEngine, ENCRYPTION_AVAILABLE
@@ -106,7 +106,7 @@ class AuditEntry:
             "operation_id": self.operation_id,
             "previous_hash": self.previous_hash,
         }
-        content_str = json.dumps(dict(deterministic_dict_items(content)), sort_keys=True)
+        content_str = json.dumps(content, sort_keys=True)
         return hashlib.sha256(content_str.encode('utf-8')).hexdigest()
 
     def to_dict(self) -> Dict[str, Any]:
