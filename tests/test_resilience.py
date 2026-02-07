@@ -304,6 +304,31 @@ def test_circuit_breaker_force_operations():
     return True
 
 
+def test_circuit_breaker_reset():
+    """Test reset() fully clears failure state and closes circuit."""
+    print("\n=== Testing CircuitBreaker: Reset ===")
+
+    cb = CircuitBreaker(name="test")
+
+    # Trigger open state
+    for _ in range(5):
+        cb.record_failure(Exception("error"))
+    assert cb.state == CircuitState.OPEN
+
+    # Reset should close and clear failures
+    cb.reset()
+    assert cb.state == CircuitState.CLOSED, "reset should close circuit"
+
+    stats = cb.get_stats()
+    assert stats["failure_count"] == 0, "reset should clear failure count"
+    print(f"  [PASS] reset: state={cb.state.value}, failures={stats['failure_count']}")
+
+    # Should be fully operational after reset
+    allowed, info = cb.can_execute()
+    assert allowed, "should allow execution after reset"
+    print(f"  [PASS] Operational after reset")
+
+
 def test_circuit_breaker_half_open_call_limit():
     """Test HALF_OPEN limits concurrent test calls."""
     print("\n=== Testing CircuitBreaker: HALF_OPEN Call Limit ===")

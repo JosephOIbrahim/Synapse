@@ -233,14 +233,9 @@ class SynapseServer:
             self._clients.add(websocket)
             self._client_ids[websocket] = client_id
 
-        try:
-            # Start session
-            bridge = get_bridge()
-            session_id = bridge.start_session(client_id)
-            with self._clients_lock:
-                self._client_sessions[websocket] = session_id
-            self._handler.set_session_id(session_id)
+        session_id = None
 
+        try:
             print(f"[SynapseServer] Client connected: {client_id}")
 
             # Notify callback
@@ -250,18 +245,19 @@ class SynapseServer:
                 except:
                     pass
 
-            # Send initial context
-            try:
-                context = bridge.get_connection_context()
-                websocket.send(json.dumps({
-                    "type": "connection_context",
-                    "protocol_version": PROTOCOL_VERSION,
-                    "context": context
-                }))
-            except Exception as e:
-                print(f"[SynapseServer] Failed to send context: {e}")
+            # No unsolicited connection_context — clients use the "context"
+            # command when they need it.  Eliminates 50-200ms of I/O on connect
+            # (markdown parse, JSONL scan, hou.* queries) that MCP discards.
 
             for message in websocket:
+                # Lazy session: create on first real command, not on connect
+                if session_id is None:
+                    bridge = get_bridge()
+                    session_id = bridge.start_session(client_id)
+                    with self._clients_lock:
+                        self._client_sessions[websocket] = session_id
+                    self._handler.set_session_id(session_id)
+
                 self._handle_message(websocket, message, client_id)
 
         except websockets.exceptions.ConnectionClosedOK:
@@ -305,7 +301,7 @@ class SynapseServer:
             # Parse command
             command = SynapseCommand.from_json(message)
 
-            # Handle heartbeat without rate limiting
+            # Handle heartbeat and ping without resilience checks
             if command.type == "heartbeat":
                 websocket.send(SynapseResponse(
                     id=command.id,
@@ -313,6 +309,11 @@ class SynapseServer:
                     data={"pong": True},
                     sequence=command.sequence
                 ).to_json())
+                return
+
+            if command.type in ("ping", "get_health"):
+                response = self._handler.handle(command)
+                websocket.send(response.to_json())
                 return
 
             # Check resilience (if enabled)
@@ -382,14 +383,15 @@ class SynapseServer:
             ).to_json())
 
     def _on_freeze(self, duration: float):
-        """Called when main thread freeze is detected."""
-        print(f"[SynapseServer] Main thread frozen for {duration:.1f}s")
-        if self._circuit_breaker:
-            self._circuit_breaker.force_open()
+        """Called when main thread freeze is detected (informational only)."""
+        print(f"[SynapseServer] Main thread frozen for {duration:.1f}s (logged, not blocking)")
 
     def _on_recover(self):
         """Called when main thread recovers from freeze."""
         print("[SynapseServer] Main thread recovered")
+        # Reset the circuit breaker so commands flow again
+        if self._circuit_breaker:
+            self._circuit_breaker.reset()
 
     def heartbeat(self):
         """

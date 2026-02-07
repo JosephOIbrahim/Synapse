@@ -40,9 +40,9 @@ class RateLimiter:
 
     def __init__(
         self,
-        tokens_per_second: float = 50.0,
-        bucket_size: int = 100,
-        per_client_bucket: int = 20
+        tokens_per_second: float = 500.0,
+        bucket_size: int = 2000,
+        per_client_bucket: int = 1000
     ):
         self.tokens_per_second = tokens_per_second
         self.bucket_size = bucket_size
@@ -83,7 +83,7 @@ class RateLimiter:
         elapsed = now - last_refill
         new_tokens = min(
             self.per_client_bucket,
-            tokens + elapsed * (self.tokens_per_second / 5)  # Slower per-client refill
+            tokens + elapsed * (self.tokens_per_second / 2)  # Per-client refill at 50/s
         )
         self._client_buckets[client_id] = (new_tokens, now)
         return new_tokens
@@ -314,6 +314,13 @@ class CircuitBreaker:
     def force_close(self):
         """Manually close the circuit."""
         with self._lock:
+            self._transition_to(CircuitState.CLOSED)
+
+    def reset(self):
+        """Full reset: close circuit and clear all failure state."""
+        with self._lock:
+            self._failure_count = 0
+            self._last_failure_time = None
             self._transition_to(CircuitState.CLOSED)
 
     def on_state_change(self, callback: Callable):

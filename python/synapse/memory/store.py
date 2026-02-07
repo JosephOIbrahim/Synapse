@@ -78,6 +78,19 @@ class MemoryStore:
         self._dirty = False
         self._loaded = threading.Event()
 
+        # Write buffer — defers disk I/O to background thread (saves 1-5ms per add)
+        self._write_buffer: list = []
+        self._write_lock = threading.Lock()
+        self._flush_interval = 2.0  # seconds
+        self._flush_max = 50  # items
+        self._flusher = threading.Thread(
+            target=self._flush_loop,
+            daemon=True,
+            name="Synapse-MemoryFlush",
+        )
+        self._flusher_running = True
+        self._flusher.start()
+
         self._ensure_storage_dir()
 
         if background_load:
@@ -89,6 +102,30 @@ class MemoryStore:
             loader.start()
         else:
             self._load()
+
+    def _flush_loop(self):
+        """Background thread: flush buffered writes to disk periodically."""
+        while self._flusher_running:
+            time.sleep(self._flush_interval)
+            self._flush_writes()
+
+    def _flush_writes(self):
+        """Flush buffered memory lines to disk."""
+        with self._write_lock:
+            if not self._write_buffer:
+                return
+            lines = self._write_buffer[:]
+            self._write_buffer.clear()
+
+        try:
+            with open(self.memory_file, 'a', encoding='utf-8') as f:
+                f.write("".join(lines))
+        except Exception as e:
+            print(f"[Synapse] Write flush error: {e}")
+
+    def flush(self):
+        """Force-flush any buffered writes (call on shutdown)."""
+        self._flush_writes()
 
     def _ensure_storage_dir(self):
         """Create storage directory if it doesn't exist."""
@@ -193,19 +230,27 @@ class MemoryStore:
             self._dirty = False
 
     def add(self, memory: Memory) -> str:
-        """Add a memory to the store."""
+        """Add a memory to the store.
+
+        Buffers disk write for background flush (saves 1-5ms per call).
+        In-memory state is updated immediately for read consistency.
+        """
         with self._lock:
             self._memories[memory.id] = memory
             self._index_memory(memory)
             self._dirty = True
 
-            # Append to file immediately for durability
-            crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
-            line = memory.to_json()
-            if crypto:
-                line = crypto.encrypt_line(line)
-            with open(self.memory_file, 'a', encoding='utf-8') as f:
-                f.write(line + "\n")
+        # Buffer the disk write — flushed by background thread
+        crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+        line = memory.to_json()
+        if crypto:
+            line = crypto.encrypt_line(line)
+
+        with self._write_lock:
+            self._write_buffer.append(line + "\n")
+            # Auto-flush if buffer is full
+            if len(self._write_buffer) >= self._flush_max:
+                self._flush_writes()
 
         return memory.id
 

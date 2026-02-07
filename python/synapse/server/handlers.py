@@ -5,6 +5,7 @@ Registry-based command handler system for the Synapse WebSocket server.
 Routes incoming commands to appropriate handler functions.
 """
 
+import threading
 import time
 from typing import Dict, Any, Callable, Optional
 
@@ -22,6 +23,15 @@ from ..core.protocol import (
     normalize_command_type,
 )
 from ..core.aliases import resolve_param, resolve_param_with_default
+
+
+# Commands that don't modify state — skip memory logging for these
+_READ_ONLY_COMMANDS = frozenset({
+    "ping", "get_health", "get_help", "heartbeat",
+    "get_parm", "get_scene_info", "get_selection",
+    "get_stage_info", "get_usd_attribute",
+    "context", "search", "recall",
+})
 
 
 # =============================================================================
@@ -115,13 +125,17 @@ class SynapseHandler:
 
             result = handler(command.payload)
 
-            # Log action to session
-            bridge = self._get_bridge()
-            if bridge and self._session_id:
-                bridge.log_action(
-                    f"Executed: {cmd_type}",
-                    session_id=self._session_id,
-                )
+            # Log action asynchronously — don't block the response path
+            if cmd_type not in _READ_ONLY_COMMANDS:
+                bridge = self._get_bridge()
+                if bridge and self._session_id:
+                    sid = self._session_id
+                    threading.Thread(
+                        target=bridge.log_action,
+                        args=(f"Executed: {cmd_type}",),
+                        kwargs={"session_id": sid},
+                        daemon=True,
+                    ).start()
 
             return SynapseResponse(
                 id=command.id,

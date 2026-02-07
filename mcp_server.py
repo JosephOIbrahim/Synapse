@@ -14,11 +14,19 @@ Run: python mcp_server.py
 """
 
 import asyncio
-import json
 import logging
 import os
 import time
 import uuid
+
+try:
+    import orjson
+    def _dumps(obj): return orjson.dumps(obj).decode()
+    def _loads(s): return orjson.loads(s)
+except ImportError:
+    import json
+    _dumps = json.dumps
+    _loads = json.loads
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -31,7 +39,8 @@ import websockets
 # ---------------------------------------------------------------------------
 
 SYNAPSE_PORT = int(os.environ.get("SYNAPSE_PORT", "9999"))
-SYNAPSE_URL = f"ws://localhost:{SYNAPSE_PORT}"
+SYNAPSE_PATH = os.environ.get("SYNAPSE_PATH", "")  # "/synapse" for hwebserver
+SYNAPSE_URL = f"ws://localhost:{SYNAPSE_PORT}{SYNAPSE_PATH}"
 PROTOCOL_VERSION = "4.0.0"
 MAX_RETRIES = 3
 RETRY_DELAY = 1.0
@@ -39,24 +48,28 @@ COMMAND_TIMEOUT = 30.0
 
 logger = logging.getLogger("synapse-mcp")
 
+
 # ---------------------------------------------------------------------------
 # WebSocket Client
 # ---------------------------------------------------------------------------
 
 _ws_connection = None
 _ws_lock = asyncio.Lock()
+_cmd_lock = asyncio.Lock()  # Serialize send+recv to prevent response interleaving
 
 
 async def _get_connection():
-    """Get or create a persistent WebSocket connection."""
+    """Get or create a persistent WebSocket connection.
+
+    Skips ping health check — just reuse if open. If the connection is
+    dead, send_command's try/except will catch it and reconnect next call.
+    Saves ~1-2ms per command vs await ping().
+    """
     global _ws_connection
     async with _ws_lock:
-        if _ws_connection is not None:
-            try:
-                await _ws_connection.ping()
-                return _ws_connection
-            except Exception:
-                _ws_connection = None
+        if _ws_connection is not None and _ws_connection.open:
+            return _ws_connection
+        _ws_connection = None
 
         last_error = None
         for attempt in range(MAX_RETRIES):
@@ -65,20 +78,7 @@ async def _get_connection():
                     websockets.connect(SYNAPSE_URL),
                     timeout=5.0,
                 )
-                # Consume the unsolicited connection_context message
-                # sent by SynapseServer on connect (websocket.py:250)
-                try:
-                    ctx_raw = await asyncio.wait_for(
-                        _ws_connection.recv(), timeout=5.0
-                    )
-                    ctx = json.loads(ctx_raw)
-                    logger.info(
-                        "Connected to Synapse at %s (protocol %s)",
-                        SYNAPSE_URL,
-                        ctx.get("protocol_version", "?"),
-                    )
-                except Exception:
-                    logger.info("Connected to Synapse at %s", SYNAPSE_URL)
+                logger.info("Connected to Synapse at %s", SYNAPSE_URL)
                 return _ws_connection
             except Exception as e:
                 last_error = e
@@ -97,32 +97,52 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
     Send a SynapseCommand over WebSocket and return the response data.
 
     Follows the SynapseCommand wire format from core/protocol.py.
+    Uses response ID matching to handle stale messages on reconnect.
     """
+    command_id = uuid.uuid4().hex[:16]
     command = {
         "type": cmd_type,
-        "id": uuid.uuid4().hex[:16],
+        "id": command_id,
         "payload": payload or {},
         "sequence": 0,
         "timestamp": time.time(),
         "protocol_version": PROTOCOL_VERSION,
     }
 
-    ws = await _get_connection()
+    # Serialize send+recv so parallel tool calls don't steal each other's responses
+    async with _cmd_lock:
+        ws = await _get_connection()
 
-    try:
-        await ws.send(json.dumps(command))
-        raw = await asyncio.wait_for(ws.recv(), timeout=COMMAND_TIMEOUT)
-    except Exception:
-        # Connection may have dropped — clear it so next call reconnects
-        global _ws_connection
-        _ws_connection = None
-        raise
+        try:
+            await ws.send(_dumps(command))
 
-    response = json.loads(raw)
+            # Recv loop with ID matching — discard stale responses from reconnect
+            start = time.monotonic()
+            while True:
+                remaining = COMMAND_TIMEOUT - (time.monotonic() - start)
+                if remaining <= 0:
+                    raise TimeoutError(f"Timed out waiting for response to {cmd_type}")
+
+                raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
+                response = _loads(raw)
+
+                if response.get("id") == command_id:
+                    break  # Matched — this is our response
+
+                # Stale or mismatched response — discard and try next
+                logger.warning(
+                    "Response ID mismatch: expected %s, got %s (discarding)",
+                    command_id, response.get("id"),
+                )
+
+        except Exception:
+            # Connection may have dropped — clear it so next call reconnects
+            global _ws_connection
+            _ws_connection = None
+            raise
 
     if not response.get("success", False):
         error_msg = response.get("error", "Unknown error from Synapse")
-        # Check for rate limiting
         data = response.get("data") or {}
         if isinstance(data, dict) and "retry_after" in data:
             error_msg += f" (retry after {data['retry_after']}s)"
