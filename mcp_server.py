@@ -38,8 +38,11 @@ import websockets
 # Configuration
 # ---------------------------------------------------------------------------
 
+# Transport configuration
+# - websocket.py backend: SYNAPSE_PATH="" (connects to ws://localhost:9999)
+# - hwebserver backend:   SYNAPSE_PATH="/synapse" (connects to ws://localhost:9999/synapse)
 SYNAPSE_PORT = int(os.environ.get("SYNAPSE_PORT", "9999"))
-SYNAPSE_PATH = os.environ.get("SYNAPSE_PATH", "")  # "/synapse" for hwebserver
+SYNAPSE_PATH = os.environ.get("SYNAPSE_PATH", "")
 SYNAPSE_URL = f"ws://localhost:{SYNAPSE_PORT}{SYNAPSE_PATH}"
 PROTOCOL_VERSION = "4.0.0"
 MAX_RETRIES = 3

@@ -21,7 +21,15 @@ Architecture:
 
 import json
 import threading
-from typing import Optional
+from typing import Dict, Optional
+
+# Fast JSON — orjson if available, stdlib fallback
+try:
+    import orjson
+    def _dumps(obj):
+        return orjson.dumps(obj).decode()
+except ImportError:
+    _dumps = json.dumps
 
 try:
     import hwebserver
@@ -54,7 +62,9 @@ _rate_limiter: Optional[RateLimiter] = None
 _backpressure: Optional[BackpressureController] = None
 _client_counter = 0
 _client_lock = threading.Lock()
+_client_sessions: Dict[int, str] = {}  # counter -> session_id
 _running = False
+_port = 0
 
 
 def _get_handler() -> SynapseHandler:
@@ -86,6 +96,7 @@ if HWEBSERVER_AVAILABLE:
             """Accept WebSocket upgrade — lightweight, no context loading."""
             self._client_id = _next_client_id()
             self._session_id = None
+            self._ws_id = _client_counter
             await self.accept()
             print(f"[Synapse-hwebserver] Client connected: {self._client_id}")
 
@@ -97,14 +108,15 @@ if HWEBSERVER_AVAILABLE:
             try:
                 command = SynapseCommand.from_json(text_data)
 
-                # Heartbeat fast path
+                # Heartbeat fast path (orjson bypass — skip protocol overhead)
                 if command.type == "heartbeat":
-                    await self.send(SynapseResponse(
-                        id=command.id,
-                        success=True,
-                        data={"pong": True},
-                        sequence=command.sequence
-                    ).to_json(), is_binary=False)
+                    await self.send(_dumps({
+                        "id": command.id,
+                        "success": True,
+                        "data": {"pong": True},
+                        "sequence": command.sequence,
+                        "protocol_version": PROTOCOL_VERSION,
+                    }), is_binary=False)
                     return
 
                 # Ping/health bypass rate limiting
@@ -132,6 +144,7 @@ if HWEBSERVER_AVAILABLE:
                     bridge = get_bridge()
                     self._session_id = bridge.start_session(self._client_id)
                     _get_handler().set_session_id(self._session_id)
+                    _client_sessions[self._ws_id] = self._session_id
 
                 # Dispatch to handler
                 handler = _get_handler()
@@ -161,6 +174,8 @@ if HWEBSERVER_AVAILABLE:
                         print(f"[Synapse-hwebserver] Session summary:\n{summary}")
                 except Exception:
                     pass
+
+            _client_sessions.pop(getattr(self, '_ws_id', None), None)
 
             if _rate_limiter:
                 _rate_limiter.remove_client(self._client_id)
@@ -209,6 +224,7 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
     )
 
     _running = True
+    _port = port
     print(f"[Synapse-hwebserver] Running on ws://localhost:{port}/synapse")
     print(f"[Synapse-hwebserver] Native C++ server — no watchdog, no circuit breaker")
 
@@ -229,9 +245,21 @@ def stop_hwebserver():
     _handler = None
     _rate_limiter = None
     _backpressure = None
+    _client_sessions.clear()
     print("[Synapse-hwebserver] Stopped")
 
 
 def is_running() -> bool:
     """Check if hwebserver is running."""
     return _running
+
+
+def get_health() -> Dict:
+    """Get health status for the hwebserver backend."""
+    return {
+        "backend": "hwebserver",
+        "running": _running,
+        "port": _port,
+        "clients": len(_client_sessions),
+        "rate_limiter": _rate_limiter is not None,
+    }

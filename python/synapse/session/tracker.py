@@ -89,6 +89,10 @@ class SynapseBridge:
         self.log_parameter_changes = False  # Too noisy by default
         self.log_errors = True
 
+        self._context_cache = None
+        self._context_cache_time = 0.0
+        self._context_cache_ttl = 5.0  # seconds — stale-while-revalidate
+
         self._init_synapse()
 
     def _init_synapse(self):
@@ -186,7 +190,14 @@ class SynapseBridge:
 
         This is sent to AI immediately when it connects, giving it
         full awareness of the project state.
+
+        Cached with TTL to avoid re-parsing disk/IPC on rapid calls.
         """
+        import time as _time
+        now = _time.monotonic()
+        if self._context_cache is not None and (now - self._context_cache_time) < self._context_cache_ttl:
+            return self._context_cache
+
         context = {
             "project": {},
             "recent_decisions": [],
@@ -258,7 +269,15 @@ class SynapseBridge:
             "storage_dir": str(self._synapse.storage_dir)
         }
 
+        # Cache for TTL
+        self._context_cache = context
+        self._context_cache_time = now
+
         return context
+
+    def invalidate_context_cache(self):
+        """Invalidate cached context after mutations."""
+        self._context_cache = None
 
     def get_context_markdown(self) -> str:
         """Get project context as markdown (for AI prompt injection)."""
@@ -297,6 +316,7 @@ class SynapseBridge:
             node_paths=node_paths or [],
             source="ai"
         )
+        self.invalidate_context_cache()
 
     def log_node_created(self, node_path: str, node_type: str, session_id: str = None):
         """Log node creation."""

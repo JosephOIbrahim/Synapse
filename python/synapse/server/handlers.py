@@ -252,12 +252,12 @@ class SynapseHandler:
 
         new_node.moveToGoodPosition()
 
-        # Log node creation
+        # Track node in session (logging handled by generic executor in handle())
         bridge = self._get_bridge()
         if bridge and self._session_id:
-            bridge.log_node_created(
-                new_node.path(), node_type, session_id=self._session_id
-            )
+            session = bridge.get_session(self._session_id)
+            if session:
+                session.nodes_created.append(new_node.path())
 
         return {
             "path": new_node.path(),

@@ -232,6 +232,33 @@ def __getattr__(name):
             globals().update(_fallback)
             return _fallback.get(name)
 
+    # --- hwebserver (native C++ transport, optional — requires Houdini) ---
+    _hwebserver_names = {
+        'start_hwebserver', 'stop_hwebserver', 'HWEBSERVER_AVAILABLE',
+    }
+    if name in _hwebserver_names:
+        try:
+            from .server.hwebserver_adapter import (
+                start_hwebserver as _start_hwebserver,
+                stop_hwebserver as _stop_hwebserver,
+                HWEBSERVER_AVAILABLE as _HWEBSERVER_AVAILABLE,
+            )
+            _map = {
+                'start_hwebserver': _start_hwebserver,
+                'stop_hwebserver': _stop_hwebserver,
+                'HWEBSERVER_AVAILABLE': _HWEBSERVER_AVAILABLE,
+            }
+            globals().update(_map)
+            return _map[name]
+        except ImportError:
+            _fallback = {
+                'start_hwebserver': None,
+                'stop_hwebserver': None,
+                'HWEBSERVER_AVAILABLE': False,
+            }
+            globals().update(_fallback)
+            return _fallback.get(name)
+
     # --- UI ---
     _ui_names = {'SynapsePanel', 'NexusPanel', 'create_panel', 'UI_AVAILABLE'}
     if name in _ui_names:

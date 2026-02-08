@@ -338,7 +338,7 @@ $HIP/.synapse/                        # Per-project (memory)
 
 ## WebSocket Protocol
 
-**Default URL:** `ws://localhost:9999`
+**Default URL:** `ws://localhost:9999` (websocket.py) or `ws://localhost:9999/synapse` (hwebserver)
 **Protocol Version:** `4.0.0`
 
 **Command Types:**
@@ -349,6 +349,46 @@ $HIP/.synapse/                        # Per-project (memory)
 - USD/Solaris: `create_usd_prim`, `modify_usd_prim`, `get_stage_info`
 - Memory: `context`, `search`, `add_memory`, `decide`, `recall`
 - Utility: `ping`, `get_health`, `get_help`, `heartbeat`, `backpressure`
+
+## Transport Backends
+
+Synapse supports two transport backends selected by environment:
+
+| Backend | Module | When to Use | Env Config |
+|---------|--------|------------|------------|
+| `websockets` | `server/websocket.py` | Testing without Houdini, CI, standalone | `SYNAPSE_PATH=""` (default) |
+| `hwebserver` | `server/hwebserver_adapter.py` | Production inside Houdini | `SYNAPSE_PATH="/synapse"` |
+
+**hwebserver** is Houdini's native C++ WebSocket server. It eliminates the Python
+`websockets` package overhead (~5-15ms/msg) by running handlers directly in Houdini's
+multi-threaded server with GIL access.
+
+**Starting hwebserver (inside Houdini):**
+```python
+from synapse.server.hwebserver_adapter import start_hwebserver
+start_hwebserver(port=9999)
+```
+
+**MCP configuration for hwebserver:**
+```json
+{
+  "mcpServers": {
+    "synapse": {
+      "command": "python",
+      "args": ["C:/Users/User/Synapse/mcp_server.py"],
+      "env": {
+        "SYNAPSE_PORT": "9999",
+        "SYNAPSE_PATH": "/synapse"
+      }
+    }
+  }
+}
+```
+
+**Integration test (inside Houdini):**
+```bash
+hython tests/test_hwebserver_integration.py
+```
 
 ## Backwards Compatibility
 
