@@ -318,53 +318,76 @@ class MemoryStore:
             self.save()
 
     def search(self, query: MemoryQuery) -> List[MemorySearchResult]:
-        """Search memories based on query parameters."""
+        """Search memories based on query parameters.
+
+        Uses the in-memory index to narrow candidates before scoring,
+        avoiding a full scan when type/tag/keyword filters are provided.
+        Falls back to full scan only for pure text queries.
+        """
         self._wait_loaded()
         with self._lock:
+            # --- Candidate narrowing via index ---
+            candidates = None  # None = "all", set() = "none matched yet"
+
+            if query.memory_types:
+                type_ids: set = set()
+                for mt in query.memory_types:
+                    type_ids.update(self._index["by_type"].get(mt.value, []))
+                candidates = type_ids
+
+            if query.tags:
+                tag_ids: set = set()
+                for tag in query.tags:
+                    tag_ids.update(self._index["by_tag"].get(tag, []))
+                candidates = tag_ids if candidates is None else candidates & tag_ids
+
+            if query.keywords:
+                kw_ids: set = set()
+                for kw in query.keywords:
+                    kw_ids.update(self._index["by_keyword"].get(kw, []))
+                candidates = kw_ids if candidates is None else candidates & kw_ids
+
+            # Resolve candidate IDs to Memory objects
+            if candidates is not None:
+                pool = [self._memories[mid] for mid in candidates if mid in self._memories]
+            else:
+                pool = list(self._memories.values())
+
+            # --- Score candidates ---
             results = []
 
-            for memory in self._memories.values():
-                # Skip consolidated unless requested
+            for memory in pool:
                 if memory.is_consolidated and not query.include_consolidated:
                     continue
 
-                score = 0.0
-                match_reasons = []
-
-                # Filter by type
-                if query.memory_types:
-                    if memory.memory_type not in query.memory_types:
-                        continue
-
-                # Filter by tier
+                # Post-filter: tier, source, time range
                 if query.tier and memory.tier != query.tier:
                     continue
-
-                # Filter by source
                 if query.source and memory.source != query.source:
                     continue
-
-                # Filter by time range
                 if query.since and memory.created_at < query.since:
                     continue
                 if query.until and memory.created_at > query.until:
                     continue
 
-                # Tag matching
+                score = 0.0
+                match_reasons = []
+
+                # Tag scoring (index already filtered, but score the overlap)
                 if query.tags:
                     matching_tags = set(query.tags) & set(memory.tags)
                     if matching_tags:
                         score += len(matching_tags) * 0.2
                         match_reasons.append(f"tags: {', '.join(matching_tags)}")
 
-                # Keyword matching
+                # Keyword scoring
                 if query.keywords:
                     matching_keywords = set(query.keywords) & set(memory.keywords)
                     if matching_keywords:
                         score += len(matching_keywords) * 0.2
                         match_reasons.append(f"keywords: {', '.join(matching_keywords)}")
 
-                # Text search
+                # Text search (still linear over candidates, but candidate set is smaller)
                 if query.text:
                     text_lower = query.text.lower()
                     content_lower = memory.content.lower()
@@ -377,14 +400,13 @@ class MemoryStore:
                         score += 0.3
                         match_reasons.append("summary match")
 
-                    # Check individual words
                     words = text_lower.split()
                     word_matches = sum(1 for w in words if w in content_lower or w in summary_lower)
                     if word_matches > 0:
                         score += word_matches * 0.1
                         match_reasons.append(f"{word_matches} word matches")
 
-                # If no specific criteria, include all with base score
+                # No criteria = return all with base score
                 if not query.text and not query.tags and not query.keywords:
                     score = 0.5
 
@@ -395,10 +417,8 @@ class MemoryStore:
                         match_reasons=match_reasons
                     ))
 
-            # Sort by score descending
             results.sort(key=lambda r: r.score, reverse=True)
 
-            # Apply limit
             if query.limit > 0:
                 results = results[:query.limit]
 

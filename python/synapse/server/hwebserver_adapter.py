@@ -201,7 +201,7 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
     if not HWEBSERVER_AVAILABLE:
         raise ImportError("hwebserver not available — must run inside Houdini")
 
-    global _rate_limiter, _backpressure, _running, _handler
+    global _rate_limiter, _backpressure, _running, _handler, _port
 
     if _running:
         print("[Synapse-hwebserver] Already running")
