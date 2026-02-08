@@ -559,9 +559,9 @@ class SynapseHandler:
         code = (
             "from pxr import Sdf\n"
             "stage = hou.pwd().editableStage()\n"
-            f"prim = stage.GetPrimAtPath('{prim_path}')\n"
+            f"prim = stage.GetPrimAtPath({repr(prim_path)})\n"
             "if prim:\n"
-            f"    attr = prim.GetAttribute('{attr_name}')\n"
+            f"    attr = prim.GetAttribute({repr(attr_name)})\n"
             "    if attr:\n"
             f"        attr.Set({repr(value)})\n"
         )
@@ -591,7 +591,7 @@ class SynapseHandler:
 
         code = (
             "stage = hou.pwd().editableStage()\n"
-            f"stage.DefinePrim('{prim_path}', '{prim_type}')\n"
+            f"stage.DefinePrim({repr(prim_path)}, {repr(prim_type)})\n"
         )
         py_lop.parm("python").set(code)
 
@@ -623,15 +623,15 @@ class SynapseHandler:
         lines = [
             "from pxr import Usd, UsdGeom, Sdf, Kind",
             "stage = hou.pwd().editableStage()",
-            f"prim = stage.GetPrimAtPath('{prim_path}')",
+            f"prim = stage.GetPrimAtPath({repr(prim_path)})",
             "if prim:",
         ]
         mods = {}
         if kind is not None:
-            lines.append(f"    Usd.ModelAPI(prim).SetKind('{kind}')")
+            lines.append(f"    Usd.ModelAPI(prim).SetKind({repr(kind)})")
             mods["kind"] = kind
         if purpose is not None:
-            lines.append(f"    UsdGeom.Imageable(prim).GetPurposeAttr().Set('{purpose}')")
+            lines.append(f"    UsdGeom.Imageable(prim).GetPurposeAttr().Set({repr(purpose)})")
             mods["purpose"] = purpose
         if active is not None:
             lines.append(f"    prim.SetActive({active})")

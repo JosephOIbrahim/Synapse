@@ -120,6 +120,10 @@ class SynapseServer:
             self._backpressure = None
             self._health_monitor = None
 
+        # Latency tracking (exponential moving average)
+        self._avg_latency = 0.0
+        self._latency_alpha = 0.2  # EMA smoothing factor
+
         # Callbacks
         self._on_client_connect: Optional[Callable] = None
         self._on_client_disconnect: Optional[Callable] = None
@@ -176,8 +180,8 @@ class SynapseServer:
         if self._server:
             try:
                 self._server.shutdown()
-            except:
-                pass
+            except Exception as e:
+                print(f"[SynapseServer] Shutdown error: {e}")
 
         print("[SynapseServer] Stopped")
 
@@ -244,8 +248,8 @@ class SynapseServer:
             if self._on_client_connect:
                 try:
                     self._on_client_connect(client_id)
-                except:
-                    pass
+                except Exception as e:
+                    print(f"[SynapseServer] Connect callback error: {e}")
 
             # No unsolicited connection_context — clients use the "context"
             # command when they need it.  Eliminates 50-200ms of I/O on connect
@@ -254,10 +258,14 @@ class SynapseServer:
             for message in websocket:
                 # Lazy session: create on first real command, not on connect
                 if session_id is None:
-                    bridge = get_bridge()
-                    session_id = bridge.start_session(client_id)
                     with self._clients_lock:
-                        self._client_sessions[websocket] = session_id
+                        # Double-check under lock to prevent race
+                        if websocket not in self._client_sessions:
+                            bridge = get_bridge()
+                            session_id = bridge.start_session(client_id)
+                            self._client_sessions[websocket] = session_id
+                        else:
+                            session_id = self._client_sessions[websocket]
                     self._handler.set_session_id(session_id)
 
                 self._handle_message(websocket, message, client_id)
@@ -282,8 +290,8 @@ class SynapseServer:
                     summary = bridge.end_session(session_id)
                     if summary:
                         print(f"[SynapseServer] Session summary:\n{summary}")
-                except:
-                    pass
+                except Exception as e:
+                    print(f"[SynapseServer] End session error: {e}")
 
             if self._rate_limiter:
                 self._rate_limiter.remove_client(client_id)
@@ -294,8 +302,8 @@ class SynapseServer:
             if self._on_client_disconnect:
                 try:
                     self._on_client_disconnect(client_id)
-                except:
-                    pass
+                except Exception as e:
+                    print(f"[SynapseServer] Disconnect callback error: {e}")
 
     def _handle_message(self, websocket, message: str, client_id: str):
         """Handle an incoming message (sync)."""
@@ -364,8 +372,14 @@ class SynapseServer:
                     ).to_json())
                     return
 
-            # Process command
+            # Process command with latency tracking
+            t0 = time.monotonic()
             response = self._handler.handle(command)
+            elapsed = time.monotonic() - t0
+            self._avg_latency = (
+                self._latency_alpha * elapsed
+                + (1 - self._latency_alpha) * self._avg_latency
+            )
 
             # Record success for circuit breaker — failures are only
             # recorded in the except block for actual service errors
@@ -415,7 +429,7 @@ class SynapseServer:
         if self._backpressure and self._circuit_breaker:
             self._backpressure.evaluate(
                 queue_size=self._command_queue.size(),
-                avg_latency=0.0,  # TODO: track actual latency
+                avg_latency=self._avg_latency,
                 circuit_state=self._circuit_breaker.state.value
             )
 

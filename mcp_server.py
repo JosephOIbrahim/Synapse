@@ -156,10 +156,22 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
                 break  # Success — exit retry loop
 
             except TimeoutError:
+                # Close stale connection on timeout to prevent resource leak
+                global _ws_connection
+                try:
+                    if ws:
+                        await ws.close()
+                except Exception:
+                    pass
+                _ws_connection = None
                 raise  # Don't retry timeouts — the command may have executed
             except Exception as e:
-                # Connection dropped — clear it and retry once
-                global _ws_connection
+                # Connection dropped — close and clear, then retry once
+                try:
+                    if ws:
+                        await ws.close()
+                except Exception:
+                    pass
                 _ws_connection = None
                 last_err = e
                 logger.warning("Connection lost during %s, reconnecting... (%s)", cmd_type, e)
