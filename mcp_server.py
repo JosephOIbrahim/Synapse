@@ -89,7 +89,7 @@ async def _get_connection():
             try:
                 _ws_connection = await websockets.connect(
                     SYNAPSE_URL,
-                    open_timeout=1.5,
+                    open_timeout=3.0,
                     close_timeout=1.0,
                     ping_interval=None,
                     compression=None,
@@ -632,7 +632,7 @@ async def _warmup():
     try:
         _ws_connection = await websockets.connect(
             SYNAPSE_URL,
-            open_timeout=1.5,
+            open_timeout=3.0,
             close_timeout=1.0,
             ping_interval=None,
             compression=None,
