@@ -28,6 +28,12 @@ from ..core.aliases import resolve_param, resolve_param_with_default
 # Reuse 2 threads for fire-and-forget memory logging (avoids Thread() per command)
 _log_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="synapse-log")
 
+# Idempotent guard functions — injected into execute_python namespace
+try:
+    from .guards import GUARD_FUNCTIONS as _GUARD_FUNCTIONS
+except ImportError:
+    _GUARD_FUNCTIONS = {}  # Graceful fallback if guards not available
+
 # Commands that don't modify state — skip memory logging for these
 _READ_ONLY_COMMANDS = frozenset({
     "ping", "get_health", "get_help", "heartbeat",
@@ -423,14 +429,27 @@ class SynapseHandler:
 
         code = resolve_param(payload, "content")
 
-        # Build execution namespace with Houdini access
+        # Build execution namespace with Houdini access + idempotent guards
         exec_globals = {"hou": hou, "__builtins__": __builtins__}
+        try:
+            from .guards import GUARD_FUNCTIONS
+            exec_globals.update(GUARD_FUNCTIONS)
+        except ImportError:
+            pass
         exec_locals = {}
 
-        # Execute the provided code in Houdini's namespace
-        # This is intentional DCC automation, not shell execution
+        # Execute inside undo group — rollback on error prevents partial mutations
         compiled = compile(code, "<synapse_exec>", "exec")
-        _run_compiled(compiled, exec_globals, exec_locals)
+        try:
+            with hou.undos.group("synapse_execute"):
+                _run_compiled(compiled, exec_globals, exec_locals)
+        except Exception:
+            # Roll back all mutations from this script
+            try:
+                hou.undos.performUndo()
+            except Exception:
+                pass
+            raise
 
         # Try to extract a result variable
         result = exec_locals.get("result", "executed")
