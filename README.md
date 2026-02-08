@@ -18,7 +18,7 @@
 
 Synapse lets an AI see, touch, and remember everything in your Houdini scene — it can read parameters, create and wire up nodes, run Python code, and manipulate USD stages, all through a real-time conversation. On top of that, it keeps a persistent project memory that remembers your decisions, tracks what happened across sessions, and gives the AI full context about your project every time you reconnect.
 
-Extracted from [Nexus](https://github.com/JosephOIbrahim) (RadiantSuite) and Engram (Hyphae) into a self-contained package. Zero required dependencies.
+Built as a standalone package with zero required dependencies.
 
 ## Key Features
 
@@ -31,7 +31,7 @@ Extracted from [Nexus](https://github.com/JosephOIbrahim) (RadiantSuite) and Eng
 - **Production Resilience** -- Rate limiter, circuit breaker, port failover, watchdog, backpressure controller
 - **Viewport Capture** -- AI can see the viewport via flipbook capture, returned as image for visual feedback
 - **RAG-Powered Routing** -- Optional knowledge lookup from your own documentation (no third-party docs bundled)
-- **Backwards Compatible** -- Full alias coverage for Nexus and Engram APIs; automatic storage migration
+- **Backwards Compatible** -- Automatic storage migration from previous versions
 - **Houdini Optional** -- All tests run without Houdini; core library has zero required dependencies
 
 ## Installation
@@ -445,8 +445,6 @@ Commands are JSON messages with `type`, `id`, `payload`, `sequence`, and `timest
 
 Parameter names are resolved through an alias system (38+ mappings). For example, `node`, `path`, and `node_path` all resolve to the canonical `node` parameter.
 
-Legacy `ENGRAM_*` command names (e.g., `engram_context`) are automatically normalized to their current equivalents.
-
 ## Claude Integration (MCP)
 
 Synapse includes an MCP (Model Context Protocol) server that bridges Claude to Houdini. This gives Claude 17 tools for scene manipulation, viewport capture, and project memory — no copy-pasting needed.
@@ -606,23 +604,13 @@ Synapse/
     └── test_hwebserver_integration.py # hwebserver transport (run inside Houdini)
 ```
 
-## Backwards Compatibility
+## Status
 
-Synapse consolidates what were previously separate packages (Nexus, Engram, Hyphae). All legacy names are preserved as aliases:
+Synapse is under active development. The core protocol, memory, determinism, and resilience layers are well-tested (324+ unit tests). The WebSocket server and viewport capture have been validated in single-user workflows but have not been stress-tested under sustained multi-user production load. Use in production at your own discretion.
 
-| Legacy | Current |
-|--------|---------|
-| `NexusServer` | `SynapseServer` |
-| `NexusMemory`, `EngramMemory` | `SynapseMemory` |
-| `NexusBridge`, `EngramBridge` | `SynapseBridge` |
-| `get_nexus_memory()`, `get_engram()` | `get_synapse_memory()` |
-| `HyphaeAuditLog` | `AuditLog` |
-| `HyphaeGate` | `HumanGate` |
-| `NexusPanel` | `SynapsePanel` |
+## Determinism Reference
 
-**Storage migration** is automatic. On first access, Synapse checks for `.nexus/` and `.engram/` directories, copies their contents to `.synapse/`, and leaves a `.migrated_to_synapse` marker.
-
-**Command protocol** aliases are also preserved: `engram_context` normalizes to `context`, `engram_search` to `search`, and so on.
+Synapse's determinism primitives (`round_float`, `kahan_sum`, `deterministic_uuid`, `@deterministic` decorator) are inspired by [He2025] — "Defeating Nondeterminism in LLM Inference" by Horace He, Thinking Machines Lab. The key insight: batch invariance failure (not just floating-point non-associativity) is the primary source of nondeterminism. Synapse applies this at the application layer: fixed-precision rounding, content-based IDs, and Kahan compensated summation ensure reproducible state across sessions.
 
 ## Related Projects
 
