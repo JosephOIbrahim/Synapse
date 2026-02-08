@@ -34,6 +34,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "get_parm", "get_scene_info", "get_selection",
     "get_stage_info", "get_usd_attribute",
     "context", "search", "recall",
+    "capture_viewport",
 })
 
 
@@ -192,6 +193,9 @@ class SynapseHandler:
         reg.register("set_usd_attribute", self._handle_set_usd_attribute)
         reg.register("create_usd_prim", self._handle_create_usd_prim)
         reg.register("modify_usd_prim", self._handle_modify_usd_prim)
+
+        # Viewport
+        reg.register("capture_viewport", self._handle_capture_viewport)
 
         # Memory operations (new names)
         reg.register("context", self._handle_memory_context)
@@ -642,6 +646,67 @@ class SynapseHandler:
             "created_node": py_lop.path(),
             "prim_path": prim_path,
             "modifications": mods,
+        }
+
+    # =========================================================================
+    # VIEWPORT HANDLERS
+    # =========================================================================
+
+    def _handle_capture_viewport(self, payload: Dict) -> Dict:
+        """Capture the Houdini viewport as an image file.
+
+        Uses Houdini's flipbook API for a single-frame capture. This correctly
+        reads the OpenGL framebuffer (QWidget.grab() returns black for GL surfaces).
+        Must run on the main thread via hdefereval.executeInMainThreadWithResult().
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError("Houdini not available")
+
+        from pathlib import Path
+
+        fmt = resolve_param_with_default(payload, "format", "jpeg")
+        width = resolve_param_with_default(payload, "width", 800)
+        height = resolve_param_with_default(payload, "height", 600)
+
+        temp_dir = Path(hou.text.expandString("$HOUDINI_TEMP_DIR"))
+        ext = "jpg" if fmt == "jpeg" else "png"
+        timestamp = int(time.time() * 1000)
+        # Flipbook requires $F4 frame pattern in output path
+        out_pattern = str(temp_dir / f"synapse_cap_{timestamp}.$F4.{ext}")
+
+        def _flipbook_on_main_thread():
+            """Runs on Houdini's main thread."""
+            desktop = hou.ui.curDesktop()
+            sv = desktop.paneTabOfType(hou.paneTabType.SceneViewer)
+            if sv is None:
+                raise ValueError("No SceneViewer pane found in the current desktop")
+
+            vp = sv.curViewport()
+            settings = sv.flipbookSettings()
+            cur = int(hou.frame())
+            settings.frameRange((cur, cur))
+            settings.output(out_pattern)
+            settings.useResolution(True)
+            settings.resolution((int(width), int(height)))
+            sv.flipbook(viewport=vp, settings=settings, open_dialog=False)
+
+            # Resolve the actual output filename (replaces $F4 with frame number)
+            actual = out_pattern.replace("$F4", f"{cur:04d}")
+            return actual
+
+        import hdefereval
+        actual_path = hdefereval.executeInMainThreadWithResult(
+            _flipbook_on_main_thread
+        )
+
+        if not Path(actual_path).exists():
+            raise RuntimeError(f"Flipbook capture failed — file not found: {actual_path}")
+
+        return {
+            "image_path": actual_path,
+            "width": int(width),
+            "height": int(height),
+            "format": fmt,
         }
 
     # =========================================================================

@@ -30,7 +30,7 @@ except ImportError:
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent
+from mcp.types import Tool, TextContent, ImageContent
 
 import websockets
 
@@ -49,7 +49,7 @@ PROTOCOL_VERSION = "4.0.0"
 MAX_RETRIES = 2
 RETRY_DELAY = 0.3
 COMMAND_TIMEOUT = 10.0
-_SLOW_COMMANDS = {"execute_python": 30.0, "execute_vex": 30.0}
+_SLOW_COMMANDS = {"execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0}
 
 logger = logging.getLogger("synapse-mcp")
 
@@ -446,6 +446,33 @@ async def list_tools():
                 "required": ["prim_path"],
             },
         ),
+        # -- Viewport --
+        Tool(
+            name="houdini_capture_viewport",
+            description=(
+                "Capture the Houdini viewport as an image. "
+                "Returns the image directly for visual analysis of lighting, layout, and composition."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "width": {
+                        "type": "integer",
+                        "description": "Optional width to resize the capture to (maintains aspect ratio)",
+                    },
+                    "height": {
+                        "type": "integer",
+                        "description": "Optional height to resize the capture to (maintains aspect ratio)",
+                    },
+                    "format": {
+                        "type": "string",
+                        "enum": ["jpeg", "png"],
+                        "description": "Image format (default: jpeg). JPEG is smaller, PNG is lossless.",
+                    },
+                },
+                "required": [],
+            },
+        ),
         # -- Memory --
         Tool(
             name="synapse_context",
@@ -593,6 +620,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "houdini_modify_usd_prim": ("modify_usd_prim", lambda a: {
         k: a[k] for k in ("node", "prim_path", "kind", "purpose", "active") if k in a
     }),
+    "houdini_capture_viewport": ("capture_viewport", lambda a: {k: a[k] for k in a}),
     "synapse_context":       ("context",         _passthrough),
     "synapse_search":        ("search",          lambda a: {"query": a["query"]}),
     "synapse_recall":        ("recall",          lambda a: {"query": a["query"]}),
@@ -612,6 +640,26 @@ async def call_tool(name: str, arguments: dict):
     try:
         payload = build_payload(arguments)
         data = await send_command(cmd_type, payload)
+
+        # Viewport capture: read image file and return as ImageContent
+        if name == "houdini_capture_viewport":
+            import base64
+            image_path = data.get("image_path", "")
+            try:
+                with open(image_path, "rb") as f:
+                    b64 = base64.b64encode(f.read()).decode("utf-8")
+                mime = "image/jpeg" if data.get("format") == "jpeg" else "image/png"
+                return [
+                    ImageContent(type="image", data=b64, mimeType=mime),
+                    TextContent(type="text", text=_dumps({
+                        "width": data.get("width"),
+                        "height": data.get("height"),
+                        "format": data.get("format"),
+                    })),
+                ]
+            except FileNotFoundError:
+                return [TextContent(type="text", text=f"Capture succeeded but file not found: {image_path}")]
+
         return [TextContent(type="text", text=_dumps(data))]
     except ConnectionError as e:
         return [TextContent(type="text", text=f"Connection error: {e}")]
