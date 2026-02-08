@@ -87,9 +87,12 @@ async def _get_connection():
         last_error = None
         for attempt in range(MAX_RETRIES):
             try:
-                _ws_connection = await asyncio.wait_for(
-                    websockets.connect(SYNAPSE_URL),
-                    timeout=1.5,
+                _ws_connection = await websockets.connect(
+                    SYNAPSE_URL,
+                    open_timeout=1.5,
+                    close_timeout=1.0,
+                    ping_interval=None,
+                    compression=None,
                 )
                 logger.info("Connected to Synapse at %s", SYNAPSE_URL)
                 return _ws_connection
@@ -124,36 +127,45 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
 
     # Serialize send+recv so parallel tool calls don't steal each other's responses
     async with _cmd_lock:
-        ws = await _get_connection()
+        last_err = None
+        for _attempt in range(2):  # One transparent retry on connection failure
+            ws = await _get_connection()
 
-        try:
-            await ws.send(_dumps(command))
+            try:
+                await ws.send(_dumps(command))
 
-            # Recv loop with ID matching — discard stale responses from reconnect
-            timeout = _SLOW_COMMANDS.get(cmd_type, COMMAND_TIMEOUT)
-            start = time.monotonic()
-            while True:
-                remaining = timeout - (time.monotonic() - start)
-                if remaining <= 0:
-                    raise TimeoutError(f"Timed out waiting for response to {cmd_type}")
+                # Recv loop with ID matching — discard stale responses from reconnect
+                cmd_timeout = _SLOW_COMMANDS.get(cmd_type, COMMAND_TIMEOUT)
+                start = time.monotonic()
+                while True:
+                    remaining = cmd_timeout - (time.monotonic() - start)
+                    if remaining <= 0:
+                        raise TimeoutError(f"Timed out waiting for response to {cmd_type}")
 
-                raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
-                response = _loads(raw)
+                    raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
+                    response = _loads(raw)
 
-                if response.get("id") == command_id:
-                    break  # Matched — this is our response
+                    if response.get("id") == command_id:
+                        break  # Matched — this is our response
 
-                # Stale or mismatched response — discard and try next
-                logger.warning(
-                    "Response ID mismatch: expected %s, got %s (discarding)",
-                    command_id, response.get("id"),
-                )
+                    # Stale or mismatched response — discard and try next
+                    logger.warning(
+                        "Response ID mismatch: expected %s, got %s (discarding)",
+                        command_id, response.get("id"),
+                    )
+                break  # Success — exit retry loop
 
-        except Exception:
-            # Connection may have dropped — clear it so next call reconnects
-            global _ws_connection
-            _ws_connection = None
-            raise
+            except TimeoutError:
+                raise  # Don't retry timeouts — the command may have executed
+            except Exception as e:
+                # Connection dropped — clear it and retry once
+                global _ws_connection
+                _ws_connection = None
+                last_err = e
+                logger.warning("Connection lost during %s, reconnecting... (%s)", cmd_type, e)
+
+        else:
+            raise ConnectionError(f"Failed to send {cmd_type} after reconnect: {last_err}")
 
     if not response.get("success", False):
         error_msg = response.get("error", "Unknown error from Synapse")
@@ -618,8 +630,12 @@ async def _warmup():
     """Pre-connect to Synapse on startup — makes first tool call instant."""
     global _ws_connection
     try:
-        _ws_connection = await asyncio.wait_for(
-            websockets.connect(SYNAPSE_URL), timeout=1.5
+        _ws_connection = await websockets.connect(
+            SYNAPSE_URL,
+            open_timeout=1.5,
+            close_timeout=1.0,
+            ping_interval=None,
+            compression=None,
         )
         logger.info("Warmup: connected to %s", SYNAPSE_URL)
     except Exception:
