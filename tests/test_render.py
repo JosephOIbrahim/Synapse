@@ -167,6 +167,22 @@ class TestHandleRender:
         hdefereval.executeInMainThreadWithResult = lambda fn: fn()
 
         hou = sys.modules["hou"]
+        # Ensure parm() returns a mock for outputimage/picture so the handler
+        # can set the output path on the node (no longer uses output_file kwarg)
+        if fake_node.parm.return_value is None:
+            out_parm = MagicMock()
+            loppath_parm = None
+            orig_side_effect = fake_node.parm.side_effect
+            def _parm(n):
+                if n in ("outputimage", "picture"):
+                    return out_parm
+                if n == "loppath":
+                    return loppath_parm
+                if orig_side_effect:
+                    return orig_side_effect(n)
+                return None
+            fake_node.parm.side_effect = _parm
+
         with patch.object(hou, "node", return_value=fake_node, create=True), \
              patch.object(hou, "frame", return_value=frame, create=True), \
              patch.object(hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
@@ -208,9 +224,14 @@ class TestHandleRender:
         fake_node.type.return_value.name.return_value = "karma"
         resx_parm = MagicMock()
         resy_parm = MagicMock()
+        out_parm = MagicMock()
+        override_parm = MagicMock()
+        override_parm.eval.return_value = ""
         fake_node.parm.side_effect = lambda n: {
             "resolutionx": resx_parm,
             "resolutiony": resy_parm,
+            "outputimage": out_parm,
+            "override_res": override_parm,
         }.get(n)
 
         self._mock_hdefereval_and_run(

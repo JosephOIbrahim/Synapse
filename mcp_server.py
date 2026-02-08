@@ -49,7 +49,7 @@ PROTOCOL_VERSION = "4.0.0"
 MAX_RETRIES = 2
 RETRY_DELAY = 0.3
 COMMAND_TIMEOUT = 10.0
-_SLOW_COMMANDS = {"execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0, "render": 120.0}
+_SLOW_COMMANDS = {"execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0, "render": 120.0, "wedge": 120.0}
 
 logger = logging.getLogger("synapse-mcp")
 
@@ -515,6 +515,62 @@ async def list_tools():
                 },
             },
         ),
+        # -- Keyframe / Render Settings --
+        Tool(
+            name="houdini_set_keyframe",
+            description="Set a keyframe on a node parameter at a specific frame.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "Node path (e.g. '/obj/geo1')"},
+                    "parm": {"type": "string", "description": "Parameter name (e.g. 'tx')"},
+                    "value": {"type": "number", "description": "Value to set"},
+                    "frame": {"type": "number", "description": "Frame number. Defaults to current frame."},
+                },
+                "required": ["node", "parm", "value"],
+            },
+        ),
+        Tool(
+            name="houdini_render_settings",
+            description="Read and optionally modify render settings on a ROP or Karma node. Pass settings dict to override values.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "ROP or render settings node path"},
+                    "settings": {"type": "object", "description": "Optional dict of parm_name: value overrides to apply"},
+                },
+                "required": ["node"],
+            },
+        ),
+        # -- TOPs / PDG --
+        Tool(
+            name="houdini_wedge",
+            description="Run a TOPs/PDG wedge to explore parameter variations. Point to a TOP network or wedge node.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "TOP network or wedge node path"},
+                    "parm": {"type": "string", "description": "Parameter to wedge"},
+                    "values": {"type": "array", "items": {"type": "number"}, "description": "List of values to wedge over"},
+                },
+                "required": ["node"],
+            },
+        ),
+        # -- USD Scene Assembly --
+        Tool(
+            name="houdini_reference_usd",
+            description="Import a USD file into the stage via reference or sublayer. Use for scene assembly with production assets.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "file": {"type": "string", "description": "Path to USD file (.usd, .usdc, .usda)"},
+                    "prim_path": {"type": "string", "description": "Target prim path for reference. Default: /"},
+                    "mode": {"type": "string", "enum": ["reference", "sublayer"], "description": "Import mode. Default: reference"},
+                    "parent": {"type": "string", "description": "Parent LOP network path. Default: /stage"},
+                },
+                "required": ["file"],
+            },
+        ),
         # -- Memory --
         Tool(
             name="synapse_context",
@@ -665,6 +721,10 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     }),
     "houdini_capture_viewport": ("capture_viewport", lambda a: {k: a[k] for k in a}),
     "houdini_render":           ("render",           lambda a: {k: a[k] for k in a}),
+    "houdini_set_keyframe":     ("set_keyframe",     lambda a: {k: a[k] for k in a}),
+    "houdini_render_settings":  ("render_settings",  lambda a: {k: a[k] for k in a}),
+    "houdini_wedge":         ("wedge",          lambda a: {k: a[k] for k in a}),
+    "houdini_reference_usd": ("reference_usd",  lambda a: {k: a[k] for k in a}),
     "synapse_context":       ("context",         _passthrough),
     "synapse_search":        ("search",          lambda a: {"query": a["query"]}),
     "synapse_recall":        ("recall",          lambda a: {"query": a["query"]}),

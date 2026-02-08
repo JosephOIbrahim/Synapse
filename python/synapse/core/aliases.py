@@ -52,6 +52,13 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "width": ["width", "w", "res_x"],
     "height": ["height", "h", "res_y"],
     "frame": ["frame", "f", "frame_number", "frame_num"],
+    # Wedge / TOPs
+    "values": ["values", "wedge_values", "vals"],
+
+    # USD scene assembly
+    "file": ["file", "filepath", "file_path", "path", "usd_file"],
+    "mode": ["mode", "import_mode"],
+    "settings": ["settings", "overrides", "params"],
 }
 
 

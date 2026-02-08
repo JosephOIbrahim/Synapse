@@ -204,6 +204,16 @@ class SynapseHandler:
         reg.register("capture_viewport", self._handle_capture_viewport)
         reg.register("render", self._handle_render)
 
+        # TOPs / PDG wedging
+        reg.register("wedge", self._handle_wedge)
+
+        # USD scene assembly (reference / sublayer)
+        reg.register("reference_usd", self._handle_reference_usd)
+
+        # Keyframe / Render Settings
+        reg.register("set_keyframe", self._handle_set_keyframe)
+        reg.register("render_settings", self._handle_render_settings)
+
         # Memory operations (new names)
         reg.register("context", self._handle_memory_context)
         reg.register("search", self._handle_memory_search)
@@ -757,6 +767,19 @@ class SynapseHandler:
             node_type = node.type().name()
             engine = _detect_karma_engine(node, node_type)
 
+            # For usdrender ROPs in /out, ensure loppath is set
+            lp = node.parm("loppath")
+            if lp and not lp.eval():
+                # Auto-find a LOP node with a stage
+                for lop_path in ["/stage"]:
+                    lop = hou.node(lop_path)
+                    if lop and lop.children():
+                        # Find last display node or last child
+                        display = [c for c in lop.children() if hasattr(c, 'isDisplayFlagSet') and c.isDisplayFlagSet()]
+                        target = display[0] if display else lop.children()[-1]
+                        lp.set(target.path())
+                        break
+
             # Output to temp JPEG (AI preview, not final EXR)
             temp_dir = Path(hou.text.expandString("$HOUDINI_TEMP_DIR"))
             timestamp = int(time.time() * 1000)
@@ -767,20 +790,31 @@ class SynapseHandler:
             # Resolution override — res= is a scale factor, so set parms directly
             if width and height:
                 w, h = int(width), int(height)
-                if node.parm("resolutionx"):
-                    node.parm("resolutionx").set(w)
-                    node.parm("resolutiony").set(h)
-                elif node.parm("res"):
-                    node.parm("res").set(f"{w} {h}")
+                for rx, ry in [("resolutionx", "resolutiony"), ("res_user1", "res_user2")]:
+                    if node.parm(rx):
+                        node.parm(rx).set(w)
+                        node.parm(ry).set(h)
+                        break
+                # Enable override if available (usdrender string menu)
+                ov = node.parm("override_res")
+                if ov and ov.eval() != "specific":
+                    ov.set("specific")
+
+            # Set output path on the node parm (output_file kwarg doesn't
+            # work reliably for usdrender/karma ROPs)
+            for parm_name in ("outputimage", "picture"):
+                p = node.parm(parm_name)
+                if p:
+                    p.set(out_path)
+                    break
 
             node.render(
                 frame_range=(cur, cur),
-                output_file=out_path,
                 verbose=False,
             )
 
-            # Karma XPU has a delayed file flush — poll briefly
-            for _ in range(20):
+            # Karma XPU has a delayed file flush — poll up to ~15s
+            for _ in range(60):
                 if Path(out_path).exists() and Path(out_path).stat().st_size > 0:
                     break
                 time.sleep(0.25)
@@ -801,6 +835,156 @@ class SynapseHandler:
             "height": int(height) if height else None,
             "format": "jpeg",
         }
+
+
+    # =========================================================================
+    # KEYFRAME / RENDER SETTINGS HANDLERS
+    # =========================================================================
+
+    def _handle_set_keyframe(self, payload: Dict) -> Dict:
+        """Set a keyframe on a node parameter at a specific frame."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError("Houdini not available")
+        node_path = resolve_param(payload, "node")
+        parm_name = resolve_param(payload, "parm")
+        value = resolve_param(payload, "value")
+        frame = resolve_param_with_default(payload, "frame", None)
+
+        node = hou.node(node_path)
+        if node is None:
+            raise ValueError(f"Node not found: {node_path}")
+        parm = node.parm(parm_name)
+        if parm is None:
+            raise ValueError(f"Parameter not found: {node_path}/{parm_name}")
+
+        if frame is not None:
+            key = hou.Keyframe()
+            key.setFrame(float(frame))
+            key.setValue(float(value))
+            parm.setKeyframe(key)
+        else:
+            key = hou.Keyframe()
+            key.setFrame(float(hou.frame()))
+            key.setValue(float(value))
+            parm.setKeyframe(key)
+
+        return {
+            "node": node_path,
+            "parm": parm_name,
+            "value": float(value),
+            "frame": float(frame) if frame is not None else float(hou.frame()),
+        }
+
+    def _handle_render_settings(self, payload: Dict) -> Dict:
+        """Read and optionally modify render settings on a ROP or Karma node."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError("Houdini not available")
+        node_path = resolve_param(payload, "node")
+
+        node = hou.node(node_path)
+        if node is None:
+            raise ValueError(f"Node not found: {node_path}")
+
+        settings = {}
+        # Read current render settings
+        for parm in node.parms():
+            try:
+                val = parm.eval()
+                if isinstance(val, (int, float, str)):
+                    settings[parm.name()] = val
+            except Exception:
+                pass
+
+        # Apply overrides if provided
+        overrides = resolve_param_with_default(payload, "settings", {})
+        if isinstance(overrides, dict):
+            for k, v in overrides.items():
+                p = node.parm(k)
+                if p:
+                    p.set(v)
+                    settings[k] = v
+
+        return {"node": node_path, "settings": settings}
+
+
+    # =========================================================================
+    # TOPS / PDG WEDGE
+    # =========================================================================
+
+    def _handle_wedge(self, payload: Dict) -> Dict:
+        """Run a TOPs/PDG wedge to explore parameter variations."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError("Houdini not available")
+
+        import hdefereval
+
+        top_path = resolve_param(payload, "node")  # TOP network or wedge node
+        wedge_parm = resolve_param(payload, "parm", required=False)
+        values = resolve_param(payload, "values", required=False)
+
+        if values is not None and not isinstance(values, list):
+            raise ValueError("'values' must be a list")
+
+        def _run_wedge():
+            node = hou.node(top_path)
+            if node is None:
+                raise ValueError(f"Node not found: {top_path}")
+
+            # If it's a TOP network, find or create wedge node
+            if node.type().category().name() == "Top":
+                # It's already a TOP node -- cook it
+                node.cook(block=True)
+                return {"node": top_path, "status": "cooked"}
+            elif node.type().category().name() == "TopNet":
+                # It's a TOP network -- find wedge nodes and cook
+                wedge_nodes = [n for n in node.children() if "wedge" in n.type().name().lower()]
+                if wedge_nodes:
+                    wedge_nodes[0].cook(block=True)
+                    return {"node": wedge_nodes[0].path(), "status": "cooked"}
+                else:
+                    raise ValueError(f"No wedge node found in {top_path}")
+            else:
+                raise ValueError(f"Node {top_path} is not a TOP network or node")
+
+        result = hdefereval.executeInMainThreadWithResult(_run_wedge)
+        return result
+
+    # =========================================================================
+    # USD SCENE ASSEMBLY (REFERENCE / SUBLAYER)
+    # =========================================================================
+
+    def _handle_reference_usd(self, payload: Dict) -> Dict:
+        """Import a USD file into the stage via reference or sublayer."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError("Houdini not available")
+
+        file_path = resolve_param(payload, "file")
+        prim_path = resolve_param_with_default(payload, "prim_path", "/")
+        mode = resolve_param_with_default(payload, "mode", "reference")
+        parent = resolve_param_with_default(payload, "parent", "/stage")
+
+        parent_node = hou.node(parent)
+        if parent_node is None:
+            raise ValueError(f"Parent node not found: {parent}")
+
+        if mode == "sublayer":
+            node = parent_node.createNode("sublayer", "sublayer_import")
+            node.parm("filepath1").set(file_path)
+        elif mode == "reference":
+            node = parent_node.createNode("reference", "ref_import")
+            node.parm("filepath1").set(file_path)
+            if prim_path != "/":
+                node.parm("primpath").set(prim_path)
+        else:
+            raise ValueError(f"Invalid mode: {mode}. Use 'reference' or 'sublayer'.")
+
+        return {
+            "node": node.path(),
+            "file": file_path,
+            "mode": mode,
+            "prim_path": prim_path,
+        }
+
 
     # =========================================================================
     # MEMORY HANDLERS
