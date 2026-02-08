@@ -2,9 +2,9 @@
 
 ## What Is Synapse?
 
-Synapse is an AI-Houdini bridge — it lets Claude (via Claude Desktop or Claude Code terminal) directly control SideFX Houdini through 22 MCP tools over WebSocket. Real-time, bidirectional, with persistent project memory.
+Synapse is an AI-Houdini bridge — it lets Claude (via Claude Desktop or Claude Code terminal) directly control SideFX Houdini through 23 MCP tools over WebSocket. Real-time, bidirectional, with persistent project memory and RAG-grounded Houdini knowledge.
 
-**Key stats:** 22 MCP tools | 359 tests | Karma XPU rendering | MaterialX shaders | USD/Solaris native | Animation keyframes | TOPs/wedging | Scene assembly | Project memory with decisions, context, search
+**Key stats:** 23 MCP tools | 376 tests | Karma XPU rendering | MaterialX shaders | USD/Solaris native | Animation keyframes | TOPs/wedging | Scene assembly | RAG knowledge index (13 topics, 11 reference files) | Project memory with decisions, context, search
 
 ---
 
@@ -80,7 +80,21 @@ because it shows specular highlights and environment reflections well."
 
 **Talking point:** AI doesn't forget between sessions. Decisions, context, and activity are stored in `$HIP/.synapse/` as human-readable markdown + JSONL. Artists can review and edit.
 
-### Act 5: "Iterate" (3 min)
+### Act 5: "Ask Houdini" (2 min)
+
+**Show:** Claude has grounded Houdini knowledge — no hallucination on parameter names.
+
+```
+"What's the correct parameter name for dome light intensity?"
+→ synapse_knowledge_lookup → "xn__inputsintensity_i0a"
+
+"How do I set up a pyro simulation?"
+→ synapse_knowledge_lookup → full SOP chain with parm names
+```
+
+**Talking point:** Claude doesn't guess Houdini parameter names — it looks them up from a curated reference index. 13 topics covering Solaris, Karma, MaterialX, Pyro, FLIP, RBD, TOPs, SOPs, cameras, lighting, and scene assembly. Sub-500ms, no LLM call needed.
+
+### Act 6: "Iterate" (3 min)
 
 **Show:** Claude can modify the scene based on feedback.
 
@@ -102,7 +116,7 @@ and add a warm fill light from the right"
 ```
 Claude Desktop / Claude Code
     ↓ MCP (Model Context Protocol)
-mcp_server.py (18 tools, async Python)
+mcp_server.py (23 tools, async Python)
     ↓ WebSocket (ws://localhost:9999)
 SynapseServer (inside Houdini)
     ↓ hdefereval (main thread dispatch)
@@ -131,8 +145,8 @@ USD Stage / Solaris / Karma XPU
 
 ## Numbers to Drop
 
-- **22 MCP tools** (node CRUD, USD/Solaris, render, viewport capture, keyframes, TOPs/wedging, scene assembly, render settings, memory, search)
-- **359 tests**, 5 skipped (hwebserver integration)
+- **23 MCP tools** (node CRUD, USD/Solaris, render, viewport capture, keyframes, TOPs/wedging, scene assembly, render settings, RAG knowledge, memory, search)
+- **376 tests**, 5 skipped (hwebserver integration)
 - **<1ms** ping RTT (WebSocket, localhost)
 - **~5s** Karma XPU render (simple scene, 960x540)
 - **61 memories** stored in current project
