@@ -356,8 +356,8 @@ Synapse supports two transport backends selected by environment:
 
 | Backend | Module | When to Use | Env Config |
 |---------|--------|------------|------------|
-| `websockets` | `server/websocket.py` | Testing without Houdini, CI, standalone | `SYNAPSE_PATH=""` (default) |
-| `hwebserver` | `server/hwebserver_adapter.py` | Production inside Houdini | `SYNAPSE_PATH="/synapse"` |
+| `hwebserver` | `server/hwebserver_adapter.py` | Production inside Houdini (default) | `SYNAPSE_PATH="/synapse"` (default) |
+| `websockets` | `server/websocket.py` | Testing without Houdini, CI, standalone | `SYNAPSE_PATH=""` |
 
 **hwebserver** is Houdini's native C++ WebSocket server. It eliminates the Python
 `websockets` package overhead (~5-15ms/msg) by running handlers directly in Houdini's
