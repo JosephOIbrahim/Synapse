@@ -46,9 +46,10 @@ SYNAPSE_PORT = int(os.environ.get("SYNAPSE_PORT", "9999"))
 SYNAPSE_PATH = os.environ.get("SYNAPSE_PATH", "/synapse")
 SYNAPSE_URL = f"ws://localhost:{SYNAPSE_PORT}{SYNAPSE_PATH}"
 PROTOCOL_VERSION = "4.0.0"
-MAX_RETRIES = 3
-RETRY_DELAY = 1.0
-COMMAND_TIMEOUT = 60.0  # Match protocol.py COMMAND_TIMEOUT
+MAX_RETRIES = 2
+RETRY_DELAY = 0.3
+COMMAND_TIMEOUT = 10.0
+_SLOW_COMMANDS = {"execute_python": 30.0, "execute_vex": 30.0}
 
 logger = logging.getLogger("synapse-mcp")
 
@@ -62,6 +63,14 @@ _ws_lock = asyncio.Lock()
 _cmd_lock = asyncio.Lock()  # Serialize send+recv to prevent response interleaving
 
 
+def _is_connected() -> bool:
+    """Check if the WebSocket connection is open."""
+    try:
+        return _ws_connection is not None and _ws_connection.state.name == "OPEN"
+    except (AttributeError, Exception):
+        return False
+
+
 async def _get_connection():
     """Get or create a persistent WebSocket connection.
 
@@ -71,7 +80,7 @@ async def _get_connection():
     """
     global _ws_connection
     async with _ws_lock:
-        if _ws_connection is not None and getattr(_ws_connection, 'state', None) is not None and _ws_connection.state.name == "OPEN":
+        if _is_connected():
             return _ws_connection
         _ws_connection = None
 
@@ -80,7 +89,7 @@ async def _get_connection():
             try:
                 _ws_connection = await asyncio.wait_for(
                     websockets.connect(SYNAPSE_URL),
-                    timeout=5.0,
+                    timeout=1.5,
                 )
                 logger.info("Connected to Synapse at %s", SYNAPSE_URL)
                 return _ws_connection
@@ -121,9 +130,10 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
             await ws.send(_dumps(command))
 
             # Recv loop with ID matching — discard stale responses from reconnect
+            timeout = _SLOW_COMMANDS.get(cmd_type, COMMAND_TIMEOUT)
             start = time.monotonic()
             while True:
-                remaining = COMMAND_TIMEOUT - (time.monotonic() - start)
+                remaining = timeout - (time.monotonic() - start)
                 if remaining <= 0:
                     raise TimeoutError(f"Timed out waiting for response to {cmd_type}")
 
@@ -604,8 +614,21 @@ async def call_tool(name: str, arguments: dict):
 # Entry point
 # ---------------------------------------------------------------------------
 
+async def _warmup():
+    """Pre-connect to Synapse on startup — makes first tool call instant."""
+    global _ws_connection
+    try:
+        _ws_connection = await asyncio.wait_for(
+            websockets.connect(SYNAPSE_URL), timeout=1.5
+        )
+        logger.info("Warmup: connected to %s", SYNAPSE_URL)
+    except Exception:
+        logger.info("Warmup: Synapse not available yet (will retry on first tool call)")
+
+
 async def main():
     """Run the Synapse MCP server on stdio."""
+    await _warmup()
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,
