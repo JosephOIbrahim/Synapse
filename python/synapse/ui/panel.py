@@ -13,6 +13,7 @@ Tabs:
 
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -29,6 +30,8 @@ except ImportError:
     from PySide2 import QtWidgets, QtCore
 
 from ..memory.store import SynapseMemory, get_synapse_memory, reset_synapse_memory
+from ..memory.models import MemoryType
+from ..session.tracker import get_bridge
 from .tabs.connection import ConnectionTab
 from .tabs.context import ContextTab
 from .tabs.decisions import DecisionsTab
@@ -66,15 +69,15 @@ class SynapsePanel(QtWidgets.QWidget):
         self.setMinimumSize(380, 500)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(12, 12, 4, 12)
+        layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(12)
 
-        # Header — compact single line
+        # Header
         header_layout = QtWidgets.QHBoxLayout()
         header_layout.setSpacing(8)
 
         title = QtWidgets.QLabel("SYNAPSE")
-        title.setStyleSheet("font-size: 18px; font-weight: bold; letter-spacing: 2px;")
+        title.setStyleSheet("font-size: 54px; font-weight: bold; letter-spacing: 4px;")
         header_layout.addWidget(title)
 
         self.status_indicator = QtWidgets.QLabel("No Project")
@@ -86,7 +89,7 @@ class SynapsePanel(QtWidgets.QWidget):
         header_layout.addStretch()
 
         version_label = QtWidgets.QLabel(f"v{__version__}")
-        version_label.setStyleSheet("color: palette(mid); font-size: 10px;")
+        version_label.setStyleSheet("color: palette(light); font-size: 10px;")
         header_layout.addWidget(version_label)
 
         layout.addLayout(header_layout)
@@ -146,6 +149,27 @@ class SynapsePanel(QtWidgets.QWidget):
         self.tabs.addTab(self.search_tab, "Search")
 
         layout.addWidget(self.tabs)
+
+        # Metrics status bar
+        metrics_frame = QtWidgets.QFrame()
+        metrics_frame.setFrameStyle(QtWidgets.QFrame.StyledPanel)
+        metrics_layout = QtWidgets.QVBoxLayout(metrics_frame)
+        metrics_layout.setContentsMargins(8, 6, 8, 6)
+        metrics_layout.setSpacing(2)
+
+        self.metrics_line1 = QtWidgets.QLabel("")
+        self.metrics_line1.setStyleSheet(
+            "font-family: Consolas, monospace; font-size: 10px; color: palette(light);"
+        )
+        metrics_layout.addWidget(self.metrics_line1)
+
+        self.metrics_line2 = QtWidgets.QLabel("")
+        self.metrics_line2.setStyleSheet(
+            "font-family: Consolas, monospace; font-size: 10px; color: palette(light);"
+        )
+        metrics_layout.addWidget(self.metrics_line2)
+
+        layout.addWidget(metrics_frame)
 
         # Footer controls
         controls = QtWidgets.QHBoxLayout()
@@ -208,10 +232,79 @@ class SynapsePanel(QtWidgets.QWidget):
         self.search_tab.set_synapse(self._synapse)
         self.activity_tab.set_synapse(self._synapse)
 
+    def _update_metrics(self):
+        """Update the compact metrics status bar."""
+        try:
+            # Line 1: Session stats + server health
+            parts1 = []
+            bridge = get_bridge()
+            server = self.connection_tab._server
+
+            # Active session info
+            if bridge and bridge._sessions:
+                # Sum across all active sessions
+                total_cmds = sum(s.commands_executed for s in bridge._sessions.values())
+                total_nodes = sum(len(s.nodes_created) for s in bridge._sessions.values())
+                total_errs = sum(len(s.errors_encountered) for s in bridge._sessions.values())
+                # Duration from oldest session
+                oldest = min(bridge._sessions.values(), key=lambda s: s.started_at)
+                dur = oldest.duration_seconds()
+                mins = int(dur // 60)
+                parts1.append(f"Session: {mins}m")
+                parts1.append(f"Cmds: {total_cmds}")
+                if total_nodes:
+                    parts1.append(f"Nodes: {total_nodes}")
+                if total_errs:
+                    parts1.append(f"Errs: {total_errs}")
+
+            # Server info
+            if server and getattr(server, 'is_running', False):
+                parts1.append(f"Clients: {server.client_count}")
+                health = server.get_health()
+                cb_state = health.get("circuit_breaker", {})
+                if isinstance(cb_state, dict):
+                    state = cb_state.get("state", "?")
+                else:
+                    state = str(cb_state) if cb_state else "?"
+                parts1.append(f"CB: {state}")
+            elif not parts1:
+                parts1.append("No active session")
+
+            self.metrics_line1.setText(" │ ".join(parts1))
+
+            # Line 2: Memory breakdown by type
+            parts2 = []
+            if self._synapse:
+                store = self._synapse.store
+                for mtype, label in [
+                    (MemoryType.DECISION, "Dec"),
+                    (MemoryType.NOTE, "Note"),
+                    (MemoryType.ACTION, "Act"),
+                    (MemoryType.CONTEXT, "Ctx"),
+                    (MemoryType.ERROR, "Err"),
+                ]:
+                    count = len(store.get_by_type(mtype))
+                    if count:
+                        parts2.append(f"{label}: {count}")
+
+                if parts2:
+                    self.metrics_line2.setText(" │ ".join(parts2))
+                else:
+                    self.metrics_line2.setText("No memories yet")
+            else:
+                self.metrics_line2.setText("")
+
+        except Exception:
+            # Metrics are non-critical — never break the panel
+            pass
+
     def _on_timer(self):
         """Timer callback for heartbeat and project change detection."""
         # Feed watchdog via connection tab
         self.connection_tab.heartbeat()
+
+        # Update metrics on every tick (lightweight reads)
+        self._update_metrics()
 
         # Check for project change (compare raw hou.hipFile.path() to itself — no normalization)
         if HOU_AVAILABLE:
