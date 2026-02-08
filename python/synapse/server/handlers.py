@@ -41,6 +41,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "get_stage_info", "get_usd_attribute",
     "context", "search", "recall",
     "capture_viewport",
+    "knowledge_lookup",
 })
 
 
@@ -213,6 +214,9 @@ class SynapseHandler:
         # Keyframe / Render Settings
         reg.register("set_keyframe", self._handle_set_keyframe)
         reg.register("render_settings", self._handle_render_settings)
+
+        # Knowledge lookup (RAG)
+        reg.register("knowledge_lookup", self._handle_knowledge_lookup)
 
         # Memory operations (new names)
         reg.register("context", self._handle_memory_context)
@@ -1014,6 +1018,44 @@ class SynapseHandler:
         """Handle recall/engram_recall command."""
         bridge = self._get_bridge()
         return bridge.handle_memory_recall(payload)
+
+    def _handle_knowledge_lookup(self, payload: Dict) -> Dict:
+        """Look up Houdini knowledge from the RAG index.
+
+        Queries the Tier 1 knowledge index for parameter names,
+        node types, workflow guides, and FX setup instructions.
+        """
+        query = resolve_param(payload, "query")
+
+        # Lazy-init the knowledge index
+        if not hasattr(self, "_knowledge"):
+            from pathlib import Path as _Path
+            from ..routing.knowledge import KnowledgeIndex
+            import os
+            rag_root = os.environ.get(
+                "SYNAPSE_RAG_ROOT",
+                str(_Path(__file__).resolve().parent.parent.parent.parent / "rag"),
+            )
+            memory = None
+            try:
+                from ..memory.store import get_synapse_memory
+                memory = get_synapse_memory()
+            except Exception:
+                pass
+            self._knowledge = KnowledgeIndex(
+                rag_root=rag_root if _Path(rag_root).exists() else None,
+                memory=memory,
+            )
+
+        result = self._knowledge.lookup(query)
+        return {
+            "found": result.found,
+            "answer": result.answer,
+            "confidence": result.confidence,
+            "topic": result.topic,
+            "sources": result.sources,
+            "agent_hint": result.agent_hint,
+        }
 
 
 def _find_render_rop():

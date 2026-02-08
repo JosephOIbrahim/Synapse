@@ -198,7 +198,7 @@ server = Server("synapse")
 
 @server.list_tools()
 async def list_tools():
-    """Register all 18 Synapse MCP tools."""
+    """Register all Synapse MCP tools."""
     return [
         # -- Utility --
         Tool(
@@ -571,6 +571,25 @@ async def list_tools():
                 "required": ["file"],
             },
         ),
+        # -- Knowledge / RAG --
+        Tool(
+            name="synapse_knowledge_lookup",
+            description=(
+                "Look up Houdini knowledge: parameter names, node types, "
+                "workflow guides, FX setup, rendering, and lighting. "
+                "Uses the RAG index for fast, grounded answers."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Natural language query (e.g. 'dome light intensity parameter', 'pyro setup chain')",
+                    },
+                },
+                "required": ["query"],
+            },
+        ),
         # -- Memory --
         Tool(
             name="synapse_context",
@@ -725,6 +744,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "houdini_render_settings":  ("render_settings",  lambda a: {k: a[k] for k in a}),
     "houdini_wedge":         ("wedge",          lambda a: {k: a[k] for k in a}),
     "houdini_reference_usd": ("reference_usd",  lambda a: {k: a[k] for k in a}),
+    "synapse_knowledge_lookup": ("knowledge_lookup", lambda a: {"query": a["query"]}),
     "synapse_context":       ("context",         _passthrough),
     "synapse_search":        ("search",          lambda a: {"query": a["query"]}),
     "synapse_recall":        ("recall",          lambda a: {"query": a["query"]}),

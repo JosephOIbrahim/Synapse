@@ -1,0 +1,67 @@
+{
+  "solaris_node_types": {
+    "summary": "Solaris/LOP node types available in Houdini",
+    "description": "Common Solaris LOP node types: sphere, cube, camera, domelight, distantlight, rectlight, cylinderlight, disklight, materiallibrary, assignmaterial, edit, merge, reference, sublayer, sopimport, karmarenderproperties, usdrender_rop, null. Note: there is no 'grid' or 'plane' LOP node — use cube with scale.y=0.01 for ground planes.",
+    "keywords": ["solaris", "lop", "node", "types", "create", "sphere", "cube", "camera", "light", "material", "merge", "reference"]
+  },
+  "solaris_parameter_names": {
+    "summary": "Key Solaris/LOP parameter naming conventions",
+    "description": "Solaris parameter names follow USD naming with namespace encoding. Common gotchas: Light intensity is 'xn__inputsintensity_i0a' (not 'intensity' or 'light_intensity'). Sphere has no 'rows'/'cols' (those are SOP sphere parms). Camera focal length is 'focalLength'. MaterialX base color channels are 'base_colorr', 'base_colorg', 'base_colorb' (not 'base_color_r'). Edit node uses 'primpattern' for prim selection and 'tx','ty','tz','sx','sy','sz' for transforms.",
+    "keywords": ["parameter", "parm", "name", "intensity", "focal", "color", "transform", "material", "solaris", "lop"]
+  },
+  "karma_rendering": {
+    "summary": "Karma render engine configuration and ROP setup",
+    "description": "Karma render types in /out: 'karma' (direct driver with 'picture' and 'camera' parms, 'engine' parm for xpu/cpu), 'usdrender' (USD-based with 'loppath', 'outputimage', 'override_camera', 'override_res' parms). The 'override_res' parm is a string menu with values '', 'scale', 'specific'. Resolution parms: 'res_user1' (width) and 'res_user2' (height) on usdrender, 'resolutionx'/'resolutiony' on karma. Camera must be USD prim path (e.g. '/cameras/render_cam'), not Houdini node path. ROP in /out needs 'loppath' set to a LOP display node. Karma XPU has ~10-15s file flush delay after render() returns.",
+    "keywords": ["karma", "render", "xpu", "cpu", "rop", "resolution", "camera", "usdrender", "output", "image", "picture"]
+  },
+  "materialx_shaders": {
+    "summary": "MaterialX shader creation in Solaris MaterialLibrary",
+    "description": "MaterialX shaders are created inside a materiallibrary LOP node. Use 'mtlxstandard_surface' type. IMPORTANT: After creating the materiallibrary, call matlib.cook(force=True) before creating child shader nodes — otherwise createNode() returns None. Key parms: 'base_colorr/g/b' (base color RGB, 0-1), 'metalness' (0=dielectric, 1=metal), 'specular_roughness' (0=mirror, 1=rough), 'specular' (specular weight), 'coat' (clearcoat weight), 'emission_colorr/g/b' (emission), 'opacity' (transparency). Assign with 'assignmaterial' LOP: 'primpattern1' for target prim, 'matspecpath1' for material path (e.g. '/materials/my_shader').",
+    "keywords": ["materialx", "shader", "material", "mtlx", "standard_surface", "color", "metalness", "roughness", "assign", "library"]
+  },
+  "usd_stage_operations": {
+    "summary": "USD stage operations and prim manipulation",
+    "description": "USD prims in Solaris follow a hierarchy. Common paths: /hero_sphere (from sphere LOP named 'hero_sphere'), /materials/shader_name (from materiallibrary), /lights/light_name (from light LOPs), /cameras/cam_name (from camera LOPs), /Render (from karmarenderproperties). Transform uses 'xformOp:transform' matrix (not 'xformOp:translate'). For translate/rotate/scale, use an 'edit' LOP node instead of USD attributes directly. Prim types: Sphere, Cube, Mesh, Xform, Scope, DomeLight, DistantLight, RectLight, Camera.",
+    "keywords": ["usd", "prim", "stage", "path", "transform", "xform", "attribute", "hierarchy", "scope"]
+  },
+  "pyro_simulation": {
+    "summary": "Pyro (fire/smoke) simulation setup in SOPs",
+    "description": "Modern Houdini pyro uses SOP-level pyrosolver. Chain: source geometry -> scatter (5000+ points) -> attribwrangle (set density=1, temperature=2, flame=1, v=upward velocity, pscale=0.05) -> volumerasterizeattributes (set 'attributes' parm to 'density temperature flame') -> pyrosolver. Key solver parms: 'divsize' (voxel size, 0.05 for detail), 'tempcooling' (0.5-0.8), 'dissipation' (0.1-0.2), 'enable_disturbance' (1 for turbulence). Import to Solaris via 'sopimport' LOP. Cook frame-by-frame for simulation (needs sequential frames).",
+    "keywords": ["pyro", "fire", "smoke", "simulation", "fx", "volume", "solver", "density", "temperature", "flame"]
+  },
+  "flip_simulation": {
+    "summary": "FLIP fluid simulation setup in SOPs",
+    "description": "FLIP fluids use the flipsolver SOP or DOP network. SOP approach: source geometry -> fluidsource (convert to SDF/particles) -> flipsolver. Key concepts: particle-based fluid, converts to surface via surfacesdf. Key parms: 'particlesep' (particle separation), 'gridscale' (grid vs particle ratio). For simple water: sphere source -> flipsolver -> particlefluidsurface (meshing). Import meshed result to Solaris via sopimport.",
+    "keywords": ["flip", "fluid", "water", "liquid", "simulation", "particles", "surface", "mesh"]
+  },
+  "rbd_simulation": {
+    "summary": "RBD (rigid body dynamics) simulation setup",
+    "description": "RBD in modern Houdini: geometry -> rbdmaterialfracture (Voronoi fracture) -> rigidsolver SOP. Or use DOP network with rbdpackedobject + bulletsolversop. Key concepts: packed primitives, constraint networks, fracture patterns. For simple destruction: box -> rbdmaterialfracture -> assemble -> rigidsolver. Import result to Solaris via sopimport.",
+    "keywords": ["rbd", "rigid", "body", "dynamics", "fracture", "destruction", "physics", "bullet", "constraint"]
+  },
+  "tops_wedging": {
+    "summary": "TOPs/PDG wedging for parameter variation",
+    "description": "TOPs (Task Operator Network) enables parameter wedging. Create a topnet at /obj level. Inside: wedge TOP (generates parameter variations) -> ropfetch TOP (renders each variation). Wedge node: 'wedgecount' sets number of variations, 'wedgeattribs' defines which attributes to vary. Can wedge any parameter via channel references. Good for: lookdev (material variations), lighting (intensity sweeps), rendering (quality presets).",
+    "keywords": ["tops", "pdg", "wedge", "variation", "parameter", "sweep", "batch", "render"]
+  },
+  "houdini_sop_basics": {
+    "summary": "Common SOP node types and parameter names",
+    "description": "SOP sphere: 'radx/rady/radz' (not 'rad'), 'scale', 'rows', 'cols'. SOP box: 'sizex/y/z', 'tx/ty/tz'. scatter: 'npts' (number of points). attribwrangle: 'snippet' (VEX code), 'class' (point/prim/vertex/detail). null: no special parms (used as output marker). merge: auto-connects inputs. transform: 'tx/ty/tz', 'rx/ry/rz', 'sx/sy/sz'. Mountain SOP: 'height', 'element_size'. Note: SOP and LOP parm names differ even for similar concepts.",
+    "keywords": ["sop", "sphere", "box", "scatter", "wrangle", "transform", "geometry", "node", "parameter"]
+  },
+  "scene_assembly": {
+    "summary": "USD scene assembly via reference and sublayer",
+    "description": "Import external USD files using 'reference' LOP (adds content under a prim path, good for assets) or 'sublayer' LOP (merges layer stack, good for environments). Reference LOP parms: 'filepath1' (USD file path), 'primpath' (target prim path). Sublayer LOP parms: 'filepath1' (USD file path). For heavy USD files (>50MB), expect slow initial cook — Houdini loads and traverses the full stage. Use 'loadmasks' to limit what's loaded if available.",
+    "keywords": ["reference", "sublayer", "assembly", "import", "usd", "asset", "scene", "composition"]
+  },
+  "camera_setup": {
+    "summary": "Camera creation and configuration in Solaris",
+    "description": "Camera LOP creates a camera prim at /cameras/node_name. Key parms: 'tx/ty/tz' (position), 'rx/ry/rz' (rotation), 'focalLength' (focal length in mm, default 50), 'fStop' (aperture for DOF), 'focusDistance' (focus distance), 'horizontalAperture' (sensor width in mm). For render, camera is referenced by USD prim path (e.g. '/cameras/render_cam'), not Houdini node path. Typical setup: camera at (4,3,6), rotation (-20,30,0) for 3/4 view.",
+    "keywords": ["camera", "focal", "aperture", "fstop", "focus", "position", "rotation", "lens"]
+  },
+  "lighting_setup": {
+    "summary": "Light types and parameters in Solaris",
+    "description": "Solaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). ALL light intensity parms use the encoded name 'xn__inputsintensity_i0a' (not 'intensity'). Light color: 'xn__inputscolor_zya' (vec3). Exposure: 'xn__inputsexposure_fya'. Dome light texture: 'xn__inputstexturefile_i1a'. Rotation via standard 'rx/ry/rz' parms.",
+    "keywords": ["light", "lighting", "dome", "distant", "rect", "area", "intensity", "color", "exposure", "hdri"]
+  }
+}

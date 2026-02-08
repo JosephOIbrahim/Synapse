@@ -1,0 +1,15 @@
+{
+  "solaris_node_types": "scene_builder",
+  "solaris_parameter_names": "parameter_resolver",
+  "karma_rendering": "render_agent",
+  "materialx_shaders": "material_agent",
+  "usd_stage_operations": "usd_agent",
+  "pyro_simulation": "fx_agent",
+  "flip_simulation": "fx_agent",
+  "rbd_simulation": "fx_agent",
+  "tops_wedging": "wedge_agent",
+  "houdini_sop_basics": "sop_agent",
+  "scene_assembly": "assembly_agent",
+  "camera_setup": "camera_agent",
+  "lighting_setup": "lighting_agent"
+}
