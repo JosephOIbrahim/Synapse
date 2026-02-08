@@ -34,7 +34,7 @@ class DecisionItem(QtWidgets.QFrame):
         header = QtWidgets.QHBoxLayout()
         date_str = self.memory.created_at.split("T")[0] if self.memory.created_at else "Unknown"
         date_label = QtWidgets.QLabel(date_str)
-        date_label.setStyleSheet("color: palette(mid); font-size: 11px;")
+        date_label.setStyleSheet("color: palette(light); font-size: 11px;")
         header.addWidget(date_label)
         header.addStretch()
 
@@ -42,7 +42,7 @@ class DecisionItem(QtWidgets.QFrame):
         if self.memory.tags:
             tags_str = " ".join([f"#{t}" for t in self.memory.tags[:3]])
             tags_label = QtWidgets.QLabel(tags_str)
-            tags_label.setStyleSheet("color: palette(mid); font-size: 10px;")
+            tags_label.setStyleSheet("color: palette(light); font-size: 11px;")
             header.addWidget(tags_label)
 
         layout.addLayout(header)
@@ -64,7 +64,7 @@ class DecisionItem(QtWidgets.QFrame):
         if reasoning:
             reason_label = QtWidgets.QLabel(reasoning)
             reason_label.setWordWrap(True)
-            reason_label.setStyleSheet("color: palette(mid); font-size: 11px;")
+            reason_label.setStyleSheet("color: palette(light); font-size: 12px;")
             layout.addWidget(reason_label)
 
 
