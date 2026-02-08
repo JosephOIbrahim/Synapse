@@ -766,7 +766,12 @@ class SynapseHandler:
                 verbose=False,
             )
 
-            if not Path(out_path).exists():
+            # Karma XPU has a delayed file flush — poll briefly
+            for _ in range(20):
+                if Path(out_path).exists() and Path(out_path).stat().st_size > 0:
+                    break
+                time.sleep(0.25)
+            else:
                 raise RuntimeError(f"Render output not found: {out_path}")
             return out_path, node.path(), node_type, engine
 
