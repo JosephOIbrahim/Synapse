@@ -2,9 +2,9 @@
 
 ## What Is Synapse?
 
-Synapse is an AI-Houdini bridge — it lets Claude (via Claude Desktop or Claude Code terminal) directly control SideFX Houdini through 18 MCP tools over WebSocket. Real-time, bidirectional, with persistent project memory.
+Synapse is an AI-Houdini bridge — it lets Claude (via Claude Desktop or Claude Code terminal) directly control SideFX Houdini through 22 MCP tools over WebSocket. Real-time, bidirectional, with persistent project memory.
 
-**Key stats:** 18 MCP tools | 344 tests | Karma XPU rendering | MaterialX shaders | USD/Solaris native | Project memory with decisions, context, search
+**Key stats:** 22 MCP tools | 359 tests | Karma XPU rendering | MaterialX shaders | USD/Solaris native | Animation keyframes | TOPs/wedging | Scene assembly | Project memory with decisions, context, search
 
 ---
 
@@ -131,8 +131,8 @@ USD Stage / Solaris / Karma XPU
 
 ## Numbers to Drop
 
-- **18 MCP tools** (node CRUD, USD/Solaris, render, viewport capture, memory, search)
-- **344 tests**, 5 skipped (hwebserver integration)
+- **22 MCP tools** (node CRUD, USD/Solaris, render, viewport capture, keyframes, TOPs/wedging, scene assembly, render settings, memory, search)
+- **359 tests**, 5 skipped (hwebserver integration)
 - **<1ms** ping RTT (WebSocket, localhost)
 - **~5s** Karma XPU render (simple scene, 960x540)
 - **61 memories** stored in current project
