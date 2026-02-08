@@ -8,7 +8,7 @@
   <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-4.2.1-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-blue.svg" alt="Python"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-323%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-324%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="python/synapse/core/protocol.py"><img src="https://img.shields.io/badge/protocol-v4.0.0-orange.svg" alt="Protocol"></a>
 </p>
 
@@ -16,7 +16,7 @@
 
 ## What is Synapse?
 
-Synapse is a standalone bridge between AI assistants and SideFX Houdini. It provides a WebSocket wire protocol for real-time scene manipulation, persistent project memory that survives between sessions, and an agentic execution layer with human-in-the-loop safety gates. Every operation is deterministic, auditable, and production-resilient.
+Synapse lets an AI see, touch, and remember everything in your Houdini scene — it can read parameters, create and wire up nodes, run Python code, and manipulate USD stages, all through a real-time conversation. On top of that, it keeps a persistent project memory that remembers your decisions, tracks what happened across sessions, and gives the AI full context about your project every time you reconnect.
 
 Extracted from [Nexus](https://github.com/JosephOIbrahim) (RadiantSuite) and Engram (Hyphae) into a self-contained package. Zero required dependencies.
 
@@ -447,7 +447,7 @@ Legacy `ENGRAM_*` command names (e.g., `engram_context`) are automatically norma
 
 ## Claude Integration (MCP)
 
-Synapse includes an MCP (Model Context Protocol) server that bridges Claude to Houdini. This gives Claude 16 tools for scene manipulation and project memory — no copy-pasting needed.
+Synapse includes an MCP (Model Context Protocol) server that bridges Claude to Houdini. This gives Claude 17 tools for scene manipulation, viewport capture, and project memory — no copy-pasting needed.
 
 ```
 Claude  <--[stdio/JSON-RPC]-->  mcp_server.py  <--[WebSocket]-->  Synapse (Houdini)
@@ -481,7 +481,7 @@ Add to your Claude Desktop config:
 }
 ```
 
-Restart Claude Desktop after editing. The 16 tools appear in the tool picker.
+Restart Claude Desktop after editing. The 17 tools appear in the tool picker.
 
 ### MCP Dependencies
 
@@ -504,6 +504,7 @@ pip install -e ".[mcp]"
 | `houdini_get_parm` | Read a parameter value |
 | `houdini_set_parm` | Set a parameter value |
 | `houdini_execute_python` | Run Python code in Houdini |
+| `houdini_capture_viewport` | Capture viewport as image (returns ImageContent) |
 | `houdini_stage_info` | USD stage prim listing |
 | `synapse_context` | Get project context from memory |
 | `synapse_search` | Search project memory |
@@ -533,6 +534,18 @@ python -m pytest tests/ --cov=synapse --cov-report=term-missing
 ```
 
 All tests import modules directly and run without a Houdini license or environment.
+
+### Live Tests (Inside Houdini)
+
+Some features (viewport capture, hwebserver transport) require a graphical Houdini session. Run these from the Houdini Python Shell:
+
+```python
+# Viewport capture test (creates temp scene, captures, verifies, cleans up)
+import runpy; runpy.run_path("tests/test_live_capture.py")
+
+# hwebserver integration test
+import runpy; runpy.run_path("tests/test_hwebserver_integration.py")
+```
 
 ## Project Structure
 
@@ -586,7 +599,9 @@ Synapse/
     ├── test_agent.py                # Agent layer tests
     ├── test_resilience.py           # Resilience layer tests
     ├── test_crypto.py               # Encryption layer tests
-    └── test_routing.py              # Routing engine tests (323 tests)
+    ├── test_routing.py              # Routing engine tests (323 tests)
+    ├── test_live_capture.py         # Viewport capture (run inside Houdini)
+    └── test_hwebserver_integration.py # hwebserver transport (run inside Houdini)
 ```
 
 ## Backwards Compatibility
