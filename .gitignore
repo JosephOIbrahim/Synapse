@@ -42,3 +42,8 @@ htmlcov/
 # Distribution
 *.tar.gz
 *.whl
+
+# Dev scratch scripts
+_*.py
+_*.txt
+nul
