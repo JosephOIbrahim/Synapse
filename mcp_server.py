@@ -625,7 +625,8 @@ def _decide_payload(args: dict) -> dict:
     if "reasoning" in args:
         p["reasoning"] = args["reasoning"]
     if "alternatives" in args:
-        p["alternatives"] = args["alternatives"]
+        alt = args["alternatives"]
+        p["alternatives"] = [a.strip() for a in alt.split(",") if a.strip()] if isinstance(alt, str) else alt
     return p
 
 
