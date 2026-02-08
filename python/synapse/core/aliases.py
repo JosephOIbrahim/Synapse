@@ -47,10 +47,11 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "reasoning": ["reasoning", "why", "rationale", "reason"],
     "alternatives": ["alternatives", "options", "other_options", "otherOptions"],
 
-    # Viewport capture
+    # Viewport capture / render
     "format": ["format", "fmt", "image_format"],
     "width": ["width", "w", "res_x"],
     "height": ["height", "h", "res_y"],
+    "frame": ["frame", "f", "frame_number", "frame_num"],
 }
 
 

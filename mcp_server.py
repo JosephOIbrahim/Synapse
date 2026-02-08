@@ -49,7 +49,7 @@ PROTOCOL_VERSION = "4.0.0"
 MAX_RETRIES = 2
 RETRY_DELAY = 0.3
 COMMAND_TIMEOUT = 10.0
-_SLOW_COMMANDS = {"execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0}
+_SLOW_COMMANDS = {"execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0, "render": 120.0}
 
 logger = logging.getLogger("synapse-mcp")
 
@@ -186,7 +186,7 @@ server = Server("synapse")
 
 @server.list_tools()
 async def list_tools():
-    """Register all 16 Synapse MCP tools."""
+    """Register all 18 Synapse MCP tools."""
     return [
         # -- Utility --
         Tool(
@@ -473,6 +473,36 @@ async def list_tools():
                 "required": [],
             },
         ),
+        # -- Render --
+        Tool(
+            name="houdini_render",
+            description=(
+                "Render a frame using Karma XPU, Karma CPU, Mantra, or any ROP node. "
+                "Returns the rendered image and reports which engine was used. "
+                "Auto-discovers a render ROP if 'node' is omitted."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {
+                        "type": "string",
+                        "description": "ROP node path (e.g. '/stage/karma1'). Auto-discovers if omitted.",
+                    },
+                    "frame": {
+                        "type": "number",
+                        "description": "Frame to render. Defaults to current frame.",
+                    },
+                    "width": {
+                        "type": "integer",
+                        "description": "Override resolution width in pixels.",
+                    },
+                    "height": {
+                        "type": "integer",
+                        "description": "Override resolution height in pixels.",
+                    },
+                },
+            },
+        ),
         # -- Memory --
         Tool(
             name="synapse_context",
@@ -621,6 +651,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
         k: a[k] for k in ("node", "prim_path", "kind", "purpose", "active") if k in a
     }),
     "houdini_capture_viewport": ("capture_viewport", lambda a: {k: a[k] for k in a}),
+    "houdini_render":           ("render",           lambda a: {k: a[k] for k in a}),
     "synapse_context":       ("context",         _passthrough),
     "synapse_search":        ("search",          lambda a: {"query": a["query"]}),
     "synapse_recall":        ("recall",          lambda a: {"query": a["query"]}),
@@ -641,21 +672,27 @@ async def call_tool(name: str, arguments: dict):
         payload = build_payload(arguments)
         data = await send_command(cmd_type, payload)
 
-        # Viewport capture: read image file and return as ImageContent
-        if name == "houdini_capture_viewport":
+        # Image-producing tools: read file and return as ImageContent
+        if name in ("houdini_capture_viewport", "houdini_render"):
             import base64
             image_path = data.get("image_path", "")
             try:
                 with open(image_path, "rb") as f:
                     b64 = base64.b64encode(f.read()).decode("utf-8")
                 mime = "image/jpeg" if data.get("format") == "jpeg" else "image/png"
+                meta = {
+                    "width": data.get("width"),
+                    "height": data.get("height"),
+                    "format": data.get("format"),
+                }
+                # Include render-specific metadata
+                if "engine" in data:
+                    meta["rop"] = data.get("rop")
+                    meta["rop_type"] = data.get("rop_type")
+                    meta["engine"] = data.get("engine")
                 return [
                     ImageContent(type="image", data=b64, mimeType=mime),
-                    TextContent(type="text", text=_dumps({
-                        "width": data.get("width"),
-                        "height": data.get("height"),
-                        "format": data.get("format"),
-                    })),
+                    TextContent(type="text", text=_dumps(meta)),
                 ]
             except FileNotFoundError:
                 return [TextContent(type="text", text=f"Capture succeeded but file not found: {image_path}")]

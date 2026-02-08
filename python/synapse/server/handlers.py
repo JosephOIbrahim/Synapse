@@ -194,8 +194,9 @@ class SynapseHandler:
         reg.register("create_usd_prim", self._handle_create_usd_prim)
         reg.register("modify_usd_prim", self._handle_modify_usd_prim)
 
-        # Viewport
+        # Viewport / Render
         reg.register("capture_viewport", self._handle_capture_viewport)
+        reg.register("render", self._handle_render)
 
         # Memory operations (new names)
         reg.register("context", self._handle_memory_context)
@@ -710,6 +711,80 @@ class SynapseHandler:
         }
 
     # =========================================================================
+    # RENDER HANDLERS
+    # =========================================================================
+
+    def _handle_render(self, payload: Dict) -> Dict:
+        """Render a frame via Karma, Mantra, or any ROP node.
+
+        Uses hdefereval.executeInMainThreadWithResult() since hou.RopNode.render()
+        must run on Houdini's main thread. Outputs to a temp JPEG for AI preview.
+
+        Supports Karma XPU (GPU+CPU hybrid), Karma CPU, and Mantra ROPs.
+        For Karma nodes, detects and reports the rendering engine variant.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError("Houdini not available")
+        from pathlib import Path
+
+        rop_path = resolve_param(payload, "node", required=False)
+        frame = resolve_param_with_default(payload, "frame", None)
+        width = resolve_param_with_default(payload, "width", None)
+        height = resolve_param_with_default(payload, "height", None)
+
+        def _render_on_main():
+            if rop_path:
+                node = hou.node(rop_path)
+                if node is None:
+                    raise ValueError(f"Node not found: {rop_path}")
+            else:
+                node = _find_render_rop()
+
+            # Detect Karma engine variant for metadata
+            node_type = node.type().name()
+            engine = _detect_karma_engine(node, node_type)
+
+            # Output to temp JPEG (AI preview, not final EXR)
+            temp_dir = Path(hou.text.expandString("$HOUDINI_TEMP_DIR"))
+            timestamp = int(time.time() * 1000)
+            out_path = str(temp_dir / f"synapse_render_{timestamp}.jpg")
+
+            cur = int(hou.frame()) if frame is None else int(frame)
+
+            # Resolution override — res= is a scale factor, so set parms directly
+            if width and height:
+                w, h = int(width), int(height)
+                if node.parm("resolutionx"):
+                    node.parm("resolutionx").set(w)
+                    node.parm("resolutiony").set(h)
+                elif node.parm("res"):
+                    node.parm("res").set(f"{w} {h}")
+
+            node.render(
+                frame_range=(cur, cur),
+                output_file=out_path,
+                verbose=False,
+            )
+
+            if not Path(out_path).exists():
+                raise RuntimeError(f"Render output not found: {out_path}")
+            return out_path, node.path(), node_type, engine
+
+        import hdefereval
+        result_path, used_rop, used_type, engine = (
+            hdefereval.executeInMainThreadWithResult(_render_on_main)
+        )
+        return {
+            "image_path": result_path,
+            "rop": used_rop,
+            "rop_type": used_type,
+            "engine": engine,
+            "width": int(width) if width else None,
+            "height": int(height) if height else None,
+            "format": "jpeg",
+        }
+
+    # =========================================================================
     # MEMORY HANDLERS
     # =========================================================================
 
@@ -737,6 +812,55 @@ class SynapseHandler:
         """Handle recall/engram_recall command."""
         bridge = self._get_bridge()
         return bridge.handle_memory_recall(payload)
+
+
+def _find_render_rop():
+    """Auto-discover a render ROP node. Searches /stage then /out."""
+    _RENDER_TYPES = {
+        "karma", "karmarendersettings",
+        "usdrender", "usdrender_rop",
+        "ifd",
+        "opengl",
+    }
+    for parent_path in ["/stage", "/out"]:
+        parent = hou.node(parent_path)
+        if parent is None:
+            continue
+        for child in parent.children():
+            if child.type().name() in _RENDER_TYPES:
+                return child
+    raise ValueError(
+        "No render ROP found. Specify 'node' parameter with the ROP path "
+        "(e.g. '/stage/karma1' or '/out/mantra1')."
+    )
+
+
+def _detect_karma_engine(node, node_type: str) -> str:
+    """Detect Karma XPU vs CPU vs Mantra vs other renderer.
+
+    Karma XPU is the GPU+CPU hybrid renderer; Karma CPU is pure CPU.
+    The engine is selected by a parm on the ROP or Karma Render Settings LOP.
+    """
+    if node_type == "ifd":
+        return "mantra"
+    if node_type == "opengl":
+        return "opengl"
+    if node_type not in ("karma", "karmarendersettings", "usdrender", "usdrender_rop"):
+        return node_type
+
+    # Check common parm names for Karma engine variant
+    for parm_name in ("renderer", "karmarenderertype", "renderengine"):
+        parm = node.parm(parm_name)
+        if parm is not None:
+            # hou.Parm.eval() reads the parameter value — not Python eval()
+            val = str(parm.eval()).lower()  # noqa: S307
+            if "xpu" in val:
+                return "karma_xpu"
+            if "cpu" in val:
+                return "karma_cpu"
+            return f"karma_{val}" if val else "karma"
+
+    return "karma"
 
 
 def _usd_to_json(value):
