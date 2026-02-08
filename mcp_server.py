@@ -71,7 +71,7 @@ async def _get_connection():
     """
     global _ws_connection
     async with _ws_lock:
-        if _ws_connection is not None and _ws_connection.open:
+        if _ws_connection is not None and getattr(_ws_connection, 'state', None) is not None and _ws_connection.state.name == "OPEN":
             return _ws_connection
         _ws_connection = None
 
