@@ -438,18 +438,12 @@ class SynapseHandler:
             pass
         exec_locals = {}
 
-        # Execute inside undo group — rollback on error prevents partial mutations
+        # Execute inside undo group (allows manual undo, but no auto-rollback
+        # — render errors and other operational failures would incorrectly
+        # undo node creation that succeeded before the error)
         compiled = compile(code, "<synapse_exec>", "exec")
-        try:
-            with hou.undos.group("synapse_execute"):
-                _run_compiled(compiled, exec_globals, exec_locals)
-        except Exception:
-            # Roll back all mutations from this script
-            try:
-                hou.undos.performUndo()
-            except Exception:
-                pass
-            raise
+        with hou.undos.group("synapse_execute"):
+            _run_compiled(compiled, exec_globals, exec_locals)
 
         # Try to extract a result variable
         result = exec_locals.get("result", "executed")
