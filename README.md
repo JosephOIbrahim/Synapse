@@ -29,6 +29,8 @@ Extracted from [Nexus](https://github.com/JosephOIbrahim) (RadiantSuite) and Eng
 - **Determinism** -- Fixed-precision rounding, content-based IDs, seeded RNG, `@deterministic` decorator
 - **Tamper-Evident Audit** -- Append-only hash-chain log with daily JSONL rotation and chain verification
 - **Production Resilience** -- Rate limiter, circuit breaker, port failover, watchdog, backpressure controller
+- **Viewport Capture** -- AI can see the viewport via flipbook capture, returned as image for visual feedback
+- **RAG-Powered Routing** -- Optional knowledge lookup from your own documentation (no third-party docs bundled)
 - **Backwards Compatible** -- Full alias coverage for Nexus and Engram APIs; automatic storage migration
 - **Houdini Optional** -- All tests run without Houdini; core library has zero required dependencies
 
