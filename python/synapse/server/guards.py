@@ -24,7 +24,10 @@ def ensure_node(parent_path: str, node_type: str, node_name: str) -> hou.Node:
         return existing
     parent = hou.node(parent_path)
     if parent is None:
-        raise ValueError(f"Parent node not found: {parent_path}")
+        raise ValueError(
+            f"Couldn't find the parent node at {parent_path} \u2014 "
+            "verify this path exists in your scene"
+        )
     return parent.createNode(node_type, node_name)
 
 
@@ -59,7 +62,11 @@ def ensure_connection(
     source = hou.node(source_path)
     target = hou.node(target_path)
     if not source or not target:
-        raise ValueError(f"Node not found: {source_path if not source else target_path}")
+        missing = source_path if not source else target_path
+        raise ValueError(
+            f"Couldn't find a node at {missing} \u2014 "
+            "make sure both source and target exist before connecting"
+        )
 
     for inp in target.inputs():
         if inp and inp.path() == source.path():
@@ -89,7 +96,10 @@ def deduplicate_inputs(merge_path: str) -> dict:
     """Remove duplicate connections on a merge node."""
     merge = hou.node(merge_path)
     if not merge:
-        raise ValueError(f"Node not found: {merge_path}")
+        raise ValueError(
+            f"Couldn't find a node at {merge_path} \u2014 "
+            "double-check the merge node path"
+        )
     seen = set()
     to_disconnect = []
     for idx, inp in enumerate(merge.inputs()):
@@ -114,10 +124,16 @@ def ensure_parm(
     """Set parameter only if current value differs."""
     node = hou.node(node_path)
     if not node:
-        raise ValueError(f"Node not found: {node_path}")
+        raise ValueError(
+            f"Couldn't find a node at {node_path} \u2014 "
+            "double-check the path exists"
+        )
     parm = node.parm(parm_name)
     if not parm:
-        raise ValueError(f"Parameter not found: {node_path}/{parm_name}")
+        raise ValueError(
+            f"Couldn't find parameter '{parm_name}' on {node_path} \u2014 "
+            "check the parameter name spelling"
+        )
     current = parm.eval()  # noqa: S307 — hou.Parm.eval(), not Python eval()
     if isinstance(value, float) and abs(current - value) < 1e-7:
         return True
@@ -135,7 +151,10 @@ def ensure_parm_tuple(
     """Set multiple related parameters. Only writes if any differ."""
     node = hou.node(node_path)
     if not node:
-        raise ValueError(f"Node not found: {node_path}")
+        raise ValueError(
+            f"Couldn't find a node at {node_path} \u2014 "
+            "double-check the path exists"
+        )
     needs_update = False
     for parm_name, value in zip(parm_names, values):
         parm = node.parm(parm_name)

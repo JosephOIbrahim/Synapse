@@ -59,17 +59,17 @@ class TestWedge:
     def test_node_not_found(self):
         """Missing node should raise ValueError."""
         hou_mock.node.return_value = None
-        with pytest.raises(ValueError, match="Node not found"):
+        with pytest.raises(ValueError, match="Couldn't find a node"):
             node = hou_mock.node("/bad")
             if node is None:
-                raise ValueError("Node not found: /bad")
+                raise ValueError("Couldn't find a node at /bad")
 
     def test_values_must_be_list(self):
         """Non-list values should raise ValueError."""
-        with pytest.raises(ValueError, match="must be a list"):
+        with pytest.raises(ValueError, match="should be a list"):
             values = "not a list"
             if not isinstance(values, list):
-                raise ValueError("'values' must be a list")
+                raise ValueError("'values' should be a list")
 
 
 class TestReferenceUSD:
@@ -105,18 +105,18 @@ class TestReferenceUSD:
 
     def test_invalid_mode(self):
         """Invalid mode should raise ValueError."""
-        with pytest.raises(ValueError, match="Invalid mode"):
+        with pytest.raises(ValueError, match="isn't a recognized import mode"):
             mode = "invalid"
             if mode not in ("reference", "sublayer"):
-                raise ValueError(f"Invalid mode: {mode}. Use 'reference' or 'sublayer'.")
+                raise ValueError(f"'{mode}' isn't a recognized import mode")
 
     def test_parent_not_found(self):
         """Missing parent node should raise ValueError."""
         hou_mock.node.return_value = None
-        with pytest.raises(ValueError, match="Parent node not found"):
+        with pytest.raises(ValueError, match="Couldn't find the parent node"):
             parent = hou_mock.node("/bad")
             if parent is None:
-                raise ValueError("Parent node not found: /bad")
+                raise ValueError("Couldn't find the parent node at /bad")
 
 
 def teardown_module():

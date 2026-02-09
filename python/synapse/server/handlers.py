@@ -25,6 +25,44 @@ from ..core.protocol import (
 from ..core.aliases import resolve_param, resolve_param_with_default
 
 
+# ---------------------------------------------------------------------------
+# Coaching-tone message helpers
+# ---------------------------------------------------------------------------
+
+_HOUDINI_UNAVAILABLE = (
+    "Houdini isn't reachable right now \u2014 make sure it's running "
+    "and Synapse is started from the Python Panel"
+)
+
+
+def _suggest_parms(node, invalid_name: str, limit: int = 8) -> str:
+    """Find similar parameter names on a node for error enrichment."""
+    try:
+        all_names = [p.name() for p in node.parms()]
+    except Exception:
+        return ""
+    needle = invalid_name.lower()
+    matches = [n for n in all_names if needle in n.lower() or n.lower() in needle]
+    if not matches:
+        # Fallback: common prefix match
+        matches = [n for n in all_names if n.lower().startswith(needle[:3])]
+    if not matches:
+        return ""
+    return " Similar parameters: " + ", ".join(matches[:limit])
+
+
+def _suggest_children(parent_path: str) -> str:
+    """List children of a parent path for error enrichment."""
+    try:
+        parent = hou.node(parent_path)
+        if parent and parent.children():
+            names = [c.name() for c in parent.children()[:10]]
+            return " Children at that path: " + ", ".join(names)
+    except Exception:
+        pass
+    return ""
+
+
 # Reuse 2 threads for fire-and-forget memory logging (avoids Thread() per command)
 _log_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="synapse-log")
 
@@ -136,7 +174,7 @@ class SynapseHandler:
                 return SynapseResponse(
                     id=command.id,
                     success=False,
-                    error=f"Unknown command type: {command.type}",
+                    error=f"I don't recognize the command '{command.type}' \u2014 try get_help to see what's available",
                     sequence=command.sequence,
                 )
 
@@ -171,7 +209,7 @@ class SynapseHandler:
             return SynapseResponse(
                 id=command.id,
                 success=False,
-                error=f"Handler error: {e}",
+                error=f"Hit a snag processing that request: {e}",
                 sequence=command.sequence,
             )
 
@@ -266,7 +304,7 @@ class SynapseHandler:
     def _handle_create_node(self, payload: Dict) -> Dict:
         """Handle create_node command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         parent = resolve_param(payload, "parent")
         node_type = resolve_param(payload, "type")
@@ -274,7 +312,10 @@ class SynapseHandler:
 
         parent_node = hou.node(parent)
         if parent_node is None:
-            raise ValueError(f"Parent node not found: {parent}")
+            raise ValueError(
+                f"Couldn't find the parent node at {parent} \u2014 "
+                "verify this path exists in your scene"
+            )
 
         if name:
             new_node = parent_node.createNode(node_type, name)
@@ -299,12 +340,15 @@ class SynapseHandler:
     def _handle_delete_node(self, payload: Dict) -> Dict:
         """Handle delete_node command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         node_path = resolve_param(payload, "node")
         node = hou.node(node_path)
         if node is None:
-            raise ValueError(f"Node not found: {node_path}")
+            raise ValueError(
+                f"Couldn't find a node at {node_path} \u2014 "
+                "it may have been renamed or moved"
+            )
 
         node_name = node.name()
         node.destroy()
@@ -314,7 +358,7 @@ class SynapseHandler:
     def _handle_connect_nodes(self, payload: Dict) -> Dict:
         """Handle connect_nodes command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         source_path = resolve_param(payload, "source")
         target_path = resolve_param(payload, "target")
@@ -325,9 +369,15 @@ class SynapseHandler:
         target_node = hou.node(target_path)
 
         if source_node is None:
-            raise ValueError(f"Source node not found: {source_path}")
+            raise ValueError(
+                f"Couldn't find the source node at {source_path} \u2014 "
+                "make sure it exists before connecting"
+            )
         if target_node is None:
-            raise ValueError(f"Target node not found: {target_path}")
+            raise ValueError(
+                f"Couldn't find the target node at {target_path} \u2014 "
+                "make sure it exists before connecting"
+            )
 
         target_node.setInput(int(target_input), source_node, int(source_output))
 
@@ -345,14 +395,17 @@ class SynapseHandler:
     def _handle_get_parm(self, payload: Dict) -> Dict:
         """Handle get_parm command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         node_path = resolve_param(payload, "node")
         parm_name = resolve_param(payload, "parm")
 
         node = hou.node(node_path)
         if node is None:
-            raise ValueError(f"Node not found: {node_path}")
+            raise ValueError(
+                f"Couldn't find a node at {node_path} \u2014 "
+                "double-check the path exists"
+            )
 
         parm = node.parm(parm_name)
         if parm is None:
@@ -362,10 +415,15 @@ class SynapseHandler:
                 return {
                     "node": node_path,
                     "parm": parm_name,
-                    "value": [p.eval() for p in parm_tuple],
+                    # hou.Parm.eval() reads parameter value — not Python eval()
+                    "value": [p.eval() for p in parm_tuple],  # noqa: S307
                     "is_tuple": True,
                 }
-            raise ValueError(f"Parameter not found: {parm_name} on {node_path}")
+            hint = _suggest_parms(node, parm_name)
+            raise ValueError(
+                f"Couldn't find parameter '{parm_name}' on {node_path} \u2014 "
+                f"check the spelling or try get_parm to explore what's available.{hint}"
+            )
 
         return {
             "node": node_path,
@@ -377,7 +435,7 @@ class SynapseHandler:
     def _handle_set_parm(self, payload: Dict) -> Dict:
         """Handle set_parm command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         node_path = resolve_param(payload, "node")
         parm_name = resolve_param(payload, "parm")
@@ -385,7 +443,10 @@ class SynapseHandler:
 
         node = hou.node(node_path)
         if node is None:
-            raise ValueError(f"Node not found: {node_path}")
+            raise ValueError(
+                f"Couldn't find a node at {node_path} \u2014 "
+                "double-check the path exists"
+            )
 
         parm = node.parm(parm_name)
         if parm is not None:
@@ -401,7 +462,11 @@ class SynapseHandler:
                 parm_tuple.set([value] * len(parm_tuple))
             return {"node": node_path, "parm": parm_name, "value": value}
 
-        raise ValueError(f"Parameter not found: {parm_name} on {node_path}")
+        hint = _suggest_parms(node, parm_name)
+        raise ValueError(
+            f"Couldn't find parameter '{parm_name}' on {node_path} \u2014 "
+            f"check the spelling or list the node's parameters first.{hint}"
+        )
 
     # =========================================================================
     # SCENE HANDLERS
@@ -410,7 +475,7 @@ class SynapseHandler:
     def _handle_get_scene_info(self, payload: Dict) -> Dict:
         """Handle get_scene_info command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         return {
             "hip_file": hou.hipFile.name(),
@@ -422,7 +487,7 @@ class SynapseHandler:
     def _handle_get_selection(self, payload: Dict) -> Dict:
         """Handle get_selection command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         selected = hou.selectedNodes()
         return {
@@ -445,7 +510,7 @@ class SynapseHandler:
         This is a standard DCC scripting pattern for automation.
         """
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         code = resolve_param(payload, "content")
 
@@ -486,7 +551,7 @@ class SynapseHandler:
     def _handle_get_stage_info(self, payload: Dict) -> Dict:
         """Handle get_stage_info command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         node_path = resolve_param(payload, "node", required=False)
 
@@ -501,11 +566,17 @@ class SynapseHandler:
                     break
 
         if node is None or not hasattr(node, 'stage'):
-            raise ValueError("No USD stage found. Select a LOP node or specify node path.")
+            raise ValueError(
+                "No USD stage found \u2014 select a LOP node or pass "
+                "a node path so I know which stage to look at"
+            )
 
         stage = node.stage()
         if stage is None:
-            raise ValueError("Node has no active stage")
+            raise ValueError(
+                "That node doesn't have an active USD stage yet \u2014 "
+                "it may need to cook first, or check the LOP network is set up"
+            )
 
         root = stage.GetPseudoRoot()
         prims = []
@@ -526,14 +597,20 @@ class SynapseHandler:
     def _resolve_lop_node(self, node_path: str = None):
         """Resolve a LOP node from path or selection."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         if node_path:
             node = hou.node(node_path)
             if node is None:
-                raise ValueError(f"Node not found: {node_path}")
+                raise ValueError(
+                    f"Couldn't find a node at {node_path} \u2014 "
+                    "double-check the path exists"
+                )
             if not hasattr(node, 'stage'):
-                raise ValueError(f"Node is not a LOP node: {node_path}")
+                raise ValueError(
+                    f"The node at {node_path} isn't a LOP node \u2014 "
+                    "I need a Solaris/LOP node to access the USD stage"
+                )
             return node
 
         # Search selection for a LOP node
@@ -541,7 +618,10 @@ class SynapseHandler:
             if hasattr(n, 'stage'):
                 return n
 
-        raise ValueError("No LOP node found. Select a LOP node or specify node path.")
+        raise ValueError(
+            "Couldn't find a LOP node in your selection \u2014 "
+            "select one in the Solaris network or specify the node path"
+        )
 
     def _handle_get_usd_attribute(self, payload: Dict) -> Dict:
         """Handle get_usd_attribute command — read a USD attribute from a prim."""
@@ -554,19 +634,25 @@ class SynapseHandler:
 
         stage = node.stage()
         if stage is None:
-            raise ValueError("Node has no active stage")
+            raise ValueError(
+                "That node doesn't have an active USD stage yet \u2014 "
+                "it may need to cook first, or check the LOP network is set up"
+            )
 
         prim = stage.GetPrimAtPath(prim_path)
         if not prim.IsValid():
-            raise ValueError(f"Prim not found: {prim_path}")
+            raise ValueError(
+                f"Couldn't find a prim at {prim_path} \u2014 "
+                "double-check the path on the USD stage"
+            )
 
         attr = prim.GetAttribute(attr_name)
         if not attr.IsValid():
             # List available attributes to help the caller
             attrs = [a.GetName() for a in prim.GetAttributes()][:30]
             raise ValueError(
-                f"Attribute '{attr_name}' not found on {prim_path}. "
-                f"Available: {', '.join(attrs)}"
+                f"That attribute name didn't match ('{attr_name}') on {prim_path}. "
+                f"Available attributes: {', '.join(attrs)}"
             )
 
         value = attr.Get()
@@ -677,7 +763,9 @@ class SynapseHandler:
             mods["active"] = active
 
         if not mods:
-            raise ValueError("No modifications specified. Provide kind, purpose, or active.")
+            raise ValueError(
+                "No changes specified \u2014 pass at least one of: kind, purpose, or active"
+            )
 
         code = "\n".join(lines)
         py_lop.parm("python").set(code)
@@ -700,7 +788,7 @@ class SynapseHandler:
         Must run on the main thread via hdefereval.executeInMainThreadWithResult().
         """
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         from pathlib import Path
 
@@ -719,7 +807,10 @@ class SynapseHandler:
             desktop = hou.ui.curDesktop()
             sv = desktop.paneTabOfType(hou.paneTabType.SceneViewer)
             if sv is None:
-                raise ValueError("No SceneViewer pane found in the current desktop")
+                raise ValueError(
+                    "Couldn't find a viewport \u2014 make sure a Scene Viewer pane "
+                    "is open in your current desktop layout"
+                )
 
             vp = sv.curViewport()
             settings = sv.flipbookSettings()
@@ -740,7 +831,10 @@ class SynapseHandler:
         )
 
         if not Path(actual_path).exists():
-            raise RuntimeError(f"Flipbook capture failed — file not found: {actual_path}")
+            raise RuntimeError(
+                f"The viewport capture ran but the image wasn't created at {actual_path} \u2014 "
+                "this can happen if the viewport is minimized or occluded"
+            )
 
         return {
             "image_path": actual_path,
@@ -763,7 +857,7 @@ class SynapseHandler:
         For Karma nodes, detects and reports the rendering engine variant.
         """
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
         from pathlib import Path
 
         rop_path = resolve_param(payload, "node", required=False)
@@ -775,7 +869,10 @@ class SynapseHandler:
             if rop_path:
                 node = hou.node(rop_path)
                 if node is None:
-                    raise ValueError(f"Node not found: {rop_path}")
+                    raise ValueError(
+                        f"Couldn't find a render ROP at {rop_path} \u2014 "
+                        "double-check the path to your ROP node"
+                    )
             else:
                 node = _find_render_rop()
 
@@ -835,7 +932,10 @@ class SynapseHandler:
                     break
                 time.sleep(0.25)
             else:
-                raise RuntimeError(f"Render output not found: {out_path}")
+                raise RuntimeError(
+                    f"The render finished but the output wasn't created at {out_path} \u2014 "
+                    "check if the output directory is writable and the renderer didn't error"
+                )
             return out_path, node.path(), node_type, engine
 
         import hdefereval
@@ -860,7 +960,7 @@ class SynapseHandler:
     def _handle_set_keyframe(self, payload: Dict) -> Dict:
         """Set a keyframe on a node parameter at a specific frame."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
         node_path = resolve_param(payload, "node")
         parm_name = resolve_param(payload, "parm")
         value = resolve_param(payload, "value")
@@ -868,10 +968,16 @@ class SynapseHandler:
 
         node = hou.node(node_path)
         if node is None:
-            raise ValueError(f"Node not found: {node_path}")
+            raise ValueError(
+                f"Couldn't find a node at {node_path} \u2014 "
+                "double-check the path exists"
+            )
         parm = node.parm(parm_name)
         if parm is None:
-            raise ValueError(f"Parameter not found: {node_path}/{parm_name}")
+            hint = _suggest_parms(node, parm_name)
+            raise ValueError(
+                f"Couldn't find parameter '{parm_name}' on {node_path}.{hint}"
+            )
 
         if frame is not None:
             key = hou.Keyframe()
@@ -894,12 +1000,15 @@ class SynapseHandler:
     def _handle_render_settings(self, payload: Dict) -> Dict:
         """Read and optionally modify render settings on a ROP or Karma node."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
         node_path = resolve_param(payload, "node")
 
         node = hou.node(node_path)
         if node is None:
-            raise ValueError(f"Node not found: {node_path}")
+            raise ValueError(
+                f"Couldn't find a node at {node_path} \u2014 "
+                "double-check the path to your render settings node"
+            )
 
         settings = {}
         # Read current render settings
@@ -930,7 +1039,7 @@ class SynapseHandler:
     def _handle_wedge(self, payload: Dict) -> Dict:
         """Run a TOPs/PDG wedge to explore parameter variations."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         import hdefereval
 
@@ -939,12 +1048,18 @@ class SynapseHandler:
         values = resolve_param(payload, "values", required=False)
 
         if values is not None and not isinstance(values, list):
-            raise ValueError("'values' must be a list")
+            raise ValueError(
+                "'values' should be a list (e.g. [0.5, 1.0, 2.0]) \u2014 "
+                "wrap your values in square brackets"
+            )
 
         def _run_wedge():
             node = hou.node(top_path)
             if node is None:
-                raise ValueError(f"Node not found: {top_path}")
+                raise ValueError(
+                    f"Couldn't find a node at {top_path} \u2014 "
+                    "double-check the path to your TOP network or wedge node"
+                )
 
             # If it's a TOP network, find or create wedge node
             if node.type().category().name() == "Top":
@@ -958,9 +1073,15 @@ class SynapseHandler:
                     wedge_nodes[0].cook(block=True)
                     return {"node": wedge_nodes[0].path(), "status": "cooked"}
                 else:
-                    raise ValueError(f"No wedge node found in {top_path}")
+                    raise ValueError(
+                        f"Couldn't find a wedge node inside {top_path} \u2014 "
+                        "create a wedge TOP or point to one directly"
+                    )
             else:
-                raise ValueError(f"Node {top_path} is not a TOP network or node")
+                raise ValueError(
+                    f"The node at {top_path} isn't a TOP network \u2014 "
+                    "point to a TOP network or a specific wedge/TOP node"
+                )
 
         result = hdefereval.executeInMainThreadWithResult(_run_wedge)
         return result
@@ -972,7 +1093,7 @@ class SynapseHandler:
     def _handle_reference_usd(self, payload: Dict) -> Dict:
         """Import a USD file into the stage via reference or sublayer."""
         if not HOU_AVAILABLE:
-            raise RuntimeError("Houdini not available")
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         file_path = resolve_param(payload, "file")
         prim_path = resolve_param_with_default(payload, "prim_path", "/")
@@ -981,7 +1102,10 @@ class SynapseHandler:
 
         parent_node = hou.node(parent)
         if parent_node is None:
-            raise ValueError(f"Parent node not found: {parent}")
+            raise ValueError(
+                f"Couldn't find the parent node at {parent} \u2014 "
+                "verify this path exists (default is /stage)"
+            )
 
         if mode == "sublayer":
             node = parent_node.createNode("sublayer", "sublayer_import")
@@ -992,7 +1116,10 @@ class SynapseHandler:
             if prim_path != "/":
                 node.parm("primpath").set(prim_path)
         else:
-            raise ValueError(f"Invalid mode: {mode}. Use 'reference' or 'sublayer'.")
+            raise ValueError(
+                f"'{mode}' isn't a recognized import mode \u2014 "
+                "use 'reference' or 'sublayer'"
+            )
 
         return {
             "node": node.path(),
@@ -1086,8 +1213,8 @@ def _find_render_rop():
             if child.type().name() in _RENDER_TYPES:
                 return child
     raise ValueError(
-        "No render ROP found. Specify 'node' parameter with the ROP path "
-        "(e.g. '/stage/karma1' or '/out/mantra1')."
+        "Couldn't auto-find a render ROP \u2014 specify the 'node' parameter "
+        "with the path to your ROP (e.g. '/stage/karma1' or '/out/mantra1')"
     )
 
 

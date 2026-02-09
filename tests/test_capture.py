@@ -96,7 +96,7 @@ class TestCaptureViewport:
         desktop.paneTabOfType.return_value = None
         _mock_hou.ui.curDesktop.return_value = desktop
 
-        with pytest.raises(ValueError, match="No SceneViewer"):
+        with pytest.raises(ValueError, match="Couldn't find a viewport"):
             handler._handle_capture_viewport({})
 
     def test_param_alias_fmt(self, handler, _setup_hou):
@@ -126,5 +126,5 @@ class TestCaptureViewport:
         desktop.paneTabOfType.return_value = mock_sv
         _mock_hou.ui.curDesktop.return_value = desktop
 
-        with pytest.raises(RuntimeError, match="file not found"):
+        with pytest.raises(RuntimeError, match="image wasn't created"):
             handler._handle_capture_viewport({})

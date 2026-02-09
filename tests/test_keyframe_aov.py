@@ -71,20 +71,20 @@ class TestSetKeyframe:
     def test_keyframe_node_not_found(self):
         """Missing node should raise ValueError."""
         hou_mock.node.return_value = None
-        with pytest.raises(ValueError, match="Node not found"):
+        with pytest.raises(ValueError, match="Couldn't find a node"):
             node = hou_mock.node("/bad/path")
             if node is None:
-                raise ValueError("Node not found: /bad/path")
+                raise ValueError("Couldn't find a node at /bad/path")
         hou_mock.node.return_value = _mock_node  # restore
 
     def test_keyframe_parm_not_found(self):
         """Missing parm should raise ValueError."""
         _mock_node.parm.return_value = None
-        with pytest.raises(ValueError, match="Parameter not found"):
+        with pytest.raises(ValueError, match="Couldn't find parameter"):
             node = hou_mock.node("/obj/geo1")
             parm = node.parm("bad_parm")
             if parm is None:
-                raise ValueError("Parameter not found: /obj/geo1/bad_parm")
+                raise ValueError("Couldn't find parameter 'bad_parm' on /obj/geo1")
         _mock_node.parm.return_value = _mock_parm  # restore
 
 
@@ -117,7 +117,7 @@ class TestRenderSettings:
         with pytest.raises(ValueError):
             node = hou_mock.node("/bad")
             if node is None:
-                raise ValueError("Node not found: /bad")
+                raise ValueError("Couldn't find a node at /bad")
         hou_mock.node.return_value = _mock_node
 
 

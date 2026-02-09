@@ -102,8 +102,8 @@ async def _get_connection():
                     await asyncio.sleep(RETRY_DELAY * (attempt + 1))
 
         raise ConnectionError(
-            f"Could not connect to Synapse at {SYNAPSE_URL} after {MAX_RETRIES} attempts: {last_error}\n\n"
-            "Houdini not running or Synapse server not started. "
+            f"Couldn't connect to Synapse at {SYNAPSE_URL} after {MAX_RETRIES} attempts: {last_error}\n\n"
+            "Houdini might not be running, or the Synapse server hasn't started yet. "
             "Launch Houdini and start the Synapse server from the Python Panel."
         )
 
@@ -140,7 +140,10 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
                 while True:
                     remaining = cmd_timeout - (time.monotonic() - start)
                     if remaining <= 0:
-                        raise TimeoutError(f"Timed out waiting for response to {cmd_type}")
+                        raise TimeoutError(
+                        f"The {cmd_type} command took too long to respond \u2014 "
+                        "Houdini may be busy with a heavy operation"
+                    )
 
                     raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
                     response = _loads(raw)
@@ -177,10 +180,12 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
                 logger.warning("Connection lost during %s, reconnecting... (%s)", cmd_type, e)
 
         else:
-            raise ConnectionError(f"Failed to send {cmd_type} after reconnect: {last_err}")
+            raise ConnectionError(
+                f"Lost connection while sending {cmd_type} and couldn't reconnect: {last_err}"
+            )
 
     if not response.get("success", False):
-        error_msg = response.get("error", "Unknown error from Synapse")
+        error_msg = response.get("error", "Something went wrong on the Synapse side")
         data = response.get("data") or {}
         if isinstance(data, dict) and "retry_after" in data:
             error_msg += f" (retry after {data['retry_after']}s)"
@@ -193,7 +198,16 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
 # MCP Server
 # ---------------------------------------------------------------------------
 
-server = Server("synapse")
+# Load TONE.md as server instructions (shapes LLM behavior when Synapse is active)
+_tone_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "TONE.md")
+_tone_instructions = ""
+try:
+    with open(_tone_path, encoding="utf-8") as _f:
+        _tone_instructions = _f.read()
+except FileNotFoundError:
+    pass
+
+server = Server("synapse", instructions=_tone_instructions or None)
 
 
 @server.list_tools()
@@ -203,29 +217,45 @@ async def list_tools():
         # -- Utility --
         Tool(
             name="synapse_ping",
-            description="Check if Houdini/Synapse is connected and responding.",
+            description=(
+                "Check if Houdini/Synapse is connected and responding. "
+                "A quick health check \u2014 if it fails, Houdini may not be running yet."
+            ),
             inputSchema={"type": "object", "properties": {}, "required": []},
         ),
         Tool(
             name="synapse_health",
-            description="Get system health status including resilience layer (circuit breaker, rate limiter).",
+            description=(
+                "Get system health status including resilience layer (circuit breaker, rate limiter). "
+                "Use this to diagnose connection issues before retrying operations."
+            ),
             inputSchema={"type": "object", "properties": {}, "required": []},
         ),
         # -- Scene --
         Tool(
             name="houdini_scene_info",
-            description="Get current Houdini scene info: HIP file path, current frame, FPS, and frame range.",
+            description=(
+                "Get current Houdini scene info: HIP file path, current frame, FPS, and frame range. "
+                "Good starting point to orient yourself in the artist's scene."
+            ),
             inputSchema={"type": "object", "properties": {}, "required": []},
         ),
         Tool(
             name="houdini_get_selection",
-            description="Get the currently selected nodes in Houdini.",
+            description=(
+                "Get the currently selected nodes in Houdini. "
+                "Useful for understanding what the artist is focused on before making changes."
+            ),
             inputSchema={"type": "object", "properties": {}, "required": []},
         ),
         # -- Node operations --
         Tool(
             name="houdini_create_node",
-            description="Create a new node in Houdini. Returns the path of the created node.",
+            description=(
+                "Create a new node in Houdini. Returns the path of the created node. "
+                "When reporting back, share what was created and where \u2014 "
+                "e.g. 'Created rim_light, it's ready at /stage/rim_light'."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -247,7 +277,10 @@ async def list_tools():
         ),
         Tool(
             name="houdini_delete_node",
-            description="Delete a node in Houdini by its path.",
+            description=(
+                "Delete a node in Houdini by its path. "
+                "Confirm with the artist before deleting if the node wasn't just created in this session."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -261,7 +294,11 @@ async def list_tools():
         ),
         Tool(
             name="houdini_connect_nodes",
-            description="Connect the output of one node to the input of another.",
+            description=(
+                "Connect the output of one node to the input of another. "
+                "If a connection fails, check that both nodes exist and that "
+                "the input/output indices are valid for those node types."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -288,7 +325,12 @@ async def list_tools():
         # -- Parameters --
         Tool(
             name="houdini_get_parm",
-            description="Read a parameter value from a Houdini node.",
+            description=(
+                "Read a parameter value from a Houdini node. "
+                "If the parameter name doesn't match, Synapse will suggest similar names. "
+                "Houdini parameter names can be cryptic (e.g. 'xn__inputsintensity_i0a') \u2014 "
+                "help the artist by translating to plain language."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -306,7 +348,11 @@ async def list_tools():
         ),
         Tool(
             name="houdini_set_parm",
-            description="Set a parameter value on a Houdini node.",
+            description=(
+                "Set a parameter value on a Houdini node. "
+                "When reporting success, describe the change in artist-friendly terms "
+                "(e.g. 'Bumped the light intensity to 5.0') rather than raw parameter names."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -331,7 +377,10 @@ async def list_tools():
             description=(
                 "Execute Python code in Houdini's runtime environment. "
                 "The code runs with 'hou' module available. "
-                "Set a 'result' variable to return data."
+                "Set a 'result' variable to return data. "
+                "When presenting results: celebrate progress, explain errors in "
+                "plain language with next steps, and frame everything as "
+                "collaborative iteration \u2014 'we tried X, let's adjust' not 'X failed'."
             ),
             inputSchema={
                 "type": "object",
@@ -347,7 +396,10 @@ async def list_tools():
         # -- USD/Solaris --
         Tool(
             name="houdini_stage_info",
-            description="Get USD stage information: prim list and types. Optionally specify a LOP node path.",
+            description=(
+                "Get USD stage information: prim list and types. Optionally specify a LOP node path. "
+                "Great for understanding what's on the stage before making USD changes."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -361,7 +413,10 @@ async def list_tools():
         ),
         Tool(
             name="houdini_get_usd_attribute",
-            description="Read a USD attribute value from a prim on the stage. Returns value and type info.",
+            description=(
+                "Read a USD attribute value from a prim on the stage. Returns value and type info. "
+                "If the attribute name doesn't match, Synapse lists available attributes to help."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -383,7 +438,11 @@ async def list_tools():
         ),
         Tool(
             name="houdini_set_usd_attribute",
-            description="Set a USD attribute on a prim. Creates a Python LOP node wired into the graph.",
+            description=(
+                "Set a USD attribute on a prim. Creates a Python LOP node wired into the graph. "
+                "When reporting, describe the change naturally \u2014 "
+                "'Moved the key light to (2, 5, 3)' reads better than 'Set xformOp:translate'."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -408,7 +467,11 @@ async def list_tools():
         ),
         Tool(
             name="houdini_create_usd_prim",
-            description="Create a USD prim on the stage. Creates a Python LOP node wired into the graph.",
+            description=(
+                "Create a USD prim on the stage. Creates a Python LOP node wired into the graph. "
+                "Share what was created in context \u2014 "
+                "'Added a DomeLight at /World/lights/env' tells the artist what happened."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -430,7 +493,11 @@ async def list_tools():
         ),
         Tool(
             name="houdini_modify_usd_prim",
-            description="Modify USD prim metadata: kind, purpose, or active state. Creates a Python LOP node.",
+            description=(
+                "Modify USD prim metadata: kind, purpose, or active state. Creates a Python LOP node. "
+                "Explain what the metadata change means in practice \u2014 "
+                "e.g. 'Set as component so it shows up properly in asset browsers'."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -463,7 +530,9 @@ async def list_tools():
             name="houdini_capture_viewport",
             description=(
                 "Capture the Houdini viewport as an image. "
-                "Returns the image directly for visual analysis of lighting, layout, and composition."
+                "Returns the image directly for visual analysis of lighting, layout, and composition. "
+                "This is the artist's window into their work \u2014 when showing the capture, "
+                "comment on what's working well before suggesting changes. Lead with what's strong."
             ),
             inputSchema={
                 "type": "object",
@@ -491,7 +560,9 @@ async def list_tools():
             description=(
                 "Render a frame using Karma XPU, Karma CPU, Mantra, or any ROP node. "
                 "Returns the rendered image and reports which engine was used. "
-                "Auto-discovers a render ROP if 'node' is omitted."
+                "Auto-discovers a render ROP if 'node' is omitted. "
+                "If the render succeeds, share the result with enthusiasm \u2014 the artist made something. "
+                "If it fails, diagnose calmly: check output path, camera, and render settings."
             ),
             inputSchema={
                 "type": "object",
@@ -518,7 +589,10 @@ async def list_tools():
         # -- Keyframe / Render Settings --
         Tool(
             name="houdini_set_keyframe",
-            description="Set a keyframe on a node parameter at a specific frame.",
+            description=(
+                "Set a keyframe on a node parameter at a specific frame. "
+                "Confirm the keyframe was set by reporting the value and frame number."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -532,7 +606,12 @@ async def list_tools():
         ),
         Tool(
             name="houdini_render_settings",
-            description="Read and optionally modify render settings on a ROP or Karma node. Pass settings dict to override values.",
+            description=(
+                "Read and optionally modify render settings on a ROP or Karma node. "
+                "Pass settings dict to override values. "
+                "When reporting changes, translate parameter names into plain language "
+                "where possible (e.g. 'Set resolution to 1920x1080')."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -545,7 +624,12 @@ async def list_tools():
         # -- TOPs / PDG --
         Tool(
             name="houdini_wedge",
-            description="Run a TOPs/PDG wedge to explore parameter variations. Point to a TOP network or wedge node.",
+            description=(
+                "Run a TOPs/PDG wedge to explore parameter variations. "
+                "Point to a TOP network or wedge node. "
+                "Great for quickly testing different looks \u2014 "
+                "present results as creative options, not just data."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -559,7 +643,11 @@ async def list_tools():
         # -- USD Scene Assembly --
         Tool(
             name="houdini_reference_usd",
-            description="Import a USD file into the stage via reference or sublayer. Use for scene assembly with production assets.",
+            description=(
+                "Import a USD file into the stage via reference or sublayer. "
+                "Use for scene assembly with production assets. "
+                "Confirm the asset loaded by reporting its path and what's on the stage now."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -577,7 +665,9 @@ async def list_tools():
             description=(
                 "Look up Houdini knowledge: parameter names, node types, "
                 "workflow guides, FX setup, rendering, and lighting. "
-                "Uses the RAG index for fast, grounded answers."
+                "Uses the RAG index for fast, grounded answers. "
+                "Use this before guessing parameter names or node types \u2014 "
+                "it's faster and more reliable than trial and error."
             ),
             inputSchema={
                 "type": "object",
@@ -593,12 +683,18 @@ async def list_tools():
         # -- Memory --
         Tool(
             name="synapse_context",
-            description="Get project context from Synapse memory (shot info, decisions, notes).",
+            description=(
+                "Get project context from Synapse memory (shot info, decisions, notes). "
+                "Check this at the start of a session to understand the project history."
+            ),
             inputSchema={"type": "object", "properties": {}, "required": []},
         ),
         Tool(
             name="synapse_search",
-            description="Search project memory for relevant entries.",
+            description=(
+                "Search project memory for relevant entries. "
+                "Helps avoid repeating past mistakes or rediscovering solutions."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -612,7 +708,10 @@ async def list_tools():
         ),
         Tool(
             name="synapse_recall",
-            description="Recall relevant memories for a given context or question.",
+            description=(
+                "Recall relevant memories for a given context or question. "
+                "Use before starting work to surface past decisions and learnings."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -626,7 +725,10 @@ async def list_tools():
         ),
         Tool(
             name="synapse_decide",
-            description="Record a decision in project memory with reasoning.",
+            description=(
+                "Record a decision in project memory with reasoning. "
+                "Future sessions will benefit from knowing why a choice was made."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -648,7 +750,10 @@ async def list_tools():
         ),
         Tool(
             name="synapse_add_memory",
-            description="Add a memory entry to the project (note, context, reference, etc.).",
+            description=(
+                "Add a memory entry to the project (note, context, reference, etc.). "
+                "Good for capturing insights, gotchas, or creative direction for future reference."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -757,7 +862,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
 async def call_tool(name: str, arguments: dict):
     """Dispatch MCP tool call to Synapse via WebSocket."""
     if name not in TOOL_DISPATCH:
-        return [TextContent(type="text", text=f"Unknown tool: {name}")]
+        return [TextContent(type="text", text=f"I don't recognize the tool '{name}' \u2014 check the available tools list")]
 
     cmd_type, build_payload = TOOL_DISPATCH[name]
 
@@ -788,16 +893,21 @@ async def call_tool(name: str, arguments: dict):
                     TextContent(type="text", text=_dumps(meta)),
                 ]
             except FileNotFoundError:
-                return [TextContent(type="text", text=f"Capture succeeded but file not found: {image_path}")]
+                return [TextContent(type="text", text=(
+                    f"The capture ran but the image file wasn't found at {image_path} \u2014 "
+                    "it may have been cleaned up or the path changed"
+                ))]
 
         return [TextContent(type="text", text=_dumps(data))]
     except ConnectionError as e:
-        return [TextContent(type="text", text=f"Connection error: {e}")]
+        return [TextContent(type="text", text=(
+            f"Couldn't reach Synapse \u2014 {e}"
+        ))]
     except RuntimeError as e:
-        return [TextContent(type="text", text=f"Synapse error: {e}")]
+        return [TextContent(type="text", text=f"Synapse hit a snag: {e}")]
     except Exception as e:
         logger.exception("Unexpected error in tool %s", name)
-        return [TextContent(type="text", text=f"Error: {e}")]
+        return [TextContent(type="text", text=f"Something unexpected happened: {e}")]
 
 
 # ---------------------------------------------------------------------------

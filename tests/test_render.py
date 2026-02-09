@@ -112,7 +112,7 @@ class TestFindRenderRop:
         empty.children.return_value = []
 
         with patch.object(sys.modules["hou"], "node", create=True, side_effect=lambda p: empty if p in ("/stage", "/out") else None):
-            with pytest.raises(ValueError, match="No render ROP found"):
+            with pytest.raises(ValueError, match="Couldn't auto-find a render ROP"):
                 handlers_mod._find_render_rop()
 
 

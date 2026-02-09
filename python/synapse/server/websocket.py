@@ -343,7 +343,7 @@ class SynapseServer:
                     websocket.send(SynapseResponse(
                         id=command.id,
                         success=False,
-                        error=f"Rate limited: {info.get('reason')}",
+                        error=f"Synapse is handling a lot of requests right now \u2014 try again in a moment ({info.get('reason')})",
                         data={"retry_after": info.get("retry_after", 1.0)},
                         sequence=command.sequence
                     ).to_json())
@@ -355,7 +355,7 @@ class SynapseServer:
                     websocket.send(SynapseResponse(
                         id=command.id,
                         success=False,
-                        error=f"Circuit breaker open: {cb_info.get('reason')}",
+                        error=f"Synapse paused commands temporarily to recover from errors \u2014 it'll resume shortly ({cb_info.get('reason')})",
                         data={"retry_after": cb_info.get("retry_after", 30.0)},
                         sequence=command.sequence
                     ).to_json())
@@ -366,7 +366,7 @@ class SynapseServer:
                     websocket.send(SynapseResponse(
                         id=command.id,
                         success=False,
-                        error=f"Backpressure: {self._backpressure.level.value}",
+                        error=f"Synapse is under heavy load right now (level: {self._backpressure.level.value}) \u2014 try again shortly",
                         data={"retry_after": 2.0},
                         sequence=command.sequence
                     ).to_json())
@@ -394,7 +394,7 @@ class SynapseServer:
             websocket.send(SynapseResponse(
                 id="unknown",
                 success=False,
-                error=f"Invalid JSON: {e}"
+                error=f"Couldn't parse the incoming message as JSON \u2014 check the message format ({e})"
             ).to_json())
         except Exception as e:
             # Notify circuit breaker on handler exceptions (service errors)

@@ -137,7 +137,7 @@ class TestEnsureNode:
         """When the parent path does not resolve, raise ValueError."""
         hou_mock.node.side_effect = _node_router({})
 
-        with pytest.raises(ValueError, match="Parent node not found"):
+        with pytest.raises(ValueError, match="Couldn't find the parent node"):
             ensure_node("/nonexistent", "null", "child")
 
 
@@ -268,7 +268,7 @@ class TestEnsureConnection:
             "/stage/merge": target,
         })
 
-        with pytest.raises(ValueError, match="Node not found"):
+        with pytest.raises(ValueError, match="Couldn't find a node"):
             ensure_connection("/stage/missing", "/stage/merge")
 
     def test_raises_for_missing_target(self):
@@ -279,7 +279,7 @@ class TestEnsureConnection:
             "/stage/light": source,
         })
 
-        with pytest.raises(ValueError, match="Node not found"):
+        with pytest.raises(ValueError, match="Couldn't find a node"):
             ensure_connection("/stage/light", "/stage/missing")
 
 
@@ -398,7 +398,7 @@ class TestDeduplicateInputs:
 
     def test_raises_for_missing_node(self):
         """ValueError when merge node does not exist."""
-        with pytest.raises(ValueError, match="Node not found"):
+        with pytest.raises(ValueError, match="Couldn't find a node"):
             deduplicate_inputs("/stage/nonexistent")
 
 
@@ -483,7 +483,7 @@ class TestEnsureParm:
 
     def test_raises_for_missing_node(self):
         """ValueError when node does not exist."""
-        with pytest.raises(ValueError, match="Node not found"):
+        with pytest.raises(ValueError, match="Couldn't find a node"):
             ensure_parm("/stage/nonexistent", "intensity", 1.0)
 
     def test_raises_for_missing_parm(self):
@@ -495,7 +495,7 @@ class TestEnsureParm:
             "/stage/light": node,
         })
 
-        with pytest.raises(ValueError, match="Parameter not found"):
+        with pytest.raises(ValueError, match="Couldn't find parameter"):
             ensure_parm("/stage/light", "nonexistent_parm", 1.0)
 
 
@@ -582,7 +582,7 @@ class TestEnsureParmTuple:
 
     def test_raises_for_missing_node(self):
         """ValueError when node does not exist."""
-        with pytest.raises(ValueError, match="Node not found"):
+        with pytest.raises(ValueError, match="Couldn't find a node"):
             ensure_parm_tuple("/missing", ["tx"], [1.0])
 
     def test_skips_missing_parms(self):
