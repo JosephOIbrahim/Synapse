@@ -59,6 +59,19 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "file": ["file", "filepath", "file_path", "path", "usd_file"],
     "mode": ["mode", "import_mode"],
     "settings": ["settings", "overrides", "params"],
+
+    # Introspection
+    "depth": ["depth", "input_depth"],
+    "root": ["root", "root_path"],
+    "max_depth": ["max_depth", "maxDepth"],
+    "context_filter": ["context_filter", "contextFilter", "filter"],
+    "include_code": ["include_code", "includeCode"],
+    "include_geometry": ["include_geometry", "includeGeometry"],
+    "include_expressions": ["include_expressions", "includeExpressions"],
+
+    # Execute options
+    "dry_run": ["dry_run", "dryRun", "syntax_check"],
+    "atomic": ["atomic", "use_undo"],
 }
 
 

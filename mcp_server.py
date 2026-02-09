@@ -49,7 +49,11 @@ PROTOCOL_VERSION = "4.0.0"
 MAX_RETRIES = 2
 RETRY_DELAY = 0.3
 COMMAND_TIMEOUT = 10.0
-_SLOW_COMMANDS = {"execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0, "render": 120.0, "wedge": 120.0}
+_SLOW_COMMANDS = {
+    "execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0,
+    "render": 120.0, "wedge": 120.0,
+    "inspect_selection": 30.0, "inspect_scene": 30.0, "inspect_node": 30.0,
+}
 
 logger = logging.getLogger("synapse-mcp")
 
@@ -389,6 +393,14 @@ async def list_tools():
                         "type": "string",
                         "description": "Python code to execute in Houdini",
                     },
+                    "dry_run": {
+                        "type": "boolean",
+                        "description": "Syntax-check only \u2014 compile the code without running it. Returns {valid: true/false}.",
+                    },
+                    "atomic": {
+                        "type": "boolean",
+                        "description": "Wrap execution in an undo group (default: true). Set false to skip undo tracking.",
+                    },
                 },
                 "required": ["code"],
             },
@@ -680,6 +692,82 @@ async def list_tools():
                 "required": ["query"],
             },
         ),
+        # -- Introspection --
+        Tool(
+            name="synapse_inspect_selection",
+            description=(
+                "Inspect the currently selected nodes in detail \u2014 modified parameters, "
+                "connections, geometry stats, warnings/errors, and the upstream input graph. "
+                "Start here to understand what the artist is working on before making changes."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "depth": {
+                        "type": "integer",
+                        "description": "How many levels of input nodes to traverse (default: 1). Use 0 for just the selected nodes, 2+ to see deeper upstream context.",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="synapse_inspect_scene",
+            description=(
+                "Get a bird's-eye view of the Houdini scene \u2014 node tree, context breakdown "
+                "(SOP/LOP/OBJ counts), any warnings or errors, and artist sticky notes. "
+                "Use this to orient yourself in an unfamiliar scene before diving into specifics."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "root": {
+                        "type": "string",
+                        "description": "Starting node path (default: '/'). Use '/obj' or '/stage' to focus on a specific context.",
+                    },
+                    "max_depth": {
+                        "type": "integer",
+                        "description": "How deep to traverse the hierarchy (default: 3).",
+                    },
+                    "context_filter": {
+                        "type": "string",
+                        "description": "Only include nodes of this category (e.g. 'Sop', 'Lop', 'Object').",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="synapse_inspect_node",
+            description=(
+                "Deep-dive into a single node \u2014 every parameter (grouped by folder), "
+                "expressions, keyframes, VEX/Python code, geometry attributes with samples, "
+                "spare parameters, and HDA info. Use this when you need the full picture "
+                "of how a specific node is configured."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {
+                        "type": "string",
+                        "description": "Full path to the node (e.g. '/obj/geo1/mountain1').",
+                    },
+                    "include_code": {
+                        "type": "boolean",
+                        "description": "Include VEX/Python code from wrangle/script nodes (default: true).",
+                    },
+                    "include_geometry": {
+                        "type": "boolean",
+                        "description": "Include geometry attribute summary (default: true).",
+                    },
+                    "include_expressions": {
+                        "type": "boolean",
+                        "description": "Include parameter expressions and keyframe info (default: true).",
+                    },
+                },
+                "required": ["node"],
+            },
+        ),
         # -- Memory --
         Tool(
             name="synapse_context",
@@ -790,7 +878,12 @@ def _passthrough(_args: dict) -> dict:
 
 def _execute_python_payload(args: dict) -> dict:
     # MCP uses 'code', Synapse handler resolves 'content'
-    return {"content": args["code"]}
+    p = {"content": args["code"]}
+    if "dry_run" in args:
+        p["dry_run"] = args["dry_run"]
+    if "atomic" in args:
+        p["atomic"] = args["atomic"]
+    return p
 
 
 def _stage_info_payload(args: dict) -> dict:
@@ -850,6 +943,9 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "houdini_wedge":         ("wedge",          lambda a: {k: a[k] for k in a}),
     "houdini_reference_usd": ("reference_usd",  lambda a: {k: a[k] for k in a}),
     "synapse_knowledge_lookup": ("knowledge_lookup", lambda a: {"query": a["query"]}),
+    "synapse_inspect_selection": ("inspect_selection", lambda a: {k: a[k] for k in a}),
+    "synapse_inspect_scene":    ("inspect_scene",     lambda a: {k: a[k] for k in a}),
+    "synapse_inspect_node":     ("inspect_node",      lambda a: {k: a[k] for k in a}),
     "synapse_context":       ("context",         _passthrough),
     "synapse_search":        ("search",          lambda a: {"query": a["query"]}),
     "synapse_recall":        ("recall",          lambda a: {"query": a["query"]}),

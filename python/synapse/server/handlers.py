@@ -86,6 +86,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "context", "search", "recall",
     "capture_viewport",
     "knowledge_lookup",
+    "inspect_selection", "inspect_scene", "inspect_node",
 })
 
 
@@ -261,6 +262,11 @@ class SynapseHandler:
 
         # Knowledge lookup (RAG)
         reg.register("knowledge_lookup", self._handle_knowledge_lookup)
+
+        # Introspection (Phase 1)
+        reg.register("inspect_selection", self._handle_inspect_selection)
+        reg.register("inspect_scene", self._handle_inspect_scene)
+        reg.register("inspect_node", self._handle_inspect_node)
 
         # Memory operations (new names)
         reg.register("context", self._handle_memory_context)
@@ -508,11 +514,28 @@ class SynapseHandler:
 
         Executes Python code in Houdini's runtime environment.
         This is a standard DCC scripting pattern for automation.
+
+        Options:
+            dry_run (bool): Compile-only syntax check — no execution.
+            atomic (bool): Wrap in undo group with rollback (default True).
         """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         code = resolve_param(payload, "content")
+        dry_run = resolve_param_with_default(payload, "dry_run", False)
+        atomic = resolve_param_with_default(payload, "atomic", True)
+
+        # Compile first — catches SyntaxError for both dry_run and real runs
+        try:
+            compiled = compile(code, "<synapse_exec>", "exec")
+        except SyntaxError as e:
+            if dry_run:
+                return {"valid": False, "error": str(e), "dry_run": True}
+            raise
+
+        if dry_run:
+            return {"valid": True, "dry_run": True}
 
         # Build execution namespace with Houdini access + idempotent guards
         exec_globals = {"hou": hou, "__builtins__": __builtins__}
@@ -528,13 +551,15 @@ class SynapseHandler:
         #   → auto-rollback, since the script is broken and partial state is bad
         # - Operational errors (render timeout, file not found, hou.OperationFailed)
         #   → keep mutations, since node creation/wiring may have succeeded
-        compiled = compile(code, "<synapse_exec>", "exec")
-        with hou.undos.group("synapse_execute"):
-            try:
-                _run_compiled(compiled, exec_globals, exec_locals)
-            except _ROLLBACK_ERRORS:
-                hou.undos.performUndo()
-                raise
+        if atomic:
+            with hou.undos.group("synapse_execute"):
+                try:
+                    _run_compiled(compiled, exec_globals, exec_locals)
+                except _ROLLBACK_ERRORS:
+                    hou.undos.performUndo()
+                    raise
+        else:
+            _run_compiled(compiled, exec_globals, exec_locals)
 
         # Try to extract a result variable
         result = exec_locals.get("result", "executed")
@@ -1157,6 +1182,48 @@ class SynapseHandler:
         """Handle recall/engram_recall command."""
         bridge = self._get_bridge()
         return bridge.handle_memory_recall(payload)
+
+    # =========================================================================
+    # INTROSPECTION HANDLERS (Phase 1)
+    # =========================================================================
+
+    def _handle_inspect_selection(self, payload: Dict) -> Dict:
+        """Inspect currently selected nodes — connections, parms, geometry, input graph."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+        from .introspection import inspect_selection
+        depth = resolve_param_with_default(payload, "depth", 1)
+        return inspect_selection(depth=int(depth))
+
+    def _handle_inspect_scene(self, payload: Dict) -> Dict:
+        """Hierarchical scene overview with issues and artist notes."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+        from .introspection import inspect_scene
+        root = resolve_param_with_default(payload, "root", "/")
+        max_depth = resolve_param_with_default(payload, "max_depth", 3)
+        context_filter = resolve_param_with_default(payload, "context_filter", None)
+        return inspect_scene(
+            root=root,
+            max_depth=int(max_depth),
+            context_filter=context_filter,
+        )
+
+    def _handle_inspect_node(self, payload: Dict) -> Dict:
+        """Deep single-node dump: all parms, expressions, code, geometry, HDA info."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+        from .introspection import inspect_node_detail
+        node_path = resolve_param(payload, "node")
+        include_code = resolve_param_with_default(payload, "include_code", True)
+        include_geometry = resolve_param_with_default(payload, "include_geometry", True)
+        include_expressions = resolve_param_with_default(payload, "include_expressions", True)
+        return inspect_node_detail(
+            node_path=node_path,
+            include_code=bool(include_code),
+            include_geometry=bool(include_geometry),
+            include_expressions=bool(include_expressions),
+        )
 
     def _handle_knowledge_lookup(self, payload: Dict) -> Dict:
         """Look up Houdini knowledge from the RAG index.
