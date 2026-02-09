@@ -34,6 +34,12 @@ try:
 except ImportError:
     _GUARD_FUNCTIONS = {}  # Graceful fallback if guards not available
 
+# Coding-bug errors that trigger auto-rollback in execute_python.
+# These indicate the script itself is broken — partial mutations are unwanted.
+# Operational errors (RuntimeError, hou.OperationFailed, IOError, etc.) do NOT
+# trigger rollback because earlier mutations (node creation, wiring) may be valid.
+_ROLLBACK_ERRORS = (NameError, SyntaxError, TypeError, AttributeError, IndexError)
+
 # Commands that don't modify state — skip memory logging for these
 _READ_ONLY_COMMANDS = frozenset({
     "ping", "get_health", "get_help", "heartbeat",
@@ -452,12 +458,18 @@ class SynapseHandler:
             pass
         exec_locals = {}
 
-        # Execute inside undo group (allows manual undo, but no auto-rollback
-        # — render errors and other operational failures would incorrectly
-        # undo node creation that succeeded before the error)
+        # Execute inside undo group with smart rollback:
+        # - Coding bugs (NameError, SyntaxError, TypeError, AttributeError)
+        #   → auto-rollback, since the script is broken and partial state is bad
+        # - Operational errors (render timeout, file not found, hou.OperationFailed)
+        #   → keep mutations, since node creation/wiring may have succeeded
         compiled = compile(code, "<synapse_exec>", "exec")
         with hou.undos.group("synapse_execute"):
-            _run_compiled(compiled, exec_globals, exec_locals)
+            try:
+                _run_compiled(compiled, exec_globals, exec_locals)
+            except _ROLLBACK_ERRORS:
+                hou.undos.performUndo()
+                raise
 
         # Try to extract a result variable
         result = exec_locals.get("result", "executed")
