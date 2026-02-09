@@ -59,6 +59,10 @@ for mod_name, fpath in [
 
 handlers_mod = sys.modules["synapse.server.handlers"]
 
+# Get the hou module that handlers.py actually imported — may differ from
+# sys.modules["hou"] if earlier test files replaced it without restoring.
+_handlers_hou = handlers_mod.hou
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -83,7 +87,7 @@ class TestFindRenderRop:
         stage_parent = MagicMock()
         stage_parent.children.return_value = [karma_node]
 
-        with patch.object(sys.modules["hou"], "node", create=True, side_effect=lambda p: stage_parent if p == "/stage" else None):
+        with patch.object(_handlers_hou, "node", create=True, side_effect=lambda p: stage_parent if p == "/stage" else None):
             result = handlers_mod._find_render_rop()
             assert result is karma_node
 
@@ -103,7 +107,7 @@ class TestFindRenderRop:
                 return out_parent
             return None
 
-        with patch.object(sys.modules["hou"], "node", create=True, side_effect=_node):
+        with patch.object(_handlers_hou, "node", create=True, side_effect=_node):
             result = handlers_mod._find_render_rop()
             assert result is mantra_node
 
@@ -111,7 +115,7 @@ class TestFindRenderRop:
         empty = MagicMock()
         empty.children.return_value = []
 
-        with patch.object(sys.modules["hou"], "node", create=True, side_effect=lambda p: empty if p in ("/stage", "/out") else None):
+        with patch.object(_handlers_hou, "node", create=True, side_effect=lambda p: empty if p in ("/stage", "/out") else None):
             with pytest.raises(ValueError, match="Couldn't auto-find a render ROP"):
                 handlers_mod._find_render_rop()
 
@@ -166,7 +170,6 @@ class TestHandleRender:
         import hdefereval
         hdefereval.executeInMainThreadWithResult = lambda fn: fn()
 
-        hou = sys.modules["hou"]
         # Ensure parm() returns a mock for outputimage/picture so the handler
         # can set the output path on the node (no longer uses output_file kwarg)
         if fake_node.parm.return_value is None:
@@ -183,9 +186,9 @@ class TestHandleRender:
                 return None
             fake_node.parm.side_effect = _parm
 
-        with patch.object(hou, "node", return_value=fake_node, create=True), \
-             patch.object(hou, "frame", return_value=frame, create=True), \
-             patch.object(hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
+        with patch.object(_handlers_hou, "node", return_value=fake_node, create=True), \
+             patch.object(_handlers_hou, "frame", return_value=frame, create=True), \
+             patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
              patch("pathlib.Path.exists", return_value=True), \
              patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)):
             return handler._handle_render(payload)

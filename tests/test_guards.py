@@ -16,6 +16,7 @@ import pytest
 # ---------------------------------------------------------------------------
 # Mock the hou module BEFORE importing guards
 # ---------------------------------------------------------------------------
+_original_hou = sys.modules.get("hou", None)
 hou_mock = MagicMock()
 sys.modules["hou"] = hou_mock
 
@@ -758,6 +759,11 @@ class TestGuardFunctionsRegistry:
 # =============================================================================
 # RUN
 # =============================================================================
+
+def teardown_module():
+    if _original_hou is not None:
+        sys.modules["hou"] = _original_hou
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
