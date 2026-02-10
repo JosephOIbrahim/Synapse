@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Synapse is the AI-Houdini Bridge — a standalone Python package (zero required dependencies) bridging AI assistants to SideFX Houdini via WebSocket. Core capabilities: real-time scene manipulation, persistent project memory, tiered LLM routing, and an MCP server exposing 29 tools to Claude Desktop/Code.
+Synapse is the AI-Houdini Bridge — a standalone Python package (zero required dependencies) bridging AI assistants to SideFX Houdini via WebSocket. Core capabilities: real-time scene manipulation, persistent project memory, tiered LLM routing, and an MCP server exposing 34 tools to Claude Desktop/Code.
 
 Lineage: Extracted from Nexus (RadiantSuite) + Engram (Hyphae) → self-contained package. Hyphae core (determinism, audit, gates) absorbed in v4.1.0. Agent layer v4.2.0. Encryption + He2025 determinism v4.2.1.
 
 ## Development Commands
 
 ```bash
-# Run all tests (~489 tests, no Houdini required)
+# Run all tests (~563 tests, no Houdini required)
 python -m pytest tests/ -v
 
 # Single test file
@@ -23,6 +23,7 @@ python -m pytest tests/test_core.py -v          # Determinism, audit, gates
 python -m pytest tests/test_agent.py -v         # Agent protocol, executor
 python -m pytest tests/test_resilience.py -v    # Rate limiter, circuit breaker
 python -m pytest tests/test_crypto.py -v        # Encryption, kahan_sum
+python -m pytest tests/test_pipeline_efficiency.py -v  # Pipeline efficiency (35 tests)
 
 # Single test
 python -m pytest tests/test_routing.py::test_routing_benchmark -v
@@ -104,7 +105,7 @@ with patch.object(hou, "flipbook", create=True):
 
 **Lazy loading**: Heavy modules (routing, server, UI) lazy-loaded via `__getattr__` in `__init__.py`. Optional deps use try/except with `*_AVAILABLE` flags.
 
-**Thread safety**: `threading.RLock()` for shared state, `threading.Event()` for background loading in `store.py`.
+**Thread safety**: `ReadWriteLock` (writer-priority) for `MemoryStore`, `threading.Lock()` for tier-pin cache, `threading.Event()` for background loading in `store.py`.
 
 **Backwards compatibility**: All legacy names preserved as aliases — `NexusServer`, `EngramMemory`, `HyphaeAuditLog`, etc. Storage migration from `.nexus/`/`.engram/` to `.synapse/` is automatic.
 
@@ -114,12 +115,13 @@ with patch.object(hou, "flipbook", create=True):
 
 **Default**: `ws://localhost:9999/synapse` | **Version**: `4.0.0`
 
-Command types: `create_node`, `delete_node`, `connect_nodes`, `get_parm`, `set_parm`, `get_scene_info`, `get_selection`, `execute_python`, `execute_vex`, `create_usd_prim`, `modify_usd_prim`, `get_usd_attribute`, `set_usd_attribute`, `get_stage_info`, `capture_viewport`, `render`, `set_keyframe`, `render_settings`, `wedge`, `reference_usd`, `create_material`, `assign_material`, `read_material`, `knowledge_lookup`, `inspect_selection`, `inspect_scene`, `inspect_node`, `context`, `search`, `add_memory`, `decide`, `recall`, `ping`, `get_health`
+Command types: `create_node`, `delete_node`, `connect_nodes`, `get_parm`, `set_parm`, `get_scene_info`, `get_selection`, `execute_python`, `execute_vex`, `create_usd_prim`, `modify_usd_prim`, `get_usd_attribute`, `set_usd_attribute`, `get_stage_info`, `capture_viewport`, `render`, `set_keyframe`, `render_settings`, `wedge`, `reference_usd`, `create_material`, `assign_material`, `read_material`, `knowledge_lookup`, `inspect_selection`, `inspect_scene`, `inspect_node`, `batch_commands`, `context`, `search`, `add_memory`, `decide`, `recall`, `ping`, `get_health`
 
 ## MCP Server (`mcp_server.py`)
 
-29 tools bridging Claude to Houdini. Key config:
-- `COMMAND_TIMEOUT=10.0` (default), `_SLOW_COMMANDS` override: execute/inspect → 30s, render/wedge → 120s
+34 tools bridging Claude to Houdini. Key config:
+- `COMMAND_TIMEOUT=10.0` (default), `_SLOW_COMMANDS` override: execute/inspect → 30s, render/wedge → 120s, batch → 60s
+- Concurrent dispatch: `_pending` dict + `_recv_loop` enables true parallel MCP tool calls (no `_cmd_lock`)
 - Warmup pre-connect in `main()` reduces first-call latency
 - `MAX_RETRIES=2`, `RETRY_DELAY=0.3`, auto-retry on connection drop
 - `open_timeout=3.0` (hwebserver handshake ~2s), `ping_interval=None`, `compression=None` (localhost)
