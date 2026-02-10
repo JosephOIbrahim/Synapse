@@ -671,6 +671,96 @@ async def list_tools():
                 "required": ["file"],
             },
         ),
+        # -- Materials --
+        Tool(
+            name="houdini_create_material",
+            description=(
+                "Create a material with a shader in the LOP network. Sets up a material "
+                "library and shader node ready to use. When reporting back, share what "
+                "was created \u2014 'Set up a new brushed metal material at /materials/chrome' "
+                "tells the artist what they've got to work with."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {
+                        "type": "string",
+                        "description": "LOP node to wire after. If omitted, uses current selection.",
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Material name (default: 'material')",
+                    },
+                    "shader_type": {
+                        "type": "string",
+                        "description": "Shader node type (default: 'mtlxstandard_surface')",
+                    },
+                    "base_color": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "[r, g, b] floats 0-1",
+                    },
+                    "metalness": {
+                        "type": "number",
+                        "description": "Metalness value 0-1",
+                    },
+                    "roughness": {
+                        "type": "number",
+                        "description": "Roughness value 0-1",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="houdini_assign_material",
+            description=(
+                "Assign a material to geometry prims. Creates an assign node wired into "
+                "the graph. Confirm what got connected \u2014 'Bound the chrome material to "
+                "all meshes under /World/props' is more helpful than parameter names."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {
+                        "type": "string",
+                        "description": "LOP node to wire after. If omitted, uses current selection.",
+                    },
+                    "prim_pattern": {
+                        "type": "string",
+                        "description": "Geometry prim path or pattern (e.g. '/World/geo/*')",
+                    },
+                    "material_path": {
+                        "type": "string",
+                        "description": "USD material path (e.g. '/materials/plastic')",
+                    },
+                },
+                "required": ["prim_pattern", "material_path"],
+            },
+        ),
+        Tool(
+            name="houdini_read_material",
+            description=(
+                "Read what material is assigned to a prim and its shader settings. Use "
+                "this to understand the current look before making changes. Present the "
+                "findings naturally \u2014 'That mesh is using a gold material with roughness "
+                "at 0.3' helps the artist understand their scene."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {
+                        "type": "string",
+                        "description": "LOP node to read stage from. If omitted, uses current selection.",
+                    },
+                    "prim_path": {
+                        "type": "string",
+                        "description": "USD prim to inspect",
+                    },
+                },
+                "required": ["prim_path"],
+            },
+        ),
         # -- Knowledge / RAG --
         Tool(
             name="synapse_knowledge_lookup",
@@ -942,6 +1032,9 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "houdini_render_settings":  ("render_settings",  lambda a: {k: a[k] for k in a}),
     "houdini_wedge":         ("wedge",          lambda a: {k: a[k] for k in a}),
     "houdini_reference_usd": ("reference_usd",  lambda a: {k: a[k] for k in a}),
+    "houdini_create_material":  ("create_material",  lambda a: {k: a[k] for k in a}),
+    "houdini_assign_material":  ("assign_material",  lambda a: {k: a[k] for k in a}),
+    "houdini_read_material":    ("read_material",    lambda a: {k: a[k] for k in a}),
     "synapse_knowledge_lookup": ("knowledge_lookup", lambda a: {"query": a["query"]}),
     "synapse_inspect_selection": ("inspect_selection", lambda a: {k: a[k] for k in a}),
     "synapse_inspect_scene":    ("inspect_scene",     lambda a: {k: a[k] for k in a}),

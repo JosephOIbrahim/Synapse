@@ -72,6 +72,14 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     # Execute options
     "dry_run": ["dry_run", "dryRun", "syntax_check"],
     "atomic": ["atomic", "use_undo"],
+
+    # Materials
+    "material_path": ["material_path", "mat_path", "matspecpath", "shader_path"],
+    "prim_pattern": ["prim_pattern", "geometry", "geo_path", "primpattern"],
+    "shader_type": ["shader_type", "shader", "mtlx_type"],
+    "base_color": ["base_color", "color", "diffuse_color", "baseColor"],
+    "metalness": ["metalness", "metallic", "metal"],
+    "roughness": ["roughness", "specular_roughness"],
 }
 
 
