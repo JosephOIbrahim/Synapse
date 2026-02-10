@@ -29,7 +29,7 @@ class RecipeStep:
     def instantiate(self, params: Dict[str, str]) -> SynapseCommand:
         """Fill placeholders and return a SynapseCommand."""
         payload = {}
-        for key, value in self.payload_template.items():
+        for key, value in sorted(self.payload_template.items()):
             if isinstance(value, str) and "{" in value:
                 payload[key] = value.format(**params)
             else:
@@ -46,7 +46,7 @@ class RecipeStep:
     def instantiate_with_vars(self, variables: Dict[str, str]) -> SynapseCommand:
         """Fill placeholders using accumulated variables (supports $var.field syntax)."""
         payload = {}
-        for key, value in self.payload_template.items():
+        for key, value in sorted(self.payload_template.items()):
             if isinstance(value, str):
                 # Replace $var.field references first
                 resolved = value
@@ -55,7 +55,7 @@ class RecipeStep:
                 # Then standard {param} placeholders
                 if "{" in resolved:
                     resolved = resolved.format(**{
-                        k: v for k, v in variables.items()
+                        k: v for k, v in sorted(variables.items())
                         if not k.startswith("$")
                     })
                 payload[key] = resolved

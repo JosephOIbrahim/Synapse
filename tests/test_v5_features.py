@@ -623,10 +623,10 @@ class TestKnowledgeBaseExpansion:
             assert len(index[key]["keywords"]) > 3
 
     def test_total_topic_count(self):
-        """Should have 27 topics (13 original + 6 phase2 + 8 phase-B domain)."""
+        """Should have 28 topics (13 original + 6 phase2 + 8 phase-B domain + 1 pipeline)."""
         index_path = _PROJECT_ROOT / "rag" / "documentation" / "_metadata" / "semantic_index.json"
         index = json.loads(index_path.read_text(encoding="utf-8"))
-        assert len(index) == 27
+        assert len(index) == 28
 
 
 # ==========================================================================

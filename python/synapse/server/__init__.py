@@ -25,11 +25,11 @@ try:
     WEBSOCKETS_AVAILABLE = True
 except ImportError:
     WEBSOCKETS_AVAILABLE = False
-    SynapseServer = None
-    SynapseHandler = None
-    NexusServer = None
-    NexusHandler = None
-    CommandHandlerRegistry = None
+    SynapseServer = None  # type: ignore[assignment,misc]
+    SynapseHandler = None  # type: ignore[assignment,misc]
+    NexusServer = None  # type: ignore[assignment,misc]
+    NexusHandler = None  # type: ignore[assignment,misc]
+    CommandHandlerRegistry = None  # type: ignore[assignment,misc]
 
 __all__ = [
     'SynapseServer',

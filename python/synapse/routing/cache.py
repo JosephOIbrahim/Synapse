@@ -168,7 +168,7 @@ class ResponseCache:
         if not self._cache:
             return
         # Evict expired first
-        for key, entry in list(self._cache.items()):
+        for key, entry in sorted(self._cache.items()):
             if entry.expired:
                 del self._cache[key]
                 self._evictions += 1

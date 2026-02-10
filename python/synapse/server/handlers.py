@@ -384,9 +384,9 @@ class SynapseHandler:
         atomic = payload.get("atomic", True)
         stop_on_error = payload.get("stop_on_error", False)
 
-        results = []
-        statuses = []
-        errors = []
+        results: list = []
+        statuses: list = []
+        errors: list = []
 
         if atomic and HOU_AVAILABLE:
             hou.undos.beginGroup()
@@ -682,7 +682,7 @@ class SynapseHandler:
             exec_globals.update(GUARD_FUNCTIONS)
         except ImportError:
             pass
-        exec_locals = {}
+        exec_locals: dict = {}
 
         # Execute inside undo group with smart rollback:
         # - Coding bugs (NameError, SyntaxError, TypeError, AttributeError)
@@ -1238,7 +1238,7 @@ class SynapseHandler:
         # Apply overrides if provided
         overrides = resolve_param_with_default(payload, "settings", {})
         if isinstance(overrides, dict):
-            for k, v in overrides.items():
+            for k, v in sorted(overrides.items()):
                 p = node.parm(k)
                 if p:
                     p.set(v)

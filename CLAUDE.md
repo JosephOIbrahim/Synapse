@@ -17,8 +17,14 @@ Two repos make up the full system:
 pip install -e ".[dev]"
 pip install -e ".[dev,websocket,mcp,routing,encryption]"   # all optional features
 
-# Run all core tests (~737 tests, no Houdini required)
+# Run all core tests (~777 tests, no Houdini required)
 python -m pytest tests/ -v
+
+# Type checking (mypy, 0 errors on 49 source files)
+python -m mypy python/synapse/ --config-file pyproject.toml
+
+# Build API docs (MkDocs + mkdocstrings)
+python -m mkdocs build
 
 # Key test files
 python -m pytest tests/test_routing.py -v              # Routing cascade (~323 tests)
@@ -32,6 +38,7 @@ python -m pytest tests/test_resilience.py -v            # Rate limiter, circuit 
 python -m pytest tests/test_auth.py -v                  # Authentication (21 tests)
 python -m pytest tests/test_stress.py -v                # Load/stress testing (24 tests)
 python -m pytest tests/test_integration_pipeline.py -v  # Integration pipeline (20 tests)
+python -m pytest tests/test_sqlite_store.py -v          # SQLite memory backend (40 tests)
 
 # Single test
 python -m pytest tests/test_routing.py::test_routing_benchmark -v
@@ -69,7 +76,7 @@ Houdini USD Stage / Solaris / Karma
 | Layer | Directory | Responsibility |
 |-------|-----------|---------------|
 | Foundation | `core/` | Wire protocol (`protocol.py`), parameter aliases (`aliases.py`), determinism (`determinism.py`), audit chain (`audit.py`), human gates (`gates.py`), encryption (`crypto.py`), command queue (`queue.py`) |
-| Memory | `memory/` | JSONL store with ReadWriteLock + async write buffer (`store.py`), data models (`models.py`), shot context (`context.py`), markdown export (`markdown.py`) |
+| Memory | `memory/` | JSONL store (`store.py`) or SQLite store (`sqlite_store.py`, via `SYNAPSE_MEMORY_BACKEND=sqlite`), data models (`models.py`), shot context (`context.py`), markdown export (`markdown.py`) |
 | Routing | `routing/` | Tiered LLM dispatch (`router.py`), regex parser (`parser.py`), RAG knowledge (`knowledge.py`), recipes (`recipes.py`), deterministic cache (`cache.py`) |
 | Agent | `agent/` | prepare/propose/execute/learn lifecycle (`executor.py`), task/plan/step protocol (`protocol.py`), outcome tracking (`learning.py`) |
 | Server | `server/` | WebSocket server (`websocket.py`), 34 command handlers (`handlers.py`), resilience stack (`resilience.py`), scene introspection (`introspection.py`), hwebserver adapter (`hwebserver_adapter.py`), guard functions (`guards.py`), material handlers |
@@ -163,7 +170,7 @@ Add to `routing/recipes.py` in the `_register_builtins()` method. 21 recipes (11
 
 ### Adding RAG knowledge
 
-Add/edit files in `rag/skills/houdini21-reference/*.md` (25 files, ~3,700 lines). Update topic triggers in `rag/documentation/_metadata/semantic_index.json` (27 topics, 400+ triggers).
+Add/edit files in `rag/skills/houdini21-reference/*.md` (26 files, ~3,900 lines). Update topic triggers in `rag/documentation/_metadata/semantic_index.json` (28 topics, 400+ triggers).
 
 ## Key Conventions
 

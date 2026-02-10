@@ -874,12 +874,12 @@ class SynapseMemory:
         words = [w for w in words if w and len(w) > 2 and w not in stop_words]
 
         # Count frequencies
-        freq = {}
+        freq: Dict[str, int] = {}
         for w in words:
             freq[w] = freq.get(w, 0) + 1
 
         # Return top keywords
-        sorted_words = sorted(freq.items(), key=lambda x: x[1], reverse=True)
+        sorted_words = sorted(freq.items(), key=lambda x: (-x[1], x[0]))
         return [w for w, _ in sorted_words[:max_keywords]]
 
 

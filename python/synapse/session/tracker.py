@@ -201,7 +201,7 @@ class SynapseBridge:
         if self._context_cache is not None and (now - self._context_cache_time) < self._context_cache_ttl:
             return self._context_cache
 
-        context = {
+        context: dict = {
             "project": {},
             "recent_decisions": [],
             "recent_activity": [],

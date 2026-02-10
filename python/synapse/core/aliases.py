@@ -5,7 +5,7 @@ Centralized parameter aliasing system to accept multiple naming conventions.
 Allows clients to use different naming conventions (camelCase, snake_case, etc.)
 """
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 
 # =============================================================================
@@ -135,7 +135,7 @@ USD_PARM_ALIASES: Dict[str, str] = {
 
 # Pre-computed reverse map: alias -> canonical (O(1) lookup)
 _REVERSE_ALIASES: Dict[str, str] = {}
-for _canonical, _aliases in PARAM_ALIASES.items():
+for _canonical, _aliases in sorted(PARAM_ALIASES.items()):
     for _alias in _aliases:
         # First writer wins — earlier entries in PARAM_ALIASES take priority
         if _alias not in _REVERSE_ALIASES:

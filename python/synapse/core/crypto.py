@@ -33,7 +33,7 @@ try:
     ENCRYPTION_AVAILABLE = True
 except ImportError:
     ENCRYPTION_AVAILABLE = False
-    Fernet = None
+    Fernet = None  # type: ignore[assignment,misc]
 
 
 class CryptoEngine:

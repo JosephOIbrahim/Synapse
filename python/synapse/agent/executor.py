@@ -162,7 +162,7 @@ class AgentExecutor:
                     description=step.description,
                     sequence_id=task.sequence_id,
                     category=task.category,
-                    level=step.gate_level,
+                    level=step.gate_level,  # type: ignore[arg-type]
                     proposed_changes=step.payload,
                     agent_id=task.agent_id,
                     reasoning=step.reasoning,

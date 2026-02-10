@@ -9,8 +9,8 @@ try:
     UI_AVAILABLE = True
 except ImportError:
     UI_AVAILABLE = False
-    SynapsePanel = None
-    create_panel = None
+    SynapsePanel = None  # type: ignore[assignment,misc]
+    create_panel = None  # type: ignore[assignment]
 
 # Backwards compatibility
 NexusPanel = SynapsePanel

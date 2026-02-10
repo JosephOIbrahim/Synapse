@@ -63,6 +63,7 @@ class KnowledgeIndex:
 
     def _load_semantic_index(self):
         """Load semantic_index.json and build inverted keyword index."""
+        assert self._rag_root is not None
         index_path = self._rag_root / "documentation" / "_metadata" / "semantic_index.json"
         if not index_path.exists():
             return
@@ -74,7 +75,7 @@ class KnowledgeIndex:
             return
 
         # Build inverted keyword index: word → [topic_names]
-        for topic_name, topic_data in self._semantic_index.items():
+        for topic_name, topic_data in sorted(self._semantic_index.items()):
             keywords = []
             if isinstance(topic_data, dict):
                 keywords = topic_data.get("keywords", [])
@@ -180,7 +181,7 @@ class KnowledgeIndex:
             return None
 
         # Best topic by overlap count
-        best_topic = max(topic_scores, key=topic_scores.get)
+        best_topic = max(topic_scores, key=lambda k: topic_scores[k])
         best_score = topic_scores[best_topic]
 
         # Require at least 1 keyword match; confidence scales with overlap
@@ -233,7 +234,7 @@ class KnowledgeIndex:
         best_match = None
         best_score = 0
 
-        for file_stem, content in self._reference_files.items():
+        for file_stem, content in sorted(self._reference_files.items()):
             lines = content.split("\n")
             for i, line in enumerate(lines):
                 if not line.startswith("#"):

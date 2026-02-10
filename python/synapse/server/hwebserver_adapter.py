@@ -222,7 +222,7 @@ if HWEBSERVER_AVAILABLE:
                 except Exception:
                     pass
 
-            _client_sessions.pop(getattr(self, '_ws_id', None), None)
+            _client_sessions.pop(getattr(self, '_ws_id', None), None)  # type: ignore[arg-type]
 
             if _rate_limiter:
                 _rate_limiter.remove_client(self._client_id)

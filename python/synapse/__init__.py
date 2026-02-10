@@ -77,8 +77,8 @@ try:
     from .core.crypto import CryptoEngine, ENCRYPTION_AVAILABLE, get_crypto
 except ImportError:
     ENCRYPTION_AVAILABLE = False
-    CryptoEngine = None
-    get_crypto = None
+    CryptoEngine = None  # type: ignore[assignment,misc]
+    get_crypto = None  # type: ignore[assignment]
 
 # Memory system
 from .memory.models import (

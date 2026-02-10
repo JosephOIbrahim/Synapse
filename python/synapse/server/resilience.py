@@ -419,7 +419,7 @@ class PortManager:
             self._ports[port].is_active = True
 
             # Deactivate others
-            for p, health in self._ports.items():
+            for p, health in sorted(self._ports.items()):
                 if p != port:
                     health.is_active = False
 
@@ -499,7 +499,7 @@ class PortManager:
                         "connections": h.connections,
                         "last_error": h.last_error
                     }
-                    for port, h in self._ports.items()
+                    for port, h in sorted(self._ports.items())
                 }
             }
 
@@ -817,25 +817,25 @@ class HealthMonitor:
 
         # Determine overall health
         if not issues:
-            level = "healthy"
+            health_level = "healthy"
             healthy = True
             message = "All systems operational"
         elif any("FROZEN" in i or "OPEN" in i for i in issues):
-            level = "critical"
+            health_level = "critical"
             healthy = False
             message = "; ".join(issues)
         elif len(issues) > 2:
-            level = "unhealthy"
+            health_level = "unhealthy"
             healthy = False
             message = "; ".join(issues)
         else:
-            level = "degraded"
+            health_level = "degraded"
             healthy = True
             message = "; ".join(issues)
 
         return HealthStatus(
             healthy=healthy,
-            level=level,
+            level=health_level,
             components=components,
             message=message
         )

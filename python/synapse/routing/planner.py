@@ -579,7 +579,7 @@ class WorkflowPlanner:
                     continue
 
                 # Extract params for the builder
-                params = {k: v for k, v in groups.items()
+                params = {k: v for k, v in sorted(groups.items())
                           if k != "modifiers" and v is not None}
 
                 steps = builder(params, modifiers)

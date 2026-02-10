@@ -374,8 +374,8 @@ class ShotContext:
     overview: str = ""
     goals: str = ""
     constraints: str = ""
-    assets: List[str] = None
-    client_notes: List[str] = None
+    assets: List[str] = None  # type: ignore[assignment]
+    client_notes: List[str] = None  # type: ignore[assignment]
     raw_content: str = ""
 
     def __post_init__(self):
@@ -390,9 +390,9 @@ def parse_context_md(content: str) -> ShotContext:
     ctx = ShotContext(raw_content=content)
 
     # Extract sections
-    sections = {}
+    sections: dict = {}
     current_section = None
-    current_lines = []
+    current_lines: list = []
 
     for line in content.split('\n'):
         if line.startswith('## '):

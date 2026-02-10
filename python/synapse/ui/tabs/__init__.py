@@ -18,11 +18,11 @@ try:
     TABS_AVAILABLE = True
 except ImportError:
     TABS_AVAILABLE = False
-    ConnectionTab = None
-    ContextTab = None
-    DecisionsTab = None
-    ActivityTab = None
-    SearchTab = None
+    ConnectionTab = None  # type: ignore[assignment,misc]
+    ContextTab = None  # type: ignore[assignment,misc]
+    DecisionsTab = None  # type: ignore[assignment,misc]
+    ActivityTab = None  # type: ignore[assignment,misc]
+    SearchTab = None  # type: ignore[assignment,misc]
 
 __all__ = [
     'ConnectionTab',

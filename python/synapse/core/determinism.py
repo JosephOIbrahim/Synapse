@@ -290,7 +290,7 @@ def deterministic(func: Callable) -> Callable:
     @wraps(func)
     def wrapper(*args, **kwargs):
         # Round float positional args
-        processed_args = []
+        processed_args: list = []
         for v in args:
             if isinstance(v, float):
                 processed_args.append(round_float(v))
@@ -300,8 +300,8 @@ def deterministic(func: Callable) -> Callable:
                 processed_args.append(v)
 
         # Round float kwargs
-        processed_kwargs = {}
-        for k, v in kwargs.items():
+        processed_kwargs: dict = {}
+        for k, v in sorted(kwargs.items()):
             if isinstance(v, float):
                 processed_kwargs[k] = round_float(v)
             elif isinstance(v, tuple) and all(isinstance(x, float) for x in v):

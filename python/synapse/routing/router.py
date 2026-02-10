@@ -517,7 +517,7 @@ class TieredRouter:
             # Include memory context
             if self._memory:
                 try:
-                    recent = self._memory.search(text=text, limit=3)
+                    recent = self._memory.search(query=text, limit=3)
                     if recent:
                         mem_parts = [
                             f"- {r.memory.summary or r.memory.content[:100]}"

@@ -1,0 +1,81 @@
+site_name: Synapse Documentation
+site_description: AI-Houdini Bridge — MCP tools, project memory, adaptive routing
+site_url: https://josephoibrahim.github.io/Synapse/
+repo_url: https://github.com/JosephOIbrahim/Synapse
+repo_name: JosephOIbrahim/Synapse
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: cyan
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: cyan
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - search.suggest
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Routing Cascade: architecture/routing.md
+    - Wire Protocol: architecture/protocol.md
+  - API Reference:
+    - Core:
+      - Protocol: api/core/protocol.md
+      - Aliases: api/core/aliases.md
+      - Determinism: api/core/determinism.md
+      - Audit: api/core/audit.md
+    - Memory:
+      - Store: api/memory/store.md
+      - Models: api/memory/models.md
+      - SQLite Store: api/memory/sqlite_store.md
+    - Routing:
+      - Router: api/routing/router.md
+      - Knowledge: api/routing/knowledge.md
+      - Recipes: api/routing/recipes.md
+      - Adaptation: api/routing/adaptation.md
+    - Server:
+      - Handlers: api/server/handlers.md
+      - Resilience: api/server/resilience.md
+      - Authentication: api/server/auth.md
+  - MCP Tools: tools.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [python]
+          options:
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            heading_level: 3
+            members_order: source
+            show_if_no_docstring: false
+            merge_init_into_class: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
