@@ -1,0 +1,464 @@
+"""
+Synapse Design System — Shelf Callbacks
+
+Python functions invoked by synapse.shelf toolbar buttons.
+Runs inside Houdini's embedded Python, so `hou` is available globally.
+
+All functions are safe to call at any time — they handle missing
+selections, empty scenes, and connection failures gracefully.
+"""
+
+import hou
+import json
+import time
+
+
+# ── Helpers ────────────────────────────────────────────────────
+
+def _copy_to_clipboard(text):
+    """Copy text to system clipboard via Qt (available in Houdini)."""
+    try:
+        from PySide2 import QtWidgets
+        app = QtWidgets.QApplication.instance()
+        if app:
+            app.clipboard().setText(text)
+            return True
+    except ImportError:
+        pass
+    return False
+
+
+def _notify(title, message, severity=hou.severityType.Message):
+    """Show a Houdini notification dialog."""
+    hou.ui.displayMessage(message, title=title, severity=severity)
+
+
+def _node_summary(node):
+    """Build a compact summary dict for a single node."""
+    info = {
+        "path": node.path(),
+        "type": node.type().name(),
+        "name": node.name(),
+    }
+
+    # Collect modified parameters (non-default values)
+    modified = {}
+    for parm_template in node.type().parmTemplates():
+        pname = parm_template.name()
+        try:
+            parm = node.parm(pname)
+            if parm is None:
+                continue
+            if not parm.isAtDefault():
+                # Use evalParm on the node to avoid bare eval() call
+                modified[pname] = node.evalParm(pname)
+        except Exception:
+            continue
+
+    if modified:
+        info["modified_parms"] = modified
+
+    # Input connections
+    inputs = []
+    for conn in node.inputConnections():
+        inputs.append({
+            "from": conn.inputNode().path(),
+            "output_index": conn.outputIndex(),
+            "input_index": conn.inputIndex(),
+        })
+    if inputs:
+        info["inputs"] = inputs
+
+    # Warnings/errors
+    warnings = node.warnings()
+    errors = node.errors()
+    if warnings:
+        info["warnings"] = warnings
+    if errors:
+        info["errors"] = errors
+
+    return info
+
+
+# ── Shelf Functions ───────────────────────────────────────────
+
+def open_panel():
+    """Open the Synapse AI Co-Pilot panel in a new pane tab."""
+    # Look for existing Synapse panel type
+    panel_type = None
+    for pt in hou.pypanel.interfacesInFile(
+        hou.findFile("python_panels/synapse_panel.pypanel") or ""
+    ):
+        if pt.name() == "synapse_panel":
+            panel_type = pt
+            break
+
+    if panel_type is None:
+        # Try to install it
+        try:
+            pypanel_path = hou.findFile("python_panels/synapse_panel.pypanel")
+            if pypanel_path:
+                hou.pypanel.installFile(pypanel_path)
+                for pt in hou.pypanel.interfaces():
+                    if pt.name() == "synapse_panel":
+                        panel_type = pt
+                        break
+        except Exception:
+            pass
+
+    if panel_type is None:
+        _notify(
+            "Synapse Panel",
+            "Couldn't find the Synapse panel.\n\n"
+            "Run the Synapse installer to set it up:\n"
+            "  python install.py",
+            hou.severityType.Warning,
+        )
+        return
+
+    # Open in current pane or create new tab
+    desktop = hou.ui.curDesktop()
+    pane = desktop.paneTabOfType(hou.paneTabType.PythonPanel)
+    if pane is None:
+        # Create a new pane tab
+        pane = desktop.createFloatingPaneTab(
+            hou.paneTabType.PythonPanel,
+            size=(320, 600),
+        )
+    pane.setActiveInterface(panel_type)
+
+
+def inspect_selection():
+    """Analyze selected nodes and copy structured context to clipboard."""
+    selected = hou.selectedNodes()
+
+    if not selected:
+        _notify(
+            "Inspect Selection",
+            "No nodes selected.\n\nSelect one or more nodes and try again.",
+        )
+        return
+
+    results = []
+    for node in selected:
+        results.append(_node_summary(node))
+
+    context = {
+        "type": "selection_inspection",
+        "timestamp": time.time(),
+        "hip_file": hou.hipFile.name(),
+        "node_count": len(results),
+        "nodes": results,
+    }
+
+    text = json.dumps(context, indent=2, default=str)
+    if _copy_to_clipboard(text):
+        _notify(
+            "Inspect Selection",
+            "Copied {} node{} to clipboard.\n\n"
+            "Paste into Claude for analysis.".format(
+                len(results), "s" if len(results) != 1 else ""
+            ),
+        )
+    else:
+        _notify(
+            "Inspect Selection",
+            "Couldn't access clipboard.\n\n"
+            "Node data:\n{}".format(text[:2000]),
+        )
+
+
+def inspect_scene():
+    """Analyze the full scene structure and copy to clipboard."""
+    scene = {
+        "type": "scene_inspection",
+        "timestamp": time.time(),
+        "hip_file": hou.hipFile.name(),
+        "frame": hou.frame(),
+        "fps": hou.fps(),
+        "frame_range": list(hou.playbar.frameRange()),
+    }
+
+    # Walk top-level contexts
+    contexts = {}
+    for context_path in ["/obj", "/stage", "/out", "/shop", "/ch"]:
+        try:
+            context_node = hou.node(context_path)
+            if context_node is None:
+                continue
+            children = context_node.children()
+            if children:
+                contexts[context_path] = []
+                for child in children:
+                    entry = {
+                        "name": child.name(),
+                        "type": child.type().name(),
+                    }
+                    warn_count = len(child.warnings())
+                    err_count = len(child.errors())
+                    if warn_count:
+                        entry["warnings"] = warn_count
+                    if err_count:
+                        entry["errors"] = err_count
+                    contexts[context_path].append(entry)
+        except Exception:
+            continue
+
+    scene["contexts"] = contexts
+
+    # Count total nodes
+    total = sum(len(v) for v in contexts.values())
+    scene["total_top_level_nodes"] = total
+
+    text = json.dumps(scene, indent=2, default=str)
+    if _copy_to_clipboard(text):
+        _notify(
+            "Inspect Scene",
+            "Copied scene overview to clipboard.\n"
+            "{} top-level nodes across {} contexts.\n\n"
+            "Paste into Claude for analysis.".format(
+                total, len(contexts)
+            ),
+        )
+    else:
+        _notify(
+            "Inspect Scene",
+            "Couldn't access clipboard.\n\n"
+            "Scene data:\n{}".format(text[:2000]),
+        )
+
+
+def copy_last_result():
+    """Copy last Synapse execution result from hou.session to clipboard."""
+    result = getattr(hou.session, "_synapse_last_result", None)
+
+    if result is None:
+        _notify(
+            "Last Result",
+            "No Synapse results stored yet.\n\n"
+            "Execute a Synapse command first.",
+        )
+        return
+
+    if isinstance(result, dict):
+        text = json.dumps(result, indent=2, default=str)
+    else:
+        text = str(result)
+
+    if _copy_to_clipboard(text):
+        _notify(
+            "Last Result",
+            "Copied last Synapse result to clipboard.\n\n"
+            "Preview:\n{}".format(text[:500]),
+        )
+    else:
+        _notify(
+            "Last Result",
+            "Couldn't access clipboard.\n\n"
+            "Result:\n{}".format(text[:2000]),
+        )
+
+
+def health_check():
+    """Run a basic scene health check and copy results to clipboard."""
+    issues = []
+
+    # Check for nodes with errors
+    error_nodes = []
+    for context_path in ["/obj", "/stage", "/out"]:
+        try:
+            context_node = hou.node(context_path)
+            if context_node is None:
+                continue
+            for child in context_node.allSubChildren():
+                errs = child.errors()
+                if errs:
+                    error_nodes.append({
+                        "path": child.path(),
+                        "errors": errs,
+                    })
+        except Exception:
+            continue
+
+    if error_nodes:
+        issues.append({
+            "severity": "error",
+            "category": "node_errors",
+            "message": "{} node{} with errors".format(
+                len(error_nodes), "s" if len(error_nodes) != 1 else ""
+            ),
+            "nodes": error_nodes[:20],
+        })
+
+    # Check for nodes with warnings
+    warning_nodes = []
+    for context_path in ["/obj", "/stage", "/out"]:
+        try:
+            context_node = hou.node(context_path)
+            if context_node is None:
+                continue
+            for child in context_node.allSubChildren():
+                warns = child.warnings()
+                if warns:
+                    warning_nodes.append({
+                        "path": child.path(),
+                        "warnings": warns,
+                    })
+        except Exception:
+            continue
+
+    if warning_nodes:
+        issues.append({
+            "severity": "warning",
+            "category": "node_warnings",
+            "message": "{} node{} with warnings".format(
+                len(warning_nodes), "s" if len(warning_nodes) != 1 else ""
+            ),
+            "nodes": warning_nodes[:20],
+        })
+
+    # Check render output paths
+    for rop in (hou.node("/out") or hou.node("/stage")).children() if hou.node("/out") or hou.node("/stage") else []:
+        try:
+            if rop.type().name() in ("karma", "usdrender_rop", "ifd"):
+                out_parm = rop.parm("picture") or rop.parm("outputimage")
+                if out_parm:
+                    out_path = out_parm.unexpandedString()
+                    if not out_path or out_path == "ip":
+                        issues.append({
+                            "severity": "info",
+                            "category": "render_output",
+                            "message": "ROP {} has no file output set".format(
+                                rop.path()
+                            ),
+                        })
+        except Exception:
+            continue
+
+    # Check HIP file saved state
+    if hou.hipFile.hasUnsavedChanges():
+        issues.append({
+            "severity": "info",
+            "category": "unsaved_changes",
+            "message": "HIP file has unsaved changes",
+        })
+
+    report = {
+        "type": "health_check",
+        "timestamp": time.time(),
+        "hip_file": hou.hipFile.name(),
+        "issue_count": len(issues),
+        "status": "clean" if not issues else "issues_found",
+        "issues": issues,
+    }
+
+    text = json.dumps(report, indent=2, default=str)
+    if _copy_to_clipboard(text):
+        if issues:
+            _notify(
+                "Health Check",
+                "Found {} issue{}. Copied to clipboard.\n\n"
+                "Paste into Claude for recommendations.".format(
+                    len(issues), "s" if len(issues) != 1 else ""
+                ),
+                hou.severityType.Warning,
+            )
+        else:
+            _notify(
+                "Health Check",
+                "Scene looks clean. No issues found.",
+            )
+    else:
+        _notify(
+            "Health Check",
+            "Couldn't access clipboard.\n\n"
+            "Report:\n{}".format(text[:2000]),
+        )
+
+
+def generate_docs():
+    """Generate documentation for selected nodes and copy to clipboard."""
+    selected = hou.selectedNodes()
+
+    if not selected:
+        _notify(
+            "Generate Docs",
+            "No nodes selected.\n\nSelect nodes to document.",
+        )
+        return
+
+    docs = []
+    for node in selected:
+        doc = {
+            "name": node.name(),
+            "path": node.path(),
+            "type": node.type().name(),
+            "type_label": node.type().description(),
+        }
+
+        # Help text
+        help_text = node.type().helpUrl()
+        if help_text:
+            doc["help_url"] = help_text
+
+        # All parameters grouped by folder
+        parm_groups = {}
+        current_folder = "General"
+        for pt in node.type().parmTemplates():
+            if pt.type() == hou.parmTemplateType.FolderSet:
+                continue
+            if pt.type() == hou.parmTemplateType.Folder:
+                current_folder = pt.label()
+                continue
+            pname = pt.name()
+            parm = node.parm(pname)
+            if parm is None:
+                continue
+            entry = {
+                "name": pname,
+                "label": pt.label(),
+                "value": node.evalParm(pname),
+                "is_default": parm.isAtDefault(),
+            }
+            if current_folder not in parm_groups:
+                parm_groups[current_folder] = []
+            parm_groups[current_folder].append(entry)
+
+        doc["parameters"] = parm_groups
+
+        # Input/output connections
+        doc["inputs"] = [
+            {"from": c.inputNode().path(), "index": c.inputIndex()}
+            for c in node.inputConnections()
+        ]
+        doc["outputs"] = [
+            {"to": c.outputNode().path(), "index": c.outputIndex()}
+            for c in node.outputConnections()
+        ]
+
+        docs.append(doc)
+
+    result = {
+        "type": "node_documentation",
+        "timestamp": time.time(),
+        "hip_file": hou.hipFile.name(),
+        "node_count": len(docs),
+        "nodes": docs,
+    }
+
+    text = json.dumps(result, indent=2, default=str)
+    if _copy_to_clipboard(text):
+        _notify(
+            "Generate Docs",
+            "Generated documentation for {} node{}.\n"
+            "Copied to clipboard.\n\n"
+            "Paste into Claude or save to file.".format(
+                len(docs), "s" if len(docs) != 1 else ""
+            ),
+        )
+    else:
+        _notify(
+            "Generate Docs",
+            "Couldn't access clipboard.\n\n"
+            "Documentation:\n{}".format(text[:2000]),
+        )

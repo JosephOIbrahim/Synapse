@@ -1,0 +1,14 @@
+<!-- Synapse synapse 64px | Pentagram -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <path d="M22 24 C22 18, 28 15, 32 15 C38 15, 42 19, 42 24 C42 30, 36 32, 32 33.5 C28 35, 22 37, 22 42 C22 48, 28 51, 32 51 C36 51, 42 47, 42 42" stroke="#00D4FF" stroke-width="3.0" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="22" cy="24" r="3.5" fill="#00D4FF"/>
+  <circle cx="42" cy="42" r="3.5" fill="#00D4FF"/>
+  <line x1="22" y1="24" x2="14" y2="16" stroke="#00D4FF" stroke-width="1.7999999999999998" stroke-linecap="round" opacity="0.3"/>
+  <line x1="22" y1="24" x2="14" y2="24" stroke="#00D4FF" stroke-width="1.7999999999999998" stroke-linecap="round" opacity="0.3"/>
+  <line x1="14" y1="16" x2="8" y2="12" stroke="#00D4FF" stroke-width="1.2000000000000002" stroke-linecap="round" opacity="0.2"/>
+  <line x1="14" y1="24" x2="8" y2="24" stroke="#00D4FF" stroke-width="1.2000000000000002" stroke-linecap="round" opacity="0.2"/>
+  <line x1="42" y1="42" x2="50" y2="50" stroke="#00D4FF" stroke-width="1.7999999999999998" stroke-linecap="round" opacity="0.3"/>
+  <line x1="42" y1="42" x2="50" y2="42" stroke="#00D4FF" stroke-width="1.7999999999999998" stroke-linecap="round" opacity="0.3"/>
+  <line x1="50" y1="50" x2="56" y2="54" stroke="#00D4FF" stroke-width="1.2000000000000002" stroke-linecap="round" opacity="0.2"/>
+  <line x1="50" y1="42" x2="56" y2="42" stroke="#00D4FF" stroke-width="1.2000000000000002" stroke-linecap="round" opacity="0.2"/>
+</svg>

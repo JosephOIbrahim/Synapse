@@ -1,0 +1,5 @@
+<!-- Synapse execute 64px | Pentagram -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <ellipse cx="32" cy="32" rx="26" ry="10" stroke="#00D4FF" stroke-width="0.8999999999999999" fill="none" opacity="0.15"/>
+  <path d="M35 10 L23 32 L31 32 L29 54 L41 28 L33 28 Z" stroke="#00D4FF" stroke-width="3.0" fill="none" stroke-linecap="round" stroke-linejoin="bevel"/>
+</svg>

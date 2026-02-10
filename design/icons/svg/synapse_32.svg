@@ -1,0 +1,6 @@
+<!-- Synapse synapse 32px | Pentagram -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64">
+  <path d="M22 24 C22 18, 28 15, 32 15 C38 15, 42 19, 42 24 C42 30, 36 32, 32 33.5 C28 35, 22 37, 22 42 C22 48, 28 51, 32 51 C36 51, 42 47, 42 42" stroke="#00D4FF" stroke-width="4.0" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="22" cy="24" r="4.5" fill="#00D4FF"/>
+  <circle cx="42" cy="42" r="4.5" fill="#00D4FF"/>
+</svg>

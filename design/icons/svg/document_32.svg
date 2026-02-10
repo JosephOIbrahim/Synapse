@@ -1,0 +1,5 @@
+<!-- Synapse document 32px | Pentagram -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64">
+  <rect x="18" y="12" width="22" height="32" stroke="#00D4FF" stroke-width="2.8" fill="none"/>
+  <line x1="22" y1="22" x2="36" y2="22" stroke="#00D4FF" stroke-width="2.0" stroke-linecap="round" opacity="0.5"/>
+</svg>

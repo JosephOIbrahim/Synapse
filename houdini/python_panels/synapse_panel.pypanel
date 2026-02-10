@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pythonPanelDocument>
+  <interface name="synapse_panel" label="Synapse" icon="SYNAPSE_synapse"
+             help_url="">
+    <script><![CDATA[
+"""
+Synapse AI Co-Pilot — Houdini Python Panel
+
+PySide2 panel providing:
+  - Title bar with branding
+  - Status indicator with animated dot
+  - 2x2 tool grid (Inspect Selection, Inspect Scene, Last Result, Health Check)
+  - Scrolling activity log
+  - Connection controls (connect/disconnect + port display)
+"""
+
+import hou
+import json
+import time
+import os
+import sys
+
+
+# ── Bootstrap Design System imports ───────────────────────
+
+_SYNAPSE_HOME = os.path.join(os.path.expanduser("~"), ".synapse")
+_DESIGN_DIR = os.path.join(_SYNAPSE_HOME, "design")
+
+if _DESIGN_DIR not in sys.path:
+    sys.path.insert(0, _DESIGN_DIR)
+
+try:
+    from tokens import (
+        SIGNAL, VOID, NEAR_BLACK, CARBON, GRAPHITE, SLATE, SILVER,
+        BONE, WHITE, FIRE, GROW, WARN, ERROR, STATES,
+        FONT_MONO, SIZE_SMALL, SIZE_LABEL, SIZE_UI, SIZE_BODY,
+        SIZE_TITLE, SIZE_HERO,
+        SPACE_XS, SPACE_SM, SPACE_MD, SPACE_LG,
+        PANEL_MIN_WIDTH, PANEL_PREF_WIDTH, PANEL_MIN_HEIGHT,
+    )
+    from synapse_styles import generate_stylesheet, STATUS_STYLES
+    _HAS_DESIGN = True
+except ImportError:
+    _HAS_DESIGN = False
+
+
+from PySide2 import QtWidgets, QtCore, QtGui
+
+
+# ── Constants ─────────────────────────────────────────────
+
+_VERSION = "1.0.0"
+_STATUS_DOT = "\u25CF"  # Filled circle
+_STATUS_DOT_EMPTY = "\u25CB"  # Empty circle
+_ACTIVITY_MAX_LINES = 200
+
+
+# ── Status Dot Animation ─────────────────────────────────
+
+class StatusDotAnimator(QtCore.QObject):
+    """Pulses the status dot opacity for 'executing' state."""
+
+    color_changed = QtCore.Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._timer = QtCore.QTimer(self)
+        self._timer.setInterval(600)
+        self._timer.timeout.connect(self._tick)
+        self._on = True
+        self._color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+        self._active = False
+
+    def start(self, color):
+        self._color = color
+        self._active = True
+        self._on = True
+        self._timer.start()
+
+    def stop(self, color):
+        self._timer.stop()
+        self._active = False
+        self._color = color
+        self.color_changed.emit(color)
+
+    def _tick(self):
+        self._on = not self._on
+        if self._on:
+            self.color_changed.emit(self._color)
+        else:
+            alpha_color = SLATE if _HAS_DESIGN else "#555555"
+            self.color_changed.emit(alpha_color)
+
+
+# ── Main Panel Widget ────────────────────────────────────
+
+class SynapsePanel(QtWidgets.QWidget):
+    """Main Synapse panel widget for Houdini's Python Panel system."""
+
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("synapse_panel")
+        self.setMinimumWidth(PANEL_MIN_WIDTH if _HAS_DESIGN else 280)
+        self.setMinimumHeight(PANEL_MIN_HEIGHT if _HAS_DESIGN else 400)
+
+        self._status = "disconnected"
+        self._dot_animator = StatusDotAnimator(self)
+        self._dot_animator.color_changed.connect(self._on_dot_color)
+
+        self._build_ui()
+
+        if _HAS_DESIGN:
+            self.setStyleSheet(generate_stylesheet())
+
+        # Start with disconnected state
+        self._set_status("idle")
+
+    def _build_ui(self):
+        """Construct the panel layout."""
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # Title bar
+        layout.addWidget(self._build_title_bar())
+
+        # Status bar
+        layout.addWidget(self._build_status_bar())
+
+        # Tool grid
+        layout.addWidget(self._build_tool_grid())
+
+        # Activity log (stretches)
+        layout.addWidget(self._build_activity_log(), stretch=1)
+
+        # Connection controls
+        layout.addWidget(self._build_connection_bar())
+
+    def _build_title_bar(self):
+        """Build the title bar with branding."""
+        frame = QtWidgets.QFrame()
+        frame.setObjectName("title_bar")
+        layout = QtWidgets.QHBoxLayout(frame)
+        layout.setContentsMargins(
+            SPACE_MD if _HAS_DESIGN else 16,
+            SPACE_SM if _HAS_DESIGN else 8,
+            SPACE_MD if _HAS_DESIGN else 16,
+            SPACE_SM if _HAS_DESIGN else 8,
+        )
+
+        title = QtWidgets.QLabel("SYNAPSE")
+        title.setObjectName("title_label")
+        layout.addWidget(title)
+
+        layout.addStretch()
+
+        version = QtWidgets.QLabel("v" + _VERSION)
+        version.setObjectName("version_label")
+        layout.addWidget(version)
+
+        return frame
+
+    def _build_status_bar(self):
+        """Build the status bar with animated dot."""
+        frame = QtWidgets.QFrame()
+        frame.setObjectName("status_bar")
+        layout = QtWidgets.QHBoxLayout(frame)
+        layout.setContentsMargins(
+            SPACE_MD if _HAS_DESIGN else 16,
+            SPACE_XS if _HAS_DESIGN else 4,
+            SPACE_MD if _HAS_DESIGN else 16,
+            SPACE_XS if _HAS_DESIGN else 4,
+        )
+        layout.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
+
+        self._dot_label = QtWidgets.QLabel(_STATUS_DOT)
+        self._dot_label.setObjectName("status_dot")
+        layout.addWidget(self._dot_label)
+
+        self._status_label = QtWidgets.QLabel("Idle")
+        self._status_label.setObjectName("status_label")
+        layout.addWidget(self._status_label)
+
+        layout.addStretch()
+
+        self._status_detail = QtWidgets.QLabel("")
+        self._status_detail.setObjectName("status_detail")
+        layout.addWidget(self._status_detail)
+
+        return frame
+
+    def _build_tool_grid(self):
+        """Build the 2x2 tool grid."""
+        frame = QtWidgets.QFrame()
+        frame.setObjectName("tool_grid")
+        grid = QtWidgets.QGridLayout(frame)
+        grid.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
+        margin = SPACE_SM if _HAS_DESIGN else 8
+        grid.setContentsMargins(margin, margin, margin, margin)
+
+        tools = [
+            ("Inspect\nSelection", "Analyze selected nodes", self._on_inspect_selection),
+            ("Inspect\nScene", "Analyze full scene", self._on_inspect_scene),
+            ("Last\nResult", "Copy last result", self._on_last_result),
+            ("Health\nCheck", "Run scene check", self._on_health_check),
+        ]
+
+        for i, (label, tooltip, callback) in enumerate(tools):
+            btn = QtWidgets.QPushButton(label)
+            btn.setProperty("class", "tool_button")
+            btn.setToolTip(tooltip)
+            btn.clicked.connect(callback)
+            grid.addWidget(btn, i // 2, i % 2)
+
+        return frame
+
+    def _build_activity_log(self):
+        """Build the scrolling activity log."""
+        frame = QtWidgets.QFrame()
+        frame.setObjectName("activity_frame")
+        layout = QtWidgets.QVBoxLayout(frame)
+        layout.setContentsMargins(
+            SPACE_SM if _HAS_DESIGN else 8, 0,
+            SPACE_SM if _HAS_DESIGN else 8, SPACE_SM if _HAS_DESIGN else 8,
+        )
+        layout.setSpacing(SPACE_XS if _HAS_DESIGN else 4)
+
+        header = QtWidgets.QLabel("ACTIVITY")
+        header.setObjectName("activity_header")
+        layout.addWidget(header)
+
+        self._log = QtWidgets.QTextEdit()
+        self._log.setObjectName("activity_log")
+        self._log.setReadOnly(True)
+        self._log.setPlaceholderText("Synapse activity will appear here...")
+        layout.addWidget(self._log)
+
+        return frame
+
+    def _build_connection_bar(self):
+        """Build the bottom connection controls."""
+        frame = QtWidgets.QFrame()
+        frame.setObjectName("connection_frame")
+        layout = QtWidgets.QHBoxLayout(frame)
+        margin_h = SPACE_MD if _HAS_DESIGN else 16
+        margin_v = SPACE_SM if _HAS_DESIGN else 8
+        layout.setContentsMargins(margin_h, margin_v, margin_h, margin_v)
+        layout.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
+
+        self._connect_btn = QtWidgets.QPushButton("Connect")
+        self._connect_btn.setObjectName("connect_button")
+        self._connect_btn.clicked.connect(self._on_connect_toggle)
+        layout.addWidget(self._connect_btn)
+
+        layout.addStretch()
+
+        self._port_label = QtWidgets.QLabel("port 9999")
+        self._port_label.setObjectName("port_label")
+        layout.addWidget(self._port_label)
+
+        return frame
+
+    # ── Status Management ────────────────────────────────
+
+    def _set_status(self, state, detail=""):
+        """Update the status bar to reflect a new state."""
+        self._status = state
+
+        if _HAS_DESIGN and state in STATES:
+            state_info = STATES[state]
+            color = state_info["color"]
+            label = state_info["label"]
+        else:
+            color = "#00D4FF"
+            label = state.capitalize()
+
+        self._status_label.setText(label)
+        self._status_detail.setText(detail)
+
+        if state == "executing":
+            self._dot_animator.start(color)
+        else:
+            self._dot_animator.stop(color)
+            self._dot_label.setStyleSheet(f"color: {color};")
+            self._status_label.setStyleSheet(f"color: {color};")
+
+        # Update connect button text
+        if state in ("connected", "idle", "executing"):
+            self._connect_btn.setText("Disconnect")
+        else:
+            self._connect_btn.setText("Connect")
+
+    def _on_dot_color(self, color):
+        """Handle animated dot color change."""
+        self._dot_label.setStyleSheet(f"color: {color};")
+
+    # ── Activity Log ─────────────────────────────────────
+
+    def _log_activity(self, message, level="info"):
+        """Add a timestamped entry to the activity log."""
+        timestamp = time.strftime("%H:%M:%S")
+
+        color_map = {
+            "info": SILVER if _HAS_DESIGN else "#999999",
+            "success": GROW if _HAS_DESIGN else "#00E676",
+            "warning": WARN if _HAS_DESIGN else "#FFAB00",
+            "error": ERROR if _HAS_DESIGN else "#FF3D71",
+            "action": SIGNAL if _HAS_DESIGN else "#00D4FF",
+        }
+        color = color_map.get(level, color_map["info"])
+
+        html = (
+            f'<span style="color: {SLATE if _HAS_DESIGN else "#555555"};">'
+            f'{timestamp}</span> '
+            f'<span style="color: {color};">{message}</span>'
+        )
+        self._log.append(html)
+
+        # Trim if too long
+        doc = self._log.document()
+        if doc.blockCount() > _ACTIVITY_MAX_LINES:
+            cursor = self._log.textCursor()
+            cursor.movePosition(QtGui.QTextCursor.Start)
+            cursor.movePosition(
+                QtGui.QTextCursor.Down,
+                QtGui.QTextCursor.KeepAnchor,
+                doc.blockCount() - _ACTIVITY_MAX_LINES,
+            )
+            cursor.removeSelectedText()
+
+    # ── Tool Callbacks ───────────────────────────────────
+
+    def _on_inspect_selection(self):
+        """Run inspect selection via shelf callback."""
+        self._log_activity("Inspecting selection...", "action")
+        try:
+            import synapse_shelf
+            synapse_shelf.inspect_selection()
+            self._log_activity("Selection copied to clipboard", "success")
+        except Exception as e:
+            self._log_activity(f"Inspect failed: {e}", "error")
+
+    def _on_inspect_scene(self):
+        """Run inspect scene via shelf callback."""
+        self._log_activity("Inspecting scene...", "action")
+        try:
+            import synapse_shelf
+            synapse_shelf.inspect_scene()
+            self._log_activity("Scene overview copied to clipboard", "success")
+        except Exception as e:
+            self._log_activity(f"Inspect failed: {e}", "error")
+
+    def _on_last_result(self):
+        """Copy last result via shelf callback."""
+        self._log_activity("Copying last result...", "action")
+        try:
+            import synapse_shelf
+            synapse_shelf.copy_last_result()
+            self._log_activity("Result copied to clipboard", "success")
+        except Exception as e:
+            self._log_activity(f"Copy failed: {e}", "error")
+
+    def _on_health_check(self):
+        """Run health check via shelf callback."""
+        self._log_activity("Running health check...", "action")
+        self._set_status("executing", "Health check")
+        try:
+            import synapse_shelf
+            synapse_shelf.health_check()
+            self._log_activity("Health check complete", "success")
+            self._set_status("idle")
+        except Exception as e:
+            self._log_activity(f"Health check failed: {e}", "error")
+            self._set_status("warning", str(e)[:40])
+
+    def _on_connect_toggle(self):
+        """Toggle connection state."""
+        if self._status in ("connected", "idle", "executing"):
+            self._set_status("disconnected")
+            self._log_activity("Disconnected from Synapse", "warning")
+        else:
+            self._set_status("idle")
+            self._log_activity("Connected to Synapse", "success")
+
+
+# ── Houdini Python Panel Interface ───────────────────────
+
+def onCreateInterface():
+    """Called by Houdini to create the panel widget."""
+    return SynapsePanel()
+]]></script>
+  </interface>
+</pythonPanelDocument>
