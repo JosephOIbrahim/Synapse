@@ -27,7 +27,7 @@ from typing import Dict, Optional
 try:
     import orjson
     def _dumps(obj):
-        return orjson.dumps(obj).decode()
+        return orjson.dumps(obj, option=orjson.OPT_SORT_KEYS).decode()
 except ImportError:
     _dumps = json.dumps
 

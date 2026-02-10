@@ -12,12 +12,21 @@ import asyncio
 import json
 import logging
 import time
-import uuid
+import hashlib
 from typing import Any, Optional
 
 import websockets
 
 logger = logging.getLogger("synapse.ws")
+
+# --- Deterministic command IDs (He2025) ---
+_cmd_seq = 0
+
+def _cmd_id(cmd_type: str, payload: dict | None) -> str:
+    global _cmd_seq
+    _cmd_seq += 1
+    content = f"{cmd_type}:{json.dumps(payload or {}, sort_keys=True)}:{_cmd_seq}"
+    return hashlib.sha256(content.encode()).hexdigest()[:16]
 
 # --- Configuration ---
 SYNAPSE_HOST = "localhost"
@@ -131,7 +140,7 @@ class SynapseClient:
         if timeout is None:
             timeout = _SLOW_COMMANDS.get(cmd_type, CALL_TIMEOUT)
 
-        command_id = uuid.uuid4().hex[:16]
+        command_id = _cmd_id(cmd_type, payload)
         command = {
             "type": cmd_type,
             "id": command_id,
@@ -143,7 +152,7 @@ class SynapseClient:
 
         async with self._lock:
             try:
-                await self._ws.send(json.dumps(command))
+                await self._ws.send(json.dumps(command, sort_keys=True))
 
                 # Recv loop with ID matching — discard stale responses
                 start = time.monotonic()

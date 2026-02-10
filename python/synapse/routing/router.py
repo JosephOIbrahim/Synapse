@@ -12,7 +12,6 @@ import json
 import time
 import threading
 import logging
-import uuid
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
@@ -498,7 +497,10 @@ class TieredRouter:
             if parsed.get("action") == "command" and parsed.get("command_type"):
                 cmd = SynapseCommand(
                     type=parsed["command_type"],
-                    id=uuid.uuid4().hex[:16],
+                    id=deterministic_uuid(
+                        f"tier2:{parsed['command_type']}:{json.dumps(parsed.get('payload', {}), sort_keys=True)}",
+                        "cmd",
+                    ),
                     payload=parsed.get("payload", {}),
                 )
                 commands.append(cmd)
@@ -552,7 +554,7 @@ class TieredRouter:
         tier1_hint: Optional[KnowledgeLookupResult] = None,
     ) -> Optional[RoutingResult]:
         """Try Tier 3: Full agent loop (async or sync)."""
-        handle = uuid.uuid4().hex[:16]
+        handle = deterministic_uuid(f"tier3:{text}:{context_hash}", "handle")
 
         if self._config.tier3_async:
             # Launch in background thread

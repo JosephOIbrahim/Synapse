@@ -9,7 +9,6 @@ Artists can register custom recipes via registry.register().
 """
 
 import re
-import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
 
@@ -37,7 +36,7 @@ class RecipeStep:
         return SynapseCommand(
             type=self.action,
             id=deterministic_uuid(
-                f"recipe:{self.action}:{str(payload)}:{time.time()}", "cmd"
+                f"recipe:{self.action}:{str(payload)}", "cmd"
             ),
             payload=payload,
         )

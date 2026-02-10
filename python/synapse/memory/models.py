@@ -196,7 +196,7 @@ class Memory:
 
     def to_json(self) -> str:
         """Serialize to JSON string."""
-        return json.dumps(self.to_dict())
+        return json.dumps(self.to_dict(), sort_keys=True)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Memory':

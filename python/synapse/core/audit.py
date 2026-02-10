@@ -316,7 +316,7 @@ class AuditLog:
         date_str = entry.timestamp_utc[:10]
         log_file = self._log_dir / f"audit_{date_str}.jsonl"
 
-        line = json.dumps(entry.to_dict())
+        line = json.dumps(entry.to_dict(), sort_keys=True)
         crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
         if crypto:
             line = crypto.encrypt_line(line)

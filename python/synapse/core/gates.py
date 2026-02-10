@@ -541,7 +541,7 @@ class HumanGate:
         date_str = proposal.created_at[:10]
         file_path = self._storage_dir / f"proposals_{date_str}.jsonl"
 
-        line = json.dumps(proposal.to_dict())
+        line = json.dumps(proposal.to_dict(), sort_keys=True)
         crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
         if crypto:
             line = crypto.encrypt_line(line)

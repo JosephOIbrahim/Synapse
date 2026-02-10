@@ -9,7 +9,6 @@ First match wins. Confidence is per-pattern (never < 0.85 for a match).
 """
 
 import re
-import time
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List, Tuple
 
@@ -187,7 +186,7 @@ class CommandParser:
         return (
             SynapseCommand(
                 type="ping",
-                id=deterministic_uuid(f"parse:ping:{time.time()}", "cmd"),
+                id=deterministic_uuid("parse:ping", "cmd"),
             ),
             {},
         )
@@ -196,7 +195,7 @@ class CommandParser:
         return (
             SynapseCommand(
                 type="get_help",
-                id=deterministic_uuid(f"parse:help:{time.time()}", "cmd"),
+                id=deterministic_uuid("parse:help", "cmd"),
             ),
             {},
         )
@@ -205,7 +204,7 @@ class CommandParser:
         return (
             SynapseCommand(
                 type="get_selection",
-                id=deterministic_uuid(f"parse:sel:{time.time()}", "cmd"),
+                id=deterministic_uuid("parse:sel", "cmd"),
             ),
             {},
         )
@@ -214,7 +213,7 @@ class CommandParser:
         return (
             SynapseCommand(
                 type="get_scene_info",
-                id=deterministic_uuid(f"parse:scene:{time.time()}", "cmd"),
+                id=deterministic_uuid("parse:scene", "cmd"),
             ),
             {},
         )
@@ -223,7 +222,7 @@ class CommandParser:
         return (
             SynapseCommand(
                 type="get_stage_info",
-                id=deterministic_uuid(f"parse:stage:{time.time()}", "cmd"),
+                id=deterministic_uuid("parse:stage", "cmd"),
             ),
             {},
         )
@@ -237,7 +236,7 @@ class CommandParser:
         return (
             SynapseCommand(
                 type="set_parm",
-                id=deterministic_uuid(f"parse:setparm:{path}:{parm}:{time.time()}", "cmd"),
+                id=deterministic_uuid(f"parse:setparm:{path}:{parm}", "cmd"),
                 payload={"node": path, "parm": parm, "value": value},
             ),
             extracted,
@@ -251,7 +250,7 @@ class CommandParser:
         return (
             SynapseCommand(
                 type="get_parm",
-                id=deterministic_uuid(f"parse:getparm:{path}:{parm}:{time.time()}", "cmd"),
+                id=deterministic_uuid(f"parse:getparm:{path}:{parm}", "cmd"),
                 payload={"node": path, "parm": parm},
             ),
             extracted,
@@ -266,7 +265,7 @@ class CommandParser:
         return (
             SynapseCommand(
                 type="create_node",
-                id=deterministic_uuid(f"parse:create:{node_type}:{name}:{time.time()}", "cmd"),
+                id=deterministic_uuid(f"parse:create:{node_type}:{name}", "cmd"),
                 payload={"type": node_type, "name": name, "parent": parent},
             ),
             extracted,
@@ -280,7 +279,7 @@ class CommandParser:
         return (
             SynapseCommand(
                 type="create_node",
-                id=deterministic_uuid(f"parse:create:{node_type}:{time.time()}", "cmd"),
+                id=deterministic_uuid(f"parse:create:{node_type}", "cmd"),
                 payload={"type": node_type, "parent": parent},
             ),
             extracted,
@@ -294,7 +293,7 @@ class CommandParser:
         return (
             SynapseCommand(
                 type="connect_nodes",
-                id=deterministic_uuid(f"parse:connect:{source}:{target}:{time.time()}", "cmd"),
+                id=deterministic_uuid(f"parse:connect:{source}:{target}", "cmd"),
                 payload={"source": source, "target": target},
             ),
             extracted,
@@ -307,7 +306,7 @@ class CommandParser:
         return (
             SynapseCommand(
                 type="delete_node",
-                id=deterministic_uuid(f"parse:delete:{path}:{time.time()}", "cmd"),
+                id=deterministic_uuid(f"parse:delete:{path}", "cmd"),
                 payload={"node": path},
             ),
             extracted,
@@ -322,7 +321,7 @@ class CommandParser:
             SynapseCommand(
                 type="connect_nodes",
                 id=deterministic_uuid(
-                    f"parse:comp:{source}:{target}:{time.time()}", "cmd"
+                    f"parse:comp:{source}:{target}", "cmd"
                 ),
                 payload={"source": source, "target": target, "domain": "compositing"},
             ),
@@ -338,7 +337,7 @@ class CommandParser:
             SynapseCommand(
                 type="create_node",
                 id=deterministic_uuid(
-                    f"parse:copfilter:{filter_type}:{parent}:{time.time()}", "cmd"
+                    f"parse:copfilter:{filter_type}:{parent}", "cmd"
                 ),
                 payload={"type": filter_type, "parent": parent, "domain": "compositing"},
             ),

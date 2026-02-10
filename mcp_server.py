@@ -17,11 +17,11 @@ import asyncio
 import logging
 import os
 import time
-import uuid
+import hashlib
 
 try:
     import orjson
-    def _dumps(obj): return orjson.dumps(obj).decode()
+    def _dumps(obj): return orjson.dumps(obj, option=orjson.OPT_SORT_KEYS).decode()
     def _loads(s): return orjson.loads(s)
 except ImportError:
     import json
@@ -33,6 +33,17 @@ from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent, ImageContent
 
 import websockets
+
+# ---------------------------------------------------------------------------
+# Deterministic command IDs (He2025: same input → same ID within a session)
+# ---------------------------------------------------------------------------
+_cmd_seq = 0
+
+def _cmd_id(cmd_type: str, payload: dict | None) -> str:
+    global _cmd_seq
+    _cmd_seq += 1
+    content = f"{cmd_type}:{_dumps(payload or {})}:{_cmd_seq}"
+    return hashlib.sha256(content.encode()).hexdigest()[:16]
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -165,7 +176,7 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
     Supports true parallel dispatch — multiple concurrent send_command
     calls share a single recv loop that routes responses by ID.
     """
-    command_id = uuid.uuid4().hex[:16]
+    command_id = _cmd_id(cmd_type, payload)
     command = {
         "type": cmd_type,
         "id": command_id,
