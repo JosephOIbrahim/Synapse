@@ -48,6 +48,15 @@ _*.py
 _*.txt
 nul
 
+# MkDocs build output
+site/
+
+# Houdini temp files
+*.hip/
+*.hiplc/
+*.hipnc/
+backup/
+
 # Secrets and media
 *.key
 *.jpg
