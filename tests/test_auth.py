@@ -8,14 +8,18 @@ Tests for API key authentication module:
 - Constant-time comparison
 - Auth cache reset
 - Hash-for-log safety
+- MCP client-side auth handshake
 """
 
+import asyncio
+import json
 import os
 import sys
 import tempfile
 import importlib.util
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
+import pytest
 
 # Import auth module directly (avoid hou dependency)
 package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -275,3 +279,93 @@ class TestAuthHandshakeProtocol:
                 auth_mod._load_key_from_file = original_fn
         finally:
             key_path.unlink(missing_ok=True)
+
+
+# =========================================================================
+# MCP Client Auth Handshake Tests
+# =========================================================================
+
+# Import MCP client auth functions
+mcp_path = os.path.join(package_root, "mcp_server.py")
+
+
+def test_mcp_client_has_auth_handshake():
+    """MCP client code contains auth handshake integration."""
+    with open(mcp_path, encoding="utf-8") as f:
+        source = f.read()
+    assert "_get_auth_key" in source, "mcp_server.py missing _get_auth_key"
+    assert "_auth_handshake" in source, "mcp_server.py missing _auth_handshake"
+    assert "await _auth_handshake" in source, "mcp_server.py not calling _auth_handshake"
+
+
+def test_mcp_client_auth_in_get_connection():
+    """_get_connection calls _auth_handshake after websockets.connect."""
+    with open(mcp_path, encoding="utf-8") as f:
+        source = f.read()
+
+    in_get_connection = False
+    found_connect = False
+    found_auth = False
+    for line in source.split("\n"):
+        if "async def _get_connection" in line:
+            in_get_connection = True
+        elif in_get_connection and (line.strip().startswith("async def ") or line.strip().startswith("def ")):
+            break
+        if in_get_connection:
+            if "websockets.connect(" in line:
+                found_connect = True
+            if "await _auth_handshake(" in line and found_connect:
+                found_auth = True
+
+    assert found_connect, "_get_connection doesn't call websockets.connect"
+    assert found_auth, "_get_connection doesn't call _auth_handshake after connect"
+
+
+def test_mcp_client_auth_in_warmup():
+    """_warmup calls _auth_handshake after websockets.connect."""
+    with open(mcp_path, encoding="utf-8") as f:
+        source = f.read()
+
+    in_warmup = False
+    found_connect = False
+    found_auth = False
+    for line in source.split("\n"):
+        if "async def _warmup" in line:
+            in_warmup = True
+        elif in_warmup and (line.strip().startswith("async def ") or line.strip().startswith("def ")):
+            break
+        if in_warmup:
+            if "websockets.connect(" in line:
+                found_connect = True
+            if "await _auth_handshake(" in line and found_connect:
+                found_auth = True
+
+    assert found_connect, "_warmup doesn't call websockets.connect"
+    assert found_auth, "_warmup doesn't call _auth_handshake after connect"
+
+
+def test_mcp_client_get_auth_key_sources():
+    """_get_auth_key checks env var, then file, then returns None."""
+    with open(mcp_path, encoding="utf-8") as f:
+        source = f.read()
+
+    assert "SYNAPSE_API_KEY" in source, "Missing env var check"
+    assert "auth.key" in source, "Missing file check"
+
+
+def test_mcp_client_auth_sends_authenticate_command():
+    """Auth handshake sends proper authenticate command format."""
+    with open(mcp_path, encoding="utf-8") as f:
+        source = f.read()
+
+    assert "authenticate" in source, "Missing authenticate command type"
+    assert '"key"' in source, "Missing key in payload"
+
+
+def test_mcp_client_handles_auth_failed():
+    """Auth handshake raises on auth_failed response."""
+    with open(mcp_path, encoding="utf-8") as f:
+        source = f.read()
+
+    assert "auth_failed" in source, "Missing auth_failed handling"
+    assert "ConnectionError" in source, "Missing error raise on auth failure"

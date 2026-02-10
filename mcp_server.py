@@ -36,6 +36,91 @@ from mcp.types import Tool, TextContent, ImageContent
 import websockets
 
 # ---------------------------------------------------------------------------
+# Authentication (client-side handshake)
+# ---------------------------------------------------------------------------
+
+def _get_auth_key() -> str | None:
+    """Get API key for authenticating with Synapse server.
+
+    Sources (checked in order):
+    1. SYNAPSE_API_KEY environment variable
+    2. ~/.synapse/auth.key file (first non-empty, non-comment line)
+    3. None (auth disabled)
+    """
+    env_key = os.environ.get("SYNAPSE_API_KEY", "").strip()
+    if env_key:
+        return env_key
+    key_path = os.path.join(os.path.expanduser("~"), ".synapse", "auth.key")
+    try:
+        if os.path.exists(key_path):
+            with open(key_path, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#"):
+                        return line
+    except OSError:
+        pass
+    return None
+
+
+async def _auth_handshake(ws) -> None:
+    """Handle auth handshake if server requires it.
+
+    After connecting, the server may send an auth_required message.
+    We peek at the first message with a short timeout — if it's
+    auth_required, we authenticate. If it's not, we have a stale
+    message that the recv loop will handle.
+    """
+    try:
+        # Short timeout — server sends auth_required immediately on connect
+        raw = await asyncio.wait_for(ws.recv(), timeout=2.0)
+        msg = _loads(raw)
+    except (asyncio.TimeoutError, Exception):
+        # No auth_required within 2s — server doesn't need auth
+        return
+
+    if msg.get("type") != "auth_required":
+        # Not an auth message — this shouldn't happen in normal flow
+        # since auth_required is always the first message if enabled
+        logger.warning("Expected auth_required, got %s (auth may be disabled)", msg.get("type"))
+        return
+
+    # Server requires auth — send our key
+    key = _get_auth_key()
+    if not key:
+        raise ConnectionError(
+            "Synapse server requires authentication but no API key is configured. "
+            "Set SYNAPSE_API_KEY environment variable or create ~/.synapse/auth.key"
+        )
+
+    await ws.send(_dumps({
+        "type": "authenticate",
+        "id": "auth-handshake",
+        "payload": {"key": key},
+    }))
+
+    # Wait for auth_success or auth_failed
+    try:
+        raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
+        response = _loads(raw)
+    except asyncio.TimeoutError:
+        raise ConnectionError("Synapse server didn't respond to authentication within 5s")
+
+    if response.get("type") == "auth_failed":
+        raise ConnectionError(
+            f"Authentication failed: {response.get('error', 'invalid API key')}. "
+            "Check your SYNAPSE_API_KEY or ~/.synapse/auth.key"
+        )
+
+    if response.get("type") == "auth_success":
+        logger.info("Authenticated with Synapse server")
+        return
+
+    # Unexpected response type
+    logger.warning("Unexpected auth response type: %s", response.get("type"))
+
+
+# ---------------------------------------------------------------------------
 # Deterministic command IDs (He2025: same input → same ID within a session)
 # ---------------------------------------------------------------------------
 _cmd_seq = 0
@@ -155,6 +240,7 @@ async def _get_connection():
                     ping_interval=None,
                     compression=None,
                 )
+                await _auth_handshake(_ws_connection)
                 _start_recv_loop()
                 logger.info("Connected to Synapse at %s", SYNAPSE_URL)
                 return _ws_connection
@@ -1272,6 +1358,7 @@ async def _warmup():
             ping_interval=None,
             compression=None,
         )
+        await _auth_handshake(_ws_connection)
         _start_recv_loop()
         logger.info("Warmup: connected to %s", SYNAPSE_URL)
     except Exception:
