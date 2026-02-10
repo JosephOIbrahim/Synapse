@@ -4,417 +4,155 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Synapse is the AI-Houdini Bridge — a standalone package providing:
-- **Server**: WebSocket bridge for real-time command transmission with production resilience
-- **Memory**: Persistent project memory ($HIP/.synapse/)
-- **Session**: Session tracking with auto-summary generation
-- **UI**: Qt panel with tabs for connection, context, decisions, activity, and search
+Synapse is the AI-Houdini Bridge — a standalone Python package (zero required dependencies) bridging AI assistants to SideFX Houdini via WebSocket. Core capabilities: real-time scene manipulation, persistent project memory, tiered LLM routing, and an MCP server exposing 29 tools to Claude Desktop/Code.
 
-Extracted from Nexus (RadiantSuite) and Engram (Hyphae) into a self-contained package.
-Hyphae core (determinism, audit, gates) absorbed in v4.1.0.
-Agent execution layer added in v4.2.0.
-Encryption layer + He2025 determinism fixes added in v4.2.1.
+Lineage: Extracted from Nexus (RadiantSuite) + Engram (Hyphae) → self-contained package. Hyphae core (determinism, audit, gates) absorbed in v4.1.0. Agent layer v4.2.0. Encryption + He2025 determinism v4.2.1.
 
 ## Development Commands
 
 ```bash
-# Run all tests (without Houdini) — 187 tests
+# Run all tests (~489 tests, no Houdini required)
 python -m pytest tests/ -v
 
-# Individual test modules
-python -m pytest tests/test_core.py -v        # Determinism, audit, gates
-python -m pytest tests/test_agent.py -v       # Agent protocol, executor, learning
-python -m pytest tests/test_resilience.py -v  # Rate limiter, circuit breaker, watchdog
-python -m pytest tests/test_crypto.py -v      # Encryption, kahan_sum, decorator fix
+# Single test file
+python -m pytest tests/test_routing.py -v      # Routing cascade (~323 tests)
+python -m pytest tests/test_materials.py -v     # Material tools (19 tests)
+python -m pytest tests/test_render.py -v        # Render pipeline
+python -m pytest tests/test_introspection.py -v # Scene inspection
+python -m pytest tests/test_core.py -v          # Determinism, audit, gates
+python -m pytest tests/test_agent.py -v         # Agent protocol, executor
+python -m pytest tests/test_resilience.py -v    # Rate limiter, circuit breaker
+python -m pytest tests/test_crypto.py -v        # Encryption, kahan_sum
+
+# Single test
+python -m pytest tests/test_routing.py::test_routing_benchmark -v
 
 # Install for development
 pip install -e ".[dev]"
 
-# Optional dependencies
-pip install -e ".[websocket]"    # WebSocket server support
-pip install -e ".[encryption]"   # Fernet encryption for data at rest
+# With optional features
+pip install -e ".[dev,websocket,mcp]"
 ```
 
----
-
-## Complete Index
-
-### Public API (from `__init__.py`)
-
-| Category | Exports |
-|----------|---------|
-| **Protocol** | `CommandType`, `SynapseCommand`, `SynapseResponse`, `PROTOCOL_VERSION`, `DeterministicCommandQueue`, `ResponseDeliveryQueue`, `PARAM_ALIASES`, `resolve_param`, `resolve_param_with_default` |
-| **Determinism** | `DeterministicConfig`, `deterministic_uuid`, `round_float`, `kahan_sum`, `deterministic` |
-| **Audit** | `AuditLog`, `AuditLevel`, `AuditCategory`, `AuditEntry`, `audit_log` |
-| **Gates** | `HumanGate`, `GateLevel`, `GateDecision`, `GateProposal`, `human_gate`, `propose_change` |
-| **Memory** | `Memory`, `MemoryType`, `MemoryTier`, `MemoryLink`, `LinkType`, `MemoryQuery`, `MemorySearchResult`, `SynapseMemory`, `MemoryStore`, `get_synapse_memory`, `reset_synapse_memory`, `ShotContext`, `load_context`, `save_context`, `MarkdownSync`, `parse_decisions_md`, `render_decisions_md` |
-| **Session** | `SynapseSession`, `SynapseBridge`, `get_bridge`, `reset_bridge` |
-| **Agent** | `AgentTask`, `AgentPlan`, `AgentStep`, `StepStatus`, `PlanStatus`, `DEFAULT_GATE_LEVELS`, `classify_gate_level`, `AgentExecutor`, `OutcomeTracker` |
-| **Server** (opt) | `SynapseServer`, `SynapseHandler`, `CommandHandlerRegistry`, `RateLimiter`, `CircuitBreaker`, `CircuitBreakerConfig`, `CircuitState`, `PortManager`, `Watchdog`, `BackpressureController`, `BackpressureLevel`, `HealthMonitor`, `HealthStatus`, `SERVER_AVAILABLE` |
-| **Encryption** (opt) | `CryptoEngine`, `ENCRYPTION_AVAILABLE`, `get_crypto` |
-| **UI** (opt) | `SynapsePanel`, `create_panel`, `UI_AVAILABLE` |
-| **Compat** | `NexusMemory`, `EngramMemory`, `NexusServer`, `NexusHandler`, `NexusPanel`, `NexusBridge`, `EngramBridge`, `HyphaeAuditLog`, `HyphaeGate`, `get_nexus_memory`, `get_engram`, `reset_nexus_memory`, `reset_engram` |
-
----
-
-### Core Layer
-
-#### `core/protocol.py` (174 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `CommandType` | Enum | Command types with `ENGRAM_*` backwards compat |
-| `SynapseCommand` | dataclass | Command with `to_json()`, `from_json()`, `normalized_type()` |
-| `SynapseResponse` | dataclass | Response with `to_json()`, `from_json()` |
-| `normalize_command_type()` | function | Convert old command names to new |
-| `PROTOCOL_VERSION` | const | `"4.0.0"` |
-| `HEARTBEAT_INTERVAL` | const | `30.0` |
-| `COMMAND_TIMEOUT` | const | `60.0` |
-
-#### `core/queue.py` (89 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `DeterministicCommandQueue` | class | Thread-safe FIFO command queue |
-| `ResponseDeliveryQueue` | class | Thread-safe response delivery queue |
-
-#### `core/aliases.py` (99 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `PARAM_ALIASES` | dict | 38+ parameter name mappings |
-| `resolve_param()` | function | Resolve parameter using aliasing |
-| `resolve_param_with_default()` | function | Resolve with default value |
-
-#### `core/determinism.py` (368 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `DeterministicConfig` | dataclass | Global config: `float_precision=6`, `strict_mode=True`, `global_seed=42` |
-| `DeterministicOperation` | dataclass | Base class for reproducible ops with metadata |
-| `DeterministicRandom` | class | Seeded LCG PRNG: `random()`, `uniform()`, `randint()`, `choice()`, `shuffle()` |
-| `round_float()` | function | Decimal ROUND_HALF_UP fixed-precision rounding |
-| `round_vector()` | function | Round all vector components |
-| `round_color()` | function | Round color with color-specific precision |
-| `kahan_sum()` | function | Compensated summation (O(1) float error) |
-| `deterministic_uuid()` | function | Content-based 16-char hex ID |
-| `deterministic_sort()` | function | Stable deterministic sort |
-| `deterministic_dict_items()` | function | Sorted dict items |
-| `@deterministic` | decorator | Auto-rounds float args (positional + keyword) |
-
-#### `core/audit.py` (402 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `AuditLevel` | Enum | DEBUG, INFO, WARNING, ERROR, CRITICAL, AGENT_ACTION, HUMAN_DECISION, GATE_APPROVAL, GATE_REJECTION |
-| `AuditCategory` | Enum | LIGHTING, MATERIAL, ENVIRONMENT, AOV, RENDER, PIPELINE, GATE, SYSTEM, SYNAPSE, ENGRAM |
-| `AuditEntry` | dataclass | Hash-chain entry with `_compute_hash()`, `to_dict()`, `from_dict()` |
-| `AuditLog` | singleton | `log()`, `log_agent_action()`, `log_human_decision()`, `verify_chain()`, `get_entries()` |
-| `audit_log()` | function | Get global instance |
-
-#### `core/gates.py` (579 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `GateLevel` | Enum | INFORM, REVIEW, APPROVE, CRITICAL |
-| `GateDecision` | Enum | PENDING, APPROVED, REJECTED, MODIFIED, DEFERRED |
-| `GateProposal` | dataclass | Proposed action with `to_dict()`, `to_human_summary()` |
-| `GateBatch` | dataclass | Batch of proposals for review |
-| `HumanGate` | singleton | `propose()`, `decide()`, `decide_batch()`, `approve_all()`, `reject_all()` |
-| `human_gate()` | function | Get global instance |
-| `propose_change()` | function | Convenience wrapper |
-
-#### `core/crypto.py` (143 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `CryptoEngine` | singleton | Fernet AES-128-CBC + HMAC-SHA256 encryption |
-| `encrypt_line()` | method | Encrypt single JSONL line |
-| `decrypt_line()` | method | Decrypt line (plaintext passthrough) |
-| `encrypt_file_content()` | method | Encrypt entire file |
-| `decrypt_file_content()` | method | Decrypt file (plaintext passthrough) |
-| `get_crypto()` | function | Get engine or None |
-| `MAGIC_PREFIX` | const | `"SYNAPSE_ENC_V1:"` |
-| `ENCRYPTION_AVAILABLE` | bool | Whether `cryptography` is installed |
-
----
-
-### Memory Layer
-
-#### `memory/models.py` (314 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `MemoryType` | Enum | CONTEXT, DECISION, TASK, ACTION, NOTE, REFERENCE, FEEDBACK, ERROR, SUMMARY |
-| `MemoryTier` | Enum | CONVERSATION, SHOT, SEQUENCE, SHOW |
-| `LinkType` | Enum | RELATED, SUPPORTS, CONTRADICTS, SUPERSEDES, DEPENDS_ON, CAUSED_BY, IMPLEMENTS |
-| `MemoryLink` | dataclass | Link between two memories |
-| `Memory` | dataclass | Core memory unit with `add_link()`, `to_dict()`, `to_markdown()` |
-| `MemoryQuery` | dataclass | Search parameters |
-| `MemorySearchResult` | dataclass | Result with relevance score |
-
-#### `memory/store.py` (748 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `MemoryStore` | class | Low-level CRUD: `add()`, `get()`, `update()`, `delete()`, `search()`, `save()` |
-| `SynapseMemory` | class | High-level API: `note()`, `decision()`, `action()`, `search()`, `save()` |
-| `get_synapse_memory()` | function | Global instance |
-| `NexusMemory`, `EngramMemory` | alias | Backwards compat |
-
-#### `memory/context.py` (66 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `get_current_context()` | function | Load ShotContext from storage |
-| `update_context()` | function | Update context fields |
-
-#### `memory/markdown.py` (490 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `MarkdownSync` | class | Two-way sync: `read_context()`, `write_context()`, `sync_decisions()`, `append_decision()`, `get_context_for_ai()` |
-| `ParsedDecision` | dataclass | Decision parsed from markdown |
-| `ShotContext` | dataclass | Parsed context.md |
-| `parse_decisions_md()` | function | Parse decisions.md |
-| `render_decisions_md()` | function | Render decisions as markdown |
-| `load_context()`, `save_context()` | function | Context file I/O |
-
----
-
-### Agent Layer
-
-#### `agent/protocol.py` (332 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `StepStatus` | Enum | PENDING, APPROVED, EXECUTING, COMPLETED, FAILED, SKIPPED |
-| `PlanStatus` | Enum | DRAFT, PROPOSED, APPROVED, EXECUTING, COMPLETED, FAILED, REJECTED |
-| `AgentStep` | dataclass | Single action with `to_command()`, gate-level classification |
-| `AgentTask` | dataclass | Goal + context populated from memory search |
-| `AgentPlan` | dataclass | Ordered steps with `progress()`, `to_summary()` |
-| `classify_gate_level()` | function | Auto-classify risk: reads->INFORM, creates->REVIEW, deletes->APPROVE, execute->CRITICAL |
-| `DEFAULT_GATE_LEVELS` | dict | Command-to-gate-level mappings |
-
-#### `agent/executor.py` (307 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `AgentExecutor` | class | Four-phase loop: `prepare()` -> `propose()` -> `execute()` -> `record_outcome()` |
-
-#### `agent/learning.py` (195 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `OutcomeTracker` | class | `record()`, `get_relevant()`, `get_rejections()`, `success_rate()` |
-
----
-
-### Server Layer
-
-#### `server/handlers.py` (504 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `CommandHandlerRegistry` | class | Handler registry with `register()`, `get()`, `has()` |
-| `SynapseHandler` | class | Main handler with methods for all command types |
-
-#### `server/websocket.py` (430 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `SynapseServer` | class | WebSocket server: `start()`, `stop()`, `heartbeat()`, `get_health()` |
-
-#### `server/resilience.py` (858 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `RateLimiter` | class | Token bucket (global + per-client): `acquire()`, `get_stats()` |
-| `CircuitState` | Enum | CLOSED, OPEN, HALF_OPEN |
-| `CircuitBreakerConfig` | dataclass | failure_threshold=5, timeout=30s |
-| `CircuitBreaker` | class | State machine: `can_execute()`, `record_success()`, `record_failure()` |
-| `PortHealth` | dataclass | Port health status |
-| `PortManager` | class | Auto-failover: `get_active_port()`, `should_failover()` |
-| `Watchdog` | class | Freeze detection: `start()`, `stop()`, `heartbeat()` |
-| `BackpressureLevel` | Enum | NORMAL, ELEVATED, HIGH, CRITICAL |
-| `BackpressureController` | class | Load management: `evaluate()`, `should_accept()` |
-| `HealthStatus` | dataclass | Overall system health |
-| `HealthMonitor` | class | Aggregate: `check()`, `to_dict()` |
-
----
-
-### Session Layer
-
-#### `session/tracker.py` (535 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `SynapseSession` | dataclass | Single session with `duration_seconds()`, `to_summary()` |
-| `SynapseBridge` | singleton | Central integration: `start_session()`, `end_session()`, `log_action()`, `log_decision()`, memory command handlers |
-
-#### `session/summary.py` (88 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `generate_session_summary()` | function | Human-readable summary |
-| `format_session_for_ai()` | function | Compact format for AI |
-
----
-
-### UI Layer
-
-#### `ui/panel.py` (276 lines)
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `SynapsePanel(QWidget)` | class | Main tabbed panel |
-| `create_panel()` | function | Factory to create and show panel |
-
-#### `ui/tabs/` (5 files, ~813 lines)
-| Tab | File | Description |
-|-----|------|-------------|
-| `ConnectionTab` | `connection.py` (199 lines) | Server status, start/stop |
-| `ContextTab` | `context.py` (185 lines) | Context.md editor |
-| `DecisionsTab` | `decisions.py` (195 lines) | Decision log viewer |
-| `ActivityTab` | `activity.py` (103 lines) | Activity feed |
-| `SearchTab` | `search.py` (131 lines) | Memory search |
-
----
-
-### Tests
-
-| File | Lines | Tests | Coverage |
-|------|-------|-------|----------|
-| `test_core.py` | 696 | ~80 | Determinism, audit, gates |
-| `test_agent.py` | 880 | ~74 | Protocol, executor, learning |
-| `test_crypto.py` | 348 | ~29 | Encryption, kahan_sum, decorator fix |
-| `test_resilience.py` | 879 | ~33 | Rate limiter, circuit breaker, watchdog, backpressure |
-| **Total** | **2,803** | **187** | |
-
----
+**CI**: GitHub Actions on Python 3.11 + 3.14, runs `python -m pytest tests/ -v --tb=short`.
 
 ## Architecture
 
 ```
 python/synapse/
-├── __init__.py         # Public API surface (294 lines)
-├── core/               # Protocol, queue, parameter aliases, foundation
-│   ├── protocol.py     # CommandType enum, SynapseCommand/Response, PROTOCOL_VERSION="4.0.0"
-│   ├── queue.py        # DeterministicCommandQueue, ResponseDeliveryQueue
-│   ├── aliases.py      # Parameter name resolution (38+ aliases)
-│   ├── determinism.py  # Fixed-precision, content IDs, seeded RNG, kahan_sum
-│   ├── audit.py        # Hash-chain append-only audit log
-│   ├── gates.py        # Human-in-the-loop gate system
-│   └── crypto.py       # Optional Fernet encryption (AES-128-CBC + HMAC-SHA256)
-├── memory/
-│   ├── models.py       # Memory, MemoryType, MemoryTier, MemoryQuery
-│   ├── store.py        # SynapseMemory high-level API
-│   ├── context.py      # ShotContext helpers
-│   └── markdown.py     # MarkdownSync (human-readable export)
-├── agent/
-│   ├── protocol.py     # AgentTask, AgentPlan, AgentStep
-│   ├── executor.py     # prepare -> propose -> execute -> learn
-│   └── learning.py     # OutcomeTracker (feedback memories)
-├── server/
-│   ├── websocket.py    # SynapseServer (WebSocket)
-│   ├── handlers.py     # CommandHandlerRegistry
-│   └── resilience.py   # RateLimiter, CircuitBreaker, Watchdog, ...
-├── session/
-│   ├── tracker.py      # SynapseBridge, SynapseSession
-│   └── summary.py      # Session summary generation
-└── ui/
-    ├── panel.py        # SynapsePanel (Qt)
-    └── tabs/           # Connection, Context, Decisions, Activity, Search
+├── core/               # Foundation: protocol, determinism, audit, gates, crypto, aliases
+├── routing/            # Tiered LLM dispatch: cache → regex → RAG → Haiku → agent
+├── memory/             # Persistent storage: JSONL store, markdown sync, shot context
+├── agent/              # Agentic execution: task→plan→step lifecycle, outcome tracking
+├── server/             # WebSocket bridge + resilience + introspection + materials
+├── session/            # Session tracking (SynapseBridge hub), summaries
+└── ui/                 # Qt panel (5 tabs: connection, context, decisions, activity, search)
+
+mcp_server.py           # MCP bridge: Claude Desktop ←[stdio]→ mcp_server ←[WebSocket]→ Houdini
+houdini/                # .pypanel for Houdini integration
+rag/                    # Knowledge base: 13 topics, semantic index, reference files
 ```
+
+### Key Data Flows
+
+**MCP Tool Call**: Claude → stdio/JSON-RPC → `mcp_server.py` → WebSocket → `SynapseServer` → `handlers.py` → `hou.*` → response
+
+**Routing Cascade** (tiered, cheapest-first):
+```
+Cache(O(1)) → Recipe(O(1)) → Tier0/regex(O(n)) → Tier1/RAG(O(log n)) → Tier2/Haiku(~5s) → Tier3/Agent(~15s)
+```
+
+**Memory Persistence**: `MemoryStore` → async write buffer (2s flush / 50-item cap / atexit flush) → `$HIP/.synapse/memory.jsonl` + `index.json`
+
+### Transport Backends
+
+| Backend | Module | Use Case |
+|---------|--------|----------|
+| `websockets` | `server/websocket.py` | Primary — lower latency for reads/pings |
+| `hwebserver` | `server/hwebserver_adapter.py` | Houdini's native C++ server — better for `hou.*` mutations |
+
+hwebserver routes through Houdini's main event loop (~2s floor per message). websockets wins for everything except hou.* mutations. Both share the same handler layer.
+
+## Testing Patterns
+
+**No Houdini required**: All tests import modules directly via `importlib.util.spec_from_file_location`, bypassing the `hou` dependency.
+
+**Patching `hou`**: Handler tests patch `handlers_mod.hou` (the module-level reference inside handlers.py), NOT `sys.modules["hou"]`. Patching sys.modules breaks object identity across test files.
+
+```python
+# Correct pattern for handler tests
+_handlers_hou = handlers_mod.hou
+with patch.object(_handlers_hou, "node", return_value=mock_node):
+    ...
+
+# For attributes that don't exist on the stub
+with patch.object(hou, "flipbook", create=True):
+    ...
+```
+
+**test_guards.py ordering**: Replaces `sys.modules["hou"]` — has save/restore teardown to avoid polluting other test files.
+
+**Error message assertions**: Use `"Couldn't find"` (not `"not found"`) — matches the coaching tone convention.
+
+**Encoding**: Any test writing files with special characters (em-dashes, etc.) must use `encoding="utf-8"` on Windows (cp1252 breaks).
+
+## Key Conventions
+
+**Coaching tone**: Error messages say "Couldn't find node" not "Node not found". Always offer a next step. Smart suggestions via `_suggest_parms(node, name)` provide substring-matched alternatives.
+
+**He2025 determinism**: `round_float()` is for OUTPUT only — never apply to internal timing. `sort_keys=True` in all JSON serialization. `@deterministic` decorator auto-rounds float args.
+
+**Lazy loading**: Heavy modules (routing, server, UI) lazy-loaded via `__getattr__` in `__init__.py`. Optional deps use try/except with `*_AVAILABLE` flags.
+
+**Thread safety**: `threading.RLock()` for shared state, `threading.Event()` for background loading in `store.py`.
+
+**Backwards compatibility**: All legacy names preserved as aliases — `NexusServer`, `EngramMemory`, `HyphaeAuditLog`, etc. Storage migration from `.nexus/`/`.engram/` to `.synapse/` is automatic.
+
+**Singletons**: `AuditLog`, `HumanGate`, `SynapseBridge`, `CryptoEngine` — accessed via `audit_log()`, `human_gate()`, `get_bridge()`, `get_crypto()`.
+
+## Wire Protocol
+
+**Default**: `ws://localhost:9999/synapse` | **Version**: `4.0.0`
+
+Command types: `create_node`, `delete_node`, `connect_nodes`, `get_parm`, `set_parm`, `get_scene_info`, `get_selection`, `execute_python`, `execute_vex`, `create_usd_prim`, `modify_usd_prim`, `get_usd_attribute`, `set_usd_attribute`, `get_stage_info`, `capture_viewport`, `render`, `set_keyframe`, `render_settings`, `wedge`, `reference_usd`, `create_material`, `assign_material`, `read_material`, `knowledge_lookup`, `inspect_selection`, `inspect_scene`, `inspect_node`, `context`, `search`, `add_memory`, `decide`, `recall`, `ping`, `get_health`
+
+## MCP Server (`mcp_server.py`)
+
+29 tools bridging Claude to Houdini. Key config:
+- `COMMAND_TIMEOUT=10.0` (default), `_SLOW_COMMANDS` override: execute/inspect → 30s, render/wedge → 120s
+- Warmup pre-connect in `main()` reduces first-call latency
+- `MAX_RETRIES=2`, `RETRY_DELAY=0.3`, auto-retry on connection drop
+- `open_timeout=3.0` (hwebserver handshake ~2s), `ping_interval=None`, `compression=None` (localhost)
+
+## Error Classification
+
+**User errors** (do NOT trip circuit breaker): `ValueError`, `KeyError`, `AttributeError`, `TypeError`, `IndexError`, `NameError`
+
+**Service errors** (DO trip circuit breaker): `TimeoutError`, threading errors, Houdini crashes
 
 ## Storage Layout
 
 ```
-$HIP/.synapse/                        # Per-project (memory)
-├── memory.jsonl                      # Append-only memory log
-├── index.json                        # Search index
-├── context.md                        # Human-editable context
-├── decisions.md                      # Decision log
-└── tasks.md                          # Task history
+$HIP/.synapse/           # Per-project memory
+├── memory.jsonl         # Append-only log
+├── index.json           # Search indices (by_type, by_tag, by_keyword)
+├── context.md           # Human-editable shot context
+├── decisions.md         # Decision log
+└── tasks.md             # Task history
 
-~/.synapse/                           # Global (audit, gates, keys)
-├── audit/audit_YYYY-MM-DD.jsonl      # Daily audit logs
-├── gates/proposals_YYYY-MM-DD.jsonl  # Gate proposals
-└── encryption.key                    # Auto-generated Fernet key (0600)
+~/.synapse/              # Global (audit, gates, keys)
+├── audit/               # Daily JSONL audit logs
+├── gates/               # Gate proposals
+└── encryption.key       # Auto-generated Fernet key
 ```
 
-## Design Patterns
+## Gotchas
 
-| Pattern | Where |
-|---------|-------|
-| **Singleton** | AuditLog, HumanGate, SynapseBridge, CryptoEngine |
-| **State Machine** | CircuitBreaker (CLOSED -> OPEN -> HALF_OPEN) |
-| **Observer** | Callbacks in AuditLog, HumanGate, MemoryStore |
-| **Command** | SynapseCommand / SynapseResponse protocol |
-| **Decorator** | `@deterministic` for reproducibility |
-| **Strategy** | BackpressureController evaluation |
-| **Template Method** | DeterministicOperation base class |
-| **Token Bucket** | RateLimiter (global + per-client) |
-
-## WebSocket Protocol
-
-**Default URL:** `ws://localhost:9999` (websocket.py) or `ws://localhost:9999/synapse` (hwebserver)
-**Protocol Version:** `4.0.0`
-
-**Command Types:**
-- Node: `create_node`, `delete_node`, `connect_nodes`
-- Parameters: `get_parm`, `set_parm`
-- Scene: `get_scene_info`, `get_selection`, `set_selection`
-- Execution: `execute_python`, `execute_vex`
-- USD/Solaris: `create_usd_prim`, `modify_usd_prim`, `get_stage_info`
-- Memory: `context`, `search`, `add_memory`, `decide`, `recall`
-- Utility: `ping`, `get_health`, `get_help`, `heartbeat`, `backpressure`
-
-## Transport Backends
-
-Synapse supports two transport backends selected by environment:
-
-| Backend | Module | When to Use | Env Config |
-|---------|--------|------------|------------|
-| `hwebserver` | `server/hwebserver_adapter.py` | Production inside Houdini (default) | `SYNAPSE_PATH="/synapse"` (default) |
-| `websockets` | `server/websocket.py` | Testing without Houdini, CI, standalone | `SYNAPSE_PATH=""` |
-
-**hwebserver** is Houdini's native C++ WebSocket server. It eliminates the Python
-`websockets` package overhead (~5-15ms/msg) by running handlers directly in Houdini's
-multi-threaded server with GIL access.
-
-**Starting hwebserver (inside Houdini):**
-```python
-from synapse.server.hwebserver_adapter import start_hwebserver
-start_hwebserver(port=9999)
-```
-
-**MCP configuration for hwebserver:**
-```json
-{
-  "mcpServers": {
-    "synapse": {
-      "command": "python",
-      "args": ["C:/Users/User/Synapse/mcp_server.py"],
-      "env": {
-        "SYNAPSE_PORT": "9999",
-        "SYNAPSE_PATH": "/synapse"
-      }
-    }
-  }
-}
-```
-
-**Integration test (inside Houdini):**
-```bash
-hython tests/test_hwebserver_integration.py
-```
-
-## Backwards Compatibility
-
-All legacy names are preserved as aliases:
-- `NexusServer = SynapseServer`
-- `NexusMemory = SynapseMemory`, `EngramMemory = SynapseMemory`
-- `NexusBridge = SynapseBridge`, `EngramBridge = SynapseBridge`
-- `get_nexus_memory() = get_synapse_memory()`, `get_engram() = get_synapse_memory()`
-- `HyphaeAuditLog = AuditLog`, `HyphaeGate = HumanGate`
-
-Storage migration is automatic: `.nexus/` and `.engram/` directories are copied to `.synapse/` on first access.
-
-## Error Classification (Circuit Breaker)
-
-**User Errors** (do NOT trip circuit):
-- ValueError, KeyError, AttributeError, TypeError, IndexError, NameError
-
-**Service Errors** (DO trip circuit):
-- TimeoutError, threading errors, Houdini crashes
-
-## Testing Without Houdini
-
-Tests must run **without Houdini** by importing modules directly:
-```python
-import importlib.util
-spec = importlib.util.spec_from_file_location("resilience", "python/synapse/server/resilience.py")
-resilience = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(resilience)
-```
+- **matlib.cook(force=True)**: MUST cook materiallibrary before `createNode()` on shader child — without cook, internal subnet doesn't exist
+- **Render `output_file` kwarg**: Doesn't work for usdrender ROPs — set `outputimage` or `picture` parm directly
+- **usdrender `loppath`**: ROPs in `/out` need `loppath` set to a LOP node — handler auto-discovers display node in `/stage`
+- **Karma camera**: Must use USD prim path (`/cameras/render_cam`), not Houdini node path
+- **`override_res`**: String menu `""` / `"scale"` / `"specific"` — not int
+- **Viewport capture**: Must use Flipbook API with `hdefereval.executeInMainThreadWithResult()` — `QWidget.grab()` returns black for OpenGL
+- **`.pypanel` imports**: NEVER nuke `sys.modules` — use `hou.session` guard for one-time import
+- **RAG Path import**: Handler uses `from pathlib import Path as _Path` (inline) — global `Path` not available in handlers.py
