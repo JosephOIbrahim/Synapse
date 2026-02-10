@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Glob(*)",
+      "synapse_ping",
+      "synapse_scene_info",
+      "synapse_inspect_scene",
+      "synapse_inspect_selection",
+      "synapse_inspect_node",
+      "synapse_execute",
+      "synapse_render_preview",
+      "synapse_knowledge_lookup"
+    ]
+  }
+}

@@ -47,3 +47,8 @@ htmlcov/
 _*.py
 _*.txt
 nul
+
+# Secrets and media
+*.key
+*.jpg
+*.png

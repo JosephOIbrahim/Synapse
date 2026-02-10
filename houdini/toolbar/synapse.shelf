@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <toolshelf name="synapse" label="Synapse">
+    <memberTool name="synapse_panel"/>
+    <memberTool name="synapse_inspect_selection"/>
+    <memberTool name="synapse_inspect_scene"/>
+    <memberTool name="synapse_last_result"/>
+    <memberTool name="synapse_health_check"/>
+    <memberTool name="synapse_generate_docs"/>
+  </toolshelf>
+
+  <tool name="synapse_panel" label="Synapse" icon="SYNAPSE_synapse">
+    <helpText>Open Synapse AI Co-Pilot panel</helpText>
+    <script scriptType="python"><![CDATA[
+try:
+    import synapse_shelf
+    synapse_shelf.open_panel()
+except Exception as e:
+    hou.ui.displayMessage(
+        "Synapse panel error: {}".format(e),
+        severity=hou.severityType.Error
+    )
+]]></script>
+  </tool>
+
+  <tool name="synapse_inspect_selection" label="Inspect Selection" icon="SYNAPSE_inspect">
+    <helpText>Analyze selected nodes and copy context to clipboard</helpText>
+    <script scriptType="python"><![CDATA[
+try:
+    import synapse_shelf
+    synapse_shelf.inspect_selection()
+except Exception as e:
+    hou.ui.displayMessage(
+        "Synapse inspect error: {}".format(e),
+        severity=hou.severityType.Error
+    )
+]]></script>
+  </tool>
+
+  <tool name="synapse_inspect_scene" label="Inspect Scene" icon="SYNAPSE_inspect">
+    <helpText>Analyze full scene and copy context to clipboard</helpText>
+    <script scriptType="python"><![CDATA[
+try:
+    import synapse_shelf
+    synapse_shelf.inspect_scene()
+except Exception as e:
+    hou.ui.displayMessage(
+        "Synapse scene inspect error: {}".format(e),
+        severity=hou.severityType.Error
+    )
+]]></script>
+  </tool>
+
+  <tool name="synapse_last_result" label="Last Result" icon="SYNAPSE_execute">
+    <helpText>Copy last Synapse execution result to clipboard</helpText>
+    <script scriptType="python"><![CDATA[
+try:
+    import synapse_shelf
+    synapse_shelf.copy_last_result()
+except Exception as e:
+    hou.ui.displayMessage(
+        "Synapse result copy error: {}".format(e),
+        severity=hou.severityType.Error
+    )
+]]></script>
+  </tool>
+
+  <tool name="synapse_health_check" label="Health Check" icon="SYNAPSE_verify">
+    <helpText>Run scene health check and copy results</helpText>
+    <script scriptType="python"><![CDATA[
+try:
+    import synapse_shelf
+    synapse_shelf.health_check()
+except Exception as e:
+    hou.ui.displayMessage(
+        "Synapse health check error: {}".format(e),
+        severity=hou.severityType.Error
+    )
+]]></script>
+  </tool>
+
+  <tool name="synapse_generate_docs" label="Generate Docs" icon="SYNAPSE_document">
+    <helpText>Generate documentation for selected nodes</helpText>
+    <script scriptType="python"><![CDATA[
+try:
+    import synapse_shelf
+    synapse_shelf.generate_docs()
+except Exception as e:
+    hou.ui.displayMessage(
+        "Synapse docs error: {}".format(e),
+        severity=hou.severityType.Error
+    )
+]]></script>
+  </tool>
+</shelfDocument>

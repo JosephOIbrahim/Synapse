@@ -1,0 +1,10 @@
+<!-- Synapse brand_light 120px | Pentagram -->
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 64 64">
+  <path d="M22 24 C22 18, 28 15, 32 15 C38 15, 42 19, 42 24 C42 30, 36 32, 32 33.5 C28 35, 22 37, 22 42 C22 48, 28 51, 32 51 C36 51, 42 47, 42 42" stroke="#0A0A0A" stroke-width="5.0" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="22" cy="24" r="8" fill="#0A0A0A"/>
+  <circle cx="42" cy="42" r="8" fill="#0A0A0A"/>
+  <line x1="22" y1="24" x2="14" y2="16" stroke="#0A0A0A" stroke-width="3.0" stroke-linecap="round" opacity="0.35"/>
+  <line x1="22" y1="24" x2="14" y2="24" stroke="#0A0A0A" stroke-width="3.0" stroke-linecap="round" opacity="0.35"/>
+  <line x1="42" y1="42" x2="50" y2="50" stroke="#0A0A0A" stroke-width="3.0" stroke-linecap="round" opacity="0.35"/>
+  <line x1="42" y1="42" x2="50" y2="42" stroke="#0A0A0A" stroke-width="3.0" stroke-linecap="round" opacity="0.35"/>
+</svg>

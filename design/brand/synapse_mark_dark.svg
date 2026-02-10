@@ -1,0 +1,42 @@
+<!-- Synapse brand_dark 120px | Pentagram -->
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 64 64">
+  <path d="M22 24 C22 18, 28 15, 32 15 C38 15, 42 19, 42 24 C42 30, 36 32, 32 33.5 C28 35, 22 37, 22 42 C22 48, 28 51, 32 51 C36 51, 42 47, 42 42" stroke="#00D4FF" stroke-width="5.0" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="22" cy="24" r="8" fill="#00D4FF"/>
+  <circle cx="42" cy="42" r="8" fill="#00D4FF"/>
+  <line x1="22" y1="24" x2="14" y2="16" stroke="#00D4FF" stroke-width="3.0" stroke-linecap="round" opacity="0.35"/>
+  <line x1="22" y1="24" x2="14" y2="24" stroke="#00D4FF" stroke-width="3.0" stroke-linecap="round" opacity="0.35"/>
+  <line x1="14" y1="16" x2="8" y2="12" stroke="#00D4FF" stroke-width="2.0" stroke-linecap="round" opacity="0.25"/>
+  <line x1="14" y1="24" x2="8" y2="24" stroke="#00D4FF" stroke-width="2.0" stroke-linecap="round" opacity="0.25"/>
+  <line x1="8" y1="12" x2="4" y2="10" stroke="#00D4FF" stroke-width="1.5" stroke-linecap="round" opacity="0.15"/>
+  <line x1="42" y1="42" x2="50" y2="50" stroke="#00D4FF" stroke-width="3.0" stroke-linecap="round" opacity="0.35"/>
+  <line x1="42" y1="42" x2="50" y2="42" stroke="#00D4FF" stroke-width="3.0" stroke-linecap="round" opacity="0.35"/>
+  <line x1="50" y1="50" x2="56" y2="54" stroke="#00D4FF" stroke-width="2.0" stroke-linecap="round" opacity="0.25"/>
+  <line x1="50" y1="42" x2="56" y2="42" stroke="#00D4FF" stroke-width="2.0" stroke-linecap="round" opacity="0.25"/>
+  <line x1="56" y1="54" x2="60" y2="56" stroke="#00D4FF" stroke-width="1.5" stroke-linecap="round" opacity="0.15"/>
+  <line x1="0" y1="0" x2="0" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="5" y1="0" x2="5" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="10" y1="0" x2="10" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="15" y1="0" x2="15" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="20" y1="0" x2="20" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="25" y1="0" x2="25" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="30" y1="0" x2="30" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="35" y1="0" x2="35" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="40" y1="0" x2="40" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="45" y1="0" x2="45" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="50" y1="0" x2="50" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="55" y1="0" x2="55" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="60" y1="0" x2="60" y2="64" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="0" x2="64" y2="0" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="5" x2="64" y2="5" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="10" x2="64" y2="10" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="15" x2="64" y2="15" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="20" x2="64" y2="20" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="25" x2="64" y2="25" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="30" x2="64" y2="30" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="35" x2="64" y2="35" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="40" x2="64" y2="40" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="45" x2="64" y2="45" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="50" x2="64" y2="50" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="55" x2="64" y2="55" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+  <line x1="0" y1="60" x2="64" y2="60" stroke="#00D4FF" stroke-width="0.15" stroke-linecap="round" opacity="0.05"/>
+</svg>

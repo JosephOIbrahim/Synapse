@@ -1,0 +1,11 @@
+<!-- Synapse document 64px | Pentagram -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect x="16" y="10" width="26" height="36" stroke="#00D4FF" stroke-width="1.7999999999999998" fill="none"/>
+  <line x1="20" y1="20" x2="36" y2="20" stroke="#00D4FF" stroke-width="1.2000000000000002" stroke-linecap="round" opacity="0.6"/>
+  <line x1="20" y1="26" x2="34" y2="26" stroke="#00D4FF" stroke-width="1.2000000000000002" stroke-linecap="round" opacity="0.45"/>
+  <line x1="20" y1="32" x2="30" y2="32" stroke="#00D4FF" stroke-width="1.2000000000000002" stroke-linecap="round" opacity="0.3"/>
+  <circle cx="46" cy="16" r="3" fill="none"/>
+  <circle cx="46" cy="16" r="3" fill="none" stroke="#00D4FF" stroke-width="1.2000000000000002" opacity="0.5"/>
+  <line x1="46" y1="13" x2="46" y2="19" stroke="#00D4FF" stroke-width="1.0499999999999998" stroke-linecap="round" opacity="0.5"/>
+  <line x1="43" y1="16" x2="49" y2="16" stroke="#00D4FF" stroke-width="1.0499999999999998" stroke-linecap="round" opacity="0.5"/>
+</svg>

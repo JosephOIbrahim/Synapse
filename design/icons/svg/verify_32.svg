@@ -1,0 +1,5 @@
+<!-- Synapse verify 32px | Pentagram -->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="18" fill="none" stroke="#00D4FF" stroke-width="1.6" opacity="0.25"/>
+  <path d="M22 33 L29 40 L42 24" stroke="#00D4FF" stroke-width="4.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
