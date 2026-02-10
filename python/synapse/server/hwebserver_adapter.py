@@ -50,6 +50,7 @@ from ..core.protocol import (
     SynapseResponse,
     PROTOCOL_VERSION,
 )
+from .auth import get_auth_key, authenticate, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
 from .handlers import SynapseHandler
 from .resilience import RateLimiter, BackpressureController
 from ..session.tracker import get_bridge
@@ -100,13 +101,56 @@ if HWEBSERVER_AVAILABLE:
             self._client_id = _next_client_id()
             self._session_id = None
             self._ws_id = _client_counter
+            self._authenticated = False
             await self.accept()
+
+            # Send auth_required if key is configured
+            auth_key = get_auth_key()
+            if auth_key is not None:
+                await self.send(json.dumps({
+                    "type": AUTH_REQUIRED_TYPE,
+                    "message": "Authentication required",
+                    "protocol_version": PROTOCOL_VERSION,
+                }, sort_keys=True), is_binary=False)
+                self._auth_key = auth_key
+            else:
+                self._authenticated = True
+                self._auth_key = None
+
             logger.info("Client connected: %s", self._client_id)
 
         async def receive(self, text_data=None, bytes_data=None):
             """Handle incoming SynapseCommand message."""
             if text_data is None:
                 return
+
+            # Auth handshake (first message when key is configured)
+            if not self._authenticated and self._auth_key:
+                try:
+                    msg = json.loads(text_data)
+                    token = msg.get("payload", {}).get("key", "")
+                    if msg.get("type") == AUTH_COMMAND_TYPE and authenticate(token, self._auth_key):
+                        self._authenticated = True
+                        await self.send(json.dumps({
+                            "type": "auth_success",
+                            "success": True,
+                            "protocol_version": PROTOCOL_VERSION,
+                        }, sort_keys=True), is_binary=False)
+                        logger.info("Client authenticated: %s", self._client_id)
+                        return
+                    else:
+                        await self.send(json.dumps({
+                            "type": "auth_failed",
+                            "success": False,
+                            "error": "Invalid API key",
+                            "protocol_version": PROTOCOL_VERSION,
+                        }, sort_keys=True), is_binary=False)
+                        logger.warning("Auth failed for client %s", self._client_id)
+                        await self.close()
+                        return
+                except json.JSONDecodeError:
+                    await self.close()
+                    return
 
             try:
                 command = SynapseCommand.from_json(text_data)

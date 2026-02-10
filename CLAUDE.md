@@ -17,7 +17,7 @@ Two repos make up the full system:
 pip install -e ".[dev]"
 pip install -e ".[dev,websocket,mcp,routing,encryption]"   # all optional features
 
-# Run all core tests (~672 tests, no Houdini required)
+# Run all core tests (~737 tests, no Houdini required)
 python -m pytest tests/ -v
 
 # Key test files
@@ -29,6 +29,9 @@ python -m pytest tests/test_introspection.py -v         # Scene inspection
 python -m pytest tests/test_core.py -v                  # Determinism, audit, gates
 python -m pytest tests/test_agent.py -v                 # Agent protocol, executor
 python -m pytest tests/test_resilience.py -v            # Rate limiter, circuit breaker
+python -m pytest tests/test_auth.py -v                  # Authentication (21 tests)
+python -m pytest tests/test_stress.py -v                # Load/stress testing (24 tests)
+python -m pytest tests/test_integration_pipeline.py -v  # Integration pipeline (20 tests)
 
 # Single test
 python -m pytest tests/test_routing.py::test_routing_benchmark -v
@@ -91,6 +94,15 @@ Cache(O(1)) -> Recipe(O(1)) -> Planner(O(1)) -> Tier0/regex(O(n)) -> Tier1/RAG(O
 | `hwebserver` | `server/hwebserver_adapter.py` | ~2s floor (main event loop) | Optional — only for hou.* mutations |
 
 Both share the same handler layer. Decision: websockets is primary; hwebserver's 2s floor per message outweighs its benefits.
+
+### Authentication (`server/auth.py`)
+
+Optional API key authentication for both transports. Key sources (checked in order):
+1. `SYNAPSE_API_KEY` environment variable
+2. `~/.synapse/auth.key` file (first non-empty, non-comment line)
+3. No key configured -> auth disabled (backward compat)
+
+When enabled, first WebSocket message must be an `authenticate` command with `{"payload": {"key": "..."}}`. Uses `hmac.compare_digest` for constant-time comparison. Auth handshake integrated into both `websocket.py` and `hwebserver_adapter.py`.
 
 ### MCP Server (`mcp_server.py`)
 

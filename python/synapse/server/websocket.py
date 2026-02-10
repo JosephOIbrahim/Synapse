@@ -37,6 +37,7 @@ from ..core.protocol import (
     PORT_RETRY_DELAY,
 )
 from ..core.queue import DeterministicCommandQueue, ResponseDeliveryQueue
+from .auth import get_auth_key, authenticate, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
 from .resilience import (
     RateLimiter,
@@ -265,9 +266,44 @@ class SynapseServer:
                 except Exception as e:
                     logger.error("Connect callback error: %s", e)
 
-            # No unsolicited connection_context — clients use the "context"
-            # command when they need it.  Eliminates 50-200ms of I/O on connect
-            # (markdown parse, JSONL scan, hou.* queries) that MCP discards.
+            # Authentication handshake (if key is configured)
+            auth_key = get_auth_key()
+            if auth_key is not None:
+                # Tell client auth is required
+                websocket.send(json.dumps({
+                    "type": AUTH_REQUIRED_TYPE,
+                    "message": "Authentication required",
+                    "protocol_version": PROTOCOL_VERSION,
+                }, sort_keys=True))
+
+                # Wait for auth message
+                try:
+                    auth_msg = json.loads(next(iter([websocket.recv()])))
+                    token = auth_msg.get("payload", {}).get("key", "")
+                    if auth_msg.get("type") != AUTH_COMMAND_TYPE or not authenticate(token, auth_key):
+                        websocket.send(json.dumps({
+                            "type": "auth_failed",
+                            "success": False,
+                            "error": "Invalid API key",
+                            "protocol_version": PROTOCOL_VERSION,
+                        }, sort_keys=True))
+                        logger.warning("Auth failed for client %s", client_id)
+                        return
+                except (json.JSONDecodeError, StopIteration):
+                    websocket.send(json.dumps({
+                        "type": "auth_failed",
+                        "success": False,
+                        "error": "Expected authenticate command",
+                        "protocol_version": PROTOCOL_VERSION,
+                    }, sort_keys=True))
+                    return
+
+                websocket.send(json.dumps({
+                    "type": "auth_success",
+                    "success": True,
+                    "protocol_version": PROTOCOL_VERSION,
+                }, sort_keys=True))
+                logger.info("Client authenticated: %s", client_id)
 
             for message in websocket:
                 # Lazy session: create on first real command, not on connect
