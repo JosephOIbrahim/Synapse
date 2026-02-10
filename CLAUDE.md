@@ -4,157 +4,222 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Synapse is the AI-Houdini Bridge — a standalone Python package (zero required dependencies) bridging AI assistants to SideFX Houdini via WebSocket. Core capabilities: real-time scene manipulation, persistent project memory, tiered LLM routing, and an MCP server exposing 34 tools to Claude Desktop/Code.
+Synapse v4.2.1 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 34 MCP tools to Claude Desktop/Code for real-time scene manipulation, persistent project memory, tiered LLM routing, and viewport/render capture.
 
-Lineage: Extracted from Nexus (RadiantSuite) + Engram (Hyphae) → self-contained package. Hyphae core (determinism, audit, gates) absorbed in v4.1.0. Agent layer v4.2.0. Encryption + He2025 determinism v4.2.1.
+Two repos make up the full system:
+- **`C:\Users\User\Synapse\`** — Core server, protocol, handlers, memory, routing, MCP bridge
+- **`C:\Users\User\.synapse\`** — Agent SDK (autonomous co-pilot), design system (tokens/icons/styles), Houdini shelf/panel integration, installer
 
 ## Development Commands
 
 ```bash
-# Run all tests (~563 tests, no Houdini required)
+# Install for development
+pip install -e ".[dev]"
+pip install -e ".[dev,websocket,mcp,routing,encryption]"   # all optional features
+
+# Run all core tests (~563 tests, no Houdini required)
 python -m pytest tests/ -v
 
-# Single test file
-python -m pytest tests/test_routing.py -v      # Routing cascade (~323 tests)
-python -m pytest tests/test_materials.py -v     # Material tools (19 tests)
-python -m pytest tests/test_render.py -v        # Render pipeline
-python -m pytest tests/test_introspection.py -v # Scene inspection
-python -m pytest tests/test_core.py -v          # Determinism, audit, gates
-python -m pytest tests/test_agent.py -v         # Agent protocol, executor
-python -m pytest tests/test_resilience.py -v    # Rate limiter, circuit breaker
-python -m pytest tests/test_crypto.py -v        # Encryption, kahan_sum
-python -m pytest tests/test_pipeline_efficiency.py -v  # Pipeline efficiency (35 tests)
+# Key test files
+python -m pytest tests/test_routing.py -v              # Routing cascade (~323 tests)
+python -m pytest tests/test_pipeline_efficiency.py -v   # RWLock, tier-pinning, batch, concurrent (35 tests)
+python -m pytest tests/test_materials.py -v             # Material tools (19 tests)
+python -m pytest tests/test_render.py -v                # Karma/Mantra pipeline
+python -m pytest tests/test_introspection.py -v         # Scene inspection
+python -m pytest tests/test_core.py -v                  # Determinism, audit, gates
+python -m pytest tests/test_agent.py -v                 # Agent protocol, executor
+python -m pytest tests/test_resilience.py -v            # Rate limiter, circuit breaker
 
 # Single test
 python -m pytest tests/test_routing.py::test_routing_benchmark -v
 
-# Install for development
-pip install -e ".[dev]"
+# Agent SDK tests (from .synapse/agent/)
+python -m pytest C:\Users\User\.synapse\agent\tests\ -v    # 49 tests
 
-# With optional features
-pip install -e ".[dev,websocket,mcp]"
+# Design system tests (from .synapse/)
+python -m pytest C:\Users\User\.synapse\tests\test_design_system.py -v   # 44 tests
+
+# Coverage
+python -m pytest tests/ --cov=synapse --cov-report=term-missing
 ```
 
 **CI**: GitHub Actions on Python 3.11 + 3.14, runs `python -m pytest tests/ -v --tb=short`.
 
 ## Architecture
 
+### Data Flow (MCP to Houdini)
+
 ```
-python/synapse/
-├── core/               # Foundation: protocol, determinism, audit, gates, crypto, aliases
-├── routing/            # Tiered LLM dispatch: cache → regex → RAG → Haiku → agent
-├── memory/             # Persistent storage: JSONL store, markdown sync, shot context
-├── agent/              # Agentic execution: task→plan→step lifecycle, outcome tracking
-├── server/             # WebSocket bridge + resilience + introspection + materials
-├── session/            # Session tracking (SynapseBridge hub), summaries
-└── ui/                 # Qt panel (5 tabs: connection, context, decisions, activity, search)
-
-mcp_server.py           # MCP bridge: Claude Desktop ←[stdio]→ mcp_server ←[WebSocket]→ Houdini
-houdini/                # .pypanel for Houdini integration
-rag/                    # Knowledge base: 13 topics, semantic index, reference files
-```
-
-### Key Data Flows
-
-**MCP Tool Call**: Claude → stdio/JSON-RPC → `mcp_server.py` → WebSocket → `SynapseServer` → `handlers.py` → `hou.*` → response
-
-**Routing Cascade** (tiered, cheapest-first):
-```
-Cache(O(1)) → Recipe(O(1)) → Tier0/regex(O(n)) → Tier1/RAG(O(log n)) → Tier2/Haiku(~5s) → Tier3/Agent(~15s)
+Claude Desktop/Code
+    |  stdio / JSON-RPC
+mcp_server.py  (34 tools, concurrent dispatch via _pending dict + _recv_loop)
+    |  WebSocket: ws://localhost:9999/synapse
+SynapseServer  (daemon thread inside Houdini)
+    |  CommandHandlerRegistry (handlers.py)
+hou.* Python API
+    |
+Houdini USD Stage / Solaris / Karma
 ```
 
-**Memory Persistence**: `MemoryStore` → async write buffer (2s flush / 50-item cap / atexit flush) → `$HIP/.synapse/memory.jsonl` + `index.json`
+### Core Package Layout (`python/synapse/`)
+
+| Layer | Directory | Responsibility |
+|-------|-----------|---------------|
+| Foundation | `core/` | Wire protocol (`protocol.py`), parameter aliases (`aliases.py`), determinism (`determinism.py`), audit chain (`audit.py`), human gates (`gates.py`), encryption (`crypto.py`), command queue (`queue.py`) |
+| Memory | `memory/` | JSONL store with ReadWriteLock + async write buffer (`store.py`), data models (`models.py`), shot context (`context.py`), markdown export (`markdown.py`) |
+| Routing | `routing/` | Tiered LLM dispatch (`router.py`), regex parser (`parser.py`), RAG knowledge (`knowledge.py`), recipes (`recipes.py`), deterministic cache (`cache.py`) |
+| Agent | `agent/` | prepare/propose/execute/learn lifecycle (`executor.py`), task/plan/step protocol (`protocol.py`), outcome tracking (`learning.py`) |
+| Server | `server/` | WebSocket server (`websocket.py`), 34 command handlers (`handlers.py`), resilience stack (`resilience.py`), scene introspection (`introspection.py`), hwebserver adapter (`hwebserver_adapter.py`), guard functions (`guards.py`), material handlers |
+| Session | `session/` | SynapseBridge singleton hub (`tracker.py`), session summaries (`summary.py`) |
+| UI | `ui/` | Qt panel with 5 tabs (`panel.py`), tab widgets in `tabs/` |
+
+### Routing Cascade (cheapest-first)
+
+```
+Cache(O(1)) -> Recipe(O(1)) -> Tier0/regex(O(n)) -> Tier1/RAG(O(log n)) -> Tier2/Haiku(~5s) -> Tier3/Agent(~15s)
+```
+
+- **Tier pinning** (He2025 consistency): Same input+context maps to same tier on subsequent calls. LRU cache, max 1,000 pins, stale pins fall through.
+- **Speculative T0+T1 parallelism**: Module-level `ThreadPoolExecutor(max_workers=2)` runs Tier 0 regex and Tier 1 knowledge lookup concurrently.
+- **Tier 1 result threading**: `route()` runs `knowledge.lookup()` once, threads the result to all higher tiers to avoid redundant lookups.
 
 ### Transport Backends
 
-| Backend | Module | Use Case |
-|---------|--------|----------|
-| `websockets` | `server/websocket.py` | Primary — lower latency for reads/pings |
-| `hwebserver` | `server/hwebserver_adapter.py` | Houdini's native C++ server — better for `hou.*` mutations |
+| Backend | Module | Latency | Use Case |
+|---------|--------|---------|----------|
+| `websockets` | `server/websocket.py` | ~0.2ms warm ping | Primary — reads, pings, everything |
+| `hwebserver` | `server/hwebserver_adapter.py` | ~2s floor (main event loop) | Optional — only for hou.* mutations |
 
-hwebserver routes through Houdini's main event loop (~2s floor per message). websockets wins for everything except hou.* mutations. Both share the same handler layer.
+Both share the same handler layer. Decision: websockets is primary; hwebserver's 2s floor per message outweighs its benefits.
+
+### MCP Server (`mcp_server.py`)
+
+34 tools. Key operational details:
+- **Concurrent dispatch**: `_pending` dict + `_recv_loop` coroutine — no blocking lock, true parallel tool calls
+- **Timeouts**: Default 10s. Overrides: execute/inspect at 30s, render/wedge at 120s, batch at 60s
+- **Warmup**: Pre-connect in `main()` reduces first-call latency
+- **Retry**: `MAX_RETRIES=2`, `RETRY_DELAY=0.3`, auto-retry on connection drop
+- **Connection**: `open_timeout=3.0`, `ping_interval=None`, `compression=None` (localhost optimization)
+
+### `.synapse` Companion Repos
+
+**Agent SDK** (`~/.synapse/agent/`): Autonomous VFX co-pilot powered by Claude Opus 4.6. Standard Anthropic tool-use message loop (NOT a separate agent framework). 8 tools via direct WebSocket to Synapse. Safety: atomic mutations, idempotent guards, undo-group rollback. 49 tests.
+
+**Design System** (`~/.synapse/design/`): Pentagram-style monochromatic design. `tokens.py` (colors, typography, spacing — stdlib-only), `generate_icons.py` (21 SVGs from construction rules), `synapse_styles.py` (Qt stylesheet generator). Primary accent: SIGNAL cyan `#00D4FF`.
+
+**Houdini Integration** (`~/.synapse/houdini/`): `synapse.shelf` (5 toolbar tools), `synapse_shelf.py` (shelf callbacks — inspect, health check, docs), `synapse_panel.pypanel` (PySide2 panel with status polling).
+
+**Installer** (`~/.synapse/install.py`): Auto-detects Houdini prefs dir, copies shelf/panel/icons. Flags: `--dry-run`, `--verify`, `--uninstall`.
 
 ## Testing Patterns
 
-**No Houdini required**: All tests import modules directly via `importlib.util.spec_from_file_location`, bypassing the `hou` dependency.
+**No Houdini required**: All tests import modules via `importlib.util.spec_from_file_location`, bypassing the `hou` dependency. The conftest creates a minimal `hou` stub in `sys.modules`.
 
-**Patching `hou`**: Handler tests patch `handlers_mod.hou` (the module-level reference inside handlers.py), NOT `sys.modules["hou"]`. Patching sys.modules breaks object identity across test files.
+**Patching `hou` in handler tests**: Always patch the module-level reference inside handlers.py, NOT `sys.modules["hou"]`. Patching sys.modules breaks object identity across test files.
 
 ```python
-# Correct pattern for handler tests
+# Correct — patch the handlers module's hou reference
 _handlers_hou = handlers_mod.hou
 with patch.object(_handlers_hou, "node", return_value=mock_node):
     ...
 
-# For attributes that don't exist on the stub
+# For attributes missing from the stub
 with patch.object(hou, "flipbook", create=True):
     ...
 ```
 
-**test_guards.py ordering**: Replaces `sys.modules["hou"]` — has save/restore teardown to avoid polluting other test files.
+**test_guards.py ordering**: Replaces `sys.modules["hou"]` entirely — has save/restore teardown to prevent pollution. `test_render.py` captures `_handlers_hou = handlers_mod.hou` to patch the correct object.
 
-**Error message assertions**: Use `"Couldn't find"` (not `"not found"`) — matches the coaching tone convention.
+**Error assertions**: Use `"Couldn't find"` (not `"not found"`) — matches coaching tone convention.
 
-**Encoding**: Any test writing files with special characters (em-dashes, etc.) must use `encoding="utf-8"` on Windows (cp1252 breaks).
+**Windows encoding**: Any test writing files with em-dashes or special chars must use `encoding="utf-8"` (cp1252 breaks).
+
+## Adding New Functionality
+
+### Adding a new MCP tool
+
+1. Add `CommandType` variant in `core/protocol.py`
+2. Add handler function `_handle_<name>` in `server/handlers.py` (register via `_HANDLERS` dict)
+3. Add parameter aliases in `core/aliases.py` if the tool has new parameter names
+4. Add MCP tool function in `mcp_server.py` with `@mcp.tool()` decorator
+5. Add timeout override to `_SLOW_COMMANDS` if >10s expected
+6. Write tests (patch `_handlers_hou`, not `sys.modules["hou"]`)
+
+### Adding a routing recipe
+
+Add to `routing/recipes.py` in the `_BUILTIN_RECIPES` dict. Recipes are Tier 0.5 — pattern-matched before regex, return multi-step command sequences.
+
+### Adding RAG knowledge
+
+Add/edit files in `rag/skills/houdini21-reference/*.md`. Update topic triggers in `rag/documentation/_metadata/semantic_index.json` (13 topics, 340+ triggers).
 
 ## Key Conventions
 
-**Coaching tone**: Error messages say "Couldn't find node" not "Node not found". Always offer a next step. Smart suggestions via `_suggest_parms(node, name)` provide substring-matched alternatives.
+**Coaching tone**: Error messages say "Couldn't find node" not "Node not found". Always offer next step. `_suggest_parms(node, name)` provides substring-matched alternatives. See `TONE.md` for the full voice guide.
 
-**He2025 determinism**: `round_float()` is for OUTPUT only — never apply to internal timing. `sort_keys=True` in all JSON serialization. `@deterministic` decorator auto-rounds float args.
+**He2025 determinism**: `round_float()` for OUTPUT only — never internal timing. `sort_keys=True` in all JSON serialization. `@deterministic` decorator auto-rounds float args. `kahan_sum()` for stable aggregation. Content-based UUIDs via `deterministic_uuid()`.
 
-**Lazy loading**: Heavy modules (routing, server, UI) lazy-loaded via `__getattr__` in `__init__.py`. Optional deps use try/except with `*_AVAILABLE` flags.
+**Lazy loading**: `__init__.py` uses `__getattr__` to defer routing/server/UI imports. Optional deps use try/except with `*_AVAILABLE` flags. Keeps Houdini startup fast.
 
-**Thread safety**: `ReadWriteLock` (writer-priority) for `MemoryStore`, `threading.Lock()` for tier-pin cache, `threading.Event()` for background loading in `store.py`.
+**Thread safety**: `ReadWriteLock` (writer-priority) in `MemoryStore`. `threading.Lock()` for tier-pin cache. `threading.Event()` for background store loading. `_log_executor` ThreadPoolExecutor(2) for fire-and-forget memory logging.
 
-**Backwards compatibility**: All legacy names preserved as aliases — `NexusServer`, `EngramMemory`, `HyphaeAuditLog`, etc. Storage migration from `.nexus/`/`.engram/` to `.synapse/` is automatic.
+**Backwards compat**: All legacy names preserved — `NexusServer`, `EngramMemory`, `HyphaeAuditLog`, etc. Storage auto-migrates from `.nexus/`/`.engram/` to `.synapse/`.
 
 **Singletons**: `AuditLog`, `HumanGate`, `SynapseBridge`, `CryptoEngine` — accessed via `audit_log()`, `human_gate()`, `get_bridge()`, `get_crypto()`.
 
+**Error classification**: User errors (`ValueError`, `KeyError`, `AttributeError`, `TypeError`, `IndexError`, `NameError`) do NOT trip circuit breaker. Service errors (`TimeoutError`, threading errors, Houdini crashes) DO trip it.
+
+**Rollback errors in execute_python**: `_ROLLBACK_ERRORS = (NameError, SyntaxError, TypeError, AttributeError, IndexError)` trigger auto-undo. Operational errors (RuntimeError, hou.OperationFailed) do NOT — earlier mutations may be valid.
+
+## Lighting Law (Critical Domain Knowledge)
+
+**Intensity is ALWAYS 1.0 (or below)**. Brightness is controlled by **exposure** (logarithmic, in stops). This applies to ALL PBR renderers (Karma, Arnold, RenderMan, V-Ray).
+
+- Key:fill ratio 3:1 = 1.585 stops difference (`log2(3)`)
+- Key:fill ratio 4:1 = 2.0 stops difference (`log2(4)`)
+- USD exposure parm: `xn__inputsexposure_vya` (value), `xn__inputsexposure_control_wcb` = `"set"` (enable)
+- USD intensity parm: `xn__inputsintensity_i0a` — always 1.0
+
 ## Wire Protocol
 
-**Default**: `ws://localhost:9999/synapse` | **Version**: `4.0.0`
+Default: `ws://localhost:9999/synapse` | Version: `4.0.0`
 
-Command types: `create_node`, `delete_node`, `connect_nodes`, `get_parm`, `set_parm`, `get_scene_info`, `get_selection`, `execute_python`, `execute_vex`, `create_usd_prim`, `modify_usd_prim`, `get_usd_attribute`, `set_usd_attribute`, `get_stage_info`, `capture_viewport`, `render`, `set_keyframe`, `render_settings`, `wedge`, `reference_usd`, `create_material`, `assign_material`, `read_material`, `knowledge_lookup`, `inspect_selection`, `inspect_scene`, `inspect_node`, `batch_commands`, `context`, `search`, `add_memory`, `decide`, `recall`, `ping`, `get_health`
+35 command types: `create_node`, `delete_node`, `connect_nodes`, `get_parm`, `set_parm`, `get_scene_info`, `get_selection`, `execute_python`, `execute_vex`, `create_usd_prim`, `modify_usd_prim`, `get_usd_attribute`, `set_usd_attribute`, `get_stage_info`, `capture_viewport`, `render`, `set_keyframe`, `render_settings`, `wedge`, `reference_usd`, `create_material`, `assign_material`, `read_material`, `knowledge_lookup`, `inspect_selection`, `inspect_scene`, `inspect_node`, `batch_commands`, `context`, `search`, `add_memory`, `decide`, `recall`, `ping`, `get_health`
 
-## MCP Server (`mcp_server.py`)
-
-34 tools bridging Claude to Houdini. Key config:
-- `COMMAND_TIMEOUT=10.0` (default), `_SLOW_COMMANDS` override: execute/inspect → 30s, render/wedge → 120s, batch → 60s
-- Concurrent dispatch: `_pending` dict + `_recv_loop` enables true parallel MCP tool calls (no `_cmd_lock`)
-- Warmup pre-connect in `main()` reduces first-call latency
-- `MAX_RETRIES=2`, `RETRY_DELAY=0.3`, auto-retry on connection drop
-- `open_timeout=3.0` (hwebserver handshake ~2s), `ping_interval=None`, `compression=None` (localhost)
-
-## Error Classification
-
-**User errors** (do NOT trip circuit breaker): `ValueError`, `KeyError`, `AttributeError`, `TypeError`, `IndexError`, `NameError`
-
-**Service errors** (DO trip circuit breaker): `TimeoutError`, threading errors, Houdini crashes
+Parameter names resolve through `aliases.py` (38+ mappings) — e.g., `node`, `path`, `node_path` all resolve to canonical `node`.
 
 ## Storage Layout
 
 ```
 $HIP/.synapse/           # Per-project memory
-├── memory.jsonl         # Append-only log
-├── index.json           # Search indices (by_type, by_tag, by_keyword)
-├── context.md           # Human-editable shot context
-├── decisions.md         # Decision log
-└── tasks.md             # Task history
+  memory.jsonl           # Append-only log (async write buffer: 2s flush / 50-item cap / atexit flush)
+  index.json             # Search indices (by_type, by_tag, by_keyword)
+  context.md             # Human-editable shot context
+  decisions.md           # Decision log
+  tasks.md               # Task history
 
-~/.synapse/              # Global (audit, gates, keys)
-├── audit/               # Daily JSONL audit logs
-├── gates/               # Gate proposals
-└── encryption.key       # Auto-generated Fernet key
+~/.synapse/              # Global
+  audit/                 # Daily JSONL audit logs (hash-chain, tamper-evident)
+  gates/                 # Gate proposals (timestamped, immutable)
+  encryption.key         # Auto-generated Fernet key (AES-128-CBC + HMAC-SHA256)
+  agent/                 # Autonomous agent SDK (synapse_agent.py entry point)
+  design/                # Design tokens, icon generator, Qt styles
+  houdini/               # Shelf, panel, callbacks for Houdini integration
+  install.py             # Houdini prefs installer
 ```
 
 ## Gotchas
 
-- **matlib.cook(force=True)**: MUST cook materiallibrary before `createNode()` on shader child — without cook, internal subnet doesn't exist
-- **Render `output_file` kwarg**: Doesn't work for usdrender ROPs — set `outputimage` or `picture` parm directly
-- **usdrender `loppath`**: ROPs in `/out` need `loppath` set to a LOP node — handler auto-discovers display node in `/stage`
+- **matlib.cook(force=True)**: MUST cook materiallibrary before `createNode()` on shader child — without cook, internal subnet doesn't exist and createNode returns None
+- **Render output_file kwarg**: Doesn't work for usdrender ROPs — set `outputimage` or `picture` parm directly
+- **usdrender loppath**: ROPs in `/out` need `loppath` set to a LOP node — handler auto-discovers display node in `/stage`
 - **Karma camera**: Must use USD prim path (`/cameras/render_cam`), not Houdini node path
-- **`override_res`**: String menu `""` / `"scale"` / `"specific"` — not int
-- **Viewport capture**: Must use Flipbook API with `hdefereval.executeInMainThreadWithResult()` — `QWidget.grab()` returns black for OpenGL
-- **`.pypanel` imports**: NEVER nuke `sys.modules` — use `hou.session` guard for one-time import
+- **override_res**: String menu `""` / `"scale"` / `"specific"` — not int
+- **Viewport capture**: Must use Flipbook API with `hdefereval.executeInMainThreadWithResult()` — `QWidget.grab()` returns black for OpenGL; `executeDeferred()` is fire-and-forget and won't block
+- **.pypanel imports**: NEVER nuke `sys.modules` — use `hou.session` guard for one-time import
 - **RAG Path import**: Handler uses `from pathlib import Path as _Path` (inline) — global `Path` not available in handlers.py
+- **MCP execute_python**: MCP param is `code`, but Synapse handler resolves `content` — payload builder in mcp_server.py maps it
+- **SVG icon generation**: XML forbids `--` inside comments; use `|` separator
+- **synapse_shelf.py**: Security hooks block `parm.eval()` patterns; use `node.evalParm("parm_name")` method instead
+- **Agent SDK websockets**: Must import at module level (not inside connect()) — patch target is `synapse_ws.websockets`
+- **Zombie servers**: Multiple SynapseServer instances can linger in Houdini; use `gc.get_objects()` + `_actual_port` to find the active one
