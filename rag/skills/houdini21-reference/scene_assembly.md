@@ -47,6 +47,18 @@ Merges an entire USD layer into the current stage.
 }
 ```
 
+## Payloads (Deferred Loading)
+
+Payloads are like references but load on demand:
+- Set `reftype` to "Payload" on the reference LOP
+- Unloaded payloads show as empty prims (fast scene open)
+- Load via "Load Payload" in scene graph or `usdprimload` LOP
+- Best for: hero assets, heavy FX caches, crowd agents
+
+### When Reference vs Payload
+- **Reference**: Always loaded. Use for things always visible (env, lights, cameras)
+- **Payload**: Deferred. Use for heavy assets, optional detail, crowd members
+
 ## Heavy USD Files (>50MB)
 
 Expect slow initial cook (~5-30s depending on size).
@@ -54,6 +66,7 @@ Tips:
 - Use Payloads instead of References for heavy assets
 - Enable load masks to limit traversal
 - Consider using `usdstitch` for pre-composed environments
+- Use `purpose=proxy` for low-res viewport stand-ins
 
 ## Typical Production Structure
 

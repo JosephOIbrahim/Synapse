@@ -4,6 +4,7 @@ Synapse Decisions Tab
 View and add decisions with reasoning.
 """
 
+import logging
 from typing import Optional, List
 
 try:
@@ -13,6 +14,8 @@ except ImportError:
 
 from ...memory.store import SynapseMemory
 from ...memory.models import Memory
+
+logger = logging.getLogger("synapse.ui.decisions")
 
 
 class DecisionItem(QtWidgets.QFrame):
@@ -165,7 +168,7 @@ class DecisionsTab(QtWidgets.QWidget):
                 item = DecisionItem(decision)
                 self.decisions_layout.insertWidget(self.decisions_layout.count() - 1, item)
         except Exception as e:
-            print(f"[Synapse] Failed to load decisions: {e}")
+            logger.error("Failed to load decisions: %s", e)
 
     def _add_decision(self):
         """Add a new decision."""
@@ -197,4 +200,4 @@ class DecisionsTab(QtWidgets.QWidget):
             # Refresh list
             self._refresh()
         except Exception as e:
-            print(f"[Synapse] Failed to add decision: {e}")
+            logger.error("Failed to add decision: %s", e)

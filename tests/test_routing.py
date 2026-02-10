@@ -457,7 +457,7 @@ class TestRecipeRegistry:
         self.registry = RecipeRegistry()
 
     def test_builtin_recipes_registered(self):
-        assert len(self.registry.recipes) == 4
+        assert len(self.registry.recipes) == 21
 
     def test_three_point_lighting_match(self):
         match = self.registry.match("set up three-point lighting at /obj")
@@ -526,7 +526,7 @@ class TestRecipeRegistry:
             ],
         )
         self.registry.register(custom)
-        assert len(self.registry.recipes) == 5
+        assert len(self.registry.recipes) == 22
         match = self.registry.match("run test")
         assert match is not None
         assert match[0].name == "test_recipe"
@@ -1229,6 +1229,22 @@ _ROUTING_BENCHMARK = [
     ("create a controller at /obj", RoutingTier.RECIPE, "null_controller", None),
     ("set up color correction at /img", RoutingTier.RECIPE, "color_correction_setup", None),
     ("setup color correction", RoutingTier.RECIPE, "color_correction_setup", None),
+
+    # --- New recipes ---
+    ("setup a dome light", RoutingTier.RECIPE, "dome_light_environment", None),
+    ("create dome light with studio.exr", RoutingTier.RECIPE, "dome_light_environment", None),
+    ("add an environment light", RoutingTier.RECIPE, "dome_light_environment", None),
+    ("setup a camera at /obj", RoutingTier.RECIPE, "camera_rig", None),
+    ("add a render camera", RoutingTier.RECIPE, "camera_rig", None),
+    ("setup pyro source at /obj/geo1", RoutingTier.RECIPE, "pyro_source_setup", None),
+    ("create a quick material named chrome", RoutingTier.RECIPE, "material_quick_setup", None),
+    ("setup material named gold", RoutingTier.RECIPE, "material_quick_setup", None),
+    ("setup karma render", RoutingTier.RECIPE, "karma_render_setup", None),
+    ("create karma render setup", RoutingTier.RECIPE, "karma_render_setup", None),
+    ("import /obj/geo1/sphere1 into the stage", RoutingTier.RECIPE, "sopimport_chain", None),
+    ("bring /obj/geo1/out to the usd stage", RoutingTier.RECIPE, "sopimport_chain", None),
+    ("edit /World/hero translate", RoutingTier.RECIPE, "edit_transform", None),
+    ("transform /World/props/chair position", RoutingTier.RECIPE, "edit_transform", None),
 
     # --- Should NOT match (falls through) ---
     ("tell me about the meaning of life", None, None, None),

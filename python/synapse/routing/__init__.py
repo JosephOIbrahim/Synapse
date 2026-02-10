@@ -22,6 +22,7 @@ from .router import (
     RoutingTier,
     RoutingConfig,
 )
+from .adaptation import EpochAdapter, TierEpoch, TierThresholds
 
 __all__ = [
     # Tier 0
@@ -41,4 +42,8 @@ __all__ = [
     "RoutingResult",
     "RoutingTier",
     "RoutingConfig",
+    # Adaptation (He2025)
+    "EpochAdapter",
+    "TierEpoch",
+    "TierThresholds",
 ]

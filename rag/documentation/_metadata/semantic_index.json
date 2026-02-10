@@ -20,9 +20,9 @@
     "keywords": ["materialx", "shader", "material", "mtlx", "standard_surface", "color", "metalness", "roughness", "assign", "library"]
   },
   "usd_stage_operations": {
-    "summary": "USD stage operations and prim manipulation",
-    "description": "USD prims in Solaris follow a hierarchy. Common paths: /hero_sphere (from sphere LOP named 'hero_sphere'), /materials/shader_name (from materiallibrary), /lights/light_name (from light LOPs), /cameras/cam_name (from camera LOPs), /Render (from karmarenderproperties). Transform uses 'xformOp:transform' matrix (not 'xformOp:translate'). For translate/rotate/scale, use an 'edit' LOP node instead of USD attributes directly. Prim types: Sphere, Cube, Mesh, Xform, Scope, DomeLight, DistantLight, RectLight, Camera.",
-    "keywords": ["usd", "prim", "stage", "path", "transform", "xform", "attribute", "hierarchy", "scope"]
+    "summary": "USD stage operations, composition arcs (LIVRPS), and prim manipulation",
+    "description": "USD prims in Solaris follow a hierarchy. Common paths: /hero_sphere (from sphere LOP named 'hero_sphere'), /materials/shader_name (from materiallibrary), /lights/light_name (from light LOPs), /cameras/cam_name (from camera LOPs), /Render (from karmarenderproperties). Transform uses 'xformOp:transform' matrix (not 'xformOp:translate'). For translate/rotate/scale, use an 'edit' LOP node instead of USD attributes directly. Composition strength (LIVRPS): Local > Inherits > VariantSets > References > Payloads > Sublayers. Prim types: Sphere, Cube, Mesh, Xform, Scope, DomeLight, DistantLight, RectLight, Camera.",
+    "keywords": ["usd", "prim", "stage", "path", "transform", "xform", "attribute", "hierarchy", "scope", "livrps", "composition"]
   },
   "pyro_simulation": {
     "summary": "Pyro (fire/smoke) simulation setup in SOPs",
@@ -31,28 +31,28 @@
   },
   "flip_simulation": {
     "summary": "FLIP fluid simulation setup in SOPs",
-    "description": "FLIP fluids use the flipsolver SOP or DOP network. SOP approach: source geometry -> fluidsource (convert to SDF/particles) -> flipsolver. Key concepts: particle-based fluid, converts to surface via surfacesdf. Key parms: 'particlesep' (particle separation), 'gridscale' (grid vs particle ratio). For simple water: sphere source -> flipsolver -> particlefluidsurface (meshing). Import meshed result to Solaris via sopimport.",
-    "keywords": ["flip", "fluid", "water", "liquid", "simulation", "particles", "surface", "mesh"]
+    "description": "FLIP fluids use the flipsolver SOP. Chain: source geometry -> fluidsource -> flipsolver -> particlefluidsurface (meshing). Key parms: 'particlesep' (particle separation, 0.1 preview / 0.03-0.05 final), 'gridscale' (2.0 default), 'viscosity' (0=water, 50+=honey), 'surfacetension'. Velocity transfer: FLIP (splashy), PIC (smooth), blend (picflip=0.05 for best results). Enable 'narrowband' for open-surface sims (5-10x faster). VDB collisions preferred. Whitewater: flipsolver -> whitewatersource -> whitewatersolver for spray/foam/bubbles.",
+    "keywords": ["flip", "fluid", "water", "liquid", "simulation", "particles", "surface", "mesh", "whitewater", "viscosity", "ocean"]
   },
   "rbd_simulation": {
     "summary": "RBD (rigid body dynamics) simulation setup",
-    "description": "RBD in modern Houdini: geometry -> rbdmaterialfracture (Voronoi fracture) -> rigidsolver SOP. Or use DOP network with rbdpackedobject + bulletsolversop. Key concepts: packed primitives, constraint networks, fracture patterns. For simple destruction: box -> rbdmaterialfracture -> assemble -> rigidsolver. Import result to Solaris via sopimport.",
-    "keywords": ["rbd", "rigid", "body", "dynamics", "fracture", "destruction", "physics", "bullet", "constraint"]
+    "description": "RBD in modern Houdini: geometry -> rbdmaterialfracture (Voronoi fracture) -> assemble (pack primitives) -> rigidsolver SOP. Constraint types: Glue (break on impact), Hard (unbreakable), Hinge (rotate), Cone Twist (limited rotation), Soft (spring). Setup: rbdconstraintsfromrules -> rbdconstraintproperties -> solver constraint input. For progressive destruction: vary strength by height or group. Impact data: f@impulse for collision force. Secondary effects: debris via POP solver, dust via pyro at impact points.",
+    "keywords": ["rbd", "rigid", "body", "dynamics", "fracture", "destruction", "physics", "bullet", "constraint", "glue", "impact"]
   },
   "tops_wedging": {
     "summary": "TOPs/PDG wedging for parameter variation",
-    "description": "TOPs (Task Operator Network) enables parameter wedging. Create a topnet at /obj level. Inside: wedge TOP (generates parameter variations) -> ropfetch TOP (renders each variation). Wedge node: 'wedgecount' sets number of variations, 'wedgeattribs' defines which attributes to vary. Can wedge any parameter via channel references. Good for: lookdev (material variations), lighting (intensity sweeps), rendering (quality presets).",
-    "keywords": ["tops", "pdg", "wedge", "variation", "parameter", "sweep", "batch", "render"]
+    "description": "TOPs (Task Operator Network) enables parameter wedging. Create a topnet at /obj level. Inside: wedge TOP (generates parameter variations) -> ropfetch TOP (renders each variation). Wedge node: 'wedgecount' sets number of variations, 'wedgeattribs' defines which attributes to vary. Types: Range (linear sweep), Random (exploration), Specific Values (A/B). Schedulers: localscheduler, hqueuescheduler, deadline. For GPU renders (Karma XPU), set maxproccount=1. Use waitforall -> imagemagick for contact sheet comparisons.",
+    "keywords": ["tops", "pdg", "wedge", "variation", "parameter", "sweep", "batch", "render", "scheduler", "contact sheet"]
   },
   "houdini_sop_basics": {
-    "summary": "Common SOP node types and parameter names",
-    "description": "SOP sphere: 'radx/rady/radz' (not 'rad'), 'scale', 'rows', 'cols'. SOP box: 'sizex/y/z', 'tx/ty/tz'. scatter: 'npts' (number of points). attribwrangle: 'snippet' (VEX code), 'class' (point/prim/vertex/detail). null: no special parms (used as output marker). merge: auto-connects inputs. transform: 'tx/ty/tz', 'rx/ry/rz', 'sx/sy/sz'. Mountain SOP: 'height', 'element_size'. Note: SOP and LOP parm names differ even for similar concepts.",
-    "keywords": ["sop", "sphere", "box", "scatter", "wrangle", "transform", "geometry", "node", "parameter"]
+    "summary": "Common SOP node types, groups, VDB workflow, and parameter names",
+    "description": "SOP sphere: 'radx/rady/radz' (not 'rad'), 'scale', 'rows', 'cols'. SOP box: 'sizex/y/z', 'tx/ty/tz'. scatter: 'npts'. attribwrangle: 'snippet', 'class' (point/prim/vertex/detail). copytopoints: reads @P, @orient, @N+@up, @pscale, @scale from target points. Groups: groupcreate, groupexpression, grouprange. VDB workflow: mesh -> vdbfrompolygons -> vdbcombine -> convertVDB (reliable booleans). For-each: foreach_begin/end (by pieces, count, feedback). SOP vs LOP parm names differ.",
+    "keywords": ["sop", "sphere", "box", "scatter", "wrangle", "transform", "geometry", "node", "parameter", "group", "vdb", "copy", "foreach"]
   },
   "scene_assembly": {
-    "summary": "USD scene assembly via reference and sublayer",
-    "description": "Import external USD files using 'reference' LOP (adds content under a prim path, good for assets) or 'sublayer' LOP (merges layer stack, good for environments). Reference LOP parms: 'filepath1' (USD file path), 'primpath' (target prim path). Sublayer LOP parms: 'filepath1' (USD file path). For heavy USD files (>50MB), expect slow initial cook — Houdini loads and traverses the full stage. Use 'loadmasks' to limit what's loaded if available.",
-    "keywords": ["reference", "sublayer", "assembly", "import", "usd", "asset", "scene", "composition"]
+    "summary": "USD scene assembly via reference, sublayer, and payload",
+    "description": "Import external USD files using 'reference' LOP (adds content under a prim path, good for assets) or 'sublayer' LOP (merges layer stack, good for environments). Reference vs Payload: references always load, payloads defer loading until requested. Reference LOP parms: 'filepath1', 'primpath', 'reftype' (Reference or Payload). Layer stacking: anim.usd -> layout.usd -> lighting.usd -> final.usd (later sublayers are stronger).",
+    "keywords": ["reference", "sublayer", "assembly", "import", "usd", "asset", "scene", "composition", "payload"]
   },
   "camera_setup": {
     "summary": "Camera creation and configuration in Solaris",
@@ -60,8 +60,78 @@
     "keywords": ["camera", "focal", "aperture", "fstop", "focus", "position", "rotation", "lens"]
   },
   "lighting_setup": {
-    "summary": "Light types and parameters in Solaris",
-    "description": "Solaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). ALL light intensity parms use the encoded name 'xn__inputsintensity_i0a' (not 'intensity'). Light color: 'xn__inputscolor_zya' (vec3). Exposure: 'xn__inputsexposure_fya'. Dome light texture: 'xn__inputstexturefile_i1a'. Rotation via standard 'rx/ry/rz' parms.",
-    "keywords": ["light", "lighting", "dome", "distant", "rect", "area", "intensity", "color", "exposure", "hdri"]
+    "summary": "Light types, Lighting Law, and exposure-based brightness control in Solaris",
+    "description": "Solaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). LIGHTING LAW: intensity ALWAYS 1.0, brightness controlled by EXPOSURE (logarithmic, in stops). Encoded parm names: intensity='xn__inputsintensity_i0a' (always 1.0), color='xn__inputscolor_kya' (vec3), exposure='xn__inputsexposure_vya', exposure control='xn__inputsexposure_control_wcb' (set to 'set' to enable). Dome light texture: 'xn__inputstexturefile_i1a'. Key:fill ratio math: fill_exposure = key_exposure - log2(ratio). Standard 3-point: key=5.0, fill=3.0 (4:1), rim=4.5, dome=0.0.",
+    "keywords": ["light", "lighting", "dome", "distant", "rect", "area", "intensity", "color", "exposure", "hdri", "stops", "ratio"]
+  },
+  "vex_functions": {
+    "summary": "VEX function reference: geometry, math, noise, strings, patterns",
+    "description": "Top VEX functions: point/prim attribute access (@P, @N, @Cd, @v, @pscale, @orient, @id), geometry functions (addpoint, removepoint, pcfind, nearpoint, xyzdist, intersect), math (lerp, fit, clamp, smooth, normalize, cross, dot, length, distance), noise (noise, snoise, curlnoise, vnoise, xnoise, flownoise), channel references (ch, chs, chv, chramp), string ops (sprintf, concat, match, split), matrix (maketransform, lookat, dihedral, quaternion, qrotate). Type prefixes: f@=float, v@=vector, i@=int, s@=string, p@=vector4.",
+    "keywords": ["vex", "function", "wrangle", "snippet", "point", "prim", "noise", "math", "attribute", "channel", "pcfind", "orient", "quaternion"]
+  },
+  "common_attributes": {
+    "summary": "Standard Houdini geometry attributes and their types",
+    "description": "Key geometry attributes: P (position vec3), N (normal vec3), Cd (color vec3), v (velocity vec3), pscale (float), orient (quaternion vec4), up (vec3), id (int), age/life (float), rest (vec3), uv (vec3), width (curve width float). Copy-to-points reads: P, orient (highest priority), N+up, pscale, scale. Pyro volumes: density, temperature, flame, fuel, vel. FLIP: viscosity, surface, vorticity. RBD: constraint_name, strength. Intrinsics: measuredarea, measuredperimeter, measuredvolume.",
+    "keywords": ["attribute", "P", "N", "Cd", "color", "velocity", "pscale", "orient", "uv", "rest", "id", "age", "copy", "width"]
+  },
+  "karma_aov": {
+    "summary": "Karma AOV setup: render passes, cryptomatte, denoising",
+    "description": "Karma AOVs via karmarenderproperties Image Output section. Common AOVs: beauty (C), direct/indirect diffuse/specular, albedo, N (normals), P (position), Z (depth), motionvector, crypto_material/object/asset (Cryptomatte). Denoising AOVs: denoise_albedo, denoise_normal. Light groups: tag lights with 'lightGroup' for per-light AOVs. Deep output: .exr with deep flag for depth-correct compositing. AOV rebuild: beauty = direct_diffuse + indirect_diffuse + direct_specular + indirect_specular + emission + sss.",
+    "keywords": ["aov", "render", "pass", "cryptomatte", "denoise", "deep", "beauty", "diffuse", "specular", "normal", "depth", "light", "group"]
+  },
+  "houdini_expressions": {
+    "summary": "HScript expressions, variables, and channel references",
+    "description": "Frame variables: $F (int), $FF (float), $T (time), $FSTART/$FEND, $FPS. Geometry: $PT, $NPT, $PR, $NPR, $CEX/Y/Z, $SIZEX/Y/Z. Channels: ch('parm'), chs('string'), chv('vector'), chramp('ramp',pos). Inputs: opinput('.', 0), opinputpath. Strings: $HIP, $HIPNAME, $OS, $JOB. File padding: $F4 = 4-digit frame. HScript vs Python vs VEX: HScript for parm fields, Python for complex expressions, VEX in wrangles. Gotcha: ch() in parm fields (HScript) vs ch() in wrangles (VEX) are different.",
+    "keywords": ["expression", "hscript", "variable", "frame", "channel", "ch", "opinput", "HIP", "time", "ramp"]
+  },
+  "common_errors": {
+    "summary": "24 common Houdini errors with causes and solutions",
+    "description": "Node/path errors: matlib cook error (cook first), node not found (check context), node type not found (check spelling). Parameter errors: parm not found on USD (use encoded names), keyframe won't set (delete expression first), parm tuple mismatch (use parmTuple). Render errors: black render (camera prim path), fireflies (intensity>1 violation, roughness=0), slow render (too many bounces). VEX errors: syntax error (semicolons), read-only attribute, wrong run-over mode, pcfind empty. Simulation errors: explosion on frame 1, pyro container clips, drift/instability. File errors: cache missing frames ($F4 padding), USD reference not found.",
+    "keywords": ["error", "fix", "solution", "cook", "not found", "black", "render", "permission", "crash", "invisible", "vex", "syntax", "fireflies"]
+  },
+  "cops_compositing": {
+    "summary": "COPs 2D compositing nodes and workflows",
+    "description": "COPs at /img or inside cop2net. Generators: file, color, ramp, noise, font. Color correction: colorcorrect (gamma/gain/offset), grade (lift/gamma/gain), bright, hueshift, lut, tonemap. Compositing: over, multiply, add, screen, blend. Transform: xform, crop, scale, flip. Filters: blur, defocus, sharpen, edge, median. Channels: channelcopy, shuffle, premultiply. Output: rop_comp. Chain: file->colorcorrect->grade->null for basic correction.",
+    "keywords": ["cops", "compositing", "color", "grade", "blur", "over", "multiply", "image", "2d", "correction"]
+  },
+  "vellum_simulation": {
+    "summary": "Vellum cloth, hair, grain, and soft body simulation",
+    "description": "Vellum is Houdini's unified SOP-based solver. Chain: source -> vellumconfigure* -> vellumsolver. Types: vellumcloth (fabric), vellumhair (cables/hair), vellumgrains (sand/snow), vellumsoftbody (jelly/rubber), vellumballoon (inflatable). Configure nodes have TWO outputs: geometry (solver input 1) and constraints (solver input 3). Key cloth parms: stretchstiffness (10000), bendstiffness (0.001), thickness (0.01). Draping: vellumdrape pre-settles garments. Collision: vellumcollider for external objects. Pin: i@stopped=1 on constrained points. Substrate guidelines: 5 substeps for cloth, 1-3 for grains.",
+    "keywords": ["vellum", "cloth", "hair", "grain", "soft", "body", "fabric", "simulation", "constraint", "drape", "stiffness", "collision"]
+  },
+  "terrain_heightfields": {
+    "summary": "Terrain creation with heightfields, erosion, and scatter",
+    "description": "Heightfield system uses 2D volume grids. Chain: heightfield -> heightfield_noise -> heightfield_erode -> heightfield_scatter. Key parms: gridspacing (resolution, 1.0 default), sizex/sizey (terrain dimensions). Erosion types: hydraulic (water carving channels) and thermal (material sliding down slopes). Erosion parms: iterations (50+), rainamount, eroderate, bankangle. Layers: height, mask, bedrock, debris, sediment, water. Use layers to drive material assignment (height=snow, debris=dirt, slope=cliff). Convert to polygon mesh via heightfield_convert for rendering. Scatter vegetation/rocks using heightfield_scatter with density masks.",
+    "keywords": ["terrain", "heightfield", "erosion", "landscape", "ground", "scatter", "vegetation", "height", "noise", "environment"]
+  },
+  "ocean_fx": {
+    "summary": "Ocean spectrum, FLIP interaction, and whitewater setup",
+    "description": "Ocean system: oceanspectrum (wave frequency data) -> oceanevaluate (displaced geometry). For interaction: add oceanflat -> flipsolver for FLIP tank blended with spectral ocean. Key spectrum parms: speed (wind m/s), direction, spread, chop (wave peakiness), gridsize, depth. Stack 2-3 spectrums for realism (swell + chop + ripples). Whitewater: flipsolver -> whitewatersource -> whitewatersolver for spray/foam/bubbles. Emission from cusp (wave crests), velocity, acceleration. Ocean shader: IOR 1.33, very low roughness, deep blue-green absorption color.",
+    "keywords": ["ocean", "water", "wave", "spectrum", "flip", "whitewater", "spray", "foam", "sea", "fluid"]
+  },
+  "kinefx_rigging": {
+    "summary": "KineFX SOP-based rigging, retargeting, and motion clips",
+    "description": "KineFX operates in SOPs: skeleton = points (joints) + polylines (bones) + @name + @transform attributes. Creation: skeleton SOP or kinefx_characterunpack (from FBX/USD). Retargeting: mappoints -> retargetbiped transfers animation between different skeletons. Full-body IK: rigfullbodyik with joint targets. Motion clips: motionclip (create), motionclipblend (crossfade), motionclipsequence (chain clips). Skinning: bonecapture (compute weights) -> bonedeform (apply animation to mesh). VEX works directly on skeletons since they're just points.",
+    "keywords": ["kinefx", "rig", "skeleton", "joint", "bone", "retarget", "animation", "motion", "capture", "skin", "ik", "fbx"]
+  },
+  "uv_workflows": {
+    "summary": "UV unwrapping, layout, UDIM, and texturing workflows",
+    "description": "UV attribute: v@uv (vector3, typically on vertices for seam support). Creation: uvunwrap (automatic), uvflatten (production, seam-based), uvproject (planar/cylindrical/spherical). Layout: uvlayout packs islands efficiently with padding. UDIM: tiles for multi-texture assets (1001=body, 1002=head, etc). Transfer: attribtransfer or uvtransfer between different topology meshes. Quality check: uvquickshade applies checker pattern (uniform squares = good UVs). Tips: vertex UVs for production, padding 0.005+ for mip bleeding, transfer UVs early before topology changes.",
+    "keywords": ["uv", "unwrap", "flatten", "layout", "texture", "udim", "project", "seam", "mapping", "coordinates"]
+  },
+  "sop_solver_loops": {
+    "summary": "SOP Solver feedback loops and custom simulation",
+    "description": "Solver SOP creates frame-to-frame feedback: output of frame N becomes input of frame N+1. Inside solver: Prev_Frame node gives last frame, Input_1 gives original input. Must play forward from start frame (no random access). Common patterns: point growth (expand each frame), trail/history (accumulate points), painting (accumulate attribute by proximity), custom particles (emit + gravity + kill). SOP Solver DOP integrates custom SOP logic inside DOP sims. Key rule: multiply velocities by @TimeInc for frame-rate independence.",
+    "keywords": ["solver", "feedback", "loop", "simulation", "custom", "accumulate", "growth", "trail", "frame", "procedural"]
+  },
+  "render_analysis": {
+    "summary": "Analyzing render quality: exposure, noise, lighting, materials",
+    "description": "Exposure analysis: check overall brightness, key:fill ratio, highlight clipping, shadow detail. Adjust via exposure stops (never intensity). Noise types: general (increase samples), shadow (increase min samples), specular/fireflies (clamp, check roughness), volume (increase step rate). Lighting check: key light dominant, fill 1.5-3 stops below, rim separates from background. Material check: roughness 0.001 minimum (not 0.0), metalness 0 or 1 (not between), base color appropriate. Iteration: 640x360 at 16 samples for layout, 1280x720 at 64 for lookdev, full res at 256+ for final.",
+    "keywords": ["render", "analysis", "exposure", "noise", "lighting", "composition", "quality", "iteration", "feedback", "review"]
+  },
+  "wire_dynamics": {
+    "summary": "Wire, cable, rope, and strand dynamics simulation",
+    "description": "Wire dynamics via Vellum Hair (recommended) or DOP Wire Solver (legacy). Chain: curve_geo -> vellumhair -> vellumsolver. Key parms: stretchstiffness (50000 for cable), bendstiffness (1.0 for cable, 0.001 for fishing line), density. Presets: thin cable (stretch=50000, bend=1.0), heavy rope (stretch=100000, bend=10.0), power line (stretch=200000, bend=0.01). Pin endpoints: i@stopped=1. Catenary curve: lerp + parabolic sag approximation. Rendering: @width attribute for curve thickness, material per wire type. Wind: vellumconstraintproperty with Wind type or custom VEX force.",
+    "keywords": ["wire", "cable", "rope", "strand", "dynamics", "vellum", "hair", "curve", "catenary", "chain", "string"]
   }
 }

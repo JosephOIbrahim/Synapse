@@ -4,9 +4,10 @@
 
 | Parameter | Encoded Name | Type | Description |
 |-----------|-------------|------|-------------|
-| Intensity | `xn__inputsintensity_i0a` | float | Light brightness |
-| Color | `xn__inputscolor_zya` | vec3 | Light color RGB |
-| Exposure | `xn__inputsexposure_fya` | float | Exposure stops |
+| Intensity | `xn__inputsintensity_i0a` | float | Always 1.0 (Lighting Law) |
+| Color | `xn__inputscolor_kya` | vec3 | Light color RGB |
+| Exposure | `xn__inputsexposure_vya` | float | Brightness in stops (use this, not intensity) |
+| Exposure Control | `xn__inputsexposure_control_wcb` | string | Set to `"set"` to enable exposure |
 | Texture File | `xn__inputstexturefile_i1a` | string | HDRI for dome light |
 | Enable Color Temp | `xn__inputsenablecolortemperature_r5a` | bool | Use color temperature |
 | Color Temperature | `xn__inputscolortemperature_u5a` | float | Kelvin temperature |

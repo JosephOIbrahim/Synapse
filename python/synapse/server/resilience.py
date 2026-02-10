@@ -13,6 +13,7 @@ Components:
 - HealthMonitor: Aggregate system health
 """
 
+import logging
 import time
 import threading
 from dataclasses import dataclass, field
@@ -24,6 +25,8 @@ from collections import deque
 # He2025 determinism applies to user-facing outputs, not internal timing.
 # Using Decimal for token-bucket math added ~2x overhead per command
 # with zero determinism benefit. Plain round() is sufficient.
+
+logger = logging.getLogger("synapse.resilience")
 
 
 # =============================================================================
@@ -243,7 +246,7 @@ class CircuitBreaker:
             except Exception:
                 pass
 
-        print(f"[CircuitBreaker:{self.name}] {old_state.value} -> {new_state.value}")
+        logger.info("CircuitBreaker[%s]: %s -> %s", self.name, old_state.value, new_state.value)
 
     def can_execute(self) -> Tuple[bool, Dict]:
         """
@@ -436,7 +439,7 @@ class PortManager:
                 health.error_count += 1
                 health.last_check = time.time()
 
-                print(f"[PortManager] Port {port} marked unhealthy: {error}")
+                logger.warning("Port %s marked unhealthy: %s", port, error)
 
                 if self._on_health_change:
                     try:
@@ -453,7 +456,7 @@ class PortManager:
                 health.last_error = None
                 health.last_check = time.time()
 
-                print(f"[PortManager] Port {port} recovered")
+                logger.info("Port %s recovered", port)
 
     def should_failover(self) -> Tuple[bool, Optional[int]]:
         """Check if we should failover to a new port."""
@@ -558,7 +561,7 @@ class Watchdog:
             self._thread.join(timeout=2.0)
             self._thread = None
         if was_running:
-            print("[Watchdog] Stopped")
+            logger.info("Watchdog stopped")
 
     def _ensure_started(self):
         """Launch monitor thread on first heartbeat (lazy start)."""
@@ -571,7 +574,7 @@ class Watchdog:
             name="Synapse-Watchdog"
         )
         self._thread.start()
-        print("[Watchdog] Started monitoring main thread")
+        logger.info("Watchdog started monitoring main thread")
 
     def heartbeat(self):
         """
@@ -595,7 +598,7 @@ class Watchdog:
             # Recover from freeze
             if self._is_frozen:
                 self._is_frozen = False
-                print(f"[Watchdog] Main thread recovered (was frozen for {latency:.1f}s)")
+                logger.info("Main thread recovered (was frozen for %.1fs)", latency)
                 if self._on_recover:
                     try:
                         self._on_recover()
@@ -614,7 +617,7 @@ class Watchdog:
                     self._is_frozen = True
                     self._freeze_count += 1
 
-                    print(f"[Watchdog] FREEZE DETECTED! No heartbeat for {elapsed:.1f}s")
+                    logger.warning("FREEZE DETECTED! No heartbeat for %.1fs", elapsed)
 
                     if self._on_freeze:
                         try:

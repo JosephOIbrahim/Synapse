@@ -4,11 +4,14 @@ Synapse Command Queue
 Thread-safe command queues for deterministic command processing.
 """
 
+import logging
 import threading
 from typing import Optional, Dict, Any, List, Tuple
 from collections import OrderedDict
 
 from .protocol import SynapseCommand, SynapseResponse, MAX_PENDING_COMMANDS
+
+logger = logging.getLogger("synapse.queue")
 
 
 class DeterministicCommandQueue:
@@ -54,7 +57,7 @@ class DeterministicCommandQueue:
     def _evict_oldest(self):
         if self._pending:
             key, (cmd, client) = self._pending.popitem(last=False)
-            print(f"[Synapse] Evicted command {cmd.id} due to queue overflow")
+            logger.warning("Evicted command %s due to queue overflow", cmd.id)
 
     def size(self) -> int:
         with self._lock:

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Synapse v4.2.1 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 34 MCP tools to Claude Desktop/Code for real-time scene manipulation, persistent project memory, tiered LLM routing, and viewport/render capture.
+Synapse v5.0.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 37 MCP tools to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, and viewport/render capture.
 
 Two repos make up the full system:
 - **`C:\Users\User\Synapse\`** — Core server, protocol, handlers, memory, routing, MCP bridge
@@ -17,7 +17,7 @@ Two repos make up the full system:
 pip install -e ".[dev]"
 pip install -e ".[dev,websocket,mcp,routing,encryption]"   # all optional features
 
-# Run all core tests (~563 tests, no Houdini required)
+# Run all core tests (~672 tests, no Houdini required)
 python -m pytest tests/ -v
 
 # Key test files
@@ -76,7 +76,7 @@ Houdini USD Stage / Solaris / Karma
 ### Routing Cascade (cheapest-first)
 
 ```
-Cache(O(1)) -> Recipe(O(1)) -> Tier0/regex(O(n)) -> Tier1/RAG(O(log n)) -> Tier2/Haiku(~5s) -> Tier3/Agent(~15s)
+Cache(O(1)) -> Recipe(O(1)) -> Planner(O(1)) -> Tier0/regex(O(n)) -> Tier1/RAG(O(log n)) -> Tier2/Haiku(~5s) -> Tier3/Agent(~15s)
 ```
 
 - **Tier pinning** (He2025 consistency): Same input+context maps to same tier on subsequent calls. LRU cache, max 1,000 pins, stale pins fall through.
@@ -147,11 +147,11 @@ with patch.object(hou, "flipbook", create=True):
 
 ### Adding a routing recipe
 
-Add to `routing/recipes.py` in the `_BUILTIN_RECIPES` dict. Recipes are Tier 0.5 — pattern-matched before regex, return multi-step command sequences.
+Add to `routing/recipes.py` in the `_register_builtins()` method. 21 recipes (11 basic + 10 production). Recipes are Tier 0.5 — pattern-matched before regex, return multi-step command sequences. For complex workflows, use `execute_python` steps. For dynamic composition with modifiers ("set up X with Y and Z"), add workflow templates to `routing/planner.py`.
 
 ### Adding RAG knowledge
 
-Add/edit files in `rag/skills/houdini21-reference/*.md`. Update topic triggers in `rag/documentation/_metadata/semantic_index.json` (13 topics, 340+ triggers).
+Add/edit files in `rag/skills/houdini21-reference/*.md` (25 files, ~3,700 lines). Update topic triggers in `rag/documentation/_metadata/semantic_index.json` (27 topics, 400+ triggers).
 
 ## Key Conventions
 

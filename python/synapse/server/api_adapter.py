@@ -24,9 +24,12 @@ Client call format:
 """
 
 import json
+import logging
 import threading
 import time
 from typing import Optional, Dict, Any
+
+logger = logging.getLogger("synapse.api")
 
 try:
     import hwebserver
@@ -426,15 +429,15 @@ def start_api_server(port: int = 8008):
 
     global _running
     if _running:
-        print("[Synapse-API] Already running")
+        logger.info("Already running")
         return
 
     hwebserver.run(port=port, debug=False)
     _running = True
 
-    print(f"[Synapse-API] Running on http://localhost:{port}/api")
-    print(f"[Synapse-API] Namespace: synapse.*")
-    print(f"[Synapse-API] Example: POST /api  json=[\"synapse.ping\", [], {{}}]")
+    logger.info("Running on http://localhost:%s/api", port)
+    logger.info("Namespace: synapse.*")
+    logger.info("Example: POST /api  json=[\"synapse.ping\", [], {}]")
 
 
 def stop_api_server():
@@ -449,4 +452,4 @@ def stop_api_server():
     _running = False
     _session_id = None
     _bridge = None
-    print("[Synapse-API] Stopped")
+    logger.info("Stopped")

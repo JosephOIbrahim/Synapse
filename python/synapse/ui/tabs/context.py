@@ -4,6 +4,7 @@ Synapse Context Tab
 Edit project context stored in context.md.
 """
 
+import logging
 from typing import Optional
 
 try:
@@ -13,6 +14,8 @@ except ImportError:
 
 from ...memory.store import SynapseMemory
 from ...memory.markdown import MarkdownSync, load_context, ShotContext
+
+logger = logging.getLogger("synapse.ui.context")
 
 
 class ContextTab(QtWidgets.QWidget):
@@ -136,7 +139,7 @@ class ContextTab(QtWidgets.QWidget):
             self._modified = False
             self._update_buttons()
         except Exception as e:
-            print(f"[Synapse] Failed to load context: {e}")
+            logger.error("Failed to load context: %s", e)
 
     def _on_text_changed(self):
         """Mark as modified when text changes."""

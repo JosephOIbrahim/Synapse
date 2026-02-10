@@ -5,6 +5,7 @@ Tracks AI sessions and integrates with the memory system.
 Handles session lifecycle, action logging, and context provision.
 """
 
+import logging
 import time
 import threading
 from typing import Dict, Any, List, Optional, Callable
@@ -20,6 +21,8 @@ from ..memory.store import SynapseMemory, get_synapse_memory, reset_synapse_memo
 from ..memory.models import Memory, MemoryType, MemoryQuery
 from ..memory.markdown import MarkdownSync, load_context
 from .summary import generate_session_summary
+
+logger = logging.getLogger("synapse.session")
 
 
 # =============================================================================
@@ -102,9 +105,9 @@ class SynapseBridge:
             if self._synapse:
                 self._markdown_sync = MarkdownSync(self._synapse.storage_dir)
                 self._markdown_sync.ensure_files()
-                print(f"[SynapseBridge] Connected to memory at {self._synapse.storage_dir}")
+                logger.info("Connected to memory at %s", self._synapse.storage_dir)
         except Exception as e:
-            print(f"[SynapseBridge] Failed to initialize memory: {e}")
+            logger.error("Failed to initialize memory: %s", e)
 
     def reload_synapse(self):
         """Reload memory (e.g., when project changes)."""

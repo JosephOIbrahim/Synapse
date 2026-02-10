@@ -20,6 +20,7 @@ Architecture:
 """
 
 import json
+import logging
 import threading
 from typing import Dict, Optional
 
@@ -30,6 +31,8 @@ try:
         return orjson.dumps(obj, option=orjson.OPT_SORT_KEYS).decode()
 except ImportError:
     _dumps = json.dumps
+
+logger = logging.getLogger("synapse.hwebserver")
 
 try:
     import hwebserver
@@ -98,7 +101,7 @@ if HWEBSERVER_AVAILABLE:
             self._session_id = None
             self._ws_id = _client_counter
             await self.accept()
-            print(f"[Synapse-hwebserver] Client connected: {self._client_id}")
+            logger.info("Client connected: %s", self._client_id)
 
         async def receive(self, text_data=None, bytes_data=None):
             """Handle incoming SynapseCommand message."""
@@ -171,7 +174,7 @@ if HWEBSERVER_AVAILABLE:
                     bridge = get_bridge()
                     summary = bridge.end_session(self._session_id)
                     if summary:
-                        print(f"[Synapse-hwebserver] Session summary:\n{summary}")
+                        logger.info("Session summary:\n%s", summary)
                 except Exception:
                     pass
 
@@ -180,7 +183,7 @@ if HWEBSERVER_AVAILABLE:
             if _rate_limiter:
                 _rate_limiter.remove_client(self._client_id)
 
-            print(f"[Synapse-hwebserver] Client disconnected: {self._client_id}")
+            logger.info("Client disconnected: %s", self._client_id)
 
 
 # =============================================================================
@@ -204,7 +207,7 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
     global _rate_limiter, _backpressure, _running, _handler, _port
 
     if _running:
-        print("[Synapse-hwebserver] Already running")
+        logger.info("Already running")
         return
 
     # Initialize handler
@@ -225,8 +228,8 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
 
     _running = True
     _port = port
-    print(f"[Synapse-hwebserver] Running on ws://localhost:{port}/synapse")
-    print(f"[Synapse-hwebserver] Native C++ server — no watchdog, no circuit breaker")
+    logger.info("Running on ws://localhost:%s/synapse", port)
+    logger.info("Native C++ server -- no watchdog, no circuit breaker")
 
 
 def stop_hwebserver():
@@ -246,7 +249,7 @@ def stop_hwebserver():
     _rate_limiter = None
     _backpressure = None
     _client_sessions.clear()
-    print("[Synapse-hwebserver] Stopped")
+    logger.info("Stopped")
 
 
 def is_running() -> bool:

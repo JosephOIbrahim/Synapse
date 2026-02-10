@@ -14,6 +14,7 @@ Run: python mcp_server.py
 """
 
 import asyncio
+import atexit
 import logging
 import os
 import time
@@ -457,6 +458,32 @@ async def list_tools():
                     },
                 },
                 "required": ["code"],
+            },
+        ),
+        Tool(
+            name="houdini_execute_vex",
+            description=(
+                "Execute VEX code by creating an Attribute Wrangle node. "
+                "Specify the VEX snippet, run-over class (Points/Primitives/Vertices/Detail), "
+                "and optional input geometry node. Returns the wrangle node path."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "snippet": {
+                        "type": "string",
+                        "description": "VEX code to execute (the wrangle snippet)",
+                    },
+                    "run_over": {
+                        "type": "string",
+                        "description": "What to run over: Points, Primitives, Vertices, or Detail (default: Points)",
+                    },
+                    "input_node": {
+                        "type": "string",
+                        "description": "Optional input geometry node path to wire into the wrangle",
+                    },
+                },
+                "required": ["snippet"],
             },
         ),
         # -- USD/Solaris --
@@ -1038,6 +1065,46 @@ async def list_tools():
                 "required": ["commands"],
             },
         ),
+        # -- Metrics / Stats --
+        Tool(
+            name="synapse_metrics",
+            description=(
+                "Get Synapse metrics in Prometheus text format. "
+                "Includes per-tier request counts, latencies, circuit breaker state, "
+                "and memory store size. Use for observability and debugging."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="synapse_router_stats",
+            description=(
+                "Get tier cascade routing statistics. Shows per-tier counts, latencies, "
+                "epoch adaptation state, cache hit rates, and knowledge index coverage. "
+                "Helps the LLM reason about its own routing performance."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="synapse_list_recipes",
+            description=(
+                "List all available recipes with names, descriptions, trigger patterns, "
+                "and categories. Artists can ask 'what recipes are available?' to discover "
+                "pre-built automation workflows."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -1099,6 +1166,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "houdini_get_parm":      ("get_parm",        lambda a: {"node": a["node"], "parm": a["parm"]}),
     "houdini_set_parm":      ("set_parm",        lambda a: {"node": a["node"], "parm": a["parm"], "value": a["value"]}),
     "houdini_execute_python":("execute_python",  _execute_python_payload),
+    "houdini_execute_vex":   ("execute_vex",    lambda a: {k: a[k] for k in a}),
     "houdini_stage_info":    ("get_stage_info",  _stage_info_payload),
     "houdini_get_usd_attribute": ("get_usd_attribute", lambda a: {
         k: a[k] for k in ("node", "prim_path", "attribute_name") if k in a
@@ -1131,6 +1199,9 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_decide":        ("decide",          _decide_payload),
     "synapse_add_memory":    ("add_memory",      _add_memory_payload),
     "synapse_batch":         ("batch_commands",  lambda a: {k: a[k] for k in a}),
+    "synapse_metrics":       ("get_metrics",     _passthrough),
+    "synapse_router_stats":  ("router_stats",    _passthrough),
+    "synapse_list_recipes":  ("list_recipes",    _passthrough),
 }
 
 
@@ -1205,6 +1276,20 @@ async def _warmup():
         logger.info("Warmup: connected to %s", SYNAPSE_URL)
     except Exception:
         logger.info("Warmup: Synapse not available yet (will retry on first tool call)")
+
+
+def _atexit_cleanup():
+    """Close the persistent WebSocket on interpreter shutdown."""
+    global _ws_connection
+    if _ws_connection is not None:
+        try:
+            asyncio.get_event_loop().run_until_complete(_ws_connection.close())
+        except Exception:
+            pass
+        _ws_connection = None
+    _signal_all_pending(ConnectionError("MCP server shutting down"))
+
+atexit.register(_atexit_cleanup)
 
 
 async def main():

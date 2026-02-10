@@ -25,7 +25,9 @@ from ..memory.store import SynapseMemory
 from .parser import CommandParser, ParseResult
 from .knowledge import KnowledgeIndex, KnowledgeLookupResult
 from .recipes import RecipeRegistry, Recipe
+from .planner import WorkflowPlanner
 from .cache import ResponseCache
+from .adaptation import EpochAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +143,7 @@ class TieredRouter:
             memory=memory,
         )
         self._recipes = RecipeRegistry()
+        self._planner = WorkflowPlanner()
         self._cache = ResponseCache(
             max_size=self._config.cache_max_size,
             ttl_seconds=self._config.cache_ttl,
@@ -154,6 +157,9 @@ class TieredRouter:
         self._tier_counts: Dict[str, int] = {t.value: 0 for t in RoutingTier}
         self._tier_latencies: Dict[str, List[float]] = {t.value: [] for t in RoutingTier}
         self._total_routes = 0
+
+        # Epoch-based adaptation (Phase 2A)
+        self._epoch = EpochAdapter()
 
         # Async handles for Tier 3
         self._async_results: Dict[str, RoutingResult] = {}
@@ -229,6 +235,13 @@ class TieredRouter:
             result = self._try_recipe(input_text, context_hash, start)
             if result:
                 return result
+
+        # ---------------------------------------------------------------
+        # 1.5. Workflow planner (composite intent decomposition)
+        # ---------------------------------------------------------------
+        result = self._try_plan(input_text, context_hash, start)
+        if result:
+            return result
 
         # ---------------------------------------------------------------
         # 2+3. Tier 0 (regex) + Tier 1 (knowledge) — speculative parallel
@@ -329,6 +342,46 @@ class TieredRouter:
             confidence=0.95,
             latency_ms=(time.monotonic() - start) * 1000,
             metadata={"recipe": recipe.name, "params": params},
+        )
+
+        self._cache_result("recipe", text, context_hash, result)
+        self._pin_tier(text, context_hash, RoutingTier.RECIPE.value)
+        self._record_metric(RoutingTier.RECIPE, result.latency_ms)
+        return result
+
+    def _try_plan(
+        self, text: str, context_hash: str, start: float
+    ) -> Optional[RoutingResult]:
+        """Try workflow planner for composite intents."""
+        plan = self._planner.plan(text)
+        if plan is None:
+            return None
+
+        # Execute plan steps if command_fn available
+        responses = []
+        if self._command_fn:
+            for cmd in plan.steps:
+                try:
+                    resp = self._command_fn(cmd)
+                    responses.append(resp)
+                except Exception as e:
+                    responses.append(SynapseResponse(
+                        id=cmd.id, success=False, error=str(e),
+                    ))
+
+        result = RoutingResult(
+            success=True,
+            tier=RoutingTier.RECIPE,  # Plans run at recipe speed
+            answer=plan.description,
+            commands=plan.steps,
+            responses=responses,
+            confidence=0.9,
+            latency_ms=(time.monotonic() - start) * 1000,
+            metadata={
+                "planned": True,
+                "workflow": plan.name,
+                **plan.metadata,
+            },
         )
 
         self._cache_result("recipe", text, context_hash, result)
@@ -741,13 +794,16 @@ class TieredRouter:
     # Metrics
     # ------------------------------------------------------------------
 
-    def _record_metric(self, tier: RoutingTier, latency_ms: float):
-        """Record routing metric."""
+    def _record_metric(self, tier: RoutingTier, latency_ms: float, success: bool = True):
+        """Record routing metric and epoch outcome."""
         self._tier_counts[tier.value] = self._tier_counts.get(tier.value, 0) + 1
         if tier.value not in self._tier_latencies:
             self._tier_latencies[tier.value] = []
         self._tier_latencies[tier.value].append(latency_ms)
         self._total_routes += 1
+
+        # Feed epoch adapter for adaptive threshold adjustment
+        self._epoch.record(tier.value, success, latency_ms)
 
     def stats(self) -> Dict[str, Any]:
         """Return routing statistics."""
@@ -766,6 +822,7 @@ class TieredRouter:
             "tiers": tier_stats,
             "cache": self._cache.stats(),
             "knowledge": self._knowledge.stats(),
+            "epoch": self._epoch.stats(),
         }
 
     # ------------------------------------------------------------------

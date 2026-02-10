@@ -11,11 +11,14 @@ Tabs:
 5. Search - Memory search
 """
 
+import logging
 import os
 import sys
 import time
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger("synapse.ui")
 
 try:
     import hou
@@ -193,7 +196,7 @@ class SynapsePanel(QtWidgets.QWidget):
             self._synapse = get_synapse_memory()
             self._update_ui()
         except Exception as e:
-            print(f"[Synapse Panel] Init failed: {e}")
+            logger.error("Panel init failed: %s", e)
             self._synapse = None
             self._update_ui()
 
@@ -312,7 +315,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 current_hip = hou.hipFile.path()
                 if current_hip != self._last_hip:
                     self._last_hip = current_hip  # Update immediately to prevent re-trigger
-                    print(f"[Synapse] Project changed: {Path(current_hip).name}")
+                    logger.info("Project changed: %s", Path(current_hip).name)
                     self._reload_project()
             except:
                 pass
@@ -340,7 +343,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._synapse.store.clear()
                 self._update_ui()
             except Exception as e:
-                print(f"[Synapse] Failed to clear memories: {e}")
+                logger.error("Failed to clear memories: %s", e)
 
     def _open_folder(self):
         """Open the .synapse folder in file explorer."""

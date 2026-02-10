@@ -5,6 +5,8 @@ WebSocket server for AI-Houdini communication.
 Provides real-time bidirectional communication with resilience features.
 """
 
+import logging
+import signal
 import threading
 import json
 import time
@@ -48,6 +50,8 @@ from .resilience import (
 )
 from ..session.tracker import get_bridge
 
+logger = logging.getLogger("synapse.server")
+
 
 class SynapseServer:
     """
@@ -65,10 +69,15 @@ class SynapseServer:
         self,
         host: str = "localhost",
         port: int = 9999,
-        enable_resilience: bool = False
+        enable_resilience: bool = True
     ):
         if not WEBSOCKETS_AVAILABLE:
             raise ImportError("websockets package required. Install with: pip install websockets")
+
+        # SYNAPSE_RESILIENCE=0 disables resilience (for CI / testing)
+        import os
+        if os.environ.get("SYNAPSE_RESILIENCE", "").strip() == "0":
+            enable_resilience = False
 
         self.host = host
         self.port = port
@@ -146,10 +155,15 @@ class SynapseServer:
     def start(self):
         """Start the WebSocket server in a background thread."""
         if self._running:
-            print("[SynapseServer] Already running")
+            logger.info("Already running")
             return
 
         self._running = True
+
+        # Register signal handlers for graceful shutdown (standalone only)
+        if not HOU_AVAILABLE:
+            signal.signal(signal.SIGTERM, lambda s, f: self.stop())
+            signal.signal(signal.SIGINT, lambda s, f: self.stop())
 
         # Start watchdog
         if self._watchdog:
@@ -163,7 +177,7 @@ class SynapseServer:
         )
         self._thread.start()
 
-        print(f"[SynapseServer] Starting on {self.host}:{self.port}")
+        logger.info("Starting on %s:%s", self.host, self.port)
 
     def stop(self):
         """Stop the WebSocket server."""
@@ -181,9 +195,9 @@ class SynapseServer:
             try:
                 self._server.shutdown()
             except Exception as e:
-                print(f"[SynapseServer] Shutdown error: {e}")
+                logger.error("Shutdown error: %s", e)
 
-        print("[SynapseServer] Stopped")
+        logger.info("Stopped")
 
     def _run_server(self):
         """Run the sync WebSocket server (no asyncio — avoids Houdini's haio.py)."""
@@ -204,12 +218,12 @@ class SynapseServer:
                     if self._port_manager:
                         self._port_manager.mark_active(port_to_try)
 
-                    print(f"[SynapseServer] Running on ws://{self.host}:{port_to_try}")
+                    logger.info("Running on ws://%s:%s", self.host, port_to_try)
                     break
 
                 except OSError as e:
                     if "Address already in use" in str(e) or e.errno == 10048:
-                        print(f"[SynapseServer] Port {port_to_try} in use, trying next...")
+                        logger.warning("Port %s in use, trying next...", port_to_try)
                         if self._port_manager:
                             self._port_manager.mark_unhealthy(port_to_try, str(e))
                         time.sleep(PORT_RETRY_DELAY)
@@ -225,8 +239,8 @@ class SynapseServer:
         except Exception as e:
             import traceback
             err_detail = traceback.format_exc()
-            print(f"[SynapseServer] Error: {e}")
-            print(f"[SynapseServer] {err_detail}")
+            logger.error("Server error: %s", e)
+            logger.debug("%s", err_detail)
         finally:
             self._running = False
 
@@ -242,14 +256,14 @@ class SynapseServer:
         session_id = None
 
         try:
-            print(f"[SynapseServer] Client connected: {client_id}")
+            logger.info("Client connected: %s", client_id)
 
             # Notify callback
             if self._on_client_connect:
                 try:
                     self._on_client_connect(client_id)
                 except Exception as e:
-                    print(f"[SynapseServer] Connect callback error: {e}")
+                    logger.error("Connect callback error: %s", e)
 
             # No unsolicited connection_context — clients use the "context"
             # command when they need it.  Eliminates 50-200ms of I/O on connect
@@ -275,7 +289,7 @@ class SynapseServer:
         except websockets.exceptions.ConnectionClosedError:
             pass
         except Exception as e:
-            print(f"[SynapseServer] Error handling client: {e}")
+            logger.error("Error handling client: %s", e)
         finally:
             # Cleanup under lock (guaranteed even if bridge.start_session fails)
             with self._clients_lock:
@@ -289,21 +303,21 @@ class SynapseServer:
                     bridge = get_bridge()
                     summary = bridge.end_session(session_id)
                     if summary:
-                        print(f"[SynapseServer] Session summary:\n{summary}")
+                        logger.info("Session summary:\n%s", summary)
                 except Exception as e:
-                    print(f"[SynapseServer] End session error: {e}")
+                    logger.error("End session error: %s", e)
 
             if self._rate_limiter:
                 self._rate_limiter.remove_client(client_id)
 
-            print(f"[SynapseServer] Client disconnected: {client_id}")
+            logger.info("Client disconnected: %s", client_id)
 
             # Notify callback
             if self._on_client_disconnect:
                 try:
                     self._on_client_disconnect(client_id)
                 except Exception as e:
-                    print(f"[SynapseServer] Disconnect callback error: {e}")
+                    logger.error("Disconnect callback error: %s", e)
 
     def _handle_message(self, websocket, message: str, client_id: str):
         """Handle an incoming message (sync)."""
@@ -408,11 +422,11 @@ class SynapseServer:
 
     def _on_freeze(self, duration: float):
         """Called when main thread freeze is detected (informational only)."""
-        print(f"[SynapseServer] Main thread frozen for {duration:.1f}s (logged, not blocking)")
+        logger.warning("Main thread frozen for %.1fs (logged, not blocking)", duration)
 
     def _on_recover(self):
         """Called when main thread recovers from freeze."""
-        print("[SynapseServer] Main thread recovered")
+        logger.info("Main thread recovered")
         # Reset the circuit breaker so commands flow again
         if self._circuit_breaker:
             self._circuit_breaker.reset()

@@ -22,7 +22,8 @@ from ..core.protocol import (
     PROTOCOL_VERSION,
     normalize_command_type,
 )
-from ..core.aliases import resolve_param, resolve_param_with_default
+from ..core.aliases import resolve_param, resolve_param_with_default, USD_PARM_ALIASES
+from ..core.audit import audit_log, AuditLevel, AuditCategory
 
 
 # ---------------------------------------------------------------------------
@@ -46,9 +47,19 @@ def _suggest_parms(node, invalid_name: str, limit: int = 8) -> str:
     if not matches:
         # Fallback: common prefix match
         matches = [n for n in all_names if n.lower().startswith(needle[:3])]
-    if not matches:
+    # Check USD alias — if the invalid name maps to an encoded USD parm, include hint
+    usd_hint = ""
+    usd_encoded = USD_PARM_ALIASES.get(invalid_name.lower())
+    if usd_encoded and usd_encoded in all_names:
+        usd_hint = f" Try '{usd_encoded}' (the encoded USD name for '{invalid_name}')."
+    if not matches and not usd_hint:
         return ""
-    return " Similar parameters: " + ", ".join(matches[:limit])
+    parts = []
+    if usd_hint:
+        parts.append(usd_hint)
+    if matches:
+        parts.append(" Similar parameters: " + ", ".join(matches[:limit]))
+    return "".join(parts)
 
 
 def _suggest_children(parent_path: str) -> str:
@@ -78,6 +89,30 @@ except ImportError:
 # trigger rollback because earlier mutations (node creation, wiring) may be valid.
 _ROLLBACK_ERRORS = (NameError, SyntaxError, TypeError, AttributeError, IndexError)
 
+# Map command types to audit categories for structured logging
+_CMD_CATEGORY: Dict[str, AuditCategory] = {
+    "create_node": AuditCategory.PIPELINE,
+    "delete_node": AuditCategory.PIPELINE,
+    "connect_nodes": AuditCategory.PIPELINE,
+    "set_parm": AuditCategory.PIPELINE,
+    "set_keyframe": AuditCategory.PIPELINE,
+    "execute_python": AuditCategory.PIPELINE,
+    "execute_vex": AuditCategory.PIPELINE,
+    "render": AuditCategory.RENDER,
+    "render_settings": AuditCategory.RENDER,
+    "wedge": AuditCategory.RENDER,
+    "capture_viewport": AuditCategory.RENDER,
+    "create_usd_prim": AuditCategory.PIPELINE,
+    "modify_usd_prim": AuditCategory.PIPELINE,
+    "set_usd_attribute": AuditCategory.PIPELINE,
+    "reference_usd": AuditCategory.PIPELINE,
+    "create_material": AuditCategory.MATERIAL,
+    "assign_material": AuditCategory.MATERIAL,
+    "add_memory": AuditCategory.ENGRAM,
+    "decide": AuditCategory.ENGRAM,
+    "batch_commands": AuditCategory.SYNAPSE,
+}
+
 # Commands that don't modify state — skip memory logging for these
 _READ_ONLY_COMMANDS = frozenset({
     "ping", "get_health", "get_help", "heartbeat",
@@ -88,6 +123,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "knowledge_lookup",
     "inspect_selection", "inspect_scene", "inspect_node",
     "read_material",
+    "get_metrics", "router_stats", "list_recipes",
 })
 
 
@@ -193,6 +229,17 @@ class SynapseHandler:
                         session_id=sid,
                     )
 
+                # Audit log — fire-and-forget via existing thread pool
+                _log_executor.submit(
+                    audit_log().log,
+                    operation=cmd_type,
+                    message=f"Executed {cmd_type}",
+                    level=AuditLevel.AGENT_ACTION,
+                    category=_CMD_CATEGORY.get(cmd_type, AuditCategory.SYNAPSE),
+                    input_data=command.payload,
+                    output_data=result if isinstance(result, dict) else {},
+                )
+
             return SynapseResponse(
                 id=command.id,
                 success=True,
@@ -239,6 +286,7 @@ class SynapseHandler:
 
         # Execution
         reg.register("execute_python", self._handle_execute_python)
+        reg.register("execute_vex", self._handle_execute_vex)
 
         # USD/Solaris
         reg.register("get_stage_info", self._handle_get_stage_info)
@@ -276,6 +324,11 @@ class SynapseHandler:
 
         # Batch
         reg.register("batch_commands", self._handle_batch_commands)
+
+        # Metrics / Router stats / Recipes
+        reg.register("get_metrics", self._handle_get_metrics)
+        reg.register("router_stats", self._handle_router_stats)
+        reg.register("list_recipes", self._handle_list_recipes)
 
         # Memory operations (new names)
         reg.register("context", self._handle_memory_context)
@@ -485,6 +538,13 @@ class SynapseHandler:
             )
 
         parm = node.parm(parm_name)
+        # USD alias fallback -- resolve human-readable name to encoded parm
+        if parm is None:
+            usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
+            if usd_encoded:
+                parm = node.parm(usd_encoded)
+                if parm is not None:
+                    parm_name = usd_encoded  # use resolved name in response
         if parm is None:
             # Try as parm tuple
             parm_tuple = node.parmTuple(parm_name)
@@ -526,6 +586,13 @@ class SynapseHandler:
             )
 
         parm = node.parm(parm_name)
+        # USD alias fallback -- resolve human-readable name to encoded parm
+        if parm is None:
+            usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
+            if usd_encoded:
+                parm = node.parm(usd_encoded)
+                if parm is not None:
+                    parm_name = usd_encoded
         if parm is not None:
             parm.set(value)
             return {"node": node_path, "parm": parm_name, "value": value}
@@ -638,6 +705,58 @@ class SynapseHandler:
         return {
             "executed": True,
             "result": str(result) if result else "executed",
+        }
+
+    def _handle_execute_vex(self, payload: Dict) -> Dict:
+        """
+        Handle execute_vex command.
+
+        Creates a temporary attribwrangle node, sets the VEX snippet,
+        optionally wires an input geometry, and returns the node path.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        snippet = resolve_param(payload, "snippet")
+        run_over = resolve_param_with_default(payload, "run_over", "Points")
+        input_node = resolve_param_with_default(payload, "input_node", None)
+
+        # Find or create a working SOP context
+        parent = None
+        if input_node:
+            src = hou.node(input_node)
+            if src is not None:
+                parent = src.parent()
+
+        if parent is None:
+            # Default to /obj — create a temp geo container
+            obj = hou.node("/obj")
+            parent = obj.createNode("geo", "synapse_vex_temp")
+
+        wrangle = parent.createNode("attribwrangle", "synapse_vex")
+        wrangle.parm("snippet").set(snippet)
+
+        # Map run_over string to class menu value
+        run_over_map = {
+            "detail": 0, "points": 1, "vertices": 2, "primitives": 3,
+        }
+        class_val = run_over_map.get(run_over.lower(), 1)
+        wrangle.parm("class").set(class_val)
+
+        # Wire input if provided
+        if input_node:
+            src = hou.node(input_node)
+            if src is not None:
+                wrangle.setInput(0, src)
+
+        wrangle.setDisplayFlag(True)
+        wrangle.setRenderFlag(True)
+
+        return {
+            "node": wrangle.path(),
+            "snippet": snippet,
+            "run_over": run_over,
+            "class": class_val,
         }
 
     # =========================================================================
@@ -1461,6 +1580,55 @@ class SynapseHandler:
             include_geometry=bool(include_geometry),
             include_expressions=bool(include_expressions),
         )
+
+    def _handle_get_metrics(self, payload: Dict) -> Dict:
+        """Return Prometheus-format metrics text."""
+        from .metrics import render_prometheus
+
+        router_stats = None
+        if hasattr(self, "_router"):
+            router_stats = self._router.stats()
+
+        cb_state = "closed"
+        memory_count = 0
+        try:
+            bridge = self._get_bridge()
+            if hasattr(bridge, "_memory") and bridge._memory:
+                memory_count = len(bridge._memory.get_all())
+        except Exception:
+            pass
+
+        text = render_prometheus(
+            router_stats=router_stats,
+            circuit_breaker_state=cb_state,
+            memory_entry_count=memory_count,
+        )
+        return {"format": "prometheus", "text": text}
+
+    def _handle_router_stats(self, payload: Dict) -> Dict:
+        """Return tier cascade statistics for LLM self-reflection."""
+        if not hasattr(self, "_router"):
+            return {"error": "Router not initialized"}
+        return self._router.stats()
+
+    def _handle_list_recipes(self, payload: Dict) -> Dict:
+        """List all available recipes for artist discovery."""
+        from ..routing.recipes import RecipeRegistry
+        registry = RecipeRegistry()
+        recipes = []
+        for recipe in registry.recipes:
+            recipes.append({
+                "name": recipe.name,
+                "description": recipe.description,
+                "category": recipe.category,
+                "triggers": recipe.triggers,
+                "parameters": recipe.parameters,
+                "step_count": len(recipe.steps),
+            })
+        return {
+            "count": len(recipes),
+            "recipes": sorted(recipes, key=lambda r: r["name"]),
+        }
 
     def _handle_knowledge_lookup(self, payload: Dict) -> Dict:
         """Look up Houdini knowledge from the RAG index.

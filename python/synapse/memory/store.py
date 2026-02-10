@@ -15,6 +15,7 @@ Migration: Automatically migrates .nexus/ or .engram/ to .synapse/ if needed.
 """
 
 import atexit
+import logging
 import os
 import json
 import time
@@ -34,6 +35,8 @@ try:
     from ..core.crypto import CryptoEngine, ENCRYPTION_AVAILABLE
 except ImportError:
     ENCRYPTION_AVAILABLE = False
+
+logger = logging.getLogger("synapse.memory")
 
 
 # =============================================================================
@@ -209,7 +212,7 @@ class MemoryStore:
             with open(self.memory_file, 'a', encoding='utf-8') as f:
                 f.write("".join(lines))
         except Exception as e:
-            print(f"[Synapse] Write flush error: {e}")
+            logger.error("Write flush error: %s", e)
 
     def flush(self):
         """Force-flush any buffered writes (call on shutdown)."""
@@ -246,9 +249,9 @@ class MemoryStore:
                         self._memories[memory.id] = memory
                         self._index_memory(memory)
                     except json.JSONDecodeError as e:
-                        print(f"[Synapse] Warning: Invalid JSON on line {line_num}: {e}")
+                        logger.warning("Invalid JSON on line %d: %s", line_num, e)
                     except Exception as e:
-                        print(f"[Synapse] Warning: Failed to load memory on line {line_num}: {e}")
+                        logger.warning("Failed to load memory on line %d: %s", line_num, e)
 
             # Load index if exists
             if self.index_file.exists():
@@ -259,9 +262,9 @@ class MemoryStore:
                         content = crypto.decrypt_file_content(content)
                     self._index = json.loads(content)
                 except Exception as e:
-                    print(f"[Synapse] Warning: Failed to load index: {e}")
+                    logger.warning("Failed to load index: %s", e)
 
-        print(f"[Synapse] Loaded {len(self._memories)} memories from {self.storage_dir}")
+        logger.info("Loaded %d memories from %s", len(self._memories), self.storage_dir)
         self._loaded.set()
 
     def _index_memory(self, memory: Memory):
@@ -576,8 +579,8 @@ class SynapseMemory:
         self._on_memory_added: List[Callable[[Memory], None]] = []
         self._on_memory_updated: List[Callable[[Memory], None]] = []
 
-        print(f"[Synapse] Initialized for project: {self.project_path}")
-        print(f"[Synapse] Storage: {self.storage_dir}")
+        logger.info("Initialized for project: %s", self.project_path)
+        logger.info("Storage: %s", self.storage_dir)
 
     def _resolve_project_path(self, path: Optional[str]) -> Path:
         """Resolve the project path."""
@@ -621,7 +624,7 @@ class SynapseMemory:
         # Priority 2: Migrate from .nexus/
         if nexus_dir.exists():
             try:
-                print(f"[Synapse] Migrating from .nexus/ to .synapse/")
+                logger.info("Migrating from .nexus/ to .synapse/")
                 shutil.copytree(nexus_dir, synapse_dir)
                 migration_marker = nexus_dir / ".migrated_to_synapse"
                 migration_marker.write_text(
@@ -629,16 +632,16 @@ class SynapseMemory:
                     f"This directory is kept for backwards compatibility.\n"
                     f"You can safely delete it."
                 )
-                print(f"[Synapse] Migration complete: {nexus_dir} -> {synapse_dir}")
+                logger.info("Migration complete: %s -> %s", nexus_dir, synapse_dir)
                 return synapse_dir
             except Exception as e:
-                print(f"[Synapse] Migration failed: {e}. Using .nexus/ directly.")
+                logger.warning("Migration failed: %s. Using .nexus/ directly.", e)
                 return nexus_dir
 
         # Priority 3: Migrate from .engram/
         if engram_dir.exists():
             try:
-                print(f"[Synapse] Migrating from .engram/ to .synapse/")
+                logger.info("Migrating from .engram/ to .synapse/")
                 shutil.copytree(engram_dir, synapse_dir)
                 migration_marker = engram_dir / ".migrated_to_synapse"
                 migration_marker.write_text(
@@ -646,10 +649,10 @@ class SynapseMemory:
                     f"This directory is kept for backwards compatibility.\n"
                     f"You can safely delete it."
                 )
-                print(f"[Synapse] Migration complete: {engram_dir} -> {synapse_dir}")
+                logger.info("Migration complete: %s -> %s", engram_dir, synapse_dir)
                 return synapse_dir
             except Exception as e:
-                print(f"[Synapse] Migration failed: {e}. Using .engram/ directly.")
+                logger.warning("Migration failed: %s. Using .engram/ directly.", e)
                 return engram_dir
 
         # Priority 4: Create new .synapse/
@@ -728,7 +731,7 @@ class SynapseMemory:
             try:
                 callback(memory)
             except Exception as e:
-                print(f"[Synapse] Callback error: {e}")
+                logger.error("Callback error: %s", e)
 
         return memory
 

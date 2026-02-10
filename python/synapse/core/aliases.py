@@ -80,6 +80,55 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "base_color": ["base_color", "color", "diffuse_color", "baseColor"],
     "metalness": ["metalness", "metallic", "metal"],
     "roughness": ["roughness", "specular_roughness"],
+
+    # VEX execution
+    "snippet": ["snippet", "vex_code", "vex", "code"],
+    "run_over": ["run_over", "runover", "class", "geo_class"],
+    "input_node": ["input_node", "input", "input_geo"],
+}
+
+
+# =============================================================================
+# USD PARAMETER ALIASES
+# =============================================================================
+
+USD_PARM_ALIASES: Dict[str, str] = {
+    # Lights — intensity
+    "intensity": "xn__inputsintensity_i0a",
+    "light_intensity": "xn__inputsintensity_i0a",
+    # Lights — exposure
+    "exposure": "xn__inputsexposure_vya",
+    "light_exposure": "xn__inputsexposure_vya",
+    "exposure_control": "xn__inputsexposure_control_wcb",
+    # Lights — color
+    "color": "xn__inputscolor_kya",
+    "light_color": "xn__inputscolor_kya",
+    "color_control": "xn__inputscolor_control_r0b",
+    # Lights — temperature
+    "color_temperature": "xn__inputscolortemperature_job",
+    "temperature": "xn__inputscolortemperature_job",
+    "enable_temperature": "xn__inputsenablecolortemperature_yxb",
+    # Lights — shape
+    "normalize": "xn__inputsnormalize_01a",
+    "diffuse": "xn__inputsdiffuse_vya",
+    "specular": "xn__inputsspecular_i0a",
+    # DomeLight
+    "texture_file": "xn__inputstexturefile_c5b",
+    "texture_format": "xn__inputstextureformat_d8b",
+    # Camera
+    "focal_length": "xn__inputsfocallength_e4b",
+    "focus_distance": "xn__inputsfocusdistance_f7b",
+    "fstop": "xn__inputsfstop_vya",
+    "horizontal_aperture": "xn__inputshorizontalaperture_ohb",
+    "vertical_aperture": "xn__inputsverticalaperture_gfb",
+    "clipping_range": "xn__inputsclippingrange_e4b",
+    # Xform
+    "translate": "xformOp:translate",
+    "rotate": "xformOp:rotateXYZ",
+    "scale": "xformOp:scale",
+    # Visibility
+    "visibility": "visibility",
+    "purpose": "purpose",
 }
 
 
@@ -145,3 +194,12 @@ def add_alias(canonical: str, alias: str):
         PARAM_ALIASES[canonical] = [canonical]
     if alias not in PARAM_ALIASES[canonical]:
         PARAM_ALIASES[canonical].append(alias)
+
+
+def resolve_usd_parm(name: str) -> Optional[str]:
+    """Resolve a human-readable USD parameter name to its encoded form.
+
+    Returns the encoded USD parm name if found, None otherwise.
+    Pure function, static dict. No determinism concern.
+    """
+    return USD_PARM_ALIASES.get(name.lower())

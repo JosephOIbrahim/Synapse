@@ -17,7 +17,10 @@ Usage from 456.py or pythonrc.py (auto-start):
         pass
 """
 
+import logging
 import os
+
+logger = logging.getLogger("synapse.hwebserver")
 
 
 def main():
@@ -31,8 +34,8 @@ def main():
             enable_rate_limiter=enable_rate_limiter,
         )
     except ImportError as e:
-        print(f"[Synapse] Cannot start hwebserver: {e}")
-        print("[Synapse] Falling back to websocket server...")
+        logger.warning("Cannot start hwebserver: %s", e)
+        logger.info("Falling back to websocket server...")
         from synapse.server.websocket import SynapseServer
         server = SynapseServer(
             port=port,
