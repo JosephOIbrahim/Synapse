@@ -19,7 +19,7 @@ from typing import Callable, Dict, List, Optional, Any
 
 from ..core.protocol import SynapseCommand, SynapseResponse
 from ..core.gates import HumanGate, GateLevel
-from ..core.determinism import deterministic_uuid
+from ..core.determinism import deterministic_uuid, kahan_sum, round_float
 from ..memory.store import SynapseMemory
 
 from .parser import CommandParser, ParseResult
@@ -808,13 +808,13 @@ class TieredRouter:
     def stats(self) -> Dict[str, Any]:
         """Return routing statistics."""
         tier_stats = {}
-        for tier_name in self._tier_counts:
+        for tier_name in sorted(self._tier_counts):  # sorted: He2025
             count = self._tier_counts[tier_name]
             latencies = self._tier_latencies.get(tier_name, [])
             tier_stats[tier_name] = {
                 "count": count,
-                "avg_ms": sum(latencies) / len(latencies) if latencies else 0,
-                "max_ms": max(latencies) if latencies else 0,
+                "avg_ms": round_float(kahan_sum(latencies) / len(latencies)) if latencies else 0,
+                "max_ms": round_float(max(latencies)) if latencies else 0,
             }
 
         return {

@@ -8,6 +8,7 @@ sequences of SynapseCommands without any LLM involvement.
 Artists can register custom recipes via registry.register().
 """
 
+import json
 import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
@@ -37,7 +38,7 @@ class RecipeStep:
         return SynapseCommand(
             type=self.action,
             id=deterministic_uuid(
-                f"recipe:{self.action}:{str(payload)}", "cmd"
+                f"recipe:{self.action}:{json.dumps(payload, sort_keys=True, default=str)}", "cmd"
             ),
             payload=payload,
         )
@@ -64,7 +65,7 @@ class RecipeStep:
         return SynapseCommand(
             type=self.action,
             id=deterministic_uuid(
-                f"recipe:{self.action}:{str(payload)}", "cmd"
+                f"recipe:{self.action}:{json.dumps(payload, sort_keys=True, default=str)}", "cmd"
             ),
             payload=payload,
         )
