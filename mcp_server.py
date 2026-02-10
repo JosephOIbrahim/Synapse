@@ -53,6 +53,7 @@ _SLOW_COMMANDS = {
     "execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0,
     "render": 120.0, "wedge": 120.0,
     "inspect_selection": 30.0, "inspect_scene": 30.0, "inspect_node": 30.0,
+    "batch_commands": 60.0,
 }
 
 logger = logging.getLogger("synapse-mcp")
@@ -64,7 +65,8 @@ logger = logging.getLogger("synapse-mcp")
 
 _ws_connection = None
 _ws_lock = asyncio.Lock()
-_cmd_lock = asyncio.Lock()  # Serialize send+recv to prevent response interleaving
+_pending: dict[str, asyncio.Future] = {}
+_recv_task: asyncio.Task | None = None
 
 
 def _is_connected() -> bool:
@@ -73,6 +75,49 @@ def _is_connected() -> bool:
         return _ws_connection is not None and _ws_connection.state.name == "OPEN"
     except (AttributeError, Exception):
         return False
+
+
+async def _recv_loop():
+    """Background task: read messages and dispatch to pending futures by ID."""
+    global _ws_connection, _recv_task
+    try:
+        while _ws_connection is not None:
+            try:
+                raw = await _ws_connection.recv()
+            except Exception as e:
+                # Connection lost — signal all pending futures
+                logger.warning("Recv loop: connection lost (%s)", e)
+                _signal_all_pending(ConnectionError(f"Connection lost: {e}"))
+                break
+
+            try:
+                response = _loads(raw)
+            except Exception:
+                continue  # Malformed message — skip
+
+            resp_id = response.get("id")
+            future = _pending.pop(resp_id, None) if resp_id else None
+            if future and not future.done():
+                future.set_result(response)
+            elif resp_id:
+                logger.warning("No pending future for response ID %s (discarding)", resp_id)
+    finally:
+        _recv_task = None
+
+
+def _signal_all_pending(exc: Exception):
+    """Signal all pending futures with an exception (connection lost)."""
+    for fut in _pending.values():
+        if not fut.done():
+            fut.set_exception(exc)
+    _pending.clear()
+
+
+def _start_recv_loop():
+    """Ensure the background recv loop is running."""
+    global _recv_task
+    if _recv_task is None or _recv_task.done():
+        _recv_task = asyncio.get_event_loop().create_task(_recv_loop())
 
 
 async def _get_connection():
@@ -98,6 +143,7 @@ async def _get_connection():
                     ping_interval=None,
                     compression=None,
                 )
+                _start_recv_loop()
                 logger.info("Connected to Synapse at %s", SYNAPSE_URL)
                 return _ws_connection
             except Exception as e:
@@ -116,8 +162,8 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
     """
     Send a SynapseCommand over WebSocket and return the response data.
 
-    Follows the SynapseCommand wire format from core/protocol.py.
-    Uses response ID matching to handle stale messages on reconnect.
+    Supports true parallel dispatch — multiple concurrent send_command
+    calls share a single recv loop that routes responses by ID.
     """
     command_id = uuid.uuid4().hex[:16]
     command = {
@@ -129,64 +175,62 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
         "protocol_version": PROTOCOL_VERSION,
     }
 
-    # Serialize send+recv so parallel tool calls don't steal each other's responses
-    async with _cmd_lock:
-        last_err = None
-        for _attempt in range(2):  # One transparent retry on connection failure
-            ws = await _get_connection()
+    cmd_timeout = _SLOW_COMMANDS.get(cmd_type, COMMAND_TIMEOUT)
+    last_err = None
 
+    for _attempt in range(2):  # One transparent retry on connection failure
+        ws = await _get_connection()
+
+        # Register a future for this command's response
+        loop = asyncio.get_event_loop()
+        future: asyncio.Future = loop.create_future()
+        _pending[command_id] = future
+
+        try:
+            await ws.send(_dumps(command))
+
+            response = await asyncio.wait_for(future, timeout=cmd_timeout)
+            break  # Success
+
+        except asyncio.TimeoutError:
+            _pending.pop(command_id, None)
+            # Close stale connection on timeout
+            global _ws_connection
             try:
-                await ws.send(_dumps(command))
-
-                # Recv loop with ID matching — discard stale responses from reconnect
-                cmd_timeout = _SLOW_COMMANDS.get(cmd_type, COMMAND_TIMEOUT)
-                start = time.monotonic()
-                while True:
-                    remaining = cmd_timeout - (time.monotonic() - start)
-                    if remaining <= 0:
-                        raise TimeoutError(
-                        f"The {cmd_type} command took too long to respond \u2014 "
-                        "Houdini may be busy with a heavy operation"
-                    )
-
-                    raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
-                    response = _loads(raw)
-
-                    if response.get("id") == command_id:
-                        break  # Matched — this is our response
-
-                    # Stale or mismatched response — discard and try next
-                    logger.warning(
-                        "Response ID mismatch: expected %s, got %s (discarding)",
-                        command_id, response.get("id"),
-                    )
-                break  # Success — exit retry loop
-
-            except TimeoutError:
-                # Close stale connection on timeout to prevent resource leak
-                global _ws_connection
-                try:
-                    if ws:
-                        await ws.close()
-                except Exception:
-                    pass
-                _ws_connection = None
-                raise  # Don't retry timeouts — the command may have executed
-            except Exception as e:
-                # Connection dropped — close and clear, then retry once
-                try:
-                    if ws:
-                        await ws.close()
-                except Exception:
-                    pass
-                _ws_connection = None
-                last_err = e
-                logger.warning("Connection lost during %s, reconnecting... (%s)", cmd_type, e)
-
-        else:
-            raise ConnectionError(
-                f"Lost connection while sending {cmd_type} and couldn't reconnect: {last_err}"
+                if ws:
+                    await ws.close()
+            except Exception:
+                pass
+            _ws_connection = None
+            raise TimeoutError(
+                f"The {cmd_type} command took too long to respond \u2014 "
+                "Houdini may be busy with a heavy operation"
             )
+        except ConnectionError:
+            # Future was signaled by _recv_loop disconnect
+            _pending.pop(command_id, None)
+            try:
+                if ws:
+                    await ws.close()
+            except Exception:
+                pass
+            _ws_connection = None
+            last_err = ConnectionError(f"Connection lost during {cmd_type}")
+            logger.warning("Connection lost during %s, reconnecting...", cmd_type)
+        except Exception as e:
+            _pending.pop(command_id, None)
+            try:
+                if ws:
+                    await ws.close()
+            except Exception:
+                pass
+            _ws_connection = None
+            last_err = e
+            logger.warning("Connection lost during %s, reconnecting... (%s)", cmd_type, e)
+    else:
+        raise ConnectionError(
+            f"Lost connection while sending {cmd_type} and couldn't reconnect: {last_err}"
+        )
 
     if not response.get("success", False):
         error_msg = response.get("error", "Something went wrong on the Synapse side")
@@ -300,8 +344,7 @@ async def list_tools():
             name="houdini_connect_nodes",
             description=(
                 "Connect the output of one node to the input of another. "
-                "If a connection fails, check that both nodes exist and that "
-                "the input/output indices are valid for those node types."
+                "If it fails, check both nodes exist and indices are valid."
             ),
             inputSchema={
                 "type": "object",
@@ -332,7 +375,7 @@ async def list_tools():
             description=(
                 "Read a parameter value from a Houdini node. "
                 "If the parameter name doesn't match, Synapse will suggest similar names. "
-                "Houdini parameter names can be cryptic (e.g. 'xn__inputsintensity_i0a') \u2014 "
+                "Houdini parameter names can be cryptic \u2014 "
                 "help the artist by translating to plain language."
             ),
             inputSchema={
@@ -452,8 +495,8 @@ async def list_tools():
             name="houdini_set_usd_attribute",
             description=(
                 "Set a USD attribute on a prim. Creates a Python LOP node wired into the graph. "
-                "When reporting, describe the change naturally \u2014 "
-                "'Moved the key light to (2, 5, 3)' reads better than 'Set xformOp:translate'."
+                "Describe changes naturally \u2014 "
+                "'Moved the key light to (2, 5, 3)' not 'Set xformOp:translate'."
             ),
             inputSchema={
                 "type": "object",
@@ -507,8 +550,8 @@ async def list_tools():
             name="houdini_modify_usd_prim",
             description=(
                 "Modify USD prim metadata: kind, purpose, or active state. Creates a Python LOP node. "
-                "Explain what the metadata change means in practice \u2014 "
-                "e.g. 'Set as component so it shows up properly in asset browsers'."
+                "Explain what the change means \u2014 "
+                "'Set as component so it shows up in asset browsers'."
             ),
             inputSchema={
                 "type": "object",
@@ -543,7 +586,7 @@ async def list_tools():
             description=(
                 "Capture the Houdini viewport as an image. "
                 "Returns the image directly for visual analysis of lighting, layout, and composition. "
-                "This is the artist's window into their work \u2014 when showing the capture, "
+                "This is the artist's window into their work \u2014 "
                 "comment on what's working well before suggesting changes. Lead with what's strong."
             ),
             inputSchema={
@@ -657,7 +700,6 @@ async def list_tools():
             name="houdini_reference_usd",
             description=(
                 "Import a USD file into the stage via reference or sublayer. "
-                "Use for scene assembly with production assets. "
                 "Confirm the asset loaded by reporting its path and what's on the stage now."
             ),
             inputSchema={
@@ -675,10 +717,9 @@ async def list_tools():
         Tool(
             name="houdini_create_material",
             description=(
-                "Create a material with a shader in the LOP network. Sets up a material "
-                "library and shader node ready to use. When reporting back, share what "
-                "was created \u2014 'Set up a new brushed metal material at /materials/chrome' "
-                "tells the artist what they've got to work with."
+                "Create a material with a shader in the LOP network. "
+                "When reporting back, share what was created \u2014 "
+                "'Set up a new brushed metal material at /materials/chrome'."
             ),
             inputSchema={
                 "type": "object",
@@ -717,7 +758,7 @@ async def list_tools():
             description=(
                 "Assign a material to geometry prims. Creates an assign node wired into "
                 "the graph. Confirm what got connected \u2014 'Bound the chrome material to "
-                "all meshes under /World/props' is more helpful than parameter names."
+                "all meshes under /World/props'."
             ),
             inputSchema={
                 "type": "object",
@@ -741,10 +782,9 @@ async def list_tools():
         Tool(
             name="houdini_read_material",
             description=(
-                "Read what material is assigned to a prim and its shader settings. Use "
-                "this to understand the current look before making changes. Present the "
-                "findings naturally \u2014 'That mesh is using a gold material with roughness "
-                "at 0.3' helps the artist understand their scene."
+                "Read what material is assigned to a prim and its shader settings. "
+                "Present findings naturally \u2014 'That mesh is using a gold material "
+                "with roughness at 0.3'."
             ),
             inputSchema={
                 "type": "object",
@@ -805,8 +845,8 @@ async def list_tools():
             name="synapse_inspect_scene",
             description=(
                 "Get a bird's-eye view of the Houdini scene \u2014 node tree, context breakdown "
-                "(SOP/LOP/OBJ counts), any warnings or errors, and artist sticky notes. "
-                "Use this to orient yourself in an unfamiliar scene before diving into specifics."
+                "(SOP/LOP/OBJ counts), warnings/errors, and sticky notes. "
+                "Use this to orient in an unfamiliar scene before diving into specifics."
             ),
             inputSchema={
                 "type": "object",
@@ -952,6 +992,41 @@ async def list_tools():
                 "required": ["content"],
             },
         ),
+        # -- Batch --
+        Tool(
+            name="synapse_batch",
+            description=(
+                "Execute multiple Synapse commands in a single round-trip. "
+                "Each command runs in declared order. Wraps in a single undo group "
+                "by default so Ctrl+Z reverts the whole batch."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "commands": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "type": {"type": "string", "description": "Command type (e.g. 'create_node', 'set_parm')"},
+                                "payload": {"type": "object", "description": "Command payload"},
+                            },
+                            "required": ["type"],
+                        },
+                        "description": "List of commands to execute in order",
+                    },
+                    "atomic": {
+                        "type": "boolean",
+                        "description": "Wrap in single undo group (default: true)",
+                    },
+                    "stop_on_error": {
+                        "type": "boolean",
+                        "description": "Stop on first error (default: false)",
+                    },
+                },
+                "required": ["commands"],
+            },
+        ),
     ]
 
 
@@ -1044,6 +1119,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_recall":        ("recall",          lambda a: {"query": a["query"]}),
     "synapse_decide":        ("decide",          _decide_payload),
     "synapse_add_memory":    ("add_memory",      _add_memory_payload),
+    "synapse_batch":         ("batch_commands",  lambda a: {k: a[k] for k in a}),
 }
 
 
@@ -1114,6 +1190,7 @@ async def _warmup():
             ping_interval=None,
             compression=None,
         )
+        _start_recv_loop()
         logger.info("Warmup: connected to %s", SYNAPSE_URL)
     except Exception:
         logger.info("Warmup: Synapse not available yet (will retry on first tool call)")

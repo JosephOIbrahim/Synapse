@@ -35,6 +35,90 @@ try:
 except ImportError:
     ENCRYPTION_AVAILABLE = False
 
+
+# =============================================================================
+# READ-WRITE LOCK
+# =============================================================================
+
+class ReadWriteLock:
+    """Writer-priority read-write lock.
+
+    Multiple readers can hold the lock simultaneously, but a writer gets
+    exclusive access.  Writer-priority: when a writer is waiting, new
+    readers queue behind it to prevent writer starvation.
+    """
+
+    def __init__(self):
+        self._cond = threading.Condition(threading.Lock())
+        self._readers: int = 0
+        self._writer: bool = False
+        self._writer_waiting: int = 0
+
+    # -- context managers ---------------------------------------------------
+
+    class _ReadCtx:
+        __slots__ = ("_rwl",)
+
+        def __init__(self, rwl: "ReadWriteLock"):
+            self._rwl = rwl
+
+        def __enter__(self):
+            self._rwl._acquire_read()
+            return self
+
+        def __exit__(self, *exc):
+            self._rwl._release_read()
+
+    class _WriteCtx:
+        __slots__ = ("_rwl",)
+
+        def __init__(self, rwl: "ReadWriteLock"):
+            self._rwl = rwl
+
+        def __enter__(self):
+            self._rwl._acquire_write()
+            return self
+
+        def __exit__(self, *exc):
+            self._rwl._release_write()
+
+    def read_lock(self):
+        """Return a context manager for shared (read) access."""
+        return self._ReadCtx(self)
+
+    def write_lock(self):
+        """Return a context manager for exclusive (write) access."""
+        return self._WriteCtx(self)
+
+    # -- primitives ---------------------------------------------------------
+
+    def _acquire_read(self):
+        with self._cond:
+            # Wait if a writer is active OR a writer is waiting (priority)
+            while self._writer or self._writer_waiting > 0:
+                self._cond.wait()
+            self._readers += 1
+
+    def _release_read(self):
+        with self._cond:
+            self._readers -= 1
+            if self._readers == 0:
+                self._cond.notify_all()
+
+    def _acquire_write(self):
+        with self._cond:
+            self._writer_waiting += 1
+            while self._writer or self._readers > 0:
+                self._cond.wait()
+            self._writer_waiting -= 1
+            self._writer = True
+
+    def _release_write(self):
+        with self._cond:
+            self._writer = False
+            self._cond.notify_all()
+
+
 from .models import (
     Memory,
     MemoryType,
@@ -75,7 +159,7 @@ class MemoryStore:
             "updated": "",
             "version": 1
         }
-        self._lock = threading.RLock()
+        self._lock = ReadWriteLock()
         self._dirty = False
         self._loaded = threading.Event()
 
@@ -148,7 +232,7 @@ class MemoryStore:
 
         crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
 
-        with self._lock:
+        with self._lock.write_lock():
             with open(self.memory_file, 'r', encoding='utf-8') as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
@@ -221,7 +305,7 @@ class MemoryStore:
         """Persist all memories to disk."""
         crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
 
-        with self._lock:
+        with self._lock.write_lock():
             # Write memories (append-only format, but we rewrite for consistency)
             with open(self.memory_file, 'w', encoding='utf-8') as f:
                 for memory in self._memories.values():
@@ -246,7 +330,7 @@ class MemoryStore:
         Buffers disk write for background flush (saves 1-5ms per call).
         In-memory state is updated immediately for read consistency.
         """
-        with self._lock:
+        with self._lock.write_lock():
             self._memories[memory.id] = memory
             self._index_memory(memory)
             self._dirty = True
@@ -268,12 +352,12 @@ class MemoryStore:
     def get(self, memory_id: str) -> Optional[Memory]:
         """Get a memory by ID."""
         self._wait_loaded()
-        with self._lock:
+        with self._lock.read_lock():
             return self._memories.get(memory_id)
 
     def update(self, memory: Memory):
         """Update an existing memory."""
-        with self._lock:
+        with self._lock.write_lock():
             if memory.id in self._memories:
                 memory.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
                 self._memories[memory.id] = memory
@@ -282,7 +366,7 @@ class MemoryStore:
 
     def delete(self, memory_id: str) -> bool:
         """Delete a memory by ID."""
-        with self._lock:
+        with self._lock.write_lock():
             if memory_id in self._memories:
                 del self._memories[memory_id]
                 self._dirty = True
@@ -292,18 +376,18 @@ class MemoryStore:
     def all(self) -> List[Memory]:
         """Get all memories."""
         self._wait_loaded()
-        with self._lock:
+        with self._lock.read_lock():
             return list(self._memories.values())
 
     def count(self) -> int:
         """Get total memory count."""
         self._wait_loaded()
-        with self._lock:
+        with self._lock.read_lock():
             return len(self._memories)
 
     def clear(self):
         """Clear all memories."""
-        with self._lock:
+        with self._lock.write_lock():
             self._memories.clear()
             self._index = {
                 "by_type": {},
@@ -325,7 +409,7 @@ class MemoryStore:
         Falls back to full scan only for pure text queries.
         """
         self._wait_loaded()
-        with self._lock:
+        with self._lock.read_lock():
             # --- Candidate narrowing via index ---
             candidates = None  # None = "all", set() = "none matched yet"
 
@@ -427,21 +511,21 @@ class MemoryStore:
     def get_by_type(self, memory_type: MemoryType) -> List[Memory]:
         """Get all memories of a specific type."""
         self._wait_loaded()
-        with self._lock:
+        with self._lock.read_lock():
             ids = self._index["by_type"].get(memory_type.value, [])
             return [self._memories[id] for id in ids if id in self._memories]
 
     def get_by_tag(self, tag: str) -> List[Memory]:
         """Get all memories with a specific tag."""
         self._wait_loaded()
-        with self._lock:
+        with self._lock.read_lock():
             ids = self._index["by_tag"].get(tag.lower(), [])
             return [self._memories[id] for id in ids if id in self._memories]
 
     def get_linked(self, memory_id: str) -> List[Memory]:
         """Get all memories linked to a specific memory."""
         self._wait_loaded()
-        with self._lock:
+        with self._lock.read_lock():
             links = self._index["links"].get(memory_id, [])
             return [
                 self._memories[link["target"]]
@@ -452,7 +536,7 @@ class MemoryStore:
     def get_recent(self, limit: int = 10) -> List[Memory]:
         """Get most recent memories."""
         self._wait_loaded()
-        with self._lock:
+        with self._lock.read_lock():
             sorted_memories = sorted(
                 self._memories.values(),
                 key=lambda m: m.created_at,

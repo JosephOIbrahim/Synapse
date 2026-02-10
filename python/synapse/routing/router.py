@@ -13,6 +13,7 @@ import time
 import threading
 import logging
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Any
@@ -108,6 +109,12 @@ Respond in structured JSON with these fields:
 """
 
 
+_MAX_TIER_PINS = 1000
+
+# Shared pool for speculative T0+T1 parallelism (avoids per-call thread creation)
+_tier_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="synapse-tier")
+
+
 class TieredRouter:
     """
     Tiered routing cascade.
@@ -139,6 +146,9 @@ class TieredRouter:
             max_size=self._config.cache_max_size,
             ttl_seconds=self._config.cache_ttl,
         )
+
+        # Tier-pinning cache: canonical_key → tier value (He2025 consistency)
+        self._tier_pins: Dict[str, str] = {}
 
         # Metrics
         self._tier_counts: Dict[str, int] = {t.value: 0 for t in RoutingTier}
@@ -172,6 +182,12 @@ class TieredRouter:
         context_hash = self._hash_context(context)
 
         # ---------------------------------------------------------------
+        # -1. Tier-pin check (He2025 consistency)
+        # ---------------------------------------------------------------
+        pin_key = f"{input_text}|{context_hash}"
+        pinned_tier = self._tier_pins.get(pin_key)
+
+        # ---------------------------------------------------------------
         # 0. Cache check (He2025)
         # ---------------------------------------------------------------
         if self._config.enable_cache:
@@ -193,6 +209,18 @@ class TieredRouter:
                     return result
 
         # ---------------------------------------------------------------
+        # 0.5. Pinned-tier fast path (He2025: same input → same tier)
+        # ---------------------------------------------------------------
+        if pinned_tier:
+            result = self._try_pinned_tier(
+                pinned_tier, input_text, context, context_hash, start
+            )
+            if result:
+                return result
+            # Stale pin — tier returned None; delete and fall through
+            self._tier_pins.pop(pin_key, None)
+
+        # ---------------------------------------------------------------
         # 1. Recipe match
         # ---------------------------------------------------------------
         if self._config.enable_recipes:
@@ -201,19 +229,30 @@ class TieredRouter:
                 return result
 
         # ---------------------------------------------------------------
-        # 2. Tier 0: Regex parse
+        # 2+3. Tier 0 (regex) + Tier 1 (knowledge) — speculative parallel
         # ---------------------------------------------------------------
-        if self._config.enable_tier0:
+        tier1_hint: Optional[KnowledgeLookupResult] = None
+        need_knowledge = (
+            self._config.enable_tier1
+            or self._config.enable_tier2
+            or self._config.enable_tier3
+        )
+
+        if self._config.enable_tier0 and need_knowledge:
+            # Run T0 and knowledge lookup concurrently
+            t0_future = _tier_pool.submit(self._try_tier0, input_text, context_hash, start)
+            t1_lookup_future = _tier_pool.submit(self._knowledge.lookup, input_text)
+
+            t0_result = t0_future.result()
+            tier1_hint = t1_lookup_future.result()
+
+            if t0_result:
+                return t0_result
+        elif self._config.enable_tier0:
             result = self._try_tier0(input_text, context_hash, start)
             if result:
                 return result
-
-        # ---------------------------------------------------------------
-        # 3. Tier 1: Knowledge lookup (run once, reuse for Tier 2/3)
-        # ---------------------------------------------------------------
-        tier1_hint: Optional[KnowledgeLookupResult] = None
-
-        if self._config.enable_tier1 or self._config.enable_tier2 or self._config.enable_tier3:
+        elif need_knowledge:
             tier1_hint = self._knowledge.lookup(input_text)
 
         if self._config.enable_tier1 and tier1_hint:
@@ -291,6 +330,7 @@ class TieredRouter:
         )
 
         self._cache_result("recipe", text, context_hash, result)
+        self._pin_tier(text, context_hash, RoutingTier.RECIPE.value)
         self._record_metric(RoutingTier.RECIPE, result.latency_ms)
         return result
 
@@ -328,6 +368,7 @@ class TieredRouter:
         )
 
         self._cache_result("instant", text, context_hash, result)
+        self._pin_tier(text, context_hash, RoutingTier.INSTANT.value)
         self._record_metric(RoutingTier.INSTANT, result.latency_ms)
         return result
 
@@ -356,8 +397,42 @@ class TieredRouter:
         )
 
         self._cache_result("fast", text, context_hash, result)
+        self._pin_tier(text, context_hash, RoutingTier.FAST.value)
         self._record_metric(RoutingTier.FAST, result.latency_ms)
         return result
+
+    def _pin_tier(self, input_text: str, context_hash: str, tier_value: str):
+        """Record a tier pin for future consistency."""
+        pin_key = f"{input_text}|{context_hash}"
+        self._tier_pins[pin_key] = tier_value
+        if len(self._tier_pins) > _MAX_TIER_PINS:
+            # Evict oldest (dict is insertion-ordered in Python 3.7+)
+            self._tier_pins.pop(next(iter(self._tier_pins)))
+
+    def _try_pinned_tier(
+        self,
+        tier_value: str,
+        text: str,
+        context: Dict,
+        context_hash: str,
+        start: float,
+    ) -> Optional[RoutingResult]:
+        """Re-execute the pinned tier directly."""
+        if tier_value == RoutingTier.RECIPE.value and self._config.enable_recipes:
+            return self._try_recipe(text, context_hash, start)
+        if tier_value == RoutingTier.INSTANT.value and self._config.enable_tier0:
+            return self._try_tier0(text, context_hash, start)
+        if tier_value == RoutingTier.FAST.value and self._config.enable_tier1:
+            hint = self._knowledge.lookup(text)
+            if hint:
+                return self._try_tier1(hint, text, context_hash, start)
+        if tier_value == RoutingTier.STANDARD.value and self._config.enable_tier2:
+            hint = self._knowledge.lookup(text)
+            return self._try_tier2(text, context, context_hash, start, hint)
+        if tier_value == RoutingTier.DEEP.value and self._config.enable_tier3:
+            hint = self._knowledge.lookup(text)
+            return self._try_tier3(text, context, context_hash, start, hint)
+        return None
 
     def _try_tier2(
         self,
@@ -456,6 +531,7 @@ class TieredRouter:
             )
 
             self._cache_result("standard", text, context_hash, result)
+            self._pin_tier(text, context_hash, RoutingTier.STANDARD.value)
             self._record_metric(RoutingTier.STANDARD, result.latency_ms)
             return result
 
@@ -571,6 +647,7 @@ class TieredRouter:
             )
 
             self._cache_result("deep", text, context_hash, result)
+            self._pin_tier(text, context_hash, RoutingTier.DEEP.value)
             self._record_metric(RoutingTier.DEEP, result.latency_ms)
             return result
 

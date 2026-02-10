@@ -274,6 +274,9 @@ class SynapseHandler:
         reg.register("inspect_scene", self._handle_inspect_scene)
         reg.register("inspect_node", self._handle_inspect_node)
 
+        # Batch
+        reg.register("batch_commands", self._handle_batch_commands)
+
         # Memory operations (new names)
         reg.register("context", self._handle_memory_context)
         reg.register("search", self._handle_memory_search)
@@ -307,6 +310,68 @@ class SynapseHandler:
             "protocol_version": PROTOCOL_VERSION,
             "commands": self._registry.registered_types,
             "description": "Synapse AI-Houdini Bridge v" + PROTOCOL_VERSION,
+        }
+
+    # =========================================================================
+    # BATCH HANDLER
+    # =========================================================================
+
+    def _handle_batch_commands(self, payload: Dict) -> Dict:
+        """Execute a batch of commands in declared order.
+
+        Payload:
+            commands: list of {type: str, payload: dict}
+            atomic: bool (default True) — wrap in single undo group
+            stop_on_error: bool (default False) — halt on first error
+        """
+        commands = payload.get("commands")
+        if not commands or not isinstance(commands, list):
+            raise ValueError("'commands' must be a non-empty list")
+
+        atomic = payload.get("atomic", True)
+        stop_on_error = payload.get("stop_on_error", False)
+
+        results = []
+        statuses = []
+        errors = []
+
+        if atomic and HOU_AVAILABLE:
+            hou.undos.beginGroup()
+
+        try:
+            for i, cmd_spec in enumerate(commands):
+                cmd_type = cmd_spec.get("type", "")
+                cmd_payload = cmd_spec.get("payload", {})
+                handler = self._registry.get(cmd_type)
+
+                if handler is None:
+                    err = f"Step {i}: unknown command '{cmd_type}'"
+                    errors.append(err)
+                    statuses.append("error")
+                    results.append(None)
+                    if stop_on_error:
+                        break
+                    continue
+
+                try:
+                    result = handler(cmd_payload)
+                    results.append(result)
+                    statuses.append("ok")
+                    errors.append(None)
+                except Exception as e:
+                    results.append(None)
+                    statuses.append("error")
+                    errors.append(f"Step {i}: {e}")
+                    if stop_on_error:
+                        break
+        finally:
+            if atomic and HOU_AVAILABLE:
+                hou.undos.endGroup()
+
+        return {
+            "results": results,
+            "statuses": statuses,
+            "errors": errors,
         }
 
     # =========================================================================
