@@ -501,7 +501,8 @@ class MemoryStore:
                         match_reasons=match_reasons
                     ))
 
-            results.sort(key=lambda r: r.score, reverse=True)
+            # He2025: stable sort with ID tiebreaker for deterministic ordering
+            results.sort(key=lambda r: (-r.score, r.memory.id))
 
             if query.limit > 0:
                 results = results[:query.limit]

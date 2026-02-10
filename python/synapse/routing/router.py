@@ -149,6 +149,7 @@ class TieredRouter:
 
         # Tier-pinning cache: canonical_key → tier value (He2025 consistency)
         self._tier_pins: Dict[str, str] = {}
+        self._tier_pins_lock = threading.Lock()
 
         # Metrics
         self._tier_counts: Dict[str, int] = {t.value: 0 for t in RoutingTier}
@@ -185,7 +186,8 @@ class TieredRouter:
         # -1. Tier-pin check (He2025 consistency)
         # ---------------------------------------------------------------
         pin_key = f"{input_text}|{context_hash}"
-        pinned_tier = self._tier_pins.get(pin_key)
+        with self._tier_pins_lock:
+            pinned_tier = self._tier_pins.get(pin_key)
 
         # ---------------------------------------------------------------
         # 0. Cache check (He2025)
@@ -218,7 +220,8 @@ class TieredRouter:
             if result:
                 return result
             # Stale pin — tier returned None; delete and fall through
-            self._tier_pins.pop(pin_key, None)
+            with self._tier_pins_lock:
+                self._tier_pins.pop(pin_key, None)
 
         # ---------------------------------------------------------------
         # 1. Recipe match
@@ -404,10 +407,11 @@ class TieredRouter:
     def _pin_tier(self, input_text: str, context_hash: str, tier_value: str):
         """Record a tier pin for future consistency."""
         pin_key = f"{input_text}|{context_hash}"
-        self._tier_pins[pin_key] = tier_value
-        if len(self._tier_pins) > _MAX_TIER_PINS:
-            # Evict oldest (dict is insertion-ordered in Python 3.7+)
-            self._tier_pins.pop(next(iter(self._tier_pins)))
+        with self._tier_pins_lock:
+            self._tier_pins[pin_key] = tier_value
+            if len(self._tier_pins) > _MAX_TIER_PINS:
+                # Evict oldest (dict is insertion-ordered in Python 3.7+)
+                self._tier_pins.pop(next(iter(self._tier_pins)))
 
     def _try_pinned_tier(
         self,
