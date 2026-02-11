@@ -15,6 +15,7 @@ from synapse_ws import (
     SynapseConnectionError,
     SynapseExecutionError,
     PROTOCOL_VERSION,
+    _get_auth_key,
 )
 
 
@@ -382,3 +383,105 @@ async def test_create_node():
     assert cmd["payload"]["parent"] == "/stage"
     assert cmd["payload"]["type"] == "null"
     assert cmd["payload"]["name"] == "test_null"
+
+
+# -- Authentication handshake tests ----------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_auth_handshake_no_auth_required():
+    """When server doesn't send auth_required, connect succeeds normally."""
+    mock_ws = AsyncMock()
+    # Server doesn't send auth_required — recv times out
+    mock_ws.recv = AsyncMock(side_effect=asyncio.TimeoutError())
+
+    with patch("synapse_ws.websockets") as mock_websockets:
+        mock_websockets.connect = AsyncMock(return_value=mock_ws)
+        client = SynapseClient()
+        result = await client.connect()
+        assert result is True
+        assert client._connected is True
+
+
+@pytest.mark.asyncio
+async def test_auth_handshake_success():
+    """Client completes auth handshake when server requires it."""
+    mock_ws = AsyncMock()
+    recv_calls = []
+
+    async def mock_recv():
+        recv_calls.append(1)
+        if len(recv_calls) == 1:
+            return json.dumps({"type": "auth_required", "message": "Authentication required"})
+        else:
+            return json.dumps({"type": "auth_success", "success": True})
+
+    mock_ws.recv = mock_recv
+    sent = []
+    async def mock_send(msg):
+        sent.append(json.loads(msg))
+    mock_ws.send = mock_send
+
+    with patch("synapse_ws.websockets") as mock_websockets, \
+         patch("synapse_ws._get_auth_key", return_value="test-secret-key"):
+        mock_websockets.connect = AsyncMock(return_value=mock_ws)
+        client = SynapseClient()
+        result = await client.connect()
+        assert result is True
+        # Verify authenticate command was sent
+        assert len(sent) == 1
+        assert sent[0]["type"] == "authenticate"
+        assert sent[0]["payload"]["key"] == "test-secret-key"
+
+
+@pytest.mark.asyncio
+async def test_auth_handshake_failed():
+    """Client raises SynapseConnectionError when auth fails."""
+    mock_ws = AsyncMock()
+    recv_calls = []
+
+    async def mock_recv():
+        recv_calls.append(1)
+        if len(recv_calls) == 1:
+            return json.dumps({"type": "auth_required"})
+        else:
+            return json.dumps({"type": "auth_failed", "error": "Invalid API key"})
+
+    mock_ws.recv = mock_recv
+    mock_ws.send = AsyncMock()
+
+    with patch("synapse_ws.websockets") as mock_websockets, \
+         patch("synapse_ws._get_auth_key", return_value="wrong-key"):
+        mock_websockets.connect = AsyncMock(return_value=mock_ws)
+        client = SynapseClient()
+        with pytest.raises(SynapseConnectionError, match="Authentication failed"):
+            await client.connect()
+
+
+@pytest.mark.asyncio
+async def test_auth_handshake_no_key_configured():
+    """Client raises SynapseConnectionError when auth required but no key."""
+    mock_ws = AsyncMock()
+    mock_ws.recv = AsyncMock(
+        return_value=json.dumps({"type": "auth_required"})
+    )
+
+    with patch("synapse_ws.websockets") as mock_websockets, \
+         patch("synapse_ws._get_auth_key", return_value=None):
+        mock_websockets.connect = AsyncMock(return_value=mock_ws)
+        client = SynapseClient()
+        with pytest.raises(SynapseConnectionError, match="no API key"):
+            await client.connect()
+
+
+def test_get_auth_key_env_var():
+    """_get_auth_key reads from SYNAPSE_API_KEY env var."""
+    with patch.dict(os.environ, {"SYNAPSE_API_KEY": "env-key-123"}):
+        assert _get_auth_key() == "env-key-123"
+
+
+def test_get_auth_key_none():
+    """_get_auth_key returns None when no key configured."""
+    with patch.dict(os.environ, {}, clear=True), \
+         patch("synapse_ws.os.path.exists", return_value=False):
+        assert _get_auth_key() is None

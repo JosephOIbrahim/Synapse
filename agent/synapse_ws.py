@@ -11,6 +11,7 @@ All other modules call functions from here.
 import asyncio
 import json
 import logging
+import os
 import time
 import uuid
 from typing import Any, Optional
@@ -54,6 +55,30 @@ class SynapseExecutionError(Exception):
         self.partial_result = partial_result
 
 
+def _get_auth_key() -> Optional[str]:
+    """Get API key for authenticating with Synapse server.
+
+    Sources (checked in order):
+    1. SYNAPSE_API_KEY environment variable
+    2. ~/.synapse/auth.key file (first non-empty, non-comment line)
+    3. None (auth disabled)
+    """
+    env_key = os.environ.get("SYNAPSE_API_KEY", "").strip()
+    if env_key:
+        return env_key
+    try:
+        key_path = os.path.join(os.path.expanduser("~"), ".synapse", "auth.key")
+        if os.path.exists(key_path):
+            with open(key_path, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#"):
+                        return line
+    except OSError:
+        pass
+    return None
+
+
 class SynapseClient:
     """
     Async WebSocket client for Synapse.
@@ -73,6 +98,51 @@ class SynapseClient:
         self._connected = False
         self._lock = asyncio.Lock()
 
+    async def _auth_handshake(self) -> None:
+        """Handle auth handshake if server requires it."""
+        try:
+            raw = await asyncio.wait_for(self._ws.recv(), timeout=2.0)
+            msg = json.loads(raw)
+        except (asyncio.TimeoutError, Exception):
+            return  # No auth_required — server doesn't need auth
+
+        if msg.get("type") != "auth_required":
+            logger.warning("Expected auth_required, got %s", msg.get("type"))
+            return
+
+        key = _get_auth_key()
+        if not key:
+            raise SynapseConnectionError(
+                "Synapse server requires authentication but no API key is configured. "
+                "Set SYNAPSE_API_KEY environment variable or create ~/.synapse/auth.key"
+            )
+
+        await self._ws.send(json.dumps({
+            "type": "authenticate",
+            "id": "auth-handshake",
+            "payload": {"key": key},
+        }))
+
+        try:
+            raw = await asyncio.wait_for(self._ws.recv(), timeout=5.0)
+            response = json.loads(raw)
+        except asyncio.TimeoutError:
+            raise SynapseConnectionError(
+                "Synapse server didn't respond to authentication within 5s"
+            )
+
+        if response.get("type") == "auth_failed":
+            raise SynapseConnectionError(
+                f"Authentication failed: {response.get('error', 'invalid API key')}. "
+                "Check your SYNAPSE_API_KEY or ~/.synapse/auth.key"
+            )
+
+        if response.get("type") == "auth_success":
+            logger.info("Authenticated with Synapse server")
+            return
+
+        logger.warning("Unexpected auth response: %s", response.get("type"))
+
     async def connect(self) -> bool:
         """Establish WebSocket connection to Synapse."""
         try:
@@ -86,6 +156,7 @@ class SynapseClient:
                 ),
                 timeout=CONNECT_TIMEOUT,
             )
+            await self._auth_handshake()
             self._connected = True
             logger.info("Connected to Synapse at %s", self.uri)
             return True
@@ -93,6 +164,8 @@ class SynapseClient:
             raise SynapseConnectionError(
                 f"Couldn't reach Synapse at {self.uri} — is Houdini running with the Synapse server active?"
             )
+        except SynapseConnectionError:
+            raise
         except Exception as e:
             raise SynapseConnectionError(
                 f"Connection to Synapse failed: {e}. Check that Houdini is running and Synapse is loaded."
