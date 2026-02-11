@@ -32,7 +32,11 @@ def test_tool_definitions_count():
     assert "synapse_execute" in names
     assert "synapse_render_preview" in names
     assert "synapse_knowledge_lookup" in names
-    assert len(names) == 8
+    assert "synapse_project_setup" in names
+    assert "synapse_memory_write" in names
+    assert "synapse_memory_query" in names
+    assert "synapse_memory_status" in names
+    assert len(names) == 12
 
 
 def test_tool_definitions_have_required_fields():

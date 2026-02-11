@@ -213,6 +213,105 @@ TOOL_DEFINITIONS = [
             "required": ["query"],
         },
     },
+    # ─── Living Memory tools ───────────────────────────────────
+    {
+        "name": "synapse_project_setup",
+        "description": (
+            "Initialize the Living Memory structure for the current Houdini scene. "
+            "Creates claude/ directories alongside the HIP file and project, seeds "
+            "memory.md and agent.usd, and returns the full project context. "
+            "Call this after synapse_ping to load prior session memory and pick up "
+            "where we left off."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
+    {
+        "name": "synapse_memory_write",
+        "description": (
+            "Write an entry to the scene's Living Memory. Use this to persist "
+            "decisions, parameter experiments, blockers, and session notes so "
+            "they survive across sessions.\n\n"
+            "Entry types: session_start, session_end, decision, "
+            "parameter_experiment, blocker, blocker_resolved, note, "
+            "asset_reference, wedge_result"
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "entry_type": {
+                    "type": "string",
+                    "description": "Type of entry to write.",
+                    "enum": [
+                        "session_start", "session_end", "decision",
+                        "parameter_experiment", "blocker", "blocker_resolved",
+                        "note", "asset_reference", "wedge_result",
+                    ],
+                },
+                "content": {
+                    "type": "object",
+                    "description": (
+                        "Entry content. Structure depends on entry_type:\n"
+                        "- decision: {name, choice, reasoning, alternatives}\n"
+                        "- parameter_experiment: {node, parm, before, after, result}\n"
+                        "- blocker: {description, attempts}\n"
+                        "- note: {content}\n"
+                        "- session_start: {goal}\n"
+                        "- session_end: {accomplishments, next_actions}"
+                    ),
+                },
+                "scope": {
+                    "type": "string",
+                    "description": "Where to write: scene (default), project, or both.",
+                    "enum": ["scene", "project", "both"],
+                },
+            },
+            "required": ["entry_type", "content"],
+        },
+    },
+    {
+        "name": "synapse_memory_query",
+        "description": (
+            "Search Living Memory across scene, project, or all scenes in the project. "
+            "Returns ranked results with relevance scores. Use this to recall past "
+            "decisions, find what settings worked, or check for unresolved blockers."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Search query (e.g., 'displacement settings', 'exposure values').",
+                },
+                "scope": {
+                    "type": "string",
+                    "description": "Search scope: scene, project, or all (default).",
+                    "enum": ["scene", "project", "all"],
+                },
+                "type_filter": {
+                    "type": "string",
+                    "description": "Limit to specific entry type (decision, parameter, blocker, etc.).",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "synapse_memory_status",
+        "description": (
+            "Get the current Living Memory system status — evolution stage "
+            "(charmander/charmeleon/charizard), file sizes, session count, "
+            "and agent task state."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
 ]
 
 
@@ -270,6 +369,31 @@ async def execute_tool(tool_name: str, tool_input: dict) -> str:
 
         elif tool_name == "synapse_knowledge_lookup":
             result = await client.knowledge_lookup(tool_input["query"])
+            return json.dumps(result, indent=2, default=str)
+
+        # Living Memory tools
+        elif tool_name == "synapse_project_setup":
+            result = await client.project_setup()
+            return json.dumps(result, indent=2, default=str)
+
+        elif tool_name == "synapse_memory_write":
+            result = await client.memory_write(
+                entry_type=tool_input["entry_type"],
+                content=tool_input.get("content", {}),
+                scope=tool_input.get("scope", "scene"),
+            )
+            return json.dumps(result, indent=2, default=str)
+
+        elif tool_name == "synapse_memory_query":
+            result = await client.memory_query(
+                query=tool_input["query"],
+                scope=tool_input.get("scope", "all"),
+                type_filter=tool_input.get("type_filter", ""),
+            )
+            return json.dumps(result, indent=2, default=str)
+
+        elif tool_name == "synapse_memory_status":
+            result = await client.memory_status()
             return json.dumps(result, indent=2, default=str)
 
         else:

@@ -355,3 +355,29 @@ class SynapseClient:
     async def knowledge_lookup(self, query: str) -> dict:
         """Look up Houdini knowledge from the RAG index."""
         return await self._send_command("knowledge_lookup", {"query": query})
+
+    # --- Living Memory ---
+
+    async def project_setup(self) -> dict:
+        """Initialize Living Memory structure for the current scene."""
+        return await self._send_command("project_setup")
+
+    async def memory_write(self, entry_type: str, content: dict, scope: str = "scene") -> dict:
+        """Write a memory entry (decision, note, blocker, parameter, etc.)."""
+        return await self._send_command("memory_write", {
+            "entry_type": entry_type,
+            "content": content,
+            "scope": scope,
+        })
+
+    async def memory_query(self, query: str, scope: str = "all", type_filter: str = "") -> dict:
+        """Search scene/project memory with ranked results."""
+        return await self._send_command("memory_query", {
+            "query": query,
+            "scope": scope,
+            "type_filter": type_filter,
+        })
+
+    async def memory_status(self) -> dict:
+        """Get Living Memory evolution stage, file sizes, session count."""
+        return await self._send_command("memory_status")
