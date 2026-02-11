@@ -303,7 +303,16 @@ def write_memory_entry(scene_dir: str, entry: Dict[str, Any], entry_type: str) -
     writer = writers.get(entry_type)
     if writer:
         writer()
-        # Stub: Phase 3 adds check_evolution() here
+        # Check if evolution should happen
+        try:
+            from .evolution import check_evolution
+            evo_status = check_evolution(scene_dir)
+            if evo_status.get("should_evolve"):
+                logger.info("Evolution triggered: %s -> %s (triggers: %s)",
+                           evo_status["current"], evo_status["target"],
+                           evo_status["triggers_met"])
+        except ImportError:
+            pass
     else:
         logger.warning("Unknown entry type: %s", entry_type)
 

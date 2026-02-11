@@ -343,6 +343,7 @@ class SynapseHandler:
         reg.register("memory_write", self._handle_memory_write)
         reg.register("memory_query", self._handle_memory_query)
         reg.register("memory_status", self._handle_memory_status)
+        reg.register("evolve_memory", self._handle_evolve_memory)
 
     # =========================================================================
     # UTILITY HANDLERS
@@ -1643,6 +1644,31 @@ class SynapseHandler:
         job_path = hou.getenv("JOB", hip_dir)
 
         return get_memory_status(hip_dir, job_path)
+
+    def _handle_evolve_memory(self, payload: Dict) -> Dict:
+        """Manually trigger memory evolution."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+        from ..memory.evolution import check_evolution, evolve_to_charmeleon
+
+        hip_path = hou.hipFile.path()
+        hip_dir = os.path.dirname(hip_path)
+        scope = resolve_param_with_default(payload, "scope", "scene")
+        dry_run = resolve_param_with_default(payload, "dry_run", True)
+
+        claude_dir = os.path.join(hip_dir, "claude")
+        status = check_evolution(claude_dir)
+
+        if dry_run:
+            return {"dry_run": True, **status}
+
+        if status["should_evolve"] and status["target"] == "charmeleon":
+            md_path = os.path.join(claude_dir, "memory.md")
+            usd_path = os.path.join(claude_dir, "memory.usd")
+            result = evolve_to_charmeleon(md_path, usd_path)
+            return {"dry_run": False, "evolved": True, **result}
+
+        return {"dry_run": False, "evolved": False, "reason": "No evolution needed"}
 
     # =========================================================================
     # INTROSPECTION HANDLERS (Phase 1)

@@ -1206,6 +1206,22 @@ async def list_tools():
                 "properties": {},
             },
         ),
+        # -- Evolution --
+        Tool(
+            name="synapse_evolve_memory",
+            description=(
+                "Manually trigger memory evolution (Charmander->Charmeleon "
+                "or Charmeleon->Charizard). Use dry_run=true to preview."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "scope": {"type": "string", "enum": ["scene", "project"]},
+                    "target_stage": {"type": "string", "enum": ["charmeleon", "charizard"]},
+                    "dry_run": {"type": "boolean", "description": "Preview without evolving. Default: true"},
+                },
+            },
+        ),
         # -- Batch --
         Tool(
             name="synapse_batch",
@@ -1382,6 +1398,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_memory_write":  ("memory_write",    lambda a: {k: a[k] for k in a}),
     "synapse_memory_query":  ("memory_query",    lambda a: {k: a[k] for k in a}),
     "synapse_memory_status": ("memory_status",   _passthrough),
+    "synapse_evolve_memory": ("evolve_memory",   _passthrough),
 }
 
 

@@ -393,3 +393,95 @@ class TestAgentState:
             agent.update_task_status(path, f"task_{i:03d}", "completed")
         stage = Usd.Stage.Open(path)
         assert stage.GetPrimAtPath("/SYNAPSE/agent").IsValid()
+
+
+# ── Phase 3: Evolution Tests ──────────────────────────────────────
+
+# Register scene_memory as a package-relative module so evolution's
+# "from .scene_memory import ..." resolves correctly.
+import types
+_memory_pkg = types.ModuleType("synapse.memory")
+_memory_pkg.__path__ = [os.path.join(os.path.dirname(__file__), "..", "python", "synapse", "memory")]
+sys.modules.setdefault("synapse", types.ModuleType("synapse"))
+sys.modules.setdefault("synapse.memory", _memory_pkg)
+sys.modules.setdefault("synapse.memory.scene_memory", sm)
+
+_evo_spec = importlib.util.spec_from_file_location(
+    "synapse.memory.evolution",
+    os.path.join(os.path.dirname(__file__), "..", "python", "synapse", "memory", "evolution.py"),
+    submodule_search_locations=[],
+)
+evo = importlib.util.module_from_spec(_evo_spec)
+evo.__package__ = "synapse.memory"
+_evo_spec.loader.exec_module(evo)
+sys.modules["synapse.memory.evolution"] = evo
+
+
+class TestEvolutionDetection:
+    """Tests for evolution trigger detection."""
+
+    def test_count_structured_data_empty(self, tmp_path):
+        md = tmp_path / "memory.md"
+        md.write_text("# Scene Memory\n\n---\n\n", encoding="utf-8")
+        counts = evo.count_structured_data(str(md))
+        assert counts["structured_data_count"] == 0
+        assert counts["node_path_references"] == 0
+
+    def test_count_structured_data_with_node_paths(self, tmp_path):
+        md = tmp_path / "memory.md"
+        content = "# Scene Memory\n\n"
+        for i in range(12):
+            content += f"Modified /obj/geo{i}/mountain1\n"
+        md.write_text(content, encoding="utf-8")
+        counts = evo.count_structured_data(str(md))
+        assert counts["node_path_references"] >= 10
+
+    def test_check_evolution_not_triggered(self, tmp_path):
+        md = tmp_path / "memory.md"
+        md.write_text("# Scene Memory\nSimple note\n", encoding="utf-8")
+        result = evo.check_evolution(str(tmp_path))
+        assert result["should_evolve"] is False
+
+    def test_check_evolution_triggered_by_node_paths(self, tmp_path):
+        md = tmp_path / "memory.md"
+        content = "# Scene Memory\n\n"
+        for i in range(15):
+            content += f"- Set /obj/geo{i}/mountain1 scale to 2.0\n"
+        md.write_text(content, encoding="utf-8")
+        result = evo.check_evolution(str(tmp_path))
+        assert result["should_evolve"] is True
+        assert "node_path_references" in result["triggers_met"]
+
+    def test_parse_markdown_memory(self, tmp_path):
+        md = tmp_path / "memory.md"
+        content = (
+            "# Scene Memory: test.hip\n\n---\n\n"
+            "## Session 2026-02-11 14:00:00\n"
+            "**Goal:** Set up lighting\n"
+            "### Decision: Render Engine\n"
+            "**Choice:** Karma XPU\n"
+            "**Reasoning:** GPU speed\n"
+            "### Parameter: /stage/karma1 / samples\n"
+            "- **Before:** 64\n"
+            "- **After:** 256\n"
+            "- **Result:** Clean render\n\n"
+            "## Session 2026-02-12 10:00:00\n"
+            "Simple notes here\n"
+        )
+        md.write_text(content, encoding="utf-8")
+        parsed = evo.parse_markdown_memory(str(md))
+        assert len(parsed["sessions"]) == 2
+        assert len(parsed["decisions"]) >= 1
+        assert len(parsed["parameters"]) >= 1
+
+    def test_prune_memory_no_op_when_few_sessions(self, tmp_path):
+        md = tmp_path / "memory.md"
+        content = "# Scene Memory\n\n## Session 2026-02-11\nNotes\n"
+        md.write_text(content, encoding="utf-8")
+        result = evo.prune_memory(str(tmp_path))
+        assert result["pruned_sessions"] == 0
+
+    def test_count_nonexistent_file(self, tmp_path):
+        counts = evo.count_structured_data(str(tmp_path / "missing.md"))
+        assert counts["structured_data_count"] == 0
+        assert counts["session_count"] == 0
