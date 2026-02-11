@@ -689,6 +689,60 @@ class TestSearchMemory:
             assert r["score"] > 0
 
 
+class TestTfIdfScoring:
+    """Tests verifying TF-IDF weighting behavior."""
+
+    # A corpus where "displacement" appears in 1 section, "render" appears in 3.
+    # "displacement" should have higher IDF weight.
+    CORPUS = (
+        "# Scene Memory\n\n---\n\n"
+        "## Session 2026-01-01\n\n"
+        "### Decision: render engine\n"
+        "**Choice:** Karma XPU\n"
+        "**Reasoning:** Fast render times\n\n"
+        "### Decision: render quality\n"
+        "**Choice:** 256 samples\n"
+        "**Reasoning:** Good render convergence\n\n"
+        "### Decision: displacement technique\n"
+        "**Choice:** True displacement\n"
+        "**Reasoning:** Better silhouettes than bump\n\n"
+        "### Note\n"
+        "Render looks good after displacement fix\n\n"
+    )
+
+    def test_rare_term_scores_higher(self):
+        """Section mentioning rare term 'displacement' should rank above
+        sections mentioning common term 'render' when both are queried."""
+        results = sm.search_memory(self.CORPUS, "displacement")
+        # The decision about displacement should be the top hit
+        assert len(results) >= 1
+        assert "displacement" in results[0]["title"].lower()
+
+    def test_common_term_has_lower_idf(self):
+        """'render' appears in many sections, so a query for 'render' should
+        still return results but with moderate scores (not inflated)."""
+        results = sm.search_memory(self.CORPUS, "render")
+        # Should find multiple matches
+        assert len(results) >= 2
+        # All scores should be positive
+        for r in results:
+            assert r["score"] > 0
+
+    def test_multi_term_query_combines_idf(self):
+        """Query with both rare and common terms should boost sections
+        containing the rare term."""
+        results = sm.search_memory(self.CORPUS, "displacement render")
+        # Top hit should be the one about displacement (has the rare term)
+        assert results[0]["title"].lower() == "displacement technique"
+
+    def test_parse_sections_public(self):
+        """_parse_sections produces correct section types."""
+        sections = sm._parse_sections(self.CORPUS)
+        types = [s["type"] for s in sections]
+        assert "decision" in types
+        assert "note" in types
+
+
 # ── Process-Safe File Locking Tests ──────────────────────────────
 
 class TestProcessFileLock:

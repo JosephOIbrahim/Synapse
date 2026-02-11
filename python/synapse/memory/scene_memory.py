@@ -542,12 +542,82 @@ def _truncate(text: str, max_chars: int) -> str:
     return truncated + "\n...(truncated)"
 
 
+def _parse_sections(content: str) -> List[Dict[str, Any]]:
+    """Split markdown memory into typed sections.
+
+    Each section has: type, title, text, line.
+    Section types: session, decision, parameter, blocker, blocker_resolved,
+    note, wedge, session_end, header.
+    """
+    import re
+
+    sections: List[Dict[str, Any]] = []
+    current: Dict[str, Any] = {"type": "header", "title": "", "text": "", "line": 1}
+
+    _SECTION_PATTERNS = [
+        ("## Session ", "session"),
+        ("### Decision:", "decision"),
+        ("### Parameter:", "parameter"),
+        ("### Blocker", None),          # special: resolved vs open
+        ("### Note", "note"),
+        ("### Wedge", "wedge"),
+        ("### Session End", "session_end"),
+    ]
+
+    for i, line in enumerate(content.split("\n"), 1):
+        matched = False
+        for prefix, sec_type in _SECTION_PATTERNS:
+            if not line.startswith(prefix):
+                continue
+            if current["text"].strip():
+                sections.append(current)
+
+            if prefix == "### Blocker":
+                is_resolved = "Resolved" in line
+                current = {
+                    "type": "blocker_resolved" if is_resolved else "blocker",
+                    "title": re.sub(r'^### Blocker\s*(Resolved)?:\s*', '', line).strip(),
+                    "text": line + "\n",
+                    "line": i,
+                }
+            elif prefix == "### Decision:":
+                current = {
+                    "type": "decision",
+                    "title": line.replace("### Decision:", "").strip(),
+                    "text": line + "\n",
+                    "line": i,
+                }
+            elif prefix == "### Parameter:":
+                current = {
+                    "type": "parameter",
+                    "title": line.replace("### Parameter:", "").strip(),
+                    "text": line + "\n",
+                    "line": i,
+                }
+            else:
+                current = {
+                    "type": sec_type,
+                    "title": line.strip("# \n") if sec_type != "session_end" else "Session End",
+                    "text": line + "\n",
+                    "line": i,
+                }
+            matched = True
+            break
+        if not matched:
+            current["text"] += line + "\n"
+
+    if current["text"].strip():
+        sections.append(current)
+    return sections
+
+
 def search_memory(content: str, query: str, type_filter: str = "") -> List[Dict[str, Any]]:
     """
-    Section-aware memory search with word-level scoring.
+    Section-aware memory search with TF-IDF scoring.
 
-    Splits markdown into sections, scores each by keyword overlap,
-    and returns ranked results. Much better than substring matching.
+    Splits markdown into sections, computes TF-IDF for each query term
+    across all sections, then ranks by combined score. Rare terms (e.g.
+    specific node names) are weighted higher than common ones (e.g. "render").
 
     Args:
         content: Raw markdown memory content
@@ -556,128 +626,85 @@ def search_memory(content: str, query: str, type_filter: str = "") -> List[Dict[
 
     Returns: Sorted list of {section_type, title, text, score, line}
     """
+    import math
     import re
 
     if not content or not query:
         return []
 
-    # Tokenize query into lowercase words (3+ chars for relevance)
-    query_words = set(
+    # Tokenize query into lowercase words (2+ chars for relevance)
+    query_words = [
         w for w in re.findall(r'[a-z0-9_/]+', query.lower()) if len(w) >= 2
-    )
-    if not query_words:
+    ]
+    query_word_set = set(query_words)
+    if not query_word_set:
         return []
 
-    # Split content into sections by ## and ### headers
-    sections = []
-    current_section = {"type": "header", "title": "", "text": "", "line": 1}
-    for i, line in enumerate(content.split("\n"), 1):
-        if line.startswith("## Session "):
-            if current_section["text"].strip():
-                sections.append(current_section)
-            current_section = {
-                "type": "session",
-                "title": line.strip("# \n"),
-                "text": line + "\n",
-                "line": i,
-            }
-        elif line.startswith("### Decision:"):
-            if current_section["text"].strip():
-                sections.append(current_section)
-            current_section = {
-                "type": "decision",
-                "title": line.replace("### Decision:", "").strip(),
-                "text": line + "\n",
-                "line": i,
-            }
-        elif line.startswith("### Parameter:"):
-            if current_section["text"].strip():
-                sections.append(current_section)
-            current_section = {
-                "type": "parameter",
-                "title": line.replace("### Parameter:", "").strip(),
-                "text": line + "\n",
-                "line": i,
-            }
-        elif line.startswith("### Blocker"):
-            if current_section["text"].strip():
-                sections.append(current_section)
-            is_resolved = "Resolved" in line
-            current_section = {
-                "type": "blocker_resolved" if is_resolved else "blocker",
-                "title": re.sub(r'^### Blocker\s*(Resolved)?:\s*', '', line).strip(),
-                "text": line + "\n",
-                "line": i,
-            }
-        elif line.startswith("### Note"):
-            if current_section["text"].strip():
-                sections.append(current_section)
-            current_section = {
-                "type": "note",
-                "title": "Note",
-                "text": line + "\n",
-                "line": i,
-            }
-        elif line.startswith("### Wedge"):
-            if current_section["text"].strip():
-                sections.append(current_section)
-            current_section = {
-                "type": "wedge",
-                "title": line.strip("# \n"),
-                "text": line + "\n",
-                "line": i,
-            }
-        elif line.startswith("### Session End"):
-            if current_section["text"].strip():
-                sections.append(current_section)
-            current_section = {
-                "type": "session_end",
-                "title": "Session End",
-                "text": line + "\n",
-                "line": i,
-            }
-        else:
-            current_section["text"] += line + "\n"
-
-    if current_section["text"].strip():
-        sections.append(current_section)
-
-    # Apply type filter
+    # Parse sections
+    sections = _parse_sections(content)
     if type_filter:
         sections = [s for s in sections if s["type"] == type_filter]
 
-    # Score each section
-    results = []
+    # Pre-compute: tokenize each section and build word lists
+    scorable = []
     for section in sections:
         if section["type"] == "header":
-            continue  # Skip file headers
-
-        section_text = section["text"].lower()
-        section_words = set(re.findall(r'[a-z0-9_/]+', section_text))
-
-        # Word overlap score
-        matching_words = query_words & section_words
-        if not matching_words:
             continue
+        words = re.findall(r'[a-z0-9_/]+', section["text"].lower())
+        word_set = set(words)
+        if not (query_word_set & word_set):
+            continue  # Skip sections with zero overlap
+        scorable.append((section, words, word_set))
 
-        # Base score: fraction of query words matched
-        score = len(matching_words) / len(query_words)
+    if not scorable:
+        return []
 
-        # Bonus for title matches (2x weight)
+    # IDF: log(N / df) where N = total scorable sections, df = sections containing term
+    n_docs = len(scorable)
+    doc_freq: Dict[str, int] = {}
+    for _, _, word_set in scorable:
+        for w in query_word_set:
+            if w in word_set:
+                doc_freq[w] = doc_freq.get(w, 0) + 1
+
+    idf: Dict[str, float] = {}
+    for w in query_word_set:
+        df = doc_freq.get(w, 0)
+        # Smoothed IDF: log((N + 1) / (df + 1)) + 1
+        idf[w] = math.log((n_docs + 1) / (df + 1)) + 1.0
+
+    # Score each section with TF-IDF
+    results = []
+    for section, words, word_set in scorable:
+        n_words = len(words) or 1  # avoid /0
+
+        # TF-IDF sum for matching query terms
+        tfidf_score = 0.0
+        for w in query_word_set:
+            if w not in word_set:
+                continue
+            tf = words.count(w) / n_words
+            tfidf_score += tf * idf[w]
+
+        # Normalize by number of query terms for comparability
+        tfidf_score /= len(query_word_set)
+
+        # Title boost: query terms in title get 2x IDF weight
         title_words = set(re.findall(r'[a-z0-9_/]+', section["title"].lower()))
-        title_matches = query_words & title_words
+        title_matches = query_word_set & title_words
         if title_matches:
-            score += len(title_matches) / len(query_words)
+            for w in title_matches:
+                tfidf_score += idf[w] * 0.5 / len(query_word_set)
 
-        # Bonus for exact phrase match
-        if query.lower() in section_text:
-            score += 0.5
+        # Exact phrase bonus
+        if query.lower() in section["text"].lower():
+            tfidf_score += 0.5
 
         results.append({
             "section_type": section["type"],
             "title": section["title"],
             "text": section["text"].strip()[:500],
-            "score": round(score, 3),
+            "score": round(tfidf_score, 3),
             "line": section["line"],
         })
 
