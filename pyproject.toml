@@ -45,6 +45,9 @@ mcp = [
 routing = [
     "anthropic>=0.40.0",
 ]
+memory = [
+    "filelock>=3.12",
+]
 build = [
     "cython>=3.0",
     "setuptools>=61.0",

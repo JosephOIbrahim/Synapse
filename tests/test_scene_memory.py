@@ -687,3 +687,69 @@ class TestSearchMemory:
             assert "score" in r
             assert isinstance(r["score"], float)
             assert r["score"] > 0
+
+
+# ── Process-Safe File Locking Tests ──────────────────────────────
+
+class TestProcessFileLock:
+    """Tests for the _ProcessFileLock mechanism."""
+
+    def test_lock_is_reentrant_context_manager(self, tmp_path):
+        """Lock can be used as a context manager."""
+        p = str(tmp_path / "test.md")
+        open(p, "w").close()
+        lock = sm._get_file_lock(p)
+        with lock:
+            with open(p, "w", encoding="utf-8") as f:
+                f.write("hello")
+        assert open(p, encoding="utf-8").read() == "hello"
+
+    def test_concurrent_appends_are_serialized(self, tmp_path):
+        """Multiple threads appending to the same file produce consistent output."""
+        md = tmp_path / "concurrent.md"
+        md.write_text("# Start\n", encoding="utf-8")
+
+        errors = []
+
+        def append_line(n):
+            try:
+                sm._append_to_md(str(md), f"Line {n}\n")
+            except Exception as e:
+                errors.append(e)
+
+        threads = [threading.Thread(target=append_line, args=(i,)) for i in range(20)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert not errors
+        content = md.read_text(encoding="utf-8")
+        # All 20 lines should be present (plus the header)
+        lines = [l for l in content.split("\n") if l.startswith("Line ")]
+        assert len(lines) == 20
+
+    def test_filelock_creates_lockfile(self, tmp_path):
+        """When filelock is available, a .lock file is created."""
+        if not sm._FILELOCK_AVAILABLE:
+            pytest.skip("filelock not installed")
+        p = str(tmp_path / "test.md")
+        open(p, "w").close()
+        lock = sm._get_file_lock(p)
+        with lock:
+            assert os.path.exists(p + ".lock")
+
+    def test_seed_project_md_is_locked(self, tmp_path):
+        """seed_project_md creates file under lock without corruption."""
+        p = str(tmp_path / "project.md")
+        sm.seed_project_md(p, "TestProject", fps=30.0)
+        content = open(p, encoding="utf-8").read()
+        assert "# Project Memory: TestProject" in content
+        assert "30.0fps" in content
+
+    def test_seed_scene_md_is_locked(self, tmp_path):
+        """seed_scene_md creates file under lock without corruption."""
+        p = str(tmp_path / "memory.md")
+        sm.seed_scene_md(p, "shot_010.hip", "MyProject")
+        content = open(p, encoding="utf-8").read()
+        assert "# Scene Memory: shot_010.hip" in content

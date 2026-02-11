@@ -19,17 +19,62 @@ logger = logging.getLogger("synapse.scene_memory")
 # Schema version for memory files
 SCHEMA_VERSION = "0.1.0"
 
-# Thread-safe file locking for concurrent writes
-_file_locks: Dict[str, threading.Lock] = {}
-_file_locks_lock = threading.Lock()
+# Process-safe file locking for concurrent writes
+# Uses filelock (cross-platform) when available, falls back to threading.Lock
+try:
+    from filelock import FileLock as _FileLock
+    _FILELOCK_AVAILABLE = True
+except ImportError:
+    _FILELOCK_AVAILABLE = False
+
+_thread_locks: Dict[str, threading.Lock] = {}
+_thread_locks_lock = threading.Lock()
 
 
-def _get_file_lock(path: str) -> threading.Lock:
-    """Get or create a threading lock for a file path."""
-    with _file_locks_lock:
-        if path not in _file_locks:
-            _file_locks[path] = threading.Lock()
-        return _file_locks[path]
+class _ProcessFileLock:
+    """Context manager that combines process-level and thread-level locking.
+
+    Process lock: filelock.FileLock on ``path + '.lock'``
+    Thread lock: threading.Lock per path (for in-process concurrency)
+
+    Falls back to thread-only if filelock is unavailable.
+    """
+
+    def __init__(self, path: str, timeout: float = 10.0):
+        self._path = path
+        self._timeout = timeout
+        # Thread lock
+        with _thread_locks_lock:
+            if path not in _thread_locks:
+                _thread_locks[path] = threading.Lock()
+            self._thread_lock = _thread_locks[path]
+        # Process lock (optional)
+        self._file_lock = None
+        if _FILELOCK_AVAILABLE:
+            self._file_lock = _FileLock(path + ".lock", timeout=timeout)
+
+    def __enter__(self):
+        self._thread_lock.acquire()
+        try:
+            if self._file_lock is not None:
+                self._file_lock.acquire()
+        except Exception:
+            self._thread_lock.release()
+            raise
+        return self
+
+    def __exit__(self, *exc):
+        try:
+            if self._file_lock is not None:
+                self._file_lock.release()
+        finally:
+            self._thread_lock.release()
+        return False
+
+
+def _get_file_lock(path: str) -> _ProcessFileLock:
+    """Get a process-safe file lock for the given path."""
+    return _ProcessFileLock(path)
 
 
 # =============================================================================
@@ -90,7 +135,7 @@ def ensure_scene_structure(hip_path: str, job_path: str) -> Dict[str, str]:
 
 
 def seed_project_md(path: str, job_name: str, fps: float = 24.0) -> None:
-    """Create initial project.md with header and empty sections."""
+    """Create initial project.md with header and empty sections. Process-safe."""
     now = _now()
     content = (
         f"# Project Memory: {job_name}\n"
@@ -102,13 +147,15 @@ def seed_project_md(path: str, job_name: str, fps: float = 24.0) -> None:
         f"## Key Decisions\n\n"
         f"## Notes\n"
     )
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(content)
+    lock = _get_file_lock(path)
+    with lock:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
     logger.info("Seeded project.md: %s", path)
 
 
 def seed_scene_md(path: str, scene_name: str, project_name: str) -> None:
-    """Create initial memory.md with header."""
+    """Create initial memory.md with header. Process-safe."""
     now = _now()
     content = (
         f"# Scene Memory: {scene_name}\n"
@@ -117,8 +164,10 @@ def seed_scene_md(path: str, scene_name: str, project_name: str) -> None:
         f"# Evolution: Charmander (markdown)\n"
         f"# Schema: {SCHEMA_VERSION}\n\n---\n\n"
     )
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(content)
+    lock = _get_file_lock(path)
+    with lock:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
     logger.info("Seeded memory.md: %s", path)
 
 
@@ -413,7 +462,7 @@ def _read_file(path: str) -> str:
 
 
 def _append_to_md(md_path: str, text: str) -> None:
-    """Append text to a markdown file if it exists. Thread-safe."""
+    """Append text to a markdown file if it exists. Process-safe."""
     if not os.path.exists(md_path):
         logger.warning("Cannot append to missing file: %s", md_path)
         return
