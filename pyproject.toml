@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "synapse"
-version = "5.0.0"
+version = "5.1.0"
 description = "AI-Houdini Bridge - WebSocket communication, persistent project memory, and foundation utilities (determinism, audit, gates)"
 readme = "README.md"
 license = {text = "MIT"}
