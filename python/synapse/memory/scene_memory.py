@@ -321,11 +321,16 @@ def write_memory_entry(scene_dir: str, entry: Dict[str, Any], entry_type: str) -
             from .evolution import check_evolution
             evo_status = check_evolution(scene_dir)
             if evo_status.get("should_evolve"):
-                logger.info("Evolution triggered: %s -> %s (triggers: %s)",
-                           evo_status["current"], evo_status["target"],
-                           evo_status["triggers_met"])
+                logger.info(
+                    "Memory evolution recommended: %s -> %s (triggers: %s). "
+                    "Call synapse_evolve_memory to upgrade.",
+                    evo_status["current"], evo_status["target"],
+                    evo_status["triggers_met"],
+                )
         except ImportError:
             pass
+        except Exception as e:
+            logger.warning("Evolution check failed: %s", e)
     else:
         logger.warning("Unknown entry type: %s", entry_type)
 
@@ -360,12 +365,32 @@ def load_full_context(hip_dir: str, job_dir: str) -> Dict[str, Any]:
         if os.path.exists(agent_usd):
             agent["path"] = agent_usd
 
-    # Build summary text (truncated)
+    # Build summary text with smart prioritization
     summary_parts = []
+
     if project["content"]:
-        summary_parts.append("## Project Context\n" + _truncate(project["content"], 2000))
+        decisions = _extract_decisions(project["content"])
+        if decisions:
+            summary_parts.append("## Project Decisions\n" + "\n".join(decisions))
+        else:
+            summary_parts.append("## Project Context\n" + _truncate(project["content"], 2000))
+
     if scene["content"]:
-        summary_parts.append("## Scene Memory\n" + _truncate(scene["content"], 4000))
+        blockers = _extract_blockers(scene["content"])
+        recent = _extract_recent_sessions(scene["content"], max_sessions=3)
+        decisions = _extract_decisions(scene["content"])
+
+        if blockers:
+            summary_parts.append("## Active Blockers\n" + "\n".join(blockers))
+        if decisions:
+            summary_parts.append("## Scene Decisions\n" + "\n".join(decisions))
+        if recent:
+            summary_parts.append("## Recent Sessions\n" + "\n".join(recent))
+
+        # Fill remaining budget with older content
+        budget_used = sum(len(p) for p in summary_parts)
+        if budget_used < 6000 and not (blockers or decisions or recent):
+            summary_parts.append("## Scene Memory\n" + _truncate(scene["content"], 6000 - budget_used))
 
     summary = "\n\n".join(summary_parts) if summary_parts else "No memory loaded."
 
@@ -422,6 +447,39 @@ def _find_project_md(scene_dir: str) -> Optional[str]:
             return candidate
         current = parent
     return None
+
+
+def _extract_blockers(content: str) -> List[str]:
+    """Extract unresolved blocker sections from markdown memory."""
+    import re
+    blockers = []
+    for match in re.finditer(
+        r'### Blocker: (.+?)(?=\n###|\n## |\Z)', content, re.DOTALL
+    ):
+        block = match.group(1)
+        if "**Status:** resolved" not in block:
+            blockers.append("- " + block.strip()[:200])
+    return blockers
+
+
+def _extract_decisions(content: str) -> List[str]:
+    """Extract decision summaries from markdown memory."""
+    import re
+    decisions = []
+    for match in re.finditer(
+        r'### Decision: (.+?)\n.*?\*\*Choice:\*\* (.+)', content
+    ):
+        decisions.append(f"- {match.group(1).strip()}: {match.group(2).strip()}")
+    return decisions
+
+
+def _extract_recent_sessions(content: str, max_sessions: int = 3) -> List[str]:
+    """Extract last N session blocks from markdown memory."""
+    import re
+    sessions = re.findall(
+        r'(## Session .+?)(?=\n## Session |\Z)', content, re.DOTALL
+    )
+    return [s.strip()[:500] for s in sessions[-max_sessions:]]
 
 
 def _truncate(text: str, max_chars: int) -> str:

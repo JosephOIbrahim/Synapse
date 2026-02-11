@@ -262,7 +262,24 @@ class TestLoadMemory:
         assert "scene" in ctx
         assert "agent" in ctx
         assert "summary" in ctx
-        assert "Project Context" in ctx["summary"]
+        assert "Project" in ctx["summary"]
+
+    def test_load_full_context_prioritizes_blockers(self, tmp_project):
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        # Add a blocker and a decision to scene memory
+        sm.write_blocker(result["scene_dir"], {
+            "description": "SSS artifacts on hero skin",
+            "attempts": "Increased samples",
+        })
+        sm.write_decision(result["scene_dir"], {
+            "name": "Render Engine",
+            "choice": "Karma XPU",
+            "reasoning": "GPU speed",
+        })
+        ctx = sm.load_full_context(tmp_project["hip_dir"], tmp_project["job"])
+        # Smart extraction should surface blockers and decisions
+        assert "Blocker" in ctx["summary"] or "SSS" in ctx["summary"]
+        assert "Karma XPU" in ctx["summary"] or "Render Engine" in ctx["summary"]
 
     def test_write_memory_entry_dispatch(self, tmp_project):
         result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
