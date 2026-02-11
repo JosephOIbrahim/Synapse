@@ -1551,18 +1551,29 @@ class SynapseHandler:
     # SCENE MEMORY HANDLERS (Living Memory System)
     # =========================================================================
 
-    def _handle_project_setup(self, payload: Dict) -> Dict:
-        """Initialize or load SYNAPSE project structure for current scene."""
+    @staticmethod
+    def _scene_paths() -> Dict:
+        """Common boilerplate for Living Memory handlers.
+
+        Returns: {hip_path, hip_dir, job_path}
+        Raises RuntimeError if Houdini is not available.
+        """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
+        hip_path = hou.hipFile.path()
+        hip_dir = os.path.dirname(hip_path)
+        job_path = hou.getenv("JOB", hip_dir)
+        return {"hip_path": hip_path, "hip_dir": hip_dir, "job_path": job_path}
+
+    def _handle_project_setup(self, payload: Dict) -> Dict:
+        """Initialize or load SYNAPSE project structure for current scene."""
         from ..memory.scene_memory import ensure_scene_structure, load_full_context
 
-        hip_path = hou.hipFile.path()
-        job_path = hou.getenv("JOB", os.path.dirname(hip_path))
+        sp = self._scene_paths()
+        hip_path, job_path = sp["hip_path"], sp["job_path"]
 
         paths = ensure_scene_structure(hip_path, job_path)
-        hip_dir = os.path.dirname(hip_path)
-        ctx = load_full_context(hip_dir, job_path)
+        ctx = load_full_context(sp["hip_dir"], job_path)
 
         return {
             "paths": paths,
@@ -1575,13 +1586,10 @@ class SynapseHandler:
 
     def _handle_memory_write(self, payload: Dict) -> Dict:
         """Write a memory entry to scene or project memory."""
-        if not HOU_AVAILABLE:
-            raise RuntimeError(_HOUDINI_UNAVAILABLE)
         from ..memory.scene_memory import write_memory_entry, ensure_scene_structure
 
-        hip_path = hou.hipFile.path()
-        job_path = hou.getenv("JOB", os.path.dirname(hip_path))
-        paths = ensure_scene_structure(hip_path, job_path)
+        sp = self._scene_paths()
+        paths = ensure_scene_structure(sp["hip_path"], sp["job_path"])
 
         entry_type = resolve_param(payload, "entry_type")
         content = resolve_param(payload, "content")
@@ -1596,19 +1604,15 @@ class SynapseHandler:
 
     def _handle_memory_query(self, payload: Dict) -> Dict:
         """Query scene or project memory with section-aware ranked search."""
-        if not HOU_AVAILABLE:
-            raise RuntimeError(_HOUDINI_UNAVAILABLE)
         from ..memory.scene_memory import load_full_context, search_memory
 
-        hip_path = hou.hipFile.path()
-        job_path = hou.getenv("JOB", os.path.dirname(hip_path))
-        hip_dir = os.path.dirname(hip_path)
+        sp = self._scene_paths()
 
         query = resolve_param(payload, "query")
         scope = resolve_param_with_default(payload, "scope", "all")
         type_filter = resolve_param_with_default(payload, "type_filter", "")
 
-        ctx = load_full_context(hip_dir, job_path)
+        ctx = load_full_context(sp["hip_dir"], sp["job_path"])
         results = []
 
         # Section-aware search with word-level scoring
@@ -1621,11 +1625,11 @@ class SynapseHandler:
                 results.append(hit)
 
         # Cross-scene search
-        if scope == "all" and HOU_AVAILABLE and job_path:
+        if scope == "all" and HOU_AVAILABLE and sp["job_path"]:
             import glob as glob_mod
-            current_scene_md = os.path.join(hip_dir, "claude", "memory.md")
+            current_scene_md = os.path.join(sp["hip_dir"], "claude", "memory.md")
             for scene_md in sorted(glob_mod.glob(
-                os.path.join(job_path, "**", "claude", "memory.md"),
+                os.path.join(sp["job_path"], "**", "claude", "memory.md"),
                 recursive=True,
             )):
                 if scene_md == current_scene_md:
@@ -1655,28 +1659,20 @@ class SynapseHandler:
 
     def _handle_memory_status(self, payload: Dict) -> Dict:
         """Get memory system status."""
-        if not HOU_AVAILABLE:
-            raise RuntimeError(_HOUDINI_UNAVAILABLE)
         from ..memory.scene_memory import get_memory_status
 
-        hip_path = hou.hipFile.path()
-        hip_dir = os.path.dirname(hip_path)
-        job_path = hou.getenv("JOB", hip_dir)
-
-        return get_memory_status(hip_dir, job_path)
+        sp = self._scene_paths()
+        return get_memory_status(sp["hip_dir"], sp["job_path"])
 
     def _handle_evolve_memory(self, payload: Dict) -> Dict:
         """Manually trigger memory evolution."""
-        if not HOU_AVAILABLE:
-            raise RuntimeError(_HOUDINI_UNAVAILABLE)
         from ..memory.evolution import check_evolution, evolve_to_charmeleon
 
-        hip_path = hou.hipFile.path()
-        hip_dir = os.path.dirname(hip_path)
+        sp = self._scene_paths()
         scope = resolve_param_with_default(payload, "scope", "scene")
         dry_run = resolve_param_with_default(payload, "dry_run", True)
 
-        claude_dir = os.path.join(hip_dir, "claude")
+        claude_dir = os.path.join(sp["hip_dir"], "claude")
         status = check_evolution(claude_dir)
 
         if dry_run:
