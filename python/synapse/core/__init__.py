@@ -56,6 +56,17 @@ from .gates import (
     propose_change,
 )
 
+from .errors import (
+    SynapseError,
+    SynapseUserError,
+    SynapseServiceError,
+    NodeNotFoundError,
+    ParameterError,
+    ExecutionError,
+    HoudiniUnavailableError,
+    ValidationError,
+)
+
 __all__ = [
     # Protocol
     'CommandType',
@@ -94,4 +105,13 @@ __all__ = [
     'HumanGate',
     'human_gate',
     'propose_change',
+    # Errors
+    'SynapseError',
+    'SynapseUserError',
+    'SynapseServiceError',
+    'NodeNotFoundError',
+    'ParameterError',
+    'ExecutionError',
+    'HoudiniUnavailableError',
+    'ValidationError',
 ]
