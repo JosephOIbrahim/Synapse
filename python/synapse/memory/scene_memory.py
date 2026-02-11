@@ -493,6 +493,150 @@ def _truncate(text: str, max_chars: int) -> str:
     return truncated + "\n...(truncated)"
 
 
+def search_memory(content: str, query: str, type_filter: str = "") -> List[Dict[str, Any]]:
+    """
+    Section-aware memory search with word-level scoring.
+
+    Splits markdown into sections, scores each by keyword overlap,
+    and returns ranked results. Much better than substring matching.
+
+    Args:
+        content: Raw markdown memory content
+        query: Search query string
+        type_filter: Optional section type filter (decision, parameter, blocker, session, note)
+
+    Returns: Sorted list of {section_type, title, text, score, line}
+    """
+    import re
+
+    if not content or not query:
+        return []
+
+    # Tokenize query into lowercase words (3+ chars for relevance)
+    query_words = set(
+        w for w in re.findall(r'[a-z0-9_/]+', query.lower()) if len(w) >= 2
+    )
+    if not query_words:
+        return []
+
+    # Split content into sections by ## and ### headers
+    sections = []
+    current_section = {"type": "header", "title": "", "text": "", "line": 1}
+    for i, line in enumerate(content.split("\n"), 1):
+        if line.startswith("## Session "):
+            if current_section["text"].strip():
+                sections.append(current_section)
+            current_section = {
+                "type": "session",
+                "title": line.strip("# \n"),
+                "text": line + "\n",
+                "line": i,
+            }
+        elif line.startswith("### Decision:"):
+            if current_section["text"].strip():
+                sections.append(current_section)
+            current_section = {
+                "type": "decision",
+                "title": line.replace("### Decision:", "").strip(),
+                "text": line + "\n",
+                "line": i,
+            }
+        elif line.startswith("### Parameter:"):
+            if current_section["text"].strip():
+                sections.append(current_section)
+            current_section = {
+                "type": "parameter",
+                "title": line.replace("### Parameter:", "").strip(),
+                "text": line + "\n",
+                "line": i,
+            }
+        elif line.startswith("### Blocker"):
+            if current_section["text"].strip():
+                sections.append(current_section)
+            is_resolved = "Resolved" in line
+            current_section = {
+                "type": "blocker_resolved" if is_resolved else "blocker",
+                "title": re.sub(r'^### Blocker\s*(Resolved)?:\s*', '', line).strip(),
+                "text": line + "\n",
+                "line": i,
+            }
+        elif line.startswith("### Note"):
+            if current_section["text"].strip():
+                sections.append(current_section)
+            current_section = {
+                "type": "note",
+                "title": "Note",
+                "text": line + "\n",
+                "line": i,
+            }
+        elif line.startswith("### Wedge"):
+            if current_section["text"].strip():
+                sections.append(current_section)
+            current_section = {
+                "type": "wedge",
+                "title": line.strip("# \n"),
+                "text": line + "\n",
+                "line": i,
+            }
+        elif line.startswith("### Session End"):
+            if current_section["text"].strip():
+                sections.append(current_section)
+            current_section = {
+                "type": "session_end",
+                "title": "Session End",
+                "text": line + "\n",
+                "line": i,
+            }
+        else:
+            current_section["text"] += line + "\n"
+
+    if current_section["text"].strip():
+        sections.append(current_section)
+
+    # Apply type filter
+    if type_filter:
+        sections = [s for s in sections if s["type"] == type_filter]
+
+    # Score each section
+    results = []
+    for section in sections:
+        if section["type"] == "header":
+            continue  # Skip file headers
+
+        section_text = section["text"].lower()
+        section_words = set(re.findall(r'[a-z0-9_/]+', section_text))
+
+        # Word overlap score
+        matching_words = query_words & section_words
+        if not matching_words:
+            continue
+
+        # Base score: fraction of query words matched
+        score = len(matching_words) / len(query_words)
+
+        # Bonus for title matches (2x weight)
+        title_words = set(re.findall(r'[a-z0-9_/]+', section["title"].lower()))
+        title_matches = query_words & title_words
+        if title_matches:
+            score += len(title_matches) / len(query_words)
+
+        # Bonus for exact phrase match
+        if query.lower() in section_text:
+            score += 0.5
+
+        results.append({
+            "section_type": section["type"],
+            "title": section["title"],
+            "text": section["text"].strip()[:500],
+            "score": round(score, 3),
+            "line": section["line"],
+        })
+
+    # Sort by score descending, then by line ascending for tiebreaker
+    results.sort(key=lambda r: (-r["score"], r["line"]))
+    return results
+
+
 def get_evolution_stage(claude_dir: str, name: str = "memory") -> str:
     """Detect current evolution stage: charmander, charmeleon, or charizard."""
     claude_dir = os.path.normpath(claude_dir)

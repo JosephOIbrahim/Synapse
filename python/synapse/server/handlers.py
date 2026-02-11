@@ -1595,10 +1595,10 @@ class SynapseHandler:
         return {"written": True, "entry_type": entry_type, "scope": scope}
 
     def _handle_memory_query(self, payload: Dict) -> Dict:
-        """Query scene or project memory."""
+        """Query scene or project memory with section-aware ranked search."""
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
-        from ..memory.scene_memory import load_full_context
+        from ..memory.scene_memory import load_full_context, search_memory
 
         hip_path = hou.hipFile.path()
         job_path = hou.getenv("JOB", os.path.dirname(hip_path))
@@ -1606,57 +1606,49 @@ class SynapseHandler:
 
         query = resolve_param(payload, "query")
         scope = resolve_param_with_default(payload, "scope", "all")
+        type_filter = resolve_param_with_default(payload, "type_filter", "")
 
         ctx = load_full_context(hip_dir, job_path)
         results = []
 
-        # Simple text search in markdown for Phase 1
-        query_lower = query.lower()
+        # Section-aware search with word-level scoring
         for layer_name in ("project", "scene"):
             if scope not in ("all", layer_name):
                 continue
             content = ctx[layer_name].get("content", "")
-            if query_lower in content.lower():
-                # Find matching lines
-                for i, line in enumerate(content.split("\n")):
-                    if query_lower in line.lower():
-                        results.append({
-                            "layer": layer_name,
-                            "line": i + 1,
-                            "text": line.strip(),
-                        })
+            for hit in search_memory(content, query, type_filter):
+                hit["layer"] = layer_name
+                results.append(hit)
 
-        # Cross-scene query
-        if scope == "all" and HOU_AVAILABLE:
-            if job_path:
-                import glob as glob_mod
-                for scene_md in sorted(glob_mod.glob(
-                    os.path.join(job_path, "**", "claude", "memory.md"),
-                    recursive=True,
-                )):
-                    if scene_md == os.path.join(hip_dir, "claude", "memory.md"):
-                        continue  # Already searched current scene
-                    scene_content = ""
-                    try:
-                        with open(scene_md, "r", encoding="utf-8") as f:
-                            scene_content = f.read()
-                    except Exception:
-                        continue
-                    if query_lower in scene_content.lower():
-                        scene_name = os.path.basename(
-                            os.path.dirname(os.path.dirname(scene_md))
-                        )
-                        for i, line in enumerate(scene_content.split("\n")):
-                            if query_lower in line.lower():
-                                results.append({
-                                    "layer": f"scene:{scene_name}",
-                                    "line": i + 1,
-                                    "text": line.strip(),
-                                })
+        # Cross-scene search
+        if scope == "all" and HOU_AVAILABLE and job_path:
+            import glob as glob_mod
+            current_scene_md = os.path.join(hip_dir, "claude", "memory.md")
+            for scene_md in sorted(glob_mod.glob(
+                os.path.join(job_path, "**", "claude", "memory.md"),
+                recursive=True,
+            )):
+                if scene_md == current_scene_md:
+                    continue
+                try:
+                    with open(scene_md, "r", encoding="utf-8") as f:
+                        scene_content = f.read()
+                except Exception:
+                    continue
+                scene_name = os.path.basename(
+                    os.path.dirname(os.path.dirname(scene_md))
+                )
+                for hit in search_memory(scene_content, query, type_filter):
+                    hit["layer"] = f"scene:{scene_name}"
+                    results.append(hit)
+
+        # Sort all results by score descending, stable tiebreak on layer+line
+        results.sort(key=lambda r: (-r["score"], r["layer"], r["line"]))
 
         return {
             "query": query,
             "scope": scope,
+            "type_filter": type_filter,
             "count": len(results),
             "results": results[:50],
         }

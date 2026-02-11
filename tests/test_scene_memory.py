@@ -616,3 +616,74 @@ class TestFileLocking:
         # All 10 notes should be present
         for i in range(10):
             assert f"Note {i}" in content
+
+
+class TestSearchMemory:
+    """Tests for section-aware semantic search."""
+
+    SAMPLE_MD = (
+        "# Scene Memory: test.hip\n"
+        "# Created: 2026-02-11\n\n---\n\n"
+        "## Session 2026-02-10 14:00:00\n"
+        "**Goal:** Set up lighting\n\n"
+        "### Decision: Render engine\n"
+        "**Choice:** Karma XPU\n"
+        "**Reasoning:** Best GPU performance on RTX 4090\n\n"
+        "### Parameter: /stage/karma1 / xn__inputsexposure_vya\n"
+        "- **Before:** 0.0\n"
+        "- **After:** 2.0\n"
+        "- **Result:** Good key light exposure\n\n"
+        "### Blocker: Displacement crashing on large meshes\n"
+        "- **Attempts:** Reduced poly count\n"
+        "- **Status:** open\n\n"
+        "### Note\nRemember to check AO settings\n\n"
+        "## Session 2026-02-11 10:00:00\n"
+        "**Goal:** Fix displacement\n\n"
+        "### Decision: Subdivision method\n"
+        "**Choice:** OpenSubdiv Catmull-Clark\n"
+        "**Reasoning:** Better handling of creases\n\n"
+        "### Blocker Resolved: Displacement crashing on large meshes\n"
+        "- **Attempts:** Used adaptive subdivision\n"
+        "- **Status:** resolved\n\n"
+        "### Wedge Result: exposure test\n"
+        "Tested exposure values 0-4\n\n"
+    )
+
+    def test_search_finds_decisions(self):
+        results = sm.search_memory(self.SAMPLE_MD, "render engine karma")
+        assert len(results) > 0
+        assert results[0]["section_type"] == "decision"
+        assert "Karma" in results[0]["text"]
+
+    def test_search_type_filter(self):
+        results = sm.search_memory(self.SAMPLE_MD, "displacement", type_filter="blocker")
+        assert len(results) > 0
+        for r in results:
+            assert r["section_type"] == "blocker"
+
+    def test_search_ranks_by_relevance(self):
+        results = sm.search_memory(self.SAMPLE_MD, "displacement crashing meshes")
+        assert len(results) >= 2
+        # Direct title match should score higher
+        assert results[0]["score"] >= results[1]["score"]
+
+    def test_search_empty_query(self):
+        assert sm.search_memory(self.SAMPLE_MD, "") == []
+
+    def test_search_empty_content(self):
+        assert sm.search_memory("", "test") == []
+
+    def test_search_no_matches(self):
+        assert sm.search_memory(self.SAMPLE_MD, "nonexistent_thing_xyz") == []
+
+    def test_search_finds_parameters(self):
+        results = sm.search_memory(self.SAMPLE_MD, "exposure", type_filter="parameter")
+        assert len(results) > 0
+        assert results[0]["section_type"] == "parameter"
+
+    def test_search_returns_scores(self):
+        results = sm.search_memory(self.SAMPLE_MD, "karma render")
+        for r in results:
+            assert "score" in r
+            assert isinstance(r["score"], float)
+            assert r["score"] > 0
