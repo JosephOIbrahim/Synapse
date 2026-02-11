@@ -5,6 +5,7 @@ Registry-based command handler system for the Synapse WebSocket server.
 Routes incoming commands to appropriate handler functions.
 """
 
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Any, Callable, Optional
@@ -336,6 +337,12 @@ class SynapseHandler:
         reg.register("add_memory", self._handle_memory_add)
         reg.register("decide", self._handle_memory_decide)
         reg.register("recall", self._handle_memory_recall)
+
+        # Scene memory operations (Living Memory)
+        reg.register("project_setup", self._handle_project_setup)
+        reg.register("memory_write", self._handle_memory_write)
+        reg.register("memory_query", self._handle_memory_query)
+        reg.register("memory_status", self._handle_memory_status)
 
     # =========================================================================
     # UTILITY HANDLERS
@@ -1538,6 +1545,104 @@ class SynapseHandler:
         """Handle recall/engram_recall command."""
         bridge = self._get_bridge()
         return bridge.handle_memory_recall(payload)
+
+    # =========================================================================
+    # SCENE MEMORY HANDLERS (Living Memory System)
+    # =========================================================================
+
+    def _handle_project_setup(self, payload: Dict) -> Dict:
+        """Initialize or load SYNAPSE project structure for current scene."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+        from ..memory.scene_memory import ensure_scene_structure, load_full_context
+
+        hip_path = hou.hipFile.path()
+        job_path = hou.getenv("JOB", os.path.dirname(hip_path))
+
+        paths = ensure_scene_structure(hip_path, job_path)
+        hip_dir = os.path.dirname(hip_path)
+        ctx = load_full_context(hip_dir, job_path)
+
+        return {
+            "paths": paths,
+            "project_memory": ctx["project"].get("content", "")[:2000],
+            "scene_memory": ctx["scene"].get("content", "")[:3000],
+            "agent_state": ctx["agent"],
+            "evolution_stage": ctx["scene"].get("evolution", "none"),
+            "suspended_tasks": [],
+        }
+
+    def _handle_memory_write(self, payload: Dict) -> Dict:
+        """Write a memory entry to scene or project memory."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+        from ..memory.scene_memory import write_memory_entry, ensure_scene_structure
+
+        hip_path = hou.hipFile.path()
+        job_path = hou.getenv("JOB", os.path.dirname(hip_path))
+        paths = ensure_scene_structure(hip_path, job_path)
+
+        entry_type = resolve_param(payload, "entry_type")
+        content = resolve_param(payload, "content")
+        scope = resolve_param_with_default(payload, "scope", "scene")
+
+        if isinstance(content, str):
+            content = {"content": content}
+        content["scope"] = scope
+
+        write_memory_entry(paths["scene_dir"], content, entry_type)
+        return {"written": True, "entry_type": entry_type, "scope": scope}
+
+    def _handle_memory_query(self, payload: Dict) -> Dict:
+        """Query scene or project memory."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+        from ..memory.scene_memory import load_full_context
+
+        hip_path = hou.hipFile.path()
+        job_path = hou.getenv("JOB", os.path.dirname(hip_path))
+        hip_dir = os.path.dirname(hip_path)
+
+        query = resolve_param(payload, "query")
+        scope = resolve_param_with_default(payload, "scope", "all")
+
+        ctx = load_full_context(hip_dir, job_path)
+        results = []
+
+        # Simple text search in markdown for Phase 1
+        query_lower = query.lower()
+        for layer_name in ("project", "scene"):
+            if scope not in ("all", layer_name):
+                continue
+            content = ctx[layer_name].get("content", "")
+            if query_lower in content.lower():
+                # Find matching lines
+                for i, line in enumerate(content.split("\n")):
+                    if query_lower in line.lower():
+                        results.append({
+                            "layer": layer_name,
+                            "line": i + 1,
+                            "text": line.strip(),
+                        })
+
+        return {
+            "query": query,
+            "scope": scope,
+            "count": len(results),
+            "results": results[:50],
+        }
+
+    def _handle_memory_status(self, payload: Dict) -> Dict:
+        """Get memory system status."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+        from ..memory.scene_memory import get_memory_status
+
+        hip_path = hou.hipFile.path()
+        hip_dir = os.path.dirname(hip_path)
+        job_path = hou.getenv("JOB", hip_dir)
+
+        return get_memory_status(hip_dir, job_path)
 
     # =========================================================================
     # INTROSPECTION HANDLERS (Phase 1)
