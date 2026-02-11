@@ -5,10 +5,10 @@
 <p align="center"><b>AI-Houdini Bridge with Persistent Project Memory</b></p>
 
 <p align="center">
-  <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-4.2.1-blue.svg" alt="Version"></a>
+  <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-5.2.0-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-blue.svg" alt="Python"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-324%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-874%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="python/synapse/core/protocol.py"><img src="https://img.shields.io/badge/protocol-v4.0.0-orange.svg" alt="Protocol"></a>
 </p>
 
@@ -16,91 +16,224 @@
 
 ## What is Synapse?
 
-Synapse lets an AI see, touch, and remember everything in your Houdini scene — it can read parameters, create and wire up nodes, run Python code, and manipulate USD stages, all through a real-time conversation. On top of that, it keeps a persistent project memory that remembers your decisions, tracks what happened across sessions, and gives the AI full context about your project every time you reconnect.
+Synapse lets an AI see, touch, and remember everything in your Houdini scene — it can read parameters, create and wire up nodes, run Python and VEX code, light and render with Karma, and manipulate USD stages, all through a real-time conversation. On top of that, it keeps a persistent project memory that remembers your decisions, tracks what happened across sessions, and gives the AI full context about your project every time you reconnect.
 
 Built as a standalone package with zero required dependencies.
 
 ## Key Features
 
+- **43 MCP Tools** -- Full Houdini control from Claude: nodes, parameters, USD, materials, lighting, rendering, viewport capture
+- **Persistent Memory** -- Project memory stored alongside your HIP file with search, decisions, and context summaries
+- **Living Memory** -- Evolving per-project and per-scene markdown journals that grow with your work
 - **Wire Protocol** -- Typed commands over WebSocket with parameter aliasing and deterministic queuing
-- **Persistent Memory** -- Project memory stored at `$HIP/.synapse/` with search, decisions, context summaries, and markdown export
 - **Agentic Execution** -- prepare / propose / execute / learn loop with automatic risk classification
-- **Human-in-the-Loop Gates** -- Four levels (INFORM, REVIEW, APPROVE, CRITICAL) with batch approval workflows
-- **Determinism** -- Fixed-precision rounding, content-based IDs, seeded RNG, `@deterministic` decorator
-- **Tamper-Evident Audit** -- Append-only hash-chain log with daily JSONL rotation and chain verification
-- **Production Resilience** -- Rate limiter, circuit breaker, port failover, watchdog, backpressure controller
-- **Viewport Capture** -- AI can see the viewport via flipbook capture, returned as image for visual feedback
-- **RAG-Powered Routing** -- Optional knowledge lookup from your own documentation (no third-party docs bundled)
-- **Backwards Compatible** -- Automatic storage migration from previous versions
-- **Houdini Optional** -- All tests run without Houdini; core library has zero required dependencies
+- **Human-in-the-Loop Gates** -- Four levels (INFORM, REVIEW, APPROVE, CRITICAL) with batch approval
+- **VEX Execution** -- Run VEX wrangles directly from conversation
+- **Production Resilience** -- Rate limiter, circuit breaker, port failover, watchdog, backpressure
+- **Viewport + Render Capture** -- AI can see what you see via flipbook and Karma renders
+- **RAG-Powered Routing** -- Knowledge lookup from Houdini documentation (21 built-in workflow recipes)
+- **Determinism** -- Fixed-precision rounding, content-based IDs, Kahan summation ([He2025] inspired)
+- **Houdini Optional** -- All 874 tests run without Houdini; core library has zero required dependencies
+
+---
+
+<br>
 
 ## Installation
 
-### Prerequisites
+There are two paths depending on how you want to use Synapse:
 
-- **Python** >= 3.9
-- **SideFX Houdini** 20.0+ (for scene manipulation; not required for memory/tests)
-- **pip** (any recent version)
+| Path | You want to... | Time |
+|------|----------------|------|
+| **A. Claude + Houdini** | Talk to Houdini through Claude Desktop or Claude Code | ~5 min |
+| **B. Developer** | Hack on Synapse itself, run tests, add features | ~5 min |
 
-### 1. Clone & Install
+Most artists want **Path A**. If you just want to try it, start there.
+
+<br>
+
+---
+
+### Path A: Connect Claude to Houdini
+
+This is the most common setup. You'll end up with Claude talking directly to your Houdini scene.
+
+<br>
+
+#### Step 1 &mdash; Download Synapse
+
+Open a terminal (Command Prompt, PowerShell, or Terminal) and run:
+
+```bash
+git clone https://github.com/JosephOIbrahim/Synapse.git
+```
+
+This creates a `Synapse/` folder wherever you ran the command.
+
+> **Don't have git?** Download the ZIP from the green "Code" button on the GitHub page and unzip it.
+
+<br>
+
+#### Step 2 &mdash; Install the Python package
+
+```bash
+cd Synapse
+pip install -e ".[websocket,mcp]"
+```
+
+This installs Synapse plus the two things it needs to work:
+- **websocket** &mdash; lets Synapse talk to Houdini
+- **mcp** &mdash; lets Claude talk to Synapse
+
+> **Tip:** If `pip` isn't recognized, try `python -m pip install -e ".[websocket,mcp]"` instead.
+
+<br>
+
+#### Step 3 &mdash; Start the server inside Houdini
+
+Open Houdini, then open the **Python Shell** (Windows > Python Shell) and paste:
+
+```python
+import sys
+sys.path.insert(0, r"C:\path\to\Synapse\python")  # <-- change this to YOUR path
+
+from synapse.server.websocket import SynapseServer
+server = SynapseServer(port=9999)
+server.start()
+```
+
+You should see a message confirming the server started on port 9999.
+
+> **Important:** Replace `C:\path\to\Synapse\python` with the actual path to the `python/` folder inside your cloned Synapse directory.
+
+<br>
+
+#### Step 4 &mdash; Tell Claude about Synapse
+
+Pick whichever Claude app you use:
+
+<br>
+
+**Claude Code** (terminal)
+
+If you open Claude Code from inside the Synapse folder, it auto-detects the tools (via `.mcp.json`). Done.
+
+To make it available from *any* folder:
+
+```bash
+claude mcp add synapse -- python /path/to/Synapse/mcp_server.py
+```
+
+<br>
+
+**Claude Desktop** (app)
+
+Open your config file:
+
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+Add this inside `"mcpServers"`:
+
+```json
+{
+  "mcpServers": {
+    "synapse": {
+      "command": "python",
+      "args": ["C:/path/to/Synapse/mcp_server.py"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop. You'll see 43 new tools in the tool picker.
+
+<br>
+
+#### Step 5 &mdash; Try it
+
+With Houdini open and the server running, say something to Claude like:
+
+> *"What's in my scene right now?"*
+
+or
+
+> *"Create a sphere and a distant light, then capture the viewport so I can see it."*
+
+Claude will use Synapse to read your scene, create nodes, adjust parameters, and show you the result. Everything happens in real time.
+
+<br>
+
+---
+
+### Path B: Developer Setup
+
+For contributing, running tests, or building on top of Synapse.
+
+<br>
+
+#### Clone and install with all extras
 
 ```bash
 git clone https://github.com/JosephOIbrahim/Synapse.git
 cd Synapse
-pip install -e .
+pip install -e ".[dev,websocket,mcp,routing,encryption]"
 ```
 
-### 2. Optional Dependencies
+| Extra | What it adds |
+|-------|-------------|
+| `dev` | pytest, coverage, mypy |
+| `websocket` | WebSocket server for Houdini bridge |
+| `mcp` | MCP server for Claude integration |
+| `routing` | LLM-powered routing tier (Anthropic API) |
+| `encryption` | Fernet encryption for data at rest |
+| `memory` | Cross-process file locking for scene memory |
+
+<br>
+
+#### Run the tests
 
 ```bash
-pip install -e ".[websocket]"     # WebSocket server (required for Houdini bridge)
-pip install -e ".[encryption]"    # Fernet encryption for data at rest
-pip install -e ".[mcp]"           # MCP server for Claude Code / Claude Desktop
-pip install -e ".[routing]"       # LLM-powered routing tier (Anthropic API)
-pip install -e ".[dev]"           # pytest + coverage for development
+python -m pytest tests/ -v
 ```
 
-### 3. Houdini Setup
+All 874 tests run without Houdini. No license needed.
 
-Copy or symlink the panel definition into your Houdini user preferences:
+<br>
+
+#### Type checking
 
 ```bash
-# Windows
+python -m mypy python/synapse/ --config-file pyproject.toml
+```
+
+Clean: 0 errors on 58 source files.
+
+<br>
+
+#### Houdini panel setup (optional)
+
+If you want the Qt panel inside Houdini, symlink the panel definition:
+
+```bash
+# Windows (run as admin)
 mklink "%USERPROFILE%\Documents\houdini20.5\python_panels\synapse.pypanel" "%CD%\houdini\python_panels\synapse.pypanel"
 
 # macOS / Linux
 ln -s "$(pwd)/houdini/python_panels/synapse.pypanel" ~/houdini20.5/python_panels/synapse.pypanel
 ```
 
-Or add the repo to your Houdini path:
+Or add to your `houdini.env`:
 
-```bash
-# In houdini.env or shell profile
+```
 HOUDINI_PATH = "/path/to/Synapse/houdini;&"
 ```
 
 Then in Houdini: **Windows > Python Panel > Synapse**.
 
-### 4. Start the Server
+<br>
 
-1. Open the Synapse panel in Houdini (Connection tab)
-2. Click **Start Server**
-3. The WebSocket server starts on `ws://localhost:9999`
-
-You can also start it programmatically from Houdini's Python shell:
-
-```python
-from synapse import SynapseServer
-server = SynapseServer(port=9999)
-server.start()
-```
-
-### 5. Verify
-
-```bash
-# Run tests (no Houdini needed)
-python -m pytest tests/ -v
-```
+---
 
 ### Encryption (Optional)
 
@@ -115,38 +248,29 @@ pip install -e ".[encryption]"
 2. `~/.synapse/encryption.key` file (auto-created with `0600` permissions)
 3. Auto-generated on first use
 
-```python
-# Generate a key manually
-from cryptography.fernet import Fernet
-print(Fernet.generate_key().decode())
-```
-
 Encryption is transparent: existing plaintext `.synapse/` directories load without migration. New writes are encrypted; reads auto-detect encrypted vs plaintext content.
 
-```python
-from synapse import SynapseMemory
+<br>
 
-memory = SynapseMemory()
+---
 
-# Record a decision
-memory.decision(
-    decision="Use three-point lighting setup",
-    reasoning="Client requested classic Hollywood look",
-    alternatives=["Natural lighting", "HDRI only"],
-    tags=["lighting", "shot_010"],
-)
+### Troubleshooting
 
-# Search memory
-results = memory.search("lighting setup")
-for r in results:
-    print(f"[{r.score:.0%}] {r.memory.summary}")
-```
+| Problem | Fix |
+|---------|-----|
+| `pip` not found | Use `python -m pip` instead of bare `pip` |
+| `git` not found | Download the ZIP from GitHub instead, or install [Git for Windows](https://git-scm.com/) |
+| Server won't start | Make sure nothing else is using port 9999. You can change it: `SynapseServer(port=9998)` |
+| Claude can't connect | Check that the server is running in Houdini *before* talking to Claude |
+| `ModuleNotFoundError` | Make sure you ran `pip install -e ".[websocket,mcp]"` from inside the Synapse folder |
+| Tools don't appear in Claude Desktop | Restart Claude Desktop after editing the config file |
+| Wrong Python version | Synapse needs Python 3.9+. Run `python --version` to check |
 
 ## Architecture
 
 ```
 +---------------------------------------------------------------+
-|                         Synapse v4.2.1                        |
+|                         Synapse v5.2.0                        |
 +---------------------------------------------------------------+
 |                                                               |
 |  +-- UI Layer (Qt) ----------------------------------------+ |
@@ -447,70 +571,29 @@ Parameter names are resolved through an alias system (38+ mappings). For example
 
 ## Claude Integration (MCP)
 
-Synapse includes an MCP (Model Context Protocol) server that bridges Claude to Houdini. This gives Claude 17 tools for scene manipulation, viewport capture, and project memory — no copy-pasting needed.
+Synapse includes an MCP server that bridges Claude to Houdini with 43 tools. See [Installation > Path A](#path-a--connect-claude-to-houdini) for setup steps.
 
 ```
 Claude  <--[stdio/JSON-RPC]-->  mcp_server.py  <--[WebSocket]-->  Synapse (Houdini)
 ```
 
-### Claude Code
+### Available MCP Tools (43)
 
-The repo includes `.mcp.json` — tools are automatically available when you open the Synapse project in Claude Code. No configuration needed.
-
-To add it globally (available from any project):
-
-```bash
-claude mcp add synapse -- python /path/to/Synapse/mcp_server.py
-```
-
-### Claude Desktop
-
-Add to your Claude Desktop config:
-
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "synapse": {
-      "command": "python",
-      "args": ["/path/to/Synapse/mcp_server.py"]
-    }
-  }
-}
-```
-
-Restart Claude Desktop after editing. The 17 tools appear in the tool picker.
-
-### MCP Dependencies
-
-```bash
-pip install -e ".[mcp]"
-# Installs: mcp>=1.0.0, websockets>=11.0
-```
-
-### Available MCP Tools
-
-| Tool | Description |
-|------|-------------|
-| `synapse_ping` | Check Houdini connection |
-| `synapse_health` | System health + resilience status |
-| `houdini_scene_info` | HIP file, frame, FPS, frame range |
-| `houdini_get_selection` | Currently selected nodes |
-| `houdini_create_node` | Create a node (parent, type, optional name) |
-| `houdini_delete_node` | Delete a node by path |
-| `houdini_connect_nodes` | Connect node outputs to inputs |
-| `houdini_get_parm` | Read a parameter value |
-| `houdini_set_parm` | Set a parameter value |
-| `houdini_execute_python` | Run Python code in Houdini |
-| `houdini_capture_viewport` | Capture viewport as image (returns ImageContent) |
-| `houdini_stage_info` | USD stage prim listing |
-| `synapse_context` | Get project context from memory |
-| `synapse_search` | Search project memory |
-| `synapse_recall` | Recall relevant memories |
-| `synapse_decide` | Record a decision |
-| `synapse_add_memory` | Add a memory entry |
+| Category | Tools |
+|----------|-------|
+| **System** | `synapse_ping`, `synapse_health` |
+| **Scene** | `houdini_scene_info`, `houdini_get_selection` |
+| **Nodes** | `houdini_create_node`, `houdini_delete_node`, `houdini_connect_nodes` |
+| **Parameters** | `houdini_get_parm`, `houdini_set_parm`, `houdini_set_keyframe` |
+| **Execution** | `houdini_execute_python`, `houdini_execute_vex` |
+| **USD / Solaris** | `houdini_stage_info`, `houdini_get_usd_attribute`, `houdini_set_usd_attribute`, `houdini_create_usd_prim`, `houdini_modify_usd_prim`, `houdini_reference_usd` |
+| **Materials** | `houdini_create_material`, `houdini_assign_material`, `houdini_read_material` |
+| **Rendering** | `houdini_render`, `houdini_render_settings`, `houdini_wedge`, `houdini_capture_viewport` |
+| **Introspection** | `synapse_inspect_selection`, `synapse_inspect_scene`, `synapse_inspect_node` |
+| **Memory** | `synapse_context`, `synapse_search`, `synapse_recall`, `synapse_decide`, `synapse_add_memory` |
+| **Knowledge** | `synapse_knowledge_lookup`, `synapse_list_recipes` |
+| **Routing** | `synapse_router_stats`, `synapse_metrics` |
+| **Batch** | `synapse_batch` |
 
 ### Configuration
 
@@ -521,13 +604,16 @@ pip install -e ".[mcp]"
 ## Testing
 
 ```bash
-# All tests (no Houdini required)
+# All 874 tests (no Houdini required)
 python -m pytest tests/ -v
 
 # Individual test modules
 python -m pytest tests/test_core.py -v        # Determinism, audit, gates
+python -m pytest tests/test_routing.py -v     # Routing cascade (323 tests)
 python -m pytest tests/test_agent.py -v       # Agent protocol, executor, learning
 python -m pytest tests/test_resilience.py -v  # Rate limiter, circuit breaker, watchdog
+python -m pytest tests/test_render.py -v      # Karma/Mantra pipeline
+python -m pytest tests/test_materials.py -v   # Material tools
 
 # With coverage
 python -m pytest tests/ --cov=synapse --cov-report=term-missing
@@ -606,7 +692,7 @@ Synapse/
 
 ## Status
 
-Synapse is under active development. The core protocol, memory, determinism, and resilience layers are well-tested (324+ unit tests). The WebSocket server and viewport capture have been validated in single-user workflows but have not been stress-tested under sustained multi-user production load. Use in production at your own discretion.
+Synapse is under active development. All layers are well-tested (874 unit tests, mypy clean on 58 source files). The WebSocket server and viewport capture have been validated in single-user VFX workflows. Use in production at your own discretion.
 
 ## Determinism Reference
 
