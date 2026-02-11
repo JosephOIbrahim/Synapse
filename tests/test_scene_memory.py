@@ -55,6 +55,26 @@ _spec = importlib.util.spec_from_file_location(
 sm = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(sm)
 
+# ── Import agent_state module ────────────────────────────────────────
+# Only if pxr is available (skip in CI without Houdini)
+_pxr_available = False
+try:
+    from pxr import Usd, Sdf
+    _pxr_available = True
+except ImportError:
+    pass
+
+_agent_spec = importlib.util.spec_from_file_location(
+    "agent_state",
+    os.path.join(os.path.dirname(__file__), "..", "python", "synapse", "memory", "agent_state.py"),
+)
+if _agent_spec:
+    agent = importlib.util.module_from_spec(_agent_spec)
+    try:
+        _agent_spec.loader.exec_module(agent)
+    except Exception:
+        agent = None
+
 
 # ── Fixtures ────────────────────────────────────────────────────────
 
@@ -281,3 +301,95 @@ class TestDualWrite:
         content = open(result["scene_md"], "r", encoding="utf-8").read()
         assert "Rim light color" in content
         assert "warm amber" in content
+
+
+# ── Phase 2: Agent State Tests ─────────────────────────────────────
+
+@pytest.mark.skipif(not _pxr_available, reason="pxr (USD) not available")
+class TestAgentState:
+    """Tests for agent.usd operations (require pxr)."""
+
+    def test_initialize_creates_valid_usd(self, tmp_path):
+        path = str(tmp_path / "agent.usd")
+        agent.initialize_agent_usd(path)
+        stage = Usd.Stage.Open(path)
+        assert stage.GetPrimAtPath("/SYNAPSE/agent")
+        status = stage.GetPrimAtPath("/SYNAPSE/agent").GetAttribute("synapse:status").Get()
+        assert status == "idle"
+
+    def test_create_task(self, tmp_path):
+        path = str(tmp_path / "agent.usd")
+        agent.initialize_agent_usd(path)
+        agent.create_task(path, "task_001", "Set up hero lighting")
+        stage = Usd.Stage.Open(path)
+        task = stage.GetPrimAtPath("/SYNAPSE/agent/tasks/task_001")
+        assert task.IsValid()
+        assert task.GetAttribute("synapse:status").Get() == "pending"
+
+    def test_update_task_status(self, tmp_path):
+        path = str(tmp_path / "agent.usd")
+        agent.initialize_agent_usd(path)
+        agent.create_task(path, "task_001", "Test task")
+        agent.update_task_status(path, "task_001", "executing")
+        stage = Usd.Stage.Open(path)
+        task = stage.GetPrimAtPath("/SYNAPSE/agent/tasks/task_001")
+        assert task.GetAttribute("synapse:status").Get() == "executing"
+
+    def test_suspend_all_tasks(self, tmp_path):
+        path = str(tmp_path / "agent.usd")
+        agent.initialize_agent_usd(path)
+        agent.create_task(path, "task_001", "Task A")
+        agent.create_task(path, "task_002", "Task B")
+        agent.update_task_status(path, "task_001", "executing")
+        agent.suspend_all_tasks(path)
+        stage = Usd.Stage.Open(path)
+        t1 = stage.GetPrimAtPath("/SYNAPSE/agent/tasks/task_001")
+        t2 = stage.GetPrimAtPath("/SYNAPSE/agent/tasks/task_002")
+        assert t1.GetAttribute("synapse:status").Get() == "suspended"
+        assert t2.GetAttribute("synapse:status").Get() == "suspended"
+
+    def test_resume_task(self, tmp_path):
+        path = str(tmp_path / "agent.usd")
+        agent.initialize_agent_usd(path)
+        agent.create_task(path, "task_001", "Task A")
+        agent.suspend_all_tasks(path)
+        agent.resume_task(path, "task_001")
+        stage = Usd.Stage.Open(path)
+        t = stage.GetPrimAtPath("/SYNAPSE/agent/tasks/task_001")
+        assert t.GetAttribute("synapse:status").Get() == "pending"
+
+    def test_load_agent_state_detects_suspended(self, tmp_path):
+        path = str(tmp_path / "agent.usd")
+        agent.initialize_agent_usd(path)
+        agent.create_task(path, "task_001", "A")
+        agent.create_task(path, "task_002", "B")
+        agent.suspend_all_tasks(path)
+        state = agent.load_agent_state(str(tmp_path))
+        assert state["has_suspended_tasks"] is True
+        assert state["suspended_count"] == 2
+
+    def test_log_session(self, tmp_path):
+        path = str(tmp_path / "agent.usd")
+        agent.initialize_agent_usd(path)
+        agent.log_session(path, {
+            "start_time": "2026-02-11T14:00:00Z",
+            "end_time": "2026-02-11T15:00:00Z",
+            "tasks_completed": 3,
+            "tasks_failed": 0,
+            "tasks_suspended": 1,
+            "summary_text": "Lighting setup session",
+        })
+        stage = Usd.Stage.Open(path)
+        history = stage.GetPrimAtPath("/SYNAPSE/agent/session_history")
+        assert len(list(history.GetChildren())) == 1
+
+    def test_100_sequential_operations(self, tmp_path):
+        """Agent USD remains valid after many operations."""
+        path = str(tmp_path / "agent.usd")
+        agent.initialize_agent_usd(path)
+        for i in range(50):
+            agent.create_task(path, f"task_{i:03d}", f"Task {i}")
+        for i in range(50):
+            agent.update_task_status(path, f"task_{i:03d}", "completed")
+        stage = Usd.Stage.Open(path)
+        assert stage.GetPrimAtPath("/SYNAPSE/agent").IsValid()

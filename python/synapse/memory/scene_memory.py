@@ -56,10 +56,14 @@ def ensure_scene_structure(hip_path: str, job_path: str) -> Dict[str, str]:
     if not os.path.exists(scene_md):
         seed_scene_md(scene_md, hip_name, job_name)
 
-    # Seed agent.usd (stub for Phase 1 -- full impl in Phase 2)
+    # Seed agent.usd
     agent_usd = os.path.join(scene_dir, "agent.usd")
     if not os.path.exists(agent_usd):
-        _seed_agent_usd_stub(agent_usd)
+        try:
+            from .agent_state import initialize_agent_usd
+            initialize_agent_usd(agent_usd)
+        except ImportError:
+            _seed_agent_usd_stub(agent_usd)
 
     paths = {
         "project_dir": project_dir,
@@ -324,11 +328,15 @@ def load_full_context(hip_dir: str, job_dir: str) -> Dict[str, Any]:
         "format": "none", "path": "", "content": "", "evolution": "none"
     }
 
-    # Agent state (simple read for Phase 1)
-    agent_usd = os.path.join(scene_claude, "agent.usd")
+    # Agent state
     agent = {"status": "idle", "has_suspended_tasks": False, "suspended_count": 0}
-    if os.path.exists(agent_usd):
-        agent["path"] = agent_usd
+    try:
+        from .agent_state import load_agent_state
+        agent = load_agent_state(scene_claude)
+    except ImportError:
+        agent_usd = os.path.join(scene_claude, "agent.usd")
+        if os.path.exists(agent_usd):
+            agent["path"] = agent_usd
 
     # Build summary text (truncated)
     summary_parts = []
