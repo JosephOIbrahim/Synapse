@@ -500,9 +500,27 @@ def get_evolution_stage(claude_dir: str, name: str = "memory") -> str:
     md_path = os.path.join(claude_dir, f"{name}.md")
 
     if os.path.exists(usd_path):
-        # Check for composition arcs (charizard indicator)
+        # Try pxr first (works for both binary USDC and text USDA)
+        try:
+            from pxr import Usd
+            stage = Usd.Stage.Open(usd_path)
+            layer_data = stage.GetRootLayer().customLayerData
+            evo = layer_data.get("synapse:evolution", "")
+            if evo == "charizard":
+                return "charizard"
+            if evo == "charmeleon":
+                return "charmeleon"
+            # Check sublayers as fallback
+            if list(stage.GetRootLayer().subLayerPaths):
+                return "charizard"
+            return "charmeleon"
+        except ImportError:
+            pass
+        # Fallback: text scan for USDA files
         try:
             content = _read_file(usd_path)
+            if '"synapse:evolution" = "charizard"' in content:
+                return "charizard"
             if "subLayers" in content or "references" in content:
                 return "charizard"
         except Exception:
