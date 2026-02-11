@@ -370,3 +370,39 @@ def prune_memory(claude_dir: str, max_sessions_full: int = 5) -> Dict[str, Any]:
 
     new_size = round(os.path.getsize(md_path) / 1024, 2)
     return {"pruned_sessions": pruned_count, "new_size_kb": new_size}
+
+
+def evolve_to_charizard(scene_usd_path: str, project_usd_path: str) -> Dict[str, Any]:
+    """
+    Set up composition arcs so scene memory sublayers project memory.
+    Scene-level opinions are stronger (override project defaults).
+    """
+    try:
+        from pxr import Usd, Sdf
+    except ImportError:
+        return {"success": False, "error": "pxr not available"}
+
+    if not os.path.exists(scene_usd_path) or not os.path.exists(project_usd_path):
+        return {"success": False, "error": "Missing USD files"}
+
+    stage = Usd.Stage.Open(scene_usd_path)
+    layer = stage.GetRootLayer()
+
+    # Add project.usd as sublayer (weaker -- scene opinions override)
+    project_rel = os.path.relpath(project_usd_path, os.path.dirname(scene_usd_path))
+    # Normalize to forward slashes for USD
+    project_rel = project_rel.replace("\\", "/")
+
+    existing = list(layer.subLayerPaths)
+    if project_rel not in existing:
+        existing.append(project_rel)
+        layer.subLayerPaths = existing
+
+    # Update evolution metadata
+    data = dict(layer.customLayerData)
+    data["synapse:evolution"] = "charizard"
+    layer.customLayerData = data
+
+    layer.Save()
+
+    return {"success": True, "sublayer": project_rel}

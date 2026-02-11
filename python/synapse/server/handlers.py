@@ -1626,6 +1626,34 @@ class SynapseHandler:
                             "text": line.strip(),
                         })
 
+        # Cross-scene query
+        if scope == "all" and HOU_AVAILABLE:
+            if job_path:
+                import glob as glob_mod
+                for scene_md in sorted(glob_mod.glob(
+                    os.path.join(job_path, "**", "claude", "memory.md"),
+                    recursive=True,
+                )):
+                    if scene_md == os.path.join(hip_dir, "claude", "memory.md"):
+                        continue  # Already searched current scene
+                    scene_content = ""
+                    try:
+                        with open(scene_md, "r", encoding="utf-8") as f:
+                            scene_content = f.read()
+                    except Exception:
+                        continue
+                    if query_lower in scene_content.lower():
+                        scene_name = os.path.basename(
+                            os.path.dirname(os.path.dirname(scene_md))
+                        )
+                        for i, line in enumerate(scene_content.split("\n")):
+                            if query_lower in line.lower():
+                                results.append({
+                                    "layer": f"scene:{scene_name}",
+                                    "line": i + 1,
+                                    "text": line.strip(),
+                                })
+
         return {
             "query": query,
             "scope": scope,

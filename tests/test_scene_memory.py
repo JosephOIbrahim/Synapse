@@ -485,3 +485,71 @@ class TestEvolutionDetection:
         counts = evo.count_structured_data(str(tmp_path / "missing.md"))
         assert counts["structured_data_count"] == 0
         assert counts["session_count"] == 0
+
+
+# ── Phase 4: Charizard Evolution Tests ────────────────────────────
+
+@pytest.mark.skipif(not _pxr_available, reason="pxr not available")
+class TestCharizardEvolution:
+    """Tests for Charmeleon -> Charizard evolution."""
+
+    def test_evolve_to_charizard_sublayers(self, tmp_path):
+        # Set up project USD
+        project_claude = tmp_path / "project" / "claude"
+        project_claude.mkdir(parents=True)
+        scene_claude = tmp_path / "project" / "scenes" / "shot_010" / "claude"
+        scene_claude.mkdir(parents=True)
+
+        # Create project.usd
+        project_usd = str(project_claude / "project.usd")
+        stage = Usd.Stage.CreateNew(project_usd)
+        stage.DefinePrim("/SYNAPSE", "Xform")
+        stage.DefinePrim("/SYNAPSE/memory", "Xform")
+        stage.GetRootLayer().Save()
+
+        # Create scene memory.usd (Charmeleon)
+        scene_usd = str(scene_claude / "memory.usd")
+        stage2 = Usd.Stage.CreateNew(scene_usd)
+        stage2.DefinePrim("/SYNAPSE", "Xform")
+        stage2.DefinePrim("/SYNAPSE/memory", "Xform")
+        stage2.GetRootLayer().customLayerData = {"synapse:evolution": "charmeleon"}
+        stage2.GetRootLayer().Save()
+
+        # Evolve to Charizard
+        result = evo.evolve_to_charizard(scene_usd, project_usd)
+        assert result["success"]
+
+        # Verify sublayer
+        stage3 = Usd.Stage.Open(scene_usd)
+        sublayers = stage3.GetRootLayer().subLayerPaths
+        assert len(sublayers) > 0
+
+    def test_charizard_metadata_updated(self, tmp_path):
+        project_claude = tmp_path / "project" / "claude"
+        project_claude.mkdir(parents=True)
+        scene_claude = tmp_path / "project" / "scenes" / "shot_010" / "claude"
+        scene_claude.mkdir(parents=True)
+
+        project_usd = str(project_claude / "project.usd")
+        stage = Usd.Stage.CreateNew(project_usd)
+        stage.DefinePrim("/SYNAPSE", "Xform")
+        stage.GetRootLayer().Save()
+
+        scene_usd = str(scene_claude / "memory.usd")
+        stage2 = Usd.Stage.CreateNew(scene_usd)
+        stage2.DefinePrim("/SYNAPSE", "Xform")
+        stage2.GetRootLayer().customLayerData = {"synapse:evolution": "charmeleon"}
+        stage2.GetRootLayer().Save()
+
+        evo.evolve_to_charizard(scene_usd, project_usd)
+
+        stage3 = Usd.Stage.Open(scene_usd)
+        data = dict(stage3.GetRootLayer().customLayerData)
+        assert data.get("synapse:evolution") == "charizard"
+
+    def test_charizard_missing_files(self, tmp_path):
+        result = evo.evolve_to_charizard(
+            str(tmp_path / "missing.usd"),
+            str(tmp_path / "also_missing.usd"),
+        )
+        assert result["success"] is False
