@@ -279,7 +279,7 @@ def write_decision(scene_dir: str, decision: Dict[str, str], scope: str = "scene
         f"**Choice:** {decision.get('choice', '')}\n"
         f"**Reasoning:** {decision.get('reasoning', '')}\n"
     )
-    alternatives = decision.get("alternatives", [])
+    alternatives = list(decision.get("alternatives", []))
     if alternatives:
         entry += "**Alternatives:**\n"
         for alt in alternatives:

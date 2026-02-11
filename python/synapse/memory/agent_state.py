@@ -162,7 +162,7 @@ def abandon_task(agent_usd_path: str, task_id: str) -> None:
 def load_agent_state(claude_dir: str) -> Dict[str, Any]:
     """Load agent state from agent.usd."""
     path = os.path.join(os.path.normpath(claude_dir), "agent.usd")
-    state = {
+    state: Dict[str, Any] = {
         "status": "idle",
         "has_suspended_tasks": False,
         "suspended_count": 0,

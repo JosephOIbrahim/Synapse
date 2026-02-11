@@ -42,27 +42,27 @@ class MemoryHandlerMixin:
 
     def _handle_memory_context(self, payload: Dict) -> Dict:
         """Handle context/engram_context command."""
-        bridge = self._get_bridge()
+        bridge = self._get_bridge()  # type: ignore[attr-defined]
         return bridge.handle_memory_context(payload)
 
     def _handle_memory_search(self, payload: Dict) -> Dict:
         """Handle search/engram_search command."""
-        bridge = self._get_bridge()
+        bridge = self._get_bridge()  # type: ignore[attr-defined]
         return bridge.handle_memory_search(payload)
 
     def _handle_memory_add(self, payload: Dict) -> Dict:
         """Handle add_memory/engram_add command."""
-        bridge = self._get_bridge()
+        bridge = self._get_bridge()  # type: ignore[attr-defined]
         return bridge.handle_memory_add(payload)
 
     def _handle_memory_decide(self, payload: Dict) -> Dict:
         """Handle decide/engram_decide command."""
-        bridge = self._get_bridge()
+        bridge = self._get_bridge()  # type: ignore[attr-defined]
         return bridge.handle_memory_decide(payload)
 
     def _handle_memory_recall(self, payload: Dict) -> Dict:
         """Handle recall/engram_recall command."""
-        bridge = self._get_bridge()
+        bridge = self._get_bridge()  # type: ignore[attr-defined]
         return bridge.handle_memory_recall(payload)
 
     def _handle_project_setup(self, payload: Dict) -> Dict:

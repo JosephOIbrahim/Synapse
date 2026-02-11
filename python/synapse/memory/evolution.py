@@ -25,7 +25,7 @@ EVOLUTION_TRIGGERS = {
 }
 
 
-def count_structured_data(md_path: str) -> Dict[str, int]:
+def count_structured_data(md_path: str) -> Dict[str, Any]:
     """Count structured elements in a markdown memory file."""
     if not os.path.exists(md_path):
         return {k: 0 for k in EVOLUTION_TRIGGERS["charmeleon"]}
@@ -112,10 +112,10 @@ def parse_markdown_memory(md_path: str) -> Dict[str, List]:
     with open(md_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    sessions = []
-    decisions = []
-    assets = []
-    parameters = []
+    sessions: List[Dict[str, Any]] = []
+    decisions: List[Dict[str, Any]] = []
+    assets: List[Dict[str, Any]] = []
+    parameters: List[Dict[str, Any]] = []
 
     # Split by ## Session headers
     session_blocks = re.split(r'^## Session ', content, flags=re.MULTILINE)
@@ -126,7 +126,7 @@ def parse_markdown_memory(md_path: str) -> Dict[str, List]:
         date = header.split()[0] if header else f"session_{i}"
         text = "\n".join(lines)
 
-        session = {
+        session: Dict[str, Any] = {
             "id": f"session_{date.replace('-', '_')}",
             "date": date,
             "text": text,

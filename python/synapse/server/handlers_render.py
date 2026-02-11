@@ -408,7 +408,7 @@ class RenderHandlerMixin:
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
-        node = self._resolve_lop_node(
+        node = self._resolve_lop_node(  # type: ignore[attr-defined]
             resolve_param(payload, "node", required=False)
         )
         name = resolve_param_with_default(payload, "name", "material")
@@ -469,7 +469,7 @@ class RenderHandlerMixin:
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
-        node = self._resolve_lop_node(
+        node = self._resolve_lop_node(  # type: ignore[attr-defined]
             resolve_param(payload, "node", required=False)
         )
         prim_pattern = resolve_param(payload, "prim_pattern")
@@ -501,7 +501,7 @@ class RenderHandlerMixin:
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
-        node = self._resolve_lop_node(
+        node = self._resolve_lop_node(  # type: ignore[attr-defined]
             resolve_param(payload, "node", required=False)
         )
         prim_path = resolve_param(payload, "prim_path")

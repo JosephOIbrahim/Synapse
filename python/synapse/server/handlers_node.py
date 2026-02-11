@@ -61,9 +61,9 @@ class NodeHandlerMixin:
         new_node.moveToGoodPosition()
 
         # Track node in session (logging handled by generic executor in handle())
-        bridge = self._get_bridge()
-        if bridge and self._session_id:
-            session = bridge.get_session(self._session_id)
+        bridge = self._get_bridge()  # type: ignore[attr-defined]
+        if bridge and self._session_id:  # type: ignore[attr-defined]
+            session = bridge.get_session(self._session_id)  # type: ignore[attr-defined]
             if session:
                 session.nodes_created.append(new_node.path())
 
