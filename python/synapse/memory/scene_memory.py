@@ -10,6 +10,7 @@ Every function is idempotent, non-destructive, and encoding-safe.
 
 import logging
 import os
+import threading
 import time
 from typing import Dict, List, Optional, Any
 
@@ -17,6 +18,18 @@ logger = logging.getLogger("synapse.scene_memory")
 
 # Schema version for memory files
 SCHEMA_VERSION = "0.1.0"
+
+# Thread-safe file locking for concurrent writes
+_file_locks: Dict[str, threading.Lock] = {}
+_file_locks_lock = threading.Lock()
+
+
+def _get_file_lock(path: str) -> threading.Lock:
+    """Get or create a threading lock for a file path."""
+    with _file_locks_lock:
+        if path not in _file_locks:
+            _file_locks[path] = threading.Lock()
+        return _file_locks[path]
 
 
 # =============================================================================
@@ -375,12 +388,14 @@ def _read_file(path: str) -> str:
 
 
 def _append_to_md(md_path: str, text: str) -> None:
-    """Append text to a markdown file if it exists."""
+    """Append text to a markdown file if it exists. Thread-safe."""
     if not os.path.exists(md_path):
         logger.warning("Cannot append to missing file: %s", md_path)
         return
-    with open(md_path, "a", encoding="utf-8") as f:
-        f.write(text)
+    lock = _get_file_lock(md_path)
+    with lock:
+        with open(md_path, "a", encoding="utf-8") as f:
+            f.write(text)
 
 
 def _write_generic_entry(scene_dir: str, title: str, entry: Dict[str, Any]) -> None:
@@ -472,3 +487,61 @@ def get_memory_status(scene_dir: str, project_dir: str) -> Dict[str, Any]:
             "suspended_count": 0,
         },
     }
+
+
+# =============================================================================
+# CORRUPTION RECOVERY
+# =============================================================================
+
+def validate_memory(claude_dir: str) -> List[str]:
+    """Validate memory files and return list of issues found."""
+    issues: List[str] = []
+    claude_dir = os.path.normpath(claude_dir)
+
+    # Check markdown files
+    for name in ("memory.md", "project.md"):
+        path = os.path.join(claude_dir, name)
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                if len(content) == 0:
+                    issues.append(f"{name}: Empty file")
+            except UnicodeDecodeError:
+                issues.append(f"{name}: Encoding error")
+
+    # Check USD files
+    for name in ("memory.usd", "agent.usd"):
+        path = os.path.join(claude_dir, name)
+        if os.path.exists(path):
+            try:
+                from pxr import Usd
+                stage = Usd.Stage.Open(path)
+                if not stage.GetPrimAtPath("/SYNAPSE"):
+                    issues.append(f"{name}: Missing /SYNAPSE root prim")
+                # Schema version check
+                layer_data = stage.GetRootLayer().customLayerData
+                file_version = layer_data.get("synapse:version", "0.0.0")
+                if file_version != SCHEMA_VERSION:
+                    issues.append(
+                        f"{name}: Schema version mismatch "
+                        f"(file={file_version}, current={SCHEMA_VERSION})"
+                    )
+            except ImportError:
+                pass  # pxr not available, skip USD validation
+            except Exception as e:
+                issues.append(f"{name}: Corrupted - {e}")
+                # Backup corrupted file
+                import shutil
+                backup = path + f".corrupted.{int(time.time())}"
+                shutil.move(path, backup)
+                issues.append(f"{name}: Backed up to {backup}")
+                if name == "agent.usd":
+                    try:
+                        from .agent_state import initialize_agent_usd
+                        initialize_agent_usd(path)
+                        issues.append(f"{name}: Reinitialized")
+                    except Exception:
+                        pass
+
+    return issues

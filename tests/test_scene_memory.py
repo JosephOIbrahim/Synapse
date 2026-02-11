@@ -6,6 +6,7 @@ import time
 import json
 import shutil
 import tempfile
+import threading
 
 import pytest
 
@@ -553,3 +554,48 @@ class TestCharizardEvolution:
             str(tmp_path / "also_missing.usd"),
         )
         assert result["success"] is False
+
+
+# ── Phase 5: Hardening Tests ─────────────────────────────────────
+
+class TestValidateMemory:
+    """Tests for corruption detection and recovery."""
+
+    def test_validate_healthy_dir(self, tmp_project):
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        issues = sm.validate_memory(result["scene_dir"])
+        assert issues == []
+
+    def test_validate_empty_md(self, tmp_path):
+        claude_dir = tmp_path / "claude"
+        claude_dir.mkdir()
+        (claude_dir / "memory.md").write_text("", encoding="utf-8")
+        issues = sm.validate_memory(str(claude_dir))
+        assert any("Empty file" in i for i in issues)
+
+    def test_validate_nonexistent_dir(self, tmp_path):
+        issues = sm.validate_memory(str(tmp_path / "missing"))
+        assert issues == []
+
+
+class TestFileLocking:
+    """Tests for thread-safe file writes."""
+
+    def test_concurrent_appends(self, tmp_project):
+        """Multiple threads writing simultaneously should not corrupt the file."""
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        md_path = result["scene_md"]
+
+        def write_note(n):
+            sm._append_to_md(md_path, f"\nNote {n}\n")
+
+        threads = [threading.Thread(target=write_note, args=(i,)) for i in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        content = open(md_path, "r", encoding="utf-8").read()
+        # All 10 notes should be present
+        for i in range(10):
+            assert f"Note {i}" in content

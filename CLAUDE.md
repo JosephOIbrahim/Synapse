@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Synapse v5.0.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 38 MCP tools to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, and viewport/render capture.
+Synapse v5.0.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 43 MCP tools to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, and viewport/render capture.
 
 Two repos make up the full system:
 - **`C:\Users\User\Synapse\`** — Core server, protocol, handlers, memory, routing, MCP bridge
@@ -17,7 +17,7 @@ Two repos make up the full system:
 pip install -e ".[dev]"
 pip install -e ".[dev,websocket,mcp,routing,encryption]"   # all optional features
 
-# Run all core tests (~788 tests, no Houdini required)
+# Run all core tests (~812 tests, no Houdini required)
 python -m pytest tests/ -v
 
 # Type checking (mypy, 0 errors on 49 source files)
@@ -62,7 +62,7 @@ python -m pytest tests/ --cov=synapse --cov-report=term-missing
 ```
 Claude Desktop/Code
     |  stdio / JSON-RPC
-mcp_server.py  (38 tools, concurrent dispatch via _pending dict + _recv_loop)
+mcp_server.py  (43 tools, concurrent dispatch via _pending dict + _recv_loop)
     |  WebSocket: ws://localhost:9999/synapse
 SynapseServer  (daemon thread inside Houdini)
     |  CommandHandlerRegistry (handlers.py)
@@ -76,7 +76,7 @@ Houdini USD Stage / Solaris / Karma
 | Layer | Directory | Responsibility |
 |-------|-----------|---------------|
 | Foundation | `core/` | Wire protocol (`protocol.py`), parameter aliases (`aliases.py`), determinism (`determinism.py`), audit chain (`audit.py`), human gates (`gates.py`), encryption (`crypto.py`), command queue (`queue.py`) |
-| Memory | `memory/` | JSONL store (`store.py`) or SQLite store (`sqlite_store.py`, via `SYNAPSE_MEMORY_BACKEND=sqlite`), data models (`models.py`), shot context (`context.py`), markdown export (`markdown.py`) |
+| Memory | `memory/` | JSONL store (`store.py`) or SQLite store (`sqlite_store.py`, via `SYNAPSE_MEMORY_BACKEND=sqlite`), data models (`models.py`), shot context (`context.py`), markdown export (`markdown.py`), **Living Memory**: scene memory (`scene_memory.py`), agent state USD (`agent_state.py`), evolution system (`evolution.py`) |
 | Routing | `routing/` | Tiered LLM dispatch (`router.py`), regex parser (`parser.py`), RAG knowledge (`knowledge.py`), recipes (`recipes.py`), deterministic cache (`cache.py`), workflow planner (`planner.py`), epoch-based tier adaptation (`adaptation.py`) |
 | Agent | `agent/` | prepare/propose/execute/learn lifecycle (`executor.py`), task/plan/step protocol (`protocol.py`), outcome tracking (`learning.py`) |
 | Server | `server/` | WebSocket server (`websocket.py`), 39 command handlers (`handlers.py`), resilience stack (`resilience.py`), scene introspection (`introspection.py`), hwebserver adapter (`hwebserver_adapter.py`), REST adapter (`api_adapter.py`), guard functions (`guards.py`), authentication (`auth.py`), Prometheus metrics (`metrics.py`) |
