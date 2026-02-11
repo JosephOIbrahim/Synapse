@@ -6,6 +6,7 @@ Handles session lifecycle, action logging, and context provision.
 """
 
 import logging
+import os
 import time
 import threading
 from typing import Dict, Any, List, Optional, Callable
@@ -445,6 +446,17 @@ class SynapseBridge:
             source="ai"
         )
 
+        # Living Memory: dual-write to file-based scene memory
+        try:
+            from ..memory.scene_memory import write_memory_entry, ensure_scene_structure
+            if HOU_AVAILABLE:
+                hip_path = hou.hipFile.path()
+                job_path = hou.getenv("JOB", os.path.dirname(hip_path))
+                paths = ensure_scene_structure(hip_path, job_path)
+                write_memory_entry(paths["scene_dir"], {"content": content}, "note")
+        except Exception as e:
+            logger.warning("Scene memory dual-write failed: %s", e)
+
         return {
             "id": memory.id,
             "summary": memory.summary,
@@ -472,6 +484,23 @@ class SynapseBridge:
         if self._markdown_sync:
             self._markdown_sync.append_decision(memory)
 
+        # Living Memory: dual-write to file-based scene memory
+        try:
+            from ..memory.scene_memory import write_decision, ensure_scene_structure
+            if HOU_AVAILABLE:
+                hip_path = hou.hipFile.path()
+                job_path = hou.getenv("JOB", os.path.dirname(hip_path))
+                paths = ensure_scene_structure(hip_path, job_path)
+                scope = "both" if "project" in tags else "scene"
+                write_decision(paths["scene_dir"], {
+                    "name": decision,
+                    "choice": decision,
+                    "reasoning": reasoning,
+                    "alternatives": alternatives,
+                }, scope=scope)
+        except Exception as e:
+            logger.warning("Scene memory dual-write failed: %s", e)
+
         return {
             "id": memory.id,
             "summary": memory.summary,
@@ -479,19 +508,32 @@ class SynapseBridge:
         }
 
     def handle_memory_context(self, payload: Dict) -> Dict:
-        """Handle context request."""
+        """Handle context request -- now includes file-based scene memory."""
         format_type = payload.get("format", "json")
 
+        # Living Memory: merge file-based memory
+        file_context = {}
+        try:
+            from ..memory.scene_memory import load_full_context
+            if HOU_AVAILABLE:
+                hip_path = hou.hipFile.path()
+                hip_dir = os.path.dirname(hip_path)
+                job_path = hou.getenv("JOB", hip_dir)
+                file_context = load_full_context(hip_dir, job_path)
+        except Exception as e:
+            logger.warning("Scene memory load failed: %s", e)
+
         if format_type == "markdown":
-            return {
-                "format": "markdown",
-                "context": self.get_context_markdown()
-            }
+            md = self.get_context_markdown()
+            if file_context.get("summary"):
+                md += "\n\n" + file_context["summary"]
+            return {"format": "markdown", "context": md}
         else:
-            return {
-                "format": "json",
-                "context": self.get_connection_context()
-            }
+            base_context = self.get_connection_context()
+            if file_context:
+                base_context["scene_memory"] = file_context.get("summary", "")
+                base_context["evolution_stage"] = file_context.get("scene", {}).get("evolution", "none")
+            return {"format": "json", "context": base_context}
 
     def handle_memory_recall(self, payload: Dict) -> Dict:
         """

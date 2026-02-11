@@ -6,6 +6,7 @@ Provides real-time bidirectional communication with resilience features.
 """
 
 import logging
+import os
 import signal
 import threading
 import json
@@ -342,6 +343,32 @@ class SynapseServer:
                         logger.info("Session summary:\n%s", summary)
                 except Exception as e:
                     logger.error("End session error: %s", e)
+
+            # Living Memory: suspend agent tasks and write session end
+            if session_id:
+                try:
+                    from ..memory.scene_memory import write_session_end, ensure_scene_structure
+                    from ..memory.agent_state import suspend_all_tasks, log_session
+                    if HOU_AVAILABLE:
+                        hip_path = hou.hipFile.path()
+                        job_path = hou.getenv("JOB", os.path.dirname(hip_path))
+                        paths = ensure_scene_structure(hip_path, job_path)
+
+                        # Suspend any pending/executing tasks
+                        agent_usd = paths.get("agent_usd", "")
+                        if agent_usd and os.path.exists(agent_usd):
+                            suspend_all_tasks(agent_usd)
+                            log_session(agent_usd, {
+                                "end_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                "summary_text": f"Session ended (client: {client_id})",
+                            })
+
+                        # Write session end to memory.md
+                        write_session_end(paths["scene_dir"], {
+                            "stopped_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        })
+                except Exception as e:
+                    logger.warning("Living Memory disconnect hook error: %s", e)
 
             if self._rate_limiter:
                 self._rate_limiter.remove_client(client_id)

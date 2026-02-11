@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Synapse v5.0.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 37 MCP tools to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, and viewport/render capture.
+Synapse v5.0.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 43 MCP tools to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, and viewport/render capture.
 
 Two repos make up the full system:
 - **`C:\Users\User\Synapse\`** — Core server, protocol, handlers, memory, routing, MCP bridge
@@ -17,7 +17,7 @@ Two repos make up the full system:
 pip install -e ".[dev]"
 pip install -e ".[dev,websocket,mcp,routing,encryption]"   # all optional features
 
-# Run all core tests (~777 tests, no Houdini required)
+# Run all core tests (~812 tests, no Houdini required)
 python -m pytest tests/ -v
 
 # Type checking (mypy, 0 errors on 49 source files)
@@ -62,7 +62,7 @@ python -m pytest tests/ --cov=synapse --cov-report=term-missing
 ```
 Claude Desktop/Code
     |  stdio / JSON-RPC
-mcp_server.py  (34 tools, concurrent dispatch via _pending dict + _recv_loop)
+mcp_server.py  (43 tools, concurrent dispatch via _pending dict + _recv_loop)
     |  WebSocket: ws://localhost:9999/synapse
 SynapseServer  (daemon thread inside Houdini)
     |  CommandHandlerRegistry (handlers.py)
@@ -76,10 +76,10 @@ Houdini USD Stage / Solaris / Karma
 | Layer | Directory | Responsibility |
 |-------|-----------|---------------|
 | Foundation | `core/` | Wire protocol (`protocol.py`), parameter aliases (`aliases.py`), determinism (`determinism.py`), audit chain (`audit.py`), human gates (`gates.py`), encryption (`crypto.py`), command queue (`queue.py`) |
-| Memory | `memory/` | JSONL store (`store.py`) or SQLite store (`sqlite_store.py`, via `SYNAPSE_MEMORY_BACKEND=sqlite`), data models (`models.py`), shot context (`context.py`), markdown export (`markdown.py`) |
-| Routing | `routing/` | Tiered LLM dispatch (`router.py`), regex parser (`parser.py`), RAG knowledge (`knowledge.py`), recipes (`recipes.py`), deterministic cache (`cache.py`) |
+| Memory | `memory/` | JSONL store (`store.py`) or SQLite store (`sqlite_store.py`, via `SYNAPSE_MEMORY_BACKEND=sqlite`), data models (`models.py`), shot context (`context.py`), markdown export (`markdown.py`), **Living Memory**: scene memory (`scene_memory.py`), agent state USD (`agent_state.py`), evolution system (`evolution.py`) |
+| Routing | `routing/` | Tiered LLM dispatch (`router.py`), regex parser (`parser.py`), RAG knowledge (`knowledge.py`), recipes (`recipes.py`), deterministic cache (`cache.py`), workflow planner (`planner.py`), epoch-based tier adaptation (`adaptation.py`) |
 | Agent | `agent/` | prepare/propose/execute/learn lifecycle (`executor.py`), task/plan/step protocol (`protocol.py`), outcome tracking (`learning.py`) |
-| Server | `server/` | WebSocket server (`websocket.py`), 34 command handlers (`handlers.py`), resilience stack (`resilience.py`), scene introspection (`introspection.py`), hwebserver adapter (`hwebserver_adapter.py`), guard functions (`guards.py`), material handlers |
+| Server | `server/` | WebSocket server (`websocket.py`), 39 command handlers (`handlers.py`), resilience stack (`resilience.py`), scene introspection (`introspection.py`), hwebserver adapter (`hwebserver_adapter.py`), REST adapter (`api_adapter.py`), guard functions (`guards.py`), authentication (`auth.py`), Prometheus metrics (`metrics.py`) |
 | Session | `session/` | SynapseBridge singleton hub (`tracker.py`), session summaries (`summary.py`) |
 | UI | `ui/` | Qt panel with 5 tabs (`panel.py`), tab widgets in `tabs/` |
 
@@ -113,9 +113,10 @@ When enabled, first WebSocket message must be an `authenticate` command with `{"
 
 ### MCP Server (`mcp_server.py`)
 
-34 tools. Key operational details:
+38 tools. Key operational details:
 - **Concurrent dispatch**: `_pending` dict + `_recv_loop` coroutine — no blocking lock, true parallel tool calls
-- **Timeouts**: Default 10s. Overrides: execute/inspect at 30s, render/wedge at 120s, batch at 60s
+- **Timeouts**: Default 10s. Overrides: execute_python/execute_vex/capture_viewport/inspect_* at 30s, render/wedge at 120s, batch at 60s
+- **JSON**: Uses `orjson` (fast, sort_keys via `OPT_SORT_KEYS`) when available, falls back to stdlib `json`
 - **Warmup**: Pre-connect in `main()` reduces first-call latency
 - **Retry**: `MAX_RETRIES=2`, `RETRY_DELAY=0.3`, auto-retry on connection drop
 - **Connection**: `open_timeout=3.0`, `ping_interval=None`, `compression=None` (localhost optimization)
@@ -132,7 +133,7 @@ When enabled, first WebSocket message must be an `authenticate` command with `{"
 
 ## Testing Patterns
 
-**No Houdini required**: All tests import modules via `importlib.util.spec_from_file_location`, bypassing the `hou` dependency. The conftest creates a minimal `hou` stub in `sys.modules`.
+**No Houdini required**: All tests import modules via `importlib.util.spec_from_file_location`, bypassing the `hou` dependency. There is no shared `conftest.py` — each test file creates its own minimal `hou` stub inline via `sys.modules["hou"] = mock_hou`. Some test files (e.g., `test_guards.py`, `test_keyframe_aov.py`) save and restore the original `sys.modules["hou"]` in teardown to prevent cross-test pollution.
 
 **Patching `hou` in handler tests**: Always patch the module-level reference inside handlers.py, NOT `sys.modules["hou"]`. Patching sys.modules breaks object identity across test files.
 
@@ -158,11 +159,11 @@ with patch.object(hou, "flipbook", create=True):
 ### Adding a new MCP tool
 
 1. Add `CommandType` variant in `core/protocol.py`
-2. Add handler function `_handle_<name>` in `server/handlers.py` (register via `_HANDLERS` dict)
+2. Add handler method `_handle_<name>` in `server/handlers.py` and register it in `SynapseHandler._register_handlers()`
 3. Add parameter aliases in `core/aliases.py` if the tool has new parameter names
-4. Add MCP tool function in `mcp_server.py` with `@mcp.tool()` decorator
-5. Add timeout override to `_SLOW_COMMANDS` if >10s expected
-6. Write tests (patch `_handlers_hou`, not `sys.modules["hou"]`)
+4. Add `Tool(...)` entry to `list_tools()` and dispatch case to `call_tool()` in `mcp_server.py` (uses `Server.list_tools()`/`Server.call_tool()` decorators, not `@mcp.tool()`)
+5. Add timeout override to `_SLOW_COMMANDS` in `mcp_server.py` if >10s expected
+6. Write tests — bootstrap a `hou` stub inline via `sys.modules`, import handlers via `importlib`, patch `_handlers_hou` (not `sys.modules["hou"]`)
 
 ### Adding a routing recipe
 
@@ -176,7 +177,7 @@ Add/edit files in `rag/skills/houdini21-reference/*.md` (26 files, ~3,900 lines)
 
 **Coaching tone**: Error messages say "Couldn't find node" not "Node not found". Always offer next step. `_suggest_parms(node, name)` provides substring-matched alternatives. See `TONE.md` for the full voice guide.
 
-**He2025 determinism**: `round_float()` for OUTPUT only — never internal timing. `sort_keys=True` in all JSON serialization. `@deterministic` decorator auto-rounds float args. `kahan_sum()` for stable aggregation. Content-based UUIDs via `deterministic_uuid()`.
+**He2025 determinism**: `round_float()` for OUTPUT only — never internal timing. `sort_keys=True` in all JSON serialization (both stdlib `json.dumps` and `orjson.OPT_SORT_KEYS`). `@deterministic` decorator auto-rounds float args. `kahan_sum()` for stable aggregation. Content-based UUIDs via `deterministic_uuid()`. Epoch-based adaptation uses fixed epoch SIZE (not time-based) per He2025.
 
 **Lazy loading**: `__init__.py` uses `__getattr__` to defer routing/server/UI imports. Optional deps use try/except with `*_AVAILABLE` flags. Keeps Houdini startup fast.
 
@@ -203,7 +204,7 @@ Add/edit files in `rag/skills/houdini21-reference/*.md` (26 files, ~3,900 lines)
 
 Default: `ws://localhost:9999/synapse` | Version: `4.0.0`
 
-35 command types: `create_node`, `delete_node`, `connect_nodes`, `get_parm`, `set_parm`, `get_scene_info`, `get_selection`, `execute_python`, `execute_vex`, `create_usd_prim`, `modify_usd_prim`, `get_usd_attribute`, `set_usd_attribute`, `get_stage_info`, `capture_viewport`, `render`, `set_keyframe`, `render_settings`, `wedge`, `reference_usd`, `create_material`, `assign_material`, `read_material`, `knowledge_lookup`, `inspect_selection`, `inspect_scene`, `inspect_node`, `batch_commands`, `context`, `search`, `add_memory`, `decide`, `recall`, `ping`, `get_health`
+39 registered handlers: `ping`, `get_health`, `get_help`, `create_node`, `delete_node`, `connect_nodes`, `get_parm`, `set_parm`, `get_scene_info`, `get_selection`, `execute_python`, `execute_vex`, `get_stage_info`, `get_usd_attribute`, `set_usd_attribute`, `create_usd_prim`, `modify_usd_prim`, `capture_viewport`, `render`, `wedge`, `reference_usd`, `set_keyframe`, `render_settings`, `create_material`, `assign_material`, `read_material`, `knowledge_lookup`, `inspect_selection`, `inspect_scene`, `inspect_node`, `batch_commands`, `get_metrics`, `router_stats`, `list_recipes`, `context`, `search`, `add_memory`, `decide`, `recall`
 
 Parameter names resolve through `aliases.py` (38+ mappings) — e.g., `node`, `path`, `node_path` all resolve to canonical `node`.
 
@@ -242,3 +243,6 @@ $HIP/.synapse/           # Per-project memory
 - **synapse_shelf.py**: Security hooks block `parm.eval()` patterns; use `node.evalParm("parm_name")` method instead
 - **Agent SDK websockets**: Must import at module level (not inside connect()) — patch target is `synapse_ws.websockets`
 - **Zombie servers**: Multiple SynapseServer instances can linger in Houdini; use `gc.get_objects()` + `_actual_port` to find the active one
+- **MCP tool registration**: Uses `@server.list_tools()` returning `Tool(...)` list + `@server.call_tool()` dispatcher — NOT the `@mcp.tool()` decorator pattern. All 38 tools defined in one `list_tools()` function with a single `call_tool()` switch
+- **SYNAPSE_PATH env var**: Controls WebSocket path segment (default `/synapse`). `SYNAPSE_PORT` controls port (default `9999`). Full URL: `ws://localhost:{SYNAPSE_PORT}{SYNAPSE_PATH}`
+- **orjson optional**: `protocol.py` and `mcp_server.py` use `orjson` for fast JSON with `OPT_SORT_KEYS` when installed, auto-fallback to stdlib `json`

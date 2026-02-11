@@ -1116,6 +1116,112 @@ async def list_tools():
                 "required": ["content"],
             },
         ),
+        # -- Scene Memory (Living Memory System) --
+        Tool(
+            name="synapse_project_setup",
+            description=(
+                "Initialize or load SYNAPSE project structure for the current scene. "
+                "Creates claude/ directories, seeds memory files, loads existing context. "
+                "Idempotent. Call this after synapse_ping to load full scene context."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "force_refresh": {
+                        "type": "boolean",
+                        "description": "Force re-read all memory files even if cached. Default: false",
+                    },
+                },
+            },
+        ),
+        Tool(
+            name="synapse_memory_write",
+            description=(
+                "Write a memory entry to scene or project memory. "
+                "Handles markdown vs USD format automatically."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "entry_type": {
+                        "type": "string",
+                        "enum": [
+                            "decision", "parameter_experiment", "blocker",
+                            "blocker_resolved", "asset_reference", "wedge_result",
+                            "note", "session_end",
+                        ],
+                        "description": "Type of memory entry",
+                    },
+                    "content": {
+                        "type": "object",
+                        "description": "Entry content -- structure depends on entry_type",
+                    },
+                    "scope": {
+                        "type": "string",
+                        "enum": ["scene", "project", "both"],
+                        "description": "Where to write. Default: scene",
+                    },
+                },
+                "required": ["entry_type", "content"],
+            },
+        ),
+        Tool(
+            name="synapse_memory_query",
+            description=(
+                "Query scene or project memory. Text search in Charmander (markdown), "
+                "structured queries in Charmeleon+ (USD)."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query",
+                    },
+                    "scope": {
+                        "type": "string",
+                        "enum": ["scene", "project", "all"],
+                        "description": "Search scope. Default: all",
+                    },
+                    "type_filter": {
+                        "type": "string",
+                        "enum": [
+                            "all", "decisions", "parameters",
+                            "blockers", "assets", "sessions",
+                        ],
+                        "description": "Filter by entry type. Default: all",
+                    },
+                },
+                "required": ["query"],
+            },
+        ),
+        Tool(
+            name="synapse_memory_status",
+            description=(
+                "Get memory system status: evolution stage, file sizes, "
+                "session count, agent state."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {},
+            },
+        ),
+        # -- Evolution --
+        Tool(
+            name="synapse_evolve_memory",
+            description=(
+                "Manually trigger memory evolution (Charmander->Charmeleon "
+                "or Charmeleon->Charizard). Use dry_run=true to preview."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "scope": {"type": "string", "enum": ["scene", "project"]},
+                    "target_stage": {"type": "string", "enum": ["charmeleon", "charizard"]},
+                    "dry_run": {"type": "boolean", "description": "Preview without evolving. Default: true"},
+                },
+            },
+        ),
         # -- Batch --
         Tool(
             name="synapse_batch",
@@ -1288,6 +1394,11 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_metrics":       ("get_metrics",     _passthrough),
     "synapse_router_stats":  ("router_stats",    _passthrough),
     "synapse_list_recipes":  ("list_recipes",    _passthrough),
+    "synapse_project_setup": ("project_setup",   lambda a: {k: a[k] for k in a}),
+    "synapse_memory_write":  ("memory_write",    lambda a: {k: a[k] for k in a}),
+    "synapse_memory_query":  ("memory_query",    lambda a: {k: a[k] for k in a}),
+    "synapse_memory_status": ("memory_status",   _passthrough),
+    "synapse_evolve_memory": ("evolve_memory",   _passthrough),
 }
 
 
