@@ -25,6 +25,13 @@ from ..core.protocol import (
 )
 from ..core.aliases import resolve_param, resolve_param_with_default, USD_PARM_ALIASES
 from ..core.audit import audit_log, AuditLevel, AuditCategory
+from ..core.errors import (
+    SynapseUserError,
+    SynapseServiceError,
+    NodeNotFoundError,
+    ParameterError,
+    HoudiniUnavailableError,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -248,7 +255,24 @@ class SynapseHandler:
                 sequence=command.sequence,
             )
 
+        except SynapseUserError as e:
+            # User errors: bad input, missing node, bad parm. Don't trip CB.
+            return SynapseResponse(
+                id=command.id,
+                success=False,
+                error=str(e),
+                sequence=command.sequence,
+            )
         except ValueError as e:
+            # Legacy ValueError path -- still user error, don't trip CB.
+            return SynapseResponse(
+                id=command.id,
+                success=False,
+                error=str(e),
+                sequence=command.sequence,
+            )
+        except SynapseServiceError as e:
+            # Service errors: Houdini down, execution crash. DO trip CB.
             return SynapseResponse(
                 id=command.id,
                 success=False,
@@ -442,7 +466,7 @@ class SynapseHandler:
     def _handle_create_node(self, payload: Dict) -> Dict:
         """Handle create_node command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+            raise HoudiniUnavailableError()
 
         parent = resolve_param(payload, "parent")
         node_type = resolve_param(payload, "type")
@@ -450,10 +474,8 @@ class SynapseHandler:
 
         parent_node = hou.node(parent)
         if parent_node is None:
-            raise ValueError(
-                f"Couldn't find the parent node at {parent} \u2014 "
-                "verify this path exists in your scene"
-            )
+            hint = _suggest_children(os.path.dirname(parent))
+            raise NodeNotFoundError(parent, suggestion=hint.strip() if hint else "")
 
         if name:
             new_node = parent_node.createNode(node_type, name)
@@ -478,15 +500,12 @@ class SynapseHandler:
     def _handle_delete_node(self, payload: Dict) -> Dict:
         """Handle delete_node command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+            raise HoudiniUnavailableError()
 
         node_path = resolve_param(payload, "node")
         node = hou.node(node_path)
         if node is None:
-            raise ValueError(
-                f"Couldn't find a node at {node_path} \u2014 "
-                "it may have been renamed or moved"
-            )
+            raise NodeNotFoundError(node_path)
 
         node_name = node.name()
         node.destroy()
@@ -496,7 +515,7 @@ class SynapseHandler:
     def _handle_connect_nodes(self, payload: Dict) -> Dict:
         """Handle connect_nodes command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+            raise HoudiniUnavailableError()
 
         source_path = resolve_param(payload, "source")
         target_path = resolve_param(payload, "target")
@@ -507,15 +526,9 @@ class SynapseHandler:
         target_node = hou.node(target_path)
 
         if source_node is None:
-            raise ValueError(
-                f"Couldn't find the source node at {source_path} \u2014 "
-                "make sure it exists before connecting"
-            )
+            raise NodeNotFoundError(source_path)
         if target_node is None:
-            raise ValueError(
-                f"Couldn't find the target node at {target_path} \u2014 "
-                "make sure it exists before connecting"
-            )
+            raise NodeNotFoundError(target_path)
 
         target_node.setInput(int(target_input), source_node, int(source_output))
 
@@ -533,17 +546,14 @@ class SynapseHandler:
     def _handle_get_parm(self, payload: Dict) -> Dict:
         """Handle get_parm command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+            raise HoudiniUnavailableError()
 
         node_path = resolve_param(payload, "node")
         parm_name = resolve_param(payload, "parm")
 
         node = hou.node(node_path)
         if node is None:
-            raise ValueError(
-                f"Couldn't find a node at {node_path} \u2014 "
-                "double-check the path exists"
-            )
+            raise NodeNotFoundError(node_path)
 
         parm = node.parm(parm_name)
         # USD alias fallback -- resolve human-readable name to encoded parm
@@ -565,10 +575,7 @@ class SynapseHandler:
                     "is_tuple": True,
                 }
             hint = _suggest_parms(node, parm_name)
-            raise ValueError(
-                f"Couldn't find parameter '{parm_name}' on {node_path} \u2014 "
-                f"check the spelling or try get_parm to explore what's available.{hint}"
-            )
+            raise ParameterError(node_path, parm_name, suggestion=hint.strip() if hint else "")
 
         return {
             "node": node_path,
@@ -580,7 +587,7 @@ class SynapseHandler:
     def _handle_set_parm(self, payload: Dict) -> Dict:
         """Handle set_parm command."""
         if not HOU_AVAILABLE:
-            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+            raise HoudiniUnavailableError()
 
         node_path = resolve_param(payload, "node")
         parm_name = resolve_param(payload, "parm")
@@ -588,10 +595,7 @@ class SynapseHandler:
 
         node = hou.node(node_path)
         if node is None:
-            raise ValueError(
-                f"Couldn't find a node at {node_path} \u2014 "
-                "double-check the path exists"
-            )
+            raise NodeNotFoundError(node_path)
 
         parm = node.parm(parm_name)
         # USD alias fallback -- resolve human-readable name to encoded parm
@@ -615,10 +619,7 @@ class SynapseHandler:
             return {"node": node_path, "parm": parm_name, "value": value}
 
         hint = _suggest_parms(node, parm_name)
-        raise ValueError(
-            f"Couldn't find parameter '{parm_name}' on {node_path} \u2014 "
-            f"check the spelling or list the node's parameters first.{hint}"
-        )
+        raise ParameterError(node_path, parm_name, suggestion=hint.strip() if hint else "")
 
     # =========================================================================
     # SCENE HANDLERS
