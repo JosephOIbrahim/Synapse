@@ -180,7 +180,7 @@ class AuditLog:
         self._entries: List[AuditEntry] = []
         self._log_dir = log_dir or Path.home() / ".synapse" / "audit"
         self._log_dir.mkdir(parents=True, exist_ok=True)
-        self._current_session = deterministic_uuid(str(time.time()), "session")
+        self._current_session = deterministic_uuid(f"session:{id(self)}:{threading.current_thread().ident}", "session")
         self._last_hash = "genesis"
         self._write_lock = threading.Lock()
 

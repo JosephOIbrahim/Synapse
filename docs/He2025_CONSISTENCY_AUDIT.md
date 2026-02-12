@@ -203,11 +203,17 @@ content_str = json.dumps(dict(deterministic_dict_items(content)), sort_keys=True
 | **Kahan summation** | Not in paper | CPU float aggregation | Extension |
 | **Decimal rounding** | Not in paper | Output determinism | Extension |
 
-### Final Score: **93/100**
+### Final Score: **97/100**
 
 **Deductions:**
-- -5: `deterministic_uuid()` called with `time.time()` input (misleading name, minor inconsistency)
 - -2: Redundant double-sort in `audit.py:109` (harmless but untidy)
+- -1: `adaptation.py:26` says "per He2025" for epoch sizing — concept is borrowed but the paper's "fixed split-size" refers to attention kernels, not epoch windowing
+
+**Previously fixed:**
+- `deterministic_uuid()` with `time.time()` in `router.py` — replaced with monotonic counters (v5.1)
+- `deterministic_uuid()` with `time.time()` in `audit.py:183` — replaced with process-stable ID (v5.2)
+- `docs/architecture/overview.md` — now distinguishes He2025-inspired vs general determinism techniques
+- `README.md` — no longer groups Kahan summation under He2025
 
 **Strengths:**
 - Correct adaptation of He2025 principles to application layer

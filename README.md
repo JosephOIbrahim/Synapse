@@ -32,7 +32,7 @@ Built as a standalone package with zero required dependencies.
 - **Production Resilience** -- Rate limiter, circuit breaker, port failover, watchdog, backpressure
 - **Viewport + Render Capture** -- AI can see what you see via flipbook and Karma renders
 - **RAG-Powered Routing** -- Knowledge lookup from Houdini documentation (21 built-in workflow recipes)
-- **Determinism** -- Fixed-precision rounding, content-based IDs, Kahan summation ([He2025] inspired)
+- **Determinism** -- Canonical ordering and tier pinning ([He2025] inspired), plus fixed-precision rounding, content-based IDs, and Kahan summation
 - **Houdini Optional** -- All 874 tests run without Houdini; core library has zero required dependencies
 
 ---

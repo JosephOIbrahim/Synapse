@@ -5,7 +5,7 @@
 ```
 Claude Desktop/Code
     |  stdio / JSON-RPC
-mcp_server.py  (37 tools, concurrent dispatch)
+mcp_server.py  (43 tools, concurrent dispatch)
     |  WebSocket: ws://localhost:9999/synapse
 SynapseServer  (daemon thread inside Houdini)
     |  CommandHandlerRegistry
@@ -47,13 +47,17 @@ Cache(O(1)) -> Recipe(O(1)) -> Planner(O(1)) -> Tier0/regex(O(n)) -> Tier1/RAG(O
 - **BackpressureController**: 4-level throttling (NORMAL -> ELEVATED -> HIGH -> CRITICAL)
 - **HealthMonitor**: Aggregates all components into single health status
 
-## He2025 Determinism
+## Determinism
 
-All state paths comply with [He2025] "Defeating Nondeterminism in LLM Inference":
+Synapse adapts the core principle from [He2025] "Defeating Nondeterminism in LLM Inference" — same input must produce same output — at the **application layer** (not GPU kernels):
 
-- `round_float()` for output precision
-- `kahan_sum()` for stable float aggregation
-- `deterministic_uuid()` for content-based IDs
-- `sort_keys=True` in all JSON serialization
-- Sorted iterations before aggregation
-- Fixed-size epochs (not time-based)
+**Inspired by He2025:**
+- `sort_keys=True` in all JSON serialization (canonical byte representation)
+- Sorted iterations before aggregation (fixed reduction order)
+- Fixed-size epochs, not time-based (batch-invariant adaptation)
+- Tier pinning: same input + context maps to same routing tier
+
+**General determinism (not from He2025):**
+- `round_float()` for output precision (Decimal ROUND_HALF_UP)
+- `kahan_sum()` for stable float aggregation (Kahan, 1965)
+- `deterministic_uuid()` for content-based IDs (SHA-256)
