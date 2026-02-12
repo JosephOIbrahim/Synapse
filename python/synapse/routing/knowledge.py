@@ -55,6 +55,8 @@ class KnowledgeIndex:
         self._keyword_to_topics: Dict[str, List[str]] = {}
         self._reference_files: Dict[str, str] = {}
         self._agent_relevance: Dict[str, Any] = {}
+        # Pre-indexed section headers: word -> [(file_stem, line_index, lines)]
+        self._section_index: Dict[str, List[tuple]] = {}
 
         if self._rag_root:
             self._load_semantic_index()
@@ -89,7 +91,7 @@ class KnowledgeIndex:
                     self._keyword_to_topics[kw_lower].append(topic_name)
 
     def _load_reference_files(self):
-        """Load .md reference files from skills directory."""
+        """Load .md reference files from skills directory and pre-index headers."""
         if not self._rag_root:
             return
         ref_dir = self._rag_root / "skills" / "houdini21-reference"
@@ -102,6 +104,18 @@ class KnowledgeIndex:
                 self._reference_files[md_file.stem] = content
             except OSError:
                 continue
+
+        # Pre-index section headers for O(1) word lookup
+        for file_stem, content in self._reference_files.items():
+            lines = content.split("\n")
+            for i, line in enumerate(lines):
+                if not line.startswith("#"):
+                    continue
+                header_words = set(line.lstrip("#").strip().lower().split())
+                for word in header_words:
+                    if word not in self._section_index:
+                        self._section_index[word] = []
+                    self._section_index[word].append((file_stem, i, lines))
 
     def _load_agent_relevance(self):
         """Load agent_relevance_map.json if available."""
@@ -227,49 +241,53 @@ class KnowledgeIndex:
     def _match_reference_sections(
         self, query_lower: str, query_words: set
     ) -> Optional[KnowledgeLookupResult]:
-        """Search reference files by section headers."""
-        if not self._reference_files:
+        """Search reference files by section headers using pre-built index."""
+        if not self._section_index:
             return None
 
-        best_match = None
-        best_score = 0
+        # Gather candidate headers from index (only headers with overlapping words)
+        candidates: Dict[tuple, int] = {}  # (file_stem, line_idx) -> overlap count
+        candidate_lines: Dict[tuple, list] = {}  # (file_stem, line_idx) -> lines ref
 
-        for file_stem, content in sorted(self._reference_files.items()):
-            lines = content.split("\n")
-            for i, line in enumerate(lines):
-                if not line.startswith("#"):
-                    continue
-                header_lower = line.lstrip("#").strip().lower()
-                header_words = set(header_lower.split())
+        for word in query_words:
+            for file_stem, line_idx, lines in self._section_index.get(word, []):
+                key = (file_stem, line_idx)
+                candidates[key] = candidates.get(key, 0) + 1
+                if key not in candidate_lines:
+                    candidate_lines[key] = lines
 
-                # Score by word overlap
-                overlap = len(query_words & header_words)
-                if overlap > best_score:
-                    best_score = overlap
-                    # Extract section content (up to next header or 500 chars)
-                    section_lines = [line]
-                    char_count = len(line)
-                    for j in range(i + 1, len(lines)):
-                        if lines[j].startswith("#"):
-                            break
-                        section_lines.append(lines[j])
-                        char_count += len(lines[j])
-                        if char_count > 500:
-                            break
-                    best_match = (file_stem, "\n".join(section_lines))
+        if not candidates:
+            return None
 
-        if best_match and best_score >= 1:
-            file_stem, section_text = best_match
-            confidence = min(0.7, 0.3 + 0.15 * best_score)
-            return KnowledgeLookupResult(
-                found=True,
-                answer=section_text,
-                sources=[f"reference:{file_stem}"],
-                confidence=confidence,
-                topic=file_stem,
-            )
+        # Find best match
+        best_key = max(candidates, key=lambda k: candidates[k])
+        best_score = candidates[best_key]
 
-        return None
+        if best_score < 1:
+            return None
+
+        file_stem, line_idx = best_key
+        lines = candidate_lines[best_key]
+
+        # Extract section content (up to next header or 500 chars)
+        section_lines = [lines[line_idx]]
+        char_count = len(lines[line_idx])
+        for j in range(line_idx + 1, len(lines)):
+            if lines[j].startswith("#"):
+                break
+            section_lines.append(lines[j])
+            char_count += len(lines[j])
+            if char_count > 500:
+                break
+
+        confidence = min(0.7, 0.3 + 0.15 * best_score)
+        return KnowledgeLookupResult(
+            found=True,
+            answer="\n".join(section_lines),
+            sources=[f"reference:{file_stem}"],
+            confidence=confidence,
+            topic=file_stem,
+        )
 
     def _match_memory(self, query: str) -> Optional[KnowledgeLookupResult]:
         """Search memory as final fallback."""

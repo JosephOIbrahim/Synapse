@@ -260,35 +260,43 @@ class MemoryStore:
                         content = f.read()
                     if crypto:
                         content = crypto.decrypt_file_content(content)
-                    self._index = json.loads(content)
+                    loaded = json.loads(content)
+                    # Convert lists to sets for by_type/by_tag/by_keyword
+                    for section in ("by_type", "by_tag", "by_keyword"):
+                        if section in loaded:
+                            loaded[section] = {
+                                k: set(v) if isinstance(v, list) else v
+                                for k, v in loaded[section].items()
+                            }
+                    self._index = loaded
                 except Exception as e:
                     logger.warning("Failed to load index: %s", e)
 
         logger.info("Loaded %d memories from %s", len(self._memories), self.storage_dir)
         self._loaded.set()
+        # After load completes, replace _wait_loaded with a no-op to skip
+        # the Event.is_set() check on every subsequent read call
+        self._wait_loaded = lambda timeout=2.0: None
 
     def _index_memory(self, memory: Memory):
-        """Add memory to in-memory indices."""
+        """Add memory to in-memory indices (sets for O(1) membership)."""
         # Index by type
         type_key = memory.memory_type.value
         if type_key not in self._index["by_type"]:
-            self._index["by_type"][type_key] = []
-        if memory.id not in self._index["by_type"][type_key]:
-            self._index["by_type"][type_key].append(memory.id)
+            self._index["by_type"][type_key] = set()
+        self._index["by_type"][type_key].add(memory.id)
 
         # Index by tags
         for tag in memory.tags:
             if tag not in self._index["by_tag"]:
-                self._index["by_tag"][tag] = []
-            if memory.id not in self._index["by_tag"][tag]:
-                self._index["by_tag"][tag].append(memory.id)
+                self._index["by_tag"][tag] = set()
+            self._index["by_tag"][tag].add(memory.id)
 
         # Index by keywords
         for keyword in memory.keywords:
             if keyword not in self._index["by_keyword"]:
-                self._index["by_keyword"][keyword] = []
-            if memory.id not in self._index["by_keyword"][keyword]:
-                self._index["by_keyword"][keyword].append(memory.id)
+                self._index["by_keyword"][keyword] = set()
+            self._index["by_keyword"][keyword].add(memory.id)
 
         # Index links
         for link in memory.links:
@@ -317,9 +325,15 @@ class MemoryStore:
                         line = crypto.encrypt_line(line)
                     f.write(line + "\n")
 
-            # Write index
-            self._index["updated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-            index_content = json.dumps(self._index, indent=2, sort_keys=True)
+            # Write index — convert sets to sorted lists for JSON serialization
+            serializable_index = dict(self._index)
+            for section in ("by_type", "by_tag", "by_keyword"):
+                serializable_index[section] = {
+                    k: sorted(v) if isinstance(v, set) else v
+                    for k, v in self._index[section].items()
+                }
+            serializable_index["updated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            index_content = json.dumps(serializable_index, indent=2, sort_keys=True)
             if crypto:
                 index_content = crypto.encrypt_file_content(index_content)
             with open(self.index_file, 'w', encoding='utf-8') as f:

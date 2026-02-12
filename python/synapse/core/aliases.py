@@ -133,15 +133,6 @@ USD_PARM_ALIASES: Dict[str, str] = {
 
 
 
-# Pre-computed reverse map: alias -> canonical (O(1) lookup)
-_REVERSE_ALIASES: Dict[str, str] = {}
-for _canonical, _aliases in sorted(PARAM_ALIASES.items()):
-    for _alias in _aliases:
-        # First writer wins — earlier entries in PARAM_ALIASES take priority
-        if _alias not in _REVERSE_ALIASES:
-            _REVERSE_ALIASES[_alias] = _canonical
-
-
 def resolve_param(payload: Dict, canonical: str, required: bool = True) -> Any:
     """
     Resolve a parameter from payload using aliasing.

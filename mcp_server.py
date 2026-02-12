@@ -18,8 +18,6 @@ import atexit
 import logging
 import os
 import time
-import hashlib
-
 try:
     import orjson
     def _dumps(obj): return orjson.dumps(obj, option=orjson.OPT_SORT_KEYS).decode()
@@ -128,8 +126,7 @@ _cmd_seq = 0
 def _cmd_id(cmd_type: str, payload: dict | None) -> str:
     global _cmd_seq
     _cmd_seq += 1
-    content = f"{cmd_type}:{_dumps(payload or {})}:{_cmd_seq}"
-    return hashlib.sha256(content.encode()).hexdigest()[:16]
+    return f"{cmd_type}-{_cmd_seq}"
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -169,7 +166,7 @@ _recv_task: asyncio.Task | None = None
 def _is_connected() -> bool:
     """Check if the WebSocket connection is open."""
     try:
-        return _ws_connection is not None and _ws_connection.state.name == "OPEN"
+        return _ws_connection is not None and _ws_connection.state == websockets.connection.State.OPEN
     except (AttributeError, Exception):
         return False
 
@@ -1347,18 +1344,22 @@ def _add_memory_payload(args: dict) -> dict:
     return p
 
 
+def _identity(a: dict) -> dict:
+    return a
+
+
 TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_ping":          ("ping",            _passthrough),
     "synapse_health":        ("get_health",      _passthrough),
     "houdini_scene_info":    ("get_scene_info",  _passthrough),
     "houdini_get_selection": ("get_selection",    _passthrough),
-    "houdini_create_node":   ("create_node",     lambda a: {k: a[k] for k in a}),
+    "houdini_create_node":   ("create_node",     _identity),
     "houdini_delete_node":   ("delete_node",     lambda a: {"node": a["node"]}),
-    "houdini_connect_nodes": ("connect_nodes",   lambda a: {k: a[k] for k in a}),
+    "houdini_connect_nodes": ("connect_nodes",   _identity),
     "houdini_get_parm":      ("get_parm",        lambda a: {"node": a["node"], "parm": a["parm"]}),
     "houdini_set_parm":      ("set_parm",        lambda a: {"node": a["node"], "parm": a["parm"], "value": a["value"]}),
     "houdini_execute_python":("execute_python",  _execute_python_payload),
-    "houdini_execute_vex":   ("execute_vex",    lambda a: {k: a[k] for k in a}),
+    "houdini_execute_vex":   ("execute_vex",    _identity),
     "houdini_stage_info":    ("get_stage_info",  _stage_info_payload),
     "houdini_get_usd_attribute": ("get_usd_attribute", lambda a: {
         k: a[k] for k in ("node", "prim_path", "attribute_name") if k in a
@@ -1372,31 +1373,31 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "houdini_modify_usd_prim": ("modify_usd_prim", lambda a: {
         k: a[k] for k in ("node", "prim_path", "kind", "purpose", "active") if k in a
     }),
-    "houdini_capture_viewport": ("capture_viewport", lambda a: {k: a[k] for k in a}),
-    "houdini_render":           ("render",           lambda a: {k: a[k] for k in a}),
-    "houdini_set_keyframe":     ("set_keyframe",     lambda a: {k: a[k] for k in a}),
-    "houdini_render_settings":  ("render_settings",  lambda a: {k: a[k] for k in a}),
-    "houdini_wedge":         ("wedge",          lambda a: {k: a[k] for k in a}),
-    "houdini_reference_usd": ("reference_usd",  lambda a: {k: a[k] for k in a}),
-    "houdini_create_material":  ("create_material",  lambda a: {k: a[k] for k in a}),
-    "houdini_assign_material":  ("assign_material",  lambda a: {k: a[k] for k in a}),
-    "houdini_read_material":    ("read_material",    lambda a: {k: a[k] for k in a}),
+    "houdini_capture_viewport": ("capture_viewport", _identity),
+    "houdini_render":           ("render",           _identity),
+    "houdini_set_keyframe":     ("set_keyframe",     _identity),
+    "houdini_render_settings":  ("render_settings",  _identity),
+    "houdini_wedge":         ("wedge",          _identity),
+    "houdini_reference_usd": ("reference_usd",  _identity),
+    "houdini_create_material":  ("create_material",  _identity),
+    "houdini_assign_material":  ("assign_material",  _identity),
+    "houdini_read_material":    ("read_material",    _identity),
     "synapse_knowledge_lookup": ("knowledge_lookup", lambda a: {"query": a["query"]}),
-    "synapse_inspect_selection": ("inspect_selection", lambda a: {k: a[k] for k in a}),
-    "synapse_inspect_scene":    ("inspect_scene",     lambda a: {k: a[k] for k in a}),
-    "synapse_inspect_node":     ("inspect_node",      lambda a: {k: a[k] for k in a}),
+    "synapse_inspect_selection": ("inspect_selection", _identity),
+    "synapse_inspect_scene":    ("inspect_scene",     _identity),
+    "synapse_inspect_node":     ("inspect_node",      _identity),
     "synapse_context":       ("context",         _passthrough),
     "synapse_search":        ("search",          lambda a: {"query": a["query"]}),
     "synapse_recall":        ("recall",          lambda a: {"query": a["query"]}),
     "synapse_decide":        ("decide",          _decide_payload),
     "synapse_add_memory":    ("add_memory",      _add_memory_payload),
-    "synapse_batch":         ("batch_commands",  lambda a: {k: a[k] for k in a}),
+    "synapse_batch":         ("batch_commands",  _identity),
     "synapse_metrics":       ("get_metrics",     _passthrough),
     "synapse_router_stats":  ("router_stats",    _passthrough),
     "synapse_list_recipes":  ("list_recipes",    _passthrough),
-    "synapse_project_setup": ("project_setup",   lambda a: {k: a[k] for k in a}),
-    "synapse_memory_write":  ("memory_write",    lambda a: {k: a[k] for k in a}),
-    "synapse_memory_query":  ("memory_query",    lambda a: {k: a[k] for k in a}),
+    "synapse_project_setup": ("project_setup",   _identity),
+    "synapse_memory_write":  ("memory_write",    _identity),
+    "synapse_memory_query":  ("memory_query",    _identity),
     "synapse_memory_status": ("memory_status",   _passthrough),
     "synapse_evolve_memory": ("evolve_memory",   _passthrough),
 }

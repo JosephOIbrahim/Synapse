@@ -7,7 +7,7 @@ Provides backwards compatibility with Nexus v3.x and Synapse v2.x protocol.
 
 import json
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import Dict, Any, Optional
 from enum import Enum
 
@@ -15,9 +15,13 @@ try:
     import orjson
     def _to_json_str(data: dict) -> str:
         return orjson.dumps(data, option=orjson.OPT_SORT_KEYS).decode()
+    def _from_json(s: str) -> dict:
+        return orjson.loads(s)
 except ImportError:
     def _to_json_str(data: dict) -> str:
         return json.dumps(data, sort_keys=True)
+    def _from_json(s: str) -> dict:
+        return json.loads(s)
 
 # Protocol version - bumped to 4.0.0 for standalone Synapse
 PROTOCOL_VERSION = "4.0.0"
@@ -122,11 +126,18 @@ class SynapseCommand:
     protocol_version: str = PROTOCOL_VERSION
 
     def to_json(self) -> str:
-        return _to_json_str(asdict(self))
+        return _to_json_str({
+            "id": self.id,
+            "payload": self.payload,
+            "protocol_version": self.protocol_version,
+            "sequence": self.sequence,
+            "timestamp": self.timestamp,
+            "type": self.type,
+        })
 
     @classmethod
     def from_json(cls, data: str) -> 'SynapseCommand':
-        parsed = json.loads(data)
+        parsed = _from_json(data)
         return cls(
             type=parsed.get("type", ""),
             id=parsed.get("id", ""),
@@ -159,11 +170,19 @@ class SynapseResponse:
     protocol_version: str = PROTOCOL_VERSION
 
     def to_json(self) -> str:
-        return _to_json_str(asdict(self))
+        return _to_json_str({
+            "data": self.data,
+            "error": self.error,
+            "id": self.id,
+            "protocol_version": self.protocol_version,
+            "sequence": self.sequence,
+            "success": self.success,
+            "timestamp": self.timestamp,
+        })
 
     @classmethod
     def from_json(cls, data: str) -> 'SynapseResponse':
-        parsed = json.loads(data)
+        parsed = _from_json(data)
         return cls(
             id=parsed.get("id", ""),
             success=parsed.get("success", False),

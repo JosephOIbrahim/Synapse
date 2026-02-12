@@ -787,8 +787,12 @@ class TieredRouter:
         """Hash context dict for cache keying."""
         if not context:
             return ""
-        raw = json.dumps(context, sort_keys=True, default=str)
-        return hashlib.sha256(raw.encode()).hexdigest()[:16]
+        try:
+            import orjson
+            raw = orjson.dumps(context, option=orjson.OPT_SORT_KEYS, default=str)
+        except (ImportError, TypeError):
+            raw = json.dumps(context, sort_keys=True, default=str).encode()
+        return hashlib.sha256(raw).hexdigest()[:16]
 
     # ------------------------------------------------------------------
     # Metrics

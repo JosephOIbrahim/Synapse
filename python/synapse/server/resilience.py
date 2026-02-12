@@ -64,9 +64,8 @@ class RateLimiter:
         self._total_requests = 0
         self._rejected_requests = 0
 
-    def _refill_global(self):
+    def _refill_global(self, now: float):
         """Refill global token bucket based on elapsed time."""
-        now = time.time()
         elapsed = now - self._last_refill
         self._tokens = min(
             self.bucket_size,
@@ -74,10 +73,8 @@ class RateLimiter:
         )
         self._last_refill = now
 
-    def _refill_client(self, client_id: str) -> float:
+    def _refill_client(self, client_id: str, now: float) -> float:
         """Refill client bucket, return current tokens."""
-        now = time.time()
-
         if client_id not in self._client_buckets:
             self._client_buckets[client_id] = (float(self.per_client_bucket), now)
             return float(self.per_client_bucket)
@@ -100,8 +97,9 @@ class RateLimiter:
         """
         with self._lock:
             self._total_requests += 1
-            self._refill_global()
-            client_tokens = self._refill_client(client_id)
+            now = time.time()
+            self._refill_global(now)
+            client_tokens = self._refill_client(client_id, now)
 
             # Check global limit
             if self._tokens < tokens:

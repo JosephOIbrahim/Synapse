@@ -36,6 +36,7 @@ from ..core.protocol import (
     COMMAND_TIMEOUT,
     MAX_PORT_RETRIES,
     PORT_RETRY_DELAY,
+    _to_json_str,
 )
 from ..core.queue import DeterministicCommandQueue, ResponseDeliveryQueue
 from .auth import get_auth_key, authenticate, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
@@ -271,39 +272,39 @@ class SynapseServer:
             auth_key = get_auth_key()
             if auth_key is not None:
                 # Tell client auth is required
-                websocket.send(json.dumps({
+                websocket.send(_to_json_str({
                     "type": AUTH_REQUIRED_TYPE,
                     "message": "Authentication required",
                     "protocol_version": PROTOCOL_VERSION,
-                }, sort_keys=True))
+                }))
 
                 # Wait for auth message
                 try:
                     auth_msg = json.loads(next(iter([websocket.recv()])))
                     token = auth_msg.get("payload", {}).get("key", "")
                     if auth_msg.get("type") != AUTH_COMMAND_TYPE or not authenticate(token, auth_key):
-                        websocket.send(json.dumps({
+                        websocket.send(_to_json_str({
                             "type": "auth_failed",
                             "success": False,
                             "error": "Invalid API key",
                             "protocol_version": PROTOCOL_VERSION,
-                        }, sort_keys=True))
+                        }))
                         logger.warning("Auth failed for client %s", client_id)
                         return
                 except (json.JSONDecodeError, StopIteration):
-                    websocket.send(json.dumps({
+                    websocket.send(_to_json_str({
                         "type": "auth_failed",
                         "success": False,
                         "error": "Expected authenticate command",
                         "protocol_version": PROTOCOL_VERSION,
-                    }, sort_keys=True))
+                    }))
                     return
 
-                websocket.send(json.dumps({
+                websocket.send(_to_json_str({
                     "type": "auth_success",
                     "success": True,
                     "protocol_version": PROTOCOL_VERSION,
-                }, sort_keys=True))
+                }))
                 logger.info("Client authenticated: %s", client_id)
 
             for message in websocket:

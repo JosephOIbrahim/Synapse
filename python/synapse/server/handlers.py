@@ -146,13 +146,8 @@ class CommandHandlerRegistry:
         self._handlers[command_type] = handler
 
     def get(self, command_type: str) -> Optional[Callable]:
-        """Get handler for a command type."""
-        # Try exact match first, then normalized
-        handler = self._handlers.get(command_type)
-        if handler is None:
-            normalized = normalize_command_type(command_type)
-            handler = self._handlers.get(normalized)
-        return handler
+        """Get handler for a command type (expects pre-normalized type)."""
+        return self._handlers.get(command_type)
 
     def has(self, command_type: str) -> bool:
         """Check if a handler exists for a command type."""
@@ -203,7 +198,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
             SynapseResponse with the result
         """
         try:
-            cmd_type = command.normalized_type()
+            cmd_type = normalize_command_type(command.type)
             handler = self._registry.get(cmd_type)
 
             if handler is None:
@@ -218,25 +213,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
 
             # Log action asynchronously — don't block the response path
             if cmd_type not in _READ_ONLY_COMMANDS:
-                bridge = self._get_bridge()
-                if bridge and self._session_id:
-                    sid = self._session_id
-                    _log_executor.submit(
-                        bridge.log_action,
-                        f"Executed: {cmd_type}",
-                        session_id=sid,
-                    )
-
-                # Audit log — fire-and-forget via existing thread pool
-                _log_executor.submit(
-                    audit_log().log,
-                    operation=cmd_type,
-                    message=f"Executed {cmd_type}",
-                    level=AuditLevel.AGENT_ACTION,
-                    category=_CMD_CATEGORY.get(cmd_type, AuditCategory.SYNAPSE),
-                    input_data=command.payload,
-                    output_data=result if isinstance(result, dict) else {},
-                )
+                self._submit_logs(cmd_type, command.payload, result)
 
             return SynapseResponse(
                 id=command.id,
@@ -276,6 +253,27 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
                 error=f"Hit a snag processing that request: {e}",
                 sequence=command.sequence,
             )
+
+    def _submit_logs(self, cmd_type: str, payload: Dict, result: Any):
+        """Submit bridge + audit log in a single executor call."""
+        bridge = self._get_bridge()
+        sid = self._session_id
+        category = _CMD_CATEGORY.get(cmd_type, AuditCategory.SYNAPSE)
+        output = result if isinstance(result, dict) else {}
+
+        def _do_log():
+            if bridge and sid:
+                bridge.log_action(f"Executed: {cmd_type}", session_id=sid)
+            audit_log().log(
+                operation=cmd_type,
+                message=f"Executed {cmd_type}",
+                level=AuditLevel.AGENT_ACTION,
+                category=category,
+                input_data=payload,
+                output_data=output,
+            )
+
+        _log_executor.submit(_do_log)
 
     def _register_handlers(self):
         """Register all built-in command handlers."""

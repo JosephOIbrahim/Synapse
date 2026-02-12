@@ -164,15 +164,18 @@ class ResponseCache:
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     def _evict_one(self):
-        """Evict the least-recently-used (lowest hits, oldest) entry."""
+        """Evict expired entry (O(n) scan) or LRU fallback (O(n) min)."""
         if not self._cache:
             return
-        # Evict expired first
-        for key, entry in sorted(self._cache.items()):
-            if entry.expired:
-                del self._cache[key]
-                self._evictions += 1
-                return
+        # Evict first expired entry found (no sort needed)
+        expired_key = next(
+            (k for k, e in self._cache.items() if e.expired),
+            None,
+        )
+        if expired_key is not None:
+            del self._cache[expired_key]
+            self._evictions += 1
+            return
         # Otherwise evict oldest with fewest hits
         victim = min(
             self._cache,

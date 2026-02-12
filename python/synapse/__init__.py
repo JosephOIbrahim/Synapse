@@ -105,51 +105,113 @@ from .memory.store import (
     reset_engram,
 )
 
-from .memory.context import (
-    ShotContext,
-    load_context,
-    save_context,
-    get_current_context,
-    update_context,
-)
-
-from .memory.markdown import (
-    MarkdownSync,
-    parse_decisions_md,
-    render_decisions_md,
-)
-
-# Session management
-from .session.tracker import (
-    SynapseSession,
-    SynapseBridge,
-    get_bridge,
-    reset_bridge,
-    # Backwards compatibility aliases
-    NexusSession,
-    NexusBridge,
-    EngramBridge,
-)
-
-# Agent protocol
-from .agent.protocol import (
-    AgentTask,
-    AgentPlan,
-    AgentStep,
-    StepStatus,
-    PlanStatus,
-    DEFAULT_GATE_LEVELS,
-    classify_gate_level,
-)
-from .agent.executor import AgentExecutor
-from .agent.learning import OutcomeTracker
-
+# Memory context, markdown, session, agent — all deferred to first access via __getattr__
 # Routing, Server, UI — all deferred to first access via __getattr__
 # This avoids importing ~3,000 lines of code (regex compilation, websockets,
 # Qt widgets) on every `import synapse`, keeping Houdini startup fast.
 
 def __getattr__(name):
     """Lazy-load heavy modules on first attribute access."""
+    # --- Memory context ---
+    _context_names = {
+        'ShotContext', 'load_context', 'save_context',
+        'get_current_context', 'update_context',
+    }
+    if name in _context_names:
+        from .memory.context import (
+            ShotContext as _ShotContext,
+            load_context as _load_context,
+            save_context as _save_context,
+            get_current_context as _get_current_context,
+            update_context as _update_context,
+        )
+        _map = {
+            'ShotContext': _ShotContext,
+            'load_context': _load_context,
+            'save_context': _save_context,
+            'get_current_context': _get_current_context,
+            'update_context': _update_context,
+        }
+        globals().update(_map)
+        return _map[name]
+
+    # --- Memory markdown ---
+    _markdown_names = {
+        'MarkdownSync', 'parse_decisions_md', 'render_decisions_md',
+    }
+    if name in _markdown_names:
+        from .memory.markdown import (
+            MarkdownSync as _MarkdownSync,
+            parse_decisions_md as _parse_decisions_md,
+            render_decisions_md as _render_decisions_md,
+        )
+        _map = {
+            'MarkdownSync': _MarkdownSync,
+            'parse_decisions_md': _parse_decisions_md,
+            'render_decisions_md': _render_decisions_md,
+        }
+        globals().update(_map)
+        return _map[name]
+
+    # --- Session management ---
+    _session_names = {
+        'SynapseSession', 'SynapseBridge', 'get_bridge', 'reset_bridge',
+        'NexusSession', 'NexusBridge', 'EngramBridge',
+    }
+    if name in _session_names:
+        from .session.tracker import (
+            SynapseSession as _SynapseSession,
+            SynapseBridge as _SynapseBridge,
+            get_bridge as _get_bridge,
+            reset_bridge as _reset_bridge,
+            NexusSession as _NexusSession,
+            NexusBridge as _NexusBridge,
+            EngramBridge as _EngramBridge,
+        )
+        _map = {
+            'SynapseSession': _SynapseSession,
+            'SynapseBridge': _SynapseBridge,
+            'get_bridge': _get_bridge,
+            'reset_bridge': _reset_bridge,
+            'NexusSession': _NexusSession,
+            'NexusBridge': _NexusBridge,
+            'EngramBridge': _EngramBridge,
+        }
+        globals().update(_map)
+        return _map[name]
+
+    # --- Agent protocol ---
+    _agent_names = {
+        'AgentTask', 'AgentPlan', 'AgentStep', 'StepStatus', 'PlanStatus',
+        'DEFAULT_GATE_LEVELS', 'classify_gate_level',
+        'AgentExecutor', 'OutcomeTracker',
+    }
+    if name in _agent_names:
+        from .agent.protocol import (
+            AgentTask as _AgentTask,
+            AgentPlan as _AgentPlan,
+            AgentStep as _AgentStep,
+            StepStatus as _StepStatus,
+            PlanStatus as _PlanStatus,
+            DEFAULT_GATE_LEVELS as _DEFAULT_GATE_LEVELS,
+            classify_gate_level as _classify_gate_level,
+        )
+        from .agent.executor import AgentExecutor as _AgentExecutor
+        from .agent.learning import OutcomeTracker as _OutcomeTracker
+        _map = {
+            'AgentTask': _AgentTask,
+            'AgentPlan': _AgentPlan,
+            'AgentStep': _AgentStep,
+            'StepStatus': _StepStatus,
+            'PlanStatus': _PlanStatus,
+            'DEFAULT_GATE_LEVELS': _DEFAULT_GATE_LEVELS,
+            'classify_gate_level': _classify_gate_level,
+            'AgentExecutor': _AgentExecutor,
+            'OutcomeTracker': _OutcomeTracker,
+        }
+        globals().update(_map)
+        return _map[name]
+
     # --- Routing ---
     _routing_names = {
         'TieredRouter', 'RoutingResult', 'RoutingTier', 'RoutingConfig',
