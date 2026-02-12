@@ -2,6 +2,7 @@
 <shelfDocument>
   <toolshelf name="synapse" label="Synapse">
     <memberTool name="synapse_panel"/>
+    <memberTool name="synapse_project_setup"/>
     <memberTool name="synapse_inspect_selection"/>
     <memberTool name="synapse_inspect_scene"/>
     <memberTool name="synapse_last_result"/>
@@ -18,6 +19,20 @@ try:
 except Exception as e:
     hou.ui.displayMessage(
         "Synapse panel error: {}".format(e),
+        severity=hou.severityType.Error
+    )
+]]></script>
+  </tool>
+
+  <tool name="synapse_project_setup" label="Project Setup" icon="SYNAPSE_synapse">
+    <helpText>Initialize project memory for the current scene</helpText>
+    <script scriptType="python"><![CDATA[
+try:
+    import synapse_shelf
+    synapse_shelf.project_setup()
+except Exception as e:
+    hou.ui.displayMessage(
+        "Synapse project setup error: {}".format(e),
         severity=hou.severityType.Error
     )
 ]]></script>

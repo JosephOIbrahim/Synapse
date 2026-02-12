@@ -9,7 +9,7 @@ Synapse AI Co-Pilot — Houdini Python Panel
 PySide2 panel providing:
   - Title bar with branding
   - Status indicator with animated dot
-  - 2x2 tool grid (Inspect Selection, Inspect Scene, Last Result, Health Check)
+  - Tool grid (Inspect Selection, Inspect Scene, Last Result, Health Check, Project Setup)
   - Scrolling activity log
   - Connection controls (connect/disconnect + port display)
 """
@@ -190,7 +190,7 @@ class SynapsePanel(QtWidgets.QWidget):
         return frame
 
     def _build_tool_grid(self):
-        """Build the 2x2 tool grid."""
+        """Build the tool grid."""
         frame = QtWidgets.QFrame()
         frame.setObjectName("tool_grid")
         grid = QtWidgets.QGridLayout(frame)
@@ -199,18 +199,20 @@ class SynapsePanel(QtWidgets.QWidget):
         grid.setContentsMargins(margin, margin, margin, margin)
 
         tools = [
+            ("Project\nSetup", "Initialize project memory", self._on_project_setup),
             ("Inspect\nSelection", "Analyze selected nodes", self._on_inspect_selection),
             ("Inspect\nScene", "Analyze full scene", self._on_inspect_scene),
-            ("Last\nResult", "Copy last result", self._on_last_result),
             ("Health\nCheck", "Run scene check", self._on_health_check),
+            ("Last\nResult", "Copy last result", self._on_last_result),
         ]
 
+        cols = 2
         for i, (label, tooltip, callback) in enumerate(tools):
             btn = QtWidgets.QPushButton(label)
             btn.setProperty("class", "tool_button")
             btn.setToolTip(tooltip)
             btn.clicked.connect(callback)
-            grid.addWidget(btn, i // 2, i % 2)
+            grid.addWidget(btn, i // cols, i % cols)
 
         return frame
 
@@ -329,6 +331,19 @@ class SynapsePanel(QtWidgets.QWidget):
             cursor.removeSelectedText()
 
     # ── Tool Callbacks ───────────────────────────────────
+
+    def _on_project_setup(self):
+        """Initialize project memory via shelf callback."""
+        self._log_activity("Setting up project...", "action")
+        self._set_status("executing", "Project setup")
+        try:
+            import synapse_shelf
+            synapse_shelf.project_setup()
+            self._log_activity("Project structure ready", "success")
+            self._set_status("idle")
+        except Exception as e:
+            self._log_activity(f"Project setup hit a snag: {e}", "error")
+            self._set_status("warning", str(e)[:40])
 
     def _on_inspect_selection(self):
         """Run inspect selection via shelf callback."""

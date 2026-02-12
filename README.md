@@ -5,10 +5,10 @@
 <p align="center"><b>AI-Houdini Bridge with Persistent Project Memory</b></p>
 
 <p align="center">
-  <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-5.2.0-blue.svg" alt="Version"></a>
+  <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-5.2.2-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-blue.svg" alt="Python"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-874%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-890%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="python/synapse/core/protocol.py"><img src="https://img.shields.io/badge/protocol-v4.0.0-orange.svg" alt="Protocol"></a>
 </p>
 
@@ -33,7 +33,7 @@ Built as a standalone package with zero required dependencies.
 - **Viewport + Render Capture** -- AI can see what you see via flipbook and Karma renders
 - **RAG-Powered Routing** -- Knowledge lookup from Houdini documentation (21 built-in workflow recipes)
 - **Determinism** -- Canonical ordering and tier pinning ([He2025] inspired), plus fixed-precision rounding, content-based IDs, and Kahan summation
-- **Houdini Optional** -- All 874 tests run without Houdini; core library has zero required dependencies
+- **Houdini Optional** -- All 890 tests run without Houdini; core library has zero required dependencies
 
 ---
 
@@ -189,7 +189,7 @@ pip install -e ".[dev,websocket,mcp,routing,encryption]"
 python -m pytest tests/ -v
 ```
 
-All 874 tests run without Houdini. No license needed.
+All 890 tests run without Houdini. No license needed.
 
 <br>
 
@@ -203,23 +203,15 @@ Clean: 0 errors on 58 source files.
 
 <br>
 
-#### Houdini panel setup (optional)
+#### Houdini shelf + panel setup (optional)
 
-If you want the Qt panel inside Houdini, symlink the panel definition:
-
-```bash
-# Windows (run as admin)
-mklink "%USERPROFILE%\Documents\houdini20.5\python_panels\synapse.pypanel" "%CD%\houdini\python_panels\synapse.pypanel"
-
-# macOS / Linux
-ln -s "$(pwd)/houdini/python_panels/synapse.pypanel" ~/houdini20.5/python_panels/synapse.pypanel
-```
-
-Or add to your `houdini.env`:
+If you want the toolbar and Qt panel inside Houdini, add to your `houdini.env`:
 
 ```
 HOUDINI_PATH = "/path/to/Synapse/houdini;&"
 ```
+
+This loads the shelf toolbar (7 tools including Project Setup, Inspect Selection, Inspect Scene, Health Check, Generate Docs) and the Python panel.
 
 Then in Houdini: **Windows > Python Panel > Synapse**.
 
@@ -262,7 +254,7 @@ Encryption is transparent: existing plaintext `.synapse/` directories load witho
 
 ```
 +---------------------------------------------------------------+
-|                         Synapse v5.2.0                        |
+|                         Synapse v5.2.2                        |
 +---------------------------------------------------------------+
 |                                                               |
 |  +-- UI Layer (Qt) ----------------------------------------+ |
@@ -557,6 +549,7 @@ Commands are JSON messages with `type`, `id`, `payload`, `sequence`, and `timest
 | **Execution** | `execute_python`, `execute_vex` |
 | **USD/Solaris** | `create_usd_prim`, `modify_usd_prim`, `get_stage_info`, `set_usd_attribute`, `get_usd_attribute` |
 | **Memory** | `context`, `search`, `add_memory`, `decide`, `recall` |
+| **Living Memory** | `project_setup`, `memory_write`, `memory_query`, `memory_status`, `evolve_memory` |
 | **Utility** | `ping`, `get_health`, `get_help`, `heartbeat`, `backpressure` |
 
 Parameter names are resolved through an alias system (38+ mappings). For example, `node`, `path`, and `node_path` all resolve to the canonical `node` parameter.
@@ -583,6 +576,7 @@ Claude  <--[stdio/JSON-RPC]-->  mcp_server.py  <--[WebSocket]-->  Synapse (Houdi
 | **Rendering** | `houdini_render`, `houdini_render_settings`, `houdini_wedge`, `houdini_capture_viewport` |
 | **Introspection** | `synapse_inspect_selection`, `synapse_inspect_scene`, `synapse_inspect_node` |
 | **Memory** | `synapse_context`, `synapse_search`, `synapse_recall`, `synapse_decide`, `synapse_add_memory` |
+| **Living Memory** | `synapse_project_setup`, `synapse_memory_write`, `synapse_memory_query`, `synapse_memory_status`, `synapse_evolve_memory` |
 | **Knowledge** | `synapse_knowledge_lookup`, `synapse_list_recipes` |
 | **Routing** | `synapse_router_stats`, `synapse_metrics` |
 | **Batch** | `synapse_batch` |
@@ -596,7 +590,7 @@ Claude  <--[stdio/JSON-RPC]-->  mcp_server.py  <--[WebSocket]-->  Synapse (Houdi
 ## Testing
 
 ```bash
-# All 874 tests (no Houdini required)
+# All 890 tests (no Houdini required)
 python -m pytest tests/ -v
 
 # Individual test modules
@@ -635,8 +629,12 @@ Synapse/
 ├── mcp_server.py                       # MCP server (Claude Code / Desktop bridge)
 ├── .mcp.json                            # Claude Code project-level MCP config
 ├── houdini/
-│   └── python_panels/
-│       └── synapse.pypanel          # Houdini Qt panel definition
+│   ├── python_panels/
+│   │   └── synapse_panel.pypanel    # Houdini Qt panel (5 tool buttons)
+│   ├── scripts/python/
+│   │   └── synapse_shelf.py         # Shelf callbacks (7 functions)
+│   └── toolbar/
+│       └── synapse.shelf            # Shelf toolbar (7 tools)
 ├── python/synapse/
 │   ├── __init__.py                  # Public API surface
 │   ├── core/
@@ -684,7 +682,7 @@ Synapse/
 
 ## Status
 
-Synapse is under active development. All layers are well-tested (874 unit tests, mypy clean on 58 source files). The WebSocket server and viewport capture have been validated in single-user VFX workflows. Use in production at your own discretion.
+Synapse is under active development. All layers are well-tested (890 unit tests, mypy clean on 58 source files). The WebSocket server and viewport capture have been validated in single-user VFX workflows. Use in production at your own discretion.
 
 ## Determinism Reference
 
