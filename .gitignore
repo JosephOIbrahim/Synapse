@@ -5,3 +5,10 @@ __pycache__/
 *.key
 *.jpg
 *.png
+
+# Runtime data (not source)
+audit/
+agent/logs/
+memory.jsonl
+index.json
+rag_path
