@@ -231,11 +231,11 @@ async def execute_tool(tool_name: str, tool_input: dict) -> str:
     try:
         if tool_name == "synapse_ping":
             result = await client.ping()
-            return json.dumps({"status": "connected", "details": result}, indent=2, default=str)
+            return json.dumps({"status": "connected", "details": result}, indent=2, default=str, sort_keys=True)
 
         elif tool_name == "synapse_scene_info":
             result = await client.scene_info()
-            return json.dumps(result, indent=2, default=str)
+            return json.dumps(result, indent=2, default=str, sort_keys=True)
 
         elif tool_name == "synapse_inspect_scene":
             result = await client.inspect_scene(
@@ -243,13 +243,13 @@ async def execute_tool(tool_name: str, tool_input: dict) -> str:
                 max_depth=tool_input.get("max_depth", 3),
                 context_filter=tool_input.get("context_filter", ""),
             )
-            return json.dumps(result, indent=2, default=str)
+            return json.dumps(result, indent=2, default=str, sort_keys=True)
 
         elif tool_name == "synapse_inspect_selection":
             result = await client.inspect_selection(
                 depth=tool_input.get("depth", 1),
             )
-            return json.dumps(result, indent=2, default=str)
+            return json.dumps(result, indent=2, default=str, sort_keys=True)
 
         elif tool_name == "synapse_inspect_node":
             result = await client.inspect_node(
@@ -258,7 +258,7 @@ async def execute_tool(tool_name: str, tool_input: dict) -> str:
                 include_geometry=tool_input.get("include_geometry", True),
                 include_expressions=tool_input.get("include_expressions", True),
             )
-            return json.dumps(result, indent=2, default=str)
+            return json.dumps(result, indent=2, default=str, sort_keys=True)
 
         elif tool_name == "synapse_execute":
             return await _execute_with_verification(client, tool_input)
@@ -266,14 +266,14 @@ async def execute_tool(tool_name: str, tool_input: dict) -> str:
         elif tool_name == "synapse_render_preview":
             payload = {k: v for k, v in tool_input.items() if v is not None}
             result = await client.render(**payload)
-            return json.dumps(result, indent=2, default=str)
+            return json.dumps(result, indent=2, default=str, sort_keys=True)
 
         elif tool_name == "synapse_knowledge_lookup":
             result = await client.knowledge_lookup(tool_input["query"])
-            return json.dumps(result, indent=2, default=str)
+            return json.dumps(result, indent=2, default=str, sort_keys=True)
 
         else:
-            return json.dumps({"error": f"Unknown tool: {tool_name}"})
+            return json.dumps({"error": f"Unknown tool: {tool_name}"}, sort_keys=True)
 
     except SynapseExecutionError as e:
         return json.dumps(
@@ -284,9 +284,10 @@ async def execute_tool(tool_name: str, tool_input: dict) -> str:
                 "hint": "The scene was rolled back. Check the code and try again.",
             },
             indent=2,
+            sort_keys=True,
         )
     except Exception as e:
-        return json.dumps({"error": str(e)}, indent=2)
+        return json.dumps({"error": str(e)}, indent=2, sort_keys=True)
 
 
 async def _execute_with_verification(client: SynapseClient, tool_input: dict) -> str:
@@ -325,12 +326,14 @@ async def _execute_with_verification(client: SynapseClient, tool_input: dict) ->
                 },
                 indent=2,
                 default=str,
+                sort_keys=True,
             )
 
         return json.dumps(
             {"executed": True, "result": result, "description": description},
             indent=2,
             default=str,
+            sort_keys=True,
         )
 
     except SynapseExecutionError as e:
@@ -343,4 +346,5 @@ async def _execute_with_verification(client: SynapseClient, tool_input: dict) ->
                 "hint": "The scene was rolled back to its previous state. Check the code and try again.",
             },
             indent=2,
+            sort_keys=True,
         )

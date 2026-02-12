@@ -151,7 +151,7 @@ class GateProposal:
             f"Agent Confidence: [{confidence_bar}] {self.confidence:.0%}\n"
             f"\n{self.description}\n"
             f"\nReasoning: {self.reasoning}\n"
-            f"\nProposed Changes:\n{json.dumps(self.proposed_changes, indent=2)}\n"
+            f"\nProposed Changes:\n{json.dumps(self.proposed_changes, indent=2, sort_keys=True)}\n"
         )
 
 

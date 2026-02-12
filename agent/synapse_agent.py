@@ -96,7 +96,7 @@ async def run_agent(goal: str):
     user_message = (
         f"GOAL: {goal}\n\n"
         f"SCENE CONTEXT: Connected to Synapse at ws://localhost:9999. "
-        f"Scene info: {json.dumps(scene, default=str)}\n\n"
+        f"Scene info: {json.dumps(scene, default=str, sort_keys=True)}\n\n"
         "START by inspecting the scene to understand what you're working with. "
         "Plan your approach, then execute step by step with verification."
     )
@@ -156,7 +156,7 @@ async def run_agent(goal: str):
             tool_name = tool_use.name
             tool_input = tool_use.input
 
-            logger.info("Tool call: %s(%s)", tool_name, json.dumps(tool_input)[:200])
+            logger.info("Tool call: %s(%s)", tool_name, json.dumps(tool_input, sort_keys=True)[:200])
 
             # Pre-validation hook for execute
             if tool_name == "synapse_execute" and "code" in tool_input:

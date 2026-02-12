@@ -151,7 +151,7 @@ def inspect_selection():
         "nodes": results,
     }
 
-    text = json.dumps(context, indent=2, default=str)
+    text = json.dumps(context, indent=2, default=str, sort_keys=True)
     if _copy_to_clipboard(text):
         _notify(
             "Inspect Selection",
@@ -210,7 +210,7 @@ def inspect_scene():
     total = sum(len(v) for v in contexts.values())
     scene["total_top_level_nodes"] = total
 
-    text = json.dumps(scene, indent=2, default=str)
+    text = json.dumps(scene, indent=2, default=str, sort_keys=True)
     if _copy_to_clipboard(text):
         _notify(
             "Inspect Scene",
@@ -241,7 +241,7 @@ def copy_last_result():
         return
 
     if isinstance(result, dict):
-        text = json.dumps(result, indent=2, default=str)
+        text = json.dumps(result, indent=2, default=str, sort_keys=True)
     else:
         text = str(result)
 
@@ -352,7 +352,7 @@ def health_check():
         "issues": issues,
     }
 
-    text = json.dumps(report, indent=2, default=str)
+    text = json.dumps(report, indent=2, default=str, sort_keys=True)
     if _copy_to_clipboard(text):
         if issues:
             _notify(
@@ -446,7 +446,7 @@ def generate_docs():
         "nodes": docs,
     }
 
-    text = json.dumps(result, indent=2, default=str)
+    text = json.dumps(result, indent=2, default=str, sort_keys=True)
     if _copy_to_clipboard(text):
         _notify(
             "Generate Docs",

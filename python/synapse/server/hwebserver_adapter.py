@@ -30,7 +30,8 @@ try:
     def _dumps(obj):
         return orjson.dumps(obj, option=orjson.OPT_SORT_KEYS).decode()
 except ImportError:
-    _dumps = json.dumps
+    def _dumps(obj):
+        return json.dumps(obj, sort_keys=True)
 
 logger = logging.getLogger("synapse.hwebserver")
 

@@ -26,7 +26,7 @@ try:
     def _loads(s): return orjson.loads(s)
 except ImportError:
     import json
-    _dumps = json.dumps
+    def _dumps(obj): return json.dumps(obj, sort_keys=True)
     _loads = json.loads
 
 from mcp.server import Server
