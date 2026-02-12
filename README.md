@@ -5,7 +5,7 @@
 <p align="center"><b>AI-Houdini Bridge with Persistent Project Memory</b></p>
 
 <p align="center">
-  <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-5.2.2-blue.svg" alt="Version"></a>
+  <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-5.3.0-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-blue.svg" alt="Python"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="tests/"><img src="https://img.shields.io/badge/tests-890%20passing-brightgreen.svg" alt="Tests"></a>
@@ -254,7 +254,7 @@ Encryption is transparent: existing plaintext `.synapse/` directories load witho
 
 ```
 +---------------------------------------------------------------+
-|                         Synapse v5.2.2                        |
+|                         Synapse v5.3.0                        |
 +---------------------------------------------------------------+
 |                                                               |
 |  +-- UI Layer (Qt) ----------------------------------------+ |

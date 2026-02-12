@@ -14,11 +14,11 @@ Features:
 Storage: $HIP/.synapse/
 
 Author: Joe Ibrahim
-Version: 5.2.0
+Version: 5.3.0
 """
 
 __title__ = "Synapse"
-__version__ = "5.2.2"
+__version__ = "5.3.0"
 __author__ = "Joe Ibrahim"
 __license__ = "MIT"
 __product__ = "Synapse - AI-Houdini Bridge"

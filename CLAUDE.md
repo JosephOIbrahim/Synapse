@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Synapse v5.2.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 43 MCP tools to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, and viewport/render capture.
+Synapse v5.3.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 43 MCP tools to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, and viewport/render capture.
 
 Two repos make up the full system:
 - **`C:\Users\User\Synapse\`** — Core server, protocol, handlers, memory, routing, MCP bridge
