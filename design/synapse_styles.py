@@ -2,7 +2,7 @@
 Synapse Design System — Qt Stylesheet Generator
 
 Generates QSS (Qt Style Sheets) from design tokens for the Synapse panel.
-Houdini uses PySide2/Qt5 — all styles target that environment.
+Houdini 21+ uses PySide6/Qt6; older versions use PySide2/Qt5.
 
 Usage:
     from synapse_styles import generate_stylesheet, STATUS_STYLES

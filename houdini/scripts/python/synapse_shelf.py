@@ -10,6 +10,7 @@ selections, empty scenes, and connection failures gracefully.
 
 import hou
 import json
+import os
 import time
 
 
@@ -18,7 +19,10 @@ import time
 def _copy_to_clipboard(text):
     """Copy text to system clipboard via Qt (available in Houdini)."""
     try:
-        from PySide2 import QtWidgets
+        try:
+            from PySide6 import QtWidgets
+        except ImportError:
+            from PySide2 import QtWidgets
         app = QtWidgets.QApplication.instance()
         if app:
             app.clipboard().setText(text)
@@ -151,7 +155,7 @@ def inspect_selection():
         "nodes": results,
     }
 
-    text = json.dumps(context, indent=2, default=str)
+    text = json.dumps(context, indent=2, default=str, sort_keys=True)
     if _copy_to_clipboard(text):
         _notify(
             "Inspect Selection",
@@ -210,7 +214,7 @@ def inspect_scene():
     total = sum(len(v) for v in contexts.values())
     scene["total_top_level_nodes"] = total
 
-    text = json.dumps(scene, indent=2, default=str)
+    text = json.dumps(scene, indent=2, default=str, sort_keys=True)
     if _copy_to_clipboard(text):
         _notify(
             "Inspect Scene",
@@ -241,7 +245,7 @@ def copy_last_result():
         return
 
     if isinstance(result, dict):
-        text = json.dumps(result, indent=2, default=str)
+        text = json.dumps(result, indent=2, default=str, sort_keys=True)
     else:
         text = str(result)
 
@@ -352,7 +356,7 @@ def health_check():
         "issues": issues,
     }
 
-    text = json.dumps(report, indent=2, default=str)
+    text = json.dumps(report, indent=2, default=str, sort_keys=True)
     if _copy_to_clipboard(text):
         if issues:
             _notify(
@@ -446,7 +450,7 @@ def generate_docs():
         "nodes": docs,
     }
 
-    text = json.dumps(result, indent=2, default=str)
+    text = json.dumps(result, indent=2, default=str, sort_keys=True)
     if _copy_to_clipboard(text):
         _notify(
             "Generate Docs",
@@ -461,4 +465,82 @@ def generate_docs():
             "Generate Docs",
             "Couldn't access clipboard.\n\n"
             "Documentation:\n{}".format(text[:2000]),
+        )
+
+
+def project_setup():
+    """Initialize SYNAPSE project structure for the current scene.
+
+    Creates claude/ directories, seeds memory files, loads existing context,
+    and copies handshake payload to clipboard. Idempotent -- safe to run
+    multiple times.
+    """
+    hip_path = hou.hipFile.path()
+    hip_dir = os.path.dirname(hip_path)
+    hip_name = hou.hipFile.basename()
+    job_path = hou.getenv("JOB", hip_dir)
+
+    # Try the installed synapse package first
+    try:
+        from synapse.memory.scene_memory import (
+            ensure_scene_structure,
+            load_full_context,
+        )
+        paths = ensure_scene_structure(hip_path, job_path)
+        ctx = load_full_context(hip_dir, job_path)
+    except ImportError:
+        # Synapse package not installed -- basic directory setup
+        project_dir = os.path.join(job_path, "claude")
+        scene_dir = os.path.join(hip_dir, "claude")
+        os.makedirs(project_dir, exist_ok=True)
+        os.makedirs(scene_dir, exist_ok=True)
+        paths = {"project_dir": project_dir, "scene_dir": scene_dir}
+        ctx = {
+            "summary": "Synapse package not installed -- basic setup only.",
+            "agent": {},
+        }
+    except Exception as e:
+        _notify(
+            "Project Setup",
+            "Memory setup hit a snag: {}\n\n"
+            "Basic directories will still be created.".format(e),
+            hou.severityType.Warning,
+        )
+        project_dir = os.path.join(job_path, "claude")
+        scene_dir = os.path.join(hip_dir, "claude")
+        os.makedirs(project_dir, exist_ok=True)
+        os.makedirs(scene_dir, exist_ok=True)
+        paths = {"project_dir": project_dir, "scene_dir": scene_dir}
+        ctx = {"summary": "Error loading memory.", "agent": {}}
+
+    # Build handshake payload
+    lines = [
+        "SYNAPSE CONNECT",
+        "=" * 50,
+        "Scene: {}".format(hip_name),
+        "HIP: {}".format(hip_path),
+        "JOB: {}".format(job_path),
+        "FPS: {} | Range: {}".format(hou.fps(), list(hou.playbar.frameRange())),
+        "Frame: {}".format(hou.frame()),
+        "",
+        "-- MEMORY --",
+        str(ctx.get("summary", "No memory loaded."))[:4000],
+        "",
+        "=" * 50,
+    ]
+    payload = "\n".join(lines)
+
+    if _copy_to_clipboard(payload):
+        agent = ctx.get("agent", {})
+        msg = "Project structure ready -- context copied to clipboard."
+        if agent.get("has_suspended_tasks"):
+            msg += "\n\n{} suspended tasks from last session.".format(
+                agent["suspended_count"]
+            )
+        _notify("Project Setup", msg)
+    else:
+        _notify(
+            "Project Setup",
+            "Directories created but couldn't access clipboard.\n\n"
+            "Paths:\n{}".format(json.dumps(paths, indent=2, sort_keys=True)),
         )
