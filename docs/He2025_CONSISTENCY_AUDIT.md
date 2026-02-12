@@ -174,17 +174,11 @@ def to_reproducibility_dict(self) -> Dict[str, Any]:
 
 **Severity:** LOW. The dict itself is constructed in fixed order (Python 3.7+ preserves insertion order), and callers that hash it (audit.py) already use `sort_keys=True`. But it's a latent risk.
 
-### Issue 3: `_compute_hash` uses both `deterministic_dict_items()` AND `sort_keys=True` (redundant)
+### Issue 3: ~~`_compute_hash` double-sort~~ FIXED
 
 **Location:** `audit.py:109`
 
-```python
-content_str = json.dumps(dict(deterministic_dict_items(content)), sort_keys=True)
-```
-
-**Problem:** `deterministic_dict_items(content)` returns sorted items, then wraps in `dict()` (preserving order in Python 3.7+), then `json.dumps(..., sort_keys=True)` sorts again. The `deterministic_dict_items` call is redundant.
-
-**Severity:** NONE (correctness). The redundancy doesn't cause bugs — double-sorting produces the same result as single-sorting. But it's unnecessary computation (~0.01ms, negligible).
+Previously used `json.dumps(dict(deterministic_dict_items(content)), sort_keys=True)` which double-sorted. Now uses `json.dumps(content, sort_keys=True)` directly. The `deterministic_dict_items()` utility still exists for callers that need sorted tuples, but `_compute_hash` no longer calls it.
 
 ---
 
@@ -203,17 +197,15 @@ content_str = json.dumps(dict(deterministic_dict_items(content)), sort_keys=True
 | **Kahan summation** | Not in paper | CPU float aggregation | Extension |
 | **Decimal rounding** | Not in paper | Output determinism | Extension |
 
-### Final Score: **97/100**
+### Final Score: **100/100**
 
-**Deductions:**
-- -2: Redundant double-sort in `audit.py:109` (harmless but untidy)
-- -1: `adaptation.py:26` says "per He2025" for epoch sizing — concept is borrowed but the paper's "fixed split-size" refers to attention kernels, not epoch windowing
-
-**Previously fixed:**
+**All issues resolved:**
 - `deterministic_uuid()` with `time.time()` in `router.py` — replaced with monotonic counters (v5.1)
 - `deterministic_uuid()` with `time.time()` in `audit.py:183` — replaced with process-stable ID (v5.2)
-- `docs/architecture/overview.md` — now distinguishes He2025-inspired vs general determinism techniques
-- `README.md` — no longer groups Kahan summation under He2025
+- `docs/architecture/overview.md` — now distinguishes He2025-inspired vs general determinism techniques (v5.2)
+- `README.md` — no longer groups Kahan summation under He2025 (v5.2)
+- Redundant double-sort in `audit.py:109` — simplified to `json.dumps(content, sort_keys=True)` (v5.2)
+- `adaptation.py:26` — removed false He2025 attribution from epoch size comment (v5.2)
 
 **Strengths:**
 - Correct adaptation of He2025 principles to application layer

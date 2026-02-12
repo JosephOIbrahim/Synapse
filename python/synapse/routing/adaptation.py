@@ -23,7 +23,7 @@ from ..core.determinism import kahan_sum, round_float
 
 logger = logging.getLogger("synapse.routing")
 
-# Default epoch size — fixed split size per He2025
+# Default epoch size — fixed window (not time-based) for stable tier adaptation
 DEFAULT_EPOCH_SIZE = 100
 
 # Thresholds for tier preference adjustment
