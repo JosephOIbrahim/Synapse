@@ -11,7 +11,19 @@ selections, empty scenes, and connection failures gracefully.
 import hou
 import json
 import os
+import sys
 import time
+
+
+# ── Bootstrap Synapse package path ────────────────────────────
+
+_SYNAPSE_ROOT = os.environ.get(
+    "SYNAPSE_ROOT",
+    os.path.join(os.path.expanduser("~"), "SYNAPSE"),
+)
+_SYNAPSE_PYTHON = os.path.join(_SYNAPSE_ROOT, "python")
+if os.path.isdir(_SYNAPSE_PYTHON) and _SYNAPSE_PYTHON not in sys.path:
+    sys.path.insert(0, _SYNAPSE_PYTHON)
 
 
 # ── Helpers ────────────────────────────────────────────────────
@@ -20,14 +32,15 @@ def _copy_to_clipboard(text):
     """Copy text to system clipboard via Qt (available in Houdini)."""
     try:
         try:
-            from PySide6 import QtWidgets
+            from PySide6 import QtWidgets, QtGui
         except ImportError:
-            from PySide2 import QtWidgets
-        app = QtWidgets.QApplication.instance()
+            from PySide2 import QtWidgets, QtGui
+        # Qt6: Houdini may register as QGuiApplication, not QApplication
+        app = QtWidgets.QApplication.instance() or QtGui.QGuiApplication.instance()
         if app:
             app.clipboard().setText(text)
             return True
-    except ImportError:
+    except Exception:
         pass
     return False
 

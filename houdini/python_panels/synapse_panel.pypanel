@@ -57,6 +57,10 @@ _STATUS_DOT = "\u25CF"  # Filled circle
 _STATUS_DOT_EMPTY = "\u25CB"  # Empty circle
 _ACTIVITY_MAX_LINES = 200
 
+_PORT = os.environ.get("SYNAPSE_PORT", "9999")
+_PATH = os.environ.get("SYNAPSE_PATH", "/synapse")
+_WS_URL = "ws://localhost:{}{}".format(_PORT, _PATH)
+
 
 # ── Status Dot Animation ─────────────────────────────────
 
@@ -259,9 +263,23 @@ class SynapsePanel(QtWidgets.QWidget):
 
         layout.addStretch()
 
-        self._port_label = QtWidgets.QLabel("port 9999")
-        self._port_label.setObjectName("port_label")
-        layout.addWidget(self._port_label)
+        self._ws_url_field = QtWidgets.QLineEdit(_WS_URL)
+        self._ws_url_field.setObjectName("ws_url_field")
+        self._ws_url_field.setReadOnly(True)
+        self._ws_url_field.setToolTip("WebSocket URL -- click to select, Ctrl+C to copy")
+        self._ws_url_field.setFrame(False)
+        font = self._ws_url_field.font()
+        font.setFamily(FONT_MONO if _HAS_DESIGN else "Consolas")
+        font.setPointSize(SIZE_SMALL if _HAS_DESIGN else 9)
+        self._ws_url_field.setFont(font)
+        self._ws_url_field.setStyleSheet(
+            "QLineEdit {{ background: transparent; color: {fg}; "
+            "border: none; padding: 0px; }}".format(
+                fg=SLATE if _HAS_DESIGN else "#666666"
+            )
+        )
+        self._ws_url_field.setCursorPosition(0)
+        layout.addWidget(self._ws_url_field)
 
         return frame
 

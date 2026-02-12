@@ -17,14 +17,14 @@ from typing import Dict, Tuple, Any
 # 1. COLOR PALETTE
 # ─────────────────────────────────────────────────────────────
 
-# Primary palette — monochromatic Pentagram with single accent
+# Primary palette — aligned with Houdini 21 dark theme
 SIGNAL      = "#00D4FF"   # Primary cyan — connectivity, intelligence
-VOID        = "#0A0A0A"   # Deep black ground
-NEAR_BLACK  = "#111111"   # Panel background
-CARBON      = "#1A1A1A"   # Surface/container
-GRAPHITE    = "#2A2A2A"   # Borders, dividers
-SLATE       = "#555555"   # Tertiary text
-SILVER      = "#999999"   # Secondary text
+VOID        = "#252525"   # Recessed areas (activity log, inputs)
+NEAR_BLACK  = "#3C3C3C"   # Panel background (matches Houdini Window)
+CARBON      = "#333333"   # Surface/container (status bar, buttons)
+GRAPHITE    = "#222222"   # Borders, dividers (darker edges)
+SLATE       = "#888888"   # Tertiary text
+SILVER      = "#AAAAAA"   # Secondary text
 BONE        = "#CCCCCC"   # Primary text (dark bg)
 WHITE       = "#F0F0F0"   # Bright text
 
@@ -97,12 +97,13 @@ FONT_SANS_FALLBACKS = ("Instrument Sans", "Segoe UI", "sans-serif")
 FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 
 # Size scale (pixels, for Qt)
-SIZE_LABEL  = 9    # Tiny labels, numbers
-SIZE_SMALL  = 10   # Status text, metadata
-SIZE_UI     = 11   # Button labels, menu items
-SIZE_BODY   = 12   # Chat messages, descriptions
-SIZE_TITLE  = 14   # Section headers
-SIZE_HERO   = 20   # Panel title
+# Tuned to match Houdini 21 native UI defaults (~11-13px base)
+SIZE_LABEL  = 11   # Tiny labels, numbers
+SIZE_SMALL  = 11   # Status text, metadata
+SIZE_UI     = 12   # Button labels, menu items
+SIZE_BODY   = 13   # Chat messages, descriptions
+SIZE_TITLE  = 16   # Section headers
+SIZE_HERO   = 22   # Panel title
 
 
 # ─────────────────────────────────────────────────────────────

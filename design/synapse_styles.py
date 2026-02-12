@@ -60,8 +60,8 @@ QFrame#title_bar {{
     background-color: {VOID};
     border-bottom: 1px solid {GRAPHITE};
     padding: {SPACE_SM}px {SPACE_MD}px;
-    min-height: 36px;
-    max-height: 36px;
+    min-height: 40px;
+    max-height: 40px;
 }}
 
 QLabel#title_label {{
@@ -84,14 +84,14 @@ QFrame#status_bar {{
     background-color: {CARBON};
     border-bottom: 1px solid {GRAPHITE};
     padding: {SPACE_XS}px {SPACE_MD}px;
-    min-height: 28px;
-    max-height: 28px;
+    min-height: 32px;
+    max-height: 32px;
 }}
 
 QLabel#status_dot {{
-    font-size: 8px;
-    min-width: 8px;
-    max-width: 8px;
+    font-size: 10px;
+    min-width: 10px;
+    max-width: 10px;
 }}
 
 QLabel#status_label {{
@@ -121,13 +121,13 @@ QPushButton.tool_button {{
     border-radius: 4px;
     font-family: {MONO_FAMILY};
     font-size: {SIZE_UI}px;
-    padding: {SPACE_SM}px;
-    min-height: 56px;
+    padding: {SPACE_XS}px {SPACE_SM}px;
+    min-height: 44px;
     text-align: center;
 }}
 
 QPushButton.tool_button:hover {{
-    background-color: {GRAPHITE};
+    background-color: #484848;
     border-color: {SIGNAL};
     color: {WHITE};
 }}
@@ -141,7 +141,7 @@ QPushButton.tool_button:pressed {{
 QPushButton.tool_button:disabled {{
     background-color: {NEAR_BLACK};
     color: {SLATE};
-    border-color: {NEAR_BLACK};
+    border-color: {GRAPHITE};
 }}
 
 /* ── Activity Log ────────────────────────────────────── */
@@ -203,8 +203,8 @@ QFrame#connection_frame {{
     background-color: {CARBON};
     border-top: 1px solid {GRAPHITE};
     padding: {SPACE_SM}px {SPACE_MD}px;
-    min-height: 32px;
-    max-height: 32px;
+    min-height: 36px;
+    max-height: 36px;
 }}
 
 QPushButton#connect_button {{
@@ -226,10 +226,13 @@ QPushButton#connect_button:pressed {{
     background-color: rgba(0, 212, 255, 0.2);
 }}
 
-QLabel#port_label {{
+QLineEdit#ws_url_field {{
+    background: transparent;
     color: {SLATE};
+    border: none;
     font-family: {MONO_FAMILY};
     font-size: {SIZE_LABEL}px;
+    padding: 0px;
 }}
 
 /* ── Tooltip ─────────────────────────────────────────── */
