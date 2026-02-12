@@ -207,6 +207,7 @@ class SynapsePanel(QtWidgets.QWidget):
 
         tools = [
             ("Project\nSetup", "Initialize project memory", self._on_project_setup),
+            ("RAG\nFolder", "Set RAG knowledge folder", self._on_rag_folder),
             ("Inspect\nSelection", "Analyze selected nodes", self._on_inspect_selection),
             ("Inspect\nScene", "Analyze full scene", self._on_inspect_scene),
             ("Health\nCheck", "Run scene check", self._on_health_check),
@@ -384,6 +385,21 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception as e:
             self._log_activity(f"Project setup hit a snag: {e}", "error")
             self._set_status("warning", str(e)[:40])
+
+    def _on_rag_folder(self):
+        """Set RAG knowledge folder via shelf callback."""
+        self._log_activity("Opening RAG folder picker...", "action")
+        try:
+            import synapse_shelf
+            synapse_shelf.rag_folder()
+            import os
+            rag = os.environ.get("SYNAPSE_RAG_ROOT", "")
+            if rag:
+                self._log_activity("RAG folder: {}".format(rag), "success")
+            else:
+                self._log_activity("RAG folder cleared", "info")
+        except Exception as e:
+            self._log_activity("RAG folder setup: {}".format(e), "error")
 
     def _on_inspect_selection(self):
         """Run inspect selection via shelf callback."""

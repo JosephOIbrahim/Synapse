@@ -26,6 +26,30 @@ if os.path.isdir(_SYNAPSE_PYTHON) and _SYNAPSE_PYTHON not in sys.path:
     sys.path.insert(0, _SYNAPSE_PYTHON)
 
 
+# ── RAG path persistence ─────────────────────────────────────
+# Auto-set SYNAPSE_RAG_ROOT from persisted file on import,
+# so the knowledge index picks it up before any lookups happen.
+
+_RAG_PATH_FILE = os.path.join(os.path.expanduser("~"), ".synapse", "rag_path")
+
+
+def _load_rag_path():
+    """Load persisted RAG folder path and set env var. Returns path or None."""
+    if os.path.isfile(_RAG_PATH_FILE):
+        try:
+            with open(_RAG_PATH_FILE, "r") as f:
+                path = f.read().strip()
+            if path and os.path.isdir(path):
+                os.environ["SYNAPSE_RAG_ROOT"] = path
+                return path
+        except Exception:
+            pass
+    return None
+
+
+_load_rag_path()
+
+
 # ── Helpers ────────────────────────────────────────────────────
 
 def _copy_to_clipboard(text):
@@ -634,3 +658,70 @@ def project_setup():
             "Directories created but couldn't access clipboard.\n\n"
             "Paths:\n{}".format(json.dumps(paths, indent=2, sort_keys=True)),
         )
+
+
+def rag_folder():
+    """Set the RAG knowledge folder for Synapse lookups.
+
+    Opens a folder picker, persists the chosen path to ~/.synapse/rag_path,
+    and sets SYNAPSE_RAG_ROOT for the current session. The knowledge index
+    will use this folder for all subsequent lookups.
+    """
+    current = os.environ.get("SYNAPSE_RAG_ROOT", "")
+
+    # Show current state
+    if current and os.path.isdir(current):
+        choice = hou.ui.displayMessage(
+            "RAG folder is currently set to:\n{}\n\n"
+            "Change it or clear the connection?".format(current),
+            title="Synapse RAG Folder",
+            buttons=("Change", "Clear", "Cancel"),
+        )
+        if choice == 2:  # Cancel
+            return
+        if choice == 1:  # Clear
+            # Remove persisted path and env var
+            if os.path.isfile(_RAG_PATH_FILE):
+                os.remove(_RAG_PATH_FILE)
+            os.environ.pop("SYNAPSE_RAG_ROOT", None)
+            _notify("RAG Folder", "RAG folder connection cleared.\n\n"
+                    "Synapse will use its built-in knowledge only.")
+            return
+
+    # Folder picker
+    start_dir = current if current and os.path.isdir(current) else _SYNAPSE_ROOT
+    chosen = hou.ui.selectFile(
+        start_directory=start_dir,
+        title="Choose RAG Knowledge Folder",
+        file_type=hou.fileType.Directory,
+        chooser_mode=hou.fileChooserMode.Read,
+    )
+
+    if not chosen:
+        return
+
+    chosen = chosen.rstrip("/").rstrip("\\")
+    chosen = hou.text.expandString(chosen)
+
+    if not os.path.isdir(chosen):
+        _notify(
+            "RAG Folder",
+            "That path doesn't exist:\n{}".format(chosen),
+            hou.severityType.Warning,
+        )
+        return
+
+    # Persist the path
+    rag_dir = os.path.dirname(_RAG_PATH_FILE)
+    os.makedirs(rag_dir, exist_ok=True)
+    with open(_RAG_PATH_FILE, "w") as f:
+        f.write(chosen)
+
+    # Set env var for the current session
+    os.environ["SYNAPSE_RAG_ROOT"] = chosen
+
+    _notify(
+        "RAG Folder",
+        "RAG knowledge folder set to:\n{}\n\n"
+        "Synapse will use this for knowledge lookups.".format(chosen),
+    )
