@@ -15,10 +15,12 @@ PySide6/PySide2 panel providing:
 """
 
 import hou
+import gc
 import json
 import time
 import os
 import sys
+import threading
 
 
 # ── Bootstrap Design System imports ───────────────────────
@@ -57,9 +59,29 @@ _STATUS_DOT = "\u25CF"  # Filled circle
 _STATUS_DOT_EMPTY = "\u25CB"  # Empty circle
 _ACTIVITY_MAX_LINES = 200
 
-_PORT = os.environ.get("SYNAPSE_PORT", "9999")
+_PORT = int(os.environ.get("SYNAPSE_PORT", "9999"))
 _PATH = os.environ.get("SYNAPSE_PATH", "/synapse")
 _WS_URL = "ws://localhost:{}{}".format(_PORT, _PATH)
+_HEALTH_POLL_MS = 3000  # Check server health every 3 seconds
+
+
+# ── Server Singleton ─────────────────────────────────────
+
+def _find_running_server():
+    """Find an existing SynapseServer instance via gc (handles zombie servers)."""
+    for obj in gc.get_objects():
+        if type(obj).__name__ == "SynapseServer" and getattr(obj, "_running", False):
+            return obj
+    return None
+
+
+def _get_server_module():
+    """Import SynapseServer lazily to avoid import-time issues."""
+    try:
+        from synapse.server.websocket import SynapseServer
+        return SynapseServer
+    except ImportError:
+        return None
 
 
 # ── Status Dot Animation ─────────────────────────────────
@@ -111,6 +133,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self.setMinimumHeight(PANEL_MIN_HEIGHT if _HAS_DESIGN else 400)
 
         self._status = "disconnected"
+        self._server = None
         self._dot_animator = StatusDotAnimator(self)
         self._dot_animator.color_changed.connect(self._on_dot_color)
 
@@ -119,8 +142,22 @@ class SynapsePanel(QtWidgets.QWidget):
         if _HAS_DESIGN:
             self.setStyleSheet(generate_stylesheet())
 
-        # Start with disconnected state
-        self._set_status("idle")
+        # Health poll timer -- checks if server is actually listening
+        self._health_timer = QtCore.QTimer(self)
+        self._health_timer.setInterval(_HEALTH_POLL_MS)
+        self._health_timer.timeout.connect(self._poll_server_health)
+
+        # Check for an already-running server (e.g. from a previous panel instance)
+        existing = _find_running_server()
+        if existing:
+            self._server = existing
+            port = getattr(existing, "_actual_port", _PORT)
+            self._set_status("connected", "port {}".format(port))
+            self._log_activity("Found running server on port {}".format(port), "success")
+            self._health_timer.start()
+        else:
+            self._set_status("disconnected")
+            self._log_activity("Server not running -- click Connect to start", "info")
 
     def _build_ui(self):
         """Construct the panel layout."""
@@ -445,13 +482,87 @@ class SynapsePanel(QtWidgets.QWidget):
             self._set_status("warning", str(e)[:40])
 
     def _on_connect_toggle(self):
-        """Toggle connection state."""
-        if self._status in ("connected", "idle", "executing"):
-            self._set_status("disconnected")
-            self._log_activity("Disconnected from Synapse", "warning")
+        """Start or stop the WebSocket server."""
+        if self._server and getattr(self._server, "_running", False):
+            # Stop the server
+            self._stop_server()
         else:
-            self._set_status("idle")
-            self._log_activity("Connected to Synapse", "success")
+            # Start the server
+            self._start_server()
+
+    def _start_server(self):
+        """Start the Synapse WebSocket server."""
+        # Check for zombie server first
+        existing = _find_running_server()
+        if existing:
+            self._server = existing
+            port = getattr(existing, "_actual_port", _PORT)
+            self._set_status("connected", "port {}".format(port))
+            self._log_activity("Found running server on port {}".format(port), "success")
+            self._health_timer.start()
+            return
+
+        SynapseServer = _get_server_module()
+        if SynapseServer is None:
+            self._log_activity(
+                "Couldn't import SynapseServer -- is the synapse package installed?",
+                "error",
+            )
+            self._set_status("error", "import failed")
+            return
+
+        self._log_activity("Starting server...", "action")
+        self._set_status("executing", "Starting")
+
+        try:
+            self._server = SynapseServer(host="localhost", port=_PORT)
+            self._server.start()
+        except Exception as e:
+            self._log_activity("Server failed to start: {}".format(e), "error")
+            self._set_status("error", str(e)[:40])
+            self._server = None
+            return
+
+        # Give the background thread a moment to bind
+        port = getattr(self._server, "_actual_port", _PORT)
+        self._set_status("connected", "port {}".format(port))
+        self._log_activity(
+            "Server listening on port {}".format(port), "success"
+        )
+        self._health_timer.start()
+
+    def _stop_server(self):
+        """Stop the Synapse WebSocket server."""
+        self._health_timer.stop()
+        if self._server:
+            self._log_activity("Stopping server...", "action")
+            try:
+                self._server.stop()
+            except Exception as e:
+                self._log_activity("Stop error: {}".format(e), "warning")
+            self._server = None
+        self._set_status("disconnected")
+        self._log_activity("Server stopped", "warning")
+
+    def _poll_server_health(self):
+        """Periodic check that the server is still running."""
+        if self._server and getattr(self._server, "_running", False):
+            # Server is alive
+            if self._status not in ("connected", "idle", "executing"):
+                port = getattr(self._server, "_actual_port", _PORT)
+                self._set_status("connected", "port {}".format(port))
+            clients = len(getattr(self._server, "_clients", set()))
+            if clients:
+                self._status_detail.setText(
+                    "{} client{}".format(clients, "s" if clients != 1 else "")
+                )
+        else:
+            # Server died unexpectedly
+            if self._status in ("connected", "idle", "executing"):
+                self._log_activity("Server stopped unexpectedly", "error")
+                self._set_status("disconnected")
+                self._server = None
+                self._health_timer.stop()
 
 
 # ── Houdini Python Panel Interface ───────────────────────
