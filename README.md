@@ -45,7 +45,7 @@ There are two paths depending on how you want to use Synapse:
 
 | Path | You want to... | Time |
 |------|----------------|------|
-| **A. Claude + Houdini** | Talk to Houdini through Claude Desktop or Claude Code | ~5 min |
+| **A. Artist** | Talk to Houdini through Claude Desktop or Claude Code | ~5 min |
 | **B. Developer** | Hack on Synapse itself, run tests, add features | ~5 min |
 
 Most artists want **Path A**. If you just want to try it, start there.
@@ -54,49 +54,33 @@ Most artists want **Path A**. If you just want to try it, start there.
 
 ---
 
-### Path A: Connect Claude to Houdini
+### Path A: Connect Claude to Houdini (Artist Setup)
 
-This is the most common setup. You'll end up with Claude talking directly to your Houdini scene.
+You'll end up with Claude talking directly to your Houdini scene. Four steps, nothing complicated.
 
 <br>
 
-#### Step 1 &mdash; Download Synapse
+#### Step 1 &mdash; Install Synapse
 
 Open a terminal (Command Prompt, PowerShell, or Terminal) and run:
 
 ```bash
-git clone https://github.com/JosephOIbrahim/Synapse.git
+pip install synapse-houdini
 ```
 
-This creates a `Synapse/` folder wherever you ran the command.
+That's it. One command. This installs Synapse and everything it needs.
 
-> **Don't have git?** Download the ZIP from the green "Code" button on the GitHub page and unzip it.
+> **Tip:** If `pip` isn't recognized, try `python -m pip install synapse-houdini` instead.
+>
+> **Still stuck?** Make sure Python 3.9 or newer is installed. Run `python --version` to check.
 
 <br>
 
-#### Step 2 &mdash; Install the Python package
+#### Step 2 &mdash; Start the server inside Houdini
 
-```bash
-cd Synapse
-pip install -e ".[websocket,mcp]"
-```
-
-This installs Synapse plus the two things it needs to work:
-- **websocket** &mdash; lets Synapse talk to Houdini
-- **mcp** &mdash; lets Claude talk to Synapse
-
-> **Tip:** If `pip` isn't recognized, try `python -m pip install -e ".[websocket,mcp]"` instead.
-
-<br>
-
-#### Step 3 &mdash; Start the server inside Houdini
-
-Open Houdini, then open the **Python Shell** (Windows > Python Shell) and paste:
+Open Houdini, then open the **Python Shell** (Windows menu > Python Shell) and paste:
 
 ```python
-import sys
-sys.path.insert(0, r"C:\path\to\Synapse\python")  # <-- change this to YOUR path
-
 from synapse.server.websocket import SynapseServer
 server = SynapseServer(port=9999)
 server.start()
@@ -104,55 +88,59 @@ server.start()
 
 You should see a message confirming the server started on port 9999.
 
-> **Important:** Replace `C:\path\to\Synapse\python` with the actual path to the `python/` folder inside your cloned Synapse directory.
+> **You'll do this every time you open Houdini.** Later, you can add these lines to your Houdini startup script so it happens automatically.
 
 <br>
 
-#### Step 4 &mdash; Tell Claude about Synapse
+#### Step 3 &mdash; Tell Claude about Synapse
 
 Pick whichever Claude app you use:
 
 <br>
 
-**Claude Code** (terminal)
+**Claude Desktop** (the app most artists use)
 
-If you open Claude Code from inside the Synapse folder, it auto-detects the tools (via `.mcp.json`). Done.
-
-To make it available from *any* folder:
-
-```bash
-claude mcp add synapse -- python /path/to/Synapse/mcp_server.py
-```
-
-<br>
-
-**Claude Desktop** (app)
-
-Open your config file:
+Find your config file and open it in any text editor:
 
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-Add this inside `"mcpServers"`:
+> **Can't find it?** In Claude Desktop, go to Settings (gear icon) > Developer > Edit Config.
+
+Paste this as the entire file contents:
 
 ```json
 {
   "mcpServers": {
     "synapse": {
       "command": "python",
-      "args": ["C:/path/to/Synapse/mcp_server.py"]
+      "args": ["-m", "synapse.mcp_server"]
     }
   }
 }
 ```
 
-Restart Claude Desktop. You'll see 43 new tools in the tool picker.
+> **Already have other MCP servers?** Just add the `"synapse": { ... }` block inside your existing `"mcpServers"`.
+
+Save the file and **restart Claude Desktop**. You'll see 43 new tools appear in the tool picker (the hammer icon).
 
 <br>
 
-#### Step 5 &mdash; Try it
+**Claude Code** (terminal)
 
-With Houdini open and the server running, say something to Claude like:
+Run this once from any folder:
+
+```bash
+claude mcp add synapse -- python -m synapse.mcp_server
+```
+
+Done. The tools are available in every Claude Code session.
+
+<br>
+
+#### Step 4 &mdash; Try it
+
+With Houdini open and the server running, say something to Claude:
 
 > *"What's in my scene right now?"*
 
@@ -160,7 +148,11 @@ or
 
 > *"Create a sphere and a distant light, then capture the viewport so I can see it."*
 
-Claude will use Synapse to read your scene, create nodes, adjust parameters, and show you the result. Everything happens in real time.
+or
+
+> *"Set up three-point lighting for my character."*
+
+Claude will use Synapse to read your scene, create nodes, adjust parameters, and show you the result. Everything happens live inside your Houdini session.
 
 <br>
 
@@ -240,7 +232,7 @@ Then in Houdini: **Windows > Python Panel > Synapse**.
 Synapse supports optional Fernet (AES-128-CBC + HMAC-SHA256) encryption for all data at rest — memory, audit logs, gate proposals, and markdown files.
 
 ```bash
-pip install -e ".[encryption]"
+pip install synapse-houdini[encryption]
 ```
 
 **Key management** (priority order):
@@ -258,13 +250,13 @@ Encryption is transparent: existing plaintext `.synapse/` directories load witho
 
 | Problem | Fix |
 |---------|-----|
-| `pip` not found | Use `python -m pip` instead of bare `pip` |
-| `git` not found | Download the ZIP from GitHub instead, or install [Git for Windows](https://git-scm.com/) |
-| Server won't start | Make sure nothing else is using port 9999. You can change it: `SynapseServer(port=9998)` |
+| `pip` not found | Use `python -m pip install synapse-houdini` instead of bare `pip` |
+| `ModuleNotFoundError: synapse` | Make sure you ran `pip install synapse-houdini` first |
+| Server won't start in Houdini | Make sure nothing else is using port 9999. You can change it: `SynapseServer(port=9998)` |
 | Claude can't connect | Check that the server is running in Houdini *before* talking to Claude |
-| `ModuleNotFoundError` | Make sure you ran `pip install -e ".[websocket,mcp]"` from inside the Synapse folder |
 | Tools don't appear in Claude Desktop | Restart Claude Desktop after editing the config file |
 | Wrong Python version | Synapse needs Python 3.9+. Run `python --version` to check |
+| Already have MCP servers configured | Add `"synapse": { ... }` inside your existing `"mcpServers"` block &mdash; don't replace the whole file |
 
 ## Architecture
 
