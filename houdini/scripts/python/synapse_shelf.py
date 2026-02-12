@@ -499,17 +499,72 @@ def generate_docs():
         )
 
 
+def _pick_project_folder(default_path):
+    """Show a folder picker dialog for project setup. Returns chosen path or None."""
+    chosen = hou.ui.selectFile(
+        start_directory=default_path,
+        title="Choose Synapse Project Folder",
+        file_type=hou.fileType.Directory,
+        chooser_mode=hou.fileChooserMode.Read,
+    )
+    if not chosen:
+        return None
+    # hou.ui.selectFile returns a path with trailing slash sometimes
+    chosen = chosen.rstrip("/").rstrip("\\")
+    # Expand Houdini variables ($HIP, $JOB, etc.)
+    chosen = hou.text.expandString(chosen)
+    return chosen
+
+
 def project_setup():
     """Initialize SYNAPSE project structure for the current scene.
 
-    Creates claude/ directories, seeds memory files, loads existing context,
-    and copies handshake payload to clipboard. Idempotent -- safe to run
-    multiple times.
+    On first run (no existing claude/ directory), prompts the user to choose
+    a project folder. On subsequent runs, loads existing context silently.
+    Copies handshake payload to clipboard.
     """
     hip_path = hou.hipFile.path()
     hip_dir = os.path.dirname(hip_path)
     hip_name = hou.hipFile.basename()
     job_path = hou.getenv("JOB", hip_dir)
+
+    # Detect unsaved/untitled scene
+    is_untitled = "untitled" in hip_path.lower() and not os.path.isfile(hip_path)
+
+    # Check if project structure already exists
+    existing_project = os.path.join(job_path, "claude")
+    first_run = not os.path.isdir(existing_project)
+
+    if first_run:
+        # First time -- prompt for project folder
+        if is_untitled:
+            msg = (
+                "Scene hasn't been saved yet.\n\n"
+                "Pick a project folder for Synapse memory,\n"
+                "or save your scene first and try again."
+            )
+        else:
+            msg = (
+                "First time setup for this project.\n\n"
+                "Pick the project folder where Synapse\n"
+                "will store memory and context files.\n\n"
+                "A 'claude/' directory will be created there."
+            )
+        hou.ui.displayMessage(msg, title="Synapse Project Setup")
+
+        default_dir = job_path if not is_untitled else os.path.expanduser("~")
+        chosen = _pick_project_folder(default_dir)
+
+        if chosen is None:
+            _notify(
+                "Project Setup",
+                "Setup cancelled -- no folder selected.",
+                hou.severityType.Warning,
+            )
+            return
+
+        job_path = chosen
+    # else: claude/ exists, use it silently
 
     # Try the installed synapse package first
     try:
@@ -522,9 +577,10 @@ def project_setup():
     except ImportError:
         # Synapse package not installed -- basic directory setup
         project_dir = os.path.join(job_path, "claude")
-        scene_dir = os.path.join(hip_dir, "claude")
+        scene_dir = os.path.join(hip_dir, "claude") if not is_untitled else project_dir
         os.makedirs(project_dir, exist_ok=True)
-        os.makedirs(scene_dir, exist_ok=True)
+        if scene_dir != project_dir:
+            os.makedirs(scene_dir, exist_ok=True)
         paths = {"project_dir": project_dir, "scene_dir": scene_dir}
         ctx = {
             "summary": "Synapse package not installed -- basic setup only.",
@@ -538,9 +594,10 @@ def project_setup():
             hou.severityType.Warning,
         )
         project_dir = os.path.join(job_path, "claude")
-        scene_dir = os.path.join(hip_dir, "claude")
+        scene_dir = os.path.join(hip_dir, "claude") if not is_untitled else project_dir
         os.makedirs(project_dir, exist_ok=True)
-        os.makedirs(scene_dir, exist_ok=True)
+        if scene_dir != project_dir:
+            os.makedirs(scene_dir, exist_ok=True)
         paths = {"project_dir": project_dir, "scene_dir": scene_dir}
         ctx = {"summary": "Error loading memory.", "agent": {}}
 
@@ -563,7 +620,9 @@ def project_setup():
 
     if _copy_to_clipboard(payload):
         agent = ctx.get("agent", {})
-        msg = "Project structure ready -- context copied to clipboard."
+        msg = "Project structure ready at:\n{}\n\nContext copied to clipboard.".format(
+            job_path
+        )
         if agent.get("has_suspended_tasks"):
             msg += "\n\n{} suspended tasks from last session.".format(
                 agent["suspended_count"]

@@ -226,13 +226,24 @@ QPushButton#connect_button:pressed {{
     background-color: rgba(0, 212, 255, 0.2);
 }}
 
-QLineEdit#ws_url_field {{
-    background: transparent;
+QPushButton#ws_path_button {{
+    background-color: transparent;
     color: {SLATE};
-    border: none;
+    border: 1px solid {GRAPHITE};
+    border-radius: 3px;
     font-family: {MONO_FAMILY};
     font-size: {SIZE_LABEL}px;
-    padding: 0px;
+    padding: {SPACE_XS}px {SPACE_SM}px;
+}}
+
+QPushButton#ws_path_button:hover {{
+    color: {SIGNAL};
+    border-color: {SIGNAL};
+    background-color: rgba(0, 212, 255, 0.1);
+}}
+
+QPushButton#ws_path_button:pressed {{
+    background-color: rgba(0, 212, 255, 0.2);
 }}
 
 /* ── Tooltip ─────────────────────────────────────────── */

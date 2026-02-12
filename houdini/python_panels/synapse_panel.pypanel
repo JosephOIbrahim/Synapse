@@ -263,20 +263,11 @@ class SynapsePanel(QtWidgets.QWidget):
 
         layout.addStretch()
 
-        self._ws_url_field = QtWidgets.QLineEdit(_WS_URL)
-        self._ws_url_field.setObjectName("ws_url_field")
-        self._ws_url_field.setReadOnly(True)
-        self._ws_url_field.setToolTip("Click to copy WebSocket URL")
-        self._ws_url_field.setFrame(False)
-        self._ws_url_field.setCursorPosition(0)
-        self._ws_url_field.installEventFilter(self)
-        if not _HAS_DESIGN:
-            self._ws_url_field.setStyleSheet(
-                "QLineEdit { background: transparent; color: #888888; "
-                "border: none; padding: 0px; font-family: Consolas; "
-                "font-size: 18px; }"
-            )
-        layout.addWidget(self._ws_url_field)
+        self._ws_path_btn = QtWidgets.QPushButton(_WS_URL)
+        self._ws_path_btn.setObjectName("ws_path_button")
+        self._ws_path_btn.setToolTip("Copy WebSocket URL to clipboard")
+        self._ws_path_btn.clicked.connect(self._on_copy_ws_path)
+        layout.addWidget(self._ws_path_btn)
 
         return frame
 
@@ -314,16 +305,14 @@ class SynapsePanel(QtWidgets.QWidget):
         """Handle animated dot color change."""
         self._dot_label.setStyleSheet(f"color: {color};")
 
-    # ── Event Filter (click-to-copy URL) ──────────────────
+    # ── WS Path Copy ─────────────────────────────────────
 
-    def eventFilter(self, obj, event):
-        """Click on the WS URL field selects all and copies to clipboard."""
-        if obj is self._ws_url_field and event.type() == QtCore.QEvent.MouseButtonPress:
-            self._ws_url_field.selectAll()
-            if self._copy_text(_WS_URL):
-                self._log_activity("Copied: {}".format(_WS_URL), "success")
-            return True
-        return super().eventFilter(obj, event)
+    def _on_copy_ws_path(self):
+        """Copy the WebSocket URL to clipboard."""
+        if self._copy_text(_WS_URL):
+            self._log_activity("Copied: {}".format(_WS_URL), "success")
+        else:
+            self._log_activity("Couldn't copy WS path to clipboard", "error")
 
     @staticmethod
     def _copy_text(text):
