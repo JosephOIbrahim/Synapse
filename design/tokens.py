@@ -97,13 +97,13 @@ FONT_SANS_FALLBACKS = ("Instrument Sans", "Segoe UI", "sans-serif")
 FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 
 # Size scale (pixels, for Qt)
-# Tuned to match Houdini 21 native UI defaults (~11-13px base)
-SIZE_LABEL  = 11   # Tiny labels, numbers
-SIZE_SMALL  = 11   # Status text, metadata
-SIZE_UI     = 12   # Button labels, menu items
-SIZE_BODY   = 13   # Chat messages, descriptions
-SIZE_TITLE  = 16   # Section headers
-SIZE_HERO   = 22   # Panel title
+# 2x scale for 4K/high-DPI displays common in VFX workstations
+SIZE_LABEL  = 22   # Tiny labels, version, URL
+SIZE_SMALL  = 22   # Status text, metadata
+SIZE_UI     = 24   # Button labels, menu items
+SIZE_BODY   = 26   # Chat messages, descriptions
+SIZE_TITLE  = 32   # Section headers
+SIZE_HERO   = 44   # Panel title ("SYNAPSE")
 
 
 # ─────────────────────────────────────────────────────────────

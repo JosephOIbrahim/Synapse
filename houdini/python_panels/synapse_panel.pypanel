@@ -266,19 +266,16 @@ class SynapsePanel(QtWidgets.QWidget):
         self._ws_url_field = QtWidgets.QLineEdit(_WS_URL)
         self._ws_url_field.setObjectName("ws_url_field")
         self._ws_url_field.setReadOnly(True)
-        self._ws_url_field.setToolTip("WebSocket URL -- click to select, Ctrl+C to copy")
+        self._ws_url_field.setToolTip("Click to copy WebSocket URL")
         self._ws_url_field.setFrame(False)
-        font = self._ws_url_field.font()
-        font.setFamily(FONT_MONO if _HAS_DESIGN else "Consolas")
-        font.setPointSize(SIZE_SMALL if _HAS_DESIGN else 9)
-        self._ws_url_field.setFont(font)
-        self._ws_url_field.setStyleSheet(
-            "QLineEdit {{ background: transparent; color: {fg}; "
-            "border: none; padding: 0px; }}".format(
-                fg=SLATE if _HAS_DESIGN else "#666666"
-            )
-        )
         self._ws_url_field.setCursorPosition(0)
+        self._ws_url_field.installEventFilter(self)
+        if not _HAS_DESIGN:
+            self._ws_url_field.setStyleSheet(
+                "QLineEdit { background: transparent; color: #888888; "
+                "border: none; padding: 0px; font-family: Consolas; "
+                "font-size: 18px; }"
+            )
         layout.addWidget(self._ws_url_field)
 
         return frame
@@ -316,6 +313,39 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_dot_color(self, color):
         """Handle animated dot color change."""
         self._dot_label.setStyleSheet(f"color: {color};")
+
+    # ── Event Filter (click-to-copy URL) ──────────────────
+
+    def eventFilter(self, obj, event):
+        """Click on the WS URL field selects all and copies to clipboard."""
+        if obj is self._ws_url_field and event.type() == QtCore.QEvent.MouseButtonPress:
+            self._ws_url_field.selectAll()
+            if self._copy_text(_WS_URL):
+                self._log_activity("Copied: {}".format(_WS_URL), "success")
+            return True
+        return super().eventFilter(obj, event)
+
+    @staticmethod
+    def _copy_text(text):
+        """Copy text to clipboard via clip.exe (Windows) or Qt fallback."""
+        import platform, subprocess
+        if platform.system() == "Windows":
+            try:
+                p = subprocess.run(
+                    ["clip"], input=text.encode("utf-8"),
+                    creationflags=0x08000000, timeout=5,
+                )
+                return p.returncode == 0
+            except Exception:
+                pass
+        try:
+            app = QtWidgets.QApplication.instance() or QtGui.QGuiApplication.instance()
+            if app:
+                app.clipboard().setText(text)
+                return True
+        except Exception:
+            pass
+        return False
 
     # ── Activity Log ─────────────────────────────────────
 

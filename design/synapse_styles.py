@@ -60,16 +60,16 @@ QFrame#title_bar {{
     background-color: {VOID};
     border-bottom: 1px solid {GRAPHITE};
     padding: {SPACE_SM}px {SPACE_MD}px;
-    min-height: 40px;
-    max-height: 40px;
+    min-height: 64px;
+    max-height: 64px;
 }}
 
 QLabel#title_label {{
     color: {WHITE};
     font-family: {MONO_FAMILY};
-    font-size: {SIZE_TITLE}px;
+    font-size: {SIZE_HERO}px;
     font-weight: 600;
-    letter-spacing: 2px;
+    letter-spacing: 4px;
 }}
 
 QLabel#version_label {{
@@ -83,15 +83,15 @@ QLabel#version_label {{
 QFrame#status_bar {{
     background-color: {CARBON};
     border-bottom: 1px solid {GRAPHITE};
-    padding: {SPACE_XS}px {SPACE_MD}px;
-    min-height: 32px;
-    max-height: 32px;
+    padding: {SPACE_SM}px {SPACE_MD}px;
+    min-height: 48px;
+    max-height: 48px;
 }}
 
 QLabel#status_dot {{
-    font-size: 10px;
-    min-width: 10px;
-    max-width: 10px;
+    font-size: 18px;
+    min-width: 18px;
+    max-width: 18px;
 }}
 
 QLabel#status_label {{
@@ -121,8 +121,8 @@ QPushButton.tool_button {{
     border-radius: 4px;
     font-family: {MONO_FAMILY};
     font-size: {SIZE_UI}px;
-    padding: {SPACE_XS}px {SPACE_SM}px;
-    min-height: 44px;
+    padding: {SPACE_SM}px;
+    min-height: 80px;
     text-align: center;
 }}
 
@@ -173,14 +173,14 @@ QTextEdit#activity_log {{
 
 QScrollBar:vertical {{
     background-color: {VOID};
-    width: 6px;
+    width: 10px;
     margin: 0px;
 }}
 
 QScrollBar::handle:vertical {{
     background-color: {GRAPHITE};
-    border-radius: 3px;
-    min-height: 20px;
+    border-radius: 5px;
+    min-height: 30px;
 }}
 
 QScrollBar::handle:vertical:hover {{
@@ -203,8 +203,8 @@ QFrame#connection_frame {{
     background-color: {CARBON};
     border-top: 1px solid {GRAPHITE};
     padding: {SPACE_SM}px {SPACE_MD}px;
-    min-height: 36px;
-    max-height: 36px;
+    min-height: 52px;
+    max-height: 52px;
 }}
 
 QPushButton#connect_button {{
@@ -215,7 +215,7 @@ QPushButton#connect_button {{
     font-family: {MONO_FAMILY};
     font-size: {SIZE_SMALL}px;
     padding: {SPACE_XS}px {SPACE_SM}px;
-    min-width: 80px;
+    min-width: 120px;
 }}
 
 QPushButton#connect_button:hover {{

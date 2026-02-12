@@ -29,13 +29,31 @@ if os.path.isdir(_SYNAPSE_PYTHON) and _SYNAPSE_PYTHON not in sys.path:
 # ── Helpers ────────────────────────────────────────────────────
 
 def _copy_to_clipboard(text):
-    """Copy text to system clipboard via Qt (available in Houdini)."""
+    """Copy text to system clipboard. Uses clip.exe on Windows (reliable
+    in Houdini's PySide6 environment), falls back to Qt."""
+    import platform
+    import subprocess
+
+    # Windows: clip.exe bypasses PySide6 QApplication.instance() issues
+    if platform.system() == "Windows":
+        try:
+            p = subprocess.run(
+                ["clip"],
+                input=text.encode("utf-8"),
+                creationflags=0x08000000,  # CREATE_NO_WINDOW
+                timeout=5,
+            )
+            if p.returncode == 0:
+                return True
+        except Exception:
+            pass
+
+    # Qt fallback (works on Linux/macOS, and older Houdini)
     try:
         try:
             from PySide6 import QtWidgets, QtGui
         except ImportError:
             from PySide2 import QtWidgets, QtGui
-        # Qt6: Houdini may register as QGuiApplication, not QApplication
         app = QtWidgets.QApplication.instance() or QtGui.QGuiApplication.instance()
         if app:
             app.clipboard().setText(text)
