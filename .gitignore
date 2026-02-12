@@ -61,3 +61,6 @@ backup/
 *.key
 *.jpg
 *.png
+
+# Claude Code local settings (permissions, session-specific)
+.claude/settings.local.json

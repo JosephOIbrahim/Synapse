@@ -10,6 +10,19 @@ Two repos make up the full system:
 - **`C:\Users\User\Synapse\`** — Core server, protocol, handlers, memory, routing, MCP bridge
 - **`C:\Users\User\.synapse\`** — Agent SDK (autonomous co-pilot), design system (tokens/icons/styles), Houdini shelf/panel integration, installer
 
+## Source vs. Deployed Files
+
+**Always edit the repo source — never the deployed copies.** The installer (`~/.synapse/install.py`) copies from source to Houdini prefs. Editing deployed files directly causes drift that gets overwritten on next install.
+
+| What | Source (edit here) | Deployed (never edit) |
+|------|-------------------|----------------------|
+| Core server | `SYNAPSE/python/synapse/` | `site-packages/synapse/` |
+| Shelf/panel | `~/.synapse/houdini/` | `~/houdini21.0/` |
+| Design system | `~/.synapse/design/` | (not deployed) |
+| Agent SDK | `~/.synapse/agent/` | (not deployed) |
+
+After editing source files, remind the user to redeploy if needed (`python ~/.synapse/install.py --verify`).
+
 ## Development Commands
 
 ```bash
@@ -199,6 +212,16 @@ Add/edit files in `rag/skills/houdini21-reference/*.md` (26 files, ~3,900 lines)
 - Key:fill ratio 4:1 = 2.0 stops difference (`log2(4)`)
 - USD exposure parm: `xn__inputsexposure_vya` (value), `xn__inputsexposure_control_wcb` = `"set"` (enable)
 - USD intensity parm: `xn__inputsintensity_i0a` — always 1.0
+
+## Rendering Guidelines
+
+When building or rendering Solaris scenes via MCP, follow a progressive validation pipeline — never jump straight to production settings:
+
+1. **Validate stage first**: After creating geometry, lights, and materials, query the stage to confirm all expected prims exist at correct paths. Use exact prim paths for material assignments (not wildcard patterns like `/**` unless verified).
+2. **Test render at low quality**: Start with 256x256 resolution, low pixel samples (4-8), no SSS, no displacement, no denoiser. Confirm the render completes and produces output before scaling up.
+3. **Scale incrementally**: Increase resolution and samples in steps. Enable expensive features (SSS, subsurface scattering, denoiser) one at a time.
+4. **Never use foreground rendering for heavy scenes**: `soho_foreground=1` blocks Houdini entirely — if the render is slow, the WebSocket server becomes unresponsive and the user must force-kill Houdini.
+5. **Verify output paths**: Set `picture` on the Karma LOP AND `outputimage` on the ROP. Check the output directory exists. Use `iconvert.exe` from `$HFS/bin/` for EXR-to-JPEG conversion.
 
 ## Wire Protocol
 
