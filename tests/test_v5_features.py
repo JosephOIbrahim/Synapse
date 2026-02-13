@@ -560,8 +560,8 @@ class TestRouterStatsAndRecipeDiscovery:
         """list_recipes handler should return all registered recipes."""
         handler = SynapseHandler()
         result = handler._handle_list_recipes({})
-        assert result["count"] == 24
-        assert len(result["recipes"]) == 24
+        assert result["count"] == 28
+        assert len(result["recipes"]) == 28
         # Should be sorted by name
         names = [r["name"] for r in result["recipes"]]
         assert names == sorted(names)
@@ -623,10 +623,10 @@ class TestKnowledgeBaseExpansion:
             assert len(index[key]["keywords"]) > 3
 
     def test_total_topic_count(self):
-        """Should have 33 topics (28 original + 5 developer/TD from HOUDINI21_RAG merge)."""
+        """Should have 38 topics (28 original + 5 developer/TD + 5 VEX corpus)."""
         index_path = _PROJECT_ROOT / "rag" / "documentation" / "_metadata" / "semantic_index.json"
         index = json.loads(index_path.read_text(encoding="utf-8"))
-        assert len(index) == 33
+        assert len(index) == 38
 
 
 # ==========================================================================

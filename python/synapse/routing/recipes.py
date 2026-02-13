@@ -1399,3 +1399,196 @@ class RecipeRegistry:
                 ),
             ],
         ))
+
+        # --- VEX Debug Wrangle ---
+        self.register(Recipe(
+            name="vex_debug_wrangle",
+            description=(
+                "Debug a VEX wrangle node: inspect inputs, check for "
+                "errors, read attribute state, and suggest fixes."
+            ),
+            triggers=[
+                r"^(?:debug|diagnose|check|inspect)\s+(?:the\s+)?(?:vex|wrangle|attribwrangle)(?:\s+(?:on|at|node)?\s*(?P<node>.+))?$",
+                r"^what(?:'s| is)\s+wrong\s+with\s+(?:the\s+)?(?:vex|wrangle)(?:\s+(?:on|at)?\s*(?P<node>.+))?$",
+                r"^fix\s+(?:the\s+)?(?:vex|wrangle)\s+(?:on|at)\s+(?P<node>.+)$",
+            ],
+            parameters=["node"],
+            gate_level=GateLevel.REVIEW,
+            category="utility",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "import json\n"
+                            "node_path = '{node}'.strip()\n"
+                            "# Find wrangle node\n"
+                            "node = None\n"
+                            "if node_path:\n"
+                            "    node = hou.node(node_path)\n"
+                            "if node is None:\n"
+                            "    # Try to find selected wrangle\n"
+                            "    sel = hou.selectedNodes()\n"
+                            "    for s in sel:\n"
+                            "        if 'wrangle' in s.type().name():\n"
+                            "            node = s\n"
+                            "            break\n"
+                            "if node is None:\n"
+                            "    result = {'error': 'No wrangle node found "
+                            "-- select one or provide a path'}\n"
+                            "else:\n"
+                            "    info = {'node': node.path(), "
+                            "'type': node.type().name()}\n"
+                            "    # Get snippet\n"
+                            "    snip_parm = node.parm('snippet') or "
+                            "node.parm('code')\n"
+                            "    if snip_parm:\n"
+                            "        info['snippet'] = snip_parm.eval()\n"
+                            "    # Get run-over class\n"
+                            "    class_parm = node.parm('class')\n"
+                            "    if class_parm:\n"
+                            "        class_map = {0: 'Detail', 1: 'Points', "
+                            "2: 'Vertices', 3: 'Primitives'}\n"
+                            "        info['run_over'] = class_map.get("
+                            "class_parm.eval(), 'unknown')\n"
+                            "    # Check errors\n"
+                            "    try:\n"
+                            "        errs = node.errors()\n"
+                            "        if errs:\n"
+                            "            info['errors'] = list(errs)\n"
+                            "    except Exception:\n"
+                            "        pass\n"
+                            "    try:\n"
+                            "        warns = node.warnings()\n"
+                            "        if warns:\n"
+                            "            info['warnings'] = list(warns)\n"
+                            "    except Exception:\n"
+                            "        pass\n"
+                            "    # Input geometry info\n"
+                            "    inputs = []\n"
+                            "    for i in range(4):\n"
+                            "        inp = node.input(i)\n"
+                            "        if inp:\n"
+                            "            geo = inp.geometry()\n"
+                            "            if geo:\n"
+                            "                attrs = [a.name() for a in "
+                            "geo.pointAttribs()]\n"
+                            "                inputs.append({'index': i, "
+                            "'node': inp.path(), 'points': "
+                            "len(geo.points()), 'attributes': attrs})\n"
+                            "    info['inputs'] = inputs\n"
+                            "    result = info\n"
+                        ),
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="debug",
+                ),
+            ],
+        ))
+
+        # --- Material Assign ---
+        self.register(Recipe(
+            name="material_assign",
+            description=(
+                "Assign a material to geometry prims on the USD stage."
+            ),
+            triggers=[
+                r"^assign\s+(?:material\s+)?(?P<material>[\w/]+)\s+to\s+(?P<target>.+)$",
+                r"^(?:bind|apply)\s+material\s+(?P<material>[\w/]+)\s+(?:to|on)\s+(?P<target>.+)$",
+            ],
+            parameters=["material", "target"],
+            gate_level=GateLevel.REVIEW,
+            category="materials",
+            steps=[
+                RecipeStep(
+                    action="assign_material",
+                    payload_template={
+                        "material_path": "{material}",
+                        "prim_pattern": "{target}",
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- VEX Noise Deformer ---
+        self.register(Recipe(
+            name="vex_noise_deformer",
+            description=(
+                "Create a wrangle that deforms geometry with layered "
+                "noise displacement along normals. Standard fBm pattern."
+            ),
+            triggers=[
+                r"^(?:create|make|add)\s+(?:a\s+)?noise\s+(?:deform(?:er|ation)?|displacement)(?:\s+(?:on|to|at|in)\s+(?P<parent>.+))?$",
+                r"^(?:create|make|add)\s+(?:a\s+)?(?:vex\s+)?(?:fbm|fractal)\s+(?:noise|deform)(?:\s+(?:on|to|at|in)\s+(?P<parent>.+))?$",
+            ],
+            parameters=["parent"],
+            gate_level=GateLevel.REVIEW,
+            category="geometry",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "parent_path = '{parent}'.strip()\n"
+                            "parent = hou.node(parent_path) if parent_path "
+                            "else None\n"
+                            "if parent is None:\n"
+                            "    sel = hou.selectedNodes()\n"
+                            "    if sel:\n"
+                            "        parent = sel[0].parent() if "
+                            "sel[0].type().category() == "
+                            "hou.sopNodeTypeCategory() else sel[0]\n"
+                            "    else:\n"
+                            "        parent = hou.node('/obj').createNode("
+                            "'geo', 'noise_deform')\n"
+                            "        parent.moveToGoodPosition()\n"
+                            "wrangle = parent.createNode('attribwrangle', "
+                            "'noise_deform')\n"
+                            "wrangle.parm('snippet').set("
+                            "'// fBm Noise Displacement\\n"
+                            "float n = 0;\\n"
+                            "float amp = chf(\"amplitude\");\\n"
+                            "float freq = chf(\"frequency\");\\n"
+                            "int octaves = chi(\"octaves\");\\n"
+                            "float a = 1.0;\\n"
+                            "float f = freq;\\n"
+                            "for (int i = 0; i < octaves; i++) {\\n"
+                            "    n += snoise(@P * f + @Time * "
+                            "chf(\"speed\")) * a;\\n"
+                            "    f *= 2.0;\\n"
+                            "    a *= 0.5;\\n"
+                            "}\\n"
+                            "@P += @N * n * amp;\\n')\n"
+                            "# Create channel references\n"
+                            "ptg = wrangle.parmTemplateGroup()\n"
+                            "ptg.append(hou.FloatParmTemplate("
+                            "'amplitude', 'Amplitude', 1, "
+                            "default_value=(0.5,)))\n"
+                            "ptg.append(hou.FloatParmTemplate("
+                            "'frequency', 'Frequency', 1, "
+                            "default_value=(2.0,)))\n"
+                            "ptg.append(hou.IntParmTemplate("
+                            "'octaves', 'Octaves', 1, "
+                            "default_value=(4,), min=1, max=8))\n"
+                            "ptg.append(hou.FloatParmTemplate("
+                            "'speed', 'Animation Speed', 1, "
+                            "default_value=(0.5,)))\n"
+                            "wrangle.setParmTemplateGroup(ptg)\n"
+                            "# Wire to last selected or first input\n"
+                            "sel = hou.selectedNodes()\n"
+                            "if sel and sel[0].parent() == parent:\n"
+                            "    wrangle.setInput(0, sel[0])\n"
+                            "wrangle.setDisplayFlag(True)\n"
+                            "wrangle.setRenderFlag(True)\n"
+                            "wrangle.moveToGoodPosition()\n"
+                            "result = {'node': wrangle.path()}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="deformer",
+                ),
+            ],
+        ))

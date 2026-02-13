@@ -675,6 +675,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
 
         Creates a temporary attribwrangle node, sets the VEX snippet,
         optionally wires an input geometry, and returns the node path.
+        Includes VEX error diagnosis when compilation or cooking fails.
         """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
@@ -682,6 +683,18 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         snippet = resolve_param(payload, "snippet")
         run_over = resolve_param_with_default(payload, "run_over", "Points")
         input_node = resolve_param_with_default(payload, "input_node", None)
+
+        # Pre-execution lint check
+        from ..routing.vex_diagnostics import (
+            lint_vex_snippet, diagnose_vex_error, format_diagnosis,
+        )
+        lint_issues = lint_vex_snippet(snippet)
+        warnings = []
+        if lint_issues:
+            warnings = [
+                {"line": d.line_number, "message": d.symptom, "fix": d.fix}
+                for d in lint_issues
+            ]
 
         # Find or create a working SOP context
         parent = None
@@ -691,7 +704,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
                 parent = src.parent()
 
         if parent is None:
-            # Default to /obj — create a temp geo container
+            # Default to /obj -- create a temp geo container
             obj = hou.node("/obj")
             parent = obj.createNode("geo", "synapse_vex_temp")
 
@@ -714,12 +727,47 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         wrangle.setDisplayFlag(True)
         wrangle.setRenderFlag(True)
 
-        return {
+        # Try to cook and capture any VEX errors
+        cook_errors = []
+        diagnosis_text = ""
+        try:
+            wrangle.cook(force=True)
+        except Exception as cook_exc:
+            error_msg = str(cook_exc)
+            cook_errors.append(error_msg)
+            # Run pattern-based diagnosis
+            diagnoses = diagnose_vex_error(error_msg, snippet, wrangle.path())
+            if diagnoses:
+                diagnosis_text = format_diagnosis(diagnoses, snippet)
+
+        # Also check node error state (Houdini may set errors without raising)
+        node_errors = []
+        try:
+            if wrangle.errors():
+                node_errors = list(wrangle.errors())
+                if not diagnosis_text and node_errors:
+                    all_errors = " | ".join(node_errors)
+                    diagnoses = diagnose_vex_error(all_errors, snippet, wrangle.path())
+                    if diagnoses:
+                        diagnosis_text = format_diagnosis(diagnoses, snippet)
+        except Exception:
+            pass
+
+        result = {
             "node": wrangle.path(),
             "snippet": snippet,
             "run_over": run_over,
             "class": class_val,
         }
+
+        if warnings:
+            result["warnings"] = warnings
+        if cook_errors or node_errors:
+            result["errors"] = cook_errors + node_errors
+        if diagnosis_text:
+            result["diagnosis"] = diagnosis_text
+
+        return result
     # =========================================================================
     # INTROSPECTION HANDLERS (Phase 1)
     # =========================================================================
