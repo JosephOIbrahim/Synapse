@@ -156,6 +156,165 @@ class TestKnowledgeIndex:
         assert isinstance(knowledge._agent_relevance, dict)
 
 
+class TestSchemaAdapter:
+    """Tests for nested-to-flat schema normalization."""
+
+    def test_flat_schema_passes_through(self):
+        """Flat SYNAPSE format should be returned unchanged."""
+        flat = {
+            "karma_rendering": {
+                "summary": "Karma setup",
+                "keywords": ["karma", "render"],
+            }
+        }
+        result = KnowledgeIndex._normalize_semantic_index(flat)
+        assert result == flat
+
+    def test_nested_schema_normalized(self):
+        """Nested HOUDINI21_RAG format should be flattened."""
+        nested = {
+            "semantic_index": {
+                "topics": {
+                    "pyro_simulation": {
+                        "primary_doc": "Pyro FX chain",
+                        "description": "sphere -> scatter -> pyrosolver",
+                        "keywords": ["pyro", "fire"],
+                        "agent_relevance": "fx_agent",
+                        "common_queries": [
+                            "how to set up pyro",
+                            "fire simulation chain",
+                        ],
+                    },
+                    "karma_rendering": {
+                        "primary_doc": "Karma XPU setup",
+                        "keywords": ["karma", "render"],
+                    },
+                }
+            }
+        }
+        result = KnowledgeIndex._normalize_semantic_index(nested)
+        assert len(result) == 2
+        assert "pyro_simulation" in result
+        assert "karma_rendering" in result
+        # primary_doc maps to summary
+        assert result["pyro_simulation"]["summary"] == "Pyro FX chain"
+        # description preserved
+        assert "pyrosolver" in result["pyro_simulation"]["description"]
+        # keywords preserved
+        assert result["pyro_simulation"]["keywords"] == ["pyro", "fire"]
+        # common_queries preserved
+        assert len(result["pyro_simulation"]["common_queries"]) == 2
+        # When no description, primary_doc used as description
+        assert result["karma_rendering"]["description"] == "Karma XPU setup"
+
+    def test_nested_schema_loads_in_index(self, tmp_path):
+        """KnowledgeIndex should handle nested schema end-to-end."""
+        meta_dir = tmp_path / "documentation" / "_metadata"
+        meta_dir.mkdir(parents=True)
+        nested = {
+            "semantic_index": {
+                "topics": {
+                    "rbd_simulation": {
+                        "primary_doc": "RBD fracture simulation",
+                        "keywords": ["rbd", "fracture", "bullet"],
+                    }
+                }
+            }
+        }
+        (meta_dir / "semantic_index.json").write_text(
+            json.dumps(nested), encoding="utf-8"
+        )
+        ki = KnowledgeIndex(rag_root=str(tmp_path))
+        assert ki.topic_count == 1
+        result = ki.lookup("rbd fracture simulation")
+        assert result.found
+
+    def test_empty_nested_topics(self):
+        """Nested format with empty topics should return empty dict."""
+        nested = {"semantic_index": {"topics": {}}}
+        result = KnowledgeIndex._normalize_semantic_index(nested)
+        assert result == {}
+
+    def test_non_dict_topic_skipped(self):
+        """Non-dict topic entries in nested format should be skipped."""
+        nested = {
+            "semantic_index": {
+                "topics": {
+                    "valid_topic": {
+                        "primary_doc": "Valid",
+                        "keywords": ["valid"],
+                    },
+                    "invalid_topic": "just a string",
+                }
+            }
+        }
+        result = KnowledgeIndex._normalize_semantic_index(nested)
+        assert len(result) == 1
+        assert "valid_topic" in result
+
+
+# ---------------------------------------------------------------------------
+# Common Queries: query -> expected topic resolution
+# ---------------------------------------------------------------------------
+
+# These fixtures validate that realistic artist queries resolve to the correct
+# topic. Ported from the HOUDINI21_RAG common_queries pattern.
+COMMON_QUERIES = [
+    # (query, expected_topic_substring)
+    ("what is the light intensity parameter name", "solaris_parameter"),
+    ("how to set up karma xpu rendering", "karma"),
+    ("pyro fire smoke simulation chain", "pyro"),
+    ("materialx base color roughness", "materialx"),
+    ("lighting setup exposure three point rig", "lighting"),
+    ("usd stage prim operations", "usd_stage"),
+    ("flip fluid simulation setup", "flip"),
+    ("rbd bullet fracture", "rbd"),
+    ("vellum cloth sim", "vellum"),
+    ("tops wedge parameter sweep", "tops"),
+    ("solaris lop node types", "solaris_node"),
+    ("camera setup focal length", "camera"),
+    ("sop geometry operations", "sop"),
+    ("vex attribute wrangle", "vex"),
+    ("scene assembly merge reference", "scene_assembly"),
+    ("ocean spectrum wave", "ocean"),
+    ("terrain heightfield erode", "terrain"),
+    ("kinefx skeleton rig", "kinefx"),
+    ("uv unwrap flatten", "uv"),
+    ("sop solver feedback loop", "sop_solver"),
+    ("cops compositing", "cops"),
+    ("common houdini errors", "common_errors"),
+    ("houdini expressions ch chf", "expressions"),
+    ("pipeline integration alembic usd", "pipeline"),
+    # Developer/TD queries (merged from HOUDINI21_RAG)
+    ("hapi engine session initialize", "hapi"),
+    ("hdk GU_Detail compiled SOP", "hdk"),
+    ("hydra render delegate plugin", "hydra"),
+    ("usd schema registration pluginfo", "usd_schema"),
+    ("pxr pluginpath discovery", "pxr_plugin"),
+]
+
+
+class TestCommonQueries:
+    """Validate that common artist/TD queries resolve to correct topics."""
+
+    @pytest.fixture
+    def real_knowledge(self):
+        rag_path = ROOT / "rag"
+        if not (rag_path / "documentation" / "_metadata" / "semantic_index.json").exists():
+            pytest.skip("Real RAG content not available")
+        return KnowledgeIndex(rag_root=str(rag_path))
+
+    @pytest.mark.parametrize("query,expected_topic", COMMON_QUERIES)
+    def test_common_query_resolves(self, real_knowledge, query, expected_topic):
+        """Each common query should resolve to a topic containing the expected substring."""
+        result = real_knowledge.lookup(query)
+        assert result.found, f"Query '{query}' should find a result"
+        assert expected_topic in result.topic.lower(), (
+            f"Query '{query}' resolved to '{result.topic}', "
+            f"expected topic containing '{expected_topic}'"
+        )
+
+
 class TestKnowledgeLookupResult:
     """Tests for the KnowledgeLookupResult dataclass."""
 

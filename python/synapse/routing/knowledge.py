@@ -64,7 +64,13 @@ class KnowledgeIndex:
             self._load_agent_relevance()
 
     def _load_semantic_index(self):
-        """Load semantic_index.json and build inverted keyword index."""
+        """Load semantic_index.json and build inverted keyword index.
+
+        Supports two schema formats:
+          - SYNAPSE flat: {"topic": {"summary": ..., "keywords": [...]}}
+          - HOUDINI21_RAG nested: {"semantic_index": {"topics": {"topic": {...}}}}
+        Nested format is auto-detected and normalized to flat.
+        """
         assert self._rag_root is not None
         index_path = self._rag_root / "documentation" / "_metadata" / "semantic_index.json"
         if not index_path.exists():
@@ -72,9 +78,12 @@ class KnowledgeIndex:
 
         try:
             with open(index_path, "r", encoding="utf-8") as f:
-                self._semantic_index = json.load(f)
+                raw = json.load(f)
         except (json.JSONDecodeError, OSError):
             return
+
+        # Schema adapter: detect nested format and normalize
+        self._semantic_index = self._normalize_semantic_index(raw)
 
         # Build inverted keyword index: word → [topic_names]
         for topic_name, topic_data in sorted(self._semantic_index.items()):
@@ -89,6 +98,48 @@ class KnowledgeIndex:
                     self._keyword_to_topics[kw_lower] = []
                 if topic_name not in self._keyword_to_topics[kw_lower]:
                     self._keyword_to_topics[kw_lower].append(topic_name)
+
+    @staticmethod
+    def _normalize_semantic_index(raw: dict) -> dict:
+        """Normalize nested RAG schema to flat SYNAPSE format.
+
+        Nested format (HOUDINI21_RAG):
+            {"semantic_index": {"topics": {"topic_name": {"primary_doc": ..., ...}}}}
+
+        Flat format (SYNAPSE):
+            {"topic_name": {"summary": ..., "keywords": [...]}}
+
+        If already flat, returns as-is.
+        """
+        # Detect nested format: has "semantic_index" key with "topics" inside
+        if "semantic_index" in raw and isinstance(raw.get("semantic_index"), dict):
+            nested = raw["semantic_index"]
+            topics = nested.get("topics", {})
+            if isinstance(topics, dict):
+                flat: Dict[str, Any] = {}
+                for topic_name, topic_data in sorted(topics.items()):
+                    if not isinstance(topic_data, dict):
+                        continue
+                    entry: Dict[str, Any] = {}
+                    # Map nested fields to flat equivalents
+                    if "primary_doc" in topic_data:
+                        entry["summary"] = topic_data["primary_doc"]
+                    if "description" in topic_data:
+                        entry["description"] = topic_data["description"]
+                    elif "primary_doc" in topic_data:
+                        entry["description"] = topic_data["primary_doc"]
+                    if "keywords" in topic_data:
+                        entry["keywords"] = topic_data["keywords"]
+                    if "reference_file" in topic_data:
+                        entry["reference_file"] = topic_data["reference_file"]
+                    # Preserve common_queries for test fixtures
+                    if "common_queries" in topic_data:
+                        entry["common_queries"] = topic_data["common_queries"]
+                    flat[topic_name] = entry
+                return flat
+
+        # Already flat format (or unrecognized) — return as-is
+        return raw
 
     def _load_reference_files(self):
         """Load .md reference files from skills directory and pre-index headers."""

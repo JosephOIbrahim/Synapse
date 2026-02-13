@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Synapse v5.3.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 43 MCP tools to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, and viewport/render capture.
+Synapse v5.4.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 43 MCP tools to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, and viewport/render capture.
 
 Two repos make up the full system:
 - **`C:\Users\User\Synapse\`** — Core server, protocol, handlers, memory, routing, MCP bridge
@@ -41,18 +41,36 @@ ls python/synapse/mcp/server.py python/synapse/mcp/tools.py python/synapse/mcp/s
 
 ```
 IF any MCP gate file is missing:
-    → ACTIVE SPRINT: MCP Protocol Conformance
+    → ACTIVE SPRINT: A (MCP Protocol Conformance)
     → Read: docs/mcp/SYNAPSE_MCP_SPRINT.md
     → TOPS status: PARKED (do NOT touch TOPS/PDG files)
 
 ELSE IF MCP gates pass BUT tops tools not registered:
     (Check: grep -l "tops_cook_node\|tops_get_work_items" python/synapse/mcp/tools.py → no match)
-    → ACTIVE SPRINT: TOPS/PDG Integration
+    → ACTIVE SPRINT: B (TOPS/PDG Integration)
     → Read: docs/tops/TOPS_SPRINT.md
     → Read: docs/tops/PARKING_SNAPSHOT.md (resume context)
     → Agent orchestration: ~/.claude/agent.md
 
-ELSE (both MCP and TOPS gates pass):
+ELSE IF Agent SDK v2 gate files missing:
+    (Check: ls ~/.synapse/agent/synapse_planner.py ~/.synapse/agent/synapse_checkpoint.py
+            ~/.synapse/agent/tests/test_planner.py → any missing)
+    → ACTIVE SPRINT: C (Agent SDK v2)
+    → Read: docs/agent/AGENT_V2_SPRINT.md
+
+ELSE IF Studio deployment gate files missing:
+    (Check: ls python/synapse/server/rbac.py python/synapse/server/sessions.py
+            docs/studio/DEPLOYMENT.md → any missing)
+    → ACTIVE SPRINT: D (Studio Deployment)
+    → Read: docs/studio/STUDIO_SPRINT.md
+
+ELSE IF Monitoring gate files missing:
+    (Check: ls python/synapse/server/live_metrics.py python/synapse/server/dashboard.py
+            docs/monitoring/SETUP.md → any missing)
+    → ACTIVE SPRINT: E (Real-Time Monitoring)
+    → Read: docs/monitoring/MONITORING_SPRINT.md
+
+ELSE (all sprint gates pass):
     → NO ACTIVE SPRINT — normal development mode
     → All new functionality follows "Adding New Functionality" below
 ```
@@ -152,19 +170,112 @@ on how to structure TOPS implementation as agent work items. See `~/.claude/agen
 
 ---
 
+### Sprint C: Agent SDK v2
+
+**Activates when:** Sprints A+B complete AND any Agent SDK v2 gate file is missing.
+
+> **Goal:** Evolve the autonomous VFX co-pilot from a linear tool-use loop into a planning-capable,
+> self-healing agent with TOPS integration, checkpoint/resume, and viewport-driven verification.
+>
+> **Prerequisite:** TOPS Sprint must be complete (TOPS tools available for agent orchestration).
+
+#### Sprint C Gate Files
+
+```
+~/.synapse/agent/synapse_planner.py      — Multi-goal decomposition
+~/.synapse/agent/synapse_checkpoint.py   — State persistence and resume
+~/.synapse/agent/tests/test_planner.py   — Planner tests (must pass)
+```
+
+#### Sprint C Phases
+
+| Phase | Scope | Verification |
+|-------|-------|-------------|
+| **Phase 1 — Tools** | Add TOPS + viewport + batch tools to agent | 8 new tools in `synapse_tools.py` |
+| **Phase 2 — Planner** | Multi-goal decomposition, sub-goal execution | `synapse_planner.py` tests pass |
+| **Phase 3 — Checkpoint** | Save/restore, resume interrupted tasks | `synapse_checkpoint.py` tests pass |
+| **Phase 4 — Self-Heal** | Retry logic, viewport verification, TOPS recovery | Integration tests pass |
+
+#### Sprint C Completion Gate
+
+Sprint C is complete when all 3 gate files exist AND `python -m pytest ~/.synapse/agent/tests/test_planner.py -v` passes.
+
+**Full reference:** `docs/agent/AGENT_V2_SPRINT.md`
+
+---
+
+### Sprint D: Studio Deployment
+
+**Activates when:** Sprints A+B+C complete AND any Studio gate file is missing.
+
+> **Goal:** Multi-user auth, RBAC, remote access over LAN/VPN, deployment automation.
+> Studios run one SYNAPSE instance per Houdini seat, managed centrally.
+>
+> **Prerequisite:** Agent SDK v2 must be complete (checkpoint/resume for network interruptions).
+
+#### Sprint D Gate Files
+
+```
+python/synapse/server/rbac.py          — Role-based access control
+python/synapse/server/sessions.py      — Multi-user session management
+docs/studio/DEPLOYMENT.md              — Studio deployment guide
+```
+
+#### Sprint D Phases
+
+| Phase | Scope | Verification |
+|-------|-------|-------------|
+| **Phase 1 — RBAC** | Roles (viewer/artist/lead/admin), permission matrix | `test_rbac.py` passes |
+| **Phase 2 — Multi-User** | Session manager, per-user audit, user directory | `test_sessions.py` passes |
+| **Phase 3 — Remote** | LAN binding, TLS option, deploy config | `DEPLOYMENT.md` exists |
+| **Phase 4 — Tooling** | CLI user management, deploy scripts | Integration tests pass |
+
+#### Sprint D Completion Gate
+
+Sprint D is complete when all 3 gate files exist AND `python -m pytest tests/test_rbac.py tests/test_sessions.py -v` passes.
+
+**Full reference:** `docs/studio/STUDIO_SPRINT.md`
+
+---
+
+### Sprint E: Real-Time Monitoring
+
+**Activates when:** Sprints A+B+C+D complete AND any Monitoring gate file is missing.
+
+> **Goal:** Live metrics dashboard streaming scene health, render progress, cook times,
+> and routing statistics. Artists monitor their session at a glance.
+>
+> **Prerequisite:** Studio Deployment must be complete (RBAC controls who can configure alerts).
+
+#### Sprint E Gate Files
+
+```
+python/synapse/server/live_metrics.py   — Metrics aggregator
+python/synapse/server/dashboard.py      — Embedded web dashboard
+docs/monitoring/SETUP.md                — Monitoring setup guide
+```
+
+#### Sprint E Phases
+
+| Phase | Scope | Verification |
+|-------|-------|-------------|
+| **Phase 1 — Collector** | Metrics aggregator, push via WebSocket | `test_live_metrics.py` passes |
+| **Phase 2 — Dashboard** | Web dashboard HTML/JS, hwebserver route | `/dashboard` serves HTML |
+| **Phase 3 — Alerts** | Threshold rules, alert manager | Alert rules configurable |
+| **Phase 4 — Polish** | Render progress, TOPS throughput, Prometheus export | `SETUP.md` exists |
+
+#### Sprint E Completion Gate
+
+Sprint E is complete when all 3 gate files exist AND `python -m pytest tests/test_live_metrics.py -v` passes.
+
+**Full reference:** `docs/monitoring/MONITORING_SPRINT.md`
+
+---
+
 ### Sprint Queue (Future)
 
-When both Sprint A and Sprint B are complete, the orchestrator enters normal development mode.
-Potential future sprints can be added here with their own filesystem gates:
-
-```
-Sprint C: Agent SDK v2 (autonomous VFX co-pilot improvements)
-Sprint D: Studio deployment (multi-user auth, remote access, RBAC)
-Sprint E: Real-time monitoring (live scene metrics dashboard)
-```
-
-To add a new sprint: define filesystem gates, write a sprint doc in `docs/`, add a gate
-check block above, and the orchestrator picks it up automatically.
+To add a new sprint: define filesystem gates, write a sprint doc in `docs/<name>/`, add a gate
+check block in Step 2 above, and add a sprint section here. The orchestrator picks it up automatically.
 
 ---
 
@@ -346,7 +457,7 @@ GET  /mcp   →  Opens optional SSE stream for server→client messages (Phase 3
     },
     "serverInfo": {
         "name": "synapse",
-        "version": "5.3.0"
+        "version": "5.4.0"
     },
     "instructions": (
         "SYNAPSE is a bridge between AI agents and SideFX Houdini. "
