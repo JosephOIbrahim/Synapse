@@ -212,14 +212,27 @@ class MCPServer:
         return {"tools": get_tools()}
 
     def _handle_tools_call(self, params: dict) -> dict:
-        """Dispatch a tool call to SynapseHandler."""
+        """Dispatch a tool call to SynapseHandler.
+
+        Tool calls go through hdefereval.executeInMainThreadWithResult()
+        because hwebserver @urlHandler callbacks run on worker threads,
+        but hou.* calls require the main thread.
+        """
         tool_name = params.get("name")
         if not tool_name:
             raise JsonRpcInvalidParams("Missing 'name' in tools/call params")
 
         arguments = params.get("arguments", {})
         handler = self._get_handler()
-        return dispatch_tool(handler, tool_name, arguments)
+
+        try:
+            import hdefereval
+            return hdefereval.executeInMainThreadWithResult(
+                dispatch_tool, handler, tool_name, arguments
+            )
+        except ImportError:
+            # Not inside Houdini (testing) — call directly
+            return dispatch_tool(handler, tool_name, arguments)
 
     def _handle_ping(self) -> dict:
         """MCP ping — empty result."""
