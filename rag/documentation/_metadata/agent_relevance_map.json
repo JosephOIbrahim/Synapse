@@ -36,5 +36,9 @@
   "sop_solver_loops": "sop_agent",
   "render_analysis": "render_agent",
   "wire_dynamics": "fx_agent",
-  "pipeline_integration": "developer_agent"
+  "pipeline_integration": "developer_agent",
+  "usd_composition_reference": "usd_agent",
+  "karma_render_reference": "render_agent",
+  "materialx_reference": "material_agent",
+  "camera_workflow_reference": "camera_agent"
 }
