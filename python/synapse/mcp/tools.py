@@ -598,6 +598,15 @@ _TOOL_DEFS: list[tuple] = [
     ("synapse_list_recipes", "list_recipes", _passthrough,
      "List all available recipes with names, descriptions, and trigger patterns.",
      _EMPTY_SCHEMA, True, False, True),
+
+    # -- Live Metrics (Sprint E) --
+    ("synapse_live_metrics", "get_live_metrics", _identity,
+     "Get live metrics snapshot: scene health, routing, resilience, sessions. "
+     "Pass history_count > 0 for historical snapshots.",
+     {"type": "object", "properties": {
+         "history_count": {"type": "integer", "description": "Historical snapshots to return (0 = latest)"},
+     }, "required": []},
+     True, False, True),
 ]
 
 

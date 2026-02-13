@@ -1588,6 +1588,24 @@ async def list_tools():
                 "required": [],
             },
         ),
+        Tool(
+            name="synapse_live_metrics",
+            description=(
+                "Get live metrics snapshot: scene health, routing performance, "
+                "resilience state, and session stats. Pass history_count > 0 for "
+                "historical snapshots (newest first)."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "history_count": {
+                        "type": "integer",
+                        "description": "Number of historical snapshots to return (0 = latest only)",
+                    },
+                },
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -1704,6 +1722,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_metrics":       ("get_metrics",     _passthrough),
     "synapse_router_stats":  ("router_stats",    _passthrough),
     "synapse_list_recipes":  ("list_recipes",    _passthrough),
+    "synapse_live_metrics":  ("get_live_metrics", _identity),
     "synapse_project_setup": ("project_setup",   _identity),
     "synapse_memory_write":  ("memory_write",    _identity),
     "synapse_memory_query":  ("memory_query",    _identity),

@@ -172,6 +172,16 @@ class SynapseServer:
             self._backpressure = None
             self._health_monitor = None
 
+        # Live metrics aggregator (Sprint E)
+        from .live_metrics import MetricsAggregator
+        self._metrics_aggregator = MetricsAggregator(
+            router=getattr(self, "_router", None),
+            health_monitor=self._health_monitor,
+            session_manager=self._session_manager,
+            server=self,
+        )
+        self._handler.set_metrics_aggregator(self._metrics_aggregator)
+
         # Latency tracking (exponential moving average)
         self._avg_latency = 0.0
         self._latency_alpha = 0.2  # EMA smoothing factor
@@ -212,6 +222,9 @@ class SynapseServer:
         if self._watchdog:
             self._watchdog.start()
 
+        # Start live metrics collector
+        self._metrics_aggregator.start()
+
         # Start server in background thread
         self._thread = threading.Thread(
             target=self._run_server,
@@ -232,6 +245,10 @@ class SynapseServer:
         # Stop watchdog
         if self._watchdog:
             self._watchdog.stop()
+
+        # Stop live metrics collector
+        if self._metrics_aggregator:
+            self._metrics_aggregator.stop()
 
         # Stop the sync server (this closes the listening socket)
         if self._server:

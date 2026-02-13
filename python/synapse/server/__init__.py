@@ -38,6 +38,12 @@ try:
 except ImportError:
     pass
 
+# Sprint E: Real-Time Monitoring (separate try for same reason)
+try:
+    from .live_metrics import MetricsAggregator, MetricSnapshot
+except ImportError:
+    pass
+
 __all__ = [
     'SynapseServer',
     'SynapseHandler',
@@ -57,6 +63,9 @@ __all__ = [
     'WEBSOCKETS_AVAILABLE',
     # Sprint D: Studio Deployment
     'Role',
+    # Sprint E: Real-Time Monitoring
+    'MetricsAggregator',
+    'MetricSnapshot',
     'check_permission',
     'is_rbac_enabled',
     'SessionManager',

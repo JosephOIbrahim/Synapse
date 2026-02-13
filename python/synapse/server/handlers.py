@@ -139,7 +139,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "inspect_selection", "inspect_scene", "inspect_node",
     "read_material",
     "validate_frame",
-    "get_metrics", "router_stats", "list_recipes",
+    "get_metrics", "router_stats", "list_recipes", "get_live_metrics",
     "tops_get_work_items", "tops_get_dependency_graph", "tops_get_cook_stats",
     "tops_query_items",
     "tops_diagnose", "tops_pipeline_status",
@@ -394,6 +394,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         reg.register("get_metrics", self._handle_get_metrics)
         reg.register("router_stats", self._handle_router_stats)
         reg.register("list_recipes", self._handle_list_recipes)
+        reg.register("get_live_metrics", self._handle_get_live_metrics)
 
         # Memory operations (new names)
         reg.register("context", self._handle_memory_context)
@@ -834,10 +835,19 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         except Exception:
             pass
 
+        live_snapshot = None
+        agg = getattr(self, "_metrics_aggregator", None)
+        if agg:
+            snap = agg.latest()
+            if snap:
+                from .live_metrics import snapshot_to_dict
+                live_snapshot = snapshot_to_dict(snap)
+
         text = render_prometheus(
             router_stats=router_stats,
             circuit_breaker_state=cb_state,
             memory_entry_count=memory_count,
+            live_snapshot=live_snapshot,
         )
         return {"format": "prometheus", "text": text}
 
@@ -865,6 +875,30 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
             "count": len(recipes),
             "recipes": sorted(recipes, key=lambda r: r["name"]),
         }
+
+    # ------------------------------------------------------------------
+    # Live Metrics (Sprint E)
+    # ------------------------------------------------------------------
+
+    def set_metrics_aggregator(self, aggregator) -> None:
+        """Inject the MetricsAggregator instance (called by SynapseServer)."""
+        self._metrics_aggregator = aggregator
+
+    def _handle_get_live_metrics(self, payload: Dict) -> Dict:
+        """Return live metrics snapshot or historical snapshots."""
+        if not getattr(self, "_metrics_aggregator", None):
+            return {"error": "Metrics aggregator not running"}
+
+        count = payload.get("history_count", 0)
+        if count > 0:
+            return {"snapshots": self._metrics_aggregator.history(count)}
+
+        snapshot = self._metrics_aggregator.latest()
+        if not snapshot:
+            return {"error": "No metrics collected yet"}
+
+        from .live_metrics import snapshot_to_dict
+        return snapshot_to_dict(snapshot)
 
     def _handle_knowledge_lookup(self, payload: Dict) -> Dict:
         """Look up Houdini knowledge from the RAG index.
