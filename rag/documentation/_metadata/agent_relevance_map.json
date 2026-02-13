@@ -40,5 +40,20 @@
   "usd_composition_reference": "usd_agent",
   "karma_render_reference": "render_agent",
   "materialx_reference": "material_agent",
-  "camera_workflow_reference": "camera_agent"
+  "camera_workflow_reference": "camera_agent",
+  "joy_of_vex_quaternions": "sop_agent",
+  "joy_of_vex_trigonometry": "sop_agent",
+  "joy_of_vex_vector_math": "sop_agent",
+  "joy_of_vex_deformation": "sop_agent",
+  "joy_of_vex_geometry": "sop_agent",
+  "joy_of_vex_surface_sampling": "sop_agent",
+  "joy_of_vex_nearpoints": "sop_agent",
+  "joy_of_vex_pcopen": "sop_agent",
+  "joy_of_vex_color": "sop_agent",
+  "joy_of_vex_ramps": "sop_agent",
+  "joy_of_vex_geometry_creation": "sop_agent",
+  "joy_of_vex_flow_control": "sop_agent",
+  "joy_of_vex_noise": "sop_agent",
+  "joy_of_vex_tips": "sop_agent",
+  "joy_of_vex_attribs": "sop_agent"
 }
