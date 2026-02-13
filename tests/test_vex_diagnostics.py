@@ -22,6 +22,7 @@ if _PROJ not in sys.path:
 
 from synapse.routing.vex_diagnostics import (
     diagnose_vex_error,
+    diagnose_vex_symptom,
     format_diagnosis,
     lint_vex_snippet,
     VexDiagnosis,
@@ -280,3 +281,74 @@ class TestDiagnosisPipeline:
         # Should pick up the readonly write from lint
         assert len(diags) >= 1
         assert any(d.category == "attribute" for d in diags)
+
+
+# ==========================================================================
+# Natural-Language Symptom Matching
+# ==========================================================================
+
+
+class TestDiagnoseVexSymptom:
+    """Test natural-language symptom matching."""
+
+    def test_points_not_moving(self):
+        diags = diagnose_vex_symptom("my points aren't moving")
+        assert len(diags) >= 1
+        assert diags[0].reference_topic == "vex_attributes"
+        assert "@P" in diags[0].example
+
+    def test_nothing_happening(self):
+        diags = diagnose_vex_symptom("nothing is happening in the wrangle")
+        assert len(diags) >= 1
+        assert "run-over" in diags[0].cause.lower() or "connected" in diags[0].cause.lower()
+
+    def test_colors_wrong(self):
+        diags = diagnose_vex_symptom("colors look weird on my geometry")
+        assert len(diags) >= 1
+        assert "Cd" in diags[0].cause or "color" in diags[0].cause.lower()
+
+    def test_orientation_issues(self):
+        diags = diagnose_vex_symptom("orientations are wrong on copy to points")
+        assert len(diags) >= 1
+        assert "orient" in diags[0].cause.lower()
+
+    def test_scale_issues(self):
+        diags = diagnose_vex_symptom("pscale is not working")
+        assert len(diags) >= 1
+        assert "pscale" in diags[0].cause.lower() or "scale" in diags[0].cause.lower()
+
+    def test_noise_blocky(self):
+        diags = diagnose_vex_symptom("noise looks blocky on my displacement")
+        assert len(diags) >= 1
+        assert "frequency" in diags[0].cause.lower() or "octave" in diags[0].cause.lower()
+
+    def test_wrangle_slow(self):
+        diags = diagnose_vex_symptom("my wrangle is slow")
+        assert len(diags) >= 1
+        assert diags[0].confidence >= 0.7
+        assert "pcfind" in diags[0].example.lower()
+
+    def test_pcfind_empty(self):
+        diags = diagnose_vex_symptom("pcfind returns nothing")
+        assert len(diags) >= 1
+        assert "radius" in diags[0].cause.lower()
+
+    def test_attribute_missing(self):
+        diags = diagnose_vex_symptom("attribute is not showing up")
+        assert len(diags) >= 1
+        assert "type prefix" in diags[0].fix.lower() or "spreadsheet" in diags[0].fix.lower()
+
+    def test_solver_exploding(self):
+        diags = diagnose_vex_symptom("my solver is exploding")
+        assert len(diags) >= 1
+        assert "TimeInc" in diags[0].fix or "damping" in diags[0].fix.lower()
+
+    def test_no_match_unrelated(self):
+        """Non-VEX queries should return empty."""
+        diags = diagnose_vex_symptom("how do I create a dome light")
+        assert len(diags) == 0
+
+    def test_sorted_by_confidence(self):
+        diags = diagnose_vex_symptom("my solver is slow and exploding")
+        if len(diags) >= 2:
+            assert diags[0].confidence >= diags[1].confidence

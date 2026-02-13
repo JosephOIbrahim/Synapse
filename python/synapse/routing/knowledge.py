@@ -207,7 +207,12 @@ class KnowledgeIndex:
         if result:
             return result
 
-        # Strategy 3: Memory fallback
+        # Strategy 3: VEX symptom diagnosis (natural-language)
+        result = self._match_vex_symptoms(query_lower)
+        if result:
+            return result
+
+        # Strategy 4: Memory fallback
         result = self._match_memory(query)
         if result:
             return result
@@ -338,6 +343,45 @@ class KnowledgeIndex:
             sources=[f"reference:{file_stem}"],
             confidence=confidence,
             topic=file_stem,
+        )
+
+    def _match_vex_symptoms(self, query: str) -> Optional[KnowledgeLookupResult]:
+        """Match natural-language VEX problem descriptions.
+
+        Uses symptom patterns from vex_diagnostics to catch artist
+        descriptions like 'my points aren't moving' or 'colors look wrong'.
+        """
+        # Quick gate: only try if the query mentions VEX-related concepts
+        _VEX_SIGNALS = {
+            "vex", "wrangle", "point", "points", "attrib", "attribute",
+            "color", "cd", "orient", "pscale", "scale", "noise",
+            "pcfind", "solver", "exploding", "slow", "moving",
+        }
+        query_words = set(query.lower().split())
+        if not query_words & _VEX_SIGNALS:
+            return None
+
+        try:
+            from synapse.routing.vex_diagnostics import (
+                diagnose_vex_symptom,
+                format_diagnosis,
+            )
+        except ImportError:
+            return None
+
+        diagnoses = diagnose_vex_symptom(query)
+        if not diagnoses:
+            return None
+
+        formatted = format_diagnosis(diagnoses)
+        best = diagnoses[0]
+        return KnowledgeLookupResult(
+            found=True,
+            answer=formatted,
+            sources=[f"vex_diagnostics:{best.reference_topic}"],
+            confidence=best.confidence,
+            topic=best.reference_topic,
+            agent_hint=f"VEX symptom match ({best.category})",
         )
 
     def _match_memory(self, query: str) -> Optional[KnowledgeLookupResult]:

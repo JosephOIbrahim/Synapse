@@ -560,8 +560,8 @@ class TestRouterStatsAndRecipeDiscovery:
         """list_recipes handler should return all registered recipes."""
         handler = SynapseHandler()
         result = handler._handle_list_recipes({})
-        assert result["count"] == 28
-        assert len(result["recipes"]) == 28
+        assert result["count"] == 29
+        assert len(result["recipes"]) == 29
         # Should be sorted by name
         names = [r["name"] for r in result["recipes"]]
         assert names == sorted(names)
@@ -789,6 +789,77 @@ class TestProductionRecipes:
         """Every recipe must have at least one step."""
         for recipe in self.registry.recipes:
             assert len(recipe.steps) >= 1, f"Recipe '{recipe.name}' has no steps"
+
+
+class TestHDAGenerate:
+    """Test HDA content generation from natural language."""
+
+    def setup_method(self):
+        from synapse.routing.recipes import RecipeRegistry
+        self.registry = RecipeRegistry()
+
+    def test_scatter_trigger(self):
+        match = self.registry.match("generate an HDA that scatters points")
+        assert match is not None
+        assert match[0].name == "hda_generate"
+        assert "scatter" in match[1]["description"].lower()
+
+    def test_deformer_trigger(self):
+        match = self.registry.match(
+            "generate a tool to deform geometry with noise"
+        )
+        assert match is not None
+        assert match[0].name == "hda_generate"
+
+    def test_color_trigger(self):
+        match = self.registry.match(
+            "hda generate color by height gradient"
+        )
+        assert match is not None
+        assert match[0].name == "hda_generate"
+
+    def test_mask_trigger(self):
+        match = self.registry.match(
+            "generate an HDA that masks points by proximity"
+        )
+        assert match is not None
+        assert match[0].name == "hda_generate"
+
+    def test_extrude_trigger(self):
+        match = self.registry.match(
+            "generate a tool to extrude along normals"
+        )
+        assert match is not None
+        assert match[0].name == "hda_generate"
+
+    def test_named_trigger(self):
+        match = self.registry.match(
+            "generate a scatter_pts HDA that distributes random points"
+        )
+        assert match is not None
+        assert match[0].name == "hda_generate"
+        assert match[1]["name"] == "scatter_pts"
+
+    def test_no_match_scaffold(self):
+        """'create an HDA' without 'generate' should NOT match hda_generate."""
+        match = self.registry.match("create an HDA called foo")
+        if match:
+            assert match[0].name != "hda_generate"
+
+    def test_uses_execute_python(self):
+        match = self.registry.match("generate an HDA that scatters points")
+        recipe = match[0]
+        actions = [s.action for s in recipe.steps]
+        assert "execute_python" in actions
+
+    def test_has_output_var(self):
+        match = self.registry.match("generate an HDA that scatters points")
+        recipe = match[0]
+        assert recipe.steps[0].output_var == "hda"
+
+    def test_category_is_pipeline(self):
+        match = self.registry.match("generate an HDA that scatters points")
+        assert match[0].category == "pipeline"
 
 
 class TestWorkflowPlanner:

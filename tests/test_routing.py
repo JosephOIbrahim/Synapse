@@ -457,7 +457,7 @@ class TestRecipeRegistry:
         self.registry = RecipeRegistry()
 
     def test_builtin_recipes_registered(self):
-        assert len(self.registry.recipes) == 28
+        assert len(self.registry.recipes) == 29
 
     def test_three_point_lighting_match(self):
         match = self.registry.match("set up three-point lighting at /obj")
@@ -526,7 +526,7 @@ class TestRecipeRegistry:
             ],
         )
         self.registry.register(custom)
-        assert len(self.registry.recipes) == 29
+        assert len(self.registry.recipes) == 30
         match = self.registry.match("run test")
         assert match is not None
         assert match[0].name == "test_recipe"
@@ -1245,6 +1245,13 @@ _ROUTING_BENCHMARK = [
     ("bring /obj/geo1/out to the usd stage", RoutingTier.RECIPE, "sopimport_chain", None),
     ("edit /World/hero translate", RoutingTier.RECIPE, "edit_transform", None),
     ("transform /World/props/chair position", RoutingTier.RECIPE, "edit_transform", None),
+
+    # --- HDA generate recipes ---
+    ("generate an HDA that scatters points", RoutingTier.RECIPE, "hda_generate", None),
+    ("generate a tool to deform geometry", RoutingTier.RECIPE, "hda_generate", None),
+    ("hda generate color by height gradient", RoutingTier.RECIPE, "hda_generate", None),
+    ("generate an HDA that masks points by proximity", RoutingTier.RECIPE, "hda_generate", None),
+    ("generate a tool to extrude along normals", RoutingTier.RECIPE, "hda_generate", None),
 
     # --- Should NOT match (falls through) ---
     ("tell me about the meaning of life", None, None, None),

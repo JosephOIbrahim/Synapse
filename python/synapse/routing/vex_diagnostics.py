@@ -407,6 +407,160 @@ def diagnose_vex_error(
     return diagnoses
 
 
+# --- Natural-Language Symptom Matching ---
+# Maps artist descriptions to likely VEX issues
+
+_SYMPTOM_PATTERNS: List[Tuple[re.Pattern, callable]] = []
+
+
+def _init_symptoms():
+    """Initialize natural-language symptom patterns for diagnosis."""
+    global _SYMPTOM_PATTERNS
+
+    symptoms = [
+        # Position / movement issues
+        (r"(?i)(?:points?|geo(?:metry)?)\s+(?:aren'?t?|not|won'?t?|don'?t?)\s+(?:moving|updating|changing)",
+         lambda m, s: VexDiagnosis(
+             category="attribute",
+             symptom="Points aren't moving",
+             cause="The wrangle may be reading @P but not writing it back, or the run-over mode is wrong (e.g., Detail instead of Points).",
+             fix="Make sure you assign to @P directly. Check the run-over dropdown is set to 'Points'. If using a Solver SOP, multiply velocity by @TimeInc.",
+             example="@P += @N * chf('amount');  // displace along normal",
+             reference_topic="vex_attributes",
+             confidence=0.75,
+         )),
+        (r"(?i)(?:nothing|no)\s+(?:is\s+)?(?:happening|changing|moving|working)",
+         lambda m, s: VexDiagnosis(
+             category="runtime",
+             symptom="Nothing seems to be happening",
+             cause="Common causes: wrangle isn't wired in (check connections), run-over set to Detail when you need Points, or writing to an output that isn't being read downstream.",
+             fix="Check: (1) Is the wrangle connected and cooking? (2) Is run-over correct? (3) Are you writing to the right attribute? Try adding a simple test: @Cd = {1,0,0}; to see if the node has any effect.",
+             example="// Quick test: turn everything red\n@Cd = {1,0,0};",
+             reference_topic="vex_fundamentals",
+             confidence=0.65,
+         )),
+        # Color issues
+        (r"(?i)(?:colors?|cd)\s+(?:are|is|look(?:s|ing)?)\s+(?:wrong|off|weird|bad|black|white|flat)",
+         lambda m, s: VexDiagnosis(
+             category="attribute",
+             symptom="Colors look wrong",
+             cause="Common issues: @Cd not initialized (black), values outside 0-1 range (clamped), writing to @Cd.x instead of @Cd (only red channel), or color space mismatch.",
+             fix="Verify @Cd exists on input (add Color SOP upstream if needed). Check your values are in 0-1 range. Use vector assignment: @Cd = set(r, g, b); not component-wise unless intentional.",
+             example="@Cd = set(chramp('ramp', @P.y), 0.5, 0.2);  // color by height",
+             reference_topic="vex_attributes",
+             confidence=0.7,
+         )),
+        # Orientation / rotation issues
+        (r"(?i)(?:orient(?:ation)?s?|rotat(?:ion|e|ing))\s+(?:are|is|look(?:s|ing)?)\s+(?:wrong|off|weird|random|flipped|broken)",
+         lambda m, s: VexDiagnosis(
+             category="attribute",
+             symptom="Orientations look wrong",
+             cause="Copy-to-points reads @orient (quaternion) with highest priority. If @orient exists but is wrong, @N+@up are ignored. Also: quaternion multiplication order matters.",
+             fix="Either (1) remove @orient and use @N+@up instead, or (2) build quaternion correctly from your desired direction. Use dihedral() or lookat() to construct quaternions.",
+             example="// Option A: use N + up (simpler)\nv@up = {0,1,0};\n@N = normalize(@P);\n\n// Option B: quaternion from direction\np@orient = dihedral({0,0,1}, @N);",
+             reference_topic="vex_attributes",
+             confidence=0.75,
+         )),
+        # Scale issues
+        (r"(?i)(?:scale|pscale|size)\s+(?:is|are|look(?:s|ing)?)\s+(?:wrong|off|weird|too\s+(?:big|small)|zero|not\s+working)",
+         lambda m, s: VexDiagnosis(
+             category="attribute",
+             symptom="Scale isn't working as expected",
+             cause="Copy-to-points reads @pscale (uniform float) and @scale (per-axis vector3). If both exist, @scale wins. pscale=0 makes things invisible.",
+             fix="For uniform scale use f@pscale = value; For per-axis use v@scale = set(sx, sy, sz); Don't set both unless you want them multiplied together.",
+             example="f@pscale = fit01(rand(@ptnum), 0.5, 1.5);  // random uniform scale",
+             reference_topic="vex_attributes",
+             confidence=0.7,
+         )),
+        # Noise issues
+        (r"(?i)(?:noise|displacement|deform(?:ation)?)\s+(?:look(?:s|ing)?|is|are)\s+(?:blocky|pixelated|uniform|flat|same|too\s+(?:smooth|sharp))",
+         lambda m, s: VexDiagnosis(
+             category="runtime",
+             symptom="Noise doesn't look right",
+             cause="Common issues: frequency too low (blocky), using integer positions (snoise needs float), not enough octaves (too smooth), or all points at same position (uniform result).",
+             fix="Try: (1) Multiply position by frequency: noise(@P * chf('freq')); (2) Add offset for animation: noise(@P * freq + @Time); (3) Layer octaves for fBm detail.",
+             example="float freq = chf('freq');  // try 2-10\nfloat amp = chf('amp');   // try 0.1-1.0\n@P += @N * amp * noise(@P * freq + chf('offset'));",
+             reference_topic="vex_patterns",
+             confidence=0.7,
+         )),
+        # Performance / speed issues
+        (r"(?i)(?:wrangle|vex|node)\s+(?:is|are)\s+(?:slow|taking\s+(?:too\s+)?long|lagging|freezing)",
+         lambda m, s: VexDiagnosis(
+             category="runtime",
+             symptom="VEX wrangle is running slow",
+             cause="Common bottlenecks: O(n^2) spatial queries (use pcfind not nearpoints), string operations in loops, heavy branching, or cooking every frame unnecessarily.",
+             fix="Profile with Performance Monitor. Quick wins: (1) pcfind() instead of nearpoints(), (2) distance2() instead of distance() if comparing, (3) cache ch() calls outside loops, (4) reduce point count upstream.",
+             example="// Fast: KD-tree spatial query\nint pts[] = pcfind(0, 'P', @P, chf('radius'), chi('maxpts'));\n\n// Slow: brute force\n// int pts[] = nearpoints(0, @P, chf('radius'));",
+             reference_topic="vex_performance",
+             confidence=0.8,
+         )),
+        # pcfind / scatter / proximity issues
+        (r"(?i)(?:pcfind|nearpoint|scatter|proximity|closest)\s+(?:return(?:s|ing)?|giv(?:es|ing))\s+(?:nothing|empty|zero|no\s+(?:result|point))",
+         lambda m, s: VexDiagnosis(
+             category="runtime",
+             symptom="Spatial query returns empty results",
+             cause="pcfind/nearpoint found no points within search radius. Either: radius too small, wrong input index (0-3), points not where expected, or searching for attribute that doesn't exist.",
+             fix="Debug: (1) Print search radius and point count, (2) Verify input connections, (3) Try much larger radius first, (4) Visualize with a sphere at @P with search radius.",
+             example="int pts[] = pcfind(1, 'P', @P, chf('radius'), chi('maxpts'));\ni@found = len(pts);  // check this attribute to see results\n// If found==0, increase radius or check input 1",
+             reference_topic="vex_functions",
+             confidence=0.75,
+         )),
+        # Attribute not showing / missing
+        (r"(?i)(?:attribute|attrib|@\w+)\s+(?:is|are|seems?)\s+(?:missing|not\s+(?:there|showing|visible|working)|gone|disappeared|zero)",
+         lambda m, s: VexDiagnosis(
+             category="attribute",
+             symptom="Attribute seems to be missing or zero",
+             cause="Possible causes: attribute name typo, wrong type prefix (f@ vs v@), reading from wrong input, wrangle run-over doesn't match attribute class, or attribute created but not surviving through the network.",
+             fix="Check: (1) Use Geometry Spreadsheet to verify attribute exists, (2) Correct type prefix: f@float, v@vector, i@int, s@string, (3) Right input index for point()/prim() calls, (4) Attribute not being deleted by a downstream node.",
+             example="// Read from input 1 (second input)\nfloat val = point(1, 'my_attr', @ptnum);\n// Check with: printf('val=%f\\n', val);",
+             reference_topic="vex_attributes",
+             confidence=0.7,
+         )),
+        # Solver / simulation issues
+        (r"(?i)(?:solver|simulation|sim)\s+(?:is|are)\s+(?:exploding|unstable|going\s+crazy|flying\s+away|blowing\s+up)",
+         lambda m, s: VexDiagnosis(
+             category="runtime",
+             symptom="Solver is exploding or unstable",
+             cause="Classic causes: not multiplying velocity by @TimeInc (frame-rate dependent), missing collision bounds, NaN propagation from division by zero, or values growing without damping.",
+             fix="Add @TimeInc multiplication for frame-rate independence, add damping (multiply velocity by 0.98 each frame), clamp values, and check for NaN with isnan().",
+             example="// Frame-rate independent velocity\n@P += v@vel * @TimeInc;\n\n// Damping\nv@vel *= 0.98;\n\n// Ground collision\nif (@P.y < 0) { @P.y = 0; v@vel.y *= -0.5; }",
+             reference_topic="vex_patterns",
+             confidence=0.8,
+         )),
+    ]
+
+    _SYMPTOM_PATTERNS = [(re.compile(p), fn) for p, fn in symptoms]
+
+
+_init_symptoms()
+
+
+def diagnose_vex_symptom(description: str) -> List[VexDiagnosis]:
+    """
+    Diagnose a VEX issue from a natural-language description.
+
+    Unlike diagnose_vex_error() which matches compiler output,
+    this matches artist descriptions like "my points aren't moving"
+    or "colors look wrong".
+
+    Args:
+        description: Natural-language description of the problem.
+
+    Returns:
+        List of VexDiagnosis objects, ordered by confidence.
+    """
+    diagnoses: List[VexDiagnosis] = []
+
+    for pattern, builder in _SYMPTOM_PATTERNS:
+        m = pattern.search(description)
+        if m:
+            diagnosis = builder(m, "")
+            diagnoses.append(diagnosis)
+
+    diagnoses.sort(key=lambda d: d.confidence, reverse=True)
+    return diagnoses
+
+
 def format_diagnosis(diagnoses: List[VexDiagnosis], snippet: str = "") -> str:
     """
     Format diagnoses into a coaching-tone response string.
