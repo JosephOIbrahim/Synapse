@@ -1215,6 +1215,343 @@ class RenderHandlerMixin:
 
         return hdefereval.executeInMainThreadWithResult(_run)
 
+    # =========================================================================
+    # TOPS / PDG HANDLERS — Phase 4: Autonomous Operations
+    # =========================================================================
+
+    def _handle_tops_cook_and_validate(self, payload: Dict) -> Dict:
+        """Cook a TOP node with optional retry on failure (Item 15: self-healing).
+
+        Blocking cook -> collect work item states -> if failures AND retries
+        remaining -> dirty -> re-cook -> repeat. Returns per-attempt details
+        and aggregate stats.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import hdefereval
+
+        node_path = resolve_param(payload, "node")
+        max_retries = resolve_param_with_default(payload, "max_retries", 0)
+        validate_states = resolve_param_with_default(payload, "validate_states", True)
+
+        def _run():
+            node = hou.node(node_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {node_path} -- "
+                    "double-check the path exists"
+                )
+
+            pdg_node = node.getPDGNode()
+            if pdg_node is None:
+                raise ValueError(
+                    f"The node at {node_path} isn't a TOP node or hasn't been "
+                    "set up for PDG yet -- make sure it's inside a TOP network"
+                )
+
+            attempts = []
+            total_elapsed_start = time.monotonic()
+
+            for attempt_num in range(1, int(max_retries) + 2):
+                t0 = time.monotonic()
+                node.cook(block=True)
+                cook_time = time.monotonic() - t0
+
+                # Collect state counts
+                by_state = {}
+                failed_count = 0
+                for wi in pdg_node.workItems:
+                    sname = wi.state.name if hasattr(wi.state, 'name') else str(wi.state)
+                    by_state[sname] = by_state.get(sname, 0) + 1
+                    if sname == "CookedFail":
+                        failed_count += 1
+
+                total_items = sum(by_state.values())
+                attempt_info = {
+                    "attempt": attempt_num,
+                    "cook_time": round_float(cook_time),
+                    "work_items": total_items,
+                    "by_state": dict(sorted(by_state.items())),
+                    "failed_items": failed_count,
+                }
+
+                if validate_states and failed_count > 0 and attempt_num <= int(max_retries):
+                    attempt_info["status"] = "retry"
+                    attempts.append(attempt_info)
+                    # Dirty and retry
+                    pdg_node.dirty(False)
+                    continue
+                else:
+                    status = "success" if failed_count == 0 else "failed"
+                    attempt_info["status"] = status
+                    attempts.append(attempt_info)
+                    break
+
+            total_elapsed = time.monotonic() - total_elapsed_start
+            all_cook_times = [a["cook_time"] for a in attempts]
+            final_by_state = attempts[-1]["by_state"]
+
+            return {
+                "node": node_path,
+                "status": attempts[-1]["status"],
+                "attempts": attempts,
+                "total_attempts": len(attempts),
+                "total_cook_time": kahan_sum(all_cook_times),
+                "total_elapsed": round_float(total_elapsed),
+                "final_by_state": final_by_state,
+            }
+
+        return hdefereval.executeInMainThreadWithResult(_run)
+
+    def _handle_tops_diagnose(self, payload: Dict) -> Dict:
+        """Diagnose failures on a TOP node -- inspect work items, scheduler,
+        upstream dependencies, and generate actionable suggestions.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import hdefereval
+
+        node_path = resolve_param(payload, "node")
+        include_scheduler = resolve_param_with_default(payload, "include_scheduler", True)
+        include_dependencies = resolve_param_with_default(payload, "include_dependencies", True)
+
+        def _run():
+            node = hou.node(node_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {node_path} -- "
+                    "double-check the path exists"
+                )
+
+            pdg_node = node.getPDGNode()
+            if pdg_node is None:
+                raise ValueError(
+                    f"The node at {node_path} isn't a TOP node or hasn't been "
+                    "set up for PDG yet -- make sure it's inside a TOP network"
+                )
+
+            node_type = node.type().name()
+
+            # Collect work item states and details
+            by_state = {}
+            failed_details = []
+            cook_times = []
+            for wi in pdg_node.workItems:
+                sname = wi.state.name if hasattr(wi.state, 'name') else str(wi.state)
+                by_state[sname] = by_state.get(sname, 0) + 1
+                cook_times.append(getattr(wi, 'cookTime', 0.0))
+                if sname == "CookedFail":
+                    failed_details.append({
+                        "id": wi.id,
+                        "name": wi.name,
+                        "state": sname,
+                    })
+
+            total_items = sum(by_state.values())
+            total_cook_time = kahan_sum(cook_times)
+
+            result = {
+                "node": node_path,
+                "node_type": node_type,
+                "total_items": total_items,
+                "by_state": dict(sorted(by_state.items())),
+                "failed_items": len(failed_details),
+                "failed_details": sorted(failed_details, key=lambda d: d["id"]),
+                "total_cook_time": round_float(total_cook_time),
+            }
+
+            # Scheduler info
+            if include_scheduler:
+                scheduler_info = None
+                parent = node.parent()
+                if parent is not None:
+                    for child in parent.children():
+                        child_type = child.type().name().lower()
+                        if "scheduler" in child_type or child_type == "localscheduler":
+                            sched_info = {
+                                "path": child.path(),
+                                "type": child.type().name(),
+                            }
+                            procs_parm = child.parm("maxprocs")
+                            if procs_parm is not None:
+                                sched_info["max_procs"] = procs_parm.eval()
+                            scheduler_info = sched_info
+                            break
+                result["scheduler"] = scheduler_info
+
+            # Upstream dependency check
+            if include_dependencies:
+                upstream = []
+                for conn in node.inputConnections():
+                    inp_node = conn.inputNode()
+                    inp_pdg = inp_node.getPDGNode()
+                    inp_by_state = {}
+                    has_failures = False
+                    if inp_pdg is not None:
+                        for wi in inp_pdg.workItems:
+                            sname = wi.state.name if hasattr(wi.state, 'name') else str(wi.state)
+                            inp_by_state[sname] = inp_by_state.get(sname, 0) + 1
+                            if sname == "CookedFail":
+                                has_failures = True
+                    upstream.append({
+                        "path": inp_node.path(),
+                        "type": inp_node.type().name(),
+                        "by_state": dict(sorted(inp_by_state.items())),
+                        "has_failures": has_failures,
+                    })
+                result["upstream"] = sorted(upstream, key=lambda u: u["path"])
+
+            # Generate suggestions
+            suggestions = []
+            if len(failed_details) > 0:
+                suggestions.append(
+                    f"{len(failed_details)} work item(s) failed -- "
+                    "check error messages in failed_details"
+                )
+            if total_items == 0:
+                suggestions.append(
+                    "No work items found -- the node may need to generate items first"
+                )
+            if include_dependencies:
+                for u in result.get("upstream", []):
+                    if u["has_failures"]:
+                        suggestions.append(
+                            f"Upstream node {u['path']} has failures -- fix upstream first"
+                        )
+            result["suggestions"] = sorted(suggestions)
+
+            return result
+
+        return hdefereval.executeInMainThreadWithResult(_run)
+
+    def _handle_tops_pipeline_status(self, payload: Dict) -> Dict:
+        """Full health check for a TOP network -- walk all child nodes,
+        aggregate work item counts, detect issues, generate suggestions.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import hdefereval
+
+        topnet_path = resolve_param(payload, "topnet_path")
+        include_items = resolve_param_with_default(payload, "include_items", False)
+
+        def _run():
+            node = hou.node(topnet_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {topnet_path} -- "
+                    "double-check the path exists"
+                )
+
+            cat = node.type().category().name()
+            if cat not in ("TopNet",):
+                raise ValueError(
+                    f"The node at {topnet_path} is a {cat} node, not a TOP network -- "
+                    "point to a topnet node (e.g. '/obj/topnet1')"
+                )
+
+            nodes_info = []
+            agg_by_state = {}
+            all_cook_times = []
+            total_items = 0
+            issues = []
+
+            for child in node.children():
+                # Skip scheduler nodes
+                child_type = child.type().name().lower()
+                if "scheduler" in child_type or child_type == "localscheduler":
+                    continue
+
+                pdg_child = child.getPDGNode()
+                child_by_state = {}
+                child_cook_times = []
+                child_total = 0
+                child_items = []
+
+                if pdg_child is not None:
+                    for wi in pdg_child.workItems:
+                        sname = wi.state.name if hasattr(wi.state, 'name') else str(wi.state)
+                        child_by_state[sname] = child_by_state.get(sname, 0) + 1
+                        child_cook_times.append(getattr(wi, 'cookTime', 0.0))
+                        if include_items:
+                            child_items.append({
+                                "id": wi.id,
+                                "name": wi.name,
+                                "state": sname,
+                            })
+
+                child_total = sum(child_by_state.values())
+                child_cook_time = kahan_sum(child_cook_times)
+
+                # Determine per-node health
+                failed_count = child_by_state.get("CookedFail", 0)
+                if failed_count > 0:
+                    health = "error"
+                    issues.append(f"{child.path()}: {failed_count} failed work item(s)")
+                elif child_total == 0:
+                    health = "empty"
+                else:
+                    health = "healthy"
+
+                node_info = {
+                    "path": child.path(),
+                    "name": child.name(),
+                    "type": child.type().name(),
+                    "health": health,
+                    "by_state": dict(sorted(child_by_state.items())),
+                    "total_items": child_total,
+                    "cook_time": round_float(child_cook_time),
+                }
+                if include_items and child_items:
+                    node_info["items"] = child_items
+
+                nodes_info.append(node_info)
+
+                # Aggregate
+                total_items += child_total
+                all_cook_times.append(child_cook_time)
+                for sname, count in sorted(child_by_state.items()):
+                    agg_by_state[sname] = agg_by_state.get(sname, 0) + count
+
+            # Overall health
+            total_failed = agg_by_state.get("CookedFail", 0)
+            if total_failed > 0:
+                overall_health = "error"
+            elif total_items == 0:
+                overall_health = "empty"
+            else:
+                overall_health = "healthy"
+
+            # Suggestions
+            suggestions = []
+            if total_failed > 0:
+                suggestions.append(
+                    f"{total_failed} total failed work item(s) -- "
+                    "use tops_diagnose for details"
+                )
+            if total_items == 0:
+                suggestions.append(
+                    "No work items in the network -- "
+                    "nodes may need to generate or cook first"
+                )
+
+            return {
+                "topnet": topnet_path,
+                "overall_health": overall_health,
+                "node_count": len(nodes_info),
+                "total_items": total_items,
+                "by_state": dict(sorted(agg_by_state.items())),
+                "total_cook_time": kahan_sum(all_cook_times),
+                "nodes": sorted(nodes_info, key=lambda n: n["path"]),
+                "issues": sorted(issues),
+                "suggestions": sorted(suggestions),
+            }
+
+        return hdefereval.executeInMainThreadWithResult(_run)
+
     def _handle_create_material(self, payload: Dict) -> Dict:
         """Create a materiallibrary LOP with a MaterialX shader inside it.
 

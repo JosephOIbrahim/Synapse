@@ -1149,6 +1149,97 @@ class RecipeRegistry:
             ],
         ))
 
+        # ==================================================================
+        # TOPS / PDG RECIPES — Autonomous pipeline operations
+        # ==================================================================
+
+        # --- TOPS Parameter Sweep ---
+        self.register(Recipe(
+            name="tops_parameter_sweep",
+            description=(
+                "Set up a wedge parameter sweep and cook it with validation. "
+                "Sweeps an attribute from start to end in N steps."
+            ),
+            triggers=[
+                r"^sweep\s+(?P<attr_name>\w+)\s+from\s+(?P<start>[\d.]+)\s+to\s+(?P<end>[\d.]+)(?:\s+in\s+(?P<steps>\d+)\s+steps?)?(?:\s+(?:in|on|at)\s+(?P<topnet>[\w\-./]+))?$",
+            ],
+            parameters=["attr_name", "start", "end", "steps", "topnet"],
+            gate_level=GateLevel.REVIEW,
+            category="tops",
+            steps=[
+                RecipeStep(
+                    action="tops_setup_wedge",
+                    payload_template={
+                        "topnet_path": "{topnet}",
+                        "attributes": [{"name": "{attr_name}", "type": "float",
+                                        "start": "{start}", "end": "{end}",
+                                        "steps": 10}],
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="wedge",
+                ),
+                RecipeStep(
+                    action="tops_cook_and_validate",
+                    payload_template={
+                        "node": "$wedge.wedge_node",
+                        "max_retries": 1,
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+                RecipeStep(
+                    action="tops_get_cook_stats",
+                    payload_template={
+                        "node": "$wedge.wedge_node",
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- TOPS Quick Cook ---
+        self.register(Recipe(
+            name="tops_quick_cook",
+            description="Cook a TOP node and validate results with one retry.",
+            triggers=[
+                r"^(?:cook\s+and\s+check|quick\s+cook)\s+(?P<node>[\w\-./]+)$",
+            ],
+            parameters=["node"],
+            gate_level=GateLevel.REVIEW,
+            category="tops",
+            steps=[
+                RecipeStep(
+                    action="tops_cook_and_validate",
+                    payload_template={
+                        "node": "{node}",
+                        "max_retries": 1,
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- TOPS Diagnose ---
+        self.register(Recipe(
+            name="tops_diagnose_recipe",
+            description="Diagnose failures on a TOP node.",
+            triggers=[
+                r"^diagnose\s+(?P<node>[\w\-./]+)$",
+                r"^what(?:'s|\s+is)\s+wrong\s+with\s+(?P<node>[\w\-./]+)$",
+            ],
+            parameters=["node"],
+            gate_level=GateLevel.REVIEW,
+            category="tops",
+            steps=[
+                RecipeStep(
+                    action="tops_diagnose",
+                    payload_template={
+                        "node": "{node}",
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
         # --- Quick Render Preview ---
         self.register(Recipe(
             name="render_preview",

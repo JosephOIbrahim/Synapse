@@ -81,6 +81,9 @@ class CommandType(Enum):
     TOPS_SETUP_WEDGE = "tops_setup_wedge"
     TOPS_BATCH_COOK = "tops_batch_cook"
     TOPS_QUERY_ITEMS = "tops_query_items"
+    TOPS_COOK_AND_VALIDATE = "tops_cook_and_validate"
+    TOPS_DIAGNOSE = "tops_diagnose"
+    TOPS_PIPELINE_STATUS = "tops_pipeline_status"
 
     # Memory operations (new simplified names)
     CONTEXT = "context"

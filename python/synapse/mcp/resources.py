@@ -102,6 +102,22 @@ _RESOURCE_TEMPLATES: list[dict] = [
         "_handler": "tops_get_cook_stats",
         "_payload_fn": lambda node_path: {"node": "/" + node_path},
     },
+    {
+        "uriTemplate": "houdini://tops/{topnet_path}/status",
+        "name": "TOPS Pipeline Status",
+        "description": "Full health check for a TOP network: per-node status, issues, suggestions.",
+        "mimeType": "application/json",
+        "_handler": "tops_pipeline_status",
+        "_payload_fn": lambda topnet_path: {"topnet_path": "/" + topnet_path},
+    },
+    {
+        "uriTemplate": "houdini://tops/{node_path}/diagnosis",
+        "name": "TOPS Diagnosis",
+        "description": "Failure analysis for a TOP node: failed items, scheduler, upstream deps.",
+        "mimeType": "application/json",
+        "_handler": "tops_diagnose",
+        "_payload_fn": lambda node_path: {"node": "/" + node_path},
+    },
 ]
 
 

@@ -123,6 +123,9 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "tops_setup_wedge": AuditCategory.PIPELINE,
     "tops_batch_cook": AuditCategory.PIPELINE,
     "tops_query_items": AuditCategory.PIPELINE,
+    "tops_cook_and_validate": AuditCategory.PIPELINE,
+    "tops_diagnose": AuditCategory.PIPELINE,
+    "tops_pipeline_status": AuditCategory.PIPELINE,
 }
 
 # Commands that don't modify state — skip memory logging for these
@@ -139,6 +142,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "get_metrics", "router_stats", "list_recipes",
     "tops_get_work_items", "tops_get_dependency_graph", "tops_get_cook_stats",
     "tops_query_items",
+    "tops_diagnose", "tops_pipeline_status",
 })
 
 
@@ -347,6 +351,11 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         reg.register("tops_setup_wedge", self._handle_tops_setup_wedge)
         reg.register("tops_batch_cook", self._handle_tops_batch_cook)
         reg.register("tops_query_items", self._handle_tops_query_items)
+
+        # TOPS / PDG (Phase 4: Autonomous Operations)
+        reg.register("tops_cook_and_validate", self._handle_tops_cook_and_validate)
+        reg.register("tops_diagnose", self._handle_tops_diagnose)
+        reg.register("tops_pipeline_status", self._handle_tops_pipeline_status)
 
         # USD scene assembly (reference / sublayer)
         reg.register("reference_usd", self._handle_reference_usd)

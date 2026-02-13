@@ -154,6 +154,9 @@ _SLOW_COMMANDS = {
     "tops_cancel_cook": 30.0,
     "tops_batch_cook": 300.0,
     "tops_setup_wedge": 30.0,
+    "tops_cook_and_validate": 600.0,
+    "tops_diagnose": 30.0,
+    "tops_pipeline_status": 60.0,
 }
 
 logger = logging.getLogger("synapse-mcp")
@@ -1058,6 +1061,55 @@ async def list_tools():
                 "required": ["node", "query_attribute", "filter_value"],
             },
         ),
+        # -- TOPS / PDG (Phase 4: Autonomous Operations) --
+        Tool(
+            name="tops_cook_and_validate",
+            description=(
+                "Cook a TOP node with automatic retry on failure. "
+                "Self-healing pipeline: cook -> validate states -> "
+                "dirty -> retry. Returns per-attempt details and aggregate stats."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "TOP node path"},
+                    "max_retries": {"type": "integer", "description": "Max retry attempts on failure (default: 0)"},
+                    "validate_states": {"type": "boolean", "description": "Check work item states after cook (default: true)"},
+                },
+                "required": ["node"],
+            },
+        ),
+        Tool(
+            name="tops_diagnose",
+            description=(
+                "Diagnose failures on a TOP node: inspect failed work items, "
+                "scheduler config, upstream dependencies, and generate suggestions."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "TOP node path"},
+                    "include_scheduler": {"type": "boolean", "description": "Include scheduler info (default: true)"},
+                    "include_dependencies": {"type": "boolean", "description": "Include upstream check (default: true)"},
+                },
+                "required": ["node"],
+            },
+        ),
+        Tool(
+            name="tops_pipeline_status",
+            description=(
+                "Full health check for a TOP network: per-node status, "
+                "aggregate stats, issues, and suggestions."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "topnet_path": {"type": "string", "description": "TOP network path"},
+                    "include_items": {"type": "boolean", "description": "Include per-node work items (default: false)"},
+                },
+                "required": ["topnet_path"],
+            },
+        ),
         # -- USD Scene Assembly --
         Tool(
             name="houdini_reference_usd",
@@ -1631,6 +1683,9 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "tops_setup_wedge":           ("tops_setup_wedge",           _identity),
     "tops_batch_cook":            ("tops_batch_cook",            _identity),
     "tops_query_items":           ("tops_query_items",           _identity),
+    "tops_cook_and_validate":     ("tops_cook_and_validate",     _identity),
+    "tops_diagnose":              ("tops_diagnose",              _identity),
+    "tops_pipeline_status":       ("tops_pipeline_status",       _identity),
     "houdini_reference_usd": ("reference_usd",  _identity),
     "houdini_create_material":  ("create_material",  _identity),
     "houdini_assign_material":  ("assign_material",  _identity),

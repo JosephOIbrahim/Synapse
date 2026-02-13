@@ -72,6 +72,11 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "query_attribute": ["query_attribute", "attribute_name", "attr_name", "attrib"],
     "filter_op": ["filter_op", "operator", "op"],
     "filter_value": ["filter_value", "value", "match_value"],
+    "max_retries": ["max_retries", "retries", "retry_count"],
+    "validate_states": ["validate_states", "validate", "check_states"],
+    "include_scheduler": ["include_scheduler", "check_scheduler"],
+    "include_dependencies": ["include_dependencies", "deps", "check_deps"],
+    "include_items": ["include_items", "show_items"],
 
     # USD scene assembly
     "file": ["file", "filepath", "file_path", "path", "usd_file"],

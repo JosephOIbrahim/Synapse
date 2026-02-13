@@ -394,6 +394,33 @@ _TOOL_DEFS: list[tuple] = [
      }, "required": ["node", "query_attribute", "filter_value"]},
      True, False, True),
 
+    # -- TOPS / PDG (Phase 4: Autonomous Operations) --
+    ("tops_cook_and_validate", "tops_cook_and_validate", _identity,
+     "Cook a TOP node with automatic retry on failure. Self-healing: cook -> validate -> dirty -> retry.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP node path"},
+         "max_retries": {"type": "integer", "description": "Max retry attempts on failure (default: 0)"},
+         "validate_states": {"type": "boolean", "description": "Check work item states after cook (default: true)"},
+     }, "required": ["node"]},
+     False, True, False),
+
+    ("tops_diagnose", "tops_diagnose", _identity,
+     "Diagnose failures on a TOP node: inspect failed items, scheduler config, upstream deps, and suggestions.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP node path"},
+         "include_scheduler": {"type": "boolean", "description": "Include scheduler info (default: true)"},
+         "include_dependencies": {"type": "boolean", "description": "Include upstream dependency check (default: true)"},
+     }, "required": ["node"]},
+     True, False, True),
+
+    ("tops_pipeline_status", "tops_pipeline_status", _identity,
+     "Full health check for a TOP network: per-node status, aggregate stats, issues, and suggestions.",
+     {"type": "object", "properties": {
+         "topnet_path": {"type": "string", "description": "TOP network path"},
+         "include_items": {"type": "boolean", "description": "Include per-node work items (default: false)"},
+     }, "required": ["topnet_path"]},
+     True, False, True),
+
     # -- USD Scene Assembly --
     ("houdini_reference_usd", "reference_usd", _identity,
      "Import a USD file into the stage via reference or sublayer.",

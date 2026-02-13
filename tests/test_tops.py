@@ -937,7 +937,7 @@ class TestAliases:
 
 class TestCommandTypeEnums:
     def test_tops_enums_exist(self):
-        """All 11 TOPS CommandType enum values should exist."""
+        """All 14 TOPS CommandType enum values should exist."""
         ct = protocol_mod.CommandType
         assert ct.TOPS_GET_WORK_ITEMS.value == "tops_get_work_items"
         assert ct.TOPS_GET_DEPENDENCY_GRAPH.value == "tops_get_dependency_graph"
@@ -950,6 +950,9 @@ class TestCommandTypeEnums:
         assert ct.TOPS_SETUP_WEDGE.value == "tops_setup_wedge"
         assert ct.TOPS_BATCH_COOK.value == "tops_batch_cook"
         assert ct.TOPS_QUERY_ITEMS.value == "tops_query_items"
+        assert ct.TOPS_COOK_AND_VALIDATE.value == "tops_cook_and_validate"
+        assert ct.TOPS_DIAGNOSE.value == "tops_diagnose"
+        assert ct.TOPS_PIPELINE_STATUS.value == "tops_pipeline_status"
 
 
 # ===========================================================================
@@ -958,7 +961,7 @@ class TestCommandTypeEnums:
 
 class TestHandlerRegistration:
     def test_all_tops_handlers_registered(self, handler):
-        """All 11 TOPS handlers should be in the command registry."""
+        """All 14 TOPS handlers should be in the command registry."""
         reg = handler._registry
         for cmd in [
             "tops_get_work_items",
@@ -972,6 +975,9 @@ class TestHandlerRegistration:
             "tops_setup_wedge",
             "tops_batch_cook",
             "tops_query_items",
+            "tops_cook_and_validate",
+            "tops_diagnose",
+            "tops_pipeline_status",
         ]:
             assert reg.has(cmd), f"Handler not registered: {cmd}"
 
@@ -982,6 +988,8 @@ class TestHandlerRegistration:
         assert "tops_get_dependency_graph" in _READ_ONLY_COMMANDS
         assert "tops_get_cook_stats" in _READ_ONLY_COMMANDS
         assert "tops_query_items" in _READ_ONLY_COMMANDS
+        assert "tops_diagnose" in _READ_ONLY_COMMANDS
+        assert "tops_pipeline_status" in _READ_ONLY_COMMANDS
         # Mutating commands should NOT be read-only
         assert "tops_cook_node" not in _READ_ONLY_COMMANDS
         assert "tops_generate_items" not in _READ_ONLY_COMMANDS
@@ -990,6 +998,7 @@ class TestHandlerRegistration:
         assert "tops_dirty_node" not in _READ_ONLY_COMMANDS
         assert "tops_setup_wedge" not in _READ_ONLY_COMMANDS
         assert "tops_batch_cook" not in _READ_ONLY_COMMANDS
+        assert "tops_cook_and_validate" not in _READ_ONLY_COMMANDS
 
     def test_audit_categories(self):
         """All TOPS commands should have PIPELINE audit category."""
@@ -1007,6 +1016,9 @@ class TestHandlerRegistration:
             "tops_setup_wedge",
             "tops_batch_cook",
             "tops_query_items",
+            "tops_cook_and_validate",
+            "tops_diagnose",
+            "tops_pipeline_status",
         ]:
             assert _CMD_CATEGORY[cmd] == AuditCategory.PIPELINE
 
@@ -1017,7 +1029,7 @@ class TestHandlerRegistration:
 
 class TestMCPToolDefs:
     def test_all_tops_tools_in_registry(self):
-        """All 11 TOPS tools should appear in mcp/tools.py _TOOL_DEFS."""
+        """All 14 TOPS tools should appear in mcp/tools.py _TOOL_DEFS."""
         # Import the tools module
         tools_path = _base / "mcp" / "tools.py"
         if "synapse.mcp" not in sys.modules:
@@ -1045,6 +1057,9 @@ class TestMCPToolDefs:
             "tops_setup_wedge",
             "tops_batch_cook",
             "tops_query_items",
+            "tops_cook_and_validate",
+            "tops_diagnose",
+            "tops_pipeline_status",
         ]:
             assert name in tool_names, f"Tool not in MCP registry: {name}"
 
@@ -1055,14 +1070,16 @@ class TestMCPToolDefs:
 
         # Read-only tools
         for name in ["tops_get_work_items", "tops_get_dependency_graph",
-                      "tops_get_cook_stats", "tops_query_items"]:
+                      "tops_get_cook_stats", "tops_query_items",
+                      "tops_diagnose", "tops_pipeline_status"]:
             assert tools[name]["annotations"]["readOnlyHint"] is True
             assert tools[name]["annotations"]["destructiveHint"] is False
 
         # Mutating tools
         for name in ["tops_cook_node", "tops_generate_items",
                       "tops_configure_scheduler", "tops_cancel_cook", "tops_dirty_node",
-                      "tops_setup_wedge", "tops_batch_cook"]:
+                      "tops_setup_wedge", "tops_batch_cook",
+                      "tops_cook_and_validate"]:
             assert tools[name]["annotations"]["readOnlyHint"] is False
             assert tools[name]["annotations"]["destructiveHint"] is True
 
@@ -1083,6 +1100,9 @@ class TestMCPToolDefs:
             "tops_setup_wedge",
             "tops_batch_cook",
             "tops_query_items",
+            "tops_cook_and_validate",
+            "tops_diagnose",
+            "tops_pipeline_status",
         ]:
             schema = tools[name]["inputSchema"]
             assert schema["type"] == "object"
@@ -1101,3 +1121,411 @@ class TestMCPToolDefs:
         assert tools_mod.has_tool("tops_setup_wedge")
         assert tools_mod.has_tool("tops_batch_cook")
         assert tools_mod.has_tool("tops_query_items")
+        assert tools_mod.has_tool("tops_cook_and_validate")
+        assert tools_mod.has_tool("tops_diagnose")
+        assert tools_mod.has_tool("tops_pipeline_status")
+
+
+# ===========================================================================
+# TestCookAndValidate (Phase 4)
+# ===========================================================================
+
+class TestCookAndValidate:
+    def test_success_no_retries(self, handler):
+        """All items succeed on first attempt, no retries needed."""
+        items = [
+            _make_work_item(id=0, state="CookedSuccess", cook_time=1.0),
+            _make_work_item(id=1, state="CookedSuccess", cook_time=2.0),
+        ]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node(pdg_node=pdg_node)
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_cook_and_validate({"node": "/obj/topnet1/gen1"})
+
+        assert result["status"] == "success"
+        assert result["total_attempts"] == 1
+        assert result["node"] == "/obj/topnet1/gen1"
+        assert result["final_by_state"]["CookedSuccess"] == 2
+        node.cook.assert_called_once_with(block=True)
+
+    def test_failures_no_retry_configured(self, handler):
+        """Items fail but max_retries=0 (default), so no retry happens."""
+        items = [
+            _make_work_item(id=0, state="CookedSuccess"),
+            _make_work_item(id=1, state="CookedFail"),
+        ]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node(pdg_node=pdg_node)
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_cook_and_validate({"node": "/obj/topnet1/gen1"})
+
+        assert result["status"] == "failed"
+        assert result["total_attempts"] == 1
+        assert result["attempts"][0]["failed_items"] == 1
+        node.cook.assert_called_once()
+
+    def test_retry_succeeds(self, handler):
+        """Items fail on first attempt, succeed after retry."""
+        fail_items = [
+            _make_work_item(id=0, state="CookedSuccess"),
+            _make_work_item(id=1, state="CookedFail"),
+        ]
+        success_items = [
+            _make_work_item(id=0, state="CookedSuccess"),
+            _make_work_item(id=1, state="CookedSuccess"),
+        ]
+        pdg_node = _make_pdg_node(fail_items)
+        node = _make_top_node(pdg_node=pdg_node)
+
+        # After first cook + dirty, swap work items to success
+        def _cook_side_effect(block=True):
+            pdg_node.workItems = success_items
+
+        node.cook.side_effect = [None, _cook_side_effect]
+        # First cook: fail_items stay. Second cook: success_items appear.
+        call_count = [0]
+        def _cook(block=True):
+            call_count[0] += 1
+            if call_count[0] == 2:
+                pdg_node.workItems = success_items
+        node.cook.side_effect = _cook
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_cook_and_validate({
+                "node": "/obj/topnet1/gen1",
+                "max_retries": 1,
+            })
+
+        assert result["status"] == "success"
+        assert result["total_attempts"] == 2
+        assert result["attempts"][0]["status"] == "retry"
+        assert result["attempts"][1]["status"] == "success"
+        pdg_node.dirty.assert_called_once_with(False)
+
+    def test_retry_exhausted(self, handler):
+        """Retries exhausted, still failing."""
+        items = [
+            _make_work_item(id=0, state="CookedFail"),
+            _make_work_item(id=1, state="CookedFail"),
+        ]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node(pdg_node=pdg_node)
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_cook_and_validate({
+                "node": "/obj/topnet1/gen1",
+                "max_retries": 2,
+            })
+
+        assert result["status"] == "failed"
+        assert result["total_attempts"] == 3  # 1 initial + 2 retries
+        # First two attempts should be "retry", last should be "failed"
+        assert result["attempts"][0]["status"] == "retry"
+        assert result["attempts"][1]["status"] == "retry"
+        assert result["attempts"][2]["status"] == "failed"
+
+    def test_validate_disabled(self, handler):
+        """With validate_states=False, failures don't trigger retries."""
+        items = [_make_work_item(id=0, state="CookedFail")]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node(pdg_node=pdg_node)
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_cook_and_validate({
+                "node": "/obj/topnet1/gen1",
+                "max_retries": 3,
+                "validate_states": False,
+            })
+
+        # Even though there are failures and retries configured,
+        # validate_states=False means we don't check and don't retry
+        assert result["total_attempts"] == 1
+        # With validation disabled, status comes from failed_count check
+        assert result["status"] == "failed"
+
+    def test_kahan_sum_cook_times(self, handler):
+        """total_cook_time should use kahan_sum for stability."""
+        items = [_make_work_item(id=0, state="CookedSuccess")]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node(pdg_node=pdg_node)
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_cook_and_validate({"node": "/obj/topnet1/gen1"})
+
+        # total_cook_time should be a number (kahan_sum result)
+        assert isinstance(result["total_cook_time"], (int, float))
+        assert result["total_cook_time"] >= 0
+
+    def test_by_state_sorted(self, handler):
+        """by_state dict keys should be sorted (He2025)."""
+        items = [
+            _make_work_item(id=0, state="CookedSuccess"),
+            _make_work_item(id=1, state="CookedFail"),
+            _make_work_item(id=2, state="Cooking"),
+        ]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node(pdg_node=pdg_node)
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_cook_and_validate({"node": "/obj/topnet1/gen1"})
+
+        keys = list(result["final_by_state"].keys())
+        assert keys == sorted(keys)
+
+    def test_node_not_found(self, handler):
+        with patch.object(_handlers_hou, "node", return_value=None):
+            with pytest.raises(ValueError, match="Couldn't find"):
+                handler._handle_tops_cook_and_validate({"node": "/nonexistent"})
+
+
+# ===========================================================================
+# TestDiagnose (Phase 4)
+# ===========================================================================
+
+class TestDiagnose:
+    def test_mixed_states(self, handler):
+        """Diagnose a node with mixed success/failure states."""
+        items = [
+            _make_work_item(id=0, name="item_0", state="CookedSuccess", cook_time=1.0),
+            _make_work_item(id=1, name="item_1", state="CookedFail", cook_time=0.5),
+            _make_work_item(id=2, name="item_2", state="CookedSuccess", cook_time=2.0),
+            _make_work_item(id=3, name="item_3", state="CookedFail", cook_time=0.1),
+        ]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node("/obj/topnet1/gen1", pdg_node=pdg_node)
+        node.parent.return_value = _make_top_node("/obj/topnet1", children=[])
+        node.inputConnections.return_value = []
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_diagnose({"node": "/obj/topnet1/gen1"})
+
+        assert result["total_items"] == 4
+        assert result["failed_items"] == 2
+        assert result["by_state"]["CookedSuccess"] == 2
+        assert result["by_state"]["CookedFail"] == 2
+        assert len(result["failed_details"]) == 2
+        # He2025: failed_details sorted by id
+        assert result["failed_details"][0]["id"] == 1
+        assert result["failed_details"][1]["id"] == 3
+
+    def test_uncooked_items(self, handler):
+        """Node with uncooked items should suggest generating first."""
+        items = []
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node("/obj/topnet1/gen1", pdg_node=pdg_node)
+        node.parent.return_value = _make_top_node("/obj/topnet1", children=[])
+        node.inputConnections.return_value = []
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_diagnose({"node": "/obj/topnet1/gen1"})
+
+        assert result["total_items"] == 0
+        assert any("No work items" in s for s in result["suggestions"])
+
+    def test_no_items(self, handler):
+        """Empty PDG node should report 0 items with a suggestion."""
+        pdg_node = _make_pdg_node([])
+        node = _make_top_node("/obj/topnet1/gen1", pdg_node=pdg_node)
+        node.parent.return_value = _make_top_node("/obj/topnet1", children=[])
+        node.inputConnections.return_value = []
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_diagnose({"node": "/obj/topnet1/gen1"})
+
+        assert result["total_items"] == 0
+        assert result["failed_items"] == 0
+
+    def test_upstream_failures(self, handler):
+        """Upstream node with failures should generate a suggestion."""
+        items = [_make_work_item(id=0, state="CookedFail")]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node("/obj/topnet1/gen2", pdg_node=pdg_node)
+        node.parent.return_value = _make_top_node("/obj/topnet1", children=[])
+
+        # Upstream node with failures
+        upstream_items = [_make_work_item(id=0, state="CookedFail")]
+        upstream_pdg = _make_pdg_node(upstream_items)
+        upstream_node = _make_top_node("/obj/topnet1/gen1", pdg_node=upstream_pdg)
+
+        conn = MagicMock()
+        conn.inputNode.return_value = upstream_node
+        node.inputConnections.return_value = [conn]
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_diagnose({"node": "/obj/topnet1/gen2"})
+
+        assert len(result["upstream"]) == 1
+        assert result["upstream"][0]["has_failures"] is True
+        assert any("Upstream node" in s for s in result["suggestions"])
+
+    def test_scheduler_info(self, handler):
+        """Scheduler info should be included when include_scheduler=True."""
+        items = [_make_work_item(id=0, state="CookedSuccess")]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node("/obj/topnet1/gen1", pdg_node=pdg_node)
+        node.inputConnections.return_value = []
+
+        scheduler = MagicMock()
+        scheduler.path.return_value = "/obj/topnet1/localscheduler"
+        scheduler.type.return_value = _MockNodeType("localscheduler", "Top")
+        procs_parm = MagicMock()
+        procs_parm.eval.return_value = 4
+        scheduler.parm.return_value = procs_parm
+
+        parent = _make_top_node("/obj/topnet1", children=[scheduler, node])
+        node.parent.return_value = parent
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_diagnose({"node": "/obj/topnet1/gen1"})
+
+        assert result["scheduler"] is not None
+        assert result["scheduler"]["type"] == "localscheduler"
+        assert result["scheduler"]["max_procs"] == 4
+
+    def test_suggestions_sorted(self, handler):
+        """Suggestions should be sorted (He2025)."""
+        items = [_make_work_item(id=0, state="CookedFail")]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node("/obj/topnet1/gen2", pdg_node=pdg_node)
+        node.parent.return_value = _make_top_node("/obj/topnet1", children=[])
+
+        upstream_items = [_make_work_item(id=0, state="CookedFail")]
+        upstream_pdg = _make_pdg_node(upstream_items)
+        upstream_node = _make_top_node("/obj/topnet1/gen1", pdg_node=upstream_pdg)
+        conn = MagicMock()
+        conn.inputNode.return_value = upstream_node
+        node.inputConnections.return_value = [conn]
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_diagnose({"node": "/obj/topnet1/gen2"})
+
+        suggestions = result["suggestions"]
+        assert suggestions == sorted(suggestions)
+
+    def test_node_not_found(self, handler):
+        with patch.object(_handlers_hou, "node", return_value=None):
+            with pytest.raises(ValueError, match="Couldn't find"):
+                handler._handle_tops_diagnose({"node": "/nonexistent"})
+
+
+# ===========================================================================
+# TestPipelineStatus (Phase 4)
+# ===========================================================================
+
+class TestPipelineStatus:
+    def test_healthy_network(self, handler):
+        """All nodes healthy -> overall_health='healthy'."""
+        items1 = [_make_work_item(id=0, state="CookedSuccess", cook_time=1.0)]
+        items2 = [_make_work_item(id=1, state="CookedSuccess", cook_time=2.0)]
+        child1 = _make_top_node("/obj/topnet1/gen1", _make_pdg_node(items1),
+                                type_name="genericgenerator")
+        child2 = _make_top_node("/obj/topnet1/rop1", _make_pdg_node(items2),
+                                type_name="ropfetch")
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet",
+                                children=[child1, child2])
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_pipeline_status({"topnet_path": "/obj/topnet1"})
+
+        assert result["overall_health"] == "healthy"
+        assert result["node_count"] == 2
+        assert result["total_items"] == 2
+        assert result["issues"] == []
+        assert result["by_state"]["CookedSuccess"] == 2
+
+    def test_network_with_errors(self, handler):
+        """Nodes with failures -> overall_health='error', issues populated."""
+        items_ok = [_make_work_item(id=0, state="CookedSuccess", cook_time=1.0)]
+        items_fail = [
+            _make_work_item(id=1, state="CookedSuccess", cook_time=0.5),
+            _make_work_item(id=2, state="CookedFail", cook_time=0.2),
+        ]
+        child1 = _make_top_node("/obj/topnet1/gen1", _make_pdg_node(items_ok),
+                                type_name="genericgenerator")
+        child2 = _make_top_node("/obj/topnet1/process1", _make_pdg_node(items_fail),
+                                type_name="ropfetch")
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet",
+                                children=[child1, child2])
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_pipeline_status({"topnet_path": "/obj/topnet1"})
+
+        assert result["overall_health"] == "error"
+        assert len(result["issues"]) == 1
+        assert "/obj/topnet1/process1" in result["issues"][0]
+        assert len(result["suggestions"]) > 0
+
+    def test_empty_network(self, handler):
+        """No work items anywhere -> overall_health='empty'."""
+        child1 = _make_top_node("/obj/topnet1/gen1", _make_pdg_node([]),
+                                type_name="genericgenerator")
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet",
+                                children=[child1])
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_pipeline_status({"topnet_path": "/obj/topnet1"})
+
+        assert result["overall_health"] == "empty"
+        assert result["total_items"] == 0
+        assert any("No work items" in s for s in result["suggestions"])
+
+    def test_include_items(self, handler):
+        """include_items=True should include per-item details in nodes."""
+        items = [
+            _make_work_item(id=0, name="item_0", state="CookedSuccess", cook_time=1.0),
+            _make_work_item(id=1, name="item_1", state="CookedSuccess", cook_time=2.0),
+        ]
+        child = _make_top_node("/obj/topnet1/gen1", _make_pdg_node(items),
+                               type_name="genericgenerator")
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet",
+                                children=[child])
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_pipeline_status({
+                "topnet_path": "/obj/topnet1",
+                "include_items": True,
+            })
+
+        assert "items" in result["nodes"][0]
+        assert len(result["nodes"][0]["items"]) == 2
+
+    def test_nodes_sorted_by_path(self, handler):
+        """He2025: nodes list should be sorted by path."""
+        child_b = _make_top_node("/obj/topnet1/z_last", _make_pdg_node([]),
+                                 type_name="null")
+        child_a = _make_top_node("/obj/topnet1/a_first", _make_pdg_node([]),
+                                 type_name="null")
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet",
+                                children=[child_b, child_a])
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_pipeline_status({"topnet_path": "/obj/topnet1"})
+
+        paths = [n["path"] for n in result["nodes"]]
+        assert paths == sorted(paths)
+
+    def test_skips_schedulers(self, handler):
+        """Scheduler nodes should be excluded from the node list."""
+        items = [_make_work_item(id=0, state="CookedSuccess")]
+        child = _make_top_node("/obj/topnet1/gen1", _make_pdg_node(items),
+                               type_name="genericgenerator")
+        scheduler = _make_top_node("/obj/topnet1/localscheduler", None,
+                                   type_name="localscheduler")
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet",
+                                children=[child, scheduler])
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_pipeline_status({"topnet_path": "/obj/topnet1"})
+
+        assert result["node_count"] == 1
+        node_names = [n["name"] for n in result["nodes"]]
+        assert "localscheduler" not in node_names
+
+    def test_not_topnet_error(self, handler):
+        """Non-TopNet node should raise ValueError."""
+        geo = _make_top_node("/obj/geo1", None, "Object", "geo")
+        with patch.object(_handlers_hou, "node", return_value=geo):
+            with pytest.raises(ValueError, match="not a TOP network"):
+                handler._handle_tops_pipeline_status({"topnet_path": "/obj/geo1"})

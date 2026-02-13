@@ -565,7 +565,21 @@ class TestResourceTemplatesList:
         resp = _parse_response(resp_body)
         assert "result" in resp
         templates = resp["result"]["resourceTemplates"]
-        assert len(templates) >= 7  # 7 resource templates
+        assert len(templates) >= 9  # 9 resource templates (7 + 2 Phase 4)
+
+    def test_tops_status_template_exists(self, server):
+        """Phase 4: tops status resource template should be listed."""
+        init_body = _jsonrpc("initialize", {}, msg_id=1)
+        _, headers = server.handle_request(init_body)
+        sid = headers["Mcp-Session-Id"]
+
+        body = _jsonrpc("resources/templates/list", {}, msg_id=2)
+        resp_body, _ = server.handle_request(body, session_id=sid)
+        resp = _parse_response(resp_body)
+        templates = resp["result"]["resourceTemplates"]
+        uris = [t["uriTemplate"] for t in templates]
+        assert "houdini://tops/{topnet_path}/status" in uris
+        assert "houdini://tops/{node_path}/diagnosis" in uris
 
 
 # ===========================================================================
@@ -604,6 +618,44 @@ class TestAuthIntegration:
         auth_mod = sys.modules["synapse.server.auth"]
         assert auth_mod.authenticate("wrong", "correct-key") is False
         assert auth_mod.authenticate("correct-key", "correct-key") is True
+
+
+class TestPhase4MCPTools:
+    """Phase 4: Verify cook_and_validate, diagnose, pipeline_status in MCP."""
+
+    def test_phase4_tools_in_tools_list(self, server):
+        """All 3 Phase 4 tools should appear in tools/list."""
+        init_body = _jsonrpc("initialize", {}, msg_id=1)
+        _, headers = server.handle_request(init_body)
+        sid = headers["Mcp-Session-Id"]
+
+        body = _jsonrpc("tools/list", {}, msg_id=2)
+        resp_body, _ = server.handle_request(body, session_id=sid)
+        resp = _parse_response(resp_body)
+        tool_names = [t["name"] for t in resp["result"]["tools"]]
+
+        assert "tops_cook_and_validate" in tool_names
+        assert "tops_diagnose" in tool_names
+        assert "tops_pipeline_status" in tool_names
+
+    def test_phase4_tool_annotations(self):
+        """Phase 4 annotations: cook_and_validate destructive, diagnose/status read-only."""
+        tools = {t["name"]: t for t in tools_mod.get_tools()}
+
+        # cook_and_validate is destructive
+        cv = tools["tops_cook_and_validate"]
+        assert cv["annotations"]["readOnlyHint"] is False
+        assert cv["annotations"]["destructiveHint"] is True
+
+        # diagnose is read-only
+        diag = tools["tops_diagnose"]
+        assert diag["annotations"]["readOnlyHint"] is True
+        assert diag["annotations"]["destructiveHint"] is False
+
+        # pipeline_status is read-only
+        ps = tools["tops_pipeline_status"]
+        assert ps["annotations"]["readOnlyHint"] is True
+        assert ps["annotations"]["destructiveHint"] is False
 
 
 class TestModuleSingleton:
