@@ -312,6 +312,201 @@ TOOL_DEFINITIONS = [
             "required": [],
         },
     },
+    # ─── TOPS / Pipeline tools ─────────────────────────────────
+    {
+        "name": "synapse_tops_cook",
+        "description": (
+            "Cook a TOP node with optional retry and validation. "
+            "Uses cook-and-validate pipeline: cooks the node, checks work item states, "
+            "and optionally retries on failure. Good for reliable batch processing."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "node": {
+                    "type": "string",
+                    "description": "TOP node path to cook (e.g. '/obj/topnet1/ropfetch1').",
+                },
+                "max_retries": {
+                    "type": "integer",
+                    "description": "Number of retry attempts on failure (default 0).",
+                },
+                "validate_states": {
+                    "type": "boolean",
+                    "description": "Check work item states after cooking (default true).",
+                },
+            },
+            "required": ["node"],
+        },
+    },
+    {
+        "name": "synapse_tops_status",
+        "description": (
+            "Get pipeline health status for a TOP network. "
+            "Returns node states, work item counts, cook progress, and any errors. "
+            "Use this to monitor long-running cooks or diagnose pipeline issues."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "topnet_path": {
+                    "type": "string",
+                    "description": "Path to the TOP network (e.g. '/obj/topnet1').",
+                },
+                "include_items": {
+                    "type": "boolean",
+                    "description": "Include individual work item details (default false).",
+                },
+            },
+            "required": ["topnet_path"],
+        },
+    },
+    {
+        "name": "synapse_tops_diagnose",
+        "description": (
+            "Diagnose failures in a TOP node. Inspects work items, scheduler state, "
+            "upstream dependencies, and error logs. Use this when a cook fails and "
+            "you need to understand why."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "node": {
+                    "type": "string",
+                    "description": "TOP node path to diagnose.",
+                },
+            },
+            "required": ["node"],
+        },
+    },
+    {
+        "name": "synapse_tops_wedge",
+        "description": (
+            "Set up and cook a parameter wedge in a TOP network. "
+            "Creates variations of a parameter across specified values. "
+            "Great for exploring different looks quickly."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "topnet_path": {
+                    "type": "string",
+                    "description": "TOP network path (e.g. '/obj/topnet1').",
+                },
+                "attribute_name": {
+                    "type": "string",
+                    "description": "Parameter/attribute to wedge (e.g. 'roughness').",
+                },
+                "values": {
+                    "type": "array",
+                    "items": {"type": "number"},
+                    "description": "List of values to wedge over (e.g. [0.1, 0.3, 0.5, 0.7]).",
+                },
+            },
+            "required": ["topnet_path", "attribute_name", "values"],
+        },
+    },
+    {
+        "name": "synapse_tops_work_items",
+        "description": (
+            "Query work items from a TOP node. Returns item IDs, states, "
+            "attributes, and output files. Optionally filter by state."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "node": {
+                    "type": "string",
+                    "description": "TOP node path to query work items from.",
+                },
+                "state_filter": {
+                    "type": "string",
+                    "description": "Filter by state: cooked, failed, waiting, uncooked (empty = all).",
+                },
+            },
+            "required": ["node"],
+        },
+    },
+    {
+        "name": "synapse_tops_cook_stats",
+        "description": (
+            "Get cook timing and throughput statistics for a TOP node. "
+            "Returns total cook time, per-item averages, throughput, "
+            "and resource usage."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "node": {
+                    "type": "string",
+                    "description": "TOP node path to get stats for.",
+                },
+            },
+            "required": ["node"],
+        },
+    },
+    {
+        "name": "synapse_capture_viewport",
+        "description": (
+            "Capture a screenshot of the Houdini viewport. Returns the image path. "
+            "Use this for visual verification after making scene changes — "
+            "check that lighting, materials, and layout look right."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "format": {
+                    "type": "string",
+                    "description": "Image format: 'jpeg' or 'png' (default 'jpeg').",
+                    "enum": ["jpeg", "png"],
+                },
+                "width": {
+                    "type": "integer",
+                    "description": "Optional width to resize capture to.",
+                },
+                "height": {
+                    "type": "integer",
+                    "description": "Optional height to resize capture to.",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "synapse_batch",
+        "description": (
+            "Execute multiple Synapse commands atomically in a single round-trip. "
+            "All commands run in order within one undo group — Ctrl+Z reverts the "
+            "whole batch. Use this for tightly coupled operations that must succeed "
+            "or fail together."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "commands": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {"type": "string", "description": "Command type (e.g. 'create_node', 'set_parm')."},
+                            "payload": {"type": "object", "description": "Command payload."},
+                        },
+                        "required": ["type"],
+                    },
+                    "description": "List of commands to execute in order.",
+                },
+                "atomic": {
+                    "type": "boolean",
+                    "description": "Wrap in single undo group (default true).",
+                },
+                "stop_on_error": {
+                    "type": "boolean",
+                    "description": "Stop on first error (default false).",
+                },
+            },
+            "required": ["commands"],
+        },
+    },
 ]
 
 
@@ -394,6 +589,58 @@ async def execute_tool(tool_name: str, tool_input: dict) -> str:
 
         elif tool_name == "synapse_memory_status":
             result = await client.memory_status()
+            return json.dumps(result, indent=2, default=str)
+
+        # TOPS / Pipeline tools
+        elif tool_name == "synapse_tops_cook":
+            result = await client.tops_cook(
+                node=tool_input["node"],
+                max_retries=tool_input.get("max_retries", 0),
+                validate=tool_input.get("validate_states", True),
+            )
+            return json.dumps(result, indent=2, default=str)
+
+        elif tool_name == "synapse_tops_status":
+            result = await client.tops_status(
+                topnet_path=tool_input["topnet_path"],
+                include_items=tool_input.get("include_items", False),
+            )
+            return json.dumps(result, indent=2, default=str)
+
+        elif tool_name == "synapse_tops_diagnose":
+            result = await client.tops_diagnose(node=tool_input["node"])
+            return json.dumps(result, indent=2, default=str)
+
+        elif tool_name == "synapse_tops_wedge":
+            result = await client.tops_wedge(
+                topnet_path=tool_input["topnet_path"],
+                attribute_name=tool_input["attribute_name"],
+                values=tool_input["values"],
+            )
+            return json.dumps(result, indent=2, default=str)
+
+        elif tool_name == "synapse_tops_work_items":
+            result = await client.tops_work_items(
+                node=tool_input["node"],
+                state_filter=tool_input.get("state_filter", ""),
+            )
+            return json.dumps(result, indent=2, default=str)
+
+        elif tool_name == "synapse_tops_cook_stats":
+            result = await client.tops_cook_stats(node=tool_input["node"])
+            return json.dumps(result, indent=2, default=str)
+
+        elif tool_name == "synapse_capture_viewport":
+            payload = {k: v for k, v in tool_input.items() if v is not None}
+            result = await client.capture_viewport(**payload)
+            return json.dumps(result, indent=2, default=str)
+
+        elif tool_name == "synapse_batch":
+            result = await client.batch_commands(
+                commands=tool_input["commands"],
+                atomic=tool_input.get("atomic", True),
+                stop_on_error=tool_input.get("stop_on_error", False),
+            )
             return json.dumps(result, indent=2, default=str)
 
         else:

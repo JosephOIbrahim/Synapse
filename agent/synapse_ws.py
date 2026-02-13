@@ -40,6 +40,13 @@ _SLOW_COMMANDS = {
     "inspect_selection": 30.0,
     "inspect_scene": 30.0,
     "inspect_node": 30.0,
+    "tops_cook_and_validate": 600.0,
+    "tops_pipeline_status": 60.0,
+    "tops_diagnose": 30.0,
+    "tops_setup_wedge": 120.0,
+    "tops_get_work_items": 30.0,
+    "tops_get_cook_stats": 30.0,
+    "batch_commands": 60.0,
 }
 
 
@@ -381,3 +388,40 @@ class SynapseClient:
     async def memory_status(self) -> dict:
         """Get Living Memory evolution stage, file sizes, session count."""
         return await self._send_command("memory_status")
+
+    # --- TOPS / Pipeline ---
+
+    async def tops_cook(self, node: str, max_retries: int = 0, validate: bool = True) -> dict:
+        """Cook a TOP node with optional retry and state validation."""
+        payload = {"node": node, "max_retries": max_retries, "validate_states": validate}
+        return await self._send_command("tops_cook_and_validate", payload)
+
+    async def tops_status(self, topnet_path: str, include_items: bool = False) -> dict:
+        """Get pipeline health status for a TOP network."""
+        payload = {"topnet_path": topnet_path, "include_items": include_items}
+        return await self._send_command("tops_pipeline_status", payload)
+
+    async def tops_diagnose(self, node: str) -> dict:
+        """Diagnose failures in a TOP node."""
+        return await self._send_command("tops_diagnose", {"node": node})
+
+    async def tops_wedge(self, topnet_path: str, attribute_name: str, values: list) -> dict:
+        """Set up and cook a parameter wedge."""
+        payload = {"topnet_path": topnet_path, "attribute_name": attribute_name, "values": values}
+        return await self._send_command("tops_setup_wedge", payload)
+
+    async def tops_work_items(self, node: str, state_filter: str = "") -> dict:
+        """Query work items from a TOP node."""
+        payload = {"node": node}
+        if state_filter:
+            payload["state_filter"] = state_filter
+        return await self._send_command("tops_get_work_items", payload)
+
+    async def tops_cook_stats(self, node: str) -> dict:
+        """Get cook timing and throughput stats for a TOP node."""
+        return await self._send_command("tops_get_cook_stats", {"node": node})
+
+    async def batch_commands(self, commands: list, atomic: bool = True, stop_on_error: bool = False) -> dict:
+        """Execute multiple commands atomically in one round-trip."""
+        payload = {"commands": commands, "atomic": atomic, "stop_on_error": stop_on_error}
+        return await self._send_command("batch_commands", payload)

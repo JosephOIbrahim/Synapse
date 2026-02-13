@@ -36,7 +36,16 @@ def test_tool_definitions_count():
     assert "synapse_memory_write" in names
     assert "synapse_memory_query" in names
     assert "synapse_memory_status" in names
-    assert len(names) == 12
+    # 12 original + 8 TOPS/viewport/batch tools
+    assert "synapse_tops_cook" in names
+    assert "synapse_tops_status" in names
+    assert "synapse_tops_diagnose" in names
+    assert "synapse_tops_wedge" in names
+    assert "synapse_tops_work_items" in names
+    assert "synapse_tops_cook_stats" in names
+    assert "synapse_capture_viewport" in names
+    assert "synapse_batch" in names
+    assert len(names) == 20
 
 
 def test_tool_definitions_have_required_fields():
@@ -164,4 +173,72 @@ async def test_execute_inspect_node():
         include_code=True,
         include_geometry=True,
         include_expressions=True,
+    )
+
+
+# ── TOPS / Pipeline tool execution tests ──────────────────────
+
+
+@pytest.mark.asyncio
+async def test_execute_tops_cook():
+    """synapse_tops_cook passes correct args to client."""
+    mock_client = AsyncMock(spec=SynapseClient)
+    mock_client.tops_cook = AsyncMock(return_value={"status": "cooked", "items": 10})
+    set_client(mock_client)
+
+    result = await execute_tool("synapse_tops_cook", {
+        "node": "/obj/topnet1/ropfetch1",
+        "max_retries": 2,
+        "validate_states": True,
+    })
+    data = json.loads(result)
+    assert data["status"] == "cooked"
+    mock_client.tops_cook.assert_awaited_once_with(
+        node="/obj/topnet1/ropfetch1", max_retries=2, validate=True,
+    )
+
+
+@pytest.mark.asyncio
+async def test_execute_tops_status():
+    """synapse_tops_status passes correct args to client."""
+    mock_client = AsyncMock(spec=SynapseClient)
+    mock_client.tops_status = AsyncMock(return_value={"healthy": True, "nodes": 5})
+    set_client(mock_client)
+
+    result = await execute_tool("synapse_tops_status", {
+        "topnet_path": "/obj/topnet1",
+    })
+    data = json.loads(result)
+    assert data["healthy"] is True
+    mock_client.tops_status.assert_awaited_once_with(
+        topnet_path="/obj/topnet1", include_items=False,
+    )
+
+
+@pytest.mark.asyncio
+async def test_execute_capture_viewport():
+    """synapse_capture_viewport passes format arg."""
+    mock_client = AsyncMock(spec=SynapseClient)
+    mock_client.capture_viewport = AsyncMock(return_value={"image_path": "/tmp/capture.jpg"})
+    set_client(mock_client)
+
+    result = await execute_tool("synapse_capture_viewport", {"format": "jpeg"})
+    data = json.loads(result)
+    assert data["image_path"] == "/tmp/capture.jpg"
+
+
+@pytest.mark.asyncio
+async def test_execute_batch():
+    """synapse_batch passes commands to client."""
+    mock_client = AsyncMock(spec=SynapseClient)
+    mock_client.batch_commands = AsyncMock(return_value={"results": [{"ok": True}]})
+    set_client(mock_client)
+
+    result = await execute_tool("synapse_batch", {
+        "commands": [{"type": "ping"}],
+    })
+    data = json.loads(result)
+    assert data["results"][0]["ok"] is True
+    mock_client.batch_commands.assert_awaited_once_with(
+        commands=[{"type": "ping"}], atomic=True, stop_on_error=False,
     )

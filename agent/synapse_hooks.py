@@ -99,6 +99,17 @@ def validate_execute_code(code: str) -> Optional[str]:
     return None
 
 
+def validate_tops_cook(tool_input: dict) -> Optional[str]:
+    """Advisory check for TOPS cook calls.
+
+    Returns a warning string if potential issues detected, None otherwise.
+    """
+    max_retries = tool_input.get("max_retries", 0)
+    if max_retries > 5:
+        return "max_retries > 5 may cause long waits -- consider a lower value"
+    return None
+
+
 def enrich_tool_result(tool_name: str, tool_input: dict, result: Any) -> Optional[str]:
     """
     Post-process a tool result with coaching-tone enrichment.
