@@ -274,6 +274,7 @@
     "summary": "Hydra render delegate architecture: HdRenderDelegate, plugInfo.json, Karma dual-plugin pattern"
   },
   "joy_of_vex_attribs": {
+    "summary": "Joy of VEX: Attributes",
     "description": "Tutorial examples covering attribute creation, types, and binding from The Joy of VEX. Covers functions: @Cd, @Frame, @N, @P, @Time, @a, @d, @dist, @foo, @i, @id, @numpt, @orient, @pnumclass, @primid, @primnum, @pscale, @ptnum, @scale, @up.",
     "keywords": [
       "binding",
@@ -285,10 +286,10 @@
       "declare",
       "creation"
     ],
-    "reference_file": "joy_of_vex_attribs",
-    "summary": "Joy of VEX: Attributes"
+    "reference_file": "joy_of_vex_attribs"
   },
   "joy_of_vex_color": {
+    "summary": "Joy of VEX: Color",
     "description": "Tutorial examples covering color from attributes, ramps, and gradients from The Joy of VEX. Covers functions: %=, @Cd, @N, @P, @Time, @d, @id, @numpt, @prim, @primnum, @pscale, @ptnum, @scale, @time, @u, ch, chf, chramp, chv, clamp.",
     "keywords": [
       "color",
@@ -301,10 +302,10 @@
       "colormap",
       "visualization"
     ],
-    "reference_file": "joy_of_vex_color",
-    "summary": "Joy of VEX: Color"
+    "reference_file": "joy_of_vex_color"
   },
   "joy_of_vex_deformation": {
+    "summary": "Joy of VEX: Deformation",
     "description": "Tutorial examples covering wave displacement and ramp-driven deformation from The Joy of VEX. Covers functions: @Cd, @Frame, @N, @P, @Py, @Time, @offset, @primnum, @ptnum, @scale, @up, abs, ch, chf, chi, chramp, cos, distance, fit, fit01.",
     "keywords": [
       "deformation",
@@ -317,10 +318,10 @@
       "ripple",
       "distort"
     ],
-    "reference_file": "joy_of_vex_deformation",
-    "summary": "Joy of VEX: Deformation"
+    "reference_file": "joy_of_vex_deformation"
   },
   "joy_of_vex_flow_control": {
+    "summary": "Joy of VEX: Flow Control",
     "description": "Tutorial examples covering loops, conditionals, and foreach from The Joy of VEX. Covers functions: @Cd, @N, @P, @Time, @a, @foo, @name, @ptnum, abs, addpoint, ch, chf, chramp, chs, chv, clamp, distance, dot, fit, fit01.",
     "keywords": [
       "foreach",
@@ -333,10 +334,10 @@
       "break",
       "continue"
     ],
-    "reference_file": "joy_of_vex_flow_control",
-    "summary": "Joy of VEX: Flow Control"
+    "reference_file": "joy_of_vex_flow_control"
   },
   "joy_of_vex_geometry": {
+    "summary": "Joy of VEX: Geometry Operations",
     "description": "Tutorial examples covering intrinsics, bounding boxes, and prim operations from The Joy of VEX. Covers functions: $PI, 3@b, 4@a, @Cd, @Frame, @Ga, @N, @P, @Time, @a, @convert, @i, @matrix3b, @orient, @p3by3, @primnum, @primuv, @pscale, @ptg, @ptnum.",
     "keywords": [
       "intrinsic",
@@ -348,10 +349,10 @@
       "getbbox",
       "primitivenormal"
     ],
-    "reference_file": "joy_of_vex_geometry",
-    "summary": "Joy of VEX: Geometry Operations"
+    "reference_file": "joy_of_vex_geometry"
   },
   "joy_of_vex_geometry_creation": {
+    "summary": "Joy of VEX: Geometry Creation",
     "description": "Tutorial examples covering addpoint, addprim, and procedural geometry from The Joy of VEX. Covers functions: @Frame, @N, @OpInput1, @P, @Time, @Tramp, @i, @id, @noise, @nrelpe, @opinput1, @primnum, @ptnum, @time, addpoint, addprim, addvertex, ch, ch3, chf.",
     "keywords": [
       "addpoint",
@@ -364,10 +365,10 @@
       "construct",
       "polyline"
     ],
-    "reference_file": "joy_of_vex_geometry_creation",
-    "summary": "Joy of VEX: Geometry Creation"
+    "reference_file": "joy_of_vex_geometry_creation"
   },
   "joy_of_vex_nearpoints": {
+    "summary": "Joy of VEX: Nearpoints & Proximity",
     "description": "Tutorial examples covering nearpoints, pcfind, neighbor lookups, and proximity blending from The Joy of VEX. Covers functions: @Cd, @P, @Time, @d, @dist, @prim1d, @primid, @ptnum, @time, @uv, @uv1, addpoint, array, attrib, ch, chf, chi, chramp, chv, clamp.",
     "keywords": [
       "nearpoints",
@@ -380,10 +381,10 @@
       "nearby",
       "search"
     ],
-    "reference_file": "joy_of_vex_nearpoints",
-    "summary": "Joy of VEX: Nearpoints & Proximity"
+    "reference_file": "joy_of_vex_nearpoints"
   },
   "joy_of_vex_noise": {
+    "summary": "Joy of VEX: Noise & Randomness",
     "description": "Tutorial examples covering snoise, curlnoise, and random patterns from The Joy of VEX. Covers functions: $F, $PI, @0, @Frame, @N, @P, @Time, @a, @orient, @primnum, @primuv, @ptnum, @t, @up, @w, PI, addpoint, addprim, ch, chf.",
     "keywords": [
       "snoise",
@@ -397,10 +398,10 @@
       "turbulence",
       "fractal"
     ],
-    "reference_file": "joy_of_vex_noise",
-    "summary": "Joy of VEX: Noise & Randomness"
+    "reference_file": "joy_of_vex_noise"
   },
   "joy_of_vex_pcopen": {
+    "summary": "Joy of VEX: Point Clouds (pcopen)",
     "description": "Tutorial examples covering pcopen, pcfilter, and point cloud iteration from The Joy of VEX. Covers functions: @Cd, @N, @P, @dist, @ez, @n, @ptnum, @v, ch, chf, chi, chramp, chv, chvlen, distance, dot, fit, fit01, foreach, i@numpt.",
     "keywords": [
       "pcopen",
@@ -413,10 +414,10 @@
       "iterate",
       "pointcloud"
     ],
-    "reference_file": "joy_of_vex_pcopen",
-    "summary": "Joy of VEX: Point Clouds (pcopen)"
+    "reference_file": "joy_of_vex_pcopen"
   },
   "joy_of_vex_quaternions": {
+    "summary": "Joy of VEX: Quaternions",
     "description": "Tutorial examples covering quaternion creation, slerp, qrotate, and orient from The Joy of VEX. Covers functions: $F, $PI, @0, @Cd, @D, @Frame, @N, @O, @P, @PI, @R, @Time, @Time01, @TimeInc, @X, @Z, @a, @chs, @orient, @ptnum.",
     "keywords": [
       "quaternion",
@@ -431,10 +432,10 @@
       "orientation",
       "qinvert"
     ],
-    "reference_file": "joy_of_vex_quaternions",
-    "summary": "Joy of VEX: Quaternions"
+    "reference_file": "joy_of_vex_quaternions"
   },
   "joy_of_vex_ramps": {
+    "summary": "Joy of VEX: Ramps & Parameters",
     "description": "Tutorial examples covering chramp, channel references, and slider controls from The Joy of VEX. Covers functions: $F, $PI, $T, 4@orient, @Cd, @Frame, @N, @P, @PI, @Time, @a, @d, @dist, @i, @orient, @pscale, @ptnum, @scale, @up, abs.",
     "keywords": [
       "chramp",
@@ -448,10 +449,10 @@
       "ramp",
       "interface"
     ],
-    "reference_file": "joy_of_vex_ramps",
-    "summary": "Joy of VEX: Ramps & Parameters"
+    "reference_file": "joy_of_vex_ramps"
   },
   "joy_of_vex_surface_sampling": {
+    "summary": "Joy of VEX: Surface Sampling",
     "description": "Tutorial examples covering primuv, xyzdist, minpos, and UV sampling from The Joy of VEX. Covers functions: $T, $TPI, @Cd, @Frame, @N, @P, @Time, @c, @cd, @dist, @grid, @id, @prim1d, @prim1id, @primId, @primid, @primnum, @ptnum, @u, @ui1.",
     "keywords": [
       "primuv",
@@ -464,10 +465,10 @@
       "uvdist",
       "surface"
     ],
-    "reference_file": "joy_of_vex_surface_sampling",
-    "summary": "Joy of VEX: Surface Sampling"
+    "reference_file": "joy_of_vex_surface_sampling"
   },
   "joy_of_vex_tips": {
+    "summary": "Joy of VEX: Tips & Misc",
     "description": "Tutorial tips covering debugging, optimization, groups, and miscellaneous VEX from The Joy of VEX. Covers functions: $PI, @Cd, @Frame, @N, @P, @Time, @V, @a, @b, @c, @offset, @orient, @primnum, @ptnum, @up, @v, @vecs, PI, array, ch.",
     "keywords": [
       "debugging",
@@ -480,10 +481,10 @@
       "misc",
       "pitfall"
     ],
-    "reference_file": "joy_of_vex_tips",
-    "summary": "Joy of VEX: Tips & Misc"
+    "reference_file": "joy_of_vex_tips"
   },
   "joy_of_vex_trigonometry": {
+    "summary": "Joy of VEX: Trigonometry & Oscillation",
     "description": "Tutorial examples covering sine waves, circular motion, and oscillation from The Joy of VEX. Covers functions: @Cd, @Frame, @N, @P, @Time, @pscale, @ptnum, @scale, @up, CH, asin, ch, chf, chi, chramp, chv, clamp, cos, distance, f@offset.",
     "keywords": [
       "sin",
@@ -498,10 +499,10 @@
       "radians",
       "wave"
     ],
-    "reference_file": "joy_of_vex_trigonometry",
-    "summary": "Joy of VEX: Trigonometry & Oscillation"
+    "reference_file": "joy_of_vex_trigonometry"
   },
   "joy_of_vex_vector_math": {
+    "summary": "Joy of VEX: Vector Math",
     "description": "Tutorial examples covering dot, cross, fit, clamp, and matrix operations from The Joy of VEX. Covers functions: @Cd, @N, @P, @numpt, @ptnum, @up, @v, ch, chramp, chv, clamp, cross, dot, f[]@, fit, float, ident, length, matrix, matrix3.",
     "keywords": [
       "dot",
@@ -516,8 +517,7 @@
       "remap",
       "matrix"
     ],
-    "reference_file": "joy_of_vex_vector_math",
-    "summary": "Joy of VEX: Vector Math"
+    "reference_file": "joy_of_vex_vector_math"
   },
   "karma_aov": {
     "description": "Karma AOVs via karmarenderproperties Image Output section. Common AOVs: beauty (C), direct/indirect diffuse/specular, albedo, N (normals), P (position), Z (depth), motionvector, crypto_material/object/asset (Cryptomatte). Denoising AOVs: denoise_albedo, denoise_normal. Light groups: tag lights with 'lightGroup' for per-light AOVs. Deep output: .exr with deep flag for depth-correct compositing. AOV rebuild: beauty = direct_diffuse + indirect_diffuse + direct_specular + indirect_specular + emission + sss.",
@@ -1109,5 +1109,545 @@
       "string"
     ],
     "summary": "Wire, cable, rope, and strand dynamics simulation"
+  },
+  "mpm_auto_sleep": {
+    "summary": "MPM Masterclass: MPM Auto Sleep",
+    "description": "Part 2/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Auto Sleep.",
+    "keywords": [
+      "mpm",
+      "auto_sleep",
+      "optimization",
+      "performance",
+      "simulation",
+      "rest_state",
+      "boundary_particles",
+      "staggered_activation"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_auto_sleep.md",
+    "common_queries": [
+      "How does auto sleep work in MPM?",
+      "MPM auto sleep performance optimization",
+      "MPM particle states active passive boundary",
+      "MPM staggered activation technique"
+    ]
+  },
+  "mpm_building_attack": {
+    "summary": "MPM Masterclass: MPM Building Attack",
+    "description": "Part 17/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Building Attack.",
+    "keywords": [
+      "mpm",
+      "building",
+      "attack",
+      "destruction",
+      "large_scale",
+      "fracture",
+      "collapse",
+      "projectile",
+      "continuous_emission",
+      "watertight",
+      "internal_structure",
+      "assume_unchanging_material",
+      "substeps",
+      "backtrack_velocity",
+      "consistent_point_count",
+      "filler_points",
+      "debris_instancing",
+      "wind_density",
+      "production_pipeline",
+      "concrete"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_building_attack.md",
+    "common_queries": [
+      "How to destroy a building with MPM projectiles",
+      "Preparing non-watertight models for MPM destruction",
+      "Continuous emission of MPM projectiles mid-simulation",
+      "Assume unchanging material properties checkbox explained",
+      "How to maintain consistent point count with emitted MPM particles",
+      "Backtracking projectile positions using velocity",
+      "Adding internal structural pillars for building destruction",
+      "Filler points and max distance in MPM Post Structure",
+      "Wind resistance driven by point density for debris"
+    ]
+  },
+  "mpm_car_rain": {
+    "summary": "MPM Masterclass: MPM Car Rain",
+    "description": "Part 13/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Car Rain.",
+    "keywords": [
+      "mpm",
+      "car",
+      "rain",
+      "water",
+      "environment",
+      "surface_tension",
+      "droplets",
+      "splash",
+      "ior",
+      "index_of_refraction",
+      "total_internal_reflection",
+      "condensation",
+      "puddle",
+      "ripple",
+      "collision_detection",
+      "particle_level_collision",
+      "mist",
+      "secondary_simulation",
+      "rendering_artifact"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_car_rain.md",
+    "common_queries": [
+      "How to simulate rain splashing on a car with MPM",
+      "How to fix total internal reflection artifacts on thin water sheets",
+      "How to set up IOR variation based on distance to collider",
+      "How to increase collision detection distance for water sticking to geometry",
+      "How to create reverse-time raindrop synchronization",
+      "How to add condensation layer to wet surfaces",
+      "How to create dynamic puddles with ripple solver"
+    ]
+  },
+  "mpm_continuous_emission": {
+    "summary": "MPM Masterclass: MPM Continuous Emission",
+    "description": "Part 3/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Continuous Emission.",
+    "keywords": [
+      "mpm",
+      "continuous_emission",
+      "expansion",
+      "particle_emission",
+      "source",
+      "fluid_source",
+      "overlapping_emission",
+      "fill",
+      "container",
+      "liquid",
+      "volume_fill"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_continuous_emission.md",
+    "common_queries": [
+      "How to fill a container with MPM?",
+      "MPM continuous emission expansion",
+      "MPM overlapping emission",
+      "How to source material on top of existing material in MPM?"
+    ]
+  },
+  "mpm_creature_breach": {
+    "summary": "MPM Masterclass: MPM Creature Breach",
+    "description": "Part 15/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Creature Breach.",
+    "keywords": [
+      "mpm",
+      "creature",
+      "breach",
+      "terrain",
+      "soil",
+      "character_fx",
+      "animated_collider",
+      "multi_resolution",
+      "stickiness",
+      "secondary_debris",
+      "point_deform",
+      "orient_retarget",
+      "narrow_band",
+      "brute_character",
+      "production_pipeline"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_creature_breach.md",
+    "common_queries": [
+      "How to simulate a creature breaking through terrain with MPM",
+      "Multi-resolution MPM simulation workflow",
+      "How to use low-res MPM sim as collider for high-res sim",
+      "Animated deforming collider with MPM",
+      "Narrow-band point cloud for render efficiency",
+      "MPM soil stickiness on animated characters",
+      "Retarget MPM dynamics onto high-resolution point cloud",
+      "Enforce maximum velocity on animated characters for MPM"
+    ]
+  },
+  "mpm_deforming_colliders": {
+    "summary": "MPM Masterclass: MPM Deforming Colliders",
+    "description": "Part 5/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Deforming Colliders.",
+    "keywords": [
+      "mpm",
+      "deforming_colliders",
+      "collision",
+      "animated_geometry",
+      "velocity_expansion",
+      "substep_interpolation"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_deforming_colliders.md",
+    "common_queries": [
+      "How to use deforming colliders in MPM?",
+      "MPM material sticking to fast-moving colliders",
+      "MPM expand to cover velocity",
+      "MPM substep interpolation for colliders"
+    ]
+  },
+  "mpm_destruction_workflow": {
+    "summary": "MPM Masterclass: MPM Destruction Workflow",
+    "description": "Part 10/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Destruction Workflow.",
+    "keywords": [
+      "mpm",
+      "destruction",
+      "workflow",
+      "fracture",
+      "close_gaps",
+      "metal_tearing",
+      "retargeting",
+      "post_fracture",
+      "building_destruction",
+      "piece_deformation",
+      "point_deformation",
+      "tolerance",
+      "transition_width",
+      "stretch_alignment",
+      "meteorite"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_destruction_workflow.md",
+    "common_queries": [
+      "How do I set up metal tearing with MPM?",
+      "What does Close Gaps do in MPM Deform Pieces?",
+      "How do I eliminate cracks in MPM destruction?",
+      "How can I speed up MPM fracture iteration?",
+      "What is the difference between tolerance and stretch ratio in MPM Deform Pieces?",
+      "How do I fracture a building with MPM?"
+    ]
+  },
+  "mpm_friction_stickiness": {
+    "summary": "MPM Masterclass: MPM Friction and Stickiness",
+    "description": "Part 4/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Friction and Stickiness.",
+    "keywords": [
+      "mpm",
+      "friction",
+      "stickiness",
+      "material_properties",
+      "collision",
+      "adhesion",
+      "per_voxel",
+      "vdb_attribute"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_friction_stickiness.md",
+    "common_queries": [
+      "How to vary friction per voxel in MPM?",
+      "MPM per-voxel friction and stickiness",
+      "MPM collider friction attribute"
+    ]
+  },
+  "mpm_mpmdebrissource": {
+    "summary": "MPM Masterclass: MPM Debris Source",
+    "description": "Part 7/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Debris Source.",
+    "keywords": [
+      "mpm",
+      "mpmdebrissource",
+      "debris",
+      "secondary_elements",
+      "secondary_emission",
+      "chunks",
+      "fragments",
+      "pop_simulation",
+      "point_replication",
+      "stretching",
+      "Jp_attribute",
+      "density_vdb",
+      "collider",
+      "high_frequency_detail",
+      "velocity_spread"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_mpmdebrissource.md",
+    "common_queries": [
+      "How do I add secondary debris to an MPM simulation?",
+      "What does MPM Debris Source do?",
+      "How to emit fine detail particles from MPM?",
+      "How to render MPM debris as density volume?",
+      "How to avoid stepping artifacts in debris emission?",
+      "How does max distance to surface work in MPM Debris Source?"
+    ]
+  },
+  "mpm_mpmdeformpieces": {
+    "summary": "MPM Masterclass: MPM Deform Pieces",
+    "description": "Part 9/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Deform Pieces.",
+    "keywords": [
+      "mpm",
+      "mpmdeformpieces",
+      "deformation",
+      "pieces",
+      "chunks",
+      "post_simulation",
+      "retargeting",
+      "stretch_ratio",
+      "point_deformation",
+      "piece_transformation",
+      "fracture_retarget",
+      "copy_to_points",
+      "instancing"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_mpmdeformpieces.md",
+    "common_queries": [
+      "How do I retarget fractured pieces onto an MPM simulation?",
+      "What is the difference between point and piece retargeting modes?",
+      "How do I control cracking vs stretching in MPM deform pieces?",
+      "Can I use MPM deform pieces without fracturing the original asset?",
+      "What does the stretch ratio parameter do in MPM deform pieces?"
+    ]
+  },
+  "mpm_mpmpostfracture": {
+    "summary": "MPM Masterclass: MPM Post Fracture",
+    "description": "Part 8/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Post Fracture.",
+    "keywords": [
+      "mpm",
+      "mpmpostfracture",
+      "fracture",
+      "voronoi",
+      "boolean",
+      "destruction",
+      "post_simulation",
+      "Jp_attribute",
+      "stretching",
+      "filler_points",
+      "align_fractures",
+      "cutting_geometry",
+      "mpm_deform_pieces",
+      "crack_alignment",
+      "metal_tearing"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_mpmpostfracture.md",
+    "common_queries": [
+      "How does MPM fracture differ from RBD fracture?",
+      "What does MPM Post Fracture do?",
+      "How to fracture geometry based on MPM simulation?",
+      "What is align fractures to stretch points?",
+      "How do filler points work in MPM Post Fracture?",
+      "How to control fracture piece size in MPM?"
+    ]
+  },
+  "mpm_mpmsurface": {
+    "summary": "MPM Masterclass: MPM Surface Meshing",
+    "description": "Part 6/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Surface Meshing.",
+    "keywords": [
+      "mpm",
+      "mpmsurface",
+      "meshing",
+      "surface_extraction",
+      "post_simulation",
+      "particle_to_mesh",
+      "neural_point_surface",
+      "vdb_from_particle",
+      "sdf",
+      "density_vdb",
+      "polygon_mesh",
+      "mask_smooth",
+      "vdb_surface_mask",
+      "attribute_transfer",
+      "snow",
+      "liquid",
+      "granular"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_mpmsurface.md",
+    "common_queries": [
+      "How do I convert MPM particles to a mesh?",
+      "What is neural point surface in Houdini 21?",
+      "How to transfer attributes from MPM simulation to mesh?",
+      "How to optimize MPM surface for rendering?",
+      "What is the mask smooth option on MPM Surface?",
+      "How to chain two MPM Surface nodes to avoid recomputing SDF?"
+    ]
+  },
+  "mpm_overview": {
+    "summary": "MPM Masterclass: MPM H21 Masterclass Overview",
+    "description": "Part 0/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM H21 Masterclass Overview.",
+    "keywords": [
+      "mpm",
+      "overview",
+      "houdini_21",
+      "masterclass",
+      "new_features",
+      "mpm_solver"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_overview.md",
+    "common_queries": [
+      "What's new in MPM for Houdini 21?",
+      "MPM H21 masterclass overview",
+      "MPM post-simulation nodes overview"
+    ]
+  },
+  "mpm_paintball_impact": {
+    "summary": "MPM Masterclass: MPM Paintball Impact",
+    "description": "Part 11/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Paintball Impact.",
+    "keywords": [
+      "mpm",
+      "paintball",
+      "impact",
+      "splatter",
+      "viscous_fluid",
+      "collision",
+      "surface_tension",
+      "rubber_shell",
+      "incompressibility",
+      "slow_motion",
+      "scale_up",
+      "numerical_precision",
+      "meshing",
+      "mpm_surface",
+      "vdb",
+      "color_blending",
+      "substeps",
+      "material_condition"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_paintball_impact.md",
+    "common_queries": [
+      "How do I set up a paintball impact simulation in MPM?",
+      "How do I handle small-scale numerical precision issues in MPM?",
+      "How do I use surface tension in MPM?",
+      "How do I mesh MPM paint splatter with color?",
+      "What are good MPM surface settings for liquid tendrils?",
+      "How do I set up rubber shells in MPM?"
+    ]
+  },
+  "mpm_pumpkin_smash": {
+    "summary": "MPM Masterclass: MPM Pumpkin Smash",
+    "description": "Part 12/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Pumpkin Smash.",
+    "keywords": [
+      "mpm",
+      "pumpkin",
+      "smash",
+      "destruction",
+      "organic",
+      "fracture",
+      "debris",
+      "slow_motion",
+      "time_scale",
+      "multi_material",
+      "meshing",
+      "mpm_surface",
+      "mpm_deform_pieces",
+      "mpm_debris",
+      "secondary_simulation",
+      "uv_transfer",
+      "depth_attribute",
+      "mask_smooth"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_pumpkin_smash.md",
+    "common_queries": [
+      "How to set up a multi-material organic destruction in MPM",
+      "How to handle slow motion velocity in MPM simulations",
+      "How to mesh MPM particles with UV transfer from rest geometry",
+      "How to use MPM Deform Pieces for rigid embedded objects",
+      "How to emit debris from MPM simulations",
+      "How to protect detail with mask smooth on MPM Surface"
+    ]
+  },
+  "mpm_surface_tension": {
+    "summary": "MPM Masterclass: MPM Surface Tension",
+    "description": "Part 1/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Surface Tension.",
+    "keywords": [
+      "mpm",
+      "surface_tension",
+      "fluid_sim",
+      "droplets",
+      "mpm_solver",
+      "viscosity",
+      "multiphase",
+      "grid_based",
+      "point_based"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_surface_tension.md",
+    "common_queries": [
+      "How does surface tension work in MPM?",
+      "MPM surface tension tutorial",
+      "MPM point-based vs grid-based surface tension",
+      "MPM multiphase surface tension setup"
+    ]
+  },
+  "mpm_train_wreck": {
+    "summary": "MPM Masterclass: MPM Train Wreck",
+    "description": "Part 16/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Train Wreck.",
+    "keywords": [
+      "mpm",
+      "train",
+      "wreck",
+      "destruction",
+      "large_scale",
+      "metal_tearing",
+      "debris",
+      "varying_friction",
+      "friction_vdb",
+      "surface_scatter",
+      "close_gap",
+      "instancing",
+      "sparks",
+      "debris_rotation",
+      "angular_velocity",
+      "retarget",
+      "consistent_point_count",
+      "filler_points",
+      "production_pipeline"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_train_wreck.md",
+    "common_queries": [
+      "How to simulate a train wreck with MPM metal tearing",
+      "MPM surface scatter mode vs volume mode",
+      "Varying friction with friction VDB in MPM",
+      "How to maintain consistent point count for MPM retargeting",
+      "Close gap feature for metal tearing",
+      "Debris instancing from MPM simulation",
+      "Angular velocity and rolling rotation for debris particles",
+      "Compression hardening for explosive fracture in MPM",
+      "How to fuse overlapping points in MPM source"
+    ]
+  },
+  "mpm_wolf_snow": {
+    "summary": "MPM Masterclass: MPM Wolf Snow",
+    "description": "Part 14/18 of the SideFX MPM H21 Masterclass by Alex Wevinger. MPM Wolf Snow.",
+    "keywords": [
+      "mpm",
+      "wolf",
+      "snow",
+      "character_interaction",
+      "deformation",
+      "particles",
+      "sleeping",
+      "passive_particles",
+      "boundary_particles",
+      "camera_frustum",
+      "terrain",
+      "stiffness_noise",
+      "vdb_rasterization",
+      "mask_by_surface",
+      "density_volume",
+      "secondary_debris",
+      "mpm_debris",
+      "fur_simulation",
+      "collider"
+    ],
+    "reference_file": "tutorials/workflow_guides/mpm_wolf_snow.md",
+    "common_queries": [
+      "How to simulate snow interaction with animated characters in MPM",
+      "How to use the sleeping mechanism for mostly passive MPM scenes",
+      "How to optimize snow volume by clipping to camera frustum",
+      "How to blend dynamic MPM snow with static snow at render time",
+      "How to use mask by surface for snow density rasterization",
+      "How to set up stiffness noise for natural snow fracture",
+      "How to reduce simulation volume using depth-based projection"
+    ]
+  },
+  "mpm_assets": {
+    "summary": "MPM Masterclass asset file locations and scene-to-asset mapping",
+    "description": "Maps each MPM demo scene to required asset files. HIP: h21_mpm_masterclass_scenes_v01.hip at D:/HOUDINI_PROJECTS_2025/MPM_MASTERCLASS_FILES/. Assets include pumpkin USDC, hammer USDC, wolf FBX, creature Alembic/USD, train USDC, track USDC, landscape USDC, 6 rock USDC scans, and external links for car, buildings, and trees.",
+    "keywords": [
+      "mpm",
+      "assets",
+      "files",
+      "hip",
+      "scene",
+      "model",
+      "geometry",
+      "usdc",
+      "fbx",
+      "alembic",
+      "project_files"
+    ],
+    "reference_file": "_metadata/asset_manifest.json",
+    "common_queries": [
+      "Where are the MPM masterclass scene files?",
+      "What assets does the train wreck scene need?",
+      "Where is the MPM HIP file?",
+      "What models are used in the pumpkin smash demo?"
+    ]
   }
 }

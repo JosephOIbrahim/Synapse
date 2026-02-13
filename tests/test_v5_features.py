@@ -623,10 +623,10 @@ class TestKnowledgeBaseExpansion:
             assert len(index[key]["keywords"]) > 3
 
     def test_total_topic_count(self):
-        """Should have 59 topics (57 original + crowds + chops)."""
+        """Should have 78 topics (57 original + crowds + chops + 19 MPM workflow guides)."""
         index_path = _PROJECT_ROOT / "rag" / "documentation" / "_metadata" / "semantic_index.json"
         index = json.loads(index_path.read_text(encoding="utf-8"))
-        assert len(index) == 59
+        assert len(index) == 78
 
 
 # ==========================================================================
@@ -860,6 +860,60 @@ class TestHDAGenerate:
     def test_category_is_pipeline(self):
         match = self.registry.match("generate an HDA that scatters points")
         assert match[0].category == "pipeline"
+
+
+class TestExecutePythonInstantiation:
+    """Regression test: all execute_python recipe steps must survive .format().
+
+    Unescaped { } in code templates (Python dicts, VEX for-loops) cause
+    KeyError when instantiated. This test catches that for every recipe.
+    """
+
+    def setup_method(self):
+        from synapse.routing.recipes import RecipeRegistry
+        self.registry = RecipeRegistry()
+
+    # Dummy params for each recipe that has execute_python steps
+    _DUMMY_PARAMS = {
+        "vellum_cloth_sim": {"parent": "/obj/test"},
+        "rbd_destruction": {"parent": "/obj/test"},
+        "turntable_render": {"target": "/obj/geo1"},
+        "ocean_setup": {"parent": "/obj/test"},
+        "pyro_fire_sim": {"parent": "/obj/test"},
+        "vellum_wire_sim": {"parent": "/obj/test"},
+        "terrain_environment": {"parent": "/obj/test"},
+        "lookdev_scene": {},
+        "file_cache": {"source": "/obj/geo1/null1"},
+        "hda_scaffold": {"name": "test_tool", "description": "a test tool"},
+        "vex_debug_wrangle": {"node": "/obj/geo1/wrangle1"},
+        "vex_noise_deformer": {"parent": "/obj/test"},
+        "hda_generate": {"name": "scatter_pts", "description": "scatters points randomly"},
+    }
+
+    @pytest.mark.parametrize("recipe_name", list(_DUMMY_PARAMS.keys()))
+    def test_instantiate_no_keyerror(self, recipe_name):
+        """Instantiating execute_python steps must not raise KeyError from unescaped braces."""
+        recipe = None
+        for r in self.registry.recipes:
+            if r.name == recipe_name:
+                recipe = r
+                break
+        assert recipe is not None, f"Recipe {recipe_name} not found"
+
+        params = self._DUMMY_PARAMS[recipe_name]
+        ep_steps = [s for s in recipe.steps if s.action == "execute_python"]
+        assert len(ep_steps) > 0, f"Recipe {recipe_name} has no execute_python steps"
+
+        for step in ep_steps:
+            # This is where unescaped braces would blow up
+            cmd = step.instantiate(params)
+            assert cmd.payload.get("code"), f"Step produced empty code for {recipe_name}"
+            # Verify placeholder substitution happened
+            for key, val in params.items():
+                if val:  # skip empty params
+                    assert "{" + key + "}" not in cmd.payload["code"], (
+                        f"Placeholder {{{key}}} not replaced in {recipe_name}"
+                    )
 
 
 class TestWorkflowPlanner:
