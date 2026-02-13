@@ -65,9 +65,40 @@
     "keywords": ["light", "lighting", "dome", "distant", "rect", "area", "intensity", "color", "exposure", "hdri", "stops", "ratio"]
   },
   "vex_functions": {
-    "summary": "VEX function reference: geometry, math, noise, strings, patterns",
-    "description": "Top VEX functions: point/prim attribute access (@P, @N, @Cd, @v, @pscale, @orient, @id), geometry functions (addpoint, removepoint, pcfind, nearpoint, xyzdist, intersect), math (lerp, fit, clamp, smooth, normalize, cross, dot, length, distance), noise (noise, snoise, curlnoise, vnoise, xnoise, flownoise), channel references (ch, chs, chv, chramp), string ops (sprintf, concat, match, split), matrix (maketransform, lookat, dihedral, quaternion, qrotate). Type prefixes: f@=float, v@=vector, i@=int, s@=string, p@=vector4.",
-    "keywords": ["vex", "function", "wrangle", "snippet", "point", "prim", "noise", "math", "attribute", "channel", "pcfind", "orient", "quaternion"]
+    "summary": "VEX function reference: 150+ signatures across geometry, math, noise, strings, channels, arrays",
+    "description": "Complete VEX function signatures organized by category. Geometry read: point/prim/vertex/detail, attribsize, hasattrib. Write: setpointattrib, setprimattrib, addattrib. Create/delete: addpoint, addprim, addvertex, removepoint, removeprim. Spatial: nearpoint, nearpoints, pcfind, pcfind_radius, pcopen, pcfilter, intersect, xyzdist. Connectivity: neighbours, pointprims, primpoints. Math: sin/cos, pow, sqrt, clamp, fit, lerp, smooth, chramp. Noise: noise, snoise, xnoise, curlnoise, flownoise, vnoise. Vector/matrix: length, normalize, dot, cross, maketransform, cracktransform, quaternion, qrotate. String: sprintf, split, join, match, re_match. Channel: ch, chf, chi, chs, chv, chramp. Array: len, append, find, sort, sum, avg.",
+    "keywords": ["vex", "function", "wrangle", "snippet", "point", "prim", "noise", "math", "attribute", "channel", "pcfind", "orient", "quaternion", "signature", "array"],
+    "reference_file": "vex_functions"
+  },
+  "vex_fundamentals": {
+    "summary": "VEX language basics: execution contexts, run-over modes, data types, control flow, VEX vs HScript",
+    "description": "VEX fundamentals for wrangle nodes. Execution contexts: SOP (Attribute Wrangle), DOP (Gas Field Wrangle), CHOP (Channel Wrangle), COP (Pixel Wrangle). Run-over modes: Points (default, @ptnum), Primitives (@primnum), Vertices (@vtxnum), Detail (single pass). Data types: int, float, vector2, vector, vector4, matrix2, matrix3, matrix, string, arrays. Type prefixes for @-binding: f@=float, i@=int, v@=vector, u@=vector2, p@=vector4, s@=string, 2@/3@/4@=matrices. Control flow: if/else, for, foreach, while, ternary. Inputs: 4 geometry inputs accessed by index (0-3). User-defined functions with semicolon type separators. Preprocessor: #include, #define. VEX vs HScript: VEX is compiled/parallel for heavy processing, HScript for simple parameter expressions.",
+    "keywords": ["vex", "fundamentals", "basics", "syntax", "wrangle", "context", "run-over", "type", "control flow", "input", "output", "hscript"],
+    "reference_file": "vex_fundamentals"
+  },
+  "vex_attributes": {
+    "summary": "VEX attribute system: built-in attributes, type prefixes, groups, intrinsics, promotion patterns",
+    "description": "VEX attribute access patterns. Built-in point attributes: @P (position), @N (normal), @Cd (color), @v (velocity), @pscale, @orient, @id, @age, @life, @rest, @uv, @Alpha, @width. Context variables: @ptnum, @numpt, @primnum, @numprim, @vtxnum, @elemnum. Globals: @Time, @Frame, @TimeInc. Reading: @-shorthand for current element (fastest), point()/prim()/vertex()/detail() for any element/input. Writing: @attr creates if missing, setpointattrib/setprimattrib/setdetailattrib with mode (set/add/min/max/mult). Groups: i@group_name = 1/0, inpointgroup(), inprimgroup(). Intrinsics: primintrinsic(0, 'measuredarea', @primnum). Promotion patterns: point-to-detail via loops, detail-to-point broadcast, nearest-point transfer via nearpoint/pcfind, distance-weighted blend.",
+    "keywords": ["vex", "attribute", "@P", "@N", "@Cd", "point", "prim", "vertex", "detail", "group", "prefix", "type", "intrinsic", "transfer", "promotion"],
+    "reference_file": "vex_attributes"
+  },
+  "vex_types": {
+    "summary": "VEX data types: int, float, vector, matrix, quaternion, string; conversions and operations",
+    "description": "VEX type system. Scalars: int (32-bit), float (32-bit), string (UTF-8). Vectors: vector2 (2f), vector (3f/xyz), vector4 (4f/quaternion). Matrices: matrix2 (2x2), matrix3 (3x3 rotation/scale), matrix (4x4 full transform). Implicit promotion: int->float->vector2->vector->vector4. Explicit: int(), float(), set(x,y,z). Component access: v.x/.y/.z or v[0]/[1]/[2]. Quaternion ops: quaternion(angle, axis), eulertoquaternion(), qrotate(), slerp(), qmultiply(), qinvert(). Matrix ops: ident(), maketransform(), cracktransform(), invert(), transpose(), lookat(), dihedral(). String conversion: itoa(), atoi(), atof(), sprintf().",
+    "keywords": ["vex", "type", "conversion", "cast", "vector", "matrix", "quaternion", "vector4", "matrix3", "int", "float", "string", "array", "slerp", "qrotate"],
+    "reference_file": "vex_types"
+  },
+  "vex_performance": {
+    "summary": "VEX optimization: fast/slow patterns, spatial queries, memory, profiling, bottleneck checklist",
+    "description": "VEX performance patterns. Fast: pcfind (KD-tree O(log n)) over nearpoints (O(n)), distance2/length2 (skip sqrt), @-binding (compiled direct access), smooth/lerp for branchless blends, pre-sized arrays via resize(). Slow: string attribute lookups in loops, dynamic array growth, complex branching. Run-over selection: Points for per-point, Detail + explicit loops for small geo with inter-element deps. Compilation: first cook compiles (slow), ch() changes don't trigger recompile. Profile via Performance Monitor. Common bottlenecks: O(n^2) spatial query -> use pcfind, memory spikes -> use pcopen/pcfilter streaming, string lookups in loops -> cache outside.",
+    "keywords": ["vex", "performance", "optimization", "speed", "slow", "fast", "bottleneck", "pcfind", "distance2", "parallel", "memory", "compile", "profiling"],
+    "reference_file": "vex_performance"
+  },
+  "vex_patterns": {
+    "summary": "15+ VEX code patterns: deformation, color, generation, grouping, solver, transfer",
+    "description": "Copy-paste VEX patterns. Deformation: sine wave (@P.y += sin()), noise displacement along normal, twist (rotation around axis), taper via chramp. Color: by height (chramp), by curvature (neighbour dot products), random per piece (hsvtorgb). Generation: spiral points (detail wrangle with trig), polyline from points, quad grid from scratch. Grouping: by bounding box, by normal direction (dot threshold), every Nth point. Solver: point advection with gravity/ground collision, attribute decay (frame-rate independent pow). Transfer: proximity blend via pcfind, smooth/relax via neighbour averaging, edge detection via gradient magnitude. fBm noise layering with octaves.",
+    "keywords": ["vex", "pattern", "example", "snippet", "recipe", "deform", "color", "noise", "spiral", "wave", "group", "solver", "transfer", "smooth", "relax", "edge"],
+    "reference_file": "vex_patterns"
   },
   "common_attributes": {
     "summary": "Standard Houdini geometry attributes and their types",
