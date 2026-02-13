@@ -11,5 +11,10 @@
   "houdini_sop_basics": "sop_agent",
   "scene_assembly": "assembly_agent",
   "camera_setup": "camera_agent",
-  "lighting_setup": "lighting_agent"
+  "lighting_setup": "lighting_agent",
+  "hapi": "developer_agent",
+  "hdk": "developer_agent",
+  "hydra_delegates": "developer_agent",
+  "usd_schema_registration": "developer_agent",
+  "pxr_plugin_discovery": "developer_agent"
 }
