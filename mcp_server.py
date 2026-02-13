@@ -150,6 +150,10 @@ _SLOW_COMMANDS = {
     "batch_commands": 60.0,
     "tops_cook_node": 120.0,
     "tops_generate_items": 60.0,
+    "tops_configure_scheduler": 30.0,
+    "tops_cancel_cook": 30.0,
+    "tops_batch_cook": 300.0,
+    "tops_setup_wedge": 30.0,
 }
 
 logger = logging.getLogger("synapse-mcp")
@@ -945,6 +949,115 @@ async def list_tools():
                 "required": ["node"],
             },
         ),
+        # -- TOPS / PDG (Phase 2: Scheduler & Control) --
+        Tool(
+            name="tops_configure_scheduler",
+            description=(
+                "Configure the scheduler for a TOP network: type, max concurrent "
+                "processes, and working directory."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "topnet_path": {"type": "string", "description": "TOP network path"},
+                    "scheduler_type": {"type": "string", "description": "Scheduler type (default: local)"},
+                    "max_concurrent": {"type": "integer", "description": "Max concurrent processes"},
+                    "working_dir": {"type": "string", "description": "PDG working directory"},
+                },
+                "required": ["topnet_path"],
+            },
+        ),
+        Tool(
+            name="tops_cancel_cook",
+            description=(
+                "Cancel an active cook on a TOP node or network. "
+                "Currently cooking items may finish before cancellation takes effect."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "TOP node or network path"},
+                },
+                "required": ["node"],
+            },
+        ),
+        Tool(
+            name="tops_dirty_node",
+            description=(
+                "Dirty a TOP node to clear cached work item results, forcing a re-cook. "
+                "Use dirty_upstream=true to also dirty upstream dependencies."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "TOP node path"},
+                    "dirty_upstream": {"type": "boolean", "description": "Also dirty upstream (default: false)"},
+                },
+                "required": ["node"],
+            },
+        ),
+        # -- TOPS / PDG (Phase 3: Advanced) --
+        Tool(
+            name="tops_setup_wedge",
+            description=(
+                "Set up a Wedge TOP node for parameter variation exploration. "
+                "Define attributes with name, type, start, end, and steps."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "topnet_path": {"type": "string", "description": "TOP network path"},
+                    "wedge_name": {"type": "string", "description": "Wedge node name (default: wedge1)"},
+                    "attributes": {
+                        "type": "array",
+                        "items": {"type": "object"},
+                        "description": "List of {name, type, start, end, steps}",
+                    },
+                },
+                "required": ["topnet_path", "attributes"],
+            },
+        ),
+        Tool(
+            name="tops_batch_cook",
+            description=(
+                "Cook multiple TOP nodes in sequence. Collects per-node results "
+                "including status, work item counts, and cook times."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node_paths": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of TOP node paths to cook",
+                    },
+                    "blocking": {"type": "boolean", "description": "Wait for each cook (default: true)"},
+                    "stop_on_error": {"type": "boolean", "description": "Stop on first error (default: true)"},
+                },
+                "required": ["node_paths"],
+            },
+        ),
+        Tool(
+            name="tops_query_items",
+            description=(
+                "Query work items by attribute value. Supports operators: "
+                "eq, gt, lt, gte, lte, contains, regex."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "TOP node path"},
+                    "query_attribute": {"type": "string", "description": "Attribute name to filter on"},
+                    "filter_op": {
+                        "type": "string",
+                        "enum": ["eq", "gt", "lt", "gte", "lte", "contains", "regex"],
+                        "description": "Filter operator (default: eq)",
+                    },
+                    "filter_value": {"description": "Value to match against"},
+                },
+                "required": ["node", "query_attribute", "filter_value"],
+            },
+        ),
         # -- USD Scene Assembly --
         Tool(
             name="houdini_reference_usd",
@@ -1512,6 +1625,12 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "tops_get_cook_stats":        ("tops_get_cook_stats",        _identity),
     "tops_cook_node":             ("tops_cook_node",             _identity),
     "tops_generate_items":        ("tops_generate_items",        _identity),
+    "tops_configure_scheduler":   ("tops_configure_scheduler",   _identity),
+    "tops_cancel_cook":           ("tops_cancel_cook",           _identity),
+    "tops_dirty_node":            ("tops_dirty_node",            _identity),
+    "tops_setup_wedge":           ("tops_setup_wedge",           _identity),
+    "tops_batch_cook":            ("tops_batch_cook",            _identity),
+    "tops_query_items":           ("tops_query_items",           _identity),
     "houdini_reference_usd": ("reference_usd",  _identity),
     "houdini_create_material":  ("create_material",  _identity),
     "houdini_assign_material":  ("assign_material",  _identity),

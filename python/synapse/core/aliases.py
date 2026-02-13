@@ -61,6 +61,17 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "generate_only": ["generate_only", "gen_only"],
     "blocking": ["blocking", "block", "wait"],
     "top_down": ["top_down", "topdown", "cook_upstream"],
+    "scheduler_type": ["scheduler_type", "scheduler", "sched_type"],
+    "max_concurrent": ["max_concurrent", "max_procs", "concurrency"],
+    "working_dir": ["working_dir", "work_dir", "pdg_workingdir"],
+    "dirty_upstream": ["dirty_upstream", "upstream", "recursive"],
+    "wedge_name": ["wedge_name", "name"],
+    "attributes": ["attributes", "wedge_attributes", "wedge_attrs"],
+    "node_paths": ["node_paths", "nodes", "paths"],
+    "stop_on_error": ["stop_on_error", "stop_on_fail", "fail_fast"],
+    "query_attribute": ["query_attribute", "attribute_name", "attr_name", "attrib"],
+    "filter_op": ["filter_op", "operator", "op"],
+    "filter_value": ["filter_value", "value", "match_value"],
 
     # USD scene assembly
     "file": ["file", "filepath", "file_path", "path", "usd_file"],

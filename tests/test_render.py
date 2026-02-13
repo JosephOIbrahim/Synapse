@@ -168,7 +168,7 @@ class TestHandleRender:
     def _mock_hdefereval_and_run(self, handler, payload, fake_node, frame=1.0):
         """Helper: mock hdefereval + hou + pathlib so _handle_render runs."""
         import hdefereval
-        hdefereval.executeInMainThreadWithResult = lambda fn: fn()
+        hdefereval.executeInMainThreadWithResult = lambda fn, *args, **kwargs: fn(*args, **kwargs)
 
         # Ensure parm() returns a mock for outputimage/picture so the handler
         # can set the output path on the node (no longer uses output_file kwarg)

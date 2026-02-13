@@ -117,6 +117,12 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "tops_get_cook_stats": AuditCategory.PIPELINE,
     "tops_cook_node": AuditCategory.PIPELINE,
     "tops_generate_items": AuditCategory.PIPELINE,
+    "tops_configure_scheduler": AuditCategory.PIPELINE,
+    "tops_cancel_cook": AuditCategory.PIPELINE,
+    "tops_dirty_node": AuditCategory.PIPELINE,
+    "tops_setup_wedge": AuditCategory.PIPELINE,
+    "tops_batch_cook": AuditCategory.PIPELINE,
+    "tops_query_items": AuditCategory.PIPELINE,
 }
 
 # Commands that don't modify state — skip memory logging for these
@@ -132,6 +138,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "validate_frame",
     "get_metrics", "router_stats", "list_recipes",
     "tops_get_work_items", "tops_get_dependency_graph", "tops_get_cook_stats",
+    "tops_query_items",
 })
 
 
@@ -330,6 +337,16 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         reg.register("tops_get_cook_stats", self._handle_tops_get_cook_stats)
         reg.register("tops_cook_node", self._handle_tops_cook_node)
         reg.register("tops_generate_items", self._handle_tops_generate_items)
+
+        # TOPS / PDG (Phase 2)
+        reg.register("tops_configure_scheduler", self._handle_tops_configure_scheduler)
+        reg.register("tops_cancel_cook", self._handle_tops_cancel_cook)
+        reg.register("tops_dirty_node", self._handle_tops_dirty_node)
+
+        # TOPS / PDG (Phase 3)
+        reg.register("tops_setup_wedge", self._handle_tops_setup_wedge)
+        reg.register("tops_batch_cook", self._handle_tops_batch_cook)
+        reg.register("tops_query_items", self._handle_tops_query_items)
 
         # USD scene assembly (reference / sublayer)
         reg.register("reference_usd", self._handle_reference_usd)

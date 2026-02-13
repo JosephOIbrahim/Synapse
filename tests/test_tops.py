@@ -35,12 +35,12 @@ else:
 if "hdefereval" not in sys.modules:
     _hdefereval = types.ModuleType("hdefereval")
     # executeInMainThreadWithResult just calls the function directly in tests
-    _hdefereval.executeInMainThreadWithResult = lambda fn: fn()
+    _hdefereval.executeInMainThreadWithResult = lambda fn, *args, **kwargs: fn(*args, **kwargs)
     sys.modules["hdefereval"] = _hdefereval
 else:
     _hdefereval = sys.modules["hdefereval"]
     if not hasattr(_hdefereval, "executeInMainThreadWithResult"):
-        _hdefereval.executeInMainThreadWithResult = lambda fn: fn()
+        _hdefereval.executeInMainThreadWithResult = lambda fn, *args, **kwargs: fn(*args, **kwargs)
 
 # PDG stub with work item states
 if "pdg" not in sys.modules:
@@ -612,6 +612,290 @@ class TestGenerateItems:
 # TestAliases
 # ===========================================================================
 
+# ===========================================================================
+# TestConfigureScheduler (Phase 2)
+# ===========================================================================
+
+class TestConfigureScheduler:
+    def test_basic_configure(self, handler):
+        scheduler = MagicMock()
+        scheduler.path.return_value = "/obj/topnet1/localscheduler"
+        scheduler.type.return_value = _MockNodeType("localscheduler", "Top")
+        scheduler.parm.return_value = MagicMock()
+
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet",
+                                children=[scheduler])
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_configure_scheduler({
+                "topnet_path": "/obj/topnet1",
+                "max_concurrent": 8,
+            })
+
+        assert result["status"] == "configured"
+        assert result["topnet"] == "/obj/topnet1"
+        assert result["max_concurrent"] == 8
+
+    def test_no_scheduler_error(self, handler):
+        child = _make_top_node("/obj/topnet1/gen1", None, "Top", "genericgenerator")
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet",
+                                children=[child])
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            with pytest.raises(ValueError, match="Couldn't find a scheduler"):
+                handler._handle_tops_configure_scheduler({"topnet_path": "/obj/topnet1"})
+
+    def test_not_topnet_error(self, handler):
+        geo = _make_top_node("/obj/geo1", None, "Object", "geo")
+        with patch.object(_handlers_hou, "node", return_value=geo):
+            with pytest.raises(ValueError, match="not a TOP network"):
+                handler._handle_tops_configure_scheduler({"topnet_path": "/obj/geo1"})
+
+
+# ===========================================================================
+# TestCancelCook (Phase 2)
+# ===========================================================================
+
+class TestCancelCook:
+    def test_cancel_topnet(self, handler):
+        ctx = MagicMock()
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet")
+        topnet.getPDGGraphContext.return_value = ctx
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_cancel_cook({"node": "/obj/topnet1"})
+
+        assert result["status"] == "cancelled"
+        ctx.cancelCook.assert_called_once()
+
+    def test_cancel_single_node(self, handler):
+        pdg_node = _make_pdg_node([])
+        node = _make_top_node("/obj/topnet1/gen1", pdg_node, "Top")
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_cancel_cook({"node": "/obj/topnet1/gen1"})
+
+        assert result["status"] == "cancelled"
+        pdg_node.dirty.assert_called_once_with(False)
+
+    def test_node_not_found(self, handler):
+        with patch.object(_handlers_hou, "node", return_value=None):
+            with pytest.raises(ValueError, match="Couldn't find"):
+                handler._handle_tops_cancel_cook({"node": "/nonexistent"})
+
+
+# ===========================================================================
+# TestDirtyNode (Phase 2)
+# ===========================================================================
+
+class TestDirtyNode:
+    def test_dirty_single_node(self, handler):
+        pdg_node = _make_pdg_node([])
+        node = _make_top_node("/obj/topnet1/gen1", pdg_node, "Top")
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_dirty_node({"node": "/obj/topnet1/gen1"})
+
+        assert result["status"] == "dirtied"
+        assert result["dirty_upstream"] is False
+        pdg_node.dirty.assert_called_once_with(False)
+
+    def test_dirty_with_upstream(self, handler):
+        pdg_node = _make_pdg_node([])
+        node = _make_top_node("/obj/topnet1/gen1", pdg_node, "Top")
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_dirty_node({
+                "node": "/obj/topnet1/gen1",
+                "dirty_upstream": True,
+            })
+
+        assert result["dirty_upstream"] is True
+        pdg_node.dirty.assert_called_once_with(True)
+
+    def test_node_not_found(self, handler):
+        with patch.object(_handlers_hou, "node", return_value=None):
+            with pytest.raises(ValueError, match="Couldn't find"):
+                handler._handle_tops_dirty_node({"node": "/nonexistent"})
+
+
+# ===========================================================================
+# TestSetupWedge (Phase 3)
+# ===========================================================================
+
+class TestSetupWedge:
+    def test_basic_wedge_setup(self, handler):
+        wedge_node = MagicMock()
+        wedge_node.path.return_value = "/obj/topnet1/wedge1"
+        wedge_node.parm.return_value = MagicMock()
+        wedge_node.moveToGoodPosition = MagicMock()
+
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet")
+        topnet.createNode = MagicMock(return_value=wedge_node)
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_setup_wedge({
+                "topnet_path": "/obj/topnet1",
+                "attributes": [
+                    {"name": "roughness", "type": "float", "start": 0.0, "end": 1.0, "steps": 5},
+                ],
+            })
+
+        assert result["wedge_node"] == "/obj/topnet1/wedge1"
+        assert result["total_variations"] == 5
+        assert len(result["attributes"]) == 1
+        assert result["attributes"][0]["name"] == "roughness"
+
+    def test_multiple_attributes(self, handler):
+        wedge_node = MagicMock()
+        wedge_node.path.return_value = "/obj/topnet1/wedge1"
+        wedge_node.parm.return_value = MagicMock()
+        wedge_node.moveToGoodPosition = MagicMock()
+
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet")
+        topnet.createNode = MagicMock(return_value=wedge_node)
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_setup_wedge({
+                "topnet_path": "/obj/topnet1",
+                "attributes": [
+                    {"name": "roughness", "type": "float", "start": 0.0, "end": 1.0, "steps": 3},
+                    {"name": "metalness", "type": "float", "start": 0.0, "end": 1.0, "steps": 4},
+                ],
+            })
+
+        assert result["total_variations"] == 12  # 3 * 4
+        # He2025: attributes sorted by name
+        assert result["attributes"][0]["name"] == "metalness"
+        assert result["attributes"][1]["name"] == "roughness"
+
+    def test_empty_attributes_error(self, handler):
+        with pytest.raises(ValueError, match="attributes"):
+            handler._handle_tops_setup_wedge({
+                "topnet_path": "/obj/topnet1",
+                "attributes": [],
+            })
+
+
+# ===========================================================================
+# TestBatchCook (Phase 3)
+# ===========================================================================
+
+class TestBatchCook:
+    def test_batch_cook_success(self, handler):
+        items = [_make_work_item(id=0, state="CookedSuccess")]
+        pdg1 = _make_pdg_node(items)
+        pdg2 = _make_pdg_node(items)
+        node1 = _make_top_node("/obj/topnet1/gen1", pdg1)
+        node2 = _make_top_node("/obj/topnet1/gen2", pdg2)
+
+        def _mock_node(path):
+            return {"/obj/topnet1/gen1": node1, "/obj/topnet1/gen2": node2}.get(path)
+
+        with patch.object(_handlers_hou, "node", side_effect=_mock_node):
+            result = handler._handle_tops_batch_cook({
+                "node_paths": ["/obj/topnet1/gen1", "/obj/topnet1/gen2"],
+            })
+
+        assert len(result["nodes"]) == 2
+        assert result["nodes"][0]["status"] == "cooked"
+        assert result["nodes"][1]["status"] == "cooked"
+        assert "total_cook_time" in result
+        assert "summary" in result
+
+    def test_batch_cook_stop_on_error(self, handler):
+        with patch.object(_handlers_hou, "node", return_value=None):
+            with pytest.raises(ValueError, match="Couldn't find"):
+                handler._handle_tops_batch_cook({
+                    "node_paths": ["/nonexistent"],
+                    "stop_on_error": True,
+                })
+
+    def test_batch_cook_continue_on_error(self, handler):
+        items = [_make_work_item(id=0, state="CookedSuccess")]
+        pdg1 = _make_pdg_node(items)
+        node1 = _make_top_node("/obj/topnet1/gen1", pdg1)
+
+        def _mock_node(path):
+            return {"/obj/topnet1/gen1": node1}.get(path)
+
+        with patch.object(_handlers_hou, "node", side_effect=_mock_node):
+            result = handler._handle_tops_batch_cook({
+                "node_paths": ["/nonexistent", "/obj/topnet1/gen1"],
+                "stop_on_error": False,
+            })
+
+        assert result["nodes"][0]["status"] == "error"
+        assert result["nodes"][1]["status"] == "cooked"
+
+    def test_empty_paths_error(self, handler):
+        with pytest.raises(ValueError, match="node_paths"):
+            handler._handle_tops_batch_cook({"node_paths": []})
+
+
+# ===========================================================================
+# TestQueryItems (Phase 3)
+# ===========================================================================
+
+class TestQueryItems:
+    def test_eq_filter(self, handler):
+        items = [
+            _make_work_item(id=0, name="item_0", attrs={"output": ["/tmp/a.exr"]}),
+            _make_work_item(id=1, name="item_1", attrs={"output": ["/tmp/b.exr"]}),
+        ]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node(pdg_node=pdg_node)
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_query_items({
+                "node": "/obj/topnet1/node1",
+                "query_attribute": "output",
+                "filter_op": "eq",
+                "filter_value": "/tmp/a.exr",
+            })
+
+        assert result["matched_count"] == 1
+        assert result["total_count"] == 2
+        assert result["items"][0]["name"] == "item_0"
+
+    def test_gt_filter(self, handler):
+        items = [
+            _make_work_item(id=0, name="item_0", attrs={"frame": [1]}),
+            _make_work_item(id=1, name="item_1", attrs={"frame": [5]}),
+            _make_work_item(id=2, name="item_2", attrs={"frame": [10]}),
+        ]
+        pdg_node = _make_pdg_node(items)
+        node = _make_top_node(pdg_node=pdg_node)
+
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler._handle_tops_query_items({
+                "node": "/obj/topnet1/node1",
+                "query_attribute": "frame",
+                "filter_op": "gt",
+                "filter_value": 3,
+            })
+
+        assert result["matched_count"] == 2
+
+    def test_invalid_operator(self, handler):
+        with pytest.raises(ValueError, match="Unknown filter operator"):
+            handler._handle_tops_query_items({
+                "node": "/obj/topnet1/node1",
+                "query_attribute": "frame",
+                "filter_op": "bad",
+                "filter_value": 1,
+            })
+
+    def test_node_not_found(self, handler):
+        with patch.object(_handlers_hou, "node", return_value=None):
+            with pytest.raises(ValueError, match="Couldn't find"):
+                handler._handle_tops_query_items({
+                    "node": "/nonexistent",
+                    "query_attribute": "output",
+                    "filter_value": "x",
+                })
+
+
 class TestAliases:
     def test_node_alias_resolves(self, handler):
         """'node_path' should resolve to 'node' via aliases."""
@@ -653,13 +937,19 @@ class TestAliases:
 
 class TestCommandTypeEnums:
     def test_tops_enums_exist(self):
-        """All 5 TOPS CommandType enum values should exist."""
+        """All 11 TOPS CommandType enum values should exist."""
         ct = protocol_mod.CommandType
         assert ct.TOPS_GET_WORK_ITEMS.value == "tops_get_work_items"
         assert ct.TOPS_GET_DEPENDENCY_GRAPH.value == "tops_get_dependency_graph"
         assert ct.TOPS_GET_COOK_STATS.value == "tops_get_cook_stats"
         assert ct.TOPS_COOK_NODE.value == "tops_cook_node"
         assert ct.TOPS_GENERATE_ITEMS.value == "tops_generate_items"
+        assert ct.TOPS_CONFIGURE_SCHEDULER.value == "tops_configure_scheduler"
+        assert ct.TOPS_CANCEL_COOK.value == "tops_cancel_cook"
+        assert ct.TOPS_DIRTY_NODE.value == "tops_dirty_node"
+        assert ct.TOPS_SETUP_WEDGE.value == "tops_setup_wedge"
+        assert ct.TOPS_BATCH_COOK.value == "tops_batch_cook"
+        assert ct.TOPS_QUERY_ITEMS.value == "tops_query_items"
 
 
 # ===========================================================================
@@ -668,7 +958,7 @@ class TestCommandTypeEnums:
 
 class TestHandlerRegistration:
     def test_all_tops_handlers_registered(self, handler):
-        """All 5 TOPS handlers should be in the command registry."""
+        """All 11 TOPS handlers should be in the command registry."""
         reg = handler._registry
         for cmd in [
             "tops_get_work_items",
@@ -676,6 +966,12 @@ class TestHandlerRegistration:
             "tops_get_cook_stats",
             "tops_cook_node",
             "tops_generate_items",
+            "tops_configure_scheduler",
+            "tops_cancel_cook",
+            "tops_dirty_node",
+            "tops_setup_wedge",
+            "tops_batch_cook",
+            "tops_query_items",
         ]:
             assert reg.has(cmd), f"Handler not registered: {cmd}"
 
@@ -685,9 +981,15 @@ class TestHandlerRegistration:
         assert "tops_get_work_items" in _READ_ONLY_COMMANDS
         assert "tops_get_dependency_graph" in _READ_ONLY_COMMANDS
         assert "tops_get_cook_stats" in _READ_ONLY_COMMANDS
+        assert "tops_query_items" in _READ_ONLY_COMMANDS
         # Mutating commands should NOT be read-only
         assert "tops_cook_node" not in _READ_ONLY_COMMANDS
         assert "tops_generate_items" not in _READ_ONLY_COMMANDS
+        assert "tops_configure_scheduler" not in _READ_ONLY_COMMANDS
+        assert "tops_cancel_cook" not in _READ_ONLY_COMMANDS
+        assert "tops_dirty_node" not in _READ_ONLY_COMMANDS
+        assert "tops_setup_wedge" not in _READ_ONLY_COMMANDS
+        assert "tops_batch_cook" not in _READ_ONLY_COMMANDS
 
     def test_audit_categories(self):
         """All TOPS commands should have PIPELINE audit category."""
@@ -699,6 +1001,12 @@ class TestHandlerRegistration:
             "tops_get_cook_stats",
             "tops_cook_node",
             "tops_generate_items",
+            "tops_configure_scheduler",
+            "tops_cancel_cook",
+            "tops_dirty_node",
+            "tops_setup_wedge",
+            "tops_batch_cook",
+            "tops_query_items",
         ]:
             assert _CMD_CATEGORY[cmd] == AuditCategory.PIPELINE
 
@@ -709,7 +1017,7 @@ class TestHandlerRegistration:
 
 class TestMCPToolDefs:
     def test_all_tops_tools_in_registry(self):
-        """All 5 TOPS tools should appear in mcp/tools.py _TOOL_DEFS."""
+        """All 11 TOPS tools should appear in mcp/tools.py _TOOL_DEFS."""
         # Import the tools module
         tools_path = _base / "mcp" / "tools.py"
         if "synapse.mcp" not in sys.modules:
@@ -731,6 +1039,12 @@ class TestMCPToolDefs:
             "tops_get_cook_stats",
             "tops_cook_node",
             "tops_generate_items",
+            "tops_configure_scheduler",
+            "tops_cancel_cook",
+            "tops_dirty_node",
+            "tops_setup_wedge",
+            "tops_batch_cook",
+            "tops_query_items",
         ]:
             assert name in tool_names, f"Tool not in MCP registry: {name}"
 
@@ -740,12 +1054,15 @@ class TestMCPToolDefs:
         tools = {t["name"]: t for t in tools_mod.get_tools()}
 
         # Read-only tools
-        for name in ["tops_get_work_items", "tops_get_dependency_graph", "tops_get_cook_stats"]:
+        for name in ["tops_get_work_items", "tops_get_dependency_graph",
+                      "tops_get_cook_stats", "tops_query_items"]:
             assert tools[name]["annotations"]["readOnlyHint"] is True
             assert tools[name]["annotations"]["destructiveHint"] is False
 
         # Mutating tools
-        for name in ["tops_cook_node", "tops_generate_items"]:
+        for name in ["tops_cook_node", "tops_generate_items",
+                      "tops_configure_scheduler", "tops_cancel_cook", "tops_dirty_node",
+                      "tops_setup_wedge", "tops_batch_cook"]:
             assert tools[name]["annotations"]["readOnlyHint"] is False
             assert tools[name]["annotations"]["destructiveHint"] is True
 
@@ -760,6 +1077,12 @@ class TestMCPToolDefs:
             "tops_get_cook_stats",
             "tops_cook_node",
             "tops_generate_items",
+            "tops_configure_scheduler",
+            "tops_cancel_cook",
+            "tops_dirty_node",
+            "tops_setup_wedge",
+            "tops_batch_cook",
+            "tops_query_items",
         ]:
             schema = tools[name]["inputSchema"]
             assert schema["type"] == "object"
@@ -772,3 +1095,9 @@ class TestMCPToolDefs:
         assert tools_mod.has_tool("tops_get_work_items")
         assert tools_mod.has_tool("tops_cook_node")
         assert tools_mod.has_tool("tops_generate_items")
+        assert tools_mod.has_tool("tops_configure_scheduler")
+        assert tools_mod.has_tool("tops_cancel_cook")
+        assert tools_mod.has_tool("tops_dirty_node")
+        assert tools_mod.has_tool("tops_setup_wedge")
+        assert tools_mod.has_tool("tops_batch_cook")
+        assert tools_mod.has_tool("tops_query_items")

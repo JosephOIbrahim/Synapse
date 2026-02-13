@@ -339,6 +339,61 @@ _TOOL_DEFS: list[tuple] = [
      }, "required": ["node"]},
      False, True, False),
 
+    # -- TOPS / PDG (Phase 2: Scheduler & Control) --
+    ("tops_configure_scheduler", "tops_configure_scheduler", _identity,
+     "Configure the scheduler for a TOP network: type, max concurrent, working directory.",
+     {"type": "object", "properties": {
+         "topnet_path": {"type": "string", "description": "TOP network path"},
+         "scheduler_type": {"type": "string", "description": "Scheduler type (default: local)"},
+         "max_concurrent": {"type": "integer", "description": "Max concurrent processes"},
+         "working_dir": {"type": "string", "description": "PDG working directory"},
+     }, "required": ["topnet_path"]},
+     False, True, True),
+
+    ("tops_cancel_cook", "tops_cancel_cook", _identity,
+     "Cancel an active cook on a TOP node or network.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP node or network path"},
+     }, "required": ["node"]},
+     False, True, False),
+
+    ("tops_dirty_node", "tops_dirty_node", _identity,
+     "Dirty a TOP node to clear cached results. Optionally dirty upstream nodes too.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP node path"},
+         "dirty_upstream": {"type": "boolean", "description": "Also dirty upstream nodes (default: false)"},
+     }, "required": ["node"]},
+     False, True, True),
+
+    # -- TOPS / PDG (Phase 3: Advanced) --
+    ("tops_setup_wedge", "tops_setup_wedge", _identity,
+     "Set up a Wedge TOP node for parameter variation exploration.",
+     {"type": "object", "properties": {
+         "topnet_path": {"type": "string", "description": "TOP network path"},
+         "wedge_name": {"type": "string", "description": "Name for the wedge node (default: wedge1)"},
+         "attributes": {"type": "array", "items": {"type": "object"}, "description": "List of {name, type, start, end, steps}"},
+     }, "required": ["topnet_path", "attributes"]},
+     False, True, False),
+
+    ("tops_batch_cook", "tops_batch_cook", _identity,
+     "Cook multiple TOP nodes in sequence, collecting per-node results and aggregate stats.",
+     {"type": "object", "properties": {
+         "node_paths": {"type": "array", "items": {"type": "string"}, "description": "List of TOP node paths to cook"},
+         "blocking": {"type": "boolean", "description": "Wait for each cook (default: true)"},
+         "stop_on_error": {"type": "boolean", "description": "Stop on first error (default: true)"},
+     }, "required": ["node_paths"]},
+     False, True, False),
+
+    ("tops_query_items", "tops_query_items", _identity,
+     "Query work items by attribute value with filter operators (eq, gt, lt, gte, lte, contains, regex).",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP node path"},
+         "query_attribute": {"type": "string", "description": "Attribute name to filter on"},
+         "filter_op": {"type": "string", "enum": ["eq", "gt", "lt", "gte", "lte", "contains", "regex"], "description": "Filter operator (default: eq)"},
+         "filter_value": {"description": "Value to match against"},
+     }, "required": ["node", "query_attribute", "filter_value"]},
+     True, False, True),
+
     # -- USD Scene Assembly --
     ("houdini_reference_usd", "reference_usd", _identity,
      "Import a USD file into the stage via reference or sublayer.",

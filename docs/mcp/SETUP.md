@@ -122,7 +122,39 @@ Use `tools/list` to get the full list with descriptions and input schemas.
 | `SYNAPSE_PORT` | `9999` | WebSocket server port |
 | `SYNAPSE_MCP_PORT` | `8008` | MCP HTTP server port |
 | `SYNAPSE_PATH` | `/synapse` | WebSocket path (MCP always uses `/mcp`) |
-| `SYNAPSE_API_KEY` | (none) | API key for WebSocket auth (MCP sessions do not require auth in Phase 1) |
+| `SYNAPSE_API_KEY` | (none) | API key for both WebSocket and MCP Bearer token auth |
+
+## Authentication
+
+MCP Bearer token authentication is opt-in. When `SYNAPSE_API_KEY` is set (or `~/.synapse/auth.key` exists), the `/mcp` endpoint requires an `Authorization: Bearer <token>` header on all requests. Without a key configured, auth is disabled (backward compatible).
+
+```bash
+# Set API key via environment variable
+export SYNAPSE_API_KEY="your-secret-key"
+
+# Or create a key file
+echo "your-secret-key" > ~/.synapse/auth.key
+```
+
+MCP clients that support auth headers can pass the token. For Claude Code, configure via `.claude/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "synapse": {
+      "type": "streamableHttp",
+      "url": "http://localhost:8008/mcp",
+      "headers": {
+        "Authorization": "Bearer your-secret-key"
+      }
+    }
+  }
+}
+```
+
+## SSE Streaming
+
+SSE (Server-Sent Events) streaming is not yet supported. Houdini's hwebserver uses a C++ request-response model that doesn't support long-lived streaming connections. Use `resources/read` polling as an alternative for real-time data.
 
 ## Troubleshooting
 
@@ -130,7 +162,7 @@ Use `tools/list` to get the full list with descriptions and input schemas.
 
 **"Unknown session"** -- Your `Mcp-Session-Id` header is missing or expired. Send a new `initialize` request to get a fresh session.
 
-**"Method not found"** -- You're calling an MCP method that isn't implemented yet. Phase 1 supports: `initialize`, `tools/list`, `tools/call`, `ping`. Resources and prompts are Phase 2.
+**"Method not found"** -- You're calling an MCP method that isn't implemented yet. Supported methods: `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`, `resources/templates/list`, `ping`.
 
 **Tools timing out** -- Render and wedge operations can take minutes. Default timeout is 10s for most tools, 30s for execution/introspection, 120s for render/wedge. Adjust your client's timeout accordingly.
 

@@ -53,6 +53,7 @@ _mcp_modules = {
     "synapse.mcp.protocol": _base / "mcp" / "protocol.py",
     "synapse.mcp.session": _base / "mcp" / "session.py",
     "synapse.mcp.tools": _base / "mcp" / "tools.py",
+    "synapse.mcp.resources": _base / "mcp" / "resources.py",
     "synapse.mcp.server": _base / "mcp" / "server.py",
 }
 
@@ -449,7 +450,7 @@ class TestMethodNotFound:
         _, headers = server.handle_request(init_body)
         sid = headers["Mcp-Session-Id"]
 
-        body = _jsonrpc("resources/list", {}, msg_id=2)
+        body = _jsonrpc("prompts/list", {}, msg_id=2)
         resp_body, _ = server.handle_request(body, session_id=sid)
         resp = _parse_response(resp_body)
         assert "error" in resp
@@ -513,6 +514,96 @@ class TestHe2025Determinism:
         resp = _parse_response(resp_body)
         names = [t["name"] for t in resp["result"]["tools"]]
         assert names == sorted(names)
+
+
+# ===========================================================================
+# Tests: Resources (resources.py)
+# ===========================================================================
+
+class TestResourcesList:
+    def test_resources_list_returns_resources(self, server):
+        # Initialize
+        init_body = _jsonrpc("initialize", {}, msg_id=1)
+        _, headers = server.handle_request(init_body)
+        sid = headers["Mcp-Session-Id"]
+
+        # List resources
+        body = _jsonrpc("resources/list", {}, msg_id=2)
+        resp_body, _ = server.handle_request(body, session_id=sid)
+        resp = _parse_response(resp_body)
+        assert "result" in resp
+        resources = resp["result"]["resources"]
+        assert len(resources) >= 3  # at least 3 static resources
+
+    def test_resources_sorted_by_uri(self, server):
+        """He2025: resources must be sorted by URI."""
+        init_body = _jsonrpc("initialize", {}, msg_id=1)
+        _, headers = server.handle_request(init_body)
+        sid = headers["Mcp-Session-Id"]
+
+        body = _jsonrpc("resources/list", {}, msg_id=2)
+        resp_body, _ = server.handle_request(body, session_id=sid)
+        resp = _parse_response(resp_body)
+        uris = [r["uri"] for r in resp["result"]["resources"]]
+        assert uris == sorted(uris)
+
+    def test_initialize_includes_resources_capability(self, server):
+        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
+        resp_body, _ = server.handle_request(body)
+        resp = _parse_response(resp_body)
+        assert "resources" in resp["result"]["capabilities"]
+
+
+class TestResourceTemplatesList:
+    def test_resource_templates_returns_templates(self, server):
+        init_body = _jsonrpc("initialize", {}, msg_id=1)
+        _, headers = server.handle_request(init_body)
+        sid = headers["Mcp-Session-Id"]
+
+        body = _jsonrpc("resources/templates/list", {}, msg_id=2)
+        resp_body, _ = server.handle_request(body, session_id=sid)
+        resp = _parse_response(resp_body)
+        assert "result" in resp
+        templates = resp["result"]["resourceTemplates"]
+        assert len(templates) >= 7  # 7 resource templates
+
+
+# ===========================================================================
+# Tests: Auth Integration
+# ===========================================================================
+
+class TestAuthIntegration:
+    def test_auth_module_exists(self):
+        """The auth module should be importable."""
+        auth_path = _base / "server" / "auth.py"
+        assert auth_path.exists()
+
+    def test_no_key_passes(self, server):
+        """With no auth key, requests should pass through."""
+        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
+        resp_body, headers = server.handle_request(body)
+        resp = _parse_response(resp_body)
+        assert "result" in resp
+
+    def test_authenticate_function(self):
+        """authenticate() with no key should return True."""
+        if "synapse.server.auth" not in sys.modules:
+            auth_path = _base / "server" / "auth.py"
+            spec = importlib.util.spec_from_file_location("synapse.server.auth", auth_path)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules["synapse.server.auth"] = mod
+            spec.loader.exec_module(mod)
+        auth_mod = sys.modules["synapse.server.auth"]
+        # Reset cache for clean test
+        auth_mod.reset_auth_cache()
+        # No key configured -> always passes
+        assert auth_mod.authenticate("any-token") is True
+
+    def test_authenticate_rejects_bad_token(self):
+        """authenticate() with explicit key should reject wrong token."""
+        auth_mod = sys.modules["synapse.server.auth"]
+        assert auth_mod.authenticate("wrong", "correct-key") is False
+        assert auth_mod.authenticate("correct-key", "correct-key") is True
 
 
 class TestModuleSingleton:

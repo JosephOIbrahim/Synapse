@@ -75,6 +75,12 @@ class CommandType(Enum):
     TOPS_GET_COOK_STATS = "tops_get_cook_stats"
     TOPS_COOK_NODE = "tops_cook_node"
     TOPS_GENERATE_ITEMS = "tops_generate_items"
+    TOPS_CONFIGURE_SCHEDULER = "tops_configure_scheduler"
+    TOPS_CANCEL_COOK = "tops_cancel_cook"
+    TOPS_DIRTY_NODE = "tops_dirty_node"
+    TOPS_SETUP_WEDGE = "tops_setup_wedge"
+    TOPS_BATCH_COOK = "tops_batch_cook"
+    TOPS_QUERY_ITEMS = "tops_query_items"
 
     # Memory operations (new simplified names)
     CONTEXT = "context"

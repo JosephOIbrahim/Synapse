@@ -38,6 +38,7 @@ from .protocol import (
     parse_request,
 )
 from .session import MCPSessionManager
+from .resources import get_resources, get_resource_templates, resolve_resource
 from .tools import dispatch_tool, get_tools
 
 # Fast JSON (He2025: sort_keys)
@@ -171,6 +172,12 @@ class MCPServer:
             return self._handle_tools_list(params)
         elif method == "tools/call":
             return self._handle_tools_call(params)
+        elif method == "resources/list":
+            return self._handle_resources_list(params)
+        elif method == "resources/read":
+            return self._handle_resources_read(params)
+        elif method == "resources/templates/list":
+            return self._handle_resource_templates_list(params)
         elif method == "ping":
             return self._handle_ping()
         else:
@@ -193,6 +200,7 @@ class MCPServer:
             "_session_id": session_id,  # stripped before sending
             "capabilities": {
                 "tools": {"listChanged": True},
+                "resources": {"subscribe": False, "listChanged": False},
             },
             "instructions": (
                 "SYNAPSE is a bridge between AI agents and SideFX Houdini. "
@@ -237,6 +245,56 @@ class MCPServer:
     def _handle_ping(self) -> dict:
         """MCP ping — empty result."""
         return {}
+
+    def _handle_resources_list(self, params: dict) -> dict:
+        """Return all available MCP resources."""
+        return {"resources": get_resources()}
+
+    def _handle_resource_templates_list(self, params: dict) -> dict:
+        """Return all MCP resource templates."""
+        return {"resourceTemplates": get_resource_templates()}
+
+    def _handle_resources_read(self, params: dict) -> dict:
+        """Read a resource by URI, dispatching to the appropriate handler."""
+        uri = params.get("uri")
+        if not uri:
+            raise JsonRpcInvalidParams("Missing 'uri' in resources/read params")
+
+        resolved = resolve_resource(uri)
+        if resolved is None:
+            raise JsonRpcInvalidParams(f"Unknown resource URI: {uri}")
+
+        handler_name, payload = resolved
+        handler = self._get_handler()
+
+        # Build a SynapseCommand and dispatch through the handler
+        from ..core.protocol import SynapseCommand
+        command = SynapseCommand(
+            type=handler_name,
+            id=f"mcp-resource-{uri}",
+            payload=payload,
+        )
+
+        try:
+            import hdefereval
+            response = hdefereval.executeInMainThreadWithResult(
+                handler.handle, command
+            )
+        except ImportError:
+            response = handler.handle(command)
+
+        if response.success:
+            import json as _json
+            text = _json.dumps(response.data, sort_keys=True) if isinstance(response.data, dict) else str(response.data or "")
+            return {
+                "contents": [{
+                    "uri": uri,
+                    "mimeType": "application/json",
+                    "text": text,
+                }]
+            }
+        else:
+            raise JsonRpcInvalidParams(response.error or f"Failed to read resource: {uri}")
 
     # -----------------------------------------------------------------
     # Notifications
@@ -294,6 +352,24 @@ try:
     def _mcp_url_handler(request):
         """HTTP POST /mcp handler for MCP Streamable HTTP transport."""
         server = get_mcp_server()
+
+        # Bearer token auth (opt-in: only when SYNAPSE_API_KEY or auth.key is configured)
+        try:
+            from ..server.auth import get_auth_key, authenticate
+            auth_key = get_auth_key()
+            if auth_key is not None:
+                auth_header = request.headers().get("Authorization", "")
+                token = ""
+                if auth_header.startswith("Bearer "):
+                    token = auth_header[7:].strip()
+                if not authenticate(token, auth_key):
+                    return hwebserver.Response(
+                        '{"error": "Unauthorized. Provide a valid Bearer token."}',
+                        status=401,
+                        content_type="application/json",
+                    )
+        except ImportError:
+            pass  # auth module not available — skip
 
         if request.method() == "POST":
             body = request.body()
