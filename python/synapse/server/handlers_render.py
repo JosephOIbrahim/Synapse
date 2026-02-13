@@ -411,6 +411,334 @@ class RenderHandlerMixin:
         result = hdefereval.executeInMainThreadWithResult(_run_wedge)
         return result
 
+    # =========================================================================
+    # TOPS / PDG HANDLERS
+    # =========================================================================
+
+    def _handle_tops_get_work_items(self, payload: Dict) -> Dict:
+        """Get work items from a TOP node with optional state filtering.
+
+        Returns work item details including id, index, name, state, cook time,
+        and optionally attributes. Useful for inspecting what a TOP node produced.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import hdefereval
+
+        node_path = resolve_param(payload, "node")
+        state_filter = resolve_param_with_default(payload, "state_filter", "all")
+        include_attrs = resolve_param_with_default(payload, "include_attributes", True)
+        limit = resolve_param_with_default(payload, "limit", 100)
+
+        def _run():
+            node = hou.node(node_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {node_path} -- "
+                    "double-check the path exists"
+                )
+
+            pdg_node = node.getPDGNode()
+            if pdg_node is None:
+                raise ValueError(
+                    f"The node at {node_path} isn't a TOP node or hasn't been "
+                    "set up for PDG yet -- make sure it's inside a TOP network"
+                )
+
+            # Map state names to pdg.workItemState values
+            import pdg as _pdg
+            state_map = {
+                "cooked": _pdg.workItemState.CookedSuccess,
+                "failed": _pdg.workItemState.CookedFail,
+                "cooking": _pdg.workItemState.Cooking,
+                "scheduled": _pdg.workItemState.Scheduled,
+                "uncooked": _pdg.workItemState.Uncooked,
+                "cancelled": _pdg.workItemState.CookedCancel,
+            }
+
+            all_items = pdg_node.workItems
+            items = []
+            for wi in all_items:
+                # Apply state filter
+                if state_filter != "all":
+                    expected_state = state_map.get(state_filter.lower())
+                    if expected_state is not None and wi.state != expected_state:
+                        continue
+
+                item = {
+                    "id": wi.id,
+                    "index": wi.index,
+                    "name": wi.name,
+                    "state": wi.state.name if hasattr(wi.state, 'name') else str(wi.state),
+                    "cook_time": getattr(wi, 'cookTime', 0.0),
+                }
+
+                if include_attrs:
+                    attrs = {}
+                    try:
+                        for attr in wi.attribs:
+                            try:
+                                attrs[attr.name] = attr.values()
+                            except Exception:
+                                attrs[attr.name] = str(attr)
+                    except Exception:
+                        pass
+                    item["attributes"] = attrs
+
+                items.append(item)
+                if len(items) >= int(limit):
+                    break
+
+            return {
+                "node": node_path,
+                "total_items": len(all_items),
+                "returned": len(items),
+                "filter": state_filter,
+                "items": items,
+            }
+
+        return hdefereval.executeInMainThreadWithResult(_run)
+
+    def _handle_tops_get_dependency_graph(self, payload: Dict) -> Dict:
+        """Get the dependency graph for a TOP network.
+
+        Returns nodes with their types, work item counts by state, and
+        edges representing connections between TOP nodes.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import hdefereval
+
+        topnet_path = resolve_param(payload, "topnet_path")
+        depth = resolve_param_with_default(payload, "depth", -1)
+
+        def _run():
+            node = hou.node(topnet_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {topnet_path} -- "
+                    "double-check the path exists"
+                )
+
+            # Verify it's a TOP network
+            cat = node.type().category().name()
+            if cat not in ("TopNet", "Top"):
+                raise ValueError(
+                    f"The node at {topnet_path} is a {cat} node, not a TOP network -- "
+                    "point to a topnet node (e.g. '/obj/topnet1')"
+                )
+
+            children = node.children()
+            nodes = []
+            edges = []
+
+            for child in children:
+                node_info = {
+                    "name": child.name(),
+                    "path": child.path(),
+                    "type": child.type().name(),
+                }
+
+                # Get work item counts by state if PDG node exists
+                pdg_node = child.getPDGNode()
+                if pdg_node is not None:
+                    by_state = {}
+                    for wi in pdg_node.workItems:
+                        state_name = wi.state.name if hasattr(wi.state, 'name') else str(wi.state)
+                        by_state[state_name] = by_state.get(state_name, 0) + 1
+                    node_info["work_items"] = by_state
+                    node_info["total_items"] = sum(by_state.values())
+                else:
+                    node_info["work_items"] = {}
+                    node_info["total_items"] = 0
+
+                nodes.append(node_info)
+
+                # Build edges from input connections
+                for conn in child.inputConnections():
+                    edges.append({
+                        "from": conn.inputNode().path(),
+                        "to": child.path(),
+                        "input_index": conn.inputIndex(),
+                        "output_index": conn.outputIndex(),
+                    })
+
+            return {
+                "topnet": topnet_path,
+                "node_count": len(nodes),
+                "nodes": nodes,
+                "edges": edges,
+            }
+
+        return hdefereval.executeInMainThreadWithResult(_run)
+
+    def _handle_tops_get_cook_stats(self, payload: Dict) -> Dict:
+        """Get cook statistics for a TOP node or network.
+
+        For a single TOP node: work item counts by state and total cook time.
+        For a TOP network: aggregate stats across all child nodes.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import hdefereval
+
+        node_path = resolve_param(payload, "node")
+
+        def _run():
+            node = hou.node(node_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {node_path} -- "
+                    "double-check the path exists"
+                )
+
+            cat = node.type().category().name()
+
+            def _node_stats(n):
+                """Get stats for a single TOP node."""
+                pdg_node = n.getPDGNode()
+                if pdg_node is None:
+                    return {"name": n.name(), "path": n.path(), "by_state": {}, "total_items": 0, "cook_time": 0.0}
+                by_state = {}
+                total_cook = 0.0
+                for wi in pdg_node.workItems:
+                    state_name = wi.state.name if hasattr(wi.state, 'name') else str(wi.state)
+                    by_state[state_name] = by_state.get(state_name, 0) + 1
+                    total_cook += getattr(wi, 'cookTime', 0.0)
+                return {
+                    "name": n.name(),
+                    "path": n.path(),
+                    "by_state": by_state,
+                    "total_items": sum(by_state.values()),
+                    "cook_time": round(total_cook, 4),
+                }
+
+            if cat == "TopNet":
+                # Aggregate over children
+                node_stats = []
+                agg_by_state = {}
+                total_cook = 0.0
+                total_items = 0
+                for child in node.children():
+                    s = _node_stats(child)
+                    node_stats.append(s)
+                    total_cook += s["cook_time"]
+                    total_items += s["total_items"]
+                    for state, count in sorted(s["by_state"].items()):
+                        agg_by_state[state] = agg_by_state.get(state, 0) + count
+                return {
+                    "node": node_path,
+                    "is_network": True,
+                    "total_items": total_items,
+                    "by_state": agg_by_state,
+                    "total_cook_time": round(total_cook, 4),
+                    "nodes": node_stats,
+                }
+            else:
+                s = _node_stats(node)
+                return {
+                    "node": node_path,
+                    "is_network": False,
+                    "total_items": s["total_items"],
+                    "by_state": s["by_state"],
+                    "total_cook_time": s["cook_time"],
+                    "nodes": [s],
+                }
+
+        return hdefereval.executeInMainThreadWithResult(_run)
+
+    def _handle_tops_cook_node(self, payload: Dict) -> Dict:
+        """Cook a TOP node, optionally generating work items only.
+
+        Supports blocking (wait for cook) and non-blocking (fire-and-forget)
+        modes. Use generate_only=True to create work items without cooking.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import hdefereval
+
+        node_path = resolve_param(payload, "node")
+        generate_only = resolve_param_with_default(payload, "generate_only", False)
+        blocking = resolve_param_with_default(payload, "blocking", True)
+        top_down = resolve_param_with_default(payload, "top_down", True)
+
+        def _run():
+            node = hou.node(node_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {node_path} -- "
+                    "double-check the path exists"
+                )
+
+            # Verify it has a PDG node
+            pdg_node = node.getPDGNode()
+            if pdg_node is None:
+                raise ValueError(
+                    f"The node at {node_path} isn't a TOP node or hasn't been "
+                    "set up for PDG yet -- make sure it's inside a TOP network"
+                )
+
+            if generate_only:
+                node.generateStaticItems()
+                item_count = len(pdg_node.workItems)
+                return {
+                    "node": node_path,
+                    "status": "generated",
+                    "work_items": item_count,
+                }
+
+            node.cook(block=bool(blocking))
+            item_count = len(pdg_node.workItems)
+            return {
+                "node": node_path,
+                "status": "cooked" if blocking else "cooking",
+                "work_items": item_count,
+            }
+
+        return hdefereval.executeInMainThreadWithResult(_run)
+
+    def _handle_tops_generate_items(self, payload: Dict) -> Dict:
+        """Generate work items for a TOP node without cooking.
+
+        Creates static work items based on the node's configuration.
+        Useful for previewing what a node will produce before cooking.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import hdefereval
+
+        node_path = resolve_param(payload, "node")
+
+        def _run():
+            node = hou.node(node_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {node_path} -- "
+                    "double-check the path exists"
+                )
+
+            pdg_node = node.getPDGNode()
+            if pdg_node is None:
+                raise ValueError(
+                    f"The node at {node_path} isn't a TOP node or hasn't been "
+                    "set up for PDG yet -- make sure it's inside a TOP network"
+                )
+
+            node.generateStaticItems()
+            item_count = len(pdg_node.workItems)
+            return {
+                "node": node_path,
+                "status": "generated",
+                "item_count": item_count,
+            }
+
+        return hdefereval.executeInMainThreadWithResult(_run)
+
     def _handle_create_material(self, payload: Dict) -> Dict:
         """Create a materiallibrary LOP with a MaterialX shader inside it.
 

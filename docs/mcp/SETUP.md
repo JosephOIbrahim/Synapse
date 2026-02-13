@@ -3,18 +3,21 @@
 SYNAPSE exposes a standard MCP (Model Context Protocol) endpoint that any MCP-compliant client can connect to -- Claude Code, Cursor, VS Code, Windsurf, Cline, or custom agents.
 
 **Protocol:** MCP 2025-06-18 (Streamable HTTP transport)
-**Endpoint:** `http://localhost:9999/mcp`
+**Endpoint:** `http://localhost:8008/mcp`
 **Method:** `POST` with JSON-RPC 2.0 body
 
 ## Prerequisites
 
 1. **Houdini must be running** with SYNAPSE started (shelf button or startup script)
-2. The hwebserver must be active on port 9999 (default)
+2. SYNAPSE runs two servers simultaneously:
+   - **WebSocket** on port 9999 (primary transport for `mcp_server.py` stdio bridge and direct WS clients)
+   - **MCP HTTP** on port 8008 (Streamable HTTP for direct MCP clients -- Claude Code, Cursor, etc.)
+3. Clicking the **Synapse** shelf button starts both servers automatically
 
 To verify SYNAPSE is running, open a terminal:
 
 ```bash
-curl -s -X POST http://localhost:9999/mcp \
+curl -s -X POST http://localhost:8008/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"clientInfo":{"name":"test"}}}'
 ```
@@ -30,20 +33,20 @@ Add to your MCP server configuration (`~/.claude/settings.json` or project `.cla
   "mcpServers": {
     "synapse": {
       "type": "streamableHttp",
-      "url": "http://localhost:9999/mcp"
+      "url": "http://localhost:8008/mcp"
     }
   }
 }
 ```
 
-Claude Code will auto-discover all 44 SYNAPSE tools on connection.
+Claude Code will auto-discover all SYNAPSE tools on connection.
 
 ## Cursor / VS Code / Other MCP Clients
 
 Most MCP clients support Streamable HTTP transport. Point them at:
 
 ```
-URL:       http://localhost:9999/mcp
+URL:       http://localhost:8008/mcp
 Transport: Streamable HTTP
 ```
 
@@ -55,7 +58,7 @@ Consult your client's documentation for the exact configuration format.
 import json
 import requests
 
-BASE = "http://localhost:9999/mcp"
+BASE = "http://localhost:8008/mcp"
 
 # 1. Initialize
 resp = requests.post(BASE, json={
@@ -93,7 +96,7 @@ SYNAPSE uses the `Mcp-Session-Id` header for session tracking:
 
 ## Available Tools
 
-SYNAPSE exposes 44 tools across these categories:
+SYNAPSE exposes 49 tools across these categories:
 
 | Category | Tools | Examples |
 |----------|-------|---------|
@@ -104,6 +107,7 @@ SYNAPSE exposes 44 tools across these categories:
 | USD/Solaris | 5 | `houdini_stage_info`, `houdini_create_usd_prim`, `houdini_set_usd_attribute` |
 | Materials | 3 | `houdini_create_material`, `houdini_assign_material`, `houdini_read_material` |
 | Render | 4 | `houdini_render`, `houdini_capture_viewport`, `synapse_validate_frame` |
+| TOPS/PDG | 6 | `houdini_wedge`, `tops_get_work_items`, `tops_cook_node` |
 | Introspection | 3 | `synapse_inspect_scene`, `synapse_inspect_node`, `synapse_inspect_selection` |
 | Memory | 7 | `synapse_context`, `synapse_search`, `synapse_recall`, `synapse_decide` |
 | Knowledge | 1 | `synapse_knowledge_lookup` |
@@ -115,7 +119,8 @@ Use `tools/list` to get the full list with descriptions and input schemas.
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
-| `SYNAPSE_PORT` | `9999` | Server port |
+| `SYNAPSE_PORT` | `9999` | WebSocket server port |
+| `SYNAPSE_MCP_PORT` | `8008` | MCP HTTP server port |
 | `SYNAPSE_PATH` | `/synapse` | WebSocket path (MCP always uses `/mcp`) |
 | `SYNAPSE_API_KEY` | (none) | API key for WebSocket auth (MCP sessions do not require auth in Phase 1) |
 
@@ -128,3 +133,5 @@ Use `tools/list` to get the full list with descriptions and input schemas.
 **"Method not found"** -- You're calling an MCP method that isn't implemented yet. Phase 1 supports: `initialize`, `tools/list`, `tools/call`, `ping`. Resources and prompts are Phase 2.
 
 **Tools timing out** -- Render and wedge operations can take minutes. Default timeout is 10s for most tools, 30s for execution/introspection, 120s for render/wedge. Adjust your client's timeout accordingly.
+
+**Stale version in `serverInfo`** -- If the version string in the `initialize` response is outdated, the installed package metadata may be stale. Run `pip install -e .` from the SYNAPSE repo root to refresh it.

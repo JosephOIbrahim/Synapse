@@ -54,6 +54,13 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "frame": ["frame", "f", "frame_number", "frame_num"],
     # Wedge / TOPs
     "values": ["values", "wedge_values", "vals"],
+    # TOPS / PDG
+    "topnet_path": ["topnet_path", "topnet", "network_path"],
+    "state_filter": ["state_filter", "filter_state", "state"],
+    "include_attributes": ["include_attributes", "include_attrs", "attrs"],
+    "generate_only": ["generate_only", "gen_only"],
+    "blocking": ["blocking", "block", "wait"],
+    "top_down": ["top_down", "topdown", "cook_upstream"],
 
     # USD scene assembly
     "file": ["file", "filepath", "file_path", "path", "usd_file"],

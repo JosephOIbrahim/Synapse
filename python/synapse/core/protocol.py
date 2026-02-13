@@ -69,6 +69,13 @@ class CommandType(Enum):
     # Quality validation
     VALIDATE_FRAME = "validate_frame"
 
+    # TOPS / PDG
+    TOPS_GET_WORK_ITEMS = "tops_get_work_items"
+    TOPS_GET_DEPENDENCY_GRAPH = "tops_get_dependency_graph"
+    TOPS_GET_COOK_STATS = "tops_get_cook_stats"
+    TOPS_COOK_NODE = "tops_cook_node"
+    TOPS_GENERATE_ITEMS = "tops_generate_items"
+
     # Memory operations (new simplified names)
     CONTEXT = "context"
     SEARCH = "search"

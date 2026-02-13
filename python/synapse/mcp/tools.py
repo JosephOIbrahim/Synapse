@@ -296,6 +296,49 @@ _TOOL_DEFS: list[tuple] = [
      }, "required": ["node"]},
      False, True, False),
 
+    # -- TOPS / PDG (Phase 1) --
+    ("tops_get_work_items", "tops_get_work_items", _identity,
+     "Get work items from a TOP node with optional state filtering.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP node path"},
+         "state_filter": {"type": "string", "description": "Filter by state: all, cooked, failed, cooking, scheduled, uncooked, cancelled (default: all)"},
+         "include_attributes": {"type": "boolean", "description": "Include work item attributes (default: true)"},
+         "limit": {"type": "integer", "description": "Max items to return (default: 100)"},
+     }, "required": ["node"]},
+     True, False, True),
+
+    ("tops_get_dependency_graph", "tops_get_dependency_graph", _identity,
+     "Get the dependency graph for a TOP network: nodes, types, work item counts, and edges.",
+     {"type": "object", "properties": {
+         "topnet_path": {"type": "string", "description": "TOP network path"},
+         "depth": {"type": "integer", "description": "Traversal depth (-1 for full, default: -1)"},
+     }, "required": ["topnet_path"]},
+     True, False, True),
+
+    ("tops_get_cook_stats", "tops_get_cook_stats", _identity,
+     "Get cook statistics for a TOP node or network: work item counts by state and cook times.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP node or network path"},
+     }, "required": ["node"]},
+     True, False, True),
+
+    ("tops_cook_node", "tops_cook_node", _identity,
+     "Cook a TOP node. Supports blocking/non-blocking and generate-only modes.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP node path"},
+         "generate_only": {"type": "boolean", "description": "Generate work items only, don't cook (default: false)"},
+         "blocking": {"type": "boolean", "description": "Wait for cook to complete (default: true)"},
+         "top_down": {"type": "boolean", "description": "Cook upstream nodes first (default: true)"},
+     }, "required": ["node"]},
+     False, True, False),
+
+    ("tops_generate_items", "tops_generate_items", _identity,
+     "Generate work items for a TOP node without cooking. Preview what a node will produce.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP node path"},
+     }, "required": ["node"]},
+     False, True, False),
+
     # -- USD Scene Assembly --
     ("houdini_reference_usd", "reference_usd", _identity,
      "Import a USD file into the stage via reference or sublayer.",

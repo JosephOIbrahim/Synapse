@@ -148,6 +148,8 @@ _SLOW_COMMANDS = {
     "render": 120.0, "wedge": 120.0, "validate_frame": 30.0,
     "inspect_selection": 30.0, "inspect_scene": 30.0, "inspect_node": 30.0,
     "batch_commands": 60.0,
+    "tops_cook_node": 120.0,
+    "tops_generate_items": 60.0,
 }
 
 logger = logging.getLogger("synapse-mcp")
@@ -854,6 +856,95 @@ async def list_tools():
                 "required": ["node"],
             },
         ),
+        # -- TOPS / PDG (Phase 1) --
+        Tool(
+            name="tops_get_work_items",
+            description=(
+                "Get work items from a TOP node with optional state filtering. "
+                "Returns item details including id, index, name, state, cook time, "
+                "and attributes."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "TOP node path"},
+                    "state_filter": {
+                        "type": "string",
+                        "description": "Filter by state: all, cooked, failed, cooking, scheduled, uncooked, cancelled (default: all)",
+                    },
+                    "include_attributes": {
+                        "type": "boolean",
+                        "description": "Include work item attributes (default: true)",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max items to return (default: 100)",
+                    },
+                },
+                "required": ["node"],
+            },
+        ),
+        Tool(
+            name="tops_get_dependency_graph",
+            description=(
+                "Get the dependency graph for a TOP network: nodes, types, "
+                "work item counts by state, and edges between nodes."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "topnet_path": {"type": "string", "description": "TOP network path"},
+                    "depth": {"type": "integer", "description": "Traversal depth (-1 for full, default: -1)"},
+                },
+                "required": ["topnet_path"],
+            },
+        ),
+        Tool(
+            name="tops_get_cook_stats",
+            description=(
+                "Get cook statistics for a TOP node or network: "
+                "work item counts by state and total cook times."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "TOP node or network path"},
+                },
+                "required": ["node"],
+            },
+        ),
+        Tool(
+            name="tops_cook_node",
+            description=(
+                "Cook a TOP node. Supports blocking (wait for completion) and "
+                "non-blocking modes. Use generate_only=true to create work items "
+                "without cooking them."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "TOP node path"},
+                    "generate_only": {"type": "boolean", "description": "Generate only, don't cook (default: false)"},
+                    "blocking": {"type": "boolean", "description": "Wait for cook to complete (default: true)"},
+                    "top_down": {"type": "boolean", "description": "Cook upstream first (default: true)"},
+                },
+                "required": ["node"],
+            },
+        ),
+        Tool(
+            name="tops_generate_items",
+            description=(
+                "Generate work items for a TOP node without cooking. "
+                "Preview what a node will produce before running the cook."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "TOP node path"},
+                },
+                "required": ["node"],
+            },
+        ),
         # -- USD Scene Assembly --
         Tool(
             name="houdini_reference_usd",
@@ -1416,6 +1507,11 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "houdini_set_keyframe":     ("set_keyframe",     _identity),
     "houdini_render_settings":  ("render_settings",  _identity),
     "houdini_wedge":         ("wedge",          _identity),
+    "tops_get_work_items":        ("tops_get_work_items",        _identity),
+    "tops_get_dependency_graph":  ("tops_get_dependency_graph",  _identity),
+    "tops_get_cook_stats":        ("tops_get_cook_stats",        _identity),
+    "tops_cook_node":             ("tops_cook_node",             _identity),
+    "tops_generate_items":        ("tops_generate_items",        _identity),
     "houdini_reference_usd": ("reference_usd",  _identity),
     "houdini_create_material":  ("create_material",  _identity),
     "houdini_assign_material":  ("assign_material",  _identity),

@@ -111,6 +111,12 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "add_memory": AuditCategory.ENGRAM,
     "decide": AuditCategory.ENGRAM,
     "batch_commands": AuditCategory.SYNAPSE,
+    # TOPS / PDG
+    "tops_get_work_items": AuditCategory.PIPELINE,
+    "tops_get_dependency_graph": AuditCategory.PIPELINE,
+    "tops_get_cook_stats": AuditCategory.PIPELINE,
+    "tops_cook_node": AuditCategory.PIPELINE,
+    "tops_generate_items": AuditCategory.PIPELINE,
 }
 
 # Commands that don't modify state — skip memory logging for these
@@ -125,6 +131,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "read_material",
     "validate_frame",
     "get_metrics", "router_stats", "list_recipes",
+    "tops_get_work_items", "tops_get_dependency_graph", "tops_get_cook_stats",
 })
 
 
@@ -316,6 +323,13 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
 
         # TOPs / PDG wedging
         reg.register("wedge", self._handle_wedge)
+
+        # TOPS / PDG (Phase 1)
+        reg.register("tops_get_work_items", self._handle_tops_get_work_items)
+        reg.register("tops_get_dependency_graph", self._handle_tops_get_dependency_graph)
+        reg.register("tops_get_cook_stats", self._handle_tops_get_cook_stats)
+        reg.register("tops_cook_node", self._handle_tops_cook_node)
+        reg.register("tops_generate_items", self._handle_tops_generate_items)
 
         # USD scene assembly (reference / sublayer)
         reg.register("reference_usd", self._handle_reference_usd)
