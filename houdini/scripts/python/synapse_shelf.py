@@ -186,6 +186,12 @@ def open_panel():
         )
     pane.setActiveInterface(panel_type)
 
+    # Auto-start MCP HTTP endpoint alongside the panel
+    try:
+        start_mcp()
+    except Exception:
+        pass  # MCP is optional -- WebSocket still works
+
 
 def inspect_selection():
     """Analyze selected nodes and copy structured context to clipboard."""
