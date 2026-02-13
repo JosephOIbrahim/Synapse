@@ -145,7 +145,7 @@ RETRY_DELAY = 0.3
 COMMAND_TIMEOUT = 10.0
 _SLOW_COMMANDS = {
     "execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0,
-    "render": 120.0, "wedge": 120.0,
+    "render": 120.0, "wedge": 120.0, "validate_frame": 30.0,
     "inspect_selection": 30.0, "inspect_scene": 30.0, "inspect_node": 30.0,
     "batch_commands": 60.0,
 }
@@ -760,6 +760,44 @@ async def list_tools():
                         "description": "Override resolution height in pixels.",
                     },
                 },
+            },
+        ),
+        # -- Frame Validation --
+        Tool(
+            name="synapse_validate_frame",
+            description=(
+                "Validate a rendered frame for common quality issues: black frames, "
+                "NaN/Inf pixels, clipping (overexposure), underexposure, and firefly "
+                "artifacts. Uses OpenImageIO for fast C++-level pixel analysis. "
+                "Returns structured pass/fail results per check. "
+                "Great for automated QC after rendering."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "image_path": {
+                        "type": "string",
+                        "description": "Path to the rendered image file (EXR, JPEG, PNG, etc.)",
+                    },
+                    "checks": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": (
+                            "Optional list of checks to run. Default: all. "
+                            "Available: file_integrity, black_frame, nan_check, "
+                            "clipping, underexposure, saturation"
+                        ),
+                    },
+                    "thresholds": {
+                        "type": "object",
+                        "description": (
+                            "Optional threshold overrides. Keys: black_frame_mean, "
+                            "clipping_pct, underexposure_mean, saturation_pct, "
+                            "saturation_multiplier"
+                        ),
+                    },
+                },
+                "required": ["image_path"],
             },
         ),
         # -- Keyframe / Render Settings --
@@ -1382,6 +1420,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "houdini_create_material":  ("create_material",  _identity),
     "houdini_assign_material":  ("assign_material",  _identity),
     "houdini_read_material":    ("read_material",    _identity),
+    "synapse_validate_frame":   ("validate_frame",   _identity),
     "synapse_knowledge_lookup": ("knowledge_lookup", lambda a: {"query": a["query"]}),
     "synapse_inspect_selection": ("inspect_selection", _identity),
     "synapse_inspect_scene":    ("inspect_scene",     _identity),

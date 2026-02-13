@@ -101,6 +101,7 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "render_settings": AuditCategory.RENDER,
     "wedge": AuditCategory.RENDER,
     "capture_viewport": AuditCategory.RENDER,
+    "validate_frame": AuditCategory.RENDER,
     "create_usd_prim": AuditCategory.PIPELINE,
     "modify_usd_prim": AuditCategory.PIPELINE,
     "set_usd_attribute": AuditCategory.PIPELINE,
@@ -122,6 +123,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "knowledge_lookup",
     "inspect_selection", "inspect_scene", "inspect_node",
     "read_material",
+    "validate_frame",
     "get_metrics", "router_stats", "list_recipes",
 })
 
@@ -326,6 +328,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         reg.register("create_material", self._handle_create_material)
         reg.register("assign_material", self._handle_assign_material)
         reg.register("read_material", self._handle_read_material)
+
+        # Quality validation
+        reg.register("validate_frame", self._handle_validate_frame)
 
         # Knowledge lookup (RAG)
         reg.register("knowledge_lookup", self._handle_knowledge_lookup)

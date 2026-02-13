@@ -85,6 +85,11 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "snippet": ["snippet", "vex_code", "vex", "code"],
     "run_over": ["run_over", "runover", "class", "geo_class"],
     "input_node": ["input_node", "input", "input_geo"],
+
+    # Frame validation
+    "image_path": ["image_path", "image", "file_path", "frame_path"],
+    "checks": ["checks", "validations", "check_list"],
+    "thresholds": ["thresholds", "threshold_overrides", "limits"],
 }
 
 

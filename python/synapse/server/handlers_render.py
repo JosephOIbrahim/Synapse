@@ -100,6 +100,18 @@ def _detect_karma_engine(node, node_type: str) -> str:
     return "karma"
 
 
+_VALIDATE_CHECKS = ("file_integrity", "black_frame", "nan_check",
+                     "clipping", "underexposure", "saturation")
+
+_VALIDATE_DEFAULTS = {
+    "black_frame_mean": 0.001,
+    "clipping_pct": 0.5,
+    "underexposure_mean": 0.05,
+    "saturation_pct": 0.1,
+    "saturation_multiplier": 10.0,
+}
+
+
 class RenderHandlerMixin:
     """Mixin providing viewport capture, render, keyframe, render settings,
     wedge, and material handlers."""
@@ -559,4 +571,251 @@ class RenderHandlerMixin:
             "material_path": mat_path_str,
             "shader_type": shader_type,
             "shader_params": shader_params,
+        }
+
+    def _handle_validate_frame(self, payload: Dict) -> Dict:
+        """Validate a rendered frame for common quality issues.
+
+        Checks for black frames, NaN/Inf pixels, clipping, underexposure,
+        and firefly (saturation) artifacts. Uses OpenImageIO for fast C++-level
+        pixel analysis. Gracefully degrades to file-integrity-only if OIIO
+        is unavailable.
+        """
+        image_path = resolve_param(payload, "image_path")
+        requested_checks = resolve_param_with_default(payload, "checks", None)
+        threshold_overrides = resolve_param_with_default(payload, "thresholds", None) or {}
+
+        # Determine which checks to run
+        if requested_checks is not None:
+            if not isinstance(requested_checks, list):
+                requested_checks = [requested_checks]
+            invalid = [c for c in requested_checks if c not in _VALIDATE_CHECKS]
+            if invalid:
+                raise ValueError(
+                    f"Unknown check(s): {', '.join(invalid)}. "
+                    f"Available checks: {', '.join(_VALIDATE_CHECKS)}"
+                )
+            check_set = set(requested_checks)
+        else:
+            check_set = set(_VALIDATE_CHECKS)
+
+        # Merge thresholds
+        thresholds = dict(_VALIDATE_DEFAULTS)
+        for k, v in sorted(threshold_overrides.items()):
+            if k in thresholds:
+                thresholds[k] = float(v)
+
+        checks_result = {}
+        issues = []
+
+        # --- File integrity (always runs, no OIIO needed) ---
+        if "file_integrity" in check_set:
+            fi = self._validate_file_integrity(image_path)
+            checks_result["file_integrity"] = fi
+            if not fi["passed"]:
+                issues.append("file_integrity")
+                # Can't continue without a valid file
+                return {
+                    "valid": False,
+                    "image_path": image_path,
+                    "resolution": None,
+                    "channels": None,
+                    "format": None,
+                    "checks": dict(sorted(checks_result.items())),
+                    "summary": f"Frame has 1 issue(s): file_integrity",
+                    "oiio_available": False,
+                }
+
+        # --- Try to load OIIO ---
+        oiio = None
+        try:
+            import OpenImageIO as oiio
+        except ImportError:
+            try:
+                import oiio as oiio
+            except ImportError:
+                pass
+
+        if oiio is None:
+            # No OIIO -- return file-integrity-only result
+            return {
+                "valid": len(issues) == 0,
+                "image_path": image_path,
+                "resolution": None,
+                "channels": None,
+                "format": None,
+                "checks": dict(sorted(checks_result.items())),
+                "summary": "OIIO unavailable -- only file integrity checked",
+                "oiio_available": False,
+            }
+
+        # --- Open image with OIIO ---
+        inp = oiio.ImageInput.open(image_path)
+        if inp is None:
+            checks_result["file_integrity"] = {
+                "passed": False,
+                "value": 0,
+                "threshold": 0,
+                "detail": f"OIIO couldn't open the file: {oiio.geterror()}",
+            }
+            return {
+                "valid": False,
+                "image_path": image_path,
+                "resolution": None,
+                "channels": None,
+                "format": None,
+                "checks": dict(sorted(checks_result.items())),
+                "summary": "Frame has 1 issue(s): file_integrity",
+                "oiio_available": True,
+            }
+
+        spec = inp.spec()
+        width, height, channels = spec.width, spec.height, spec.nchannels
+        fmt_str = str(spec.format)
+        inp.close()
+
+        # --- Compute pixel stats via ImageBuf ---
+        buf = oiio.ImageBuf(image_path)
+        stats = oiio.ImageBufAlgo.computePixelStats(buf)
+
+        # --- Per-pixel data (only if needed) ---
+        need_pixels = bool(check_set & {"clipping", "saturation"})
+        pixels = None
+        pixel_count = 0
+
+        if need_pixels:
+            import numpy as np
+            pixels = buf.get_pixels(oiio.FLOAT)
+            # Downsample if > 8MP
+            total_pixels = width * height
+            if total_pixels > 8_000_000:
+                pixels = pixels[::2, ::2, :]
+                pixel_count = pixels.shape[0] * pixels.shape[1]
+            else:
+                pixel_count = total_pixels
+
+        # --- Mean luminance (used by multiple checks) ---
+        # Average across RGB channels (first 3); ignore alpha
+        rgb_channels = min(channels, 3)
+        mean_lum = sum(stats.avg[i] for i in range(rgb_channels)) / rgb_channels
+
+        # --- Run requested checks ---
+        if "black_frame" in check_set:
+            thresh = thresholds["black_frame_mean"]
+            passed = mean_lum >= thresh
+            checks_result["black_frame"] = {
+                "passed": passed,
+                "value": round(mean_lum, 6),
+                "threshold": thresh,
+                "detail": "Mean luminance is adequate" if passed else "Frame appears black or near-black",
+            }
+            if not passed:
+                issues.append("black_frame")
+
+        if "nan_check" in check_set:
+            nan_count = sum(stats.nancount[i] for i in range(channels))
+            inf_count = sum(stats.infcount[i] for i in range(channels))
+            total_bad = nan_count + inf_count
+            passed = total_bad == 0
+            checks_result["nan_check"] = {
+                "passed": passed,
+                "value": int(total_bad),
+                "threshold": 0,
+                "detail": "No NaN/Inf pixels" if passed else f"Found {int(nan_count)} NaN and {int(inf_count)} Inf values",
+            }
+            if not passed:
+                issues.append("nan_check")
+
+        if "clipping" in check_set and pixels is not None:
+            import numpy as np
+            thresh_pct = thresholds["clipping_pct"]
+            rgb = pixels[:, :, :rgb_channels]
+            clipped = int(np.sum(rgb >= 1.0))
+            total_vals = rgb.size
+            clip_pct = (clipped / total_vals) * 100.0 if total_vals > 0 else 0.0
+            passed = bool(clip_pct <= thresh_pct)
+            checks_result["clipping"] = {
+                "passed": passed,
+                "value": round(clip_pct, 4),
+                "threshold": thresh_pct,
+                "detail": "Highlights within range" if passed else f"{clip_pct:.2f}% of values are clipped at 1.0+",
+            }
+            if not passed:
+                issues.append("clipping")
+
+        if "underexposure" in check_set:
+            thresh = thresholds["underexposure_mean"]
+            passed = mean_lum >= thresh
+            checks_result["underexposure"] = {
+                "passed": passed,
+                "value": round(mean_lum, 6),
+                "threshold": thresh,
+                "detail": "Exposure looks adequate" if passed else "Frame appears underexposed",
+            }
+            if not passed:
+                issues.append("underexposure")
+
+        if "saturation" in check_set and pixels is not None:
+            import numpy as np
+            thresh_pct = thresholds["saturation_pct"]
+            multiplier = thresholds["saturation_multiplier"]
+            rgb = pixels[:, :, :rgb_channels]
+            firefly_threshold = mean_lum * multiplier
+            if firefly_threshold > 0:
+                hot_pixels = int(np.sum(rgb > firefly_threshold))
+                total_vals = rgb.size
+                sat_pct = (hot_pixels / total_vals) * 100.0 if total_vals > 0 else 0.0
+            else:
+                sat_pct = 0.0
+            passed = bool(sat_pct <= thresh_pct)
+            checks_result["saturation"] = {
+                "passed": passed,
+                "value": round(sat_pct, 4),
+                "threshold": thresh_pct,
+                "detail": "No firefly artifacts detected" if passed else f"{sat_pct:.2f}% of values exceed {multiplier}x mean",
+            }
+            if not passed:
+                issues.append("saturation")
+
+        # --- Build result ---
+        all_passed = len(issues) == 0
+        if all_passed:
+            summary = "Frame looks good"
+        else:
+            summary = f"Frame has {len(issues)} issue(s): {', '.join(sorted(issues))}"
+
+        return {
+            "valid": all_passed,
+            "image_path": image_path,
+            "resolution": [width, height],
+            "channels": channels,
+            "format": fmt_str,
+            "checks": dict(sorted(checks_result.items())),
+            "summary": summary,
+            "oiio_available": True,
+        }
+
+    @staticmethod
+    def _validate_file_integrity(image_path: str) -> Dict:
+        """Check file exists and has non-zero size."""
+        if not os.path.isfile(image_path):
+            return {
+                "passed": False,
+                "value": 0,
+                "threshold": 0,
+                "detail": f"File not found: {image_path}",
+            }
+        size = os.path.getsize(image_path)
+        if size == 0:
+            return {
+                "passed": False,
+                "value": 0,
+                "threshold": 0,
+                "detail": "File is empty (0 bytes)",
+            }
+        return {
+            "passed": True,
+            "value": size,
+            "threshold": 0,
+            "detail": f"File exists ({size} bytes)",
         }

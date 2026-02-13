@@ -66,6 +66,9 @@ class CommandType(Enum):
     GET_HELP = "get_help"
     GET_HEALTH = "get_health"
 
+    # Quality validation
+    VALIDATE_FRAME = "validate_frame"
+
     # Memory operations (new simplified names)
     CONTEXT = "context"
     SEARCH = "search"
