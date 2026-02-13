@@ -32,6 +32,12 @@ _DETERMINISM_PATH = os.path.join(
     os.path.dirname(__file__), "..", "python", "synapse", "core", "determinism.py"
 )
 
+# Save original sys.modules state BEFORE any patching
+_PATCHED_KEYS = ("synapse", "synapse.core", "synapse.core.determinism",
+                 "synapse.server", "synapse.server.rbac")
+_saved_modules = {k: sys.modules[k] for k in _PATCHED_KEYS if k in sys.modules}
+_absent_keys = [k for k in _PATCHED_KEYS if k not in sys.modules]
+
 # Load determinism first (dependency)
 spec_det = importlib.util.spec_from_file_location("synapse.core.determinism", os.path.abspath(_DETERMINISM_PATH))
 det_mod = importlib.util.module_from_spec(spec_det)
@@ -44,17 +50,25 @@ rbac_mod = importlib.util.module_from_spec(spec_rbac)
 sys.modules["synapse.server.rbac"] = rbac_mod
 spec_rbac.loader.exec_module(rbac_mod)
 
-# Patch the relative import targets for sessions module
-sys.modules["synapse"] = type(sys)("synapse")
-sys.modules["synapse.core"] = type(sys)("synapse.core")
-sys.modules["synapse.core.determinism"] = det_mod
-sys.modules["synapse.server"] = type(sys)("synapse.server")
-sys.modules["synapse.server.rbac"] = rbac_mod
+# Temporarily patch package stubs so sessions.py relative imports resolve.
+# Use setdefault to avoid clobbering the real synapse package if already imported
+# (unconditional assignment during collection corrupts sys.modules for later tests).
+sys.modules.setdefault("synapse", type(sys)("synapse"))
+sys.modules.setdefault("synapse.core", type(sys)("synapse.core"))
+sys.modules.setdefault("synapse.core.determinism", det_mod)
+sys.modules.setdefault("synapse.server", type(sys)("synapse.server"))
+sys.modules.setdefault("synapse.server.rbac", rbac_mod)
 
-# Now load sessions
+# Load sessions
 spec_sess = importlib.util.spec_from_file_location("synapse.server.sessions", os.path.abspath(_SESSIONS_PATH))
 sess_mod = importlib.util.module_from_spec(spec_sess)
 spec_sess.loader.exec_module(sess_mod)
+
+# Immediately restore sys.modules — prevent pollution of other test files
+for _k, _v in _saved_modules.items():
+    sys.modules[_k] = _v
+for _k in _absent_keys:
+    sys.modules.pop(_k, None)
 
 Role = rbac_mod.Role
 UserSession = sess_mod.UserSession
