@@ -22,10 +22,10 @@ Two repos make up the full system:
 Verify ALL of the following files exist in the repo:
 
 ```
-synapse/mcp/server.py          — MCP endpoint handler with /mcp route
-synapse/mcp/tools.py           — Tool registry mapping to existing handlers
-synapse/mcp/session.py         — Session manager
-synapse/mcp/protocol.py        — JSON-RPC utilities
+python/synapse/mcp/server.py   — MCP endpoint handler with /mcp route
+python/synapse/mcp/tools.py    — Tool registry mapping to existing handlers
+python/synapse/mcp/session.py  — Session manager
+python/synapse/mcp/protocol.py — JSON-RPC utilities
 docs/mcp/SETUP.md              — User-facing connection instructions
 tests/test_mcp_protocol.py     — MCP protocol tests (must exist AND pass)
 ```
@@ -33,8 +33,8 @@ tests/test_mcp_protocol.py     — MCP protocol tests (must exist AND pass)
 **Run this check:**
 ```bash
 # All 6 must exist. If ANY is missing, MCP Sprint is active.
-ls synapse/mcp/server.py synapse/mcp/tools.py synapse/mcp/session.py \
-   synapse/mcp/protocol.py docs/mcp/SETUP.md tests/test_mcp_protocol.py
+ls python/synapse/mcp/server.py python/synapse/mcp/tools.py python/synapse/mcp/session.py \
+   python/synapse/mcp/protocol.py docs/mcp/SETUP.md tests/test_mcp_protocol.py
 ```
 
 ### Step 2: Route to Active Sprint
@@ -46,7 +46,7 @@ IF any MCP gate file is missing:
     → TOPS status: PARKED (do NOT touch TOPS/PDG files)
 
 ELSE IF MCP gates pass BUT tops tools not registered:
-    (Check: grep -l "tops_cook_node\|tops_get_work_items" synapse/mcp/tools.py → no match)
+    (Check: grep -l "tops_cook_node\|tops_get_work_items" python/synapse/mcp/tools.py → no match)
     → ACTIVE SPRINT: TOPS/PDG Integration
     → Read: docs/tops/TOPS_SPRINT.md
     → Read: docs/tops/PARKING_SNAPSHOT.md (resume context)
