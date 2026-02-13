@@ -16,6 +16,7 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.aliases import resolve_param, resolve_param_with_default, USD_PARM_ALIASES
+from ..core.determinism import round_float, kahan_sum
 from .handlers_usd import _usd_to_json
 
 
@@ -471,7 +472,7 @@ class RenderHandlerMixin:
                     "index": wi.index,
                     "name": wi.name,
                     "state": wi.state.name if hasattr(wi.state, 'name') else str(wi.state),
-                    "cook_time": getattr(wi, 'cookTime', 0.0),
+                    "cook_time": round_float(getattr(wi, 'cookTime', 0.0)),
                 }
 
                 if include_attrs:
@@ -548,7 +549,7 @@ class RenderHandlerMixin:
                     for wi in pdg_node.workItems:
                         state_name = wi.state.name if hasattr(wi.state, 'name') else str(wi.state)
                         by_state[state_name] = by_state.get(state_name, 0) + 1
-                    node_info["work_items"] = by_state
+                    node_info["work_items"] = dict(sorted(by_state.items()))
                     node_info["total_items"] = sum(by_state.values())
                 else:
                     node_info["work_items"] = {}
@@ -603,29 +604,29 @@ class RenderHandlerMixin:
                 if pdg_node is None:
                     return {"name": n.name(), "path": n.path(), "by_state": {}, "total_items": 0, "cook_time": 0.0}
                 by_state = {}
-                total_cook = 0.0
+                cook_times = []
                 for wi in pdg_node.workItems:
                     state_name = wi.state.name if hasattr(wi.state, 'name') else str(wi.state)
                     by_state[state_name] = by_state.get(state_name, 0) + 1
-                    total_cook += getattr(wi, 'cookTime', 0.0)
+                    cook_times.append(getattr(wi, 'cookTime', 0.0))
                 return {
                     "name": n.name(),
                     "path": n.path(),
-                    "by_state": by_state,
+                    "by_state": dict(sorted(by_state.items())),
                     "total_items": sum(by_state.values()),
-                    "cook_time": round(total_cook, 4),
+                    "cook_time": kahan_sum(cook_times),
                 }
 
             if cat == "TopNet":
                 # Aggregate over children
                 node_stats = []
                 agg_by_state = {}
-                total_cook = 0.0
+                cook_times = []
                 total_items = 0
                 for child in node.children():
                     s = _node_stats(child)
                     node_stats.append(s)
-                    total_cook += s["cook_time"]
+                    cook_times.append(s["cook_time"])
                     total_items += s["total_items"]
                     for state, count in sorted(s["by_state"].items()):
                         agg_by_state[state] = agg_by_state.get(state, 0) + count
@@ -633,8 +634,8 @@ class RenderHandlerMixin:
                     "node": node_path,
                     "is_network": True,
                     "total_items": total_items,
-                    "by_state": agg_by_state,
-                    "total_cook_time": round(total_cook, 4),
+                    "by_state": dict(sorted(agg_by_state.items())),
+                    "total_cook_time": kahan_sum(cook_times),
                     "nodes": node_stats,
                 }
             else:
@@ -643,7 +644,7 @@ class RenderHandlerMixin:
                     "node": node_path,
                     "is_network": False,
                     "total_items": s["total_items"],
-                    "by_state": s["by_state"],
+                    "by_state": s["by_state"],  # already sorted by _node_stats
                     "total_cook_time": s["cook_time"],
                     "nodes": [s],
                 }
