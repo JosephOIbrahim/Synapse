@@ -99,3 +99,7 @@ matrix3 rot = lookat(from_pos, to_pos);
 // Rotation between two vectors
 matrix3 rot = dihedral(vec_a, vec_b);
 ```
+
+## See Also
+- **Joy of VEX: Quaternions** (`joy_of_vex_quaternions.md`) -- tutorial examples with slerp, qrotate, orient
+- **Joy of VEX: Vector Math** (`joy_of_vex_vector_math.md`) -- tutorial examples with dot, cross, fit, normalize

@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+// *orient  // Orient Attribute Transformation
+@Cd = @P.x;  // Accessing Vector Components
+v@up = {0,0,1};  // Setting Up Vector Orientation
+```
+
 ## Attribute Basics
 
 ### Accessing Vector Components [[Ep1, 19:28](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1168s)]
@@ -953,3 +960,7 @@ f@dist;
 @Cd = primuv(1, 'Cd', i@primid, @uv);
 ```
 Using xyzdist to find the closest primitive and UV coordinates on a grid, then using primuv to read both position and color attributes from that location. This allows points elevated above a grid to sample and adopt the color values from their nearest primitive below.
+
+## See Also
+- **VEX Attribute Access** (`vex_attributes.md`) -- attribute binding and type prefixes
+- **VEX Fundamentals** (`vex_fundamentals.md`) -- wrangle execution contexts

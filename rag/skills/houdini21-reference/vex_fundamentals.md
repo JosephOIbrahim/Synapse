@@ -137,3 +137,7 @@ Note: VEX uses semicolons to separate parameter types in function signatures.
 | Variables | `@P`, `@ptnum` | `$PT`, `$NPT` |
 
 Rule of thumb: If processing more than a few hundred points or modifying geometry, use VEX.
+
+## See Also
+- **Joy of VEX: Attributes** (`joy_of_vex_attribs.md`) -- tutorial examples with attribute creation and binding
+- **Joy of VEX: Flow Control** (`joy_of_vex_flow_control.md`) -- tutorial examples with loops, conditionals, foreach

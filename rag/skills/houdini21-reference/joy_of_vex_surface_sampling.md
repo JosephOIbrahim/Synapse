@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+@P = minpos(1, @P);  // Snapping Points to Geometry
+vector uv = chv('uv');  // UV-based Position Lookup
+vector up = chv('up');  // primuv function introduction
+```
+
 ## Distance Queries
 
 ### Distance to Secondary Input Geometry [Needs Review] [[Ep3, 32:48](https://www.youtube.com/watch?v=fOasE4T9BRY&t=1968s)]
@@ -791,3 +798,6 @@ Uses xyzdist to find the closest primitive and UV coordinates on a source geomet
 @P = minpos(1, @P);
 ```
 Uses minpos() to snap each point to the nearest position on the geometry connected to the second input, causing points to track to the closest surface position as they move. As animated points rotate around the target geometry, they continuously snap to the nearest point on its surface rather than smoothly sliding across it.
+
+## See Also
+- **VEX Functions Reference** (`vex_functions.md`) -- primuv, xyzdist function signatures

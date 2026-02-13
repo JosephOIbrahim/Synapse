@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+int pc = pcopen(0, "N", @N, ch("d"), chi("amt"));  // Point Cloud Filtering by Normals
+int pc = pcopen(0, "cd", @Cd, ch("dist"), chi("maxpts"));  // Point Cloud Normal Lookup
+int pc = pcopen(0, "P", @Cd, ch("dist"), chi("maxpoints"));  // Point Cloud Color-Based Clustering
+```
+
 ## Point Cloud Iteration
 
 ### Disconnected Code Conclusion [Needs Review] [[Ep8, 100:30](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=6030s)]
@@ -1195,3 +1202,6 @@ float dot = dot(norm, pcN);
 @Cd = pow(@Cd, ch("gamma"));
 ```
 Creates a point cloud lookup based on position, computes the normalized average normal from nearby points, then calculates the dot product between the point cloud normal and the current point's normal. The dot product is remapped from [-1,1] to [0,1] and assigned to color, then raised to a gamma power for contrast control.
+
+## See Also
+- **VEX Functions Reference** (`vex_functions.md`) -- pcopen, pcfilter function signatures

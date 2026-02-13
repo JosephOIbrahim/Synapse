@@ -230,3 +230,8 @@ pcclose(handle);
 f@rand_val = rand(i@id * 12345 + 67890);
 v@Cd = set(rand(i@id), rand(i@id+1), rand(i@id+2));
 ```
+
+## See Also
+- **Joy of VEX: Nearpoints & Proximity** (`joy_of_vex_nearpoints.md`) -- tutorial examples with nearpoints, pcfind
+- **Joy of VEX: Point Clouds** (`joy_of_vex_pcopen.md`) -- tutorial examples with pcopen, pcfilter
+- **Joy of VEX: Surface Sampling** (`joy_of_vex_surface_sampling.md`) -- tutorial examples with primuv, xyzdist

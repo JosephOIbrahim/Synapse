@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+@orient = {0,0,0,1};  // Setting Orient to Identity Quaternion
+@N *= chv('scale_vec');  // Multiplying Normals by Vector
+@N = cross(@N, {1, -1, 0});  // Cross Product Normal Reorientation
+```
+
 ## Geometry Operations
 
 ### Cone Height Manipulation with Distance [[Ep2, 20:02](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=1202s)]
@@ -844,3 +851,6 @@ vector uv = chv('uv');
 @N = primav(1, 'N', 0, uv);
 ```
 Uses primav() to sample position and normal attributes from a primitive at specified UV coordinates. The UV coordinates are exposed as a channel parameter, allowing interactive control. This technique samples geometry-1's primitive-0 attributes at the given UV location and assigns them to the current point.
+
+## See Also
+- **VEX Common Patterns** (`vex_patterns.md`) -- geometry manipulation patterns

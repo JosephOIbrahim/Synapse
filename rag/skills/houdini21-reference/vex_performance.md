@@ -107,3 +107,6 @@ float radius = chf("radius");   // Fast to adjust at runtime
 | Memory spike | Large per-element arrays | Use streaming (pcopen/pcfilter) |
 | Uniform slowdown | String attribute lookups in loops | Cache outside loop |
 | Frame-dependent slowdown | Growing geometry | Profile per-frame, check for leaks |
+
+## See Also
+- **Joy of VEX: Tips & Misc** (`joy_of_vex_tips.md`) -- tutorial tips on debugging, optimization, groups

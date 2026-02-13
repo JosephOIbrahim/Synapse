@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+@Cd = curlnoise(@P*chv('fancyscale')*@Time);  // Animating Noise with Time and Parameters
+v@Cd = curlnoise(@P*chv('fancyscale'))*0.5+0.5;  // Curl Noise Function Arguments
+@Cd = curlnoise(@P * cv('fancyscale') + @Time);  // Curl Noise Color with Channel
+```
+
 ## Noise Patterns
 
 ### Noise with Parameters and Animation [[Ep3, 60:14](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3614s)]
@@ -490,3 +497,7 @@ vector pos = chv('pos');
 @P += pos * curlnoise((@P + {0,1,0}) * (@w * 0.2) * @Time, 0, 0);
 ```
 Offsets point positions using curl noise driven by a channel-referenced vector parameter. The noise input combines the point position with a vertical offset, scaled by a point attribute @w and time, creating animated divergence-free flow patterns that can be controlled via the pos parameter.
+
+## See Also
+- **VEX Common Patterns** (`vex_patterns.md`) -- noise displacement patterns
+- **VEX Functions Reference** (`vex_functions.md`) -- noise function signatures

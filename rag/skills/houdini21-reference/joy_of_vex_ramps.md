@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+chv('scalevec');  // Channel Reference Scale Vector
+@N = chf('scale');  // Setting Normals with Channel Reference
+vector uv = chv("uv");  // Declaring UV vector parameter
+```
+
 ## Parameter Controls
 
 ### Channel references in expressions [[Ep1, 40:20](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=2420s)]
@@ -895,3 +902,6 @@ Demonstrates three methods of controlling quaternion interpolation: using a chan
 vector uv = chv("uv");
 ```
 Declares a vector variable 'uv' and populates it using the chv() function to read a vector channel parameter named 'uv'. This allows the user to specify UV coordinates through the parameter interface, which will later be used with primuv() to sample positions from the first input geometry.
+
+## See Also
+- **VEX Functions Reference** (`vex_functions.md`) -- chramp, chf function signatures

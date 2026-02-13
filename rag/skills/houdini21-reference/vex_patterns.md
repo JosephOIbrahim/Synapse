@@ -229,3 +229,8 @@ for (int i = 0; i < chi("octaves"); i++) {
 }
 @P += @N * n * chf("amplitude");
 ```
+
+## See Also
+- **Joy of VEX: Deformation** (`joy_of_vex_deformation.md`) -- tutorial examples with wave displacement, ramp-driven deformation
+- **Joy of VEX: Noise & Randomness** (`joy_of_vex_noise.md`) -- tutorial examples with snoise, curlnoise patterns
+- **Joy of VEX: Geometry Creation** (`joy_of_vex_geometry_creation.md`) -- tutorial examples with addpoint, addprim

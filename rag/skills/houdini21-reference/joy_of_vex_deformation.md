@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+v = fit(0, ch("radius"), 1, 0);  // Fit and Sine Wave Deformation
+float d = length(@P);  // Applying Sine Wave to Position
+float d = length(@P);  // Distance-Based Displacement
+```
+
 ## Wave Deformation
 
 ### Surface Displacement with Normals [[Ep2, 11:14](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=674s)]
@@ -1017,3 +1024,6 @@ uv = fit(uv, -1, 1, -0.2, 0.2);
 @N = primv(1, 'N', 0, uv);
 ```
 Creates circular motion by using sine and cosine functions on the same time value for UV coordinates, then uses fit() to scale the range from [-1,1] to [-0.2,0.2]. The scaled UV coordinates are used with primv() to sample position and normal attributes from the second input, creating a point that moves in a circular path across a primitive's parametric space.
+
+## See Also
+- **VEX Common Patterns** (`vex_patterns.md`) -- deformation pattern recipes

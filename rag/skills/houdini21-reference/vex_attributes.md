@@ -142,3 +142,7 @@ foreach (int pt; pts) {
 }
 if (total_w > 0) @Cd = total_cd / total_w;
 ```
+
+## See Also
+- **Joy of VEX: Attributes** (`joy_of_vex_attribs.md`) -- tutorial examples with attribute creation, types, binding
+- **Joy of VEX: Color** (`joy_of_vex_color.md`) -- tutorial examples with @Cd, ramps, gradients

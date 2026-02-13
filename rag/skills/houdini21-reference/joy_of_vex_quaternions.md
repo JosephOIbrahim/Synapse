@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+@orient = slerp(base, target, blend);  // Spherical Interpolation with Orient
+float angle = ch('angle');  // Quaternion from Angle and Axis
+@N = normalize(@P);  // Quaternion Extra Rotation
+```
+
 ## Orient Attribute
 
 ### Quaternion Extra Rotation [[Ep7, 100:40](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=6040s)]
@@ -1431,3 +1438,6 @@ vector4 extrarot = quaternion($PI/2, {1,0,0});
 @orient = qmultiply(@orient, extrarot);
 ```
 Creates an orientation quaternion from normalized position vectors using maketransform, then applies an additional 90-degree rotation around the X-axis using qmultiply. This technique demonstrates composing multiple quaternion rotations by multiplying them together, with the extra rotation rotating each point's orientation by PI/2 radians.
+
+## See Also
+- **VEX Data Types** (`vex_types.md`) -- quaternion and vector4 type reference

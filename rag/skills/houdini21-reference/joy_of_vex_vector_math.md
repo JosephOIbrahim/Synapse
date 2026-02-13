@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+*= ch('scale');  // Vector Scaling with Parameters
+matrix3 m = ident();  // Identity Matrix Initialization
+@Cd.r = @Time % 0.2;  // Modulo Operator Looping Behavior
+```
+
 ## Vector Operations
 
 ### Color from Position Math [[Ep1, 22:28](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1348s)]
@@ -851,3 +858,7 @@ A 4x4 transformation matrix in VEX is structured with the upper-left 3x3 block c
 f[]@matrix3 = {0.54813, -0.13154, 0.0, 0.034593, 0.478835, 0.006364, 0.0, 0.066738, 0.27055, 0.006364, 0.0, 0.0, 0.0, 0.0, 1.0};
 ```
 This declares a float array attribute containing 15 values representing a flattened 4x4 transformation matrix. The transcript discusses how translation values are visible in specific positions of the matrix, and introduces the concept of extracting just the rotation and scale components by converting to a 3x3 matrix.
+
+## See Also
+- **VEX Data Types** (`vex_types.md`) -- vector type hierarchy and conversions
+- **VEX Functions Reference** (`vex_functions.md`) -- math function signatures

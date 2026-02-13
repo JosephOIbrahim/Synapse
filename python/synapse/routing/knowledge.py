@@ -240,12 +240,15 @@ class KnowledgeIndex:
         if not self._keyword_to_topics:
             return None
 
-        # Score topics by keyword overlap
-        topic_scores: Dict[str, int] = {}
+        # Score topics by keyword overlap with IDF tiebreaker
+        # Each match contributes 1.0 (count) + IDF bonus (rare keywords score higher)
+        # Count remains the primary signal; IDF disambiguates equal-count ties
+        topic_scores: Dict[str, float] = {}
         for word in query_words:
             matching_topics = self._keyword_to_topics.get(word, [])
+            idf = 1.0 / len(matching_topics) if matching_topics else 0.0
             for topic in matching_topics:
-                topic_scores[topic] = topic_scores.get(topic, 0) + 1
+                topic_scores[topic] = topic_scores.get(topic, 0.0) + 1.0 + idf
 
         if not topic_scores:
             return None

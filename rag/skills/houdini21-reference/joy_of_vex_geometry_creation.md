@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+addpoint(0, @P + @N * 4);  // Creating Points Along Normal Direction
+int pt = addpoint(0, set(0, 3, 0));  // Creating Points for Polyline Primitive
+addpoint(0, {0,0,0});  // Adding Points with Position Offset
+```
+
 ## Adding Points & Geometry
 
 ### Creating Points with addpoint [[Ep5, 104:36](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=6276s)]
@@ -1268,3 +1275,7 @@ foreach (pt; pts) {
 }
 ```
 Finds up to 25 nearby points within a channel-controlled distance from the current point's position, then creates new geometry points at each found point's location by reading their positions and adding them to the output geometry. This technique can replicate or sample from nearby geometry, offering an alternative to tools like the Attribute Interpolate SOP.
+
+## See Also
+- **VEX Common Patterns** (`vex_patterns.md`) -- geometry creation patterns
+- **VEX Functions Reference** (`vex_functions.md`) -- addpoint, addprim signatures

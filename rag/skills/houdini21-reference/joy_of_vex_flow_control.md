@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+if(@ptnum < 5){  // Conditional color assignment with less than
+if(@ptnum >= 5){  // Comparison Operators and Modulo
+float a = 42;  // Variable in Vector Literal
+```
+
 ## Conditionals & Control Flow
 
 ### Multi-line Operations Clarity [Needs Review] [[Ep1, 102:12](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=6132s)]
@@ -1005,3 +1012,6 @@ if (min(@Cd)<0) {
 }
 ```
 Assigns normal vectors to color attributes, then checks if any color component is negative using min(). If negative values are found (from normals pointing in negative axis directions), the entire color is set to a neutral gray (0.1) to avoid dark or invalid colors.
+
+## See Also
+- **VEX Fundamentals** (`vex_fundamentals.md`) -- control flow and execution model

@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+int pts[];  // Point Array Variable Declaration
+@Cd = (sin(length(@P)*ch('scale'))+1)*0.5;  // One-line vs multi-line code readability
+vector origin = point(1, "P", 0);  // Setting velocity from origin point
+```
+
 ## Debugging
 
 ### Multi-line operations for readability [[Ep1, 102:06](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=6126s)]
@@ -616,3 +623,6 @@ avgp *= (1, 0, 1);
 @v += avgv - avgp;
 ```
 Uses point cloud queries on a second input geometry to calculate averaged velocity and position values from nearby points, then modifies particle velocity by the difference between these smoothed values. The vector multiplication masks out the Y-component to constrain the effect to horizontal dimensions only.
+
+## See Also
+- **VEX Performance** (`vex_performance.md`) -- optimization guidelines

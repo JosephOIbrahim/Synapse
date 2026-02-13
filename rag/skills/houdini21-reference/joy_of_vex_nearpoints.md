@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+vector pos = minpos(1, @P);  // Finding Closest Point Position
+int pts[] = nearpoints(1, @P, chf("d"), 25);  // Find Nearest Points Array
+int pt = nearpoint(1, @P);  // Transfer Color from Nearest Point
+```
+
 ## Proximity Operations
 
 ### Distance-based coloring using minpos [[Ep3, 33:26](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2006s)]
@@ -1545,3 +1552,6 @@ foreach(pt; pts){
 @P = pos/len(pts);
 ```
 This code finds nearby points on a surface using nearpoints() and averages their positions to relocate the current point. By accumulating all found point positions and dividing by the count, it creates a smoothing effect that adheres to the underlying geometry. The technique provides smooth motion but may deviate from the original surface shape as more points are averaged.
+
+## See Also
+- **VEX Functions Reference** (`vex_functions.md`) -- nearpoints, pcfind function signatures

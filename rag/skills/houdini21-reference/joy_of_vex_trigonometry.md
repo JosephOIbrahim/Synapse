@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+@P.y = sin(@P.x);  // Sine Wave Output Range
+float d = length(@P);  // Length Function and Distance Calculations
+v@up = set(sin(@Time), 0, cos(@Time));  // Rotating Up Vector with Time
+```
+
 ## Trigonometric Functions
 
 ### Compound assignment operators [Needs Review] [[Ep1, 100:42](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=6042s)]
@@ -755,3 +762,6 @@ float c = cos(@Time);
 @up = set(s, 0, c);
 ```
 Uses sine and cosine of time to create a rotating up vector that circles around the Y-axis. The sine starts at zero, oscillates to 1 and -1, while cosine starts at 1 and oscillates, creating perpendicular waves that together produce circular motion when combined in a vector.
+
+## See Also
+- **VEX Functions Reference** (`vex_functions.md`) -- trigonometric function signatures

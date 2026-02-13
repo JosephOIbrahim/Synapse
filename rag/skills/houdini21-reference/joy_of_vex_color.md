@@ -3,6 +3,13 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
+## Quick Reference
+```vex
+@Cd = @N.y;  // Vector Component Access
+@Cd = @P.x + 3;  // Offsetting Color Values
+@Cd = @P;  // Position to Color Mapping
+```
+
 ## Color Operations
 
 ### Distance-Based Color with Sine Wave [[Ep1, 109:14](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=6554s)]
@@ -1056,3 +1063,6 @@ if (sin(@d) < 0) {
 }
 ```
 Colors geometry based on normal direction, with front faces colored according to their axis-aligned normal components and back faces (where sine of @d is negative) colored a uniform gray (0.1). This creates a visual distinction between front and back faces, making it easy to identify surface orientation and axis alignment.
+
+## See Also
+- **VEX Attribute Access** (`vex_attributes.md`) -- @Cd color attribute reference
