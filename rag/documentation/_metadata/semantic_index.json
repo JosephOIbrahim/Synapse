@@ -1,190 +1,5 @@
 {
-  "solaris_node_types": {
-    "summary": "Solaris/LOP node types available in Houdini",
-    "description": "Common Solaris LOP node types: sphere, cube, camera, domelight, distantlight, rectlight, cylinderlight, disklight, materiallibrary, assignmaterial, edit, merge, reference, sublayer, sopimport, karmarenderproperties, usdrender_rop, null. Note: there is no 'grid' or 'plane' LOP node — use cube with scale.y=0.01 for ground planes.",
-    "keywords": [
-      "solaris",
-      "lop",
-      "node",
-      "types",
-      "create",
-      "sphere",
-      "cube",
-      "camera",
-      "light",
-      "material",
-      "merge",
-      "reference"
-    ]
-  },
-  "solaris_parameter_names": {
-    "summary": "Key Solaris/LOP parameter naming conventions",
-    "description": "Solaris parameter names follow USD naming with namespace encoding. Common gotchas: Light intensity is 'xn__inputsintensity_i0a' (not 'intensity' or 'light_intensity'). Sphere has no 'rows'/'cols' (those are SOP sphere parms). Camera focal length is 'focalLength'. MaterialX base color channels are 'base_colorr', 'base_colorg', 'base_colorb' (not 'base_color_r'). Edit node uses 'primpattern' for prim selection and 'tx','ty','tz','sx','sy','sz' for transforms.",
-    "keywords": [
-      "parameter",
-      "parm",
-      "name",
-      "intensity",
-      "focal",
-      "color",
-      "transform",
-      "material",
-      "solaris",
-      "lop"
-    ]
-  },
-  "karma_rendering": {
-    "summary": "Karma render engine configuration and ROP setup",
-    "description": "Karma render types in /out: 'karma' (direct driver with 'picture' and 'camera' parms, 'engine' parm for xpu/cpu), 'usdrender' (USD-based with 'loppath', 'outputimage', 'override_camera', 'override_res' parms). The 'override_res' parm is a string menu with values '', 'scale', 'specific'. Resolution parms: 'res_user1' (width) and 'res_user2' (height) on usdrender, 'resolutionx'/'resolutiony' on karma. Camera must be USD prim path (e.g. '/cameras/render_cam'), not Houdini node path. ROP in /out needs 'loppath' set to a LOP display node. Karma XPU has ~10-15s file flush delay after render() returns.",
-    "keywords": [
-      "karma",
-      "render",
-      "xpu",
-      "cpu",
-      "rop",
-      "resolution",
-      "camera",
-      "usdrender",
-      "output",
-      "image",
-      "picture"
-    ]
-  },
-  "materialx_shaders": {
-    "summary": "MaterialX shader creation in Solaris MaterialLibrary",
-    "description": "MaterialX shaders are created inside a materiallibrary LOP node. Use 'mtlxstandard_surface' type. IMPORTANT: After creating the materiallibrary, call matlib.cook(force=True) before creating child shader nodes — otherwise createNode() returns None. Key parms: 'base_colorr/g/b' (base color RGB, 0-1), 'metalness' (0=dielectric, 1=metal), 'specular_roughness' (0=mirror, 1=rough), 'specular' (specular weight), 'coat' (clearcoat weight), 'emission_colorr/g/b' (emission), 'opacity' (transparency). Assign with 'assignmaterial' LOP: 'primpattern1' for target prim, 'matspecpath1' for material path (e.g. '/materials/my_shader').",
-    "keywords": [
-      "materialx",
-      "shader",
-      "material",
-      "mtlx",
-      "standard_surface",
-      "color",
-      "metalness",
-      "roughness",
-      "assign",
-      "library"
-    ]
-  },
-  "usd_stage_operations": {
-    "summary": "USD stage operations, composition arcs (LIVRPS), and prim manipulation",
-    "description": "USD prims in Solaris follow a hierarchy. Common paths: /hero_sphere (from sphere LOP named 'hero_sphere'), /materials/shader_name (from materiallibrary), /lights/light_name (from light LOPs), /cameras/cam_name (from camera LOPs), /Render (from karmarenderproperties). Transform uses 'xformOp:transform' matrix (not 'xformOp:translate'). For translate/rotate/scale, use an 'edit' LOP node instead of USD attributes directly. Composition strength (LIVRPS): Local > Inherits > VariantSets > References > Payloads > Sublayers. Prim types: Sphere, Cube, Mesh, Xform, Scope, DomeLight, DistantLight, RectLight, Camera.",
-    "keywords": [
-      "usd",
-      "prim",
-      "stage",
-      "path",
-      "transform",
-      "xform",
-      "attribute",
-      "hierarchy",
-      "scope",
-      "livrps",
-      "composition"
-    ]
-  },
-  "pyro_simulation": {
-    "summary": "Pyro (fire/smoke) simulation setup in SOPs",
-    "description": "Modern Houdini pyro uses SOP-level pyrosolver. Chain: source geometry -> scatter (5000+ points) -> attribwrangle (set density=1, temperature=2, flame=1, v=upward velocity, pscale=0.05) -> volumerasterizeattributes (set 'attributes' parm to 'density temperature flame') -> pyrosolver. Key solver parms: 'divsize' (voxel size, 0.05 for detail), 'tempcooling' (0.5-0.8), 'dissipation' (0.1-0.2), 'enable_disturbance' (1 for turbulence). Import to Solaris via 'sopimport' LOP. Cook frame-by-frame for simulation (needs sequential frames).",
-    "keywords": [
-      "pyro",
-      "fire",
-      "smoke",
-      "simulation",
-      "fx",
-      "volume",
-      "solver",
-      "density",
-      "temperature",
-      "flame"
-    ]
-  },
-  "flip_simulation": {
-    "summary": "FLIP fluid simulation setup in SOPs",
-    "description": "FLIP fluids use the flipsolver SOP. Chain: source geometry -> fluidsource -> flipsolver -> particlefluidsurface (meshing). Key parms: 'particlesep' (particle separation, 0.1 preview / 0.03-0.05 final), 'gridscale' (2.0 default), 'viscosity' (0=water, 50+=honey), 'surfacetension'. Velocity transfer: FLIP (splashy), PIC (smooth), blend (picflip=0.05 for best results). Enable 'narrowband' for open-surface sims (5-10x faster). VDB collisions preferred. Whitewater: flipsolver -> whitewatersource -> whitewatersolver for spray/foam/bubbles.",
-    "keywords": [
-      "flip",
-      "fluid",
-      "water",
-      "liquid",
-      "simulation",
-      "particles",
-      "surface",
-      "mesh",
-      "whitewater",
-      "viscosity",
-      "ocean"
-    ]
-  },
-  "rbd_simulation": {
-    "summary": "RBD (rigid body dynamics) simulation setup",
-    "description": "RBD in modern Houdini: geometry -> rbdmaterialfracture (Voronoi fracture) -> assemble (pack primitives) -> rigidsolver SOP. Constraint types: Glue (break on impact), Hard (unbreakable), Hinge (rotate), Cone Twist (limited rotation), Soft (spring). Setup: rbdconstraintsfromrules -> rbdconstraintproperties -> solver constraint input. For progressive destruction: vary strength by height or group. Impact data: f@impulse for collision force. Secondary effects: debris via POP solver, dust via pyro at impact points.",
-    "keywords": [
-      "rbd",
-      "rigid",
-      "body",
-      "dynamics",
-      "fracture",
-      "destruction",
-      "physics",
-      "bullet",
-      "constraint",
-      "glue",
-      "impact"
-    ]
-  },
-  "tops_wedging": {
-    "summary": "TOPs/PDG wedging for parameter variation",
-    "description": "TOPs (Task Operator Network) enables parameter wedging. Create a topnet at /obj level. Inside: wedge TOP (generates parameter variations) -> ropfetch TOP (renders each variation). Wedge node: 'wedgecount' sets number of variations, 'wedgeattribs' defines which attributes to vary. Types: Range (linear sweep), Random (exploration), Specific Values (A/B). Schedulers: localscheduler, hqueuescheduler, deadline. For GPU renders (Karma XPU), set maxproccount=1. Use waitforall -> imagemagick for contact sheet comparisons.",
-    "keywords": [
-      "tops",
-      "pdg",
-      "wedge",
-      "variation",
-      "parameter",
-      "sweep",
-      "batch",
-      "render",
-      "scheduler",
-      "contact sheet"
-    ]
-  },
-  "houdini_sop_basics": {
-    "summary": "Common SOP node types, groups, VDB workflow, and parameter names",
-    "description": "SOP sphere: 'radx/rady/radz' (not 'rad'), 'scale', 'rows', 'cols'. SOP box: 'sizex/y/z', 'tx/ty/tz'. scatter: 'npts'. attribwrangle: 'snippet', 'class' (point/prim/vertex/detail). copytopoints: reads @P, @orient, @N+@up, @pscale, @scale from target points. Groups: groupcreate, groupexpression, grouprange. VDB workflow: mesh -> vdbfrompolygons -> vdbcombine -> convertVDB (reliable booleans). For-each: foreach_begin/end (by pieces, count, feedback). SOP vs LOP parm names differ.",
-    "keywords": [
-      "sop",
-      "sphere",
-      "box",
-      "scatter",
-      "wrangle",
-      "transform",
-      "geometry",
-      "node",
-      "parameter",
-      "group",
-      "vdb",
-      "copy",
-      "foreach"
-    ]
-  },
-  "scene_assembly": {
-    "summary": "USD scene assembly via reference, sublayer, and payload",
-    "description": "Import external USD files using 'reference' LOP (adds content under a prim path, good for assets) or 'sublayer' LOP (merges layer stack, good for environments). Reference vs Payload: references always load, payloads defer loading until requested. Reference LOP parms: 'filepath1', 'primpath', 'reftype' (Reference or Payload). Layer stacking: anim.usd -> layout.usd -> lighting.usd -> final.usd (later sublayers are stronger).",
-    "keywords": [
-      "reference",
-      "sublayer",
-      "assembly",
-      "import",
-      "usd",
-      "asset",
-      "scene",
-      "composition",
-      "payload"
-    ]
-  },
   "camera_setup": {
-    "summary": "Camera creation and configuration in Solaris",
     "description": "Camera LOP creates a camera prim at /cameras/node_name. Key parms: 'tx/ty/tz' (position), 'rx/ry/rz' (rotation), 'focalLength' (focal length in mm, default 50), 'fStop' (aperture for DOF), 'focusDistance' (focus distance), 'horizontalAperture' (sensor width in mm). For render, camera is referenced by USD prim path (e.g. '/cameras/render_cam'), not Houdini node path. Typical setup: camera at (4,3,6), rotation (-20,30,0) for 3/4 view.",
     "keywords": [
       "camera",
@@ -195,156 +10,67 @@
       "position",
       "rotation",
       "lens"
-    ]
+    ],
+    "summary": "Camera creation and configuration in Solaris"
   },
-  "lighting_setup": {
-    "summary": "Light types, Lighting Law, and exposure-based brightness control in Solaris",
-    "description": "Solaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). LIGHTING LAW: intensity ALWAYS 1.0, brightness controlled by EXPOSURE (logarithmic, in stops). Encoded parm names: intensity='xn__inputsintensity_i0a' (always 1.0), color='xn__inputscolor_kya' (vec3), exposure='xn__inputsexposure_vya', exposure control='xn__inputsexposure_control_wcb' (set to 'set' to enable). Dome light texture: 'xn__inputstexturefile_i1a'. Key:fill ratio math: fill_exposure = key_exposure - log2(ratio). Standard 3-point: key=5.0, fill=3.0 (4:1), rim=4.5, dome=0.0.",
+  "camera_workflow_reference": {
+    "description": "Comprehensive camera workflow reference. Camera types: standard perspective, orthographic, stereo rig. Essential parameters: focalLength (mm), horizontalAperture (36=full frame), verticalAperture, fStop (0=no DOF), focusDistance, clippingRange. Focal length cheat sheet: 14-24mm ultra-wide (environments), 24-35mm wide (interiors), 35-50mm normal (general), 50-85mm portrait (characters), 85-135mm telephoto (close-ups), 135-200mm+ long (compression). DOF setup: fStop non-zero, focusDistance to subject. Quick DOF reference: product (2.0-4.0), portrait (2.8-5.6), landscape (8.0-16.0), miniature (1.4-2.0). Motion blur: transform blur (xformsamples=2), deformation blur (geosamples=2, geovelblur=1). Shutter settings: forward (0.0-1.0), centered (-0.5-0.5), backward (-1.0-0.0). Camera animation: keyframing via Edit LOP, turntable orbit pattern (radius/height/frames), look-at constraint. Multi-camera workflows: render_cam, turntable_cam, closeup_cam, wide_cam. Batch rendering via TOPS/PDG. Composition: rule of thirds, head room, lead room, framing depth.",
     "keywords": [
-      "light",
-      "lighting",
-      "dome",
-      "distant",
-      "rect",
-      "area",
-      "intensity",
-      "color",
-      "exposure",
-      "hdri",
-      "stops",
-      "ratio"
-    ]
+      "camera",
+      "focal length",
+      "dof",
+      "depth of field",
+      "fstop",
+      "aperture",
+      "motion blur",
+      "turntable",
+      "animation",
+      "composition",
+      "multi-camera",
+      "shutter",
+      "clipping",
+      "lens",
+      "bokeh",
+      "keyframe",
+      "orbit"
+    ],
+    "reference_file": "camera_workflows",
+    "summary": "Camera workflows: types, focal length, DOF, motion blur, animation, turntable, multi-camera, composition guidelines"
   },
-  "vex_functions": {
-    "summary": "VEX function reference: 150+ signatures across geometry, math, noise, strings, channels, arrays",
-    "description": "Complete VEX function signatures organized by category. Geometry read: point/prim/vertex/detail, attribsize, hasattrib. Write: setpointattrib, setprimattrib, addattrib. Create/delete: addpoint, addprim, addvertex, removepoint, removeprim. Spatial: nearpoint, nearpoints, pcfind, pcfind_radius, pcopen, pcfilter, intersect, xyzdist. Connectivity: neighbours, pointprims, primpoints. Math: sin/cos, pow, sqrt, clamp, fit, lerp, smooth, chramp. Noise: noise, snoise, xnoise, curlnoise, flownoise, vnoise. Vector/matrix: length, normalize, dot, cross, maketransform, cracktransform, quaternion, qrotate. String: sprintf, split, join, match, re_match. Channel: ch, chf, chi, chs, chv, chramp. Array: len, append, find, sort, sum, avg.",
+  "chops": {
+    "description": "Channel Operators (CHOPs) for audio processing, motion analysis and retargeting, keyframe/channel manipulation, CHOP wrangles with VEX, and workflows for piping channel data into SOPs, DOPs, and LOPs.",
     "keywords": [
-      "vex",
-      "function",
-      "wrangle",
-      "snippet",
-      "point",
-      "prim",
-      "noise",
-      "math",
-      "attribute",
+      "chop",
+      "chops",
       "channel",
-      "pcfind",
-      "orient",
-      "quaternion",
-      "signature",
-      "array"
+      "channels",
+      "channel operator",
+      "audio",
+      "audio file",
+      "audio in",
+      "spectrum",
+      "noise chop",
+      "spring chop",
+      "lag chop",
+      "trigger chop",
+      "trail chop",
+      "expression chop",
+      "math chop",
+      "constant chop",
+      "chop to sop",
+      "export chop",
+      "channel wrangle",
+      "sample rate",
+      "channel scope",
+      "motion",
+      "retarget",
+      "keyframe",
+      "chop network"
     ],
-    "reference_file": "vex_functions"
-  },
-  "vex_fundamentals": {
-    "summary": "VEX language basics: execution contexts, run-over modes, data types, control flow, VEX vs HScript",
-    "description": "VEX fundamentals for wrangle nodes. Execution contexts: SOP (Attribute Wrangle), DOP (Gas Field Wrangle), CHOP (Channel Wrangle), COP (Pixel Wrangle). Run-over modes: Points (default, @ptnum), Primitives (@primnum), Vertices (@vtxnum), Detail (single pass). Data types: int, float, vector2, vector, vector4, matrix2, matrix3, matrix, string, arrays. Type prefixes for @-binding: f@=float, i@=int, v@=vector, u@=vector2, p@=vector4, s@=string, 2@/3@/4@=matrices. Control flow: if/else, for, foreach, while, ternary. Inputs: 4 geometry inputs accessed by index (0-3). User-defined functions with semicolon type separators. Preprocessor: #include, #define. VEX vs HScript: VEX is compiled/parallel for heavy processing, HScript for simple parameter expressions.",
-    "keywords": [
-      "vex",
-      "fundamentals",
-      "basics",
-      "syntax",
-      "wrangle",
-      "context",
-      "run-over",
-      "type",
-      "control flow",
-      "input",
-      "output",
-      "hscript"
-    ],
-    "reference_file": "vex_fundamentals"
-  },
-  "vex_attributes": {
-    "summary": "VEX attribute system: built-in attributes, type prefixes, groups, intrinsics, promotion patterns",
-    "description": "VEX attribute access patterns. Built-in point attributes: @P (position), @N (normal), @Cd (color), @v (velocity), @pscale, @orient, @id, @age, @life, @rest, @uv, @Alpha, @width. Context variables: @ptnum, @numpt, @primnum, @numprim, @vtxnum, @elemnum. Globals: @Time, @Frame, @TimeInc. Reading: @-shorthand for current element (fastest), point()/prim()/vertex()/detail() for any element/input. Writing: @attr creates if missing, setpointattrib/setprimattrib/setdetailattrib with mode (set/add/min/max/mult). Groups: i@group_name = 1/0, inpointgroup(), inprimgroup(). Intrinsics: primintrinsic(0, 'measuredarea', @primnum). Promotion patterns: point-to-detail via loops, detail-to-point broadcast, nearest-point transfer via nearpoint/pcfind, distance-weighted blend.",
-    "keywords": [
-      "vex",
-      "attribute",
-      "@P",
-      "@N",
-      "@Cd",
-      "point",
-      "prim",
-      "vertex",
-      "detail",
-      "group",
-      "prefix",
-      "type",
-      "intrinsic",
-      "transfer",
-      "promotion"
-    ],
-    "reference_file": "vex_attributes"
-  },
-  "vex_types": {
-    "summary": "VEX data types: int, float, vector, matrix, quaternion, string; conversions and operations",
-    "description": "VEX type system. Scalars: int (32-bit), float (32-bit), string (UTF-8). Vectors: vector2 (2f), vector (3f/xyz), vector4 (4f/quaternion). Matrices: matrix2 (2x2), matrix3 (3x3 rotation/scale), matrix (4x4 full transform). Implicit promotion: int->float->vector2->vector->vector4. Explicit: int(), float(), set(x,y,z). Component access: v.x/.y/.z or v[0]/[1]/[2]. Quaternion ops: quaternion(angle, axis), eulertoquaternion(), qrotate(), slerp(), qmultiply(), qinvert(). Matrix ops: ident(), maketransform(), cracktransform(), invert(), transpose(), lookat(), dihedral(). String conversion: itoa(), atoi(), atof(), sprintf().",
-    "keywords": [
-      "vex",
-      "type",
-      "conversion",
-      "cast",
-      "vector",
-      "matrix",
-      "quaternion",
-      "vector4",
-      "matrix3",
-      "int",
-      "float",
-      "string",
-      "array",
-      "slerp",
-      "qrotate"
-    ],
-    "reference_file": "vex_types"
-  },
-  "vex_performance": {
-    "summary": "VEX optimization: fast/slow patterns, spatial queries, memory, profiling, bottleneck checklist",
-    "description": "VEX performance patterns. Fast: pcfind (KD-tree O(log n)) over nearpoints (O(n)), distance2/length2 (skip sqrt), @-binding (compiled direct access), smooth/lerp for branchless blends, pre-sized arrays via resize(). Slow: string attribute lookups in loops, dynamic array growth, complex branching. Run-over selection: Points for per-point, Detail + explicit loops for small geo with inter-element deps. Compilation: first cook compiles (slow), ch() changes don't trigger recompile. Profile via Performance Monitor. Common bottlenecks: O(n^2) spatial query -> use pcfind, memory spikes -> use pcopen/pcfilter streaming, string lookups in loops -> cache outside.",
-    "keywords": [
-      "vex",
-      "performance",
-      "optimization",
-      "speed",
-      "slow",
-      "fast",
-      "bottleneck",
-      "pcfind",
-      "distance2",
-      "parallel",
-      "memory",
-      "compile",
-      "profiling"
-    ],
-    "reference_file": "vex_performance"
-  },
-  "vex_patterns": {
-    "summary": "15+ VEX code patterns: deformation, color, generation, grouping, solver, transfer",
-    "description": "Copy-paste VEX patterns. Deformation: sine wave (@P.y += sin()), noise displacement along normal, twist (rotation around axis), taper via chramp. Color: by height (chramp), by curvature (neighbour dot products), random per piece (hsvtorgb). Generation: spiral points (detail wrangle with trig), polyline from points, quad grid from scratch. Grouping: by bounding box, by normal direction (dot threshold), every Nth point. Solver: point advection with gravity/ground collision, attribute decay (frame-rate independent pow). Transfer: proximity blend via pcfind, smooth/relax via neighbour averaging, edge detection via gradient magnitude. fBm noise layering with octaves.",
-    "keywords": [
-      "vex",
-      "pattern",
-      "example",
-      "snippet",
-      "recipe",
-      "deform",
-      "color",
-      "noise",
-      "spiral",
-      "wave",
-      "group",
-      "solver",
-      "transfer",
-      "smooth",
-      "relax",
-      "edge"
-    ],
-    "reference_file": "vex_patterns"
+    "reference_file": "chops",
+    "summary": "Houdini CHOPs (Channel Operators): audio workflows, motion data, channel manipulation, wrangles, and SOP/DOP/LOP integration."
   },
   "common_attributes": {
-    "summary": "Standard Houdini geometry attributes and their types",
     "description": "Key geometry attributes: P (position vec3), N (normal vec3), Cd (color vec3), v (velocity vec3), pscale (float), orient (quaternion vec4), up (vec3), id (int), age/life (float), rest (vec3), uv (vec3), width (curve width float). Copy-to-points reads: P, orient (highest priority), N+up, pscale, scale. Pyro volumes: density, temperature, flame, fuel, vel. FLIP: viscosity, surface, vorticity. RBD: constraint_name, strength. Intrinsics: measuredarea, measuredperimeter, measuredvolume.",
     "keywords": [
       "attribute",
@@ -361,45 +87,10 @@
       "age",
       "copy",
       "width"
-    ]
-  },
-  "karma_aov": {
-    "summary": "Karma AOV setup: render passes, cryptomatte, denoising",
-    "description": "Karma AOVs via karmarenderproperties Image Output section. Common AOVs: beauty (C), direct/indirect diffuse/specular, albedo, N (normals), P (position), Z (depth), motionvector, crypto_material/object/asset (Cryptomatte). Denoising AOVs: denoise_albedo, denoise_normal. Light groups: tag lights with 'lightGroup' for per-light AOVs. Deep output: .exr with deep flag for depth-correct compositing. AOV rebuild: beauty = direct_diffuse + indirect_diffuse + direct_specular + indirect_specular + emission + sss.",
-    "keywords": [
-      "aov",
-      "render",
-      "pass",
-      "cryptomatte",
-      "denoise",
-      "deep",
-      "beauty",
-      "diffuse",
-      "specular",
-      "normal",
-      "depth",
-      "light",
-      "group"
-    ]
-  },
-  "houdini_expressions": {
-    "summary": "HScript expressions, variables, and channel references",
-    "description": "Frame variables: $F (int), $FF (float), $T (time), $FSTART/$FEND, $FPS. Geometry: $PT, $NPT, $PR, $NPR, $CEX/Y/Z, $SIZEX/Y/Z. Channels: ch('parm'), chs('string'), chv('vector'), chramp('ramp',pos). Inputs: opinput('.', 0), opinputpath. Strings: $HIP, $HIPNAME, $OS, $JOB. File padding: $F4 = 4-digit frame. HScript vs Python vs VEX: HScript for parm fields, Python for complex expressions, VEX in wrangles. Gotcha: ch() in parm fields (HScript) vs ch() in wrangles (VEX) are different.",
-    "keywords": [
-      "expression",
-      "hscript",
-      "variable",
-      "frame",
-      "channel",
-      "ch",
-      "opinput",
-      "HIP",
-      "time",
-      "ramp"
-    ]
+    ],
+    "summary": "Standard Houdini geometry attributes and their types"
   },
   "common_errors": {
-    "summary": "24 common Houdini errors with causes and solutions",
     "description": "Node/path errors: matlib cook error (cook first), node not found (check context), node type not found (check spelling). Parameter errors: parm not found on USD (use encoded names), keyframe won't set (delete expression first), parm tuple mismatch (use parmTuple). Render errors: black render (camera prim path), fireflies (intensity>1 violation, roughness=0), slow render (too many bounces). VEX errors: syntax error (semicolons), read-only attribute, wrong run-over mode, pcfind empty. Simulation errors: explosion on frame 1, pyro container clips, drift/instability. File errors: cache missing frames ($F4 padding), USD reference not found.",
     "keywords": [
       "error",
@@ -415,10 +106,10 @@
       "vex",
       "syntax",
       "fireflies"
-    ]
+    ],
+    "summary": "24 common Houdini errors with causes and solutions"
   },
   "cops_compositing": {
-    "summary": "COPs 2D compositing nodes and workflows",
     "description": "COPs at /img or inside cop2net. Generators: file, color, ramp, noise, font. Color correction: colorcorrect (gamma/gain/offset), grade (lift/gamma/gain), bright, hueshift, lut, tonemap. Compositing: over, multiply, add, screen, blend. Transform: xform, crop, scale, flip. Filters: blur, defocus, sharpen, edge, median. Channels: channelcopy, shuffle, premultiply. Output: rop_comp. Chain: file->colorcorrect->grade->null for basic correction.",
     "keywords": [
       "cops",
@@ -431,168 +122,57 @@
       "image",
       "2d",
       "correction"
-    ]
+    ],
+    "summary": "COPs 2D compositing nodes and workflows"
   },
-  "vellum_simulation": {
-    "summary": "Vellum cloth, hair, grain, and soft body simulation",
-    "description": "Vellum is Houdini's unified SOP-based solver. Chain: source -> vellumconfigure* -> vellumsolver. Types: vellumcloth (fabric), vellumhair (cables/hair), vellumgrains (sand/snow), vellumsoftbody (jelly/rubber), vellumballoon (inflatable). Configure nodes have TWO outputs: geometry (solver input 1) and constraints (solver input 3). Key cloth parms: stretchstiffness (10000), bendstiffness (0.001), thickness (0.01). Draping: vellumdrape pre-settles garments. Collision: vellumcollider for external objects. Pin: i@stopped=1 on constrained points. Substrate guidelines: 5 substeps for cloth, 1-3 for grains.",
+  "crowds": {
+    "description": "Complete crowd simulation pipeline including Agent SOP setup, Crowd Source, DOP network with Crowd Solver, state machines with triggers and transitions, terrain adaptation and foot locking, agent shape/clip variations, and Karma/Solaris rendering workflows.",
     "keywords": [
-      "vellum",
-      "cloth",
-      "hair",
-      "grain",
-      "soft",
-      "body",
-      "fabric",
-      "simulation",
-      "constraint",
-      "drape",
-      "stiffness",
-      "collision"
-    ]
+      "crowd",
+      "crowds",
+      "agent",
+      "agents",
+      "crowd simulation",
+      "crowd source",
+      "crowd solver",
+      "formation",
+      "crowd state",
+      "trigger",
+      "transition",
+      "foot locking",
+      "terrain following",
+      "agent variation",
+      "clip variation",
+      "crowd rendering",
+      "agent setup",
+      "crowd DOP",
+      "agent layer",
+      "agent prep",
+      "crowd fuzzy logic",
+      "ragdoll",
+      "crowd behavior"
+    ],
+    "reference_file": "crowds",
+    "summary": "Houdini Crowd simulation: agent setup, crowd source, DOP solver, states/triggers/transitions, terrain following, agent variations, and rendering."
   },
-  "terrain_heightfields": {
-    "summary": "Terrain creation with heightfields, erosion, and scatter",
-    "description": "Heightfield system uses 2D volume grids. Chain: heightfield -> heightfield_noise -> heightfield_erode -> heightfield_scatter. Key parms: gridspacing (resolution, 1.0 default), sizex/sizey (terrain dimensions). Erosion types: hydraulic (water carving channels) and thermal (material sliding down slopes). Erosion parms: iterations (50+), rainamount, eroderate, bankangle. Layers: height, mask, bedrock, debris, sediment, water. Use layers to drive material assignment (height=snow, debris=dirt, slope=cliff). Convert to polygon mesh via heightfield_convert for rendering. Scatter vegetation/rocks using heightfield_scatter with density masks.",
+  "flip_simulation": {
+    "description": "FLIP fluids use the flipsolver SOP. Chain: source geometry -> fluidsource -> flipsolver -> particlefluidsurface (meshing). Key parms: 'particlesep' (particle separation, 0.1 preview / 0.03-0.05 final), 'gridscale' (2.0 default), 'viscosity' (0=water, 50+=honey), 'surfacetension'. Velocity transfer: FLIP (splashy), PIC (smooth), blend (picflip=0.05 for best results). Enable 'narrowband' for open-surface sims (5-10x faster). VDB collisions preferred. Whitewater: flipsolver -> whitewatersource -> whitewatersolver for spray/foam/bubbles.",
     "keywords": [
-      "terrain",
-      "heightfield",
-      "erosion",
-      "landscape",
-      "ground",
-      "scatter",
-      "vegetation",
-      "height",
-      "noise",
-      "environment"
-    ]
-  },
-  "ocean_fx": {
-    "summary": "Ocean spectrum, FLIP interaction, and whitewater setup",
-    "description": "Ocean system: oceanspectrum (wave frequency data) -> oceanevaluate (displaced geometry). For interaction: add oceanflat -> flipsolver for FLIP tank blended with spectral ocean. Key spectrum parms: speed (wind m/s), direction, spread, chop (wave peakiness), gridsize, depth. Stack 2-3 spectrums for realism (swell + chop + ripples). Whitewater: flipsolver -> whitewatersource -> whitewatersolver for spray/foam/bubbles. Emission from cusp (wave crests), velocity, acceleration. Ocean shader: IOR 1.33, very low roughness, deep blue-green absorption color.",
-    "keywords": [
-      "ocean",
-      "water",
-      "wave",
-      "spectrum",
       "flip",
-      "whitewater",
-      "spray",
-      "foam",
-      "sea",
-      "fluid"
-    ]
-  },
-  "kinefx_rigging": {
-    "summary": "KineFX SOP-based rigging, retargeting, and motion clips",
-    "description": "KineFX operates in SOPs: skeleton = points (joints) + polylines (bones) + @name + @transform attributes. Creation: skeleton SOP or kinefx_characterunpack (from FBX/USD). Retargeting: mappoints -> retargetbiped transfers animation between different skeletons. Full-body IK: rigfullbodyik with joint targets. Motion clips: motionclip (create), motionclipblend (crossfade), motionclipsequence (chain clips). Skinning: bonecapture (compute weights) -> bonedeform (apply animation to mesh). VEX works directly on skeletons since they're just points.",
-    "keywords": [
-      "kinefx",
-      "rig",
-      "skeleton",
-      "joint",
-      "bone",
-      "retarget",
-      "animation",
-      "motion",
-      "capture",
-      "skin",
-      "ik",
-      "fbx"
-    ]
-  },
-  "uv_workflows": {
-    "summary": "UV unwrapping, layout, UDIM, and texturing workflows",
-    "description": "UV attribute: v@uv (vector3, typically on vertices for seam support). Creation: uvunwrap (automatic), uvflatten (production, seam-based), uvproject (planar/cylindrical/spherical). Layout: uvlayout packs islands efficiently with padding. UDIM: tiles for multi-texture assets (1001=body, 1002=head, etc). Transfer: attribtransfer or uvtransfer between different topology meshes. Quality check: uvquickshade applies checker pattern (uniform squares = good UVs). Tips: vertex UVs for production, padding 0.005+ for mip bleeding, transfer UVs early before topology changes.",
-    "keywords": [
-      "uv",
-      "unwrap",
-      "flatten",
-      "layout",
-      "texture",
-      "udim",
-      "project",
-      "seam",
-      "mapping",
-      "coordinates"
-    ]
-  },
-  "sop_solver_loops": {
-    "summary": "SOP Solver feedback loops and custom simulation",
-    "description": "Solver SOP creates frame-to-frame feedback: output of frame N becomes input of frame N+1. Inside solver: Prev_Frame node gives last frame, Input_1 gives original input. Must play forward from start frame (no random access). Common patterns: point growth (expand each frame), trail/history (accumulate points), painting (accumulate attribute by proximity), custom particles (emit + gravity + kill). SOP Solver DOP integrates custom SOP logic inside DOP sims. Key rule: multiply velocities by @TimeInc for frame-rate independence.",
-    "keywords": [
-      "solver",
-      "feedback",
-      "loop",
+      "fluid",
+      "water",
+      "liquid",
       "simulation",
-      "custom",
-      "accumulate",
-      "growth",
-      "trail",
-      "frame",
-      "procedural"
-    ]
-  },
-  "render_analysis": {
-    "summary": "Analyzing render quality: exposure, noise, lighting, materials",
-    "description": "Exposure analysis: check overall brightness, key:fill ratio, highlight clipping, shadow detail. Adjust via exposure stops (never intensity). Noise types: general (increase samples), shadow (increase min samples), specular/fireflies (clamp, check roughness), volume (increase step rate). Lighting check: key light dominant, fill 1.5-3 stops below, rim separates from background. Material check: roughness 0.001 minimum (not 0.0), metalness 0 or 1 (not between), base color appropriate. Iteration: 640x360 at 16 samples for layout, 1280x720 at 64 for lookdev, full res at 256+ for final.",
-    "keywords": [
-      "render",
-      "analysis",
-      "exposure",
-      "noise",
-      "lighting",
-      "composition",
-      "quality",
-      "iteration",
-      "feedback",
-      "review"
-    ]
-  },
-  "wire_dynamics": {
-    "summary": "Wire, cable, rope, and strand dynamics simulation",
-    "description": "Wire dynamics via Vellum Hair (recommended) or DOP Wire Solver (legacy). Chain: curve_geo -> vellumhair -> vellumsolver. Key parms: stretchstiffness (50000 for cable), bendstiffness (1.0 for cable, 0.001 for fishing line), density. Presets: thin cable (stretch=50000, bend=1.0), heavy rope (stretch=100000, bend=10.0), power line (stretch=200000, bend=0.01). Pin endpoints: i@stopped=1. Catenary curve: lerp + parabolic sag approximation. Rendering: @width attribute for curve thickness, material per wire type. Wind: vellumconstraintproperty with Wind type or custom VEX force.",
-    "keywords": [
-      "wire",
-      "cable",
-      "rope",
-      "strand",
-      "dynamics",
-      "vellum",
-      "hair",
-      "curve",
-      "catenary",
-      "chain",
-      "string"
-    ]
-  },
-  "pipeline_integration": {
-    "summary": "VFX studio pipeline: ShotGrid, file conventions, render farm, ACES, review tools",
-    "description": "Studio pipeline integration patterns. File conventions: $HIP/$JOB paths, _v001 versioning, $F4 frame padding, .bgeo.sc/.vdb/.exr formats. ShotGrid/Ftrack: project/sequence/shot/asset/task/version hierarchy, publishing workflow, status tracking (wtg/ip/rev/apr). Render farm: Deadline (chunk 1 for sims, 5-10 for renders), HQueue, Tractor. ACES color management: ACEScg working space, sRGB input for textures, Raw for data maps, EXR linear output. Asset management: USD references for assets, variant sets for LOD, lowercase_underscores naming. Cache workflow: filecache SOP with $HIP/cache paths.",
-    "keywords": [
-      "pipeline",
-      "shotgrid",
-      "ftrack",
-      "deadline",
-      "farm",
-      "render",
-      "aces",
-      "color",
-      "management",
-      "version",
-      "publish",
-      "asset",
-      "cache",
-      "review",
-      "rv",
-      "ocio",
-      "usd",
-      "convention",
-      "naming"
-    ]
+      "particles",
+      "surface",
+      "mesh",
+      "whitewater",
+      "viscosity",
+      "ocean"
+    ],
+    "summary": "FLIP fluid simulation setup in SOPs"
   },
   "hapi": {
-    "summary": "HAPI (Houdini Engine API) C functions for session management, asset loading, and geometry access",
     "description": "HAPI is the C API for embedding Houdini in external applications (game engines, DCC tools). Session management: HAPI_Initialize (call once before any HAPI functions, takes cook_options, threading config, search paths), HAPI_Cleanup (frees all resources), HAPI_IsInitialized. Asset loading: HAPI_LoadAssetLibraryFromFile (loads HDA, returns library_id), HAPI_GetAvailableAssetCount, HAPI_CreateNode (creates node under parent, optional cook_on_creation). Geometry access: HAPI_GetGeoInfo, HAPI_GetPartInfo, HAPI_GetAttributeInfo (takes owner: VERTEX/POINT/PRIM/DETAIL), HAPI_GetAttributeFloatData / HAPI_SetAttributeFloatData (strided array access), HAPI_CommitGeo (must call after setting attributes). Cooking: HAPI_CookNode, HAPI_GetStatus (CALL_RESULT/COOK_RESULT/COOK_STATE). Storage types: INT, INT64, FLOAT, FLOAT64, STRING.",
     "keywords": [
       "hapi",
@@ -612,10 +192,10 @@
       "integration",
       "c api"
     ],
-    "reference_file": "hapi-reference"
+    "reference_file": "hapi-reference",
+    "summary": "HAPI (Houdini Engine API) C functions for session management, asset loading, and geometry access"
   },
   "hdk": {
-    "summary": "HDK (Houdini Development Kit) C++ API for custom SOP nodes, geometry manipulation, and parameter templates",
     "description": "HDK is the C++ SDK for extending Houdini with custom nodes and operators. Core classes: GU_Detail (main geometry container -- appendPoint, setPos3, GU_PrimPoly::build, addFloatTuple for attributes), GA_Attribute (attribute storage via GA_RWHandleF/GA_ROHandleV3, iteration with GA_FOR_ALL_PTOFF), SOP_Node (custom SOP base class -- myConstructor, myTemplateList, cookMySop override), PRM_Template (parameter definition with PRM_Name, PRM_Default, types like PRM_FLT/PRM_XYZ). Compiled SOP blocks: setIsThreadSafe(true) on OP_Operator registration. Thread-safe cooking: UT_AutoInterrupt for cancellation. Build system: CMake with find_package(Houdini REQUIRED), target_link_libraries(Houdini), houdini_configure_target().",
     "keywords": [
       "hdk",
@@ -634,10 +214,45 @@
       "thread safe",
       "cookMySop"
     ],
-    "reference_file": "hdk-api"
+    "reference_file": "hdk-api",
+    "summary": "HDK (Houdini Development Kit) C++ API for custom SOP nodes, geometry manipulation, and parameter templates"
+  },
+  "houdini_expressions": {
+    "description": "Frame variables: $F (int), $FF (float), $T (time), $FSTART/$FEND, $FPS. Geometry: $PT, $NPT, $PR, $NPR, $CEX/Y/Z, $SIZEX/Y/Z. Channels: ch('parm'), chs('string'), chv('vector'), chramp('ramp',pos). Inputs: opinput('.', 0), opinputpath. Strings: $HIP, $HIPNAME, $OS, $JOB. File padding: $F4 = 4-digit frame. HScript vs Python vs VEX: HScript for parm fields, Python for complex expressions, VEX in wrangles. Gotcha: ch() in parm fields (HScript) vs ch() in wrangles (VEX) are different.",
+    "keywords": [
+      "expression",
+      "hscript",
+      "variable",
+      "frame",
+      "channel",
+      "ch",
+      "opinput",
+      "HIP",
+      "time",
+      "ramp"
+    ],
+    "summary": "HScript expressions, variables, and channel references"
+  },
+  "houdini_sop_basics": {
+    "description": "SOP sphere: 'radx/rady/radz' (not 'rad'), 'scale', 'rows', 'cols'. SOP box: 'sizex/y/z', 'tx/ty/tz'. scatter: 'npts'. attribwrangle: 'snippet', 'class' (point/prim/vertex/detail). copytopoints: reads @P, @orient, @N+@up, @pscale, @scale from target points. Groups: groupcreate, groupexpression, grouprange. VDB workflow: mesh -> vdbfrompolygons -> vdbcombine -> convertVDB (reliable booleans). For-each: foreach_begin/end (by pieces, count, feedback). SOP vs LOP parm names differ.",
+    "keywords": [
+      "sop",
+      "sphere",
+      "box",
+      "scatter",
+      "wrangle",
+      "transform",
+      "geometry",
+      "node",
+      "parameter",
+      "group",
+      "vdb",
+      "copy",
+      "foreach"
+    ],
+    "summary": "Common SOP node types, groups, VDB workflow, and parameter names"
   },
   "hydra_delegates": {
-    "summary": "Hydra render delegate architecture: HdRenderDelegate, plugInfo.json, Karma dual-plugin pattern",
     "description": "Hydra is Pixar's rendering framework in USD. Architecture: USD Stage -> UsdImagingDelegate -> HdRenderIndex -> HdRenderDelegate (your renderer) with HdRenderPass, HdRenderBuffer, and Rprim/Sprim/Bprim scene primitives. Core classes: HdRendererPlugin (entry point, discovered via plugInfo.json with bases=['HdRendererPlugin']), HdRenderDelegate (renderer core -- GetSupportedRprimTypes, CreateRprim/Sprim/Bprim, CreateRenderPass, GetRenderSettingDescriptors), HdRenderPass (_Execute called per frame), HdRenderBuffer (Allocate, Map/Unmap, Resolve). Prim categories: Rprim (Mesh, BasisCurves, Points, Volume), Sprim (Camera, Light, Material), Bprim (RenderBuffer). Karma pattern: hdKarma (delegate DLL) + usdKarma (schema resource). Lifecycle: Houdini start -> PXR_PLUGINPATH scan -> plugInfo discovery -> user selects renderer -> CreateRenderDelegate -> per-frame _Execute -> DeleteRenderDelegate.",
     "keywords": [
       "hydra",
@@ -655,79 +270,275 @@
       "viewport",
       "imaging"
     ],
-    "reference_file": "hydra-delegates"
+    "reference_file": "hydra-delegates",
+    "summary": "Hydra render delegate architecture: HdRenderDelegate, plugInfo.json, Karma dual-plugin pattern"
   },
-  "usd_schema_registration": {
-    "summary": "USD schema registration: usdGenSchema, resource-only vs compiled, applying custom API schemas",
-    "description": "Two deployment strategies for USD schemas in Houdini: Resource-only (no compilation, for UI/settings schemas -- deploy generatedSchema.usda + hand-crafted plugInfo.json with LibraryPath='', Type='resource') and Compiled library (full C++ typed accessors + Python bindings via CMake). usdGenSchema code generator: takes schema.usda input with GLOBAL customData (libraryName, libraryPath, libraryPrefix), outputs api.h, tokens, accessor classes, wrappers, generatedSchema.usda, plugInfo.json template. Schema types: IsA (custom prim types, inherits </Typed>), Single-apply API (settings, inherits </APISchemaBase>, ApplyAPI()), Multi-apply API (per-instance data). Key directives: apiSchemaType, apiSchemaCanOnlyApplyTo, displayGroup, displayName. Karma uses resource-only (Type=resource, no SchemasForRenderers in H21). Third-party delegates need SchemasForRenderers mapping in plugInfo.json. Python: rs.ApplyAPI('MyRenderSettingsAPI'), rs.GetAttribute('myrenderer:steps').Get().",
+  "joy_of_vex_attribs": {
+    "description": "Tutorial examples covering attribute creation, types, and binding from The Joy of VEX. Covers functions: @Cd, @Frame, @N, @P, @Time, @a, @d, @dist, @foo, @i, @id, @numpt, @orient, @pnumclass, @primid, @primnum, @pscale, @ptnum, @scale, @up.",
     "keywords": [
-      "schema",
-      "usdGenSchema",
-      "registration",
-      "api schema",
-      "plugInfo",
-      "resource",
-      "compiled",
-      "library",
-      "render settings",
-      "displayGroup",
-      "displayName",
-      "ApplyAPI",
-      "singleApply",
-      "multiApply",
-      "custom prim"
+      "binding",
+      "prefix",
+      "attrib",
+      "setpointattrib",
+      "setprimattrib",
+      "setdetailattrib",
+      "declare",
+      "creation"
     ],
-    "reference_file": "usd-schema-registration"
+    "reference_file": "joy_of_vex_attribs",
+    "summary": "Joy of VEX: Attributes"
   },
-  "pxr_plugin_discovery": {
-    "summary": "PXR_PLUGINPATH_NAME, Houdini packages, plugin discovery mechanism, and path priority",
-    "description": "USD plugin discovery in Houdini via PXR_PLUGINPATH_NAME environment variable. Discovery mechanism: PlugRegistry scans each directory, finds plugInfo.json, follows Includes patterns (e.g., '*/resources/' for one-level subdirectory scan -- NOT recursive), registers Types based on bases declarations, lazy-loads libraries on demand. Houdini's built-in paths: $HFS/houdini/dso/usd_plugins/ (Karma, Storm), $HOUDINI_USER_PREF_DIR/dso/usd/ (user plugins). Package system: JSON files in houdini21.0/packages/ that set env vars with method='append'/'prepend'/'set'. Dual-location deployment: source (git-tracked, via prepend) + runtime (dso/usd/, via append). Root field in plugInfo.json: '.' = dir containing plugInfo, '..' = parent dir. Path priority (highest first): PXR_PLUGINPATH_NAME prepend -> append -> $HFS built-in -> user prefs auto-scan. Verification: hython with Plug.Registry().GetAllPlugins().",
+  "joy_of_vex_color": {
+    "description": "Tutorial examples covering color from attributes, ramps, and gradients from The Joy of VEX. Covers functions: %=, @Cd, @N, @P, @Time, @d, @id, @numpt, @prim, @primnum, @pscale, @ptnum, @scale, @time, @u, ch, chf, chramp, chv, clamp.",
     "keywords": [
-      "PXR_PLUGINPATH_NAME",
-      "plugin",
-      "discovery",
-      "plugInfo",
-      "Includes",
-      "packages",
-      "environment",
-      "path",
-      "PlugRegistry",
-      "deploy",
-      "dual location",
-      "houdini path",
-      "dso",
-      "prepend",
-      "append"
+      "color",
+      "cd",
+      "gradient",
+      "hsvtorgb",
+      "rgb",
+      "hue",
+      "saturation",
+      "colormap",
+      "visualization"
     ],
-    "reference_file": "pxr-pluginpath"
+    "reference_file": "joy_of_vex_color",
+    "summary": "Joy of VEX: Color"
   },
-  "usd_composition_reference": {
-    "summary": "USD composition arcs (LIVRPS), layer stacking, prim hierarchy, transforms, VariantSets, instancing, and material binding",
-    "description": "Comprehensive USD stage composition reference. LIVRPS strength ordering: Local > Inherits > VariantSets > References > Payloads > Sublayers. Multi-department layer stacking (shot_final > fx > lighting > anim > layout > asset). Standard prim hierarchy: /World/cameras, /World/lights, /World/geo, /World/materials. 18 common prim types (Xform, Mesh, BasisCurves, Points, DomeLight, DistantLight, RectLight, Camera, Material, etc.). Transform stack: xformOp:translate, xformOp:rotateXYZ, xformOp:scale with right-to-left execution. VariantSets for switchable configurations. PointInstancer for many copies, native instancing for shared subtrees. Visibility (inherited/invisible) and purpose (default/render/proxy/guide). Material binding patterns: direct, collection-based, GeomSubset face-level. 14 Houdini LOP nodes: sopimport, reference, sublayer, edit, material_library, assign_material, light, camera, render_settings, usdrender, prune, configure_layer, graft, collection.",
+  "joy_of_vex_deformation": {
+    "description": "Tutorial examples covering wave displacement and ramp-driven deformation from The Joy of VEX. Covers functions: @Cd, @Frame, @N, @P, @Py, @Time, @offset, @primnum, @ptnum, @scale, @up, abs, ch, chf, chi, chramp, cos, distance, fit, fit01.",
     "keywords": [
-      "usd",
-      "composition",
-      "livrps",
-      "layer",
-      "sublayer",
-      "reference",
-      "payload",
-      "inherits",
-      "variant",
-      "instancing",
-      "transform",
-      "xform",
-      "material binding",
-      "prim type",
-      "hierarchy",
-      "scope",
-      "mesh",
-      "point instancer"
+      "deformation",
+      "deform",
+      "displacement",
+      "displace",
+      "warp",
+      "bend",
+      "bulge",
+      "ripple",
+      "distort"
     ],
-    "reference_file": "usd_stage_composition"
+    "reference_file": "joy_of_vex_deformation",
+    "summary": "Joy of VEX: Deformation"
+  },
+  "joy_of_vex_flow_control": {
+    "description": "Tutorial examples covering loops, conditionals, and foreach from The Joy of VEX. Covers functions: @Cd, @N, @P, @Time, @a, @foo, @name, @ptnum, abs, addpoint, ch, chf, chramp, chs, chv, clamp, distance, dot, fit, fit01.",
+    "keywords": [
+      "foreach",
+      "loop",
+      "while",
+      "conditional",
+      "iteration",
+      "branch",
+      "switch",
+      "break",
+      "continue"
+    ],
+    "reference_file": "joy_of_vex_flow_control",
+    "summary": "Joy of VEX: Flow Control"
+  },
+  "joy_of_vex_geometry": {
+    "description": "Tutorial examples covering intrinsics, bounding boxes, and prim operations from The Joy of VEX. Covers functions: $PI, 3@b, 4@a, @Cd, @Frame, @Ga, @N, @P, @Time, @a, @convert, @i, @matrix3b, @orient, @p3by3, @primnum, @primuv, @pscale, @ptg, @ptnum.",
+    "keywords": [
+      "intrinsic",
+      "primintrinsic",
+      "bbox",
+      "bounding",
+      "measuredarea",
+      "measuredvolume",
+      "getbbox",
+      "primitivenormal"
+    ],
+    "reference_file": "joy_of_vex_geometry",
+    "summary": "Joy of VEX: Geometry Operations"
+  },
+  "joy_of_vex_geometry_creation": {
+    "description": "Tutorial examples covering addpoint, addprim, and procedural geometry from The Joy of VEX. Covers functions: @Frame, @N, @OpInput1, @P, @Time, @Tramp, @i, @id, @noise, @nrelpe, @opinput1, @primnum, @ptnum, @time, addpoint, addprim, addvertex, ch, ch3, chf.",
+    "keywords": [
+      "addpoint",
+      "addprim",
+      "addvertex",
+      "removepoint",
+      "removeprim",
+      "procedural",
+      "generate",
+      "construct",
+      "polyline"
+    ],
+    "reference_file": "joy_of_vex_geometry_creation",
+    "summary": "Joy of VEX: Geometry Creation"
+  },
+  "joy_of_vex_nearpoints": {
+    "description": "Tutorial examples covering nearpoints, pcfind, neighbor lookups, and proximity blending from The Joy of VEX. Covers functions: @Cd, @P, @Time, @d, @dist, @prim1d, @primid, @ptnum, @time, @uv, @uv1, addpoint, array, attrib, ch, chf, chi, chramp, chv, clamp.",
+    "keywords": [
+      "nearpoints",
+      "nearpoint",
+      "pcfind",
+      "neighbours",
+      "neighbor",
+      "proximity",
+      "closest",
+      "nearby",
+      "search"
+    ],
+    "reference_file": "joy_of_vex_nearpoints",
+    "summary": "Joy of VEX: Nearpoints & Proximity"
+  },
+  "joy_of_vex_noise": {
+    "description": "Tutorial examples covering snoise, curlnoise, and random patterns from The Joy of VEX. Covers functions: $F, $PI, @0, @Frame, @N, @P, @Time, @a, @orient, @primnum, @primuv, @ptnum, @t, @up, @w, PI, addpoint, addprim, ch, chf.",
+    "keywords": [
+      "snoise",
+      "curlnoise",
+      "noise",
+      "random",
+      "rand",
+      "nrandom",
+      "xnoise",
+      "flownoise",
+      "turbulence",
+      "fractal"
+    ],
+    "reference_file": "joy_of_vex_noise",
+    "summary": "Joy of VEX: Noise & Randomness"
+  },
+  "joy_of_vex_pcopen": {
+    "description": "Tutorial examples covering pcopen, pcfilter, and point cloud iteration from The Joy of VEX. Covers functions: @Cd, @N, @P, @dist, @ez, @n, @ptnum, @v, ch, chf, chi, chramp, chv, chvlen, distance, dot, fit, fit01, foreach, i@numpt.",
+    "keywords": [
+      "pcopen",
+      "pcfilter",
+      "pciterate",
+      "pcimport",
+      "pcclose",
+      "pcnumfound",
+      "streaming",
+      "iterate",
+      "pointcloud"
+    ],
+    "reference_file": "joy_of_vex_pcopen",
+    "summary": "Joy of VEX: Point Clouds (pcopen)"
+  },
+  "joy_of_vex_quaternions": {
+    "description": "Tutorial examples covering quaternion creation, slerp, qrotate, and orient from The Joy of VEX. Covers functions: $F, $PI, @0, @Cd, @D, @Frame, @N, @O, @P, @PI, @R, @Time, @Time01, @TimeInc, @X, @Z, @a, @chs, @orient, @ptnum.",
+    "keywords": [
+      "quaternion",
+      "orient",
+      "slerp",
+      "qrotate",
+      "qmultiply",
+      "maketransform",
+      "dihedral",
+      "eulertoquaternion",
+      "rotation",
+      "orientation",
+      "qinvert"
+    ],
+    "reference_file": "joy_of_vex_quaternions",
+    "summary": "Joy of VEX: Quaternions"
+  },
+  "joy_of_vex_ramps": {
+    "description": "Tutorial examples covering chramp, channel references, and slider controls from The Joy of VEX. Covers functions: $F, $PI, $T, 4@orient, @Cd, @Frame, @N, @P, @PI, @Time, @a, @d, @dist, @i, @orient, @pscale, @ptnum, @scale, @up, abs.",
+    "keywords": [
+      "chramp",
+      "chf",
+      "chi",
+      "chv",
+      "chs",
+      "slider",
+      "channel",
+      "parameter",
+      "ramp",
+      "interface"
+    ],
+    "reference_file": "joy_of_vex_ramps",
+    "summary": "Joy of VEX: Ramps & Parameters"
+  },
+  "joy_of_vex_surface_sampling": {
+    "description": "Tutorial examples covering primuv, xyzdist, minpos, and UV sampling from The Joy of VEX. Covers functions: $T, $TPI, @Cd, @Frame, @N, @P, @Time, @c, @cd, @dist, @grid, @id, @prim1d, @prim1id, @primId, @primid, @primnum, @ptnum, @u, @ui1.",
+    "keywords": [
+      "primuv",
+      "xyzdist",
+      "minpos",
+      "uvsample",
+      "primduv",
+      "sampling",
+      "interpolate",
+      "uvdist",
+      "surface"
+    ],
+    "reference_file": "joy_of_vex_surface_sampling",
+    "summary": "Joy of VEX: Surface Sampling"
+  },
+  "joy_of_vex_tips": {
+    "description": "Tutorial tips covering debugging, optimization, groups, and miscellaneous VEX from The Joy of VEX. Covers functions: $PI, @Cd, @Frame, @N, @P, @Time, @V, @a, @b, @c, @offset, @orient, @primnum, @ptnum, @up, @v, @vecs, PI, array, ch.",
+    "keywords": [
+      "debugging",
+      "printf",
+      "optimization",
+      "performance",
+      "groups",
+      "tips",
+      "tricks",
+      "misc",
+      "pitfall"
+    ],
+    "reference_file": "joy_of_vex_tips",
+    "summary": "Joy of VEX: Tips & Misc"
+  },
+  "joy_of_vex_trigonometry": {
+    "description": "Tutorial examples covering sine waves, circular motion, and oscillation from The Joy of VEX. Covers functions: @Cd, @Frame, @N, @P, @Time, @pscale, @ptnum, @scale, @up, CH, asin, ch, chf, chi, chramp, chv, clamp, cos, distance, f@offset.",
+    "keywords": [
+      "sin",
+      "cos",
+      "sine",
+      "cosine",
+      "trigonometry",
+      "trig",
+      "oscillation",
+      "circular",
+      "orbit",
+      "radians",
+      "wave"
+    ],
+    "reference_file": "joy_of_vex_trigonometry",
+    "summary": "Joy of VEX: Trigonometry & Oscillation"
+  },
+  "joy_of_vex_vector_math": {
+    "description": "Tutorial examples covering dot, cross, fit, clamp, and matrix operations from The Joy of VEX. Covers functions: @Cd, @N, @P, @numpt, @ptnum, @up, @v, ch, chramp, chv, clamp, cross, dot, f[]@, fit, float, ident, length, matrix, matrix3.",
+    "keywords": [
+      "dot",
+      "cross",
+      "fit",
+      "clamp",
+      "normalize",
+      "length",
+      "distance",
+      "lerp",
+      "smooth",
+      "remap",
+      "matrix"
+    ],
+    "reference_file": "joy_of_vex_vector_math",
+    "summary": "Joy of VEX: Vector Math"
+  },
+  "karma_aov": {
+    "description": "Karma AOVs via karmarenderproperties Image Output section. Common AOVs: beauty (C), direct/indirect diffuse/specular, albedo, N (normals), P (position), Z (depth), motionvector, crypto_material/object/asset (Cryptomatte). Denoising AOVs: denoise_albedo, denoise_normal. Light groups: tag lights with 'lightGroup' for per-light AOVs. Deep output: .exr with deep flag for depth-correct compositing. AOV rebuild: beauty = direct_diffuse + indirect_diffuse + direct_specular + indirect_specular + emission + sss.",
+    "keywords": [
+      "aov",
+      "render",
+      "pass",
+      "cryptomatte",
+      "denoise",
+      "deep",
+      "beauty",
+      "diffuse",
+      "specular",
+      "normal",
+      "depth",
+      "light",
+      "group"
+    ],
+    "summary": "Karma AOV setup: render passes, cryptomatte, denoising"
   },
   "karma_render_reference": {
-    "summary": "Comprehensive Karma rendering: XPU vs CPU, render settings, progressive pipeline, denoising, AOVs, volumes, camera DOF, light linking",
     "description": "Full Karma rendering reference. Engine comparison: XPU (GPU+CPU hybrid, 5-20x faster) vs CPU (reference quality, OSL support, nested dielectrics). Render settings: pixel samples (karma:global:pathtracedsamples), convergence mode, pixel oracle. Bounce limits: diffuse (diffuselimit), specular (reflectlimit), transmission (refractlimit), volume (volumelimit), SSS (ssslimit). Progressive render pipeline: Stage 1 layout (320x240, 4 samples), Stage 2 lighting (960x540, 16-32), Stage 3 quality (1920x1080, 64), Stage 4 final (128-512 samples). Intel OIDN denoising (denoisemode='oidn'). 9 beauty AOVs (C, direct/indirect diffuse/specular, emission, sss, direct/indirect volume) + 8 utility AOVs (N, P, depth, Albedo, motionvector, crypto_material/object/asset). Volume rendering: step rate, shadow step rate. Camera DOF (fStop > 0), motion blur (xformsamples, geosamples). Light linking via USD collections. Light groups for per-light AOVs. 8 common render issues with fixes.",
     "keywords": [
       "karma",
@@ -749,10 +560,63 @@
       "step rate",
       "convergence"
     ],
-    "reference_file": "karma_rendering_guide"
+    "reference_file": "karma_rendering_guide",
+    "summary": "Comprehensive Karma rendering: XPU vs CPU, render settings, progressive pipeline, denoising, AOVs, volumes, camera DOF, light linking"
+  },
+  "karma_rendering": {
+    "description": "Karma render types in /out: 'karma' (direct driver with 'picture' and 'camera' parms, 'engine' parm for xpu/cpu), 'usdrender' (USD-based with 'loppath', 'outputimage', 'override_camera', 'override_res' parms). The 'override_res' parm is a string menu with values '', 'scale', 'specific'. Resolution parms: 'res_user1' (width) and 'res_user2' (height) on usdrender, 'resolutionx'/'resolutiony' on karma. Camera must be USD prim path (e.g. '/cameras/render_cam'), not Houdini node path. ROP in /out needs 'loppath' set to a LOP display node. Karma XPU has ~10-15s file flush delay after render() returns.",
+    "keywords": [
+      "karma",
+      "render",
+      "xpu",
+      "cpu",
+      "rop",
+      "resolution",
+      "camera",
+      "usdrender",
+      "output",
+      "image",
+      "picture"
+    ],
+    "summary": "Karma render engine configuration and ROP setup"
+  },
+  "kinefx_rigging": {
+    "description": "KineFX operates in SOPs: skeleton = points (joints) + polylines (bones) + @name + @transform attributes. Creation: skeleton SOP or kinefx_characterunpack (from FBX/USD). Retargeting: mappoints -> retargetbiped transfers animation between different skeletons. Full-body IK: rigfullbodyik with joint targets. Motion clips: motionclip (create), motionclipblend (crossfade), motionclipsequence (chain clips). Skinning: bonecapture (compute weights) -> bonedeform (apply animation to mesh). VEX works directly on skeletons since they're just points.",
+    "keywords": [
+      "kinefx",
+      "rig",
+      "skeleton",
+      "joint",
+      "bone",
+      "retarget",
+      "animation",
+      "motion",
+      "capture",
+      "skin",
+      "ik",
+      "fbx"
+    ],
+    "summary": "KineFX SOP-based rigging, retargeting, and motion clips"
+  },
+  "lighting_setup": {
+    "description": "Solaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). LIGHTING LAW: intensity ALWAYS 1.0, brightness controlled by EXPOSURE (logarithmic, in stops). Encoded parm names: intensity='xn__inputsintensity_i0a' (always 1.0), color='xn__inputscolor_kya' (vec3), exposure='xn__inputsexposure_vya', exposure control='xn__inputsexposure_control_wcb' (set to 'set' to enable). Dome light texture: 'xn__inputstexturefile_i1a'. Key:fill ratio math: fill_exposure = key_exposure - log2(ratio). Standard 3-point: key=5.0, fill=3.0 (4:1), rim=4.5, dome=0.0.",
+    "keywords": [
+      "light",
+      "lighting",
+      "dome",
+      "distant",
+      "rect",
+      "area",
+      "intensity",
+      "color",
+      "exposure",
+      "hdri",
+      "stops",
+      "ratio"
+    ],
+    "summary": "Light types, Lighting Law, and exposure-based brightness control in Solaris"
   },
   "materialx_reference": {
-    "summary": "MaterialX Standard Surface: input groups, encoded parameter names, material presets, PBR textures, UDIM, displacement",
     "description": "Comprehensive MaterialX shader reference. Standard Surface 11 input groups: Base (base, base_color), Specular (specular, specular_roughness, specular_IOR), Metalness, Transmission, SSS (subsurface, subsurface_color/radius/scale), Emission, Coat, Sheen, Thin Film, Normal, Opacity. 21 encoded parameter names (basecolor, metalness, specular_roughness, specular_IOR, coat, coat_roughness, emission, emission_color, etc.). 10 material presets: brushed metal (metalness=1, roughness=0.25), polished chrome (roughness=0.02), matte plastic (roughness=0.4), glossy plastic (coat=0.5), clear glass (transmission=1), frosted glass (roughness=0.3, transmission=1), skin SSS (subsurface=0.6), marble (subsurface=0.4), fabric/velvet (sheen=0.8), car paint (metalness=0.5, coat=1). PBR texture set: diffuse/albedo (sRGB), roughness/metalness/normal/displacement (Raw/Linear). UDIM tiles (<UDIM> token). Color space rules. Displacement setup (displacement_scale, displacement_offset, displacement bound, subdivision). Material assignment: direct binding, collection-based, GeomSubset. 12 common MaterialX nodes.",
     "keywords": [
       "materialx",
@@ -775,276 +639,475 @@
       "shader",
       "encoded parameter"
     ],
-    "reference_file": "materialx_shaders"
+    "reference_file": "materialx_shaders",
+    "summary": "MaterialX Standard Surface: input groups, encoded parameter names, material presets, PBR textures, UDIM, displacement"
   },
-  "camera_workflow_reference": {
-    "summary": "Camera workflows: types, focal length, DOF, motion blur, animation, turntable, multi-camera, composition guidelines",
-    "description": "Comprehensive camera workflow reference. Camera types: standard perspective, orthographic, stereo rig. Essential parameters: focalLength (mm), horizontalAperture (36=full frame), verticalAperture, fStop (0=no DOF), focusDistance, clippingRange. Focal length cheat sheet: 14-24mm ultra-wide (environments), 24-35mm wide (interiors), 35-50mm normal (general), 50-85mm portrait (characters), 85-135mm telephoto (close-ups), 135-200mm+ long (compression). DOF setup: fStop non-zero, focusDistance to subject. Quick DOF reference: product (2.0-4.0), portrait (2.8-5.6), landscape (8.0-16.0), miniature (1.4-2.0). Motion blur: transform blur (xformsamples=2), deformation blur (geosamples=2, geovelblur=1). Shutter settings: forward (0.0-1.0), centered (-0.5-0.5), backward (-1.0-0.0). Camera animation: keyframing via Edit LOP, turntable orbit pattern (radius/height/frames), look-at constraint. Multi-camera workflows: render_cam, turntable_cam, closeup_cam, wide_cam. Batch rendering via TOPS/PDG. Composition: rule of thirds, head room, lead room, framing depth.",
+  "materialx_shaders": {
+    "description": "MaterialX shaders are created inside a materiallibrary LOP node. Use 'mtlxstandard_surface' type. IMPORTANT: After creating the materiallibrary, call matlib.cook(force=True) before creating child shader nodes — otherwise createNode() returns None. Key parms: 'base_colorr/g/b' (base color RGB, 0-1), 'metalness' (0=dielectric, 1=metal), 'specular_roughness' (0=mirror, 1=rough), 'specular' (specular weight), 'coat' (clearcoat weight), 'emission_colorr/g/b' (emission), 'opacity' (transparency). Assign with 'assignmaterial' LOP: 'primpattern1' for target prim, 'matspecpath1' for material path (e.g. '/materials/my_shader').",
     "keywords": [
-      "camera",
-      "focal length",
-      "dof",
-      "depth of field",
-      "fstop",
-      "aperture",
-      "motion blur",
-      "turntable",
-      "animation",
-      "composition",
-      "multi-camera",
-      "shutter",
-      "clipping",
-      "lens",
-      "bokeh",
-      "keyframe",
-      "orbit"
-    ],
-    "reference_file": "camera_workflows"
-  },
-  "joy_of_vex_quaternions": {
-    "summary": "Joy of VEX: Quaternions",
-    "description": "Tutorial examples covering quaternion creation, slerp, qrotate, and orient from The Joy of VEX. Covers functions: $F, $PI, @0, @Cd, @D, @Frame, @N, @O, @P, @PI, @R, @Time, @Time01, @TimeInc, @X, @Z, @a, @chs, @orient, @ptnum.",
-    "keywords": [
-      "quaternion",
-      "orient",
-      "slerp",
-      "qrotate",
-      "qmultiply",
-      "maketransform",
-      "dihedral",
-      "eulertoquaternion",
-      "rotation",
-      "orientation",
-      "qinvert"
-    ],
-    "reference_file": "joy_of_vex_quaternions"
-  },
-  "joy_of_vex_trigonometry": {
-    "summary": "Joy of VEX: Trigonometry & Oscillation",
-    "description": "Tutorial examples covering sine waves, circular motion, and oscillation from The Joy of VEX. Covers functions: @Cd, @Frame, @N, @P, @Time, @pscale, @ptnum, @scale, @up, CH, asin, ch, chf, chi, chramp, chv, clamp, cos, distance, f@offset.",
-    "keywords": [
-      "sin",
-      "cos",
-      "sine",
-      "cosine",
-      "trigonometry",
-      "trig",
-      "oscillation",
-      "circular",
-      "orbit",
-      "radians",
-      "wave"
-    ],
-    "reference_file": "joy_of_vex_trigonometry"
-  },
-  "joy_of_vex_vector_math": {
-    "summary": "Joy of VEX: Vector Math",
-    "description": "Tutorial examples covering dot, cross, fit, clamp, and matrix operations from The Joy of VEX. Covers functions: @Cd, @N, @P, @numpt, @ptnum, @up, @v, ch, chramp, chv, clamp, cross, dot, f[]@, fit, float, ident, length, matrix, matrix3.",
-    "keywords": [
-      "dot",
-      "cross",
-      "fit",
-      "clamp",
-      "normalize",
-      "length",
-      "distance",
-      "lerp",
-      "smooth",
-      "remap",
-      "matrix"
-    ],
-    "reference_file": "joy_of_vex_vector_math"
-  },
-  "joy_of_vex_deformation": {
-    "summary": "Joy of VEX: Deformation",
-    "description": "Tutorial examples covering wave displacement and ramp-driven deformation from The Joy of VEX. Covers functions: @Cd, @Frame, @N, @P, @Py, @Time, @offset, @primnum, @ptnum, @scale, @up, abs, ch, chf, chi, chramp, cos, distance, fit, fit01.",
-    "keywords": [
-      "deformation",
-      "deform",
-      "displacement",
-      "displace",
-      "warp",
-      "bend",
-      "bulge",
-      "ripple",
-      "distort"
-    ],
-    "reference_file": "joy_of_vex_deformation"
-  },
-  "joy_of_vex_geometry": {
-    "summary": "Joy of VEX: Geometry Operations",
-    "description": "Tutorial examples covering intrinsics, bounding boxes, and prim operations from The Joy of VEX. Covers functions: $PI, 3@b, 4@a, @Cd, @Frame, @Ga, @N, @P, @Time, @a, @convert, @i, @matrix3b, @orient, @p3by3, @primnum, @primuv, @pscale, @ptg, @ptnum.",
-    "keywords": [
-      "intrinsic",
-      "primintrinsic",
-      "bbox",
-      "bounding",
-      "measuredarea",
-      "measuredvolume",
-      "getbbox",
-      "primitivenormal"
-    ],
-    "reference_file": "joy_of_vex_geometry"
-  },
-  "joy_of_vex_surface_sampling": {
-    "summary": "Joy of VEX: Surface Sampling",
-    "description": "Tutorial examples covering primuv, xyzdist, minpos, and UV sampling from The Joy of VEX. Covers functions: $T, $TPI, @Cd, @Frame, @N, @P, @Time, @c, @cd, @dist, @grid, @id, @prim1d, @prim1id, @primId, @primid, @primnum, @ptnum, @u, @ui1.",
-    "keywords": [
-      "primuv",
-      "xyzdist",
-      "minpos",
-      "uvsample",
-      "primduv",
-      "sampling",
-      "interpolate",
-      "uvdist",
-      "surface"
-    ],
-    "reference_file": "joy_of_vex_surface_sampling"
-  },
-  "joy_of_vex_nearpoints": {
-    "summary": "Joy of VEX: Nearpoints & Proximity",
-    "description": "Tutorial examples covering nearpoints, pcfind, neighbor lookups, and proximity blending from The Joy of VEX. Covers functions: @Cd, @P, @Time, @d, @dist, @prim1d, @primid, @ptnum, @time, @uv, @uv1, addpoint, array, attrib, ch, chf, chi, chramp, chv, clamp.",
-    "keywords": [
-      "nearpoints",
-      "nearpoint",
-      "pcfind",
-      "neighbours",
-      "neighbor",
-      "proximity",
-      "closest",
-      "nearby",
-      "search"
-    ],
-    "reference_file": "joy_of_vex_nearpoints"
-  },
-  "joy_of_vex_pcopen": {
-    "summary": "Joy of VEX: Point Clouds (pcopen)",
-    "description": "Tutorial examples covering pcopen, pcfilter, and point cloud iteration from The Joy of VEX. Covers functions: @Cd, @N, @P, @dist, @ez, @n, @ptnum, @v, ch, chf, chi, chramp, chv, chvlen, distance, dot, fit, fit01, foreach, i@numpt.",
-    "keywords": [
-      "pcopen",
-      "pcfilter",
-      "pciterate",
-      "pcimport",
-      "pcclose",
-      "pcnumfound",
-      "streaming",
-      "iterate",
-      "pointcloud"
-    ],
-    "reference_file": "joy_of_vex_pcopen"
-  },
-  "joy_of_vex_color": {
-    "summary": "Joy of VEX: Color",
-    "description": "Tutorial examples covering color from attributes, ramps, and gradients from The Joy of VEX. Covers functions: %=, @Cd, @N, @P, @Time, @d, @id, @numpt, @prim, @primnum, @pscale, @ptnum, @scale, @time, @u, ch, chf, chramp, chv, clamp.",
-    "keywords": [
+      "materialx",
+      "shader",
+      "material",
+      "mtlx",
+      "standard_surface",
       "color",
-      "cd",
-      "gradient",
-      "hsvtorgb",
-      "rgb",
-      "hue",
-      "saturation",
-      "colormap",
-      "visualization"
+      "metalness",
+      "roughness",
+      "assign",
+      "library"
     ],
-    "reference_file": "joy_of_vex_color"
+    "summary": "MaterialX shader creation in Solaris MaterialLibrary"
   },
-  "joy_of_vex_ramps": {
-    "summary": "Joy of VEX: Ramps & Parameters",
-    "description": "Tutorial examples covering chramp, channel references, and slider controls from The Joy of VEX. Covers functions: $F, $PI, $T, 4@orient, @Cd, @Frame, @N, @P, @PI, @Time, @a, @d, @dist, @i, @orient, @pscale, @ptnum, @scale, @up, abs.",
+  "ocean_fx": {
+    "description": "Ocean system: oceanspectrum (wave frequency data) -> oceanevaluate (displaced geometry). For interaction: add oceanflat -> flipsolver for FLIP tank blended with spectral ocean. Key spectrum parms: speed (wind m/s), direction, spread, chop (wave peakiness), gridsize, depth. Stack 2-3 spectrums for realism (swell + chop + ripples). Whitewater: flipsolver -> whitewatersource -> whitewatersolver for spray/foam/bubbles. Emission from cusp (wave crests), velocity, acceleration. Ocean shader: IOR 1.33, very low roughness, deep blue-green absorption color.",
     "keywords": [
-      "chramp",
-      "chf",
-      "chi",
-      "chv",
-      "chs",
-      "slider",
-      "channel",
-      "parameter",
-      "ramp",
-      "interface"
+      "ocean",
+      "water",
+      "wave",
+      "spectrum",
+      "flip",
+      "whitewater",
+      "spray",
+      "foam",
+      "sea",
+      "fluid"
     ],
-    "reference_file": "joy_of_vex_ramps"
+    "summary": "Ocean spectrum, FLIP interaction, and whitewater setup"
   },
-  "joy_of_vex_geometry_creation": {
-    "summary": "Joy of VEX: Geometry Creation",
-    "description": "Tutorial examples covering addpoint, addprim, and procedural geometry from The Joy of VEX. Covers functions: @Frame, @N, @OpInput1, @P, @Time, @Tramp, @i, @id, @noise, @nrelpe, @opinput1, @primnum, @ptnum, @time, addpoint, addprim, addvertex, ch, ch3, chf.",
+  "pipeline_integration": {
+    "description": "Studio pipeline integration patterns. File conventions: $HIP/$JOB paths, _v001 versioning, $F4 frame padding, .bgeo.sc/.vdb/.exr formats. ShotGrid/Ftrack: project/sequence/shot/asset/task/version hierarchy, publishing workflow, status tracking (wtg/ip/rev/apr). Render farm: Deadline (chunk 1 for sims, 5-10 for renders), HQueue, Tractor. ACES color management: ACEScg working space, sRGB input for textures, Raw for data maps, EXR linear output. Asset management: USD references for assets, variant sets for LOD, lowercase_underscores naming. Cache workflow: filecache SOP with $HIP/cache paths.",
     "keywords": [
-      "addpoint",
-      "addprim",
-      "addvertex",
-      "removepoint",
-      "removeprim",
-      "procedural",
-      "generate",
-      "construct",
-      "polyline"
+      "pipeline",
+      "shotgrid",
+      "ftrack",
+      "deadline",
+      "farm",
+      "render",
+      "aces",
+      "color",
+      "management",
+      "version",
+      "publish",
+      "asset",
+      "cache",
+      "review",
+      "rv",
+      "ocio",
+      "usd",
+      "convention",
+      "naming"
     ],
-    "reference_file": "joy_of_vex_geometry_creation"
+    "summary": "VFX studio pipeline: ShotGrid, file conventions, render farm, ACES, review tools"
   },
-  "joy_of_vex_flow_control": {
-    "summary": "Joy of VEX: Flow Control",
-    "description": "Tutorial examples covering loops, conditionals, and foreach from The Joy of VEX. Covers functions: @Cd, @N, @P, @Time, @a, @foo, @name, @ptnum, abs, addpoint, ch, chf, chramp, chs, chv, clamp, distance, dot, fit, fit01.",
+  "pxr_plugin_discovery": {
+    "description": "USD plugin discovery in Houdini via PXR_PLUGINPATH_NAME environment variable. Discovery mechanism: PlugRegistry scans each directory, finds plugInfo.json, follows Includes patterns (e.g., '*/resources/' for one-level subdirectory scan -- NOT recursive), registers Types based on bases declarations, lazy-loads libraries on demand. Houdini's built-in paths: $HFS/houdini/dso/usd_plugins/ (Karma, Storm), $HOUDINI_USER_PREF_DIR/dso/usd/ (user plugins). Package system: JSON files in houdini21.0/packages/ that set env vars with method='append'/'prepend'/'set'. Dual-location deployment: source (git-tracked, via prepend) + runtime (dso/usd/, via append). Root field in plugInfo.json: '.' = dir containing plugInfo, '..' = parent dir. Path priority (highest first): PXR_PLUGINPATH_NAME prepend -> append -> $HFS built-in -> user prefs auto-scan. Verification: hython with Plug.Registry().GetAllPlugins().",
     "keywords": [
-      "foreach",
-      "loop",
-      "while",
-      "conditional",
-      "iteration",
-      "branch",
-      "switch",
-      "break",
-      "continue"
+      "PXR_PLUGINPATH_NAME",
+      "plugin",
+      "discovery",
+      "plugInfo",
+      "Includes",
+      "packages",
+      "environment",
+      "path",
+      "PlugRegistry",
+      "deploy",
+      "dual location",
+      "houdini path",
+      "dso",
+      "prepend",
+      "append"
     ],
-    "reference_file": "joy_of_vex_flow_control"
+    "reference_file": "pxr-pluginpath",
+    "summary": "PXR_PLUGINPATH_NAME, Houdini packages, plugin discovery mechanism, and path priority"
   },
-  "joy_of_vex_noise": {
-    "summary": "Joy of VEX: Noise & Randomness",
-    "description": "Tutorial examples covering snoise, curlnoise, and random patterns from The Joy of VEX. Covers functions: $F, $PI, @0, @Frame, @N, @P, @Time, @a, @orient, @primnum, @primuv, @ptnum, @t, @up, @w, PI, addpoint, addprim, ch, chf.",
+  "pyro_simulation": {
+    "description": "Modern Houdini pyro uses SOP-level pyrosolver. Chain: source geometry -> scatter (5000+ points) -> attribwrangle (set density=1, temperature=2, flame=1, v=upward velocity, pscale=0.05) -> volumerasterizeattributes (set 'attributes' parm to 'density temperature flame') -> pyrosolver. Key solver parms: 'divsize' (voxel size, 0.05 for detail), 'tempcooling' (0.5-0.8), 'dissipation' (0.1-0.2), 'enable_disturbance' (1 for turbulence). Import to Solaris via 'sopimport' LOP. Cook frame-by-frame for simulation (needs sequential frames).",
     "keywords": [
-      "snoise",
-      "curlnoise",
+      "pyro",
+      "fire",
+      "smoke",
+      "simulation",
+      "fx",
+      "volume",
+      "solver",
+      "density",
+      "temperature",
+      "flame"
+    ],
+    "summary": "Pyro (fire/smoke) simulation setup in SOPs"
+  },
+  "rbd_simulation": {
+    "description": "RBD in modern Houdini: geometry -> rbdmaterialfracture (Voronoi fracture) -> assemble (pack primitives) -> rigidsolver SOP. Constraint types: Glue (break on impact), Hard (unbreakable), Hinge (rotate), Cone Twist (limited rotation), Soft (spring). Setup: rbdconstraintsfromrules -> rbdconstraintproperties -> solver constraint input. For progressive destruction: vary strength by height or group. Impact data: f@impulse for collision force. Secondary effects: debris via POP solver, dust via pyro at impact points.",
+    "keywords": [
+      "rbd",
+      "rigid",
+      "body",
+      "dynamics",
+      "fracture",
+      "destruction",
+      "physics",
+      "bullet",
+      "constraint",
+      "glue",
+      "impact"
+    ],
+    "summary": "RBD (rigid body dynamics) simulation setup"
+  },
+  "render_analysis": {
+    "description": "Exposure analysis: check overall brightness, key:fill ratio, highlight clipping, shadow detail. Adjust via exposure stops (never intensity). Noise types: general (increase samples), shadow (increase min samples), specular/fireflies (clamp, check roughness), volume (increase step rate). Lighting check: key light dominant, fill 1.5-3 stops below, rim separates from background. Material check: roughness 0.001 minimum (not 0.0), metalness 0 or 1 (not between), base color appropriate. Iteration: 640x360 at 16 samples for layout, 1280x720 at 64 for lookdev, full res at 256+ for final.",
+    "keywords": [
+      "render",
+      "analysis",
+      "exposure",
       "noise",
-      "random",
-      "rand",
-      "nrandom",
-      "xnoise",
-      "flownoise",
-      "turbulence",
-      "fractal"
+      "lighting",
+      "composition",
+      "quality",
+      "iteration",
+      "feedback",
+      "review"
     ],
-    "reference_file": "joy_of_vex_noise"
+    "summary": "Analyzing render quality: exposure, noise, lighting, materials"
   },
-  "joy_of_vex_tips": {
-    "summary": "Joy of VEX: Tips & Misc",
-    "description": "Tutorial tips covering debugging, optimization, groups, and miscellaneous VEX from The Joy of VEX. Covers functions: $PI, @Cd, @Frame, @N, @P, @Time, @V, @a, @b, @c, @offset, @orient, @primnum, @ptnum, @up, @v, @vecs, PI, array, ch.",
+  "scene_assembly": {
+    "description": "Import external USD files using 'reference' LOP (adds content under a prim path, good for assets) or 'sublayer' LOP (merges layer stack, good for environments). Reference vs Payload: references always load, payloads defer loading until requested. Reference LOP parms: 'filepath1', 'primpath', 'reftype' (Reference or Payload). Layer stacking: anim.usd -> layout.usd -> lighting.usd -> final.usd (later sublayers are stronger).",
     "keywords": [
-      "debugging",
-      "printf",
-      "optimization",
-      "performance",
-      "groups",
-      "tips",
-      "tricks",
-      "misc",
-      "pitfall"
+      "reference",
+      "sublayer",
+      "assembly",
+      "import",
+      "usd",
+      "asset",
+      "scene",
+      "composition",
+      "payload"
     ],
-    "reference_file": "joy_of_vex_tips"
+    "summary": "USD scene assembly via reference, sublayer, and payload"
   },
-  "joy_of_vex_attribs": {
-    "summary": "Joy of VEX: Attributes",
-    "description": "Tutorial examples covering attribute creation, types, and binding from The Joy of VEX. Covers functions: @Cd, @Frame, @N, @P, @Time, @a, @d, @dist, @foo, @i, @id, @numpt, @orient, @pnumclass, @primid, @primnum, @pscale, @ptnum, @scale, @up.",
+  "solaris_node_types": {
+    "description": "Common Solaris LOP node types: sphere, cube, camera, domelight, distantlight, rectlight, cylinderlight, disklight, materiallibrary, assignmaterial, edit, merge, reference, sublayer, sopimport, karmarenderproperties, usdrender_rop, null. Note: there is no 'grid' or 'plane' LOP node — use cube with scale.y=0.01 for ground planes.",
     "keywords": [
-      "binding",
+      "solaris",
+      "lop",
+      "node",
+      "types",
+      "create",
+      "sphere",
+      "cube",
+      "camera",
+      "light",
+      "material",
+      "merge",
+      "reference"
+    ],
+    "summary": "Solaris/LOP node types available in Houdini"
+  },
+  "solaris_parameter_names": {
+    "description": "Solaris parameter names follow USD naming with namespace encoding. Common gotchas: Light intensity is 'xn__inputsintensity_i0a' (not 'intensity' or 'light_intensity'). Sphere has no 'rows'/'cols' (those are SOP sphere parms). Camera focal length is 'focalLength'. MaterialX base color channels are 'base_colorr', 'base_colorg', 'base_colorb' (not 'base_color_r'). Edit node uses 'primpattern' for prim selection and 'tx','ty','tz','sx','sy','sz' for transforms.",
+    "keywords": [
+      "parameter",
+      "parm",
+      "name",
+      "intensity",
+      "focal",
+      "color",
+      "transform",
+      "material",
+      "solaris",
+      "lop"
+    ],
+    "summary": "Key Solaris/LOP parameter naming conventions"
+  },
+  "sop_solver_loops": {
+    "description": "Solver SOP creates frame-to-frame feedback: output of frame N becomes input of frame N+1. Inside solver: Prev_Frame node gives last frame, Input_1 gives original input. Must play forward from start frame (no random access). Common patterns: point growth (expand each frame), trail/history (accumulate points), painting (accumulate attribute by proximity), custom particles (emit + gravity + kill). SOP Solver DOP integrates custom SOP logic inside DOP sims. Key rule: multiply velocities by @TimeInc for frame-rate independence.",
+    "keywords": [
+      "solver",
+      "feedback",
+      "loop",
+      "simulation",
+      "custom",
+      "accumulate",
+      "growth",
+      "trail",
+      "frame",
+      "procedural"
+    ],
+    "summary": "SOP Solver feedback loops and custom simulation"
+  },
+  "terrain_heightfields": {
+    "description": "Heightfield system uses 2D volume grids. Chain: heightfield -> heightfield_noise -> heightfield_erode -> heightfield_scatter. Key parms: gridspacing (resolution, 1.0 default), sizex/sizey (terrain dimensions). Erosion types: hydraulic (water carving channels) and thermal (material sliding down slopes). Erosion parms: iterations (50+), rainamount, eroderate, bankangle. Layers: height, mask, bedrock, debris, sediment, water. Use layers to drive material assignment (height=snow, debris=dirt, slope=cliff). Convert to polygon mesh via heightfield_convert for rendering. Scatter vegetation/rocks using heightfield_scatter with density masks.",
+    "keywords": [
+      "terrain",
+      "heightfield",
+      "erosion",
+      "landscape",
+      "ground",
+      "scatter",
+      "vegetation",
+      "height",
+      "noise",
+      "environment"
+    ],
+    "summary": "Terrain creation with heightfields, erosion, and scatter"
+  },
+  "tops_wedging": {
+    "description": "TOPs (Task Operator Network) enables parameter wedging. Create a topnet at /obj level. Inside: wedge TOP (generates parameter variations) -> ropfetch TOP (renders each variation). Wedge node: 'wedgecount' sets number of variations, 'wedgeattribs' defines which attributes to vary. Types: Range (linear sweep), Random (exploration), Specific Values (A/B). Schedulers: localscheduler, hqueuescheduler, deadline. For GPU renders (Karma XPU), set maxproccount=1. Use waitforall -> imagemagick for contact sheet comparisons.",
+    "keywords": [
+      "tops",
+      "pdg",
+      "wedge",
+      "variation",
+      "parameter",
+      "sweep",
+      "batch",
+      "render",
+      "scheduler",
+      "contact sheet"
+    ],
+    "summary": "TOPs/PDG wedging for parameter variation"
+  },
+  "usd_composition_reference": {
+    "description": "Comprehensive USD stage composition reference. LIVRPS strength ordering: Local > Inherits > VariantSets > References > Payloads > Sublayers. Multi-department layer stacking (shot_final > fx > lighting > anim > layout > asset). Standard prim hierarchy: /World/cameras, /World/lights, /World/geo, /World/materials. 18 common prim types (Xform, Mesh, BasisCurves, Points, DomeLight, DistantLight, RectLight, Camera, Material, etc.). Transform stack: xformOp:translate, xformOp:rotateXYZ, xformOp:scale with right-to-left execution. VariantSets for switchable configurations. PointInstancer for many copies, native instancing for shared subtrees. Visibility (inherited/invisible) and purpose (default/render/proxy/guide). Material binding patterns: direct, collection-based, GeomSubset face-level. 14 Houdini LOP nodes: sopimport, reference, sublayer, edit, material_library, assign_material, light, camera, render_settings, usdrender, prune, configure_layer, graft, collection.",
+    "keywords": [
+      "usd",
+      "composition",
+      "livrps",
+      "layer",
+      "sublayer",
+      "reference",
+      "payload",
+      "inherits",
+      "variant",
+      "instancing",
+      "transform",
+      "xform",
+      "material binding",
+      "prim type",
+      "hierarchy",
+      "scope",
+      "mesh",
+      "point instancer"
+    ],
+    "reference_file": "usd_stage_composition",
+    "summary": "USD composition arcs (LIVRPS), layer stacking, prim hierarchy, transforms, VariantSets, instancing, and material binding"
+  },
+  "usd_schema_registration": {
+    "description": "Two deployment strategies for USD schemas in Houdini: Resource-only (no compilation, for UI/settings schemas -- deploy generatedSchema.usda + hand-crafted plugInfo.json with LibraryPath='', Type='resource') and Compiled library (full C++ typed accessors + Python bindings via CMake). usdGenSchema code generator: takes schema.usda input with GLOBAL customData (libraryName, libraryPath, libraryPrefix), outputs api.h, tokens, accessor classes, wrappers, generatedSchema.usda, plugInfo.json template. Schema types: IsA (custom prim types, inherits </Typed>), Single-apply API (settings, inherits </APISchemaBase>, ApplyAPI()), Multi-apply API (per-instance data). Key directives: apiSchemaType, apiSchemaCanOnlyApplyTo, displayGroup, displayName. Karma uses resource-only (Type=resource, no SchemasForRenderers in H21). Third-party delegates need SchemasForRenderers mapping in plugInfo.json. Python: rs.ApplyAPI('MyRenderSettingsAPI'), rs.GetAttribute('myrenderer:steps').Get().",
+    "keywords": [
+      "schema",
+      "usdGenSchema",
+      "registration",
+      "api schema",
+      "plugInfo",
+      "resource",
+      "compiled",
+      "library",
+      "render settings",
+      "displayGroup",
+      "displayName",
+      "ApplyAPI",
+      "singleApply",
+      "multiApply",
+      "custom prim"
+    ],
+    "reference_file": "usd-schema-registration",
+    "summary": "USD schema registration: usdGenSchema, resource-only vs compiled, applying custom API schemas"
+  },
+  "usd_stage_operations": {
+    "description": "USD prims in Solaris follow a hierarchy. Common paths: /hero_sphere (from sphere LOP named 'hero_sphere'), /materials/shader_name (from materiallibrary), /lights/light_name (from light LOPs), /cameras/cam_name (from camera LOPs), /Render (from karmarenderproperties). Transform uses 'xformOp:transform' matrix (not 'xformOp:translate'). For translate/rotate/scale, use an 'edit' LOP node instead of USD attributes directly. Composition strength (LIVRPS): Local > Inherits > VariantSets > References > Payloads > Sublayers. Prim types: Sphere, Cube, Mesh, Xform, Scope, DomeLight, DistantLight, RectLight, Camera.",
+    "keywords": [
+      "usd",
+      "prim",
+      "stage",
+      "path",
+      "transform",
+      "xform",
+      "attribute",
+      "hierarchy",
+      "scope",
+      "livrps",
+      "composition"
+    ],
+    "summary": "USD stage operations, composition arcs (LIVRPS), and prim manipulation"
+  },
+  "uv_workflows": {
+    "description": "UV attribute: v@uv (vector3, typically on vertices for seam support). Creation: uvunwrap (automatic), uvflatten (production, seam-based), uvproject (planar/cylindrical/spherical). Layout: uvlayout packs islands efficiently with padding. UDIM: tiles for multi-texture assets (1001=body, 1002=head, etc). Transfer: attribtransfer or uvtransfer between different topology meshes. Quality check: uvquickshade applies checker pattern (uniform squares = good UVs). Tips: vertex UVs for production, padding 0.005+ for mip bleeding, transfer UVs early before topology changes.",
+    "keywords": [
+      "uv",
+      "unwrap",
+      "flatten",
+      "layout",
+      "texture",
+      "udim",
+      "project",
+      "seam",
+      "mapping",
+      "coordinates"
+    ],
+    "summary": "UV unwrapping, layout, UDIM, and texturing workflows"
+  },
+  "vellum_simulation": {
+    "description": "Vellum is Houdini's unified SOP-based solver. Chain: source -> vellumconfigure* -> vellumsolver. Types: vellumcloth (fabric), vellumhair (cables/hair), vellumgrains (sand/snow), vellumsoftbody (jelly/rubber), vellumballoon (inflatable). Configure nodes have TWO outputs: geometry (solver input 1) and constraints (solver input 3). Key cloth parms: stretchstiffness (10000), bendstiffness (0.001), thickness (0.01). Draping: vellumdrape pre-settles garments. Collision: vellumcollider for external objects. Pin: i@stopped=1 on constrained points. Substrate guidelines: 5 substeps for cloth, 1-3 for grains.",
+    "keywords": [
+      "vellum",
+      "cloth",
+      "hair",
+      "grain",
+      "soft",
+      "body",
+      "fabric",
+      "simulation",
+      "constraint",
+      "drape",
+      "stiffness",
+      "collision"
+    ],
+    "summary": "Vellum cloth, hair, grain, and soft body simulation"
+  },
+  "vex_attributes": {
+    "description": "VEX attribute access patterns. Built-in point attributes: @P (position), @N (normal), @Cd (color), @v (velocity), @pscale, @orient, @id, @age, @life, @rest, @uv, @Alpha, @width. Context variables: @ptnum, @numpt, @primnum, @numprim, @vtxnum, @elemnum. Globals: @Time, @Frame, @TimeInc. Reading: @-shorthand for current element (fastest), point()/prim()/vertex()/detail() for any element/input. Writing: @attr creates if missing, setpointattrib/setprimattrib/setdetailattrib with mode (set/add/min/max/mult). Groups: i@group_name = 1/0, inpointgroup(), inprimgroup(). Intrinsics: primintrinsic(0, 'measuredarea', @primnum). Promotion patterns: point-to-detail via loops, detail-to-point broadcast, nearest-point transfer via nearpoint/pcfind, distance-weighted blend.",
+    "keywords": [
+      "vex",
+      "attribute",
+      "@P",
+      "@N",
+      "@Cd",
+      "point",
+      "prim",
+      "vertex",
+      "detail",
+      "group",
       "prefix",
-      "attrib",
-      "setpointattrib",
-      "setprimattrib",
-      "setdetailattrib",
-      "declare",
-      "creation"
+      "type",
+      "intrinsic",
+      "transfer",
+      "promotion"
     ],
-    "reference_file": "joy_of_vex_attribs"
+    "reference_file": "vex_attributes",
+    "summary": "VEX attribute system: built-in attributes, type prefixes, groups, intrinsics, promotion patterns"
+  },
+  "vex_functions": {
+    "description": "Complete VEX function signatures organized by category. Geometry read: point/prim/vertex/detail, attribsize, hasattrib. Write: setpointattrib, setprimattrib, addattrib. Create/delete: addpoint, addprim, addvertex, removepoint, removeprim. Spatial: nearpoint, nearpoints, pcfind, pcfind_radius, pcopen, pcfilter, intersect, xyzdist. Connectivity: neighbours, pointprims, primpoints. Math: sin/cos, pow, sqrt, clamp, fit, lerp, smooth, chramp. Noise: noise, snoise, xnoise, curlnoise, flownoise, vnoise. Vector/matrix: length, normalize, dot, cross, maketransform, cracktransform, quaternion, qrotate. String: sprintf, split, join, match, re_match. Channel: ch, chf, chi, chs, chv, chramp. Array: len, append, find, sort, sum, avg.",
+    "keywords": [
+      "vex",
+      "function",
+      "wrangle",
+      "snippet",
+      "point",
+      "prim",
+      "noise",
+      "math",
+      "attribute",
+      "channel",
+      "pcfind",
+      "orient",
+      "quaternion",
+      "signature",
+      "array"
+    ],
+    "reference_file": "vex_functions",
+    "summary": "VEX function reference: 150+ signatures across geometry, math, noise, strings, channels, arrays"
+  },
+  "vex_fundamentals": {
+    "description": "VEX fundamentals for wrangle nodes. Execution contexts: SOP (Attribute Wrangle), DOP (Gas Field Wrangle), CHOP (Channel Wrangle), COP (Pixel Wrangle). Run-over modes: Points (default, @ptnum), Primitives (@primnum), Vertices (@vtxnum), Detail (single pass). Data types: int, float, vector2, vector, vector4, matrix2, matrix3, matrix, string, arrays. Type prefixes for @-binding: f@=float, i@=int, v@=vector, u@=vector2, p@=vector4, s@=string, 2@/3@/4@=matrices. Control flow: if/else, for, foreach, while, ternary. Inputs: 4 geometry inputs accessed by index (0-3). User-defined functions with semicolon type separators. Preprocessor: #include, #define. VEX vs HScript: VEX is compiled/parallel for heavy processing, HScript for simple parameter expressions.",
+    "keywords": [
+      "vex",
+      "fundamentals",
+      "basics",
+      "syntax",
+      "wrangle",
+      "context",
+      "run-over",
+      "type",
+      "control flow",
+      "input",
+      "output",
+      "hscript"
+    ],
+    "reference_file": "vex_fundamentals",
+    "summary": "VEX language basics: execution contexts, run-over modes, data types, control flow, VEX vs HScript"
+  },
+  "vex_patterns": {
+    "description": "Copy-paste VEX patterns. Deformation: sine wave (@P.y += sin()), noise displacement along normal, twist (rotation around axis), taper via chramp. Color: by height (chramp), by curvature (neighbour dot products), random per piece (hsvtorgb). Generation: spiral points (detail wrangle with trig), polyline from points, quad grid from scratch. Grouping: by bounding box, by normal direction (dot threshold), every Nth point. Solver: point advection with gravity/ground collision, attribute decay (frame-rate independent pow). Transfer: proximity blend via pcfind, smooth/relax via neighbour averaging, edge detection via gradient magnitude. fBm noise layering with octaves.",
+    "keywords": [
+      "vex",
+      "pattern",
+      "example",
+      "snippet",
+      "recipe",
+      "deform",
+      "color",
+      "noise",
+      "spiral",
+      "wave",
+      "group",
+      "solver",
+      "transfer",
+      "smooth",
+      "relax",
+      "edge"
+    ],
+    "reference_file": "vex_patterns",
+    "summary": "15+ VEX code patterns: deformation, color, generation, grouping, solver, transfer"
+  },
+  "vex_performance": {
+    "description": "VEX performance patterns. Fast: pcfind (KD-tree O(log n)) over nearpoints (O(n)), distance2/length2 (skip sqrt), @-binding (compiled direct access), smooth/lerp for branchless blends, pre-sized arrays via resize(). Slow: string attribute lookups in loops, dynamic array growth, complex branching. Run-over selection: Points for per-point, Detail + explicit loops for small geo with inter-element deps. Compilation: first cook compiles (slow), ch() changes don't trigger recompile. Profile via Performance Monitor. Common bottlenecks: O(n^2) spatial query -> use pcfind, memory spikes -> use pcopen/pcfilter streaming, string lookups in loops -> cache outside.",
+    "keywords": [
+      "vex",
+      "performance",
+      "optimization",
+      "speed",
+      "slow",
+      "fast",
+      "bottleneck",
+      "pcfind",
+      "distance2",
+      "parallel",
+      "memory",
+      "compile",
+      "profiling"
+    ],
+    "reference_file": "vex_performance",
+    "summary": "VEX optimization: fast/slow patterns, spatial queries, memory, profiling, bottleneck checklist"
+  },
+  "vex_types": {
+    "description": "VEX type system. Scalars: int (32-bit), float (32-bit), string (UTF-8). Vectors: vector2 (2f), vector (3f/xyz), vector4 (4f/quaternion). Matrices: matrix2 (2x2), matrix3 (3x3 rotation/scale), matrix (4x4 full transform). Implicit promotion: int->float->vector2->vector->vector4. Explicit: int(), float(), set(x,y,z). Component access: v.x/.y/.z or v[0]/[1]/[2]. Quaternion ops: quaternion(angle, axis), eulertoquaternion(), qrotate(), slerp(), qmultiply(), qinvert(). Matrix ops: ident(), maketransform(), cracktransform(), invert(), transpose(), lookat(), dihedral(). String conversion: itoa(), atoi(), atof(), sprintf().",
+    "keywords": [
+      "vex",
+      "type",
+      "conversion",
+      "cast",
+      "vector",
+      "matrix",
+      "quaternion",
+      "vector4",
+      "matrix3",
+      "int",
+      "float",
+      "string",
+      "array",
+      "slerp",
+      "qrotate"
+    ],
+    "reference_file": "vex_types",
+    "summary": "VEX data types: int, float, vector, matrix, quaternion, string; conversions and operations"
+  },
+  "wire_dynamics": {
+    "description": "Wire dynamics via Vellum Hair (recommended) or DOP Wire Solver (legacy). Chain: curve_geo -> vellumhair -> vellumsolver. Key parms: stretchstiffness (50000 for cable), bendstiffness (1.0 for cable, 0.001 for fishing line), density. Presets: thin cable (stretch=50000, bend=1.0), heavy rope (stretch=100000, bend=10.0), power line (stretch=200000, bend=0.01). Pin endpoints: i@stopped=1. Catenary curve: lerp + parabolic sag approximation. Rendering: @width attribute for curve thickness, material per wire type. Wind: vellumconstraintproperty with Wind type or custom VEX force.",
+    "keywords": [
+      "wire",
+      "cable",
+      "rope",
+      "strand",
+      "dynamics",
+      "vellum",
+      "hair",
+      "curve",
+      "catenary",
+      "chain",
+      "string"
+    ],
+    "summary": "Wire, cable, rope, and strand dynamics simulation"
   }
 }

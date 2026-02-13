@@ -631,8 +631,8 @@ class RecipeRegistry:
                             "cache.setDisplayFlag(True)\n"
                             "cache.setRenderFlag(True)\n"
                             "parent.layoutChildren()\n"
-                            "result = {'node': cache.path(), 'solver': solver.path(), "
-                            "'cloth': cloth.path()}\n"
+                            "result = {{'node': cache.path(), 'solver': solver.path(), "
+                            "'cloth': cloth.path()}}\n"
                         ),
                     },
                     gate_level=GateLevel.REVIEW,
@@ -690,8 +690,8 @@ class RecipeRegistry:
                             "cache.setDisplayFlag(True)\n"
                             "cache.setRenderFlag(True)\n"
                             "parent.layoutChildren()\n"
-                            "result = {'node': cache.path(), 'solver': solver.path(), "
-                            "'fracture': frac.path()}\n"
+                            "result = {{'node': cache.path(), 'solver': solver.path(), "
+                            "'fracture': frac.path()}}\n"
                         ),
                     },
                     gate_level=GateLevel.REVIEW,
@@ -731,7 +731,7 @@ class RecipeRegistry:
                             "cam.parm('tz').set(5)\n"
                             "cam.parm('ry').setExpression("
                             "'$FF / ($FEND - $FSTART + 1) * 360')\n"
-                            "result = {'camera': cam.path()}\n"
+                            "result = {{'camera': cam.path()}}\n"
                         ),
                     },
                     gate_level=GateLevel.REVIEW,
@@ -849,8 +849,8 @@ class RecipeRegistry:
                             "out.setDisplayFlag(True)\n"
                             "out.setRenderFlag(True)\n"
                             "parent.layoutChildren()\n"
-                            "result = {'node': out.path(), 'spectrum': spec.path(), "
-                            "'evaluate': evl.path()}\n"
+                            "result = {{'node': out.path(), 'spectrum': spec.path(), "
+                            "'evaluate': evl.path()}}\n"
                         ),
                     },
                     gate_level=GateLevel.REVIEW,
@@ -911,7 +911,7 @@ class RecipeRegistry:
                             "cache.setDisplayFlag(True)\n"
                             "cache.setRenderFlag(True)\n"
                             "parent.layoutChildren()\n"
-                            "result = {'node': cache.path(), 'solver': solver.path()}\n"
+                            "result = {{'node': cache.path(), 'solver': solver.path()}}\n"
                         ),
                     },
                     gate_level=GateLevel.REVIEW,
@@ -957,7 +957,7 @@ class RecipeRegistry:
                             "cache.setDisplayFlag(True)\n"
                             "cache.setRenderFlag(True)\n"
                             "parent.layoutChildren()\n"
-                            "result = {'node': cache.path(), 'solver': solver.path()}\n"
+                            "result = {{'node': cache.path(), 'solver': solver.path()}}\n"
                         ),
                     },
                     gate_level=GateLevel.REVIEW,
@@ -1011,7 +1011,7 @@ class RecipeRegistry:
                             "out.setDisplayFlag(True)\n"
                             "out.setRenderFlag(True)\n"
                             "parent.layoutChildren()\n"
-                            "result = {'node': out.path(), 'erosion': erode.path()}\n"
+                            "result = {{'node': out.path(), 'erosion': erode.path()}}\n"
                         ),
                     },
                     gate_level=GateLevel.REVIEW,
@@ -1069,8 +1069,8 @@ class RecipeRegistry:
                             "cam.parm('rx').set(-10)\n"
                             "cam.parm('focal').set(85)\n"
                             "stage.layoutChildren()\n"
-                            "result = {'dome': dome.path(), 'key': key.path(), "
-                            "'fill': fill.path(), 'camera': cam.path()}\n"
+                            "result = {{'dome': dome.path(), 'key': key.path(), "
+                            "'fill': fill.path(), 'camera': cam.path()}}\n"
                         ),
                     },
                     gate_level=GateLevel.REVIEW,
@@ -1129,7 +1129,7 @@ class RecipeRegistry:
                             "import hou\n"
                             "src = hou.node('{source}')\n"
                             "if not src:\n"
-                            "    result = {'error': 'Could not find node: {source}'}\n"
+                            "    result = {{'error': 'Could not find node: {source}'}}\n"
                             "else:\n"
                             "    parent = src.parent()\n"
                             "    cache = parent.createNode('filecache', "
@@ -1140,7 +1140,7 @@ class RecipeRegistry:
                             "    cache.setDisplayFlag(True)\n"
                             "    cache.setRenderFlag(True)\n"
                             "    parent.layoutChildren()\n"
-                            "    result = {'node': cache.path()}\n"
+                            "    result = {{'node': cache.path()}}\n"
                         ),
                     },
                     gate_level=GateLevel.REVIEW,
@@ -1383,7 +1383,7 @@ class RecipeRegistry:
                             "clear_all_selected=True)\n"
                             "hda_node.setDisplayFlag(True)\n"
                             "hda_node.setRenderFlag(True)\n"
-                            "result = {\n"
+                            "result = {{\n"
                             "    'node': hda_node.path(),\n"
                             "    'hda_file': hda_path,\n"
                             "    'hda_name': hda_name,\n"
@@ -1391,7 +1391,7 @@ class RecipeRegistry:
                             "    'definition': 'Sop/' + hda_name,\n"
                             "    'description': description "
                             "or '(none provided)',\n"
-                            "}\n"
+                            "}}\n"
                         ),
                     },
                     gate_level=GateLevel.REVIEW,
@@ -1435,11 +1435,11 @@ class RecipeRegistry:
                             "            node = s\n"
                             "            break\n"
                             "if node is None:\n"
-                            "    result = {'error': 'No wrangle node found "
-                            "-- select one or provide a path'}\n"
+                            "    result = {{'error': 'No wrangle node found "
+                            "-- select one or provide a path'}}\n"
                             "else:\n"
-                            "    info = {'node': node.path(), "
-                            "'type': node.type().name()}\n"
+                            "    info = {{'node': node.path(), "
+                            "'type': node.type().name()}}\n"
                             "    # Get snippet\n"
                             "    snip_parm = node.parm('snippet') or "
                             "node.parm('code')\n"
@@ -1448,8 +1448,8 @@ class RecipeRegistry:
                             "    # Get run-over class\n"
                             "    class_parm = node.parm('class')\n"
                             "    if class_parm:\n"
-                            "        class_map = {0: 'Detail', 1: 'Points', "
-                            "2: 'Vertices', 3: 'Primitives'}\n"
+                            "        class_map = {{0: 'Detail', 1: 'Points', "
+                            "2: 'Vertices', 3: 'Primitives'}}\n"
                             "        info['run_over'] = class_map.get("
                             "class_parm.eval(), 'unknown')\n"
                             "    # Check errors\n"
@@ -1474,9 +1474,9 @@ class RecipeRegistry:
                             "            if geo:\n"
                             "                attrs = [a.name() for a in "
                             "geo.pointAttribs()]\n"
-                            "                inputs.append({'index': i, "
+                            "                inputs.append({{'index': i, "
                             "'node': inp.path(), 'points': "
-                            "len(geo.points()), 'attributes': attrs})\n"
+                            "len(geo.points()), 'attributes': attrs}})\n"
                             "    info['inputs'] = inputs\n"
                             "    result = info\n"
                         ),
@@ -1555,12 +1555,12 @@ class RecipeRegistry:
                             "int octaves = chi(\"octaves\");\\n"
                             "float a = 1.0;\\n"
                             "float f = freq;\\n"
-                            "for (int i = 0; i < octaves; i++) {\\n"
+                            "for (int i = 0; i < octaves; i++) {{\\n"
                             "    n += snoise(@P * f + @Time * "
                             "chf(\"speed\")) * a;\\n"
                             "    f *= 2.0;\\n"
                             "    a *= 0.5;\\n"
-                            "}\\n"
+                            "}}\\n"
                             "@P += @N * n * amp;\\n')\n"
                             "# Create channel references\n"
                             "ptg = wrangle.parmTemplateGroup()\n"
@@ -1584,7 +1584,7 @@ class RecipeRegistry:
                             "wrangle.setDisplayFlag(True)\n"
                             "wrangle.setRenderFlag(True)\n"
                             "wrangle.moveToGoodPosition()\n"
-                            "result = {'node': wrangle.path()}\n"
+                            "result = {{'node': wrangle.path()}}\n"
                         ),
                     },
                     gate_level=GateLevel.REVIEW,

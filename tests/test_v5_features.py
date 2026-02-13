@@ -623,10 +623,10 @@ class TestKnowledgeBaseExpansion:
             assert len(index[key]["keywords"]) > 3
 
     def test_total_topic_count(self):
-        """Should have 57 topics (28 original + 5 developer/TD + 5 VEX corpus + 4 USD/Karma/MaterialX/Camera refs + 15 Joy of VEX tutorials)."""
+        """Should have 59 topics (57 original + crowds + chops)."""
         index_path = _PROJECT_ROOT / "rag" / "documentation" / "_metadata" / "semantic_index.json"
         index = json.loads(index_path.read_text(encoding="utf-8"))
-        assert len(index) == 57
+        assert len(index) == 59
 
 
 # ==========================================================================
