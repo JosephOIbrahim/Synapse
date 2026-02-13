@@ -31,6 +31,13 @@ except ImportError:
     NexusHandler = None  # type: ignore[assignment,misc]
     CommandHandlerRegistry = None  # type: ignore[assignment,misc]
 
+# Sprint D: Studio Deployment (separate try to avoid breaking existing imports)
+try:
+    from .rbac import Role, check_permission, is_rbac_enabled
+    from .sessions import SessionManager, UserSession, DeployConfig, load_deploy_config
+except ImportError:
+    pass
+
 __all__ = [
     'SynapseServer',
     'SynapseHandler',
@@ -48,4 +55,12 @@ __all__ = [
     'HealthMonitor',
     'HealthStatus',
     'WEBSOCKETS_AVAILABLE',
+    # Sprint D: Studio Deployment
+    'Role',
+    'check_permission',
+    'is_rbac_enabled',
+    'SessionManager',
+    'UserSession',
+    'DeployConfig',
+    'load_deploy_config',
 ]

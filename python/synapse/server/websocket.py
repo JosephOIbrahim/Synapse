@@ -39,8 +39,18 @@ from ..core.protocol import (
     _to_json_str,
 )
 from ..core.queue import DeterministicCommandQueue, ResponseDeliveryQueue
-from .auth import get_auth_key, authenticate, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
+from .auth import get_auth_key, authenticate, hash_key_for_log, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
+from .rbac import Role, check_permission, is_rbac_enabled
+from .sessions import (
+    SessionManager,
+    DeployConfig,
+    load_deploy_config,
+    load_user_directory,
+    lookup_user_by_key,
+    create_tls_context,
+)
+from ..core.audit import audit_log, AuditLevel, AuditCategory
 from .resilience import (
     RateLimiter,
     CircuitBreaker,
@@ -72,7 +82,8 @@ class SynapseServer:
         self,
         host: str = "localhost",
         port: int = 9999,
-        enable_resilience: bool = True
+        enable_resilience: bool = True,
+        deploy_config: Optional[DeployConfig] = None,
     ):
         if not WEBSOCKETS_AVAILABLE:
             raise ImportError("websockets package required. Install with: pip install websockets")
@@ -81,6 +92,14 @@ class SynapseServer:
         import os
         if os.environ.get("SYNAPSE_RESILIENCE", "").strip() == "0":
             enable_resilience = False
+
+        # Deployment configuration
+        self._deploy_config = deploy_config or DeployConfig()
+        if self._deploy_config.mode != "local":
+            host = self._deploy_config.bind
+            port = self._deploy_config.port
+            # Set env var so is_rbac_enabled() works
+            os.environ["SYNAPSE_DEPLOY_MODE"] = self._deploy_config.mode
 
         self.host = host
         self.port = port
@@ -102,6 +121,27 @@ class SynapseServer:
         self._command_queue = DeterministicCommandQueue()
         self._response_queue = ResponseDeliveryQueue()
         self._handler = SynapseHandler()
+
+        # Multi-user sessions (studio mode only)
+        self._session_manager: Optional[SessionManager] = None
+        self._user_directory: Dict[str, dict] = {}
+        if self._deploy_config.mode != "local":
+            from pathlib import Path
+            self._session_manager = SessionManager(
+                session_timeout=self._deploy_config.session_timeout,
+            )
+            users_path = Path(self._deploy_config.users_file)
+            self._user_directory = load_user_directory(users_path)
+
+        # TLS context (VPN mode only)
+        self._tls_context = None
+        if self._deploy_config.tls_enabled:
+            if self._deploy_config.tls_certfile and self._deploy_config.tls_keyfile:
+                self._tls_context = create_tls_context(
+                    self._deploy_config.tls_certfile,
+                    self._deploy_config.tls_keyfile,
+                )
+                logger.info("TLS enabled for studio-vpn mode")
 
         # Resilience layer
         self._enable_resilience = enable_resilience
@@ -209,13 +249,16 @@ class SynapseServer:
             for attempt in range(MAX_PORT_RETRIES):
                 try:
                     port_to_try = self.port if attempt == 0 else self.port + attempt
-                    self._server = sync_serve(
-                        self._handle_client,
-                        self.host,
-                        port_to_try,
+                    serve_kwargs = dict(
+                        handler=self._handle_client,
+                        host=self.host,
+                        port=port_to_try,
                         ping_interval=None,
                         ping_timeout=None,
                     )
+                    if self._tls_context:
+                        serve_kwargs["ssl"] = self._tls_context
+                    self._server = sync_serve(**serve_kwargs)
                     self._actual_port = port_to_try
 
                     if self._port_manager:
@@ -268,9 +311,13 @@ class SynapseServer:
                 except Exception as e:
                     logger.error("Connect callback error: %s", e)
 
-            # Authentication handshake (if key is configured)
+            # Authentication handshake (if key is configured or studio mode requires it)
             auth_key = get_auth_key()
-            if auth_key is not None:
+            auth_required = auth_key is not None or (
+                self._deploy_config and self._deploy_config.auth_required
+            )
+
+            if auth_required:
                 # Tell client auth is required
                 websocket.send(_to_json_str({
                     "type": AUTH_REQUIRED_TYPE,
@@ -282,7 +329,15 @@ class SynapseServer:
                 try:
                     auth_msg = json.loads(next(iter([websocket.recv()])))
                     token = auth_msg.get("payload", {}).get("key", "")
-                    if auth_msg.get("type") != AUTH_COMMAND_TYPE or not authenticate(token, auth_key):
+
+                    # Validate against shared key (legacy) or user directory
+                    auth_ok = False
+                    if auth_key is not None and authenticate(token, auth_key):
+                        auth_ok = True
+                    elif self._user_directory and lookup_user_by_key(token, self._user_directory):
+                        auth_ok = True
+
+                    if auth_msg.get("type") != AUTH_COMMAND_TYPE or not auth_ok:
                         websocket.send(_to_json_str({
                             "type": "auth_failed",
                             "success": False,
@@ -290,6 +345,16 @@ class SynapseServer:
                             "protocol_version": PROTOCOL_VERSION,
                         }))
                         logger.warning("Auth failed for client %s", client_id)
+                        # Audit auth failure
+                        try:
+                            audit_log().log(
+                                operation="auth_failed",
+                                message=f"Authentication failed for client {client_id}",
+                                level=AuditLevel.WARNING,
+                                category=AuditCategory.SYSTEM,
+                            )
+                        except Exception:
+                            pass
                         return
                 except (json.JSONDecodeError, StopIteration):
                     websocket.send(_to_json_str({
@@ -299,6 +364,22 @@ class SynapseServer:
                         "protocol_version": PROTOCOL_VERSION,
                     }))
                     return
+
+                # Create user session if in studio mode
+                if self._session_manager and self._user_directory:
+                    user_info = lookup_user_by_key(token, self._user_directory)
+                    if user_info:
+                        user_session = self._session_manager.create_session(
+                            user_id=user_info["id"],
+                            role=Role(user_info.get("role", self._deploy_config.default_role)),
+                            client_id=client_id,
+                            display_name=user_info.get("name", user_info["id"]),
+                        )
+                        self._handler.set_user_id(user_info["id"])
+                        logger.info(
+                            "User session created: %s (role=%s)",
+                            user_info["id"], user_info.get("role", "artist"),
+                        )
 
                 websocket.send(_to_json_str({
                     "type": "auth_success",
@@ -334,6 +415,10 @@ class SynapseServer:
                 session_id = self._client_sessions.pop(websocket, None)
                 self._clients.discard(websocket)
                 self._client_ids.pop(websocket, None)
+
+            # Remove user session (studio mode)
+            if self._session_manager:
+                self._session_manager.remove_by_client(client_id)
 
             # End session
             if session_id:
@@ -403,6 +488,24 @@ class SynapseServer:
                 response = self._handler.handle(command)
                 websocket.send(response.to_json())
                 return
+
+            # RBAC check (studio mode only)
+            if is_rbac_enabled() and self._session_manager:
+                user_session = self._session_manager.get_by_client(client_id)
+                if user_session:
+                    if not check_permission(user_session.role, command.type):
+                        websocket.send(SynapseResponse(
+                            id=command.id,
+                            success=False,
+                            error=(
+                                f"Your role ({user_session.role.value}) doesn't have "
+                                f"permission for '{command.type}'"
+                            ),
+                            sequence=command.sequence,
+                        ).to_json())
+                        return
+                    # Touch session to keep it alive
+                    self._session_manager.touch(user_session.session_id)
 
             # Read-only commands bypass resilience — they're cheap reads
             # that can't cause cascading failures

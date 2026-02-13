@@ -193,12 +193,17 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
     def __init__(self):
         self._registry = CommandHandlerRegistry()
         self._session_id: Optional[str] = None
+        self._user_id: str = ""
         self._bridge = None
         self._register_handlers()
 
     def set_session_id(self, session_id: str):
         """Set the current session ID for action logging."""
         self._session_id = session_id
+
+    def set_user_id(self, user_id: str):
+        """Set the current user ID for per-user audit trails."""
+        self._user_id = user_id
 
     def _get_bridge(self):
         """Lazy-load the bridge to avoid circular imports."""
@@ -278,6 +283,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         """Submit bridge + audit log in a single executor call."""
         bridge = self._get_bridge()
         sid = self._session_id
+        uid = self._user_id
         category = _CMD_CATEGORY.get(cmd_type, AuditCategory.SYNAPSE)
         output = result if isinstance(result, dict) else {}
 
@@ -289,6 +295,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
                 message=f"Executed {cmd_type}",
                 level=AuditLevel.AGENT_ACTION,
                 category=category,
+                user_id=uid,
                 input_data=payload,
                 output_data=output,
             )
