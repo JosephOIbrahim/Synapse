@@ -1266,3 +1266,136 @@ class RecipeRegistry:
                 ),
             ],
         ))
+
+        # --- HDA Scaffold ---
+        self.register(Recipe(
+            name="hda_scaffold",
+            description=(
+                "Scaffold a complete HDA: create subnet with IN/OUT nulls, "
+                "create digital asset definition, add standard parameter "
+                "interface, and save to $HIP/otls/."
+            ),
+            triggers=[
+                r"^(?:create|make|build|scaffold)\s+(?:an?\s+)?(?:hda|digital asset|otl)\s+(?:called|named)\s+(?P<name>[\w]+)(?:\s+(?:for|that|to|which)\s+(?P<description>.+))?$",
+                r"^(?:create|make|build|scaffold)\s+(?:an?\s+)?(?:hda|digital asset|otl)\s+(?P<name>[\w]+)(?:\s+(?:for|that|to|which)\s+(?P<description>.+))?$",
+                r"^(?:create|make|build|scaffold)\s+(?:an?\s+)?(?:hda|digital asset|otl)(?:\s+(?:for|that|to|which)\s+(?P<description>.+))?$",
+                r"^(?:new|setup)\s+(?:hda|digital asset)(?:\s+(?P<name>[\w]+))?(?:\s+(?:for|that|to|which)\s+(?P<description>.+))?$",
+                r"^hda\s+scaffold(?:\s+(?P<name>[\w]+))?(?:\s+(?P<description>.+))?$",
+            ],
+            parameters=["name", "description"],
+            gate_level=GateLevel.REVIEW,
+            category="pipeline",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "import os\n"
+                            "import re\n"
+                            "# Parameters from trigger\n"
+                            "raw_name = '{name}'.strip()\n"
+                            "description = '{description}'.strip()\n"
+                            "# Derive names\n"
+                            "if not raw_name:\n"
+                            "    raw_name = 'custom_tool'\n"
+                            "hda_name = re.sub(r'[^a-z0-9_]', '_', "
+                            "raw_name.lower()).strip('_')\n"
+                            "hda_label = raw_name.replace('_', ' ').title()\n"
+                            "# Find parent context\n"
+                            "sel = hou.selectedNodes()\n"
+                            "if sel and sel[0].type().category() == "
+                            "hou.sopNodeTypeCategory():\n"
+                            "    parent = sel[0].parent()\n"
+                            "elif sel:\n"
+                            "    parent = sel[0]\n"
+                            "else:\n"
+                            "    obj = hou.node('/obj')\n"
+                            "    parent = obj.createNode('geo', "
+                            "hda_name + '_dev')\n"
+                            "    parent.moveToGoodPosition()\n"
+                            "# Create subnet structure\n"
+                            "subnet = parent.createNode('subnet', hda_name)\n"
+                            "input_null = subnet.createNode('null', 'IN')\n"
+                            "input_null.setPosition(hou.Vector2(0, 0))\n"
+                            "output_null = subnet.createNode('null', 'OUT')\n"
+                            "output_null.setPosition(hou.Vector2(0, -3))\n"
+                            "output_null.setInput(0, input_null)\n"
+                            "output_null.setDisplayFlag(True)\n"
+                            "output_null.setRenderFlag(True)\n"
+                            "input_null.setInput(0, "
+                            "subnet.indirectInputs()[0])\n"
+                            "subnet.layoutChildren()\n"
+                            "subnet.moveToGoodPosition()\n"
+                            "# Create HDA definition\n"
+                            "otls_dir = os.path.join("
+                            "hou.getenv('HIP', ''), 'otls')\n"
+                            "if not os.path.exists(otls_dir):\n"
+                            "    os.makedirs(otls_dir)\n"
+                            "hda_path = os.path.join(otls_dir, "
+                            "hda_name + '.hda')\n"
+                            "hda_node = subnet.createDigitalAsset(\n"
+                            "    name=hda_name,\n"
+                            "    hda_file_name=hda_path,\n"
+                            "    description=hda_label,\n"
+                            "    min_num_inputs=1,\n"
+                            "    max_num_inputs=1,\n"
+                            ")\n"
+                            "# Configure HDA definition\n"
+                            "definition = hda_node.type().definition()\n"
+                            "help_text = '= ' + hda_label + ' =\\n\\n'\n"
+                            "if description:\n"
+                            "    help_text += description + '\\n\\n'\n"
+                            "help_text += '== Parameters ==\\n\\n'\n"
+                            "help_text += 'See parameter interface "
+                            "for controls.\\n'\n"
+                            "definition.setExtraFileOption("
+                            "'Help', help_text)\n"
+                            "definition.setIcon('SOP_subnet')\n"
+                            "definition.setExtraFileOption("
+                            "'CreatedBy', 'Synapse HDA Scaffold')\n"
+                            "# Standard parameter interface\n"
+                            "ptg = hda_node.parmTemplateGroup()\n"
+                            "main_folder = hou.FolderParmTemplate(\n"
+                            "    'main_folder', 'Main', "
+                            "folder_type=hou.folderType.Tabs)\n"
+                            "if description:\n"
+                            "    main_folder.addParmTemplate(\n"
+                            "        hou.LabelParmTemplate("
+                            "'info_label', 'Purpose', "
+                            "column_labels=[description]))\n"
+                            "main_folder.addParmTemplate(\n"
+                            "    hou.FloatParmTemplate("
+                            "'blend', 'Blend', 1, "
+                            "default_value=(1.0,),\n"
+                            "        min=0.0, max=1.0, "
+                            "min_is_strict=True, "
+                            "max_is_strict=True))\n"
+                            "main_folder.addParmTemplate(\n"
+                            "    hou.ToggleParmTemplate("
+                            "'enable', 'Enable', "
+                            "default_value=True))\n"
+                            "ptg.append(main_folder)\n"
+                            "hda_node.setParmTemplateGroup(ptg)\n"
+                            "# Save and select\n"
+                            "definition.save(hda_path, hda_node)\n"
+                            "hda_node.setSelected(True, "
+                            "clear_all_selected=True)\n"
+                            "hda_node.setDisplayFlag(True)\n"
+                            "hda_node.setRenderFlag(True)\n"
+                            "result = {\n"
+                            "    'node': hda_node.path(),\n"
+                            "    'hda_file': hda_path,\n"
+                            "    'hda_name': hda_name,\n"
+                            "    'hda_label': hda_label,\n"
+                            "    'definition': 'Sop/' + hda_name,\n"
+                            "    'description': description "
+                            "or '(none provided)',\n"
+                            "}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="hda",
+                ),
+            ],
+        ))
