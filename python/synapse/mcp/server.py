@@ -292,14 +292,13 @@ try:
 
             if response_body is None:
                 # Notification — 204 No Content
-                return hwebserver.Response(
-                    204, "", "text/plain",
-                )
+                return hwebserver.Response("", status=204, content_type="text/plain")
 
+            data = response_body.decode("utf-8") if isinstance(response_body, bytes) else response_body
             resp = hwebserver.Response(
-                200,
-                response_body.decode("utf-8") if isinstance(response_body, bytes) else response_body,
-                headers.get("Content-Type", "application/json"),
+                data,
+                status=200,
+                content_type=headers.get("Content-Type", "application/json"),
             )
             for key, val in headers.items():
                 if key != "Content-Type":
@@ -310,14 +309,14 @@ try:
             session_id = request.headers().get("Mcp-Session-Id")
             if session_id:
                 server.destroy_session(session_id)
-            return hwebserver.Response(200, "", "text/plain")
+            return hwebserver.Response("", status=200, content_type="text/plain")
 
         else:
             # GET for SSE — Phase 2
             return hwebserver.Response(
-                405,
                 '{"error": "Method not allowed. Use POST for MCP requests."}',
-                "application/json",
+                status=405,
+                content_type="application/json",
             )
 
     logger.info("MCP endpoint registered at /mcp (hwebserver)")
