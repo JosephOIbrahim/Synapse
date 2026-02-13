@@ -6,6 +6,7 @@
     <memberTool name="synapse_inspect_selection"/>
     <memberTool name="synapse_inspect_scene"/>
     <memberTool name="synapse_last_result"/>
+    <memberTool name="synapse_start_mcp"/>
     <memberTool name="synapse_health_check"/>
     <memberTool name="synapse_generate_docs"/>
   </toolshelf>
@@ -75,6 +76,20 @@ try:
 except Exception as e:
     hou.ui.displayMessage(
         "Synapse result copy error: {}".format(e),
+        severity=hou.severityType.Error
+    )
+]]></script>
+  </tool>
+
+  <tool name="synapse_start_mcp" label="Start MCP" icon="SYNAPSE_synapse">
+    <helpText>Start the MCP HTTP endpoint for AI tool connectivity</helpText>
+    <script scriptType="python"><![CDATA[
+try:
+    import synapse_shelf
+    synapse_shelf.start_mcp()
+except Exception as e:
+    hou.ui.displayMessage(
+        "Synapse MCP startup error: {}".format(e),
         severity=hou.severityType.Error
     )
 ]]></script>

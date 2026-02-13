@@ -660,6 +660,70 @@ def project_setup():
         )
 
 
+def start_mcp():
+    """Start the MCP HTTP endpoint via hwebserver.
+
+    Imports the MCP server module (which registers the /mcp URL handler),
+    then starts hwebserver on a configurable port. The MCP endpoint runs
+    alongside the existing WebSocket server -- no conflict.
+    """
+    mcp_port = int(os.environ.get("SYNAPSE_MCP_PORT", "8008"))
+
+    try:
+        import hwebserver
+    except ImportError:
+        _notify(
+            "MCP Server",
+            "hwebserver not available.\n\n"
+            "MCP requires Houdini's built-in web server.",
+            hou.severityType.Error,
+        )
+        return
+
+    # Import the MCP module to register the /mcp URL handler
+    try:
+        from synapse.mcp.server import get_mcp_server
+        get_mcp_server()  # ensure singleton is created
+    except ImportError as e:
+        _notify(
+            "MCP Server",
+            "Couldn't load SYNAPSE MCP module: {}\n\n"
+            "Make sure SYNAPSE is installed:\n"
+            "  pip install -e \".[dev]\"".format(e),
+            hou.severityType.Error,
+        )
+        return
+
+    # Start hwebserver (idempotent -- won't fail if already running)
+    try:
+        hwebserver.run(
+            port=mcp_port,
+            debug=False,
+            in_background=True,
+            max_num_threads=4,
+        )
+    except Exception as e:
+        # Already running on this port is fine
+        if "already" in str(e).lower() or "in use" in str(e).lower():
+            pass
+        else:
+            _notify(
+                "MCP Server",
+                "hwebserver couldn't start on port {}: {}\n\n"
+                "The port may be in use.".format(mcp_port, e),
+                hou.severityType.Warning,
+            )
+            return
+
+    _notify(
+        "MCP Server",
+        "MCP endpoint is live.\n\n"
+        "URL: http://localhost:{}/mcp\n"
+        "Transport: Streamable HTTP (MCP 2025-06-18)\n\n"
+        "Any MCP client can now connect.".format(mcp_port),
+    )
+
+
 def rag_folder():
     """Set the RAG knowledge folder for Synapse lookups.
 
