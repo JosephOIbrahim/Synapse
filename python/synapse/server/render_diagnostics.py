@@ -179,7 +179,7 @@ def classify_scene(stage_info: Dict) -> List[str]:
     if prim_count > 50000:
         tags.append("high_poly")
 
-    return sorted(set(tags))
+    return sorted(dict.fromkeys(tags))
 
 
 # =========================================================================
@@ -339,13 +339,13 @@ def record_fix_outcome(
         *scene_tags[:5],
     ]
     # Sort tags for He2025 determinism
-    tags = sorted(set(tags))
+    tags = sorted(dict.fromkeys(tags))
 
     keywords = [
         "render", "fix", issue_type, remedy.parm_name,
         *scene_tags[:3],
     ]
-    keywords = sorted(set(keywords))
+    keywords = sorted(dict.fromkeys(keywords))
 
     try:
         memory.add(

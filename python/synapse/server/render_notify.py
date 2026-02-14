@@ -20,6 +20,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
+from ..core.determinism import round_float
+
 logger = logging.getLogger("synapse.render_farm")
 
 
@@ -69,9 +71,9 @@ class BatchReport:
             "total_frames": self.total_frames,
             "successful_frames": self.successful_frames,
             "failed_frames": self.failed_frames,
-            "success_rate": round(self.success_rate, 3),
-            "total_render_time": round(self.total_render_time, 2),
-            "total_wall_time": round(self.total_wall_time, 2),
+            "success_rate": round_float(self.success_rate),
+            "total_render_time": round_float(self.total_render_time),
+            "total_wall_time": round_float(self.total_wall_time),
             "rop_path": self.rop_path,
             "scene_tags": self.scene_tags,
             "settings_used": self.settings_used,
@@ -79,7 +81,7 @@ class BatchReport:
                 {
                     "frame": fr.frame,
                     "success": fr.success,
-                    "render_time": round(fr.render_time, 2),
+                    "render_time": round_float(fr.render_time),
                     "retries": fr.retries,
                     "issues": fr.issues,
                     "fixes_applied": fr.fixes_applied,
@@ -250,9 +252,9 @@ def build_progress_event(
         "type": "render_farm_progress",
         "frame": frame,
         "total_frames": total_frames,
-        "progress": round(frame / max(total_frames, 1), 3),
+        "progress": round_float(frame / max(total_frames, 1)),
         "status": status,
-        "timestamp": time.time(),
+        "timestamp": round_float(time.time()),
     }
     if details:
         event["details"] = details
