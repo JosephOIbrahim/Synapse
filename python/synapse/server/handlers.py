@@ -936,6 +936,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
             "topic": result.topic,
             "sources": result.sources,
             "agent_hint": result.agent_hint,
+            "summary": result.summary,
+            "reference_file": result.reference_file,
         }
 
 def _run_compiled(compiled_code, globals_dict, locals_dict):

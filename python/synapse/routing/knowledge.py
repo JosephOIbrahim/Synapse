@@ -27,6 +27,8 @@ class KnowledgeLookupResult:
     confidence: float = 0.0
     topic: str = ""
     agent_hint: str = ""
+    summary: str = ""
+    reference_file: str = ""
 
 
 class KnowledgeIndex:
@@ -288,6 +290,13 @@ class KnowledgeIndex:
 
         sources = [f"semantic_index:{best_topic}"]
 
+        # Extract discrete metadata for structured response
+        summary = ""
+        ref_file = ""
+        if isinstance(topic_data, dict):
+            summary = topic_data.get("summary", "")
+            ref_file = topic_data.get("reference_file", "")
+
         return KnowledgeLookupResult(
             found=True,
             answer=answer,
@@ -295,6 +304,8 @@ class KnowledgeIndex:
             confidence=confidence,
             topic=best_topic,
             agent_hint=agent_hint if isinstance(agent_hint, str) else "",
+            summary=summary,
+            reference_file=ref_file,
         )
 
     def _match_reference_sections(
@@ -346,6 +357,7 @@ class KnowledgeIndex:
             sources=[f"reference:{file_stem}"],
             confidence=confidence,
             topic=file_stem,
+            reference_file=file_stem,
         )
 
     def _match_vex_symptoms(self, query: str) -> Optional[KnowledgeLookupResult]:
