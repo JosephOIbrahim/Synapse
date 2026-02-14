@@ -48,30 +48,35 @@ class NodeHandlerMixin:
         node_type = resolve_param(payload, "type")
         name = resolve_param(payload, "name", required=False)
 
-        parent_node = hou.node(parent)
-        if parent_node is None:
-            hint = _suggest_children(os.path.dirname(parent))
-            raise NodeNotFoundError(parent, suggestion=hint.strip() if hint else "")
+        from .main_thread import run_on_main
 
-        if name:
-            new_node = parent_node.createNode(node_type, name)
-        else:
-            new_node = parent_node.createNode(node_type)
+        def _on_main():
+            parent_node = hou.node(parent)
+            if parent_node is None:
+                hint = _suggest_children(os.path.dirname(parent))
+                raise NodeNotFoundError(parent, suggestion=hint.strip() if hint else "")
 
-        new_node.moveToGoodPosition()
+            if name:
+                new_node = parent_node.createNode(node_type, name)
+            else:
+                new_node = parent_node.createNode(node_type)
 
-        # Track node in session (logging handled by generic executor in handle())
-        bridge = self._get_bridge()  # type: ignore[attr-defined]
-        if bridge and self._session_id:  # type: ignore[attr-defined]
-            session = bridge.get_session(self._session_id)  # type: ignore[attr-defined]
-            if session:
-                session.nodes_created.append(new_node.path())
+            new_node.moveToGoodPosition()
 
-        return {
-            "path": new_node.path(),
-            "type": node_type,
-            "name": new_node.name(),
-        }
+            # Track node in session (logging handled by generic executor in handle())
+            bridge = self._get_bridge()  # type: ignore[attr-defined]
+            if bridge and self._session_id:  # type: ignore[attr-defined]
+                session = bridge.get_session(self._session_id)  # type: ignore[attr-defined]
+                if session:
+                    session.nodes_created.append(new_node.path())
+
+            return {
+                "path": new_node.path(),
+                "type": node_type,
+                "name": new_node.name(),
+            }
+
+        return run_on_main(_on_main)
 
     def _handle_delete_node(self, payload: Dict) -> Dict:
         """Handle delete_node command."""
@@ -79,14 +84,20 @@ class NodeHandlerMixin:
             raise HoudiniUnavailableError()
 
         node_path = resolve_param(payload, "node")
-        node = hou.node(node_path)
-        if node is None:
-            raise NodeNotFoundError(node_path)
 
-        node_name = node.name()
-        node.destroy()
+        from .main_thread import run_on_main
 
-        return {"deleted": node_path, "name": node_name}
+        def _on_main():
+            node = hou.node(node_path)
+            if node is None:
+                raise NodeNotFoundError(node_path)
+
+            node_name = node.name()
+            node.destroy()
+
+            return {"deleted": node_path, "name": node_name}
+
+        return run_on_main(_on_main)
 
     def _handle_connect_nodes(self, payload: Dict) -> Dict:
         """Handle connect_nodes command."""
@@ -98,19 +109,24 @@ class NodeHandlerMixin:
         source_output = resolve_param_with_default(payload, "source_output", 0)
         target_input = resolve_param_with_default(payload, "target_input", 0)
 
-        source_node = hou.node(source_path)
-        target_node = hou.node(target_path)
+        from .main_thread import run_on_main
 
-        if source_node is None:
-            raise NodeNotFoundError(source_path)
-        if target_node is None:
-            raise NodeNotFoundError(target_path)
+        def _on_main():
+            source_node = hou.node(source_path)
+            target_node = hou.node(target_path)
 
-        target_node.setInput(int(target_input), source_node, int(source_output))
+            if source_node is None:
+                raise NodeNotFoundError(source_path)
+            if target_node is None:
+                raise NodeNotFoundError(target_path)
 
-        return {
-            "source": source_path,
-            "target": target_path,
-            "source_output": source_output,
-            "target_input": target_input,
-        }
+            target_node.setInput(int(target_input), source_node, int(source_output))
+
+            return {
+                "source": source_path,
+                "target": target_path,
+                "source_output": source_output,
+                "target_input": target_input,
+            }
+
+        return run_on_main(_on_main)

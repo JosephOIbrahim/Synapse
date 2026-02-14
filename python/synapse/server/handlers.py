@@ -451,8 +451,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
 
         Payload:
             commands: list of {type: str, payload: dict}
-            atomic: bool (default True) — wrap in single undo group
-            stop_on_error: bool (default False) — halt on first error
+            atomic: bool (default True) -- wrap in single undo group
+            stop_on_error: bool (default False) -- halt on first error
         """
         commands = payload.get("commands")
         if not commands or not isinstance(commands, list):
@@ -461,48 +461,53 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         atomic = payload.get("atomic", True)
         stop_on_error = payload.get("stop_on_error", False)
 
-        results: list = []
-        statuses: list = []
-        errors: list = []
+        from .main_thread import run_on_main, _SLOW_TIMEOUT
 
-        if atomic and HOU_AVAILABLE:
-            hou.undos.beginGroup()
+        def _on_main():
+            results: list = []
+            statuses: list = []
+            errors: list = []
 
-        try:
-            for i, cmd_spec in enumerate(commands):
-                cmd_type = cmd_spec.get("type", "")
-                cmd_payload = cmd_spec.get("payload", {})
-                handler = self._registry.get(cmd_type)
-
-                if handler is None:
-                    err = f"Step {i}: unknown command '{cmd_type}'"
-                    errors.append(err)
-                    statuses.append("error")
-                    results.append(None)
-                    if stop_on_error:
-                        break
-                    continue
-
-                try:
-                    result = handler(cmd_payload)
-                    results.append(result)
-                    statuses.append("ok")
-                    errors.append(None)
-                except Exception as e:
-                    results.append(None)
-                    statuses.append("error")
-                    errors.append(f"Step {i}: {e}")
-                    if stop_on_error:
-                        break
-        finally:
             if atomic and HOU_AVAILABLE:
-                hou.undos.endGroup()
+                hou.undos.beginGroup()
 
-        return {
-            "results": results,
-            "statuses": statuses,
-            "errors": errors,
-        }
+            try:
+                for i, cmd_spec in enumerate(commands):
+                    cmd_type = cmd_spec.get("type", "")
+                    cmd_payload = cmd_spec.get("payload", {})
+                    handler = self._registry.get(cmd_type)
+
+                    if handler is None:
+                        err = f"Step {i}: unknown command '{cmd_type}'"
+                        errors.append(err)
+                        statuses.append("error")
+                        results.append(None)
+                        if stop_on_error:
+                            break
+                        continue
+
+                    try:
+                        result = handler(cmd_payload)
+                        results.append(result)
+                        statuses.append("ok")
+                        errors.append(None)
+                    except Exception as e:
+                        results.append(None)
+                        statuses.append("error")
+                        errors.append(f"Step {i}: {e}")
+                        if stop_on_error:
+                            break
+            finally:
+                if atomic and HOU_AVAILABLE:
+                    hou.undos.endGroup()
+
+            return {
+                "results": results,
+                "statuses": statuses,
+                "errors": errors,
+            }
+
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
 
     # =========================================================================
     # PARAMETER HANDLERS
@@ -516,38 +521,44 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         node_path = resolve_param(payload, "node")
         parm_name = resolve_param(payload, "parm")
 
-        node = hou.node(node_path)
-        if node is None:
-            raise NodeNotFoundError(node_path)
+        from .main_thread import run_on_main
 
-        parm = node.parm(parm_name)
-        # USD alias fallback -- resolve human-readable name to encoded parm
-        if parm is None:
-            usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
-            if usd_encoded:
-                parm = node.parm(usd_encoded)
-                if parm is not None:
-                    parm_name = usd_encoded  # use resolved name in response
-        if parm is None:
-            # Try as parm tuple
-            parm_tuple = node.parmTuple(parm_name)
-            if parm_tuple is not None:
-                return {
-                    "node": node_path,
-                    "parm": parm_name,
-                    # hou.Parm.eval() reads parameter value — not Python eval()
-                    "value": [p.eval() for p in parm_tuple],  # noqa: S307
-                    "is_tuple": True,
-                }
-            hint = _suggest_parms(node, parm_name)
-            raise ParameterError(node_path, parm_name, suggestion=hint.strip() if hint else "")
+        def _on_main():
+            nonlocal parm_name
+            node = hou.node(node_path)
+            if node is None:
+                raise NodeNotFoundError(node_path)
 
-        return {
-            "node": node_path,
-            "parm": parm_name,
-            "value": parm.eval(),
-            "is_tuple": False,
-        }
+            parm = node.parm(parm_name)
+            # USD alias fallback -- resolve human-readable name to encoded parm
+            if parm is None:
+                usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
+                if usd_encoded:
+                    parm = node.parm(usd_encoded)
+                    if parm is not None:
+                        parm_name = usd_encoded  # use resolved name in response
+            if parm is None:
+                # Try as parm tuple
+                parm_tuple = node.parmTuple(parm_name)
+                if parm_tuple is not None:
+                    return {
+                        "node": node_path,
+                        "parm": parm_name,
+                        # hou.Parm.eval() reads parameter value -- not Python eval()
+                        "value": [p.eval() for p in parm_tuple],  # noqa: S307
+                        "is_tuple": True,
+                    }
+                hint = _suggest_parms(node, parm_name)
+                raise ParameterError(node_path, parm_name, suggestion=hint.strip() if hint else "")
+
+            return {
+                "node": node_path,
+                "parm": parm_name,
+                "value": parm.eval(),
+                "is_tuple": False,
+            }
+
+        return run_on_main(_on_main)
 
     def _handle_set_parm(self, payload: Dict) -> Dict:
         """Handle set_parm command."""
@@ -558,33 +569,39 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         parm_name = resolve_param(payload, "parm")
         value = resolve_param(payload, "value")
 
-        node = hou.node(node_path)
-        if node is None:
-            raise NodeNotFoundError(node_path)
+        from .main_thread import run_on_main
 
-        parm = node.parm(parm_name)
-        # USD alias fallback -- resolve human-readable name to encoded parm
-        if parm is None:
-            usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
-            if usd_encoded:
-                parm = node.parm(usd_encoded)
-                if parm is not None:
-                    parm_name = usd_encoded
-        if parm is not None:
-            parm.set(value)
-            return {"node": node_path, "parm": parm_name, "value": value}
+        def _on_main():
+            nonlocal parm_name
+            node = hou.node(node_path)
+            if node is None:
+                raise NodeNotFoundError(node_path)
 
-        # Try as parm tuple
-        parm_tuple = node.parmTuple(parm_name)
-        if parm_tuple is not None:
-            if isinstance(value, (list, tuple)):
-                parm_tuple.set(value)
-            else:
-                parm_tuple.set([value] * len(parm_tuple))
-            return {"node": node_path, "parm": parm_name, "value": value}
+            parm = node.parm(parm_name)
+            # USD alias fallback -- resolve human-readable name to encoded parm
+            if parm is None:
+                usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
+                if usd_encoded:
+                    parm = node.parm(usd_encoded)
+                    if parm is not None:
+                        parm_name = usd_encoded
+            if parm is not None:
+                parm.set(value)
+                return {"node": node_path, "parm": parm_name, "value": value}
 
-        hint = _suggest_parms(node, parm_name)
-        raise ParameterError(node_path, parm_name, suggestion=hint.strip() if hint else "")
+            # Try as parm tuple
+            parm_tuple = node.parmTuple(parm_name)
+            if parm_tuple is not None:
+                if isinstance(value, (list, tuple)):
+                    parm_tuple.set(value)
+                else:
+                    parm_tuple.set([value] * len(parm_tuple))
+                return {"node": node_path, "parm": parm_name, "value": value}
+
+            hint = _suggest_parms(node, parm_name)
+            raise ParameterError(node_path, parm_name, suggestion=hint.strip() if hint else "")
+
+        return run_on_main(_on_main)
 
     # =========================================================================
     # SCENE HANDLERS
@@ -595,26 +612,36 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
-        return {
-            "hip_file": hou.hipFile.name(),
-            "frame": int(hou.frame()),
-            "fps": hou.fps(),
-            "frame_range": [int(hou.playbar.frameRange()[0]), int(hou.playbar.frameRange()[1])],
-        }
+        from .main_thread import run_on_main
+
+        def _on_main():
+            return {
+                "hip_file": hou.hipFile.name(),
+                "frame": int(hou.frame()),
+                "fps": hou.fps(),
+                "frame_range": [int(hou.playbar.frameRange()[0]), int(hou.playbar.frameRange()[1])],
+            }
+
+        return run_on_main(_on_main)
 
     def _handle_get_selection(self, payload: Dict) -> Dict:
         """Handle get_selection command."""
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
-        selected = hou.selectedNodes()
-        return {
-            "count": len(selected),
-            "nodes": [
-                {"path": n.path(), "type": n.type().name(), "name": n.name()}
-                for n in selected[:50]
-            ],
-        }
+        from .main_thread import run_on_main
+
+        def _on_main():
+            selected = hou.selectedNodes()
+            return {
+                "count": len(selected),
+                "nodes": [
+                    {"path": n.path(), "type": n.type().name(), "name": n.name()}
+                    for n in selected[:50]
+                ],
+            }
+
+        return run_on_main(_on_main)
 
     # =========================================================================
     # EXECUTION HANDLERS
@@ -628,7 +655,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         This is a standard DCC scripting pattern for automation.
 
         Options:
-            dry_run (bool): Compile-only syntax check — no execution.
+            dry_run (bool): Compile-only syntax check -- no execution.
             atomic (bool): Wrap in undo group with rollback (default True).
         """
         if not HOU_AVAILABLE:
@@ -638,7 +665,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         dry_run = resolve_param_with_default(payload, "dry_run", False)
         atomic = resolve_param_with_default(payload, "atomic", True)
 
-        # Compile first — catches SyntaxError for both dry_run and real runs
+        # Compile first -- catches SyntaxError for both dry_run and real runs
         try:
             compiled = compile(code, "<synapse_exec>", "exec")
         except SyntaxError as e:
@@ -658,28 +685,33 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
             pass
         exec_locals: dict = {}
 
-        # Execute inside undo group with smart rollback:
-        # - Coding bugs (NameError, SyntaxError, TypeError, AttributeError)
-        #   → auto-rollback, since the script is broken and partial state is bad
-        # - Operational errors (render timeout, file not found, hou.OperationFailed)
-        #   → keep mutations, since node creation/wiring may have succeeded
-        if atomic:
-            with hou.undos.group("synapse_execute"):
-                try:
-                    _run_compiled(compiled, exec_globals, exec_locals)
-                except _ROLLBACK_ERRORS:
-                    hou.undos.performUndo()
-                    raise
-        else:
-            _run_compiled(compiled, exec_globals, exec_locals)
+        from .main_thread import run_on_main, _SLOW_TIMEOUT
 
-        # Try to extract a result variable
-        result = exec_locals.get("result", "executed")
+        def _on_main():
+            # Execute inside undo group with smart rollback:
+            # - Coding bugs (NameError, SyntaxError, TypeError, AttributeError)
+            #   -> auto-rollback, since the script is broken and partial state is bad
+            # - Operational errors (render timeout, file not found, hou.OperationFailed)
+            #   -> keep mutations, since node creation/wiring may have succeeded
+            if atomic:
+                with hou.undos.group("synapse_execute"):
+                    try:
+                        _run_compiled(compiled, exec_globals, exec_locals)
+                    except _ROLLBACK_ERRORS:
+                        hou.undos.performUndo()
+                        raise
+            else:
+                _run_compiled(compiled, exec_globals, exec_locals)
 
-        return {
-            "executed": True,
-            "result": str(result) if result else "executed",
-        }
+            # Try to extract a result variable
+            result = exec_locals.get("result", "executed")
+
+            return {
+                "executed": True,
+                "result": str(result) if result else "executed",
+            }
+
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
 
     def _handle_execute_vex(self, payload: Dict) -> Dict:
         """
@@ -696,7 +728,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         run_over = resolve_param_with_default(payload, "run_over", "Points")
         input_node = resolve_param_with_default(payload, "input_node", None)
 
-        # Pre-execution lint check
+        # Pre-execution lint check (no hou.* needed)
         from ..routing.vex_diagnostics import (
             lint_vex_snippet, diagnose_vex_error, format_diagnosis,
         )
@@ -708,119 +740,127 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
                 for d in lint_issues
             ]
 
-        # Find or create a working SOP context
-        parent = None
-        if input_node:
-            src = hou.node(input_node)
-            if src is not None:
-                parent = src.parent()
+        from .main_thread import run_on_main, _SLOW_TIMEOUT
 
-        if parent is None:
-            # Default to /obj -- create a temp geo container
-            obj = hou.node("/obj")
-            parent = obj.createNode("geo", "synapse_vex_temp")
+        def _on_main():
+            # Find or create a working SOP context
+            parent = None
+            if input_node:
+                src = hou.node(input_node)
+                if src is not None:
+                    parent = src.parent()
 
-        wrangle = parent.createNode("attribwrangle", "synapse_vex")
-        wrangle.parm("snippet").set(snippet)
+            if parent is None:
+                # Default to /obj -- create a temp geo container
+                obj = hou.node("/obj")
+                parent = obj.createNode("geo", "synapse_vex_temp")
 
-        # Map run_over string to class menu value
-        run_over_map = {
-            "detail": 0, "points": 1, "vertices": 2, "primitives": 3,
-        }
-        class_val = run_over_map.get(run_over.lower(), 1)
-        wrangle.parm("class").set(class_val)
+            wrangle = parent.createNode("attribwrangle", "synapse_vex")
+            wrangle.parm("snippet").set(snippet)
 
-        # Wire input if provided
-        if input_node:
-            src = hou.node(input_node)
-            if src is not None:
-                wrangle.setInput(0, src)
+            # Map run_over string to class menu value
+            run_over_map = {
+                "detail": 0, "points": 1, "vertices": 2, "primitives": 3,
+            }
+            class_val = run_over_map.get(run_over.lower(), 1)
+            wrangle.parm("class").set(class_val)
 
-        wrangle.setDisplayFlag(True)
-        wrangle.setRenderFlag(True)
+            # Wire input if provided
+            if input_node:
+                src = hou.node(input_node)
+                if src is not None:
+                    wrangle.setInput(0, src)
 
-        # Try to cook and capture any VEX errors
-        cook_errors = []
-        diagnosis_text = ""
-        try:
-            wrangle.cook(force=True)
-        except Exception as cook_exc:
-            error_msg = str(cook_exc)
-            cook_errors.append(error_msg)
-            # Run pattern-based diagnosis
-            diagnoses = diagnose_vex_error(error_msg, snippet, wrangle.path())
-            if diagnoses:
-                diagnosis_text = format_diagnosis(diagnoses, snippet)
+            wrangle.setDisplayFlag(True)
+            wrangle.setRenderFlag(True)
 
-        # Also check node error state (Houdini may set errors without raising)
-        node_errors = []
-        try:
-            if wrangle.errors():
-                node_errors = list(wrangle.errors())
-                if not diagnosis_text and node_errors:
-                    all_errors = " | ".join(node_errors)
-                    diagnoses = diagnose_vex_error(all_errors, snippet, wrangle.path())
-                    if diagnoses:
-                        diagnosis_text = format_diagnosis(diagnoses, snippet)
-        except Exception:
-            pass
+            # Try to cook and capture any VEX errors
+            cook_errors = []
+            diagnosis_text = ""
+            try:
+                wrangle.cook(force=True)
+            except Exception as cook_exc:
+                error_msg = str(cook_exc)
+                cook_errors.append(error_msg)
+                # Run pattern-based diagnosis
+                diagnoses = diagnose_vex_error(error_msg, snippet, wrangle.path())
+                if diagnoses:
+                    diagnosis_text = format_diagnosis(diagnoses, snippet)
 
-        result = {
-            "node": wrangle.path(),
-            "snippet": snippet,
-            "run_over": run_over,
-            "class": class_val,
-        }
+            # Also check node error state (Houdini may set errors without raising)
+            node_errors = []
+            try:
+                if wrangle.errors():
+                    node_errors = list(wrangle.errors())
+                    if not diagnosis_text and node_errors:
+                        all_errors = " | ".join(node_errors)
+                        diagnoses = diagnose_vex_error(all_errors, snippet, wrangle.path())
+                        if diagnoses:
+                            diagnosis_text = format_diagnosis(diagnoses, snippet)
+            except Exception:
+                pass
 
-        if warnings:
-            result["warnings"] = warnings
-        if cook_errors or node_errors:
-            result["errors"] = cook_errors + node_errors
-        if diagnosis_text:
-            result["diagnosis"] = diagnosis_text
+            result = {
+                "node": wrangle.path(),
+                "snippet": snippet,
+                "run_over": run_over,
+                "class": class_val,
+            }
 
-        return result
+            if warnings:
+                result["warnings"] = warnings
+            if cook_errors or node_errors:
+                result["errors"] = cook_errors + node_errors
+            if diagnosis_text:
+                result["diagnosis"] = diagnosis_text
+
+            return result
+
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
     # =========================================================================
     # INTROSPECTION HANDLERS (Phase 1)
     # =========================================================================
 
     def _handle_inspect_selection(self, payload: Dict) -> Dict:
-        """Inspect currently selected nodes — connections, parms, geometry, input graph."""
+        """Inspect currently selected nodes -- connections, parms, geometry, input graph."""
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
         from .introspection import inspect_selection
+        from .main_thread import run_on_main
         depth = resolve_param_with_default(payload, "depth", 1)
-        return inspect_selection(depth=int(depth))
+        return run_on_main(lambda: inspect_selection(depth=int(depth)))
 
     def _handle_inspect_scene(self, payload: Dict) -> Dict:
         """Hierarchical scene overview with issues and artist notes."""
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
         from .introspection import inspect_scene
+        from .main_thread import run_on_main
         root = resolve_param_with_default(payload, "root", "/")
         max_depth = resolve_param_with_default(payload, "max_depth", 3)
         context_filter = resolve_param_with_default(payload, "context_filter", None)
-        return inspect_scene(
+        return run_on_main(lambda: inspect_scene(
             root=root,
             max_depth=int(max_depth),
             context_filter=context_filter,
-        )
+        ))
 
     def _handle_inspect_node(self, payload: Dict) -> Dict:
         """Deep single-node dump: all parms, expressions, code, geometry, HDA info."""
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
         from .introspection import inspect_node_detail
+        from .main_thread import run_on_main
         node_path = resolve_param(payload, "node")
         include_code = resolve_param_with_default(payload, "include_code", True)
         include_geometry = resolve_param_with_default(payload, "include_geometry", True)
         include_expressions = resolve_param_with_default(payload, "include_expressions", True)
-        return inspect_node_detail(
+        return run_on_main(lambda: inspect_node_detail(
             node_path=node_path,
             include_code=bool(include_code),
             include_geometry=bool(include_geometry),
             include_expressions=bool(include_expressions),
-        )
+        ))
 
     def _handle_get_metrics(self, payload: Dict) -> Dict:
         """Return Prometheus-format metrics text."""

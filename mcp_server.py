@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
 """
-Synapse MCP Server — Bridge between Claude Desktop and Houdini via WebSocket.
+Synapse MCP Server v2 — Bridge between Claude Desktop and Houdini via WebSocket.
 
 Connects Claude Desktop (stdio/JSON-RPC) to the Synapse WebSocket server
 running inside Houdini, giving Claude Desktop full access to Houdini scene
 manipulation and project memory.
+
+v2 latency overhaul:
+    - Auth handshake: skip 2s recv wait when no local key configured
+    - orjson bytes passthrough: send bytes directly over WebSocket, zero-copy
+    - Lock-free fast path: volatile check before acquiring _ws_lock
+    - asyncio.wait() replaces wait_for() — avoids internal task overhead
+    - Recv task race condition fix: explicit cancel + cleanup on reconnect
+    - Fire-and-forget warmup: stdio server starts accepting immediately
+    - max_size=None: skip frame validation on localhost
+    - get_running_loop() everywhere (deprecated get_event_loop removed)
 
 Architecture:
     Claude Desktop  <-[stdio/JSON-RPC]->  mcp_server.py  <-[WebSocket]->  Synapse (Houdini)
@@ -20,11 +30,13 @@ import os
 import time
 try:
     import orjson
-    def _dumps(obj): return orjson.dumps(obj, option=orjson.OPT_SORT_KEYS).decode()
+    def _dumps(obj) -> bytes: return orjson.dumps(obj, option=orjson.OPT_SORT_KEYS)
+    def _dumps_str(obj) -> str: return orjson.dumps(obj, option=orjson.OPT_SORT_KEYS).decode()
     def _loads(s): return orjson.loads(s)
 except ImportError:
     import json
-    def _dumps(obj): return json.dumps(obj, sort_keys=True)
+    def _dumps(obj) -> bytes: return json.dumps(obj, sort_keys=True).encode()
+    def _dumps_str(obj) -> str: return json.dumps(obj, sort_keys=True)
     _loads = json.loads
 
 from mcp.server import Server
@@ -64,32 +76,27 @@ def _get_auth_key() -> str | None:
 async def _auth_handshake(ws) -> None:
     """Handle auth handshake if server requires it.
 
-    After connecting, the server may send an auth_required message.
-    We peek at the first message with a short timeout — if it's
-    auth_required, we authenticate. If it's not, we have a stale
-    message that the recv loop will handle.
+    v2 optimization: If no local key is configured, skip the 2s recv wait
+    entirely. If the server requires auth, the first command will fail with
+    a clear error — acceptable trade-off for eliminating 2s dead time on
+    every reconnect when auth is disabled (the common case).
     """
+    key = _get_auth_key()
+    if not key:
+        # No key configured — skip the recv wait entirely (saves ~2s)
+        return
+
+    # Key exists — wait for auth_required from server
     try:
-        # Short timeout — server sends auth_required immediately on connect
         raw = await asyncio.wait_for(ws.recv(), timeout=2.0)
         msg = _loads(raw)
     except (asyncio.TimeoutError, Exception):
-        # No auth_required within 2s — server doesn't need auth
+        # Server didn't send auth_required — auth not enabled server-side
         return
 
     if msg.get("type") != "auth_required":
-        # Not an auth message — this shouldn't happen in normal flow
-        # since auth_required is always the first message if enabled
         logger.warning("Expected auth_required, got %s (auth may be disabled)", msg.get("type"))
         return
-
-    # Server requires auth — send our key
-    key = _get_auth_key()
-    if not key:
-        raise ConnectionError(
-            "Synapse server requires authentication but no API key is configured. "
-            "Set SYNAPSE_API_KEY environment variable or create ~/.synapse/auth.key"
-        )
 
     await ws.send(_dumps({
         "type": "authenticate",
@@ -114,7 +121,6 @@ async def _auth_handshake(ws) -> None:
         logger.info("Authenticated with Synapse server")
         return
 
-    # Unexpected response type
     logger.warning("Unexpected auth response type: %s", response.get("type"))
 
 
@@ -139,7 +145,7 @@ def _cmd_id(cmd_type: str, payload: dict | None) -> str:
 SYNAPSE_PORT = int(os.environ.get("SYNAPSE_PORT", "9999"))
 SYNAPSE_PATH = os.environ.get("SYNAPSE_PATH", "/synapse")
 SYNAPSE_URL = f"ws://localhost:{SYNAPSE_PORT}{SYNAPSE_PATH}"
-PROTOCOL_VERSION = "4.0.0"
+PROTOCOL_VERSION = "5.0.0"
 MAX_RETRIES = 2
 RETRY_DELAY = 0.3
 COMMAND_TIMEOUT = 10.0
@@ -221,21 +227,40 @@ def _start_recv_loop():
     """Ensure the background recv loop is running."""
     global _recv_task
     if _recv_task is None or _recv_task.done():
-        _recv_task = asyncio.get_event_loop().create_task(_recv_loop())
+        _recv_task = asyncio.get_running_loop().create_task(_recv_loop())
 
 
 async def _get_connection():
     """Get or create a persistent WebSocket connection.
 
-    Skips ping health check — just reuse if open. If the connection is
-    dead, send_command's try/except will catch it and reconnect next call.
-    Saves ~1-2ms per command vs await ping().
+    v2: Lock-free fast path — volatile check before acquiring the lock.
+    The common case (connection alive) skips the lock entirely.
+    Double-check inside lock for safety.
     """
-    global _ws_connection
+    global _ws_connection, _recv_task
+
+    # Lock-free fast path: if connected, return immediately
+    if _is_connected():
+        return _ws_connection
+
     async with _ws_lock:
+        # Double-check after acquiring lock
         if _is_connected():
             return _ws_connection
+
+        # Force cleanup of stale state — cancel lingering recv task
+        # to prevent the race where _start_recv_loop() sees the old
+        # task as "not done" and skips creating a new recv loop.
         _ws_connection = None
+        if _recv_task is not None and not _recv_task.done():
+            _recv_task.cancel()
+            try:
+                await _recv_task
+            except (asyncio.CancelledError, Exception):
+                pass
+        _recv_task = None
+        # Clear any orphaned futures from the dead connection
+        _signal_all_pending(ConnectionError("Connection recycled"))
 
         last_error = None
         for attempt in range(MAX_RETRIES):
@@ -246,6 +271,7 @@ async def _get_connection():
                     close_timeout=1.0,
                     ping_interval=None,
                     compression=None,
+                    max_size=None,  # Skip frame size validation on localhost
                 )
                 await _auth_handshake(_ws_connection)
                 _start_recv_loop()
@@ -287,14 +313,21 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
         ws = await _get_connection()
 
         # Register a future for this command's response
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         future: asyncio.Future = loop.create_future()
         _pending[command_id] = future
 
         try:
             await ws.send(_dumps(command))
 
-            response = await asyncio.wait_for(future, timeout=cmd_timeout)
+            # Direct wait on future set — avoids asyncio.wait_for's internal task overhead
+            done, _ = await asyncio.wait({future}, timeout=cmd_timeout)
+            if not done:
+                # Timeout — future still pending
+                _pending.pop(command_id, None)
+                future.cancel()
+                raise asyncio.TimeoutError()
+            response = future.result()
             break  # Success
 
         except asyncio.TimeoutError:
@@ -1817,7 +1850,7 @@ async def call_tool(name: str, arguments: dict):
                     meta["engine"] = data.get("engine")
                 return [
                     ImageContent(type="image", data=b64, mimeType=mime),
-                    TextContent(type="text", text=_dumps(meta)),
+                    TextContent(type="text", text=_dumps_str(meta)),
                 ]
             except FileNotFoundError:
                 return [TextContent(type="text", text=(
@@ -1825,7 +1858,7 @@ async def call_tool(name: str, arguments: dict):
                     "it may have been cleaned up or the path changed"
                 ))]
 
-        return [TextContent(type="text", text=_dumps(data))]
+        return [TextContent(type="text", text=_dumps_str(data))]
     except ConnectionError as e:
         return [TextContent(type="text", text=(
             f"Couldn't reach Synapse \u2014 {e}"
@@ -1851,6 +1884,7 @@ async def _warmup():
             close_timeout=1.0,
             ping_interval=None,
             compression=None,
+            max_size=None,
         )
         await _auth_handshake(_ws_connection)
         _start_recv_loop()
@@ -1864,7 +1898,9 @@ def _atexit_cleanup():
     global _ws_connection
     if _ws_connection is not None:
         try:
-            asyncio.get_event_loop().run_until_complete(_ws_connection.close())
+            loop = asyncio.get_event_loop()
+            if not loop.is_closed():
+                loop.run_until_complete(_ws_connection.close())
         except Exception:
             pass
         _ws_connection = None
@@ -1875,7 +1911,8 @@ atexit.register(_atexit_cleanup)
 
 async def main():
     """Run the Synapse MCP server on stdio."""
-    await _warmup()
+    # Fire-and-forget warmup — stdio server starts accepting immediately
+    asyncio.get_running_loop().create_task(_warmup())
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,

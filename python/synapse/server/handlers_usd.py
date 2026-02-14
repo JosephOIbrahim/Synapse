@@ -88,154 +88,168 @@ class UsdHandlerMixin:
 
         node_path = resolve_param(payload, "node", required=False)
 
-        if node_path:
-            node = hou.node(node_path)
-        else:
-            # Try to find the current LOP network
-            node = None
-            for n in hou.selectedNodes():
-                if hasattr(n, 'stage'):
-                    node = n
+        from .main_thread import run_on_main
+
+        def _on_main():
+            if node_path:
+                node = hou.node(node_path)
+            else:
+                # Try to find the current LOP network
+                node = None
+                for n in hou.selectedNodes():
+                    if hasattr(n, 'stage'):
+                        node = n
+                        break
+
+            if node is None or not hasattr(node, 'stage'):
+                raise ValueError(
+                    "No USD stage found -- select a LOP node or pass "
+                    "a node path so I know which stage to look at"
+                )
+
+            stage = node.stage()
+            if stage is None:
+                raise ValueError(
+                    "That node doesn't have an active USD stage yet -- "
+                    "it may need to cook first, or check the LOP network is set up"
+                )
+
+            root = stage.GetPseudoRoot()
+            prims = []
+            for prim in root.GetAllChildren():
+                prims.append({
+                    "path": str(prim.GetPath()),
+                    "type": str(prim.GetTypeName()),
+                })
+                if len(prims) >= 100:
                     break
 
-        if node is None or not hasattr(node, 'stage'):
-            raise ValueError(
-                "No USD stage found -- select a LOP node or pass "
-                "a node path so I know which stage to look at"
-            )
+            return {
+                "node": node.path(),
+                "prim_count": len(prims),
+                "prims": prims,
+            }
 
-        stage = node.stage()
-        if stage is None:
-            raise ValueError(
-                "That node doesn't have an active USD stage yet -- "
-                "it may need to cook first, or check the LOP network is set up"
-            )
-
-        root = stage.GetPseudoRoot()
-        prims = []
-        for prim in root.GetAllChildren():
-            prims.append({
-                "path": str(prim.GetPath()),
-                "type": str(prim.GetTypeName()),
-            })
-            if len(prims) >= 100:
-                break
-
-        return {
-            "node": node.path(),
-            "prim_count": len(prims),
-            "prims": prims,
-        }
+        return run_on_main(_on_main)
 
     def _handle_get_usd_attribute(self, payload: Dict) -> Dict:
         """Handle get_usd_attribute command -- read a USD attribute from a prim."""
-        node = self._resolve_lop_node(
-            resolve_param(payload, "node", required=False)
-        )
-
+        node_path_arg = resolve_param(payload, "node", required=False)
         prim_path = resolve_param(payload, "prim_path")
         attr_name = resolve_param(payload, "usd_attribute")
 
-        stage = node.stage()
-        if stage is None:
-            raise ValueError(
-                "That node doesn't have an active USD stage yet -- "
-                "it may need to cook first, or check the LOP network is set up"
-            )
+        from .main_thread import run_on_main
 
-        prim = stage.GetPrimAtPath(prim_path)
-        if not prim.IsValid():
-            raise ValueError(
-                f"Couldn't find a prim at {prim_path} -- "
-                "double-check the path on the USD stage"
-            )
+        def _on_main():
+            node = self._resolve_lop_node(node_path_arg)
 
-        attr = prim.GetAttribute(attr_name)
-        if not attr.IsValid():
-            # List available attributes to help the caller
-            attrs = [a.GetName() for a in prim.GetAttributes()][:30]
-            raise ValueError(
-                f"That attribute name didn't match ('{attr_name}') on {prim_path}. "
-                f"Available attributes: {', '.join(attrs)}"
-            )
+            stage = node.stage()
+            if stage is None:
+                raise ValueError(
+                    "That node doesn't have an active USD stage yet -- "
+                    "it may need to cook first, or check the LOP network is set up"
+                )
 
-        value = attr.Get()
+            prim = stage.GetPrimAtPath(prim_path)
+            if not prim.IsValid():
+                raise ValueError(
+                    f"Couldn't find a prim at {prim_path} -- "
+                    "double-check the path on the USD stage"
+                )
 
-        return {
-            "node": node.path(),
-            "prim_path": prim_path,
-            "attribute": attr_name,
-            "value": _usd_to_json(value),
-            "type_name": str(attr.GetTypeName()),
-        }
+            attr = prim.GetAttribute(attr_name)
+            if not attr.IsValid():
+                # List available attributes to help the caller
+                attrs = [a.GetName() for a in prim.GetAttributes()][:30]
+                raise ValueError(
+                    f"That attribute name didn't match ('{attr_name}') on {prim_path}. "
+                    f"Available attributes: {', '.join(attrs)}"
+                )
+
+            value = attr.Get()
+
+            return {
+                "node": node.path(),
+                "prim_path": prim_path,
+                "attribute": attr_name,
+                "value": _usd_to_json(value),
+                "type_name": str(attr.GetTypeName()),
+            }
+
+        return run_on_main(_on_main)
 
     def _handle_set_usd_attribute(self, payload: Dict) -> Dict:
         """Handle set_usd_attribute command -- set a USD attribute via Python LOP."""
-        node = self._resolve_lop_node(
-            resolve_param(payload, "node", required=False)
-        )
-
+        node_path_arg = resolve_param(payload, "node", required=False)
         prim_path = resolve_param(payload, "prim_path")
         attr_name = resolve_param(payload, "usd_attribute")
         value = resolve_param(payload, "value")
 
-        parent = node.parent()
-        safe_name = f"set_{attr_name.replace(':', '_').replace('.', '_')}"
-        py_lop = parent.createNode("pythonscript", safe_name)
-        py_lop.setInput(0, node)
-        py_lop.moveToGoodPosition()
+        from .main_thread import run_on_main
 
-        code = (
-            "from pxr import Sdf\n"
-            "stage = hou.pwd().editableStage()\n"
-            f"prim = stage.GetPrimAtPath({repr(prim_path)})\n"
-            "if prim:\n"
-            f"    attr = prim.GetAttribute({repr(attr_name)})\n"
-            "    if attr:\n"
-            f"        attr.Set({repr(value)})\n"
-        )
-        py_lop.parm("python").set(code)
+        def _on_main():
+            node = self._resolve_lop_node(node_path_arg)
 
-        return {
-            "created_node": py_lop.path(),
-            "prim_path": prim_path,
-            "attribute": attr_name,
-            "value": value,
-        }
+            parent = node.parent()
+            safe_name = f"set_{attr_name.replace(':', '_').replace('.', '_')}"
+            py_lop = parent.createNode("pythonscript", safe_name)
+            py_lop.setInput(0, node)
+            py_lop.moveToGoodPosition()
+
+            code = (
+                "from pxr import Sdf\n"
+                "stage = hou.pwd().editableStage()\n"
+                f"prim = stage.GetPrimAtPath({repr(prim_path)})\n"
+                "if prim:\n"
+                f"    attr = prim.GetAttribute({repr(attr_name)})\n"
+                "    if attr:\n"
+                f"        attr.Set({repr(value)})\n"
+            )
+            py_lop.parm("python").set(code)
+
+            return {
+                "created_node": py_lop.path(),
+                "prim_path": prim_path,
+                "attribute": attr_name,
+                "value": value,
+            }
+
+        return run_on_main(_on_main)
 
     def _handle_create_usd_prim(self, payload: Dict) -> Dict:
         """Handle create_usd_prim command -- define a USD prim via Python LOP."""
-        node = self._resolve_lop_node(
-            resolve_param(payload, "node", required=False)
-        )
-
+        node_path_arg = resolve_param(payload, "node", required=False)
         prim_path = resolve_param(payload, "prim_path")
         prim_type = resolve_param_with_default(payload, "prim_type", "Xform")
 
-        parent = node.parent()
-        safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
-        py_lop = parent.createNode("pythonscript", f"create_{safe_name}")
-        py_lop.setInput(0, node)
-        py_lop.moveToGoodPosition()
+        from .main_thread import run_on_main
 
-        code = (
-            "stage = hou.pwd().editableStage()\n"
-            f"stage.DefinePrim({repr(prim_path)}, {repr(prim_type)})\n"
-        )
-        py_lop.parm("python").set(code)
+        def _on_main():
+            node = self._resolve_lop_node(node_path_arg)
 
-        return {
-            "created_node": py_lop.path(),
-            "prim_path": prim_path,
-            "prim_type": prim_type,
-        }
+            parent = node.parent()
+            safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
+            py_lop = parent.createNode("pythonscript", f"create_{safe_name}")
+            py_lop.setInput(0, node)
+            py_lop.moveToGoodPosition()
+
+            code = (
+                "stage = hou.pwd().editableStage()\n"
+                f"stage.DefinePrim({repr(prim_path)}, {repr(prim_type)})\n"
+            )
+            py_lop.parm("python").set(code)
+
+            return {
+                "created_node": py_lop.path(),
+                "prim_path": prim_path,
+                "prim_type": prim_type,
+            }
+
+        return run_on_main(_on_main)
 
     def _handle_modify_usd_prim(self, payload: Dict) -> Dict:
         """Handle modify_usd_prim command -- set metadata/properties on a prim."""
-        node = self._resolve_lop_node(
-            resolve_param(payload, "node", required=False)
-        )
-
+        node_path_arg = resolve_param(payload, "node", required=False)
         prim_path = resolve_param(payload, "prim_path")
 
         # Collect optional modifications
@@ -243,27 +257,13 @@ class UsdHandlerMixin:
         purpose = resolve_param(payload, "purpose", required=False)
         active = resolve_param(payload, "active", required=False)
 
-        parent = node.parent()
-        safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
-        py_lop = parent.createNode("pythonscript", f"modify_{safe_name}")
-        py_lop.setInput(0, node)
-        py_lop.moveToGoodPosition()
-
-        lines = [
-            "from pxr import Usd, UsdGeom, Sdf, Kind",
-            "stage = hou.pwd().editableStage()",
-            f"prim = stage.GetPrimAtPath({repr(prim_path)})",
-            "if prim:",
-        ]
+        # Validate before touching hou.*
         mods = {}
         if kind is not None:
-            lines.append(f"    Usd.ModelAPI(prim).SetKind({repr(kind)})")
             mods["kind"] = kind
         if purpose is not None:
-            lines.append(f"    UsdGeom.Imageable(prim).GetPurposeAttr().Set({repr(purpose)})")
             mods["purpose"] = purpose
         if active is not None:
-            lines.append(f"    prim.SetActive({active})")
             mods["active"] = active
 
         if not mods:
@@ -271,14 +271,40 @@ class UsdHandlerMixin:
                 "No changes specified -- pass at least one of: kind, purpose, or active"
             )
 
-        code = "\n".join(lines)
-        py_lop.parm("python").set(code)
+        from .main_thread import run_on_main
 
-        return {
-            "created_node": py_lop.path(),
-            "prim_path": prim_path,
-            "modifications": mods,
-        }
+        def _on_main():
+            node = self._resolve_lop_node(node_path_arg)
+
+            parent = node.parent()
+            safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
+            py_lop = parent.createNode("pythonscript", f"modify_{safe_name}")
+            py_lop.setInput(0, node)
+            py_lop.moveToGoodPosition()
+
+            lines = [
+                "from pxr import Usd, UsdGeom, Sdf, Kind",
+                "stage = hou.pwd().editableStage()",
+                f"prim = stage.GetPrimAtPath({repr(prim_path)})",
+                "if prim:",
+            ]
+            if kind is not None:
+                lines.append(f"    Usd.ModelAPI(prim).SetKind({repr(kind)})")
+            if purpose is not None:
+                lines.append(f"    UsdGeom.Imageable(prim).GetPurposeAttr().Set({repr(purpose)})")
+            if active is not None:
+                lines.append(f"    prim.SetActive({active})")
+
+            code = "\n".join(lines)
+            py_lop.parm("python").set(code)
+
+            return {
+                "created_node": py_lop.path(),
+                "prim_path": prim_path,
+                "modifications": mods,
+            }
+
+        return run_on_main(_on_main)
 
     def _handle_reference_usd(self, payload: Dict) -> Dict:
         """Import a USD file into the stage via reference or sublayer."""
@@ -290,30 +316,37 @@ class UsdHandlerMixin:
         mode = resolve_param_with_default(payload, "mode", "reference")
         parent = resolve_param_with_default(payload, "parent", "/stage")
 
-        parent_node = hou.node(parent)
-        if parent_node is None:
-            raise ValueError(
-                f"Couldn't find the parent node at {parent} -- "
-                "verify this path exists (default is /stage)"
-            )
-
-        if mode == "sublayer":
-            node = parent_node.createNode("sublayer", "sublayer_import")
-            node.parm("filepath1").set(file_path)
-        elif mode == "reference":
-            node = parent_node.createNode("reference", "ref_import")
-            node.parm("filepath1").set(file_path)
-            if prim_path != "/":
-                node.parm("primpath").set(prim_path)
-        else:
+        # Validate mode before touching hou.*
+        if mode not in ("sublayer", "reference"):
             raise ValueError(
                 f"'{mode}' isn't a recognized import mode -- "
                 "use 'reference' or 'sublayer'"
             )
 
-        return {
-            "node": node.path(),
-            "file": file_path,
-            "mode": mode,
-            "prim_path": prim_path,
-        }
+        from .main_thread import run_on_main
+
+        def _on_main():
+            parent_node = hou.node(parent)
+            if parent_node is None:
+                raise ValueError(
+                    f"Couldn't find the parent node at {parent} -- "
+                    "verify this path exists (default is /stage)"
+                )
+
+            if mode == "sublayer":
+                node = parent_node.createNode("sublayer", "sublayer_import")
+                node.parm("filepath1").set(file_path)
+            else:
+                node = parent_node.createNode("reference", "ref_import")
+                node.parm("filepath1").set(file_path)
+                if prim_path != "/":
+                    node.parm("primpath").set(prim_path)
+
+            return {
+                "node": node.path(),
+                "file": file_path,
+                "mode": mode,
+                "prim_path": prim_path,
+            }
+
+        return run_on_main(_on_main)

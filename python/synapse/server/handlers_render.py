@@ -350,71 +350,81 @@ class RenderHandlerMixin:
         value = resolve_param(payload, "value")
         frame = resolve_param_with_default(payload, "frame", None)
 
-        node = hou.node(node_path)
-        if node is None:
-            raise ValueError(
-                f"Couldn't find a node at {node_path} -- "
-                "double-check the path exists"
-            )
-        parm = node.parm(parm_name)
-        if parm is None:
-            hint = _suggest_parms(node, parm_name)
-            raise ValueError(
-                f"Couldn't find parameter '{parm_name}' on {node_path}.{hint}"
-            )
+        from .main_thread import run_on_main
 
-        if frame is not None:
-            key = hou.Keyframe()
-            key.setFrame(float(frame))
-            key.setValue(float(value))
-            parm.setKeyframe(key)
-        else:
-            key = hou.Keyframe()
-            key.setFrame(float(hou.frame()))
-            key.setValue(float(value))
-            parm.setKeyframe(key)
+        def _on_main():
+            node = hou.node(node_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {node_path} -- "
+                    "double-check the path exists"
+                )
+            parm = node.parm(parm_name)
+            if parm is None:
+                hint = _suggest_parms(node, parm_name)
+                raise ValueError(
+                    f"Couldn't find parameter '{parm_name}' on {node_path}.{hint}"
+                )
 
-        return {
-            "node": node_path,
-            "parm": parm_name,
-            "value": float(value),
-            "frame": float(frame) if frame is not None else float(hou.frame()),
-        }
+            if frame is not None:
+                key = hou.Keyframe()
+                key.setFrame(float(frame))
+                key.setValue(float(value))
+                parm.setKeyframe(key)
+            else:
+                key = hou.Keyframe()
+                key.setFrame(float(hou.frame()))
+                key.setValue(float(value))
+                parm.setKeyframe(key)
+
+            return {
+                "node": node_path,
+                "parm": parm_name,
+                "value": float(value),
+                "frame": float(frame) if frame is not None else float(hou.frame()),
+            }
+
+        return run_on_main(_on_main)
 
     def _handle_render_settings(self, payload: Dict) -> Dict:
         """Read and optionally modify render settings on a ROP or Karma node."""
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
         node_path = resolve_param(payload, "node")
-
-        node = hou.node(node_path)
-        if node is None:
-            raise ValueError(
-                f"Couldn't find a node at {node_path} -- "
-                "double-check the path to your render settings node"
-            )
-
-        settings = {}
-        # Read current render settings
-        for parm in node.parms():
-            try:
-                # hou.Parm.eval() reads parameter value -- not Python eval()
-                val = parm.eval()  # noqa: S307
-                if isinstance(val, (int, float, str)):
-                    settings[parm.name()] = val
-            except Exception:
-                pass
-
-        # Apply overrides if provided
         overrides = resolve_param_with_default(payload, "settings", {})
-        if isinstance(overrides, dict):
-            for k, v in sorted(overrides.items()):
-                p = node.parm(k)
-                if p:
-                    p.set(v)
-                    settings[k] = v
 
-        return {"node": node_path, "settings": settings}
+        from .main_thread import run_on_main
+
+        def _on_main():
+            node = hou.node(node_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {node_path} -- "
+                    "double-check the path to your render settings node"
+                )
+
+            settings = {}
+            # Read current render settings
+            for parm in node.parms():
+                try:
+                    # hou.Parm.eval() reads parameter value -- not Python eval()
+                    val = parm.eval()  # noqa: S307
+                    if isinstance(val, (int, float, str)):
+                        settings[parm.name()] = val
+                except Exception:
+                    pass
+
+            # Apply overrides if provided
+            if isinstance(overrides, dict):
+                for k, v in sorted(overrides.items()):
+                    p = node.parm(k)
+                    if p:
+                        p.set(v)
+                        settings[k] = v
+
+            return {"node": node_path, "settings": settings}
+
+        return run_on_main(_on_main)
 
     def _handle_wedge(self, payload: Dict) -> Dict:
         """Run a TOPs/PDG wedge to explore parameter variations."""
@@ -1615,9 +1625,7 @@ class RenderHandlerMixin:
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
-        node = self._resolve_lop_node(  # type: ignore[attr-defined]
-            resolve_param(payload, "node", required=False)
-        )
+        node_path_arg = resolve_param(payload, "node", required=False)
         name = resolve_param_with_default(payload, "name", "material")
         shader_type = resolve_param_with_default(
             payload, "shader_type", "mtlxstandard_surface"
@@ -1626,78 +1634,90 @@ class RenderHandlerMixin:
         metalness = resolve_param(payload, "metalness", required=False)
         roughness = resolve_param(payload, "roughness", required=False)
 
-        parent = node.parent()
+        from .main_thread import run_on_main
 
-        # Create materiallibrary node and wire it after the resolved LOP node
-        matlib = parent.createNode("materiallibrary", name)
-        matlib.setInput(0, node)
-        matlib.moveToGoodPosition()
+        def _on_main():
+            node = self._resolve_lop_node(node_path_arg)  # type: ignore[attr-defined]
 
-        # Cook the matlib so its internal network is ready for child creation
-        matlib.cook(force=True)
+            parent = node.parent()
 
-        # Create shader node inside the materiallibrary
-        shader = matlib.createNode(shader_type, name + "_shader")
-        if shader is None:
-            raise RuntimeError(
-                f"Couldn't create a '{shader_type}' shader inside the material library "
-                "-- check that this shader type is available in your Houdini build"
-            )
+            # Create materiallibrary node and wire it after the resolved LOP node
+            matlib = parent.createNode("materiallibrary", name)
+            matlib.setInput(0, node)
+            matlib.moveToGoodPosition()
 
-        # Set optional shader parameters
-        if base_color is not None:
-            if isinstance(base_color, (list, tuple)) and len(base_color) >= 3:
-                for i, ch in enumerate(("r", "g", "b")):
-                    p = shader.parm(f"base_color{ch}")
-                    if p:
-                        p.set(float(base_color[i]))
-        if metalness is not None:
-            p = shader.parm("metalness")
-            if p:
-                p.set(float(metalness))
-        if roughness is not None:
-            p = shader.parm("specular_roughness")
-            if p:
-                p.set(float(roughness))
+            # Cook the matlib so its internal network is ready for child creation
+            matlib.cook(force=True)
 
-        # Read the USD material path that the matlib auto-generates
-        material_usd_path = f"/materials/{name}"
+            # Create shader node inside the materiallibrary
+            shader = matlib.createNode(shader_type, name + "_shader")
+            if shader is None:
+                raise RuntimeError(
+                    f"Couldn't create a '{shader_type}' shader inside the material library "
+                    "-- check that this shader type is available in your Houdini build"
+                )
 
-        return {
-            "matlib_path": matlib.path(),
-            "shader_path": shader.path(),
-            "material_usd_path": material_usd_path,
-            "shader_type": shader_type,
-            "name": name,
-        }
+            # Set optional shader parameters
+            if base_color is not None:
+                if isinstance(base_color, (list, tuple)) and len(base_color) >= 3:
+                    for i, ch in enumerate(("r", "g", "b")):
+                        p = shader.parm(f"base_color{ch}")
+                        if p:
+                            p.set(float(base_color[i]))
+            if metalness is not None:
+                p = shader.parm("metalness")
+                if p:
+                    p.set(float(metalness))
+            if roughness is not None:
+                p = shader.parm("specular_roughness")
+                if p:
+                    p.set(float(roughness))
+
+            # Read the USD material path that the matlib auto-generates
+            material_usd_path = f"/materials/{name}"
+
+            return {
+                "matlib_path": matlib.path(),
+                "shader_path": shader.path(),
+                "material_usd_path": material_usd_path,
+                "shader_type": shader_type,
+                "name": name,
+            }
+
+        return run_on_main(_on_main)
 
     def _handle_assign_material(self, payload: Dict) -> Dict:
         """Create an assignmaterial LOP to bind a material to geometry prims."""
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
-        node = self._resolve_lop_node(  # type: ignore[attr-defined]
-            resolve_param(payload, "node", required=False)
-        )
+        node_path_arg = resolve_param(payload, "node", required=False)
         prim_pattern = resolve_param(payload, "prim_pattern")
         material_path = resolve_param(payload, "material_path")
 
-        parent = node.parent()
-        # Safe node name from the material path
-        safe_name = material_path.rstrip("/").rsplit("/", 1)[-1] or "mat"
-        assign_node = parent.createNode("assignmaterial", f"assign_{safe_name}")
-        assign_node.setInput(0, node)
-        assign_node.moveToGoodPosition()
+        from .main_thread import run_on_main
 
-        # Set the prim pattern and material spec path
-        assign_node.parm("primpattern1").set(prim_pattern)
-        assign_node.parm("matspecpath1").set(material_path)
+        def _on_main():
+            node = self._resolve_lop_node(node_path_arg)  # type: ignore[attr-defined]
 
-        return {
-            "node_path": assign_node.path(),
-            "prim_pattern": prim_pattern,
-            "material_path": material_path,
-        }
+            parent = node.parent()
+            # Safe node name from the material path
+            safe_name = material_path.rstrip("/").rsplit("/", 1)[-1] or "mat"
+            assign_node = parent.createNode("assignmaterial", f"assign_{safe_name}")
+            assign_node.setInput(0, node)
+            assign_node.moveToGoodPosition()
+
+            # Set the prim pattern and material spec path
+            assign_node.parm("primpattern1").set(prim_pattern)
+            assign_node.parm("matspecpath1").set(material_path)
+
+            return {
+                "node_path": assign_node.path(),
+                "prim_pattern": prim_pattern,
+                "material_path": material_path,
+            }
+
+        return run_on_main(_on_main)
 
     def _handle_read_material(self, payload: Dict) -> Dict:
         """Read material binding and shader parameters from a USD prim.
@@ -1708,65 +1728,70 @@ class RenderHandlerMixin:
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
-        node = self._resolve_lop_node(  # type: ignore[attr-defined]
-            resolve_param(payload, "node", required=False)
-        )
+        node_path_arg = resolve_param(payload, "node", required=False)
         prim_path = resolve_param(payload, "prim_path")
 
-        stage = node.stage()
-        if stage is None:
-            raise ValueError(
-                "That node doesn't have an active USD stage yet -- "
-                "it may need to cook first, or check the LOP network is set up"
-            )
+        from .main_thread import run_on_main
 
-        prim = stage.GetPrimAtPath(prim_path)
-        if not prim.IsValid():
-            raise ValueError(
-                f"Couldn't find a prim at {prim_path} -- "
-                "double-check the path on the USD stage"
-            )
+        def _on_main():
+            node = self._resolve_lop_node(node_path_arg)  # type: ignore[attr-defined]
 
-        from pxr import UsdShade
+            stage = node.stage()
+            if stage is None:
+                raise ValueError(
+                    "That node doesn't have an active USD stage yet -- "
+                    "it may need to cook first, or check the LOP network is set up"
+                )
 
-        binding_api = UsdShade.MaterialBindingAPI(prim)
-        bound = binding_api.GetDirectBinding()
-        mat_path_str = str(bound.GetMaterialPath()) if bound.GetMaterial() else ""
+            prim = stage.GetPrimAtPath(prim_path)
+            if not prim.IsValid():
+                raise ValueError(
+                    f"Couldn't find a prim at {prim_path} -- "
+                    "double-check the path on the USD stage"
+                )
 
-        if not mat_path_str:
+            from pxr import UsdShade
+
+            binding_api = UsdShade.MaterialBindingAPI(prim)
+            bound = binding_api.GetDirectBinding()
+            mat_path_str = str(bound.GetMaterialPath()) if bound.GetMaterial() else ""
+
+            if not mat_path_str:
+                return {
+                    "prim_path": prim_path,
+                    "has_material": False,
+                    "material_path": "",
+                    "shader_type": "",
+                    "shader_params": {},
+                }
+
+            material = bound.GetMaterial()
+            shader_type = ""
+            shader_params = {}
+
+            # Get the surface shader output
+            surface_output = material.GetSurfaceOutput()
+            if surface_output:
+                source = surface_output.GetConnectedSources()
+                if source and source[0]:
+                    shader_prim = UsdShade.Shader(source[0][0].source.GetPrim())
+                    shader_type = str(shader_prim.GetIdAttr().Get() or "")
+
+                    for shader_input in shader_prim.GetInputs():
+                        input_name = shader_input.GetBaseName()
+                        val = shader_input.Get()
+                        if val is not None:
+                            shader_params[input_name] = _usd_to_json(val)
+
             return {
                 "prim_path": prim_path,
-                "has_material": False,
-                "material_path": "",
-                "shader_type": "",
-                "shader_params": {},
+                "has_material": True,
+                "material_path": mat_path_str,
+                "shader_type": shader_type,
+                "shader_params": shader_params,
             }
 
-        material = bound.GetMaterial()
-        shader_type = ""
-        shader_params = {}
-
-        # Get the surface shader output
-        surface_output = material.GetSurfaceOutput()
-        if surface_output:
-            source = surface_output.GetConnectedSources()
-            if source and source[0]:
-                shader_prim = UsdShade.Shader(source[0][0].source.GetPrim())
-                shader_type = str(shader_prim.GetIdAttr().Get() or "")
-
-                for shader_input in shader_prim.GetInputs():
-                    input_name = shader_input.GetBaseName()
-                    val = shader_input.Get()
-                    if val is not None:
-                        shader_params[input_name] = _usd_to_json(val)
-
-        return {
-            "prim_path": prim_path,
-            "has_material": True,
-            "material_path": mat_path_str,
-            "shader_type": shader_type,
-            "shader_params": shader_params,
-        }
+        return run_on_main(_on_main)
 
     def _handle_validate_frame(self, payload: Dict) -> Dict:
         """Validate a rendered frame for common quality issues.
