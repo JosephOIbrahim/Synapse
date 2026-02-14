@@ -1531,7 +1531,7 @@ class RecipeRegistry:
                     action="execute_python",
                     payload_template={
                         "code": (
-                            "import hou\n"
+                            "import hou\n"  # noqa: E501
                             "parent_path = '{parent}'.strip()\n"
                             "parent = hou.node(parent_path) if parent_path "
                             "else None\n"
@@ -1888,6 +1888,106 @@ class RecipeRegistry:
                     },
                     gate_level=GateLevel.REVIEW,
                     output_var="hda",
+                ),
+            ],
+        ))
+
+        # ==================================================================
+        # RENDER FARM RECIPES — Autonomous render pipeline
+        # ==================================================================
+
+        # --- Render Sequence ---
+        self.register(Recipe(
+            name="render_sequence",
+            description=(
+                "Render a frame sequence with per-frame validation, "
+                "automatic issue diagnosis, and self-improving fixes. "
+                "Learns from each render to start smarter next time."
+            ),
+            triggers=[
+                r"^render\s+(?:sequence|frames?)\s+(?P<start>\d+)\s*[-\u2013to]+\s*(?P<end>\d+)(?:\s+(?:on|with|using)\s+(?P<rop>[\w\-./]+))?$",
+                r"^render\s+(?:from\s+)?(?P<start>\d+)\s+to\s+(?P<end>\d+)(?:\s+(?:on|with|using)\s+(?P<rop>[\w\-./]+))?$",
+                r"^batch\s+render\s+(?P<start>\d+)\s*[-\u2013to]+\s*(?P<end>\d+)(?:\s+(?:on|with|using)\s+(?P<rop>[\w\-./]+))?$",
+            ],
+            parameters=["start", "end", "rop"],
+            gate_level=GateLevel.APPROVE,
+            category="render",
+            steps=[
+                RecipeStep(
+                    action="render_sequence",
+                    payload_template={
+                        "start_frame": "{start}",
+                        "end_frame": "{end}",
+                        "rop": "{rop}",
+                        "auto_fix": True,
+                        "max_retries": 3,
+                    },
+                    gate_level=GateLevel.APPROVE,
+                ),
+            ],
+        ))
+
+        # --- Render and Validate (single frame) ---
+        self.register(Recipe(
+            name="render_validate_frame",
+            description=(
+                "Render the current frame and validate it for quality "
+                "issues (fireflies, black frames, clipping)."
+            ),
+            triggers=[
+                r"^render\s+and\s+validate$",
+                r"^test\s+render$",
+                r"^render\s+(?:and\s+)?check$",
+            ],
+            parameters=[],
+            gate_level=GateLevel.REVIEW,
+            category="render",
+            steps=[
+                RecipeStep(
+                    action="render",
+                    payload_template={},
+                    gate_level=GateLevel.REVIEW,
+                    output_var="render_result",
+                ),
+                RecipeStep(
+                    action="validate_frame",
+                    payload_template={
+                        "image_path": "${render_result.image_path}",
+                    },
+                    gate_level=GateLevel.INFORM,
+                ),
+            ],
+        ))
+
+        # --- Setup Render Farm ---
+        self.register(Recipe(
+            name="setup_render_farm",
+            description=(
+                "Configure render farm settings: classify the scene, "
+                "query memory for known-good settings, and prepare "
+                "the ROP for batch rendering."
+            ),
+            triggers=[
+                r"^(?:set up|setup)\s+render\s+farm(?:\s+(?:on|for|with)\s+(?P<rop>[\w\-./]+))?$",
+                r"^(?:prepare|configure)\s+(?:for\s+)?batch\s+render(?:ing)?(?:\s+(?:on|for|with)\s+(?P<rop>[\w\-./]+))?$",
+            ],
+            parameters=["rop"],
+            gate_level=GateLevel.APPROVE,
+            category="render",
+            steps=[
+                RecipeStep(
+                    action="get_stage_info",
+                    payload_template={},
+                    gate_level=GateLevel.INFORM,
+                    output_var="stage",
+                ),
+                RecipeStep(
+                    action="render_settings",
+                    payload_template={
+                        "node": "{rop}",
+                    },
+                    gate_level=GateLevel.INFORM,
+                    output_var="settings",
                 ),
             ],
         ))

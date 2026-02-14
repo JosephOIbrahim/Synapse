@@ -457,7 +457,7 @@ class TestRecipeRegistry:
         self.registry = RecipeRegistry()
 
     def test_builtin_recipes_registered(self):
-        assert len(self.registry.recipes) == 29
+        assert len(self.registry.recipes) == 32
 
     def test_three_point_lighting_match(self):
         match = self.registry.match("set up three-point lighting at /obj")
@@ -526,7 +526,7 @@ class TestRecipeRegistry:
             ],
         )
         self.registry.register(custom)
-        assert len(self.registry.recipes) == 30
+        assert len(self.registry.recipes) == 33
         match = self.registry.match("run test")
         assert match is not None
         assert match[0].name == "test_recipe"

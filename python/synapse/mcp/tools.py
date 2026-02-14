@@ -599,6 +599,24 @@ _TOOL_DEFS: list[tuple] = [
      "List all available recipes with names, descriptions, and trigger patterns.",
      _EMPTY_SCHEMA, True, False, True),
 
+    # -- Render Farm --
+    ("synapse_render_sequence", "render_sequence", _identity,
+     "Render a frame range with per-frame validation, automatic issue diagnosis, "
+     "and self-improving fixes. Learns from each render to start smarter next time.",
+     {"type": "object", "properties": {
+         "rop": {"type": "string", "description": "ROP node path (auto-discovers if omitted)"},
+         "start_frame": {"type": "integer", "description": "First frame to render"},
+         "end_frame": {"type": "integer", "description": "Last frame to render (inclusive)"},
+         "step": {"type": "integer", "description": "Frame step (default: 1)"},
+         "auto_fix": {"type": "boolean", "description": "Auto-diagnose and fix issues (default: true)"},
+         "max_retries": {"type": "integer", "description": "Max retries per frame (default: 3)"},
+     }, "required": ["start_frame", "end_frame"]},
+     False, True, False),
+
+    ("synapse_render_farm_status", "render_farm_status", _passthrough,
+     "Check progress of a running render farm job: running state, scene tags, current frame.",
+     _EMPTY_SCHEMA, True, False, True),
+
     # -- Live Metrics (Sprint E) --
     ("synapse_live_metrics", "get_live_metrics", _identity,
      "Get live metrics snapshot: scene health, routing, resilience, sessions. "

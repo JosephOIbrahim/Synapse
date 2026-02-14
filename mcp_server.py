@@ -146,6 +146,7 @@ COMMAND_TIMEOUT = 10.0
 _SLOW_COMMANDS = {
     "execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0,
     "render": 120.0, "wedge": 120.0, "validate_frame": 30.0,
+    "render_sequence": 600.0,
     "inspect_selection": 30.0, "inspect_scene": 30.0, "inspect_node": 30.0,
     "batch_commands": 60.0,
     "tops_cook_node": 120.0,
@@ -1606,6 +1607,57 @@ async def list_tools():
                 "required": [],
             },
         ),
+        # -- Render Farm --
+        Tool(
+            name="synapse_render_sequence",
+            description=(
+                "Render a frame range with per-frame validation, automatic issue "
+                "diagnosis, and self-improving fixes. Learns from each render to "
+                "start smarter next time."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "rop": {
+                        "type": "string",
+                        "description": "ROP node path (auto-discovers if omitted)",
+                    },
+                    "start_frame": {
+                        "type": "integer",
+                        "description": "First frame to render",
+                    },
+                    "end_frame": {
+                        "type": "integer",
+                        "description": "Last frame to render (inclusive)",
+                    },
+                    "step": {
+                        "type": "integer",
+                        "description": "Frame step (default: 1)",
+                    },
+                    "auto_fix": {
+                        "type": "boolean",
+                        "description": "Auto-diagnose and fix issues (default: true)",
+                    },
+                    "max_retries": {
+                        "type": "integer",
+                        "description": "Max retries per frame (default: 3)",
+                    },
+                },
+                "required": ["start_frame", "end_frame"],
+            },
+        ),
+        Tool(
+            name="synapse_render_farm_status",
+            description=(
+                "Check progress of a running render farm job: running state, "
+                "scene tags, current frame."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -1728,6 +1780,8 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_memory_query":  ("memory_query",    _identity),
     "synapse_memory_status": ("memory_status",   _passthrough),
     "synapse_evolve_memory": ("evolve_memory",   _passthrough),
+    "synapse_render_sequence":    ("render_sequence",      _identity),
+    "synapse_render_farm_status": ("render_farm_status",   _passthrough),
 }
 
 
