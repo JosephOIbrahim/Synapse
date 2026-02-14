@@ -192,7 +192,7 @@ class TestDiagnoseIssues:
         assert len(result) == 1
         issue_type, remedy, mem = result[0]
         assert issue_type == "saturation"
-        assert remedy.parm_name == "karma_samples"
+        assert remedy.parm_name == "pathtracedsamples"
         assert mem is None
 
     def test_multiple_failures(self):
@@ -231,7 +231,7 @@ class TestDiagnoseIssues:
     def test_with_memory_match(self):
         mock_memory = MagicMock()
         mock_result = MagicMock()
-        mock_result.memory.content = "**Parameter:** karma_samples = 128"
+        mock_result.memory.content = "**Parameter:** pathtracedsamples = 128"
         mock_result.memory.tags = ["render_fix", "success", "saturation"]
         mock_result.memory.id = "mem-123"
         mock_result.score = 0.9
@@ -299,14 +299,14 @@ class TestRecordFixOutcome:
 
     def test_records_success(self):
         mock_memory = MagicMock()
-        remedy = Remedy("saturation", "Double samples", "karma_samples", "multiply", 2.0)
+        remedy = Remedy("saturation", "Double samples", "pathtracedsamples", "multiply", 2.0)
         record_fix_outcome(
             mock_memory,
             "saturation",
             remedy,
             success=True,
             scene_tags=["interior"],
-            settings_applied={"karma_samples": 128},
+            settings_applied={"pathtracedsamples": 128},
             frame=42,
         )
         mock_memory.add.assert_called_once()
@@ -317,7 +317,7 @@ class TestRecordFixOutcome:
 
     def test_records_failure(self):
         mock_memory = MagicMock()
-        remedy = Remedy("saturation", "Double samples", "karma_samples", "multiply", 2.0)
+        remedy = Remedy("saturation", "Double samples", "pathtracedsamples", "multiply", 2.0)
         record_fix_outcome(
             mock_memory,
             "saturation",

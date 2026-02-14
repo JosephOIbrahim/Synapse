@@ -69,7 +69,7 @@ def _make_handler():
         "valid": True, "checks": {},
     })
     handler._handle_render_settings = MagicMock(return_value={
-        "settings": {"karma_samples": 64},
+        "settings": {"pathtracedsamples": 64},
     })
     handler._handle_get_stage_info = MagicMock(return_value={"prims": []})
     handler._broadcast = MagicMock()

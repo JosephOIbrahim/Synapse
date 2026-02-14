@@ -64,7 +64,7 @@ def _make_callbacks(
     if validate_resp is None:
         validate_resp = {"valid": True, "checks": {}}
     if settings_resp is None:
-        settings_resp = {"settings": {"karma_samples": 64}}
+        settings_resp = {"settings": {"pathtracedsamples": 64}}
 
     return RenderCallbacks(
         render_frame=MagicMock(return_value=render_resp),
@@ -141,7 +141,7 @@ class TestAutoFix:
             {"valid": True, "checks": {}},
         ]
         farm = RenderFarmOrchestrator(callbacks=cb, max_retries=3, report_dir=str(tmp_path))
-        result = farm.render_frame_validated("/stage/karma1", 1001, {"karma_samples": 32})
+        result = farm.render_frame_validated("/stage/karma1", 1001, {"pathtracedsamples": 32})
         assert result.success is True
         assert result.retries == 1
         assert len(result.fixes_applied) >= 1
@@ -156,7 +156,7 @@ class TestAutoFix:
             "checks": {"saturation": {"passed": False}},
         }
         farm = RenderFarmOrchestrator(callbacks=cb, max_retries=2, report_dir=str(tmp_path))
-        result = farm.render_frame_validated("/stage/karma1", 1001, {"karma_samples": 32})
+        result = farm.render_frame_validated("/stage/karma1", 1001, {"pathtracedsamples": 32})
         assert result.success is False
         assert result.retries == 2
         # 1 initial + 2 retries = 3 renders
@@ -196,7 +196,7 @@ class TestAutoFix:
         }
         cb.set_render_settings.side_effect = RuntimeError("permission denied")
         farm = RenderFarmOrchestrator(callbacks=cb, max_retries=3, report_dir=str(tmp_path))
-        result = farm.render_frame_validated("/stage/karma1", 1001, {"karma_samples": 32})
+        result = farm.render_frame_validated("/stage/karma1", 1001, {"pathtracedsamples": 32})
         assert result.success is False
         assert "Remedy application failed" in result.error
 
@@ -319,7 +319,7 @@ class TestMemoryIntegration:
     def test_warmup_from_memory(self, mock_query, mock_notify, tmp_path):
         mock_notify.return_value = {}
         mock_query.return_value = [{
-            "content": "**Parameter:** karma_samples = 128\n**Issue:** saturation",
+            "content": "**Parameter:** pathtracedsamples = 128\n**Issue:** saturation",
             "tags": ["render_fix", "success"],
             "score": 0.9,
             "memory_id": "mem-1",

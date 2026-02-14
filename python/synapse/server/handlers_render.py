@@ -1945,6 +1945,10 @@ class RenderHandlerMixin:
 
         Orchestrates multi-frame renders through the RenderFarmOrchestrator,
         which handles validation, diagnostics, and automatic re-renders.
+
+        Auto-fix remedies target the Karma Render Properties LOP (where the
+        real quality parms live), not the usdrender ROP itself. Discovery:
+        ROP.loppath -> walk LOP children for 'karmarenderproperties' type.
         """
         from .render_farm import RenderFarmOrchestrator, RenderCallbacks
 
@@ -1955,12 +1959,47 @@ class RenderHandlerMixin:
         auto_fix = resolve_param_with_default(payload, "auto_fix", True)
         max_retries = int(resolve_param_with_default(payload, "max_retries", 3))
 
+        # Discover the Karma Render Properties LOP where quality parms live.
+        # The ROP's loppath parm points to the LOP network; we walk its
+        # children looking for a karmarenderproperties node.
+        karma_lop_path = None
+        if HOU_AVAILABLE and rop:
+            try:
+                rop_node = hou.node(rop)
+                if rop_node is not None:
+                    lp = rop_node.parm("loppath")
+                    if lp:
+                        lop_target = lp.eval()  # noqa: S307
+                        if lop_target:
+                            lop_node = hou.node(lop_target)
+                            if lop_node is not None:
+                                # Walk up to the parent LOP network
+                                lop_net = lop_node.parent() if lop_node.parent() else lop_node
+                                for child in lop_net.children():
+                                    if child.type().name() == "karmarenderproperties":
+                                        karma_lop_path = child.path()
+                                        break
+            except Exception:
+                pass  # Fall back to ROP path for settings
+
+        # Wrap get/set_render_settings to target the Karma LOP if discovered
+        settings_target = karma_lop_path or rop
+
+        def _get_settings(p):
+            node = p.get("node") or settings_target
+            return self._handle_render_settings({"node": node})
+
+        def _set_settings(p):
+            node = p.get("node") or settings_target
+            settings = p.get("settings", {})
+            return self._handle_render_settings({"node": node, "settings": settings})
+
         # Build callbacks wiring to existing handlers
         callbacks = RenderCallbacks(
             render_frame=self._handle_render,
             validate_frame=self._handle_validate_frame,
-            get_render_settings=self._handle_render_settings,
-            set_render_settings=self._handle_render_settings,
+            get_render_settings=_get_settings,
+            set_render_settings=_set_settings,
             get_stage_info=getattr(self, '_handle_get_stage_info', None),
             broadcast=getattr(self, '_broadcast', None),
         )

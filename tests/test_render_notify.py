@@ -70,7 +70,7 @@ class TestFrameResult:
         fr = FrameResult(
             frame=1002, success=False, retries=3,
             issues=["saturation", "clipping"],
-            fixes_applied=["karma_samples=128"],
+            fixes_applied=["pathtracedsamples=128"],
             error="Validation failed",
         )
         assert fr.retries == 3
@@ -107,7 +107,7 @@ class TestBatchReport:
             total_render_time=120.567, total_wall_time=130.123,
             rop_path="/stage/karma1",
             scene_tags=["interior"],
-            settings_used={"karma_samples": 64},
+            settings_used={"pathtracedsamples": 64},
             frame_results=[
                 FrameResult(frame=1001, success=True, render_time=25.1),
                 FrameResult(frame=1002, success=False, render_time=30.2, error="black frame"),
@@ -134,13 +134,13 @@ class TestWriteReport:
             total_render_time=100.0, total_wall_time=110.0,
             rop_path="/stage/karma1",
             scene_tags=["interior", "has_environment"],
-            settings_used={"karma_samples": 64},
+            settings_used={"pathtracedsamples": 64},
             frame_results=[
                 FrameResult(frame=1001, success=True, render_time=20.0),
                 FrameResult(
                     frame=1002, success=False, render_time=25.0,
                     retries=3, issues=["saturation"],
-                    fixes_applied=["karma_samples=128"],
+                    fixes_applied=["pathtracedsamples=128"],
                     error="Validation failed after max retries",
                 ),
             ],
