@@ -244,6 +244,76 @@ class TestHandleRender:
         resx_parm.set.assert_called_once_with(1920)
         resy_parm.set.assert_called_once_with(1080)
 
+    def test_flipbook_fallback_on_usdrender_no_output(self, handler):
+        """When usdrender ROP produces no output, fall back to flipbook."""
+        import hdefereval
+        hdefereval.executeInMainThreadWithResult = lambda fn, *a, **kw: fn(*a, **kw)
+
+        fake_node = MagicMock()
+        fake_node.path.return_value = "/stage/usdrender_rop1"
+        fake_node.type.return_value.name.return_value = "usdrender_rop"
+
+        out_parm = MagicMock()
+        fake_node.parm.side_effect = lambda n: out_parm if n in ("outputimage", "picture") else None
+
+        # Track how many times Path.exists is called to simulate:
+        # - node.render() output poll: always False (60 iterations)
+        # - flipbook output check: True
+        call_count = {"n": 0}
+
+        def _fake_exists(self_path):
+            call_count["n"] += 1
+            # First 60 calls are the render poll loop — all fail
+            if call_count["n"] <= 60:
+                return False
+            # After that, flipbook output exists
+            return True
+
+        # Mock the Scene Viewer for flipbook
+        mock_vp = MagicMock()
+        mock_fb_settings = MagicMock()
+        mock_sv = MagicMock()
+        mock_sv.curViewport.return_value = mock_vp
+        mock_sv.flipbookSettings.return_value = mock_fb_settings
+        mock_desktop = MagicMock()
+        mock_desktop.paneTabOfType.return_value = mock_sv
+
+        with patch.object(_handlers_hou, "node", return_value=fake_node, create=True), \
+             patch.object(_handlers_hou, "frame", return_value=1.0, create=True), \
+             patch.object(_handlers_hou, "setFrame", create=True), \
+             patch.object(_handlers_hou, "ui", MagicMock(curDesktop=MagicMock(return_value=mock_desktop)), create=True), \
+             patch.object(_handlers_hou, "paneTabType", MagicMock(SceneViewer="SceneViewer"), create=True), \
+             patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
+             patch("pathlib.Path.exists", _fake_exists), \
+             patch("pathlib.Path.stat", return_value=MagicMock(st_size=2048)), \
+             patch("time.sleep"):
+            result = handler._handle_render({"node": "/stage/usdrender_rop1"})
+
+        assert result["flipbook_fallback"] is True
+        assert result["rop_type"] == "usdrender_rop"
+        mock_sv.flipbook.assert_called_once()
+
+    def test_no_flipbook_fallback_for_non_usdrender(self, handler):
+        """Non-usdrender ROPs raise RuntimeError without attempting flipbook."""
+        import hdefereval
+        hdefereval.executeInMainThreadWithResult = lambda fn, *a, **kw: fn(*a, **kw)
+
+        fake_node = MagicMock()
+        fake_node.path.return_value = "/out/mantra1"
+        fake_node.type.return_value.name.return_value = "ifd"
+
+        out_parm = MagicMock()
+        fake_node.parm.side_effect = lambda n: out_parm if n in ("outputimage", "picture") else None
+
+        with patch.object(_handlers_hou, "node", return_value=fake_node, create=True), \
+             patch.object(_handlers_hou, "frame", return_value=1.0, create=True), \
+             patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
+             patch("pathlib.Path.exists", return_value=False), \
+             patch("pathlib.Path.stat", return_value=MagicMock(st_size=0)), \
+             patch("time.sleep"):
+            with pytest.raises(RuntimeError, match="output wasn't created"):
+                handler._handle_render({"node": "/out/mantra1"})
+
 
 # ---------------------------------------------------------------------------
 # Tests: aliases

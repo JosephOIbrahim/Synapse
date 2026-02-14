@@ -5,9 +5,12 @@ Extracted from handlers.py -- contains viewport capture, render, keyframe,
 render settings, wedge, and material handlers for the SynapseHandler class.
 """
 
+import logging
 import os
 import time
 from typing import Dict
+
+logger = logging.getLogger(__name__)
 
 try:
     import hou
@@ -262,22 +265,70 @@ class RenderHandlerMixin:
             )
 
             # Karma XPU has a delayed file flush -- poll up to ~15s
+            used_flipbook = False
+            render_ok = False
             for _ in range(60):
                 if Path(out_path).exists() and Path(out_path).stat().st_size > 0:
+                    render_ok = True
                     break
                 time.sleep(0.25)
-            else:
+
+            # -- Flipbook fallback for usdrender ROPs (husk may fail on Indie) --
+            if not render_ok and node_type in ("usdrender", "usdrender_rop"):
+                logger.warning(
+                    "Render output not found after node.render() -- "
+                    "attempting viewport flipbook fallback (husk may not "
+                    "support this license type)"
+                )
+                try:
+                    desktop = hou.ui.curDesktop()
+                    sv = desktop.paneTabOfType(hou.paneTabType.SceneViewer)
+                    if sv is not None:
+                        hou.setFrame(cur)
+                        vp = sv.curViewport()
+                        fb_settings = sv.flipbookSettings()
+                        ext = "jpg"
+                        fb_pattern = out_path.replace(
+                            f".{ext}", f".$F4.{ext}"
+                        )
+                        fb_settings.frameRange((cur, cur))
+                        fb_settings.output(fb_pattern)
+                        fb_settings.useResolution(True)
+                        w_fb = int(width) if width else 640
+                        h_fb = int(height) if height else 480
+                        fb_settings.resolution((w_fb, h_fb))
+                        sv.flipbook(
+                            viewport=vp,
+                            settings=fb_settings,
+                            open_dialog=False,
+                        )
+                        fb_actual = fb_pattern.replace(
+                            "$F4", f"{cur:04d}"
+                        )
+                        if (
+                            Path(fb_actual).exists()
+                            and Path(fb_actual).stat().st_size > 0
+                        ):
+                            used_flipbook = True
+                            out_path = fb_actual
+                            render_ok = True
+                except Exception as fb_err:
+                    logger.warning(
+                        "Flipbook fallback also failed: %s", fb_err
+                    )
+
+            if not render_ok:
                 raise RuntimeError(
                     f"The render finished but the output wasn't created at {out_path} -- "
                     "check if the output directory is writable and the renderer didn't error"
                 )
-            return out_path, node.path(), node_type, engine
+            return out_path, node.path(), node_type, engine, used_flipbook
 
         import hdefereval
-        result_path, used_rop, used_type, engine = (
+        result_path, used_rop, used_type, engine, used_flipbook = (
             hdefereval.executeInMainThreadWithResult(_render_on_main)
         )
-        return {
+        result = {
             "image_path": result_path,
             "rop": used_rop,
             "rop_type": used_type,
@@ -286,6 +337,9 @@ class RenderHandlerMixin:
             "height": int(height) if height else None,
             "format": "jpeg",
         }
+        if used_flipbook:
+            result["flipbook_fallback"] = True
+        return result
 
     def _handle_set_keyframe(self, payload: Dict) -> Dict:
         """Set a keyframe on a node parameter at a specific frame."""
