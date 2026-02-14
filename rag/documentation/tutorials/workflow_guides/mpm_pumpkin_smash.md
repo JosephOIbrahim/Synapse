@@ -85,5 +85,14 @@ The MPM Surface node handles meshing with built-in UV transfer from a rest model
 - When meshing for Karma XPU, increase adaptivity aggressively to fit within GPU memory (28M polygons for flesh even at 10x adaptivity).
 - For slow-motion shots, always track which pipeline stage needs real-time velocity vs. scaled velocity. Rendering needs scaled; debris emission needs real-time.
 
+## Assets
+
+| Asset | Path | Format |
+|-------|------|--------|
+| Medium Sized Pumpkin 3D Scan | `pumpkin/Medium_Sized_Pumpkin_3D_Scan/scene.usdc` | USDC |
+| Sledge Hammer | `hammer/Sledge_Hammer/scene.usdc` | USDC |
+
+*Asset root: `D:/HOUDINI_PROJECTS_2025/MPM_MASTERCLASS_FILES/`*
+
 ---
 *Full transcript: [12_pumpkin_smash.md](../../_raw_documentation/mpm_masterclass/12_pumpkin_smash.md)*

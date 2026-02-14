@@ -87,5 +87,13 @@ The max distance parameter in MPM Post Structure controls how far filler points 
 - Filler point max distance is a key memory optimization for large structures: keep filler points concentrated near fracture lines rather than spread across the entire model.
 - Point-density-driven wind resistance is the standard secondary debris technique across all masterclass scenes: densely packed debris behaves like solid chunks while isolated particles drift realistically.
 
+## Assets
+
+| Asset | Path | Format |
+|-------|------|--------|
+| KitBash3D Atlantis Temple of Triton | `buildings/` | External ([KitBash3D](https://kitbash3d.com/products/atlantis/temple-of-triton)) |
+
+*Asset root: `D:/HOUDINI_PROJECTS_2025/MPM_MASTERCLASS_FILES/`*
+
 ---
 *Full transcript: [17_building_attack.md](../../_raw_documentation/mpm_masterclass/17_building_attack.md)*

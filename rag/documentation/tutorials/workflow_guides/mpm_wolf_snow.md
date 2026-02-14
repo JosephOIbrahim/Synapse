@@ -91,5 +91,18 @@ When rasterizing MPM snow particles to a density volume, the raw result appears 
 - The density multiplier for secondary particles is best dialed interactively in LOPs during test renders rather than set procedurally.
 - Trees with snow on branches are optional scene dressing handled entirely in LOPs and TOPs; they can be disabled to save bake time.
 
+## Assets
+
+| Asset | Path | Format |
+|-------|------|--------|
+| Wolf (slow animation) | `wolf/wolf_slow.fbx` | FBX |
+| Wolf (normal speed) | `wolf/wolf.fbx` | FBX |
+| Wolf fur guides | `wolf/geo/guides.bgeo.sc` | BGEO |
+| ML Groom Deformer | `wolf/ML_Groom_Deformer.hip` | HIP |
+| Spruce Trees Pack | `trees/` | External ([Mantissa](https://ftp.mantissa.xyz/resources/trees/mantissa_spruce_trees_pack.zip)) |
+| Fir Trees Pack | `trees/` | External ([Mantissa](https://ftp.mantissa.xyz/resources/fir_free/mantissa.xyz_free_firs.zip)) |
+
+*Asset root: `D:/HOUDINI_PROJECTS_2025/MPM_MASTERCLASS_FILES/`*
+
 ---
 *Full transcript: [14_wolf_snow.md](../../_raw_documentation/mpm_masterclass/14_wolf_snow.md)*

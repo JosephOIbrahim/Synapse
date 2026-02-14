@@ -60,7 +60,6 @@ def test_rate_limiter_basic_acquire():
     assert "remaining_global" in info, "Should return remaining tokens"
     print(f"  [PASS] Basic acquire: remaining_global={info['remaining_global']}")
 
-    return True
 
 
 def test_rate_limiter_exhaustion():
@@ -82,7 +81,6 @@ def test_rate_limiter_exhaustion():
     assert "retry_after" in info, "Should include retry_after"
     print(f"  [PASS] Global exhaustion: retry_after={info['retry_after']:.3f}s")
 
-    return True
 
 
 def test_rate_limiter_per_client():
@@ -108,7 +106,6 @@ def test_rate_limiter_per_client():
     assert allowed, "Different client should succeed"
     print(f"  [PASS] Other clients unaffected")
 
-    return True
 
 
 def test_rate_limiter_refill():
@@ -134,7 +131,6 @@ def test_rate_limiter_refill():
     assert allowed, "Should succeed after refill"
     print(f"  [PASS] Tokens refilled: remaining={info['remaining_global']}")
 
-    return True
 
 
 def test_rate_limiter_stats():
@@ -153,7 +149,6 @@ def test_rate_limiter_stats():
     assert stats["rejected_requests"] >= 1, "Should have rejections"
     print(f"  [PASS] Stats: total={stats['total_requests']}, rejected={stats['rejected_requests']}")
 
-    return True
 
 
 def test_rate_limiter_client_cleanup():
@@ -176,7 +171,6 @@ def test_rate_limiter_client_cleanup():
     assert stats_after["active_clients"] == 1, f"Client not removed: {stats_after['active_clients']}"
     print(f"  [PASS] Client cleanup: {stats_before['active_clients']} -> {stats_after['active_clients']}")
 
-    return True
 
 
 # =============================================================================
@@ -191,7 +185,6 @@ def test_circuit_breaker_initial_state():
     assert cb.state == CircuitState.CLOSED, f"Should start CLOSED, got {cb.state}"
     print(f"  [PASS] Initial state: {cb.state.value}")
 
-    return True
 
 
 def test_circuit_breaker_opens_on_failures():
@@ -214,7 +207,6 @@ def test_circuit_breaker_opens_on_failures():
     assert info["state"] == "open", f"Wrong state in info: {info['state']}"
     print(f"  [PASS] Calls rejected when open: retry_after={info.get('retry_after', 'N/A')}")
 
-    return True
 
 
 def test_circuit_breaker_timeout_to_half_open():
@@ -235,7 +227,6 @@ def test_circuit_breaker_timeout_to_half_open():
     assert cb.state == CircuitState.HALF_OPEN, f"Should be HALF_OPEN after timeout, got {cb.state}"
     print(f"  [PASS] Transitioned to HALF_OPEN after {config.timeout_seconds}s")
 
-    return True
 
 
 def test_circuit_breaker_half_open_recovery():
@@ -261,7 +252,6 @@ def test_circuit_breaker_half_open_recovery():
     assert cb.state == CircuitState.CLOSED, f"Should be CLOSED after successes, got {cb.state}"
     print(f"  [PASS] Circuit closed after {config.success_threshold} successes")
 
-    return True
 
 
 def test_circuit_breaker_half_open_failure():
@@ -282,7 +272,6 @@ def test_circuit_breaker_half_open_failure():
     assert cb.state == CircuitState.OPEN, f"Should reopen on HALF_OPEN failure, got {cb.state}"
     print(f"  [PASS] Circuit reopened on HALF_OPEN failure")
 
-    return True
 
 
 def test_circuit_breaker_force_operations():
@@ -301,7 +290,6 @@ def test_circuit_breaker_force_operations():
     assert cb.state == CircuitState.CLOSED, "force_close should close circuit"
     print(f"  [PASS] force_close: state={cb.state.value}")
 
-    return True
 
 
 def test_circuit_breaker_reset():
@@ -354,7 +342,6 @@ def test_circuit_breaker_half_open_call_limit():
     assert info["reason"] == "half_open_exhausted_retrying", f"Wrong reason: {info.get('reason')}"
     print(f"  [PASS] HALF_OPEN limited to {config.half_open_max_calls} calls")
 
-    return True
 
 
 def test_circuit_breaker_state_callback():
@@ -381,7 +368,6 @@ def test_circuit_breaker_state_callback():
     assert len(transitions) >= 2, f"Expected transitions, got {transitions}"
     print(f"  [PASS] Transitions recorded: {transitions}")
 
-    return True
 
 
 # =============================================================================
@@ -401,7 +387,6 @@ def test_port_manager_initial_state():
     assert 9997 in status["ports"], "Backup 2 not in ports"
     print(f"  [PASS] Initialized with primary={status['primary_port']}, backups={pm.backup_ports}")
 
-    return True
 
 
 def test_port_manager_mark_active():
@@ -417,7 +402,6 @@ def test_port_manager_mark_active():
     assert status["ports"][9999]["is_active"], "Port not marked active"
     print(f"  [PASS] Marked active: {status['active_port']}")
 
-    return True
 
 
 def test_port_manager_health_tracking():
@@ -443,7 +427,6 @@ def test_port_manager_health_tracking():
     assert status["ports"][9999]["last_error"] is None, "Error should be cleared"
     print(f"  [PASS] Marked healthy")
 
-    return True
 
 
 def test_port_manager_failover_detection():
@@ -465,7 +448,6 @@ def test_port_manager_failover_detection():
     assert new_port == 9998, f"Should failover to first backup, got {new_port}"
     print(f"  [PASS] Failover detected: {9999} -> {new_port}")
 
-    return True
 
 
 def test_port_manager_get_active_prefers_primary():
@@ -485,7 +467,6 @@ def test_port_manager_get_active_prefers_primary():
     assert port == 9998, f"Should return backup, got {port}"
     print(f"  [PASS] Returns backup when primary unhealthy: {port}")
 
-    return True
 
 
 # =============================================================================
@@ -508,7 +489,6 @@ def test_watchdog_heartbeat():
     print(f"  [PASS] Heartbeat recorded: count={stats['total_heartbeats']}")
 
     watchdog.stop()
-    return True
 
 
 def test_watchdog_freeze_detection():
@@ -540,7 +520,6 @@ def test_watchdog_freeze_detection():
     print(f"  [PASS] Freeze detected after {freeze_duration[0]:.2f}s")
 
     watchdog.stop()
-    return True
 
 
 def test_watchdog_recovery():
@@ -576,7 +555,6 @@ def test_watchdog_recovery():
     print(f"  [PASS] Recovery detected")
 
     watchdog.stop()
-    return True
 
 
 def test_watchdog_stats():
@@ -600,7 +578,6 @@ def test_watchdog_stats():
     print(f"  [PASS] Stats: count={stats['total_heartbeats']}, avg={stats['avg_latency']:.4f}s")
 
     watchdog.stop()
-    return True
 
 
 # =============================================================================
@@ -619,7 +596,6 @@ def test_backpressure_normal_at_low_load():
     assert bp.should_accept(is_critical=False), "Should accept non-critical"
     print(f"  [PASS] NORMAL at low load")
 
-    return True
 
 
 def test_backpressure_elevated_at_medium_load():
@@ -635,7 +611,6 @@ def test_backpressure_elevated_at_medium_load():
     assert bp.should_accept(is_critical=False), "Should still accept at ELEVATED"
     print(f"  [PASS] ELEVATED at queue={info.get('queue_size', 15)}")
 
-    return True
 
 
 def test_backpressure_high_at_heavy_load():
@@ -652,7 +627,6 @@ def test_backpressure_high_at_heavy_load():
     assert bp.should_accept(is_critical=True), "Should accept critical at HIGH"
     print(f"  [PASS] HIGH at queue={info.get('queue_size', 30)}")
 
-    return True
 
 
 def test_backpressure_critical_at_extreme_load():
@@ -669,7 +643,6 @@ def test_backpressure_critical_at_extreme_load():
     assert not bp.should_accept(is_critical=True), "Should reject even critical at CRITICAL"
     print(f"  [PASS] CRITICAL at queue={info.get('queue_size', 60)}")
 
-    return True
 
 
 def test_backpressure_circuit_override():
@@ -685,7 +658,6 @@ def test_backpressure_circuit_override():
     assert info["reason"] == "circuit_open", f"Wrong reason: {info.get('reason')}"
     print(f"  [PASS] Circuit open overrides to CRITICAL")
 
-    return True
 
 
 def test_backpressure_latency_thresholds():
@@ -709,7 +681,6 @@ def test_backpressure_latency_thresholds():
     assert level == BackpressureLevel.CRITICAL, f"Should be CRITICAL at critical latency, got {level}"
     print(f"  [PASS] CRITICAL at latency={info.get('latency', 3.0)}s")
 
-    return True
 
 
 # =============================================================================
@@ -744,7 +715,6 @@ def test_health_monitor_all_healthy():
     assert "components" in health, "Should include components"
     print(f"  [PASS] All healthy: level={health['level']}, message='{health['message']}'")
 
-    return True
 
 
 def test_health_monitor_degraded():
@@ -765,7 +735,6 @@ def test_health_monitor_degraded():
         f"Message should mention issue: {health['message']}"
     print(f"  [PASS] Degraded: level={health['level']}, message='{health['message']}'")
 
-    return True
 
 
 def test_health_monitor_critical():
@@ -786,7 +755,6 @@ def test_health_monitor_critical():
         f"Message should mention circuit: {health['message']}"
     print(f"  [PASS] Critical: level={health['level']}, message='{health['message']}'")
 
-    return True
 
 
 def test_health_monitor_component_stats():
@@ -810,7 +778,6 @@ def test_health_monitor_component_stats():
     assert health["components"]["rate_limiter"]["total_requests"] == 1, "Should track requests"
     print(f"  [PASS] Component stats included")
 
-    return True
 
 
 # =============================================================================
@@ -873,8 +840,8 @@ def run_all_tests():
     results = []
     for name, test_fn in tests:
         try:
-            success = test_fn()
-            results.append((name, success, None))
+            test_fn()
+            results.append((name, True, None))
         except Exception as e:
             import traceback
             results.append((name, False, str(e)))

@@ -1,0 +1,259 @@
+{
+  "asset_manifest": {
+    "description": "Maps MPM Masterclass demo scenes to required assets and file paths",
+    "project_root": "D:/HOUDINI_PROJECTS_2025/MPM_MASTERCLASS_FILES",
+    "hip_file": "h21_mpm_masterclass_scenes_v01.hip",
+    "scenes": {
+      "mpm_overview": {
+        "part": 0,
+        "assets": [],
+        "notes": "Procedural geometry only (spheres, boxes)"
+      },
+      "mpm_surface_tension": {
+        "part": 1,
+        "assets": [],
+        "notes": "Procedural geometry only (droplets, fluid domains)"
+      },
+      "mpm_auto_sleep": {
+        "part": 2,
+        "assets": [],
+        "notes": "Procedural geometry only"
+      },
+      "mpm_continuous_emission": {
+        "part": 3,
+        "assets": [],
+        "notes": "Procedural geometry only (containers, emitters)"
+      },
+      "mpm_friction_stickiness": {
+        "part": 4,
+        "assets": [],
+        "notes": "Procedural geometry only"
+      },
+      "mpm_deforming_colliders": {
+        "part": 5,
+        "assets": [],
+        "notes": "Procedural geometry only (animated colliders)"
+      },
+      "mpm_mpmsurface": {
+        "part": 6,
+        "assets": [],
+        "notes": "Procedural geometry only (meshing demos)"
+      },
+      "mpm_mpmdebrissource": {
+        "part": 7,
+        "assets": [],
+        "notes": "Procedural geometry only (debris emission)"
+      },
+      "mpm_mpmpostfracture": {
+        "part": 8,
+        "assets": [],
+        "notes": "Procedural geometry only (fracture demos)"
+      },
+      "mpm_mpmdeformpieces": {
+        "part": 9,
+        "assets": [],
+        "notes": "Procedural geometry only (retarget demos)"
+      },
+      "mpm_destruction_workflow": {
+        "part": 10,
+        "assets": [],
+        "notes": "Procedural geometry only (metal sheet, meteorite demos)"
+      },
+      "mpm_paintball_impact": {
+        "part": 11,
+        "assets": [],
+        "notes": "Procedural geometry only (paintball spheres)"
+      },
+      "mpm_pumpkin_smash": {
+        "part": 12,
+        "assets": [
+          {
+            "name": "Medium Sized Pumpkin 3D Scan",
+            "path": "pumpkin/Medium_Sized_Pumpkin_3D_Scan/scene.usdc",
+            "format": "USDC",
+            "role": "Hero pumpkin geometry (skin, flesh, seeds layers)"
+          },
+          {
+            "name": "Sledge Hammer",
+            "path": "hammer/Sledge_Hammer/scene.usdc",
+            "format": "USDC",
+            "role": "Animated hammer collider"
+          }
+        ]
+      },
+      "mpm_car_rain": {
+        "part": 13,
+        "assets": [
+          {
+            "name": "Porsche 718 Cayman GT4",
+            "path": "car/",
+            "format": "external",
+            "source": "https://www.cgtrader.com/free-3d-models/car/sport-car/porsche-718-cayman-gt4-5734530d-8afb-4852-9421-b71bde9adce3",
+            "role": "Car body for rain simulation collider"
+          }
+        ]
+      },
+      "mpm_wolf_snow": {
+        "part": 14,
+        "assets": [
+          {
+            "name": "Wolf (slow animation)",
+            "path": "wolf/wolf_slow.fbx",
+            "format": "FBX",
+            "role": "Animated wolf character collider"
+          },
+          {
+            "name": "Wolf (normal speed)",
+            "path": "wolf/wolf.fbx",
+            "format": "FBX",
+            "role": "Animated wolf character collider (alternate)"
+          },
+          {
+            "name": "Wolf fur guides",
+            "path": "wolf/geo/guides.bgeo.sc",
+            "format": "BGEO",
+            "role": "Pre-cached Vellum fur guide curves"
+          },
+          {
+            "name": "ML Groom Deformer",
+            "path": "wolf/ML_Groom_Deformer.hip",
+            "format": "HIP",
+            "role": "Machine learning groom deformation setup for fur"
+          },
+          {
+            "name": "Spruce Trees Pack",
+            "path": "trees/",
+            "format": "external",
+            "source": "https://ftp.mantissa.xyz/resources/trees/mantissa_spruce_trees_pack.zip",
+            "role": "Scene dressing trees (optional, LOPs only)"
+          },
+          {
+            "name": "Fir Trees Pack",
+            "path": "trees/",
+            "format": "external",
+            "source": "https://ftp.mantissa.xyz/resources/fir_free/mantissa.xyz_free_firs.zip",
+            "role": "Scene dressing fir trees (optional, LOPs only)"
+          }
+        ]
+      },
+      "mpm_creature_breach": {
+        "part": 15,
+        "assets": [
+          {
+            "name": "Brute Creature Model",
+            "path": "broot/broot_modelMain.abc",
+            "format": "Alembic",
+            "role": "Animated creature breaching through terrain"
+          },
+          {
+            "name": "Brute Creature Rig v1",
+            "path": "broot/rigMain.bgeo.sc",
+            "format": "BGEO",
+            "role": "Creature rig geometry"
+          },
+          {
+            "name": "Brute Creature Rig v2",
+            "path": "broot/rigMain_v02.bgeo.sc",
+            "format": "BGEO",
+            "role": "Updated creature rig geometry"
+          },
+          {
+            "name": "Brute USD Lookdev",
+            "path": "broot/lookdev/usd/assets/broot/broot.usd",
+            "format": "USD",
+            "role": "Full USD asset with materials (geo.usdc, mtl.usdc, payload.usdc)"
+          }
+        ]
+      },
+      "mpm_train_wreck": {
+        "part": 16,
+        "assets": [
+          {
+            "name": "EMD GP7 Western Pacific 713 Locomotive",
+            "path": "train/EMD_GP7_Western_Pacific_713 (1)/scene.usdc",
+            "format": "USDC",
+            "role": "Main train geometry for destruction"
+          },
+          {
+            "name": "Subway Car",
+            "path": "train/Subway_Car/scene.usdc",
+            "format": "USDC",
+            "role": "Alternate/additional train car"
+          },
+          {
+            "name": "Railway Track (parts/rail)",
+            "path": "train_tracks/Railway_track_train_route_Railway_parts_rail/scene.usdc",
+            "format": "USDC",
+            "role": "Rail track geometry"
+          },
+          {
+            "name": "Train Track",
+            "path": "train_tracks/Train_Track/scene.usdc",
+            "format": "USDC",
+            "role": "Track geometry"
+          },
+          {
+            "name": "Train Tracks and Cart",
+            "path": "train_tracks/Train_Tracks_and_Train_Cart/scene.usdc",
+            "format": "USDC",
+            "role": "Combined track and cart geometry"
+          },
+          {
+            "name": "Rocky Summit Landscape",
+            "path": "landscape/Rocky_summit_in_Mondarrain/scene.usdc",
+            "format": "USDC",
+            "role": "Terrain for derailment scene"
+          },
+          {
+            "name": "Boulder 01 (4K)",
+            "path": "rocks/boulder_01_4k.usdc/boulder_01_4k.usdc",
+            "format": "USDC",
+            "role": "Debris instancing source"
+          },
+          {
+            "name": "Namaqualand Boulder 02 (4K)",
+            "path": "rocks/namaqualand_boulder_02_4k.usdc/namaqualand_boulder_02_4k.usdc",
+            "format": "USDC",
+            "role": "Debris instancing source"
+          },
+          {
+            "name": "Namaqualand Boulder 05 (4K)",
+            "path": "rocks/namaqualand_boulder_05_4k.usdc/namaqualand_boulder_05_4k.usdc",
+            "format": "USDC",
+            "role": "Debris instancing source"
+          },
+          {
+            "name": "Rock 09 (4K)",
+            "path": "rocks/rock_09_4k.usdc/rock_09_4k.usdc",
+            "format": "USDC",
+            "role": "Debris instancing source"
+          },
+          {
+            "name": "Rock Moss Set 01 (4K)",
+            "path": "rocks/rock_moss_set_01_4k.usdc/rock_moss_set_01_4k.usdc",
+            "format": "USDC",
+            "role": "Landscape scatter and debris instancing"
+          },
+          {
+            "name": "Rock Moss Set 02 (4K)",
+            "path": "rocks/rock_moss_set_02_4k.usdc/rock_moss_set_02_4k.usdc",
+            "format": "USDC",
+            "role": "Landscape scatter and debris instancing"
+          }
+        ]
+      },
+      "mpm_building_attack": {
+        "part": 17,
+        "assets": [
+          {
+            "name": "KitBash3D Atlantis Temple of Triton",
+            "path": "buildings/",
+            "format": "external",
+            "source": "https://kitbash3d.com/products/atlantis/temple-of-triton",
+            "role": "Building geometry for destruction (must be made watertight via VDB)"
+          }
+        ]
+      }
+    }
+  }
+}

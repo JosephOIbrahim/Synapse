@@ -79,5 +79,16 @@ Each MPM particle carries an orient attribute from the solver. High-resolution r
 - The narrow-band approach (exterior surfaces + crack interiors only) can reduce point counts by 50% or more with no visible quality loss at render time.
 - The velocity clamping wrangle is a simple but critical safeguard -- fast animation limbs will otherwise scatter MPM material in all directions.
 
+## Assets
+
+| Asset | Path | Format |
+|-------|------|--------|
+| Brute Creature Model | `broot/broot_modelMain.abc` | Alembic |
+| Brute Creature Rig v1 | `broot/rigMain.bgeo.sc` | BGEO |
+| Brute Creature Rig v2 | `broot/rigMain_v02.bgeo.sc` | BGEO |
+| Brute USD Lookdev | `broot/lookdev/usd/assets/broot/broot.usd` | USD |
+
+*Asset root: `D:/HOUDINI_PROJECTS_2025/MPM_MASTERCLASS_FILES/`*
+
 ---
 *Full transcript: [15_creature_breach.md](../../_raw_documentation/mpm_masterclass/15_creature_breach.md)*

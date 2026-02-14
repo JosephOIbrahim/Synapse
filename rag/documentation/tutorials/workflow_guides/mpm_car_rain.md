@@ -86,5 +86,13 @@ Strong surface tension requires increased minimum substeps to maintain stability
 - Resolution can be increased at any time via the global scale controller on the MPM container.
 - The condensation layer and puddle system have nothing to do with MPM but add significant production value to the shot.
 
+## Assets
+
+| Asset | Path | Format |
+|-------|------|--------|
+| Porsche 718 Cayman GT4 | `car/` | External ([CGTrader](https://www.cgtrader.com/free-3d-models/car/sport-car/porsche-718-cayman-gt4-5734530d-8afb-4852-9421-b71bde9adce3)) |
+
+*Asset root: `D:/HOUDINI_PROJECTS_2025/MPM_MASTERCLASS_FILES/`*
+
 ---
 *Full transcript: [13_car_rain.md](../../_raw_documentation/mpm_masterclass/13_car_rain.md)*

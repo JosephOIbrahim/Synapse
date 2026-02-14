@@ -89,5 +89,24 @@ Secondary debris particles receive physically-motivated rotation. A VEX wrangle 
 - The filler point count in MPM Post Structure may need tuning -- excessive filler points add computation without improving visual quality.
 - Storing angular velocity in a custom attribute (not `w`) prevents the POP solver from overriding your carefully computed rolling rotation.
 
+## Assets
+
+| Asset | Path | Format |
+|-------|------|--------|
+| EMD GP7 Western Pacific 713 | `train/EMD_GP7_Western_Pacific_713 (1)/scene.usdc` | USDC |
+| Subway Car | `train/Subway_Car/scene.usdc` | USDC |
+| Railway Track (parts/rail) | `train_tracks/Railway_track_train_route_Railway_parts_rail/scene.usdc` | USDC |
+| Train Track | `train_tracks/Train_Track/scene.usdc` | USDC |
+| Train Tracks and Cart | `train_tracks/Train_Tracks_and_Train_Cart/scene.usdc` | USDC |
+| Rocky Summit Landscape | `landscape/Rocky_summit_in_Mondarrain/scene.usdc` | USDC |
+| Boulder 01 (4K) | `rocks/boulder_01_4k.usdc/boulder_01_4k.usdc` | USDC |
+| Namaqualand Boulder 02 (4K) | `rocks/namaqualand_boulder_02_4k.usdc/namaqualand_boulder_02_4k.usdc` | USDC |
+| Namaqualand Boulder 05 (4K) | `rocks/namaqualand_boulder_05_4k.usdc/namaqualand_boulder_05_4k.usdc` | USDC |
+| Rock 09 (4K) | `rocks/rock_09_4k.usdc/rock_09_4k.usdc` | USDC |
+| Rock Moss Set 01 (4K) | `rocks/rock_moss_set_01_4k.usdc/rock_moss_set_01_4k.usdc` | USDC |
+| Rock Moss Set 02 (4K) | `rocks/rock_moss_set_02_4k.usdc/rock_moss_set_02_4k.usdc` | USDC |
+
+*Asset root: `D:/HOUDINI_PROJECTS_2025/MPM_MASTERCLASS_FILES/`*
+
 ---
 *Full transcript: [16_train_wreck.md](../../_raw_documentation/mpm_masterclass/16_train_wreck.md)*

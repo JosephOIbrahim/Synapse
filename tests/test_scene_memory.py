@@ -9,6 +9,7 @@ import tempfile
 import threading
 
 import pytest
+from pathlib import Path as _P
 
 
 # ── Bootstrap hou stub ──────────────────────────────────────────────
@@ -113,14 +114,14 @@ class TestEnsureSceneStructure:
         result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
         project_md = result["project_md"]
         assert os.path.exists(project_md)
-        content = open(project_md, "r", encoding="utf-8").read()
+        content = _P(project_md).read_text(encoding="utf-8")
         assert "# Project Memory" in content
 
     def test_seeds_scene_md(self, tmp_project):
         result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
         scene_md = result["scene_md"]
         assert os.path.exists(scene_md)
-        content = open(scene_md, "r", encoding="utf-8").read()
+        content = _P(scene_md).read_text(encoding="utf-8")
         assert "# Scene Memory" in content
 
     def test_does_not_overwrite_existing_project_md(self, tmp_project):
@@ -131,7 +132,7 @@ class TestEnsureSceneStructure:
         with open(os.path.join(job_claude, "project.md"), "w", encoding="utf-8") as f:
             f.write(custom)
         sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
-        content = open(os.path.join(job_claude, "project.md"), "r", encoding="utf-8").read()
+        content = _P(os.path.join(job_claude, "project.md")).read_text(encoding="utf-8")
         assert content == custom
 
     def test_does_not_overwrite_existing_scene_md(self, tmp_project):
@@ -141,7 +142,7 @@ class TestEnsureSceneStructure:
         with open(os.path.join(scene_claude, "memory.md"), "w", encoding="utf-8") as f:
             f.write(custom)
         sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
-        content = open(os.path.join(scene_claude, "memory.md"), "r", encoding="utf-8").read()
+        content = _P(os.path.join(scene_claude, "memory.md")).read_text(encoding="utf-8")
         assert content == custom
 
     def test_returns_correct_paths(self, tmp_project):
@@ -175,7 +176,7 @@ class TestSessionWriteOps:
     def test_write_session_start(self, tmp_project):
         result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
         sm.write_session_start(result["scene_dir"], goal="Set up hero lighting")
-        content = open(result["scene_md"], "r", encoding="utf-8").read()
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
         assert "## Session" in content
         assert "Set up hero lighting" in content
 
@@ -185,7 +186,7 @@ class TestSessionWriteOps:
             result["scene_dir"],
             {"name": "Render Engine", "choice": "Karma XPU", "reasoning": "GPU acceleration"},
         )
-        content = open(result["scene_md"], "r", encoding="utf-8").read()
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
         assert "### Decision: Render Engine" in content
         assert "Karma XPU" in content
 
@@ -196,8 +197,8 @@ class TestSessionWriteOps:
             {"name": "OCIO Config", "choice": "ACES 1.3", "reasoning": "Studio standard"},
             scope="both",
         )
-        scene_content = open(result["scene_md"], "r", encoding="utf-8").read()
-        project_content = open(result["project_md"], "r", encoding="utf-8").read()
+        scene_content = _P(result["scene_md"]).read_text(encoding="utf-8")
+        project_content = _P(result["project_md"]).read_text(encoding="utf-8")
         assert "ACES 1.3" in scene_content
         assert "ACES 1.3" in project_content
 
@@ -209,7 +210,7 @@ class TestSessionWriteOps:
             "accomplishments": ["Set up lighting", "Fixed SSS"],
             "next_actions": ["Render turntable"],
         })
-        content = open(result["scene_md"], "r", encoding="utf-8").read()
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
         assert "Session End" in content
         assert "Set up lighting" in content
         assert "Render turntable" in content
@@ -224,7 +225,7 @@ class TestSessionWriteOps:
             "after": 256,
             "result": "Noise eliminated, render time 2x",
         })
-        content = open(result["scene_md"], "r", encoding="utf-8").read()
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
         assert "/stage/karma1" in content
         assert "256" in content
 
@@ -234,7 +235,7 @@ class TestSessionWriteOps:
             "description": "SSS artifacts on hero skin",
             "attempts": "Increased samples, tried different SSS model",
         })
-        content = open(result["scene_md"], "r", encoding="utf-8").read()
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
         assert "Blocker:" in content
         assert "SSS artifacts" in content
 
@@ -284,7 +285,7 @@ class TestLoadMemory:
     def test_write_memory_entry_dispatch(self, tmp_project):
         result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
         sm.write_memory_entry(result["scene_dir"], {"content": "Test note"}, "note")
-        content = open(result["scene_md"], "r", encoding="utf-8").read()
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
         assert "Test note" in content
 
 
@@ -316,7 +317,7 @@ class TestDualWrite:
             result["scene_dir"],
             {"name": "Rim light color", "choice": "warm amber", "reasoning": "sunset scene"},
         )
-        content = open(result["scene_md"], "r", encoding="utf-8").read()
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
         assert "Rim light color" in content
         assert "warm amber" in content
 
@@ -427,7 +428,6 @@ sys.modules.setdefault("synapse.memory.scene_memory", sm)
 _evo_spec = importlib.util.spec_from_file_location(
     "synapse.memory.evolution",
     os.path.join(os.path.dirname(__file__), "..", "python", "synapse", "memory", "evolution.py"),
-    submodule_search_locations=[],
 )
 evo = importlib.util.module_from_spec(_evo_spec)
 evo.__package__ = "synapse.memory"
@@ -612,7 +612,7 @@ class TestFileLocking:
         for t in threads:
             t.join()
 
-        content = open(md_path, "r", encoding="utf-8").read()
+        content = _P(md_path).read_text(encoding="utf-8")
         # All 10 notes should be present
         for i in range(10):
             assert f"Note {i}" in content
@@ -756,7 +756,7 @@ class TestProcessFileLock:
         with lock:
             with open(p, "w", encoding="utf-8") as f:
                 f.write("hello")
-        assert open(p, encoding="utf-8").read() == "hello"
+        assert _P(p).read_text(encoding="utf-8") == "hello"
 
     def test_concurrent_appends_are_serialized(self, tmp_path):
         """Multiple threads appending to the same file produce consistent output."""
@@ -797,7 +797,7 @@ class TestProcessFileLock:
         """seed_project_md creates file under lock without corruption."""
         p = str(tmp_path / "project.md")
         sm.seed_project_md(p, "TestProject", fps=30.0)
-        content = open(p, encoding="utf-8").read()
+        content = _P(p).read_text(encoding="utf-8")
         assert "# Project Memory: TestProject" in content
         assert "30.0fps" in content
 
@@ -805,5 +805,5 @@ class TestProcessFileLock:
         """seed_scene_md creates file under lock without corruption."""
         p = str(tmp_path / "memory.md")
         sm.seed_scene_md(p, "shot_010.hip", "MyProject")
-        content = open(p, encoding="utf-8").read()
+        content = _P(p).read_text(encoding="utf-8")
         assert "# Scene Memory: shot_010.hip" in content
