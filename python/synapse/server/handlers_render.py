@@ -1936,6 +1936,83 @@ class RenderHandlerMixin:
             "oiio_available": True,
         }
 
+    # =========================================================================
+    # RENDER FARM HANDLERS
+    # =========================================================================
+
+    def _handle_render_sequence(self, payload: Dict) -> Dict:
+        """Render a frame sequence with per-frame validation and auto-fix.
+
+        Orchestrates multi-frame renders through the RenderFarmOrchestrator,
+        which handles validation, diagnostics, and automatic re-renders.
+        """
+        from .render_farm import RenderFarmOrchestrator, RenderCallbacks
+
+        start_frame = resolve_param(payload, "start_frame")
+        end_frame = resolve_param(payload, "end_frame")
+        rop = resolve_param(payload, "rop", required=False)
+        step = int(resolve_param_with_default(payload, "step", 1))
+        auto_fix = resolve_param_with_default(payload, "auto_fix", True)
+        max_retries = int(resolve_param_with_default(payload, "max_retries", 3))
+
+        # Build callbacks wiring to existing handlers
+        callbacks = RenderCallbacks(
+            render_frame=self._handle_render,
+            validate_frame=self._handle_validate_frame,
+            get_render_settings=self._handle_render_settings,
+            set_render_settings=self._handle_render_settings,
+            get_stage_info=getattr(self, '_handle_get_stage_info', None),
+            broadcast=getattr(self, '_broadcast', None),
+        )
+
+        # Resolve report directory
+        report_dir = None
+        if HOU_AVAILABLE:
+            try:
+                hip = hou.text.expandString("$HIP")
+                if hip and hip != "$HIP":
+                    report_dir = os.path.join(hip, ".synapse", "render_reports")
+            except Exception:
+                pass
+        if not report_dir:
+            report_dir = os.path.join(
+                os.path.expanduser("~"), ".synapse", "render_reports"
+            )
+
+        # Get or create singleton orchestrator
+        if not hasattr(self, '_render_farm') or self._render_farm is None:
+            self._render_farm = RenderFarmOrchestrator(
+                callbacks=callbacks,
+                max_retries=max_retries,
+                auto_fix=bool(auto_fix),
+                report_dir=report_dir,
+            )
+        else:
+            # Update settings for this run
+            self._render_farm._cb = callbacks
+            self._render_farm._max_retries = max_retries
+            self._render_farm._auto_fix = bool(auto_fix)
+            self._render_farm._report_dir = report_dir
+
+        # Inject memory if available
+        if hasattr(self, '_memory') and self._memory is not None:
+            self._render_farm._memory = self._memory
+
+        # Run the sequence (blocks until complete)
+        report = self._render_farm.render_sequence(
+            rop=rop or "",
+            frame_range=(int(start_frame), int(end_frame)),
+            step=step,
+        )
+
+        return report.to_dict()
+
+    def _handle_render_farm_status(self, payload: Dict) -> Dict:
+        """Get the current render farm status."""
+        if hasattr(self, '_render_farm') and self._render_farm is not None:
+            return self._render_farm.get_status()
+        return {"running": False, "cancelled": False, "scene_tags": []}
+
     @staticmethod
     def _validate_file_integrity(image_path: str) -> Dict:
         """Check file exists and has non-zero size."""

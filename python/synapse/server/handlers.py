@@ -379,6 +379,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Memo
         # Quality validation
         reg.register("validate_frame", self._handle_validate_frame)
 
+        # Render farm
+        reg.register("render_sequence", self._handle_render_sequence)
+        reg.register("render_farm_status", self._handle_render_farm_status)
+
         # Knowledge lookup (RAG)
         reg.register("knowledge_lookup", self._handle_knowledge_lookup)
 
