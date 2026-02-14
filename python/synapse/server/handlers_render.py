@@ -1982,17 +1982,18 @@ class RenderHandlerMixin:
             except Exception:
                 pass  # Fall back to ROP path for settings
 
-        # Wrap get/set_render_settings to target the Karma LOP if discovered
+        # Wrap get/set_render_settings to target the Karma LOP if discovered.
+        # The orchestrator always passes the ROP path, but the quality parms
+        # (pathtracedsamples, colorlimit, diffuselimit) live on the Karma LOP.
+        # When we've found it, always redirect there.
         settings_target = karma_lop_path or rop
 
         def _get_settings(p):
-            node = p.get("node") or settings_target
-            return self._handle_render_settings({"node": node})
+            return self._handle_render_settings({"node": settings_target})
 
         def _set_settings(p):
-            node = p.get("node") or settings_target
             settings = p.get("settings", {})
-            return self._handle_render_settings({"node": node, "settings": settings})
+            return self._handle_render_settings({"node": settings_target, "settings": settings})
 
         # Build callbacks wiring to existing handlers
         callbacks = RenderCallbacks(
