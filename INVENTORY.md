@@ -1,351 +1,331 @@
-# Synapse Project Inventory
+# Synapse Codebase Inventory
 
-**Version:** 4.2.1 | **Protocol:** 4.0.0 | **Generated:** 2026-02-10
+**Version:** 5.4.0 | **Protocol:** v4.0.0 (WS) / v5.0.0 (MCP bridge) / MCP 2025-06-18 (HTTP)
+**Location:** `C:/Users/User/Synapse/` | **License:** MIT
+**Updated:** 2026-02-15
 
-## Executive Summary
+---
+
+## Architecture
+
+```
+Claude Desktop/Code (stdio) --> mcp_server.py (43 tools, v2 latency)
+                                     |
+ANY MCP Client (HTTP) ---------> synapse/mcp/ (Streamable HTTP)
+                                     |
+                              WebSocket ws://localhost:9999/synapse
+                                     |
+                              SynapseServer (daemon thread in Houdini)
+                                     |
+                              hou.* Python API --> Houdini USD Stage / Karma XPU
+```
+
+**Routing cascade (cheapest-first):**
+```
+Cache(O(1)) -> Recipe(O(1)) -> Planner(O(1)) -> Tier0/regex -> Tier1/RAG -> Tier2/Haiku -> Tier3/Agent
+```
+
+---
+
+## Summary Statistics
 
 | Metric | Count |
 |--------|-------|
-| **Total Python files** | 92 |
-| **Total lines of code** | ~22,000 |
-| **MCP tools** | 34 |
-| **Wire protocol commands** | 35 |
-| **Total tests** | 563+ (484 core + 49 agent + 44 design, 5 skipped) |
-| **RAG topics** | 13 |
-| **Design icons** | 21 SVG (63 size variants) |
-| **Parameter aliases** | 38+ |
-| **Backwards-compat aliases** | 15+ |
-| **Transport backends** | 2 (websockets primary, hwebserver optional) |
-| **Python support** | 3.11, 3.14 |
+| Python source files | 67 |
+| Source lines | ~25,500 |
+| Test files | 40 |
+| Test lines | ~18,900 |
+| Tests | ~1,012 |
+| MCP tools (stdio) | 43 |
+| MCP tools (HTTP) | In mcp/tools.py |
+| Command handlers | 39 |
+| Recipes | 21 (11 basic + 10 production) |
+| RAG knowledge files | 94 |
+| Documentation files | 43 |
+| SVG icons | 18 |
+| Houdini shelf tools | 7 |
+| UI tabs | 5 |
 
 ---
 
-## Repository Locations
+## Package Layout (python/synapse/)
 
-| Component | Path |
-|-----------|------|
-| Core repository | `C:\Users\User\Synapse\` |
-| Agent SDK | `C:\Users\User\.synapse\agent\` |
-| Design system | `C:\Users\User\.synapse\design\` |
-| Houdini integration | `C:\Users\User\.synapse\houdini\` |
+### Core (9 files, ~2,240 lines)
+| File | Lines | Role |
+|------|-------|------|
+| `protocol.py` | 222 | CommandType enum, SynapseCommand/Response wire format |
+| `aliases.py` | 224 | Parameter name resolution (38+ mappings) |
+| `audit.py` | 404 | Hash-chain append-only audit log, tamper detection |
+| `determinism.py` | 367 | round_float, deterministic_uuid, kahan_sum, @deterministic |
+| `gates.py` | 578 | Human-in-the-loop (INFORM/REVIEW/APPROVE/CRITICAL) |
+| `queue.py` | 93 | DeterministicCommandQueue (He2025 batch invariance) |
+| `crypto.py` | 142 | Fernet encryption (AES-128-CBC + HMAC-SHA256) |
+| `errors.py` | 91 | Exception hierarchy |
 
----
+### Server (23 files, ~9,720 lines)
+| File | Lines | Role |
+|------|-------|------|
+| `handlers.py` | 1,004 | CommandHandlerRegistry (39 handlers, main dispatch) |
+| `handlers_render.py` | 2,158 | Karma/Mantra/viewport pipeline (largest file) |
+| `handlers_usd.py` | 352 | USD/Solaris handlers |
+| `handlers_node.py` | 132 | Node CRUD handlers |
+| `handlers_memory.py` | 187 | Memory handlers |
+| `websocket.py` | 654 | SynapseServer (WebSocket transport) |
+| `resilience.py` | 885 | RateLimiter, CircuitBreaker, Watchdog |
+| `introspection.py` | 417 | inspect_scene, inspect_node, inspect_selection |
+| `render_farm.py` | 514 | Render farm orchestration |
+| `render_diagnostics.py` | 368 | Frame validation (black, NaN, clipping, fireflies) |
+| `render_notify.py` | 310 | Render completion notifications |
+| `auth.py` | 123 | API key auth (hmac.compare_digest) |
+| `rbac.py` | 209 | Role-based access control |
+| `sessions.py` | 397 | Multi-user session management |
+| `guards.py` | 215 | Safety guard functions |
+| `live_metrics.py` | 386 | Live metrics aggregator |
+| `dashboard.py` | 326 | Embedded web dashboard |
+| `metrics.py` | 122 | Prometheus metrics |
+| `api_adapter.py` | 455 | REST adapter (optional) |
+| `hwebserver_adapter.py` | 313 | Houdini native HTTP transport |
+| `main_thread.py` | 70 | Main thread dispatcher for hou.* mutations |
+| `start_hwebserver.py` | 51 | hwebserver startup |
 
-## 1. Core Package (`python/synapse/`) — 44 files
+### Routing (9 files, ~5,300 lines)
+| File | Lines | Role |
+|------|-------|------|
+| `router.py` | 886 | TieredRouter (6-tier cascade, tier pinning, speculative T0+T1) |
+| `recipes.py` | 1,993 | RecipeRegistry (21 recipes) |
+| `planner.py` | 613 | Workflow planner with modifier composition |
+| `knowledge.py` | 456 | KnowledgeIndex (inverted keyword RAG) |
+| `vex_diagnostics.py` | 593 | VEX error analysis and suggestions |
+| `parser.py` | 345 | CommandParser (regex, Tier 0) |
+| `cache.py` | 185 | ResponseCache (deterministic LRU, per-tier TTL) |
+| `adaptation.py` | 183 | Epoch-based tier adaptation (He2025) |
 
-### 1.1 Foundation (`core/`) — 8 files
+### Memory (10 files, ~4,250 lines)
+| File | Lines | Role |
+|------|-------|------|
+| `store.py` | 949 | SynapseMemory (JSONL, ReadWriteLock, async write buffer) |
+| `scene_memory.py` | 843 | Living Memory (scene-aware persistence) |
+| `sqlite_store.py` | 733 | SQLite backend (SYNAPSE_MEMORY_BACKEND=sqlite) |
+| `evolution.py` | 408 | Charmander -> Charmeleon -> Charizard evolution |
+| `markdown.py` | 489 | MarkdownSync (context.md, decisions.md) |
+| `models.py` | 313 | Memory, MemoryType, MemoryTier, MemoryQuery |
+| `agent_state.py` | 253 | Agent state USD prims |
+| `patterns.py` | 120 | Memory pattern matching |
+| `context.py` | 65 | ShotContext helpers |
 
-| File | Purpose | ~LOC |
-|------|---------|------|
-| `__init__.py` | Lazy-load foundation modules | 20 |
-| `protocol.py` | CommandType enum (35 types), SynapseCommand/Response dataclasses, wire format v4.0.0 | 350 |
-| `aliases.py` | Parameter name aliasing (38+ mappings) | 180 |
-| `determinism.py` | round_float, deterministic_uuid, kahan_sum, @deterministic decorator, DeterministicRandom | 420 |
-| `audit.py` | AuditLog (hash-chain JSONL), AuditLevel/AuditCategory enums, daily rotation, tamper detection | 580 |
-| `gates.py` | HumanGate (INFORM/REVIEW/APPROVE/CRITICAL), GateProposal, GateDecision | 550 |
-| `crypto.py` | CryptoEngine (Fernet AES-128-CBC + HMAC-SHA256), optional encryption, key management | 420 |
-| `queue.py` | DeterministicCommandQueue, ResponseDeliveryQueue | 180 |
+### MCP Layer (6 files, ~1,570 lines) -- Streamable HTTP
+| File | Lines | Role |
+|------|-------|------|
+| `server.py` | 416 | /mcp endpoint, JSON-RPC 2.0 router |
+| `tools.py` | 717 | Tool registry mapping to existing handlers |
+| `resources.py` | 183 | Scene state resources (houdini://scene/*) |
+| `protocol.py` | 155 | JSON-RPC utilities, error codes |
+| `session.py` | 89 | MCP session manager (Mcp-Session-Id) |
 
-### 1.2 Memory (`memory/`) — 5 files
+### Agent (4 files, ~880 lines)
+| File | Lines | Role |
+|------|-------|------|
+| `executor.py` | 309 | prepare -> propose -> execute -> learn lifecycle |
+| `protocol.py` | 331 | AgentTask, AgentPlan, AgentStep |
+| `learning.py` | 194 | OutcomeTracker (feedback memories) |
 
-| File | Purpose | ~LOC |
-|------|---------|------|
-| `__init__.py` | Memory layer public API | 30 |
-| `models.py` | Memory, MemoryType, MemoryTier, MemoryLink, LinkType, MemoryQuery, MemorySearchResult | 350 |
-| `store.py` | MemoryStore (JSONL + ReadWriteLock + async write buffer + search index), SynapseMemory | 900 |
-| `context.py` | ShotContext, load/save/get/update context for project metadata | 350 |
-| `markdown.py` | MarkdownSync (human-readable .md export), parse/render decisions | 480 |
+### Session (3 files, ~720 lines)
+| File | Lines | Role |
+|------|-------|------|
+| `tracker.py` | 599 | SynapseBridge singleton hub |
+| `summary.py` | 87 | Session summary generation |
 
-### 1.3 Routing (`routing/`) — 6 files
-
-| File | Purpose | ~LOC |
-|------|---------|------|
-| `__init__.py` | Routing layer public API | 40 |
-| `parser.py` | CommandParser (regex Tier 0), 30+ patterns for common Houdini commands | 520 |
-| `knowledge.py` | KnowledgeIndex (semantic Tier 1), RAG lookup from `rag/` dir | 380 |
-| `recipes.py` | Recipe/RecipeStep/RecipeRegistry (multi-step sequences, Tier 0.5) | 340 |
-| `cache.py` | ResponseCache (He2025 deterministic LRU with TTL) | 220 |
-| `router.py` | TieredRouter, tier-pinning cache, speculative T0+T1 parallelism | 700 |
-
-**Routing cascade:** Cache → Recipe → Tier 0 (regex) → Tier 1 (RAG) → Tier 2 (Haiku) → Tier 3 (agent)
-
-### 1.4 Agent (`agent/`) — 4 files
-
-| File | Purpose | ~LOC |
-|------|---------|------|
-| `__init__.py` | Agent layer public API | 20 |
-| `protocol.py` | AgentTask, AgentPlan, AgentStep, StepStatus, PlanStatus, gate classification | 480 |
-| `executor.py` | AgentExecutor (prepare→propose→execute→learn lifecycle), risk classification | 420 |
-| `learning.py` | OutcomeTracker (feedback memories, outcome-based learning) | 180 |
-
-### 1.5 Server (`server/`) — 8 files
-
-| File | Purpose | ~LOC |
-|------|---------|------|
-| `__init__.py` | Server layer public API | 20 |
-| `websocket.py` | SynapseServer (WebSocket daemon thread), client handling, command dispatch | 650 |
-| `handlers.py` | CommandHandlerRegistry, **34 handlers**, coaching tone errors, `_suggest_parms()` | 2,100 |
-| `resilience.py` | RateLimiter, CircuitBreaker, PortManager, Watchdog, BackpressureController, HealthMonitor | 1,250 |
-| `introspection.py` | inspect_selection, inspect_scene, inspect_node_detail | 350 |
-| `hwebserver_adapter.py` | Native C++ Houdini transport (Phase 3 alternative) | 280 |
-| `api_adapter.py` | hwebserver.apiFunction adapters (16 endpoints) | 180 |
-| `start_hwebserver.py` | hwebserver startup helper | 120 |
-
-### 1.6 Session (`session/`) — 3 files
-
-| File | Purpose | ~LOC |
-|------|---------|------|
-| `__init__.py` | Session layer public API | 20 |
-| `tracker.py` | SynapseBridge (singleton), SynapseSession, context cache (5s TTL) | 450 |
-| `summary.py` | SessionSummary generation | 330 |
-
-### 1.7 UI (`ui/`) — 7 files
-
-| File | Purpose | ~LOC |
-|------|---------|------|
-| `__init__.py` | UI layer public API | 20 |
-| `panel.py` | SynapsePanel (main Qt widget, 5 tabs) | 650 |
-| `tabs/__init__.py` | Tab exports | 10 |
-| `tabs/connection.py` | Connection tab (status, port, start/stop) | 180 |
-| `tabs/context.py` | Context tab (shot metadata) | 90 |
-| `tabs/decisions.py` | Decisions tab (history with reasoning) | 80 |
-| `tabs/activity.py` | Activity tab (command log) | 70 |
-| `tabs/search.py` | Search tab (memory queries) | 100 |
-
-### 1.8 Package Root
-
-| File | Purpose |
-|------|---------|
-| `python/synapse/__init__.py` | Lazy-loading via `__getattr__`, `*_AVAILABLE` feature flags |
+### UI (8 files, ~1,350 lines)
+- `panel.py` (385) -- SynapsePanel (Qt, 5 tabs)
+- `tabs/` -- connection, context, decisions, activity, search
 
 ---
 
-## 2. MCP Server — 1 file, ~1,217 LOC
+## MCP Bridge (mcp_server.py) -- 1,931 lines, 43 tools
 
-| File | Purpose |
-|------|---------|
-| `mcp_server.py` | Claude Desktop ←[stdio/JSON-RPC]→ mcp_server ←[WebSocket]→ Houdini |
+stdio JSON-RPC bridge spawned by Claude Desktop/Code. Connects to Houdini via WebSocket.
 
-### 34 MCP Tools
+### Tool Categories
 
-**Houdini Inspection (6):** `synapse_ping`, `synapse_health`, `houdini_scene_info`, `houdini_get_selection`, `houdini_get_parm`, `houdini_execute_python`
+| Category | Count | Tools |
+|----------|-------|-------|
+| System | 2 | ping, health |
+| Scene | 2 | scene_info, get_selection |
+| Nodes | 3 | create_node, delete_node, connect_nodes |
+| Params | 3 | get_parm, set_parm, set_keyframe |
+| Execution | 2 | execute_python, execute_vex |
+| USD/Solaris | 6 | stage_info, get/set_usd_attribute, create/modify_usd_prim, reference_usd |
+| Materials | 3 | create_material, assign_material, read_material |
+| Rendering | 4 | render, render_settings, wedge, capture_viewport |
+| Render Farm | 3 | render_sequence, render_farm_status, validate_frame |
+| TOPS/PDG | 14 | cook_node, get_work_items, dependency_graph, cook_stats, generate_items, configure_scheduler, cancel_cook, dirty_node, setup_wedge, batch_cook, query_items, cook_and_validate, diagnose, pipeline_status |
+| Introspection | 3 | inspect_selection, inspect_scene, inspect_node |
+| Memory | 5 | context, search, recall, decide, add_memory |
+| Living Memory | 5 | project_setup, memory_write, memory_query, memory_status, evolve_memory |
+| Knowledge | 3 | knowledge_lookup, list_recipes, live_metrics |
+| Routing | 2 | router_stats, metrics |
+| Batch | 1 | batch |
 
-**Houdini Mutation (9):** `houdini_create_node`, `houdini_delete_node`, `houdini_connect_nodes`, `houdini_set_parm`, `houdini_set_keyframe`, `houdini_capture_viewport`, `houdini_reference_usd`, `houdini_render_settings`, `houdini_wedge`
+### v2 Latency Optimizations (2026-02-15)
+- **Auth skip:** saves ~2s when no key configured (check key first, skip recv wait)
+- **orjson bytes passthrough:** _dumps returns bytes, websockets sends directly, .decode() only at TextContent
+- **Lock-free fast path:** volatile _is_connected() check before acquiring _ws_lock
+- **asyncio.wait():** replaces wait_for(), avoids internal task creation
+- **Recv task lifecycle:** explicit cancel prevents race condition hangs
+- **Fire-and-forget warmup:** server accepts tools immediately
+- **max_size=None:** no frame size validation on localhost
 
-**USD/Solaris (5):** `houdini_stage_info`, `houdini_get_usd_attribute`, `houdini_set_usd_attribute`, `houdini_create_usd_prim`, `houdini_modify_usd_prim`
-
-**Materials (3):** `houdini_create_material`, `houdini_assign_material`, `houdini_read_material`
-
-**Rendering (1):** `houdini_render`
-
-**Introspection (3):** `synapse_inspect_selection`, `synapse_inspect_scene`, `synapse_inspect_node`
-
-**Memory (6):** `synapse_context`, `synapse_search`, `synapse_recall`, `synapse_decide`, `synapse_add_memory`, `synapse_knowledge_lookup`
-
-**Batch (1):** `synapse_batch`
-
-### Timeout Configuration
-
+### Timeout Tiers
 | Category | Timeout |
 |----------|---------|
-| Default | 10.0s |
-| execute_python, execute_vex, inspect_* | 30s |
-| render, wedge | 120s |
-| batch_commands | 60s |
+| Default | 10s |
+| execute_python/vex, inspect_*, capture_viewport | 30s |
+| render, wedge, render_sequence | 120s |
+| batch | 60s |
 
 ---
 
-## 3. Test Suite — 18 files, ~8,425 LOC
+## Test Suite (40 files, ~18,900 lines, ~1,012 tests)
 
-| File | Tests | Category |
-|------|-------|----------|
-| `test_routing.py` | ~323 | Parser, knowledge, recipes, cache, router cascade |
-| `test_core.py` | ~45 | Protocol, determinism, audit, gates, crypto |
-| `test_resilience.py` | ~40 | Rate limiter, circuit breaker, watchdog, backpressure |
-| `test_knowledge.py` | ~35 | RAG, semantic index, topic coverage |
-| `test_pipeline_efficiency.py` | 35 | RWLock, tier-pinning, T0+T1 parallel, batch, concurrent dispatch |
-| `test_agent.py` | ~30 | Executor, learning, plan lifecycle |
-| `test_render.py` | ~28 | Karma/Mantra pipeline, resolution, output |
-| `test_introspection.py` | ~22 | Scene inspection, node detail |
-| `test_materials.py` | 19 | MaterialX, shader binding |
-| `test_tops_assembly.py` | ~18 | Wedging, parameter variation |
-| `test_capture.py` | ~15 | Flipbook, viewport image |
-| `test_guards.py` | ~15 | Gate levels, proposals |
-| `test_keyframe_aov.py` | ~12 | Animation, AOV |
-| `test_crypto.py` | ~25 | Encryption, He2025, kahan_sum |
-| `test_load.py` | ~8 | Lazy-loading verification |
-| `test_live_capture.py` | ~8 | Integration (skipped in CI) |
-| `test_hwebserver_integration.py` | ~4 | Transport (skipped in CI) |
-| `test_design_system.py` | 44 | Icons, tokens, styles |
-| `conftest.py` | — | hou stub, backward-compat shims |
-
-**Total:** 484 passed + 5 skipped (core) + 49 agent + 44 design = **563+ tests**
-
----
-
-## 4. Agent SDK (`~/.synapse/agent/`) — 11 files, ~1,809 LOC
-
-| File | Purpose | ~LOC |
-|------|---------|------|
-| `synapse_agent.py` | Entry point, Opus 4.6 agentic loop, max 30 turns | 420 |
-| `synapse_ws.py` | WebSocket client (connection, message dispatch) | 280 |
-| `synapse_tools.py` | 8 tool definitions for Claude tool_use | 350 |
-| `synapse_hooks.py` | Safety hooks (pre-execution validation, undo protection) | 280 |
-| `synapse_tone.py` | Coaching tone guide + validation | 220 |
-| `CLAUDE.md` | Agent behavior guide | 340 |
-| `requirements.txt` | anthropic>=0.75.0, websockets>=12.0, anyio>=4.0 | 3 |
-| `tests/test_agent.py` | Agent loop tests | — |
-| `tests/test_ws_client.py` | WebSocket client tests | — |
-| `tests/test_tools.py` | Tool dispatch tests | — |
-| `tests/test_hooks.py` | Safety hook tests | — |
-| `tests/test_tone.py` | Voice validation tests | — |
-
-**49 tests total**
-
----
-
-## 5. Design System (`~/.synapse/design/`) — 4 files, ~1,038 LOC
-
-| File | Purpose | ~LOC |
-|------|---------|------|
-| `tokens.py` | Design tokens (colors, typography, spacing, shadows) | 280 |
-| `synapse_styles.py` | PySide2 Qt stylesheet generation | 320 |
-| `generate_icons.py` | SVG icon generation (21 icons × 3 sizes) | 240 |
-| `rasterize_icons.py` | SVG→PNG rasterization for Houdini | 198 |
-
-**21 icons:** synapse, execute, inspect, verify, document, profile, construction, marks, etc.
-**44 tests** in `test_design_system.py`
-
----
-
-## 6. Houdini Integration (`~/.synapse/houdini/`)
-
-| File | Purpose |
-|------|---------|
-| `python_panels/synapse.pypanel` | Primary panel definition (XML) |
-| `python_panels/synapse_panel.pypanel` | Alternative panel config (XML) |
-| `toolbar/synapse.shelf` | Shelf with quick-action buttons (XML) |
-| `scripts/python/synapse_shelf.py` | Shelf script helpers (~160 LOC) |
-
----
-
-## 7. RAG System (`rag/`) — 13 files
-
-### Metadata
-
-| File | Purpose |
-|------|---------|
-| `documentation/_metadata/semantic_index.json` | 13-topic keyword index (340+ triggers) |
-| `documentation/_metadata/agent_relevance_map.json` | Agent→topic relevance scores |
-
-### Reference Content (11 .md files, ~663 LOC)
-
-| File | Topic |
+### Major Test Files
+| File | Focus |
 |------|-------|
-| `skills/houdini21-reference/sop_basics.md` | SOPs — geometry operations |
-| `skills/houdini21-reference/solaris_nodes.md` | Solaris — USD/LOPs |
-| `skills/houdini21-reference/solaris_parameters.md` | Solaris parameter names |
-| `skills/houdini21-reference/rendering.md` | Karma, Mantra |
-| `skills/houdini21-reference/lighting.md` | Area lights, domes, color |
-| `skills/houdini21-reference/usd_operations.md` | USD composition, layer editing |
-| `skills/houdini21-reference/pyro_fx.md` | Pyro simulation |
-| `skills/houdini21-reference/rbd_simulation.md` | RBD simulation |
-| `skills/houdini21-reference/flip_simulation.md` | FLIP simulation |
-| `skills/houdini21-reference/tops_wedging.md` | TOPs, batch processing |
-| `skills/houdini21-reference/scene_assembly.md` | References, layers |
+| `test_routing.py` (1,376) | Routing cascade (~323 tests) |
+| `test_tops.py` (1,531) | TOPS/PDG integration |
+| `test_v5_features.py` (1,035) | v5 feature validation |
+| `test_resilience.py` (874) | Rate limiter, circuit breaker |
+| `test_agent.py` (879) | Agent protocol, executor |
+| `test_scene_memory.py` (809) | Living Memory |
+| `test_guards.py` (769) | Safety guards |
+| `test_core.py` (695) | Determinism, audit, gates |
+| `test_mcp_protocol.py` (669) | MCP Streamable HTTP |
+| `test_pipeline_efficiency.py` (622) | RWLock, tier-pinning, batch (35 tests) |
+| `test_sqlite_store.py` (589) | SQLite memory (40 tests) |
+| `test_introspection.py` (556) | Scene inspection |
+| `test_stress.py` (553) | Load/stress (24 tests) |
+| `test_materials.py` (530) | Material tools (19 tests) |
+| `test_frame_validator.py` (532) | Render validation |
+| `test_integration_pipeline.py` (488) | Integration (20 tests) |
+| `test_auth.py` (371) | Authentication (21 tests) |
 
 ---
 
-## 8. Configuration & Documentation
+## Key Design Principles
 
-| File | Purpose |
-|------|---------|
-| `pyproject.toml` | Package metadata, dependencies, pytest config |
-| `.mcp.json` | Claude Code MCP project-level registration |
-| `CLAUDE.md` | Development guidance for Claude Code (~400 lines) |
-| `README.md` | User-facing documentation (~650 lines) |
-| `TONE.md` | Coaching voice guide (~70 lines) |
-| `LATENCY_PLAN.md` | Performance optimization roadmap (~250 lines) |
-| `docs/He2025_CONSISTENCY_AUDIT.md` | He2025 alignment audit (93/100 score) |
+### Determinism (He2025-inspired)
+- `sort_keys=True` in ALL JSON serialization (orjson + stdlib)
+- Content-based UUIDs via deterministic_uuid() (SHA-256)
+- round_float() for OUTPUT only (Decimal, ROUND_HALF_UP)
+- kahan_sum() for stable float aggregation
+- Response queue sorted by (sequence, id) -- batch invariance
+- Timestamp preservation: 0.0 sentinel in deserialization
+- Epoch adaptation: fixed epoch SIZE (not time-based)
+
+### Safety Stack
+- Atomic scripts: all mutations in undo groups
+- Idempotent guards: repeat calls = same result
+- Human gates: INFORM / REVIEW / APPROVE / CRITICAL
+- Circuit breaker: trips on service errors only
+- Rate limiter: token bucket per transport
+- Auto-rollback: NameError/SyntaxError/TypeError in execute_python
+
+### Coaching Tone
+- "Couldn't find" not "not found"
+- "We hit a snag" not "error"
+- Always offer next step
+- _suggest_parms() provides fuzzy alternatives
+
+### Lighting Law (VFX Domain -- Never Violate)
+- Intensity ALWAYS 1.0 -- brightness via exposure (stops)
+- Key:fill 3:1 = 1.585 stops, 4:1 = 2.0 stops
+- USD parms: `xn__inputsexposure_vya` (value), `xn__inputsexposure_control_wcb` = "set"
 
 ---
 
-## 9. Wire Protocol Commands (35)
+## Sprint Roadmap (Auto-Detected via Filesystem Gates)
 
-**Node ops (4):** create_node, delete_node, modify_node, connect_nodes
-**Parameters (2):** get_parm, set_parm
-**Scene (3):** get_scene_info, get_selection, set_selection
-**Execution (2):** execute_python, execute_vex
-**USD (6):** create_usd_prim, modify_usd_prim, get_stage_info, get_usd_attribute, set_usd_attribute, reference_usd
-**Rendering (5):** render, set_keyframe, render_settings, wedge, capture_viewport
-**Materials (3):** create_material, assign_material, read_material
-**Introspection (3):** inspect_selection, inspect_scene, inspect_node
-**Memory (5):** context, search, add_memory, decide, recall
-**Utility (3):** ping, get_health, knowledge_lookup
-**Batch (1):** batch_commands
+| Sprint | Status | What |
+|--------|--------|------|
+| A: MCP Protocol | Done | Streamable HTTP, JSON-RPC 2.0, /mcp endpoint |
+| B: TOPS/PDG | Done | 14 TOPS tools, PDG scheduler, wedge, batch cook |
+| C: Agent SDK v2 | Next | Multi-goal planner, checkpoint/resume, self-heal |
+| D: Studio Deploy | Queued | RBAC, multi-user sessions, remote access |
+| E: Monitoring | Queued | Live metrics dashboard, alerts, Prometheus |
 
 ---
 
-## 10. Storage Layout
+## Companion Repos
+
+### ~/.synapse/ (Agent SDK + Design + Houdini)
+- **agent/** -- Autonomous VFX co-pilot (Claude Opus 4.6, 8 tools, 49 tests)
+- **design/** -- Pentagram-style system (tokens, 18 SVGs, Qt styles, accent: #00D4FF)
+- **houdini/** -- Shelf (7 tools) + panel (PySide2, 5 tabs)
+- **install.py** -- Auto-detect Houdini prefs, deploy shelf/panel/icons
+
+### RAG Knowledge (rag/)
+- 94 markdown files (documentation/ + skills/houdini21-reference/)
+- 28 Houdini topics, 400+ semantic triggers
+- VEX/Python examples with difficulty ratings
+
+---
+
+## Storage Layout
 
 ```
 $HIP/.synapse/           # Per-project memory
-├── memory.jsonl         # Append-only log
-├── index.json           # Search indices (by_type, by_tag, by_keyword)
-├── context.md           # Human-editable shot context
-├── decisions.md         # Decision log
-└── tasks.md             # Task history
+  memory.jsonl           # Append-only log (2s flush / 50-item cap)
+  index.json             # Search indices
+  context.md             # Human-editable shot context
+  decisions.md           # Decision log
 
-~/.synapse/              # Global (audit, gates, keys)
-├── audit/               # Daily JSONL audit logs (hash-chain)
-├── gates/               # Gate proposals (timestamped, immutable)
-└── encryption.key       # Auto-generated Fernet key
+~/.synapse/              # Global
+  audit/                 # Daily JSONL audit logs (hash-chain)
+  gates/                 # Gate proposals (immutable)
+  encryption.key         # Fernet key (auto-generated)
 ```
 
 ---
 
-## 11. Backwards Compatibility
-
-| Legacy Name | Current Name |
-|-------------|-------------|
-| `NexusMemory` | `SynapseMemory` |
-| `EngramMemory` | `SynapseMemory` |
-| `NexusServer` | `SynapseServer` |
-| `NexusSession` | `SynapseSession` |
-| `NexusBridge` | `SynapseBridge` |
-| `EngramBridge` | `SynapseBridge` |
-| `HyphaeAuditLog` | `AuditLog` |
-| `HyphaeGate` | `HumanGate` |
-| `.nexus/` directory | auto-migrated to `.synapse/` |
-| `.engram/` directory | auto-migrated to `.synapse/` |
-
----
-
-## 12. Dependencies
+## Dependencies
 
 **Core:** Zero required (stdlib only)
 
-| Optional Feature | Package | Min Version |
-|-----------------|---------|-------------|
-| WebSocket server | websockets | >=11.0 |
+| Feature | Package | Version |
+|---------|---------|---------|
+| WebSocket | websockets | >=11.0 |
 | Encryption | cryptography | >=41.0.0 |
-| MCP server | mcp | >=1.0.0 |
-| Routing (LLM) | anthropic | >=0.40.0 |
+| MCP | mcp | >=1.0.0 |
+| LLM routing | anthropic | >=0.40.0 |
 | Fast JSON | orjson | auto-detected |
-| Agent SDK | anthropic | >=0.75.0 |
-| Development | pytest | >=7.0 |
+| Dev/test | pytest | >=7.0 |
+
+```bash
+pip install -e ".[dev,websocket,mcp,routing,encryption]"
+python -m pytest tests/ -v   # ~1,012 tests
+```
 
 ---
 
-## 13. Performance Benchmarks
+## Platform
+
+- Windows 11 Pro for Workstations
+- AMD Threadripper PRO 7965WX (24C/48T)
+- NVIDIA RTX 4090 (24GB VRAM)
+- 128GB DDR5
+- Python 3.14
+- Houdini Indie (Solaris / Karma XPU)
+- CI: GitHub Actions (Python 3.11 + 3.14)
+
+---
+
+## Performance
 
 | Operation | Latency |
 |-----------|---------|
-| Ping (warm) | 0.2ms |
-| get_scene_info | 2.0ms |
+| Ping (warm) | ~0.2ms |
+| get_scene_info | ~2ms |
 | get_parm | 1-3ms |
-| context (memory) | 0.9ms |
 | create_node | 20-65ms |
-| delete_node | 5-20ms |
+| context (memory) | ~0.9ms |
 | render (Karma 512x) | 2-5s |
-| First connect (MCP) | 50-200ms |
+| First connect (v2) | 50-200ms (was 2s+ in v1) |
