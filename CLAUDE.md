@@ -24,7 +24,7 @@ All five initial sprints are **COMPLETE** (all gate files exist and tests pass):
 | Sprint | Status | Gate Files |
 |--------|--------|------------|
 | **A: MCP Protocol** | COMPLETE | `synapse/mcp/server.py`, `tools.py`, `session.py`, `protocol.py`, `resources.py` + `docs/mcp/SETUP.md` + `tests/test_mcp_protocol.py` |
-| **B: TOPS/PDG** | COMPLETE | 14 `tops_*` tools in `mcp_server.py` + `handlers_render.py` + `tests/test_tops.py` |
+| **B: TOPS/PDG** | COMPLETE | 14 `tops_*` tools in `mcp_server.py` + `handlers_tops.py` + `tests/test_tops.py` |
 | **C: Agent SDK v2** | COMPLETE | `~/.synapse/agent/synapse_planner.py`, `synapse_checkpoint.py` + `tests/test_planner.py` |
 | **D: Studio Deployment** | COMPLETE | `server/rbac.py`, `server/sessions.py` + `docs/studio/DEPLOYMENT.md` |
 | **E: Monitoring** | COMPLETE | `server/live_metrics.py`, `server/dashboard.py` + `docs/monitoring/SETUP.md` |
@@ -157,7 +157,7 @@ Both MCP Streamable HTTP and the existing WebSocket/stdio paths converge at the 
 | Routing | `routing/` | Tiered LLM dispatch (`router.py`), regex parser (`parser.py`), RAG knowledge (`knowledge.py`), recipes (`recipes.py`), deterministic cache (`cache.py`), workflow planner (`planner.py`), epoch-based tier adaptation (`adaptation.py`) |
 | Agent | `agent/` | prepare/propose/execute/learn lifecycle (`executor.py`), task/plan/step protocol (`protocol.py`), outcome tracking (`learning.py`) |
 | MCP | `mcp/` | MCP Streamable HTTP protocol layer. `server.py` (endpoint handler, JSON-RPC router), `session.py` (session manager), `tools.py` (tool registry, 61 tools), `resources.py` (scene state resources), `prompts.py` (workflow prompts), `protocol.py` (JSON-RPC utilities, error codes), `types.py` (type definitions, schemas) |
-| Server | `server/` | WebSocket server (`websocket.py`), command handlers split across 5 files: `handlers.py` (core registry + 18 handlers), `handlers_render.py` (render + 14 TOPS handlers), `handlers_memory.py` (memory/context), `handlers_node.py` (node ops), `handlers_usd.py` (USD/Solaris). Plus: resilience stack (`resilience.py`), introspection (`introspection.py`), hwebserver adapter (`hwebserver_adapter.py`), REST adapter (`api_adapter.py`), guards (`guards.py`), auth (`auth.py`), metrics (`metrics.py`), RBAC (`rbac.py`), multi-user sessions (`sessions.py`), live metrics (`live_metrics.py`), dashboard (`dashboard.py`), render farm (`render_farm.py`, `render_farm_handler.py`), render diagnostics (`render_diagnostics.py`), render notifications (`render_notify.py`) |
+| Server | `server/` | WebSocket server (`websocket.py`), command handlers split across 7 files: `handlers.py` (core registry + 18 handlers), `handlers_render.py` (viewport/render/keyframe/settings/validation/farm), `handlers_tops.py` (wedge + 15 tops_* PDG handlers), `handlers_material.py` (create/assign/read material), `handlers_memory.py` (memory/context), `handlers_node.py` (node ops), `handlers_usd.py` (USD/Solaris). Shared utilities in `handler_helpers.py`. Plus: resilience stack (`resilience.py`), introspection (`introspection.py`), hwebserver adapter (`hwebserver_adapter.py`), REST adapter (`api_adapter.py`), guards (`guards.py`), auth (`auth.py`), metrics (`metrics.py`), RBAC (`rbac.py`), multi-user sessions (`sessions.py`), live metrics (`live_metrics.py`), dashboard (`dashboard.py`), render farm (`render_farm.py`, `render_farm_handler.py`), render diagnostics (`render_diagnostics.py`), render notifications (`render_notify.py`) |
 | Session | `session/` | SynapseBridge singleton hub (`tracker.py`), session summaries (`summary.py`) |
 | UI | `ui/` | Qt panel with 5 tabs (`panel.py`), tab widgets in `tabs/` |
 
@@ -424,7 +424,7 @@ with patch.object(hou, "flipbook", create=True):
 ### Adding a new MCP tool
 
 1. Add `CommandType` variant in `core/protocol.py`
-2. Add handler method `_handle_<name>` in the appropriate handler file (`handlers.py` for core, `handlers_render.py` for render/TOPS, `handlers_usd.py` for USD, `handlers_memory.py` for memory, `handlers_node.py` for node ops) and register it in `SynapseHandler._register_handlers()`
+2. Add handler method `_handle_<name>` in the appropriate handler file (`handlers.py` for core, `handlers_render.py` for render/viewport/keyframe/validation, `handlers_tops.py` for TOPS/PDG, `handlers_material.py` for materials, `handlers_usd.py` for USD, `handlers_memory.py` for memory, `handlers_node.py` for node ops) and register it in `SynapseHandler._register_handlers()`
 3. Add parameter aliases in `core/aliases.py` if the tool has new parameter names
 4. Add `Tool(...)` entry to `list_tools()` and dispatch case to `call_tool()` in `mcp_server.py` (uses `Server.list_tools()`/`Server.call_tool()` decorators, not `@mcp.tool()` decorator pattern). All 61 tools defined in one `list_tools()` function with a single `call_tool()` switch
 5. **Add MCP tool definition in `mcp/tools.py`** — include `inputSchema` (JSON Schema for arguments) and `annotations` (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`). The tool dispatches to the same handler registered in step 2.
@@ -483,11 +483,13 @@ When building or rendering Solaris scenes via MCP, follow a progressive validati
 Default: `ws://localhost:9999/synapse` | Version: `4.0.0`
 MCP endpoint: `http://localhost:PORT/mcp` | Protocol: MCP 2025-06-18 (Streamable HTTP)
 
-53 registered handlers across 5 handler files:
+53 registered handlers across 7 handler files:
 - **Core (18)**: `ping`, `get_health`, `get_help`, `create_node`, `delete_node`, `connect_nodes`, `get_parm`, `set_parm`, `get_scene_info`, `get_selection`, `execute_python`, `execute_vex`, `batch_commands`, `get_metrics`, `router_stats`, `list_recipes`, `knowledge_lookup`, `capture_viewport`
-- **USD (7)**: `get_stage_info`, `get_usd_attribute`, `set_usd_attribute`, `create_usd_prim`, `modify_usd_prim`, `reference_usd`, `set_keyframe`
-- **Render + TOPS (14+)**: `render`, `render_settings`, `wedge`, `tops_cook_node`, `tops_get_work_items`, `tops_get_dependency_graph`, `tops_get_cook_stats`, `tops_generate_items`, `tops_configure_scheduler`, `tops_cancel_cook`, `tops_dirty_node`, `tops_setup_wedge`, `tops_batch_cook`, `tops_query_items`, `tops_cook_and_validate`, `tops_diagnose`, `tops_pipeline_status`
+- **Render (8)**: `capture_viewport`, `render`, `set_keyframe`, `render_settings`, `validate_frame`, `render_sequence`, `render_farm_status`
+- **TOPS/PDG (16)**: `wedge`, `tops_get_work_items`, `tops_get_dependency_graph`, `tops_get_cook_stats`, `tops_cook_node`, `tops_generate_items`, `tops_configure_scheduler`, `tops_cancel_cook`, `tops_dirty_node`, `tops_setup_wedge`, `tops_batch_cook`, `tops_query_items`, `tops_cook_and_validate`, `tops_diagnose`, `tops_pipeline_status`
 - **Materials (3)**: `create_material`, `assign_material`, `read_material`
+- **USD (7)**: `get_stage_info`, `get_usd_attribute`, `set_usd_attribute`, `create_usd_prim`, `modify_usd_prim`, `reference_usd`
+- **Node (3)**: `create_node`, `delete_node`, `connect_nodes`
 - **Memory (7)**: `context`, `search`, `add_memory`, `decide`, `recall`, `inspect_selection`, `inspect_scene`, `inspect_node`
 
 All handlers are accessible through WebSocket, stdio MCP, and Streamable HTTP MCP transports. Parameter names resolve through `aliases.py` (38+ mappings) — e.g., `node`, `path`, `node_path` all resolve to canonical `node`.
