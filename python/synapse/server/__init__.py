@@ -30,19 +30,36 @@ except ImportError:
     NexusServer = None  # type: ignore[assignment,misc]
     NexusHandler = None  # type: ignore[assignment,misc]
     CommandHandlerRegistry = None  # type: ignore[assignment,misc]
+    RateLimiter = None  # type: ignore[assignment,misc]
+    CircuitBreaker = None  # type: ignore[assignment,misc]
+    CircuitBreakerConfig = None  # type: ignore[assignment,misc]
+    CircuitState = None  # type: ignore[assignment,misc]
+    PortManager = None  # type: ignore[assignment,misc]
+    Watchdog = None  # type: ignore[assignment,misc]
+    BackpressureController = None  # type: ignore[assignment,misc]
+    BackpressureLevel = None  # type: ignore[assignment,misc]
+    HealthMonitor = None  # type: ignore[assignment,misc]
+    HealthStatus = None  # type: ignore[assignment,misc]
 
 # Sprint D: Studio Deployment (separate try to avoid breaking existing imports)
 try:
     from .rbac import Role, check_permission, is_rbac_enabled
     from .sessions import SessionManager, UserSession, DeployConfig, load_deploy_config
 except ImportError:
-    pass
+    Role = None  # type: ignore[assignment,misc]
+    check_permission = None  # type: ignore[assignment]
+    is_rbac_enabled = None  # type: ignore[assignment]
+    SessionManager = None  # type: ignore[assignment,misc]
+    UserSession = None  # type: ignore[assignment,misc]
+    DeployConfig = None  # type: ignore[assignment,misc]
+    load_deploy_config = None  # type: ignore[assignment]
 
 # Sprint E: Real-Time Monitoring (separate try for same reason)
 try:
     from .live_metrics import MetricsAggregator, MetricSnapshot
 except ImportError:
-    pass
+    MetricsAggregator = None  # type: ignore[assignment,misc]
+    MetricSnapshot = None  # type: ignore[assignment,misc]
 
 __all__ = [
     'SynapseServer',
