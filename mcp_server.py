@@ -145,7 +145,7 @@ def _cmd_id(cmd_type: str, payload: dict | None) -> str:
 SYNAPSE_PORT = int(os.environ.get("SYNAPSE_PORT", "9999"))
 SYNAPSE_PATH = os.environ.get("SYNAPSE_PATH", "/synapse")
 SYNAPSE_URL = f"ws://localhost:{SYNAPSE_PORT}{SYNAPSE_PATH}"
-PROTOCOL_VERSION = "5.0.0"
+PROTOCOL_VERSION = "5.4.0"
 MAX_RETRIES = 2
 RETRY_DELAY = 0.3
 COMMAND_TIMEOUT = 10.0
