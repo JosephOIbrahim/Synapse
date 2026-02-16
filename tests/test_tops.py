@@ -89,12 +89,12 @@ handlers_mod = sys.modules["synapse.server.handlers"]
 protocol_mod = sys.modules["synapse.core.protocol"]
 aliases_mod = sys.modules["synapse.core.aliases"]
 
-# Get the hou reference from handlers_render.py — that's where the TOPS handlers
+# Get the hou reference from handlers_tops.py — that's where the TOPS handlers
 # live and where hou.node() is called. In the full test suite, earlier tests may
-# have replaced sys.modules["hou"], but handlers_render.hou still points to
+# have replaced sys.modules["hou"], but handlers_tops.hou still points to
 # the original object. We patch THAT object.
-_render_mod = sys.modules.get("synapse.server.handlers_render")
-_handlers_hou = _render_mod.hou if _render_mod else handlers_mod.hou
+_tops_mod = sys.modules.get("synapse.server.handlers_tops")
+_handlers_hou = _tops_mod.hou if _tops_mod else handlers_mod.hou
 
 # Ensure the hou stub has the attributes we need to patch (cross-test robustness:
 # earlier test files may have replaced hou with a bare ModuleType)

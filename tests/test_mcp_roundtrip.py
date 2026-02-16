@@ -74,6 +74,8 @@ _module_files = [
     ("synapse.server.handlers_node", _root / "synapse" / "server" / "handlers_node.py"),
     ("synapse.server.handlers_usd", _root / "synapse" / "server" / "handlers_usd.py"),
     ("synapse.server.handlers_render", _root / "synapse" / "server" / "handlers_render.py"),
+    ("synapse.server.handlers_tops", _root / "synapse" / "server" / "handlers_tops.py"),
+    ("synapse.server.handlers_material", _root / "synapse" / "server" / "handlers_material.py"),
     ("synapse.server.handlers_memory", _root / "synapse" / "server" / "handlers_memory.py"),
     ("synapse.server.handlers", _root / "synapse" / "server" / "handlers.py"),
 ]

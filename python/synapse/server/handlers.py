@@ -35,6 +35,8 @@ from ..core.errors import (
 from .handlers_node import NodeHandlerMixin
 from .handlers_usd import UsdHandlerMixin
 from .handlers_render import RenderHandlerMixin
+from .handlers_tops import TopsHandlerMixin
+from .handlers_material import MaterialHandlerMixin
 from .handlers_memory import MemoryHandlerMixin
 
 
@@ -153,7 +155,7 @@ class CommandHandlerRegistry:
 # SYNAPSE HANDLER
 # =============================================================================
 
-class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, MemoryHandlerMixin):
+class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin):
     """
     Main command handler for the Synapse server.
 
