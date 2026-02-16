@@ -185,6 +185,19 @@ def __getattr__(name):
         'AgentTask', 'AgentPlan', 'AgentStep', 'StepStatus', 'PlanStatus',
         'DEFAULT_GATE_LEVELS', 'classify_gate_level',
         'AgentExecutor', 'OutcomeTracker',
+        # v8-DSA: Sparse Router
+        'SparseToolIndexer', 'SparseRouterConfig', 'ToolSignature',
+        'RouteCandidate', 'Domain', 'CostTier', 'build_signatures_from_registry',
+        # v8-DSA: Reasoning Context
+        'ReasoningContext', 'ReasoningContextManager', 'ReasoningEntry',
+        'EntryCategory', 'PROTECTED_CATEGORIES',
+        # v8-DSA: Specialist Modes
+        'SpecialistMode', 'SpecialistDomain', 'QualitySignal',
+        'SPECIALIST_REGISTRY', 'get_specialist', 'get_specialist_by_name',
+        'build_enhanced_prompt', 'list_specialists',
+        # v8-DSA: Task Synthesizer
+        'TaskSynthesizer', 'TaskEnvironment', 'TaskConstraint',
+        'SuccessCriterion', 'Complexity', 'ConstraintType', 'FailureMode',
     }
     if name in _agent_names:
         from .agent.protocol import (
@@ -198,6 +211,41 @@ def __getattr__(name):
         )
         from .agent.executor import AgentExecutor as _AgentExecutor
         from .agent.learning import OutcomeTracker as _OutcomeTracker
+        from .agent.sparse_router import (
+            SparseToolIndexer as _SparseToolIndexer,
+            SparseRouterConfig as _SparseRouterConfig,
+            ToolSignature as _ToolSignature,
+            RouteCandidate as _RouteCandidate,
+            Domain as _Domain,
+            CostTier as _CostTier,
+            build_signatures_from_registry as _build_signatures_from_registry,
+        )
+        from .agent.reasoning_context import (
+            ReasoningContext as _ReasoningContext,
+            ReasoningContextManager as _ReasoningContextManager,
+            ReasoningEntry as _ReasoningEntry,
+            EntryCategory as _EntryCategory,
+            PROTECTED_CATEGORIES as _PROTECTED_CATEGORIES,
+        )
+        from .agent.specialist_modes import (
+            SpecialistMode as _SpecialistMode,
+            SpecialistDomain as _SpecialistDomain,
+            QualitySignal as _QualitySignal,
+            SPECIALIST_REGISTRY as _SPECIALIST_REGISTRY,
+            get_specialist as _get_specialist,
+            get_specialist_by_name as _get_specialist_by_name,
+            build_enhanced_prompt as _build_enhanced_prompt,
+            list_specialists as _list_specialists,
+        )
+        from .agent.task_synthesizer import (
+            TaskSynthesizer as _TaskSynthesizer,
+            TaskEnvironment as _TaskEnvironment,
+            TaskConstraint as _TaskConstraint,
+            SuccessCriterion as _SuccessCriterion,
+            Complexity as _Complexity,
+            ConstraintType as _ConstraintType,
+            FailureMode as _FailureMode,
+        )
         _map = {
             'AgentTask': _AgentTask,
             'AgentPlan': _AgentPlan,
@@ -208,6 +256,34 @@ def __getattr__(name):
             'classify_gate_level': _classify_gate_level,
             'AgentExecutor': _AgentExecutor,
             'OutcomeTracker': _OutcomeTracker,
+            # v8-DSA
+            'SparseToolIndexer': _SparseToolIndexer,
+            'SparseRouterConfig': _SparseRouterConfig,
+            'ToolSignature': _ToolSignature,
+            'RouteCandidate': _RouteCandidate,
+            'Domain': _Domain,
+            'CostTier': _CostTier,
+            'build_signatures_from_registry': _build_signatures_from_registry,
+            'ReasoningContext': _ReasoningContext,
+            'ReasoningContextManager': _ReasoningContextManager,
+            'ReasoningEntry': _ReasoningEntry,
+            'EntryCategory': _EntryCategory,
+            'PROTECTED_CATEGORIES': _PROTECTED_CATEGORIES,
+            'SpecialistMode': _SpecialistMode,
+            'SpecialistDomain': _SpecialistDomain,
+            'QualitySignal': _QualitySignal,
+            'SPECIALIST_REGISTRY': _SPECIALIST_REGISTRY,
+            'get_specialist': _get_specialist,
+            'get_specialist_by_name': _get_specialist_by_name,
+            'build_enhanced_prompt': _build_enhanced_prompt,
+            'list_specialists': _list_specialists,
+            'TaskSynthesizer': _TaskSynthesizer,
+            'TaskEnvironment': _TaskEnvironment,
+            'TaskConstraint': _TaskConstraint,
+            'SuccessCriterion': _SuccessCriterion,
+            'Complexity': _Complexity,
+            'ConstraintType': _ConstraintType,
+            'FailureMode': _FailureMode,
         }
         globals().update(_map)
         return _map[name]
@@ -434,6 +510,34 @@ __all__ = [
     'classify_gate_level',
     'AgentExecutor',
     'OutcomeTracker',
+    # Agent v8-DSA
+    'SparseToolIndexer',
+    'SparseRouterConfig',
+    'ToolSignature',
+    'RouteCandidate',
+    'Domain',
+    'CostTier',
+    'build_signatures_from_registry',
+    'ReasoningContext',
+    'ReasoningContextManager',
+    'ReasoningEntry',
+    'EntryCategory',
+    'PROTECTED_CATEGORIES',
+    'SpecialistMode',
+    'SpecialistDomain',
+    'QualitySignal',
+    'SPECIALIST_REGISTRY',
+    'get_specialist',
+    'get_specialist_by_name',
+    'build_enhanced_prompt',
+    'list_specialists',
+    'TaskSynthesizer',
+    'TaskEnvironment',
+    'TaskConstraint',
+    'SuccessCriterion',
+    'Complexity',
+    'ConstraintType',
+    'FailureMode',
 
     # Server
     'SynapseServer',

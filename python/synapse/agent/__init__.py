@@ -32,6 +32,43 @@ from .protocol import (
 from .executor import AgentExecutor
 from .learning import OutcomeTracker
 
+# v8-DSA: DeepSeek-V3.2 research graft (Phase 1)
+from .sparse_router import (
+    SparseToolIndexer,
+    SparseRouterConfig,
+    ToolSignature,
+    RouteCandidate,
+    Domain,
+    CostTier,
+    build_signatures_from_registry,
+)
+from .reasoning_context import (
+    ReasoningContext,
+    ReasoningContextManager,
+    ReasoningEntry,
+    EntryCategory,
+    PROTECTED_CATEGORIES,
+)
+from .specialist_modes import (
+    SpecialistMode,
+    SpecialistDomain,
+    QualitySignal,
+    SPECIALIST_REGISTRY,
+    get_specialist,
+    get_specialist_by_name,
+    build_enhanced_prompt,
+    list_specialists,
+)
+from .task_synthesizer import (
+    TaskSynthesizer,
+    TaskEnvironment,
+    TaskConstraint,
+    SuccessCriterion,
+    Complexity,
+    ConstraintType,
+    FailureMode,
+)
+
 __all__ = [
     "AgentTask",
     "AgentPlan",
@@ -42,4 +79,35 @@ __all__ = [
     "classify_gate_level",
     "AgentExecutor",
     "OutcomeTracker",
+    # v8-DSA: Sparse Router
+    "SparseToolIndexer",
+    "SparseRouterConfig",
+    "ToolSignature",
+    "RouteCandidate",
+    "Domain",
+    "CostTier",
+    "build_signatures_from_registry",
+    # v8-DSA: Reasoning Context
+    "ReasoningContext",
+    "ReasoningContextManager",
+    "ReasoningEntry",
+    "EntryCategory",
+    "PROTECTED_CATEGORIES",
+    # v8-DSA: Specialist Modes
+    "SpecialistMode",
+    "SpecialistDomain",
+    "QualitySignal",
+    "SPECIALIST_REGISTRY",
+    "get_specialist",
+    "get_specialist_by_name",
+    "build_enhanced_prompt",
+    "list_specialists",
+    # v8-DSA: Task Synthesizer
+    "TaskSynthesizer",
+    "TaskEnvironment",
+    "TaskConstraint",
+    "SuccessCriterion",
+    "Complexity",
+    "ConstraintType",
+    "FailureMode",
 ]
