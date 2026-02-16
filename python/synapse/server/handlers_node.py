@@ -16,12 +16,7 @@ except ImportError:
 
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.errors import NodeNotFoundError, HoudiniUnavailableError
-
-
-_HOUDINI_UNAVAILABLE = (
-    "Houdini isn't reachable right now -- make sure it's running "
-    "and Synapse is started from the Python Panel"
-)
+from .handler_helpers import _HOUDINI_UNAVAILABLE
 
 
 def _suggest_children(parent_path: str) -> str:

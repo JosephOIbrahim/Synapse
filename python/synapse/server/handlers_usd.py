@@ -15,12 +15,7 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.aliases import resolve_param, resolve_param_with_default, USD_PARM_ALIASES
-
-
-_HOUDINI_UNAVAILABLE = (
-    "Houdini isn't reachable right now -- make sure it's running "
-    "and Synapse is started from the Python Panel"
-)
+from .handler_helpers import _HOUDINI_UNAVAILABLE
 
 
 def _usd_to_json(value):
