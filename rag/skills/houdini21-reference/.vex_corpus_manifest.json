@@ -1,0 +1,40 @@
+{
+  "chunks_enriched": 2079,
+  "chunks_total": 2513,
+  "corpus_hash": "cc4cae414fe87c90e7fe896d8d19e0f69c1e15cf609435c4c7845894e33ab8ce",
+  "corpus_path": "C:\\Users\\User\\vex-corpus\\output\\corpus\\merged_corpus.jsonl",
+  "files_written": [
+    "vex_corpus_attribute_operations.md",
+    "vex_corpus_channel_references.md",
+    "vex_corpus_color_operations.md",
+    "vex_corpus_conditional_logic.md",
+    "vex_corpus_edge_topology.md",
+    "vex_corpus_field_analysis.md",
+    "vex_corpus_flow_visualization.md",
+    "vex_corpus_geometry_creation.md",
+    "vex_corpus_loop_patterns.md",
+    "vex_corpus_math_operations.md",
+    "vex_corpus_matrix_transforms.md",
+    "vex_corpus_misc.md",
+    "vex_corpus_noise_patterns.md",
+    "vex_corpus_point_cloud_ops.md"
+  ],
+  "semantic_keys": [
+    "vex_corpus_attribute_operations",
+    "vex_corpus_channel_references",
+    "vex_corpus_color_operations",
+    "vex_corpus_conditional_logic",
+    "vex_corpus_edge_topology",
+    "vex_corpus_field_analysis",
+    "vex_corpus_flow_visualization",
+    "vex_corpus_geometry_creation",
+    "vex_corpus_loop_patterns",
+    "vex_corpus_math_operations",
+    "vex_corpus_matrix_transforms",
+    "vex_corpus_misc",
+    "vex_corpus_noise_patterns",
+    "vex_corpus_point_cloud_ops"
+  ],
+  "topics_major": 13,
+  "topics_misc": 15
+}
