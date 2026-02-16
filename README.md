@@ -8,7 +8,7 @@
   <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-5.3.0-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-blue.svg" alt="Python"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-890%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-1%2C427%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="python/synapse/core/protocol.py"><img src="https://img.shields.io/badge/protocol-v4.0.0-orange.svg" alt="Protocol"></a>
 </p>
 
@@ -31,9 +31,9 @@ Built as a standalone package with zero required dependencies.
 - **VEX Execution** -- Run VEX wrangles directly from conversation
 - **Production Resilience** -- Rate limiter, circuit breaker, port failover, watchdog, backpressure
 - **Viewport + Render Capture** -- AI can see what you see via flipbook and Karma renders
-- **RAG-Powered Routing** -- Knowledge lookup from Houdini documentation (21 built-in workflow recipes)
+- **RAG-Powered Routing** -- Knowledge lookup from Houdini documentation (21 built-in workflow recipes) plus 2,079 labeled VEX examples from [vex-corpus](https://github.com/JosephOIbrahim/vex-corpus)
 - **Determinism** -- Canonical ordering and tier pinning ([He2025] inspired), plus fixed-precision rounding, content-based IDs, and Kahan summation
-- **Houdini Optional** -- All 890 tests run without Houdini; core library has zero required dependencies
+- **Houdini Optional** -- All 1,427 tests run without Houdini; core library has zero required dependencies
 
 ---
 
@@ -189,7 +189,7 @@ pip install -e ".[dev,websocket,mcp,routing,encryption]"
 python -m pytest tests/ -v
 ```
 
-All 890 tests run without Houdini. No license needed.
+All 1,427 tests run without Houdini. No license needed.
 
 <br>
 
@@ -590,7 +590,7 @@ Claude  <--[stdio/JSON-RPC]-->  mcp_server.py  <--[WebSocket]-->  Synapse (Houdi
 ## Testing
 
 ```bash
-# All 890 tests (no Houdini required)
+# All 1,427 tests (no Houdini required)
 python -m pytest tests/ -v
 
 # Individual test modules
@@ -682,7 +682,7 @@ Synapse/
 
 ## Status
 
-Synapse is under active development. All layers are well-tested (890 unit tests, mypy clean on 58 source files). The WebSocket server and viewport capture have been validated in single-user VFX workflows. Use in production at your own discretion.
+Synapse is under active development. All layers are well-tested (1,427 unit tests, mypy clean on 58 source files). The WebSocket server and viewport capture have been validated in single-user VFX workflows. Use in production at your own discretion.
 
 ## Determinism Reference
 
@@ -691,6 +691,7 @@ Synapse's determinism primitives (`round_float`, `kahan_sum`, `deterministic_uui
 ## Related Projects
 
 - [**Orchestra**](https://github.com/JosephOIbrahim/Orchestra) -- Cognitive orchestration framework (v7.1.0, 1,500+ tests). Synapse is the Houdini bridge; Orchestra is the cognitive engine.
+- [**vex-corpus**](https://github.com/JosephOIbrahim/vex-corpus) -- 2,513 labeled VEX code examples (5.3 MB JSONL) that feed Synapse's RAG knowledge layer. Covers 28 topics from 4 sources with difficulty ratings, topic classification, and function/attribute metadata. Synced via `sync_to_synapse.py` into 14 reference files.
 - **Cognitive Substrate** -- Theoretical foundation for deterministic state composition.
 
 ## Patent Notice
