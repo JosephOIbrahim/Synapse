@@ -1,0 +1,417 @@
+{
+  "version": "1.0.0",
+  "description": "FORGE Scenario Registry — Production VFX scenarios for SYNAPSE battle-testing",
+  "scenarios": [
+
+    {
+      "id": "T1-LGT-001",
+      "title": "Create Dome Light",
+      "description": "Create a Karma dome light in LOPs with environment map, verify it exists in the USD stage with correct type and default parameters.",
+      "tier": 1,
+      "domain": "lighting",
+      "complexity": "single_tool",
+      "focus": "reliability",
+      "tools_needed": ["create_node", "set_parameter", "inspect_stage"],
+      "steps": [
+        "Create a dome light LOP node",
+        "Set texture file parameter to a test HDRI path",
+        "Set intensity to 1.0",
+        "Verify the light prim exists in the stage",
+        "Verify the light type is DomeLight"
+      ],
+      "expected_outcome": "DomeLight prim exists in USD stage with correct texture and intensity",
+      "estimated_tool_calls": 4,
+      "tags": ["lighting", "usd", "karma", "lop"]
+    },
+
+    {
+      "id": "T1-LGT-002",
+      "title": "Create 3-Point Light Rig",
+      "description": "Create key, fill, and rim lights as distant/rect lights in LOPs. Verify all three exist with differentiated parameters.",
+      "tier": 1,
+      "domain": "lighting",
+      "complexity": "single_tool",
+      "focus": "coverage",
+      "tools_needed": ["create_node", "set_parameter", "inspect_stage"],
+      "steps": [
+        "Create a distant light (key) with intensity 1.0",
+        "Create a rect light (fill) with intensity 0.5, width 2.0",
+        "Create a distant light (rim) with intensity 0.7",
+        "Set different rotations for each light",
+        "Verify all three lights exist in the stage"
+      ],
+      "expected_outcome": "Three light prims in USD stage with distinct types and intensities",
+      "estimated_tool_calls": 10,
+      "tags": ["lighting", "usd", "multi-node"]
+    },
+
+    {
+      "id": "T1-MTL-001",
+      "title": "Create MaterialX Surface Shader",
+      "description": "Create a basic MaterialX standard surface material in LOPs. Verify the material prim and its binding structure.",
+      "tier": 1,
+      "domain": "lookdev",
+      "complexity": "single_tool",
+      "focus": "coverage",
+      "tools_needed": ["create_node", "set_parameter", "inspect_material"],
+      "steps": [
+        "Create a material library LOP",
+        "Create a MaterialX standard surface inside it",
+        "Set base color to (0.8, 0.2, 0.2)",
+        "Set roughness to 0.4",
+        "Verify material prim exists with correct shader type"
+      ],
+      "expected_outcome": "MaterialX material prim with standard_surface shader and correct parameter values",
+      "estimated_tool_calls": 5,
+      "tags": ["materialx", "lookdev", "shader", "lop"]
+    },
+
+    {
+      "id": "T1-MTL-002",
+      "title": "Assign Material to Geometry",
+      "description": "Create geometry in SOPs, import to LOPs, create a material, and bind the material to the geometry.",
+      "tier": 1,
+      "domain": "lookdev",
+      "complexity": "single_tool",
+      "focus": "reliability",
+      "tools_needed": ["create_node", "set_parameter", "inspect_stage", "inspect_material"],
+      "steps": [
+        "Create a sphere SOP",
+        "Create a SOP Import LOP to bring geometry into USD stage",
+        "Create a MaterialX material",
+        "Assign the material to the sphere geometry",
+        "Verify the material binding exists on the geometry prim"
+      ],
+      "expected_outcome": "Geometry prim has a valid material binding pointing to the MaterialX material",
+      "estimated_tool_calls": 7,
+      "tags": ["materialx", "binding", "sop-to-lop", "assignment"]
+    },
+
+    {
+      "id": "T1-SCN-001",
+      "title": "Query Scene State",
+      "description": "Create several nodes, then query the scene to verify they exist and have correct types.",
+      "tier": 1,
+      "domain": "general",
+      "complexity": "single_tool",
+      "focus": "reliability",
+      "tools_needed": ["create_node", "query_scene", "list_nodes"],
+      "steps": [
+        "Create 3 different node types (geo, light, camera)",
+        "Query the scene for all nodes",
+        "Verify each created node appears in the query results",
+        "Verify node types match what was created"
+      ],
+      "expected_outcome": "Scene query returns all created nodes with correct types",
+      "estimated_tool_calls": 6,
+      "tags": ["scene-management", "query", "validation"]
+    },
+
+    {
+      "id": "T1-RND-001",
+      "title": "Render Single Frame",
+      "description": "Set up a minimal scene (sphere + dome light + camera) and render a single frame.",
+      "tier": 1,
+      "domain": "render",
+      "complexity": "single_tool",
+      "focus": "reliability",
+      "tools_needed": ["create_node", "set_parameter", "render_frame"],
+      "steps": [
+        "Create a sphere geometry via SOP Import",
+        "Create a dome light",
+        "Create a camera",
+        "Set render settings (resolution, samples)",
+        "Render a single frame",
+        "Verify render output file exists"
+      ],
+      "expected_outcome": "Render completes without error and output file is created",
+      "estimated_tool_calls": 8,
+      "tags": ["render", "karma", "single-frame"]
+    },
+
+    {
+      "id": "T1-USD-001",
+      "title": "USD Stage Inspection",
+      "description": "Build a simple USD stage with multiple prims and inspect it. Verify hierarchy, types, and properties.",
+      "tier": 1,
+      "domain": "layout",
+      "complexity": "single_tool",
+      "focus": "architecture",
+      "tools_needed": ["create_node", "inspect_stage"],
+      "steps": [
+        "Create a scene with nested transform hierarchy",
+        "Add geometry at leaf level",
+        "Inspect the full stage",
+        "Verify prim paths match expected hierarchy",
+        "Verify property values are accessible"
+      ],
+      "expected_outcome": "Stage inspection returns correct hierarchy and property values",
+      "estimated_tool_calls": 5,
+      "tags": ["usd", "stage", "hierarchy", "inspection"]
+    },
+
+    {
+      "id": "T1-PAR-001",
+      "title": "Parameter Encoding Stress",
+      "description": "Set various parameter types (float, int, string, vector, color, bool) and verify they persist correctly in USD.",
+      "tier": 1,
+      "domain": "general",
+      "complexity": "single_tool",
+      "focus": "reliability",
+      "tools_needed": ["create_node", "set_parameter", "inspect_stage"],
+      "steps": [
+        "Create a light node",
+        "Set float parameter (intensity)",
+        "Set color parameter (light color as RGB vector)",
+        "Set string parameter (texture path)",
+        "Set boolean parameter (normalize)",
+        "Read back each parameter and verify values match"
+      ],
+      "expected_outcome": "All parameter types round-trip correctly through set/get",
+      "estimated_tool_calls": 10,
+      "tags": ["parameters", "encoding", "types", "usd"]
+    },
+
+    {
+      "id": "T1-SAF-001",
+      "title": "Undo/Safety System",
+      "description": "Create nodes, make modifications, then test the undo system to verify rollback works.",
+      "tier": 1,
+      "domain": "general",
+      "complexity": "single_tool",
+      "focus": "reliability",
+      "tools_needed": ["create_node", "set_parameter", "undo", "query_scene"],
+      "steps": [
+        "Query initial scene state",
+        "Create a new node",
+        "Verify node exists",
+        "Call undo",
+        "Verify node no longer exists",
+        "Query scene state matches initial"
+      ],
+      "expected_outcome": "Undo correctly reverses the node creation",
+      "estimated_tool_calls": 6,
+      "tags": ["safety", "undo", "rollback", "atomic"]
+    },
+
+    {
+      "id": "T1-MEM-001",
+      "title": "Memory System Read/Write",
+      "description": "Write a memory entry, read it back, verify persistence within the session.",
+      "tier": 1,
+      "domain": "pipeline",
+      "complexity": "single_tool",
+      "focus": "reliability",
+      "tools_needed": ["save_memory", "load_memory", "query_memory"],
+      "steps": [
+        "Save a memory entry with key-value data",
+        "Read the entry back",
+        "Verify the data matches what was written",
+        "Query memory for the entry by key",
+        "Verify query returns the correct entry"
+      ],
+      "expected_outcome": "Memory system correctly persists and retrieves data within session",
+      "estimated_tool_calls": 5,
+      "tags": ["memory", "persistence", "session"]
+    },
+
+    {
+      "id": "T2-LGT-001",
+      "title": "Full Lighting Setup + Render",
+      "description": "Build a complete lighting setup: dome light for environment, key light, fill light, rim light. Import geometry, assign material, render preview.",
+      "tier": 2,
+      "domain": "lighting",
+      "complexity": "workflow",
+      "focus": "quality",
+      "tools_needed": ["create_node", "set_parameter", "inspect_stage", "render_frame"],
+      "steps": [
+        "Create sphere geometry via SOP Import",
+        "Create dome light with HDRI texture",
+        "Create distant light as key (intensity 1.2, warm color)",
+        "Create rect light as fill (intensity 0.4, cool color)",
+        "Create distant light as rim (intensity 0.8)",
+        "Create camera at appropriate distance",
+        "Set render resolution to 1920x1080",
+        "Set sample count for preview quality",
+        "Render a frame",
+        "Verify render output exists and is non-empty"
+      ],
+      "expected_outcome": "Complete render with all lights contributing, correct resolution, no artifacts",
+      "estimated_tool_calls": 15,
+      "tags": ["lighting", "render", "workflow", "karma"]
+    },
+
+    {
+      "id": "T2-MTL-001",
+      "title": "Multi-Material Scene",
+      "description": "Create three different objects, each with a unique MaterialX material, render to verify distinct appearances.",
+      "tier": 2,
+      "domain": "lookdev",
+      "complexity": "workflow",
+      "focus": "quality",
+      "tools_needed": ["create_node", "set_parameter", "inspect_material", "render_frame"],
+      "steps": [
+        "Create three SOP geometries (sphere, box, torus)",
+        "Import all to LOPs",
+        "Create Material A: red metal (base_color red, metalness 1.0, roughness 0.2)",
+        "Create Material B: blue rubber (base_color blue, metalness 0.0, roughness 0.8)",
+        "Create Material C: green glass (transmission 0.9, IOR 1.5)",
+        "Assign each material to its corresponding geometry",
+        "Add dome light",
+        "Render frame",
+        "Verify all three material bindings exist",
+        "Verify render output exists"
+      ],
+      "expected_outcome": "Three objects with visually distinct materials, all bindings valid",
+      "estimated_tool_calls": 20,
+      "tags": ["materialx", "multi-object", "binding", "render"]
+    },
+
+    {
+      "id": "T2-USD-001",
+      "title": "USD Layer Composition",
+      "description": "Build a multi-layer USD scene: asset layer with geometry, material layer with materials, shot layer with overrides. Verify composition precedence.",
+      "tier": 2,
+      "domain": "layout",
+      "complexity": "workflow",
+      "focus": "architecture",
+      "tools_needed": ["create_node", "set_parameter", "inspect_stage", "compose_layer"],
+      "steps": [
+        "Create base asset layer with sphere geometry",
+        "Create material layer with MaterialX material",
+        "Create shot layer with intensity override on light",
+        "Compose layers in correct order",
+        "Verify shot layer opinions override asset layer",
+        "Inspect final composed stage",
+        "Verify no orphan prims or broken references"
+      ],
+      "expected_outcome": "Clean USD composition with correct layer precedence, no errors",
+      "estimated_tool_calls": 12,
+      "tags": ["usd", "composition", "layers", "pipeline"]
+    },
+
+    {
+      "id": "T2-PIP-001",
+      "title": "SOP to LOP Pipeline",
+      "description": "Full SOP-to-LOP pipeline: create geometry in SOPs, add attributes, import to LOPs, apply materials, set up camera and lights, render.",
+      "tier": 2,
+      "domain": "pipeline",
+      "complexity": "workflow",
+      "focus": "architecture",
+      "tools_needed": ["create_node", "set_parameter", "inspect_stage", "render_frame"],
+      "steps": [
+        "Create procedural geometry in SOPs (mountain terrain)",
+        "Add Cd attribute (vertex color) in SOPs",
+        "Create SOP Import LOP to bring geometry into stage",
+        "Apply MaterialX material using Cd as base color",
+        "Create camera looking at terrain",
+        "Add dome light",
+        "Set render settings",
+        "Render frame",
+        "Verify attribute transfer from SOP to LOP",
+        "Verify material uses transferred attribute"
+      ],
+      "expected_outcome": "Complete SOP→LOP pipeline with attribute transfer and material assignment rendering correctly",
+      "estimated_tool_calls": 15,
+      "tags": ["pipeline", "sop-to-lop", "attributes", "render"]
+    },
+
+    {
+      "id": "T2-RND-001",
+      "title": "Render Settings Validation",
+      "description": "Configure various render settings (resolution, samples, pixel filter, AOVs) and verify they take effect in the render output.",
+      "tier": 2,
+      "domain": "render",
+      "complexity": "workflow",
+      "focus": "reliability",
+      "tools_needed": ["create_node", "set_parameter", "render_frame", "get_render_settings"],
+      "steps": [
+        "Create minimal render scene",
+        "Set resolution to 1280x720",
+        "Set pixel samples to 64",
+        "Configure AOVs (beauty, diffuse, specular, depth)",
+        "Read back render settings to verify they match",
+        "Render a frame",
+        "Verify output resolution matches setting",
+        "Verify AOV outputs were generated"
+      ],
+      "expected_outcome": "All render settings correctly applied and reflected in output",
+      "estimated_tool_calls": 12,
+      "tags": ["render", "settings", "aovs", "karma"]
+    },
+
+    {
+      "id": "T2-SAF-001",
+      "title": "Error Recovery Workflow",
+      "description": "Deliberately trigger errors in a multi-step workflow and verify SYNAPSE's safety system handles them correctly.",
+      "tier": 2,
+      "domain": "general",
+      "complexity": "workflow",
+      "focus": "reliability",
+      "tools_needed": ["create_node", "set_parameter", "undo", "checkpoint", "validate_scene"],
+      "steps": [
+        "Create a valid scene (geometry + light + camera)",
+        "Create a checkpoint",
+        "Attempt to set an invalid parameter value",
+        "Verify error is reported cleanly",
+        "Verify scene state is not corrupted",
+        "Attempt to create a node with invalid type",
+        "Verify error is reported cleanly",
+        "Verify scene state still matches checkpoint",
+        "Continue with valid operations to confirm recovery"
+      ],
+      "expected_outcome": "Errors caught cleanly, scene never corrupted, recovery successful",
+      "estimated_tool_calls": 12,
+      "tags": ["safety", "error-handling", "recovery", "atomic"]
+    },
+
+    {
+      "id": "T3-FULL-001",
+      "title": "Complete Shot Assembly",
+      "description": "Full cross-department shot assembly: Layout places assets, Lookdev adds materials, Lighting sets up rig, render validates output.",
+      "tier": 3,
+      "domain": "pipeline",
+      "complexity": "cross_department",
+      "focus": "architecture",
+      "tools_needed": ["create_node", "set_parameter", "inspect_stage", "inspect_material", "render_frame", "compose_layer"],
+      "steps": [
+        "[LAYOUT] Create scene with ground plane and 3 objects at different positions",
+        "[LAYOUT] Set up camera with appropriate framing",
+        "[LOOKDEV] Create 3 distinct MaterialX materials",
+        "[LOOKDEV] Assign materials to objects",
+        "[LOOKDEV] Verify all bindings resolve correctly",
+        "[LIGHTING] Create dome light + 3-point rig",
+        "[LIGHTING] Adjust intensities for scene balance",
+        "[RENDER] Set production render settings",
+        "[RENDER] Render frame",
+        "[SUPERVISOR] Evaluate: all objects visible, materials distinct, lighting balanced",
+        "[PRODUCER] Time the entire pipeline, compute friction ratio"
+      ],
+      "expected_outcome": "Production-quality render from a multi-department assembly with clean USD composition",
+      "estimated_tool_calls": 30,
+      "tags": ["cross-department", "full-pipeline", "production", "composition"]
+    },
+
+    {
+      "id": "T3-STRESS-001",
+      "title": "Parametric Stress Test",
+      "description": "Run a single tool call (set_parameter) with 20 different parameter variations to find edge cases.",
+      "tier": 3,
+      "domain": "general",
+      "complexity": "cross_department",
+      "focus": "reliability",
+      "tools_needed": ["create_node", "set_parameter", "inspect_stage"],
+      "steps": [
+        "Create a light node as test subject",
+        "Set intensity to: 0, 0.001, 0.5, 1.0, 10, 100, 1000, -1, NaN, Inf",
+        "Set color to: (0,0,0), (1,1,1), (-1,0,0), (2,2,2), (0.5,0.5,0.5)",
+        "Set texture path to: empty, valid, nonexistent, unicode, very long, spaces",
+        "For each variation: record success/failure and resulting parameter value",
+        "Identify which edge cases break and which are handled gracefully"
+      ],
+      "expected_outcome": "Clear map of which parameter edge cases are handled vs. which break",
+      "estimated_tool_calls": 25,
+      "tags": ["stress-test", "parametric", "edge-cases", "boundary"]
+    }
+  ]
+}
