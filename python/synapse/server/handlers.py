@@ -5,6 +5,7 @@ Registry-based command handler system for the Synapse WebSocket server.
 Routes incoming commands to appropriate handler functions.
 """
 
+import math
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -74,12 +75,18 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "render_settings": AuditCategory.RENDER,
     "wedge": AuditCategory.RENDER,
     "capture_viewport": AuditCategory.RENDER,
+    "configure_render_passes": AuditCategory.RENDER,
     "validate_frame": AuditCategory.RENDER,
     "create_usd_prim": AuditCategory.PIPELINE,
     "modify_usd_prim": AuditCategory.PIPELINE,
     "set_usd_attribute": AuditCategory.PIPELINE,
     "reference_usd": AuditCategory.PIPELINE,
+    "query_prims": AuditCategory.PIPELINE,
+    "manage_variant_set": AuditCategory.PIPELINE,
+    "manage_collection": AuditCategory.PIPELINE,
+    "configure_light_linking": AuditCategory.PIPELINE,
     "create_material": AuditCategory.MATERIAL,
+    "create_textured_material": AuditCategory.MATERIAL,
     "assign_material": AuditCategory.MATERIAL,
     "add_memory": AuditCategory.ENGRAM,
     "decide": AuditCategory.ENGRAM,
@@ -337,8 +344,12 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("tops_diagnose", self._handle_tops_diagnose)
         reg.register("tops_pipeline_status", self._handle_tops_pipeline_status)
 
-        # USD scene assembly (reference / sublayer)
+        # USD scene assembly (reference / sublayer / payload) + prim queries
         reg.register("reference_usd", self._handle_reference_usd)
+        reg.register("query_prims", self._handle_query_prims)
+        reg.register("manage_variant_set", self._handle_manage_variant_set)
+        reg.register("manage_collection", self._handle_manage_collection)
+        reg.register("configure_light_linking", self._handle_configure_light_linking)
 
         # Keyframe / Render Settings
         reg.register("set_keyframe", self._handle_set_keyframe)
@@ -346,8 +357,12 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
         # Materials
         reg.register("create_material", self._handle_create_material)
+        reg.register("create_textured_material", self._handle_create_textured_material)
         reg.register("assign_material", self._handle_assign_material)
         reg.register("read_material", self._handle_read_material)
+
+        # Render passes / AOVs
+        reg.register("configure_render_passes", self._handle_configure_render_passes)
 
         # Quality validation
         reg.register("validate_frame", self._handle_validate_frame)
@@ -441,10 +456,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             statuses: list = []
             errors: list = []
 
-            if atomic and HOU_AVAILABLE:
-                hou.undos.beginGroup()
-
-            try:
+            def _run_batch():
                 for i, cmd_spec in enumerate(commands):
                     cmd_type = cmd_spec.get("type", "")
                     cmd_payload = cmd_spec.get("payload", {})
@@ -470,9 +482,12 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                         errors.append(f"Step {i}: {e}")
                         if stop_on_error:
                             break
-            finally:
-                if atomic and HOU_AVAILABLE:
-                    hou.undos.endGroup()
+
+            if atomic and HOU_AVAILABLE:
+                with hou.undos.group("synapse_batch"):
+                    _run_batch()
+            else:
+                _run_batch()
 
             return {
                 "results": results,
@@ -542,6 +557,22 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         parm_name = resolve_param(payload, "parm")
         value = resolve_param(payload, "value")
 
+        # Guard: reject NaN/Inf before they reach Houdini (they persist and corrupt)
+        if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+            bad = "NaN" if math.isnan(value) else "Infinity"
+            raise ValueError(
+                f"Can't set {parm_name} to {bad} — that would corrupt the "
+                "parameter. Use a finite number instead."
+            )
+        if isinstance(value, (list, tuple)):
+            for i, v in enumerate(value):
+                if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+                    bad = "NaN" if math.isnan(v) else "Infinity"
+                    raise ValueError(
+                        f"Can't set {parm_name} — element {i} is {bad}, which "
+                        "would corrupt the parameter. Use finite numbers instead."
+                    )
+
         from .main_thread import run_on_main
 
         def _on_main():
@@ -560,7 +591,19 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                         parm_name = usd_encoded
             if parm is not None:
                 parm.set(value)
-                return {"node": node_path, "parm": parm_name, "value": value}
+                result = {"node": node_path, "parm": parm_name, "value": value}
+                # Lighting Law: soft warning when intensity > 1.0 on light nodes
+                if ("intensity" in parm_name.lower()
+                        and isinstance(value, (int, float)) and value > 1.0):
+                    try:
+                        if "light" in node.type().name().lower():
+                            result["warning"] = (
+                                "Intensity is usually 1.0 — consider using "
+                                "exposure for brightness control (Lighting Law)"
+                            )
+                    except Exception:
+                        pass  # Node type check is best-effort
+                return result
 
             # Try as parm tuple
             parm_tuple = node.parmTuple(parm_name)
@@ -569,7 +612,19 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                     parm_tuple.set(value)
                 else:
                     parm_tuple.set([value] * len(parm_tuple))
-                return {"node": node_path, "parm": parm_name, "value": value}
+                result = {"node": node_path, "parm": parm_name, "value": value}
+                # Lighting Law: soft warning when intensity > 1.0 on light nodes
+                if ("intensity" in parm_name.lower()
+                        and isinstance(value, (int, float)) and value > 1.0):
+                    try:
+                        if "light" in node.type().name().lower():
+                            result["warning"] = (
+                                "Intensity is usually 1.0 — consider using "
+                                "exposure for brightness control (Lighting Law)"
+                            )
+                    except Exception:
+                        pass
+                return result
 
             hint = _suggest_parms(node, parm_name)
             raise ParameterError(node_path, parm_name, suggestion=hint.strip() if hint else "")
@@ -667,12 +722,24 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             # - Operational errors (render timeout, file not found, hou.OperationFailed)
             #   -> keep mutations, since node creation/wiring may have succeeded
             if atomic:
+                _needs_rollback = False
+                _rollback_exc = None
                 with hou.undos.group("synapse_execute"):
                     try:
                         _run_compiled(compiled, exec_globals, exec_locals)
-                    except _ROLLBACK_ERRORS:
+                    except _ROLLBACK_ERRORS as e:
+                        # Don't call performUndo() inside the undo group —
+                        # that raises "Cannot undo within an undo group".
+                        # Instead, flag for rollback after the group closes.
+                        _needs_rollback = True
+                        _rollback_exc = e
+                # Undo group is now closed — safe to roll back
+                if _needs_rollback:
+                    try:
                         hou.undos.performUndo()
-                        raise
+                    except Exception:
+                        pass  # Best effort — group may already be empty
+                    raise _rollback_exc
             else:
                 _run_compiled(compiled, exec_globals, exec_locals)
 

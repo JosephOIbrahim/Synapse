@@ -8,9 +8,9 @@
       "category": "TOOL_GAP",
       "title": "No dedicated undo/redo MCP tool",
       "description": "Undo/redo requires execute_python with atomic=false and manual hou.undos calls. A dedicated tool would simplify scene state rollback for agents.",
-      "evidence": ["T1-SAF-001"],
+      "evidence": ["T1-SAF-001", "T2-SAF-001"],
       "proposed_fix": "Add houdini_undo and houdini_redo tools to MCP that call hou.undos.performUndo()/performRedo() with atomic=false wrapper.",
-      "priority": "medium",
+      "priority": "high",
       "status": "open"
     },
     {
@@ -23,7 +23,9 @@
       "evidence": ["T1-MTL-001"],
       "proposed_fix": "Enhance read_material handler to introspect MaterialX shader nodes — traverse the material's shader network and extract surface shader parameters.",
       "priority": "high",
-      "status": "open"
+      "status": "resolved",
+      "resolved_at": "2026-02-19T01:30:00Z",
+      "resolution": "Two fixes: (1) read_material now handles material prims directly — checks if prim IS a UsdShade.Material before falling back to binding lookup. Works for both geometry prims (via binding) and material prims (direct). (2) Root cause of empty returns was stale .pyc — the multi-fallback shader extraction code (surface output → MaterialX outputs → child walk) was already in the .py but not in the loaded bytecode. After module reload, shader params and type are returned correctly. Updated test mocks to distinguish geometry prims from material prims."
     },
     {
       "id": "BL-003",
@@ -35,7 +37,9 @@
       "evidence": ["T1-MTL-001", "T1-MTL-002"],
       "proposed_fix": "Fix create_material handler to return the actual USD prim path by querying the stage after creation, or fix the matlib naming convention.",
       "priority": "high",
-      "status": "open"
+      "status": "resolved",
+      "resolved_at": "2026-02-19T01:30:00Z",
+      "resolution": "Root cause: stale .pyc. The stage query code (cook matlib → traverse /materials/ children → match by name) was already in the .py source but the loaded .pyc bytecode predated it. After deleting stale .pyc and reloading, create_material correctly returns /materials/{name}_shader. No code change needed — just deployment hygiene."
     },
     {
       "id": "BL-004",
@@ -48,6 +52,104 @@
       "proposed_fix": "Extend set_parm to accept array values and auto-distribute to component parameters when the target is a tuple parm.",
       "priority": "medium",
       "status": "open"
+    },
+    {
+      "id": "BL-005",
+      "created_cycle": 2,
+      "created_at": "2026-02-18T21:00:00Z",
+      "category": "WORKFLOW_FRICTION",
+      "title": "synapse_batch undo grouping broken",
+      "description": "synapse_batch with atomic=true fails: 'undos object has no attribute beginGroup'. Batch operations cannot be wrapped in a single undo group.",
+      "evidence": ["T2-LGT-001"],
+      "proposed_fix": "Fix undo group API call in batch handler — likely needs hou.undos.disabler() or correct beginUndoGroup()/endUndoGroup() method names.",
+      "priority": "medium",
+      "status": "resolved",
+      "resolved_at": "2026-02-18T25:15:00Z",
+      "resolution": "Root cause: stale .pyc (handlers.cpython-311.pyc) compiled from older code that used hou.undos.beginGroup()/endGroup() — which don't exist on hou.undos. The .py source already used hou.undos.group() context manager (correct API). Fix: deleted stale .pyc, reloaded module. Verified: synapse_batch atomic=true creates nodes, single undo removes both. Prevention: Houdini loads .pyc at startup — any handler edits require restart or explicit reload."
+    },
+    {
+      "id": "BL-006",
+      "created_cycle": 2,
+      "created_at": "2026-02-18T21:00:00Z",
+      "category": "SAFETY_CONCERN",
+      "title": "execute_python rollback fails under atomic=true",
+      "description": "When execute_python (atomic=true default) hits a rollback error (NameError, TypeError, etc.), the auto-undo fails with 'Cannot undo within an undo group'. Nodes created before the error persist as orphans. The safety net has a hole.",
+      "evidence": ["T2-SAF-001"],
+      "proposed_fix": "Either: (1) switch rollback to use hou.undos.undoGroup() context manager exit instead of performUndo(), or (2) make atomic=true wrap in try/finally that rolls back the entire undo group on exception.",
+      "priority": "high",
+      "status": "resolved",
+      "resolved_at": "2026-02-18T25:15:00Z",
+      "resolution": "Verified working in live Houdini. The flag-and-defer pattern in execute_python handler (line 713-727) correctly handles rollback: catches _ROLLBACK_ERRORS inside hou.undos.group(), flags need_rollback=True, then calls performUndo() AFTER the 'with' block exits. This avoids 'Cannot undo within an undo group'. Confirmed: NameError triggers rollback, orphan node is cleaned up. The original BL-006 was also caused by the stale .pyc (same root cause as BL-005)."
+    },
+    {
+      "id": "BL-007",
+      "created_cycle": 2,
+      "created_at": "2026-02-18T21:00:00Z",
+      "category": "WORKFLOW_FRICTION",
+      "title": "houdini_render does not persist EXR to disk",
+      "description": "houdini_render returns an in-memory JPEG preview but does not write the EXR file to the path specified in picture/outputimage parms. Cannot do post-render file validation or AOV inspection.",
+      "evidence": ["T1-RND-001", "T2-RND-001"],
+      "proposed_fix": "Ensure render handler triggers a disk-write render (not just viewport preview). May need soho_foreground=1 or background render with file polling.",
+      "priority": "high",
+      "status": "resolved",
+      "resolved_at": "2026-02-18T26:00:00Z",
+      "resolution": "Three fixes in _handle_render: (1) Default to EXR in $HIP/.synapse/renders/ when no artist output path is configured (was defaulting to temp JPEG). (2) Discover picture parm from upstream Karma LOP when ROP has no output path — walks loppath -> karma LOP chain. (3) Pre-render validation creates output directory if needed. (4) $F4 frame tokens resolved before file polling. (5) Always reports output_file in response. 5 new tests."
+    },
+    {
+      "id": "BL-008",
+      "created_cycle": 3,
+      "created_at": "2026-02-18T23:30:00Z",
+      "category": "WORKFLOW_FRICTION",
+      "title": "assetreference LOP invisible in Karma renderer",
+      "description": "assetreference LOP nodes are invisible to Karma. Sublayer works. Need to either document workaround or investigate root cause (possibly husk asset resolver).",
+      "evidence": ["T3-FULL-001"],
+      "proposed_fix": "Investigate whether assetreference requires specific purpose/kind metadata for Karma visibility. Document sublayer as preferred import method for Karma scenes. Consider adding a warning in reference_usd handler when mode=reference and render context is Karma.",
+      "priority": "critical",
+      "status": "resolved",
+      "resolved_at": "2026-02-18T26:15:00Z",
+      "resolution": "Three-pronged fix: (1) Added mode='payload' to reference_usd handler — sets reftype parm on reference LOP for deferred loading. (2) Added Karma visibility advisory in response for reference/payload modes, recommending sublayer for rendering. (3) Updated MCP tool schemas in both mcp/tools.py and mcp_server.py to include 'payload' enum option with documentation. Root cause: assetreference is a separate node type; the handler uses the standard 'reference' LOP which supports both reference and payload via the reftype parm. Sublayer remains the most reliable import mode for Karma scenes."
+    },
+    {
+      "id": "BL-009",
+      "created_cycle": 3,
+      "created_at": "2026-02-18T23:30:00Z",
+      "category": "SAFETY_CONCERN",
+      "title": "NaN/Inf guard for set_parm",
+      "description": "set_parm should reject NaN/Inf values before calling hou.Parm.set(). Add math.isnan/isinf validation.",
+      "evidence": ["T3-STRESS-001"],
+      "proposed_fix": "Add a guard in the set_parm handler: if value is float and (math.isnan(value) or math.isinf(value)), return an error with coaching tone: 'That value (NaN/Inf) would corrupt the parameter. Try a finite number instead.'",
+      "priority": "high",
+      "status": "resolved",
+      "resolved_at": "2026-02-18T23:45:00Z",
+      "resolution": "Added NaN/Inf validation in _handle_set_parm (handlers.py) before run_on_main. Covers single float, list/tuple elements. Raises ValueError with coaching tone. 10 tests added to test_integration_pipeline.py."
+    },
+    {
+      "id": "BL-010",
+      "created_cycle": 3,
+      "created_at": "2026-02-18T23:30:00Z",
+      "category": "MISSING_CONVENTION",
+      "title": "Lighting Law enforcement in set_parm",
+      "description": "set_parm should warn (not reject) when setting intensity > 1.0 on light nodes. Lighting Law: brightness via exposure only.",
+      "evidence": ["T3-STRESS-001"],
+      "proposed_fix": "Add a soft warning in set_parm handler when parameter name matches intensity patterns (xn__inputsintensity_*) and value > 1.0. Include coaching message: 'Intensity is usually 1.0 — consider using exposure for brightness control (Lighting Law).' Do not reject the value.",
+      "priority": "medium",
+      "status": "resolved",
+      "resolved_at": "2026-02-18T23:50:00Z",
+      "resolution": "Added Lighting Law soft warning in _handle_set_parm (both single parm and tuple paths). Checks: parm name contains 'intensity', value > 1.0, node type contains 'light'. Warning added to response dict as 'warning' key — operation still succeeds. 8 tests added."
+    },
+    {
+      "id": "BL-011",
+      "created_cycle": 3,
+      "created_at": "2026-02-18T23:30:00Z",
+      "category": "WORKFLOW_FRICTION",
+      "title": "create_material stage query fix incomplete",
+      "description": "Fix #13 stage query silently fails. Material USD path suffix '_shader' not captured. Need to debug why matlib.stage() returns None in handler context.",
+      "evidence": ["T3-FULL-001"],
+      "proposed_fix": "Debug matlib.stage() call in handler context — may need to cook the matlib first (matlib.cook(force=True)) before querying stage. Alternative: use hou.LopNode.editableStage() instead of matlib.stage(). Return the actual prim path from stage traversal, not the constructed path.",
+      "priority": "high",
+      "status": "resolved",
+      "resolved_at": "2026-02-19T01:30:00Z",
+      "resolution": "Duplicate of BL-003. Same root cause: stale .pyc. The stage query code was present in the .py source but the loaded bytecode never had it. Resolved by purging all stale handler .pyc files and reloading modules."
     }
   ]
 }

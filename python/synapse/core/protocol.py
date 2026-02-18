@@ -59,6 +59,10 @@ class CommandType(Enum):
     GET_STAGE_INFO = "get_stage_info"
     SET_USD_ATTRIBUTE = "set_usd_attribute"
     GET_USD_ATTRIBUTE = "get_usd_attribute"
+    QUERY_PRIMS = "query_prims"
+    MANAGE_VARIANT_SET = "manage_variant_set"
+    MANAGE_COLLECTION = "manage_collection"
+    CONFIGURE_LIGHT_LINKING = "configure_light_linking"
 
     # Utility
     PING = "ping"

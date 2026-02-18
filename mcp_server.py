@@ -843,6 +843,27 @@ async def list_tools():
                 "required": ["image_path"],
             },
         ),
+        Tool(
+            name="synapse_configure_render_passes",
+            description=(
+                "Configure render passes (AOVs) for Karma. Creates RenderVar prims for compositing. "
+                "Presets: beauty, diffuse, specular, emission, normal, depth, position, albedo, "
+                "crypto_material, crypto_object, motion, sss."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "LOP node to wire after (optional)"},
+                    "passes": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of pass names (e.g. ['beauty', 'diffuse', 'normal', 'crypto_object'])",
+                    },
+                    "clear_existing": {"type": "boolean", "description": "Clear existing render vars first (default: false)"},
+                },
+                "required": ["passes"],
+            },
+        ),
         # -- Keyframe / Render Settings --
         Tool(
             name="houdini_set_keyframe",
@@ -1148,21 +1169,115 @@ async def list_tools():
         Tool(
             name="houdini_reference_usd",
             description=(
-                "Import a USD file into the stage via reference or sublayer. "
-                "Confirm the asset loaded by reporting its path and what's on the stage now."
+                "Import a USD file into the stage via reference, payload, or sublayer. "
+                "Payload mode uses deferred loading for heavy assets. "
+                "For Karma rendering, sublayer is the most reliable import mode."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "file": {"type": "string", "description": "Path to USD file (.usd, .usdc, .usda)"},
                     "prim_path": {"type": "string", "description": "Target prim path for reference. Default: /"},
-                    "mode": {"type": "string", "enum": ["reference", "sublayer"], "description": "Import mode. Default: reference"},
+                    "mode": {"type": "string", "enum": ["reference", "payload", "sublayer"],
+                             "description": "Import mode: reference (default), payload (deferred load), or sublayer (most Karma-compatible)"},
                     "parent": {"type": "string", "description": "Parent LOP network path. Default: /stage"},
                 },
                 "required": ["file"],
             },
         ),
+        Tool(
+            name="houdini_query_prims",
+            description=(
+                "Query USD stage prims with filtering by type, purpose, and name pattern. "
+                "Returns matching prims with their paths, types, and metadata."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "LOP node path. If omitted, uses current selection."},
+                    "root_path": {"type": "string", "description": "USD prim path to start walking from (default: /)"},
+                    "prim_type": {"type": "string", "description": "Filter by USD type name (e.g. 'Mesh', 'DomeLight', 'Material')"},
+                    "purpose": {"type": "string", "description": "Filter by purpose (e.g. 'default', 'render', 'proxy', 'guide')"},
+                    "name_pattern": {"type": "string", "description": "Regex or substring filter on prim name"},
+                    "max_depth": {"type": "integer", "description": "Max traversal depth (default: 10)"},
+                    "limit": {"type": "integer", "description": "Max prims to return (default: 100)"},
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="houdini_manage_variant_set",
+            description=(
+                "Manage USD variant sets on a prim: list, create, or select variants. "
+                "Use 'list' to see existing variant sets, 'create' to add a new set "
+                "with named variants, or 'select' to switch the active variant."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "LOP node path. If omitted, uses current selection."},
+                    "prim_path": {"type": "string", "description": "USD prim path to manage variants on"},
+                    "action": {"type": "string", "enum": ["list", "create", "select"],
+                               "description": "Action to perform (default: list)"},
+                    "variant_set": {"type": "string", "description": "Variant set name (required for create/select)"},
+                    "variants": {"type": "array", "items": {"type": "string"},
+                                 "description": "Variant names to create (required for create action)"},
+                    "variant": {"type": "string", "description": "Variant to select (required for select action)"},
+                },
+                "required": ["prim_path"],
+            },
+        ),
+        Tool(
+            name="houdini_manage_collection",
+            description=(
+                "Manage USD collections on a prim for light linking, material assignment, "
+                "and grouping. Use 'list' to see existing collections, 'create' to make a "
+                "new collection with include/exclude paths, 'add'/'remove' to modify paths."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "LOP node path. If omitted, uses current selection."},
+                    "prim_path": {"type": "string", "description": "USD prim path to manage collections on"},
+                    "action": {"type": "string", "enum": ["list", "create", "add", "remove"],
+                               "description": "Action to perform (default: list)"},
+                    "collection_name": {"type": "string", "description": "Collection name (required for create/add/remove)"},
+                    "paths": {"type": "array", "items": {"type": "string"},
+                              "description": "Prim paths to include (required for create/add/remove)"},
+                    "exclude_paths": {"type": "array", "items": {"type": "string"},
+                                      "description": "Prim paths to exclude (optional, create only)"},
+                    "expansion_rule": {"type": "string", "enum": ["expandPrims", "expandPrimsAndProperties", "explicitOnly"],
+                                       "description": "Collection expansion rule (default: expandPrims)"},
+                },
+                "required": ["prim_path"],
+            },
+        ),
         # -- Materials --
+        Tool(
+            name="houdini_create_textured_material",
+            description=(
+                "Create a production MaterialX material with texture file inputs. "
+                "Supports diffuse, roughness, metalness, normal, opacity, and displacement maps. "
+                "Handles UDIM textures and UV coordinate wiring automatically."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "LOP node to wire after (optional)"},
+                    "name": {"type": "string", "description": "Material name (default: textured_material)"},
+                    "diffuse_map": {"type": "string", "description": "Path to diffuse/albedo texture file"},
+                    "roughness_map": {"type": "string", "description": "Path to roughness texture file"},
+                    "metalness_map": {"type": "string", "description": "Path to metalness texture file"},
+                    "normal_map": {"type": "string", "description": "Path to normal map texture file"},
+                    "displacement_map": {"type": "string", "description": "Path to displacement map texture file"},
+                    "opacity_map": {"type": "string", "description": "Path to opacity/alpha texture file"},
+                    "roughness": {"type": "number", "description": "Scalar roughness fallback if no texture (0-1)"},
+                    "metalness": {"type": "number", "description": "Scalar metalness fallback if no texture (0-1)"},
+                    "geo_pattern": {"type": "string", "description": "Optional geometry prim pattern to auto-assign material"},
+                },
+                "required": [],
+            },
+        ),
         Tool(
             name="houdini_create_material",
             description=(
@@ -1198,8 +1313,55 @@ async def list_tools():
                         "type": "number",
                         "description": "Roughness value 0-1",
                     },
+                    "opacity": {
+                        "type": "number",
+                        "description": "Opacity 0-1 (1=fully opaque)",
+                    },
+                    "emission": {
+                        "type": "number",
+                        "description": "Emission weight 0-1",
+                    },
+                    "emission_color": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "Emission color [r, g, b] 0-1",
+                    },
+                    "subsurface": {
+                        "type": "number",
+                        "description": "Subsurface scattering weight 0-1",
+                    },
+                    "subsurface_color": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "Subsurface color [r, g, b] 0-1",
+                    },
                 },
                 "required": [],
+            },
+        ),
+        Tool(
+            name="houdini_configure_light_linking",
+            description=(
+                "Configure light linking between lights and geometry via USD collections. "
+                "Control which geometry a light illuminates or casts shadows on."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "LOP node path. If omitted, uses current selection."},
+                    "light_path": {"type": "string", "description": "USD prim path of the light"},
+                    "action": {
+                        "type": "string",
+                        "enum": ["include", "exclude", "shadow_include", "shadow_exclude", "reset"],
+                        "description": "Light linking action (default: include)",
+                    },
+                    "geo_paths": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Geometry prim paths to include/exclude (not needed for reset)",
+                    },
+                },
+                "required": ["light_path"],
             },
         ),
         Tool(
@@ -1790,10 +1952,16 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "tops_diagnose":              ("tops_diagnose",              _identity),
     "tops_pipeline_status":       ("tops_pipeline_status",       _identity),
     "houdini_reference_usd": ("reference_usd",  _identity),
+    "houdini_query_prims":   ("query_prims",    _identity),
+    "houdini_manage_variant_set": ("manage_variant_set", _identity),
+    "houdini_manage_collection": ("manage_collection", _identity),
+    "houdini_configure_light_linking": ("configure_light_linking", _identity),
+    "houdini_create_textured_material": ("create_textured_material", _identity),
     "houdini_create_material":  ("create_material",  _identity),
     "houdini_assign_material":  ("assign_material",  _identity),
     "houdini_read_material":    ("read_material",    _identity),
     "synapse_validate_frame":   ("validate_frame",   _identity),
+    "synapse_configure_render_passes": ("configure_render_passes", _identity),
     "synapse_knowledge_lookup": ("knowledge_lookup", lambda a: {"query": a["query"]}),
     "synapse_inspect_selection": ("inspect_selection", _identity),
     "synapse_inspect_scene":    ("inspect_scene",     _identity),

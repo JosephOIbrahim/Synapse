@@ -27,7 +27,11 @@ else:
     _hou = sys.modules["hou"]
 
 if "hdefereval" not in sys.modules:
-    sys.modules["hdefereval"] = types.ModuleType("hdefereval")
+    _hde = types.ModuleType("hdefereval")
+    # Stub executeDeferred to call fn synchronously (no Houdini main thread)
+    _hde.executeDeferred = lambda fn: fn()
+    _hde.executeInMainThreadWithResult = lambda fn: fn()
+    sys.modules["hdefereval"] = _hde
 
 # Import handlers via importlib to bypass package __init__
 _handlers_path = Path(__file__).resolve().parent.parent / "python" / "synapse" / "server" / "handlers.py"
@@ -114,7 +118,8 @@ class TestCreateMaterial:
         parent.createNode.assert_called_once_with("materiallibrary", "material")
         matlib.setInput.assert_called_once_with(0, lop_node)
         matlib.moveToGoodPosition.assert_called_once()
-        matlib.cook.assert_called_once_with(force=True)
+        assert matlib.cook.call_count >= 1
+        matlib.cook.assert_any_call(force=True)
 
         # Verify shader was created inside matlib
         matlib.createNode.assert_called_once_with("mtlxstandard_surface", "material_shader")
@@ -240,7 +245,9 @@ class TestCreateMaterial:
         with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
             handler._handle_create_material({"node": "/stage/node1"})
 
-        assert call_order == ["cook", "createNode"]
+        # cook before createNode, optional second cook for stage query
+        assert call_order[0] == "cook"
+        assert call_order[1] == "createNode"
 
     def test_node_not_found_raises(self, handler):
         """Non-existent node path raises ValueError."""
@@ -265,6 +272,64 @@ class TestCreateMaterial:
             result = handler._handle_create_material({})
 
         assert result["matlib_path"] == "/stage/material"
+
+    def test_extended_params_set(self, handler):
+        """Extended params (opacity, emission, subsurface) are set on shader."""
+        lop_node = _make_lop_node()
+        parent = lop_node.parent.return_value
+
+        matlib = MagicMock()
+        matlib.path.return_value = "/stage/glass"
+        shader = MagicMock()
+        shader.path.return_value = "/stage/glass/glass_shader"
+        parent.createNode.return_value = matlib
+        matlib.createNode.return_value = shader
+
+        opacity_parm = MagicMock()
+        emission_parm = MagicMock()
+        subsurface_parm = MagicMock()
+        emission_r = MagicMock()
+        emission_g = MagicMock()
+        emission_b = MagicMock()
+        subsurface_r = MagicMock()
+        subsurface_g = MagicMock()
+        subsurface_b = MagicMock()
+
+        def _shader_parm(name):
+            return {
+                "opacity": opacity_parm,
+                "emission": emission_parm,
+                "subsurface": subsurface_parm,
+                "emission_colorr": emission_r,
+                "emission_colorg": emission_g,
+                "emission_colorb": emission_b,
+                "subsurface_colorr": subsurface_r,
+                "subsurface_colorg": subsurface_g,
+                "subsurface_colorb": subsurface_b,
+            }.get(name)
+
+        shader.parm.side_effect = _shader_parm
+
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            handler._handle_create_material({
+                "node": "/stage/node1",
+                "name": "glass",
+                "opacity": 0.5,
+                "emission": 0.8,
+                "emission_color": [1.0, 0.5, 0.0],
+                "subsurface": 0.3,
+                "subsurface_color": [0.8, 0.2, 0.1],
+            })
+
+        opacity_parm.set.assert_called_once_with(0.5)
+        emission_parm.set.assert_called_once_with(0.8)
+        subsurface_parm.set.assert_called_once_with(0.3)
+        emission_r.set.assert_called_once_with(1.0)
+        emission_g.set.assert_called_once_with(0.5)
+        emission_b.set.assert_called_once_with(0.0)
+        subsurface_r.set.assert_called_once_with(0.8)
+        subsurface_g.set.assert_called_once_with(0.2)
+        subsurface_b.set.assert_called_once_with(0.1)
 
 
 # ---------------------------------------------------------------------------
@@ -415,6 +480,13 @@ class TestReadMaterial:
         mock_usdshade = MagicMock()
         mock_usdshade.MaterialBindingAPI.return_value = mock_binding_api
 
+        # Make UsdShade.Material(prim) return a non-material for geometry prims
+        # (GetSurfaceOutput returns falsy so the handler falls through to binding lookup)
+        non_mat = MagicMock()
+        non_mat.GetPrim.return_value.IsValid.return_value = False
+        non_mat.GetSurfaceOutput.return_value = None
+        mock_usdshade.Material.return_value = non_mat
+
         # The shader mock
         bound = mock_binding_api.GetDirectBinding.return_value
         material = bound.GetMaterial.return_value
@@ -453,6 +525,12 @@ class TestReadMaterial:
 
         mock_usdshade = MagicMock()
         mock_usdshade.MaterialBindingAPI.return_value = mock_binding_api
+
+        # Geometry prim is not a material — direct_mat check should fail
+        non_mat = MagicMock()
+        non_mat.GetPrim.return_value.IsValid.return_value = False
+        non_mat.GetSurfaceOutput.return_value = None
+        mock_usdshade.Material.return_value = non_mat
 
         with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
             with patch("builtins.__import__", side_effect=_make_import_patcher(mock_usdshade)):
@@ -523,6 +601,180 @@ def _make_import_patcher(mock_usdshade):
 # ---------------------------------------------------------------------------
 # Tests: read_material is in _READ_ONLY_COMMANDS
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Tests: create_textured_material
+# ---------------------------------------------------------------------------
+
+class TestCreateTexturedMaterial:
+    def _make_matlib_with_shader(self, name="textured_material"):
+        """Create mock matlib and shader for textured material tests."""
+        matlib = MagicMock()
+        matlib.path.return_value = f"/stage/{name}"
+        shader = MagicMock()
+        shader.path.return_value = f"/stage/{name}/{name}_shader"
+
+        uv_node = MagicMock()
+        uv_node.path.return_value = f"/stage/{name}/uv_reader"
+
+        img_nodes = {}
+        def _create_node(node_type, node_name):
+            if node_type == "mtlxstandard_surface":
+                return shader
+            if node_type == "mtlxgeompropvalue":
+                return uv_node
+            node = MagicMock()
+            node.path.return_value = f"/stage/{name}/{node_name}"
+            img_nodes[node_name] = node
+            return node
+
+        matlib.createNode.side_effect = _create_node
+        return matlib, shader, uv_node, img_nodes
+
+    def test_diffuse_only(self, handler):
+        """Create textured material with just a diffuse map."""
+        lop_node = _make_lop_node()
+        parent = lop_node.parent.return_value
+        matlib, shader, uv_node, img_nodes = self._make_matlib_with_shader()
+        parent.createNode.return_value = matlib
+
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            result = handler._handle_create_textured_material({
+                "node": "/stage/node1",
+                "name": "textured_material",
+                "diffuse_map": "D:/textures/wood_diffuse.exr",
+            })
+
+        assert result["name"] == "textured_material"
+        assert len(result["connected_maps"]) == 1
+        assert result["connected_maps"][0]["map"] == "diffuse_tex"
+        assert result["connected_maps"][0]["shader_input"] == "base_color"
+        assert result["connected_maps"][0]["file"] == "D:/textures/wood_diffuse.exr"
+
+    def test_full_texture_set(self, handler):
+        """Create with diffuse, roughness, metalness, and normal maps."""
+        lop_node = _make_lop_node()
+        parent = lop_node.parent.return_value
+        matlib, shader, uv_node, img_nodes = self._make_matlib_with_shader()
+        parent.createNode.return_value = matlib
+
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            result = handler._handle_create_textured_material({
+                "node": "/stage/node1",
+                "diffuse_map": "D:/tex/diffuse.<UDIM>.exr",
+                "roughness_map": "D:/tex/roughness.<UDIM>.exr",
+                "metalness_map": "D:/tex/metal.<UDIM>.exr",
+                "normal_map": "D:/tex/normal.<UDIM>.exr",
+            })
+
+        # Should have 4 connected maps (diffuse, roughness, metalness, normal)
+        assert len(result["connected_maps"]) == 4
+        map_names = [m["map"] for m in result["connected_maps"]]
+        assert "diffuse_tex" in map_names
+        assert "roughness_tex" in map_names
+        assert "metalness_tex" in map_names
+        assert "normal_tex" in map_names
+
+        # UDIM detection
+        for m in result["connected_maps"]:
+            assert m["udim"] is True
+
+    def test_scalar_fallback_when_no_texture(self, handler):
+        """Roughness/metalness scalar values used when no texture map provided."""
+        lop_node = _make_lop_node()
+        parent = lop_node.parent.return_value
+        matlib, shader, uv_node, img_nodes = self._make_matlib_with_shader()
+        parent.createNode.return_value = matlib
+
+        rough_parm = MagicMock()
+        metal_parm = MagicMock()
+        shader.parm.side_effect = lambda n: {
+            "specular_roughness": rough_parm,
+            "metalness": metal_parm,
+        }.get(n)
+
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            result = handler._handle_create_textured_material({
+                "node": "/stage/node1",
+                "roughness": 0.4,
+                "metalness": 0.9,
+            })
+
+        rough_parm.set.assert_called_once_with(0.4)
+        metal_parm.set.assert_called_once_with(0.9)
+        assert result["connected_maps"] == []
+
+    def test_geo_pattern_creates_assign_node(self, handler):
+        """geo_pattern creates an assignmaterial node wired after matlib."""
+        lop_node = _make_lop_node()
+        parent = lop_node.parent.return_value
+        matlib, shader, uv_node, img_nodes = self._make_matlib_with_shader()
+
+        assign_node = MagicMock()
+        assign_node.path.return_value = "/stage/assign_textured_material"
+        assign_node.parm.return_value = MagicMock()
+
+        call_count = {"n": 0}
+        def _create_node(node_type, name):
+            call_count["n"] += 1
+            if node_type == "materiallibrary":
+                return matlib
+            if node_type == "assignmaterial":
+                return assign_node
+            return MagicMock()
+
+        parent.createNode.side_effect = _create_node
+
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            result = handler._handle_create_textured_material({
+                "node": "/stage/node1",
+                "name": "textured_material",
+                "diffuse_map": "D:/tex/diffuse.exr",
+                "geo_pattern": "/World/hero/mesh",
+            })
+
+        assert "assign_node" in result
+        assert result["geo_pattern"] == "/World/hero/mesh"
+
+    def test_shader_creation_failure_raises(self, handler):
+        """If shader creation returns None, raise RuntimeError."""
+        lop_node = _make_lop_node()
+        parent = lop_node.parent.return_value
+
+        matlib = MagicMock()
+        matlib.path.return_value = "/stage/textured_material"
+        matlib.createNode.return_value = None  # Shader fails
+        parent.createNode.return_value = matlib
+
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            with pytest.raises(RuntimeError, match="Couldn't create"):
+                handler._handle_create_textured_material({
+                    "node": "/stage/node1",
+                    "diffuse_map": "D:/tex/diffuse.exr",
+                })
+
+    def test_uv_reader_created_and_connected(self, handler):
+        """Verify UV reader node is created and wired to texture nodes."""
+        lop_node = _make_lop_node()
+        parent = lop_node.parent.return_value
+        matlib, shader, uv_node, img_nodes = self._make_matlib_with_shader()
+        parent.createNode.return_value = matlib
+
+        with patch.object(_handlers_hou, "node", create=True, return_value=lop_node):
+            handler._handle_create_textured_material({
+                "node": "/stage/node1",
+                "diffuse_map": "D:/tex/diffuse.exr",
+            })
+
+        # UV node should have had signature and geomprop set
+        uv_node.parm.assert_any_call("signature")
+        uv_node.parm.assert_any_call("geomprop")
+
+        # Diffuse texture should be connected to UV reader
+        diffuse_img = img_nodes.get("diffuse_tex")
+        if diffuse_img:
+            diffuse_img.setNamedInput.assert_any_call("texcoord", uv_node, 0)
+
 
 class TestReadOnlyClassification:
     def test_read_material_is_read_only(self):

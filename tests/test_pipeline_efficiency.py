@@ -47,7 +47,10 @@ else:
     _hou = sys.modules["hou"]
 
 if "hdefereval" not in sys.modules:
-    sys.modules["hdefereval"] = types.ModuleType("hdefereval")
+    _hde = types.ModuleType("hdefereval")
+    _hde.executeDeferred = lambda fn: fn()
+    _hde.executeInMainThreadWithResult = lambda fn: fn()
+    sys.modules["hdefereval"] = _hde
 
 # Bootstrap synapse package stubs
 for mod_name, mod_path in [
@@ -447,10 +450,9 @@ class TestBatchCommands:
         assert result["statuses"] == ["ok", "error", "ok"]
 
     def test_batch_atomic_calls_undo(self):
-        """atomic=True wraps in undo group."""
+        """atomic=True wraps in undo group context manager."""
         handler = self._make_handler()
-        _handlers_hou.undos.beginGroup = MagicMock()
-        _handlers_hou.undos.endGroup = MagicMock()
+        _handlers_hou.undos.group = MagicMock()
 
         payload = {
             "commands": [
@@ -461,8 +463,7 @@ class TestBatchCommands:
         with patch.object(handlers_mod, "HOU_AVAILABLE", True):
             handler._handle_batch_commands(payload)
 
-        _handlers_hou.undos.beginGroup.assert_called_once()
-        _handlers_hou.undos.endGroup.assert_called_once()
+        _handlers_hou.undos.group.assert_called_once_with("synapse_batch")
 
     def test_batch_default_payload(self):
         """Commands without payload key get empty dict."""

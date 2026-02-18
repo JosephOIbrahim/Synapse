@@ -156,7 +156,8 @@ class RenderHandlerMixin:
         """Render a frame via Karma, Mantra, or any ROP node.
 
         Uses hdefereval.executeInMainThreadWithResult() since hou.RopNode.render()
-        must run on Houdini's main thread. Outputs to a temp JPEG for AI preview.
+        must run on Houdini's main thread. Writes render output to disk (EXR or
+        artist-configured format) AND generates a JPEG preview for AI consumption.
 
         Supports Karma XPU (GPU+CPU hybrid), Karma CPU, and Mantra ROPs.
         For Karma nodes, detects and reports the rendering engine variant.
@@ -186,6 +187,7 @@ class RenderHandlerMixin:
             engine = _detect_karma_engine(node, node_type)
 
             # For usdrender ROPs in /out, ensure loppath is set
+            lop_target_node = None
             lp = node.parm("loppath")
             # hou.Parm.eval() reads parameter value -- not Python eval()
             if lp and not lp.eval():  # noqa: S307
@@ -197,14 +199,84 @@ class RenderHandlerMixin:
                         display = [c for c in lop.children() if hasattr(c, 'isDisplayFlagSet') and c.isDisplayFlagSet()]
                         target = display[0] if display else lop.children()[-1]
                         lp.set(target.path())
+                        lop_target_node = target
                         break
+            elif lp:
+                lop_target_path = lp.eval()  # noqa: S307
+                if lop_target_path:
+                    lop_target_node = hou.node(lop_target_path)
 
-            # Output to temp JPEG (AI preview, not final EXR)
+            # Preserve artist's configured output path for EXR persistence
             temp_dir = Path(hou.text.expandString("$HOUDINI_TEMP_DIR"))
             timestamp = int(time.time() * 1000)
-            out_path = str(temp_dir / f"synapse_render_{timestamp}.jpg")
+            preview_path = str(temp_dir / f"synapse_render_{timestamp}.jpg")
+
+            # Read the artist's original output path — check ROP first, then
+            # walk upstream to find Karma LOP's picture parm (BL-007 fix)
+            artist_output = ""
+            output_parm = None
+            for parm_name in ("outputimage", "picture"):
+                p = node.parm(parm_name)
+                if p:
+                    artist_output = p.eval() or ""  # noqa: S307
+                    output_parm = p
+                    if artist_output.strip():
+                        break
+
+            # If ROP has no output path, check the upstream Karma LOP
+            if not artist_output.strip() and lop_target_node is not None:
+                try:
+                    # Walk from the LOP target up to find a karma node with picture
+                    _walk = lop_target_node
+                    for _ in range(20):  # bounded walk
+                        kp = _walk.parm("picture")
+                        if kp:
+                            _val = kp.eval() or ""  # noqa: S307
+                            if _val.strip():
+                                artist_output = _val
+                                break
+                        # Try parent's children (sibling karma nodes)
+                        inputs = _walk.inputs()
+                        if inputs:
+                            _walk = inputs[0]
+                        else:
+                            break
+                except Exception:
+                    pass  # best-effort upstream discovery
+
+            # Determine render output: use artist path if set, else default EXR
+            if artist_output and artist_output.strip():
+                render_path = artist_output
+            else:
+                # Default to EXR in $HIP/.synapse/renders/ so renders persist
+                try:
+                    hip = hou.text.expandString("$HIP")
+                    if hip and hip != "$HIP":
+                        render_dir = Path(hip) / ".synapse" / "renders"
+                    else:
+                        render_dir = temp_dir / "synapse_renders"
+                except Exception:
+                    render_dir = temp_dir / "synapse_renders"
+                render_path = str(render_dir / f"render_{timestamp}.$F4.exr")
+
+            # Pre-render validation: ensure output directory exists
+            render_dir_path = Path(render_path).parent
+            # Expand $F4 frame tokens for directory check
+            dir_str = str(render_dir_path)
+            if "$" not in dir_str:
+                try:
+                    render_dir_path.mkdir(parents=True, exist_ok=True)
+                except OSError as e:
+                    raise RuntimeError(
+                        f"Couldn't create output directory {render_dir_path} -- {e}. "
+                        "Check the path is writable or set a different output path "
+                        "on the render node's 'picture' or 'outputimage' parameter."
+                    ) from e
 
             cur = int(hou.frame()) if frame is None else int(frame)
+
+            # Resolve $F4 frame token in render path for file polling
+            render_path_resolved = render_path.replace("$F4", f"{cur:04d}")
 
             # Resolution override -- res= is a scale factor, so set parms directly
             if width and height:
@@ -220,13 +292,14 @@ class RenderHandlerMixin:
                 if ov and ov.eval() != "specific":  # noqa: S307
                     ov.set("specific")
 
-            # Set output path on the node parm (output_file kwarg doesn't
+            # Set output path on the ROP parm (output_file kwarg doesn't
             # work reliably for usdrender/karma ROPs)
-            for parm_name in ("outputimage", "picture"):
-                p = node.parm(parm_name)
-                if p:
-                    p.set(out_path)
-                    break
+            if output_parm:
+                output_parm.set(render_path)
+            elif node.parm("outputimage"):
+                node.parm("outputimage").set(render_path)
+            elif node.parm("picture"):
+                node.parm("picture").set(render_path)
 
             node.render(
                 frame_range=(cur, cur),
@@ -236,11 +309,36 @@ class RenderHandlerMixin:
             # Karma XPU has a delayed file flush -- poll up to ~15s
             used_flipbook = False
             render_ok = False
+            out_path = render_path_resolved
             for _ in range(60):
                 if Path(out_path).exists() and Path(out_path).stat().st_size > 0:
                     render_ok = True
                     break
                 time.sleep(0.25)
+
+            # If render wrote to artist's EXR/non-JPEG, convert to JPEG for preview
+            artist_file_written = False
+            if render_ok and out_path != preview_path:
+                artist_file_written = True
+                # Try to convert to JPEG preview using iconvert or PIL
+                try:
+                    hfs = hou.text.expandString("$HFS")
+                    iconvert = Path(hfs) / "bin" / "iconvert.exe"
+                    if not iconvert.exists():
+                        iconvert = Path(hfs) / "bin" / "iconvert"
+                    if iconvert.exists():
+                        import subprocess
+                        subprocess.run(
+                            [str(iconvert), out_path, preview_path],
+                            timeout=15,
+                            capture_output=True,
+                        )
+                except Exception:
+                    pass  # Preview conversion is best-effort
+                # If iconvert worked, use preview; otherwise serve the render file
+                if Path(preview_path).exists() and Path(preview_path).stat().st_size > 0:
+                    out_path = preview_path
+                # else: out_path stays as the artist's render file
 
             # -- Flipbook fallback for usdrender ROPs (husk may fail on Indie) --
             if not render_ok and node_type in ("usdrender", "usdrender_rop"):
@@ -291,10 +389,10 @@ class RenderHandlerMixin:
                     f"The render finished but the output wasn't created at {out_path} -- "
                     "check if the output directory is writable and the renderer didn't error"
                 )
-            return out_path, node.path(), node_type, engine, used_flipbook
+            return out_path, node.path(), node_type, engine, used_flipbook, artist_file_written, render_path_resolved
 
         import hdefereval
-        result_path, used_rop, used_type, engine, used_flipbook = (
+        result_path, used_rop, used_type, engine, used_flipbook, artist_file_written, render_file = (
             hdefereval.executeInMainThreadWithResult(_render_on_main)
         )
         result = {
@@ -308,6 +406,9 @@ class RenderHandlerMixin:
         }
         if used_flipbook:
             result["flipbook_fallback"] = True
+        # Always report the disk-written file path (EXR or artist format)
+        if artist_file_written or render_file != result_path:
+            result["output_file"] = render_file
         return result
 
     def _handle_set_keyframe(self, payload: Dict) -> Dict:
@@ -733,6 +834,146 @@ class RenderHandlerMixin:
         if hasattr(self, '_render_farm') and self._render_farm is not None:
             return self._render_farm.get_status()
         return {"running": False, "cancelled": False, "scene_tags": []}
+
+    def _handle_configure_render_passes(self, payload: Dict) -> Dict:
+        """Configure render passes (AOVs) for Karma via Python LOP.
+
+        Creates USD RenderVar prims for each requested pass. Supported presets:
+        - beauty: RGBA combined output
+        - diffuse: direct_diffuse + indirect_diffuse
+        - specular: direct_specular + indirect_specular
+        - emission: direct_emission
+        - normal: world-space normals (N)
+        - depth: camera depth (Z)
+        - position: world-space position (P)
+        - crypto_material: Cryptomatte by material
+        - crypto_object: Cryptomatte by object
+        - motion: 2D motion vectors
+        - sss: subsurface scattering
+        - albedo: surface albedo
+
+        Can also accept custom pass names with explicit source_name and data_type.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        from ..core.aliases import resolve_param, resolve_param_with_default
+
+        node_path_arg = resolve_param(payload, "node", required=False)
+        passes = resolve_param(payload, "passes")
+        clear_existing = resolve_param_with_default(payload, "clear_existing", False)
+
+        # Preset definitions: name -> (source_name, data_type, source_type)
+        _PRESETS = {
+            "beauty":          ("C",                "color4f", "raw"),
+            "direct_diffuse":  ("direct_diffuse",   "color3f", "raw"),
+            "indirect_diffuse":("indirect_diffuse",  "color3f", "raw"),
+            "diffuse":         ("direct_diffuse",    "color3f", "raw"),  # alias
+            "direct_specular": ("direct_specular",   "color3f", "raw"),
+            "indirect_specular":("indirect_specular", "color3f", "raw"),
+            "specular":        ("direct_specular",   "color3f", "raw"),  # alias
+            "emission":        ("direct_emission",   "color3f", "raw"),
+            "sss":             ("sss",               "color3f", "raw"),
+            "normal":          ("N",                 "normal3f","raw"),
+            "depth":           ("Z",                 "float",   "raw"),
+            "position":        ("P",                 "point3f", "raw"),
+            "albedo":          ("albedo",            "color3f", "raw"),
+            "motion":          ("motionvector",      "float2",  "raw"),
+            "crypto_material": ("crypto_material",   "color4f", "raw"),
+            "crypto_object":   ("crypto_object",     "color4f", "raw"),
+            "crypto_asset":    ("crypto_asset",      "color4f", "raw"),
+        }
+
+        from .main_thread import run_on_main
+
+        def _on_main():
+            node = self._resolve_lop_node(node_path_arg)  # type: ignore[attr-defined]
+            parent = node.parent()
+
+            # Build the Python code to create RenderVar prims
+            lines = [
+                "import hou",
+                "from pxr import UsdRender, Sdf, Gf",
+                "",
+                "node = hou.pwd()",
+                "stage = node.editableStage()",
+                "",
+            ]
+
+            if clear_existing:
+                lines.append("# Clear existing render vars")
+                lines.append("render_settings = stage.GetPrimAtPath('/Render/rendersettings')")
+                lines.append("if render_settings and render_settings.IsValid():")
+                lines.append("    for child in render_settings.GetChildren():")
+                lines.append("        if child.GetTypeName() == 'RenderVar':")
+                lines.append("            stage.RemovePrim(child.GetPath())")
+                lines.append("")
+
+            created_passes = []
+
+            if isinstance(passes, list):
+                pass_list = passes
+            elif isinstance(passes, str):
+                # Comma-separated string
+                pass_list = [p.strip() for p in passes.split(",")]
+            else:
+                raise ValueError(
+                    "passes should be a list of pass names or a comma-separated string "
+                    f"(e.g. ['beauty', 'diffuse', 'normal'] or 'beauty,diffuse,normal')"
+                )
+
+            for pass_spec in pass_list:
+                if isinstance(pass_spec, dict):
+                    # Custom pass with explicit params
+                    pass_name = pass_spec.get("name", "custom")
+                    source_name = pass_spec.get("source_name", pass_name)
+                    data_type = pass_spec.get("data_type", "color3f")
+                    source_type = pass_spec.get("source_type", "raw")
+                elif isinstance(pass_spec, str):
+                    pass_name = pass_spec.lower().strip()
+                    if pass_name in _PRESETS:
+                        source_name, data_type, source_type = _PRESETS[pass_name]
+                    else:
+                        # Treat as custom pass name
+                        source_name = pass_name
+                        data_type = "color3f"
+                        source_type = "raw"
+                else:
+                    continue
+
+                safe_name = pass_name.replace("/", "_").replace(" ", "_")
+                prim_path = f"/Render/rendersettings/{safe_name}"
+
+                lines.append(f"# Render var: {pass_name}")
+                lines.append(f"rv = UsdRender.Var.Define(stage, '{prim_path}')")
+                lines.append(f"rv.GetSourceNameAttr().Set('{source_name}')")
+                lines.append(f"rv.GetDataTypeAttr().Set('{data_type}')")
+                lines.append(f"rv.GetSourceTypeAttr().Set('{source_type}')")
+                lines.append("")
+
+                created_passes.append({
+                    "name": pass_name,
+                    "prim_path": prim_path,
+                    "source_name": source_name,
+                    "data_type": data_type,
+                })
+
+            code = "\n".join(lines)
+
+            # Create Python LOP to author the render vars
+            py_lop = parent.createNode("pythonscript", "render_passes")
+            py_lop.setInput(0, node)
+            py_lop.moveToGoodPosition()
+            py_lop.parm("python").set(code)
+
+            return {
+                "node": py_lop.path(),
+                "passes": created_passes,
+                "pass_count": len(created_passes),
+                "clear_existing": bool(clear_existing),
+            }
+
+        return run_on_main(_on_main)
 
     @staticmethod
     def _validate_file_integrity(image_path: str) -> Dict:

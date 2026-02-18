@@ -108,6 +108,146 @@
           "estimated_optimal_calls": 5
         }
       ]
+    },
+    {
+      "cycle_number": 2,
+      "timestamp": "2026-02-18T21:00:00Z",
+      "tier": 2,
+      "agents_active": ["ENGINEER", "RESEARCHER", "ARCHITECT", "SUPERVISOR", "PRODUCER"],
+      "domains_tested": ["lighting", "lookdev", "layout", "pipeline", "render", "general"],
+      "scenarios_run": 6,
+      "scenarios_passed": 6,
+      "scenarios_failed": 0,
+      "pass_rate": 1.0,
+      "friction_scenarios": 4,
+      "failure_categories": {},
+      "friction_categories": {
+        "WORKFLOW_FRICTION": 3,
+        "SAFETY_CONCERN": 1,
+        "MISSING_CONVENTION": 1
+      },
+      "top_failure": "",
+      "top_failure_count": 0,
+      "fixes_generated": 0,
+      "fixes_applied": 0,
+      "fixes_validated": 0,
+      "fixes_failed": 0,
+      "fixes_queued_human": 3,
+      "corpus_entries_added": 6,
+      "corpus_promotions": 2,
+      "total_corpus_entries": 17,
+      "avg_friction_ratio": 1.2,
+      "total_elapsed_ms": 0,
+      "improvement_delta": 0.0,
+      "regression_count": 0,
+      "new_tool_gaps": ["batch_undo_group", "render_file_persistence", "rollback_under_atomic"],
+      "new_scenarios_proposed": 0,
+      "scenario_results": [
+        {
+          "id": "T2-LGT-001",
+          "success": true,
+          "friction_notes": ["synapse_batch fails with undo group error — used individual calls instead", "Camera at origin produced black render — repositioned to tz=8"],
+          "tool_calls_count": 18,
+          "estimated_optimal_calls": 15
+        },
+        {
+          "id": "T2-MTL-001",
+          "success": true,
+          "friction_notes": ["Objects overlap at origin — no transforms applied", "Material path suffix workaround applied from Cycle 1 corpus"],
+          "tool_calls_count": 22,
+          "estimated_optimal_calls": 20
+        },
+        {
+          "id": "T2-USD-001",
+          "success": true,
+          "friction_notes": [],
+          "tool_calls_count": 10,
+          "estimated_optimal_calls": 12
+        },
+        {
+          "id": "T2-PIP-001",
+          "success": true,
+          "friction_notes": [],
+          "tool_calls_count": 12,
+          "estimated_optimal_calls": 15
+        },
+        {
+          "id": "T2-RND-001",
+          "success": true,
+          "friction_notes": ["EXR not written to disk despite parms set", "LopNode has no setRenderFlag — only setDisplayFlag"],
+          "tool_calls_count": 8,
+          "estimated_optimal_calls": 12
+        },
+        {
+          "id": "T2-SAF-001",
+          "success": true,
+          "friction_notes": ["Rollback fails under atomic=true — orphan nodes persist", "Error messages consistently follow coaching tone"],
+          "tool_calls_count": 10,
+          "estimated_optimal_calls": 12
+        }
+      ]
+    },
+    {
+      "cycle_number": 3,
+      "timestamp": "2026-02-18T23:30:00Z",
+      "tier": 3,
+      "agents_active": ["ENGINEER", "RESEARCHER", "ARCHITECT", "SUPERVISOR", "PRODUCER"],
+      "domains_tested": ["render", "lookdev", "lighting", "layout", "general"],
+      "scenarios_run": 2,
+      "scenarios_passed": 2,
+      "scenarios_failed": 0,
+      "pass_rate": 1.0,
+      "friction_scenarios": 2,
+      "failure_categories": {},
+      "friction_categories": {
+        "WORKFLOW_FRICTION": 4,
+        "SAFETY_CONCERN": 1,
+        "MISSING_CONVENTION": 1
+      },
+      "top_failure": "",
+      "top_failure_count": 0,
+      "fixes_generated": 0,
+      "fixes_applied": 0,
+      "fixes_validated": 0,
+      "fixes_failed": 0,
+      "fixes_queued_human": 4,
+      "corpus_entries_added": 6,
+      "corpus_promotions": 3,
+      "total_corpus_entries": 23,
+      "avg_friction_ratio": 1.33,
+      "total_elapsed_ms": 0,
+      "improvement_delta": 0.0,
+      "regression_count": 0,
+      "new_tool_gaps": ["nan_inf_guard", "lighting_law_enforcement", "assetref_karma_workaround"],
+      "new_scenarios_proposed": 0,
+      "scenario_results": [
+        {
+          "id": "T3-FULL-001",
+          "success": true,
+          "friction_notes": [
+            "assetreference LOP nodes render invisible in Karma — sublayer LOP works. Critical workflow difference not documented.",
+            "create_material still returns wrong USD prim path despite Fix #13 — stage query inside handler silently fails",
+            "Camera focalLength parm not discoverable via get_parm — requires listing all parms or knowledge lookup",
+            "soho_foreground=1 required on usdrender ROP for file output — background render returns before write completes",
+            "Karma node camera parm defaults to /cameras/camera1, not the scene camera — must set explicitly on both karmarendersettings and karma nodes",
+            "Initial black render caused by corrupted scene state from iterative debugging — clean rebuild fixed it"
+          ],
+          "tool_calls_count": 35,
+          "estimated_optimal_calls": 25
+        },
+        {
+          "id": "T3-STRESS-001",
+          "success": true,
+          "friction_notes": [
+            "NaN and Inf values persist in Houdini parameters — no guard at set_parm level",
+            "Negative intensity accepted without warning — violates Lighting Law",
+            "No domain validation: intensity=1000 accepted (should warn about Lighting Law)",
+            "Helper functions inside execute_python lose variable scope — variables defined at top level of script are not accessible inside nested function definitions"
+          ],
+          "tool_calls_count": 15,
+          "estimated_optimal_calls": 12
+        }
+      ]
     }
   ]
 }

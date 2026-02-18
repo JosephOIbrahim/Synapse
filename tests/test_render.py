@@ -28,7 +28,14 @@ else:
     _hou = sys.modules["hou"]
 
 if "hdefereval" not in sys.modules:
-    sys.modules["hdefereval"] = types.ModuleType("hdefereval")
+    _hdefereval = types.ModuleType("hdefereval")
+    sys.modules["hdefereval"] = _hdefereval
+else:
+    _hdefereval = sys.modules["hdefereval"]
+
+# Ensure executeDeferred runs immediately (needed by run_on_main)
+if not hasattr(_hdefereval, "executeDeferred"):
+    _hdefereval.executeDeferred = lambda fn: fn()
 
 # Import handlers via importlib to bypass package __init__
 _handlers_path = Path(__file__).resolve().parent.parent / "python" / "synapse" / "server" / "handlers.py"
@@ -316,8 +323,339 @@ class TestHandleRender:
 
 
 # ---------------------------------------------------------------------------
+# Tests: BL-007 — EXR persistence and pre-render validation
+# ---------------------------------------------------------------------------
+
+class TestRenderEXRPersistence:
+    """Tests for BL-007: render should write EXR to disk, not just JPEG preview."""
+
+    def _setup_render(self, handler, fake_node, payload, frame=1.0,
+                      exists_pattern=None, artist_output=""):
+        """Helper to run _handle_render with controlled mocks."""
+        import hdefereval
+        hdefereval.executeInMainThreadWithResult = lambda fn, *a, **kw: fn(*a, **kw)
+
+        out_parm = MagicMock()
+        out_parm.eval.return_value = artist_output
+        loppath_parm = MagicMock()
+        loppath_parm.eval.return_value = ""
+
+        def _parm(n):
+            if n in ("outputimage", "picture"):
+                return out_parm
+            if n == "loppath":
+                return loppath_parm
+            return None
+
+        fake_node.parm.side_effect = _parm
+
+        if exists_pattern is None:
+            exists_fn = lambda self_path: True
+        else:
+            exists_fn = exists_pattern
+
+        with patch.object(_handlers_hou, "node", return_value=fake_node, create=True), \
+             patch.object(_handlers_hou, "frame", return_value=frame, create=True), \
+             patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
+             patch("pathlib.Path.exists", exists_fn), \
+             patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)), \
+             patch("pathlib.Path.mkdir", return_value=None):
+            return handler._handle_render(payload)
+
+    def test_default_exr_when_no_artist_output(self, handler):
+        """When no artist output path is configured, default to EXR (not JPEG)."""
+        fake_node = MagicMock()
+        fake_node.path.return_value = "/stage/karma1"
+        fake_node.type.return_value.name.return_value = "karma"
+
+        result = self._setup_render(
+            handler, fake_node, {"node": "/stage/karma1"}, artist_output=""
+        )
+
+        # output_file should be reported in the result
+        assert "output_file" in result
+        assert result["output_file"].endswith(".exr")
+
+    def test_artist_exr_path_preserved(self, handler):
+        """When artist has configured an EXR output path, it's used and reported."""
+        fake_node = MagicMock()
+        fake_node.path.return_value = "/stage/karma1"
+        fake_node.type.return_value.name.return_value = "karma"
+
+        result = self._setup_render(
+            handler, fake_node, {"node": "/stage/karma1"},
+            artist_output="/renders/beauty/shot.0001.exr"
+        )
+
+        assert "output_file" in result
+        assert result["output_file"] == "/renders/beauty/shot.0001.exr"
+
+    def test_output_parm_set_even_without_initial_parm(self, handler):
+        """Handler sets outputimage/picture parm even if it wasn't initially configured."""
+        import hdefereval
+        hdefereval.executeInMainThreadWithResult = lambda fn, *a, **kw: fn(*a, **kw)
+
+        fake_node = MagicMock()
+        fake_node.path.return_value = "/stage/karma1"
+        fake_node.type.return_value.name.return_value = "karma"
+
+        out_parm = MagicMock()
+        out_parm.eval.return_value = ""
+        # No loppath parm on Karma LOP nodes in /stage
+        def _parm(n):
+            if n in ("outputimage", "picture"):
+                return out_parm
+            return None  # No loppath, no other parms
+
+        fake_node.parm.side_effect = _parm
+
+        with patch.object(_handlers_hou, "node", return_value=fake_node, create=True), \
+             patch.object(_handlers_hou, "frame", return_value=1.0, create=True), \
+             patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
+             patch("pathlib.Path.exists", return_value=True), \
+             patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)), \
+             patch("pathlib.Path.mkdir", return_value=None):
+            handler._handle_render({"node": "/stage/karma1"})
+
+        # The output parm should have been set to an EXR path
+        out_parm.set.assert_called()
+        set_path = out_parm.set.call_args[0][0]
+        assert ".exr" in set_path
+
+    def test_upstream_karma_lop_picture_discovered(self, handler):
+        """Handler discovers picture parm from upstream Karma LOP when ROP has none."""
+        import hdefereval
+        hdefereval.executeInMainThreadWithResult = lambda fn, *a, **kw: fn(*a, **kw)
+
+        fake_node = MagicMock()
+        fake_node.path.return_value = "/out/usdrender1"
+        fake_node.type.return_value.name.return_value = "usdrender"
+
+        # ROP has empty outputimage
+        out_parm = MagicMock()
+        out_parm.eval.return_value = ""
+
+        # loppath points to a Karma LOP that has a picture parm
+        loppath_parm = MagicMock()
+        loppath_parm.eval.return_value = "/stage/karma1"
+
+        karma_lop = MagicMock()
+        karma_picture = MagicMock()
+        karma_picture.eval.return_value = "/renders/shot_beauty.$F4.exr"
+        karma_lop.parm.side_effect = lambda n: karma_picture if n == "picture" else None
+        karma_lop.inputs.return_value = []
+
+        def _parm(n):
+            if n in ("outputimage", "picture"):
+                return out_parm
+            if n == "loppath":
+                return loppath_parm
+            if n == "override_res":
+                return None
+            return None
+
+        fake_node.parm.side_effect = _parm
+
+        def _hou_node(p):
+            if p == "/out/usdrender1":
+                return fake_node
+            if p == "/stage/karma1":
+                return karma_lop
+            return None
+
+        with patch.object(_handlers_hou, "node", side_effect=_hou_node, create=True), \
+             patch.object(_handlers_hou, "frame", return_value=1.0, create=True), \
+             patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
+             patch("pathlib.Path.exists", return_value=True), \
+             patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)), \
+             patch("pathlib.Path.mkdir", return_value=None):
+            result = handler._handle_render({"node": "/out/usdrender1"})
+
+        # Should have used the Karma LOP's picture path
+        assert "output_file" in result
+        assert "shot_beauty" in result["output_file"]
+
+    def test_frame_token_resolved_in_output(self, handler):
+        """$F4 frame tokens are resolved to actual frame number in output_file."""
+        fake_node = MagicMock()
+        fake_node.path.return_value = "/stage/karma1"
+        fake_node.type.return_value.name.return_value = "karma"
+
+        result = self._setup_render(
+            handler, fake_node, {"node": "/stage/karma1", "frame": 42},
+            artist_output="/renders/shot.$F4.exr", frame=42.0
+        )
+
+        assert "output_file" in result
+        assert "0042" in result["output_file"]
+        assert "$F4" not in result["output_file"]
+
+
+# ---------------------------------------------------------------------------
 # Tests: aliases
 # ---------------------------------------------------------------------------
+
+class TestConfigureRenderPasses:
+    """Tests for _handle_configure_render_passes."""
+
+    def _setup_lop_mock(self, handler):
+        """Set up a mock LOP node and parent for render passes."""
+        lop_node = MagicMock()
+        lop_node.path.return_value = "/stage/render_settings"
+        parent = MagicMock()
+        lop_node.parent.return_value = parent
+
+        py_lop = MagicMock()
+        py_lop.path.return_value = "/stage/render_passes"
+        parent.createNode.return_value = py_lop
+
+        handler._resolve_lop_node = MagicMock(return_value=lop_node)
+        return lop_node, parent, py_lop
+
+    def test_preset_passes_created(self, handler):
+        """Preset pass names resolve to correct source_name and data_type."""
+        _, parent, py_lop = self._setup_lop_mock(handler)
+
+        result = handler._handle_configure_render_passes({
+            "passes": ["beauty", "normal", "depth"],
+        })
+
+        assert result["pass_count"] == 3
+        names = [p["name"] for p in result["passes"]]
+        assert "beauty" in names
+        assert "normal" in names
+        assert "depth" in names
+
+        # Verify correct source names
+        by_name = {p["name"]: p for p in result["passes"]}
+        assert by_name["beauty"]["source_name"] == "C"
+        assert by_name["beauty"]["data_type"] == "color4f"
+        assert by_name["normal"]["source_name"] == "N"
+        assert by_name["normal"]["data_type"] == "normal3f"
+        assert by_name["depth"]["source_name"] == "Z"
+        assert by_name["depth"]["data_type"] == "float"
+
+    def test_comma_separated_string(self, handler):
+        """Passes can be a comma-separated string."""
+        self._setup_lop_mock(handler)
+
+        result = handler._handle_configure_render_passes({
+            "passes": "beauty, diffuse, specular",
+        })
+
+        assert result["pass_count"] == 3
+        names = [p["name"] for p in result["passes"]]
+        assert "beauty" in names
+        assert "diffuse" in names
+        assert "specular" in names
+
+    def test_custom_pass_dict(self, handler):
+        """Custom pass with explicit source_name and data_type."""
+        self._setup_lop_mock(handler)
+
+        result = handler._handle_configure_render_passes({
+            "passes": [
+                {"name": "my_aov", "source_name": "custom_lpe", "data_type": "color4f"},
+            ],
+        })
+
+        assert result["pass_count"] == 1
+        p = result["passes"][0]
+        assert p["name"] == "my_aov"
+        assert p["source_name"] == "custom_lpe"
+        assert p["data_type"] == "color4f"
+        assert p["prim_path"] == "/Render/rendersettings/my_aov"
+
+    def test_python_lop_created_and_wired(self, handler):
+        """A pythonscript LOP is created, wired to input, and has code set."""
+        lop_node, parent, py_lop = self._setup_lop_mock(handler)
+
+        handler._handle_configure_render_passes({
+            "passes": ["beauty"],
+        })
+
+        parent.createNode.assert_called_once_with("pythonscript", "render_passes")
+        py_lop.setInput.assert_called_once_with(0, lop_node)
+        py_lop.moveToGoodPosition.assert_called_once()
+
+        # Verify python code was set
+        py_lop.parm.assert_called_with("python")
+        code_set_call = py_lop.parm.return_value.set
+        code_set_call.assert_called_once()
+        code = code_set_call.call_args[0][0]
+        assert "UsdRender.Var.Define" in code
+        assert "'/Render/rendersettings/beauty'" in code
+
+    def test_clear_existing_flag(self, handler):
+        """clear_existing=True adds stage cleanup code."""
+        _, _, py_lop = self._setup_lop_mock(handler)
+
+        handler._handle_configure_render_passes({
+            "passes": ["beauty"],
+            "clear_existing": True,
+        })
+
+        code = py_lop.parm.return_value.set.call_args[0][0]
+        assert "Clear existing render vars" in code
+        assert "RemovePrim" in code
+
+    def test_clear_existing_false_omits_cleanup(self, handler):
+        """clear_existing=False (default) does not add cleanup code."""
+        _, _, py_lop = self._setup_lop_mock(handler)
+
+        handler._handle_configure_render_passes({
+            "passes": ["beauty"],
+        })
+
+        code = py_lop.parm.return_value.set.call_args[0][0]
+        assert "RemovePrim" not in code
+        assert result_check(handler._handle_configure_render_passes({
+            "passes": ["beauty"],
+        }), "clear_existing", False)
+
+    def test_unknown_pass_treated_as_custom(self, handler):
+        """An unknown pass name is treated as custom with color3f default."""
+        self._setup_lop_mock(handler)
+
+        result = handler._handle_configure_render_passes({
+            "passes": ["my_fancy_pass"],
+        })
+
+        assert result["pass_count"] == 1
+        p = result["passes"][0]
+        assert p["name"] == "my_fancy_pass"
+        assert p["source_name"] == "my_fancy_pass"
+        assert p["data_type"] == "color3f"
+
+    def test_invalid_passes_type_raises(self, handler):
+        """Non-list, non-string passes raises ValueError."""
+        self._setup_lop_mock(handler)
+
+        with pytest.raises(ValueError, match="passes should be a list"):
+            handler._handle_configure_render_passes({
+                "passes": 42,
+            })
+
+    def test_cryptomatte_presets(self, handler):
+        """Cryptomatte presets resolve correctly."""
+        self._setup_lop_mock(handler)
+
+        result = handler._handle_configure_render_passes({
+            "passes": ["crypto_material", "crypto_object", "crypto_asset"],
+        })
+
+        assert result["pass_count"] == 3
+        by_name = {p["name"]: p for p in result["passes"]}
+        assert by_name["crypto_material"]["source_name"] == "crypto_material"
+        assert by_name["crypto_material"]["data_type"] == "color4f"
+        assert by_name["crypto_object"]["source_name"] == "crypto_object"
+        assert by_name["crypto_asset"]["source_name"] == "crypto_asset"
+
+
+def result_check(result, key, expected):
+    """Utility to check a result dict key matches expected value."""
+    return result.get(key) == expected
+
 
 class TestRenderAliases:
     def test_frame_alias(self):

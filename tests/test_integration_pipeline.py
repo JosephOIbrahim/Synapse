@@ -51,7 +51,10 @@ else:
     _hou = sys.modules["hou"]
 
 if "hdefereval" not in sys.modules:
-    sys.modules["hdefereval"] = types.ModuleType("hdefereval")
+    _hde = types.ModuleType("hdefereval")
+    _hde.executeDeferred = lambda fn: fn()
+    _hde.executeInMainThreadWithResult = lambda fn: fn()
+    sys.modules["hdefereval"] = _hde
 
 # ---------------------------------------------------------------------------
 # Bootstrap synapse package stubs for relative imports
@@ -486,3 +489,267 @@ class TestFullPipelineSimulation:
         assert parsed["success"] is False
         assert parsed["id"] == "err-pipeline-001"
         assert parsed["error"]  # Has error message
+
+
+# =============================================================================
+# NaN/Inf GUARD TESTS (BL-009)
+# =============================================================================
+
+class TestSetParmNanInfGuard:
+    """set_parm rejects NaN/Inf values before they reach Houdini.
+
+    These values persist in Houdini parameters and corrupt downstream
+    behavior. The guard fires before run_on_main (boundary validation).
+    """
+
+    def setup_method(self):
+        self.handler = SynapseHandler()
+
+    def test_nan_rejected(self):
+        """float('nan') is rejected with coaching message."""
+        cmd = _make_command("set_parm", {
+            "node": "/stage/light", "parm": "intensity", "value": float("nan"),
+        })
+        resp = self.handler.handle(cmd)
+        assert resp.success is False
+        assert "NaN" in resp.error
+        assert "corrupt" in resp.error
+        assert "finite" in resp.error
+
+    def test_inf_rejected(self):
+        """float('inf') is rejected with coaching message."""
+        cmd = _make_command("set_parm", {
+            "node": "/stage/light", "parm": "exposure", "value": float("inf"),
+        })
+        resp = self.handler.handle(cmd)
+        assert resp.success is False
+        assert "Infinity" in resp.error
+        assert "corrupt" in resp.error
+
+    def test_negative_inf_rejected(self):
+        """float('-inf') is also caught."""
+        cmd = _make_command("set_parm", {
+            "node": "/stage/light", "parm": "exposure", "value": float("-inf"),
+        })
+        resp = self.handler.handle(cmd)
+        assert resp.success is False
+        assert "Infinity" in resp.error
+
+    def test_nan_in_list_rejected(self):
+        """NaN inside a list/tuple value is caught."""
+        cmd = _make_command("set_parm", {
+            "node": "/stage/light", "parm": "color",
+            "value": [1.0, float("nan"), 0.5],
+        })
+        resp = self.handler.handle(cmd)
+        assert resp.success is False
+        assert "NaN" in resp.error
+        assert "element 1" in resp.error
+
+    def test_inf_in_list_rejected(self):
+        """Inf inside a list value is caught."""
+        cmd = _make_command("set_parm", {
+            "node": "/stage/light", "parm": "color",
+            "value": [float("inf"), 0.5, 0.5],
+        })
+        resp = self.handler.handle(cmd)
+        assert resp.success is False
+        assert "Infinity" in resp.error
+        assert "element 0" in resp.error
+
+    def test_normal_float_passes_through(self):
+        """Normal float values are not blocked by the guard."""
+        mock_node = MagicMock()
+        mock_parm = MagicMock()
+        mock_node.parm.return_value = mock_parm
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/stage/light", "parm": "exposure", "value": 2.5,
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+        mock_parm.set.assert_called_once_with(2.5)
+
+    def test_int_passes_through(self):
+        """Integer values are not affected (ints can't be NaN/Inf)."""
+        mock_node = MagicMock()
+        mock_parm = MagicMock()
+        mock_node.parm.return_value = mock_parm
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/stage/light", "parm": "samples", "value": 64,
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+        mock_parm.set.assert_called_once_with(64)
+
+    def test_string_passes_through(self):
+        """String values are not affected by the numeric guard."""
+        mock_node = MagicMock()
+        mock_parm = MagicMock()
+        mock_node.parm.return_value = mock_parm
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/stage/dome", "parm": "texture",
+                "value": "/path/to/hdri.exr",
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+        mock_parm.set.assert_called_once_with("/path/to/hdri.exr")
+
+    def test_zero_float_passes_through(self):
+        """0.0 is a valid float, not caught by the guard."""
+        mock_node = MagicMock()
+        mock_parm = MagicMock()
+        mock_node.parm.return_value = mock_parm
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/stage/light", "parm": "intensity", "value": 0.0,
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+
+    def test_error_does_not_trip_circuit_breaker(self):
+        """NaN/Inf raises ValueError, which is classified as user error (no CB)."""
+        cmd = _make_command("set_parm", {
+            "node": "/stage/light", "parm": "intensity", "value": float("nan"),
+        })
+        resp = self.handler.handle(cmd)
+        # ValueError path returns success=False but doesn't trip circuit breaker
+        assert resp.success is False
+        # Coaching tone: no "Error:" prefix, no "Failed"
+        assert not resp.error.startswith("Error")
+        assert "Failed" not in resp.error
+
+
+# =============================================================================
+# LIGHTING LAW WARNING TESTS (BL-010)
+# =============================================================================
+
+class TestSetParmLightingLaw:
+    """set_parm emits a soft warning when setting intensity > 1.0 on light nodes.
+
+    The Lighting Law: intensity is always 1.0, brightness via exposure only.
+    The warning does NOT block the operation — it's advisory.
+    """
+
+    def setup_method(self):
+        self.handler = SynapseHandler()
+
+    def _make_light_node(self, node_type="distantlight"):
+        """Create a mock light node with type name."""
+        mock_node = MagicMock()
+        mock_parm = MagicMock()
+        mock_node.parm.return_value = mock_parm
+        mock_type = MagicMock()
+        mock_type.name.return_value = node_type
+        mock_node.type.return_value = mock_type
+        return mock_node, mock_parm
+
+    def test_intensity_above_1_on_light_warns(self):
+        """Setting intensity > 1.0 on a light node adds a warning."""
+        mock_node, mock_parm = self._make_light_node("distantlight")
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/stage/key_light",
+                "parm": "xn__inputsintensity_i0a",
+                "value": 5.0,
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+        mock_parm.set.assert_called_once_with(5.0)  # Value still set
+        assert "warning" in resp.data
+        assert "Lighting Law" in resp.data["warning"]
+        assert "exposure" in resp.data["warning"]
+
+    def test_intensity_at_1_no_warning(self):
+        """intensity = 1.0 is fine — no warning."""
+        mock_node, mock_parm = self._make_light_node("domelight")
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/stage/dome",
+                "parm": "xn__inputsintensity_i0a",
+                "value": 1.0,
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+        assert "warning" not in resp.data
+
+    def test_intensity_below_1_no_warning(self):
+        """intensity < 1.0 is fine — no warning."""
+        mock_node, mock_parm = self._make_light_node("light")
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/stage/fill",
+                "parm": "xn__inputsintensity_i0a",
+                "value": 0.5,
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+        assert "warning" not in resp.data
+
+    def test_exposure_above_1_no_warning(self):
+        """Exposure > 1.0 is fine — Lighting Law only applies to intensity."""
+        mock_node, mock_parm = self._make_light_node("distantlight")
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/stage/key",
+                "parm": "xn__inputsexposure_vya",
+                "value": 3.0,
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+        assert "warning" not in resp.data
+
+    def test_non_light_node_no_warning(self):
+        """intensity > 1.0 on a non-light node (e.g., geo) — no warning."""
+        mock_node, mock_parm = self._make_light_node("geo")
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/obj/geo1",
+                "parm": "intensity",
+                "value": 5.0,
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+        assert "warning" not in resp.data
+
+    def test_warning_with_human_readable_name(self):
+        """'intensity' as parm name (not just USD-encoded) triggers warning."""
+        mock_node, mock_parm = self._make_light_node("light")
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/stage/area_light",
+                "parm": "intensity",
+                "value": 2.0,
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+        assert "warning" in resp.data
+
+    def test_negative_intensity_no_warning(self):
+        """Negative intensity doesn't trigger the > 1.0 warning."""
+        mock_node, mock_parm = self._make_light_node("distantlight")
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/stage/light",
+                "parm": "xn__inputsintensity_i0a",
+                "value": -1.0,
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+        assert "warning" not in resp.data
+
+    def test_warning_does_not_block_set(self):
+        """The warning is advisory — parm.set() is still called."""
+        mock_node, mock_parm = self._make_light_node("domelight")
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True):
+            cmd = _make_command("set_parm", {
+                "node": "/stage/dome",
+                "parm": "xn__inputsintensity_i0a",
+                "value": 100.0,
+            })
+            resp = self.handler.handle(cmd)
+        assert resp.success is True
+        mock_parm.set.assert_called_once_with(100.0)
+        assert "warning" in resp.data
