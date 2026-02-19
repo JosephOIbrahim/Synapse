@@ -164,6 +164,8 @@ _SLOW_COMMANDS = {
     "tops_cook_and_validate": 600.0,
     "tops_diagnose": 30.0,
     "tops_pipeline_status": 60.0,
+    "tops_monitor_stream": 30.0,
+    "tops_render_sequence": 600.0,
 }
 
 logger = logging.getLogger("synapse-mcp")
@@ -1165,6 +1167,64 @@ async def list_tools():
                 "required": ["topnet_path"],
             },
         ),
+        # -- TOPS / PDG (Phase 5: Streaming & Render Integration) --
+        Tool(
+            name="tops_monitor_stream",
+            description=(
+                "Start, stop, or check status of event-driven TOPS cook monitoring. "
+                "Push-based alternative to polling \u2014 registers PDG event callbacks "
+                "that track work_item_started, work_item_completed, work_item_failed, "
+                "cook_progress, and cook_complete events. "
+                "Use action='start' to begin, action='status' to check, action='stop' to end."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {"type": "string", "description": "TOP node or network path to monitor"},
+                    "action": {
+                        "type": "string",
+                        "enum": ["start", "stop", "status"],
+                        "description": "Action: start monitoring, stop monitoring, or check status (default: start)",
+                    },
+                    "monitor_id": {
+                        "type": "string",
+                        "description": "Monitor ID (required for stop/status, returned by start)",
+                    },
+                },
+                "required": ["node"],
+            },
+        ),
+        Tool(
+            name="tops_render_sequence",
+            description=(
+                "Render a frame sequence via TOPS/PDG. Single-call interface for "
+                "'render frames 1\u201348'. Validates the Solaris stage, creates (or reuses) "
+                "a TOPS network with ROP fetch, sets frame range and render settings, "
+                "generates work items, and starts the cook. Returns a job_id for tracking. "
+                "Idempotent \u2014 reuses existing network if one matches."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "start_frame": {"type": "integer", "description": "First frame to render"},
+                    "end_frame": {"type": "integer", "description": "Last frame to render (inclusive)"},
+                    "step": {"type": "integer", "description": "Frame step (default: 1)"},
+                    "camera": {"type": "string", "description": "Camera USD prim path (e.g. /cameras/render_cam)"},
+                    "output_dir": {"type": "string", "description": "Output directory for rendered frames"},
+                    "output_prefix": {"type": "string", "description": "Filename prefix (default: render)"},
+                    "rop_node": {"type": "string", "description": "ROP node path (auto-discovers if omitted)"},
+                    "topnet_path": {"type": "string", "description": "Existing TOP network path to reuse"},
+                    "pixel_samples": {"type": "integer", "description": "Override pixel samples"},
+                    "resolution": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": "Override resolution [width, height]",
+                    },
+                    "blocking": {"type": "boolean", "description": "Wait for cook to complete (default: false)"},
+                },
+                "required": ["start_frame", "end_frame"],
+            },
+        ),
         # -- USD Scene Assembly --
         Tool(
             name="houdini_reference_usd",
@@ -1951,6 +2011,8 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "tops_cook_and_validate":     ("tops_cook_and_validate",     _identity),
     "tops_diagnose":              ("tops_diagnose",              _identity),
     "tops_pipeline_status":       ("tops_pipeline_status",       _identity),
+    "tops_monitor_stream":        ("tops_monitor_stream",        _identity),
+    "tops_render_sequence":       ("tops_render_sequence",       _identity),
     "houdini_reference_usd": ("reference_usd",  _identity),
     "houdini_query_prims":   ("query_prims",    _identity),
     "houdini_manage_variant_set": ("manage_variant_set", _identity),

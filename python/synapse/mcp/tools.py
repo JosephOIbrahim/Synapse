@@ -433,6 +433,40 @@ _TOOL_DEFS: list[tuple] = [
      }, "required": ["topnet_path"]},
      True, False, True),
 
+    # -- TOPS / PDG (Phase 5: Streaming & Render Integration) --
+    ("tops_monitor_stream", "tops_monitor_stream", _identity,
+     "Start, stop, or check status of event-driven TOPS cook monitoring. "
+     "Push-based alternative to polling -- registers PDG event callbacks that "
+     "track work_item_started/completed/failed, cook_progress, cook_complete events. "
+     "Use action='start' to begin, 'status' to check, 'stop' to end.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "TOP node or network path to monitor"},
+         "action": {"type": "string", "enum": ["start", "stop", "status"],
+                    "description": "Action: start, stop, or status (default: start)"},
+         "monitor_id": {"type": "string", "description": "Monitor ID (required for stop/status, returned by start)"},
+     }, "required": ["node"]},
+     False, False, False),
+
+    ("tops_render_sequence", "tops_render_sequence", _identity,
+     "Render a frame sequence via TOPS/PDG. Single-call interface for 'render frames 1-48'. "
+     "Validates stage, creates/reuses TOPS network, sets frame range, generates work items, "
+     "starts cook. Idempotent -- reuses existing network if one matches.",
+     {"type": "object", "properties": {
+         "start_frame": {"type": "integer", "description": "First frame to render"},
+         "end_frame": {"type": "integer", "description": "Last frame to render (inclusive)"},
+         "step": {"type": "integer", "description": "Frame step (default: 1)"},
+         "camera": {"type": "string", "description": "Camera USD prim path"},
+         "output_dir": {"type": "string", "description": "Output directory for rendered frames"},
+         "output_prefix": {"type": "string", "description": "Filename prefix (default: render)"},
+         "rop_node": {"type": "string", "description": "ROP node path (auto-discovers if omitted)"},
+         "topnet_path": {"type": "string", "description": "Existing TOP network to reuse"},
+         "pixel_samples": {"type": "integer", "description": "Override pixel samples"},
+         "resolution": {"type": "array", "items": {"type": "integer"},
+                        "description": "Override resolution [width, height]"},
+         "blocking": {"type": "boolean", "description": "Wait for cook to complete (default: false)"},
+     }, "required": ["start_frame", "end_frame"]},
+     False, True, False),
+
     # -- USD Scene Assembly --
     ("houdini_reference_usd", "reference_usd", _identity,
      "Import a USD file into the stage via reference, payload, or sublayer. "

@@ -88,6 +88,8 @@ class CommandType(Enum):
     TOPS_COOK_AND_VALIDATE = "tops_cook_and_validate"
     TOPS_DIAGNOSE = "tops_diagnose"
     TOPS_PIPELINE_STATUS = "tops_pipeline_status"
+    TOPS_MONITOR_STREAM = "tops_monitor_stream"
+    TOPS_RENDER_SEQUENCE = "tops_render_sequence"
 
     # Memory operations (new simplified names)
     CONTEXT = "context"

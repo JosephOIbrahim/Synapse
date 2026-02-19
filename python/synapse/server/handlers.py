@@ -344,6 +344,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("tops_diagnose", self._handle_tops_diagnose)
         reg.register("tops_pipeline_status", self._handle_tops_pipeline_status)
 
+        # TOPS / PDG (Phase 5: Streaming & Render Integration)
+        reg.register("tops_monitor_stream", self._handle_tops_monitor_stream)
+        reg.register("tops_render_sequence", self._handle_tops_render_sequence)
+
         # USD scene assembly (reference / sublayer / payload) + prim queries
         reg.register("reference_usd", self._handle_reference_usd)
         reg.register("query_prims", self._handle_query_prims)
