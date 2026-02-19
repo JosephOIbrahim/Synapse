@@ -1991,3 +1991,616 @@ class RecipeRegistry:
                 ),
             ],
         ))
+
+        # ==================================================================
+        # PRODUCTION RECIPES — Advanced Solaris / Render / Comp workflows
+        # ==================================================================
+
+        # --- Production Turntable ---
+        self.register(Recipe(
+            name="render_turntable_production",
+            description=(
+                "Full production turntable: camera orbit (configurable radius, "
+                "height, 120 frames), 3-point lighting rig with 4:1 key:fill "
+                "ratio, ground plane shadow catcher, Karma XPU at 1920x1080 "
+                "128 samples, AOVs (beauty, depth, normal, motion vector, "
+                "crypto matte), motion blur enabled."
+            ),
+            triggers=[
+                r"^(?:render\s+)?production\s+turntable(?:\s+(?:for|of|with)\s+(?P<subject>.+))?$",
+                r"^render\s+turntable\s+production(?:\s+(?:for|of|with)\s+(?P<subject>.+))?$",
+                r"^turntable\s+production(?:\s+(?:for|of|with)\s+(?P<subject>.+))?$",
+            ],
+            parameters=["subject"],
+            gate_level=GateLevel.APPROVE,
+            category="render",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "import math\n"
+                            "subject = '{subject}'.strip()\n"
+                            "stage = hou.node('/stage')\n"
+                            "if stage is None:\n"
+                            "    stage = hou.node('/obj').createNode("
+                            "'lopnet', 'stage')\n"
+                            "\n"
+                            "# --- Camera orbit ---\n"
+                            "cam = stage.createNode('camera', 'turntable_cam')\n"
+                            "cam.parm('primpath').set('/cameras/turntable_cam')\n"
+                            "cam.parm('focalLength').set(50)\n"
+                            "radius = 5.0\n"
+                            "height = 1.5\n"
+                            "frames = 120\n"
+                            "for f in range(1, frames + 1):\n"
+                            "    angle = (f - 1) * (2 * math.pi / frames)\n"
+                            "    x = radius * math.cos(angle)\n"
+                            "    z = radius * math.sin(angle)\n"
+                            "    cam.parmTuple('t').setKeyframe("
+                            "(hou.Keyframe(x, hou.frameToTime(f)),), 0)\n"
+                            "    cam.parmTuple('t').setKeyframe("
+                            "(hou.Keyframe(height, hou.frameToTime(f)),), 1)\n"
+                            "    cam.parmTuple('t').setKeyframe("
+                            "(hou.Keyframe(z, hou.frameToTime(f)),), 2)\n"
+                            "\n"
+                            "# --- 3-point lighting (4:1 key:fill ratio) ---\n"
+                            "# Key light: exposure 5\n"
+                            "key = stage.createNode('light', 'key_light')\n"
+                            "key.parm('primpath').set('/lights/key_light')\n"
+                            "key.parm('xn__inputsintensity_i0a').set(1.0)\n"
+                            "key.parm('xn__inputsexposure_control_wcb').set('set')\n"
+                            "key.parm('xn__inputsexposure_vya').set(5.0)\n"
+                            "key.parmTuple('t').set((3, 4, 2))\n"
+                            "key.parmTuple('r').set((-35, 45, 0))\n"
+                            "\n"
+                            "# Fill light: exposure 3 (4:1 ratio = 2 stops diff)\n"
+                            "fill = stage.createNode('light', 'fill_light')\n"
+                            "fill.parm('primpath').set('/lights/fill_light')\n"
+                            "fill.parm('xn__inputsintensity_i0a').set(1.0)\n"
+                            "fill.parm('xn__inputsexposure_control_wcb').set('set')\n"
+                            "fill.parm('xn__inputsexposure_vya').set(3.0)\n"
+                            "fill.parmTuple('t').set((-3, 3, 2))\n"
+                            "fill.parmTuple('r').set((-25, -45, 0))\n"
+                            "\n"
+                            "# Rim light: exposure 4.5\n"
+                            "rim = stage.createNode('light', 'rim_light')\n"
+                            "rim.parm('primpath').set('/lights/rim_light')\n"
+                            "rim.parm('xn__inputsintensity_i0a').set(1.0)\n"
+                            "rim.parm('xn__inputsexposure_control_wcb').set('set')\n"
+                            "rim.parm('xn__inputsexposure_vya').set(4.5)\n"
+                            "rim.parmTuple('t').set((0, 3, -4))\n"
+                            "rim.parmTuple('r').set((-20, 180, 0))\n"
+                            "\n"
+                            "# --- Ground plane with shadow catcher ---\n"
+                            "ground = stage.createNode('sopimport', 'ground_plane')\n"
+                            "ground.parm('primpath').set('/geo/ground_plane')\n"
+                            "\n"
+                            "# --- Merge scene ---\n"
+                            "merge = stage.createNode('merge', 'scene_merge')\n"
+                            "inputs = [cam, key, fill, rim, ground]\n"
+                            "for i, node in enumerate(inputs):\n"
+                            "    merge.setInput(i, node)\n"
+                            "\n"
+                            "# --- Render settings: Karma XPU 1920x1080 ---\n"
+                            "rs = stage.createNode('karmarenderproperties', "
+                            "'render_settings')\n"
+                            "rs.setInput(0, merge)\n"
+                            "rs.parm('resolutionx').set(1920)\n"
+                            "rs.parm('resolutiony').set(1080)\n"
+                            "rs.parm('engine').set('XPU')\n"
+                            "rs.parm('samplesperpixel').set(128)\n"
+                            "rs.parm('diffuselimit').set(4)\n"
+                            "rs.parm('specularlimit').set(6)\n"
+                            "\n"
+                            "# --- Motion blur ---\n"
+                            "rs.parm('xformsamples').set(2)\n"
+                            "rs.parm('geosamples').set(2)\n"
+                            "\n"
+                            "# --- Karma LOP ---\n"
+                            "karma = stage.createNode('karma', 'karma_render')\n"
+                            "karma.setInput(0, rs)\n"
+                            "karma.parm('camera').set('/cameras/turntable_cam')\n"
+                            "karma.parm('picture').set("
+                            "'$HIP/render/$HIPNAME/$HIPNAME.$F4.exr')\n"
+                            "\n"
+                            "# --- AOV passes ---\n"
+                            "# Beauty is default; add utility passes\n"
+                            "aovs = ['depth', 'N', 'motionvector', "
+                            "'cryptomatte']\n"
+                            "for idx, aov in enumerate(aovs):\n"
+                            "    try:\n"
+                            "        karma.parm('ar_aov_name_' + str(idx + 1)"
+                            ").set(aov)\n"
+                            "    except Exception:\n"
+                            "        pass\n"
+                            "\n"
+                            "stage.layoutChildren()\n"
+                            "result = {{'camera': cam.path(), "
+                            "'karma': karma.path(), "
+                            "'output': '$HIP/render/$HIPNAME/$HIPNAME.$F4.exr', "
+                            "'frames': frames, 'resolution': '1920x1080', "
+                            "'samples': 128, "
+                            "'key_exposure': 5.0, 'fill_exposure': 3.0, "
+                            "'rim_exposure': 4.5, "
+                            "'motion_blur': True, "
+                            "'aovs': ['beauty'] + aovs}}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.APPROVE,
+                    output_var="turntable",
+                ),
+            ],
+        ))
+
+        # --- Character Cloth Setup ---
+        self.register(Recipe(
+            name="character_cloth_setup",
+            description=(
+                "Solaris character with cloth pipeline: sublayer LOP for "
+                "character USD reference, materiallibrary with skin/cloth/hair "
+                "MaterialX subnets, SOP Import for Vellum cloth cache, "
+                "subdivision + displacement on render geometry settings, "
+                "purpose tagging (render vs proxy)."
+            ),
+            triggers=[
+                r"^(?:set up|setup|create)\s+character\s+cloth(?:\s+(?:for|on|at|in)\s+(?P<char_path>.+))?$",
+                r"^(?:set up|setup|create)\s+(?:a\s+)?character\s+with\s+cloth(?:\s+(?:for|on|at|in)\s+(?P<char_path>.+))?$",
+                r"^character\s+cloth\s+setup(?:\s+(?:for|on|at|in)\s+(?P<char_path>.+))?$",
+            ],
+            parameters=["char_path"],
+            gate_level=GateLevel.REVIEW,
+            category="pipeline",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "char_path = '{char_path}'.strip()\n"
+                            "stage = hou.node('/stage')\n"
+                            "if stage is None:\n"
+                            "    stage = hou.node('/obj').createNode("
+                            "'lopnet', 'stage')\n"
+                            "\n"
+                            "# --- Sublayer for character USD reference ---\n"
+                            "sublayer = stage.createNode('sublayer', "
+                            "'char_reference')\n"
+                            "if char_path:\n"
+                            "    sublayer.parm('filepath1').set(char_path)\n"
+                            "\n"
+                            "# --- Material Library: skin, cloth, hair ---\n"
+                            "matlib = stage.createNode('materiallibrary', "
+                            "'char_materials')\n"
+                            "matlib.setInput(0, sublayer)\n"
+                            "matlib.parm('matpathprefix').set("
+                            "'/materials')\n"
+                            "matlib.cook(force=True)\n"
+                            "\n"
+                            "# Skin MaterialX subnet\n"
+                            "skin = matlib.createNode('subnet', 'skin_mtl')\n"
+                            "skin_surf = skin.createNode("
+                            "'mtlxstandard_surface', 'skin_shader')\n"
+                            "skin_surf.parm('base_color').set("
+                            "(0.8, 0.6, 0.5))\n"
+                            "skin_surf.parm('specular_roughness').set(0.4)\n"
+                            "skin_surf.parm('subsurface').set(0.3)\n"
+                            "skin_out = skin.createNode("
+                            "'subnetconnector', 'surface_output')\n"
+                            "skin_out.setInput(0, skin_surf)\n"
+                            "\n"
+                            "# Cloth MaterialX subnet\n"
+                            "cloth = matlib.createNode('subnet', 'cloth_mtl')\n"
+                            "cloth_surf = cloth.createNode("
+                            "'mtlxstandard_surface', 'cloth_shader')\n"
+                            "cloth_surf.parm('base_color').set("
+                            "(0.3, 0.3, 0.35))\n"
+                            "cloth_surf.parm('specular_roughness').set(0.7)\n"
+                            "cloth_surf.parm('sheen').set(0.5)\n"
+                            "cloth_out = cloth.createNode("
+                            "'subnetconnector', 'surface_output')\n"
+                            "cloth_out.setInput(0, cloth_surf)\n"
+                            "\n"
+                            "# Hair MaterialX subnet\n"
+                            "hair = matlib.createNode('subnet', 'hair_mtl')\n"
+                            "hair_surf = hair.createNode("
+                            "'mtlxstandard_surface', 'hair_shader')\n"
+                            "hair_surf.parm('base_color').set("
+                            "(0.15, 0.1, 0.08))\n"
+                            "hair_surf.parm('specular_roughness').set(0.35)\n"
+                            "hair_out = hair.createNode("
+                            "'subnetconnector', 'surface_output')\n"
+                            "hair_out.setInput(0, hair_surf)\n"
+                            "\n"
+                            "# --- SOP Import for Vellum cloth cache ---\n"
+                            "cloth_import = stage.createNode('sopimport', "
+                            "'cloth_cache_import')\n"
+                            "cloth_import.parm('primpath').set("
+                            "'/characters/cloth_sim')\n"
+                            "cloth_import.setInput(0, matlib)\n"
+                            "\n"
+                            "# --- Render Geometry Settings: "
+                            "subdivision + displacement ---\n"
+                            "rendergeo = stage.createNode("
+                            "'rendergeometrysettings', 'char_render_geo')\n"
+                            "rendergeo.setInput(0, cloth_import)\n"
+                            "rendergeo.parm('primpattern').set("
+                            "'/characters/**')\n"
+                            "try:\n"
+                            "    rendergeo.parm("
+                            "'xn__karmasubdivisionmesh_control_kfb'"
+                            ").set('set')\n"
+                            "    rendergeo.parm("
+                            "'xn__karmasubdivisionmesh_beb'"
+                            ").set(True)\n"
+                            "except Exception:\n"
+                            "    pass\n"
+                            "\n"
+                            "# --- Purpose tagging ---\n"
+                            "configure = stage.createNode("
+                            "'configureprimitive', 'purpose_tags')\n"
+                            "configure.setInput(0, rendergeo)\n"
+                            "configure.parm('primpattern').set("
+                            "'/characters/**')\n"
+                            "try:\n"
+                            "    configure.parm('purpose').set('render')\n"
+                            "except Exception:\n"
+                            "    pass\n"
+                            "\n"
+                            "stage.layoutChildren()\n"
+                            "result = {{'sublayer': sublayer.path(), "
+                            "'matlib': matlib.path(), "
+                            "'materials': ['skin_mtl', 'cloth_mtl', "
+                            "'hair_mtl'], "
+                            "'cloth_import': cloth_import.path(), "
+                            "'render_geo': rendergeo.path(), "
+                            "'purpose_config': configure.path()}}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="char_setup",
+                ),
+            ],
+        ))
+
+        # --- Destruction Sequence ---
+        self.register(Recipe(
+            name="destruction_sequence",
+            description=(
+                "RBD cache to Solaris multi-pass render: SOP imports for "
+                "RBD cache, debris instancing, volumetric dust/smoke, "
+                "destruction materials, and multi-pass Karma render settings "
+                "(beauty, depth, motion vectors, crypto mattes)."
+            ),
+            triggers=[
+                r"^(?:set up|setup|create)\s+(?:a\s+)?destruction\s+sequence(?:\s+(?:for|from|with)\s+(?P<cache_path>.+))?$",
+                r"^(?:set up|setup|create)\s+destruction(?:\s+(?:for|from|with)\s+(?P<cache_path>.+))?$",
+                r"^rbd\s+to\s+solaris\s+render(?:\s+(?:for|from|with)\s+(?P<cache_path>.+))?$",
+            ],
+            parameters=["cache_path"],
+            gate_level=GateLevel.APPROVE,
+            category="render",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "cache_path = '{cache_path}'.strip()\n"
+                            "stage = hou.node('/stage')\n"
+                            "if stage is None:\n"
+                            "    stage = hou.node('/obj').createNode("
+                            "'lopnet', 'stage')\n"
+                            "\n"
+                            "# --- SOP Import: RBD cache ---\n"
+                            "rbd_import = stage.createNode('sopimport', "
+                            "'rbd_cache')\n"
+                            "rbd_import.parm('primpath').set("
+                            "'/fx/rbd_fragments')\n"
+                            "if cache_path:\n"
+                            "    rbd_import.parm('soppath').set(cache_path)\n"
+                            "\n"
+                            "# --- SOP Import: debris instancing ---\n"
+                            "debris_import = stage.createNode('sopimport', "
+                            "'debris_instances')\n"
+                            "debris_import.parm('primpath').set("
+                            "'/fx/debris')\n"
+                            "\n"
+                            "# --- SOP Import: volumetric dust/smoke ---\n"
+                            "vol_import = stage.createNode('sopimport', "
+                            "'dust_volume')\n"
+                            "vol_import.parm('primpath').set("
+                            "'/fx/dust_smoke')\n"
+                            "\n"
+                            "# --- Material library for destruction ---\n"
+                            "matlib = stage.createNode('materiallibrary', "
+                            "'destruction_materials')\n"
+                            "matlib.parm('matpathprefix').set("
+                            "'/materials')\n"
+                            "matlib.cook(force=True)\n"
+                            "\n"
+                            "# Concrete material\n"
+                            "concrete = matlib.createNode('subnet', "
+                            "'concrete_mtl')\n"
+                            "concrete_surf = concrete.createNode("
+                            "'mtlxstandard_surface', 'concrete_shader')\n"
+                            "concrete_surf.parm('base_color').set("
+                            "(0.6, 0.58, 0.55))\n"
+                            "concrete_surf.parm('specular_roughness').set("
+                            "0.85)\n"
+                            "\n"
+                            "# Dust volume material\n"
+                            "dust = matlib.createNode('subnet', "
+                            "'dust_mtl')\n"
+                            "dust_vol = dust.createNode("
+                            "'mtlxstandard_volume', 'dust_shader')\n"
+                            "\n"
+                            "# --- Merge all FX layers ---\n"
+                            "merge = stage.createNode('merge', "
+                            "'fx_merge')\n"
+                            "merge.setInput(0, rbd_import)\n"
+                            "merge.setInput(1, debris_import)\n"
+                            "merge.setInput(2, vol_import)\n"
+                            "merge.setInput(3, matlib)\n"
+                            "\n"
+                            "# --- Render settings: multi-pass ---\n"
+                            "rs = stage.createNode("
+                            "'karmarenderproperties', "
+                            "'destruction_render_settings')\n"
+                            "rs.setInput(0, merge)\n"
+                            "rs.parm('resolutionx').set(1920)\n"
+                            "rs.parm('resolutiony').set(1080)\n"
+                            "rs.parm('engine').set('XPU')\n"
+                            "rs.parm('samplesperpixel').set(256)\n"
+                            "rs.parm('diffuselimit').set(4)\n"
+                            "rs.parm('specularlimit').set(6)\n"
+                            "\n"
+                            "# Motion blur for RBD\n"
+                            "rs.parm('xformsamples').set(2)\n"
+                            "rs.parm('geosamples').set(2)\n"
+                            "\n"
+                            "# --- Karma LOP ---\n"
+                            "karma = stage.createNode('karma', "
+                            "'karma_destruction')\n"
+                            "karma.setInput(0, rs)\n"
+                            "karma.parm('picture').set("
+                            "'$HIP/render/destruction/"
+                            "beauty.$F4.exr')\n"
+                            "\n"
+                            "# --- AOV config ---\n"
+                            "passes = {{\n"
+                            "    'beauty': 'beauty.$F4.exr',\n"
+                            "    'depth': 'depth.$F4.exr',\n"
+                            "    'motionvector': 'motionvector.$F4.exr',\n"
+                            "    'cryptomatte_obj': "
+                            "'cryptomatte_obj.$F4.exr',\n"
+                            "    'cryptomatte_mtl': "
+                            "'cryptomatte_mtl.$F4.exr',\n"
+                            "    'cryptomatte_asset': "
+                            "'cryptomatte_asset.$F4.exr',\n"
+                            "}}\n"
+                            "for idx, (aov, _) in enumerate("
+                            "passes.items()):\n"
+                            "    try:\n"
+                            "        karma.parm('ar_aov_name_' + "
+                            "str(idx)).set(aov)\n"
+                            "    except Exception:\n"
+                            "        pass\n"
+                            "\n"
+                            "stage.layoutChildren()\n"
+                            "result = {{'rbd_import': rbd_import.path(), "
+                            "'debris': debris_import.path(), "
+                            "'volume': vol_import.path(), "
+                            "'matlib': matlib.path(), "
+                            "'karma': karma.path(), "
+                            "'passes': list(passes.keys()), "
+                            "'resolution': '1920x1080', "
+                            "'samples': 256}}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.APPROVE,
+                    output_var="destruction",
+                ),
+            ],
+        ))
+
+        # --- Multi-Shot Composition ---
+        self.register(Recipe(
+            name="multi_shot_composition",
+            description=(
+                "Shot-based USD layer composition: sublayer chain for "
+                "base assets and shot overrides, per-shot camera prim, "
+                "per-shot lighting overrides as stronger opinion layer, "
+                "and render layer management."
+            ),
+            triggers=[
+                r"^(?:set up|setup|create)\s+multi\s*shot\s+composition(?:\s+(?:for|called|named)\s+(?P<shot_name>.+))?$",
+                r"^(?:set up|setup|create)\s+(?:a\s+)?shot\s+based\s+composition(?:\s+(?:for|called|named)\s+(?P<shot_name>.+))?$",
+                r"^multi\s+shot\s+composition(?:\s+(?:for|called|named)\s+(?P<shot_name>.+))?$",
+            ],
+            parameters=["shot_name"],
+            gate_level=GateLevel.REVIEW,
+            category="pipeline",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "shot_name = '{shot_name}'.strip() or 'shot_010'\n"
+                            "stage = hou.node('/stage')\n"
+                            "if stage is None:\n"
+                            "    stage = hou.node('/obj').createNode("
+                            "'lopnet', 'stage')\n"
+                            "\n"
+                            "# --- Base asset sublayer ---\n"
+                            "base_layer = stage.createNode('sublayer', "
+                            "'base_assets')\n"
+                            "base_layer.parm('filepath1').set("
+                            "'$HIP/usd/assets.usda')\n"
+                            "\n"
+                            "# --- Shot overrides sublayer "
+                            "(stronger opinion) ---\n"
+                            "shot_layer = stage.createNode('sublayer', "
+                            "shot_name + '_overrides')\n"
+                            "shot_layer.setInput(0, base_layer)\n"
+                            "shot_layer.parm('filepath1').set("
+                            "'$HIP/usd/' + shot_name + '_overrides.usda')\n"
+                            "\n"
+                            "# --- Per-shot camera ---\n"
+                            "cam = stage.createNode('camera', "
+                            "shot_name + '_cam')\n"
+                            "cam.parm('primpath').set("
+                            "'/cameras/' + shot_name + '_cam')\n"
+                            "cam.parm('focalLength').set(35)\n"
+                            "cam.setInput(0, shot_layer)\n"
+                            "\n"
+                            "# --- Per-shot lighting overrides ---\n"
+                            "light_layer = stage.createNode('sublayer', "
+                            "shot_name + '_lighting')\n"
+                            "light_layer.setInput(0, cam)\n"
+                            "\n"
+                            "# Key light override for this shot\n"
+                            "key = stage.createNode('light', "
+                            "shot_name + '_key')\n"
+                            "key.parm('primpath').set("
+                            "'/lights/' + shot_name + '_key')\n"
+                            "key.parm('xn__inputsintensity_i0a').set(1.0)\n"
+                            "key.parm("
+                            "'xn__inputsexposure_control_wcb').set('set')\n"
+                            "key.parm('xn__inputsexposure_vya').set(5.0)\n"
+                            "\n"
+                            "# Merge lighting into shot layer\n"
+                            "light_merge = stage.createNode('merge', "
+                            "shot_name + '_light_merge')\n"
+                            "light_merge.setInput(0, light_layer)\n"
+                            "light_merge.setInput(1, key)\n"
+                            "\n"
+                            "# --- Render layer management ---\n"
+                            "rs = stage.createNode("
+                            "'karmarenderproperties', "
+                            "shot_name + '_render_settings')\n"
+                            "rs.setInput(0, light_merge)\n"
+                            "rs.parm('resolutionx').set(1920)\n"
+                            "rs.parm('resolutiony').set(1080)\n"
+                            "\n"
+                            "karma = stage.createNode('karma', "
+                            "shot_name + '_karma')\n"
+                            "karma.setInput(0, rs)\n"
+                            "karma.parm('camera').set("
+                            "'/cameras/' + shot_name + '_cam')\n"
+                            "karma.parm('picture').set("
+                            "'$HIP/render/' + shot_name + "
+                            "'/' + shot_name + '.$F4.exr')\n"
+                            "\n"
+                            "stage.layoutChildren()\n"
+                            "result = {{'shot': shot_name, "
+                            "'base_layer': base_layer.path(), "
+                            "'shot_overrides': shot_layer.path(), "
+                            "'camera': cam.path(), "
+                            "'camera_prim': '/cameras/' + shot_name + '_cam', "
+                            "'lighting': light_merge.path(), "
+                            "'karma': karma.path(), "
+                            "'output': '$HIP/render/' + shot_name + "
+                            "'/' + shot_name + '.$F4.exr'}}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="shot_comp",
+                ),
+            ],
+        ))
+
+        # --- Copernicus Render Comp ---
+        self.register(Recipe(
+            name="copernicus_render_comp",
+            description=(
+                "Render pass compositing via Copernicus GPU nodes: "
+                "load beauty EXR and utility AOVs as file COPs, "
+                "grade (exposure/contrast), tonemap, and output "
+                "composited result."
+            ),
+            triggers=[
+                r"^(?:set up|setup|create)\s+(?:a\s+)?copernicus\s+render\s+comp(?:osite|ositing)?(?:\s+(?:for|from|with)\s+(?P<exr_path>.+))?$",
+                r"^(?:set up|setup|create)\s+(?:a\s+)?render\s+comp(?:osite|ositing)?(?:\s+(?:for|from|with)\s+(?P<exr_path>.+))?$",
+                r"^composite\s+render\s+passes(?:\s+(?:for|from|with)\s+(?P<exr_path>.+))?$",
+            ],
+            parameters=["exr_path"],
+            gate_level=GateLevel.REVIEW,
+            category="pipeline",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "exr_path = '{exr_path}'.strip()\n"
+                            "if not exr_path:\n"
+                            "    exr_path = '$HIP/render/$HIPNAME/"
+                            "$HIPNAME.$F4.exr'\n"
+                            "\n"
+                            "# --- Create COP network ---\n"
+                            "root = hou.node('/stage') or hou.node('/out')\n"
+                            "cop = root.createNode('cop2net', "
+                            "'render_comp')\n"
+                            "\n"
+                            "# --- File COP: beauty pass ---\n"
+                            "beauty_file = cop.createNode('file', "
+                            "'beauty_input')\n"
+                            "beauty_file.parm('filename1').set(exr_path)\n"
+                            "\n"
+                            "# --- File COP: depth AOV ---\n"
+                            "depth_path = exr_path.replace("
+                            "'$HIPNAME.$F4', 'depth.$F4')\n"
+                            "depth_file = cop.createNode('file', "
+                            "'depth_input')\n"
+                            "depth_file.parm('filename1').set(depth_path)\n"
+                            "\n"
+                            "# --- File COP: normal AOV ---\n"
+                            "normal_path = exr_path.replace("
+                            "'$HIPNAME.$F4', 'N.$F4')\n"
+                            "normal_file = cop.createNode('file', "
+                            "'normal_input')\n"
+                            "normal_file.parm('filename1').set("
+                            "normal_path)\n"
+                            "\n"
+                            "# --- Grade node: exposure/contrast ---\n"
+                            "grade = cop.createNode('colorcorrect', "
+                            "'grade')\n"
+                            "grade.setInput(0, beauty_file)\n"
+                            "try:\n"
+                            "    grade.parm('gamma').set(1.0)\n"
+                            "    grade.parm('gain').set(1.0)\n"
+                            "except Exception:\n"
+                            "    pass\n"
+                            "\n"
+                            "# --- Tonemap node ---\n"
+                            "tonemap = cop.createNode('tonemap', "
+                            "'tonemap')\n"
+                            "tonemap.setInput(0, grade)\n"
+                            "\n"
+                            "# --- ROP Composite Output ---\n"
+                            "rop_out = cop.createNode('rop_comp', "
+                            "'comp_output')\n"
+                            "rop_out.setInput(0, tonemap)\n"
+                            "output_path = exr_path.replace("
+                            "'$HIPNAME.$F4', 'comp.$F4')\n"
+                            "rop_out.parm('copoutput').set(output_path)\n"
+                            "\n"
+                            "cop.layoutChildren()\n"
+                            "result = {{'cop_net': cop.path(), "
+                            "'beauty': beauty_file.path(), "
+                            "'depth': depth_file.path(), "
+                            "'normal': normal_file.path(), "
+                            "'grade': grade.path(), "
+                            "'tonemap': tonemap.path(), "
+                            "'output': rop_out.path(), "
+                            "'output_path': output_path}}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="comp_setup",
+                ),
+            ],
+        ))
