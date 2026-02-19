@@ -51,7 +51,9 @@
       "evidence": ["T1-PAR-001"],
       "proposed_fix": "Extend set_parm to accept array values and auto-distribute to component parameters when the target is a tuple parm.",
       "priority": "medium",
-      "status": "open"
+      "status": "resolved",
+      "resolved_at": "2026-02-18T20:00:00Z",
+      "resolution": "set_parm already supported parmTuple with array values, but only as a fallback when scalar parm lookup failed. Added smart tuple promotion: when a scalar parm IS found but the value is a list/tuple, we now check for a matching parmTuple and set it directly. This lets callers set color (R,G,B) in one call using the base name (e.g., 'base_color' with [1,0,0]) without needing 3 separate calls."
     },
     {
       "id": "BL-005",

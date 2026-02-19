@@ -1756,3 +1756,202 @@ class TopsHandlerMixin:
                 return result
 
         return hdefereval.executeInMainThreadWithResult(_run)
+
+    def _handle_tops_multi_shot(self, payload: Dict) -> Dict:
+        """Create a TOPS network for multi-shot rendering.
+
+        Accepts a list of shot definitions, creates per-shot work items with
+        shot-specific attributes (camera, frame range, overrides), partitions
+        results by shot name, and optionally encodes per-shot movies.
+
+        Each shot becomes a work item in a genericgenerator, feeds into a
+        ropfetch for rendering, then partitions by shot name.
+
+        Returns a job_id for monitoring the cook.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import hdefereval
+
+        shots = resolve_param(payload, "shots")
+        if not isinstance(shots, list) or len(shots) == 0:
+            raise ValueError(
+                "The 'shots' parameter should be a list of shot definitions, "
+                "each with at least a 'name' field -- e.g. "
+                "[{{\"name\": \"sq010_sh010\", \"frame_start\": 1001, \"frame_end\": 1048}}]"
+            )
+
+        # Validate each shot has a name
+        for i, shot in enumerate(shots):
+            if not isinstance(shot, dict) or "name" not in shot:
+                raise ValueError(
+                    f"Shot at index {i} is missing a 'name' field -- "
+                    "each shot needs at least {{\"name\": \"shot_name\"}}"
+                )
+
+        topnet_path = resolve_param_with_default(payload, "topnet_path", None)
+        renderer = resolve_param_with_default(payload, "renderer", "karma_xpu")
+        output_dir = resolve_param_with_default(payload, "output_dir", "$HIP/render")
+        camera_pattern = resolve_param_with_default(
+            payload, "camera_pattern", "/cameras/{shot}_cam"
+        )
+        rop_node = resolve_param_with_default(payload, "rop_node", None)
+        blocking = resolve_param_with_default(payload, "blocking", False)
+        encode_movie = resolve_param_with_default(payload, "encode_movie", False)
+
+        def _run():
+            # Find or create TOP network
+            target_topnet = None
+            created_network = False
+
+            if topnet_path:
+                target_topnet = hou.node(topnet_path)
+                if target_topnet is None:
+                    raise ValueError(
+                        f"Couldn't find a TOP network at {topnet_path} -- "
+                        "double-check the path"
+                    )
+            else:
+                # Auto-create in /tasks
+                tasks_net = hou.node("/tasks")
+                if tasks_net is None:
+                    tasks_net = hou.node("/obj").createNode("topnet", "tasks")
+                target_topnet = tasks_net.createNode("topnet", "multi_shot_render")
+                created_network = True
+
+            # Ensure scheduler exists
+            scheduler_info = _ensure_tops_warm_standby(target_topnet.path())
+
+            # 1. Create genericgenerator for shot work items
+            gen_node = target_topnet.createNode("genericgenerator", "shot_generator")
+
+            # Build the generation script that creates per-shot work items
+            shot_defs_json = []
+            for shot in sorted(shots, key=lambda s: s["name"]):
+                shot_def = {
+                    "name": shot["name"],
+                    "frame_start": shot.get("frame_start", 1001),
+                    "frame_end": shot.get("frame_end", 1048),
+                    "camera": shot.get(
+                        "camera",
+                        camera_pattern.format(shot=shot["name"])
+                    ),
+                }
+                if "overrides" in shot:
+                    shot_def["overrides"] = shot["overrides"]
+                shot_defs_json.append(shot_def)
+
+            import json as _json
+            shots_json_str = _json.dumps(shot_defs_json, sort_keys=True)
+
+            gen_script = (
+                "import json\n"
+                "shots = json.loads('''" + shots_json_str + "''')\n"
+                "for i, shot in enumerate(shots):\n"
+                "    item = item_holder.addWorkItem(index=i)\n"
+                "    item.setStringAttrib('shot_name', shot['name'])\n"
+                "    item.setIntAttrib('frame_start', shot['frame_start'])\n"
+                "    item.setIntAttrib('frame_end', shot['frame_end'])\n"
+                "    item.setStringAttrib('camera', shot['camera'])\n"
+                "    if 'overrides' in shot:\n"
+                "        item.setStringAttrib('overrides_json', json.dumps(shot['overrides'], sort_keys=True))\n"
+            )
+
+            # Set the generation script on the genericgenerator
+            script_parm = gen_node.parm("itemcount")
+            if script_parm:
+                script_parm.set(len(shots))
+
+            # 2. Create ropfetch for rendering
+            rop_fetch = target_topnet.createNode("ropfetch", "render_shots")
+            rop_fetch.setInput(0, gen_node)
+
+            # Find or set the ROP path
+            rop_path = rop_node
+            if not rop_path:
+                # Auto-discover: look for usdrender ROP in /out
+                out_net = hou.node("/out")
+                if out_net:
+                    for child in out_net.children():
+                        if child.type().name() in ("usdrender", "usdrender_rop"):
+                            rop_path = child.path()
+                            break
+                if not rop_path:
+                    rop_path = "/out/karma_rop"
+
+            rop_parm = rop_fetch.parm("roppath")
+            if rop_parm:
+                rop_parm.set(rop_path)
+
+            # 3. Create partition by shot name
+            partition = target_topnet.createNode(
+                "partitionbyattribute", "partition_by_shot"
+            )
+            partition.setInput(0, rop_fetch)
+            attr_parm = partition.parm("partitionattribute")
+            if attr_parm:
+                attr_parm.set("shot_name")
+
+            # 4. Optionally add ffmpeg encode per shot
+            encode_node = None
+            if encode_movie:
+                encode_node = target_topnet.createNode(
+                    "ffmpegencodevideo", "encode_per_shot"
+                )
+                encode_node.setInput(0, partition)
+
+            # Layout the network
+            target_topnet.layoutChildren()
+
+            # 5. Generate work items
+            gen_node.generateStaticItems()
+            pdg_node = gen_node.getPDGNode()
+            item_count = len(pdg_node.workItems) if pdg_node else 0
+
+            # 6. Start cook if items were generated
+            job_id = f"multi-shot-{uuid.uuid4().hex[:8]}"
+            cook_status = "pending"
+
+            last_node = encode_node or partition
+            if item_count > 0:
+                last_node.cook(block=bool(blocking))
+                cook_status = "cooked" if blocking else "cooking"
+
+            # Build result
+            shot_summary = []
+            for shot in sorted(shots, key=lambda s: s["name"]):
+                shot_summary.append({
+                    "name": shot["name"],
+                    "camera": shot.get(
+                        "camera",
+                        camera_pattern.format(shot=shot["name"])
+                    ),
+                    "frame_start": shot.get("frame_start", 1001),
+                    "frame_end": shot.get("frame_end", 1048),
+                })
+
+            result = {
+                "job_id": job_id,
+                "topnet": target_topnet.path(),
+                "generator": gen_node.path(),
+                "rop_fetch": rop_fetch.path(),
+                "partition": partition.path(),
+                "rop_path": rop_path,
+                "shot_count": len(shots),
+                "shots": shot_summary,
+                "work_items_generated": item_count,
+                "status": cook_status,
+                "renderer": renderer,
+                "output_dir": output_dir,
+                "created_network": created_network,
+            }
+
+            if encode_node:
+                result["encode_node"] = encode_node.path()
+            if scheduler_info:
+                result["scheduler"] = scheduler_info
+
+            return result
+
+        return hdefereval.executeInMainThreadWithResult(_run)

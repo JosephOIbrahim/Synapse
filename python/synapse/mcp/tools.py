@@ -467,6 +467,29 @@ _TOOL_DEFS: list[tuple] = [
      }, "required": ["start_frame", "end_frame"]},
      False, True, False),
 
+    ("tops_multi_shot", "tops_multi_shot", _identity,
+     "Create a TOPS network for multi-shot rendering. Accepts a list of shot definitions "
+     "(name, frame range, camera, overrides), creates per-shot work items in a genericgenerator, "
+     "feeds into ropfetch for rendering, partitions results by shot name. "
+     "Returns a job_id for monitoring.",
+     {"type": "object", "properties": {
+         "shots": {"type": "array", "items": {"type": "object", "properties": {
+             "name": {"type": "string", "description": "Shot name (e.g. sq010_sh010)"},
+             "frame_start": {"type": "integer", "description": "First frame (default: 1001)"},
+             "frame_end": {"type": "integer", "description": "Last frame (default: 1048)"},
+             "camera": {"type": "string", "description": "Camera USD prim path"},
+             "overrides": {"type": "object", "description": "Shot-specific parameter overrides"},
+         }, "required": ["name"]}, "description": "List of shot definitions"},
+         "topnet_path": {"type": "string", "description": "Existing TOP network to reuse"},
+         "renderer": {"type": "string", "description": "Renderer (default: karma_xpu)"},
+         "output_dir": {"type": "string", "description": "Base output directory (default: $HIP/render)"},
+         "camera_pattern": {"type": "string", "description": "Camera path template (default: /cameras/{shot}_cam)"},
+         "rop_node": {"type": "string", "description": "ROP node path (auto-discovers if omitted)"},
+         "blocking": {"type": "boolean", "description": "Wait for cook to complete (default: false)"},
+         "encode_movie": {"type": "boolean", "description": "Add ffmpeg encode per shot (default: false)"},
+     }, "required": ["shots"]},
+     False, True, False),
+
     # -- USD Scene Assembly --
     ("houdini_reference_usd", "reference_usd", _identity,
      "Import a USD file into the stage via reference, payload, or sublayer. "
@@ -766,6 +789,17 @@ _TOOL_DEFS: list[tuple] = [
     ("synapse_render_farm_status", "render_farm_status", _passthrough,
      "Check progress of a running render farm job: running state, scene tags, current frame.",
      _EMPTY_SCHEMA, True, False, True),
+
+    # -- Autonomous Render --
+    ("synapse_autonomous_render", "autonomous_render", _identity,
+     "Execute an autonomous render loop: plan the render from intent, validate the scene, "
+     "execute via TOPS, evaluate quality, and re-render if needed. Returns a full report.",
+     {"type": "object", "properties": {
+         "intent": {"type": "string", "description": "What to render (e.g., 'render frames 1-48', 'render turntable with ARRI Alexa 35 at 50mm')"},
+         "max_iterations": {"type": "integer", "default": 3, "description": "Max re-render attempts if quality check fails"},
+         "quality_threshold": {"type": "number", "default": 0.85, "description": "Minimum quality score (0.0-1.0) for frames to pass"},
+     }, "required": ["intent"]},
+     False, True, False),
 
     # -- Live Metrics (Sprint E) --
     ("synapse_live_metrics", "get_live_metrics", _identity,

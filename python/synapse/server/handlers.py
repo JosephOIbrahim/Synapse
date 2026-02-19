@@ -107,6 +107,9 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "tops_cook_and_validate": AuditCategory.PIPELINE,
     "tops_diagnose": AuditCategory.PIPELINE,
     "tops_pipeline_status": AuditCategory.PIPELINE,
+    "tops_multi_shot": AuditCategory.PIPELINE,
+    # Autonomous render
+    "autonomous_render": AuditCategory.RENDER,
 }
 
 # Commands that don't modify state — skip memory logging for these
@@ -349,6 +352,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         # TOPS / PDG (Phase 5: Streaming & Render Integration)
         reg.register("tops_monitor_stream", self._handle_tops_monitor_stream)
         reg.register("tops_render_sequence", self._handle_tops_render_sequence)
+        reg.register("tops_multi_shot", self._handle_tops_multi_shot)
 
         # USD scene assembly (reference / sublayer / payload) + prim queries
         reg.register("reference_usd", self._handle_reference_usd)
@@ -410,6 +414,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("memory_query", self._handle_memory_query)
         reg.register("memory_status", self._handle_memory_status)
         reg.register("evolve_memory", self._handle_evolve_memory)
+
+        # Autonomous render pipeline
+        reg.register("autonomous_render", self._handle_autonomous_render)
 
     # =========================================================================
     # UTILITY HANDLERS
@@ -599,6 +606,14 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                     if parm is not None:
                         parm_name = usd_encoded
             if parm is not None:
+                # If value is a list/tuple but we found a scalar parm, try the
+                # tuple parm instead — this lets callers set color (R,G,B) in one
+                # call using the base name (e.g., "base_color" with [1,0,0]).
+                if isinstance(value, (list, tuple)):
+                    parm_tuple = node.parmTuple(parm_name)
+                    if parm_tuple is not None and len(parm_tuple) > 1:
+                        parm_tuple.set(value)
+                        return {"node": node_path, "parm": parm_name, "value": value}
                 parm.set(value)
                 result = {"node": node_path, "parm": parm_name, "value": value}
                 # Lighting Law: soft warning when intensity > 1.0 on light nodes
@@ -1032,6 +1047,120 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             "summary": result.summary,
             "reference_file": result.reference_file,
         }
+
+    # =========================================================================
+    # AUTONOMOUS RENDER
+    # =========================================================================
+
+    def _handle_autonomous_render(self, payload: Dict) -> Dict:
+        """Run the autonomous render pipeline: Plan -> Validate -> Execute -> Evaluate -> Report.
+
+        Payload:
+            intent (str, required): Natural-language render intent (e.g. 'render frames 1-48').
+            max_iterations (int, optional): Max re-render attempts (default: 3).
+            quality_threshold (float, optional): Minimum quality score 0.0-1.0 (default: 0.85).
+
+        Returns:
+            Serialized RenderReport with plan, evaluation, decisions, and success flag.
+        """
+        import asyncio
+        from dataclasses import asdict
+
+        intent = payload.get("intent")
+        if not intent:
+            raise ValueError(
+                "We need an intent to plan the render \u2014 "
+                "e.g. 'render frames 1-48' or 'render turntable at 50mm'"
+            )
+
+        max_iterations = int(payload.get("max_iterations", 3))
+        quality_threshold = float(payload.get("quality_threshold", 0.85))
+
+        # Late import to keep autonomy optional (no import at module level)
+        from ..autonomy import (
+            AutonomousDriver,
+            RenderPlanner,
+            PreFlightValidator,
+            RenderEvaluator,
+        )
+
+        # Adapter: bridge the sync handler registry to the async interface
+        # expected by the autonomy modules.
+        class _HandlerAdapter:
+            """Adapts the sync handler registry to the async interface expected by autonomy modules."""
+
+            def __init__(self, registry):
+                self._registry = registry
+
+            async def call(self, tool_name, params):
+                handler = self._registry.get(tool_name)
+                if handler is None:
+                    raise ValueError(f"Couldn't find handler: {tool_name}")
+                result = handler(params)
+                if asyncio.iscoroutine(result):
+                    return await result
+                return result
+
+        adapter = _HandlerAdapter(self._registry)
+
+        # Optionally wire up memory for decision persistence
+        memory = None
+        try:
+            from ..memory.store import get_synapse_memory
+            memory = get_synapse_memory()
+        except Exception:
+            pass
+
+        planner = RenderPlanner()
+        validator = PreFlightValidator(adapter)
+        evaluator = RenderEvaluator()
+
+        driver = AutonomousDriver(
+            planner=planner,
+            validator=validator,
+            evaluator=evaluator,
+            handler_interface=adapter,
+            memory_system=memory,
+            max_iterations=max_iterations,
+        )
+
+        # The autonomy pipeline is async; run it from this sync handler context.
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            # Already inside an event loop (e.g. hwebserver) — schedule as a task.
+            import concurrent.futures
+            future: concurrent.futures.Future = concurrent.futures.Future()
+
+            async def _run():
+                try:
+                    result = await driver.execute(intent)
+                    future.set_result(result)
+                except Exception as exc:
+                    future.set_exception(exc)
+
+            loop.create_task(_run())
+            report = future.result(timeout=600)
+        else:
+            report = asyncio.run(driver.execute(intent))
+
+        # Serialize the dataclass report to a plain dict
+        def _serialize(obj):
+            """Convert dataclass / enum / datetime to JSON-safe dict."""
+            if hasattr(obj, "__dataclass_fields__"):
+                return {k: _serialize(v) for k, v in asdict(obj).items()}
+            if isinstance(obj, dict):
+                return {k: _serialize(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [_serialize(v) for v in obj]
+            if hasattr(obj, "value"):  # Enum
+                return obj.value
+            return obj
+
+        return _serialize(report)
 
 def _run_compiled(compiled_code, globals_dict, locals_dict):
     """

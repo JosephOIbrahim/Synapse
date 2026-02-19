@@ -4,31 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Synapse v5.4.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 61 MCP tools (24 houdini_, 23 synapse_, 14 tops_) to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, TOPS/PDG pipeline orchestration, and viewport/render capture.
+Synapse v5.5.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 70 MCP tools (24 houdini_, 28 synapse_, 18 tops_) to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, TOPS/PDG pipeline orchestration, and viewport/render capture.
 
 Two repos make up the full system:
 - **`C:\Users\User\Synapse\`** — Core server, protocol, handlers, memory, routing, MCP bridge
 - **`C:\Users\User\.synapse\`** — Agent SDK (autonomous co-pilot), design system (tokens/icons/styles), Houdini shelf/panel integration, installer
 
-## Active Sprint: FORGE-PRODUCTION
+## Completed Sprint: FORGE-PRODUCTION
 
-**Plan:** `FORGE_PRODUCTION/docs/forge/FORGE_PRODUCTION.md` — read this first.
-**Agent directives:** `FORGE_PRODUCTION/.claude/agent.md` — loaded for all Task sub-agents.
-**Task prompts:** `FORGE_PRODUCTION/.claude/tasks/` — dispatch files for each team.
+**Plan:** `FORGE_PRODUCTION/docs/forge/FORGE_PRODUCTION.md`
+**Status:** ALL PHASES COMPLETE
 
-### Phase Detection (run on session start)
-```bash
-grep -c "render_turntable_production" synapse/routing/recipes.py 2>/dev/null
-ls synapse/autonomy/__init__.py 2>/dev/null
-grep -c "solaris_validate_ordering" synapse/handlers_solaris.py 2>/dev/null
-ls rag/skills/houdini21-reference/camera_sensor_database.md 2>/dev/null
-```
-
-Phase 1 active if no production recipes.
-Phase 2 active if recipes exist but no autonomy/.
-Phase 3 active if autonomy/ exists but no ordering validator.
-Phase 4 active if ordering exists but no camera database.
-All exist = FORGE-PRODUCTION complete.
+| Phase | Gate | Status |
+|-------|------|--------|
+| Phase 1: Production Recipes | `grep -c "render_turntable_production" synapse/routing/recipes.py` | COMPLETE |
+| Phase 2: Autonomy Module | `ls synapse/autonomy/__init__.py` | COMPLETE |
+| Phase 3: Ordering Validator | `grep -c "solaris_validate_ordering" synapse/handlers_solaris.py` | COMPLETE |
+| Phase 4: Camera Database | `ls rag/skills/houdini21-reference/camera_sensor_database.md` | COMPLETE |
 
 **RAG Source:** `G:\HOUDINI21_RAG_SYSTEM` — Houdini 21 reference knowledge.
 
@@ -94,7 +86,7 @@ After editing source files, remind the user to redeploy if needed (`python ~/.sy
 pip install -e ".[dev]"
 pip install -e ".[dev,websocket,mcp,routing,encryption]"   # all optional features
 
-# Run all core tests (~1,427 tests across 42 test files, no Houdini required)
+# Run all core tests (~1,691 tests across 47+ test files, no Houdini required)
 python -m pytest tests/ -v
 
 # Type checking (mypy, 0 errors on 49 source files)
@@ -157,7 +149,7 @@ MCP Protocol Layer  (synapse/mcp/)
                           |
 Claude Desktop/Code       |  (existing stdio path preserved)
     |  stdio / JSON-RPC   |
-mcp_server.py  (61 tools) |
+mcp_server.py  (70 tools) |
     |                     |
     ├─────────────────────┘
     |  WebSocket: ws://localhost:9999/synapse
@@ -178,8 +170,9 @@ Both MCP Streamable HTTP and the existing WebSocket/stdio paths converge at the 
 | Memory | `memory/` | JSONL store (`store.py`) or SQLite store (`sqlite_store.py`, via `SYNAPSE_MEMORY_BACKEND=sqlite`), data models (`models.py`), shot context (`context.py`), markdown export (`markdown.py`), **Living Memory**: scene memory (`scene_memory.py`), agent state USD (`agent_state.py`), evolution system (`evolution.py`) |
 | Routing | `routing/` | Tiered LLM dispatch (`router.py`), regex parser (`parser.py`), RAG knowledge (`knowledge.py`), recipes (`recipes.py`), deterministic cache (`cache.py`), workflow planner (`planner.py`), epoch-based tier adaptation (`adaptation.py`) |
 | Agent | `agent/` | prepare/propose/execute/learn lifecycle (`executor.py`), task/plan/step protocol (`protocol.py`), outcome tracking (`learning.py`) |
-| MCP | `mcp/` | MCP Streamable HTTP protocol layer. `server.py` (endpoint handler, JSON-RPC router), `session.py` (session manager), `tools.py` (tool registry, 61 tools), `resources.py` (scene state resources), `prompts.py` (workflow prompts), `protocol.py` (JSON-RPC utilities, error codes), `types.py` (type definitions, schemas) |
-| Server | `server/` | WebSocket server (`websocket.py`), command handlers split across 7 files: `handlers.py` (core registry + 18 handlers), `handlers_render.py` (viewport/render/keyframe/settings/validation/farm), `handlers_tops.py` (wedge + 15 tops_* PDG handlers), `handlers_material.py` (create/assign/read material), `handlers_memory.py` (memory/context), `handlers_node.py` (node ops), `handlers_usd.py` (USD/Solaris). Shared utilities in `handler_helpers.py`. Plus: resilience stack (`resilience.py`), introspection (`introspection.py`), hwebserver adapter (`hwebserver_adapter.py`), REST adapter (`api_adapter.py`), guards (`guards.py`), auth (`auth.py`), metrics (`metrics.py`), RBAC (`rbac.py`), multi-user sessions (`sessions.py`), live metrics (`live_metrics.py`), dashboard (`dashboard.py`), render farm (`render_farm.py`, `render_farm_handler.py`), render diagnostics (`render_diagnostics.py`), render notifications (`render_notify.py`) |
+| MCP | `mcp/` | MCP Streamable HTTP protocol layer. `server.py` (endpoint handler, JSON-RPC router), `session.py` (session manager), `tools.py` (tool registry, 70 tools), `resources.py` (scene state resources), `prompts.py` (workflow prompts), `protocol.py` (JSON-RPC utilities, error codes), `types.py` (type definitions, schemas) |
+| Server | `server/` | WebSocket server (`websocket.py`), command handlers split across 7 files: `handlers.py` (core registry + 18 handlers), `handlers_render.py` (viewport/render/keyframe/settings/validation/farm), `handlers_tops.py` (wedge + 17 tops_* PDG handlers), `handlers_material.py` (create/assign/read material), `handlers_memory.py` (memory/context), `handlers_node.py` (node ops), `handlers_usd.py` (USD/Solaris). Shared utilities in `handler_helpers.py`. Plus: resilience stack (`resilience.py`), introspection (`introspection.py`), hwebserver adapter (`hwebserver_adapter.py`), REST adapter (`api_adapter.py`), guards (`guards.py`), auth (`auth.py`), metrics (`metrics.py`), RBAC (`rbac.py`), multi-user sessions (`sessions.py`), live metrics (`live_metrics.py`), dashboard (`dashboard.py`), render farm (`render_farm.py`, `render_farm_handler.py`), render diagnostics (`render_diagnostics.py`), render notifications (`render_notify.py`) |
+| Autonomy | `autonomy/` | Autonomous render loop (`planner.py`), pre-flight validation (`validator.py`), render evaluation (`evaluator.py`), orchestration (`driver.py`), data models (`models.py`) |
 | Session | `session/` | SynapseBridge singleton hub (`tracker.py`), session summaries (`summary.py`) |
 | UI | `ui/` | Qt panel with 5 tabs (`panel.py`), tab widgets in `tabs/` |
 
@@ -216,7 +209,7 @@ When enabled, first WebSocket message must be an `authenticate` command with `{"
 
 ### MCP Server — stdio Bridge (`mcp_server.py`)
 
-61 tools (24 houdini_, 23 synapse_, 14 tops_). Key operational details:
+70 tools (24 houdini_, 28 synapse_, 18 tops_). Key operational details:
 - **Concurrent dispatch**: `_pending` dict + `_recv_loop` coroutine — no blocking lock, true parallel tool calls
 - **Timeouts**: Default 10s. Overrides: execute_python/execute_vex/capture_viewport/inspect_* at 30s, render/wedge at 120s, batch at 60s
 - **JSON**: Uses `orjson` (fast, sort_keys via `OPT_SORT_KEYS`) when available, falls back to stdlib `json`
@@ -257,7 +250,7 @@ GET  /mcp   →  Opens optional SSE stream for server→client messages (Phase 3
     },
     "serverInfo": {
         "name": "synapse",
-        "version": "5.4.0"
+        "version": "5.5.0"
     },
     "instructions": (
         "SYNAPSE is a bridge between AI agents and SideFX Houdini. "
@@ -448,7 +441,7 @@ with patch.object(hou, "flipbook", create=True):
 1. Add `CommandType` variant in `core/protocol.py`
 2. Add handler method `_handle_<name>` in the appropriate handler file (`handlers.py` for core, `handlers_render.py` for render/viewport/keyframe/validation, `handlers_tops.py` for TOPS/PDG, `handlers_material.py` for materials, `handlers_usd.py` for USD, `handlers_memory.py` for memory, `handlers_node.py` for node ops) and register it in `SynapseHandler._register_handlers()`
 3. Add parameter aliases in `core/aliases.py` if the tool has new parameter names
-4. Add `Tool(...)` entry to `list_tools()` and dispatch case to `call_tool()` in `mcp_server.py` (uses `Server.list_tools()`/`Server.call_tool()` decorators, not `@mcp.tool()` decorator pattern). All 61 tools defined in one `list_tools()` function with a single `call_tool()` switch
+4. Add `Tool(...)` entry to `list_tools()` and dispatch case to `call_tool()` in `mcp_server.py` (uses `Server.list_tools()`/`Server.call_tool()` decorators, not `@mcp.tool()` decorator pattern). All 70 tools defined in one `list_tools()` function with a single `call_tool()` switch
 5. **Add MCP tool definition in `mcp/tools.py`** — include `inputSchema` (JSON Schema for arguments) and `annotations` (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`). The tool dispatches to the same handler registered in step 2.
 6. Add timeout override to `_SLOW_COMMANDS` in `mcp_server.py` if >10s expected
 7. Write tests — bootstrap a `hou` stub inline via `sys.modules`, import handlers via `importlib`, patch `_handlers_hou` (not `sys.modules["hou"]`). **Also write a test in `test_mcp_protocol.py`** verifying the tool appears in `tools/list` and `tools/call` dispatches correctly.
@@ -457,11 +450,11 @@ with patch.object(hou, "flipbook", create=True):
 
 ### Adding a routing recipe
 
-Add to `routing/recipes.py` in the `_register_builtins()` method. 21 recipes (11 basic + 10 production). Recipes are Tier 0.5 — pattern-matched before regex, return multi-step command sequences. For complex workflows, use `execute_python` steps. For dynamic composition with modifiers ("set up X with Y and Z"), add workflow templates to `routing/planner.py`.
+Add to `routing/recipes.py` in the `_register_builtins()` method. 39 recipes. Recipes are Tier 0.5 — pattern-matched before regex, return multi-step command sequences. For complex workflows, use `execute_python` steps. For dynamic composition with modifiers ("set up X with Y and Z"), add workflow templates to `routing/planner.py`.
 
 ### Adding RAG knowledge
 
-Add/edit files in `rag/skills/houdini21-reference/*.md` (26 files, ~3,900 lines). Update topic triggers in `rag/documentation/_metadata/semantic_index.json` (28 topics, 400+ triggers).
+Add/edit files in `rag/skills/houdini21-reference/*.md` (78 files). Update topic triggers in `rag/documentation/_metadata/semantic_index.json` (28 topics, 400+ triggers).
 
 ## Key Conventions
 
@@ -505,10 +498,10 @@ When building or rendering Solaris scenes via MCP, follow a progressive validati
 Default: `ws://localhost:9999/synapse` | Version: `4.0.0`
 MCP endpoint: `http://localhost:PORT/mcp` | Protocol: MCP 2025-06-18 (Streamable HTTP)
 
-53 registered handlers across 7 handler files:
+56 registered handlers across 7 handler files:
 - **Core (18)**: `ping`, `get_health`, `get_help`, `create_node`, `delete_node`, `connect_nodes`, `get_parm`, `set_parm`, `get_scene_info`, `get_selection`, `execute_python`, `execute_vex`, `batch_commands`, `get_metrics`, `router_stats`, `list_recipes`, `knowledge_lookup`, `capture_viewport`
-- **Render (8)**: `capture_viewport`, `render`, `set_keyframe`, `render_settings`, `validate_frame`, `render_sequence`, `render_farm_status`
-- **TOPS/PDG (16)**: `wedge`, `tops_get_work_items`, `tops_get_dependency_graph`, `tops_get_cook_stats`, `tops_cook_node`, `tops_generate_items`, `tops_configure_scheduler`, `tops_cancel_cook`, `tops_dirty_node`, `tops_setup_wedge`, `tops_batch_cook`, `tops_query_items`, `tops_cook_and_validate`, `tops_diagnose`, `tops_pipeline_status`
+- **Render (9)**: `capture_viewport`, `render`, `set_keyframe`, `render_settings`, `validate_frame`, `render_sequence`, `render_farm_status`, `solaris_validate_ordering`
+- **TOPS/PDG (18)**: `wedge`, `tops_get_work_items`, `tops_get_dependency_graph`, `tops_get_cook_stats`, `tops_cook_node`, `tops_generate_items`, `tops_configure_scheduler`, `tops_cancel_cook`, `tops_dirty_node`, `tops_setup_wedge`, `tops_batch_cook`, `tops_query_items`, `tops_cook_and_validate`, `tops_diagnose`, `tops_pipeline_status`, `tops_monitor_stream`, `tops_render_sequence`
 - **Materials (3)**: `create_material`, `assign_material`, `read_material`
 - **USD (7)**: `get_stage_info`, `get_usd_attribute`, `set_usd_attribute`, `create_usd_prim`, `modify_usd_prim`, `reference_usd`
 - **Node (3)**: `create_node`, `delete_node`, `connect_nodes`
@@ -551,7 +544,7 @@ $HIP/.synapse/           # Per-project memory
 - **synapse_shelf.py**: Security hooks block `parm.eval()` patterns; use `node.evalParm("parm_name")` method instead
 - **Agent SDK websockets**: Must import at module level (not inside connect()) — patch target is `synapse_ws.websockets`
 - **Zombie servers**: Multiple SynapseServer instances can linger in Houdini; use `gc.get_objects()` + `_actual_port` to find the active one
-- **MCP tool registration (stdio bridge)**: Uses `@server.list_tools()` returning `Tool(...)` list + `@server.call_tool()` dispatcher — NOT the `@mcp.tool()` decorator pattern. All 61 tools defined in one `list_tools()` function with a single `call_tool()` switch
+- **MCP tool registration (stdio bridge)**: Uses `@server.list_tools()` returning `Tool(...)` list + `@server.call_tool()` dispatcher — NOT the `@mcp.tool()` decorator pattern. All 70 tools defined in one `list_tools()` function with a single `call_tool()` switch
 - **MCP tool registration (Streamable HTTP)**: Uses the tool registry in `mcp/tools.py` which maps to the same handlers. Both registries must stay in sync — when adding a tool to `mcp_server.py`, also add it to `mcp/tools.py`
 - **MCP session headers**: `Mcp-Session-Id` must be returned on the `initialize` response and included by the client on all subsequent requests. hwebserver header access may require case-insensitive lookup
 - **MCP notifications return 202**: `notifications/initialized` and other notification methods return HTTP 202 Accepted with empty body — NOT 200 with a JSON-RPC response

@@ -91,6 +91,10 @@ class CommandType(Enum):
     TOPS_PIPELINE_STATUS = "tops_pipeline_status"
     TOPS_MONITOR_STREAM = "tops_monitor_stream"
     TOPS_RENDER_SEQUENCE = "tops_render_sequence"
+    TOPS_MULTI_SHOT = "tops_multi_shot"
+
+    # Autonomous render pipeline
+    AUTONOMOUS_RENDER = "autonomous_render"
 
     # Memory operations (new simplified names)
     CONTEXT = "context"

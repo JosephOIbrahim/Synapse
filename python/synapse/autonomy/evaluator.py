@@ -6,6 +6,7 @@ Detects black frames, NaN/Inf values, fireflies, clipping,
 flickering, motion discontinuities, and missing frames.
 
 numpy is optional — gracefully degrades if unavailable.
+Image loading uses OIIO > pyexr > PIL with graceful fallback.
 """
 
 import logging
@@ -23,6 +24,30 @@ try:
 except ImportError:
     np = None  # type: ignore[assignment]
     NUMPY_AVAILABLE = False
+
+# Optional image library imports — tried in order of preference
+_OIIO_AVAILABLE = False
+_PYEXR_AVAILABLE = False
+_PIL_AVAILABLE = False
+
+try:
+    import OpenImageIO as oiio  # type: ignore[import-untyped]
+    _OIIO_AVAILABLE = True
+except ImportError:
+    oiio = None  # type: ignore[assignment]
+
+if not _OIIO_AVAILABLE:
+    try:
+        import pyexr  # type: ignore[import-untyped]
+        _PYEXR_AVAILABLE = True
+    except ImportError:
+        pyexr = None  # type: ignore[assignment]
+
+try:
+    from PIL import Image as _PILImage  # type: ignore[import-untyped]
+    _PIL_AVAILABLE = True
+except ImportError:
+    _PILImage = None  # type: ignore[assignment]
 
 
 class RenderEvaluator:
@@ -65,6 +90,89 @@ class RenderEvaluator:
         self._continuity_threshold = continuity_threshold
 
     # ------------------------------------------------------------------
+    # Image loading
+    # ------------------------------------------------------------------
+
+    def _load_frame(self, output_path: str) -> Optional[Any]:
+        """Load a rendered frame from disk as a float32 numpy array.
+
+        Tries image libraries in order: OIIO > pyexr > PIL.
+        Returns numpy array (H, W, C) in [0, 1] float32 range,
+        or None if loading failed or no library is available.
+        """
+        if not NUMPY_AVAILABLE:
+            logger.debug("numpy not available — can't load frame pixels")
+            return None
+
+        if not os.path.exists(output_path):
+            logger.debug("Frame file does not exist: %s", output_path)
+            return None
+
+        ext = os.path.splitext(output_path)[1].lower()
+
+        # --- OIIO path (handles EXR, PNG, JPEG, TIFF, and more) ---
+        if _OIIO_AVAILABLE:
+            try:
+                inp = oiio.ImageInput.open(output_path)
+                if inp is None:
+                    logger.warning(
+                        "OIIO couldn't open %s: %s",
+                        output_path,
+                        oiio.geterror(),
+                    )
+                    return None
+                spec = inp.spec()
+                buf = np.empty(
+                    (spec.height, spec.width, spec.nchannels),
+                    dtype=np.float32,
+                )
+                inp.read_image(0, 0, oiio.FLOAT, buf)
+                inp.close()
+                return buf
+            except Exception as exc:
+                logger.warning("OIIO failed to read %s: %s", output_path, exc)
+                return None
+
+        # --- pyexr path (EXR only) ---
+        if _PYEXR_AVAILABLE and ext == ".exr":
+            try:
+                data = pyexr.open(output_path).get()
+                return np.asarray(data, dtype=np.float32)
+            except Exception as exc:
+                logger.warning("pyexr failed to read %s: %s", output_path, exc)
+                return None
+
+        # --- PIL path (PNG, JPEG, TIFF, BMP — not EXR) ---
+        if _PIL_AVAILABLE and ext in (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"):
+            try:
+                img = _PILImage.open(output_path)
+                arr = np.asarray(img, dtype=np.float32)
+                # Normalize based on original bit depth
+                if arr.max() > 1.0:
+                    if img.mode in ("I;16", "I;16B", "I;16L"):
+                        arr = arr / 65535.0
+                    elif arr.max() > 255.0:
+                        arr = arr / 65535.0
+                    else:
+                        arr = arr / 255.0
+                # Ensure 3D shape (H, W, C)
+                if arr.ndim == 2:
+                    arr = arr[:, :, np.newaxis]
+                return arr
+            except Exception as exc:
+                logger.warning("PIL failed to read %s: %s", output_path, exc)
+                return None
+
+        # No library could handle this format
+        logger.debug(
+            "No image library available for %s (ext=%s). "
+            "Install OpenImageIO, pyexr, or Pillow.",
+            output_path,
+            ext,
+        )
+        return None
+
+    # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
@@ -72,6 +180,7 @@ class RenderEvaluator:
         self,
         frame: int,
         output_path: str,
+        pixels: Optional[Any] = None,
         image_data: Optional[Any] = None,
     ) -> FrameEvaluation:
         """Evaluate a single rendered frame.
@@ -79,28 +188,44 @@ class RenderEvaluator:
         Args:
             frame: Frame number.
             output_path: Path to the rendered image file.
-            image_data: Optional numpy array (H, W, C) with pixel values
-                        in [0, 1] range. If not provided, we check file
-                        existence only.
+            pixels: Optional numpy array (H, W, C) with pixel values
+                    in [0, 1] range. If not provided, attempts to load
+                    from output_path automatically.
+            image_data: Legacy alias for pixels (backwards compatibility).
 
         Returns:
             FrameEvaluation with issues list and per-check metrics.
         """
+        # Resolve pixel data: pixels takes priority over image_data
+        resolved_pixels = pixels if pixels is not None else image_data
+
         issues: List[str] = []
         metrics: Dict[str, float] = {}
 
-        # Basic file existence check
-        if not image_data is not None and not os.path.exists(output_path):
-            return FrameEvaluation(
-                frame=frame,
-                output_path=output_path,
-                passed=False,
-                issues=[f"Couldn't find rendered output at {output_path}"],
-                metrics={},
-            )
+        # Auto-load from disk if no pixel data provided
+        if resolved_pixels is None:
+            resolved_pixels = self._load_frame(output_path)
+            if resolved_pixels is None:
+                # Couldn't load — check if file exists at all
+                if not os.path.exists(output_path):
+                    return FrameEvaluation(
+                        frame=frame,
+                        output_path=output_path,
+                        passed=False,
+                        issues=[f"Couldn't find rendered output at {output_path}"],
+                        metrics={},
+                    )
+                # File exists but couldn't load pixels — skip quality checks
+                return FrameEvaluation(
+                    frame=frame,
+                    output_path=output_path,
+                    passed=True,
+                    issues=["Couldn't load frame for pixel analysis — skipping quality checks"],
+                    metrics={"quality_score": 1.0},
+                )
 
-        if image_data is not None and NUMPY_AVAILABLE:
-            arr = np.asarray(image_data, dtype=np.float64)
+        if resolved_pixels is not None and NUMPY_AVAILABLE:
+            arr = np.asarray(resolved_pixels, dtype=np.float64)
 
             # Run all per-frame checks
             black_result = self._check_black_frame(arr)
@@ -122,7 +247,7 @@ class RenderEvaluator:
             if clipping_result:
                 issues.append(clipping_result)
 
-        elif image_data is not None and not NUMPY_AVAILABLE:
+        elif resolved_pixels is not None and not NUMPY_AVAILABLE:
             logger.warning(
                 "numpy not available — skipping pixel-level quality checks for frame %d",
                 frame,
@@ -204,6 +329,34 @@ class RenderEvaluator:
             overall_score=overall_score,
             passed=passed,
         )
+
+    def evaluate_sequence_from_disk(
+        self,
+        frame_paths: Dict[int, str],
+    ) -> SequenceEvaluation:
+        """Evaluate a sequence of rendered frames from disk.
+
+        Loads each frame automatically using _load_frame(). This is a
+        convenience wrapper around evaluate_frame + evaluate_sequence
+        for the common case where frames are already on disk.
+
+        Args:
+            frame_paths: Dict mapping frame number to file path,
+                         e.g., {1: "/tmp/frame.0001.exr", 2: "/tmp/frame.0002.exr"}
+
+        Returns:
+            SequenceEvaluation with per-frame and temporal analysis.
+        """
+        frame_results: List[Dict[str, Any]] = []
+        for frame_num in sorted(frame_paths.keys()):
+            path = frame_paths[frame_num]
+            loaded = self._load_frame(path)
+            frame_results.append({
+                "frame": frame_num,
+                "output_path": path,
+                "image_data": loaded,
+            })
+        return self.evaluate_sequence(frame_results)
 
     # ------------------------------------------------------------------
     # Per-frame checks

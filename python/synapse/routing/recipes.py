@@ -2512,6 +2512,78 @@ class RecipeRegistry:
             ],
         ))
 
+        # --- Multi-Shot Render (TOPS pipeline) ---
+        self.register(Recipe(
+            name="multi_shot_render",
+            description=(
+                "Multi-shot render pipeline via TOPS/PDG: creates per-shot "
+                "work items from a shot list, configures camera and frame "
+                "range per shot, renders via ropfetch, partitions results "
+                "by shot name, and optionally encodes per-shot movies."
+            ),
+            triggers=[
+                r"^(?:render|batch render)\s+(?:all\s+)?shots?\s+(?P<shots>.+?)(?:\s+frames?\s+(?P<frame_range>\d+-\d+))?$",
+                r"^multi[- ]?shot\s+render(?:\s+(?P<shots>.+?))?(?:\s+frames?\s+(?P<frame_range>\d+-\d+))?$",
+                r"^render\s+all\s+shots?(?:\s+(?P<shots>.+?))?(?:\s+frames?\s+(?P<frame_range>\d+-\d+))?$",
+                r"^batch\s+render\s+shots?\s+(?P<shots>.+?)(?:\s+frames?\s+(?P<frame_range>\d+-\d+))?$",
+            ],
+            parameters=["shots", "frame_range"],
+            gate_level=GateLevel.APPROVE,
+            category="pipeline",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou, json\n"
+                            "shots_str = '{shots}'.strip()\n"
+                            "frame_range_str = '{frame_range}'.strip()\n"
+                            "\n"
+                            "# Parse shot names\n"
+                            "shot_names = [s.strip() for s in shots_str.split(',') if s.strip()]\n"
+                            "if not shot_names:\n"
+                            "    shot_names = ['sq010_sh010', 'sq010_sh020', 'sq010_sh030']\n"
+                            "\n"
+                            "# Parse frame range\n"
+                            "frame_start, frame_end = 1001, 1048\n"
+                            "if frame_range_str and '-' in frame_range_str:\n"
+                            "    parts = frame_range_str.split('-')\n"
+                            "    frame_start, frame_end = int(parts[0]), int(parts[1])\n"
+                            "\n"
+                            "# Build shot definitions for tops_multi_shot\n"
+                            "shot_defs = []\n"
+                            "for name in shot_names:\n"
+                            "    shot_defs.append({{\n"
+                            "        'name': name,\n"
+                            "        'frame_start': frame_start,\n"
+                            "        'frame_end': frame_end,\n"
+                            "        'camera': '/cameras/' + name + '_cam',\n"
+                            "    }})\n"
+                            "\n"
+                            "result = {{\n"
+                            "    'shot_count': len(shot_defs),\n"
+                            "    'shots': shot_defs,\n"
+                            "    'frame_range': '{{}}-{{}}'.format(frame_start, frame_end),\n"
+                            "}}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="shot_list",
+                ),
+                RecipeStep(
+                    action="tops_multi_shot",
+                    payload_template={
+                        "shots": "$shot_list.shots",
+                        "output_dir": "$HIP/render",
+                        "renderer": "karma_xpu",
+                        "camera_pattern": "/cameras/{{shot}}_cam",
+                    },
+                    gate_level=GateLevel.APPROVE,
+                    output_var="multi_shot_job",
+                ),
+            ],
+        ))
+
         # --- Copernicus Render Comp ---
         self.register(Recipe(
             name="copernicus_render_comp",
