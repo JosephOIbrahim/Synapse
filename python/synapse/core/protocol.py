@@ -39,6 +39,7 @@ class CommandType(Enum):
     DELETE_NODE = "delete_node"
     MODIFY_NODE = "modify_node"
     CONNECT_NODES = "connect_nodes"
+    NETWORK_EXPLAIN = "network_explain"
 
     # Scene operations
     GET_SCENE_INFO = "get_scene_info"
@@ -95,6 +96,12 @@ class CommandType(Enum):
 
     # Autonomous render pipeline
     AUTONOMOUS_RENDER = "autonomous_render"
+
+    # HDA (Houdini Digital Asset) operations
+    HDA_CREATE = "hda_create"
+    HDA_PROMOTE_PARM = "hda_promote_parm"
+    HDA_SET_HELP = "hda_set_help"
+    HDA_PACKAGE = "hda_package"
 
     # Undo / Redo
     UNDO = "undo"

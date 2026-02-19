@@ -154,6 +154,7 @@ _SLOW_COMMANDS = {
     "render": 120.0, "wedge": 120.0, "validate_frame": 30.0,
     "render_sequence": 600.0,
     "inspect_selection": 30.0, "inspect_scene": 30.0, "inspect_node": 30.0,
+    "network_explain": 30.0,
     "batch_commands": 60.0,
     # TOPS/PDG commands — PDG graph context initialization (getPDGGraphContext,
     # getPDGNode) can block Houdini's main thread for 5-15s on first access.
@@ -176,6 +177,7 @@ _SLOW_COMMANDS = {
     "tops_render_sequence": 600.0,
     "tops_multi_shot": 600.0,
     "autonomous_render": 600.0,
+    "hda_package": 120.0,
 }
 
 logger = logging.getLogger("synapse-mcp")
@@ -1616,6 +1618,48 @@ async def list_tools():
                 "required": ["node"],
             },
         ),
+        # -- Network Explain --
+        Tool(
+            name="houdini_network_explain",
+            description=(
+                "Walk a Houdini node network and produce a structured explanation: "
+                "data flow order, detected workflow patterns (scatter, terrain, simulation, "
+                "VDB, etc.), non-default parameter values, and suggested parameters to "
+                "promote for HDA interfaces."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "root_path": {
+                        "type": "string",
+                        "description": "Path to network root (e.g. '/obj/geo1')",
+                    },
+                    "depth": {
+                        "type": "integer",
+                        "description": "How deep to traverse subnets (default: 2, max: 5)",
+                    },
+                    "detail_level": {
+                        "type": "string",
+                        "enum": ["summary", "standard", "detailed"],
+                        "description": "Level of detail (default: standard)",
+                    },
+                    "include_parameters": {
+                        "type": "boolean",
+                        "description": "Include key non-default parameter values (default: true)",
+                    },
+                    "include_expressions": {
+                        "type": "boolean",
+                        "description": "Include channel expressions (default: false)",
+                    },
+                    "format": {
+                        "type": "string",
+                        "enum": ["prose", "structured", "help_card"],
+                        "description": "Output format (default: structured)",
+                    },
+                },
+                "required": ["root_path"],
+            },
+        ),
         # -- Memory --
         Tool(
             name="synapse_context",
@@ -2032,6 +2076,188 @@ async def list_tools():
                 "required": [],
             },
         ),
+        # -- HDA (Houdini Digital Asset) --
+        Tool(
+            name="houdini_hda_create",
+            description=(
+                "Convert a subnet into a Houdini Digital Asset (HDA). "
+                "Wraps the subnet, sets metadata (author, version), and installs the .hda file. "
+                "The subnet must already exist -- use create_node to build it first."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "subnet_path": {
+                        "type": "string",
+                        "description": "Path to the subnet node to convert (e.g. '/obj/geo1/my_subnet')",
+                    },
+                    "operator_name": {
+                        "type": "string",
+                        "description": "Internal operator type name (e.g. 'my_tool')",
+                    },
+                    "operator_label": {
+                        "type": "string",
+                        "description": "Human-readable label (e.g. 'My Tool')",
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": ["Sop", "Object", "Driver", "Lop", "Top"],
+                        "description": "Node category for the HDA",
+                    },
+                    "version": {
+                        "type": "string",
+                        "description": "SemVer version string (default: '1.0.0')",
+                    },
+                    "save_path": {
+                        "type": "string",
+                        "description": "File path to save the .hda file",
+                    },
+                    "min_inputs": {
+                        "type": "integer",
+                        "description": "Minimum number of inputs (default: 0)",
+                    },
+                    "max_inputs": {
+                        "type": "integer",
+                        "description": "Maximum number of inputs (default: 1)",
+                    },
+                    "icon": {
+                        "type": "string",
+                        "description": "Optional icon name (e.g. 'SOP_subnet')",
+                    },
+                },
+                "required": ["subnet_path", "operator_name", "operator_label", "category", "save_path"],
+            },
+        ),
+        Tool(
+            name="houdini_hda_promote_parm",
+            description=(
+                "Promote an internal node parameter to the HDA's top-level interface. "
+                "Creates a channel reference so the promoted parm drives the internal one. "
+                "Idempotent -- re-promoting updates rather than duplicates."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "hda_path": {
+                        "type": "string",
+                        "description": "Path to the HDA instance node",
+                    },
+                    "internal_node": {
+                        "type": "string",
+                        "description": "Relative path to internal node (e.g. 'scatter1')",
+                    },
+                    "parm_name": {
+                        "type": "string",
+                        "description": "Parameter name on the internal node",
+                    },
+                    "label": {
+                        "type": "string",
+                        "description": "Optional label override for the promoted parameter",
+                    },
+                    "folder": {
+                        "type": "string",
+                        "description": "Optional folder/tab name to place the parameter in",
+                    },
+                    "callback": {
+                        "type": "string",
+                        "description": "Optional Python callback script",
+                    },
+                    "conditions": {
+                        "type": "object",
+                        "description": "Optional visibility conditions",
+                    },
+                },
+                "required": ["hda_path", "internal_node", "parm_name"],
+            },
+        ),
+        Tool(
+            name="houdini_hda_set_help",
+            description=(
+                "Set help documentation on an HDA. Generates Houdini wiki markup "
+                "from structured inputs -- summary, description, per-parameter help, and tips."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "hda_path": {
+                        "type": "string",
+                        "description": "Path to the HDA instance node",
+                    },
+                    "summary": {
+                        "type": "string",
+                        "description": "Short summary for the HDA",
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Full description (supports Houdini wiki markup)",
+                    },
+                    "parameters_help": {
+                        "type": "object",
+                        "description": "Mapping of {parm_name: help_text}",
+                    },
+                    "tips": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of tip strings",
+                    },
+                    "author": {
+                        "type": "string",
+                        "description": "Author name",
+                    },
+                },
+                "required": ["hda_path"],
+            },
+        ),
+        Tool(
+            name="houdini_hda_package",
+            description=(
+                "High-level HDA orchestrator: create a subnet, convert to HDA, promote parameters, "
+                "and set help documentation -- all in one call. Runs inside a single undo group "
+                "so the whole thing rolls back on failure. This is the go-to tool for creating "
+                "HDAs from a description."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "description": {
+                        "type": "string",
+                        "description": "What the HDA should do",
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Operator name (e.g. 'scatter_on_surface')",
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": ["Sop", "Object", "Driver", "Lop", "Top"],
+                        "description": "Node category for the HDA",
+                    },
+                    "save_path": {
+                        "type": "string",
+                        "description": "File path to save the .hda file",
+                    },
+                    "inputs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of input descriptions",
+                    },
+                    "promoted_parms": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "node": {"type": "string", "description": "Internal node name"},
+                                "parm": {"type": "string", "description": "Parameter name"},
+                                "label": {"type": "string", "description": "Display label"},
+                            },
+                            "required": ["node", "parm"],
+                        },
+                        "description": "Parameters to promote to HDA interface",
+                    },
+                },
+                "required": ["description", "name", "category", "save_path"],
+            },
+        ),
     ]
 
 
@@ -2148,6 +2374,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_inspect_selection": ("inspect_selection", _identity),
     "synapse_inspect_scene":    ("inspect_scene",     _identity),
     "synapse_inspect_node":     ("inspect_node",      _identity),
+    "houdini_network_explain":  ("network_explain",  lambda a: {**{k: v for k, v in a.items() if k != "root_path"}, "node": a["root_path"]}),
     "synapse_context":       ("context",         _passthrough),
     "synapse_search":        ("search",          lambda a: {"query": a["query"]}),
     "synapse_recall":        ("recall",          lambda a: {"query": a["query"]}),
@@ -2169,6 +2396,11 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_validate_ordering": ("solaris_validate_ordering", _identity),
     "houdini_undo":              ("undo",                     _passthrough),
     "houdini_redo":              ("redo",                     _passthrough),
+    # HDA operations
+    "houdini_hda_create":        ("hda_create",               _identity),
+    "houdini_hda_promote_parm":  ("hda_promote_parm",         _identity),
+    "houdini_hda_set_help":      ("hda_set_help",             _identity),
+    "houdini_hda_package":       ("hda_package",              _identity),
 }
 
 

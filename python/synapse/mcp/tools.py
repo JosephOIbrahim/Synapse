@@ -671,6 +671,24 @@ _TOOL_DEFS: list[tuple] = [
      }, "required": ["node"]},
      True, False, True),
 
+    # -- Network Explain --
+    ("houdini_network_explain", "network_explain",
+     lambda a: {**{k: v for k, v in a.items() if k != "root_path"}, "node": a["root_path"]},
+     "Walk a Houdini node network and produce a structured explanation: data flow order, "
+     "detected workflow patterns (scatter, terrain, simulation, VDB, etc.), non-default "
+     "parameter values, and suggested parameters to promote for HDA interfaces.",
+     {"type": "object", "properties": {
+         "root_path": {"type": "string", "description": "Path to network root (e.g. '/obj/geo1')"},
+         "depth": {"type": "integer", "description": "How deep to traverse subnets (default: 2, max: 5)"},
+         "detail_level": {"type": "string", "enum": ["summary", "standard", "detailed"],
+                          "description": "Level of detail (default: standard)"},
+         "include_parameters": {"type": "boolean", "description": "Include key non-default parameter values (default: true)"},
+         "include_expressions": {"type": "boolean", "description": "Include channel expressions (default: false)"},
+         "format": {"type": "string", "enum": ["prose", "structured", "help_card"],
+                    "description": "Output format (default: structured)"},
+     }, "required": ["root_path"]},
+     True, False, True),
+
     # -- Memory --
     ("synapse_context", "context", _passthrough,
      "Get project context from Synapse memory.",
@@ -748,6 +766,67 @@ _TOOL_DEFS: list[tuple] = [
          "dry_run": {"type": "boolean", "description": "Preview without evolving (default: true)"},
      }},
      False, False, False),
+
+    # -- HDA (Houdini Digital Asset) --
+    ("houdini_hda_create", "hda_create", _identity,
+     "Convert a subnet into a Houdini Digital Asset (HDA). "
+     "Sets metadata (author, version), installs the .hda file. "
+     "The subnet must already exist -- use create_node to build it first.",
+     {"type": "object", "properties": {
+         "subnet_path": {"type": "string", "description": "Path to subnet node to convert"},
+         "operator_name": {"type": "string", "description": "Internal operator type name"},
+         "operator_label": {"type": "string", "description": "Human-readable label"},
+         "category": {"type": "string", "enum": ["Sop", "Object", "Driver", "Lop", "Top"],
+                      "description": "Node category for the HDA"},
+         "version": {"type": "string", "description": "SemVer version (default: 1.0.0)"},
+         "save_path": {"type": "string", "description": "File path to save the .hda file"},
+         "min_inputs": {"type": "integer", "description": "Minimum inputs (default: 0)"},
+         "max_inputs": {"type": "integer", "description": "Maximum inputs (default: 1)"},
+         "icon": {"type": "string", "description": "Optional icon name"},
+     }, "required": ["subnet_path", "operator_name", "operator_label", "category", "save_path"]},
+     False, True, False),
+
+    ("houdini_hda_promote_parm", "hda_promote_parm", _identity,
+     "Promote an internal node parameter to the HDA's top-level interface. "
+     "Idempotent -- re-promoting updates rather than duplicates.",
+     {"type": "object", "properties": {
+         "hda_path": {"type": "string", "description": "Path to the HDA instance node"},
+         "internal_node": {"type": "string", "description": "Relative path to internal node"},
+         "parm_name": {"type": "string", "description": "Parameter name on the internal node"},
+         "label": {"type": "string", "description": "Optional label override"},
+         "folder": {"type": "string", "description": "Optional folder/tab name"},
+         "callback": {"type": "string", "description": "Optional Python callback script"},
+         "conditions": {"type": "object", "description": "Optional visibility conditions"},
+     }, "required": ["hda_path", "internal_node", "parm_name"]},
+     False, True, True),
+
+    ("houdini_hda_set_help", "hda_set_help", _identity,
+     "Set help documentation on an HDA. Generates Houdini wiki markup "
+     "from structured inputs: summary, description, per-parameter help, and tips.",
+     {"type": "object", "properties": {
+         "hda_path": {"type": "string", "description": "Path to the HDA instance node"},
+         "summary": {"type": "string", "description": "Short summary"},
+         "description": {"type": "string", "description": "Full description (wiki markup)"},
+         "parameters_help": {"type": "object", "description": "{parm_name: help_text}"},
+         "tips": {"type": "array", "items": {"type": "string"}, "description": "List of tips"},
+         "author": {"type": "string", "description": "Author name"},
+     }, "required": ["hda_path"]},
+     False, True, True),
+
+    ("houdini_hda_package", "hda_package", _identity,
+     "High-level HDA orchestrator: create subnet, convert to HDA, promote parameters, "
+     "set help -- all in one call. Atomic undo group rolls back on failure.",
+     {"type": "object", "properties": {
+         "description": {"type": "string", "description": "What the HDA should do"},
+         "name": {"type": "string", "description": "Operator name"},
+         "category": {"type": "string", "enum": ["Sop", "Object", "Driver", "Lop", "Top"],
+                      "description": "Node category"},
+         "save_path": {"type": "string", "description": "File path to save .hda"},
+         "inputs": {"type": "array", "items": {"type": "string"}, "description": "Input descriptions"},
+         "promoted_parms": {"type": "array", "items": {"type": "object"},
+                           "description": "List of {node, parm, label} dicts"},
+     }, "required": ["description", "name", "category", "save_path"]},
+     False, True, False),
 
     # -- Undo / Redo --
     ("houdini_undo", "undo", _passthrough,

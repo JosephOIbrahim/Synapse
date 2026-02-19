@@ -20,6 +20,8 @@ else:
     _hdefereval = sys.modules["hdefereval"]
 if not hasattr(_hdefereval, "executeDeferred"):
     _hdefereval.executeDeferred = lambda fn: fn()
+if not hasattr(_hdefereval, "executeInMainThreadWithResult"):
+    _hdefereval.executeInMainThreadWithResult = lambda fn: fn()
 
 # Bootstrap synapse packages for handler import
 _base = Path(__file__).resolve().parent.parent / "python" / "synapse"

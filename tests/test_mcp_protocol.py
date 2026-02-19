@@ -658,6 +658,45 @@ class TestPhase4MCPTools:
         assert ps["annotations"]["destructiveHint"] is False
 
 
+class TestNetworkExplainMCPTool:
+    """Verify network_explain tool registration in MCP layer."""
+
+    def test_network_explain_in_tools_list(self):
+        """network_explain should appear in the tool registry."""
+        assert tools_mod.has_tool("houdini_network_explain")
+
+    def test_network_explain_tool_definition(self):
+        """Tool definition should have correct annotations."""
+        tools = {t["name"]: t for t in tools_mod.get_tools()}
+        ne = tools["houdini_network_explain"]
+
+        assert ne["annotations"]["readOnlyHint"] is True
+        assert ne["annotations"]["destructiveHint"] is False
+        assert ne["annotations"]["idempotentHint"] is True
+
+        # Required param
+        assert "root_path" in ne["inputSchema"]["properties"]
+        assert "root_path" in ne["inputSchema"]["required"]
+
+    def test_network_explain_dispatch(self):
+        """Dispatch should map root_path to node in payload."""
+        handler = MagicMock()
+        response = MagicMock()
+        response.success = True
+        response.data = {"status": "ok", "node_count": 0}
+        handler.handle.return_value = response
+
+        result = tools_mod.dispatch_tool(
+            handler, "houdini_network_explain",
+            {"root_path": "/obj/geo1"},
+        )
+        assert "isError" not in result or result.get("isError") is not True
+
+        # Verify the command sent to handler has "node" not "root_path"
+        call_args = handler.handle.call_args[0][0]
+        assert call_args.payload.get("node") == "/obj/geo1"
+
+
 class TestModuleSingleton:
     def test_get_mcp_server_returns_same_instance(self):
         # Reset singleton

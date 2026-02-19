@@ -39,6 +39,7 @@ from .handlers_render import RenderHandlerMixin
 from .handlers_tops import TopsHandlerMixin
 from .handlers_material import MaterialHandlerMixin
 from .handlers_memory import MemoryHandlerMixin
+from .handlers_hda import HdaHandlerMixin
 
 
 
@@ -113,6 +114,11 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     # Undo / Redo
     "undo": AuditCategory.PIPELINE,
     "redo": AuditCategory.PIPELINE,
+    # HDA operations
+    "hda_create": AuditCategory.PIPELINE,
+    "hda_promote_parm": AuditCategory.PIPELINE,
+    "hda_set_help": AuditCategory.PIPELINE,
+    "hda_package": AuditCategory.PIPELINE,
 }
 
 # Commands that don't modify state — skip memory logging for these
@@ -124,6 +130,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "capture_viewport",
     "knowledge_lookup",
     "inspect_selection", "inspect_scene", "inspect_node",
+    "network_explain",
     "read_material",
     "validate_frame",
     "solaris_validate_ordering",
@@ -170,7 +177,7 @@ class CommandHandlerRegistry:
 # SYNAPSE HANDLER
 # =============================================================================
 
-class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin):
+class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin):
     """
     Main command handler for the Synapse server.
 
@@ -303,6 +310,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("create_node", self._handle_create_node)
         reg.register("delete_node", self._handle_delete_node)
         reg.register("connect_nodes", self._handle_connect_nodes)
+        reg.register("network_explain", self._handle_network_explain)
 
         # Parameters
         reg.register("get_parm", self._handle_get_parm)
@@ -420,6 +428,12 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
         # Autonomous render pipeline
         reg.register("autonomous_render", self._handle_autonomous_render)
+
+        # HDA operations
+        reg.register("hda_create", self._handle_hda_create)
+        reg.register("hda_promote_parm", self._handle_hda_promote_parm)
+        reg.register("hda_set_help", self._handle_hda_set_help)
+        reg.register("hda_package", self._handle_hda_package)
 
         # Undo / Redo
         reg.register("undo", self._handle_undo)
