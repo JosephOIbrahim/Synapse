@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pythonPanelDocument>
+  <interface name="synapse_chat"
+             label="SYNAPSE Chat"
+             icon="MISC_python"
+             help_url="">
+    <script><![CDATA[
+import sys
+import os
+
+# Ensure synapse package is importable from the repo source tree.
+# The panel file lives at python/synapse/panel/synapse_chat.pypanel;
+# we need python/ on sys.path.
+_panel_dir = os.path.dirname(os.path.abspath(__file__))
+_pkg_root = _panel_dir
+# Walk up to find the python/ directory
+for _i in range(5):
+    _candidate = os.path.join(_pkg_root, "python")
+    if os.path.isdir(_candidate):
+        if _candidate not in sys.path:
+            sys.path.insert(0, _candidate)
+        break
+    _pkg_root = os.path.dirname(_pkg_root)
+
+# Also check SYNAPSE env var or well-known location
+_synapse_root = os.environ.get("SYNAPSE_ROOT", r"C:\Users\User\SYNAPSE")
+_synapse_py = os.path.join(_synapse_root, "python")
+if os.path.isdir(_synapse_py) and _synapse_py not in sys.path:
+    sys.path.insert(0, _synapse_py)
+
+from synapse.panel.chat_panel import SynapseChatPanel
+
+_panel_instance = None
+
+def createInterface():
+    global _panel_instance
+    _panel_instance = SynapseChatPanel()
+    return _panel_instance.createInterface()
+
+def onActivateInterface():
+    if _panel_instance is not None:
+        _panel_instance.onActivateInterface()
+
+def onDeactivateInterface():
+    if _panel_instance is not None:
+        _panel_instance.onDeactivateInterface()
+
+def onDestroyInterface():
+    if _panel_instance is not None:
+        _panel_instance.onDestroyInterface()
+]]></script>
+  </interface>
+</pythonPanelDocument>

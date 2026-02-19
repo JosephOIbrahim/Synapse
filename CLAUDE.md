@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Synapse v5.5.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 70 MCP tools (24 houdini_, 28 synapse_, 18 tops_) to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, TOPS/PDG pipeline orchestration, and viewport/render capture.
+Synapse v5.5.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 79 MCP tools (29 houdini_, 28 synapse_, 18 tops_, 4 hda_) to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, TOPS/PDG pipeline orchestration, HDA creation from prompts, and viewport/render capture.
 
 Two repos make up the full system:
 - **`C:\Users\User\Synapse\`** — Core server, protocol, handlers, memory, routing, MCP bridge
@@ -86,7 +86,7 @@ After editing source files, remind the user to redeploy if needed (`python ~/.sy
 pip install -e ".[dev]"
 pip install -e ".[dev,websocket,mcp,routing,encryption]"   # all optional features
 
-# Run all core tests (~1,691 tests across 47+ test files, no Houdini required)
+# Run all core tests (~1,786 tests across 50+ test files, no Houdini required)
 python -m pytest tests/ -v
 
 # Type checking (mypy, 0 errors on 49 source files)
@@ -175,6 +175,7 @@ Both MCP Streamable HTTP and the existing WebSocket/stdio paths converge at the 
 | Autonomy | `autonomy/` | Autonomous render loop (`planner.py`), pre-flight validation (`validator.py`), render evaluation (`evaluator.py`), orchestration (`driver.py`), data models (`models.py`) |
 | Session | `session/` | SynapseBridge singleton hub (`tracker.py`), session summaries (`summary.py`) |
 | UI | `ui/` | Qt panel with 5 tabs (`panel.py`), tab widgets in `tabs/` |
+| Chat Panel | `panel/` | Native Houdini chat interface (`chat_panel.py`), WebSocket bridge (`ws_bridge.py`), message formatter, context bar, quick actions |
 
 ### Routing Cascade (cheapest-first)
 
@@ -498,13 +499,14 @@ When building or rendering Solaris scenes via MCP, follow a progressive validati
 Default: `ws://localhost:9999/synapse` | Version: `4.0.0`
 MCP endpoint: `http://localhost:PORT/mcp` | Protocol: MCP 2025-06-18 (Streamable HTTP)
 
-56 registered handlers across 7 handler files:
-- **Core (18)**: `ping`, `get_health`, `get_help`, `create_node`, `delete_node`, `connect_nodes`, `get_parm`, `set_parm`, `get_scene_info`, `get_selection`, `execute_python`, `execute_vex`, `batch_commands`, `get_metrics`, `router_stats`, `list_recipes`, `knowledge_lookup`, `capture_viewport`
+62 registered handlers across 8 handler files:
+- **Core (20)**: `ping`, `get_health`, `get_help`, `create_node`, `delete_node`, `connect_nodes`, `get_parm`, `set_parm`, `get_scene_info`, `get_selection`, `execute_python`, `execute_vex`, `batch_commands`, `get_metrics`, `router_stats`, `list_recipes`, `knowledge_lookup`, `capture_viewport`, `undo`, `redo`
 - **Render (9)**: `capture_viewport`, `render`, `set_keyframe`, `render_settings`, `validate_frame`, `render_sequence`, `render_farm_status`, `solaris_validate_ordering`
 - **TOPS/PDG (18)**: `wedge`, `tops_get_work_items`, `tops_get_dependency_graph`, `tops_get_cook_stats`, `tops_cook_node`, `tops_generate_items`, `tops_configure_scheduler`, `tops_cancel_cook`, `tops_dirty_node`, `tops_setup_wedge`, `tops_batch_cook`, `tops_query_items`, `tops_cook_and_validate`, `tops_diagnose`, `tops_pipeline_status`, `tops_monitor_stream`, `tops_render_sequence`
+- **HDA (4)**: `hda_create`, `hda_promote_parm`, `hda_set_help`, `hda_package`
 - **Materials (3)**: `create_material`, `assign_material`, `read_material`
 - **USD (7)**: `get_stage_info`, `get_usd_attribute`, `set_usd_attribute`, `create_usd_prim`, `modify_usd_prim`, `reference_usd`
-- **Node (3)**: `create_node`, `delete_node`, `connect_nodes`
+- **Node (4)**: `create_node`, `delete_node`, `connect_nodes`, `network_explain`
 - **Memory (7)**: `context`, `search`, `add_memory`, `decide`, `recall`, `inspect_selection`, `inspect_scene`, `inspect_node`
 
 All handlers are accessible through WebSocket, stdio MCP, and Streamable HTTP MCP transports. Parameter names resolve through `aliases.py` (38+ mappings) — e.g., `node`, `path`, `node_path` all resolve to canonical `node`.
