@@ -2604,3 +2604,268 @@ class RecipeRegistry:
                 ),
             ],
         ))
+
+        # --- Camera Match Real ---
+        self.register(Recipe(
+            name="camera_match_real",
+            description=(
+                "Create a USD camera prim that matches a real-world cinema "
+                "camera body. Looks up sensor dimensions from a built-in "
+                "database of 8 cameras (ARRI Alexa 35, ARRI Alexa Mini LF, "
+                "RED V-Raptor [X], RED Komodo-X, Sony Venice 2, Sony FX6, "
+                "Blackmagic URSA Mini Pro 12K, Canon EOS C500 Mark II). "
+                "Sets horizontalAperture, verticalAperture, focalLength, "
+                "clippingRange, and optional fStop/focusDistance overrides."
+            ),
+            triggers=[
+                r"^(?:match|set up|setup|create)\s+(?:an?\s+)?(?:arri|red|sony|bmpcc|blackmagic|canon)\s*(?P<camera_body>[\w\s\-\[\]]+?)(?:\s+(?:with|at)\s+(?P<lens_mm>\d+)\s*mm)?(?:\s+f/?(?P<f_stop>[\d.]+))?(?:\s+(?:focus|fd)\s+(?P<focus_distance>[\d.]+))?$",
+                r"^camera\s+(?:match|like)\s+(?:an?\s+)?(?P<camera_body>[\w\s\-\[\]]+?)(?:\s+(?:with|at)\s+(?P<lens_mm>\d+)\s*mm)?(?:\s+f/?(?P<f_stop>[\d.]+))?(?:\s+(?:focus|fd)\s+(?P<focus_distance>[\d.]+))?$",
+                r"^(?:set up|setup|create)\s+(?:an?\s+)?camera\s+(?:match(?:ing)?|like)\s+(?P<camera_body>[\w\s\-\[\]]+?)(?:\s+(?:with|at)\s+(?P<lens_mm>\d+)\s*mm)?(?:\s+f/?(?P<f_stop>[\d.]+))?(?:\s+(?:focus|fd)\s+(?P<focus_distance>[\d.]+))?$",
+            ],
+            parameters=["camera_body", "lens_mm", "f_stop", "focus_distance"],
+            gate_level=GateLevel.REVIEW,
+            category="pipeline",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "import re\n"
+                            "\n"
+                            "SENSORS = {{\n"
+                            "    'arri_alexa_35': {{'width': 27.99, 'height': 19.22, 'name': 'ARRI Alexa 35'}},\n"
+                            "    'arri_alexa_mini_lf': {{'width': 36.70, 'height': 25.54, 'name': 'ARRI Alexa Mini LF'}},\n"
+                            "    'red_v_raptor_x': {{'width': 40.96, 'height': 21.60, 'name': 'RED V-Raptor [X]'}},\n"
+                            "    'red_komodo_x': {{'width': 27.03, 'height': 14.26, 'name': 'RED Komodo-X'}},\n"
+                            "    'sony_venice_2': {{'width': 36.20, 'height': 24.10, 'name': 'Sony Venice 2'}},\n"
+                            "    'sony_fx6': {{'width': 35.60, 'height': 23.80, 'name': 'Sony FX6'}},\n"
+                            "    'bmpcc_ursa_12k': {{'width': 27.03, 'height': 14.26, 'name': 'Blackmagic URSA Mini Pro 12K'}},\n"
+                            "    'canon_c500_ii': {{'width': 38.10, 'height': 20.10, 'name': 'Canon EOS C500 Mark II'}},\n"
+                            "}}\n"
+                            "\n"
+                            "camera_body = '{camera_body}'.strip().lower()\n"
+                            "# Normalize body name to match sensor keys\n"
+                            "slug = re.sub(r'[\\s\\-\\[\\]]+', '_', camera_body).strip('_')\n"
+                            "# Try direct match first, then fuzzy prefix match\n"
+                            "sensor = SENSORS.get(slug)\n"
+                            "if sensor is None:\n"
+                            "    for key, val in sorted(SENSORS.items()):\n"
+                            "        if slug in key or key in slug:\n"
+                            "            sensor = val\n"
+                            "            slug = key\n"
+                            "            break\n"
+                            "    # Try matching against display names\n"
+                            "    if sensor is None:\n"
+                            "        for key, val in sorted(SENSORS.items()):\n"
+                            "            if camera_body in val['name'].lower():\n"
+                            "                sensor = val\n"
+                            "                slug = key\n"
+                            "                break\n"
+                            "if sensor is None:\n"
+                            "    available = ', '.join(v['name'] for k, v in sorted(SENSORS.items()))\n"
+                            "    result = {{'error': True, 'message': "
+                            "\"Couldn't find camera body '\" + camera_body + "
+                            "\"' in the sensor database. Available cameras: \" + available}}\n"
+                            "else:\n"
+                            "    lens_mm = int('{lens_mm}' or '50') if '{lens_mm}'.strip() else 50\n"
+                            "    f_stop_str = '{f_stop}'.strip()\n"
+                            "    focus_str = '{focus_distance}'.strip()\n"
+                            "\n"
+                            "    stage = hou.node('/stage')\n"
+                            "    if stage is None:\n"
+                            "        stage = hou.node('/obj').createNode('lopnet', 'stage')\n"
+                            "\n"
+                            "    cam_name = slug + '_cam'\n"
+                            "    cam = stage.createNode('camera', cam_name)\n"
+                            "    cam.parm('primpath').set('/cameras/' + cam_name)\n"
+                            "    cam.parm('horizontalAperture').set(sensor['width'])\n"
+                            "    cam.parm('verticalAperture').set(sensor['height'])\n"
+                            "    cam.parm('focalLength').set(lens_mm)\n"
+                            "    cam.parm('clippingRange1').set(0.1)\n"
+                            "    cam.parm('clippingRange2').set(10000)\n"
+                            "\n"
+                            "    if f_stop_str:\n"
+                            "        cam.parm('fStop').set(float(f_stop_str))\n"
+                            "    if focus_str:\n"
+                            "        cam.parm('focusDistance').set(float(focus_str))\n"
+                            "\n"
+                            "    stage.layoutChildren()\n"
+                            "    result = {{'camera': cam.path(), "
+                            "'prim_path': '/cameras/' + cam_name, "
+                            "'sensor': sensor['name'], "
+                            "'horizontal_aperture': sensor['width'], "
+                            "'vertical_aperture': sensor['height'], "
+                            "'focal_length': lens_mm, "
+                            "'clipping_range': [0.1, 10000]}}\n"
+                            "    if f_stop_str:\n"
+                            "        result['f_stop'] = float(f_stop_str)\n"
+                            "    if focus_str:\n"
+                            "        result['focus_distance'] = float(focus_str)\n"
+                        ),
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="camera",
+                ),
+            ],
+        ))
+
+        # --- Camera Match Turntable ---
+        self.register(Recipe(
+            name="camera_match_turntable",
+            description=(
+                "Create a production turntable render using a real-world "
+                "camera match. Combines camera_match_real sensor lookup with "
+                "a full turntable orbit, 3-point lighting (4:1 key:fill "
+                "ratio), Karma XPU render at 1920x1080 with configurable "
+                "samples and frame count."
+            ),
+            triggers=[
+                r"^turntable\s+(?:with|using)\s+(?:an?\s+)?(?P<camera_body>[\w\s\-\[\]]+?)(?:\s+(?:with|at)\s+(?P<lens_mm>\d+)\s*mm)?(?:\s+(?P<frames>\d+)\s+frames?)?(?:\s+(?P<samples>\d+)\s+samples?)?$",
+                r"^(?:production\s+)?turntable\s+(?P<camera_body>arri|red|sony|bmpcc|blackmagic|canon)[\w\s\-\[\]]*?(?:\s+(?:with|at)\s+(?P<lens_mm>\d+)\s*mm)?(?:\s+(?P<frames>\d+)\s+frames?)?(?:\s+(?P<samples>\d+)\s+samples?)?$",
+                r"^(?:render\s+)?turntable\s+(?:with|using)\s+(?P<camera_body>[\w\s\-\[\]]+?)(?:\s+(?:with|at)\s+(?P<lens_mm>\d+)\s*mm)?(?:\s+(?P<frames>\d+)\s+frames?)?(?:\s+(?P<samples>\d+)\s+samples?)?$",
+            ],
+            parameters=["camera_body", "lens_mm", "frames", "samples"],
+            gate_level=GateLevel.APPROVE,
+            category="render",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "import re\n"
+                            "import math\n"
+                            "\n"
+                            "SENSORS = {{\n"
+                            "    'arri_alexa_35': {{'width': 27.99, 'height': 19.22, 'name': 'ARRI Alexa 35'}},\n"
+                            "    'arri_alexa_mini_lf': {{'width': 36.70, 'height': 25.54, 'name': 'ARRI Alexa Mini LF'}},\n"
+                            "    'red_v_raptor_x': {{'width': 40.96, 'height': 21.60, 'name': 'RED V-Raptor [X]'}},\n"
+                            "    'red_komodo_x': {{'width': 27.03, 'height': 14.26, 'name': 'RED Komodo-X'}},\n"
+                            "    'sony_venice_2': {{'width': 36.20, 'height': 24.10, 'name': 'Sony Venice 2'}},\n"
+                            "    'sony_fx6': {{'width': 35.60, 'height': 23.80, 'name': 'Sony FX6'}},\n"
+                            "    'bmpcc_ursa_12k': {{'width': 27.03, 'height': 14.26, 'name': 'Blackmagic URSA Mini Pro 12K'}},\n"
+                            "    'canon_c500_ii': {{'width': 38.10, 'height': 20.10, 'name': 'Canon EOS C500 Mark II'}},\n"
+                            "}}\n"
+                            "\n"
+                            "camera_body = '{camera_body}'.strip().lower()\n"
+                            "slug = re.sub(r'[\\s\\-\\[\\]]+', '_', camera_body).strip('_')\n"
+                            "sensor = SENSORS.get(slug)\n"
+                            "if sensor is None:\n"
+                            "    for key, val in sorted(SENSORS.items()):\n"
+                            "        if slug in key or key in slug:\n"
+                            "            sensor = val\n"
+                            "            slug = key\n"
+                            "            break\n"
+                            "    if sensor is None:\n"
+                            "        for key, val in sorted(SENSORS.items()):\n"
+                            "            if camera_body in val['name'].lower():\n"
+                            "                sensor = val\n"
+                            "                slug = key\n"
+                            "                break\n"
+                            "if sensor is None:\n"
+                            "    available = ', '.join(v['name'] for k, v in sorted(SENSORS.items()))\n"
+                            "    result = {{'error': True, 'message': "
+                            "\"Couldn't find camera body '\" + camera_body + "
+                            "\"' in the sensor database. Available cameras: \" + available}}\n"
+                            "else:\n"
+                            "    lens_mm = int('{lens_mm}' or '50') if '{lens_mm}'.strip() else 50\n"
+                            "    frames = int('{frames}' or '120') if '{frames}'.strip() else 120\n"
+                            "    samples = int('{samples}' or '128') if '{samples}'.strip() else 128\n"
+                            "\n"
+                            "    stage = hou.node('/stage')\n"
+                            "    if stage is None:\n"
+                            "        stage = hou.node('/obj').createNode('lopnet', 'stage')\n"
+                            "\n"
+                            "    # --- Camera with real sensor match ---\n"
+                            "    cam_name = slug + '_cam'\n"
+                            "    cam = stage.createNode('camera', cam_name)\n"
+                            "    cam.parm('primpath').set('/cameras/' + cam_name)\n"
+                            "    cam.parm('horizontalAperture').set(sensor['width'])\n"
+                            "    cam.parm('verticalAperture').set(sensor['height'])\n"
+                            "    cam.parm('focalLength').set(lens_mm)\n"
+                            "    cam.parm('clippingRange1').set(0.1)\n"
+                            "    cam.parm('clippingRange2').set(10000)\n"
+                            "\n"
+                            "    # --- Camera orbit keyframes ---\n"
+                            "    radius = 5.0\n"
+                            "    height = 1.5\n"
+                            "    for f in range(1, frames + 1):\n"
+                            "        angle = (f - 1) * (2 * math.pi / frames)\n"
+                            "        x = radius * math.cos(angle)\n"
+                            "        z = radius * math.sin(angle)\n"
+                            "        cam.parmTuple('t').setKeyframe("
+                            "(hou.Keyframe(x, hou.frameToTime(f)),), 0)\n"
+                            "        cam.parmTuple('t').setKeyframe("
+                            "(hou.Keyframe(height, hou.frameToTime(f)),), 1)\n"
+                            "        cam.parmTuple('t').setKeyframe("
+                            "(hou.Keyframe(z, hou.frameToTime(f)),), 2)\n"
+                            "\n"
+                            "    # --- 3-point lighting (4:1 key:fill ratio) ---\n"
+                            "    key = stage.createNode('light', 'key_light')\n"
+                            "    key.parm('primpath').set('/lights/key_light')\n"
+                            "    key.parm('xn__inputsintensity_i0a').set(1.0)\n"
+                            "    key.parm('xn__inputsexposure_control_wcb').set('set')\n"
+                            "    key.parm('xn__inputsexposure_vya').set(5.0)\n"
+                            "    key.parmTuple('t').set((3, 4, 2))\n"
+                            "    key.parmTuple('r').set((-35, 45, 0))\n"
+                            "\n"
+                            "    fill = stage.createNode('light', 'fill_light')\n"
+                            "    fill.parm('primpath').set('/lights/fill_light')\n"
+                            "    fill.parm('xn__inputsintensity_i0a').set(1.0)\n"
+                            "    fill.parm('xn__inputsexposure_control_wcb').set('set')\n"
+                            "    fill.parm('xn__inputsexposure_vya').set(3.0)\n"
+                            "    fill.parmTuple('t').set((-3, 3, 2))\n"
+                            "    fill.parmTuple('r').set((-25, -45, 0))\n"
+                            "\n"
+                            "    rim = stage.createNode('light', 'rim_light')\n"
+                            "    rim.parm('primpath').set('/lights/rim_light')\n"
+                            "    rim.parm('xn__inputsintensity_i0a').set(1.0)\n"
+                            "    rim.parm('xn__inputsexposure_control_wcb').set('set')\n"
+                            "    rim.parm('xn__inputsexposure_vya').set(4.5)\n"
+                            "    rim.parmTuple('t').set((0, 3, -4))\n"
+                            "    rim.parmTuple('r').set((-20, 180, 0))\n"
+                            "\n"
+                            "    # --- Merge scene ---\n"
+                            "    merge = stage.createNode('merge', 'scene_merge')\n"
+                            "    inputs = [cam, key, fill, rim]\n"
+                            "    for i, node in enumerate(inputs):\n"
+                            "        merge.setInput(i, node)\n"
+                            "\n"
+                            "    # --- Render settings: Karma XPU 1920x1080 ---\n"
+                            "    rs = stage.createNode('karmarenderproperties', "
+                            "'render_settings')\n"
+                            "    rs.setInput(0, merge)\n"
+                            "    rs.parm('resolutionx').set(1920)\n"
+                            "    rs.parm('resolutiony').set(1080)\n"
+                            "    rs.parm('engine').set('XPU')\n"
+                            "    rs.parm('samplesperpixel').set(samples)\n"
+                            "\n"
+                            "    # --- Karma LOP ---\n"
+                            "    karma = stage.createNode('karma', 'karma_render')\n"
+                            "    karma.setInput(0, rs)\n"
+                            "    karma.parm('camera').set('/cameras/' + cam_name)\n"
+                            "    karma.parm('picture').set("
+                            "'$HIP/render/$HIPNAME/$HIPNAME.$F4.exr')\n"
+                            "\n"
+                            "    stage.layoutChildren()\n"
+                            "    result = {{'camera': cam.path(), "
+                            "'prim_path': '/cameras/' + cam_name, "
+                            "'sensor': sensor['name'], "
+                            "'horizontal_aperture': sensor['width'], "
+                            "'vertical_aperture': sensor['height'], "
+                            "'focal_length': lens_mm, "
+                            "'frames': frames, "
+                            "'samples': samples, "
+                            "'resolution': '1920x1080', "
+                            "'karma': karma.path(), "
+                            "'output': '$HIP/render/$HIPNAME/$HIPNAME.$F4.exr', "
+                            "'key_exposure': 5.0, 'fill_exposure': 3.0, "
+                            "'rim_exposure': 4.5}}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.APPROVE,
+                    output_var="turntable_cam",
+                ),
+            ],
+        ))

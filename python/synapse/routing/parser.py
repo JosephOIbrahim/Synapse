@@ -121,6 +121,17 @@ _p("apply_cop_filter",
    r"^(?:apply\s+)?(blur|denoise|sharpen|defocus|glow|grade|color[_ ]?correct)\s+(?:to\s+)?" + _PATH + r"$",
    0.9, "_build_apply_cop_filter")
 
+# --- Camera matching ---
+_CAMERA_BODY = r"(arri[\w\s\-]*|red[\w\s\-\[\]]*|sony[\w\s\-]*|bmpcc[\w\s\-]*|blackmagic[\w\s\-]*|canon[\w\s\-]*)"
+
+_p("camera_match",
+   r"^(?:match|set up|setup|create)\s+(?:an?\s+)?" + _CAMERA_BODY + r"\s*(?:camera)?$",
+   0.85, "_build_camera_match")
+
+_p("camera_match_like",
+   r"^camera\s+(?:match|like)\s+(?:an?\s+)?" + _CAMERA_BODY + r"$",
+   0.85, "_build_camera_match")
+
 
 def _parse_value(raw: str) -> Any:
     """Parse a raw string value into a typed Python value."""
@@ -340,6 +351,21 @@ class CommandParser:
                     f"parse:copfilter:{filter_type}:{parent}", "cmd"
                 ),
                 payload={"type": filter_type, "parent": parent, "domain": "compositing"},
+            ),
+            extracted,
+        )
+
+    def _build_camera_match(self, m: re.Match) -> Tuple[SynapseCommand, Dict]:
+        groups = m.groups()
+        camera_body = groups[0].strip()
+        extracted = {"camera_body": camera_body, "domain": "camera"}
+        return (
+            SynapseCommand(
+                type="execute_python",
+                id=deterministic_uuid(
+                    f"parse:camera_match:{camera_body}", "cmd"
+                ),
+                payload={"camera_body": camera_body, "domain": "camera"},
             ),
             extracted,
         )
