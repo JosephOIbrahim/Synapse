@@ -1913,6 +1913,31 @@ async def list_tools():
                 "required": [],
             },
         ),
+        # -- Solaris Ordering Validation --
+        Tool(
+            name="synapse_validate_ordering",
+            description=(
+                "Walk a LOP network backwards from the render node, detecting "
+                "ambiguous merge points where input order affects USD opinion "
+                "strength. Flags merge and sublayer LOPs with 2+ inputs as "
+                "potential ordering issues. Use this before rendering to catch "
+                "unintended layer composition problems."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node": {
+                        "type": "string",
+                        "description": "Starting node path (render ROP or Karma LOP). Auto-discovers if omitted.",
+                    },
+                    "max_depth": {
+                        "type": "integer",
+                        "description": "Maximum traversal depth (default: 50)",
+                    },
+                },
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -2045,6 +2070,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_evolve_memory": ("evolve_memory",   _passthrough),
     "synapse_render_sequence":    ("render_sequence",      _identity),
     "synapse_render_farm_status": ("render_farm_status",   _passthrough),
+    "synapse_validate_ordering": ("solaris_validate_ordering", _identity),
 }
 
 

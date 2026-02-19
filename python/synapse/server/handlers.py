@@ -85,6 +85,7 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "manage_variant_set": AuditCategory.PIPELINE,
     "manage_collection": AuditCategory.PIPELINE,
     "configure_light_linking": AuditCategory.PIPELINE,
+    "solaris_validate_ordering": AuditCategory.PIPELINE,
     "create_material": AuditCategory.MATERIAL,
     "create_textured_material": AuditCategory.MATERIAL,
     "assign_material": AuditCategory.MATERIAL,
@@ -119,6 +120,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "inspect_selection", "inspect_scene", "inspect_node",
     "read_material",
     "validate_frame",
+    "solaris_validate_ordering",
     "get_metrics", "router_stats", "list_recipes", "get_live_metrics",
     "tops_get_work_items", "tops_get_dependency_graph", "tops_get_cook_stats",
     "tops_query_items",
@@ -354,6 +356,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("manage_variant_set", self._handle_manage_variant_set)
         reg.register("manage_collection", self._handle_manage_collection)
         reg.register("configure_light_linking", self._handle_configure_light_linking)
+
+        # Solaris ordering validation
+        reg.register("solaris_validate_ordering", self._handle_solaris_validate_ordering)
 
         # Keyframe / Render Settings
         reg.register("set_keyframe", self._handle_set_keyframe)

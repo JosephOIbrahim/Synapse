@@ -52,7 +52,7 @@ class PreFlightValidator:
             self._check_render_settings(plan),
             self._check_frame_range(plan),
             self._check_output_path(),
-            self._check_solaris_ordering(),
+            self._check_solaris_ordering(plan),
             self._check_missing_assets(),
             return_exceptions=True,
         )
@@ -290,15 +290,42 @@ class PreFlightValidator:
                 message=f"Couldn't verify output path: {exc}",
             )
 
-    async def _check_solaris_ordering(self) -> PreFlightCheck:
-        """SOFT_WARN stub — Phase 3 will inspect LOP network ordering."""
-        return PreFlightCheck(
-            name="solaris_ordering",
-            description="Check Solaris LOP network ordering (Phase 3 stub)",
-            severity=CheckSeverity.SOFT_WARN,
-            passed=True,
-            message="Solaris ordering check deferred to Phase 3.",
-        )
+    async def _check_solaris_ordering(self, plan: RenderPlan) -> PreFlightCheck:
+        """Detect ambiguous LOP merge ordering via solaris_validate_ordering handler."""
+        try:
+            render_node = ""
+            if plan.steps:
+                render_node = plan.steps[0].params.get("render_node", "")
+            result = await self._handler.call("solaris_validate_ordering", {
+                "render_node": render_node
+            })
+
+            if result.get("clean", True):
+                return PreFlightCheck(
+                    name="solaris_ordering",
+                    description="Solaris network ordering check",
+                    severity=CheckSeverity.INFO,
+                    passed=True,
+                    message="No ordering ambiguities detected."
+                )
+            else:
+                issues = result.get("issues", [])
+                issue_desc = "; ".join(f"{i['node']}: {i['type']}" for i in issues)
+                return PreFlightCheck(
+                    name="solaris_ordering",
+                    description="Solaris network ordering check",
+                    severity=CheckSeverity.SOFT_WARN,
+                    passed=False,
+                    message=f"Ordering ambiguities detected: {issue_desc}. Review merge order before rendering."
+                )
+        except Exception as exc:
+            return PreFlightCheck(
+                name="solaris_ordering",
+                description="Solaris network ordering check",
+                severity=CheckSeverity.INFO,
+                passed=True,
+                message=f"Couldn't run ordering check: {exc}"
+            )
 
     async def _check_missing_assets(self) -> PreFlightCheck:
         """SOFT_WARN if unresolved USD asset references are found."""

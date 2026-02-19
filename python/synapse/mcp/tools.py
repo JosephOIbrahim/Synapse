@@ -530,6 +530,16 @@ _TOOL_DEFS: list[tuple] = [
      }, "required": ["prim_path"]},
      False, True, True),
 
+    ("synapse_validate_ordering", "solaris_validate_ordering", _identity,
+     "Walk a LOP network backwards from the render node, detecting ambiguous "
+     "merge points where input order affects USD opinion strength. Flags "
+     "merge and sublayer LOPs with 2+ inputs as potential ordering issues.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "Starting node path (render ROP or Karma LOP). Auto-discovers if omitted."},
+         "max_depth": {"type": "integer", "description": "Maximum traversal depth (default: 50)"},
+     }, "required": []},
+     True, False, True),
+
     ("houdini_configure_light_linking", "configure_light_linking", _identity,
      "Configure light linking between lights and geometry via USD collections. "
      "Control which geometry a light illuminates or casts shadows on. "

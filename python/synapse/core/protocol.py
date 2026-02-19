@@ -63,6 +63,7 @@ class CommandType(Enum):
     MANAGE_VARIANT_SET = "manage_variant_set"
     MANAGE_COLLECTION = "manage_collection"
     CONFIGURE_LIGHT_LINKING = "configure_light_linking"
+    SOLARIS_VALIDATE_ORDERING = "solaris_validate_ordering"
 
     # Utility
     PING = "ping"

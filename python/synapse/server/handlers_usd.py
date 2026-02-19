@@ -6,7 +6,7 @@ _usd_to_json utility for the SynapseHandler class.
 """
 
 import time
-from typing import Dict
+from typing import Dict, List
 
 try:
     import hou
@@ -895,5 +895,169 @@ class UsdHandlerMixin:
             if geo_paths:
                 result["geo_paths"] = geo_paths
             return result
+
+        return run_on_main(_on_main)
+
+    # -- Solaris ordering validation ----------------------------------------
+
+    # Node types where input order determines layer/opinion strength.
+    # These are merge-like LOPs: sublayer stacks, merges, etc.
+    _ORDER_DEPENDENT_TYPES = frozenset({
+        "merge", "sublayer", "merge::2.0",
+    })
+
+    # Node types where input selection is explicit (switch, blend) --
+    # these are NOT ambiguous even with multiple inputs.
+    _ORDER_INDEPENDENT_TYPES = frozenset({
+        "switch", "switchif", "null", "output",
+    })
+
+    def _handle_solaris_validate_ordering(self, payload: Dict) -> Dict:
+        """Walk LOP network from render ROP backwards, detect ambiguous merge points.
+
+        Ambiguous merge = a LOP node with multiple inputs where evaluation order
+        is not explicitly set and affects the output (e.g., merge LOPs, sublayer
+        stacks where order determines opinion strength).
+
+        Args:
+            payload: Dict with optional keys:
+                - node: Starting node path (render ROP or Karma LOP).
+                  If omitted, auto-discovers the display node in /stage.
+                - max_depth: Maximum traversal depth (default: 50).
+
+        Returns:
+            {
+                "issues": [
+                    {
+                        "node": "/stage/merge1",
+                        "type": "ambiguous_merge",
+                        "input_count": 3,
+                        "current_order": ["/stage/lighting", "/stage/materials", "/stage/geo"],
+                        "suggested_fix": "Verify merge order matches intended layer strength"
+                    }
+                ],
+                "nodes_visited": int,
+                "clean": bool
+            }
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        node_path = resolve_param(payload, "node", required=False)
+        max_depth = int(resolve_param_with_default(payload, "max_depth", 50))
+
+        from .main_thread import run_on_main
+
+        def _on_main():
+            # Resolve starting node
+            start_node = None
+            if node_path:
+                start_node = hou.node(node_path)
+                if start_node is None:
+                    raise ValueError(
+                        f"Couldn't find a node at {node_path} -- "
+                        "double-check the path exists"
+                    )
+            else:
+                # Auto-discover: try /stage display node, then /out render ROPs
+                stage = hou.node("/stage")
+                if stage is not None:
+                    start_node = stage.displayNode()
+                if start_node is None:
+                    out = hou.node("/out")
+                    if out is not None:
+                        for child in out.children():
+                            if child.type().name() in ("usdrender", "usdrender_rop"):
+                                start_node = child
+                                break
+                if start_node is None:
+                    raise ValueError(
+                        "Couldn't find a render node to start from -- "
+                        "pass a node path or make sure /stage has a display node"
+                    )
+
+            issues: List[Dict] = []
+            visited: set = set()
+
+            def _walk(node, depth: int):
+                if depth > max_depth:
+                    return
+                path = node.path()
+                if path in visited:
+                    return
+                visited.add(path)
+
+                # For ROPs (e.g. usdrender in /out), follow loppath parm
+                # to jump into the LOP network
+                node_type = node.type().name()
+                if node_type in ("usdrender", "usdrender_rop"):
+                    lop_path_parm = node.parm("loppath")
+                    if lop_path_parm:
+                        lop_path = lop_path_parm.eval()
+                        if lop_path:
+                            lop_node = hou.node(lop_path)
+                            if lop_node is not None:
+                                _walk(lop_node, depth + 1)
+                    return
+
+                # Check inputs
+                inputs = node.inputs()
+                input_count = len(inputs)
+
+                if input_count >= 2:
+                    # Determine if this is an order-dependent node
+                    base_type = node_type.split("::")[0].lower()
+
+                    if base_type not in self._ORDER_INDEPENDENT_TYPES:
+                        is_order_dependent = (
+                            base_type in self._ORDER_DEPENDENT_TYPES
+                            or base_type.startswith("merge")
+                            or base_type.startswith("sublayer")
+                        )
+
+                        if is_order_dependent:
+                            current_order = []
+                            for inp in inputs:
+                                if inp is not None:
+                                    current_order.append(inp.path())
+                                else:
+                                    current_order.append(None)
+
+                            # Determine suggested fix based on node type
+                            if "sublayer" in base_type:
+                                suggested_fix = (
+                                    "Verify sublayer order matches intended opinion "
+                                    "strength -- later inputs (higher index) have "
+                                    "stronger opinions in USD composition"
+                                )
+                            else:
+                                suggested_fix = (
+                                    "Verify merge order matches intended layer "
+                                    "strength -- check that geometry, materials, "
+                                    "and lights are in the expected order"
+                                )
+
+                            issues.append({
+                                "node": path,
+                                "type": "ambiguous_merge",
+                                "node_type": node_type,
+                                "input_count": input_count,
+                                "current_order": current_order,
+                                "suggested_fix": suggested_fix,
+                            })
+
+                # Walk backwards through all inputs
+                for inp in inputs:
+                    if inp is not None:
+                        _walk(inp, depth + 1)
+
+            _walk(start_node, 0)
+
+            return {
+                "start_node": start_node.path(),
+                "issues": issues,
+                "nodes_visited": len(visited),
+                "clean": len(issues) == 0,
+            }
 
         return run_on_main(_on_main)

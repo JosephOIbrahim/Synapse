@@ -253,12 +253,12 @@ class TestPreFlightValidation:
         assert path_checks[0].severity == CheckSeverity.SOFT_WARN
 
     @pytest.mark.asyncio
-    async def test_solaris_ordering_stub(self, validator, plan):
-        """Solaris ordering check is a Phase 3 stub -- always passes as SOFT_WARN."""
+    async def test_solaris_ordering_clean(self, validator, plan):
+        """Solaris ordering check passes as INFO when no ambiguities detected."""
         checks = await validator.validate(plan)
         ordering_checks = [c for c in checks if c.name == "solaris_ordering"]
         assert len(ordering_checks) == 1
-        assert ordering_checks[0].severity == CheckSeverity.SOFT_WARN
+        assert ordering_checks[0].severity == CheckSeverity.INFO
         assert ordering_checks[0].passed is True
 
     @pytest.mark.asyncio
