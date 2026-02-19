@@ -10,6 +10,28 @@ Two repos make up the full system:
 - **`C:\Users\User\Synapse\`** — Core server, protocol, handlers, memory, routing, MCP bridge
 - **`C:\Users\User\.synapse\`** — Agent SDK (autonomous co-pilot), design system (tokens/icons/styles), Houdini shelf/panel integration, installer
 
+## Active Sprint: FORGE-PRODUCTION
+
+**Plan:** `FORGE_PRODUCTION/docs/forge/FORGE_PRODUCTION.md` — read this first.
+**Agent directives:** `FORGE_PRODUCTION/.claude/agent.md` — loaded for all Task sub-agents.
+**Task prompts:** `FORGE_PRODUCTION/.claude/tasks/` — dispatch files for each team.
+
+### Phase Detection (run on session start)
+```bash
+grep -c "render_turntable_production" synapse/routing/recipes.py 2>/dev/null
+ls synapse/autonomy/__init__.py 2>/dev/null
+grep -c "solaris_validate_ordering" synapse/handlers_solaris.py 2>/dev/null
+ls rag/skills/houdini21-reference/camera_sensor_database.md 2>/dev/null
+```
+
+Phase 1 active if no production recipes.
+Phase 2 active if recipes exist but no autonomy/.
+Phase 3 active if autonomy/ exists but no ordering validator.
+Phase 4 active if ordering exists but no camera database.
+All exist = FORGE-PRODUCTION complete.
+
+**RAG Source:** `G:\HOUDINI21_RAG_SYSTEM` — Houdini 21 reference knowledge.
+
 ---
 
 ## Sprint Orchestrator — Auto-Detecting
