@@ -110,6 +110,9 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "tops_multi_shot": AuditCategory.PIPELINE,
     # Autonomous render
     "autonomous_render": AuditCategory.RENDER,
+    # Undo / Redo
+    "undo": AuditCategory.PIPELINE,
+    "redo": AuditCategory.PIPELINE,
 }
 
 # Commands that don't modify state — skip memory logging for these
@@ -418,6 +421,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         # Autonomous render pipeline
         reg.register("autonomous_render", self._handle_autonomous_render)
 
+        # Undo / Redo
+        reg.register("undo", self._handle_undo)
+        reg.register("redo", self._handle_redo)
+
     # =========================================================================
     # UTILITY HANDLERS
     # =========================================================================
@@ -445,6 +452,32 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             "commands": self._registry.registered_types,
             "description": "Synapse AI-Houdini Bridge v" + PROTOCOL_VERSION,
         }
+
+    # =========================================================================
+    # UNDO / REDO HANDLERS
+    # =========================================================================
+
+    def _handle_undo(self, payload: Dict) -> Dict:
+        """Undo the last operation in Houdini.
+
+        Uses hou.undos.performUndo() to step back one undo level.
+        No parameters required.
+        """
+        if not HOU_AVAILABLE:
+            raise HoudiniUnavailableError(_HOUDINI_UNAVAILABLE)
+        hou.undos.performUndo()
+        return {"status": "ok", "message": "Undid last operation"}
+
+    def _handle_redo(self, payload: Dict) -> Dict:
+        """Redo the last undone operation in Houdini.
+
+        Uses hou.undos.performRedo() to step forward one undo level.
+        No parameters required.
+        """
+        if not HOU_AVAILABLE:
+            raise HoudiniUnavailableError(_HOUDINI_UNAVAILABLE)
+        hou.undos.performRedo()
+        return {"status": "ok", "message": "Redid last undone operation"}
 
     # =========================================================================
     # BATCH HANDLER

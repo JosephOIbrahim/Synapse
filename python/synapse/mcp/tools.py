@@ -749,6 +749,15 @@ _TOOL_DEFS: list[tuple] = [
      }},
      False, False, False),
 
+    # -- Undo / Redo --
+    ("houdini_undo", "undo", _passthrough,
+     "Undo the last Houdini operation. Steps back one undo level.",
+     _EMPTY_SCHEMA, False, True, False),
+
+    ("houdini_redo", "redo", _passthrough,
+     "Redo the last undone Houdini operation. Steps forward one undo level.",
+     _EMPTY_SCHEMA, False, True, False),
+
     # -- Batch --
     ("synapse_batch", "batch_commands", _identity,
      "Execute multiple Synapse commands in a single round-trip.",

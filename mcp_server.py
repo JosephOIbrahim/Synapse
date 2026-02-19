@@ -155,14 +155,22 @@ _SLOW_COMMANDS = {
     "render_sequence": 600.0,
     "inspect_selection": 30.0, "inspect_scene": 30.0, "inspect_node": 30.0,
     "batch_commands": 60.0,
+    # TOPS/PDG commands — PDG graph context initialization (getPDGGraphContext,
+    # getPDGNode) can block Houdini's main thread for 5-15s on first access.
+    # All tops_ commands need at least 60s to survive this cold-start stall.
+    "tops_get_work_items": 60.0,
+    "tops_get_dependency_graph": 60.0,
+    "tops_get_cook_stats": 60.0,
     "tops_cook_node": 120.0,
     "tops_generate_items": 60.0,
     "tops_configure_scheduler": 30.0,
     "tops_cancel_cook": 30.0,
+    "tops_dirty_node": 60.0,
     "tops_batch_cook": 300.0,
     "tops_setup_wedge": 30.0,
+    "tops_query_items": 60.0,
     "tops_cook_and_validate": 600.0,
-    "tops_diagnose": 30.0,
+    "tops_diagnose": 60.0,
     "tops_pipeline_status": 60.0,
     "tops_monitor_stream": 30.0,
     "tops_render_sequence": 600.0,
@@ -272,7 +280,7 @@ async def _get_connection():
                 _ws_connection = await websockets.connect(
                     SYNAPSE_URL,
                     open_timeout=3.0,
-                    close_timeout=1.0,
+                    close_timeout=5.0,
                     ping_interval=None,
                     compression=None,
                     max_size=None,  # Skip frame size validation on localhost
@@ -1982,6 +1990,23 @@ async def list_tools():
                 "required": ["intent"],
             },
         ),
+        # -- Undo / Redo --
+        Tool(
+            name="houdini_undo",
+            description=(
+                "Undo the last Houdini operation. Steps back one undo level. "
+                "Use this to roll back a change that didn't work out."
+            ),
+            inputSchema={"type": "object", "properties": {}, "required": []},
+        ),
+        Tool(
+            name="houdini_redo",
+            description=(
+                "Redo the last undone Houdini operation. Steps forward one undo level. "
+                "Use this to restore a change after an undo."
+            ),
+            inputSchema={"type": "object", "properties": {}, "required": []},
+        ),
         # -- Solaris Ordering Validation --
         Tool(
             name="synapse_validate_ordering",
@@ -2142,6 +2167,8 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_render_farm_status": ("render_farm_status",   _passthrough),
     "synapse_autonomous_render":  ("autonomous_render",    _identity),
     "synapse_validate_ordering": ("solaris_validate_ordering", _identity),
+    "houdini_undo":              ("undo",                     _passthrough),
+    "houdini_redo":              ("redo",                     _passthrough),
 }
 
 
@@ -2208,7 +2235,7 @@ async def _warmup():
         _ws_connection = await websockets.connect(
             SYNAPSE_URL,
             open_timeout=3.0,
-            close_timeout=1.0,
+            close_timeout=5.0,
             ping_interval=None,
             compression=None,
             max_size=None,

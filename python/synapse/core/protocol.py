@@ -96,6 +96,10 @@ class CommandType(Enum):
     # Autonomous render pipeline
     AUTONOMOUS_RENDER = "autonomous_render"
 
+    # Undo / Redo
+    UNDO = "undo"
+    REDO = "redo"
+
     # Memory operations (new simplified names)
     CONTEXT = "context"
     SEARCH = "search"
