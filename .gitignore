@@ -45,8 +45,16 @@ htmlcov/
 
 # Dev scratch scripts
 _*.py
+_*.ps1
 _*.txt
+houdini_exec.py
 nul
+
+# Logs
+*.log
+
+# Manual tests
+tests/manual_*
 
 # MkDocs build output
 site/
