@@ -18,6 +18,7 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.protocol import (
+    COMMAND_ALIASES,
     CommandType,
     SynapseCommand,
     SynapseResponse,
@@ -218,8 +219,13 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             SynapseResponse with the result
         """
         try:
-            cmd_type = normalize_command_type(command.type)
+            # Fast path: try raw type first (aliases are pre-populated in registry)
+            cmd_type = command.type
             handler = self._registry.get(cmd_type)
+            if handler is None:
+                # Fallback: normalize for any aliases not in registry
+                cmd_type = normalize_command_type(command.type)
+                handler = self._registry.get(cmd_type)
 
             if handler is None:
                 return SynapseResponse(
@@ -438,6 +444,18 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         # Undo / Redo
         reg.register("undo", self._handle_undo)
         reg.register("redo", self._handle_redo)
+
+        # Pre-populate alias names so dispatch never needs normalization.
+        # Build reverse map: canonical_name -> [alias1, alias2, ...]
+        _canonical_to_aliases: Dict[str, list] = {}
+        for alias, canonical in COMMAND_ALIASES.items():
+            _canonical_to_aliases.setdefault(canonical, []).append(alias)
+        for canonical, aliases in _canonical_to_aliases.items():
+            handler = reg.get(canonical)
+            if handler is not None:
+                for alias in aliases:
+                    if not reg.has(alias):
+                        reg.register(alias, handler)
 
     # =========================================================================
     # UTILITY HANDLERS

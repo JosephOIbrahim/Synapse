@@ -931,12 +931,17 @@ for _def in _TOOL_DEFS:
 # Public API
 # =========================================================================
 
+# Pre-sorted tool list (built once at import, never changes)
+_TOOLS_LIST_CACHE: list[dict] = sorted(_TOOL_JSON.values(), key=lambda t: t["name"])
+
+
 def get_tools() -> list[dict]:
     """Return all MCP tool definitions for tools/list response.
 
-    Returns a list sorted by name (He2025 determinism).
+    Returns a cached, pre-sorted list (He2025 determinism).
+    Built once at import time -- tool definitions are static.
     """
-    return sorted(_TOOL_JSON.values(), key=lambda t: t["name"])
+    return _TOOLS_LIST_CACHE
 
 
 def get_tool_names() -> list[str]:

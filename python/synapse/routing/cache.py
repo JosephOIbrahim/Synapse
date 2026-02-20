@@ -19,6 +19,25 @@ import threading
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Any, Tuple
 
+# xxhash is ~100x faster than SHA-256 for cache keying (non-crypto use)
+try:
+    import xxhash
+    _XXHASH_AVAILABLE = True
+except ImportError:
+    _XXHASH_AVAILABLE = False
+
+
+def _fast_hash(data: str) -> str:
+    """Fast non-cryptographic hash for cache keys.
+
+    Uses xxhash (O(n) with tiny constant) when available,
+    falls back to SHA-256.
+    """
+    encoded = data.encode("utf-8")
+    if _XXHASH_AVAILABLE:
+        return xxhash.xxh64(encoded).hexdigest()
+    return hashlib.sha256(encoded).hexdigest()
+
 
 # Default TTLs per tier name
 _DEFAULT_TTLS: Dict[str, int] = {
@@ -161,25 +180,31 @@ class ResponseCache:
         """
         canonical = input_text.strip().lower()
         raw = f"{tier}:{canonical}:{context_hash}"
-        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        return _fast_hash(raw)
 
     def _evict_one(self):
-        """Evict expired entry (O(n) scan) or LRU fallback (O(n) min)."""
+        """Batch eviction: remove expired entries, then oldest 10% by created_at.
+
+        Amortizes the O(n) scan cost by evicting multiple entries at once
+        instead of finding a single min on every put().
+        """
         if not self._cache:
             return
-        # Evict first expired entry found (no sort needed)
-        expired_key = next(
-            (k for k, e in self._cache.items() if e.expired),
-            None,
-        )
-        if expired_key is not None:
-            del self._cache[expired_key]
-            self._evictions += 1
+
+        # Phase 1: sweep all expired entries
+        expired_keys = [k for k, e in self._cache.items() if e.expired]
+        if expired_keys:
+            for k in expired_keys:
+                del self._cache[k]
+            self._evictions += len(expired_keys)
             return
-        # Otherwise evict oldest with fewest hits
-        victim = min(
+
+        # Phase 2: evict oldest 10% (minimum 1) sorted by created_at
+        batch_size = max(1, len(self._cache) // 10)
+        victims = sorted(
             self._cache,
-            key=lambda k: (self._cache[k].hits, -self._cache[k].created_at),
-        )
-        del self._cache[victim]
-        self._evictions += 1
+            key=lambda k: self._cache[k].created_at,
+        )[:batch_size]
+        for k in victims:
+            del self._cache[k]
+        self._evictions += len(victims)

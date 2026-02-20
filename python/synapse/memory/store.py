@@ -38,6 +38,19 @@ except ImportError:
 
 logger = logging.getLogger("synapse.memory")
 
+# Cached CryptoEngine instance — avoids repeated get_instance() calls.
+# _CRYPTO_NOT_CHECKED sentinel distinguishes "not checked yet" from "checked and None".
+_CRYPTO_NOT_CHECKED = object()
+_crypto_instance = _CRYPTO_NOT_CHECKED
+
+
+def _get_crypto():
+    """Return cached CryptoEngine instance, or None if unavailable."""
+    global _crypto_instance
+    if _crypto_instance is _CRYPTO_NOT_CHECKED:
+        _crypto_instance = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+    return _crypto_instance
+
 
 # =============================================================================
 # READ-WRITE LOCK
@@ -171,6 +184,7 @@ class MemoryStore:
         self._write_lock = threading.Lock()
         self._flush_interval = 2.0  # seconds
         self._flush_max = 50  # items
+        self._flush_event = threading.Event()  # Wakes flusher immediately on buffer full
         self._flusher = threading.Thread(
             target=self._flush_loop,
             daemon=True,
@@ -195,9 +209,16 @@ class MemoryStore:
             self._load()
 
     def _flush_loop(self):
-        """Background thread: flush buffered writes to disk periodically."""
+        """Background thread: flush buffered writes to disk.
+
+        Wakes on either the flush interval (2s) OR immediately when
+        the buffer hits capacity (via _flush_event). This eliminates
+        the worst-case 4s latency under low write frequency.
+        """
         while self._flusher_running:
-            time.sleep(self._flush_interval)
+            # Wait up to flush_interval, but wake early if signaled
+            self._flush_event.wait(timeout=self._flush_interval)
+            self._flush_event.clear()
             self._flush_writes()
 
     def _flush_writes(self):
@@ -233,7 +254,7 @@ class MemoryStore:
             self._loaded.set()
             return
 
-        crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+        crypto = _get_crypto()
 
         with self._lock.write_lock():
             with open(self.memory_file, 'r', encoding='utf-8') as f:
@@ -314,7 +335,7 @@ class MemoryStore:
 
     def save(self):
         """Persist all memories to disk."""
-        crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+        crypto = _get_crypto()
 
         with self._lock.write_lock():
             # Write memories (append-only format, but we rewrite for consistency)
@@ -353,16 +374,16 @@ class MemoryStore:
             self._dirty = True
 
         # Buffer the disk write — flushed by background thread
-        crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+        crypto = _get_crypto()
         line = memory.to_json()
         if crypto:
             line = crypto.encrypt_line(line)
 
         with self._write_lock:
             self._write_buffer.append(line + "\n")
-            # Auto-flush if buffer is full
+            # Signal flusher to wake immediately when buffer hits capacity
             if len(self._write_buffer) >= self._flush_max:
-                self._flush_writes()
+                self._flush_event.set()
 
         return memory.id
 

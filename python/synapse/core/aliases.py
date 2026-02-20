@@ -116,6 +116,13 @@ PARAM_ALIASES: Dict[str, List[str]] = {
 }
 
 
+# Pre-computed reverse alias map: alias -> canonical name (O(1) lookup)
+_REVERSE_ALIASES: Dict[str, str] = {}
+for _canonical, _aliases in PARAM_ALIASES.items():
+    for _alias in _aliases:
+        _REVERSE_ALIASES[_alias] = _canonical
+
+
 # =============================================================================
 # USD PARAMETER ALIASES
 # =============================================================================
@@ -180,7 +187,12 @@ def resolve_param(payload: Dict, canonical: str, required: bool = True) -> Any:
     if canonical in payload:
         return payload[canonical]
 
-    # Check known aliases for this canonical name
+    # Fast path: reverse-lookup payload keys against pre-computed map
+    for key in payload:
+        if _REVERSE_ALIASES.get(key) == canonical:
+            return payload[key]
+
+    # Fallback: check known aliases for this canonical name (handles dynamic aliases)
     aliases = PARAM_ALIASES.get(canonical, [canonical])
     for alias in aliases:
         if alias in payload:

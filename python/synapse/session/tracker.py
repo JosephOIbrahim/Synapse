@@ -95,7 +95,7 @@ class SynapseBridge:
 
         self._context_cache = None
         self._context_cache_time = 0.0
-        self._context_cache_ttl = 5.0  # seconds — stale-while-revalidate
+        self._context_cache_ttl = 30.0  # seconds — stale-while-revalidate
 
         self._init_synapse()
 

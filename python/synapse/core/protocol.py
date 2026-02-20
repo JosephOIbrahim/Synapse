@@ -13,12 +13,16 @@ from enum import Enum
 
 try:
     import orjson
-    def _to_json_str(data: dict) -> str:
+    def _to_json_str(data: dict, pre_sorted: bool = False) -> str:
+        if pre_sorted:
+            return orjson.dumps(data).decode()
         return orjson.dumps(data, option=orjson.OPT_SORT_KEYS).decode()
     def _from_json(s: str) -> dict:
         return orjson.loads(s)
 except ImportError:
-    def _to_json_str(data: dict) -> str:
+    def _to_json_str(data: dict, pre_sorted: bool = False) -> str:
+        if pre_sorted:
+            return json.dumps(data)
         return json.dumps(data, sort_keys=True)
     def _from_json(s: str) -> dict:
         return json.loads(s)

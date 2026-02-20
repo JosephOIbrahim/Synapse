@@ -187,6 +187,10 @@ class AuditLog:
         # Callbacks for real-time monitoring
         self._callbacks: List[Callable[[AuditEntry], None]] = []
 
+        # Mtime-based hash chain verification cache
+        self._last_verify_mtime: float = 0.0
+        self._last_verify_result: Optional[Tuple[bool, Optional[int]]] = None
+
     @classmethod
     def get_instance(cls, log_dir: Optional[Path] = None) -> 'AuditLog':
         """Get singleton instance"""
@@ -363,17 +367,43 @@ class AuditLog:
         """
         Verify hash chain integrity.
 
+        Uses file mtime to skip re-verification when the audit log
+        has not been modified since the last successful check.
+
         Returns:
             (is_valid, first_invalid_index)
         """
+        # Check if any audit file has been modified since last verification
+        current_mtime = self._get_latest_mtime()
+        if (
+            self._last_verify_result is not None
+            and current_mtime <= self._last_verify_mtime
+            and len(self._entries) > 0
+        ):
+            return self._last_verify_result
+
         expected_hash = "genesis"
 
         for i, entry in enumerate(self._entries):
             if entry.previous_hash != expected_hash:
-                return False, i
+                result = (False, i)
+                self._last_verify_mtime = current_mtime
+                self._last_verify_result = result
+                return result
             expected_hash = entry.entry_hash
 
-        return True, None
+        result = (True, None)
+        self._last_verify_mtime = current_mtime
+        self._last_verify_result = result
+        return result
+
+    def _get_latest_mtime(self) -> float:
+        """Get the most recent mtime across all audit log files."""
+        try:
+            mtimes = [f.stat().st_mtime for f in self._log_dir.glob("audit_*.jsonl")]
+            return max(mtimes) if mtimes else 0.0
+        except OSError:
+            return 0.0
 
     def export_session(self, session_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Export all entries for a session"""

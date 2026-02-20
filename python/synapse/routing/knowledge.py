@@ -101,6 +101,12 @@ class KnowledgeIndex:
                 if topic_name not in self._keyword_to_topics[kw_lower]:
                     self._keyword_to_topics[kw_lower].append(topic_name)
 
+        # Pre-compute IDF values (avoids per-query division)
+        self._keyword_idf: Dict[str, float] = {
+            word: 1.0 / len(topics) if topics else 0.0
+            for word, topics in self._keyword_to_topics.items()
+        }
+
     @staticmethod
     def _normalize_semantic_index(raw: dict) -> dict:
         """Normalize nested RAG schema to flat SYNAPSE format.
@@ -248,7 +254,7 @@ class KnowledgeIndex:
         topic_scores: Dict[str, float] = {}
         for word in query_words:
             matching_topics = self._keyword_to_topics.get(word, [])
-            idf = 1.0 / len(matching_topics) if matching_topics else 0.0
+            idf = self._keyword_idf.get(word, 0.0)
             for topic in matching_topics:
                 topic_scores[topic] = topic_scores.get(topic, 0.0) + 1.0 + idf
 

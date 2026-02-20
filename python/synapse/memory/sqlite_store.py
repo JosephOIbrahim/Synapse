@@ -127,6 +127,7 @@ class SQLiteMemoryStore:
         self._write_lock = threading.Lock()
         self._loaded = threading.Event()
         self._fts_available = False
+        self._local = threading.local()  # per-thread connection reuse
 
         if background_load:
             loader = threading.Thread(
@@ -139,7 +140,21 @@ class SQLiteMemoryStore:
             self._init_db()
 
     def _get_conn(self) -> sqlite3.Connection:
-        """Create a new connection (safe for per-thread use)."""
+        """Get or create a per-thread connection (thread-local reuse).
+
+        Connections are cached in threading.local() so each thread reuses
+        a single connection instead of creating one per call.  WAL/pragma
+        setup runs only on the first call per thread.
+        """
+        conn = getattr(self._local, "conn", None)
+        if conn is not None:
+            try:
+                conn.execute("SELECT 1")
+                return conn
+            except sqlite3.ProgrammingError:
+                # Connection was closed — fall through and create a new one
+                pass
+
         conn = sqlite3.connect(
             str(self._db_path),
             check_same_thread=False,
@@ -149,6 +164,7 @@ class SQLiteMemoryStore:
         conn.execute("PRAGMA foreign_keys=ON")
         conn.execute("PRAGMA busy_timeout=5000")
         conn.row_factory = sqlite3.Row
+        self._local.conn = conn
         return conn
 
     def _init_db(self):
@@ -178,6 +194,7 @@ class SQLiteMemoryStore:
                 self._fts_available = False
 
             conn.close()
+            self._local.conn = None  # clear thread-local after init close
             logger.info(
                 "SQLite memory store ready at %s (FTS5=%s)",
                 self._db_path,
@@ -365,7 +382,7 @@ class SQLiteMemoryStore:
                 self._update_fts(conn, memory, delete_first=True)
                 conn.commit()
             finally:
-                conn.close()
+                pass  # thread-local conn reused, not closed
 
         return memory.id
 
@@ -381,7 +398,7 @@ class SQLiteMemoryStore:
             links = self._load_links(conn, memory_id)
             return self._row_to_memory(row, links)
         finally:
-            conn.close()
+            pass  # thread-local conn reused, not closed
 
     def update(self, memory: Memory):
         """Update an existing memory."""
@@ -421,7 +438,7 @@ class SQLiteMemoryStore:
                 self._update_fts(conn, memory, delete_first=True)
                 conn.commit()
             finally:
-                conn.close()
+                pass  # thread-local conn reused, not closed
 
     def delete(self, memory_id: str) -> bool:
         """Delete a memory by ID."""
@@ -452,7 +469,7 @@ class SQLiteMemoryStore:
                 conn.commit()
                 return True
             finally:
-                conn.close()
+                pass  # thread-local conn reused, not closed
 
     def all(self) -> List[Memory]:
         """Get all memories."""
@@ -466,7 +483,7 @@ class SQLiteMemoryStore:
                 for r in rows
             ]
         finally:
-            conn.close()
+            pass  # thread-local conn reused, not closed
 
     def count(self) -> int:
         """Get total memory count."""
@@ -476,7 +493,7 @@ class SQLiteMemoryStore:
             cur = conn.execute("SELECT COUNT(*) as cnt FROM memories")
             return cur.fetchone()["cnt"]
         finally:
-            conn.close()
+            pass  # thread-local conn reused, not closed
 
     def clear(self):
         """Clear all memories."""
@@ -492,7 +509,7 @@ class SQLiteMemoryStore:
                 conn.execute("DELETE FROM memories")
                 conn.commit()
             finally:
-                conn.close()
+                pass  # thread-local conn reused, not closed
 
     def search(self, query: MemoryQuery) -> List[MemorySearchResult]:
         """Search memories based on query parameters."""
@@ -501,7 +518,7 @@ class SQLiteMemoryStore:
         try:
             return self._search_impl(conn, query)
         finally:
-            conn.close()
+            pass  # thread-local conn reused, not closed
 
     def _search_impl(
         self, conn: sqlite3.Connection, query: MemoryQuery
@@ -657,7 +674,7 @@ class SQLiteMemoryStore:
                 for r in cur.fetchall()
             ]
         finally:
-            conn.close()
+            pass  # thread-local conn reused, not closed
 
     def get_by_tag(self, tag: str) -> List[Memory]:
         """Get all memories with a specific tag."""
@@ -675,7 +692,7 @@ class SQLiteMemoryStore:
                 for r in cur.fetchall()
             ]
         finally:
-            conn.close()
+            pass  # thread-local conn reused, not closed
 
     def get_linked(self, memory_id: str) -> List[Memory]:
         """Get all memories linked to a specific memory."""
@@ -693,7 +710,7 @@ class SQLiteMemoryStore:
                 for r in cur.fetchall()
             ]
         finally:
-            conn.close()
+            pass  # thread-local conn reused, not closed
 
     def get_recent(self, limit: int = 10) -> List[Memory]:
         """Get most recent memories."""
@@ -709,7 +726,7 @@ class SQLiteMemoryStore:
                 for r in cur.fetchall()
             ]
         finally:
-            conn.close()
+            pass  # thread-local conn reused, not closed
 
 
 # =============================================================================

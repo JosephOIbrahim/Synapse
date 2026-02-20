@@ -45,6 +45,9 @@ mcp = [
 routing = [
     "anthropic>=0.40.0",
 ]
+fast-hash = [
+    "xxhash>=3.0.0",
+]
 memory = [
     "filelock>=3.12",
 ]

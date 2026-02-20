@@ -289,6 +289,22 @@ def deterministic(func: Callable) -> Callable:
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
+        # Fast path: skip processing if no float args present
+        has_float_args = any(isinstance(v, float) for v in args)
+        has_float_kwargs = any(isinstance(v, float) for v in kwargs.values())
+        if not has_float_args and not has_float_kwargs:
+            # Still need to check for float tuples in args
+            has_tuple_args = any(
+                isinstance(v, tuple) and v and all(isinstance(x, float) for x in v)
+                for v in args
+            )
+            has_tuple_kwargs = any(
+                isinstance(v, tuple) and v and all(isinstance(x, float) for x in v)
+                for v in kwargs.values()
+            )
+            if not has_tuple_args and not has_tuple_kwargs:
+                return func(*args, **kwargs)
+
         # Round float positional args
         processed_args: list = []
         for v in args:

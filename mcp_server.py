@@ -147,7 +147,7 @@ SYNAPSE_PATH = os.environ.get("SYNAPSE_PATH", "/synapse")
 SYNAPSE_URL = f"ws://localhost:{SYNAPSE_PORT}{SYNAPSE_PATH}"
 PROTOCOL_VERSION = "5.4.0"
 MAX_RETRIES = 2
-RETRY_DELAY = 0.3
+RETRY_DELAY = 0.05
 COMMAND_TIMEOUT = 10.0
 _SLOW_COMMANDS = {
     "execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0,

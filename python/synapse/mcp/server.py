@@ -53,6 +53,44 @@ except ImportError:
 
 logger = logging.getLogger("synapse.mcp")
 
+# Read-only tools: bypass resilience/rate-limiting in future fast-path.
+# Derived from tools with readOnlyHint=True in mcp/tools.py.
+_READ_ONLY_TOOLS: frozenset = frozenset({
+    "synapse_ping",
+    "synapse_health",
+    "houdini_scene_info",
+    "houdini_get_selection",
+    "houdini_get_parm",
+    "houdini_stage_info",
+    "houdini_get_usd_attribute",
+    "houdini_capture_viewport",
+    "synapse_validate_frame",
+    "tops_get_work_items",
+    "tops_get_dependency_graph",
+    "tops_get_cook_stats",
+    "tops_query_items",
+    "tops_diagnose",
+    "tops_pipeline_status",
+    "houdini_query_prims",
+    "synapse_validate_ordering",
+    "houdini_read_material",
+    "synapse_knowledge_lookup",
+    "synapse_inspect_selection",
+    "synapse_inspect_scene",
+    "synapse_inspect_node",
+    "houdini_network_explain",
+    "synapse_context",
+    "synapse_search",
+    "synapse_recall",
+    "synapse_memory_query",
+    "synapse_memory_status",
+    "synapse_metrics",
+    "synapse_router_stats",
+    "synapse_list_recipes",
+    "synapse_render_farm_status",
+    "synapse_live_metrics",
+})
+
 # Synapse version — read from package metadata if available, else hardcoded
 try:
     from importlib.metadata import version as _pkg_version

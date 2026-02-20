@@ -365,21 +365,24 @@ def write_memory_entry(scene_dir: str, entry: Dict[str, Any], entry_type: str) -
     writer = writers.get(entry_type)
     if writer:
         writer()
-        # Check if evolution should happen
-        try:
-            from .evolution import check_evolution
-            evo_status = check_evolution(scene_dir)
-            if evo_status.get("should_evolve"):
-                logger.info(
-                    "Memory evolution recommended: %s -> %s (triggers: %s). "
-                    "Call synapse_evolve_memory to upgrade.",
-                    evo_status["current"], evo_status["target"],
-                    evo_status["triggers_met"],
-                )
-        except ImportError:
-            pass
-        except Exception as e:
-            logger.warning("Evolution check failed: %s", e)
+        # Check evolution in background thread (avoids ~100ms file scan on hot path)
+        import threading
+        def _bg_evolution_check():
+            try:
+                from .evolution import check_evolution
+                evo_status = check_evolution(scene_dir)
+                if evo_status.get("should_evolve"):
+                    logger.info(
+                        "Memory evolution recommended: %s -> %s (triggers: %s). "
+                        "Call synapse_evolve_memory to upgrade.",
+                        evo_status["current"], evo_status["target"],
+                        evo_status["triggers_met"],
+                    )
+            except ImportError:
+                pass
+            except Exception as e:
+                logger.warning("Evolution check failed: %s", e)
+        threading.Thread(target=_bg_evolution_check, daemon=True, name="Synapse-EvoCheck").start()
     else:
         logger.warning("Unknown entry type: %s", entry_type)
 

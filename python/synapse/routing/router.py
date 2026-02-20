@@ -7,6 +7,7 @@ LLM calls are reserved for the ~20% that genuinely need reasoning.
 Cascade: Cache → Recipe → Tier0 → Tier1 → Tier2 → Tier3
 """
 
+import collections
 import hashlib
 import json
 import time
@@ -15,12 +16,12 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Any
+from typing import Callable, Deque, Dict, List, Optional, Any
 
 from ..core.protocol import SynapseCommand, SynapseResponse
 from ..core.gates import HumanGate, GateLevel
 from ..core.determinism import deterministic_uuid, kahan_sum, round_float
-from ..memory.store import SynapseMemory
+from ..memory.store import SynapseMemory, ReadWriteLock
 
 from .parser import CommandParser, ParseResult
 from .knowledge import KnowledgeIndex, KnowledgeLookupResult
@@ -150,12 +151,15 @@ class TieredRouter:
         )
 
         # Tier-pinning cache: canonical_key → tier value (He2025 consistency)
+        # RWLock: reads vastly outnumber writes in steady state
         self._tier_pins: Dict[str, str] = {}
-        self._tier_pins_lock = threading.Lock()
+        self._tier_pins_lock = ReadWriteLock()
 
-        # Metrics
+        # Metrics (deque with maxlen keeps only the last 1000 measurements per tier)
         self._tier_counts: Dict[str, int] = {t.value: 0 for t in RoutingTier}
-        self._tier_latencies: Dict[str, List[float]] = {t.value: [] for t in RoutingTier}
+        self._tier_latencies: Dict[str, Deque[float]] = {
+            t.value: collections.deque(maxlen=1000) for t in RoutingTier
+        }
         self._total_routes = 0
 
         # Epoch-based adaptation (Phase 2A)
@@ -191,7 +195,7 @@ class TieredRouter:
         # -1. Tier-pin check (He2025 consistency)
         # ---------------------------------------------------------------
         pin_key = f"{input_text}|{context_hash}"
-        with self._tier_pins_lock:
+        with self._tier_pins_lock.read_lock():
             pinned_tier = self._tier_pins.get(pin_key)
 
         # ---------------------------------------------------------------
@@ -225,7 +229,7 @@ class TieredRouter:
             if result:
                 return result
             # Stale pin — tier returned None; delete and fall through
-            with self._tier_pins_lock:
+            with self._tier_pins_lock.write_lock():
                 self._tier_pins.pop(pin_key, None)
 
         # ---------------------------------------------------------------
@@ -345,7 +349,8 @@ class TieredRouter:
         )
 
         self._cache_result("recipe", text, context_hash, result)
-        self._pin_tier(text, context_hash, RoutingTier.RECIPE.value)
+        self._pin_tier(text, context_hash, RoutingTier.RECIPE.value,
+                       pin_key=f"{text}|{context_hash}")
         self._record_metric(RoutingTier.RECIPE, result.latency_ms)
         return result
 
@@ -385,7 +390,8 @@ class TieredRouter:
         )
 
         self._cache_result("recipe", text, context_hash, result)
-        self._pin_tier(text, context_hash, RoutingTier.RECIPE.value)
+        self._pin_tier(text, context_hash, RoutingTier.RECIPE.value,
+                       pin_key=f"{text}|{context_hash}")
         self._record_metric(RoutingTier.RECIPE, result.latency_ms)
         return result
 
@@ -423,7 +429,8 @@ class TieredRouter:
         )
 
         self._cache_result("instant", text, context_hash, result)
-        self._pin_tier(text, context_hash, RoutingTier.INSTANT.value)
+        self._pin_tier(text, context_hash, RoutingTier.INSTANT.value,
+                       pin_key=f"{text}|{context_hash}")
         self._record_metric(RoutingTier.INSTANT, result.latency_ms)
         return result
 
@@ -452,14 +459,17 @@ class TieredRouter:
         )
 
         self._cache_result("fast", text, context_hash, result)
-        self._pin_tier(text, context_hash, RoutingTier.FAST.value)
+        self._pin_tier(text, context_hash, RoutingTier.FAST.value,
+                       pin_key=f"{text}|{context_hash}")
         self._record_metric(RoutingTier.FAST, result.latency_ms)
         return result
 
-    def _pin_tier(self, input_text: str, context_hash: str, tier_value: str):
+    def _pin_tier(self, input_text: str, context_hash: str, tier_value: str,
+                  pin_key: Optional[str] = None):
         """Record a tier pin for future consistency."""
-        pin_key = f"{input_text}|{context_hash}"
-        with self._tier_pins_lock:
+        if pin_key is None:
+            pin_key = f"{input_text}|{context_hash}"
+        with self._tier_pins_lock.write_lock():
             self._tier_pins[pin_key] = tier_value
             if len(self._tier_pins) > _MAX_TIER_PINS:
                 # Evict oldest (dict is insertion-ordered in Python 3.7+)
@@ -590,7 +600,8 @@ class TieredRouter:
             )
 
             self._cache_result("standard", text, context_hash, result)
-            self._pin_tier(text, context_hash, RoutingTier.STANDARD.value)
+            self._pin_tier(text, context_hash, RoutingTier.STANDARD.value,
+                           pin_key=f"{text}|{context_hash}")
             self._record_metric(RoutingTier.STANDARD, result.latency_ms)
             return result
 
@@ -706,7 +717,8 @@ class TieredRouter:
             )
 
             self._cache_result("deep", text, context_hash, result)
-            self._pin_tier(text, context_hash, RoutingTier.DEEP.value)
+            self._pin_tier(text, context_hash, RoutingTier.DEEP.value,
+                           pin_key=f"{text}|{context_hash}")
             self._record_metric(RoutingTier.DEEP, result.latency_ms)
             return result
 
@@ -784,7 +796,10 @@ class TieredRouter:
             self._cache.put(tier, text, context_hash, result)
 
     def _hash_context(self, context: Dict) -> str:
-        """Hash context dict for cache keying."""
+        """Hash context dict for cache keying.
+
+        Uses xxhash (~100x faster than SHA-256) when available.
+        """
         if not context:
             return ""
         try:
@@ -792,7 +807,11 @@ class TieredRouter:
             raw = orjson.dumps(context, option=orjson.OPT_SORT_KEYS, default=str)
         except (ImportError, TypeError):
             raw = json.dumps(context, sort_keys=True, default=str).encode()
-        return hashlib.sha256(raw).hexdigest()[:16]
+        try:
+            import xxhash
+            return xxhash.xxh64(raw).hexdigest()[:16]
+        except ImportError:
+            return hashlib.sha256(raw).hexdigest()[:16]
 
     # ------------------------------------------------------------------
     # Metrics
@@ -802,7 +821,7 @@ class TieredRouter:
         """Record routing metric and epoch outcome."""
         self._tier_counts[tier.value] = self._tier_counts.get(tier.value, 0) + 1
         if tier.value not in self._tier_latencies:
-            self._tier_latencies[tier.value] = []
+            self._tier_latencies[tier.value] = collections.deque(maxlen=1000)
         self._tier_latencies[tier.value].append(latency_ms)
         self._total_routes += 1
 
