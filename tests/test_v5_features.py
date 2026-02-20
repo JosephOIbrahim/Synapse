@@ -91,7 +91,16 @@ class TestStructuredLogging:
         violations = []
         for py_file in src_dir.rglob("*.py"):
             content = py_file.read_text(encoding="utf-8", errors="replace")
+            in_triple_quote = False
             for i, line in enumerate(content.splitlines(), 1):
+                # Track triple-quoted strings (skip print() inside them)
+                count_dq = line.count('"""')
+                count_sq = line.count("'''")
+                toggles = count_dq + count_sq
+                if toggles % 2 == 1:
+                    in_triple_quote = not in_triple_quote
+                if in_triple_quote:
+                    continue
                 stripped = line.strip()
                 if stripped.startswith("print(") and not stripped.startswith("#"):
                     violations.append(f"{py_file.relative_to(_PKG)}:{i}: {stripped[:80]}")
