@@ -120,6 +120,7 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "hda_promote_parm": AuditCategory.PIPELINE,
     "hda_set_help": AuditCategory.PIPELINE,
     "hda_package": AuditCategory.PIPELINE,
+    "hda_list": AuditCategory.PIPELINE,
 }
 
 # Commands that don't modify state — skip memory logging for these
@@ -440,6 +441,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("hda_promote_parm", self._handle_hda_promote_parm)
         reg.register("hda_set_help", self._handle_hda_set_help)
         reg.register("hda_package", self._handle_hda_package)
+        reg.register("hda_list", self._handle_hda_list)
 
         # Undo / Redo
         reg.register("undo", self._handle_undo)

@@ -1400,6 +1400,239 @@ class RecipeRegistry:
             ],
         ))
 
+        # --- LOP HDA Scaffold ---
+        self.register(Recipe(
+            name="lop_hda_scaffold",
+            description=(
+                "Scaffold a Solaris (LOP) HDA: create subnet in /stage with "
+                "stage passthrough, edit properties and configure primitive "
+                "nodes, convert to HDA, promote primpath, and save to "
+                "$HIP/otls/synapse/."
+            ),
+            triggers=[
+                r"^(?:create|make|build|scaffold)\s+(?:an?\s+)?(?:solaris|lop|usd)\s+(?:hda|digital asset)(?:\s+(?:called|named)\s+(?P<name>[\w]+))?(?:\s+(?:for|that|to|which)\s+(?P<description>.+))?$",
+                r"^(?:create|make|build)\s+(?:an?\s+)?(?:lop|solaris|usd)\s+(?:hda|digital asset)\s+(?P<name>[\w]+)(?:\s+(?P<description>.+))?$",
+                r"^(?:new|setup)\s+(?:lop|solaris)\s+(?:hda|digital asset)(?:\s+(?P<name>[\w]+))?(?:\s+(?P<description>.+))?$",
+                r"^(?:lop|solaris)\s+hda\s+scaffold(?:\s+(?P<name>[\w]+))?(?:\s+(?P<description>.+))?$",
+                r"^build\s+(?:an?\s+)?usd\s+digital\s+asset(?:\s+(?:called|named)\s+(?P<name>[\w]+))?(?:\s+(?P<description>.+))?$",
+            ],
+            parameters=["name", "description"],
+            gate_level=GateLevel.REVIEW,
+            category="pipeline",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "import os\n"
+                            "import re\n"
+                            "# Parameters from trigger\n"
+                            "raw_name = '{name}'.strip()\n"
+                            "description = '{description}'.strip()\n"
+                            "if not raw_name:\n"
+                            "    raw_name = 'custom_lop_tool'\n"
+                            "hda_name = re.sub(r'[^a-z0-9_]', '_', "
+                            "raw_name.lower()).strip('_')\n"
+                            "hda_label = raw_name.replace('_', ' ').title()\n"
+                            "# Find or create /stage context\n"
+                            "stage = hou.node('/stage')\n"
+                            "if not stage:\n"
+                            "    stage = hou.node('/obj')\n"
+                            "# Create LOP subnet\n"
+                            "subnet = stage.createNode('subnet', hda_name)\n"
+                            "# Wire subnet indirect input for stage passthrough\n"
+                            "indirect = subnet.indirectInputs()[0]\n"
+                            "# Create internal nodes\n"
+                            "edit_props = subnet.createNode("
+                            "'editproperties::2.0', 'edit_properties')\n"
+                            "edit_props.setInput(0, indirect)\n"
+                            "config_prim = subnet.createNode("
+                            "'configureprimitive', 'configure_prim')\n"
+                            "config_prim.setInput(0, edit_props)\n"
+                            "config_prim.setDisplayFlag(True)\n"
+                            "subnet.layoutChildren()\n"
+                            "subnet.moveToGoodPosition()\n"
+                            "# Create HDA definition\n"
+                            "otls_dir = os.path.join("
+                            "hou.getenv('HIP', ''), 'otls', 'synapse')\n"
+                            "os.makedirs(otls_dir, exist_ok=True)\n"
+                            "hda_path = os.path.join(otls_dir, "
+                            "hda_name + '.hda')\n"
+                            "hda_node = subnet.createDigitalAsset(\n"
+                            "    name=hda_name,\n"
+                            "    hda_file_name=hda_path,\n"
+                            "    description=hda_label,\n"
+                            "    min_num_inputs=1,\n"
+                            "    max_num_inputs=1,\n"
+                            ")\n"
+                            "# Set LOP category\n"
+                            "definition = hda_node.type().definition()\n"
+                            "import time as _time\n"
+                            "definition.setExtraInfo(\n"
+                            "    'author=synapse;version=1.0.0;'\n"
+                            "    'created=' + _time.strftime("
+                            "'%Y-%m-%d %H:%M:%S'))\n"
+                            "# Promote primpath from edit_properties\n"
+                            "ptg = hda_node.parmTemplateGroup()\n"
+                            "ep_node = hda_node.node('edit_properties')\n"
+                            "if ep_node:\n"
+                            "    pp = ep_node.parm('primpath')\n"
+                            "    if pp:\n"
+                            "        tpl = pp.parmTemplate().clone()\n"
+                            "        tpl.setName('primpath')\n"
+                            "        tpl.setLabel('Prim Path')\n"
+                            "        ptg.append(tpl)\n"
+                            "        hda_node.setParmTemplateGroup(ptg)\n"
+                            "# Help text\n"
+                            "help_text = '= ' + hda_label + ' =\\n\\n'\n"
+                            "if description:\n"
+                            "    help_text += description + '\\n\\n'\n"
+                            "help_text += '#type: node\\n'\n"
+                            "help_text += '#context: Lop\\n'\n"
+                            "definition.addSection('HelpText', help_text)\n"
+                            "# Save and select\n"
+                            "definition.save(hda_path, hda_node)\n"
+                            "hda_node.setSelected(True, "
+                            "clear_all_selected=True)\n"
+                            "hda_node.setDisplayFlag(True)\n"
+                            "result = {{\n"
+                            "    'node': hda_node.path(),\n"
+                            "    'hda_file': hda_path,\n"
+                            "    'hda_name': hda_name,\n"
+                            "    'hda_label': hda_label,\n"
+                            "    'definition': 'Lop/' + hda_name,\n"
+                            "    'description': description "
+                            "or '(none provided)',\n"
+                            "}}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="lop_hda",
+                ),
+            ],
+        ))
+
+        # --- Karma Quality HDA ---
+        self.register(Recipe(
+            name="karma_quality_hda",
+            description=(
+                "Create a Karma render quality preset HDA with draft/medium/final "
+                "quality tiers, resolution control, and HScript-switched pixel samples."
+            ),
+            triggers=[
+                r"^(?:create|make|build)\s+(?:a\s+)?karma\s+quality\s+(?:hda|digital asset|preset)(?:\s+(?:called|named)\s+(?P<name>[\w]+))?$",
+                r"^(?:create|make|build)\s+(?:a\s+)?render\s+quality\s+(?:hda|digital asset|preset)(?:\s+(?:called|named)\s+(?P<name>[\w]+))?$",
+                r"^(?:build|make)\s+(?:a\s+)?render\s+(?:settings|quality)\s+(?:hda|preset)(?:\s+(?P<name>[\w]+))?$",
+                r"^karma\s+(?:quality|preset)\s+hda(?:\s+(?P<name>[\w]+))?$",
+            ],
+            parameters=["name"],
+            gate_level=GateLevel.REVIEW,
+            category="pipeline",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "import os\n"
+                            "import re\n"
+                            "import time as _time\n"
+                            "raw_name = '{name}'.strip()\n"
+                            "if not raw_name:\n"
+                            "    raw_name = 'karma_quality'\n"
+                            "hda_name = re.sub(r'[^a-z0-9_]', '_', "
+                            "raw_name.lower()).strip('_')\n"
+                            "hda_label = raw_name.replace('_', ' ').title()\n"
+                            "# Create in /stage\n"
+                            "stage = hou.node('/stage')\n"
+                            "if not stage:\n"
+                            "    stage = hou.node('/obj')\n"
+                            "subnet = stage.createNode('subnet', hda_name)\n"
+                            "indirect = subnet.indirectInputs()[0]\n"
+                            "# Karma render properties\n"
+                            "karma_props = subnet.createNode("
+                            "'karmarenderproperties', 'karma_props')\n"
+                            "karma_props.setInput(0, indirect)\n"
+                            "# Pixel samples switched by quality tier\n"
+                            "# 0=draft(16), 1=medium(64), 2=final(256)\n"
+                            "karma_props.parm('karma:global:pathtracedsamples'"
+                            ").setExpression(\n"
+                            "    'if(ch(\"../quality_tier\")==0, 16, "
+                            "if(ch(\"../quality_tier\")==1, 64, 256))',\n"
+                            "    hou.exprLanguage.Hscript)\n"
+                            "# Resolution via edit properties\n"
+                            "edit_res = subnet.createNode("
+                            "'editproperties::2.0', 'resolution')\n"
+                            "edit_res.setInput(0, karma_props)\n"
+                            "edit_res.setDisplayFlag(True)\n"
+                            "subnet.layoutChildren()\n"
+                            "subnet.moveToGoodPosition()\n"
+                            "# Create HDA\n"
+                            "otls_dir = os.path.join("
+                            "hou.getenv('HIP', ''), 'otls', 'synapse')\n"
+                            "os.makedirs(otls_dir, exist_ok=True)\n"
+                            "hda_path = os.path.join(otls_dir, "
+                            "hda_name + '.hda')\n"
+                            "hda_node = subnet.createDigitalAsset(\n"
+                            "    name=hda_name,\n"
+                            "    hda_file_name=hda_path,\n"
+                            "    description=hda_label,\n"
+                            "    min_num_inputs=1,\n"
+                            "    max_num_inputs=1,\n"
+                            ")\n"
+                            "definition = hda_node.type().definition()\n"
+                            "definition.setExtraInfo(\n"
+                            "    'author=synapse;version=1.0.0;'\n"
+                            "    'created=' + _time.strftime("
+                            "'%Y-%m-%d %H:%M:%S'))\n"
+                            "# Add quality_tier menu parameter\n"
+                            "ptg = hda_node.parmTemplateGroup()\n"
+                            "quality_menu = hou.MenuParmTemplate(\n"
+                            "    'quality_tier', 'Quality Tier',\n"
+                            "    menu_items=['0', '1', '2'],\n"
+                            "    menu_labels=['Draft (16 spp)', "
+                            "'Medium (64 spp)', 'Final (256 spp)'],\n"
+                            "    default_value=0)\n"
+                            "ptg.append(quality_menu)\n"
+                            "# Promote resolution\n"
+                            "res_node = hda_node.node('resolution')\n"
+                            "if res_node:\n"
+                            "    rp = res_node.parm('primpath')\n"
+                            "    if rp:\n"
+                            "        tpl = rp.parmTemplate().clone()\n"
+                            "        tpl.setName('res_primpath')\n"
+                            "        tpl.setLabel('Render Prim')\n"
+                            "        ptg.append(tpl)\n"
+                            "hda_node.setParmTemplateGroup(ptg)\n"
+                            "# Help text\n"
+                            "help_text = ('= ' + hda_label + ' =\\n\\n'\n"
+                            "    'Karma render quality preset with three '\n"
+                            "    'tiers: Draft (16 spp), Medium (64 spp), '\n"
+                            "    'Final (256 spp).\\n\\n'\n"
+                            "    '@parameters\\n\\n'\n"
+                            "    'quality_tier:\\n'\n"
+                            "    '    Select render quality level.\\n')\n"
+                            "definition.addSection('HelpText', help_text)\n"
+                            "definition.save(hda_path, hda_node)\n"
+                            "hda_node.setSelected(True, "
+                            "clear_all_selected=True)\n"
+                            "hda_node.setDisplayFlag(True)\n"
+                            "result = {{\n"
+                            "    'node': hda_node.path(),\n"
+                            "    'hda_file': hda_path,\n"
+                            "    'hda_name': hda_name,\n"
+                            "    'hda_label': hda_label,\n"
+                            "    'definition': 'Lop/' + hda_name,\n"
+                            "}}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="karma_hda",
+                ),
+            ],
+        ))
+
         # --- VEX Debug Wrangle ---
         self.register(Recipe(
             name="vex_debug_wrangle",

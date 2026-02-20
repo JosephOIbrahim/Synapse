@@ -2254,8 +2254,44 @@ async def list_tools():
                         },
                         "description": "Parameters to promote to HDA interface",
                     },
+                    "nodes": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "type": {"type": "string", "description": "Node type to create"},
+                                "name": {"type": "string", "description": "Node name"},
+                                "parms": {"type": "object", "description": "Parameter values to set"},
+                            },
+                            "required": ["type"],
+                        },
+                        "description": "Internal nodes to create inside the subnet before HDA conversion",
+                    },
+                    "connections": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "description": (
+                            "Connections as [src_name, dst_name, dst_input_idx] triples. "
+                            "Use '__input0' for the subnet's first indirect input."
+                        ),
+                    },
                 },
                 "required": ["description", "name", "category", "save_path"],
+            },
+        ),
+        Tool(
+            name="houdini_hda_list",
+            description=(
+                "List all Synapse-authored HDAs currently loaded in Houdini. "
+                "Scans loaded HDA files and filters for definitions with "
+                "author=synapse metadata. Read-only, no scene changes."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {},
             },
         ),
     ]
@@ -2401,6 +2437,7 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "houdini_hda_promote_parm":  ("hda_promote_parm",         _identity),
     "houdini_hda_set_help":      ("hda_set_help",             _identity),
     "houdini_hda_package":       ("hda_package",              _identity),
+    "houdini_hda_list":          ("hda_list",                 _passthrough),
 }
 
 

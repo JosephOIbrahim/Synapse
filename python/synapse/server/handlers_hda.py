@@ -358,6 +358,8 @@ class HdaHandlerMixin:
         save_path = resolve_param(payload, "save_path")
         inputs = resolve_param_with_default(payload, "inputs", None) or []
         promoted_parms = resolve_param_with_default(payload, "promoted_parms", None) or []
+        nodes = resolve_param_with_default(payload, "nodes", None) or []
+        connections = resolve_param_with_default(payload, "connections", None) or []
 
         # Validate category
         if category not in _VALID_CATEGORIES:
@@ -398,6 +400,60 @@ class HdaHandlerMixin:
                     else:
                         subnet = parent_node.createNode("subnet", name)
                         container = None
+
+                    # Step 1b: Build internal network from nodes spec
+                    created_nodes = {}
+                    for node_spec in nodes:
+                        node_type = node_spec.get("type", "")
+                        node_name = node_spec.get("name", "")
+                        node_parms = node_spec.get("parms", {})
+                        if not node_type:
+                            continue
+                        try:
+                            internal = subnet.createNode(node_type, node_name or None)
+                            if internal is None:
+                                raise ValueError(
+                                    f"Couldn't create node of type '{node_type}' -- "
+                                    "check that this node type exists in the current context"
+                                )
+                            for pk, pv in node_parms.items():
+                                p = internal.parm(pk)
+                                if p is not None:
+                                    p.set(pv)
+                            created_nodes[internal.name()] = internal
+                        except hou.OperationFailed as e:
+                            raise ValueError(
+                                f"Couldn't create node of type '{node_type}' -- {e}"
+                            )
+
+                    # Step 1c: Wire connections
+                    for conn in connections:
+                        if len(conn) < 3:
+                            continue
+                        src_name, dst_name, dst_input = conn[0], conn[1], int(conn[2])
+                        if src_name.startswith("__input"):
+                            idx = int(src_name.replace("__input", ""))
+                            indirect = subnet.indirectInputs()
+                            if idx < len(indirect):
+                                src_node = indirect[idx]
+                            else:
+                                continue
+                        else:
+                            src_node = created_nodes.get(src_name)
+                        dst_node = created_nodes.get(dst_name)
+                        if src_node is not None and dst_node is not None:
+                            dst_node.setInput(dst_input, src_node)
+
+                    # Set flags on last created node
+                    if created_nodes:
+                        last_node = list(created_nodes.values())[-1]
+                        try:
+                            last_node.setDisplayFlag(True)
+                            last_node.setRenderFlag(True)
+                        except AttributeError:
+                            pass  # Not all contexts support render flag
+
+                    subnet.layoutChildren()
 
                     # Configure inputs
                     num_inputs = len(inputs) if inputs else 1
@@ -489,6 +545,38 @@ class HdaHandlerMixin:
                             "HelpText", "\n".join(help_lines)
                         )
 
+                    # Step 5: Validation
+                    warnings = []
+
+                    # Force cook and capture errors
+                    try:
+                        hda_node.cook(force=True)
+                    except Exception as cook_exc:
+                        warnings.append(f"Cook warning: {cook_exc}")
+
+                    # Verify promoted parm references
+                    if promoted_parms and definition is not None:
+                        for parm_spec in promoted_parms:
+                            node_name_val = parm_spec.get("node", "")
+                            parm_name_val = parm_spec.get("parm", "")
+                            if not node_name_val:
+                                continue
+                            # Check internal node exists
+                            ref_node = hda_node.node(node_name_val)
+                            if ref_node is None:
+                                warnings.append(
+                                    f"Promoted parm references '{node_name_val}' "
+                                    "but that node doesn't exist inside the HDA"
+                                )
+                            elif parm_name_val:
+                                ref_parm = ref_node.parm(parm_name_val)
+                                if ref_parm is None:
+                                    warnings.append(
+                                        f"Promoted parm references '{parm_name_val}' "
+                                        f"on '{node_name_val}' but that parameter "
+                                        "doesn't exist"
+                                    )
+
                     # Clean up temp container if we created one
                     if container is not None:
                         # The HDA node is now inside the container;
@@ -511,7 +599,62 @@ class HdaHandlerMixin:
                 "hda_path": hda_node.path(),
                 "operator_type": f"{category}/{name}",
                 "promoted_count": promoted_count,
+                "node_count": len(created_nodes),
                 "save_path": save_path,
+                "warnings": warnings,
             }
 
         return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+
+    def _handle_hda_list(self, payload: Dict) -> Dict:
+        """List all Synapse-authored HDAs currently loaded in Houdini.
+
+        Scans hou.hda.loadedFiles() and filters for HDAs with
+        'author=synapse' in their extraInfo. Read-only, no scene mutation.
+
+        Payload:
+            (no required parameters)
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        from .main_thread import run_on_main
+
+        def _on_main():
+            results = []
+            for hda_file in hou.hda.loadedFiles():
+                try:
+                    definitions = hou.hda.definitionsInFile(hda_file)
+                except Exception:
+                    continue
+                for defn in definitions:
+                    extra = ""
+                    try:
+                        extra = defn.extraInfo() or ""
+                    except Exception:
+                        continue
+                    if "author=synapse" not in extra:
+                        continue
+                    # Parse metadata from extraInfo
+                    meta = {}
+                    for part in extra.split(";"):
+                        if "=" in part:
+                            k, v = part.split("=", 1)
+                            meta[k.strip()] = v.strip()
+                    entry = {
+                        "name": defn.nodeTypeName(),
+                        "label": defn.description(),
+                        "version": meta.get("version", ""),
+                        "category": defn.nodeTypeCategory().name()
+                                    if defn.nodeTypeCategory() else "",
+                        "file_path": hda_file,
+                        "created": meta.get("created", ""),
+                    }
+                    results.append(entry)
+            return {
+                "status": "ok",
+                "hdas": sorted(results, key=lambda x: x["name"]),
+                "count": len(results),
+            }
+
+        return run_on_main(_on_main)

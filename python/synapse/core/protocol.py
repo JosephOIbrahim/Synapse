@@ -106,6 +106,7 @@ class CommandType(Enum):
     HDA_PROMOTE_PARM = "hda_promote_parm"
     HDA_SET_HELP = "hda_set_help"
     HDA_PACKAGE = "hda_package"
+    HDA_LIST = "hda_list"
 
     # Undo / Redo
     UNDO = "undo"

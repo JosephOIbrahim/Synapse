@@ -29,6 +29,7 @@ if "hou" not in sys.modules:
     _hou.scriptLanguage.Python = "Python"
     _hou.FolderParmTemplate = MagicMock()
     _hou.Keyframe = MagicMock
+    _hou.OperationFailed = type("OperationFailed", (Exception,), {})
     sys.modules["hou"] = _hou
 else:
     _hou = sys.modules["hou"]
@@ -95,6 +96,8 @@ if not hasattr(_handlers_hou, "scriptLanguage"):
     _handlers_hou.scriptLanguage.Python = "Python"
 if not hasattr(_handlers_hou, "FolderParmTemplate"):
     _handlers_hou.FolderParmTemplate = MagicMock()
+if not hasattr(_handlers_hou, "OperationFailed"):
+    _handlers_hou.OperationFailed = type("OperationFailed", (Exception,), {})
 
 
 # ---------------------------------------------------------------------------
@@ -479,17 +482,334 @@ class TestHdaPackage:
 # Tests: registration
 # ---------------------------------------------------------------------------
 
+class TestHdaPackageNodes:
+    """Tests for hda_package with nodes and connections spec."""
+
+    def _make_package_mocks(self):
+        """Set up parent/container/subnet/hda mocks for package tests."""
+        parent_node = MagicMock()
+        container = MagicMock()
+        subnet = MagicMock()
+
+        parent_node.createNode.return_value = container
+        container.createNode.return_value = subnet
+
+        # Internal nodes created inside subnet
+        created_internal = {}
+
+        def _subnet_create_node(node_type, node_name=None):
+            node = MagicMock()
+            actual_name = node_name or node_type
+            node.name.return_value = actual_name
+            node.path.return_value = f"/obj/temp_test/{actual_name}"
+            node.parm.return_value = MagicMock()
+            created_internal[actual_name] = node
+            return node
+
+        subnet.createNode.side_effect = _subnet_create_node
+        subnet.indirectInputs.return_value = [MagicMock()]
+
+        # HDA node
+        hda_node = MagicMock()
+        hda_node.path.return_value = "/obj/temp_test/test_tool"
+        definition = MagicMock()
+        node_type = MagicMock()
+        node_type.definition.return_value = definition
+        hda_node.type.return_value = node_type
+        subnet.createDigitalAsset.return_value = hda_node
+
+        ptg = MagicMock()
+        ptg.find.return_value = None
+        definition.parmTemplateGroup.return_value = ptg
+
+        # hda_node.node() looks up internal nodes by name
+        hda_node.node.side_effect = lambda n: created_internal.get(n)
+
+        return parent_node, subnet, hda_node, definition, created_internal
+
+    def test_package_creates_internal_nodes(self, handler):
+        """Nodes spec creates internal nodes inside the subnet."""
+        parent, subnet, hda_node, defn, created = self._make_package_mocks()
+
+        with patch.object(_handlers_hou, "node", return_value=parent):
+            with patch.object(_handlers_hou, "hda", create=True):
+                result = handler._handle_hda_package({
+                    "description": "Test tool",
+                    "name": "test_tool",
+                    "category": "Sop",
+                    "save_path": "/tmp/test.hda",
+                    "nodes": [
+                        {"type": "scatter", "name": "scatter1"},
+                        {"type": "null", "name": "OUT"},
+                    ],
+                })
+
+        assert result["status"] == "ok"
+        assert result["node_count"] == 2
+        # subnet.createNode called for the subnet itself + 2 internal nodes
+        assert subnet.createNode.call_count >= 2
+
+    def test_package_wires_connections(self, handler):
+        """Connections spec wires nodes including __input0 convention."""
+        parent, subnet, hda_node, defn, created = self._make_package_mocks()
+
+        with patch.object(_handlers_hou, "node", return_value=parent):
+            with patch.object(_handlers_hou, "hda", create=True):
+                result = handler._handle_hda_package({
+                    "description": "Test tool",
+                    "name": "test_tool",
+                    "category": "Sop",
+                    "save_path": "/tmp/test.hda",
+                    "nodes": [
+                        {"type": "scatter", "name": "scatter1"},
+                        {"type": "null", "name": "OUT"},
+                    ],
+                    "connections": [
+                        ["__input0", "scatter1", "0"],
+                        ["scatter1", "OUT", "0"],
+                    ],
+                })
+
+        assert result["status"] == "ok"
+        # scatter1 should have setInput called (from __input0)
+        scatter_node = created["scatter1"]
+        scatter_node.setInput.assert_called()
+        # OUT should have setInput called (from scatter1)
+        out_node = created["OUT"]
+        out_node.setInput.assert_called()
+
+    def test_package_sets_node_parms(self, handler):
+        """Nodes spec sets parameters on created nodes."""
+        parent, subnet, hda_node, defn, created = self._make_package_mocks()
+
+        with patch.object(_handlers_hou, "node", return_value=parent):
+            with patch.object(_handlers_hou, "hda", create=True):
+                result = handler._handle_hda_package({
+                    "description": "Test tool",
+                    "name": "test_tool",
+                    "category": "Sop",
+                    "save_path": "/tmp/test.hda",
+                    "nodes": [
+                        {"type": "scatter", "name": "scatter1",
+                         "parms": {"npts": 100, "seed": 42}},
+                    ],
+                })
+
+        assert result["status"] == "ok"
+        scatter_node = created["scatter1"]
+        # parm() was called for each parameter
+        scatter_node.parm.assert_any_call("npts")
+        scatter_node.parm.assert_any_call("seed")
+
+    def test_package_invalid_node_type_raises(self, handler):
+        """Invalid node type triggers rollback with coaching tone error."""
+        parent_node = MagicMock()
+        container = MagicMock()
+        subnet = MagicMock()
+
+        parent_node.createNode.return_value = container
+        container.createNode.return_value = subnet
+
+        # Make subnet.createNode return None for invalid type
+        subnet.createNode.return_value = None
+        subnet.indirectInputs.return_value = [MagicMock()]
+
+        with patch.object(_handlers_hou, "node", return_value=parent_node):
+            with pytest.raises(ValueError, match="Couldn't create node"):
+                handler._handle_hda_package({
+                    "description": "Test tool",
+                    "name": "test_tool",
+                    "category": "Sop",
+                    "save_path": "/tmp/test.hda",
+                    "nodes": [
+                        {"type": "nonexistent_type", "name": "bad_node"},
+                    ],
+                })
+
+        _handlers_hou.undos.performUndo.assert_called()
+
+    def test_package_validation_catches_cook_errors(self, handler):
+        """Cook errors are captured as warnings, not exceptions."""
+        parent, subnet, hda_node, defn, created = self._make_package_mocks()
+
+        # Make cook raise an error
+        hda_node.cook.side_effect = RuntimeError("Cook failed: missing input")
+
+        with patch.object(_handlers_hou, "node", return_value=parent):
+            with patch.object(_handlers_hou, "hda", create=True):
+                result = handler._handle_hda_package({
+                    "description": "Test tool",
+                    "name": "test_tool",
+                    "category": "Sop",
+                    "save_path": "/tmp/test.hda",
+                })
+
+        assert result["status"] == "ok"
+        assert any("Cook warning" in w for w in result["warnings"])
+
+    def test_package_validation_missing_promoted_node(self, handler):
+        """Promoted parm referencing nonexistent node produces warning."""
+        parent, subnet, hda_node, defn, created = self._make_package_mocks()
+
+        # hda_node.node returns None for missing nodes
+        hda_node.node.side_effect = lambda n: None
+
+        with patch.object(_handlers_hou, "node", return_value=parent):
+            with patch.object(_handlers_hou, "hda", create=True):
+                result = handler._handle_hda_package({
+                    "description": "Test tool",
+                    "name": "test_tool",
+                    "category": "Sop",
+                    "save_path": "/tmp/test.hda",
+                    "promoted_parms": [
+                        {"node": "ghost_node", "parm": "count"},
+                    ],
+                })
+
+        assert result["status"] == "ok"
+        assert any("ghost_node" in w for w in result["warnings"])
+
+    def test_package_validation_missing_promoted_parm(self, handler):
+        """Promoted parm referencing nonexistent parameter produces warning."""
+        parent, subnet, hda_node, defn, created = self._make_package_mocks()
+
+        # Node exists but parm returns None
+        ref_node = MagicMock()
+        ref_node.parm.return_value = None
+        hda_node.node.side_effect = lambda n: ref_node if n == "scatter1" else None
+
+        with patch.object(_handlers_hou, "node", return_value=parent):
+            with patch.object(_handlers_hou, "hda", create=True):
+                result = handler._handle_hda_package({
+                    "description": "Test tool",
+                    "name": "test_tool",
+                    "category": "Sop",
+                    "save_path": "/tmp/test.hda",
+                    "nodes": [
+                        {"type": "scatter", "name": "scatter1"},
+                    ],
+                    "promoted_parms": [
+                        {"node": "scatter1", "parm": "nonexistent_parm"},
+                    ],
+                })
+
+        assert result["status"] == "ok"
+        assert any("nonexistent_parm" in w for w in result["warnings"])
+
+    def test_package_lop_context_uses_stage(self, handler):
+        """Lop category creates subnet under /stage, not /obj."""
+        parent_node = MagicMock()
+        subnet = MagicMock()
+
+        parent_node.createNode.return_value = subnet
+
+        hda_node = MagicMock()
+        hda_node.path.return_value = "/stage/test_lop"
+        definition = MagicMock()
+        node_type = MagicMock()
+        node_type.definition.return_value = definition
+        hda_node.type.return_value = node_type
+        subnet.createDigitalAsset.return_value = hda_node
+        subnet.indirectInputs.return_value = [MagicMock()]
+
+        ptg = MagicMock()
+        ptg.find.return_value = None
+        definition.parmTemplateGroup.return_value = ptg
+
+        with patch.object(_handlers_hou, "node", return_value=parent_node):
+            with patch.object(_handlers_hou, "hda", create=True):
+                result = handler._handle_hda_package({
+                    "description": "LOP tool",
+                    "name": "test_lop",
+                    "category": "Lop",
+                    "save_path": "/tmp/test_lop.hda",
+                })
+
+        assert result["status"] == "ok"
+        # For Lop, no geo container — subnet created directly on parent
+        parent_node.createNode.assert_called_once_with("subnet", "test_lop")
+
+
+# ---------------------------------------------------------------------------
+# Tests: hda_list
+# ---------------------------------------------------------------------------
+
+class TestHdaList:
+    def test_hda_list_finds_synapse_hdas(self, handler):
+        """hda_list returns HDAs with author=synapse in extraInfo."""
+        # Mock hou.hda.loadedFiles and definitionsInFile
+        synapse_defn = MagicMock()
+        synapse_defn.extraInfo.return_value = (
+            "author=synapse;version=1.0.0;created=2026-01-15 10:30:00"
+        )
+        synapse_defn.nodeTypeName.return_value = "scatter_tool"
+        synapse_defn.description.return_value = "Scatter Tool"
+        cat = MagicMock()
+        cat.name.return_value = "Sop"
+        synapse_defn.nodeTypeCategory.return_value = cat
+
+        with patch.object(_handlers_hou, "hda", create=True) as mock_hda:
+            mock_hda.loadedFiles.return_value = ["/tmp/scatter_tool.hda"]
+            mock_hda.definitionsInFile.return_value = [synapse_defn]
+            result = handler._handle_hda_list({})
+
+        assert result["status"] == "ok"
+        assert result["count"] == 1
+        assert result["hdas"][0]["name"] == "scatter_tool"
+        assert result["hdas"][0]["version"] == "1.0.0"
+        assert result["hdas"][0]["category"] == "Sop"
+
+    def test_hda_list_excludes_non_synapse(self, handler):
+        """hda_list skips HDAs without author=synapse."""
+        other_defn = MagicMock()
+        other_defn.extraInfo.return_value = "author=sidefx;version=1.0"
+
+        synapse_defn = MagicMock()
+        synapse_defn.extraInfo.return_value = "author=synapse;version=2.0.0"
+        synapse_defn.nodeTypeName.return_value = "my_tool"
+        synapse_defn.description.return_value = "My Tool"
+        cat = MagicMock()
+        cat.name.return_value = "Sop"
+        synapse_defn.nodeTypeCategory.return_value = cat
+
+        with patch.object(_handlers_hou, "hda", create=True) as mock_hda:
+            mock_hda.loadedFiles.return_value = ["/tmp/a.hda", "/tmp/b.hda"]
+            mock_hda.definitionsInFile.side_effect = [
+                [other_defn],
+                [synapse_defn],
+            ]
+            result = handler._handle_hda_list({})
+
+        assert result["count"] == 1
+        assert result["hdas"][0]["name"] == "my_tool"
+
+    def test_hda_list_empty_scene(self, handler):
+        """hda_list returns empty list when no HDAs are loaded."""
+        with patch.object(_handlers_hou, "hda", create=True) as mock_hda:
+            mock_hda.loadedFiles.return_value = []
+            result = handler._handle_hda_list({})
+
+        assert result["status"] == "ok"
+        assert result["count"] == 0
+        assert result["hdas"] == []
+
+
+# ---------------------------------------------------------------------------
+# Tests: registration
+# ---------------------------------------------------------------------------
+
 class TestHdaRegistration:
     def test_hda_registered_in_handlers(self, handler):
-        """Verify all 4 HDA handlers are in the registry."""
+        """Verify all 5 HDA handlers are in the registry."""
         registered = handler._registry.registered_types
         assert "hda_create" in registered
         assert "hda_promote_parm" in registered
         assert "hda_set_help" in registered
         assert "hda_package" in registered
+        assert "hda_list" in registered
 
     def test_hda_mcp_tools_listed(self):
-        """Verify all 4 HDA tools appear in the MCP tool registry."""
+        """Verify all 5 HDA tools appear in the MCP tool registry."""
         # Import mcp/tools.py to check tool definitions
         tools_path = Path(__file__).resolve().parent.parent / "python" / "synapse" / "mcp" / "tools.py"
 
@@ -507,6 +827,10 @@ class TestHdaRegistration:
             mod = importlib.util.module_from_spec(spec)
             sys.modules["synapse.mcp.tools"] = mod
             spec.loader.exec_module(mod)
+        else:
+            # Reload to pick up new tool
+            mod = sys.modules["synapse.mcp.tools"]
+            importlib.reload(mod)
 
         tools_mod = sys.modules["synapse.mcp.tools"]
         tool_names = tools_mod.get_tool_names()
@@ -515,9 +839,11 @@ class TestHdaRegistration:
         assert "houdini_hda_promote_parm" in tool_names
         assert "houdini_hda_set_help" in tool_names
         assert "houdini_hda_package" in tool_names
+        assert "houdini_hda_list" in tool_names
 
         # Verify dispatch entries exist too
         assert tools_mod.has_tool("houdini_hda_create")
         assert tools_mod.has_tool("houdini_hda_promote_parm")
         assert tools_mod.has_tool("houdini_hda_set_help")
         assert tools_mod.has_tool("houdini_hda_package")
+        assert tools_mod.has_tool("houdini_hda_list")

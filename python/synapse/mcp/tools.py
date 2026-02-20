@@ -825,8 +825,21 @@ _TOOL_DEFS: list[tuple] = [
          "inputs": {"type": "array", "items": {"type": "string"}, "description": "Input descriptions"},
          "promoted_parms": {"type": "array", "items": {"type": "object"},
                            "description": "List of {node, parm, label} dicts"},
+         "nodes": {"type": "array", "items": {"type": "object", "properties": {
+             "type": {"type": "string", "description": "Node type to create"},
+             "name": {"type": "string", "description": "Node name"},
+             "parms": {"type": "object", "description": "Parameter values to set"},
+         }, "required": ["type"]}, "description": "Internal nodes to create before HDA conversion"},
+         "connections": {"type": "array", "items": {"type": "array", "items": {"type": "string"}},
+             "description": "Connection triples: [src_name, dst_name, dst_input_idx]. Use __input0 for subnet input"},
      }, "required": ["description", "name", "category", "save_path"]},
      False, True, False),
+
+    ("houdini_hda_list", "hda_list", _passthrough,
+     "List all Synapse-authored HDAs currently loaded in Houdini. "
+     "Scans loaded HDA files for definitions with author=synapse metadata.",
+     {"type": "object", "properties": {}},
+     True, False, False),
 
     # -- Undo / Redo --
     ("houdini_undo", "undo", _passthrough,
