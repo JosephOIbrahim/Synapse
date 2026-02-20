@@ -6,7 +6,7 @@
 """
 Synapse AI Co-Pilot — Houdini Python Panel
 
-PySide2 panel providing:
+PySide6/PySide2 panel providing:
   - Title bar with branding
   - Status indicator with animated dot
   - Tool grid (Inspect Selection, Inspect Scene, Last Result, Health Check, Project Setup)
@@ -15,10 +15,12 @@ PySide2 panel providing:
 """
 
 import hou
+import gc
 import json
 import time
 import os
 import sys
+import threading
 
 
 # ── Bootstrap Design System imports ───────────────────────
@@ -44,15 +46,42 @@ except ImportError:
     _HAS_DESIGN = False
 
 
-from PySide2 import QtWidgets, QtCore, QtGui
+try:
+    from PySide6 import QtWidgets, QtCore, QtGui
+except ImportError:
+    from PySide2 import QtWidgets, QtCore, QtGui
 
 
 # ── Constants ─────────────────────────────────────────────
 
-_VERSION = "1.0.0"
+_VERSION = "5.5.0"
 _STATUS_DOT = "\u25CF"  # Filled circle
 _STATUS_DOT_EMPTY = "\u25CB"  # Empty circle
 _ACTIVITY_MAX_LINES = 200
+
+_PORT = int(os.environ.get("SYNAPSE_PORT", "9999"))
+_PATH = os.environ.get("SYNAPSE_PATH", "/synapse")
+_WS_URL = "ws://localhost:{}{}".format(_PORT, _PATH)
+_HEALTH_POLL_MS = 3000  # Check server health every 3 seconds
+
+
+# ── Server Singleton ─────────────────────────────────────
+
+def _find_running_server():
+    """Find an existing SynapseServer instance via gc (handles zombie servers)."""
+    for obj in gc.get_objects():
+        if type(obj).__name__ == "SynapseServer" and getattr(obj, "_running", False):
+            return obj
+    return None
+
+
+def _get_server_module():
+    """Import SynapseServer lazily to avoid import-time issues."""
+    try:
+        from synapse.server.websocket import SynapseServer
+        return SynapseServer
+    except ImportError:
+        return None
 
 
 # ── Status Dot Animation ─────────────────────────────────
@@ -104,6 +133,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self.setMinimumHeight(PANEL_MIN_HEIGHT if _HAS_DESIGN else 400)
 
         self._status = "disconnected"
+        self._server = None
         self._dot_animator = StatusDotAnimator(self)
         self._dot_animator.color_changed.connect(self._on_dot_color)
 
@@ -112,8 +142,22 @@ class SynapsePanel(QtWidgets.QWidget):
         if _HAS_DESIGN:
             self.setStyleSheet(generate_stylesheet())
 
-        # Start with disconnected state
-        self._set_status("idle")
+        # Health poll timer -- checks if server is actually listening
+        self._health_timer = QtCore.QTimer(self)
+        self._health_timer.setInterval(_HEALTH_POLL_MS)
+        self._health_timer.timeout.connect(self._poll_server_health)
+
+        # Check for an already-running server (e.g. from a previous panel instance)
+        existing = _find_running_server()
+        if existing:
+            self._server = existing
+            port = getattr(existing, "_actual_port", _PORT)
+            self._set_status("connected", "port {}".format(port))
+            self._log_activity("Found running server on port {}".format(port), "success")
+            self._health_timer.start()
+        else:
+            self._set_status("disconnected")
+            self._log_activity("Server not running -- click Connect to start", "info")
 
     def _build_ui(self):
         """Construct the panel layout."""
@@ -200,6 +244,7 @@ class SynapsePanel(QtWidgets.QWidget):
 
         tools = [
             ("Project\nSetup", "Initialize project memory", self._on_project_setup),
+            ("RAG\nFolder", "Set RAG knowledge folder", self._on_rag_folder),
             ("Inspect\nSelection", "Analyze selected nodes", self._on_inspect_selection),
             ("Inspect\nScene", "Analyze full scene", self._on_inspect_scene),
             ("Health\nCheck", "Run scene check", self._on_health_check),
@@ -256,9 +301,11 @@ class SynapsePanel(QtWidgets.QWidget):
 
         layout.addStretch()
 
-        self._port_label = QtWidgets.QLabel("port 9999")
-        self._port_label.setObjectName("port_label")
-        layout.addWidget(self._port_label)
+        self._ws_path_btn = QtWidgets.QPushButton(_WS_URL)
+        self._ws_path_btn.setObjectName("ws_path_button")
+        self._ws_path_btn.setToolTip("Copy WebSocket URL to clipboard")
+        self._ws_path_btn.clicked.connect(self._on_copy_ws_path)
+        layout.addWidget(self._ws_path_btn)
 
         return frame
 
@@ -295,6 +342,37 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_dot_color(self, color):
         """Handle animated dot color change."""
         self._dot_label.setStyleSheet(f"color: {color};")
+
+    # ── WS Path Copy ─────────────────────────────────────
+
+    def _on_copy_ws_path(self):
+        """Copy the WebSocket URL to clipboard."""
+        if self._copy_text(_WS_URL):
+            self._log_activity("Copied: {}".format(_WS_URL), "success")
+        else:
+            self._log_activity("Couldn't copy WS path to clipboard", "error")
+
+    @staticmethod
+    def _copy_text(text):
+        """Copy text to clipboard via clip.exe (Windows) or Qt fallback."""
+        import platform, subprocess
+        if platform.system() == "Windows":
+            try:
+                p = subprocess.run(
+                    ["clip"], input=text.encode("utf-8"),
+                    creationflags=0x08000000, timeout=5,
+                )
+                return p.returncode == 0
+            except Exception:
+                pass
+        try:
+            app = QtWidgets.QApplication.instance() or QtGui.QGuiApplication.instance()
+            if app:
+                app.clipboard().setText(text)
+                return True
+        except Exception:
+            pass
+        return False
 
     # ── Activity Log ─────────────────────────────────────
 
@@ -345,6 +423,21 @@ class SynapsePanel(QtWidgets.QWidget):
             self._log_activity(f"Project setup hit a snag: {e}", "error")
             self._set_status("warning", str(e)[:40])
 
+    def _on_rag_folder(self):
+        """Set RAG knowledge folder via shelf callback."""
+        self._log_activity("Opening RAG folder picker...", "action")
+        try:
+            import synapse_shelf
+            synapse_shelf.rag_folder()
+            import os
+            rag = os.environ.get("SYNAPSE_RAG_ROOT", "")
+            if rag:
+                self._log_activity("RAG folder: {}".format(rag), "success")
+            else:
+                self._log_activity("RAG folder cleared", "info")
+        except Exception as e:
+            self._log_activity("RAG folder setup: {}".format(e), "error")
+
     def _on_inspect_selection(self):
         """Run inspect selection via shelf callback."""
         self._log_activity("Inspecting selection...", "action")
@@ -389,13 +482,87 @@ class SynapsePanel(QtWidgets.QWidget):
             self._set_status("warning", str(e)[:40])
 
     def _on_connect_toggle(self):
-        """Toggle connection state."""
-        if self._status in ("connected", "idle", "executing"):
-            self._set_status("disconnected")
-            self._log_activity("Disconnected from Synapse", "warning")
+        """Start or stop the WebSocket server."""
+        if self._server and getattr(self._server, "_running", False):
+            # Stop the server
+            self._stop_server()
         else:
-            self._set_status("idle")
-            self._log_activity("Connected to Synapse", "success")
+            # Start the server
+            self._start_server()
+
+    def _start_server(self):
+        """Start the Synapse WebSocket server."""
+        # Check for zombie server first
+        existing = _find_running_server()
+        if existing:
+            self._server = existing
+            port = getattr(existing, "_actual_port", _PORT)
+            self._set_status("connected", "port {}".format(port))
+            self._log_activity("Found running server on port {}".format(port), "success")
+            self._health_timer.start()
+            return
+
+        SynapseServer = _get_server_module()
+        if SynapseServer is None:
+            self._log_activity(
+                "Couldn't import SynapseServer -- is the synapse package installed?",
+                "error",
+            )
+            self._set_status("error", "import failed")
+            return
+
+        self._log_activity("Starting server...", "action")
+        self._set_status("executing", "Starting")
+
+        try:
+            self._server = SynapseServer(host="localhost", port=_PORT)
+            self._server.start()
+        except Exception as e:
+            self._log_activity("Server failed to start: {}".format(e), "error")
+            self._set_status("error", str(e)[:40])
+            self._server = None
+            return
+
+        # Give the background thread a moment to bind
+        port = getattr(self._server, "_actual_port", _PORT)
+        self._set_status("connected", "port {}".format(port))
+        self._log_activity(
+            "Server listening on port {}".format(port), "success"
+        )
+        self._health_timer.start()
+
+    def _stop_server(self):
+        """Stop the Synapse WebSocket server."""
+        self._health_timer.stop()
+        if self._server:
+            self._log_activity("Stopping server...", "action")
+            try:
+                self._server.stop()
+            except Exception as e:
+                self._log_activity("Stop error: {}".format(e), "warning")
+            self._server = None
+        self._set_status("disconnected")
+        self._log_activity("Server stopped", "warning")
+
+    def _poll_server_health(self):
+        """Periodic check that the server is still running."""
+        if self._server and getattr(self._server, "_running", False):
+            # Server is alive
+            if self._status not in ("connected", "idle", "executing"):
+                port = getattr(self._server, "_actual_port", _PORT)
+                self._set_status("connected", "port {}".format(port))
+            clients = len(getattr(self._server, "_clients", set()))
+            if clients:
+                self._status_detail.setText(
+                    "{} client{}".format(clients, "s" if clients != 1 else "")
+                )
+        else:
+            # Server died unexpectedly
+            if self._status in ("connected", "idle", "executing"):
+                self._log_activity("Server stopped unexpectedly", "error")
+                self._set_status("disconnected")
+                self._server = None
+                self._health_timer.stop()
 
 
 # ── Houdini Python Panel Interface ───────────────────────
