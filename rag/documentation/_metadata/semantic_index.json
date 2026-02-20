@@ -2765,5 +2765,29 @@
     "keywords": ["husk", "command line render", "headless render", "batch render", "husk cli", "standalone render", "husk flags", "iconvert"],
     "reference_file": "rag_render_husk_cli",
     "summary": "husk CLI rendering: flags, frame tokens, EXR output, iconvert preview pipeline"
+  },
+  "solaris_instancing": {
+    "description": "Point Instancer setup in Solaris: prototype configuration, SOP-to-instancer workflow, RBD-to-instancer pipeline, light instancing (reference mode for Karma), variant instancing workaround (Duplicate + Set Variant), Retime Instancer for animated prototypes, SOP attribute mapping (Cd -> inputs:color, primvars array indexing), instanceable flag via Configure Primitive, Karma XPU nesting limits.",
+    "keywords": ["instancer", "point instancer", "instance", "prototype", "scatter", "RBD instance", "light instance", "retime", "copy to points lop", "instanceable", "instanceable flag", "prototype index", "protoIndices", "instance positions", "instance orientations", "scatter and align", "instancer lop", "light instancing", "reference mode", "RBD to instance", "prototype paths", "instance transform", "Cd to color", "primvar mapping", "retime instancer", "animated prototype", "variant instancing", "instance id", "random instance", "scatter density", "pscale instance", "configure primitive instanceable", "nested instancer", "instance material", "per-instance override", "point instancer karma"],
+    "reference_file": "solaris_instancing",
+    "summary": "Solaris instancing: Point Instancer setup, SOP/RBD workflows, light instancing, variant workaround, animated prototypes, instanceable flag"
+  },
+  "solaris_variants": {
+    "description": "USD variant creation and selection in Solaris: Add Variant LOP (Begin/End block), Set Variant LOP, variant naming, clean variant setup via chained Grafts, LOD variants, material/look variants, variant precedence in LIVRPS, variant selection in Python, Component Output export with variants, variant composition rules.",
+    "keywords": ["variant", "variant set", "set variant", "variant lop", "switchable", "option", "toggle variant", "variant selection", "add variant", "variant block", "variant begin", "variant end", "variant graft", "base variant", "alternate variant", "variant naming", "clean variant", "lod variant", "level of detail", "look variant", "shading variant", "material variant", "geo variant", "variant default", "variant python", "variant LIVRPS", "variant strength", "graft variant", "component builder variant", "variant export", "select variant", "variant composition", "variant override"],
+    "reference_file": "solaris_variants",
+    "summary": "USD variants in Solaris: Add/Set Variant LOPs, clean Graft workflows, LOD/look patterns, LIVRPS precedence, export"
+  },
+  "solaris_vex_wrangle": {
+    "description": "LOPs Wrangle VEX patterns: setting displayColor (array syntax), xformOp translate/rotate/scale with xformOpOrder, material assignment via usd_setrelationshiptargets, texture path manipulation, cross-stage reads (op: prefix), primpath expressions ({usd_istype}, {s@info:id}), random instance orientations, array attribute editing. Fundamentally different from SOP VEX — no @P/@N/@Cd, everything via usd_setattrib/usd_getattrib.",
+    "keywords": ["lops wrangle", "lop vex", "usd wrangle", "primpath expression", "xformOp", "displayColor lop", "usd_setrelationshiptargets", "material assignment vex", "usd_addrotate", "lops attribute", "attribwrangle lop", "vex solaris", "usd vex", "xformOpOrder", "usd_addtranslate", "usd_addscale", "usd_setattrib", "usd_getattrib", "usd_istype", "primpath pattern", "usd_flattenedxform", "usd_worldtransform", "usd_localtransform", "primvar lop", "usd_setrelationship", "material binding vex", "texture path vex", "op: prefix", "cross-stage read", "usd_addrotateXYZ", "wrangle collection", "lop attribute wrangle", "solaris wrangle node", "edit properties vex"],
+    "reference_file": "solaris_vex_wrangle",
+    "summary": "LOPs VEX wrangle: displayColor arrays, xformOps, material binding, cross-stage reads, primpath selectors, USD attribute functions"
+  },
+  "solaris_caching_layers": {
+    "description": "Solaris caching and layer management: layer concepts (active layer, layer stack, layer break), save path configuration, Cache LOP file caching, USD ROP per-frame export, Value Clip LOP for animated sequences, Geometry Clip Sequence (H21), VDB sequence looping, UsdConfigure SOP static/dynamic optimization (170MB->30MB), UsdStitch/UsdStitchClips CLI, layered cache strategy (static + animation separation), Scene Graph debugging (blue=static, green=dynamic), flatten and prune, layer muting.",
+    "keywords": ["layer", "cache", "value clip", "geometry clip sequence", "usd stitch", "optimize cache", "static attribute", "usd configure", "layer save path", "vdb loop", "inspect layer", "scene graph layers", "cache lop", "layer break", "save layer", "flatten layer", "configure layer", "active layer", "layer stack", "usd rop cache", "per-frame export", "static vs dynamic", "deformation cache", "animation cache", "geometry cache solaris", "vdb sequence", "value clip lop", "clip manifest", "usd stitch clips", "file cache lop", "scene graph details", "blue static", "green dynamic", "inspect active layer", "layer muting", "mute layer", "prune", "anonymous layer"],
+    "reference_file": "solaris_caching_layers",
+    "summary": "Solaris caching/layers: layer stack management, Value Clips, Geometry Clip Sequences, static/dynamic optimization, scene graph debugging"
   }
 }
