@@ -5,6 +5,8 @@ GPU benchmarks, memory estimation, optimization patterns for Copernicus OpenCL p
 ## RTX 4090 Benchmark Reference
 
 ```
+Benchmarks at square texture resolutions (1024^2, 2048^2, 4096^2):
+
 Operation                      | 1K      | 2K      | 4K
 -------------------------------|---------|---------|--------
 Simple color math (per-pixel)  | <1ms    | <1ms    | 2ms
@@ -37,11 +39,16 @@ Bytes per channel:
   16-bit half: 2 bytes
   32-bit float: 4 bytes (default)
 
-Examples at 32-bit float:
+Examples at 32-bit float (square texture resolutions):
+  Resolution:  1K = 1024x1024    2K = 2048x2048    4K = 4096x4096
+
   Mono (1ch):  1K = 4 MB    2K = 16 MB    4K = 64 MB
   UV (2ch):    1K = 8 MB    2K = 32 MB    4K = 128 MB
   RGB (3ch):   1K = 12 MB   2K = 48 MB    4K = 192 MB
   RGBA (4ch):  1K = 16 MB   2K = 64 MB    4K = 256 MB
+
+For video resolutions (non-square):
+  HD 1920x1080 RGBA: 32 MB    UHD 3840x2160 RGBA: 127 MB
 ```
 
 ### Solver Cache Memory

@@ -15,7 +15,7 @@ Block End
     iterations:      sub-steps per frame (int)
     simulate:        ON = frame-dependent, enables scrubbing/caching
     live_simulation: ON = continuous real-time playback
-    method:          "Feedback Loop" for iterative processing
+    method:          "feedback" for iterative processing (display: "Feedback Loop")
 ```
 
 ### Wiring Convention
@@ -346,10 +346,10 @@ For SYNAPSE batch processing:
 ## Memory Management
 
 ```
-Memory per cached frame:
-  1 field, 4K, 32-bit float = ~64 MB
-  3 fields, 4K, 32-bit float = ~192 MB
-  3 fields, 4K, 32-bit, 100 frames = ~19 GB
+Memory per cached frame (4K = 4096x4096 square texture):
+  1 Mono field, 4K, 32-bit float = 64 MB
+  3 Mono fields, 4K, 32-bit float = 192 MB
+  3 Mono fields, 4K, 32-bit, 100 frames = ~19 GB
 
 Solutions for large simulations:
   1. Checkpoint to disk (File COP at intervals)

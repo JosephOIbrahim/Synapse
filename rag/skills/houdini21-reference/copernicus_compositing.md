@@ -8,6 +8,11 @@ layer comp, beauty rebuild, aov comp, depth effects, motion blur 2d, glow, blur
 Copernicus is Houdini 21's GPU-accelerated compositing framework, replacing legacy COPs.
 Runs on GPU (OpenCL/Metal), OCIO-aware, ACES-ready. All code is Houdini Python.
 
+Note: This file uses `cop2net` + `cop:` prefixed node names (legacy COP2 table syntax
+inside /img context). For modern Copernicus workflows at /obj or /stage level, use
+`copnet` with bare node names (e.g., `createNode("file")` not `createNode("cop:file")`).
+See copernicus_python_api.md for the modern pattern.
+
 ## Code
 
 ```python
