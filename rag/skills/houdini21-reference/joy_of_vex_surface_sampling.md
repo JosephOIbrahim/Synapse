@@ -37,8 +37,8 @@ vector uv = chv('uv');
 
 @P = primuv(0, 'P', @ptnum, uv);
 @N = primuv(1, 'N', @ptnum, uv);
+// This code samples position and normal attributes from primitives using UV coordinates. The primuv() function interpolates attributes at a UV location on a primitive, reading @P from input 0 and @N from input 1, with the UV coordinates controlled by a channel vector parameter.
 ```
-This code samples position and normal attributes from primitives using UV coordinates. The primuv() function interpolates attributes at a UV location on a primitive, reading @P from input 0 and @N from input 1, with the UV coordinates controlled by a channel vector parameter.
 
 ### Sample Surface with primuv [[Ep8, 24:12](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=1452s)]
 ```vex
@@ -55,8 +55,8 @@ vector uv = chv('uv');
 
 @P = primuv(1, 'P', @v, uv);
 @N = primuv(1, 'N', @v, uv);
+// Uses primuv() to sample position and normal attributes from a second input geometry at specific UV coordinates. The UV coordinates are driven by a channel parameter, allowing interactive control over the sampling position on the primitive.
 ```
-Uses primuv() to sample position and normal attributes from a second input geometry at specific UV coordinates. The UV coordinates are driven by a channel parameter, allowing interactive control over the sampling position on the primitive.
 
 ### Sampling Geometry with primuv [[Ep8, 25:40](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=1540s)]
 ```vex
@@ -64,15 +64,15 @@ vector uv = chv('uv');
 
 @P = primuv(1, 'P', @u, @v);
 @N = primuv(1, 'N', @u, @v);
+// Uses primuv() to sample position and normal attributes from a second input geometry based on UV coordinates. The UV parameter is exposed as a channel reference allowing interactive control, while @u and @v intrinsic attributes specify the parametric location on the primitive.
 ```
-Uses primuv() to sample position and normal attributes from a second input geometry based on UV coordinates. The UV parameter is exposed as a channel reference allowing interactive control, while @u and @v intrinsic attributes specify the parametric location on the primitive.
 
 ### UV-based Position Lookup [[Ep8, 26:24](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=1584s)]
 ```vex
 vector uv = chv('uv');
 @P = primuv(1, 'P', 0, uv);
+// Uses a channel parameter to define a UV coordinate, then looks up the position attribute at that UV location on primitive 0 of the first input geometry. This allows interactive sampling of positions across a primitive's surface using UV coordinates.
 ```
-Uses a channel parameter to define a UV coordinate, then looks up the position attribute at that UV location on primitive 0 of the first input geometry. This allows interactive sampling of positions across a primitive's surface using UV coordinates.
 
 ### primuv sampling position and normal [[Ep8, 27:38](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=1658s)]
 ```vex
@@ -89,8 +89,8 @@ vector uv = chv('uv');
 
 vector gx = primuv(1, 'P', 0, uv);
 vector gN = primuv(1, 'N', 1, uv);
+// Retrieves a UV coordinate from a channel parameter and uses it to sample both position (P) and normal (N) attributes from a grid primitive. The primuv function samples attributes at parametric UV coordinates on a primitive surface, with the second call sampling from primitive 1.
 ```
-Retrieves a UV coordinate from a channel parameter and uses it to sample both position (P) and normal (N) attributes from a grid primitive. The primuv function samples attributes at parametric UV coordinates on a primitive surface, with the second call sampling from primitive 1.
 
 ### UV primitive attribute sampling [Needs Review] [[Ep8, 27:56](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=1676s)]
 ```vex
@@ -107,8 +107,8 @@ vector uv = chv('uv');
 
 @P = primuv(0, '', 'P', 0, uv);
 @N = primuv(0, '', 'N', 0, uv);
+// Uses primuv() to sample both position and normal attributes from a primitive using UV coordinates. The UV coordinates are controlled via a channel reference parameter, allowing interactive exploration of different UV positions on the primitive surface.
 ```
-Uses primuv() to sample both position and normal attributes from a primitive using UV coordinates. The UV coordinates are controlled via a channel reference parameter, allowing interactive exploration of different UV positions on the primitive surface.
 
 ### primuv for UV lookup [[Ep8, 29:38](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=1778s)]
 ```vex
@@ -129,8 +129,8 @@ primuv(1, 'N', 0, uv);
 vector uv = chv('uv');
 @P = primuv(1, 'P', 0, uv);
 @N = primuv(1, 'N', 0, uv);
+// The primuv() function samples attribute values from a primitive at a specific UV coordinate. It takes the input geometry index (1 = second input), attribute name to read, primitive number, and a UV vector position to sample from.
 ```
-The primuv() function samples attribute values from a primitive at a specific UV coordinate. It takes the input geometry index (1 = second input), attribute name to read, primitive number, and a UV vector position to sample from.
 
 ### Sample Surface with primuv [[Ep8, 30:58](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=1858s)]
 ```vex
@@ -151,8 +151,8 @@ uv = fit(uv, -1, 1, 0.5, 2);
 @P += {0, 3, uv.x};
 
 @P = primuv(0, 'P', 0, uv);
+// Creates circular motion by using sin/cos with @Time to generate UV coordinates, then uses primuv() to sample a position from the first input geometry. The UV coordinates are animated in a circle and remapped from [-1,1] to [0.5,2] range before sampling the primitive surface.
 ```
-Creates circular motion by using sin/cos with @Time to generate UV coordinates, then uses primuv() to sample a position from the first input geometry. The UV coordinates are animated in a circle and remapped from [-1,1] to [0.5,2] range before sampling the primitive surface.
 
 ### Circular Motion via primuv [[Ep8, 33:08](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=1988s)]
 ```vex
@@ -166,8 +166,8 @@ uv = fit(uv, -1, 1, 0, 2);
 uv *= {0.5, 0.5};
 
 @P = primuv('p', 'P', 0, uv);
+// Creates circular motion by using sine and cosine of time to generate UV coordinates, then samples a position on a primitive using primuv(). The sine/cosine values are fitted from [-1,1] to [0,2] range and scaled by 0.5 to keep the motion within primitive bounds.
 ```
-Creates circular motion by using sine and cosine of time to generate UV coordinates, then samples a position on a primitive using primuv(). The sine/cosine values are fitted from [-1,1] to [0,2] range and scaled by 0.5 to keep the motion within primitive bounds.
 
 ### Circular Motion with primuv [[Ep8, 33:12](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=1992s)]
 ```vex
@@ -404,8 +404,8 @@ v@UV += {0.5, 0.5};
 
 @P = primuv(1, 'P', @primnum, v@UV);
 @N = primuv(1, 'N', @primnum, v@UV);
+// Creates animated UV coordinates using sine and cosine of time, fits them to a normalized range centered at 0.5, then samples position and normal attributes from a reference geometry's surface using those UV coordinates. This creates points that ride along an animated path on a deforming surface.
 ```
-Creates animated UV coordinates using sine and cosine of time, fits them to a normalized range centered at 0.5, then samples position and normal attributes from a reference geometry's surface using those UV coordinates. This creates points that ride along an animated path on a deforming surface.
 
 ### Animated UV sampling on surface [Needs Review] [[Ep8, 38:04](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=2284s)]
 ```vex
@@ -419,8 +419,8 @@ UV += {0.5, 0.5};
 
 @P = primuv(1, 'P', 0, UV);
 @N = primuv(1, 'N', 0, UV);
+// Creates animated UV coordinates using sine and cosine functions driven by @Time, remaps them from -1:1 range to 0.2:0.8, offsets by 0.5 to center, then samples position and normal attributes from a surface using primuv. This allows points to ride along an animated deforming surface.
 ```
-Creates animated UV coordinates using sine and cosine functions driven by @Time, remaps them from -1:1 range to 0.2:0.8, offsets by 0.5 to center, then samples position and normal attributes from a surface using primuv. This allows points to ride along an animated deforming surface.
 
 ### Animating Point on Surface with UV [Needs Review] [[Ep8, 38:08](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=2288s)]
 ```vex
@@ -434,8 +434,8 @@ UV += {0.5, 0.5, 0};
 
 @P = primuv(1, 'P', 0, UV);
 @N = primuv(1, 'N', 0, UV);
+// Creates an animated UV coordinate using sine and cosine of time, fits the range to (0.2-0.8), offsets to center, then samples position and normal from a surface geometry at input 1 using primuv. This produces a point that rides along an animated path on the surface.
 ```
-Creates an animated UV coordinate using sine and cosine of time, fits the range to (0.2-0.8), offsets to center, then samples position and normal from a surface geometry at input 1 using primuv. This produces a point that rides along an animated path on the surface.
 
 ### Animated UV Surface Sampling [Needs Review] [[Ep8, 38:10](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=2290s)]
 ```vex
@@ -449,8 +449,8 @@ UV += (0.5, 0.5);
 
 @P = primuv(1, 'P', 0, UV);
 @N = primuv(1, 'N', 0, UV);
+// Creates animated UV coordinates using sine and cosine of @Time multiplied by 10, fits them to a range, then uses primuv() to sample position and normal attributes from input 1 at those UV coordinates. This causes a point to ride along an animated deformed surface.
 ```
-Creates animated UV coordinates using sine and cosine of @Time multiplied by 10, fits them to a range, then uses primuv() to sample position and normal attributes from input 1 at those UV coordinates. This causes a point to ride along an animated deformed surface.
 
 ### Animating Points on Surface with primuv [Needs Review] [[Ep8, 38:20](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=2300s)]
 ```vex
@@ -550,8 +550,8 @@ uv += {0.5,0.5};
 
 @P = primuv(1, 'P', 0, uv);
 @N = primuv(1, 'N', 0, uv);
+// Creates animated UV coordinates using sine and cosine functions based on a time variable, fits them to a smaller range centered at 0.5, then samples position and normal attributes from a primitive using primuv. This moves a point around on a surface by sampling different UV locations over time.
 ```
-Creates animated UV coordinates using sine and cosine functions based on a time variable, fits them to a smaller range centered at 0.5, then samples position and normal attributes from a primitive using primuv. This moves a point around on a surface by sampling different UV locations over time.
 
 ### Animated UV Sampling with Primuv [[Ep8, 39:40](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=2380s)]
 ```vex
@@ -641,8 +641,8 @@ v@v;
 @dist;
 
 @dist = xyzdist(1, @P, @primid, @uv);
+// The xyzdist function finds the minimum distance from a point to a surface geometry and outputs the primitive ID and UV coordinates of the closest point on that surface. This allows you to bridge the concept of finding the closest point on geometry with looking up attributes at that location.
 ```
-The xyzdist function finds the minimum distance from a point to a surface geometry and outputs the primitive ID and UV coordinates of the closest point on that surface. This allows you to bridge the concept of finding the closest point on geometry with looking up attributes at that location.
 
 ## primuv Sampling
 
@@ -657,8 +657,8 @@ uv *= {0.5, 0.5};
 
 @P = primuv(1, "P", 0, uv);
 @N = primuv(1, "N", 0, uv);
+// Initializes variables for distance calculations and UV-based primitive sampling. The code prepares a UV coordinate system that is fitted and scaled, then uses primuv to sample position and normal attributes from a primitive surface at the calculated UV coordinates.
 ```
-Initializes variables for distance calculations and UV-based primitive sampling. The code prepares a UV coordinate system that is fitted and scaled, then uses primuv to sample position and normal attributes from a primitive surface at the calculated UV coordinates.
 
 ## Distance Queries
 
@@ -713,8 +713,8 @@ float @dist;
 @dist = xyzdist(1, @P, @primid, @uv);
 
 @P = primuv(1, "P", @primid, @uv);
+// Uses xyzdist() to find the closest point on a surface (input 1), which returns the distance, primitive ID, and UV coordinates. Then uses primuv() to look up the actual position at those UV coordinates, effectively snapping points to the closest location on the target surface.
 ```
-Uses xyzdist() to find the closest point on a surface (input 1), which returns the distance, primitive ID, and UV coordinates. Then uses primuv() to look up the actual position at those UV coordinates, effectively snapping points to the closest location on the target surface.
 
 ### Transferring Attributes with primuv [[Ep8, 53:00](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=3180s)]
 ```vex
@@ -766,8 +766,8 @@ v@uv;
 @P = primuv(1, 'P', @prim1id, @uv);
 
 @Cd = primuv(1, 'Cd', @prim1id, @uv);
+// Uses xyzdist to find the closest primitive and UV coordinates on a grid surface from a point in space, then uses primuv to sample both the position and color attributes at that UV location. This allows a point to snap to the grid surface while also inheriting the color from that surface location.
 ```
-Uses xyzdist to find the closest primitive and UV coordinates on a grid surface from a point in space, then uses primuv to sample both the position and color attributes at that UV location. This allows a point to snap to the grid surface while also inheriting the color from that surface location.
 
 ### Reading Primitive Color with primuv [[Ep8, 54:38](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=3278s)]
 ```vex

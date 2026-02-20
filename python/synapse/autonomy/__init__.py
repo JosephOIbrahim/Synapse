@@ -28,14 +28,17 @@ from .models import (
     GateLevel,
     PreFlightCheck,
     RenderPlan,
+    RenderPrediction,
     RenderReport,
     RenderStep,
     SequenceEvaluation,
     StepStatus,
+    VerificationResult,
 )
 from .planner import RenderPlanner
 from .validator import PreFlightValidator
 from .evaluator import RenderEvaluator
+from .predictor import RenderPredictor
 from .driver import AutonomousDriver
 
 __all__ = [
@@ -46,13 +49,16 @@ __all__ = [
     "GateLevel",
     "PreFlightCheck",
     "RenderPlan",
+    "RenderPrediction",
     "RenderReport",
     "RenderStep",
     "SequenceEvaluation",
     "StepStatus",
+    "VerificationResult",
     # Core classes
     "AutonomousDriver",
     "RenderEvaluator",
     "RenderPlanner",
+    "RenderPredictor",
     "PreFlightValidator",
 ]

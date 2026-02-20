@@ -1,137 +1,310 @@
 # Pyro FX Setup Guide
 
-## SOP-Level Pyro Chain
+## Triggers
+pyro, fire, smoke, explosion, combustion, volume, pyrosolver, density, temperature,
+flame, fuel, dissipation, turbulence, disturbance, shredding, volume rendering
 
+## Context
+Pyro simulation pipeline in Houdini: source setup, solver configuration, combustion model,
+turbulence, caching, and Karma rendering. Includes the simulation guard pattern for safe
+DOP operations.
+
+## Code
+
+```python
+# Complete pyro pipeline: source -> rasterize -> solver -> cache
+import hou
+
+hou.setSimulationEnabled(False)
+try:
+    geo = hou.node("/obj/pyro_fx")
+    if not geo:
+        geo = hou.node("/obj").createNode("geo", "pyro_fx")
+
+    # Step 1: Source geometry (emission points)
+    sphere = geo.createNode("sphere", "source_shape")
+    sphere.parm("radx").set(0.5)
+
+    # Step 2: Scatter points on surface for emission
+    scatter = geo.createNode("scatter", "emission_pts")
+    scatter.setInput(0, sphere)
+    scatter.parm("npts").set(1000)
+
+    # Step 3: Set emission attributes via wrangle
+    wrangle = geo.createNode("attribwrangle", "emission_attrs")
+    wrangle.setInput(0, scatter)
+    wrangle.parm("snippet").set('''
+// Source attributes for pyro emission
+f@density = 1.0;           // smoke density
+f@temperature = 2.0;       // heat (drives buoyancy)
+f@flame = 1.0;             // visible flame
+f@fuel = 0.8;              // combustible fuel
+f@pscale = 0.05;           // REQUIRED for volume rasterize radius
+v@v = set(0, 3, 0);        // upward velocity for rising smoke
+''')
+
+    # Step 4: Convert points to volume fields
+    rasterize = geo.createNode("volumerasterizeattributes", "to_volume")
+    rasterize.setInput(0, wrangle)
+    rasterize.parm("attributes").set("density temperature flame fuel")
+
+    # Step 5: DOP network with pyro solver
+    dopnet = geo.createNode("dopnet", "pyro_sim")
+
+    smoke_obj = dopnet.createNode("smokeobject", "pyro_container")
+    smoke_obj.parm("divsize").set(0.05)            # Voxel size
+    smoke_obj.parm("initialSOP").set(rasterize.path())
+
+    solver = dopnet.createNode("pyrosolver", "solver")
+    solver.parm("timescale").set(1.0)
+    solver.parm("dissipation").set(0.1)            # Smoke fade rate
+    solver.parm("tempcooling").set(0.5)            # Flame cooling
+    solver.parm("buoyancy").set(1.0)               # Upward force
+    solver.parm("resize_padding").set(0.5)         # Container growth
+    solver.parm("enable_disturbance").set(1)
+    solver.parm("disturbance").set(0.4)            # Turbulence
+    solver.parm("shredding").set(0.2)              # High-freq breakup
+
+    source = dopnet.createNode("sopscalar", "source_field")
+    source.parm("soppath").set(rasterize.path())
+    source.parm("fieldname").set("density")
+
+    merge = dopnet.createNode("merge", "sim_merge")
+    merge.setInput(0, smoke_obj)
+    merge.setInput(1, solver)
+    merge.setInput(2, source)
+    merge.setDisplayFlag(True)
+
+    dopnet.layoutChildren()
+    geo.layoutChildren()
+    print(f"Pyro pipeline created at {geo.path()}")
+
+finally:
+    hou.setSimulationEnabled(True)
 ```
-source_geo -> scatter -> attribwrangle(emission) -> volumerasterizeattributes -> pyrosolver
-```
 
-For import to LOPs: `pyrosolver` -> `filecache` -> `sopimport` LOP
-
-## Source Setup
-
-### Scatter + Wrangle Pattern
 ```vex
-// Source wrangle — run over Points
+// Source wrangle -- emission attributes for different fire types
+// Run over Points on scatter output
+
+// --- Campfire ---
 f@density = 1.0;
 f@temperature = 2.0;
 f@flame = 1.0;
-f@pscale = 0.05;      // REQUIRED for volumerasterize
-v@v = set(0, 3, 0);   // upward velocity for rising smoke/fire
+f@fuel = 0.5;
+f@pscale = 0.03;
+v@v = set(0, 2, 0) + curlnoise(v@P * 3.0) * 0.3;  // slight turbulence
+
+// --- Explosion ---
+// f@density = 3.0;
+// f@temperature = 5.0;
+// f@flame = 2.0;
+// f@fuel = 1.5;
+// f@pscale = 0.1;
+// v@v = normalize(v@P) * 10.0;  // radial outward burst
+
+// --- Cigarette smoke ---
+// f@density = 0.3;
+// f@temperature = 0.5;
+// f@flame = 0;
+// f@pscale = 0.02;
+// v@v = set(0, 0.5, 0);  // gentle upward drift
 ```
 
-### Source from Animated Geometry
-For fire on a moving object:
-1. Use `Trail` SOP to compute `v@v` (velocity) from animated geo
-2. Scatter on surface each frame
-3. Set `f@density` and `f@temperature` in wrangle
-4. The velocity from the trail drives the flame direction
+```python
+# Pyro solver tuning presets
+import hou
 
-### Source from Curves/Lines
-For fire along wires, fuses, trails:
-1. Resample curve to even spacing
-2. Copy small spheres to curve points
-3. Use sphere points as emission source
+PYRO_PRESETS = {
+    "campfire": {
+        "dissipation": 0.05,
+        "tempcooling": 0.3,
+        "buoyancy": 0.8,
+        "disturbance": 0.3,
+        "shredding": 0.2,
+        "divsize": 0.04,
+    },
+    "explosion": {
+        "dissipation": 0.02,
+        "tempcooling": 0.1,
+        "buoyancy": 2.0,
+        "disturbance": 0.8,
+        "shredding": 0.5,
+        "divsize": 0.05,
+    },
+    "cigarette_smoke": {
+        "dissipation": 0.15,
+        "tempcooling": 0.8,
+        "buoyancy": 0.3,
+        "disturbance": 0.1,
+        "shredding": 0.05,
+        "divsize": 0.02,
+    },
+    "industrial_stack": {
+        "dissipation": 0.03,
+        "tempcooling": 0.5,
+        "buoyancy": 1.5,
+        "disturbance": 0.4,
+        "shredding": 0.15,
+        "divsize": 0.06,
+    },
+    "torch": {
+        "dissipation": 0.1,
+        "tempcooling": 0.4,
+        "buoyancy": 1.0,
+        "disturbance": 0.5,
+        "shredding": 0.3,
+        "divsize": 0.03,
+    },
+}
 
-## Volume Rasterize Setup
+def apply_pyro_preset(solver_path, preset_name):
+    """Apply a pyro preset to a solver node."""
+    solver = hou.node(solver_path)
+    if not solver:
+        print(f"Solver not found: {solver_path}")
+        return
 
-- `volumerasterizeattributes` converts point attributes to volume fields
-- Set `attributes` parm to: `density temperature flame`
-- Input must have scattered points (not raw geometry)
-- Points MUST have `@pscale` attribute for volume radius
-- `@pscale` controls emission radius: larger = softer, wider source
+    preset = PYRO_PRESETS.get(preset_name)
+    if not preset:
+        print(f"Unknown preset: {preset_name}")
+        print(f"Available: {list(PYRO_PRESETS.keys())}")
+        return
 
-## Pyro Solver Key Parameters
+    for parm_name, value in preset.items():
+        p = solver.parm(parm_name)
+        if p:
+            p.set(value)
+    print(f"Applied '{preset_name}' preset to {solver_path}")
 
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Voxel Size | `divsize` | 0.1 | Smaller = more detail, slower |
-| Time Scale | `timescale` | 1.0 | Simulation speed |
-| Dissipation | `dissipation` | 0.1 | Smoke fade rate |
-| Temperature Cooling | `tempcooling` | 0.5 | Flame cooling speed |
-| Enable Disturbance | `enable_disturbance` | 0 | Turbulence toggle |
-| Disturbance | `disturbance` | 0.5 | Turbulence strength |
-| Shredding | `shredding` | 0 | High-frequency breakup |
-| Resize Padding | `resize_padding` | 0.3 | Container growth around sim |
-| Buoyancy | `buoyancy` | 1.0 | Upward force from temperature |
-| Gas Release | `gasrelease` | 0.1 | Container expansion speed |
+apply_pyro_preset("/obj/pyro_fx/pyro_sim/solver", "campfire")
+```
 
-## Combustion Model
-
-Fire = fuel burning into heat + density:
-- `f@fuel` consumed by combustion -> produces `f@temperature` + `f@density`
-- `Burn Rate` controls how fast fuel converts
-- `Flame Lifespan` controls how long visible flame persists
-- Higher `temperature` -> stronger buoyancy -> faster rise
-
-### Tuning Fire vs Smoke
-
-| Look | Dissipation | Temp Cooling | Buoyancy | Disturbance |
-|------|-------------|-------------|----------|-------------|
-| Campfire | 0.05 | 0.3 | 0.8 | 0.3 |
-| Explosion | 0.02 | 0.1 | 2.0 | 0.8 |
-| Cigarette smoke | 0.15 | 0.8 | 0.3 | 0.1 |
-| Industrial stack | 0.03 | 0.5 | 1.5 | 0.4 |
-| Torch | 0.1 | 0.4 | 1.0 | 0.5 |
-
-## Turbulence and Detail
-
-### Disturbance (low frequency)
-- `disturbance`: overall strength (0.3-0.8 typical)
-- `dist_scale`: spatial frequency of turbulence
-- `control_field`: tie disturbance to temperature (fire breaks up more in hot areas)
-
-### Shredding (high frequency)
-- `shredding`: strength of small-scale breakup
-- Applied AFTER disturbance
-- Makes smoke look wispy and detailed
-
-### Curl noise (custom via Gas Wrangle)
-For custom turbulence:
 ```vex
-// In a Gas Wrangle DOP inside pyro solver
-vector turb = curlnoise(@P * 2.0 + @Time * 0.5);
-v@vel += turb * 0.5;
+// Custom turbulence via Gas Wrangle inside pyro solver
+// Create a Gas Wrangle DOP, wire after the solver
+vector turb = curlnoise(v@P * ch("turb_scale") + @Time * ch("turb_speed"));
+v@vel += turb * ch("turb_strength");
+
+// Temperature-driven turbulence (more breakup in hot areas)
+float temp = f@temperature;
+float turb_mult = fit(temp, 0, 2, 0.1, 1.0);
+v@vel += curlnoise(v@P * 3.0 + @Time * 0.5) * turb_mult * 0.5;
 ```
 
-## Upresing
+```python
+# Cache pyro simulation to disk
+import hou
 
-For production: simulate at low res, upres for render detail.
-1. Simulate with `divsize=0.1` for fast iteration
-2. Use `gasupres` microsolver or second pyrosolver with smaller voxels
-3. Feed low-res velocity field into high-res container
-4. High-res adds turbulence detail without re-simming
+def cache_pyro(sim_path, cache_dir="$HIP/cache/pyro"):
+    """Cache pyro sim to bgeo.sc for efficient storage."""
+    sim_node = hou.node(sim_path)
+    if not sim_node:
+        print(f"Sim node not found: {sim_path}")
+        return
 
-## Caching Strategy
+    geo = sim_node.parent()
 
-Always cache before rendering:
+    cache = geo.createNode("filecache", "pyro_cache")
+    cache.setInput(0, sim_node)
+    # .bgeo.sc = Blosc compressed, 3-5x smaller than raw for volumes
+    cache.parm("sopoutput").set(f"{cache_dir}/pyro.$F4.bgeo.sc")
+    cache.parm("trange").set(1)  # Render Frame Range
+
+    print(f"Cache node created: {cache.path()}")
+    print("Fields cached: density, temperature, flame, vel")
+    print("To cache: set frame range, then click 'Save to Disk'")
+    return cache
+
+cache_pyro("/obj/pyro_fx/pyro_sim")
 ```
-pyrosolver -> filecache(file="$HIP/cache/pyro.$F4.bgeo.sc")
+
+```python
+# Import pyro to Solaris and configure volume rendering
+import hou
+
+def import_pyro_to_solaris(cache_path, stage_path="/stage"):
+    """Import cached pyro to Solaris for Karma rendering."""
+    stage = hou.node(stage_path)
+    if not stage:
+        return
+
+    # SOP Import for pyro volumes
+    sop_import = stage.createNode("sopimport", "pyro_import")
+    sop_import.parm("soppath").set(cache_path)
+
+    # Karma volume rendering settings
+    # karmarenderproperties node for volume quality
+    render_props = stage.node("karmarenderproperties1")
+    if render_props:
+        # Volume step rate: 0.25 (fast) to 1.0 (production)
+        if render_props.parm("karma_volumesteprate"):
+            render_props.parm("karma_volumesteprate").set(0.5)  # production quality
+        # Shadow step rate can be coarser
+        if render_props.parm("karma_volumeshadowsteprate"):
+            render_props.parm("karma_volumeshadowsteprate").set(0.5)
+
+    print(f"Pyro imported to Solaris, volume step rate=0.5")
+    return sop_import
+
+import_pyro_to_solaris("/obj/pyro_fx/pyro_cache")
 ```
-- Use `.bgeo.sc` (Blosc compressed) for volumes -- 3-5x smaller than raw
-- Cache density, temperature, flame, vel fields
-- For re-render without re-sim: load from `filecache` in "Read" mode
 
-## Import to Solaris
+```python
+# Pyro source from animated geometry
+import hou
 
-Use `sopimport` LOP with `soppath` pointing to the pyrosolver or filecache node.
-Wire into scene merge.
+hou.setSimulationEnabled(False)
+try:
+    geo = hou.node("/obj/pyro_fx")
 
-## Rendering Pyro in Karma
+    # For fire on a moving object:
+    # 1. Object merge the animated geo
+    animated = geo.createNode("object_merge", "moving_obj")
+    animated.parm("objpath1").set("/obj/animated_hero")
 
-- Karma XPU renders volumes natively. No special setup needed.
-- For better quality: increase `volumesteprate` in karmarenderproperties
-- Volume step rate 0.25 (default) is fast but noisy; 0.5-1.0 for production
-- Increase max samples for volume noise convergence
-- Check that density values are reasonable (0.1-5.0 range)
+    # 2. Trail SOP computes velocity from motion
+    trail = geo.createNode("trail", "compute_vel")
+    trail.setInput(0, animated)
+    trail.parm("result").set(1)  # Compute velocity
 
-## Common Pyro Issues
+    # 3. Scatter emission points on surface
+    scatter = geo.createNode("scatter", "emit_pts")
+    scatter.setInput(0, trail)
+    scatter.parm("npts").set(500)
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Container clips simulation | Resize padding too low | Increase `resize_padding` to 0.5+ |
-| Fire disappears instantly | `tempcooling` too high | Lower to 0.2-0.3 |
-| Smoke too uniform | No disturbance/shredding | Enable both, start with 0.3 each |
-| Simulation drifts sideways | External velocity or wind | Check source velocity, wind force |
-| Voxels visible in render | `divsize` too large | Reduce to 0.03-0.05 for final |
-| Memory explosion | `divsize` too small for domain | Start coarse, refine after blocking |
+    # 4. Set pyro source attributes
+    wrangle = geo.createNode("attribwrangle", "source_attrs")
+    wrangle.setInput(0, scatter)
+    wrangle.parm("snippet").set('''
+f@density = 1.0;
+f@temperature = 2.0;
+f@flame = 1.0;
+f@pscale = 0.04;
+// v@v already inherited from trail -- drives flame direction
+''')
+
+    geo.layoutChildren()
+    print("Animated pyro source created")
+
+finally:
+    hou.setSimulationEnabled(True)
+```
+
+## Expected DOP Tree
+```
+dopnet/
+  smokeobject (divsize=0.05, initialSOP -> rasterize output)
+  pyrosolver (dissipation=0.1, buoyancy=1.0, disturbance=0.4)
+  sopscalar (source field from rasterize)
+  merge (wires: container + solver + source)
+```
+
+## Common Mistakes
+- Container clips simulation -- increase resize_padding to 0.5+
+- Fire disappears instantly -- tempcooling too high, lower to 0.2-0.3
+- Smoke too uniform -- enable disturbance (0.3) and shredding (0.2)
+- Missing @pscale on source points -- volumerasterize needs it for radius
+- divsize too small for preview -- start at 0.1, refine to 0.03-0.05 for final
+- Not caching to disk before Solaris -- re-simulates every frame on render
+- Volume step rate too low in Karma -- increase to 0.5-1.0 for production quality

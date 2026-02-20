@@ -1,602 +1,806 @@
 # CHOPs (Channel Operators) Reference
 
-## Overview
+## Triggers
 
-CHOPs = Channel Operators. Houdini's context for manipulating time-based channel data: animation curves, audio waveforms, motion capture streams, procedural signals, and constraint networks. Located at `/ch` or inside `chopnet` nodes at OBJ/SOP level.
+chops channel operators animation noise wave lag spring filter export chop wrangle vex audio spectrum
+frequency analysis motion capture mocap constraint lookat follow path camera shake procedural motion
+secondary animation jiggle trigger envelope audio reactive chinput chstart chend chrate chnum
+channelwrangle geometry chop sop to chop chop to sop export flag bake keyframes resample trim shift
 
-Each CHOP node outputs one or more **channels** — named 1D data arrays sampled at a uniform rate. Channels carry values over a time range (start/end) at a given sample rate (default: scene FPS). CHOPs can be wired together to filter, combine, blend, and export channel data back into the scene.
+## Context
 
-### When to Use CHOPs
-- **Audio-reactive animation**: Drive parameters from audio frequency/amplitude
-- **Procedural motion**: Generate noise-based, spring-based, or wave-based animation without keyframes
-- **Channel filtering**: Smooth, lag, or constrain animated parameters after keyframing
-- **Motion capture cleanup**: Import, retarget, and filter mocap data
-- **Constraint systems**: Build OBJ-level constraints (Look At, Follow Path, Blend)
-- **Real-time device input**: MIDI, OSC, joystick, mouse input
-- **Parameter export**: Override any scene parameter with CHOP-driven values
+CHOPs = Channel Operators. Time-based 1D data arrays sampled at a uniform rate. Located at `/ch`
+or inside `chopnet` nodes. Each node outputs named channels over a time range at a given sample rate.
 
-### CHOP Context Globals (VEX)
-| Variable | Type | Description |
-|----------|------|-------------|
-| `@C` | float | Current channel value at the current sample |
-| `@I` | int | Current sample index |
-| `@Time` | float | Current time (seconds) |
-| `@TimeInc` | float | Time increment between samples (1/sample_rate) |
-| `@SampleRate` | float | Sample rate of the channel |
-| `@numSamples` | int | Total number of samples in the channel |
-| `@channum` | int | Index of current channel (0-based) |
-| `@channame` | string | Name of current channel |
+## Code
 
-## Key CHOP Node Types
-
-### Generators (Create Channels)
-
-| Node | Type String | Description |
-|------|-------------|-------------|
-| Constant | `constant` | Output fixed value(s). One channel per value. Use for static offsets or base values. |
-| Noise | `noise` | Procedural noise curves. Supports Perlin, Sparse, Alligator, Simplex, etc. |
-| Wave | `wave` | Periodic waveforms: sine, square, triangle, sawtooth, pulse. |
-| Channel | `channel` | Fetch animated parameters from the scene as CHOP channels. |
-| Expression | `expression` | Evaluate Hscript expressions per sample. Each channel defined by an expression string. |
-| Pattern | `pattern` | Generate patterns: ramps, steps, random sequences. |
-| Object | `object` | Extract transform channels (tx ty tz rx ry rz sx sy sz) from OBJ nodes. |
-| Geometry | `geometry` | Read SOP point/prim/detail attributes as CHOP channels. |
-| Audio File In | `audifilein` | Load audio files (WAV, AIFF, MP3). |
-| Audio In | `audioin` | Real-time audio input from system microphone/device. |
-| MIDI In | `midiin` | Real-time MIDI input from MIDI devices. |
-| Keyboard | `keyboard` | Keyboard press events as channels. |
-| Mouse | `mouse` | Mouse position and button states. |
-
-### Filters (Modify Channels)
-
-| Node | Type String | Description |
-|------|-------------|-------------|
-| Lag | `lag` | Smooth transitions with configurable rise/fall times. Essential for easing. |
-| Spring | `spring` | Physical spring simulation — overshoot, oscillation, damping. |
-| Filter | `filter` | Low-pass, high-pass, band-pass, band-stop frequency filtering. |
-| Smooth | `smooth` | Rolling average smoothing. Good for noisy mocap data. |
-| Limit | `limit` | Clamp or loop channel values within a range. |
-| Slope | `slope` | Compute velocity (first derivative) of a channel. |
-| Speed | `speed` | Integrate velocity to get position, or differentiate position to get speed. |
-| Resample | `resample` | Change sample rate. Interpolation: linear, cubic, or no interpolation. |
-| Trim | `trim` | Trim or extend the time range of channels. |
-| Shift | `shift` | Time-shift channels forward or backward. |
-| Stretch | `stretch` | Time-stretch or compress channels (speed up / slow down). |
-| Trigger | `trigger` | Detect threshold crossings and generate attack/sustain/release envelopes. |
-| Envelope | `envelope` | Extract amplitude envelope from a signal. |
-| Trail | `trail` | Accumulate recent values into a trailing window (useful for visualization). |
-| Jiggle | `jiggle` | Add secondary jiggle motion based on velocity/acceleration. |
-
-### Combiners (Merge/Blend Channels)
-
-| Node | Type String | Description |
-|------|-------------|-------------|
-| Math | `math` | Arithmetic operations: add, subtract, multiply, fit, clamp. Multi-input. |
-| Merge | `merge` | Combine channels from multiple inputs into one output. |
-| Blend | `blend` | Weighted blend between inputs. Slider-driven crossfade. |
-| Sequence | `sequence` | Concatenate channel clips end-to-end over time. |
-| Cycle | `cycle` | Repeat channel data cyclically. |
-| Switch | `switch` | Select one input based on index (animatable). |
-| Composite | `comp` | Layer channels using blend modes (add, multiply, replace). |
-| Copy | `copy` | Duplicate and offset channels across multiple copies. |
-
-### Constraints (OBJ-Level)
-
-| Node | Type String | Description |
-|------|-------------|-------------|
-| Look At | `constraintlookat` | Aim object at a target. `aimaxis`, `upaxis`, `upvector` params. |
-| Follow Path | `constraintpath` | Move object along a curve. `position` param (0-1 along path). |
-| Object Offset | `constraintobject` | Maintain offset from a target object's transform. |
-| Blend | `constraintblend` | Blend between multiple constraint targets with weights. |
-| Points | `constraintpoints` | Constrain to SOP point positions. |
-| Surface | `constraintsurface` | Constrain to SOP surface position (uv parametric). |
-| Parent | `constraintparent` | Parent-child relationship between objects. |
-
-### Output
-
-| Node | Type String | Description |
-|------|-------------|-------------|
-| Null | `null` | Output marker. Use as export target. |
-| Export | `export` | Push channel values to scene parameters. Active flag: `export` toggle. |
-| Rename | `rename` | Rename channels. Supports wildcards: `tx ty tz` to `rx ry rz`. |
-
-## CHOP to SOP/DOP/LOP Workflows
-
-### Channel CHOP (Fetch Parameters into CHOPs)
-
-The `channel` CHOP reads animated parameters from any node and exposes them as CHOP channels for filtering.
-
-```
-channel (fetch /obj/cam1 tx ty tz) -> lag (smooth) -> export (back to cam1 or elsewhere)
-```
-
-Key parameters on `channel` CHOP:
-- `nodepath` - Node to fetch from (e.g., `/obj/cam1`)
-- `channelnames` - Space-separated parameter names: `tx ty tz rx ry rz`
-
-### Export CHOP (Push Values to Parameters)
-
-The `export` CHOP overrides scene parameters with CHOP channel values. This is the primary way to drive parameters from CHOPs.
-
-**Export method 1 — Export flag on null:**
-1. Wire your CHOP chain into a `null`
-2. Set the `export` toggle on the null (or on any CHOP)
-3. Set `exportpath` to target node
-4. Channel names must match parameter names (`tx`, `ry`, etc.)
-
-**Export method 2 — Channel reference:**
-In any parameter field, use:
-```
-chop("/ch/chopnet1/null1/tx")
-```
-or the short form:
-```
-chop("../chopnet1/filter1/tx")
-```
-
-**Export method 3 — CHOP Export SOP:**
-The `chopexport` SOP reads CHOP data and applies it as point attributes.
-
-### CHOP to SOP (Geometry from Channels)
-
-The `choptosop` node in SOPs converts CHOP channel data to point geometry:
-- Each channel becomes a point attribute
-- Each sample becomes a point
-- Useful for waveform visualization, audio-reactive geometry
-
-Parameters:
-- `choppath` - Path to CHOP node to read
-- `createaliases` - Create attribute aliases from channel names
-
-### SOP to CHOP (Geometry CHOP)
-
-The `geometry` CHOP reads SOP attributes as CHOP channels:
-- `soppath` - Path to SOP node
-- `attribscope` - Which attributes to read (`*` for all, or specific names)
-- `attribtype` - Point, Primitive, Vertex, or Detail
-
-This creates one channel per attribute component per element. For `@P` on 100 points, you get channels: `P:0:x P:0:y P:0:z P:1:x ...`
-
-### CHOP to DOP
-
-Use `dopimport` CHOP to read DOP simulation data as channels, or use channel references:
-```
-chop("/ch/chopnet1/noise1/chan1")
-```
-in DOP parameter fields for procedural driving of forces, velocities, etc.
-
-### CHOP in LOPs
-
-In Solaris/LOPs, CHOPs integrate via Python expressions or parameter references:
 ```python
-# In a Python LOP wrangle
-import hou
-val = hou.ch("/ch/chopnet1/null1/tx")
+# ── Node type strings for hou.node().createNode() ─────────────────────────────
+
+CHOP_GENERATORS = {
+    "constant":    "Output fixed value(s); one channel per value",
+    "noise":       "Procedural noise: Perlin, Sparse, Alligator, Simplex",
+    "wave":        "Periodic waveforms: sine, square, triangle, sawtooth, pulse",
+    "channel":     "Fetch animated parameters from any scene node as channels",
+    "expression":  "Evaluate Hscript expressions per sample",
+    "pattern":     "Generate ramps, steps, random sequences",
+    "object":      "Extract tx ty tz rx ry rz sx sy sz from OBJ nodes",
+    "geometry":    "Read SOP point/prim/detail attributes as channels",
+    "audiofilein": "Load audio files: WAV, AIFF, MP3",
+    "audioin":     "Real-time audio input from system microphone/device",
+    "midiin":      "Real-time MIDI input",
+    "keyboard":    "Keyboard press events as channels",
+    "mouse":       "Mouse position and button states",
+}
+
+CHOP_FILTERS = {
+    "lag":      "Smooth transitions with configurable rise/fall times",
+    "spring":   "Physical spring: overshoot, oscillation, damping",
+    "filter":   "Low-pass, high-pass, band-pass, band-stop frequency filtering",
+    "smooth":   "Rolling average — good for noisy mocap",
+    "limit":    "Clamp or loop channel values within a range",
+    "slope":    "Compute velocity (first derivative) of a channel",
+    "speed":    "Integrate velocity → position, or differentiate position → speed",
+    "resample": "Change sample rate; interpolation: linear, cubic, none",
+    "trim":     "Trim or extend the time range of channels",
+    "shift":    "Time-shift channels forward or backward",
+    "stretch":  "Time-stretch or compress channels (speed up / slow down)",
+    "trigger":  "Detect threshold crossings → attack/sustain/release envelopes",
+    "envelope": "Extract amplitude envelope from a signal",
+    "trail":    "Accumulate recent values into a trailing window",
+    "jiggle":   "Add secondary jiggle based on velocity/acceleration",
+}
+
+CHOP_COMBINERS = {
+    "math":     "Arithmetic: add, subtract, multiply, fit, clamp; multi-input",
+    "merge":    "Combine channels from multiple inputs into one output",
+    "blend":    "Weighted blend between inputs — slider-driven crossfade",
+    "sequence": "Concatenate channel clips end-to-end over time",
+    "cycle":    "Repeat channel data cyclically",
+    "switch":   "Select one input based on animatable index",
+    "comp":     "Layer channels with blend modes: add, multiply, replace",
+    "copy":     "Duplicate and offset channels across multiple copies",
+}
+
+CHOP_CONSTRAINTS = {
+    "constraintlookat":   "Aim object at a target; params: aimaxis, upaxis, upvector",
+    "constraintpath":     "Move object along a curve; param: position (0-1 along path)",
+    "constraintobject":   "Maintain offset from a target object's transform",
+    "constraintblend":    "Blend between multiple constraint targets with weights",
+    "constraintpoints":   "Constrain to SOP point positions",
+    "constraintsurface":  "Constrain to SOP surface position (uv parametric)",
+    "constraintparent":   "Parent-child relationship between objects",
+}
+
+CHOP_OUTPUT = {
+    "null":   "Output marker and export target",
+    "export": "Push channel values to scene parameters; toggle: export flag",
+    "rename": "Rename channels; supports wildcards: 'tx ty tz' → 'rx ry rz'",
+}
 ```
 
-Or via channel reference expressions on LOP parameters:
-```
-chop("/ch/chopnet1/out/intensity")
-```
-
-## Audio Workflows
-
-### Loading Audio
-
-```
-audiofilein -> null (output)
-```
-
-`audiofilein` parameters:
-- `file` - Path to audio file (WAV, AIFF, MP3)
-- `rate` - Override sample rate (typically 44100 or 48000)
-- `mono` - Convert stereo to mono
-
-### Real-Time Audio Input
-
-```
-audioin -> null
-```
-
-`audioin` parameters:
-- `rate` - Sample rate (44100 default)
-- `device` - Audio input device index
-- `seglen` - Segment length in samples
-
-### Audio Analysis Chain
-
-```
-audiofilein -> spectrum -> null
-```
-
-The `spectrum` CHOP performs FFT analysis:
-- `fftsize` - FFT window size (256, 512, 1024, 2048). Larger = better frequency resolution, worse time resolution.
-- `window` - Window function: Hanning, Hamming, Blackman, Rectangular
-- `outputformat` - Magnitude, Phase, Power, dB
-
-### Audio-to-Parameter Workflow
-
-```
-audiofilein -> filter (band-pass 80-200Hz) -> math (abs + gain) -> lag (smooth) -> export
-```
-
-1. **audiofilein**: Load the audio track
-2. **filter**: Isolate frequency band (bass=20-200Hz, mids=200-2kHz, highs=2k-20kHz)
-3. **math**: Rectify (absolute value) and scale (multiply gain)
-4. **lag**: Smooth rapid fluctuations (lagrise=0.1, lagfall=0.2)
-5. **export**: Push to parameter (e.g., light intensity, scale, displacement amplitude)
-
-### Filter CHOP Parameters
-
-| Parameter | Name | Description |
-|-----------|------|-------------|
-| Filter Type | `type` | Low Pass, High Pass, Band Pass, Band Stop |
-| Cutoff | `cutofffreq` | Cutoff frequency in Hz |
-| Bandwidth | `bandwidth` | Width for band-pass/band-stop (Hz) |
-| Order | `order` | Filter steepness (higher = sharper rolloff) |
-| Pass Type | `passtype` | Butterworth, Chebyshev, Bessel |
-
-### Spectrum-Driven Multiple Bands
-
-For multi-band audio reactivity, use parallel filter chains:
-```
-audiofilein -> filter(low-pass 200Hz)   -> math -> lag -> export (bass param)
-            -> filter(band-pass 200-2k) -> math -> lag -> export (mid param)
-            -> filter(high-pass 2kHz)   -> math -> lag -> export (treble param)
-```
-
-## Motion Analysis and Retargeting
-
-### Importing Motion Capture
-
-Motion capture data (BVH, FBX, C3D) arrives as animated channels on skeleton joints.
-
-```
-file (BVH) -> agent_bvhimport (SOP) -> geometry CHOP (extract channels)
-```
-
-Or directly in CHOPs:
-```
-fetch (from OBJ-level imported FBX skeleton) -> null
-```
-
-### Mocap Cleanup Pipeline
-
-```
-fetch (raw mocap channels) -> smooth (remove noise) -> filter (low-pass high-frequency jitter) -> lag (ease transitions) -> null (export)
-```
-
-Key parameters for cleanup:
-- `smooth` CHOP: `width` (number of samples to average), `type` (gaussian, box)
-- `filter` CHOP: `cutofffreq` (8-15 Hz removes finger jitter while preserving motion)
-- `lag` CHOP: `lagrise` / `lagfall` (seconds, typically 0.05-0.15 for subtle smoothing)
-
-### Channel Retargeting with Rename
-
-Use `rename` CHOP to map channels between different skeleton naming conventions:
-```
-rename:  source:Hip_tx  -> target:Hips_tx
-         source:Spine1  -> target:spine_01
-```
-
-Parameters:
-- `renamefrom` - Source pattern (supports wildcards: `Left*`)
-- `renameto` - Target pattern (`L_*`)
-
-### Velocity and Acceleration Analysis
-
-```
-object (track moving OBJ) -> slope (velocity) -> slope (acceleration) -> null
-```
-
-The `slope` CHOP computes the derivative. Chain two for acceleration. Useful for:
-- Detecting motion peaks for procedural effects (dust on foot plants)
-- Triggering events when velocity exceeds threshold
-- Analyzing simulation output for quality checks
-
-## Keyframe and Channel Manipulation
-
-### Fetching Keyframed Channels
-
-```
-channel -> null
-```
-
-The `channel` CHOP reads keyframed animation from any node:
-- `nodepath` - Target node path
-- `channelnames` - Whitespace-separated list of parameter names
-
-### Modifying Keyframed Animation
-
-```
-channel (fetch keys) -> math (scale or offset) -> export (override original)
-```
-
-Common Math operations on animation:
-- **Scale amplitude**: `channelop=multiply`, `gain=0.5` (halve motion)
-- **Add offset**: `channelop=add`, `value=10` (shift up by 10 units)
-- **Fit range**: `channelop=fit`, `frommin/frommax/tomin/tomax`
-- **Clamp**: `channelop=clamp`, `min/max`
-
-### Math CHOP Key Parameters
-
-| Parameter | Name | Description |
-|-----------|------|-------------|
-| Channel Op | `channelop` | Off, Add, Subtract, Multiply, Divide, Fit, Clamp, etc. |
-| Gain | `gain` | Multiplier (default 1.0) |
-| Offset | `offset` | Additive offset (default 0.0) |
-| From Range | `frommin` / `frommax` | Input range for Fit operation |
-| To Range | `tomin` / `tomax` | Output range for Fit operation |
-| Combine Inputs | `align` | How to combine multiple inputs: Extend, Trim, Match |
-| Multi-Input Op | `multop` | Add, Multiply, Average, Min, Max across inputs |
-
-### Baking CHOP to Keyframes
-
-In Python, bake CHOP values back to keyframes:
 ```python
+# ── VEX CHOP context globals ────────────────────────────────────────────────
+# Available in channelwrangle nodes (runs per sample per channel)
+
+VEX_CHOP_GLOBALS = {
+    "@C":          "float  — current channel value (read/write)",
+    "@I":          "int    — current sample index (0-based)",
+    "@Time":       "float  — current time in seconds at this sample",
+    "@TimeInc":    "float  — time increment between samples (1 / sample_rate)",
+    "@SampleRate": "float  — sample rate of the channel",
+    "@numSamples": "int    — total number of samples in the channel",
+    "@channum":    "int    — index of current channel (0-based)",
+    "@channame":   "string — name of current channel",
+}
+
+VEX_CHOP_FUNCTIONS = {
+    "chinput(input, chanidx, sample)":  "Read channel value from input by index",
+    'chinput(input, "name", sample)':   "Read channel value from input by name",
+    "chend(input)":                     "End sample of input",
+    "chstart(input)":                   "Start sample of input",
+    "chrate(input)":                    "Sample rate of input",
+    "chnum(input)":                     "Number of channels on input",
+    "chname(input, index)":             "Channel name by index",
+}
+```
+
+```python
+# ── Shared CHOP parameter names (most generator/filter nodes) ────────────────
+
+CHOP_SHARED_PARMS = {
+    "start":       "Channel start (seconds or frames depending on units)",
+    "end":         "Channel end",
+    "rate":        "Samples per second (default: scene FPS)",
+    "left":        "Extend left: Hold | Slope | Cycle | Mirror | Default",
+    "right":       "Extend right: Hold | Slope | Cycle | Mirror | Default",
+    "channelname": "Output channel name(s)",
+    "units":       "Frames | Seconds | Samples",
+}
+
+NOISE_CHOP_PARMS = {
+    "type":       "Sparse | Perlin | Original Perlin | Alligator | Simplex | Zero-Centered",
+    "amp":        "Signal amplitude",
+    "period":     "Noise period (seconds)",
+    "offset":     "Time offset for seed/phase control",
+    "rough":      "Fractal roughness (0-1)",
+    "turb":       "Number of fractal octaves",
+    "seed":       "Random seed",
+    "constraint": "None | Zero-Slope Start | Zero-Slope End | Zero-Slope Both",
+}
+
+LAG_CHOP_PARMS = {
+    "lagrise":       "Time to reach rising target (seconds)",
+    "lagfall":       "Time to reach falling target (seconds)",
+    "overshootrise": "Overshoot on rise (0=none, 1=full)",
+    "overshootfall": "Overshoot on fall",
+    "clampmin":      "Minimum output value",
+    "clampmax":      "Maximum output value",
+}
+
+SPRING_CHOP_PARMS = {
+    "springk":  "Spring stiffness (higher = snappier return)",
+    "mass":     "Object mass (higher = slower, more overshoot)",
+    "damping":  "Damping coefficient (higher = less oscillation)",
+    "initval":  "Starting value",
+}
+
+TRIGGER_CHOP_PARMS = {
+    "threshold":    "Trigger fires when input crosses this value",
+    "triggeron":    "Rising Edge | Falling Edge | Both",
+    "attack":       "Attack time (seconds)",
+    "sustain":      "Sustain length (seconds, or hold while above threshold)",
+    "release":      "Release/decay time (seconds)",
+    "attackshape":  "Linear | Ease In | Ease Out | Ease In/Out",
+    "peakvalue":    "Maximum value during attack/sustain",
+    "releaseshape": "Linear | Ease In | Ease Out | Exponential",
+}
+
+MATH_CHOP_PARMS = {
+    "channelop": "Off | Add | Subtract | Multiply | Divide | Fit | Clamp ...",
+    "gain":      "Multiplier (default 1.0)",
+    "offset":    "Additive offset (default 0.0)",
+    "frommin":   "Input range min for Fit operation",
+    "frommax":   "Input range max for Fit operation",
+    "tomin":     "Output range min for Fit operation",
+    "tomax":     "Output range max for Fit operation",
+    "align":     "Combine inputs: Extend | Trim | Match",
+    "multop":    "Multi-input op: Add | Multiply | Average | Min | Max",
+}
+
+FILTER_CHOP_PARMS = {
+    "type":       "Low Pass | High Pass | Band Pass | Band Stop",
+    "cutofffreq": "Cutoff frequency in Hz",
+    "bandwidth":  "Bandwidth for band-pass/band-stop (Hz)",
+    "order":      "Filter steepness (higher = sharper rolloff)",
+    "passtype":   "Butterworth | Chebyshev | Bessel",
+}
+```
+
+```python
+# ── Python: create a full camera-shake CHOP chain at /ch/cam_shake ───────────
 import hou
 
-chop_node = hou.node("/ch/chopnet1/null1")
-target_parm = hou.parm("/obj/geo1/tx")
+def build_camera_shake_chopnet(cam_path="/obj/cam1", amp=0.02, period=0.2):
+    """
+    noise -> lag -> export  (drives cam tx, ty)
+    amp   : shake amplitude in world units (0.02 = subtle, 0.15 = earthquake)
+    period: noise period in seconds  (0.15-0.3 = 3-8 Hz range)
+    """
+    ch_net = hou.node("/ch")
+    if ch_net is None:
+        ch_net = hou.node("/").createNode("chopnet", "ch")
 
-for sample in range(int(chop_node.sampleRange()[0]), int(chop_node.sampleRange()[1]) + 1):
-    time = chop_node.sampleToTime(sample)
-    val = chop_node.sample(time, "tx")
-    key = hou.Keyframe()
-    key.setTime(time)
-    key.setValue(val)
-    target_parm.setKeyframe(key)
+    net = ch_net.createNode("chopnet", "cam_shake")
+
+    # Noise generator — two channels for X and Y shake
+    noise = net.createNode("noise", "shake_noise")
+    noise.parm("type").set(0)          # Sparse
+    noise.parm("amp").set(amp)
+    noise.parm("period").set(period)
+    noise.parm("rough").set(0.5)
+    noise.parm("turb").set(3)
+    noise.parm("seed").set(42)
+    noise.parmTuple("channelname").set(("tx", "ty"))  # two channels
+
+    # Lag for subtle smoothing
+    lag = net.createNode("lag", "shake_lag")
+    lag.parm("lagrise").set(0.03)
+    lag.parm("lagfall").set(0.03)
+    lag.setInput(0, noise)
+
+    # Null as export target
+    out = net.createNode("null", "OUT")
+    out.setInput(0, lag)
+
+    # Enable export to camera
+    out.parm("export").set(1)
+    out.parm("exportpath").set(cam_path)
+
+    net.layoutChildren()
+    return net
 ```
 
-## Common Parameter Names in CHOPs
+```python
+# ── Python: fetch animated channels, apply lag, re-export ────────────────────
+import hou
 
-### Shared Across Most CHOPs
+def add_lag_to_animation(node_path="/obj/geo1", parms=("tx", "ty", "tz"),
+                          lag_rise=0.15, lag_fall=0.15):
+    """
+    channel (fetch keyframes) -> lag -> export (override original node)
+    Applies non-destructive lag smoothing to existing animation.
+    """
+    ch_net = hou.node("/ch")
+    if ch_net is None:
+        ch_net = hou.node("/").createNode("chopnet", "ch")
 
-| Parameter | Name | Description |
-|-----------|------|-------------|
-| Start | `start` | Channel start (seconds or frames, depends on `units`) |
-| End | `end` | Channel end |
-| Sample Rate | `rate` | Samples per second (default: scene FPS) |
-| Extend Left | `left` | Behavior before channel start: Hold, Slope, Cycle, Mirror, Default |
-| Extend Right | `right` | Behavior after channel end |
-| Channel Names | `channelname` | Output channel name(s) |
-| Units | `units` | Frames, Seconds, or Samples |
+    net = ch_net.createNode("chopnet", "lag_anim")
 
-### Noise CHOP
+    # Fetch animated parameters
+    fetch = net.createNode("channel", "fetch")
+    fetch.parm("nodepath").set(node_path)
+    fetch.parm("channelnames").set(" ".join(parms))
 
-| Parameter | Name | Description |
-|-----------|------|-------------|
-| Type | `type` | Sparse, Perlin, Original Perlin, Alligator, Simplex, Zero-Centered |
-| Amplitude | `amp` | Signal amplitude |
-| Period | `period` | Noise period (seconds) |
-| Offset | `offset` | Time offset for seed control |
-| Roughness | `rough` | Fractal roughness (0-1) |
-| Octaves | `turb` | Number of fractal octaves |
-| Seed | `seed` | Random seed |
-| Constraint | `constraint` | None, Zero-Slope Start, Zero-Slope End, Zero-Slope Both |
+    # Lag
+    lag = net.createNode("lag", "smooth_lag")
+    lag.parm("lagrise").set(lag_rise)
+    lag.parm("lagfall").set(lag_fall)
+    lag.setInput(0, fetch)
 
-### Lag CHOP
+    # Export back to source node
+    out = net.createNode("null", "OUT")
+    out.setInput(0, lag)
+    out.parm("export").set(1)
+    out.parm("exportpath").set(node_path)
 
-| Parameter | Name | Description |
-|-----------|------|-------------|
-| Lag Rise | `lagrise` | Time to reach rising target (seconds) |
-| Lag Fall | `lagfall` | Time to reach falling target (seconds) |
-| Overshoot Rise | `overshootrise` | Overshoot on rise (0=none, 1=full) |
-| Overshoot Fall | `overshootfall` | Overshoot on fall |
-| Clamp Min | `clampmin` | Minimum output value |
-| Clamp Max | `clampmax` | Maximum output value |
+    net.layoutChildren()
+    return net
+```
 
-### Spring CHOP
+```python
+# ── Python: bake CHOP output back to keyframes ───────────────────────────────
+import hou
 
-| Parameter | Name | Description |
-|-----------|------|-------------|
-| Spring Constant | `springk` | Stiffness (higher = snappier return) |
-| Mass | `mass` | Object mass (higher = slower, more overshoot) |
-| Damping | `damping` | Damping coefficient (higher = less oscillation) |
-| Initial Value | `initval` | Starting value |
+def bake_chop_to_keyframes(chop_null_path, target_parm_path, frame_start=None, frame_end=None):
+    """
+    Bakes every sample in a CHOP null to keyframes on a scene parameter.
+    chop_null_path  : e.g. "/ch/cam_shake/OUT"
+    target_parm_path: e.g. "/obj/cam1/tx"
+    """
+    chop_node = hou.node(chop_null_path)
+    target_parm = hou.parm(target_parm_path)
 
-### Trigger CHOP
+    if chop_node is None:
+        raise ValueError(f"CHOP node not found: {chop_null_path}")
+    if target_parm is None:
+        raise ValueError(f"Parameter not found: {target_parm_path}")
 
-| Parameter | Name | Description |
-|-----------|------|-------------|
-| Threshold | `threshold` | Trigger fires when input crosses this value |
-| Trigger On | `triggeron` | Rising Edge, Falling Edge, Both |
-| Attack | `attack` | Attack time (seconds) |
-| Sustain | `sustain` | Sustain length (seconds, or hold while above threshold) |
-| Release | `release` | Release/decay time (seconds) |
-| Attack Shape | `attackshape` | Linear, Ease In, Ease Out, Ease In/Out |
-| Peak Value | `peakvalue` | Maximum value during attack/sustain |
-| Release Shape | `releaseshape` | Linear, Ease In, Ease Out, Exponential |
+    # Determine channel name from the last path component of parm
+    chan_name = target_parm_path.rsplit("/", 1)[-1]
 
-## VEX in CHOPs (CHOP Wrangles)
+    sample_start = int(chop_node.sampleRange()[0])
+    sample_end   = int(chop_node.sampleRange()[1])
 
-### Channel Wrangle Node
+    if frame_start is not None:
+        sample_start = max(sample_start, int(frame_start))
+    if frame_end is not None:
+        sample_end = min(sample_end, int(frame_end))
 
-The `channelwrangle` CHOP runs VEX per sample per channel. Create via Tab menu: "Channel Wrangle".
+    target_parm.deleteAllKeyframes()
 
-Bindings:
-- `@C` - Current channel value (read/write)
-- `@I` - Sample index
-- `@Time` - Time in seconds at current sample
-- `@TimeInc` - Time step between samples
-- `@SampleRate` - Sample rate
-- `@channum` - Current channel index
-- `@channame` - Current channel name (string)
+    for sample in range(sample_start, sample_end + 1):
+        time = chop_node.sampleToTime(sample)
+        val  = chop_node.sample(time, chan_name)
+        key  = hou.Keyframe()
+        key.setTime(time)
+        key.setValue(val)
+        key.setExpression("bezier()")
+        target_parm.setKeyframe(key)
 
-### Common VEX Snippets
+    return sample_end - sample_start + 1  # number of keyframes set
+```
 
-**Scale amplitude by time:**
+```python
+# ── Python: read CHOP value at current time (for LOP/SOP Python nodes) ───────
+import hou
+
+def get_chop_value(chop_path, channel_name, time=None):
+    """
+    Read a single channel value from a CHOP at the given time.
+    Falls back to current scene time if time is None.
+    chop_path    : e.g. "/ch/cam_shake/OUT"
+    channel_name : e.g. "tx"
+    """
+    if time is None:
+        time = hou.time()
+    node = hou.node(chop_path)
+    if node is None:
+        raise ValueError(f"CHOP node not found: {chop_path}")
+    return node.sample(time, channel_name)
+
+# In a parameter expression field:
+#   chop("/ch/chopnet1/null1/tx")
+#   chop("../lag1/tx")           <- relative path form
+```
+
+```python
+# ── Python: build an audio-reactive light-exposure chain ─────────────────────
+import hou
+
+def build_audio_reactive_light(audio_file, light_path="/obj/light1",
+                                 lo_freq=80.0, hi_freq=200.0,
+                                 gain=5.0, lag_rise=0.02, lag_fall=0.1,
+                                 exp_min=2.0, exp_max=8.0):
+    """
+    audiofilein -> filter(band-pass bass) -> math(abs + gain)
+                -> lag(attack/release) -> math(fit → exposure range)
+                -> export(light exposure parm)
+
+    Network:  /ch/audio_light/
+    """
+    ch_net = hou.node("/ch")
+    if ch_net is None:
+        ch_net = hou.node("/").createNode("chopnet", "ch")
+
+    net = ch_net.createNode("chopnet", "audio_light")
+
+    # Load audio
+    audio_in = net.createNode("audiofilein", "audio")
+    audio_in.parm("file").set(audio_file)
+
+    # Band-pass filter — isolate bass frequencies
+    bp = net.createNode("filter", "bass_filter")
+    bp.parm("type").set(2)                 # Band Pass
+    bp.parm("cutofffreq").set((lo_freq + hi_freq) / 2.0)
+    bp.parm("bandwidth").set(hi_freq - lo_freq)
+    bp.parm("order").set(4)
+    bp.setInput(0, audio_in)
+
+    # Rectify (abs) and apply gain
+    rectify = net.createNode("math", "rectify")
+    rectify.parm("channelop").set("abs")
+    rectify.setInput(0, bp)
+
+    gain_node = net.createNode("math", "gain_scale")
+    gain_node.parm("channelop").set("multiply")
+    gain_node.parm("gain").set(gain)
+    gain_node.setInput(0, rectify)
+
+    # Lag for smooth attack/release envelope
+    lag = net.createNode("lag", "env_lag")
+    lag.parm("lagrise").set(lag_rise)
+    lag.parm("lagfall").set(lag_fall)
+    lag.setInput(0, gain_node)
+
+    # Fit 0-1 → exposure range
+    fit = net.createNode("math", "fit_exposure")
+    fit.parm("channelop").set("fit")
+    fit.parm("frommin").set(0.0)
+    fit.parm("frommax").set(1.0)
+    fit.parm("tomin").set(exp_min)
+    fit.parm("tomax").set(exp_max)
+    fit.setInput(0, lag)
+
+    # Rename channel to match exposure parm name
+    ren = net.createNode("rename", "to_exposure")
+    ren.parm("renamefrom").set("chan1")
+    ren.parm("renameto").set("xn__inputsexposure_vya")
+    ren.setInput(0, fit)
+
+    # Export to light node
+    out = net.createNode("null", "OUT")
+    out.setInput(0, ren)
+    out.parm("export").set(1)
+    out.parm("exportpath").set(light_path)
+
+    net.layoutChildren()
+    return net
+```
+
+```python
+# ── Python: geometry CHOP — read SOP point positions as channels ─────────────
+import hou
+
+def sop_attrib_to_chop(sop_path, attrib_name="P", attrib_type="point",
+                        net_parent_path="/ch"):
+    """
+    geometry CHOP: one channel per attribute component per element.
+    For @P on 100 points → channels: P:0:x P:0:y P:0:z P:1:x ...
+    """
+    ATTRIB_TYPES = {"point": 0, "primitive": 1, "vertex": 2, "detail": 3}
+
+    ch_net = hou.node(net_parent_path)
+    if ch_net is None:
+        ch_net = hou.node("/").createNode("chopnet", "ch")
+
+    geo_chop = ch_net.createNode("geometry", "sop_reader")
+    geo_chop.parm("soppath").set(sop_path)
+    geo_chop.parm("attribscope").set(attrib_name)
+    geo_chop.parm("attribtype").set(ATTRIB_TYPES.get(attrib_type, 0))
+
+    return geo_chop
+
+# chop_to_sop (SOP side): reads channels back as point attributes
+def chop_to_sop_example():
+    """
+    In a SOPs network, add a 'choptosop' node.
+    choppath: path to CHOP null, e.g. "/ch/analysis/OUT"
+    Each channel → a point attribute; each sample → a point.
+    Useful for waveform visualization, audio-reactive geometry.
+    """
+    obj = hou.node("/obj")
+    geo = obj.createNode("geo", "wave_geo")
+    c2s = geo.createNode("choptosop")
+    c2s.parm("choppath").set("/ch/analysis/OUT")
+    c2s.parm("createaliases").set(1)
+    return c2s
+```
+
+```python
+# ── Python: mocap cleanup pipeline ───────────────────────────────────────────
+import hou
+
+def build_mocap_cleanup(source_obj_path, smooth_width=5, cutoff_hz=12.0,
+                         lag_time=0.08):
+    """
+    fetch (raw mocap) -> smooth -> filter(low-pass) -> lag -> null(export)
+    Removes high-frequency jitter while preserving natural motion.
+    smooth_width : samples to average (3-7 typical)
+    cutoff_hz    : low-pass cutoff; 8-15 Hz removes finger jitter
+    lag_time     : subtle easing in seconds (0.05-0.15)
+    """
+    ch_net = hou.node("/ch")
+    if ch_net is None:
+        ch_net = hou.node("/").createNode("chopnet", "ch")
+
+    net = ch_net.createNode("chopnet", "mocap_cleanup")
+
+    # Fetch all transform channels from source object
+    fetch = net.createNode("channel", "raw_mocap")
+    fetch.parm("nodepath").set(source_obj_path)
+    fetch.parm("channelnames").set("tx ty tz rx ry rz")
+
+    # Rolling average — removes sample-to-sample noise
+    smooth = net.createNode("smooth", "avg_smooth")
+    smooth.parm("width").set(smooth_width)
+    smooth.parm("type").set(0)  # Gaussian
+    smooth.setInput(0, fetch)
+
+    # Low-pass filter — removes high-frequency jitter
+    lp = net.createNode("filter", "lp_filter")
+    lp.parm("type").set(0)  # Low Pass
+    lp.parm("cutofffreq").set(cutoff_hz)
+    lp.parm("order").set(4)
+    lp.setInput(0, smooth)
+
+    # Lag — subtle easing on transitions
+    lag = net.createNode("lag", "ease_lag")
+    lag.parm("lagrise").set(lag_time)
+    lag.parm("lagfall").set(lag_time)
+    lag.setInput(0, lp)
+
+    out = net.createNode("null", "OUT")
+    out.setInput(0, lag)
+    out.parm("export").set(1)
+    out.parm("exportpath").set(source_obj_path)
+
+    net.layoutChildren()
+    return net
+```
+
+```python
+# ── Python: velocity / acceleration analysis via slope CHOP ─────────────────
+import hou
+
+def build_velocity_chain(tracked_obj="/obj/ball"):
+    """
+    object -> slope(vel) -> slope(accel) -> null
+    Use peaks in acceleration to trigger secondary effects (dust, impact).
+    """
+    ch_net = hou.node("/ch")
+    if ch_net is None:
+        ch_net = hou.node("/").createNode("chopnet", "ch")
+
+    net = ch_net.createNode("chopnet", "vel_analysis")
+
+    obj_chop = net.createNode("object", "track_pos")
+    obj_chop.parm("rootobject").set(tracked_obj)
+    obj_chop.parm("xord").set("srt")
+
+    vel = net.createNode("slope", "velocity")
+    vel.setInput(0, obj_chop)
+
+    accel = net.createNode("slope", "acceleration")
+    accel.setInput(0, vel)
+
+    out = net.createNode("null", "OUT_accel")
+    out.setInput(0, accel)
+
+    net.layoutChildren()
+    return net
+```
+
+```python
+# ── Python: OBJ constraint network (lookat + blend) ──────────────────────────
+import hou
+
+def build_lookat_constraint(subject_obj="/obj/cam1", target_obj="/obj/target1",
+                             aim_axis=(0, 0, -1), up_axis=(0, 1, 0)):
+    """
+    Creates a constraint CHOP network inside subject_obj.
+    constraintlookat -> constraintblend -> null (output drives OBJ transforms)
+
+    The constraint network's output channels (rx ry rz tx ty tz) override
+    the OBJ node transforms automatically when 'Use Constraint Network' is on.
+    """
+    subj = hou.node(subject_obj)
+    if subj is None:
+        raise ValueError(f"Object not found: {subject_obj}")
+
+    # Enable constraint network on the OBJ
+    subj.parm("constraints_on").set(1)
+
+    # Find or create the constraint CHOP network
+    cnet = subj.node("constraints")
+    if cnet is None:
+        cnet = subj.createNode("chopnet", "constraints")
+
+    lookat = cnet.createNode("constraintlookat", "look_at_target")
+    lookat.parm("target").set(target_obj)
+    lookat.parm("aimaxis").set(f"{aim_axis[0]} {aim_axis[1]} {aim_axis[2]}")
+    lookat.parm("upaxis").set(f"{up_axis[0]} {up_axis[1]} {up_axis[2]}")
+
+    # Blend node (allows mixing with other constraints by weight)
+    blend = cnet.createNode("constraintblend", "blend")
+    blend.setInput(0, lookat)
+    blend.parm("weight0").set(1.0)
+
+    out = cnet.createNode("null", "output0")
+    out.setInput(0, blend)
+    out.setDisplayFlag(True)
+    out.setRenderFlag(True)
+
+    cnet.layoutChildren()
+    return cnet
+```
+
+```python
+# ── Python: noise CHOP — camera shake settings presets ───────────────────────
+import hou
+
+CAMERA_SHAKE_PRESETS = {
+    # name: (amp, period, rough, turb)
+    "subtle":     (0.005, 0.25,  0.5, 2),
+    "handheld":   (0.02,  0.18,  0.6, 3),
+    "action":     (0.06,  0.12,  0.7, 4),
+    "earthquake": (0.20,  0.08,  0.8, 5),
+}
+
+def apply_shake_preset(noise_chop_path, preset_name="handheld"):
+    node = hou.node(noise_chop_path)
+    if node is None:
+        raise ValueError(f"CHOP not found: {noise_chop_path}")
+    amp, period, rough, turb = CAMERA_SHAKE_PRESETS[preset_name]
+    node.parm("amp").set(amp)
+    node.parm("period").set(period)
+    node.parm("rough").set(rough)
+    node.parm("turb").set(turb)
+    return node
+```
+
 ```vex
-// Fade in over first 2 seconds
-float fade = clamp(@Time / 2.0, 0, 1);
+// ── channelwrangle: fade in over first 2 seconds ────────────────────────────
+float fade = clamp(@Time / 2.0, 0.0, 1.0);
 @C *= fade;
 ```
 
-**Add noise to a channel:**
 ```vex
-// Add subtle noise jitter
-float n = noise(@Time * 5.0 + @channum * 100) - 0.5;
+// ── channelwrangle: add procedural noise jitter ──────────────────────────────
+// Uses channel index as a seed offset so each channel gets different noise
+float n = noise(@Time * 5.0 + @channum * 100.0) - 0.5;
 @C += n * 0.1;
 ```
 
-**Clamp channel values:**
 ```vex
+// ── channelwrangle: clamp channel values ────────────────────────────────────
 @C = clamp(@C, -1.0, 1.0);
 ```
 
-**Remap channel range:**
 ```vex
-@C = fit(@C, -1, 1, 0, 10);
+// ── channelwrangle: remap input range to output range ───────────────────────
+// fit(value, srcmin, srcmax, dstmin, dstmax)
+@C = fit(@C, -1.0, 1.0, 0.0, 10.0);
 ```
 
-**Channel-specific operations:**
 ```vex
-// Only affect rotation channels
+// ── channelwrangle: only affect rotation channels ───────────────────────────
+// match() supports glob patterns: r? matches rx ry rz
 if (match("r?", @channame)) {
     @C *= 0.5;  // halve all rotation values
 }
 ```
 
-**Spring-like behavior in VEX:**
 ```vex
-// Simple damped spring (stateful, use with caution in CHOPs)
-float target = chinput(0, @channum, @I);
-float prev = @I > 0 ? chinput(-1, @channum, @I - 1) : target;
-float vel = @I > 1 ? prev - chinput(-1, @channum, @I - 2) : 0;
+// ── channelwrangle: simple damped spring (stateful) ─────────────────────────
+// chinput(-1, ...) reads the OUTPUT of this wrangle (previous sample feedback)
+// Use with caution — requires serial evaluation
+float target  = chinput(0, @channum, @I);
+float prev    = @I > 0 ? chinput(-1, @channum, @I - 1) : target;
+float vel     = @I > 1 ? prev - chinput(-1, @channum, @I - 2) : 0.0;
 float springk = 0.3;
-float damp = 0.8;
-float force = (target - prev) * springk;
-vel = (vel + force) * damp;
-@C = prev + vel;
+float damp    = 0.8;
+float force   = (target - prev) * springk;
+vel           = (vel + force) * damp;
+@C            = prev + vel;
 ```
 
-**Frequency-based selection:**
 ```vex
-// Only process samples in a time window
-if (@Time >= 1.0 && @Time <= 3.0) {
-    @C = smooth(@C, 0.5);
-}
-```
-
-### Accessing Multiple Channels in VEX
-
-```vex
-// Read a specific channel by name from input 0
+// ── channelwrangle: compute 3D distance from three channels ─────────────────
+// Read tx ty tz from input 0 at the current sample index
 float tx = chinput(0, "tx", @I);
 float ty = chinput(0, "ty", @I);
 float tz = chinput(0, "tz", @I);
-
-// Compute distance from origin
-float dist = sqrt(tx*tx + ty*ty + tz*tz);
-@C = dist;
+@C = sqrt(tx*tx + ty*ty + tz*tz);
 ```
 
-### VEX CHOP Functions
-
-| Function | Description |
-|----------|-------------|
-| `chinput(input, chanidx, sample)` | Read channel value from input by index |
-| `chinput(input, "name", sample)` | Read channel value from input by name |
-| `chend(input)` | End sample of input |
-| `chstart(input)` | Start sample of input |
-| `chrate(input)` | Sample rate of input |
-| `chnum(input)` | Number of channels on input |
-| `chname(input, index)` | Channel name by index |
-
-## Common Production Workflows
-
-### Camera Shake
-
-```
-noise (freq 3-8Hz, amp 0.01-0.05) -> lag (subtle smoothing) -> math (scale) -> export (cam tx ty)
+```vex
+// ── channelwrangle: per-sample windowed processing ──────────────────────────
+// Only process samples within a time window (1.0s to 3.0s)
+if (@Time >= 1.0 && @Time <= 3.0) {
+    float t = fit(@Time, 1.0, 3.0, 0.0, 1.0);  // 0-1 within window
+    @C *= sin(t * 3.14159);                      // bell-shaped envelope
+}
 ```
 
-Noise CHOP settings for camera shake:
-- `type`: Sparse
-- `amp`: 0.02 (subtle) to 0.2 (earthquake)
-- `period`: 0.15-0.3 (3-8Hz range)
-- `rough`: 0.5
-- `turb`: 3-4
-
-### Follow with Lag (Smooth Camera Track)
-
-```
-object (target position) -> lag (lagrise=0.3, lagfall=0.3) -> export (camera position)
+```vex
+// ── channelwrangle: cross-channel blend ─────────────────────────────────────
+// Blend channel 0 and channel 1 from input, output into current channel
+float a = chinput(0, 0, @I);   // first channel
+float b = chinput(0, 1, @I);   // second channel
+float w = fit(@Time, 0.0, 5.0, 0.0, 1.0);  // animate blend weight over 5s
+@C = lerp(a, b, w);
 ```
 
-### Audio-Driven Light Flicker
+```python
+# ── Python: list all channels on a CHOP node ─────────────────────────────────
+import hou
 
+def inspect_chop_channels(chop_path):
+    node = hou.node(chop_path)
+    if node is None:
+        raise ValueError(f"CHOP not found: {chop_path}")
+
+    info = {
+        "channel_count": node.numChans(),
+        "sample_range":  node.sampleRange(),     # (start_sample, end_sample)
+        "sample_rate":   node.sampleRate(),
+        "channels": []
+    }
+    for i in range(node.numChans()):
+        ch = node.chan(i)
+        info["channels"].append({
+            "name":   ch.name(),
+            "length": ch.numSamples(),
+            "min":    min(ch.evalAtSample(s) for s in range(ch.numSamples())),
+            "max":    max(ch.evalAtSample(s) for s in range(ch.numSamples())),
+        })
+    return info
+
+# Sample a CHOP channel at a specific frame
+def sample_at_frame(chop_path, channel_name, frame):
+    node = hou.node(chop_path)
+    time = hou.frameToTime(frame)
+    return node.sample(time, channel_name)
 ```
-audiofilein -> filter (band-pass bass) -> math (abs, gain=5) -> trigger (attack=0.02, release=0.1) -> math (fit 0-1 to 2-8 exposure) -> export (light exposure)
+
+```python
+# ── Python: disable / remove export from a CHOP to reclaim a parameter ───────
+import hou
+
+def remove_chop_export(chop_null_path):
+    """
+    Disables export flag so the parameter returns to its keyframed value.
+    After export is removed the parameter may appear 'stuck' at last value —
+    manually type a new value or set a keyframe to reclaim it.
+    """
+    node = hou.node(chop_null_path)
+    if node is None:
+        raise ValueError(f"CHOP not found: {chop_null_path}")
+    node.parm("export").set(0)
+    print(f"Export disabled on {chop_null_path}. "
+          f"Manually set a keyframe on the target parameter to reclaim it.")
 ```
 
-### Procedural Secondary Motion
+## Common Mistakes
 
+```python
+# WRONG: channel name "translatex" does not match parm name "tx"
+# Export silently does nothing
+export_node.parm("exportpath").set("/obj/geo1")
+# channel named "translatex" — will NOT drive parm "tx"
+
+# CORRECT: channel name must exactly match the parameter name
+# Use rename CHOP to fix naming before export
+rename_node.parm("renamefrom").set("translatex")
+rename_node.parm("renameto").set("tx")
 ```
-object (primary animation) -> jiggle (mass=1, stiffness=50, damping=0.1) -> export (secondary geo)
+
+```python
+# WRONG: two CHOP networks exporting to the same parameter
+# Last one wins, Houdini warns but does not error
+net_a_out.parm("exportpath").set("/obj/geo1")  # exports "tx"
+net_b_out.parm("exportpath").set("/obj/geo1")  # also exports "tx" — conflict!
+
+# CORRECT: only one CHOP network should export to a given parameter
+# Merge the chains before the single export null
 ```
 
-Jiggle CHOP simulates a mass-spring system driven by the input motion. Heavier mass = more lag, lower stiffness = more wobble.
+```python
+# WRONG: downsampling audio to scene FPS before spectrum analysis
+# destroys frequency content above (FPS/2) Hz — Nyquist limit
+audio_in = net.createNode("audiofilein", "audio")
+resample_early = net.createNode("resample", "bad_resample")
+resample_early.parm("rate").set(24)  # destroys everything above 12 Hz!
 
-### Constraint Network (OBJ Level)
-
-Inside an OBJ node's `constraints` CHOP network:
+# CORRECT: do frequency analysis at full 44100/48000 Hz,
+# then only resample the RESULT (low-rate envelope) for scene export
+spectrum_node.setInput(0, audio_in)          # full rate analysis
+envelope = net.createNode("envelope", "env")
+envelope.setInput(0, spectrum_node)
+resample_after = net.createNode("resample", "to_fps")
+resample_after.parm("rate").set(hou.fps())   # resample AFTER analysis
+resample_after.setInput(0, envelope)
 ```
-constraintlookat (aim at target) -> constraintblend (weight with other constraints) -> null (output)
+
+```python
+# WRONG: using chinput(-1, ...) in a wrangle without understanding feedback
+# chinput(-1, channum, I) reads from THIS wrangle's own previous output
+# Not the same as reading the upstream input's previous sample
+# This creates a feedback loop — valid for spring, but unexpected otherwise
+
+# CORRECT: use chinput(0, ...) to read from upstream input (no feedback)
+# Use chinput(-1, ...) ONLY when intentional stateful feedback is needed
 ```
 
-The constraints network on an OBJ is a special CHOP network. Its output channels (`rx ry rz tx ty tz`) override the OBJ transforms.
+```python
+# WRONG: geometry CHOP on a heavy mesh (100k points) reads all channels
+# Creates 100k * 3 channels = 300k channels — extremely slow
+geo_chop.parm("attribscope").set("*")  # reads every attribute
 
-## Tips and Gotchas
+# CORRECT: scope to only needed attributes and limit point range
+geo_chop.parm("attribscope").set("P N")         # only position and normal
+geo_chop.parm("attribtype").set(3)               # detail attrib when possible
+```
 
-### Sample Rate Mismatches
+```python
+# WRONG: trail CHOP with long trail on a high-sample-rate chain eats memory
+# At 44100 Hz with a 10s trail = 441,000 samples stored per channel
+trail.parm("length").set(10.0)  # 10 seconds at audio rate
 
-CHOPs operate at their own sample rate, independent of scene FPS. When connecting CHOPs with different rates, Houdini resamples automatically, but this can introduce artifacts.
+# CORRECT: resample to scene FPS before the trail
+resample = net.createNode("resample")
+resample.parm("rate").set(hou.fps())  # 24/30/60 FPS
+resample.setInput(0, upstream)
+trail.setInput(0, resample)           # trail at scene rate, not audio rate
+```
 
-- **Audio data**: 44100 Hz or 48000 Hz. Do NOT downsample to scene FPS (24-60) before analysis -- do the frequency analysis at full rate, then export the result at scene FPS.
-- **Animation data**: Typically at scene FPS (24, 25, 30, 60).
-- Use `resample` CHOP explicitly when you need control over interpolation method.
-- The `rate` parameter on generator CHOPs sets their native rate.
+```python
+# WRONG: noise CHOP looks the same every take because seed is 0 default
+noise.parm("seed").set(0)  # produces identical noise every time
 
-### Channel Scope and Naming
+# CORRECT: vary seed or use $OS (operator string / node name hash)
+noise.parm("seed").setExpression("opinputpath('.', 0) != '' ? 0 : $OS")
+# Or simply set a distinct integer seed per noise node
+noise.parm("seed").set(17)
+```
 
-- Channel names must **exactly match** parameter names for export to work. `tx` exports to `tx`, not `translatex`.
-- Use `rename` CHOP to fix naming mismatches.
-- Wildcard patterns in channel scope: `t?` matches `tx ty tz`, `r?` matches `rx ry rz`.
-- `*` matches all channels. `chan[0-3]` matches `chan0` through `chan3`.
+```python
+# WRONG: Spring CHOP never settles — damping too low or mass too high
+spring.parm("damping").set(0.05)  # barely damps — oscillates forever
+spring.parm("mass").set(100.0)    # huge mass = huge overshoot
 
-### Export Flag Behavior
-
-- Only ONE CHOP network can export to a given parameter. If two CHOPs export to the same parm, the last one wins and Houdini warns.
-- The export flag (star icon) on a CHOP node must be active for export to work.
-- Exported parameters show a **green background** in the parameter editor.
-- To stop exporting: disable the export flag, or delete the CHOP. The parameter returns to its original value or keyframes.
-- **Export does not create keyframes** -- it overrides the parameter value live per frame.
-
-### Performance Considerations
-
-- CHOPs evaluate at their sample rate every frame. A 44100 Hz audio chain evaluates 44100 samples per frame even at 24 FPS. Keep audio processing in a separate chopnet and only export the final low-rate result.
-- `geometry` CHOP reading thousands of points creates thousands of channels -- scope to only the attributes and point range you need.
-- `trail` CHOP accumulates data over time and can use significant memory on long trails.
-- CHOP networks cook independently of SOPs. Unused CHOP networks still cook if they have active export flags.
-
-### Time Range Pitfalls
-
-- Generator CHOPs default to the scene frame range. If your scene range changes, CHOP output may unexpectedly clip.
-- Use `start` and `end` parameters explicitly, or set `range` to "Use Full Animation Range" to avoid surprises.
-- `trim` and `shift` CHOPs affect the time range metadata but do not change sample count unless combined with `resample`.
-
-### Common Issues
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Export not working | Export flag off or channel name mismatch | Enable star icon, verify channel names match target parm names |
-| Parameter stuck after removing export | Houdini caches last exported value | Set parameter to a keyframe or type a value manually to reclaim |
-| Audio sounds wrong / aliased | Sample rate mismatch | Set CHOP `rate` to match audio file rate (44100/48000) |
-| Jittery motion after lag/spring | Sample rate too low for fast motion | Increase CHOP sample rate, or increase lag/damping values |
-| Constraint flips at gimbal lock | Rotation order / up-vector alignment | Change rotation order on OBJ, or adjust `upvector` on constraintlookat |
-| Geometry CHOP too slow | Reading too many points/attribs | Scope to specific attributes, use detail attribs where possible |
-| Channel Wrangle not running | No input connected or zero samples | Connect an input CHOP, or set explicit sample range on the wrangle |
-| CHOP reference returns 0 | Wrong path or channel name in `chop()` | Verify path with middle-click on CHOP node, check exact channel name |
-| Noise looks same every take | Same seed value | Change `seed` parameter or add `$OS` to offset expression |
-| Spring never settles | Damping too low or mass too high | Increase `damping` to 0.5+, reduce `mass` |
+# CORRECT: damping >= 0.5 for most use cases; mass 0.1-2.0 range
+spring.parm("damping").set(0.7)
+spring.parm("mass").set(0.5)
+```

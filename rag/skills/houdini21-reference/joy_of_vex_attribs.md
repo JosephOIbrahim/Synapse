@@ -14,129 +14,85 @@ v@up = {0,0,1};  // Setting Up Vector Orientation
 
 ### Accessing Vector Components [[Ep1, 19:28](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1168s)]
 ```vex
+// Dot notation (.x/.y/.z) extracts a float from a vector; auto-promotes back to vector on assignment
 @Cd = @P.x;
 ```
-Assigns the X component of the position attribute to the color attribute, resulting in all three RGB channels being set to the same value (the X coordinate). This demonstrates accessing individual vector components using dot notation (.x) and automatic type promotion from float to vector.
 
 ### Vector Component Access [[Ep1, 20:28](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1228s)]
 ```vex
-@Cd = @P.x;
-
-@Cd = @N.y;
+// .x/.y/.z on any vector attribute extracts a float — useful for masks and visualizations
+@Cd = @P.x;  // color = X position
+@Cd = @N.y;  // color = Y normal component
 ```
-Individual components of vector attributes can be accessed using dot notation (.x, .y, .z). Here, color is set to the X component of position, then to the Y component of the normal, demonstrating how single float values can be extracted from vector attributes and used to create masks or visualizations.
 
 ### Type Casting and Point Color Normalization [[Ep1, 39:22](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=2362s)]
 ```vex
-@Cd = float(@ptnum)/100;
+// Integer / integer = integer in VEX — must cast to float for fractional results
+@Cd = float(@ptnum)/100;  // correct: explicit cast
 
-@Cd = @ptnum;
+@Cd = @ptnum;             // wrong range: assigns large integers directly
 
-@Cd = @ptnum/@numpt;
+@Cd = @ptnum/@numpt;      // normalize 0-1 by dividing by total point count
 ```
-Demonstrates the importance of type casting in VEX when dividing integers. Shows three approaches to setting point color: casting point number to float before division, direct assignment (incorrect range), and dividing by total point count to normalize color values between 0 and 1.
 
 ### Variable Declaration and Type Casting [[Ep1, 50:52](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=3052s)]
 ```vex
-@Cd = sin(@ptnum);
-
-@Cd = sin(@ptnum/100);
-
-@Cd = sin(float(@ptnum)/100);
-
-@Cd = sin(float(@ptnum)*ch('scale'));
-
+// Progression: inline -> cast -> named variable for readability
+@Cd = sin(@ptnum);                        // @ptnum is int, sin() promotes it
+@Cd = sin(@ptnum/100);                    // still int division — wrong
+@Cd = sin(float(@ptnum)/100);             // correct: explicit float cast
+@Cd = sin(float(@ptnum)*ch('scale'));     // add channel-driven scale
+// Using a named variable makes complex expressions easier to read and debug:
 float foo = float(@ptnum)/ch('scale');
 @Cd = sin(foo);
-
 float foo = float(@ptnum)*ch('scale');
 @Cd = sin(foo);
 ```
-Demonstrates the progression from inline expressions to using named variables for code clarity. Shows how to declare a float variable 'foo' to store intermediate calculations (point number scaled by a channel parameter), making the code more readable and easier to debug. Emphasizes the importance of explicit type casting with float() when working with integer attributes like @ptnum.
 
 ### Variables vs Attributes [[Ep1, 54:06](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=3246s)]
 ```vex
+// Local var (foo): temporary, lives only in this wrangle, never saved to geo
+// Attribute (@Cd):  persists on the geometry after the wrangle runs
 float foo = float(@ptnum)/ch('scale');
 @Cd = sin(foo);
 ```
-Demonstrates the difference between local variables and attributes in VEX. The variable 'foo' is temporary throwaway data that only exists within the wrangle code, while @Cd is an attribute that gets saved on the geometry. This pattern helps keep code clean and organized while understanding when data needs to persist versus when it's just used for intermediate calculations.
 
 ### Animating with @Time [[Ep1, 96:50](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=5810s)]
 ```vex
+// @Time is a built-in attribute (capitalized) — current time in seconds, auto-updates each frame
+// Static radial sine wave:
 vector pos = @P * chv('fancyscale');
 vector center = chv('center');
 float d = distance(pos, center);
 d *= ch('scale');
 @Cd = fit(sin(d),-1,1,0,1);
 
-// Adding @Time for animation
-vector pos = @P * chv('fancyscale');
-vector center = chv('center');
-float d = distance(pos, center);
-d *= ch('scale');
+// Animated version: add @Time to the distance to make the wave travel over time
 @Cd = fit(sin(d+@Time),-1,1,0,1);
 ```
-Demonstrates animating color patterns by adding the built-in @Time attribute to the sine wave calculation. The @Time attribute is automatically updated each frame, creating animated ripple effects without requiring additional setup. Note that @Time and other built-in attributes like @Frame are capitalized.
 
-### Time attribute and animation [[Ep1, 96:56](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=5816s)]
+### @Time Animation Variations [[Ep1, 96:56–97:48](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=5816s)]
 ```vex
+// @Time = current time in seconds (at 24fps, equals 1.0 after 24 frames)
+// @Frame increments by 1 per frame — faster animation than @Time
 vector pos = @P * chv('fancyscale');
 vector center = chv('center');
 float d = distance(pos, center);
 d *= ch('scale');
+
+// Static wave (no time)
 @Cd = fit(sin(d), -1, 1, 0, 1);
-```
-Demonstrates using the built-in @Time attribute (capitalized) to animate patterns over time. The distance calculation combined with sin() creates ripple patterns, and adding @Time to the distance value makes these patterns evolve automatically with playback. The @Frame attribute can also be used but animates faster since it increments by integers each frame.
 
-### Animating with @Time Attribute [[Ep1, 96:58](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=5818s)]
-```vex
-vector pos = @P * chv('fancyscale');
-vector center = chv('center');
-float d = distance(pos, center);
-d *= ch('scale');
+// Travelling wave: add @Time to shift the pattern each frame
+@Cd = fit(sin(d + @Time), -1, 1, 0, 1);
+
+// Multiply @Time into the distance for frequency-scaled animation
 @Cd = fit(sin(d * @Time), -1, 1, 0, 1);
 ```
-Demonstrates using the built-in @Time attribute to animate color patterns over time. The @Time attribute is capitalized and represents the current time in seconds, providing automatic animation without needing to explicitly reference $T or frame numbers. This creates a rippling color effect that evolves smoothly as the timeline plays.
-
-### Animating patterns with @Time [[Ep1, 97:08](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=5828s)]
-```vex
-vector pos = @P * chv('fancyscale');
-vector center = chv('center');
-float d = distance(pos, center);
-d *= ch('scale');
-@Cd = fit(sin(d), -1, 1, 0, 1);
-
-// Animated version:
-vector pos = @P * chv('fancyscale');
-vector center = chv('center');
-float d = distance(pos, center);
-d *= ch('scale');
-@Cd = fit(sin(d + @Time), -1, 1, 0, 1);
-```
-Demonstrates animating a radial sine wave pattern by adding the @Time attribute to the distance calculation. The @Time attribute provides the current time in seconds, creating smooth animation as the pattern evolves. This is slower than using @Frame (which changes by 1 each frame) because @Time increments fractionally based on the frame rate.
-
-### Time-based Animation with @Time [[Ep1, 97:38](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=5858s)]
-```vex
-vector pos = @P * chv('fancyscale');
-vector center = chv('center');
-float d = distance(pos, center);
-@N = ch('scale');
-@Cd = fit(sin(d*@Time),-1,1,0,1);
-```
-Demonstrates using the @Time attribute to create time-varying effects by combining it with distance calculations and sine waves. The @Time attribute updates smoothly based on seconds elapsed (at 24fps, reaching 1.0 after 24 frames), making it ideal for slower, continuous animations compared to @Frame which changes by integer values each frame.
-
-### Time-based animation with @Time [[Ep1, 97:48](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=5868s)]
-```vex
-vector pos = @P * chv('fancyscale');
-vector center = chv('center');
-float d = distance(pos, center);
-d *= ch('scale');
-@Cd = fit(sin(d*@Time), -1, 1, 0, 1);
-```
-Creates animated color patterns by calculating distance from a center point and using @Time with sine function to create oscillating values. The @Time attribute provides frame-based animation where reaching frame 24 equals 1.0 in value, making it ideal for time-varying effects without additional setup. The fit() function remaps the sine wave output from [-1,1] to [0,1] for valid color values.
 
 ### Ramp Modulo Behavior Change [Needs Review] [[Ep2, 50:46](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=3046s)]
 ```vex
+// chramp() no longer implicitly modulos values — repeating patterns need explicit fmod()
 float d = length(@P);
 d *= ch("scale");
 d += @Time;
@@ -145,288 +101,193 @@ d = sin(d);
 @Cd.y = chramp("myRamp", d);
 @Cd.y *= ch("height");
 ```
-Creates animated wave displacement using distance from origin, sine function, and time. Uses chramp() to color based on the displacement value, noting that ramp behavior changed to no longer implicitly modulo values (which previously caused repeating patterns).
 
 ### Pseudo Attributes and Point Primitives [Needs Review] [[Ep3, 11:32](https://www.youtube.com/watch?v=fOasE4T9BRY&t=692s)]
 ```vex
+// Pseudo attributes (@P, @ptnum, @Time) are computed by Houdini, not stored in geo
+// Primitive @P = centroid of primitive's point positions (computed, not stored)
 float d = len(v@P - p1(0, @primnum, 0));
 s@ry = sin(d);
 ```
-Demonstrates using pseudo attributes and the p1() function to calculate distance from point position to primitive center. The distance is then used to create a sine wave pattern stored in a string attribute, illustrating how pseudo attributes like @primnum work similarly to other built-in attributes.
 
 ### Pseudo Attributes and Compilation [Needs Review] [[Ep3, 11:34](https://www.youtube.com/watch?v=fOasE4T9BRY&t=694s)]
 ```vex
 // VCC compiler command (not VEX code)
 // VCC -q $VOP_INCLUDEPATH -o $VOP_OBJECTFILE -e $VOP_ERRORFILE $VOP_SOURCEFILE
 ```
-Discussion of pseudo attributes like @P, @ptnum, and @Time that are automatically generated by Houdini. Pseudo attributes differ from regular attributes as they are computed values - for example, primitive @P is generated from the center point of the primitive's point positions rather than being stored data.
 
 ### Vertex Attribute Manipulation with Distance [[Ep3, 14:38](https://www.youtube.com/watch?v=fOasE4T9BRY&t=878s)]
 ```vex
+// Vertex wrangles run per-vertex — more iterations than points (each point has multiple vertices)
 float d = length(@P);
 d *= ch('scale');
 @Cry = sin(d);
 ```
-Calculates the distance from the origin for each vertex position, scales it by a channel parameter, and assigns a sine wave pattern to a custom vertex attribute. This code runs on every vertex in the geometry, creating more data points than point-based operations since each point with connected primitives generates multiple vertices.
 
-### Creating Custom Variables and Attributes [[Ep3, 21:42](https://www.youtube.com/watch?v=fOasE4T9BRY&t=1302s)]
+### Creating Custom Attributes [[Ep3, 21:42–22:14](https://www.youtube.com/watch?v=fOasE4T9BRY&t=1302s)]
 ```vex
+// @ prefix creates a geometry attribute — appears in the spreadsheet and persists after the wrangle
+// f@ prefix explicitly declares a float attribute (vs auto-detected type)
 float d = length(@P);
-@mydistance = d;
+@mydistance = d;          // custom attribute stores distance for debugging / reuse
 @Cd.r = sin(d);
 
-// You can also use channel references
-float scale = ch("scale");
-@Cd.r = sin(@mydistance * scale);
-```
-This demonstrates creating custom variables in VEX to store intermediate calculations and output them as geometry attributes. By declaring variables with the @ prefix, they automatically appear in the geometry spreadsheet, making them valuable for debugging and visualization. Variables can be declared at any point in the code and reused throughout.
-
-### Creating Custom Attributes with Variables [[Ep3, 21:44](https://www.youtube.com/watch?v=fOasE4T9BRY&t=1304s)]
-```vex
+// Explicit type prefix version:
 f@d = length(@P);
 f@d /= ch("scale");
 @Cd = @d;
 @Cd.r = sin(@d);
-```
-Demonstrates creating a custom float attribute 'd' to store calculated distance values, which can then be used in subsequent operations and viewed in the geometry spreadsheet. The pattern shows how intermediate calculations can be stored as attributes for debugging and reuse, here computing distance from origin, scaling it, and using it to drive color.
 
-### Distance Attributes and Color Assignment [[Ep3, 22:08](https://www.youtube.com/watch?v=fOasE4T9BRY&t=1328s)]
-```vex
-float d = length(@P);
-@mydistance = d;
-
-@d = length(@P);
-@Cd = d;
-@Cd.r = sin(@d);
-```
-Demonstrates creating custom attributes by calculating distance from origin using length(@P), storing it in variables and custom attributes like @mydistance and @d. Shows how to assign distance values to color channels, including using sin() function to modulate the red color channel based on distance.
-
-### Creating Custom Attributes from Distance [[Ep3, 22:14](https://www.youtube.com/watch?v=fOasE4T9BRY&t=1334s)]
-```vex
+// Minimal form: create attribute and drive color in three lines
 float d = length(@P);
 @d = d;
 @Cd.r = sin(@d);
 ```
-Demonstrates creating custom attributes dynamically in VEX by calculating distance from origin and storing it in a custom attribute @d. The red channel of color is then driven by the sine of this distance value, showing how attributes can be created on-the-fly and used to drive other attributes.
 
 ### Distance to Point with Fit [Needs Review] [[Ep3, 37:22](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2242s)]
 ```vex
+// Read point 0 position from first input, measure distance, remap for color
 vector pos = v@pos[0];
 float d = distance(pos, @P);
 d *= ch('scale');
 f@Cd = fit(d, 0, 1, 0, 1);
 ```
-Reads a position vector from the first input's point 0, calculates the distance from each point to that position, scales it by a channel parameter, and uses fit() to remap the distance values into the color attribute. This demonstrates combining point attribute lookups, distance calculations, and value remapping for visualization.
 
 ### Distance-based color and wind [Needs Review] [[Ep3, 37:50](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2270s)]
 ```vex
+// @opinput1_P reads position from second wrangle input by matching point number
 vector pos = v@opinput1_P;
 float d = distance(@P, pos);
 f@scale = d;
 @Cd = d;
-v@v = v@wind * d;
+v@v = v@wind * d;  // proximity-based velocity: farther points get more wind
 ```
-Demonstrates reading position from a second input, calculating distance from current point to that position, and using the distance value to drive both color and a wind-scaled velocity vector. This pattern is commonly used for proximity-based effects where scattered points respond to a reference position.
 
-### Transfer Color via Nearest Point [[Ep3, 39:58](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2398s)]
+### Transfer Color via Nearest Point [[Ep3, 39:58–44:24](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2398s)]
 ```vex
+// nearpoint(input, pos) -> point number of closest point on that input
+// point(input, "attribname", ptnum) -> reads attribute — name MUST be a string, not @ syntax
 int pt = nearpoint(1, @P);
-@Cd = point(1, "Cd", pt);
-```
-This code finds the closest point on the second input geometry and transfers its color attribute to the current point. The nearpoint() function returns the point number of the nearest point, which is then used with point() to read that point's Cd attribute.
+@Cd = point(1, "Cd", pt);   // transfers color from nearest point on input 1
 
-### Transferring Attributes from Second Input [[Ep3, 42:26](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2546s)]
-```vex
-int pt = nearpoint(0, v@P);
-@Cd = point(0, 'Cd', pt);
-```
-This demonstrates transferring attributes from a second input geometry by finding the nearest point on the reference geometry and copying its color attribute. The nearpoint() function locates the closest point on input 0 to the current point's position, then point() retrieves the color attribute from that nearest point.
-
-### Understanding point() Function Syntax [[Ep3, 43:06](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2586s)]
-```vex
-int pt = nearpoints(0, @P);
-@Cd = point(0, 'Cd', pt);
-```
-This demonstrates the syntax of the point() function, which retrieves an attribute value from a specific point. The code finds a nearby point using nearpoints(), then copies its Cd (color) attribute to the current point using point(), illustrating why the attribute name is passed as a string parameter rather than using direct attribute binding syntax.
-
-### Point function attribute syntax [[Ep3, 43:18](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2598s)]
-```vex
+// Same pattern reading from input 0:
 int pt = nearpoint(0, @P);
 @Cd = point(0, 'Cd', pt);
+
+// If the attribute doesn't exist on the input, point() returns zero (0,0,0 for vectors) — no error
+v@Cd = point(0, "Cd", pt);  // returns {0,0,0} (black) if Cd doesn't exist
 ```
-This snippet demonstrates using nearpoint() to find the closest point and then reading its Cd attribute with the point() function. The explanation discusses why the attribute name 'Cd' must be passed as a string in quotes rather than using @ syntax, clarifying common confusion about when to use @ versus string literals for attribute access.
 
-### Reading Non-Existent Attributes [[Ep3, 44:20](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2660s)]
+### Point Attributes from Second Input [[Ep3, 49:58–52:36](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2998s)]
 ```vex
-int pt = nearpoint(0, v@P);
-v@Cd = point(0, "Cd", pt);
+// Two equivalent ways to copy point positions from input 1 by point number:
+@P = point(1, 'P', @ptnum);   // explicit: point(input, attrib, ptnum)
+@P = @opinput1_P;             // shorthand: @opinput<N>_<attrib> — same result, cleaner syntax
 ```
-Demonstrates what happens when attempting to read a color attribute (Cd) that doesn't exist on the input geometry. When an attribute doesn't exist, VEX returns a default zero-initialized value, which in this case produces a vector {0,0,0} for color.
 
-### Handling Missing Attributes [[Ep3, 44:24](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2664s)]
+### Reading Multiple Attributes from Second Input [[Ep3, 55:14](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3314s)]
 ```vex
-int pt = nearpoint(0, @P);
-v@Cd = point(0, "Cd", pt);
-```
-Demonstrates what happens when attempting to read a non-existent attribute from geometry. When the 'Cd' attribute doesn't exist on the input geometry, the point() function returns a zero vector (0,0,0) rather than throwing an error, resulting in black color values.
-
-### Point Attributes via Input Reference [[Ep3, 49:58](https://www.youtube.com/watch?v=fOasE4T9BRY&t=2998s)]
-```vex
-@P = @opinput1_P;
-```
-Demonstrates multiple approaches to reading point data from a second input, progressing from manual nearpoint lookups with distance calculations to the simplified @opinput syntax for direct attribute access. The final version @P = @opinput1_P directly assigns position from input 1 by point number.
-
-### Direct Point Attribute Access [[Ep3, 50:04](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3004s)]
-```vex
-@P = point(1, 'P', @ptnum);
-
-@P = @opinput1_P;
-```
-Demonstrates two equivalent methods for directly copying point positions from the second input. The first uses point() with @ptnum to read by point number, while the second uses the @opinput1_P shorthand to access the same data. Both methods copy positions directly without requiring nearpoint() lookups.
-
-### Reading Points from Second Input [[Ep3, 52:04](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3124s)]
-```vex
-@P = point(1, 'P', @ptnum);
-
-@opinput1_P;
-```
-Demonstrates two methods for reading point positions from the second input: using the point() function with input index 1, and using the @opinput1_P syntax which is shorthand for accessing attributes from specific inputs. Both approaches allow you to copy or reference geometry attributes from a different input stream.
-
-### Reading Position from Second Input [[Ep3, 52:36](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3156s)]
-```vex
-@P = point(1, 'P', @ptnum);
-```
-This demonstrates reading point positions from a second input geometry using the point() function. The code sets the current point's position to match the corresponding point from input 1, using @ptnum to maintain point correspondence. The alternative @opinput1_P syntax achieves the same result more concisely.
-
-### Reading Attributes from Second Input [[Ep3, 55:14](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3314s)]
-```vex
-vector pi = @opinput1_P;
+// @opinput1_<attrib> reads any attribute from input 1 at the same point number
+// Requires matching point counts between inputs
+vector pi  = @opinput1_P;
 vector cd1 = @opinput1_Cd;
-
-@P = pi;
+@P  = pi;
 @Cd = cd1;
 ```
-Demonstrates how to read attributes from the second input (input 1) of a wrangle node using the @opinput1_ prefix syntax. This allows you to transfer attributes like position and color from one geometry stream to another when point counts and numbers match.
-
-### Reading Input Geometry Attributes [[Ep3, 55:18](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3318s)]
-```vex
-vector p1 = @opinput1_P;
-vector cd1 = @opinput1_Cd;
-
-@P = p1;
-@Cd = cd1;
-```
-Demonstrates reading attributes from the second input geometry using the @opinput1_ prefix to access position and color. This technique allows you to copy attribute values from one input to another, enabling geometry blending and attribute transfer operations.
 
 ### Reading Quaternion Point Attributes [[Ep3, 59:56](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3596s)]
 ```vex
-vector p1 = swlerpquat.p1;
+// Read position and color from a point struct (e.g. from slerp/quat lookup)
+vector p1  = swlerpquat.p1;
 vector cd1 = swlerpquat.Cd1;
-
-@P = p1;
+@P  = p1;
 @Cd = cd1;
 ```
-This code reads position and color attributes from another point referenced by the swlerpquat variable (likely from a nearpoint or similar lookup), then assigns those values to the current point's position and color attributes. This is a common pattern for transferring attributes between points in different geometric contexts.
 
 ### Vector component assignment clarity [[Ep3, 74:02](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4442s)]
 ```vex
+// Initialize the full vector first, then modify individual components for clarity
 @Cd = v1;
 @Cd.x = curlnoise(@P*chv('fancyscale'))*@Time;
 ```
-Demonstrates the difference between assigning a full vector versus assigning individual components. The code shows how to properly initialize a vector to ensure clarity when only modifying specific components, avoiding implicit assumptions in the VEX compiler.
 
 ### Reading Point Position from Second Input [Needs Review] [[Ep4, 11:06](https://www.youtube.com/watch?v=66WGmbykQhI&t=666s)]
 ```vex
+// dot(chv("angle"), pos) projects position onto a viewport-controlled direction vector
 vector pos = point(1, "P", @ptnum);
 @Cd = dot(chv("angle"), pos);
 ```
-Reads the position of a point from the second input using the point() function, then uses a dot product between a channel vector parameter and that position to drive color. This demonstrates how to reference geometry from multiple inputs and combine it with viewport-controlled parameters.
 
 ### Reading Point Positions with point() [[Ep4, 34:34](https://www.youtube.com/watch?v=66WGmbykQhI&t=2074s)]
 ```vex
+// @P = current point; point(input, attrib, ptnum) = specific point from any input
 vector a = @P;
-vector b = point(1, 'P', 0);
+vector b = point(1, 'P', 0);  // point 0 from input 1
 ```
-Demonstrates two methods of accessing point positions: using the @P attribute binding for the current point, and using the point() function to read the position of a specific point (point 0) from input 1. This establishes the foundation for working with multiple point positions simultaneously.
 
 ### Reading points from multiple inputs [[Ep4, 34:40](https://www.youtube.com/watch?v=66WGmbykQhI&t=2080s)]
 ```vex
+// point(input, "attrib", ptnum) — first arg is input index (0=first, 1=second)
 vector a = point(0, "P", 0);
 vector b = point(1, "P", 0);
+@i = b - a;  // direction vector from input-0 point 0 to input-1 point 0
 
-@i = b - a;
-
-vector a = point(0, 0, "P", 0);
-vector b = point(1, 0, "P", 0);
-
-@i = b - a;
-
+// Using current point as 'a':
 vector a = @P;
 vector b = point(1, "P", 0);
 ```
-Demonstrates reading point positions from multiple wrangle inputs using the point() function with different input indices. The first parameter specifies which input to read from (0 for first input, 1 for second input), allowing vectors to be constructed from different geometry streams and subtracted to create directional vectors.
 
 ### Point-to-Point Normal Direction [[Ep4, 37:18](https://www.youtube.com/watch?v=66WGmbykQhI&t=2238s)]
 ```vex
-vector a = point(0, 'P', 0);
-vector b = point(1, 'P', 0);
-
-@N = b - a;
-
-// Alternative using current point
+// Subtract two positions to get a direction vector and assign to @N
+// Using @P (current point) makes every point aim its normal at a single target
 vector a = @P;
 vector b = point(1, 'P', 0);
-
 @N = b - a;
 ```
-Demonstrates calculating a normal vector by subtracting two point positions. The first example references point 0 from input 0 and point 0 from input 1, while the second uses the current point position (@P) and a reference point from input 1, causing all points on a sphere to orient their normals toward a single target point that can be moved interactively.
 
 ### Vector Direction from Point [[Ep4, 38:14](https://www.youtube.com/watch?v=66WGmbykQhI&t=2294s)]
 ```vex
+// @P - origin = vector radiating outward from origin — useful for explosion/sim initial velocities
 vector origin = point(1, "P", 0);
 @v = @P - origin;
 ```
-Creates a velocity vector on each point that points away from a specific origin point (point 0 on input 1). By subtracting the origin position from the current point position, vectors radiate outward from the origin. This technique is useful for simulations where you want to set initial velocities that emanate from or converge to a specific point in space.
 
 ### Multiplying Normals by Channel Parameter [[Ep4, 41:58](https://www.youtube.com/watch?v=66WGmbykQhI&t=2518s)]
 ```vex
+// *= preserves direction and scales length; = would set all components to the same scalar
 @N *= ch('scale');
 ```
-Demonstrates multiplying the normal vector by a channel parameter to scale normals uniformly. The correction shows the difference between assigning (@N = ch('scale')) versus multiplying (@N *= ch('scale')) - multiplication preserves the vector direction while scaling its length, whereas assignment would set all components to the same scalar value.
 
 ### Scaling Normals with Vectors [[Ep4, 44:20](https://www.youtube.com/watch?v=66WGmbykQhI&t=2660s)]
 ```vex
+// Multiply by a vector for per-axis scaling: zero flattens, negative reverses
 @N *= chv('scalevec');
 ```
-Demonstrates multiplying the normal vector by a vector parameter to scale normals non-uniformly along different axes. By setting certain components of the scale vector to zero or negative values, you can flatten normals along specific axes or reverse their direction, creating interesting deformations that stretch geometry along particular directions.
 
 ### Component Access on Vectors [[Ep4, 53:02](https://www.youtube.com/watch?v=66WGmbykQhI&t=3182s)]
 ```vex
+// relpointbbox() returns normalized 0-1 position within the bounding box
 vector bbox = relpointbbox(0, @P);
-@Cd = bbox.y;
+@Cd = bbox.y;  // black-to-white gradient along Y axis
 ```
-Demonstrates accessing individual components of a vector using dot notation. The y-component of the bbox vector (which contains normalized 0-1 bounding box coordinates) is extracted and assigned to the color attribute, creating a black-to-white gradient based on vertical position within the bounding box.
 
 ### Vector Component Access [[Ep5, 20:50](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=1250s)]
 ```vex
+// Two equivalent ways to access vector components: dot notation or array index
 vector myvector = {1, 2, 1};
-
 v@a = {10, 12, 100};
-
-float foo = @a.x; // will return 10
-
-float foo = @a[2]; // that's asking for index 2, which will return 100
+float foo = @a.x;   // dot notation  -> 10  (x=0, y=1, z=2)
+float foo = @a[2];  // index notation -> 100 (index 2 = z component)
 ```
-Demonstrates two methods for accessing vector components in VEX: dot notation (@a.x) for named access to x/y/z components, and array index notation (@a[2]) for numeric index access where 0=x, 1=y, 2=z. Both approaches extract a single float value from a vector attribute.
 
 ### Vector component access methods [Needs Review] [[Ep5, 25:18](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=1518s)]
 ```vex
+// .x/.y/.z and .r/.g/.b are interchangeable on vectors; arrays needed for >3 elements
 vector @vector = {1,2,3};
 v@a = {10,15,100};
-
 @foo = @x+1;
 ```
-Demonstrates creating vector attributes and accessing vector components using different notations. Vector components can be accessed using .x, .y, .z or .r, .g, .b notation interchangeably. This introduces the concept that vectors have multiple ways to reference their components before transitioning to arrays for storing more than three elements.
 
 ### Setting pscale from channel parameter [Needs Review] [[Ep6, 15:20](https://www.youtube.com/watch?v=yPaWl3AiSrc&t=920s)]
 ```vex

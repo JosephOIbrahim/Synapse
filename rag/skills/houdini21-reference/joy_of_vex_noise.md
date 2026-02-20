@@ -3,162 +3,158 @@
 > Tutorial examples from The Joy of VEX video series by Matt Estela.
 > Source: https://www.youtube.com/@MattEstela
 
-## Quick Reference
-```vex
-@Cd = curlnoise(@P*chv('fancyscale')*@Time);  // Animating Noise with Time and Parameters
-v@Cd = curlnoise(@P*chv('fancyscale'))*0.5+0.5;  // Curl Noise Function Arguments
-@Cd = curlnoise(@P * cv('fancyscale') + @Time);  // Curl Noise Color with Channel
-```
+## Triggers
+noise, rand, curlnoise, randomness, procedural, animated noise, curl noise, quaternion wobble, noise color, noise deletion, noise orientation, fit noise, chramp noise, quantized rotation, wave animation
 
-## Noise Patterns
+## Context
+VEX noise and randomness patterns from Matt Estela's Joy of VEX series. Covers noise(), curlnoise(), rand() with seed, noise-driven quaternion orientations, fit/chramp remapping, and wave animation.
+
+## Code
+
+### Quick Reference
+```vex
+// Animated curl noise color -- combine position, scale param, and @Time
+@Cd = curlnoise(@P * chv('fancyscale') + @Time);
+
+// Curl noise remapped to 0-1 range
+v@Cd = curlnoise(@P * chv('fancyscale')) * 0.5 + 0.5;
+
+// Single channel from curl noise
+@Cd = curlnoise(@P * cv('fancyscale') + @Time);
+```
 
 ### Noise with Parameters and Animation [[Ep3, 60:14](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3614s)]
 ```vex
+// Progressive enhancement: add chv() for UI-controllable scale/offset, then @Time for animation.
+// chv() reads a vector parameter -- gives 3D control over noise frequency and offset.
+// @Time drives continuous animation; multiply by scale for speed control.
 @Cd = noise(chv('offset') + @P * chv('fancyscale') * @Time);
 ```
-Demonstrates progressive enhancement of noise by adding channel parameters for scale control and offset, then incorporating time-based animation. The final expression combines vector offset, vector scale multiplication, and time to create animated noise patterns that can be controlled via the UI.
 
 ### Noise Function Basics [[Ep3, 61:02](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3662s)]
 ```vex
-noise(@P*chf('offset')+@v*chv('fancyscale')*@Time);
+// noise() takes spatial coords modified by scale and offset params to generate variation.
+// Combine position, velocity, and time with channel parameters for animated noise.
+noise(@P * chf('offset') + @v * chv('fancyscale') * @Time);
 ```
-Introduction to working with noise in VEX, demonstrating how to combine position, velocity, and time with channel parameters to create animated noise patterns. The noise function takes spatial coordinates modified by scale and offset parameters to generate procedural variation.
-
-### Noise with Position and Time [[Ep3, 61:06](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3666s)]
-```vex
-@Cd = noise(chv('offset')+@P*chv('fancyscale')*@Time);
-```
-Demonstrates progressive complexity in using noise functions with position data, from basic noise(@P) to more sophisticated combinations involving channel parameters for scale/offset control and time-based animation. The final version combines offset, scaled position, and time multiplication to create animated noise patterns on point colors.
 
 ### Noise Function with Parameters [[Ep3, 61:18](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3678s)]
 ```vex
-@Cd = noise(chv('offset')+@P*chv('fancyscale'));
+// chv() reads vector parameters for real-time UI adjustment of noise characteristics.
+// Offset shifts the noise lookup position; fancyscale controls spatial frequency.
+@Cd = noise(chv('offset') + @P * chv('fancyscale'));
 ```
-Demonstrates using the noise function to generate color values by combining position with channel-referenced parameters for offset and scale control. The chv() function reads vector parameters to enable real-time adjustment of noise characteristics through the interface.
 
 ### Noise with Channel References and Time [[Ep3, 62:58](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3778s)]
 ```vex
-@Cd = noise(chv('offset')+@P*chv('fancyscale')+@Time);
-```
-Applies animated noise to point color by combining position scaled by a vector parameter, an offset parameter, and the current time attribute. The chv() function retrieves vector channel parameters, allowing for three-dimensional control over noise frequency and offset, while @Time drives the animation.
-
-### Animating Noise with Offset and Time [[Ep3, 64:10](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3850s)]
-```vex
+// Add @Time as a 4th coordinate to animate the noise pattern over the timeline.
+// chv() provides 3D control; @Time drives animation independently of position.
 @Cd = noise(chv('offset') + @P * chv('fancyscale') + @Time);
 ```
-Demonstrates various methods for animating noise patterns by combining position (@P), scale parameters, offset controls, and time (@Time). The final version shows how to add an offset parameter, multiply position by a fancy scale vector, and add time to create animated noise-based color patterns.
 
 ### Animating Noise with Offset Parameter [[Ep3, 64:18](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3858s)]
 ```vex
-@Cd = noise(chv('offset')*@P*chv('fancyscale')*@Frame);
+// @Frame creates discrete per-frame steps; @Time is continuous (uses float seconds).
+// Multiply channels together: offset * position * scale * frame = animated noise.
+@Cd = noise(chv('offset') * @P * chv('fancyscale') * @Frame);
 ```
-Demonstrates combining multiple parameters to control noise-based color attributes, including vector offset, fancy scale, and frame-based animation. The chv() channel references allow interactive control of the noise pattern position and scale, while @Frame creates time-based animation.
 
-## Curl Noise
-
-### Animated Noise with Channels [[Ep3, 66:12](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3972s)]
+### Animated Noise with Time [[Ep3, 67:02](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4022s)]
 ```vex
-@Cd = curlnoise(chv('offset')+@P*chv('fancyscale')*@Time);
-```
-Demonstrates progressive building of animated noise expressions by combining channel parameters with position, time, and noise functions. The final version uses curlnoise with offset, scaled position, and time multiplication to create evolving turbulent color patterns.
-
-### Animating Noise with Time and Parameters [[Ep3, 66:14](https://www.youtube.com/watch?v=fOasE4T9BRY&t=3974s)]
-```vex
-@Cd = curlnoise(@P*chv('fancyscale')*@Time);
-```
-Demonstrates progressive techniques for animating noise patterns using parameter channels and the @Time attribute. The final example uses curlnoise with a vector scale parameter multiplied by @Time to create evolving, divergence-free noise patterns that animate automatically over the timeline.
-
-## Noise Patterns
-
-### Animating Noise with Time [[Ep3, 67:02](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4022s)]
-```vex
+// Adding @time (lowercase) to the result -- not the input -- shifts color over time.
+// Multiplying by @P stretches the noise pattern outward from the origin.
 @Cd = noise(@P + chv('offset')) * @P * chv('fancyscale') + @time;
 ```
-Creates animated noise-based color by adding a channel vector offset to position for noise sampling, multiplying the result by position and a scale vector, then adding time to animate the pattern. The combination of position multiplication and time addition produces stretched, flowing noise patterns that evolve over the timeline.
-
-## Curl Noise
 
 ### Animated Curl Noise Color [[Ep3, 68:08](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4088s)]
 ```vex
+// curlnoise() returns a divergence-free 3D vector field (no sinks/sources).
+// Directly assign to @Cd for organic flowing color patterns.
+// fancyscale controls spatial frequency; @Time drives the animation.
 @Cd = curlnoise(@P * chv('fancyscale') + @Time);
 ```
-Uses curl noise to generate animated color values based on point positions and time. The fancyscale channel parameter controls spatial frequency, while @Time drives the animation. This creates smoothly evolving color patterns across geometry.
 
 ### Curlnoise Color Animation [[Ep3, 68:10](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4090s)]
 ```vex
+// Extract a single channel (.g = green) from the curl noise vector result.
+// Assign only to @Cd.x (red) to create grayscale-style time-varying color.
 @Cd = 0;
 @Cd.x = curlnoise(@P * chv('fancyscale')).g * @Time;
 ```
-Uses curlnoise to animate point color by extracting the green channel (g component) of the curl noise result and multiplying it by time, then assigning it to only the red color channel. This creates time-based color variations driven by the divergence-free curl noise field.
 
 ### Curl Noise Function Arguments [[Ep3, 68:50](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4130s)]
 ```vex
-v@Cd = curlnoise(@P*chv('fancyscale'))*0.5+0.5;
+// curlnoise() evaluates its entire argument as one expression before processing.
+// Multiply result by 0.5 + 0.5 to remap from [-1,1] to [0,1] range for color.
+v@Cd = curlnoise(@P * chv('fancyscale')) * 0.5 + 0.5;
 ```
-This demonstrates how curl noise evaluates its input argument as a single expression before processing it. The entire calculation @P*chv('fancyscale') is evaluated first, then passed to curlnoise() as one input, with the result remapped to 0-1 range and assigned to color.
 
-### Curl Noise Color Animation [[Ep3, 69:18](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4158s)]
+### Curl Noise Color Animation -- Single Component [[Ep3, 69:18](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4158s)]
 ```vex
+// Assign the full vector to @Cd, then access .x / [0] / .r interchangeably.
 v@Cd = curlnoise(@P * chv('fancyscale') * @Time);
-@Cd[1]
+// @Cd[1] accesses the green channel (same as @Cd.g or @Cd.y)
 ```
-Uses curlnoise to generate animated vector colors based on point position, scaled by a channel parameter and animated with @Time. Accesses the green channel component of the resulting color vector for further operations or visualization.
 
 ### Curl Noise Color with Channel [[Ep3, 69:30](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4170s)]
 ```vex
+// cv() is an alias for chv() -- reads a vector channel parameter.
+// curlnoise() returns a 3D vector; assign directly to @Cd for flowing color.
 @Cd = curlnoise(@P * cv('fancyscale') + @Time);
 ```
-Uses curl noise to generate a color based on position scaled by a custom channel parameter and animated with time. The curlnoise() function returns a 3D vector field that can be directly assigned to the color attribute, creating organic flowing color patterns.
 
 ### Animating Curlnoise with Time [[Ep3, 71:10](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4270s)]
 ```vex
+// Double-quoted channel names work identically to single-quoted.
+// curlnoise creates divergence-free swirling color -- useful for fluid-like effects.
 @Cd = curlnoise(@P * chv("fancyscale") * @Time);
 ```
-Uses curlnoise to generate animated color values by multiplying position with a channel parameter and the @Time attribute. This creates divergence-free noise that evolves over time, useful for creating flowing, swirling color patterns on geometry.
 
 ### Curlnoise Single Component Assignment [[Ep3, 72:04](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4324s)]
 ```vex
+// Zero the full color first, then drive only the x (red) channel.
+// Extracts scalar noise from a vector noise function by taking one component.
 @Cd = 0;
 @Cd.x = curlnoise(@P * chv('fancyscale') + @Time);
 ```
-Demonstrates extracting a single component from curlnoise by first zeroing the color attribute, then assigning only the x component of the divergence-free vector field to create a grayscale noise pattern. This technique is useful when you want scalar noise values from a vector-based noise function.
 
 ### Curlnoise Color Components [[Ep3, 72:12](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4332s)]
 ```vex
+// vector(0) zeros all three components. Then assign only the .x component.
+// .x, .r, and [0] are all equivalent ways to access the first component.
 v@Cd = vector(0);
 v@Cd.x = curlnoise(@P * chv('fancyscale') + @Time).x;
 ```
-This code demonstrates extracting the x component from curlnoise to drive color values. First the color attribute is zeroed, then a single component (x, which could also be accessed as r) of the curlnoise vector is assigned to the x channel of the color attribute, creating a grayscale animated effect based on curl noise.
 
-### Noise Functions for Color Animation [[Ep3, 74:00](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4440s)]
+### Curl Noise Color Animation -- Red Channel [[Ep3, 74:20](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4460s)]
 ```vex
-@Cd = curlnoise(@P * chv('fancyscale') * @Time);
-```
-Demonstrates various noise-based approaches to animating color attributes, starting with simple noise and progressing to curlnoise with time-based animation. The final version uses curlnoise with controllable scale parameters and time multiplication to create animated color patterns based on point positions.
-
-### Curl Noise Color Animation [[Ep3, 74:20](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4460s)]
-```vex
+// Initialise to black, then drive only the red channel with curlnoise * time.
+// Multiplying the curlnoise result by @Time grows the effect over the timeline.
 @Cd = 0;
 @Cd.x = curlnoise(@P * chv("fancyscale")) * @Time;
 ```
-Creates animated color by using curl noise to drive the red color channel over time. The code initializes color to black, then sets only the red component using curl noise scaled by position and time, with the scale controlled by a channel parameter.
 
 ### Curlnoise with Time Animation [[Ep3, 74:22](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4462s)]
 ```vex
+// Seed color from position, then override only the red channel with animated curlnoise.
+// Adding @Time to the noise input translates the lookup through the field over time.
 @Cd = @P;
 @Cd.r = curlnoise(@P * chv('fancyscale') + @Time);
 ```
-Assigns color to points by using curlnoise driven by animated position. The red channel is modulated by curlnoise that changes over time, creating animated color variation based on both spatial position and temporal evolution.
 
-### Animated Curl Noise Color [[Ep3, 80:32](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4832s)]
+### Animated Curl Noise Color -- Position Seed [[Ep3, 80:32](https://www.youtube.com/watch?v=fOasE4T9BRY&t=4832s)]
 ```vex
+// Same as above but uses .x instead of .r (identical in VEX).
+// Curl noise generates a 3D vector; only the x component drives the red channel.
 @Cd = @P;
 @Cd.x = curlnoise(@P * chv('fancyscale') + @Time);
 ```
-Sets color based on position, then animates the red channel using curl noise driven by scaled position and time. The curl noise function generates a 3D vector field but only the x component is used for the red color channel.
 
-### For Loop with Curl Noise [Needs Review] [[Ep5, 125:54](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=7554s)]
+### For Loop with Curl Noise [[Ep5, 125:54](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=7554s)]
 ```vex
+// Build a polyline by iterating, computing curl noise offset at each step.
+// Subtracting @Time from pos shifts the lookup through the field for animation.
+// Adding i gives each iteration a unique noise sample even at the same position.
 vector offset, pos;
 int pr, pt;
 float stepsize;
@@ -166,76 +162,79 @@ float stepsize;
 pr = addprim(0, 'polyline');
 stepsize = 0.5;
 
-for(int i = 0; i < 6; i++) {
+for (int i = 0; i < 6; i++) {
     offset = curlnoise(pos - @Time + i);
+    pos += offset * stepsize;
+    pt = addpoint(0, pos);
+    addvertex(0, pr, pt);
+}
 ```
-Sets up a for loop to iterate 6 times, calculating a curl noise offset for each iteration. The curl noise function is evaluated at the current position offset by negative time plus the iteration index, creating a time-varying noise pattern that differs for each loop iteration.
-
-## Noise Patterns
 
 ### Random Primitive Removal with Seed Control [[Ep5, 144:30](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=8670s)]
 ```vex
-if(rand(@primnum, ch('seed')) < ch('cutoff')){
+// rand() with a seed parameter gives repeatable randomness.
+// cutoff slider controls what percentage of geometry is removed.
+// Two-argument rand() hashes both values together for a unique result per seed.
+
+// Remove primitives probabilistically (run over primitives)
+if (rand(@primnum, ch('seed')) < ch('cutoff')) {
     removepoint(0, @primnum, 1);
 }
 
-if(rand(@ptnum) < ch('cutoff')){
+// Remove based on point number (run over points)
+if (rand(@ptnum) < ch('cutoff')) {
     removeprim(0, @primnum, 1);
 }
 
-if(rand(@ptnum, ch('seed')) < ch('cutoff')){
+// Remove primitives with seeded randomness (run over points)
+if (rand(@ptnum, ch('seed')) < ch('cutoff')) {
     removeprim(0, @primnum, 1);
 }
 ```
-Demonstrates using rand() with seed values to randomly remove primitives or points based on a cutoff threshold. The seed parameter allows for repeatable randomness, while the cutoff slider controls what percentage of geometry is removed, useful for creating natural-looking variations in geometry.
 
-### Random Primitive Removal with Seed Control [[Ep5, 144:38](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=8678s)]
+### Random Primitive Removal via Primitive UV [[Ep5, 144:38](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=8678s)]
 ```vex
-if(rand(@primuv, ch('seed')) < ch('cutoff')){
+// Hash on @primuv for UV-space-based randomness rather than integer primnum.
+// seed changes the pattern; cutoff sets the removal threshold.
+if (rand(@primuv, ch('seed')) < ch('cutoff')) {
     removepoint(0, @primuv, 1);
 }
 ```
-Uses a seeded random function to probabilistically remove points based on primitive UV coordinates and a cutoff threshold. The seed parameter allows control over the randomness pattern, while the cutoff slider determines the probability of point removal. This technique is useful for creating natural-looking variations in geometry by adding controlled randomness.
 
 ### Random Point Deletion with Seed [[Ep5, 159:42](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=9582s)]
 ```vex
+// Set an up vector, then conditionally delete points with seeded randomness.
+// rand() = white noise; noise() = structured, scalable, animatable pattern.
 v@up = set(0, 1, 0);
-if(rand(@primnum, ch('seed')) < ch('cutoff')) {
+if (rand(@primnum, ch('seed')) < ch('cutoff')) {
     removepoint(0, @primnum, 1);
 }
 ```
-Demonstrates random point deletion using rand() with a seed parameter for reproducibility and a cutoff threshold. The code sets an up vector and conditionally removes points based on whether a seeded random value falls below a user-controlled cutoff. This technique is mentioned as an alternative to using noise() for more structured deletion patterns.
-
-### Noise vs Rand for Deletion [Needs Review] [[Ep5, 159:48](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=9588s)]
-```vex
-if(rand(@primnum, ch('seed')) < ch('cutoff')){
-    removeprim(0, @primnum, 1);
-}
-
-int pt = addpoint(0, (0,3,0));
-addprim(0, 'polyline', @primnum, pt);
-
-int pt = addpoint(0, @P + @N);
-addprim(0, 'polyline', @ptnum, pt);
-```
-Demonstrates the difference between rand() and noise() for procedural deletion of primitives. While rand() provides pure white noise with a seed parameter, noise() offers more structured patterns that can be scaled, offset, and animated over time, making it useful for effects like noise flowing across a grid to control deletion patterns.
 
 ### Noise vs Rand for Deletion [[Ep5, 159:50](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=9590s)]
 ```vex
-if(rand(@primnum, ch('seed')) < ch('cutoff')){
+// rand() = pure white noise, good for scattered random removal.
+// noise() = spatially coherent, can be scaled/animated -- flows across geometry.
+
+// rand-based removal
+if (rand(@primnum, ch('seed')) < ch('cutoff')) {
     removeprim(0, @primnum, 1);
 }
 
-int pt = addpoint(0, {0,1,0});
+// Add a point and connect as polyline (example of procedural topology)
+int pt = addpoint(0, {0, 1, 0});
 
-if (@ptnum==0) {
-    addpoint(0, {0,1,0});
+// Conditional point addition on first point only
+if (@ptnum == 0) {
+    addpoint(0, {0, 1, 0});
 }
 ```
-Comparison of rand() versus noise() for structured deletion patterns. While rand() produces pure white noise, noise() offers more structure and can be scaled, offset, and animated over time, making it useful for flowing deletion patterns across geometry.
 
-### Time-based wave animation with randomness [Needs Review] [[Ep5, 84:08](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=5048s)]
+### Time-based Wave Animation with Randomness [[Ep5, 84:08](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=5048s)]
 ```vex
+// Accumulate sine-wave displacement from all nearby points.
+// rand(pt) offsets timing per-point so waves don't fire in sync.
+// d*ch('freq') ties wave frequency to distance; d*ch('amp') ties amplitude.
 vector pos;
 int pts[];
 int pt;
@@ -243,22 +242,24 @@ float d, s, f, t, e, a;
 
 pts = nearpoints(1, @P, ch('radius'));
 
-foreach(int pt; pts) {
+foreach (int pt; pts) {
     pos = point(1, "P", pt);
-    d = distance(@P, pos);
-    s = fit(d, 0, ch('radius'), 1, 0);
-    s = chramp('s', s);
-    t = @Time * ch('speed');
-    t += rand(pt);
-    a = d * ch('amp');
-    f = d * ch('freq');
-    e += sin(t * f) * a;
+    d   = distance(@P, pos);
+    s   = fit(d, 0, ch('radius'), 1, 0); // falloff: 1 at center, 0 at edge
+    s   = chramp('s', s);                 // artistic ramp control over falloff
+    t   = @Time * ch('speed');            // global time, scaled by speed
+    t  += rand(pt);                       // per-point time offset for variety
+    a   = d * ch('amp');                  // amplitude scales with distance
+    f   = d * ch('freq');                 // frequency scales with distance
+    e  += sin(t * f) * a;                 // accumulate sine displacement
 }
+@P.y += e;
 ```
-Creates animated waves by accumulating sine-based displacement values from nearby points. Uses time multiplied by a speed channel, adds per-point randomness via rand(), and modulates wave amplitude and frequency based on distance from neighboring points.
 
-### Time-based wave animation setup [Needs Review] [[Ep5, 84:10](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=5050s)]
+### Time-based Wave Animation Setup [[Ep5, 84:10](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=5050s)]
 ```vex
+// Minimal setup: gather nearpoints, compute distance-based amplitude and frequency,
+// then add rand(pt) to time so each point's wave is offset differently.
 vector pos;
 int pts[];
 int pt;
@@ -266,237 +267,248 @@ float d, a, f, t;
 
 pts = nearpoints(1, @P, 40);
 
-foreach(int pt; pts){
+foreach (int pt; pts) {
     pos = point(1, "P", pt);
-    d = distance(@P, pos);
-    a = fit(d, 0, ch("radius"), 1, 0);
-    d = clamp(d, a, 1);
-    t = @Time * ch("speed");
-    t += rand(pt);
-    a = d * ch("amp");
-    f = d * ch("freq");
+    d   = distance(@P, pos);
+    a   = fit(d, 0, ch("radius"), 1, 0); // falloff weight
+    d   = clamp(d, a, 1);
+    t   = @Time * ch("speed");           // scaled time
+    t  += rand(pt);                      // per-point random time offset
+    a   = d * ch("amp");
+    f   = d * ch("freq");
+}
 ```
-Sets up time-based animation variables for wave effects by multiplying @Time with a speed parameter, adding per-point randomness using rand(pt) to offset timing, and computing amplitude and frequency based on distance. This creates animated waves with per-point variation and controllable speed.
 
-## Curl Noise
-
-### Quaternion wobble with curl noise [Needs Review] [[Ep7, 107:58](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=6478s)]
+### Quaternion Wobble with Curl Noise [[Ep7, 107:58](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=6478s)]
 ```vex
+// Build orientation from surface normal, add a fixed tilt (extrarot),
+// then a sine-based head-shake (headshake).
+// wobble uses curlnoise -- position-based so each point gets unique motion.
 vector N, up;
 vector4 extrarot, headshake, wobble;
 
-N = normalize(@P);
-up = {0,1,0};
-@orient = quaternion(maketransform(N, up));
-extrarot = quaternion(radians(@0), {1,0,0});
-headshake = quaternion(radians(20) * sin(@Time*3), {0,1,0});
-wobble = quaternion({0,0,1} * curlnoise(@P + @Time));
+N  = normalize(@P);
+up = {0, 1, 0};
+@orient  = quaternion(maketransform(N, up));
+extrarot = quaternion(radians(@0), {1, 0, 0});
+headshake = quaternion(radians(20) * sin(@Time * 3), {0, 1, 0});
+wobble   = quaternion({0, 0, 1} * curlnoise(@P + @Time)); // Z-axis curl noise wobble
 
 @orient = qmultiply(@orient, extrarot);
 @orient = qmultiply(@orient, headshake);
+// @orient = qmultiply(@orient, wobble);  // add wobble layer when ready
 ```
-Declares a wobble quaternion variable and initializes it using curl noise applied to a Z-axis vector. The curl noise input is driven by point position plus time, creating an animated vector field for rotation around the Z axis that will be multiplied into the final orientation.
 
-### Quaternion Wobble with Curl Noise [Needs Review] [[Ep7, 108:26](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=6506s)]
+### Quaternion Wobble with Curl Noise -- Full [[Ep7, 108:26](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=6506s)]
 ```vex
+// Three-layer orientation: base align + fixed tilt + head-shake + noise wobble.
+// curlnoise(pos + time, roughness, attenuation) -- second arg controls roughness.
+// Each point gets unique wobble because the noise lookup is keyed to @P.
 vector N, up;
 vector4 extrarot, headshake, wobble;
 
-N = normalize(@P);
-up = {0,1,0};
-@orient = quaternion(maketransform(N, up));
-extrarot = quaternion(radians(ch("angle")), {1,0,0});
-headshake = quaternion(radians(20) * sin(@Time*3), {0,1,0});
-wobble = quaternion({0,0,1} * curlnoise(@P+@Time,2));
+N  = normalize(@P);
+up = {0, 1, 0};
+@orient   = quaternion(maketransform(N, up));
+extrarot  = quaternion(radians(ch("angle")), {1, 0, 0});
+headshake = quaternion(radians(20) * sin(@Time * 3), {0, 1, 0});
+wobble    = quaternion({0, 0, 1} * curlnoise(@P + @Time, 2)); // roughness = 2
 
 @orient = qmultiply(@orient, extrarot);
 @orient = qmultiply(@orient, headshake);
 @orient = qmultiply(@orient, wobble);
 ```
-Adds a third quaternion rotation layer using curl noise to create random wobbling motion. The wobble quaternion is constructed from curl noise sampled at the point's position plus time, multiplied by the Z-axis vector, creating position-based random rotations that vary over time. Each point gets its own unique wobble pattern since the noise lookup is based on @P.
 
-### Quaternion Wobble with Curl Noise [[Ep7, 108:32](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=6512s)]
+### Quaternion Wobble with Curl Noise -- Clean [[Ep7, 108:32](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=6512s)]
 ```vex
+// Slowed-down version: @Time * 0.2 reduces wobble animation speed.
+// h = normalized position direction (radial from origin).
+// 90-degree tilt aligns geometry standing on a sphere surface.
 vector h, up;
 vector4 extrarot, headshake, wobble;
 
-h = normalize(@P);
+h  = normalize(@P);
 up = {0, 1, 0};
-@orient = quaternion(maketransform(h, up));
-extrarot = quaternion(radians(90), {1, 0, 0});
+@orient   = quaternion(maketransform(h, up));
+extrarot  = quaternion(radians(90), {1, 0, 0}); // 90-deg tilt to stand upright
 headshake = quaternion(radians(20) * sin(@Time * 3), {0, 1, 0});
-wobble = quaternion({0, 0, 1} * curlnoise(@P + @Time * 0.2));
+wobble    = quaternion({0, 0, 1} * curlnoise(@P + @Time * 0.2)); // slow wobble
 
 @orient = qmultiply(@orient, extrarot);
 @orient = qmultiply(@orient, headshake);
 @orient = qmultiply(@orient, wobble);
 ```
-Adds a wobble rotation to oriented geometry by creating a quaternion from curl noise based on point position plus time, then multiplying it with the existing orientation quaternions. The curl noise creates unique, natural-looking random wobbles for each point because it's position-based, and animates over time with the @Time offset.
 
-## Noise Patterns
-
-### Noise-based quaternion rotation animation [Needs Review] [[Ep7, 52:46](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3166s)]
+### Noise-based Quaternion Rotation [[Ep7, 52:46](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3166s)]
 ```vex
+// trunc(noise * 4) quantizes noise to 0/1/2/3, multiplied by PI/2 = 90-deg steps.
+// This creates stepped rotations (0, 90, 180, 270) that animate as noise evolves.
+// Using @P + @Time makes patterns spatially coherent and time-animated.
 vector axis1;
 axis1 = chv("axis");
 axis1 = normalize(axis1);
-float angle = trunc(noise(@P + @Time) * 4) * $PI/2;
+float angle = trunc(noise(@P + @Time) * 4) * $PI / 2;
 
 @orient = quaternion(angle, axis1);
 ```
-Replaces random rotation with noise-based rotation that evolves over time, using position and time as noise input. The noise function creates more structured, coherent patterns compared to random values, and truncating the result to 4 discrete steps creates stepped rotations at 90-degree intervals that animate smoothly across space and time.
 
 ### Noise-Based Orientation with Quaternions [[Ep7, 52:50](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3170s)]
 ```vex
+// noise(@P * @Frame) -- multiply position by frame for time-animated noise.
+// Axis is scaled by quantized angle, then quaternion(axis) uses axis-angle form
+// where |axis| = angle in radians.
 vector axis;
 axis = chv('axis');
 axis = normalize(axis);
-axis *= trunc(noise(@P*@Frame)*4)*$PI/2;
+axis *= trunc(noise(@P * @Frame) * 4) * $PI / 2;
 
 @orient = quaternion(axis);
 ```
-Replaces rand() with noise(@P*@Frame) to create spatially coherent, time-animated rotation axes for quaternion orientations. The noise function produces more structured, less random-looking results than pure random, with values that change smoothly over space and time when multiplied by @Frame.
 
-### Quaternion Rotation from Noise [Needs Review] [[Ep7, 53:10](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3190s)]
+### Quaternion Rotation from Noise [[Ep7, 53:14](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3194s)]
 ```vex
-vector axis1;
-axis1 = chv('axis');
-axis1 = normalize(axis1);
-axis1 = trunc(noise(@P * @Time) * 4) * $PI / 2;
-
-@orient = quaternion(axis1);
-```
-Creates randomized rotations using noise truncated to discrete angles (multiples of PI/2), then converts the result to a quaternion orientation. The truncation quantizes the noise output to create stepped rotations rather than smooth variation, which explains why certain rotation values appear less frequently.
-
-### Quantized Noise for Orientation [Needs Review] [[Ep7, 53:14](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3194s)]
-```vex
+// Use @P.y as a secondary noise seed to break up horizontal banding.
+// trunc(@a * 4) * (PI/2) = four discrete rotation steps at 90-deg intervals.
 vector axis;
 axis = chv('axis');
 axis = normalize(axis);
-@a = noise(@P + @P.y);
-axis *= trunc(@a*4)*(PI/2);
+@a   = noise(@P + @P.y);        // use y as additional seed to reduce banding
+axis *= trunc(@a * 4) * (PI / 2);
 
 @orient = quaternion(axis);
 ```
-Uses noise based on point position to create quantized rotation angles by truncating the noise value multiplied by 4, then scaling by PI/2 to produce 90-degree increments. The axis vector is scaled by this quantized rotation value before being converted to a quaternion orientation attribute, resulting in stepped rather than continuous rotations.
 
 ### Remapping Noise with Fit and Ramp [[Ep7, 54:10](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3250s)]
 ```vex
+// Three approaches to controlling noise distribution for quaternion rotation.
+
+// 1. Raw noise -- limited variance (noise() output clusters around 0.4-0.6)
 vector axis;
 axis = chv('axis');
 axis = normalize(axis);
-@a = noise(@P+@Time);
-axis *= trunc(@a*4)*PI/2;
-
+@a   = noise(@P + @Time);
+axis *= trunc(@a * 4) * PI / 2;
 @orient = quaternion(axis);
 
-// With fit to expand noise range
-vector axis;
+// 2. fit() stretches the 0.4-0.6 cluster to full 0-1 range for better distribution
 axis = chv('axis');
 axis = normalize(axis);
-@a = noise(@P+@Time);
-@a = fit(@a, 0.4, 0.6, 0, 1);
-axis *= trunc(@a*4)*PI/2;
-
+@a   = noise(@P + @Time);
+@a   = fit(@a, 0.4, 0.6, 0, 1); // expand midrange noise to full range
+axis *= trunc(@a * 4) * PI / 2;
 @orient = quaternion(axis);
 
-// With chramp for artistic control
-vector axis;
+// 3. chramp() for full artistic control via a ramp parameter widget
 axis = chv('axis');
 axis = normalize(axis);
-@a = noise(@P+@Time);
-@a = chramp('noise_remap', @a);
+@a   = noise(@P + @Time);
+@a   = chramp('noise_remap', @a); // ramp lets you sculpt the distribution
+axis *= trunc(@a * 4) * PI / 2;
+@orient = quaternion(axis);
 ```
-Demonstrates three approaches to using noise for quaternion rotation: first storing raw noise in an @a attribute, then using fit() to remap the noise range from 0.4-0.6 to 0-1 for better distribution, and finally using chramp() to allow artistic control over noise remapping via a ramp parameter. The @a attribute is created for easier inspection in the geometry spreadsheet.
 
-### Remapping noise with fit function [[Ep7, 55:44](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3344s)]
+### Remapping Noise with Fit Function [[Ep7, 55:44](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3344s)]
 ```vex
+// fit() remaps the 0.4-0.6 band of noise values to 0-1, amplifying contrast.
+// This makes discrete rotation steps (trunc * PI/2) distribute more evenly.
 vector axis;
 axis = chv('axis');
 axis = normalize(axis);
-@a = noise(@P*@Time);
-@a = fit(@a, 0.4, 0.6, 0, 1);
-axis *= trunc(@a*4)*@t/2;
+@a   = noise(@P * @Time);
+@a   = fit(@a, 0.4, 0.6, 0, 1); // stretch midrange to full range
+axis *= trunc(@a * 4) * @t / 2;
 
 @orient = quaternion(axis);
 ```
-Uses the fit() function to remap noise values by taking the range between 0.4 and 0.6 from the attribute @a and stretching it to fill the full 0 to 1 range, creating more variance and contrast in the noise distribution. This selective remapping creates more dramatic random rotations by amplifying values in the middle range of the noise.
 
-### Quaternion Rotation from Noise [[Ep7, 56:20](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3380s)]
+### Quaternion Rotation from Noise -- Lmn Freq [[Ep7, 56:20](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3380s)]
 ```vex
+// f@lmn is a point attribute controlling per-point noise frequency.
+// Discrete angles (multiples of PI/2 = 90 deg) stored as quaternions in @orient.
 vector axis;
 axis = chv('axis');
 axis = normalize(axis);
-@a = noise(@P*f@lmn);
-axis *= trunc(@a*4)*$PI/2;
+@a   = noise(@P * f@lmn);       // f@lmn = float "lmn" attribute for per-point freq
+axis *= trunc(@a * 4) * $PI / 2;
 
 @orient = quaternion(axis);
 ```
-Creates quaternion-based orientation by computing a noise value at each point position, then truncating and scaling it to create discrete rotation angles (multiples of 90 degrees) around a user-defined axis. The axis vector is read from a channel parameter, normalized, then multiplied by the quantized noise value to create rotation angles that are stored as quaternions in the @orient attribute.
-
-### Interactive Noise Manipulation with Ramps [Needs Review] [[Ep7, 60:02](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3602s)]
-```vex
-vector axis;
-axis = normalize(axis);
-
-@orient = quaternion(axis);
-
-v@orient = quaternion(axis);
-axis = chv("axis");
-axis = normalize(axis);
-
-@a = noise(@P*10);
-@a = chv("a");
-
-@orient = quaternion(axis);
-
-@P.y = @a;
-
-@orient = quaternion(axis);
-```
-Demonstrates using channel references and ramps to get interactive visual feedback when tweaking noise values. By connecting UI controls to noise parameters, you can adjust values in real-time and see how they affect the output, similar to adjusting levels in Photoshop. The ramp allows you to fit and remap the noise distribution dynamically.
 
 ### Visualizing Noise with Quaternion Rotation [[Ep7, 61:04](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3664s)]
 ```vex
+// chramp remaps noise distribution; trunc reduces to discrete steps.
+// trunc(@a / 4) * PI -- note dividing by 4, not multiplying -- fewer steps.
 vector axis;
 axis = chv('axis');
 axis = normalize(axis);
-@a = noise(@ptnum);
-@a = chramp('noise_remap', @a);
-axis *= trunc(@a/4)*(PI);
+@a   = noise(@ptnum);              // per-point noise using integer ptnum
+@a   = chramp('noise_remap', @a);  // artistic ramp control
+axis *= trunc(@a / 4) * (PI);
 @orient = quaternion(axis);
 ```
-This code generates noise-driven rotation by creating a normalized axis vector from a parameter, generating noise per point, remapping it through a ramp parameter, then using that value to create quaternion orientations. The truncation reduces rotation contrast by quantizing the angle values before converting to quaternions.
 
 ### Visualizing Data with Height and Orientation [[Ep7, 62:30](https://www.youtube.com/watch?v=9ztkhG7DhuA&t=3750s)]
 ```vex
+// Drive both @P.y and @orient from the same noise value for visual data inspection.
+// Points jump to discrete height levels set by trunc() thresholds.
+// Second block shows a separate N + up -> orient pattern using frame-based up vector.
 vector axis;
 axis = chv('a');
 axis = normalize(axis);
-axis = noise(@ptnum);
-@a = chramp('noise_remap', @a);
-axis *= trunc(@a*4)*(PI/2);
-@P.y = @a;
+axis = noise(@ptnum);              // reuse noise as axis direction
+@a   = chramp('noise_remap', @a);
+axis *= trunc(@a * 4) * (PI / 2);
+@P.y = @a;                         // lift point height to match noise value
 
 @orient = quaternion(axis);
 
-@N = {0,1,0};
-float a = sin($F*0.1);
-float c = cos($F*0.1);
-@up = set(a,0,c);
-
+// Separate example: oscillating up vector drives orientation over time
+@N  = {0, 1, 0};
+float a = sin($F * 0.1);
+float c = cos($F * 0.1);
+@up = set(a, 0, c);                // rotating up vector in XZ plane
 @orient = quaternion(maketransform(@N, @up));
 ```
-Uses noise-driven attribute values to control both point height (@P.y) and orientation through quaternions. The technique employs chramp to remap noise values and trunc to create discrete rotation steps, causing points to jump between different height levels based on threshold values that can be adjusted to visualize data distribution.
 
-## Curl Noise
-
-### Curl Noise with Vector Offset [Needs Review] [[Ep8, 90:28](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=5428s)]
+### Curl Noise with Vector Offset [[Ep8, 90:28](https://www.youtube.com/watch?v=KJUZD4PTyz0&t=5428s)]
 ```vex
+// Offset point positions using curl noise for divergence-free flow displacement.
+// @w is a point attribute (e.g., influence weight); scale by 0.2 to reduce magnitude.
+// Adding {0,1,0} to @P shifts the noise lookup vertically to break horizontal symmetry.
+// Third argument (0, 0) = roughness and attenuation overrides.
 vector pos = chv('pos');
-@P += pos * curlnoise((@P + {0,1,0}) * (@w * 0.2) * @Time, 0, 0);
+@P += pos * curlnoise((@P + {0, 1, 0}) * (@w * 0.2) * @Time, 0, 0);
 ```
-Offsets point positions using curl noise driven by a channel-referenced vector parameter. The noise input combines the point position with a vertical offset, scaled by a point attribute @w and time, creating animated divergence-free flow patterns that can be controlled via the pos parameter.
+
+## Common Mistakes
+
+```vex
+// WRONG: noise() output is NOT uniform -- it clusters around 0.4-0.6.
+// Always use fit() or chramp() before feeding noise into trunc() for discrete steps.
+// BAD -- most values will map to the same step:
+@a = noise(@P);
+axis *= trunc(@a * 4) * PI / 2;
+
+// GOOD -- expand the range first:
+@a = fit(noise(@P), 0.4, 0.6, 0, 1);
+axis *= trunc(@a * 4) * PI / 2;
+
+// WRONG: curlnoise returns a vector, not a float.
+// Assigning directly to a float attribute truncates to the first component.
+// EXPLICIT is better -- access .x / .r / [0] deliberately:
+float val = curlnoise(@P).x;  // intentional scalar extraction
+
+// WRONG: @Time vs @time (case matters in VEX).
+// @Time = current time in seconds (float, same as $T).
+// @time = same but lowercase -- both exist; be consistent.
+
+// WRONG: rand(@primnum) on a point wrangle runs over points, not primitives.
+// Use the correct iteration context for the wrangle type (points/prims/etc.).
+
+// NOTE: curlnoise(@P * scale * @Time) -- multiplication order matters.
+// @P * scale * @Time is NOT the same as @P * (scale + @Time).
+// Use + @Time to add a time offset; use * @Time to scale position by time.
+```
 
 ## See Also
 - **VEX Common Patterns** (`vex_patterns.md`) -- noise displacement patterns

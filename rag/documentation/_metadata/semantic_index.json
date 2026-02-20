@@ -2447,5 +2447,161 @@
       "string"
     ],
     "summary": "Wire, cable, rope, and strand dynamics simulation"
+  },
+  "rag_material_binding_strength": {
+    "description": "Material binding strength override in Solaris. Covers Assign Material LOP bindingstrength parameter, weakerThanDescendants vs strongerThanDescendants, when materials don't apply due to existing bindings, Unassign Material for clearing bindings.",
+    "keywords": ["material binding", "binding strength", "material override", "material not working", "material not applying", "default material", "stronger than descendants", "weaker than descendants", "unassign material", "clear material"],
+    "reference_file": "rag_material_binding_strength",
+    "summary": "Material binding strength and override patterns in Solaris LOPs"
+  },
+  "rag_material_library_setup": {
+    "description": "Creating materials inside Material Library LOP. CRITICAL: matlib.cook(force=True) BEFORE createNode() on shader children. Multiple material subnets, geopath assignment directly in matlib, wiring order.",
+    "keywords": ["material library", "matlib", "create material", "material subnet", "matlib cook", "multiple materials", "material scope", "matlib setup", "geopath"],
+    "reference_file": "rag_material_library_setup",
+    "summary": "Material Library LOP creation, cooking requirement, and multi-material setup"
+  },
+  "rag_material_vexpression": {
+    "description": "Dynamic material assignment using VEXpressions in LOPs. CRITICAL: LOPs use @elemnum not @ptnum. Conditional material assignment, attribute-driven assignment via primvars.",
+    "keywords": ["vexpression material", "dynamic material", "conditional material", "elemnum", "ptnum", "attribute driven material", "material per prim", "lop vexpression"],
+    "reference_file": "rag_material_vexpression",
+    "summary": "VEXpression-based dynamic material assignment in LOPs (@elemnum, not @ptnum)"
+  },
+  "rag_material_mtlx_encoding": {
+    "description": "MaterialX as USD prims workflow. How MaterialX nodes become USD shader prims, mtlx: namespace, reading/writing MaterialX parameters through USD API, Sdf.ValueTypeNames, the _shader suffix issue.",
+    "keywords": ["materialx usd", "mtlx encoding", "materialx prim", "shader prim", "mtlx namespace", "materialx usd api", "material shader suffix", "sdf value types"],
+    "reference_file": "rag_material_mtlx_encoding",
+    "summary": "MaterialX shader encoding as USD prims with Sdf value types"
+  },
+  "rag_material_primvar_driven": {
+    "description": "shop_materialpath and primvar-driven material assignment. SOP-level attribute propagation to LOPs, primvar readers in MaterialX, using geometry attributes to drive shader parameters.",
+    "keywords": ["shop_materialpath", "primvar material", "attribute driven material", "geometry material", "sop material", "material attribute", "primvar reader"],
+    "reference_file": "rag_material_primvar_driven",
+    "summary": "SOP-to-LOP material assignment via shop_materialpath and primvar-driven shading"
+  },
+  "rag_material_karma_xpu": {
+    "description": "Karma XPU material constraints. XPU supports MaterialX ONLY (no VEX shaders), checking renderer compatibility, XPU-unsupported features (custom AOVs, some SSS modes), fallback to CPU.",
+    "keywords": ["karma xpu", "xpu material", "xpu limitation", "materialx only", "xpu shader", "xpu compatibility", "gpu render", "xpu vs cpu"],
+    "reference_file": "rag_material_karma_xpu",
+    "summary": "Karma XPU material constraints — MaterialX only, no VEX shaders"
+  },
+  "rag_material_path_expressions": {
+    "description": "USD path expressions vs Houdini prim patterns for material assignment. Exact prim paths required for bindings, wildcard patterns for targeting, collection-based targeting.",
+    "keywords": ["usd path expression", "prim pattern", "material path", "prim selection", "wildcard prim", "collection target", "exact prim path", "glob pattern lop"],
+    "reference_file": "rag_material_path_expressions",
+    "summary": "USD path expressions vs Houdini glob patterns — exact paths required for material bindings"
+  },
+  "rag_material_collect_vop": {
+    "description": "Multi-renderer material switching. Collect VOP pattern for multi-output materials across Karma CPU, XPU, and other delegates. USD material purpose outputs.",
+    "keywords": ["collect vop", "multi renderer", "material switching", "renderer specific", "karma cpu xpu material", "render delegate material", "universal material"],
+    "reference_file": "rag_material_collect_vop",
+    "summary": "Multi-renderer material switching with Collect VOP and USD material outputs"
+  },
+  "rag_material_texture_override": {
+    "description": "Texture parameter overrides in Karma. Per-prim texture variation via Edit Properties LOP, UDIM setup, CPU vs XPU texture handling differences.",
+    "keywords": ["texture override", "texture parameter", "per-prim texture", "edit properties material", "texture path", "instanced material", "udim", "texture streaming"],
+    "reference_file": "rag_material_texture_override",
+    "summary": "Texture overrides, UDIM setup, and CPU vs XPU texture handling"
+  },
+  "rag_material_common_errors": {
+    "description": "Consolidated material error patterns. Grey/default shader (binding didn't take), material not visible (check binding strength), matlib cook error, wrong prim path, @ptnum vs @elemnum, scope mismatch.",
+    "keywords": ["material error", "grey shader", "default material", "material not visible", "material debug", "material troubleshoot", "matlib error", "material assignment failed"],
+    "reference_file": "rag_material_common_errors",
+    "summary": "Material error diagnostics: grey shader, invisible material, matlib cook, path mismatch"
+  },
+  "rag_dop_wiring_order": {
+    "description": "DOP node wiring conventions. DOPs use merge-based connections (NOT SOP-style direct wiring). Objects first, then forces, then solvers via merge nodes. enforceWiringOrder, findOrCreateMergeInput pattern.",
+    "keywords": ["dop wiring", "dop merge", "dop connection", "enforceWiringOrder", "merge input", "dop node order", "dop network wiring", "connect dop nodes"],
+    "reference_file": "rag_dop_wiring_order",
+    "summary": "DOP merge-based wiring conventions: objects → forces → solver via merge"
+  },
+  "rag_dop_simulation_guard": {
+    "description": "ALWAYS wrap DOP network creation/modification in simulation-enabled guard. hou.setSimulationEnabled(False) try/finally pattern prevents crashes and incorrect initial state.",
+    "keywords": ["simulation guard", "setSimulationEnabled", "disable simulation", "simulation during edit", "dop crash", "safe dop editing", "simulation enabled"],
+    "reference_file": "rag_dop_simulation_guard",
+    "summary": "Simulation-enabled guard pattern for safe DOP network editing"
+  },
+  "rag_dop_solver_creation": {
+    "description": "Creating solvers in DOP networks. Bullet RBD, Pyro, FLIP, Vellum solver setup. Substep guidelines, solver wiring from merge output, solver configuration.",
+    "keywords": ["dop solver", "create solver", "bullet solver", "pyro solver", "flip solver", "vellum solver", "mpm solver", "solver substeps"],
+    "reference_file": "rag_dop_solver_creation",
+    "summary": "DOP solver creation: Bullet, Pyro, FLIP, Vellum with substep guidelines"
+  },
+  "rag_dop_data_tree": {
+    "description": "DopData hierarchy navigation. Simulation → objects → subdata (geometry, forces, solver). freeze() for extracting geometry, DOP records for metadata, recursive subdata listing.",
+    "keywords": ["dop data", "DopData", "dop hierarchy", "dop subdata", "freeze", "extract geometry dop", "dop records", "simulation data"],
+    "reference_file": "rag_dop_data_tree",
+    "summary": "DOP data tree navigation, freeze() pattern, and record access"
+  },
+  "rag_dop_rbd_setup": {
+    "description": "Complete RBD simulation setup via Python. Packed Object workflow, Bullet solver, constraint networks, collision geometry, activation/deactivation, ground plane.",
+    "keywords": ["rbd", "rigid body", "rbd packed", "rbd object", "fracture simulation", "bullet solver", "rbd constraint", "rbd collision", "rbd activation"],
+    "reference_file": "rag_dop_rbd_setup",
+    "summary": "RBD packed object setup: fracture, constraints, Bullet solver, collision"
+  },
+  "rag_dop_checkpoint": {
+    "description": "DOP checkpoint and recovery. .sim file caching, checkpoint intervals, resume from checkpoints, File Cache SOP for geometry output, disk space management.",
+    "keywords": ["dop checkpoint", "simulation cache", "sim file", "resume simulation", "checkpoint interval", "cache simulation", "simulation recovery"],
+    "reference_file": "rag_dop_checkpoint",
+    "summary": "DOP checkpoint configuration, .sim caching, and simulation recovery"
+  },
+  "rag_dop_python_pattern": {
+    "description": "Complete end-to-end DOP network creation pattern. Source geometry verification, DOP network creation, objects, forces, constraints, solver, output, caching. Master pattern tying all DOP RAG entries together.",
+    "keywords": ["dop python", "create dop network", "build simulation", "full dop setup", "dop from scratch", "simulation python", "dop template", "automated simulation"],
+    "reference_file": "rag_dop_python_pattern",
+    "summary": "Master DOP creation pattern: end-to-end RBD network via Python"
+  },
+  "rag_dop_common_errors": {
+    "description": "Consolidated DOP error patterns. Frame-1 explosion, fall-through, no-object-to-solve, unexpected reset, freeze requirement, substep instability. Diagnostic functions for each.",
+    "keywords": ["dop error", "simulation error", "simulation explode", "objects fall through", "no object to solve", "simulation crash", "dop not working", "dop troubleshoot"],
+    "reference_file": "rag_dop_common_errors",
+    "summary": "DOP error diagnostics: explosion, fall-through, missing objects, instability"
+  },
+  "rag_render_usd_pipeline": {
+    "description": "USD render pipeline hierarchy: RenderSettings → RenderProduct → RenderVar. How to traverse and read these prims. How Karma LOP creates them automatically under /Render.",
+    "keywords": ["render pipeline", "RenderSettings", "RenderProduct", "RenderVar", "render prim", "render hierarchy", "USD render", "render configuration"],
+    "reference_file": "rag_render_usd_pipeline",
+    "summary": "USD render pipeline: RenderSettings → RenderProduct → RenderVar hierarchy"
+  },
+  "rag_render_karma_lop": {
+    "description": "Karma LOP as unified render configuration. Creates RenderSettings + RenderProduct + camera binding. Key parms: resolutionx/y, camera (USD prim path), picture, samplesperpixel. CPU vs XPU differences.",
+    "keywords": ["karma lop", "karma node", "karma settings", "karma render node", "karma cpu", "karma xpu", "render settings lop", "karma configuration"],
+    "reference_file": "rag_render_karma_lop",
+    "summary": "Karma LOP unified render configuration: resolution, camera, output, samples"
+  },
+  "rag_render_output_path": {
+    "description": "Render output path configuration. Set path on BOTH Karma LOP (picture) AND usdrender ROP (outputimage). soho_foreground=1 for synchronous rendering. Output directory creation and verification.",
+    "keywords": ["render output", "output path", "render file", "picture parm", "outputimage", "render to file", "soho_foreground", "synchronous render"],
+    "reference_file": "rag_render_output_path",
+    "summary": "Render output path: Karma LOP picture + ROP outputimage, soho_foreground"
+  },
+  "rag_render_frame_tokens": {
+    "description": "CRITICAL: Three different frame token systems. Houdini: $F4. husk CLI: <F4>. USD timeSamples: explicit per-frame. Using the wrong format causes silent failures.",
+    "keywords": ["frame token", "$F4", "F4", "frame padding", "render sequence", "output path sequence", "husk output", "timeSamples render"],
+    "reference_file": "rag_render_frame_tokens",
+    "summary": "Frame token disambiguation: $F4 (Houdini) vs <F4> (husk) vs USD timeSamples"
+  },
+  "rag_render_branch_convention": {
+    "description": "USD /Render scene graph branch convention. All render configuration under /Render/. renderSettingsPrimPath stage metadata. Multiple render configs. Karma LOP auto-follows convention.",
+    "keywords": ["/Render", "render branch", "render prim location", "renderSettingsPrimPath", "render scene graph", "render configuration location"],
+    "reference_file": "rag_render_branch_convention",
+    "summary": "USD /Render branch convention and renderSettingsPrimPath metadata"
+  },
+  "rag_render_karma_namespace": {
+    "description": "Karma property namespaces for per-prim render control. karma:object: (visibility, matte, phantom), karma:light: properties. USD-encoded parameter names. Edit Properties LOP integration.",
+    "keywords": ["karma namespace", "karma:object", "karma:light", "per-prim render", "render visibility", "matte object", "phantom object", "karma property"],
+    "reference_file": "rag_render_karma_namespace",
+    "summary": "Karma property namespaces: karma:object: visibility/matte/phantom per-prim control"
+  },
+  "rag_render_delegate_detection": {
+    "description": "Render delegate detection via Hydra registry. Query available delegates, check AOV support, validate material compatibility per delegate. BRAY_HdKarma vs BRAY_HdKarmaXPU capabilities.",
+    "keywords": ["render delegate", "hydra delegate", "available renderers", "renderer compatibility", "BRAY_HdKarma", "render plugin", "AOV support"],
+    "reference_file": "rag_render_delegate_detection",
+    "summary": "Render delegate detection, capabilities, and material compatibility checking"
+  },
+  "rag_render_husk_cli": {
+    "description": "husk standalone USD renderer at $HFS/bin/husk. Key flags: --renderer, --frame, --frame-range, --output (<F4> tokens), --res, --pixel-samples. iconvert for EXR-to-JPEG conversion.",
+    "keywords": ["husk", "command line render", "headless render", "batch render", "husk cli", "standalone render", "husk flags", "iconvert"],
+    "reference_file": "rag_render_husk_cli",
+    "summary": "husk CLI rendering: flags, frame tokens, EXR output, iconvert preview pipeline"
   }
 }

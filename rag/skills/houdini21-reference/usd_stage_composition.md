@@ -2,18 +2,18 @@
 
 ## Composition Arcs (LIVRPS)
 
-USD resolves opinions via **LIVRPS** strength ordering (strongest first):
-
-| Arc | Strength | Use Case | Example |
-|-----|----------|----------|---------|
-| **L**ocal opinions | 1 (strongest) | Direct attribute edits on a prim | `prim.GetAttribute("radius").Set(2.0)` |
-| **I**nherits | 2 | Share properties across prim classes | `inherits = </class/hero>` |
-| **V**ariantSets | 3 | Switchable options on a prim | `variantSet "color" = { "red" { ... } "blue" { ... } }` |
-| **R**eferences | 4 | Bring in external assets | `references = @./assets/chair.usd@` |
-| **P**ayloads | 5 | Deferred-load references (lazy) | `payload = @./heavy_geo.usd@` |
-| **S**ublayers | 6 (weakest) | Stack layers in a stage | `subLayers = [@./anim.usd@, @./model.usd@]` |
-
-**Key rule**: A stronger arc's opinion always wins. Local edits override everything.
+```python
+# LIVRPS strength ordering (strongest first):
+LIVRPS = {
+    "L": {"strength": 1, "arc": "Local opinions",  "example": 'prim.GetAttribute("radius").Set(2.0)'},
+    "I": {"strength": 2, "arc": "Inherits",         "example": 'inherits = </class/hero>'},
+    "V": {"strength": 3, "arc": "VariantSets",      "example": 'variantSet "color" = { "red" {} "blue" {} }'},
+    "R": {"strength": 4, "arc": "References",        "example": 'references = @./assets/chair.usd@'},
+    "P": {"strength": 5, "arc": "Payloads",          "example": 'payload = @./heavy_geo.usd@'},
+    "S": {"strength": 6, "arc": "Sublayers",         "example": 'subLayers = [@./anim.usd@, @./model.usd@]'},
+}
+# Key rule: stronger arc's opinion always wins. Local edits override everything.
+```
 
 ## Layer Stacking Patterns
 
@@ -30,27 +30,25 @@ shot_final.usd          (sublayer - comp's final tweaks)
           asset.usd     (reference - model/materials)
 ```
 
-Each department only edits their layer. Opinions cascade: lighting can override layout positions, FX can override lighting visibility.
+```python
+# Each department only edits their layer.
+# Opinions cascade: lighting overrides layout, FX overrides lighting visibility.
 
-### In Houdini/Solaris
+# In Houdini/Solaris:
+# sublayer1 (LOP) -> sublayer2 (LOP) -> merge (LOP)
+# Sublayer: stacks opinions (weaker). Use for department overrides.
+# Reference: brings asset under a prim path. Use for asset loading.
+# Graft: moves prim subtree to new location. Use for scene assembly.
 
+# Reference vs Sublayer decision:
+COMPOSITION_GUIDE = {
+    "Loading an asset (chair, tree, character)": "Reference -- isolates under target prim, can instance",
+    "Adding department overrides (lighting, FX)": "Sublayer -- stacks on existing stage, opinions merge",
+    "Combining multiple shots":                   "Sublayer -- each shot layer contributes to final",
+    "Instancing same asset N times":              "Reference + instanceable -- single prototype, many instances",
+    "Deferred loading (huge assets)":             "Payload -- like reference but lazy-loaded",
+}
 ```
-sublayer1 (LOP) -> sublayer2 (LOP) -> merge (LOP)
-```
-
-- **Sublayer**: Stacks opinions (weaker than existing). Use for department overrides.
-- **Reference**: Brings in an asset under a prim path. Use for asset loading.
-- **Graft**: Moves a prim subtree to a new location. Use for scene assembly.
-
-### Reference vs Sublayer Decision
-
-| Scenario | Use | Why |
-|----------|-----|-----|
-| Loading an asset (chair, tree, character) | Reference | Isolates asset under target prim, can instance |
-| Adding department overrides (lighting, FX) | Sublayer | Stacks on existing stage, opinions merge |
-| Combining multiple shots | Sublayer | Each shot layer contributes to final |
-| Instancing same asset N times | Reference + instanceable | Single prototype, many instances |
-| Deferred loading (huge assets) | Payload | Like reference but lazy-loaded |
 
 ## Prim Hierarchy Best Practices
 
@@ -80,35 +78,43 @@ sublayer1 (LOP) -> sublayer2 (LOP) -> merge (LOP)
     /ground_concrete
 ```
 
-### Naming Conventions
+```python
+# Naming conventions:
+# - snake_case for prim names (not camelCase)
+# - Group by function: /cameras/, /lights/, /geo/, /materials/
+# - Assets get own scope: /geo/hero/ not /hero/
+# - Materials under /materials/ or /World/materials/
 
-- Use **snake_case** for prim names (not camelCase)
-- Group by function: `/cameras/`, `/lights/`, `/geo/`, `/materials/`
-- Assets get their own scope: `/geo/hero/` not `/hero/`
-- Materials live under `/materials/` or `/World/materials/`
-
-## Common Prim Types
-
-| Type | Category | Purpose |
-|------|----------|---------|
-| `Xform` | Transform | Grouping node with transform |
-| `Mesh` | Geometry | Polygonal mesh |
-| `BasisCurves` | Geometry | Curves (hair, wires) |
-| `Points` | Geometry | Point cloud |
-| `Sphere`, `Cube`, `Cylinder`, `Cone`, `Capsule` | Geometry | Implicit shapes |
-| `DomeLight` | Lighting | Environment/HDRI light |
-| `DistantLight` | Lighting | Sun/directional |
-| `RectLight` | Lighting | Area light (rectangular) |
-| `DiskLight` | Lighting | Area light (disk) |
-| `SphereLight` | Lighting | Point/sphere light |
-| `CylinderLight` | Lighting | Tube/strip light |
-| `Camera` | Camera | Render camera |
-| `Material` | Shading | Material container |
-| `Shader` | Shading | Individual shader node |
-| `Scope` | Organization | Non-transformable group |
-| `GeomSubset` | Geometry | Face set for material binding |
-| `RenderProduct` | Rendering | Output file definition |
-| `RenderVar` | Rendering | AOV definition |
+# Common USD prim types
+PRIM_TYPES = {
+    # Transform
+    "Xform":        "Grouping node with transform",
+    # Geometry
+    "Mesh":         "Polygonal mesh",
+    "BasisCurves":  "Curves (hair, wires)",
+    "Points":       "Point cloud",
+    "Sphere":       "Implicit sphere shape",
+    "Cube":         "Implicit cube shape",
+    # Lighting
+    "DomeLight":    "Environment/HDRI light",
+    "DistantLight": "Sun/directional light",
+    "RectLight":    "Rectangular area light",
+    "DiskLight":    "Disk area light",
+    "SphereLight":  "Point/sphere light",
+    "CylinderLight":"Tube/strip light",
+    # Camera
+    "Camera":       "Render camera",
+    # Shading
+    "Material":     "Material container",
+    "Shader":       "Individual shader node",
+    # Organization
+    "Scope":        "Non-transformable group",
+    "GeomSubset":   "Face set for material binding",
+    # Rendering
+    "RenderProduct":"Output file definition",
+    "RenderVar":    "AOV definition",
+}
+```
 
 ## Transforms
 
@@ -191,12 +197,10 @@ instancer.CreateProtoIndicesAttr().Set([0, 0])
 
 ### Native Instancing (shared subtrees)
 
-Mark a prim as instanceable to share its subtree:
 ```python
+# Mark prim as instanceable to share subtree (all refs share GPU memory)
 prim.SetInstanceable(True)
 ```
-
-All references to the same asset with `instanceable=True` share GPU memory.
 
 ## Visibility and Purpose
 
@@ -211,12 +215,13 @@ UsdGeom.Imageable(prim).MakeVisible()
 UsdGeom.Imageable(prim).GetPurposeAttr().Set("render")
 ```
 
-| Purpose | Viewport | Render | Use Case |
-|---------|----------|--------|----------|
-| `default` | Yes | Yes | Normal geometry |
-| `render` | No | Yes | Render-only detail (displacement, subdivision) |
-| `proxy` | Yes | No | Viewport stand-in (low-poly) |
-| `guide` | Optional | No | Construction guides, debug geo |
+```python
+# Purpose tokens:          Viewport  Render  Use Case
+# "default"                Yes       Yes     Normal geometry
+# "render"                 No        Yes     Render-only detail (displacement, subdivision)
+# "proxy"                  Yes       No      Viewport stand-in (low-poly)
+# "guide"                  Optional  No      Construction guides, debug geo
+```
 
 ## Material Binding
 
@@ -241,38 +246,145 @@ UsdShade.MaterialBindingAPI(prim).Bind(
 )
 ```
 
-## Common USD Attributes
+## Layer Operations
 
-| Attribute | Type | Prim Types | Description |
-|-----------|------|------------|-------------|
-| `xformOp:translate` | double3 | Any Xformable | Position |
-| `xformOp:rotateXYZ` | float3 | Any Xformable | Euler rotation |
-| `xformOp:scale` | float3 | Any Xformable | Scale |
-| `visibility` | token | Any Imageable | "inherited" or "invisible" |
-| `purpose` | token | Any Imageable | "default", "render", "proxy", "guide" |
-| `extent` | float3[] | Boundable | Bounding box [min, max] |
-| `doubleSided` | bool | Mesh | Render both sides |
-| `subdivisionScheme` | token | Mesh | "catmullClark", "loop", "bilinear", "none" |
-| `faceVertexCounts` | int[] | Mesh | Vertex count per face |
-| `faceVertexIndices` | int[] | Mesh | Vertex indices |
-| `points` | point3f[] | Mesh/Points | Point positions |
-| `normals` | normal3f[] | Mesh | Surface normals |
+```python
+# Layer stacking and management in Houdini Python
+from pxr import Sdf, Usd
 
-## Houdini LOP Node Quick Reference
+def inspect_stage_layers(stage):
+    """List all layers contributing to the stage."""
+    root_layer = stage.GetRootLayer()
+    print(f"Root layer: {root_layer.identifier}")
 
-| Node | Purpose | When to Use |
-|------|---------|-------------|
-| `sopimport` | Bring SOP geo to stage | First step for any SOP geometry |
-| `reference` | Reference a USD file | Loading external assets |
-| `sublayer` | Stack a USD layer | Department overrides |
-| `edit` | Modify existing prims | Transform, visibility, attribute edits |
-| `material_library` | Create materials | MaterialX/UsdPreviewSurface authoring |
-| `assign_material` | Bind material to prims | Material assignment (supports patterns) |
-| `light` | Create USD lights | Any light type |
-| `camera` | Create USD camera | Render cameras |
-| `render_settings` | Configure render | Karma settings, resolution, samples |
-| `usdrender` | Render ROP | Trigger Karma render |
-| `prune` | Remove prims | Clean up unwanted geometry |
-| `configure_layer` | Set layer metadata | Default prim, up-axis, meters-per-unit |
-| `graft` | Move prim subtree | Restructure hierarchy |
-| `collection` | Define prim collections | For light linking, material binding |
+    # Sublayers (weakest to strongest)
+    for i, sub in enumerate(root_layer.subLayerPaths):
+        print(f"  Sublayer {i}: {sub}")
+
+    # Session layer (strongest, temporary edits)
+    session = stage.GetSessionLayer()
+    if session:
+        print(f"Session layer: {session.identifier}")
+
+    # All used layers
+    used = stage.GetUsedLayers()
+    print(f"\nTotal layers used: {len(used)}")
+    for layer in used:
+        print(f"  {layer.identifier}")
+
+# inspect_stage_layers(stage)
+```
+
+```python
+# Create and save individual layers for department pipeline
+from pxr import Sdf, Usd
+
+def create_department_layer(stage, department, output_path):
+    """Create a new sublayer for a department's edits.
+    Department layers stack: lighting > animation > layout."""
+    layer = Sdf.Layer.CreateNew(output_path)
+
+    # Add as sublayer (strongest position = index 0)
+    root = stage.GetRootLayer()
+    root.subLayerPaths.insert(0, output_path)
+
+    # Set edit target to new layer
+    stage.SetEditTarget(Usd.EditTarget(layer))
+    print(f"Edit target: {department} layer ({output_path})")
+    print("All edits now go to this layer only")
+    return layer
+
+# create_department_layer(stage, "lighting", "$HIP/layers/lighting.usd")
+```
+
+```python
+# Configure layer metadata (default prim, up-axis, meters-per-unit)
+from pxr import UsdGeom, Usd
+
+def configure_root_layer(stage):
+    """Set standard layer metadata."""
+    root = stage.GetRootLayer()
+
+    # Default prim (what gets loaded when referenced)
+    stage.SetDefaultPrim(stage.GetPrimAtPath("/World"))
+
+    # Up axis (Y-up for most DCCs, Z-up for some game engines)
+    UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.y)
+
+    # Meters per unit (0.01 = centimeters, 1.0 = meters)
+    UsdGeom.SetStageMetersPerUnit(stage, 0.01)
+
+    print(f"Default prim: {stage.GetDefaultPrim().GetPath()}")
+    print(f"Up axis: {UsdGeom.GetStageUpAxis(stage)}")
+    print(f"Meters per unit: {UsdGeom.GetStageMetersPerUnit(stage)}")
+
+# configure_root_layer(stage)
+```
+
+```python
+# Query composition arcs on a prim
+from pxr import Usd, Pcp
+
+def inspect_composition(stage, prim_path):
+    """Show all composition arcs affecting a prim (LIVRPS order)."""
+    prim = stage.GetPrimAtPath(prim_path)
+    if not prim:
+        return
+
+    query = Usd.PrimCompositionQuery(prim)
+    arcs = query.GetCompositionArcs()
+    print(f"Composition arcs for {prim_path}: {len(arcs)}")
+    for arc in arcs:
+        arc_type = arc.GetArcType()
+        target = arc.GetTargetLayer()
+        target_path = arc.GetTargetPrimPath()
+        print(f"  {arc_type}: {target.identifier} -> {target_path}")
+
+# inspect_composition(stage, "/World/geo/hero")
+```
+
+```python
+# Houdini LOP node creation for common operations
+import hou
+
+def create_scene_assembly(stage_path="/stage"):
+    """Create standard Solaris scene assembly nodes."""
+    stage = hou.node(stage_path)
+    if not stage:
+        return
+
+    # SOP Import -- bring geometry to stage
+    sop_import = stage.createNode("sopimport", "import_hero")
+    sop_import.parm("soppath").set("/obj/hero_geo/OUT")
+
+    # Reference -- load external USD asset
+    ref = stage.createNode("reference", "ref_environment")
+    ref.parm("filepath1").set("$JOB/assets/environment/env.usd")
+    ref.parm("primpath1").set("/World/geo/environment")
+
+    # Sublayer -- department override layer
+    sublayer = stage.createNode("sublayer", "lighting_layer")
+    sublayer.parm("filepath1").set("$HIP/layers/lighting.usd")
+
+    # Configure layer -- set metadata
+    config = stage.createNode("configurelayer", "root_config")
+    config.parm("defaultprim").set("/World")
+
+    # Prune -- remove unwanted prims
+    prune = stage.createNode("prune", "cleanup")
+    prune.parm("primpattern1").set("/World/geo/construction_*")
+
+    stage.layoutChildren()
+    print("Scene assembly nodes created")
+
+
+create_scene_assembly()
+```
+
+## Common Mistakes
+- Sublayer vs reference confusion -- sublayer stacks opinions (departments), reference isolates assets
+- Wrong LIVRPS understanding -- local opinions are STRONGEST, sublayers are WEAKEST
+- Missing default prim -- referenced assets need a default prim or explicit prim path
+- Editing wrong layer -- check stage.GetEditTarget() before authoring opinions
+- VariantSet edits outside variant context -- use GetVariantEditContext() context manager
+- Instancing without instanceable flag -- prim.SetInstanceable(True) required for shared GPU memory

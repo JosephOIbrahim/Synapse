@@ -19,9 +19,8 @@ d *= ch('v_scale');
 d *= @Time;
 @P.y = sin(d);
 
-@P += @N * ch('push');
+@P += @N * ch('push');  // @N-based push respects surface direction; @P.y = sin(d) does not
 ```
-This demonstrates the difference between arbitrary displacement and normal-based displacement. The first section creates a wave effect by calculating distance from origin and modifying only the Y component, which doesn't respect the surface direction. The corrected approach uses @N to push points along their surface normals, properly respecting the geometry's orientation.
 
 ### Normal-based displacement [Needs Review] [[Ep2, 11:16](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=676s)]
 ```vex
@@ -30,9 +29,8 @@ d *= ch('N_scale');
 d *= @Frame;
 @P.y = sin(d);
 
-@P += @N * ch('push');
+@P += @N * ch('push');  // correct: displaces along surface normal, not world Y
 ```
-This code demonstrates the difference between non-directional displacement (modifying only @P.y based on distance from origin) and proper normal-based displacement using @N. The first section creates a wave pattern by calculating distance from origin and applying it to the Y axis, while the second section properly displaces points along their surface normals using a channel-driven push value.
 
 ### Normal-based Surface Displacement [[Ep2, 11:32](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=692s)]
 ```vex
@@ -41,105 +39,93 @@ d *= ch("v_scale");
 d *= PI;
 @P.y = sin(d);
 
-@P += @N * ch("push");
+@P += @N * ch("push");  // normal offset follows surface topology, not world space
 ```
-Creates a sinusoidal displacement pattern based on distance from origin, then offsets geometry along surface normals. The normal-based offset allows the undulation to follow the surface topology rather than occurring strictly in world space, producing more natural-looking deformation on curved surfaces.
 
 ### Animated Wave Displacement with Controls [[Ep2, 12:32](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=752s)]
 ```vex
 float d = length(@P);
 d *= ch('x_scale');
 d += @Frame;
-@P += @N * sin(d) * ch('wave_height');
+@P += @N * sin(d) * ch('wave_height');  // radial waves propagate outward; @Frame drives animation
 ```
-Creates an animated wave displacement effect by calculating distance from origin, scaling it with a channel parameter, adding frame number for animation, and displacing points along their normals using a sine wave modulated by a height control. This technique produces radial wave patterns that propagate outward over time.
 
 ### Animated Sine Wave Deformation [[Ep2, 13:52](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=832s)]
 ```vex
 float d = length(@P);
 d *= ch('v_scale');
 d += @Time;
-@P += @N*sin(d)*ch('wave_height');
+@P += @N*sin(d)*ch('wave_height');  // distance + @Time phase creates ripples from center
 ```
-Creates an animated sine wave deformation on geometry by calculating distance from origin, scaling it with a channel parameter, adding time for animation, then offsetting points along their normals by the sine of this value multiplied by a wave height control. The combination of distance-based calculation and time creates rippling waves that emanate from the center.
 
 ### Animated Sine Wave Displacement [[Ep2, 13:58](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=838s)]
 ```vex
 float d = length(@P);
 d *= ch('v_scale');
 d += @Time;
-@P += @N*sin(d) * ch('wave_height');
+@P += @N*sin(d) * ch('wave_height');  // same pattern; @Time subtraction drives outward motion
 ```
-Creates an animated ripple effect by calculating distance from origin, scaling it with a channel parameter, adding time for animation, then displacing points along their normals using a sine wave multiplied by a height control. The combination of distance-based calculation and time offset creates radial waves emanating from the center.
 
 ### Animated Wavelength Displacement [[Ep2, 14:02](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=842s)]
 ```vex
 float d = length(@P);
 d ^= ch('v_scale');
 d += @Time;
-@P += @N*sin(d);
+@P += @N*sin(d);  // ^= is VEX exponentiation, controls wavelength nonlinearly
 ```
-Creates an animated displacement effect by calculating distance from origin, scaling it with a channel parameter, adding time for animation, and displacing points along normals using a sine wave. The exponentiation operator allows control over the wavelength scale, while time creates continuous wave motion.
 
 ### Animated wave with channel controls [[Ep2, 14:46](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=886s)]
 ```vex
 float d = length(@P);
 d *= ch('v_scale');
 d += @Time;
-@P += @N * sin(d) * ch('wave_height');
+@P += @N * sin(d) * ch('wave_height');  // v_scale = frequency; wave_height = amplitude
 ```
-Creates an animated wave displacement by calculating distance from origin, scaling it with a channel parameter, adding time for animation, and offsetting points along their normals using a sine wave multiplied by a wave height control. The combination of distance-based phase and time creates rippling wave motion across the geometry.
 
 ### Animated Wave Displacement [[Ep2, 14:52](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=892s)]
 ```vex
 float d = length(@P);
 d *= ch("v_scale");
 d += @Frame;
-@P = @P * sin(d) * ch("wave_height");
+@P = @P * sin(d) * ch("wave_height");  // NOTE: @P *= sin collapses toward origin; prefer @P += @N*sin(d)*ch()
 ```
-Creates an animated radial wave displacement by calculating distance from origin, scaling it with parameters, adding frame-based animation, and applying a sine function modulated by wave height. The v_scale parameter controls the frequency of waves while wave_height controls the displacement amplitude.
 
 ### Animated Wave Deformation [[Ep2, 15:24](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=924s)]
 ```vex
 float d = length(@P);
 d *= ch("y_scale");
 d += @Time;
-@P += @N*sin(d)*ch("wave_height");
+@P += @N*sin(d)*ch("wave_height");  // y_scale = frequency; wave_height = amplitude
 ```
-Creates an animated wave deformation by calculating distance from origin, scaling it with a channel parameter, adding time for animation, and displacing points along their normals using a sine wave multiplied by a height parameter. The wave propagates outward from the origin over time, with adjustable scale and amplitude controls.
 
 ### Animated Wave Deformation with Channels [[Ep2, 16:00](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=960s)]
 ```vex
 float d = length(@P);
 d += @Time;
-@P.y = @P.y * sin(d) * ch("wave_height");
+@P.y = @P.y * sin(d) * ch("wave_height");  // modulates existing Y, not @N direction
 ```
-Creates an animated wave deformation by calculating distance from origin, adding time offset, and modulating the Y position with a sine function scaled by a channel parameter. The channel parameters allow interactive control over wave height and scale, producing a dynamic ripple effect that propagates outward from the center.
 
 ### Wave Distortion with Distance [Needs Review] [[Ep2, 17:32](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=1052s)]
 ```vex
 float d = length(@P);
 d -= ch("v_scale");
 d *= 6*@Time;
-@P.y = @P.y*sin(d) *ch("wave_height");
+@P.y = @P.y*sin(d) *ch("wave_height");  // v_scale offsets freq; 6*@Time speeds animation
 ```
-Creates an animated wave distortion effect by calculating distance from origin, offsetting and scaling it with time, then applying a sine wave to the Y position. The wave_height parameter controls amplitude while v_scale adjusts the wave frequency offset, creating a rippling effect that propagates across the geometry over time.
 
 ### Sine Wave Ripple Effect [[Ep2, 18:06](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=1086s)]
 ```vex
 float d = length(@P);
 v@v = ch("_scale");
-@P += @N * sin(d) * ch("wave_height");
+@P += @N * sin(d) * ch("wave_height");  // distance = phase; wave_height = amplitude; concentric rings
 ```
-Creates a ripple effect by calculating the distance from the origin to each point, then displacing points along their normals using a sine wave modulated by distance and controlled by channel parameters. The wave_height channel controls the amplitude of the ripple while the distance determines the phase, creating concentric wave patterns.
 
 ### Creating Sine Waves with Length [[Ep2, 18:38](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=1118s)]
 ```vex
 float d = length(@P);
 d *= ch("scale");
-@P += @N * sin(d) * ch("wave_height");
+@P += @N * sin(d) * ch("wave_height");  // scale = wavelength; wave_height = amplitude
 ```
-Demonstrates creating wave patterns by calculating distance from origin using length(), scaling it with a channel parameter, then displacing points along their normals using a sine function. Two channel parameters control the wavelength (scale) and amplitude (wave_height) of the resulting wave pattern.
 
 ## Ramp-Driven Deformation
 
@@ -147,18 +133,16 @@ Demonstrates creating wave patterns by calculating distance from origin using le
 ```vex
 float d = length(@P);
 d *= ch('scale');
-@P.y = chramp('my-ramp', d);
+@P.y = chramp('my-ramp', d);  // chramp gives artistic shape control vs fixed math
 ```
-This code calculates the distance of each point from the origin, scales it by a channel parameter, and uses that scaled distance to sample a ramp parameter which drives the Y position of points. The technique allows for artistic control over deformation patterns using a visual ramp curve instead of mathematical functions.
 
 ### Scaling distance with ramp and channels [Needs Review] [[Ep2, 47:16](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=2836s)]
 ```vex
 float d = length(@P);
 d *= ch('scale');
 d = chramp('myramp', d);
-@P.y = chramp('myramp', d);
+@P.y = chramp('myramp', d);  // double chramp: first remaps d, second drives Y
 ```
-This code calculates the distance of each point from the origin, scales it using a channel parameter, and then uses a ramp to remap those distance values to control the Y position of points. The technique allows for creating distance-based deformations across a grid that can be adjusted interactively via the scale parameter.
 
 ### Ramp-Driven Height Displacement [[Ep2, 48:18](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=2898s)]
 ```vex
@@ -166,9 +150,8 @@ float d = length(@P);
 d *= ch('scale');
 d -= ch('time');
 @P.y = chramp('myramp', d);
-@P.y *= ch('height');
+@P.y *= ch('height');  // ch('time') animates ramp lookup; height = amplitude multiplier
 ```
-This code uses the distance from origin to drive a ramp lookup, creating animated height displacement on geometry. The distance is scaled by a parameter, offset by time for animation, and the resulting ramp value is used to modify the Y position with an additional height multiplier for amplitude control.
 
 ### Animated Ramp Displacement with Height Control [[Ep2, 48:46](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=2926s)]
 ```vex
@@ -176,9 +159,8 @@ float d = length(@P);
 d *= ch("scale");
 d -= @Time;
 @P.y = chramp("myramp", d);
-@P.y *= ch("Height");
+@P.y *= ch("Height");  // subtracting @Time from d animates ramp lookup outward
 ```
-Creates an animated vertical displacement effect by calculating distance from origin, scaling and offsetting it by time, then sampling a ramp to control the Y position. The final displacement is multiplied by a height parameter for overall amplitude control, creating a spreading wave-like deformation across the geometry.
 
 ## Wave Deformation
 
@@ -190,9 +172,8 @@ d += $T;
 d = sin(d);
 d = fit(d, -1, 1, 0, 1);
 @P.y = chramp('myramp', d);
-@P.y *= ch('height');
+@P.y *= ch('height');  // fit() maps sin() [-1,1] to [0,1] for valid chramp input
 ```
-Creates an animated wave displacement by calculating distance from origin, scaling it, adding time to create motion, then using sine and fit to normalize the value for color ramp lookup. The ramp value drives the vertical position of points, creating a rippling grid animation controlled by height multiplier.
 
 ### Animated ramp with time offset [[Ep2, 49:28](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=2968s)]
 ```vex
@@ -202,9 +183,8 @@ d += @Time;
 d = sin(d);
 d = fit(d,-1,1,0,1);
 @P.y = chramp('my_ramp',d);
-@P.y *= ch('height');
+@P.y *= ch('height');  // fit() required: sin() returns [-1,1] but chramp expects [0,1]
 ```
-Creates an animated wave pattern by calculating distance from origin, scaling it with a parameter, adding time to animate, applying sine function, and using the result to sample a ramp for vertical displacement. The fit() function normalizes the sine wave output from [-1,1] to [0,1] for proper ramp sampling.
 
 ### Animated radial wave with point offset [Needs Review] [[Ep2, 51:56](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=3116s)]
 ```vex
@@ -212,9 +192,8 @@ float d = length(@P);
 d *= ch('scale');
 d -= @Time;
 @P.y = sin(d*ch('freq')/(@ptnum/100.0)*d);
-@Cd *= ch('height');
+@Cd *= ch('height');  // @ptnum/100.0 offsets each point's wave phase for variation
 ```
-Creates an animated radial wave pattern emanating from the origin by calculating distance from center, scaling and offsetting by time, then using sine function with point number offset and distance modulation to generate vertical displacement. The color is multiplied by a height parameter to visualize the wave intensity.
 
 ## Ramp-Driven Deformation
 
@@ -225,9 +204,8 @@ d *= ch("scale");
 d = qs(d);
 d *= $PI;
 @P.y = chramp("myamp", d);
-@P.y *= ch("height");
+@P.y *= ch("height");  // qs() wraps d to create repeating radial pattern; $PI scales lookup
 ```
-Creates a radial displacement pattern by calculating distance from origin, scaling and wrapping it with qs() function, then using that as input to a ramp parameter to drive vertical position. The pattern repeats radially around the origin, creating a circular wave-like effect controlled by a ramp and height parameter.
 
 ## Wave Deformation
 
@@ -237,9 +215,8 @@ float d = length(@P);
 d *= ch('scale');
 d -= @Time;
 @P.y = .1*sin(d);
-@v.y = sin(length(@P));
+@v.y = sin(length(@P));  // @v.y stores velocity for downstream simulation
 ```
-Creates an animated sine wave displacement by calculating distance from origin, applying a channel-based scale, offsetting by time, and using the result to drive vertical position with sine. The velocity attribute is set based on the sine of distance, creating a ripple effect that propagates over time.
 
 ## Ramp-Driven Deformation
 
@@ -249,9 +226,8 @@ float d = length(@P);
 d *= ch('scale');
 d %= 1;
 @P.y = chramp('myramp', d);
-@Cd = chramp('height', d);
+@Cd = chramp('height', d);  // d %= 1 normalizes to [0,1] for repeating concentric ring lookup
 ```
-Creates a radial displacement pattern by computing distance from origin, scaling and wrapping it with modulo to create repeating rings, then using a ramp to drive vertical displacement and color. The distance value is normalized to 0-1 range through the modulo operation, allowing the ramp to sample repeating concentric patterns.
 
 ## Wave Deformation
 
@@ -261,9 +237,8 @@ float d = length(@P);
 d *= ch('scale');
 d -= @Time;
 @P.y = chramp('myramp', d);
-@N.y = ch('height');
+@N.y = ch('height');  // sets normal Y for downstream shading, not displacement
 ```
-Creates an animated radial wave effect by calculating distance from origin, scaling and animating it with time, then using a ramp to modulate the vertical position. The scale parameter controls wave frequency while the ramp lookup creates the wave shape, with the height parameter affecting the normal's y component.
 
 ### Animated Ramp Wave Effect [[Ep2, 55:38](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=3338s)]
 ```vex
@@ -271,9 +246,8 @@ float d = length(@P);
 d *= ch('scale');
 d -= @Time;
 @P.y = chramp('my-ramp', d);
-@P.y *= ch('height');
+@P.y *= ch('height');  // ramp shapes the wave; scale=freq, height=amplitude
 ```
-Creates an animated wave effect by calculating distance from origin, scaling and animating it with time, then using that value to sample a ramp parameter which drives the Y position of points. The ramp allows artistic control over the wave shape while scale and height parameters control its frequency and amplitude.
 
 ## Ramp-Driven Deformation
 
@@ -283,9 +257,8 @@ float d = length(@P);
 d -= ch('scale');
 d -= @Time;
 @P.y = chramp('my-ramp', d);
-@P.y *= ch('height');
+@P.y *= ch('height');  // d -= scale then d -= @Time: offset + animate ramp lookup outward
 ```
-Creates an animated radial displacement effect by calculating distance from origin, offsetting it by scale and time parameters, then using that distance to sample a ramp channel which controls the Y position scaled by a height multiplier. The subtraction of @Time creates outward-moving waves over time.
 
 ## Wave Deformation
 
@@ -295,9 +268,8 @@ float d = length(@P);
 d *= ch('scale');
 d -= @Time;
 @P.y = chramp('my-map', d);
-@P.y *= ch('height');
+@P.y *= ch('height');  // subtracting @Time animates ramp lookup; height = amplitude
 ```
-Creates animated wave patterns by calculating distance from origin, scaling and offsetting by time, then using a ramp parameter to control vertical displacement. The ramp lookup value is animated by subtracting @Time from the scaled distance, creating waves that propagate over time. The final height is multiplied by a height parameter for amplitude control.
 
 ### Animated Waves with Ramp Control [[Ep2, 57:30](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=3450s)]
 ```vex
@@ -308,9 +280,8 @@ d %= 1;
 d = sin(d);
 d = fit(d, -1, 1, 0, 1);
 @P.y = chramp("myRamp", d);
-@P.y *= ch("height");
+@P.y *= ch("height");  // chain: @Time animate -> %= wrap -> sin oscillate -> fit normalize -> chramp shape
 ```
-Creates animated wave deformations by calculating distance from origin, animating it with time, applying sine wave oscillation, and then using a ramp parameter to shape the wave profile. The chramp lookup allows artistic control over the wave shape by mapping the oscillating value through a customizable ramp curve, which is then scaled by a height multiplier.
 
 ### Ramp and Distance Deformation [[Ep2, 58:14](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=3494s)]
 ```vex
@@ -320,9 +291,8 @@ d = abs(d);
 d = sin(d);
 d = fit(d, -1, 1, 0, 1);
 @P.y = chramp("myram", d);
-@P.y *= ch("height");
+@P.y *= ch("height");  // abs(d) ensures positive input; fit() normalizes for chramp
 ```
-Creates a vertical deformation by calculating distance from origin, applying sine wave modulation, and using chramp() to lookup values from a ramp parameter. The distance is scaled and fitted to 0-1 range before being used as the ramp lookup value, which controls the Y position of points multiplied by a height parameter.
 
 ### Distance-based Height with ID Offset [Needs Review] [[Ep2, 59:00](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=3540s)]
 ```vex
@@ -331,9 +301,8 @@ d *= ch('scale');
 d += @id;
 d += sin(d);
 d *= ch('height');
-@P.y = d;
+@P.y = d;  // @id offsets each point's wave phase; final @P.y = d (not *= height)
 ```
-Calculates a distance value from the origin using point position length, scales it with a channel parameter, offsets by point ID, applies a sine wave modulation, and uses the result to drive the Y position of points. The final line was corrected from 'ch('height')' to 'd' as the intent is to assign the calculated distance value to the point's Y coordinate.
 
 ### Fit and Ramp for Wave Displacement [[Ep2, 59:26](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=3566)]
 ```vex
@@ -342,9 +311,8 @@ d *= ch("scale");
 d -= sin(d);
 d = fit(d, -1, 1, 0, 1);
 @P.y = chramp("my-ramp", d);
-@P.y *= ch("height");
+@P.y *= ch("height");  // d -= sin(d) warps distance field; fit() maps to [0,1] for chramp
 ```
-This code creates a radial wave displacement by calculating distance from origin, applying sine wave modulation, and remapping the result through a ramp parameter for artistic control. The fit() function normalizes the sine wave's range from [-1,1] to [0,1] so it can properly drive the chramp() lookup, which then sets vertical position scaled by a height parameter.
 
 ### Ramp-driven displacement with fit [[Ep2, 59:44](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=3584s)]
 ```vex
@@ -354,9 +322,8 @@ d += 0;
 d *= sin(d);
 d = fit(d, -1, 1, 0, 1);
 @P.y = chramp("my-ramp", d);
-@P.y *= ch("height");
+@P.y *= ch("height");  // d *= sin(d) self-modulates; fit clamps to [0,1] for chramp
 ```
-Creates a radial displacement pattern by calculating distance from origin, applying sine wave modulation, fitting the result to 0-1 range, and using it to sample a ramp parameter for vertical displacement. The fit function clamps the sine wave oscillation to a normalized range suitable for ramp lookup, while position values themselves can extend beyond typical bounds.
 
 ### Ramp-driven height displacement [[Ep2, 62:54](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=3774s)]
 ```vex
@@ -366,9 +333,8 @@ d *= @Time;
 d = sin(d);
 
 @P.y = chramp("my-ramp", d);
-@P.y *= ch("height");
+@P.y *= ch("height");  // multiply d by @Time before sin() for time-varying oscillation
 ```
-This creates animated vertical displacement using a color ramp for control. The distance from origin is calculated, scaled by time and parameters, then passed through sine to create oscillation, and finally the result is used to sample a ramp that drives the Y-position of points, scaled by a height multiplier.
 
 ### Ramp-Driven Height Displacement [Needs Review] [[Ep2, 68:12](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=4092s)]
 ```vex
@@ -377,9 +343,8 @@ d *= ch("scale");
 d = sin(d);
 d = sin(d);
 d = fit(d, -1, 1, 0, 1);
-@P.y = chramp("my-ramp", d) * ch("height");
+@P.y = chramp("my-ramp", d) * ch("height");  // double sin() creates interference; fit() normalizes for chramp
 ```
-This code creates a radial wave pattern by calculating distance from origin, applying sine wave distortion, normalizing the result with fit(), and using a ramp parameter to drive vertical displacement. The double sine application creates more complex wave interference patterns, and the final height is controlled by a channel parameter for easy adjustment.
 
 ### Distance-Based Deformation with Ramps [[Ep2, 70:18](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=4218s)]
 ```vex
@@ -388,9 +353,8 @@ d *= ch('scale');
 d *= sin(d);
 d *= fit(d, -1, 1, 0, 1);
 d = chramp('my-ramp', d);
-@P.y *= ch('height');
+@P.y *= ch('height');  // chain: sin -> fit normalize -> chramp shape; @P.y not reassigned from d
 ```
-This code calculates distance from origin using length(@P), applies sinusoidal waves, normalizes the result with fit(), and uses a color ramp to control vertical displacement. The technique chains multiple operations to create controllable distance-based deformations with UI parameters for scale and height.
 
 ### Animated Radial Wave Pattern [[Ep2, 71:02](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=4262s)]
 ```vex
@@ -399,9 +363,8 @@ d *= ch('scale');
 d -= @Time;
 d %= 1;
 @P.y = chramp('my-ramp', d);
-@P.y *= ch('height');
+@P.y *= ch('height');  // d %= 1 creates repeating concentric rings for chramp lookup
 ```
-Creates an animated radial wave pattern by calculating distance from origin, scaling and offsetting by time, using modulo to create repeating rings, then applying a ramp to control vertical displacement. The height is multiplied by a parameter for overall amplitude control, producing concentric animated waves emanating from the center.
 
 ### Animated Radial Sine Wave [[Ep2, 71:14](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=4274s)]
 ```vex
@@ -411,9 +374,8 @@ d -= @Time;
 d = sin(d);
 d = fit(d, -1, 0, 0, 1);
 d = chramp('my_control_ramp', d);
-@P.y += ch('height');
+@P.y += ch('height');  // fit(d,-1,0,0,1) maps only negative half of sine to [0,1]
 ```
-Creates an animated radial sine wave pattern by calculating distance from origin, scaling it, subtracting time for animation, applying sine function, and remapping the result through a ramp parameter. The final remapped value displaces points vertically and can be used to drive color or geometry deformation.
 
 ### Distance-based height displacement with ramps [[Ep2, 74:32](https://www.youtube.com/watch?v=OyjB5ZifIuU&t=4472s)]
 ```vex
@@ -422,9 +384,8 @@ v@Cd = ch('color');
 d = sin(d);
 d = fit(d, -1, 1, 0, 1);
 d = chramp('height', d);
-@P.y *= ch('height');
+@P.y *= ch('height');  // core pattern: distance -> sin -> fit [0,1] -> chramp -> scale
 ```
-This example calculates the distance from the origin, applies a sine wave, normalizes it to 0-1 range, then uses a ramp parameter to control a vertical displacement multiplier. The code demonstrates core VEX patterns commonly used across production work, including distance fields, trigonometric functions, value remapping, and channel/ramp parameter integration.
 
 ## Ramp-Driven Deformation
 
@@ -434,9 +395,8 @@ float d = length(@P);
 d *= ch('pre_scale');
 d = chramp('my_stepped_ramp', d);
 d *= ch('post_scale');
-@P.y = d;
+@P.y = d;  // pre_scale controls ramp input range; post_scale multiplies ramp output
 ```
-This code calculates the distance from the origin using length(@P), scales it with a pre-multiplier channel, remaps the value through a stepped ramp parameter, applies a post-scale multiplier, and assigns the result to the Y position to create height displacement. The technique demonstrates how to chain multiple transformations including ramp lookups to achieve controlled deformation based on radial distance.
 
 ## Wave Deformation
 
@@ -449,44 +409,39 @@ d = @Time;
 
 @P += @N;
 
-@P += @N * ch('push');
+@P += @N * ch('push');  // progressive: d=@Time sine -> @N push -> @N*ch(push) controlled
 ```
-Demonstrates multiple techniques for displacing points including calculating distance from origin, using time-based sine wave deformation, and offsetting geometry along normals with channel-controlled strength. The code shows progressive iterations of displacement methods, with the final version using a 'push' parameter to control normal-based offset magnitude.
 
 ### Distance-Based Displacement [[Ep3, 10:42](https://www.youtube.com/watch?v=fOasE4T9BRY&t=642s)]
 ```vex
 float d = length(@P);
 d *= ch('scale');
 @Cd = d;
-@P.y = sin(d);
+@P.y = sin(d);  // @Cd = d visualizes distance; @P only writable in point context, not prim
 ```
-Calculates the distance of each point from the origin using length(@P), scales it with a channel parameter, assigns the distance to color, and displaces points vertically using a sine wave based on the scaled distance. The code demonstrates why @P can be written in point context but not in primitive context, as point positions are point-level attributes.
 
 ### Distance to Surface Point [Needs Review] [[Ep3, 27:48](https://www.youtube.com/watch?v=fOasE4T9BRY&t=1668s)]
 ```vex
 vector pos = point(1, @P);
 float d = distance(@P, pos);
 d *= chf("M1");
-@Cd.r = sin(d);
+@Cd.r = sin(d);  // point(1, @P) queries input 1 geometry; distance drives color visualization
 ```
-Uses the point() function to find the closest point on a reference surface geometry (input 1) to the current point position, then calculates the distance between them. The distance is multiplied by a channel parameter and used with sine to create a color pattern in the red channel, producing proximity-based visualization.
 
 ### Sine Wave Color and Position [[Ep3, 7:26](https://www.youtube.com/watch?v=fOasE4T9BRY&t=446s)]
 ```vex
 float d = length(@P);
 d *= ch('scale');
 @Cd = @P;
-@P.y = sin(d);
+@P.y = sin(d);  // @Cd = @P stores XYZ as RGB for spatial color visualization
 ```
-Calculates distance from origin using length(@P), scales it with a channel parameter, and applies a sine wave to the Y position based on this distance. Each point stores its position as a color attribute, creating a visualization where point colors represent their spatial coordinates while the geometry deforms into a sine wave pattern.
 
 ### Applying Sine Wave to Position [[Ep3, 8:58](https://www.youtube.com/watch?v=fOasE4T9BRY&t=538s)]
 ```vex
 float d = length(@P);
 d *= ch('scale');
-@P.y = sin(d);
+@P.y = sin(d);  // same as color calculation but applied to geometry: color -> deformation
 ```
-This code calculates the distance from the origin for each point, scales it using a channel parameter, and applies a sine function to the Y position. This creates a wave pattern along the Y axis based on radial distance from the origin, demonstrating how the same sine calculation used for color can be applied to geometric deformation.
 
 ## Ramp-Driven Deformation
 
@@ -500,17 +455,15 @@ vector bbox = relpointbbox(0, @P);
 
 vector bbox = relpointbbox(0, @P);
 float k = chramp('inflate', bbox.y);
-@P += @N * k * ch('scale');
+@P += @N * k * ch('scale');  // relpointbbox returns 0-1 coords; scale-independent unlike world @P
 ```
-Uses relpointbbox to get normalized bounding box coordinates (0-1 range) for each point, then demonstrates progressive complexity: first visualizing the Y component as color, then scaling point positions along normals by the Y coordinate, and finally using a ramp parameter to control the deformation gradient. This creates height-based effects where the influence varies smoothly from bottom to top of the geometry's bounding box.
 
 ### Ramp-Driven Inflation Using Bounding Box [[Ep4, 53:56](https://www.youtube.com/watch?v=66WGmbykQhI&t=3236s)]
 ```vex
 vector bbox = relpointbbox(0, @P);
 float t = chramp('inflate', bbox.y);
-@P += @N * t * ch('scale');
+@P += @N * t * ch('scale');  // bbox.y: 0=bottom, 1=top; ramp replaces linear scale for artistic control
 ```
-Uses a ramp parameter to control point displacement along the normal based on vertical bounding box position. The bbox.y value (0-1 from bottom to top) drives a chramp lookup, allowing customizable inflation profiles instead of linear scaling. This creates more artistic control over geometry deformation compared to direct bbox multiplication.
 
 ### Ramp-driven geometry deformation [[Ep4, 55:00](https://www.youtube.com/watch?v=66WGmbykQhI&t=3300s)]
 ```vex
@@ -585,9 +538,8 @@ Uses relpointbbox to get normalized (0-1) bounding box coordinates for each poin
 ```vex
 vector bbox = relpointbbox(0,@P);
 float t = chramp('inflate',bbox.y);
-@P += @N * t * ch('scale');
+@P += @N * t * ch('scale');  // relpointbbox makes effect scale-independent; same ramp works on any geometry
 ```
-Uses relpointbbox() to get normalized bounding box coordinates (0-1 range) and drives position displacement via a ramp parameter, allowing the same effect to work consistently across different geometry scales. The Y component of the relative bounding box is fed into a ramp to control inflation amount, making it easy to create effects like mid-body bulges that adapt to any character's proportions.
 
 ### Relative Bounding Box Inflation [[Ep4, 58:24](https://www.youtube.com/watch?v=66WGmbykQhI&t=3504s)]
 ```vex
@@ -756,10 +708,9 @@ for(int i = 0; i < len(pts); i++) {
     w = sin(w);
     w *= ch('amp');
     w *= fit(d, 0, ch('radius'), 1, 0);
-    @P.y += w;
+    @P.y += w;  // += accumulates ripples from all pts; = overwrites and breaks blending
 }
 ```
-This code duplicates the ripple effect loop to blend multiple ripple influences together, using += on @P.y to accumulate the effects rather than overwriting them. The key technique is using @P.y += w instead of @P.y = w so that multiple ripple waves from different source points can be added together, allowing ripples to pass through and blend across voronoi cell boundaries.
 
 ### Multi-Point Ripple Accumulation [[Ep5, 70:08](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=4208s)]
 ```vex
@@ -769,9 +720,9 @@ v@w = f@d * ch('freq');
 v@w -= @Time * ch('speed');
 v@w = sin(v@w);
 v@w *= fit(f@d, 0, ch('radius'), 1, 0);
-@P.y = v@w;
+@P.y = v@w;  // single ripple: assignment overwrites
 
-// Multiple ripples version
+// Multiple ripples: += accumulates across all source points
 int pt = i[]@ps[0];
 v@pos = point(1, 'P', pt);
 f@d = distance(@P, v@pos);
@@ -779,9 +730,8 @@ float w = f@d * ch('freq');
 w -= @Time * ch('speed');
 w = sin(w);
 w *= fit(f@d, 0, ch('radius'), 1, 0);
-@P.y += w;
+@P.y += w;  // += blends ripples from multiple pts beyond Voronoi boundaries
 ```
-Demonstrates the critical difference between assignment (@P.y =) and accumulation (@P.y +=) when applying multiple ripple effects. Using += allows ripples from multiple source points to blend together additively, creating overlapping wave patterns that extend beyond individual Voronoi cell boundaries.
 
 ### Multi-Point Distance Blending [Needs Review] [[Ep5, 70:52](https://www.youtube.com/watch?v=qPwiuQUT-N4&t=4252s)]
 ```vex

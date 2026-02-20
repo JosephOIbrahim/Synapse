@@ -2,12 +2,17 @@
 
 ## Two Deployment Strategies
 
-| Strategy | When to Use | Compiles C++? | Provides Accessors? |
-|----------|-------------|---------------|---------------------|
-| **Resource-only** | UI/settings schemas, display metadata | No | No (use generic `GetAttribute`) |
-| **Compiled library** | Custom prim types, typed accessors, Python bindings | Yes | Yes (`Get*()` / `Set*()` methods) |
+```python
+# Resource-only: UI/settings schemas, display metadata
+# - No C++ compilation needed
+# - Use generic GetAttribute() to read/write
+# - Best for: Render Settings tab, property panel schemas
 
-**Rule of thumb:** If you only need the schema to appear in Houdini's UI (Render Settings tab, property panel), resource-only is sufficient. If you need C++ accessor classes or Python `UsdMySchema` wrappers, compile.
+# Compiled library: Custom prim types, typed accessors, Python bindings
+# - Requires C++ compilation (usdGenSchema + CMake)
+# - Provides Get*()/Set*() accessor methods
+# - Best for: custom prim types, Python UsdMySchema wrappers
+```
 
 ## usdGenSchema (Code Generator)
 
@@ -56,25 +61,21 @@ class "MyRenderSettingsAPI" (
 }
 ```
 
-### Key Schema Directives
+```usda
+# Key schema directives reference:
+# inherits = </APISchemaBase>         -- Makes this an API schema (applied to prims)
+# apiSchemaType = "singleApply"       -- One instance per prim (not multi-apply)
+# apiSchemaCanOnlyApplyTo = ["RenderSettings"] -- Restricts to RenderSettings prims
+# displayGroup = "Quality"            -- Groups attributes in Houdini UI tabs
+# displayName = "Steps"               -- Human-readable label in UI
+# libraryName = "usdMyRenderer"       -- Plugin name for registration
+# libraryPrefix = "UsdMyRenderer"     -- C++ class name prefix
 
-| Directive | Value | Purpose |
-|-----------|-------|---------|
-| `inherits` | `</APISchemaBase>` | Makes this an API schema (applied to prims) |
-| `apiSchemaType` | `"singleApply"` | One instance per prim (not multi-apply) |
-| `apiSchemaCanOnlyApplyTo` | `["RenderSettings"]` | Restricts to RenderSettings prims only |
-| `displayGroup` | `"Quality"` | Groups attributes in Houdini UI tabs |
-| `displayName` | `"Steps"` | Human-readable label in UI |
-| `libraryName` | `"usdMyRenderer"` | Plugin name for registration |
-| `libraryPrefix` | `"UsdMyRenderer"` | C++ class name prefix |
-
-### Schema Types
-
-| Type | Inherits From | Applied How | Use Case |
-|------|---------------|-------------|----------|
-| **IsA schema** | `</Typed>` | Prim type (`def MyPrim`) | Custom prim types (geometry, lights) |
-| **Single-apply API** | `</APISchemaBase>` | `ApplyAPI()` | Settings, metadata (render settings) |
-| **Multi-apply API** | `</APISchemaBase>` | `ApplyAPI(instanceName)` | Per-instance data (collections, AOVs) |
+# Schema types:
+# IsA schema:        inherits = </Typed>          -- Custom prim types (def MyPrim)
+# Single-apply API:  inherits = </APISchemaBase>   -- Settings/metadata (ApplyAPI())
+# Multi-apply API:   inherits = </APISchemaBase>   -- Per-instance data (ApplyAPI(instanceName))
+```
 
 ### Running usdGenSchema
 
@@ -95,17 +96,19 @@ outputDir/
 +-- plugInfo.json                  # Template (has @PLUG_INFO_*@ vars)
 ```
 
-**Important:** The auto-generated `plugInfo.json` contains template variables (`@PLUG_INFO_LIBRARY_PATH@`, `@PLUG_INFO_ROOT@`). These are meant for CMake substitution during build. For resource-only deployment, write your own `plugInfo.json` instead.
+```bash
+# IMPORTANT: auto-generated plugInfo.json contains template variables
+# (@PLUG_INFO_LIBRARY_PATH@, @PLUG_INFO_ROOT@) meant for CMake substitution.
+# For resource-only deployment, write your own plugInfo.json instead.
+```
 
 ## Resource-Only Deployment
 
-No compilation needed. Deploy two files:
-
-### generatedSchema.usda
-
-Copy directly from usdGenSchema output. Contains the compiled schema with all attribute definitions, defaults, display metadata.
-
-### plugInfo.json (hand-crafted)
+```python
+# No compilation needed. Deploy two files:
+# 1. generatedSchema.usda -- copy from usdGenSchema output (schema definitions + defaults)
+# 2. plugInfo.json -- hand-crafted manifest (see below)
+```
 
 ```json
 {
@@ -136,25 +139,24 @@ Copy directly from usdGenSchema output. Contains the compiled schema with all at
 }
 ```
 
-| Field | Value for Resource-Only |
-|-------|------------------------|
-| `LibraryPath` | `""` (empty -- no DLL) |
-| `Type` | `"resource"` |
-| `Root` | `".."` (parent of `resources/` dir) |
-| `bases` | `["UsdAPISchemaBase"]` for API schemas |
-| `schemaKind` | `"singleApplyAPI"` or `"multiApplyAPI"` |
-| `SchemasForRenderers` | Maps delegate name -> schema list (for Render Settings tab) |
-
-### Directory Layout
+```json
+// Resource-only plugInfo.json field reference:
+// "LibraryPath": ""               -- empty (no DLL)
+// "Type": "resource"              -- not "library"
+// "Root": ".."                    -- parent of resources/ dir
+// "bases": ["UsdAPISchemaBase"]   -- for API schemas
+// "schemaKind": "singleApplyAPI"  -- or "multiApplyAPI"
+// "SchemasForRenderers": {"HdMyRenderer": ["MyRenderSettingsAPI"]}
+//   ^ maps delegate name to schema list (for Render Settings tab)
+```
 
 ```
+# Directory layout (goes under PXR_PLUGINPATH_NAME):
 usdMyRenderer/
 +-- resources/
     +-- generatedSchema.usda    <- Schema definition
     +-- plugInfo.json           <- Resource-only manifest
 ```
-
-This directory goes under a path on `PXR_PLUGINPATH_NAME`. See `pxr-pluginpath.md`.
 
 ## Compiled Library Deployment
 
@@ -241,17 +243,17 @@ for prop_name in defn.GetPropertyNames():
 
 ## Display Metadata (Houdini UI)
 
-Houdini reads `displayGroup` and `displayName` from the schema to build the Render Settings UI:
+```usda
+# Houdini reads these from generatedSchema.usda to build Render Settings UI:
+# displayGroup = "Quality"    -- creates "Quality" tab/section in Render Settings
+# displayName = "Steps"       -- label shown next to the parameter widget
+# doc = "..."                 -- tooltip on hover
+# Attribute type (int/float/bool/string) determines widget type (slider/checkbox/textfield)
+# Default value is pre-filled in UI
 
-| Metadata | Effect in Houdini |
-|----------|-------------------|
-| `displayGroup = "Quality"` | Creates "Quality" tab/section in Render Settings |
-| `displayName = "Steps"` | Label shown next to the parameter widget |
-| `doc = "..."` | Tooltip on hover |
-| Attribute type (`int`, `float`, `bool`, `string`) | Widget type (slider, checkbox, text field) |
-| Default value | Pre-filled value in UI |
-
-**displayGroup ordering:** Groups appear in the order they're first encountered in the schema file. Place your most important group's first attribute earliest in the schema.
+# displayGroup ordering: groups appear in order first encountered in schema.
+# Place your most important group's first attribute earliest in the schema.
+```
 
 ## Karma Schema Pattern (Houdini 21)
 
@@ -263,17 +265,23 @@ usdKarma/resources/
 
 Karma does NOT use `SchemasForRenderers` in Houdini 21 -- Houdini handles the mapping internally for its own renderers. Third-party delegates should include it.
 
-## Common Issues
+## Common Mistakes
+```python
+# Schema not found by FindAppliedAPIPrimDefinition
+# -- plugInfo.json not on plugin path; check PXR_PLUGINPATH_NAME
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Schema not found by `FindAppliedAPIPrimDefinition` | plugInfo.json not on plugin path | Check PXR_PLUGINPATH_NAME |
-| `ApplyAPI` fails | `apiSchemaCanOnlyApplyTo` mismatch | Apply to correct prim type (e.g., RenderSettings) |
-| Settings tab missing in Houdini | Schema registered but no `SchemasForRenderers` | Add mapping in plugInfo.json |
-| Auto-generated plugInfo has `@PLUG_INFO_*@` | Template vars not substituted | Write manual plugInfo.json for resource deployment |
-| Attributes have wrong defaults | generatedSchema.usda stale | Re-run usdGenSchema, redeploy |
-| `displayGroup` not showing | Missing from generatedSchema.usda | Ensure source schema has displayGroup metadata |
+# ApplyAPI fails -- apiSchemaCanOnlyApplyTo mismatch
+# Fix: apply to correct prim type (e.g., RenderSettings, not Xform)
 
----
-*Source: Pixar USD schema framework + usdGenSchema. Verified against Houdini 21.0 usdKarma + usdCarWash patterns.*
-*Cross-reference: hydra-delegates.md for delegate registration, pxr-pluginpath.md for plugin discovery.*
+# Settings tab missing in Houdini -- schema registered but no SchemasForRenderers
+# Fix: add "SchemasForRenderers": {"HdMyRenderer": ["MyRenderSettingsAPI"]} in plugInfo.json
+
+# Auto-generated plugInfo has @PLUG_INFO_*@ template vars
+# Fix: write manual plugInfo.json for resource-only deployment
+
+# Attributes have wrong defaults -- generatedSchema.usda is stale
+# Fix: re-run usdGenSchema and redeploy
+
+# displayGroup not showing -- missing from generatedSchema.usda
+# Fix: ensure source schema.usda has displayGroup metadata on attributes
+```

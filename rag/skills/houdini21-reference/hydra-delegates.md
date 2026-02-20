@@ -53,14 +53,6 @@ public:
 }
 ```
 
-| Field | Purpose |
-|-------|---------|
-| `bases` | Must be `["HdRendererPlugin"]` |
-| `displayName` | Shown in Houdini renderer dropdown |
-| `priority` | Higher = preferred when multiple delegates available |
-| `LibraryPath` | Relative path to compiled DLL/so |
-| `Type` | `"library"` for compiled delegates |
-
 ### HdRenderDelegate (Renderer Core)
 
 ```cpp
@@ -94,15 +86,12 @@ public:
 };
 ```
 
-**Prim Types:**
-
-| Category | Class | Examples |
-|----------|-------|---------|
-| Rprim (renderable) | `HdRprim` | Mesh, BasisCurves, Points, Volume |
-| Sprim (state) | `HdSprim` | Camera, Light, Material, RenderSettings |
-| Bprim (buffer) | `HdBprim` | RenderBuffer, RenderOutput |
-
-**Supported prim tokens (typical):**
+```cpp
+// Prim categories:
+// Rprim (renderable): Mesh, BasisCurves, Points, Volume
+// Sprim (state):      Camera, Light, Material, RenderSettings
+// Bprim (buffer):     RenderBuffer, RenderOutput
+```
 ```cpp
 const TfTokenVector& MyRenderDelegate::GetSupportedRprimTypes() const {
     static TfTokenVector types = {
@@ -126,14 +115,14 @@ protected:
 };
 ```
 
-The `_Execute` method is called each frame. It reads scene data from the render index, invokes your renderer, and writes results to render buffers.
-
-**Typical _Execute flow:**
-1. Get camera from `renderPassState`
-2. Query dirty prims from render index
-3. Sync scene changes (transforms, visibility, materials)
-4. Render frame (your rendering logic)
-5. Write pixels to `HdRenderBuffer`
+```cpp
+// Typical _Execute flow:
+// 1. Get camera from renderPassState
+// 2. Query dirty prims from render index
+// 3. Sync scene changes (transforms, visibility, materials)
+// 4. Render frame (your rendering logic)
+// 5. Write pixels to HdRenderBuffer
+```
 
 ### HdRenderBuffer (Output Storage)
 
@@ -158,17 +147,15 @@ public:
 };
 ```
 
-**Common formats:**
-| HdFormat | Use |
-|----------|-----|
-| `HdFormatFloat32Vec4` | RGBA color (HDR) |
-| `HdFormatFloat32` | Depth |
-| `HdFormatFloat32Vec3` | Normal, position AOVs |
-| `HdFormatUNorm8Vec4` | LDR color (8-bit) |
+```cpp
+// Common HdFormat values:
+// HdFormatFloat32Vec4  -- RGBA color (HDR)
+// HdFormatFloat32      -- Depth
+// HdFormatFloat32Vec3  -- Normal, position AOVs
+// HdFormatUNorm8Vec4   -- LDR color (8-bit)
+```
 
 ### HdRenderSettingDescriptorList (Custom Settings)
-
-Exposes settings in Houdini's Render Settings LOP:
 
 ```cpp
 HdRenderSettingDescriptorList
@@ -181,8 +168,6 @@ MyRenderDelegate::GetRenderSettingDescriptors() const {
     };
 }
 ```
-
-**For full UI integration**, use a USD API schema (`CarWashRenderSettingsAPI`) deployed as a resource plugin. See `usd-schema-registration.md`.
 
 ## Houdini-Specific Patterns
 
@@ -256,31 +241,39 @@ dso/usd/
 }
 ```
 
-Note: Karma in Houdini 21 does NOT use `SchemasForRenderers` (Houdini handles it internally). Third-party delegates may need it for auto-discovery.
+```cpp
+// Karma in Houdini 21 does NOT use SchemasForRenderers
+// (Houdini handles the mapping internally for its own renderers)
+// Third-party delegates should include SchemasForRenderers for auto-discovery
+```
 
 ## Render Delegate Lifecycle
 
+```cpp
+// 1. Houdini starts -> PXR_PLUGINPATH_NAME scanned
+// 2. PlugRegistry discovers plugInfo.json with HdRendererPlugin base
+// 3. User selects renderer in Render Settings LOP dropdown
+// 4. HdRendererPlugin::CreateRenderDelegate() called
+// 5. Delegate creates RenderPass, RenderBuffers
+// 6. Per frame: _Execute() called on RenderPass
+// 7. RenderBuffer::Map() exposes pixels to Houdini viewport
+// 8. On renderer switch/close: DeleteRenderDelegate()
 ```
-1. Houdini starts -> PXR_PLUGINPATH_NAME scanned
-2. PlugRegistry discovers plugInfo.json with HdRendererPlugin base
-3. User selects renderer in Render Settings LOP dropdown
-4. HdRendererPlugin::CreateRenderDelegate() called
-5. Delegate creates RenderPass, RenderBuffers
-6. Per frame: _Execute() called on RenderPass
-7. RenderBuffer::Map() exposes pixels to Houdini viewport
-8. On renderer switch/close: DeleteRenderDelegate()
+
+## Common Mistakes
+```cpp
+// Renderer not in dropdown -- plugInfo.json not discovered
+// Fix: check PXR_PLUGINPATH_NAME includes the plugin directory
+
+// Settings tab missing -- schema registered but no SchemasForRenderers
+// Fix: add "SchemasForRenderers": {"HdMyRenderer": ["MyRenderSettingsAPI"]} in plugInfo.json
+
+// Black viewport -- RenderBuffer format mismatch
+// Fix: match HdFormat to AOV expectations (e.g., HdFormatFloat32Vec4 for color)
+
+// Crash on delegate create -- DLL dependencies missing
+// Fix: check DLL deps with: dumpbin /dependents hdMyRenderer.dll
+
+// Delegate loads but no render -- _Execute not called
+// Fix: verify RenderPass creation and prim collection setup
 ```
-
-## Common Issues
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Renderer not in dropdown | plugInfo.json not discovered | Check PXR_PLUGINPATH_NAME |
-| Settings tab missing | Schema not registered | Deploy usdSchema resource plugin |
-| Black viewport | RenderBuffer format mismatch | Match HdFormat to AOV expectations |
-| Crash on delegate create | DLL dependencies missing | Check DLL deps with `dumpbin /dependents` |
-| Delegate loads but no render | `_Execute` not called | Verify RenderPass creation, check prim collection |
-
----
-*Source: Pixar USD Imaging (Hd) framework. Verified against Houdini 21.0 hdKarma + hdCarWash patterns.*
-*Cross-reference: usd-schema-registration.md for schema deployment, pxr-pluginpath.md for discovery.*

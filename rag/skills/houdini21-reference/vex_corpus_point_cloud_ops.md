@@ -50,7 +50,12 @@ float d,w;
 pts = nearpoints(1,@P,ch('radius'),chi('number_of_points'));
 
 pt = pts[0];
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 Now you know we can't get through a chapter without waves.
@@ -88,7 +93,13 @@ float d;
 pts = nearpoints(1,@P,20);
 
 // treat this as ink on paper, so start with white paper
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Make ripples that are red at their peaks and green at the lowest points Make each ripple setup have the wave frequency be determined by data coming from the scatter points.
@@ -200,7 +211,13 @@ vector col = point(1, "Cd", pt);
 int pt = nearpoints(1, @P, 1)[0];
 vector pos = point(1, "P", pt);
 vector col = point(1, "Cd", pt);
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Finds the nearest point from input 1 and transfers its color to create a Voronoi pattern.
@@ -300,7 +317,12 @@ i@dir = inpointgroup(1, "phs1", pt);
 float d = distance(@P, pt1);
 d = fit(d, 0, chf("radius"), 1, 0);
 vector v = pt2;
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 Demonstrates extracting a single point from a nearpoints array using bracket notation (pts[0]) to access the first element.
@@ -316,7 +338,14 @@ float d;
 @Cd = 0; // set colour to black to start with
 
 // first point
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Extends the nearest point color blending technique to process multiple points from the nearpoints array by extracting individual points using bracket indexing (pts[0], pts[1]).
@@ -332,7 +361,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Demonstrates proper variable declaration and reuse when processing multiple nearby points from a point cloud query.
@@ -348,7 +384,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Demonstrates proper variable declaration by moving all variable definitions to the top of the code block, allowing variables to be reused across multiple operations without redeclaring them.
@@ -364,7 +407,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Demonstrates accumulative color blending from multiple source points using += operator.
@@ -380,7 +430,14 @@ float d;
 pts = nearpoints(1, @P, 40); // search within 40 units
 @Cd = 0; // set colour to black to start with
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Blends colors from multiple nearby points by accumulating their contributions using the += operator instead of direct assignment.
@@ -396,7 +453,10 @@ d = fit(d, 0, ch('radius'), 1, 0);
 d = clamp(d, 0, 1);
 @Cd = col * d;
 
-// ...
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+@Cd += col * d;
 ```
 
 Demonstrates extending single nearest point color sampling to multiple points by duplicating the calculation block and accessing pts[1] for the second nearest point.
@@ -412,7 +472,14 @@ float d;
 
 pts = nearpoints(1,@P,40);
 @Cd = 0;
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Extends the nearest point color lookup to blend contributions from the two closest points.
@@ -428,7 +495,14 @@ float d;
 pts = nearpoints(1,@P,40); // search within 40 units
 @Cd = 0; // set colour to black to start with
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Extends the single nearest point color lookup by duplicating the code block to process both the first and second nearest points from the nearpoints array.
@@ -444,7 +518,14 @@ float d;
 pts = nearpoints(1, pos, ch('radius'));
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Extends color blending by accessing the second nearest point (pts[1]) in addition to the first, allowing colors to blend beyond initial Voronoi boundaries.
@@ -460,7 +541,12 @@ i[]@a = pts;
 int pt = pts[0];
 vector pos = point(0, "P", pt);
 vector d = normalize(pos);
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 This code demonstrates manually accessing and processing individual points from a nearpoints array by copying and pasting the same operations for pts[0] and pts[1].
@@ -476,7 +562,13 @@ float d;
 pts = nearpoints(1, v@P, 40);
 // if(len(pts))
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Demonstrates querying multiple near points by accessing individual array elements from nearpoints() result.
@@ -492,7 +584,13 @@ float d;
 pts = nearpoints(1, v@P, 40, 3);
 
 // first point
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Demonstrates using the nearpoints() function with a maximum count parameter to limit the number of returned points to 3.
@@ -551,7 +649,13 @@ int pt;
 vector pos;
 float d, W;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Declares typed variables needed for nearpoints analysis: an integer array for storing point numbers, individual point integer, position vector, and float variables for distance and weight calculations.
@@ -580,7 +684,12 @@ float d, w;
 pts = nearpoints(1, @P, ch('radius'), chi('number_of_points'));
 
 pt = pts[0];
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 Creates animated sine wave displacement by calculating distance to nearest point, modulating it with a frequency parameter and time-based speed control, then applying the result as vertical displac....
@@ -612,7 +721,12 @@ float d, w;
 pts = nearpoints(1, @P, ch('radius'), chi('max_pt_points'));
 
 pt = pts[0];
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 Adjusts wave propagation by controlling frequency and radius parameters, demonstrating how higher frequency values can cause visual artifacts while lower frequencies produce smoother wave patterns.
@@ -628,7 +742,14 @@ float d,w;
 pts = nearpoints(1,@P,ch("radius"),chi("number_of_points"));
 
 foreach(int i; pts){
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Iterates through all nearby points found by nearpoints and accumulates their individual wave influences on the current point's Y position.
@@ -644,7 +765,13 @@ float d, w;
 pts = nearpoints(1, @P, ch('radius'), chi('number_of_points'));
 
 for(int i = 0; i < len(pts); i++) {
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 This code duplicates the ripple effect loop to blend multiple ripple influences together, using += on @P.y to accumulate the effects rather than overwriting them.
@@ -676,7 +803,14 @@ float d, m;
 pts = nearpoints(1, @P, ch('radius'), chi('max_of_points'));
 
 foreach(int pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates looping through an array of nearby points using foreach syntax.
@@ -692,7 +826,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Finds nearby points within 40 units using nearpoints(), then iterates through each point to accumulate their color contributions.
@@ -708,7 +849,13 @@ pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
 foreach(int pt; pts){
-// ...
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Blends colors from multiple nearby points by finding all points within a radius, calculating distance-based weights using fit and clamp, and accumulating weighted color contributions.
@@ -740,7 +887,14 @@ float d;
 pts = nearpoints(0, @P, chv("radius"));
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Blends colors from multiple nearby points by iterating through all points within a radius and accumulating their color contributions weighted by distance.
@@ -756,7 +910,13 @@ pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
 foreach(int pt; pts){
-// ...
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Iterates through all nearby points within a radius and additively blends their colors together based on distance falloff.
@@ -788,7 +948,14 @@ float d, d_f, t, f, g;
 pts = nearpoints(1, @P, 40); // search within 40 units
 
 foreach(pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Uses nearpoints to find surrounding points within 40 units, then applies a wave deformation to the Y position based on distance falloff and time.
@@ -804,7 +971,14 @@ float u, d, f, t, a;
 pts = nearpoints(1, @P, 40);
 
 foreach(pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Animates point positions with a sine wave whose amplitude and frequency are modulated by distance from nearby points.
@@ -820,7 +994,14 @@ float d, f, t, a;
 pts = nearpoints(1, @P, 40);
 
 foreach(int pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Uses nearpoints to find neighboring points within 40 units, then calculates distance-based falloff and applies sinusoidal wave displacement to each point's Y position.
@@ -836,7 +1017,14 @@ float d, a, f, t;
 pts = nearpoints(1, @P, 40);
 
 foreach(int pt; pts){
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Sets up time-based animation variables for wave effects by multiplying @Time with a speed parameter, adding per-point randomness using rand(pt) to offset timing, and computing amplitude and frequen....
@@ -852,7 +1040,13 @@ float u, v, f, t, d;
 
 pts = nearpoints(0, @P, 40);
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Demonstrates foreach loop iterating over nearby points found with nearpoints, calculating distance-based falloff using fit and chramp, and accumulating trigonometric values.
@@ -868,7 +1062,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Demonstrates a for loop iterating over an array of nearby points found with nearpoints().
@@ -884,7 +1085,13 @@ float d;
 pts = nearpoints(1, @P, ch("radius"));
 
 // treat this as ink on paper, so start with white paper
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Creates an ink-on-paper effect by starting with white and darkening each point based on nearby colored points from a second input.
@@ -900,7 +1107,14 @@ vector pos, col;
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Uses nearpoints to find neighboring points within a radius, then accumulates their color contributions weighted by distance.
@@ -916,7 +1130,14 @@ float d;
 pts = nearpoints(1, @P, chf("radius"));
 
 foreach(pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 This snippet demonstrates a color blending exercise using nearpoints to sample nearby geometry colors and blend them additively with distance-based falloff.
@@ -932,7 +1153,14 @@ vector pos, col;
 pts = nearpoints(0, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Uses nearpoints to find surrounding points within a radius, then accumulates their colors weighted by distance.
@@ -948,7 +1176,14 @@ foreach (pt; pts) {
     addpoint(0, pos);
 }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates using nearpoints() to find nearby points from input 1 within a given radius, then iterating through the results to add those points to the output geometry.
@@ -1030,7 +1265,14 @@ foreach (pt; pts) {
 }
 
 // Alternative with pcfind:
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Uses nearpoints() to find up to 25 points within a channel-controlled distance of the current point, then iterates through each found point with foreach to look up its position and create new point....
@@ -1061,7 +1303,14 @@ int pts[] = nearpoints(1, @P, ch("d"), chi("amt"));
 vector pos = 0;
 foreach (int pt; pts) {
     pos += point(1, "P", pt);
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Instead of snapping to the single closest point (which causes jerky movement), this code finds multiple nearby points using nearpoints(), averages their positions, and moves the current point to th....
@@ -1077,7 +1326,14 @@ setpointgroup(0, "pts", pts, 1);
 vector pos = 0;
 foreach (int pt; pts) {
     pos += point(1, 'P', pt);
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Instead of snapping points directly to the closest position on a surface using minpos (which causes visible jumping), this approach finds multiple nearby points using nearpoints, averages their pos....
@@ -1093,7 +1349,14 @@ vector pos = 0;
 foreach (int pt; pts) {
     pos += point(1, 'P', pt);
 }
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Instead of snapping directly to the closest point on a surface, this technique uses nearpoints() to find multiple nearby points, averages their positions, and then projects back to the surface.
@@ -1132,7 +1395,14 @@ foreach(int pt; pts){
     pos += point(1, 'P', pt);
 }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 This code finds nearby points from a second input, accumulates their positions in a vector, then averages them by dividing by the count of points.
@@ -1148,7 +1418,14 @@ foreach(pt; pts){
     pos += point(1, 'P', pt);
 }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 This snippet finds nearby points using nearpoints() and averages their positions to smooth or blend the current point's location.
@@ -1164,7 +1441,14 @@ foreach(pt; pts){
     pos += point(1, 'P', pt);
 }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates two equivalent methods for averaging point positions: manually using nearpoints() with a foreach loop to accumulate and divide by length, versus using pcopen() and pcfilter() which aut....
@@ -1180,7 +1464,14 @@ vector pos = 0;
 foreach(pt; pts){
     pos += point(1, 'P', pt);
 }
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates two methods for averaging point positions from neighboring points: the first uses nearpoints() to gather point numbers, iterates through them with foreach to accumulate positions, then....
@@ -1196,7 +1487,14 @@ foreach(pt; pts){
 }
 @P = pos/len(pts);
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates two equivalent methods for averaging point positions: manually finding nearby points with nearpoints() and summing their positions, versus using the more efficient pcopen() and pcfilte....
@@ -1212,7 +1510,14 @@ foreach(pt; pts){
     pos += point(1, 'P', pt);
 }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates point averaging by finding nearby points using nearpoints, accumulating their positions in a loop, and dividing by the count to get the average position.
@@ -1228,7 +1533,14 @@ foreach(pt; pts){
     pos += point(1, "P", pt);
 }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Looks up nearby points on a surface geometry (input 1) and averages their positions to smooth point movement.
@@ -1244,7 +1556,14 @@ foreach(pt; pts){
 }
 
 @P = pos/len(pts);
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates two equivalent approaches to point smoothing: a manual method using nearpoints() with a foreach loop to average neighbor positions, and a more concise point cloud method using pcopen()....
@@ -1260,7 +1579,14 @@ foreach(pt; pt[]){
     pos += point(1, 'P', pt);
 }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates two approaches to averaging nearby point positions: the first uses nearpoints() with a foreach loop to manually accumulate and average positions, while the second shows the beginning o....
@@ -1276,7 +1602,14 @@ foreach(pt; pts){
     pos += point(1, "P", pt);
 }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates two methods for smoothing point positions by averaging nearby points: the verbose approach using nearpoints() with a foreach loop to accumulate and average positions, versus the more c....
@@ -1322,7 +1655,14 @@ foreach (pt; pts) {
     pos += point(1, 'P', pt);
 }
 pos /= len(pts);
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates two methods for smoothing points by averaging nearby positions: a manual approach using nearpoints with a foreach loop, and a more concise point cloud approach using pcopen and pcfilter.
@@ -1353,7 +1693,14 @@ foreach(pt; pts){
 }
 
 @P = pos/len(pts);
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates setting up a point cloud query using pcopen() as an alternative to nearpoints().
@@ -1369,7 +1716,14 @@ foreach(pt; pts){
 }
 
 @P = pos/len(pts);
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Opens a point cloud handle using pcopen() with the averaged position from nearby points, then uses pcfilter() to compute a weighted average normal from points within the cloud.
@@ -1385,7 +1739,14 @@ Opens a point cloud handle using pcopen() with the averaged position from nearby
 //     pos += point(1, 'P', pti);
 // }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 This demonstrates using point cloud functions as an optimized alternative to manually averaging nearby point positions.
@@ -1401,7 +1762,14 @@ This demonstrates using point cloud functions as an optimized alternative to man
 //     pos += point(1, 'P', pt);
 // }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates using pcopen() and pcfilter() to achieve the same averaging effect as the nearpoints/foreach approach but in just two lines of code.
@@ -1417,7 +1785,14 @@ Demonstrates using pcopen() and pcfilter() to achieve the same averaging effect 
 //     pos += point(1, "P", pt);
 // }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates using pcfilter() as a two-line shortcut to replace the manual nearpoints/foreach/averaging workflow.
@@ -1449,7 +1824,14 @@ int pts[] = nearpoints(1, @P, ch('d'), chi('amt'));
 //     }
 //     @P = pos/len(pts);
 // }
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates using point clouds to filter and sample attributes from nearby geometry.
@@ -1465,7 +1847,14 @@ int pts[] = nearpoints(1, @P, ch('d'), ch('maxpt'));
 //     pos += point(1, 'P', pt);
 // }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Creates a point cloud from nearby points and uses pcfilter to read and average the normal attribute from neighbors, then normalizes and scales the result.
@@ -1481,7 +1870,14 @@ Creates a point cloud from nearby points and uses pcfilter to read and average t
 //     pos += point(1, 'P', pt);
 // }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates the advantage of point clouds over nearpoints by using pcopen to create a point cloud handle, then pcfilter to efficiently query and average normal vectors from neighboring points.
@@ -1497,7 +1893,14 @@ foreach(pt; ptsli){
     addpoint(0, pt, @P);
 }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Opens a point cloud handle using pcopen and extracts the normal attribute from nearby points using pcfilter.
@@ -1513,7 +1916,14 @@ Opens a point cloud handle using pcopen and extracts the normal attribute from n
 //     pos += point(1, 'P', pt);
 // }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Opens a point cloud handle from the first input using pcopen, then uses pcfilter to gather and average normal vectors from nearby points within the search radius.
@@ -1529,7 +1939,14 @@ int pts[] = nearpoints(1, @P, ch('d'), chi('maxpt'));
 //     pos += point(1, 'P', pt);
 // }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Uses pcopen to create a point cloud from the current geometry at each point position, then applies pcfilter to average the color attribute (@Cd) from surrounding points within the specified distanc....
@@ -1545,7 +1962,14 @@ int pts[] = nearpoints(1, @P, ch('d'), chi('maxpt'));
 // foreach(pt; pts){
 //     pos += point(1, 'P', pt);
 // }
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Opens a point cloud handle using pcopen() at the current point position with controllable distance and max points parameters, then uses pcsample() to average the color (Cd) attribute from all point....
@@ -1561,7 +1985,14 @@ Opens a point cloud handle using pcopen() at the current point position with con
 //     pos += point(1, 'P', pt);
 // }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Uses pcopen() to create a point cloud handle, then pcfilter() to average the color (Cd) attribute across neighboring points.
@@ -1577,7 +2008,14 @@ int pts[] = nearpoints(1, @P, ch('d'), ch('mont'));
 // foreach(pt; pts){
     pos += point(1, 'P', pt);
 // }
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Uses pcopen and pcfilter to blur color attributes by averaging the Cd values of nearby points within a specified radius.
@@ -1593,7 +2031,14 @@ Uses pcopen and pcfilter to blur color attributes by averaging the Cd values of 
 //     pos += point(1, 'P', pt);
 // )
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates using point clouds to blur attributes by opening a point cloud based on position to filter colors, then inversely opening a point cloud based on color distance to filter positions.
@@ -2263,7 +2708,10 @@ float dot, dist;
 pcp = pcfilter(pc, "P");
 pcn = pcfilter(pc, "N");
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Demonstrates point cloud filtering to average neighboring point positions and velocities, creating clumping behavior for particles.
@@ -2279,7 +2727,10 @@ float dot, dist;
 pcp = pcfilter(pc, "P");
 pcn = pcfilter(pc, "N");
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Creates a fake ambient occlusion effect by opening a point cloud around each point, then computing both the dot product between the point's normal and averaged nearby normals, and the distance to a....
@@ -2295,7 +2746,10 @@ float dot, dist;
 pcp = pcfilter(pc, "P");
 pcn = pcfilter(pc, "N");
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Creates a fake ambient occlusion effect by opening a point cloud and filtering averaged position and normal values.
@@ -2311,7 +2765,10 @@ pcp = pcfilter(pc, 'P');
 pcn = pcfilter(pc, 'N');
 
 dot = dot(@N, pcn);
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 This technique creates a fake ambient occlusion effect by opening a point cloud around each point, filtering the average position and normal of nearby points, then calculating both the dot product ....
@@ -2327,7 +2784,10 @@ float dot, dist;
 pcp = pcfilter(pc, "P");
 pcn = pcfilter(pc, "N");
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Creates a fake ambient occlusion effect by opening a point cloud around each point, filtering averaged position and normal data, then calculating both the dot product between the current point norm....
@@ -2343,7 +2803,10 @@ float dot, dist;
 pcp = pcfilter(pc, "P");
 pcn = pcfilter(pc, "N");
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Creates a fake ambient occlusion effect by opening a point cloud around each point, filtering the averaged position and normal, then computing dot product and distance values.
@@ -2375,7 +2838,10 @@ float dot, dist;
 pcp = pcfilter(pc, 'P');
 pcn = pcfilter(pc, 'N');
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Creates a pseudo-ambient occlusion effect by opening a point cloud to find nearby geometry, filtering the blurred position and normal values, then comparing the current point's normal with the filt....
@@ -2423,7 +2889,10 @@ float dot, dist;
 pcp = pcfilter(pc, 'P');
 pcn = pcfilter(pc, 'N');
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Creates an ambient occlusion or curvature map by opening a point cloud near each point, filtering to get averaged position and normal values, then computing the dot product between the original and....
@@ -2439,7 +2908,10 @@ pcp = pcfilter(pc, "P");
 pcn = pcfilter(pc, "N");
 
 dot = dot(@N, pcn);
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Creates a curvature-like visualization by opening a point cloud with a biased lookup position (offset by normal), then filtering to get averaged position and normal values.
@@ -2455,7 +2927,10 @@ float dot, dist;
 pcp = pcfilter(pc, "P");
 pcn = pcfilter(pc, "N");
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Opens a point cloud and computes both the dot product between the current point's normal and the averaged point cloud normal, and the distance between the current point and the averaged point cloud....
@@ -2471,7 +2946,10 @@ float dot, dist;
 pcp = pcfilter(pc, "P");
 pcn = pcfilter(pc, "N");
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Opens a point cloud and calculates both the dot product between the current normal and averaged neighbor normals, and the distance to the averaged neighbor positions.
@@ -2487,7 +2965,10 @@ float dot, dist;
 
 pcp = pcfilter(pc, "P");
 pcn = pcfilter(pc, "N");
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Uses chramp() to apply user-controlled color ramps to both the dot product comparison and distance calculation from a point cloud query, allowing artistic control over the falloff curves.
@@ -2503,7 +2984,10 @@ float dot, dist;
 pcp = pcfilter(pc, "P");
 pcn = pcfilter(pc, "N");
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Creates a fake ambient occlusion effect by computing both dot product and distance between point normals and positions using point clouds, then remapping those values through color ramps for artist....
@@ -2519,7 +3003,10 @@ pcn = pcfilter(pc, "P");
 pos = pcfilter(pc, "pos");
 
 dot = dot(@N, pcn);
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Demonstrates two approaches for creating fake ambient occlusion using point cloud queries.
@@ -2857,7 +3344,10 @@ d = fit(d, 0, ch('radius'), 1, 0);
 d = clamp(d, 0, 1);
 @Cd = col * d;
 
-// ...
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+@Cd += col * d;
 ```
 
 Demonstrates extending single-point color blending to multiple nearby points by duplicating the distance-based color blending logic for both the first and second nearest points.
@@ -2873,7 +3363,14 @@ pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
 // first point
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 This code extends the nearest point color blending by manually processing two separate points from the nearpoints array.
@@ -2889,7 +3386,13 @@ float d;
 pts = nearpoints(1, @P, 40);
 
 //first point
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Demonstrates processing multiple nearby points using nearpoints() to find neighbors, then accessing individual points by array index to sample their colors and blend them based on distance.
@@ -2905,7 +3408,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 
 @Cd = 0;
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Demonstrates using temporary attributes for debugging by writing intermediate array results to a geometry attribute.
@@ -2921,7 +3431,10 @@ i[]@a = pts;
 int pt = pts[0];
 vector col = point(0, 'Cd', pt);
 vector pos = point(0, 'P', pt);
-// ...
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+@Cd += col * d;
 ```
 
 Demonstrates a debugging technique by writing the nearpoints array to a detail array attribute (@a) so you can visualize which points are being found in the point cloud search.
@@ -2937,7 +3450,14 @@ float d;
 int[] pts = nearpoints(1, v@P, 40);
 // slider = pt1;
 @Cd = 0;
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Demonstrates using Ctrl+/ to comment/uncomment lines in VEX for quick testing and debugging.
@@ -2953,7 +3473,13 @@ float d;
 
 pts = nearpoints(1, @P, 40);
 // i[]@a = pts;
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Demonstrates using the optional max count parameter in nearpoints() to limit the number of returned points.
@@ -2969,7 +3495,12 @@ float d, w;
 pts = nearpoints(0, @P, ch('radius'), chi('number_of_points'));
 
 pt = pts[0];
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 Demonstrates using nearpoints() with a maximum count argument to limit how many nearby points are returned, rather than returning all points within the radius.
@@ -2985,7 +3516,12 @@ float d, w;
 pts = nearpoints(1, @P, ch('radius'), chi('number_points'));
 
 pt = pts[0];
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 Demonstrates using nearpoints() with a fourth argument to limit the number of returned points instead of returning all points within the search radius.
@@ -3032,7 +3568,12 @@ float d, w;
 pts = nearpoints(1, @P, ch('radius'), chi('number_of_points'));
 
 pt = pts[0];
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 Sets up variables and uses nearpoints() to find nearby points from the second input geometry within a specified radius, preparing for proximity-based displacement.
@@ -3048,7 +3589,12 @@ float d, w;
 pts = nearpoints(1, @P, ch('radius'), chi('number_of_points'));
 
 pt = pts[0];
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 Retrieves the nearest points from the second input using nearpoints(), then extracts the first point from the array and queries its position using point().
@@ -3064,7 +3610,12 @@ float d, w;
 pts = nearpoints(1, @P, ch('radius'), chi('number_of_points'));
 
 pt = pts[0];
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 Creates animated ripple waves emanating from nearby points by calculating distance-based sine waves that progress over time.
@@ -3080,7 +3631,12 @@ float d, w;
 pts = nearpoints(1, @P, ch('radius'), chi('number_of_points'));
 
 pt = pts[0];
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 Creates animated sine wave ripples emanating from nearby points by finding the nearest point, calculating distance-based sine waves controlled by frequency and radius parameters, and displacing poi....
@@ -3096,7 +3652,12 @@ pts = nearpoints(1, @P, ch('radius'), chi('max_nf_points'));
 
 pt = pts[0];
 mind = distance(@P, point(1, 'P', pt));
-// ...
+pos = point(1, "P", pt);
+d = distance(@P, pos);
+d = fit(d, 0, ch("radius"), 1, 0);
+d = clamp(d, 0, 1);
+float wv = sin(d * ch("freq") - @Time * ch("speed"));
+@P.y += wv * d * ch("amp");
 ```
 
 Demonstrates iterating through a nearpoints array to find the closest point by comparing distances.
@@ -3112,7 +3673,13 @@ float d, w, s;
 pts = nearpoints(1, @P, ch('radius'), chi('number_of_points'));
 
 for(int i = 0; i < len(pts); i++) {
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Iterates through multiple nearby points to accumulate ripple effects, using += operators to blend contributions from each neighbor rather than overwriting.
@@ -3144,7 +3711,14 @@ float d;
 pts = nearpoints(1, @P, 40); // search within 40 units
 @Cd = 0; // set colour to black to start with
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Uses a foreach loop to iterate through nearby points within a 40-unit radius, sampling their positions and colors.
@@ -3160,7 +3734,14 @@ float d;
 pts = nearpoints(1, @P, 40); // search within 40 units
 @Cd = 0; // set point to black to start with
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Accumulates color from nearby points within a search radius, weighting each neighbor's color contribution by its distance.
@@ -3176,7 +3757,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 foreach (pt; pts) {
     pos = point(1, "P", pt);
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Searches for points within 40 units using nearpoints(), then iterates through each found point to accumulate its color contribution weighted by distance.
@@ -3206,7 +3794,13 @@ float d;
 pts = nearpoints(0, @P, 40);
 d = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 This snippet retrieves nearby points using nearpoints, then iterates through each near point to read its color and position from the first input.
@@ -3222,7 +3816,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Iterates through nearby points within a radius of 40 units, reading their position and color attributes into local variables, and calculating the distance between the current point and each nearby ....
@@ -3238,7 +3839,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Accumulates weighted color contributions from nearby points, where each neighbor's color influence is determined by distance from the current point.
@@ -3254,7 +3862,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Accumulates color values from nearby points using distance-weighted blending, where each neighboring point's color contribution is scaled by a falloff based on its distance from the current point.
@@ -3270,7 +3885,13 @@ pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
 foreach(int pt; pts){
-// ...
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 This snippet finds all points within a radius and blends their colors into the current point based on distance-weighted falloff.
@@ -3286,7 +3907,14 @@ float d;
 pts = nearpoints(1, @P, 40); // search within 40 units
 @Cd = 0; // set colour to black to start with
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 This code blends colors from nearby points by finding all points within a radius using nearpoints, then iterating through each neighbor to accumulate its color contribution weighted by distance.
@@ -3302,7 +3930,14 @@ float d;
 pt = nearpoints(0, @P, ch("radius"));
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 This code blends colors from nearby points by iterating through all points found by nearpoints() and accumulating their colors weighted by distance.
@@ -3318,7 +3953,14 @@ float d;
 d = chf("radius");
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 This code blends colors from multiple nearby points by finding all points within a radius, then accumulating their color contributions based on distance-weighted falloff.
@@ -3334,7 +3976,14 @@ float d;
 pts = nearpoints(1, @P, chf('r'));
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Iterates through all nearby points within a radius and blends their colors together based on distance-weighted contributions.
@@ -3350,7 +3999,14 @@ pts = nearpoints(1, @P, 40);
 pts = pts[1:];
 
 foreach(int pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 This code creates smooth color blending across geometry by finding nearby points within a radius, calculating distance-weighted color contributions from each neighbor, and accumulating them into th....
@@ -3430,7 +4086,13 @@ float d;
 pts = nearpoints(1, @P, 40);
 d = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Iterates through nearby points using nearpoints and accumulates their color contributions to the current point's color.
@@ -3446,7 +4108,13 @@ float d;
 pts = nearpoints(1, @P, 40);
 @d = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Accumulates weighted color values from nearby points using a point cloud search with nearpoints().
@@ -3478,7 +4146,14 @@ float a, d, f, t;
 pts = nearpoints(1, @P, 40);  // search within 40 units
 
 foreach(pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Creates a wave deformation on points based on their proximity to nearby points within a search radius.
@@ -3494,7 +4169,14 @@ float d, s, t;
 pts = nearpoints(1, @P, ch('radius'), 10);
 
 foreach(pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates combining point cloud color blending with wave deformation.
@@ -3510,7 +4192,14 @@ float d, a, f, t;
 pts = nearpoints(1, @P, 40);
 
 foreach(int pt; pts){
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 This snippet finds all points within a radius of 40 units from the current point using nearpoints(), then iterates through each found point to retrieve its position and calculate the distance from ....
@@ -3526,7 +4215,14 @@ float d, s, f;
 pts = nearpoints(1, @P, 40);
 
 foreach(int pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Finds nearby points within 40 units and calculates the distance from the current point to each neighbor.
@@ -3542,7 +4238,14 @@ float d, a, f, t;
 pts = nearpoints(1, @P, 40);
 
 foreach(int pt; pts){
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Calculates distance-based falloff by finding nearby points within a radius, computing the distance from the current point to each neighbor, and remapping that distance with fit() to create an inver....
@@ -3558,7 +4261,14 @@ float u, s, f, t;
 pts = nearpoints(1, @P, 40);
 
 foreach(int pt; pts){
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Sets up time-based animation parameters for wave propagation by querying nearby points within a radius, calculating distance-based falloff using fit01 (inverted from 1 to 0), clamping the result, a....
@@ -3574,7 +4284,13 @@ int pt;
 float u, d, f, t;
 
 pts = nearpoints(1, @P, 40);
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Sets up a proximity-based time offset system by finding nearby points within a radius, calculating distance-based falloff using fit (inverted from 0 to 1), clamping the result, and multiplying time....
@@ -3590,7 +4306,14 @@ float d, s, f, t, e, a;
 pts = nearpoints(1, @P, ch('radius'));
 
 foreach(int pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Creates animated waves by accumulating sine-based displacement values from nearby points.
@@ -3606,7 +4329,14 @@ float d, f, t, a;
 pts = nearpoints(0, @P, ch('radius'));
 
 foreach(pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Creates distance-based wave ripples by finding nearby points, calculating a distance-based falloff, and applying sine wave displacement to the Y position.
@@ -3622,7 +4352,14 @@ float d, d1, f, t, a;
 pts = nearpoints(1, @P, 40);
 
 foreach(pt; pts){
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Creates a ripple effect by searching for nearby points within 40 units and applying a sine wave displacement to the Y position.
@@ -3638,7 +4375,14 @@ float d, f, t, a;
 pts = nearpoints(1, @P, ch('radius'));
 
 foreach(pt; pts) {
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Uses nearpoints() to find neighboring geometry within a channel-controlled radius, then applies distance-based falloff with fit() and clamp() to create smoothly blending sine wave ripples.
@@ -3654,7 +4398,14 @@ foreach(int pt; pts) {
     d = fit(d, 0, ch('radius'), 1, 0);
     d = clamp(d, 0, 1);
     t = @Time * ch('speed');
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Creates overlapping ripple effects from multiple nearby points by iterating through points found within a 40-unit radius.
@@ -3686,7 +4437,14 @@ foreach(int pt; pts){
     d = fit(d, 0, ch('radius'), 1, 0);
     d = clamp(d, 0, 1);
     float t = @Time * ch('speed');
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates how parameter values need to scale proportionally with geometry size.
@@ -3702,7 +4460,14 @@ foreach(pt; pts) {
     d = fit(d, 0, ch('radius'), 1, 0);
     d = clamp(d, 0, 1);
     t = @Time * ch('speed');
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates how grid resolution affects parameter scaling in proximity-based animation.
@@ -3718,7 +4483,13 @@ float a;
 
 pts = nearpoints(1, @P, ch('radius'));
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Creates localized wave effects by finding nearby points and applying sine-based displacement that falls off with distance.
@@ -3734,7 +4505,14 @@ pts = nearpoints(1, @P, 40);
 
 foreach(int pt; pts){
     ptx = point(1, "P", pt);
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Creates a wave ripple effect by finding nearby points within a radius and modulating their Y position based on distance-attenuated sine waves.
@@ -3750,7 +4528,14 @@ pts = nearpoints(1, @P, d);
 
 foreach(int pt; pts) {
     vector Pnr = point(1, "P", pt);
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates the transition from foreach loops to traditional for loops, showing how foreach syntax differs in structure.
@@ -3766,7 +4551,13 @@ vector pos, col, c, p;
 
 pts = nearpoints(1, @P, 40);
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Introduction to for loop syntax as a transition from foreach loops.
@@ -3846,7 +4637,13 @@ float d;
 pts = nearpoints(0, @P, 10);
 
 @Cd = {0,0,0};
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Demonstrates using a for loop to iterate through an array of nearby points returned by nearpoints().
@@ -3862,7 +4659,13 @@ float d;
 pts = nearpoints(1, @P, 40);
 float gcd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Accumulates weighted color values from nearby points based on their distance.
@@ -3878,7 +4681,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Iterates through nearby points within a search radius, reading their positions and colors.
@@ -3894,7 +4704,14 @@ float d;
 pts = nearpoints(1, @P, ch('radius'));
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 This snippet demonstrates using a for loop to iterate through nearby points found with nearpoints, accumulating weighted color contributions based on distance.
@@ -3910,7 +4727,14 @@ vector pos, col;
 
 pts = nearpoints(0, @P, ch('radius'));
 @Cd = 0;
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Uses a for loop to iterate through nearby points, accumulating their color contributions weighted by distance falloff.
@@ -3926,7 +4750,14 @@ float d;
 pt[] = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Uses a for loop to iterate through nearby points found by nearpoints(), accumulating their colors into the current point's @Cd attribute with distance-based falloff.
@@ -3942,7 +4773,14 @@ float d;
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Demonstrates for loop iteration over an array of nearby points, clarifying that the loop counter iterates a number of times equal to the array length rather than directly iterating over array elements.
@@ -3958,7 +4796,14 @@ vector pos, col;
 
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Finds nearby points within a radius of 40 units and accumulates their color contributions weighted by distance.
@@ -3974,7 +4819,14 @@ float d;
 pts = nearpoints(1, @P, 40); // search within 40 units
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Demonstrates using a traditional for loop to iterate through an array of nearby points, manually accessing each element by index.
@@ -3990,7 +4842,14 @@ vector pos, col;
 // Using for loop
 pts = nearpoints(1, @P, 40);
 @Cd = 0;
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Demonstrates the difference between for loops and foreach loops when iterating over arrays in VEX.
@@ -4006,7 +4865,14 @@ vector pos, col;
 pts = nearpoints(0, @P, 40);
 @Cd = 0;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    col = point(1, "Cd", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, 40, 1, 0);
+    d = clamp(d, 0, 1);
+    @Cd += col * d;
+}
 ```
 
 Demonstrates using a for loop to iterate through an array of nearby points, where each point's color is accumulated into the current point's color based on distance-weighted falloff.
@@ -4022,7 +4888,13 @@ float d;
 pts = nearpoints(1, @P, ch("radius"));
 
 // treat this as ink on paper, so start with white paper
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 Demonstrates color blending using multiply mode (like Photoshop multiply) rather than additive blending.
@@ -4038,7 +4910,13 @@ pts = nearpoints(1, @P, ch("radius"));
 // treat this as ink on paper, so start with white paper
 @Cd = 1;
 
-// ...
+foreach (int pt; pts) {
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    @P.y += sin(d * ch("freq") - @Time) * d;
+}
 ```
 
 This creates a Photoshop-like multiply blend effect by starting with white paper (@Cd = 1) and multiplying colors from nearby points.
@@ -4062,7 +4940,14 @@ foreach(pt; pts){
     pos += point(1, 'P', pt);
 }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Uses nearpoints() to find nearby points within a specified distance and count, then averages their positions to smooth point movement across a surface.
@@ -4093,7 +4978,14 @@ foreach(pt; pts){
 }
 
 @P = pos/len(pts);
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 This code demonstrates the difference between nearpoints and pcopen.
@@ -4109,7 +5001,14 @@ This code demonstrates the difference between nearpoints and pcopen.
 //     pos += point(1, 'P', pti);
 // }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 This demonstrates using point cloud functions as a more efficient alternative to nearpoints() for averaging positions.
@@ -4125,7 +5024,14 @@ This demonstrates using point cloud functions as a more efficient alternative to
 // @P = pos/len(pts);
 
 int nvpc = pcopen(1, 'P', @P, ch('d'), chi('amt'));
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates using pcopen() to create a point cloud handle and pcfilter() to compute the average normal from nearby points on the second input geometry.
@@ -4150,7 +5056,14 @@ Opens a point cloud handle containing nearby points within a specified distance,
 //     pos += point(1, 'P', pt);
 // }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates using pcopen() to create point cloud handles and pcfilter() to extract and average attributes from nearby points.
@@ -4166,7 +5079,14 @@ Demonstrates using pcopen() to create point cloud handles and pcfilter() to extr
 //     pos += point(1, 'P', pt);
 // }
 //
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Uses pcopen() to create point cloud handles from different inputs, then applies pcfilter() to average normal and color attributes from nearby points.
@@ -4182,7 +5102,14 @@ Uses pcopen() to create point cloud handles from different inputs, then applies 
 //     pos += point(1, 'P', pt);
 // }
 // @P = pos/len(pts);
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates using pcopen and pcfilter to blur color attributes by averaging neighboring points in space.
@@ -4320,7 +5247,10 @@ float dot, dist;
 pcp = pcfilter(pc, 'P');
 pcn = pcfilter(pc, 'N');
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Demonstrates creating fake ambient occlusion by using point cloud queries to compare the current point's normal against averaged normals of nearby points.
@@ -4332,7 +5262,6 @@ vector p0 = getblurP(0);
 int handle = pcopen("pcloud.pc", p0, ...);
 ```
 
-Signature: vector p0 = getblurP(0);
 int handle = pcopen("pcloud.pc", p0, ...);
 
 Adds an item to an array or string.
@@ -4344,42 +5273,127 @@ Efficiently creates an arr....
 ### pcfilter
 
 ```vex
-floatpcfilter(inthandle;stringchannel){floatsum,w,d;floatvalue,result=0;while(pciterate(handle)){pcimport(handle,"point.distance",d);pcimport(handle,channel,value);w=1-smooth(0,radius,d);sum+=w;result+=w*value;}result/=sum;returnresult;}
+// pcfilter: weighted average of an attribute from point cloud
+float pcfilter(int handle; string channel) {
+    float sum = 0;
+    float w, d;
+    float value, result = 0;
+    while (pciterate(handle)) {
+        pcimport(handle, "point.distance", d);
+        pcimport(handle, channel, value);
+        w = 1 - smooth(0, radius, d);
+        sum += w;
+        result += w * value;
+    }
+    result /= sum;
+    return result;
+}
 ```
 
-Signature: floatpcfilter(inthandle;stringchannel){floatsum,w,d;floatvalue,result=0;while(pciterate(handle)){pcimport(handle,"point.distance",d);pcimport(handle,channel,value);w=1-smooth(0,radius,d)....
 
 ### pcgenerate
 
 ```vex
-vectorposition;intohandle,ghandle,rval;ghandle=pcgenerate(texturename,npoints);while(pcunshaded(ghandle,"P")){// Compute 'position'...rval=pcexport(ghandle,"P",position);}ohandle=pcopen(texturename,"P",P,maxdistance,maxpoints);while(pciterate(ohandle)){rval=pcimport(ohandle,"P",position);// Do something with 'position'...}pcclose(ohandle);pcclose(ghandle);
+// pcgenerate: create a point cloud file with baked positions
+vector position;
+int ohandle, ghandle, rval;
+
+// Generate phase: write positions into a point cloud
+ghandle = pcgenerate(texturename, npoints);
+while (pcunshaded(ghandle, "P")) {
+    // Compute position for this sample...
+    position = @P + rand(@ptnum) * 0.1;
+    rval = pcexport(ghandle, "P", position);
+}
+
+// Read phase: query the generated point cloud
+ohandle = pcopen(texturename, "P", P, maxdistance, maxpoints);
+while (pciterate(ohandle)) {
+    rval = pcimport(ohandle, "P", position);
+    // Do something with position...
+    @Cd += {0.1, 0.05, 0.0};
+}
+pcclose(ohandle);
+pcclose(ghandle);
 ```
 
-Signature: vectorposition;intohandle,ghandle,rval;ghandle=pcgenerate(texturename,npoints);while(pcunshaded(ghandle,"P")){// Compute 'position'...rval=pcexport(ghandle,"P",position);}ohandle=pcopen(....
 
 ### pcopen
 
 ```vex
-inthandle=pcopen(texturename,"P",P,maxdistance,maxpoints);while(pcunshaded(handle,"irradiance")){pcimport(handle,"P",cloudP);pcimport(handle,"N",cloudN);ir=computeIrraciance(cloudP,cloudN);pcexport(handle,"irradiance",ir);}pcfilter(handle,radius,"irradiance",ir);
+// pcopen: open a point cloud for reading/writing
+int handle = pcopen(texturename, "P", P, maxdistance, maxpoints);
+
+// Shade unprocessed points (irradiance baking pattern)
+while (pcunshaded(handle, "irradiance")) {
+    vector cloudP, cloudN;
+    float ir;
+    pcimport(handle, "P", cloudP);
+    pcimport(handle, "N", cloudN);
+    ir = computeIrradiance(cloudP, cloudN);
+    pcexport(handle, "irradiance", ir);
+}
+
+// Filter to get weighted average of irradiance
+float ir_result;
+pcfilter(handle, radius, "irradiance", ir_result);
+pcclose(handle);
 ```
 
-Signature: inthandle=pcopen(texturename,"P",P,maxdistance,maxpoints);while(pcunshaded(handle,"irradiance")){pcimport(handle,"P",cloudP);pcimport(handle,"N",cloudN);ir=computeIrraciance(cloudP,cloud....
 
 ### pcopenlod
 
 ```vex
-inthandle=pcopenlod(texturename,"P",P,8,"measure","distance","threshold",2.0,"aggregate:P","mean","aggregate:value","sum");Cf=0;while(pciterate(handle)){pcimport(handle,"value",valueSum);Cf+=valueSum;}pcclose(handle);
+// pcopenlod: level-of-detail point cloud query (cluster nearby points)
+int handle = pcopenlod(
+    texturename, "P", P, 8,
+    "measure", "distance",
+    "threshold", 2.0,
+    "aggregate:P", "mean",
+    "aggregate:value", "sum"
+);
+
+Cf = 0;
+float valueSum;
+while (pciterate(handle)) {
+    pcimport(handle, "value", valueSum);
+    Cf += valueSum;
+}
+pcclose(handle);
 ```
 
-Signature: inthandle=pcopenlod(texturename,"P",P,8,"measure","distance","threshold",2.0,"aggregate:P","mean","aggregate:value","sum");Cf=0;while(pciterate(handle)){pcimport(handle,"value",valueSum)....
 
 ### pcsampleleaf
 
 ```vex
-// Open a point cloud and retrieve a single aggregate point representing the// entire cloudstringtexturename="points.pc";inthandle=pcopenlod(texturename,"P",P,8,"measure","solidangle","area","A","samples",1,"aggregate:A","sum","aggregate:P","mean");Cf=0;// This loop will iterate only oncewhile(pciterate(handle)){// Query A from the averaged pointfloatptarea;pcimport(handle,"A",ptarea);pcsampleleaf(handle,nrandom());// Query P from a sampled leaf pointvectorpos;pcimport(handle,"P",pos);if(trace(pos,P-pos,Time))Cf+=ptarea/length2(P-pos);}
+// pcsampleleaf: sample a leaf point from a LOD cluster
+// Open a point cloud and retrieve a single aggregate point
+// representing the entire cloud (solidangle measure)
+string texturename = "points.pc";
+int handle = pcopenlod(
+    texturename, "P", P, 8,
+    "measure", "solidangle",
+    "area", "A",
+    "samples", 1,
+    "aggregate:A", "sum",
+    "aggregate:P", "mean"
+);
+
+Cf = 0;
+// This loop iterates only once (single aggregate point)
+while (pciterate(handle)) {
+    // Query area from the averaged cluster point
+    float ptarea;
+    pcimport(handle, "A", ptarea);
+    pcsampleleaf(handle, nrandom());
+    // Query P from a sampled leaf point within the cluster
+    vector pos;
+    pcimport(handle, "P", pos);
+    if (trace(pos, P - pos, Time))
+        Cf += ptarea / length2(P - pos);
+}
 ```
 
-Signature: // Open a point cloud and retrieve a single aggregate point representing the// entire cloudstringtexturename="points.pc";inthandle=pcopenlod(texturename,"P",P,8,"measure","solidangle","a....
 
 ### Pattern: Neighbor Averaging
 
@@ -4392,14 +5406,6 @@ foreach(int pt; pts) {
 }
 @Cd = sum / max(len(pts), 1);
 ```
-
-// Smooth attribute by averaging neighbors
-int pts[] = nearpoints(0, @P, ch("radius"));
-vector sum = {0,0,0};
-foreach(int pt; pts) {
-    sum += point(0, "Cd", pt);
-}
-@Cd = sum / max(len(pts), 1);.
 
 ### Pattern: Attribute Transfer
 
@@ -4499,7 +5505,10 @@ float dot, dist;
 pcp = pcfilter(pc, 'P');
 pcn = pcfilter(pc, 'N');
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 Download scene: pbao.hiplc
@@ -4517,7 +5526,14 @@ Not quite AO, but it'll do.
 //     pos += point(1, 'P', pt);
 // }
 
-// ...
+    pos = point(1, "P", pt);
+    d = distance(@P, pos);
+    d = fit(d, 0, ch("radius"), 1, 0);
+    d = clamp(d, 0, 1);
+    float t = @Time * ch("speed") + rand(pt);
+    float f = ch("freq");
+    @P.y += sin(d * f - t) * d * ch("amp");
+}
 ```
 
 Demonstrates the creation of a point cloud handle using pcopen as an alternative to nearpoints-based averaging.
@@ -4546,7 +5562,10 @@ float dot, dist;
 pcp = pcfilter(pc, "P");
 pcn = pcfilter(pc, "N");
 
-// ...
+dot = dot(@N, pcn);
+dist = distance(@P, pcp);
+@Cd = chramp("dot_ramp", fit(dot, -1, 1, 0, 1));
+@Cd += chramp("dist_ramp", fit(dist, 0, ch("maxdist"), 1, 0));
 ```
 
 This technique creates a fake ambient occlusion effect by opening a point cloud and using pcfilter to average nearby point positions and normals.
@@ -4598,15 +5617,21 @@ pcclose(handle);
 ### Solver and wrangle for branching structures â
 
 ```vex
-if (@active ==0) {
+if (@active == 0) {
     float maxdist = ch('maxdist');
     int maxpoints = 5;
-    int pts[] = nearpoints(0,@P, maxdist, maxpoints);
-    int pt ;
+    int pts[] = nearpoints(0, @P, maxdist, maxpoints);
+    int pt;
 
-    foreach  (pt;pts) {
-        if (point(0,'active',pt)==1) {
-// ...
+    foreach (pt; pts) {
+        if (point(0, 'active', pt) == 1) {
+            // This point has an active neighbor - activate and record it
+            setpointattrib(0, "active", @ptnum, 1, "set");
+            setpointattrib(0, "parent", @ptnum, pt, "set");
+            break;
+        }
+    }
+}
 ```
 
 Download scene: Download file: vex_brancher.hipnc

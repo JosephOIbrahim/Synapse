@@ -18,14 +18,17 @@ from .models import (
     Decision,
     GateLevel,
     RenderPlan,
+    RenderPrediction,
     RenderReport,
     RenderStep,
     SequenceEvaluation,
     StepStatus,
+    VerificationResult,
 )
 from .planner import RenderPlanner
 from .validator import PreFlightValidator
 from .evaluator import RenderEvaluator
+from .predictor import RenderPredictor
 
 logger = logging.getLogger("synapse.autonomy.driver")
 
@@ -74,6 +77,7 @@ class AutonomousDriver:
         evaluator: RenderEvaluator,
         handler_interface: HandlerInterface,
         memory_system: Optional[MemorySystem] = None,
+        predictor: Optional[RenderPredictor] = None,
         max_iterations: int = 3,
     ) -> None:
         self._planner = planner
@@ -81,6 +85,7 @@ class AutonomousDriver:
         self._evaluator = evaluator
         self._handler = handler_interface
         self._memory = memory_system
+        self._predictor = predictor
         self._max_iterations = max_iterations
 
         self._decisions: List[Decision] = []
@@ -183,6 +188,28 @@ class AutonomousDriver:
                     gate=GateLevel.INFORM,
                 )
 
+            # Step 3.5: Predict render outcome (if predictor available)
+            prediction: Optional[RenderPrediction] = None
+            if self._predictor is not None:
+                try:
+                    prediction = await self._predictor.predict(plan, checks)
+                    self._log_decision(
+                        context="prediction",
+                        decision=f"Pre-render prediction: {prediction.geo_prim_count} geo, "
+                                 f"{prediction.light_count} lights, {prediction.material_count} materials",
+                        reasoning=f"{len(prediction.pre_render_issues)} pre-render issue(s)"
+                                  if prediction.pre_render_issues
+                                  else "Scene structure looks good",
+                        gate=GateLevel.INFORM,
+                    )
+                    self._checkpoint("prediction", {
+                        "camera": prediction.camera_prim,
+                        "geo_count": prediction.geo_prim_count,
+                        "issues": len(prediction.pre_render_issues),
+                    })
+                except Exception as exc:
+                    logger.warning("Prediction failed (non-blocking): %s", exc)
+
             # Step 4: Execute render steps
             execution_ok = await self._execute_steps(plan)
             if not execution_ok:
@@ -213,6 +240,22 @@ class AutonomousDriver:
                 gate=GateLevel.INFORM,
             )
 
+            # Step 5.5: Verify prediction against actual results
+            verification: Optional[VerificationResult] = None
+            if self._predictor is not None and prediction is not None:
+                try:
+                    prediction.render_succeeded = execution_ok
+                    verification = await self._predictor.verify(prediction, evaluation)
+                    self._log_decision(
+                        context="verification",
+                        decision=f"Verification score: {verification.score:.2f}, "
+                                 f"rerender recommended: {verification.should_rerender}",
+                        reasoning=verification.reasoning,
+                        gate=GateLevel.INFORM,
+                    )
+                except Exception as exc:
+                    logger.warning("Verification failed (non-blocking): %s", exc)
+
             # Step 6: Check if we need to re-plan
             if evaluation.passed:
                 self._log_decision(
@@ -224,10 +267,18 @@ class AutonomousDriver:
                 break
 
             if iteration < self._max_iterations:
+                # Check if rerendering would actually help
+                replan_reasoning = "Evaluation failed -- adjusting settings and re-rendering failed frames"
+                if self._predictor is not None and verification is not None:
+                    if not verification.should_rerender:
+                        replan_reasoning = (
+                            "Evaluation failed but verification suggests rerender may not help "
+                            f"(score: {verification.score:.2f}). Attempting anyway."
+                        )
                 self._log_decision(
                     context="replan",
                     decision=f"Re-planning (iteration {iteration}/{self._max_iterations})",
-                    reasoning="Evaluation failed — adjusting settings and re-rendering failed frames",
+                    reasoning=replan_reasoning,
                     gate=GateLevel.INFORM,
                 )
                 plan = self._planner.replan(plan, evaluation)
@@ -245,6 +296,8 @@ class AutonomousDriver:
         report = RenderReport(
             plan=plan,
             evaluation=evaluation,
+            prediction=prediction if self._predictor is not None else None,
+            verification=verification if self._predictor is not None else None,
             decisions=list(self._decisions),
             iterations=iteration,
             total_time_seconds=total_time,

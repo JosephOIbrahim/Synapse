@@ -19,8 +19,8 @@ foo *= 3;          // set range
 foo += 1;          // make sure values never get below 0
 foo /= @Cd.x;      // reduce range to within red value
 foo += @N.y;       // addition normal on y
+// Each line performs a single operation -- easier to debug than one compound expression
 ```
-Breaking complex mathematical operations across multiple lines with comments improves code readability and maintainability. Each line performs a single operation on the variable, making it easier to understand the transformation sequence compared to a single compound expression like 'foo * 3 + 1 / @Cd.x + @N.y'.
 
 ### Code Review and Debugging Practices [Needs Review] [[Ep1, 104:58](https://www.youtube.com/watch?v=9gB1zB9aLg4&t=6298s)]
 ```vex
@@ -31,8 +31,8 @@ vector center = chv('center');
 float r = distance(pos, center);
 r *= ch('scale');
 @Cd = fit(sin(r+chf('time')), -1, 1, 0, 3);
+// Debug: check for typos like using 'd' instead of 'r' -- errors manifest visually
 ```
-Discussion of debugging practices and troubleshooting VEX code when visual results don't match expectations. Emphasizes the importance of reviewing code to identify issues like incorrect variable usage (e.g., using 'd' instead of 'r') and understanding how errors manifest visually.
 
 ### Debugging Visual Results in VEX [Needs Review] [[Ep1, 105:02](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=6302s)]
 ```vex
@@ -41,22 +41,22 @@ vector center = chv('center');
 vector d = normalize(pos - center);
 d *= ch('scaleb');
 @Cd = fit(sin(d.x), -1, 1, 0, 1);
+// When output looks wrong: review each step -- common mistake is missing normalize or scale
 ```
-This code demonstrates a complete example combining position transformation, distance calculation, and color animation. The instructor emphasizes the importance of debugging visual results by carefully reviewing code when output doesn't match expectations, highlighting common mistakes like missing operations in expressions.
 
 ## Optimization
 
 ### One-line vs multi-line code readability [[Ep1, 76:02](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=4562s)]
 ```vex
 @Cd = (sin(length(@P)*ch('scale'))+1)*0.5;
+// Compact but hard to debug -- prefer multi-line with intermediate variables in production
 ```
-Demonstrates that complex VEX expressions can be written on a single line, but emphasizes that breaking code into multiple lines is often preferable for readability and maintainability in production environments. This is the same color calculation as previous examples, condensed into one line to illustrate coding style considerations.
 
 ### Code Style and Readability [[Ep1, 76:04](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=4564s)]
 ```vex
 @Cd = (sin(length(@P) * ch('scale')) * 1) * 0.5;
+// Studio best practice: prefer intermediate variables over brevity -- your future self will thank you
 ```
-Demonstrates that complex VEX expressions can be written as a single line, but emphasizes that code readability and maintainability in a studio environment is often more important than brevity. Breaking complex expressions into multiple lines with intermediate variables makes code easier to understand and debug, which is considered a best practice for collaborative work and for your future self.
 
 ### Code Readability Best Practices [[Ep1, 76:08](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=4568s)]
 ```vex
@@ -73,8 +73,8 @@ vector center = chv('center');
 float d = distance(@P, center);
 d *= ch('scale');
 @Cd = (sin(d)+1)*0.5;
+// All four variants produce the same result -- choose clarity over cleverness
 ```
-Demonstrates that the same color calculation can be written in multiple ways, from multi-line with intermediate variables to a single compressed line. Emphasizes that while compact code may seem clever, breaking complex expressions into clear steps with intermediate variables improves readability and maintainability in production environments. The final example extends this to use a custom center point via a vector parameter.
 
 ## Debugging
 
@@ -97,8 +97,8 @@ vector center = chv('center');
 float d = distance(@P, center);
 d *= ch('scale');
 @Cd = (sin(d)%1)*0.5;
+// Extract to named variables -- same result, far easier to review and modify later
 ```
-Demonstrates best practices for code readability by extracting complex expressions into intermediate variables. The same color pattern is achieved multiple ways, showing how breaking calculations into multiple lines makes code more maintainable and clearer for future review, even when working solo.
 
 ## Miscellaneous Tips
 
@@ -106,22 +106,22 @@ Demonstrates best practices for code readability by extracting complex expressio
 ```vex
 vector origin = point(1, 'P', 0);
 @v = @origin;
+// Direct assignment -- useful for RBD/particle motion toward a specific origin point
 ```
-Reads the position of point 0 from input 1 and assigns it directly to the velocity attribute. This approach uses direct assignment rather than subtraction to set velocity vectors, which can be useful for RBD simulations or directing particle motion toward a specific point.
 
 ### Setting velocity from origin point [[Ep4, 38:46](https://www.youtube.com/watch?v=66WGmbykQhI&t=2326s)]
 ```vex
 vector origin = point(1, "P", 0);
 @v = origin;
+// Input 1 = second input node; point(1, "P", 0) reads P from point 0 of that input
 ```
-Reads the position of point 0 from input 1 and assigns it to the velocity attribute. This technique is useful for RBD simulations where you want to set initial velocities based on a specific origin point, such as creating an explosion effect radiating from a defined location.
 
 ### Explosion Velocity from Origin Point [[Ep4, 39:24](https://www.youtube.com/watch?v=66WGmbykQhI&t=2364s)]
 ```vex
 vector origin = point(1, 'P', 0);
 @v = (@P - origin) * ch('scale');
+// (@P - origin) = direction away from origin; ch('scale') controls explosion force magnitude
 ```
-Creates an explosion effect by reading an origin point from the second input (input 1), computing the direction vector from that origin to each point, and scaling the result to set velocity. The channel reference allows interactive control of the explosion force magnitude.
 
 ### Velocity From Origin Point [[Ep4, 39:26](https://www.youtube.com/watch?v=66WGmbykQhI&t=2366s)]
 ```vex
@@ -129,44 +129,42 @@ f@z = ch('scale');
 
 vector origin = point(1, 'P', 0);
 @v = @P - origin;
+// Store scale in f@z for inspection; velocity points away from origin
 ```
-Creates velocity vectors for an explosion effect by calculating the direction from an origin point (from second input) to each point's position. The velocity is set as the vector from origin to current point position, with an optional scale parameter to control magnitude.
 
 ### Setting Velocity from Origin Point [[Ep4, 39:48](https://www.youtube.com/watch?v=66WGmbykQhI&t=2388s)]
 ```vex
 vector origin = point(1, 'P', 0);
 @v = @P - origin;
+// Normalize and scale @v afterward to control the exact speed of the explosion
 ```
-Sets the velocity attribute (@v) of each point to a vector pointing away from an origin point. The origin is read from point 0 of the second input (input 1), and the velocity direction is calculated as the difference between the current point position and that origin, which can be scaled for controlling the magnitude of the velocity.
 
 ### Directional velocity from origin point [[Ep4, 39:56](https://www.youtube.com/watch?v=66WGmbykQhI&t=2396s)]
 ```vex
 @v *= ch("scale");
 
-@v = -@N;
+@v = -@N;             // variant: use inverted normal as velocity direction
 @v *= ch("scale");
 
 vector origin = point(1, 'P', 0);
-@v = @P - origin;
-@v *= ch("scale");
+@v = @P - origin;     // variant: direction from origin to each point
+@v *= ch("scale");    // scale controls explosion force magnitude
 ```
-Sets velocity vectors radiating outward from an origin point by computing the direction from the origin to each point position. The resulting velocity is scaled by a channel parameter, creating an explosion-like effect where geometry moves away from the central point.
 
 ### Velocity from Origin Point [[Ep4, 40:12](https://www.youtube.com/watch?v=66WGmbykQhI&t=2412s)]
 ```vex
 vector origin = point(1, 'P', 0);
 @v = -origin;
+// Negating origin creates outward blast direction -- use (@P - origin) for per-point divergence
 ```
-Reads the position of point 0 from the second input and sets the velocity vector to point away from that origin position. This creates an outward explosion effect where particles blast away from a central point, useful for rigid body simulations and directional force effects.
 
 ### Velocity from Origin Point [[Ep4, 40:30](https://www.youtube.com/watch?v=66WGmbykQhI&t=2430s)]
 ```vex
 vector origin = point(1, 'P', 0);
 @v = (@P - origin);
 
-@N = @v * ch('scale');
+@N = @v * ch('scale');  // copy scaled velocity into @N for art-directible force field
 ```
-Sets velocity (@v) for each point by calculating a vector from an origin point (first point from input 1) to the current point position. The normal (@N) is then set to the scaled velocity vector using a channel reference, creating an explosion-like directional field that can be art-directed for simulations.
 
 ## Debugging
 
@@ -178,10 +176,10 @@ float bar = sin(PI);
 if(foo == bar) {
     @Cd = {1,1,0};
 } else {
-    @Cd = {1,0,0};
+    @Cd = {1,0,0};  // sin(PI) returns ~-8.74228e-8, not exactly 0 -- equality fails
 }
+// Fix: use abs(foo - bar) < 1e-6 for float comparisons
 ```
-Demonstrates floating point precision errors where sin(PI) returns a value extremely close to zero (approximately -8.74228e-8) but not exactly zero, causing the equality comparison to fail. This common numerical issue occurs because floating point numbers have limited precision and trigonometric calculations may introduce small rounding errors.
 
 ### Floating Point Comparison Issues [Needs Review] [[Ep4, 76:02](https://www.youtube.com/watch?v=66WGmbykQhI&t=4562s)]
 ```vex
@@ -191,10 +189,10 @@ float bar = sin(@P.y);
 if(foo == bar) {
     @Cd = {1,1,0};
 } else {
-    @Cd = {1,0,0};
+    @Cd = {1,0,0};  // sin(@P.y) returns ~0.00000087, not 0 -- == comparison fails
 }
+// Always use epsilon comparison: if(abs(foo - bar) < 1e-6) for float equality
 ```
-Demonstrates a common floating point precision error where sin(@P.y) produces values extremely close to zero (like 0.00000087) but not exactly zero, causing equality comparisons to fail. This illustrates why direct equality testing with floating point numbers is unreliable and should use epsilon-based tolerance checks instead.
 
 ### Floating Point Precision Errors [[Ep4, 76:04](https://www.youtube.com/watch?v=66WGmbykQhI&t=4564s)]
 ```vex
@@ -204,10 +202,10 @@ float bar = sin(@P);
 if(foo == bar) {
     @Cd = {0,1,0};
 } else {
-    @Cd = {1,0,0};
+    @Cd = {1,0,0};  // will almost always be red -- sin accumulates tiny floating point errors
 }
+// Rule: never use == for floats; use abs(a - b) < 0.000001 (epsilon tolerance)
 ```
-Demonstrates a floating point precision error where comparing sin(@P) to zero using == fails because floating point calculations can produce values extremely close to zero (like 0.00000087) but not exactly zero. This common issue occurs when testing equality between floating point numbers that should theoretically be equal but have accumulated tiny computational errors.
 
 ## Groups
 

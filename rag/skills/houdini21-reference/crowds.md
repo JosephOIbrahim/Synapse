@@ -1,552 +1,711 @@
 # Crowd Simulation
 
-## Overview
+## Triggers
+<!-- triggers: crowd, agent, crowd simulation, crowdsource, crowdsolver, crowd solver, crowdobject, agentclip, agentlayer, agentprep, crowd state machine, crowd trigger, crowd transition, foot locking, terrain following, locomotion, agent variation, crowd rendering, point instancer, skeletal agent, LOD, crowd LOD, agent attributes, crowd attributes, agent transform, crowd steering, style sheet, crowd material, bgeo crowd, crowd cache, ragdoll crowd -->
 
-Houdini's crowd system simulates large numbers of animated characters (agents) using a lightweight packed agent representation. Agents carry embedded animation clips, collision shapes, and layers, and are driven through a state machine in DOPs. The system is built on the Agent primitive type -- a packed prim with skeletal animation, shape libraries, and clip blending.
+## Context
 
-## SOP-Level Setup Chain
+Houdini 21 crowd system: packed agent primitives with embedded skeleton + clips, driven by a DOP state machine. Zero Houdini required to read/run these snippets — all use `hou` Python API or VEX wrangles.
 
-```
-character_fbx -> agent -> agentlayer (optional) -> agentclip (additional clips)
-    -> crowdsource -> crowdstate (initial state assignment)
-    -> dopnet(crowdsolver) -> dopimport -> filecache
-```
-
-For import to LOPs: `filecache` -> `sopimport` LOP
-
-## Agent Setup
-
-### agent SOP
-
-Creates an Agent primitive from an FBX/BVH/character file. This is the entry point for all crowd work.
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Agent Name | `agentname` | agent1 | Unique name for this agent type |
-| Input | `input` | FBX File | Source type: FBX, BVH, or Character Rig |
-| FBX File | `fbxfile` | (empty) | Path to .fbx character file |
-| Convert Units | `convertunits` | 1 | Auto-convert units (cm to m) |
-| Clip Name | `clipname` | (auto) | Name for the default animation clip |
-| Locomotion Joint | `locomotionjoint` | (auto) | Root joint for locomotion (usually Hips) |
-| Locomotion | `locomotion` | 1 | Enable in-place clip conversion |
-
-**Locomotion**: When enabled, the agent SOP strips the root joint's forward translation from the clip and stores it as `locomotion speed`. The crowd solver then moves the agent point in world space at that speed. This is essential -- without it, agents will slide or moonwalk.
-
-### agentclip SOP
-
-Adds additional animation clips to an existing agent.
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Clip Name | `name` | clip1 | Name for this clip |
-| Source | `source` | FBX Animation File | Where to get the clip |
-| FBX File | `fbxfile` | (empty) | Path to FBX with animation |
-| Start/End Frame | `startend` | 1/240 | Clip frame range |
-| Locomotion | `locomotion` | 1 | Convert to in-place clip |
-| Locomotion Joint | `locomotionjoint` | (same as agent) | Root joint name |
-
-### agentlayer SOP
-
-Defines geometry layers on an agent -- different shapes that can be swapped for variation.
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Layer Name | `layername` | default | Name of this layer |
-| Source | `source` | Current Layer | Inherit existing or start fresh |
-| Shape Transform | `shapetransform#` | (varies) | Which joint a shape is bound to |
-| Shape Geometry | `shapegeo#` | (varies) | Geometry for this shape |
-| Deforming | `deforming#` | 1 | Whether shape deforms with skeleton |
-
-Layers allow swapping armor pieces, helmets, weapons, or clothing per agent. Each layer is a named set of shape bindings.
-
-### agentprep SOP
-
-Prepares agents for simulation. Configures collision shapes, foot joints, and terrain adaptation.
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Agent Name | `agentname` | (auto) | Which agent type to configure |
-| Show Guide | `showguide` | 1 | Display collision/foot guides |
-| Enable Terrain Adapt | `enableterrain` | 0 | Set up terrain following |
-| Hip Joint | `hipjoint` | Hips | Joint for terrain offset |
-| Foot Joints | `leftfoot`/`rightfoot` | (auto) | Foot joints for foot locking |
-| Lower Limb Joints | `leftlowerleg`/`rightlowerleg` | (auto) | Knee joints for IK |
-| Upper Limb Joints | `leftupperleg`/`rightupperleg` | (auto) | Hip joints for IK |
-| Ankle Offset | `ankleoffset` | 0.0 | Vertical offset from ankle to sole |
-
-**Critical**: Agent Prep must be connected before the DOP network. Without it, terrain adaptation and foot locking will not work. The foot/leg joint names must match the skeleton exactly.
-
-## Crowd Source
-
-### crowdsource SOP
-
-Places agents in the scene with initial positions, orientations, and state assignments.
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Number of Agents | `numagents` | 10 | How many agents to scatter |
-| Randomize | `randomize` | 1 | Randomize positions |
-| Area Shape | `areashape` | Circle | Scatter area (Circle, Rectangle, Custom) |
-| Area Size | `areasize` | 10 | Scatter radius/size |
-| Formation | `formation` | None | Grid, Circle, Custom |
-| Agent Group | `agentgroup` | (empty) | Assign to named group |
-| Initial State | `initialstate` | (empty) | Starting state machine state |
-| Initial Clip | `initialclip` | (auto) | Starting animation clip |
-| Randomize Clip Offset | `randomclipoffset` | 1 | Offset clip start time per agent |
-| Max Initial Speed | `maxinitspeed` | 1.0 | Random initial speed range |
-
-### Formation Types
-
-| Formation | Parameter Value | Description |
-|-----------|----------------|-------------|
-| None | `0` | Random scatter in area |
-| Grid | `1` | Regular grid, set rows/columns |
-| Circle | `2` | Ring formation |
-| Custom Geometry | `3` | Points from input geometry define positions |
-
-For custom formations, wire geometry with points into crowdsource input 2. Each point becomes an agent position. Add `@orient` (quaternion) on input points to control facing direction.
-
-### crowdstate SOP
-
-Assigns initial states to agents before simulation.
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| State Name | `statename` | idle | Name of the state to assign |
-| Group | `group` | (empty) | Apply to specific agent group |
-| Randomize | `randomize` | 0 | Randomly assign from multiple states |
-
-## Crowd Simulation (DOPs)
-
-### DOP Network Setup
-
-```
-crowdsource -> dopnet -> dopimport
+```python
+# SOP-level setup chain (logical flow, not executable network builder)
+# character_fbx -> agent -> agentlayer (optional) -> agentclip (additional clips)
+#     -> agentprep -> crowdsource -> crowdstate
+#     -> dopnet(crowdobject -> groundplane -> crowdsolver -> output)
+#     -> dopimport -> filecache
+# For LOPs: filecache -> sopimport LOP -> materiallibrary -> karmarendersettings
 ```
 
-Inside the DOP network:
+## Code
 
-```
-crowdobject -> groundplane (optional) -> crowdsolver -> output
-```
+### Agent SOP — create agent from FBX
 
-### crowdobject DOP
+```python
+import hou
 
-Imports the crowd from SOPs into the DOP simulation.
+obj = hou.node("/obj")
+geo = obj.createNode("geo", "crowd_setup")
+geo.moveToGoodPosition()
 
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| SOP Path | `soppath` | (auto) | Path to SOP crowd source |
-| Use Object Transform | `useobjecttransform` | 0 | Apply object-level transform |
-
-### crowdsolver DOP
-
-The core simulation engine. Runs the state machine, blends clips, handles avoidance, applies forces.
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Substeps | `substeps` | 1 | Solver substeps |
-| Avoidance Force | `avoidanceforce` | 1.0 | Strength of inter-agent avoidance |
-| Avoidance Radius | `anticipatetime` | 2.0 | Look-ahead time for avoidance (seconds) |
-| Max Speed | `maxspeed` | 2.0 | Maximum agent speed (m/s) |
-| Max Rotation Speed | `maxrotspeed` | 120 | Max turning rate (deg/s) |
-| Max Accel | `maxaccel` | 5.0 | Maximum acceleration |
-| Terrain Following | `terrain` | 0 | Enable terrain snap |
-| Terrain Object | `terrainobject` | (empty) | DOP object or SOP path for terrain |
-| Foot Locking | `enablefootlocking` | 0 | Enable IK foot plant |
-
-### State Machine
-
-Crowd behavior is driven by a state machine. Each state plays a clip, applies forces, and checks triggers for transitions.
-
-#### crowdstate DOP (inside crowdsolver)
-
-Defines a behavioral state.
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| State Name | `statename` | state1 | Unique state name |
-| Animation Clips | `clipnames` | (empty) | Clip(s) to play in this state |
-| Clip Speed Multiplier | `clipspeedmultiplier` | 1.0 | Speed scale on clip playback |
-| Blend Time | `blendtime` | 0.3 | Seconds to blend from previous clip |
-| Speed Range | `speedrange` | 0/2 | Min/max agent speed in this state |
-| Speed Clip Range | `speedcliprange` | (auto) | Map speed to clip blend |
-
-#### crowdtrigger DOP
-
-Defines conditions that cause state transitions.
-
-| Trigger Type | Parameter | Description |
-|-------------|-----------|-------------|
-| Time in State | `timeinstate` | Fires after N seconds in current state |
-| Proximity to Object | `objectdistance` | Fires when near a specific object |
-| Proximity to Agent | `agentdistance` | Fires when near another agent |
-| Bounding Box | `boundingbox` | Fires when inside a bounding box |
-| Particle Speed | `particlespeed` | Fires at a speed threshold |
-| Custom VEX | `customvex` | Fires based on VEX expression |
-| Crowd Field | `crowdfield` | Fires based on crowd attribute value |
-| Object Attribute | `objectattribute` | Fires based on object attribute |
-
-#### crowdtransition DOP
-
-Links a trigger to a state change.
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Source State | `sourcestate` | (any) | State to transition from |
-| Target State | `targetstate` | (required) | State to transition to |
-| Trigger | `trigger` | (required) | Which trigger activates this |
-| Duration | `duration` | 0.3 | Transition blend time |
-| Priority | `priority` | 0 | Higher priority wins if multiple triggers fire |
-
-### Example State Machine
-
-A basic walk-to-run-to-idle cycle:
-
-```
-State: idle (clip=idle_anim, speed=0)
-  Trigger: proximity_to_goal (distance < 20)
-    -> Transition to: walk
-
-State: walk (clip=walk_cycle, speed=1.0)
-  Trigger: proximity_to_goal (distance < 5)
-    -> Transition to: idle
-  Trigger: speed_threshold (speed > 1.5)
-    -> Transition to: run
-
-State: run (clip=run_cycle, speed=2.5)
-  Trigger: speed_threshold (speed < 1.2)
-    -> Transition to: walk
+# agent SOP: entry point for all crowd work
+agent = geo.createNode("agent", "agent1")
+agent.parm("input").set(0)                    # 0=FBX File, 1=BVH, 2=Character Rig
+agent.parm("fbxfile").set("/path/to/char.fbx")
+agent.parm("agentname").set("soldier")
+agent.parm("clipname").set("walk_cycle")
+agent.parm("locomotion").set(1)               # CRITICAL: strip root translation, store as locomotion speed
+agent.parm("locomotionjoint").set("Hips")     # must match root joint in skeleton
+agent.parm("convertunits").set(1)             # auto-convert cm -> m (FBX usually cm)
+agent.cook()
 ```
 
-## Terrain Following
+### agentclip SOP — add more animation clips
 
-### Setup Requirements
+```python
+# Wire after agent SOP to add extra clips
+agentclip = geo.createNode("agentclip", "add_clips")
+agentclip.setInput(0, agent)
 
-1. Agent Prep: Enable terrain adaptation, set hip/foot/leg joints
-2. Crowd Solver: Enable `terrain` parm, set `terrainobject` to terrain SOP or DOP object
-3. Optional: Enable `enablefootlocking` on crowd solver for IK foot plant
+# parms for each clip entry (multiparm, index starts at 1)
+agentclip.parm("name1").set("run_cycle")
+agentclip.parm("source1").set(0)              # 0=FBX Animation File
+agentclip.parm("fbxfile1").set("/path/to/run.fbx")
+agentclip.parm("startend1v1").set(1)          # start frame
+agentclip.parm("startend1v2").set(120)        # end frame
+agentclip.parm("locomotion1").set(1)          # in-place conversion
+agentclip.parm("locomotionjoint1").set("Hips")
 
-### Terrain Adaptation Parameters (Agent Prep)
+# add a second clip
+agentclip.parm("numentries").set(2)
+agentclip.parm("name2").set("idle_anim")
+agentclip.parm("source2").set(0)
+agentclip.parm("fbxfile2").set("/path/to/idle.fbx")
+agentclip.parm("locomotion2").set(0)          # idle has no locomotion
+```
 
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Hip Joint | `hipjoint` | Hips | Joint to offset vertically |
-| Hip Offset | `hipoffset` | 0.0 | Additional vertical hip offset |
-| Back Adjust | `backadjust` | lean | How to handle slopes: lean or tilt |
-| Lean Angle | `leanangle` | 15 | Max forward/back lean in degrees |
-| Left/Right Foot | `leftfoot`/`rightfoot` | (auto) | Foot joints for terrain snap |
-| Ankle Offset | `ankleoffset` | 0.0 | Distance from ankle joint to foot sole |
+### agentlayer SOP — geometry layers for variation
 
-### Foot Locking
+```python
+# Layers allow swapping armor, helmets, weapons per agent at source/sim time
+agentlayer = geo.createNode("agentlayer", "add_layer")
+agentlayer.setInput(0, agentclip)
 
-Foot locking plants feet on the terrain during the grounded phase of a walk/run cycle. It uses IK on the leg chain to adjust foot positions.
+agentlayer.parm("layername").set("armor_heavy")
+agentlayer.parm("source").set(0)              # 0=Current Layer (inherit), 1=Empty
 
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Enable | `enablefootlocking` | 0 | Turn on foot planting |
-| Lock Blend Time | `lockblendtime` | 0.1 | Blend into locked position (seconds) |
-| Unlock Blend Time | `unlockblendtime` | 0.1 | Blend out of locked position |
-| Adjust Hips | `adjusthips` | 1 | Lower hips when feet reach down |
+# shape bindings (multiparm)
+# shapetransform#: which joint this shape is bound to
+# deforming#: whether the shape deforms with the skeleton (1) or is rigid (0)
+agentlayer.parm("shapetransform1").set("Spine")
+agentlayer.parm("deforming1").set(1)
 
-**Foot lock channels**: The agent clip must have foot-lock metadata indicating which frames each foot is planted. Use `agentclip` SOP's "Locomotion" tab to auto-detect or manually set planted frames via `s@agentrig_footchannel` attributes.
+# For multiple layers, use multiple agentlayer SOPs chained:
+# agent -> agentlayer("default") -> agentlayer("armor_heavy") -> agentlayer("armor_light") -> agentprep
+```
 
-### Obstacle Avoidance
+### agentprep SOP — terrain adaptation + foot locking config
 
-Built into the crowd solver. Agents steer away from each other and from DOP objects.
+```python
+# CRITICAL: Must be connected before dopnet. Without it, terrain + foot locking won't work.
+agentprep = geo.createNode("agentprep", "agent_prep")
+agentprep.setInput(0, agentlayer)             # or agentclip if no layers
 
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Avoidance Force | `avoidanceforce` | 1.0 | Avoidance strength |
-| Anticipation Time | `anticipatetime` | 2.0 | Look-ahead time (seconds) |
-| Neighbor Distance | `neighbordist` | 5.0 | Radius to check for neighbors |
-| Max Neighbors | `maxneighbors` | 6 | Max neighbors to consider |
-| FOV | `fov` | 180 | Agent field of view (degrees) |
-| Avoidance Weight | `avoidanceweight` | 1.0 | Blend vs other steering forces |
+# terrain adaptation
+agentprep.parm("enableterrain").set(1)
+agentprep.parm("hipjoint").set("Hips")        # joint to offset vertically on slopes
+agentprep.parm("hipoffset").set(0.0)
+agentprep.parm("backadjust").set(0)           # 0=lean, 1=tilt
 
-For static obstacles, add `staticobject` DOPs. For animated obstacles, use `rbdobject` or `staticobject` with deforming enabled.
+# foot joints — names must match skeleton exactly
+agentprep.parm("leftfoot").set("LeftFoot")
+agentprep.parm("rightfoot").set("RightFoot")
+agentprep.parm("leftlowerleg").set("LeftLeg")
+agentprep.parm("rightlowerleg").set("RightLeg")
+agentprep.parm("leftupperleg").set("LeftUpLeg")
+agentprep.parm("rightupperleg").set("RightUpLeg")
+agentprep.parm("ankleoffset").set(0.08)       # distance from ankle joint to foot sole (meters)
+agentprep.parm("showguide").set(1)            # display collision/foot guides in viewport
+```
 
-## Agent Variations
+### crowdsource SOP — scatter agents
 
-### Shape Variation (Agent Layers)
+```python
+crowdsource = geo.createNode("crowdsource", "crowd_src")
+crowdsource.setInput(0, agentprep)
 
-Each agent type can have multiple layers. At crowdsource time, assign layers randomly:
+crowdsource.parm("numagents").set(500)
+crowdsource.parm("areashape").set(0)          # 0=Circle, 1=Rectangle, 2=Custom Geometry
+crowdsource.parm("areasize").set(30.0)        # scatter radius (meters)
+crowdsource.parm("randomize").set(1)
+
+# formation: 0=None(random), 1=Grid, 2=Circle ring, 3=Custom Geometry points
+crowdsource.parm("formation").set(0)
+
+crowdsource.parm("initialstate").set("walk")  # starting state machine state
+crowdsource.parm("initialclip").set("walk_cycle")
+crowdsource.parm("randomclipoffset").set(1)   # offset clip start time so agents don't sync
+crowdsource.parm("maxinitspeed").set(1.0)
+
+# custom geometry input: wire points into input 2
+# each point becomes one agent position; add @orient (quaternion) to control facing
+# crowdsource.setInput(1, scatter_sop)
+```
+
+### crowdstate SOP — assign initial states before sim
+
+```python
+crowdstate_sop = geo.createNode("crowdstate", "init_state")
+crowdstate_sop.setInput(0, crowdsource)
+
+crowdstate_sop.parm("statename").set("walk")  # state name must match DOP crowdstate
+crowdstate_sop.parm("group").set("")          # empty = all agents
+crowdstate_sop.parm("randomize").set(0)
+```
+
+### DOP Network — crowd simulation
+
+```python
+# Build the DOP network programmatically
+dopnet = geo.createNode("dopnet", "crowd_sim")
+dopnet.setInput(0, crowdstate_sop)
+dopnet.moveToGoodPosition()
+
+# Enter the DOP network
+dop_context = dopnet
+
+# crowdobject: imports crowd from SOPs into DOPs
+crowdobj = dopnet.createNode("crowdobject", "crowd_obj")
+crowdobj.parm("soppath").set("../crowd_src")  # relative path to crowdsource SOP
+crowdobj.parm("useobjecttransform").set(0)
+
+# groundplane: flat collision surface (optional, use staticobject for terrain)
+groundplane = dopnet.createNode("groundplane", "ground")
+
+# crowdsolver: core simulation engine
+solver = dopnet.createNode("crowdsolver", "crowd_solver")
+
+# simulation tab
+solver.parm("substeps").set(1)
+solver.parm("maxspeed").set(2.0)              # max agent speed (m/s)
+solver.parm("maxrotspeed").set(120.0)         # max turning rate (deg/s)
+solver.parm("maxaccel").set(5.0)
+
+# avoidance tab
+solver.parm("avoidanceforce").set(1.0)        # inter-agent avoidance strength
+solver.parm("anticipatetime").set(2.0)        # look-ahead seconds for avoidance
+solver.parm("neighbordist").set(5.0)          # radius to check for neighbors
+solver.parm("maxneighbors").set(6)
+solver.parm("fov").set(180.0)                 # agent field of view (degrees)
+
+# terrain tab
+solver.parm("terrain").set(1)                 # enable terrain snap
+solver.parm("terrainobject").set("ground")    # DOP object name or SOP path
+solver.parm("enablefootlocking").set(1)       # IK foot planting
+solver.parm("lockblendtime").set(0.1)
+solver.parm("unlockblendtime").set(0.1)
+solver.parm("adjusthips").set(1)              # lower hips when feet reach down
+
+# wire: crowdobject + groundplane -> crowdsolver -> output
+merge_node = dopnet.createNode("merge", "merge_objects")
+merge_node.setInput(0, crowdobj)
+merge_node.setInput(1, groundplane)
+solver.setInput(0, merge_node)
+
+output = dopnet.createNode("output", "output")
+output.setInput(0, solver)
+```
+
+### State Machine inside crowdsolver DOP — walk/run/idle example
+
+```python
+# crowdstate DOP nodes define behavioral states inside the crowdsolver subnet
+# Access the solver's subnet (in Houdini 21, crowdsolver has an embedded network)
+
+# State: idle
+state_idle = solver.createNode("crowdstate", "state_idle")
+state_idle.parm("statename").set("idle")
+state_idle.parm("clipnames").set("idle_anim")
+state_idle.parm("clipspeedmultiplier").set(1.0)
+state_idle.parm("blendtime").set(0.3)         # seconds to blend from previous clip
+
+# State: walk
+state_walk = solver.createNode("crowdstate", "state_walk")
+state_walk.parm("statename").set("walk")
+state_walk.parm("clipnames").set("walk_cycle")
+state_walk.parm("blendtime").set(0.3)
+state_walk.parm("speedrange1").set(0.5)       # min speed for this state
+state_walk.parm("speedrange2").set(2.0)       # max speed for this state
+
+# State: run
+state_run = solver.createNode("crowdstate", "state_run")
+state_run.parm("statename").set("run")
+state_run.parm("clipnames").set("run_cycle")
+state_run.parm("blendtime").set(0.5)
+state_run.parm("speedrange1").set(2.0)
+state_run.parm("speedrange2").set(6.0)
+
+# Trigger: time in state -> idle to walk
+trig_idle_walk = solver.createNode("crowdtrigger", "trig_idle_walk")
+trig_idle_walk.parm("type").set(0)            # 0=Time in State
+trig_idle_walk.parm("timeinstate").set(2.0)   # fire after 2 seconds in idle
+
+# Trigger: speed threshold -> walk to run
+trig_walk_run = solver.createNode("crowdtrigger", "trig_walk_run")
+trig_walk_run.parm("type").set(4)             # 4=Particle Speed
+trig_walk_run.parm("speedthreshold").set(1.8)
+trig_walk_run.parm("speedcompare").set(1)     # 1 = greater than
+
+# Trigger: speed threshold -> run to walk
+trig_run_walk = solver.createNode("crowdtrigger", "trig_run_walk")
+trig_run_walk.parm("type").set(4)
+trig_run_walk.parm("speedthreshold").set(1.2)
+trig_run_walk.parm("speedcompare").set(0)     # 0 = less than
+
+# Transition: idle -> walk
+trans_ij = solver.createNode("crowdtransition", "trans_idle_walk")
+trans_ij.parm("sourcestate").set("idle")
+trans_ij.parm("targetstate").set("walk")
+trans_ij.parm("trigger").set("trig_idle_walk")
+trans_ij.parm("duration").set(0.3)
+trans_ij.parm("priority").set(0)
+
+# Transition: walk -> run
+trans_wr = solver.createNode("crowdtransition", "trans_walk_run")
+trans_wr.parm("sourcestate").set("walk")
+trans_wr.parm("targetstate").set("run")
+trans_wr.parm("trigger").set("trig_walk_run")
+
+# Transition: run -> walk
+trans_rw = solver.createNode("crowdtransition", "trans_run_walk")
+trans_rw.parm("sourcestate").set("run")
+trans_rw.parm("targetstate").set("walk")
+trans_rw.parm("trigger").set("trig_run_walk")
+```
+
+### dopimport + filecache — bring sim results back to SOPs
+
+```python
+# After dopnet node
+dopimport = geo.createNode("dopimport", "crowd_import")
+dopimport.setInput(0, dopnet)
+dopimport.parm("doppath").set("../crowd_sim")
+dopimport.parm("import").set(0)               # 0=All Objects
+
+filecache = geo.createNode("filecache", "crowd_cache")
+filecache.setInput(0, dopimport)
+filecache.parm("file").set('$HIP/cache/crowd/crowd.$F4.bgeo.sc')  # .bgeo.sc = Blosc-compressed, fastest
+filecache.parm("loadfromdisk").set(0)         # 0=write mode; set to 1 to load cached frames
+```
+
+### VEX — agent variations at source time
 
 ```vex
-// In a wrangle after crowdsource:
+// Run in a wrangle after crowdsource, before dopnet
+// Randomize layer per agent
 string layers[] = {"default", "armor_heavy", "armor_light", "casual"};
 int idx = int(random(@ptnum) * len(layers));
 s@agentcurrentlayer = layers[idx];
-```
 
-Or use the crowdsource SOP's `Layer` parameter to specify randomly from available layers.
-
-### Clip Variation
-
-Randomize which animation clip plays per state:
-
-```vex
-// In a wrangle on the crowd source:
+// Randomize initial clip from multiple variants
 float r = random(@ptnum + 31);
-if (r < 0.33) s@crowdinitialclip = "walk_01";
+if (r < 0.33)      s@crowdinitialclip = "walk_01";
 else if (r < 0.66) s@crowdinitialclip = "walk_02";
-else s@crowdinitialclip = "walk_03";
+else               s@crowdinitialclip = "walk_03";
 
-// Random clip offset so agents don't sync
+// Random clip offset so agents don't animate in sync
 f@crowdinitialcliptime = random(@ptnum) * 30.0;
+
+// Color variation (picked up by style sheets or per-agent primvars)
+v@Cd = set(random(@ptnum), random(@ptnum + 7), random(@ptnum + 13));
+
+// Slight scale variation for visual diversity
+f@pscale = fit01(random(@ptnum + 99), 0.85, 1.15);
+
+// Custom attributes for style sheet targeting
+f@armor_wear = random(@ptnum + 42);   // 0=pristine, 1=heavily worn
 ```
 
-### Material/Style Sheet Variation
-
-Houdini uses CVEX style sheets to vary materials per agent or per shape. Style sheets are applied at render time without duplicating geometry.
-
-Key concepts:
-- **Target**: Which agents/shapes the override applies to (by agent name, group, or attribute)
-- **Override**: What material property to change (diffuse color, texture path, roughness)
-
-Style sheet JSON structure:
-```json
-{
-  "styles": [
-    {
-      "target": {"group": "crowd_*", "subTarget": {"shape": "body"}},
-      "overrides": {
-        "material:parameter": {"diffuseColor": {"type": "random", "min": [0.3,0.2,0.1], "max": [0.8,0.6,0.4]}}
-      }
-    }
-  ]
-}
-```
-
-In production, style sheets live in a `.json` file referenced by the render settings. They run at render time (Mantra, Karma CPU) and apply material overrides without modifying agent geometry.
-
-**Karma XPU note**: CVEX style sheets are NOT supported in Karma XPU (as of Houdini 20/21). Use MaterialX with per-agent primvars instead, or render crowds with Karma CPU.
-
-### Color/Attribute Variation
+### VEX — LOD layer switching by camera distance
 
 ```vex
-// Vary color per agent at source time
-v@Cd = set(random(@ptnum), random(@ptnum+7), random(@ptnum+13));
+// Run in a post-sim wrangle (after dopimport, before render)
+// Requires camera world position passed via detail attribute or channel
+vector cam = chv("camera_pos");   // set channel to camera position
+float dist = distance(@P, cam);
 
-// Vary scale slightly
-f@pscale = fit01(random(@ptnum+99), 0.85, 1.15);
+if      (dist < 20.0)  s@agentcurrentlayer = "lod0";  // full mesh, full skeleton
+else if (dist < 50.0)  s@agentcurrentlayer = "lod1";  // reduced mesh, skeletal
+else if (dist < 100.0) s@agentcurrentlayer = "lod2";  // simple mesh, point instanced
+else                   s@agentcurrentlayer = "lod3";  // billboard card, no deformation
 
-// Store custom attributes for style sheets
-f@armor_wear = random(@ptnum + 42);
+// Freeze distant agents to save simulation cost
+if (dist > 150.0) i@crowdactive = 0;
+else              i@crowdactive = 1;
 ```
 
-## Crowd Rendering in Solaris/Karma
-
-### SOP Import to LOPs
-
-```
-filecache (cached crowd sim) -> sopimport LOP -> materiallibrary -> assignmaterial -> karmarendersettings
-```
-
-The `sopimport` LOP brings agent primitives onto the USD stage. Houdini converts each agent to a USD `PointInstancer` or skeletal `SkelRoot` depending on the pipeline approach.
-
-### Point Instancer Approach (Recommended for Large Crowds)
-
-Agents render as point-instanced geometry. Each unique agent type becomes a prototype; each agent in the crowd references a prototype with per-instance transforms.
-
-| Aspect | Detail |
-|--------|--------|
-| Node | `sopimport` with agent geometry |
-| USD Type | `PointInstancer` |
-| Prototype | One per unique agent mesh |
-| Performance | Excellent -- GPU instancing, minimal memory |
-| Limitation | No per-agent skeletal deformation at render time |
-
-Best for: background crowds, distant shots, thousands of agents.
-
-### Skeletal Agent Approach (Hero Crowds)
-
-Each agent maintains its own skeleton and deforms at render time. More expensive but supports full animation fidelity.
-
-| Aspect | Detail |
-|--------|--------|
-| USD Type | `SkelRoot` + `Skeleton` + `SkelAnimation` |
-| Deformation | Full per-agent skin deformation |
-| Performance | Expensive -- one draw call per agent |
-| Limitation | Scales to hundreds, not thousands |
-
-Best for: foreground/hero crowd members, close-up shots.
-
-### LOD Strategy
-
-Use multiple agent layers with decreasing detail:
-
-| LOD Level | Use Case | Strategy |
-|-----------|----------|----------|
-| LOD0 (high) | Foreground, < 20m from camera | Full mesh, full skeleton deform |
-| LOD1 (mid) | Mid-ground, 20-50m | Reduced mesh, skeletal deform |
-| LOD2 (low) | Background, 50-100m | Simple mesh, point instanced |
-| LOD3 (billboard) | Far background, > 100m | Card/billboard, no deformation |
-
-In SOPs, create agent layers per LOD level using `agentlayer` SOP. Switch layers based on camera distance in a post-sim wrangle:
+### VEX — agent introspection (read-only, in a wrangle)
 
 ```vex
-float dist = distance(@P, chv("camera_pos"));
-if (dist < 20) s@agentcurrentlayer = "lod0";
-else if (dist < 50) s@agentcurrentlayer = "lod1";
-else if (dist < 100) s@agentcurrentlayer = "lod2";
-else s@agentcurrentlayer = "lod3";
-```
-
-### Karma Render Settings for Crowds
-
-| Parameter | Recommendation | Why |
-|-----------|---------------|-----|
-| Ray Bias | 0.01 | Avoid self-intersection on instanced geo |
-| Max Ray Depth | 4-6 | Crowds rarely need deep bounces |
-| Pixel Samples | 6-9 for mid, 16+ for hero | Balance noise vs render time |
-| Denoiser | OIDN or OptiX | Essential for noisy crowd backgrounds |
-| Motion Blur | Per-agent velocity from sim | Use `v@v` from crowd sim for correct blur |
-
-## Key VEX Functions for Crowds
-
-### Agent Introspection
-
-```vex
-// Get the agent's current clip name(s)
+// Get all clips available on this agent
 string clips[] = agentclipcatalog(0, @ptnum);
 
-// Get the current clip time
+// Current clip playback time
 float t = agentcliptime(0, @ptnum, "walk_cycle");
 
-// Get the current clip weight (for blending)
+// Current clip blend weight (0-1)
 float w = agentclipweight(0, @ptnum, "walk_cycle");
 
-// Get all clip names available on this agent
-string all_clips[] = agentclipcatalog(0, @ptnum);
-
-// Get clip length
+// Clip duration in seconds
 float len = agentcliplength(0, @ptnum, "walk_cycle");
 
-// Get the agent's current layer
+// Current geometry layer name
 string layer = agentcurrentlayer(0, @ptnum);
 
-// Get all available layers
-string layers[] = agentlayers(0, @ptnum);
+// All available geometry layers
+string all_layers[] = agentlayers(0, @ptnum);
 
-// Get the agent's name (type)
-string name = agentname(0, @ptnum);
+// Agent type name (set by agent SOP agentname parm)
+string aname = agentname(0, @ptnum);
 ```
 
-### Agent Transform Access
+### VEX — joint/skeleton access
 
 ```vex
-// Get a specific joint's world transform
+// World transform of a named joint
 matrix xform = agentworldtransform(0, @ptnum, "Hips");
 
-// Get a joint's local transform
+// Local transform of a joint
 matrix local_xform = agentlocaltransform(0, @ptnum, "Spine1");
 
-// Get the joint index by name
+// Joint index by name (use for bulk operations)
 int idx = agentrigfind(0, @ptnum, "LeftFoot");
 
-// Get all joint names
-string joints[] = agentrigchildren(0, @ptnum, "Hips");
+// Child joints of a given joint
+string children[] = agentrigchildren(0, @ptnum, "Hips");
 
-// Get parent joint
+// Parent joint name
 string parent = agentrigparent(0, @ptnum, "LeftFoot");
+
+// Bone count
+int bone_count = len(agentrigchildren(0, @ptnum, ""));
 ```
 
-### Agent Modification
+### VEX — modify agent state at run time
 
 ```vex
-// Set current clip and time
+// Force a specific clip and playhead position
 setagentcliptime(0, @ptnum, "idle", 5.0);
 setagentclipweight(0, @ptnum, "idle", 1.0);
+setagentclipweight(0, @ptnum, "walk_cycle", 0.0);  // zero out other clips
 
-// Change layer
-setagentcurrentlayer(0, @ptnum, "armor_heavy");
+// Change geometry layer (e.g. hit response: swap to damaged version)
+setagentcurrentlayer(0, @ptnum, "armor_damaged");
 
-// Override a joint transform
+// Override a joint transform: tilt the head
 matrix m = agentworldtransform(0, @ptnum, "Head");
-rotate(m, radians(15), {1,0,0});  // tilt head
+rotate(m, radians(15.0), {1, 0, 0});
 setagentworldtransform(0, @ptnum, m, "Head");
 ```
 
-### Crowd Steering (in POP Wrangle inside Crowd Solver)
+### VEX — custom steering forces (POP Wrangle inside Crowd Solver)
 
 ```vex
-// Seek toward a target
-vector target = chv("target_pos");
-vector desired = normalize(target - @P) * ch("max_speed");
-vector steer = desired - @v;
-@force += steer * ch("seek_weight");
+// Seek toward a target point
+vector target   = chv("target_pos");
+float max_speed = ch("max_speed");
+float seek_wt   = ch("seek_weight");
+vector desired  = normalize(target - @P) * max_speed;
+vector steer    = desired - @v;
+@force += steer * seek_wt;
 
-// Flee from a point
-vector threat = chv("threat_pos");
-float dist = distance(@P, threat);
-if (dist < ch("flee_radius")) {
+// Flee from a threat within radius
+vector threat     = chv("threat_pos");
+float flee_radius = ch("flee_radius");
+float flee_force  = ch("flee_force");
+float dist        = distance(@P, threat);
+if (dist < flee_radius) {
     vector flee_dir = normalize(@P - threat);
-    @force += flee_dir * ch("flee_force") * (1.0 - dist / ch("flee_radius"));
+    float falloff   = 1.0 - dist / flee_radius;
+    @force += flee_dir * flee_force * falloff;
+}
+
+// Separation: push agents apart if too close (supplement built-in avoidance)
+float sep_radius = ch("sep_radius");
+float sep_force  = ch("sep_force");
+int neighbors[] = pcfind(0, "P", @P, sep_radius, 8);
+foreach (int nb; neighbors) {
+    if (nb == @ptnum) continue;
+    vector diff = @P - point(0, "P", nb);
+    float d = length(diff);
+    if (d > 0.001)
+        @force += normalize(diff) * sep_force * (1.0 - d / sep_radius);
 }
 ```
 
-### Crowd Attribute Reference
+### VEX — custom VEX trigger expression
 
-Key point attributes on crowd agents:
+```vex
+// Inside a crowdtrigger DOP with type=Custom VEX
+// Return 1 to fire the trigger, 0 to stay in current state
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `@P` | vector | Agent world position |
-| `@orient` | quaternion | Agent facing direction |
-| `@v` | vector | Agent velocity |
-| `@up` | vector | Agent up vector |
-| `@pscale` | float | Agent scale |
-| `s@agentname` | string | Agent type name |
-| `s@crowdstate` | string | Current state machine state |
-| `s@crowdinitialstate` | string | Starting state |
-| `s@crowdinitialclip` | string | Starting animation clip |
-| `f@crowdinitialcliptime` | float | Starting clip time offset |
-| `f@crowdspeed` | float | Current locomotion speed |
-| `f@crowdturnrate` | float | Current turning rate |
-| `s@agentcurrentlayer` | string | Active geometry layer |
-| `i@crowdactive` | int | Whether agent is active (1) or frozen (0) |
-| `f@crowdanimscale` | float | Clip playback speed multiplier |
-| `i@id` | int | Unique agent ID (stable across frames) |
+// Example: fire when agent is within 8m of a "panic zone" defined by a detail attrib
+vector panic_center = detail(0, "panic_center", 0);
+float panic_radius  = detail(0, "panic_radius", 0);
+float dist          = distance(@P, panic_center);
+return (dist < panic_radius) ? 1 : 0;
+```
 
-## Common Parameters Quick Reference
+### Python — crowd attribute reference dictionary
 
-### DOP Crowd Solver Tabs
+```python
+# Key point attributes on crowd agent primitives (for reference in Python/VEX)
+CROWD_ATTRIBS = {
+    # core position/motion
+    "P":                     ("vector",  "agent world position"),
+    "orient":                ("vector4", "agent facing direction (quaternion)"),
+    "v":                     ("vector",  "agent velocity"),
+    "up":                    ("vector",  "agent up vector"),
+    "pscale":                ("float",   "agent uniform scale"),
 
-| Tab | Key Parameters |
-|-----|---------------|
-| Simulation | `substeps`, `maxspeed`, `maxrotspeed`, `maxaccel` |
-| Avoidance | `avoidanceforce`, `anticipatetime`, `neighbordist`, `maxneighbors`, `fov` |
-| Terrain | `terrain`, `terrainobject`, `enablefootlocking`, `adjusthips` |
-| Locomotion | `locomotion`, `locomotionnode`, `gait` |
-| Fuzzy Logic | `fuzzyvars` (override behavioral weights per-state) |
+    # state machine
+    "crowdstate":            ("string",  "current state machine state name"),
+    "crowdinitialstate":     ("string",  "starting state at sim start"),
+    "crowdinitialclip":      ("string",  "starting animation clip"),
+    "crowdinitialcliptime":  ("float",   "starting clip time offset (seconds)"),
 
-## Tips and Gotchas
+    # locomotion
+    "crowdspeed":            ("float",   "current locomotion speed (m/s)"),
+    "crowdturnrate":         ("float",   "current turning rate (deg/s)"),
+    "crowdanimscale":        ("float",   "clip playback speed multiplier"),
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Agents slide/moonwalk | Locomotion not enabled on clip | Enable `locomotion` on `agent`/`agentclip` SOP, verify `locomotionjoint` matches root joint |
-| Agents sink into ground | Missing terrain adaptation | Enable terrain on Agent Prep + Crowd Solver, verify `ankleoffset` |
-| Agents all move in sync | Same clip start time | Enable `randomclipoffset` on crowdsource, or randomize `f@crowdinitialcliptime` in VEX |
-| Foot sliding on terrain | Foot locking not configured | Enable `enablefootlocking` on solver, set foot/leg joints in Agent Prep |
-| State machine not triggering | Trigger condition never met | Check trigger type and threshold; use custom VEX trigger for debugging |
-| Agents bunch up / overlap | Avoidance too weak | Increase `avoidanceforce`, increase `anticipatetime`, check `neighbordist` |
-| Agents jitter on slopes | Terrain resolution too coarse | Increase terrain heightfield resolution or smooth terrain |
-| Clip blend pops | Blend time too short | Increase `blendtime` on crowdstate DOP to 0.5-1.0 seconds |
-| Memory blowup with many agents | Full skeletal deform per agent | Use point instancing for background agents, LOD layers |
-| Style sheets not working in Karma XPU | CVEX not supported | Use Karma CPU for crowd style sheets, or per-agent primvars with MaterialX |
-| Agent missing shapes | Layer not loaded | Check `agentlayer` SOP names match what crowdsource/VEX assigns |
-| Simulation is slow | Too many agents with full avoidance | Reduce `maxneighbors`, increase `neighbordist` step, disable avoidance for background agents |
-| Agents don't follow path | No force toward path | Add a POP Steer Path node or use custom VEX steering force in solver |
-| FBX import scale wrong | Unit mismatch (cm vs m) | Enable `convertunits` on agent SOP, or manually scale by 0.01 |
+    # agent type/layer
+    "agentname":             ("string",  "agent type name (set by agent SOP)"),
+    "agentcurrentlayer":     ("string",  "active geometry layer name"),
 
-### Performance Guidelines
+    # sim control
+    "crowdactive":           ("int",     "1=active, 0=frozen (no sim cost)"),
+    "id":                    ("int",     "unique stable agent ID across frames"),
+}
 
-- **Start small**: Test with 10-20 agents before scaling to thousands
-- **Cache early**: `filecache` the crowd sim before any rendering pipeline
-- **LOD is essential**: No production crowd renders all agents at full quality
-- **Disable avoidance for distant agents**: Group by camera distance, disable avoidance for far groups
-- **Use `.bgeo.sc`**: Blosc-compressed format is fastest for agent caching
-- **Clip count matters**: Each unique clip adds memory; share clips across agent types where possible
-- **Terrain resolution**: Crowd terrain can be lower-res than render terrain -- agents only need slope info
-- **Ragdoll transition**: Use the `crowdtrigger` -> `ragdoll` state pattern for agents that get hit/die -- transitions from animated clip to RBD simulation seamlessly
+# Access pattern in Python (after dopimport, on a SOP geometry)
+geo = hou.node("/obj/crowd_setup/crowd_import").geometry()
+for pt in geo.points():
+    state = pt.attribValue("crowdstate")
+    speed = pt.attribValue("crowdspeed")
+    agent = pt.attribValue("agentname")
+    print(f"pt {pt.number()}: agent={agent} state={state} speed={speed:.2f}")
+```
+
+### Python — crowdsolver DOP parameter reference dictionary
+
+```python
+# crowdsolver DOP parm names by tab
+CROWDSOLVER_PARMS = {
+    "Simulation": {
+        "substeps":    "solver substeps (1 usually sufficient)",
+        "maxspeed":    "maximum agent speed m/s (default 2.0)",
+        "maxrotspeed": "max turning rate deg/s (default 120)",
+        "maxaccel":    "maximum acceleration (default 5.0)",
+    },
+    "Avoidance": {
+        "avoidanceforce":  "inter-agent avoidance strength (default 1.0)",
+        "anticipatetime":  "look-ahead seconds for collision avoidance (default 2.0)",
+        "neighbordist":    "radius to scan for neighbors (default 5.0)",
+        "maxneighbors":    "max neighbors considered per agent (default 6)",
+        "fov":             "agent field of view degrees (default 180)",
+        "avoidanceweight": "blend avoidance vs other steering (default 1.0)",
+    },
+    "Terrain": {
+        "terrain":          "enable terrain snap (0/1)",
+        "terrainobject":    "DOP object name or SOP path for terrain",
+        "enablefootlocking":"IK foot planting (0/1)",
+        "lockblendtime":    "seconds to blend into locked foot position",
+        "unlockblendtime":  "seconds to blend out of locked foot position",
+        "adjusthips":       "lower hips when feet reach down (0/1)",
+    },
+    "Locomotion": {
+        "locomotion":     "enable locomotion-based movement (0/1)",
+        "locomotionnode": "which SOP node provides locomotion data",
+        "gait":           "gait selection mode",
+    },
+}
+
+# Apply recommended settings for a mid-size crowd (500-2000 agents)
+solver = hou.node("/obj/crowd_setup/crowd_sim/crowd_solver")
+solver.parm("substeps").set(1)
+solver.parm("maxspeed").set(3.0)
+solver.parm("maxrotspeed").set(90.0)
+solver.parm("avoidanceforce").set(1.5)
+solver.parm("anticipatetime").set(1.5)
+solver.parm("maxneighbors").set(4)            # reduce for performance at scale
+solver.parm("terrain").set(1)
+solver.parm("enablefootlocking").set(1)
+```
+
+### Python — SOP import to Solaris/LOPs for Karma rendering
+
+```python
+# Bring cached crowd into USD stage for Karma rendering
+stage_context = hou.node("/stage")
+if not stage_context:
+    stage_context = hou.node("/obj").createNode("lopnet", "stage")
+
+sopimport = stage_context.createNode("sopimport", "crowd_import")
+sopimport.parm("soppath").set("/obj/crowd_setup/crowd_cache")
+# sopimport converts agent packed prims to:
+#   PointInstancer (default, recommended for large crowds: GPU instancing, low memory)
+#   SkelRoot + Skeleton + SkelAnimation (hero agents, full per-agent skin deform)
+
+matlib = stage_context.createNode("materiallibrary", "crowd_mats")
+matlib.setInput(0, sopimport)
+matlib.cook(force=True)                       # MUST cook matlib before adding shader children
+
+assign = stage_context.createNode("assignmaterial", "assign_crowd")
+assign.setInput(0, matlib)
+
+karma = stage_context.createNode("karma", "karma_render")
+karma.setInput(0, assign)
+
+# Karma settings optimized for crowd background rendering
+karma.parm("camera").set("/cameras/render_cam")
+karma.parm("resolutionx").set(1920)
+karma.parm("resolutiony").set(1080)
+karma.parm("picture").set('$HIP/render/crowd.$F4.exr')
+
+# Karma render settings for crowds
+karma.parm("vm_raybias").set(0.01)            # avoid self-intersection on instanced geo
+karma.parm("vm_maxraysamples").set(9)         # 6-9 for mid crowd, 16+ for hero
+karma.parm("allowmotionblur").set(1)          # use v@v from crowd sim for correct blur
+# Note: OIDN or OptiX denoiser essential for noisy crowd backgrounds
+```
+
+### JSON — style sheet for per-agent material variation (Karma CPU only)
+
+```python
+import json
+
+# CVEX style sheets NOT supported in Karma XPU (Houdini 20/21)
+# Use Karma CPU for crowd style sheets, or per-agent primvars with MaterialX for XPU
+
+style_sheet = {
+    "styles": [
+        {
+            # target agents in group "crowd_*", shape "body"
+            "target": {
+                "group": "crowd_*",
+                "subTarget": {"shape": "body"}
+            },
+            "overrides": {
+                "material:parameter": {
+                    "diffuseColor": {
+                        "type": "random",
+                        "min": [0.3, 0.2, 0.1],   # dark brown
+                        "max": [0.8, 0.6, 0.4]    # light tan
+                    }
+                }
+            }
+        },
+        {
+            # override using a custom per-agent attribute (armor_wear)
+            "target": {"group": "crowd_*"},
+            "overrides": {
+                "material:parameter": {
+                    "roughness": {
+                        "type": "attribute",
+                        "name": "armor_wear"        # float attrib set in VEX
+                    }
+                }
+            }
+        }
+    ]
+}
+
+style_path = hou.expandString("$HIP/crowd_styles.json")
+with open(style_path, "w", encoding="utf-8") as f:
+    json.dump(style_sheet, f, indent=2, sort_keys=True)
+print(f"Style sheet written to: {style_path}")
+```
+
+### Python — performance: disable avoidance for distant agents via groups
+
+```python
+# Group agents by camera distance, disable avoidance for far group
+# Run this in a Python SOP or pre-sim expression
+
+geo = hou.node("/obj/crowd_setup/crowd_cache").geometry().freeze(True)
+cam_node = hou.node("/obj/cam1")
+cam_pos  = cam_node.worldTransform().extractTranslates() if cam_node else hou.Vector3(0, 0, 0)
+
+near_group = geo.findPointGroup("near_crowd") or geo.createPointGroup("near_crowd")
+far_group  = geo.findPointGroup("far_crowd")  or geo.createPointGroup("far_crowd")
+
+for pt in geo.points():
+    dist = (pt.position() - cam_pos).length()
+    if dist < 60.0:
+        near_group.add(pt)
+    else:
+        far_group.add(pt)
+        pt.setAttribValue("crowdactive", 0)   # freeze distant agents
+
+print(f"near={near_group.numElements()} far={far_group.numElements()}")
+```
+
+## Common Mistakes
+
+```python
+# MISTAKE 1: locomotion not enabled -> agents slide / moonwalk
+# Fix: enable locomotion on agent SOP AND each agentclip SOP
+agent.parm("locomotion").set(1)
+agent.parm("locomotionjoint").set("Hips")     # must match root joint exactly
+
+# MISTAKE 2: agents sink into ground
+# Fix: enable terrain on both Agent Prep AND Crowd Solver
+agentprep.parm("enableterrain").set(1)
+solver.parm("terrain").set(1)
+solver.parm("terrainobject").set("ground")
+agentprep.parm("ankleoffset").set(0.08)       # tune to character foot height
+
+# MISTAKE 3: all agents animate in sync (visible ripple wave)
+# Fix: randomize clip offset
+crowdsource.parm("randomclipoffset").set(1)
+# OR in VEX:
+# f@crowdinitialcliptime = random(@ptnum) * 30.0;
+
+# MISTAKE 4: foot sliding on terrain
+# Fix: foot locking requires joint names set in agentprep AND enabled on solver
+agentprep.parm("leftfoot").set("LeftFoot")    # must match skeleton exactly
+agentprep.parm("rightfoot").set("RightFoot")
+solver.parm("enablefootlocking").set(1)
+
+# MISTAKE 5: agents bunch up / overlap
+# Fix: increase avoidance parameters
+solver.parm("avoidanceforce").set(2.0)
+solver.parm("anticipatetime").set(2.5)
+solver.parm("neighbordist").set(6.0)
+
+# MISTAKE 6: state machine not triggering
+# Debug with a custom VEX trigger that prints state:
+# In crowdtrigger VEX expression (type=Custom VEX):
+# printf("pt %d state=%s dist=%f\n", @ptnum, s@crowdstate, distance(@P, chv("target")));
+# return 0;   // don't fire, just log
+
+# MISTAKE 7: style sheets not working -> using Karma XPU
+# Fix: CVEX style sheets require Karma CPU. Switch renderer or use per-agent primvars with MaterialX.
+
+# MISTAKE 8: agent shapes missing after sim
+# Cause: layer name in VEX doesn't match agentlayer SOP name
+# Fix: check exact layer names
+geo = hou.node("/obj/crowd_setup/agent_prep").geometry()
+pt = geo.points()[0]
+available = hou.vex.runSnippet('string l[] = agentlayers(0, @ptnum); printf("%s\\n", l);',
+                               geometry=geo, ptnum=0)
+# Or in a wrangle: printf("%s\n", agentlayers(0, @ptnum));
+
+# MISTAKE 9: memory blowup with large crowd
+# Fix: use point instancing (not skeletal) for background agents + LOD layers
+# Full skeletal deform: use only for foreground/hero agents (< 200 agents)
+# Point instancer: thousands of background agents, GPU instancing, minimal memory
+
+# MISTAKE 10: FBX imports at wrong scale (agents too small/large)
+# Fix: FBX is usually in cm, Houdini works in m
+agent.parm("convertunits").set(1)             # auto cm->m
+# If still wrong, manually scale:
+# f@pscale = 0.01;   // or set pscale in a wrangle
+
+# MISTAKE 11: clip blend pops (harsh transition)
+# Fix: increase blendtime
+state_walk.parm("blendtime").set(0.5)         # 0.5-1.0 seconds for smooth blends
+
+# MISTAKE 12: sim caching to .bgeo is slow
+# Fix: use Blosc-compressed format
+filecache.parm("file").set('$HIP/cache/crowd/crowd.$F4.bgeo.sc')  # .bgeo.sc is fastest
+
+# MISTAKE 13: agents don't follow a path
+# Fix: no built-in path following — add a POP Steer Path node or custom VEX seek force
+# See steering VEX example in ## Code section above
+
+# MISTAKE 14: dopimport is slow / unresponsive
+# Cause: soho_foreground=1 blocks Houdini on large sims
+# Fix: cache crowd sim first with filecache, then load from disk
+filecache.parm("loadfromdisk").set(1)
+```

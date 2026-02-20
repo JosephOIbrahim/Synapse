@@ -1,145 +1,125 @@
 # VEX Corpus: Loop Patterns
 
-> 12 examples from vex-corpus. Sources: cgwiki-vex, joy-of-vex-youtube, sidefx-vex-reference
+## Triggers
+for loop, foreach, while, iteration, addpoint loop, addprim, polyline,
+vertex index, curve iteration, conditional creation, point creation
 
-## Beginner (2 examples)
+## Context
+VEX loop patterns: for/foreach/while, point creation in loops,
+primitive creation, curve iteration, conditional geometry creation.
 
-### For Loop Syntax Overview
-
-```vex
-for(brackets) {
-    // for in curly brackets;
-    // semicolon;
-    // curly bracket;
-}
-```
-
-This demonstrates the basic syntax structure of a for loop in VEX, showing the use of parentheses for the loop condition, curly brackets to define the loop body, and semicolons for statement separa....
-
-### For Loop Initialization
+## Code
 
 ```vex
-int i;
-
-for(i=1; i<11; i++){
-    i += 1;
-}
-```
-
-Demonstrates the initialization and basic structure of a for loop in VEX.
-
-## Intermediate (10 examples)
-
-### Find the median curve from many curves with vertexindex â
-
-```vex
-int lv, curve, curves;
-vector pos;
-
-@P = 0;
-curves = nprimitives(1);
-for (curve = 0; curve < curves; curve++) {
-   lv = vertexindex(1, curve, @ptnum);
-   pos = vertex(1, 'P', lv);
-// ...
-```
-
-Semi-related to the above, say you have many curves with the same number of points, eg curves to represent the arms of an anemone.
-
-### Conditional Point Creation
-
-```vex
-int i = addpoint(0, {0, i, 0});
-
-int pt = addpoint(0, {0, i, 0});
-
-if (@ptnum == 0) {
-    addpoint(0, {0, i, 0});
-}
-```
-
-Demonstrates the problem of creating points in a loop without conditional checks, where addpoint creates a new point for every existing point on the grid, resulting in duplicate overlapping points.
-
-### Conditional Point Creation with addpoint
-
-```vex
-int pt = addpoint(0, {0,1,0});
-
-if (@ptnum==0) {
-    addpoint(0, {0,1,0});
-}
-
-int @i1 = addpoint(0, {0,1,0});
-```
-
-Using addpoint() inside a point wrangle creates a new point for every iteration through the geometry, resulting in duplicate points at the same location.
-
-### Creating primitives with addprim
-
-```vex
-// Create a loop to add 10 points along the normal
+// Basic for loop syntax
 for (int i = 0; i < 10; i++) {
-    addpoint(0, @P + @N * (i * 0.1));
+    vector pos = @P + set(i * 0.1, 0, 0);
+    addpoint(0, pos);
+}
+```
+
+```vex
+// CRITICAL: addpoint in point wrangle creates per-point duplicates
+// WRONG: runs once PER EXISTING POINT, creating N copies
+int pt = addpoint(0, {0, 1, 0});
+
+// RIGHT: guard with @ptnum == 0 to create only once
+if (@ptnum == 0) {
+    int pt = addpoint(0, {0, 1, 0});
 }
 
-// Create a point and add it to a polyline primitive
-int pt = addpoint(0, {0, 1, 0});
-addprim(0, 'polyline', @ptnum, pt);
+// RIGHT: use Detail mode for global geometry creation
+// Run over Detail:
+for (int i = 0; i < chi("count"); i++) {
+    addpoint(0, set(i * 0.1, 0, 0));
+}
 ```
-
-Demonstrates creating geometry primitives using addprim() function, which creates a polyline primitive by linking points together as vertices.
-
-### Random Open/Closed Polygon Intrinsic
 
 ```vex
-int openLoop = int(rand(@primnum)*rand())*2);
-setprimintrinsic(0, "closed", @primnum, openLoop);
+// Create polyline primitives from points
+// Run over Detail:
+int pts[];
+for (int i = 0; i < chi("count"); i++) {
+    vector pos = set(cos(radians(i * 36.0)), i * 0.1, sin(radians(i * 36.0)));
+    append(pts, addpoint(0, pos));
+}
+// Create polyline connecting all points
+addprim(0, "polyline", pts);
 ```
-
-Uses random values to assign primitives as either open or closed polygons by setting the 'closed' intrinsic attribute.
-
-### getlight
 
 ```vex
-int[]lights=getlights();intnlights=len(lights);for(inti=0;i<nlights;i++){lightlp=getlight(i);lp->illuminate(...);}
+// Create lines from existing points along normals
+// Run over Points:
+for (int i = 0; i < chi("segments"); i++) {
+    int pt = addpoint(0, @P + @N * (i * ch("length")));
+    if (i == 0) {
+        addprim(0, "polyline", @ptnum, pt);
+    } else {
+        // Chain points into connected line
+    }
+}
 ```
-
-Signature: int[]lights=getlights();intnlights=len(lights);for(inti=0;i<nlights;i++){lightlp=getlight(i);lp->illuminate(...);}
-
-Adds an item to an array or string.
-
-Returns the indices of a sorted v....
-
-### metaimport
 
 ```vex
-floatmetaweight(stringfile;vectorP){inthandle;floatdensity,tmp;density=0;handle=metastart(file,P);while(metanext(handle)){if(metaimport(handle,"meta:density",P,tmp))density+=tmp;}returndensity;}
+// Iterate over curves: find median position across multiple curves
+// Run over Points (input 0 = single curve, input 1 = many curves)
+int curves = nprimitives(1);
+vector avg_pos = {0, 0, 0};
+for (int curve = 0; curve < curves; curve++) {
+    int lv = vertexindex(1, curve, @ptnum);
+    vector pos = vertex(1, "P", lv);
+    avg_pos += pos;
+}
+@P = avg_pos / max(curves, 1);
 ```
-
-Signature: floatmetaweight(stringfile;vectorP){inthandle;floatdensity,tmp;density=0;handle=metastart(file,P);while(metanext(handle)){if(metaimport(handle,"meta:density",P,tmp))density+=tmp;}returnd....
-
-### solid_angle
 
 ```vex
-// Split BSDF into component lobesbsdflobes[] =split_bsdf(hitF);// Get solid angle of lobesfloatangles[];resize(angles,len(lobes));for(inti=0;i<len(lobes);i++){angles[i] =solid_angle(lobes[i],PBR_ALL_MASK);}// Compute PDF from anglesfloatpdf[] =compute_pdf(angles);// Compute CDF from PDFfloatcdf[] =compute_cdf(pdf);// Randomly select a BSDF based on albedo distributionintid=sample_cdf(cdf,sx);// Do something with the selected BSDF// lobes[id] ...
+// Foreach over neighbours
+int pts[] = neighbours(0, @ptnum);
+vector avg = {0, 0, 0};
+foreach (int pt; pts) {
+    avg += point(0, "P", pt);
+}
+avg /= max(len(pts), 1);
+@P = lerp(@P, avg, ch("smooth_amount"));  // Laplacian smooth
 ```
-
-Signature: // Split BSDF into component lobesbsdflobes[] =split_bsdf(hitF);// Get solid angle of lobesfloatangles[];resize(angles,len(lobes));for(inti=0;i<len(lobes);i++){angles[i] =solid_angle(lob....
-
-### storelightexport
 
 ```vex
-surfacetest(exportvectorperlight={0,0,0}){intlights[] =getlights();for(inti=0;i<len(lights);i++){vectorval=set(lights[i],0,0);storelightexport(getlightname(lights[i]),"perlight",val);}}
+// Iterate unique attribute values
+// Run over Detail:
+int count = nuniqueval(0, "point", "class");
+for (int i = 0; i < count; i++) {
+    int val = uniqueval(0, "point", "class", i);
+    // Process each unique class value
+    printf("Class %d found\n", val);
+}
 ```
-
-Signature: surfacetest(exportvectorperlight={0,0,0}){intlights[] =getlights();for(inti=0;i<len(lights);i++){vectorval=set(lights[i],0,0);storelightexport(getlightname(lights[i]),"perlight",val);}}.
-
-### uniqueval
 
 ```vex
-intcount=nuniqueval(0,"point","foo");for(inti=0;i<count;i++){stringval=uniqueval(0,"point","foo",i);// ...do something with the value...}
+// Random open/closed polygon intrinsic
+// Run over Primitives:
+int make_open = int(rand(@primnum) * 2);
+setprimintrinsic(0, "closed", @primnum, make_open);
 ```
 
-Signature: intcount=nuniqueval(0,"point","foo");for(inti=0;i<count;i++){stringval=uniqueval(0,"point","foo",i);// ...do something with the value...}
+```vex
+// While loop with convergence check
+// Run over Points:
+vector target = point(1, "P", @ptnum);
+int max_iter = chi("max_iterations");
+float tolerance = ch("tolerance");
+int iter = 0;
+while (iter < max_iter) {
+    vector delta = target - @P;
+    if (length(delta) < tolerance) break;
+    @P += delta * ch("step_size");
+    iter++;
+}
+i@iterations = iter;
+```
 
-When running in the context of a node (such as ....
+## Common Mistakes
+- addpoint in Point mode without @ptnum==0 guard -- creates N copies instead of 1
+- Forgetting to use Detail mode for global geometry creation -- Point mode runs per-element
+- Growing arrays with append in tight loops -- pre-size with resize() when count is known
+- Infinite while loops -- always include max_iter guard and break condition

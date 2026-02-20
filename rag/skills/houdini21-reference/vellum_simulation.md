@@ -1,264 +1,591 @@
 # Vellum Simulation
 
-## Overview
+## Triggers
+vellum, cloth sim, hair sim, grain sim, soft body, vellum cloth, vellum hair, vellum grains,
+vellum solver, vellumcloth, vellumhair, vellumgrains, vellumsoftbody, vellumconstraints,
+vellumcollider, vellumdrape, pin cloth, vellum pin, vellum cache, vellum collision,
+vellum constraints, vellum solver substeps, vellum lops, vellum solaris, grain setup,
+fabric sim, flag sim, curtain sim, fur sim, guide curves, grain friction, soft body tet
 
-Vellum is Houdini's unified solver for cloth, hair, grain, soft body, and balloon simulations. It runs in SOPs (not DOPs), making it faster to iterate than traditional DOP setups.
+## Context
+Vellum is Houdini's unified SOP-level solver for cloth, hair, grain, soft body, and balloon
+simulations. All configure nodes (vellumcloth, vellumhair, etc.) have TWO outputs:
+  output 0 = geometry,  output 1 = constraints.
+Vellumsolver: input 0 = geometry, input 2 = constraints (0-indexed in Python API).
+Always cache before rendering. Import to Solaris via sopimport LOP.
 
-## SOP-Level Vellum Chain
+---
 
+## Network Assembly
+
+```python
+import hou
+
+# ── Full Vellum SOP network scaffold ──────────────────────────────────────────
+geo = hou.node("/obj").createNode("geo", "vellum_sim")
+geo.moveToGoodPosition()
+
+# Source geometry (grid for cloth demo)
+grid = geo.createNode("grid", "source_grid")
+grid.parm("rows").set(20)
+grid.parm("cols").set(20)
+grid.parm("sizex").set(2.0)
+grid.parm("sizey").set(2.0)
+
+# Configure node -- produces geometry (output 0) AND constraints (output 1)
+cloth = geo.createNode("vellumcloth", "configure_cloth")
+cloth.setInput(0, grid)           # geometry in
+
+# Solver -- input 0 = geo, input 2 = constraints (NOT input 1)
+solver = geo.createNode("vellumsolver", "vellum_solver")
+solver.setInput(0, cloth, 0)      # output 0 of configure = geo -> solver input 0
+solver.setInput(2, cloth, 1)      # output 1 of configure = constraints -> solver input 2
+
+# Output null
+out = geo.createNode("null", "OUT_sim")
+out.setInput(0, solver)
+out.setDisplayFlag(True)
+out.setRenderFlag(True)
+
+geo.layoutChildren()
 ```
-source_geo -> vellumconfigure* -> vellumdrape (optional) -> vellumsolver -> null (output)
-```
 
-For import to LOPs: `vellumsolver` -> `filecache` -> `sopimport` LOP
-
-## Configure Nodes
-
-Vellum uses `vellumconfigure*` SOPs to define simulation behavior:
-
-| Node | Description | Use Case |
-|------|-------------|----------|
-| `vellumconstraints` | Generic constraint setup | Custom configurations |
-| `vellumcloth` | Cloth + constraints | Fabric, flags, curtains |
-| `vellumhair` | Hair/fur curves + constraints | Hair, fur, cables, ropes |
-| `vellumgrains` | Grain particles + constraints | Sand, snow, sugar, pebbles |
-| `vellumsoftbody` | Tet mesh + constraints | Jelly, muscle, rubber |
-| `vellumballoon` | Inflatable mesh + constraints | Balloons, airbags |
-| `vellumstruts` | Strut constraints between points | Rigid structures, bridges |
-
-### Output Convention
-All configure nodes have TWO outputs:
-- **Output 1**: Geometry (the mesh/curves/points)
-- **Output 2**: Constraints (the constraint geometry)
-
-Both must be connected to the `vellumsolver`:
-- Solver **Input 1**: Geometry
-- Solver **Input 3**: Constraints
+---
 
 ## Cloth Setup
 
-### Basic Cloth
+```python
+import hou
+
+def setup_cloth(geo_node_path, source_node):
+    """Wire and configure a cloth simulation."""
+    geo = hou.node(geo_node_path)
+
+    cloth = geo.createNode("vellumcloth", "configure_cloth")
+    cloth.setInput(0, source_node)
+
+    # ── Cloth stiffness ───────────────────────────────────────────────────────
+    cloth.parm("stretchstiffness").set(10000)       # resist stretching
+    cloth.parm("bendstiffness").set(0.001)           # resist bending (low = floppy)
+    cloth.parm("compressionstiffness").set(10)       # resist compression
+    cloth.parm("shearstiffness").set(10000)          # resist shear / diagonal stretch
+
+    # ── Mass / thickness ──────────────────────────────────────────────────────
+    cloth.parm("density").set(0.1)                   # kg/m^2
+    cloth.parm("thickness").set(0.01)                # collision thickness in scene units
+
+    # ── Damping ───────────────────────────────────────────────────────────────
+    cloth.parm("dampingratio").set(0.01)             # 0 = no damping, 1 = overdamped
+
+    # ── Self-collision (expensive -- disable for preview) ─────────────────────
+    cloth.parm("selfcollisions").set(0)              # 0=off, 1=on
+
+    return cloth
+
+
+# ── Cloth material presets ────────────────────────────────────────────────────
+# Use these values as (stretchstiffness, bendstiffness, density) tuples.
+CLOTH_PRESETS = {
+    "silk":          (5000,    0.0001,  0.05),   # very light, flowing
+    "cotton_tshirt": (10000,   0.001,   0.10),   # Houdini default feel
+    "denim":         (50000,   0.1,     0.30),   # heavy, stiff
+    "leather":       (100000,  1.0,     0.50),   # very stiff, thick
+    "flag_banner":   (8000,    0.0005,  0.08),   # light, responsive to wind
+    "rubber_sheet":  (5000,    0.01,    0.40),   # stretchy, heavy
+    "chiffon_veil":  (3000,    0.00001, 0.02),   # ultra-light, delicate
+}
+
+def apply_cloth_preset(cloth_node, preset_name):
+    """Apply a fabric preset to a vellumcloth configure node."""
+    stretch, bend, density = CLOTH_PRESETS[preset_name]
+    cloth_node.parm("stretchstiffness").set(stretch)
+    cloth_node.parm("bendstiffness").set(bend)
+    cloth_node.parm("density").set(density)
+    print(f"Applied cloth preset '{preset_name}': "
+          f"stretch={stretch}, bend={bend}, density={density}")
 ```
-grid -> vellumcloth -> vellumsolver
+
+---
+
+## Draping (pre-settle onto body)
+
+```python
+import hou
+
+def setup_drape(geo_node_path, cloth_configure_node, collision_body_node):
+    """
+    Add a vellumdrape step so the garment settles before the main sim.
+    Drape runs a pre-simulation; its output is the 'rest' position for the solver.
+    """
+    geo = hou.node(geo_node_path)
+
+    drape = geo.createNode("vellumdrape", "drape")
+    drape.setInput(0, cloth_configure_node, 0)   # cloth geo
+    drape.setInput(1, cloth_configure_node, 1)   # cloth constraints
+    drape.setInput(2, collision_body_node)        # collision body
+
+    drape.parm("frames").set(60)                 # pre-sim frames to settle garment
+    drape.parm("substeps").set(3)                # substeps during drape solve
+
+    # Wire drape output to the main solver
+    solver = geo.createNode("vellumsolver", "vellum_solver")
+    solver.setInput(0, drape, 0)    # draped geo -> solver geo input
+    solver.setInput(2, drape, 1)    # draped constraints -> solver constraint input
+
+    return drape, solver
 ```
 
-### Key Parameters (vellumcloth)
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Stretch Stiffness | `stretchstiffness` | 10000 | Resistance to stretching |
-| Bend Stiffness | `bendstiffness` | 0.001 | Resistance to bending |
-| Compression Stiffness | `compressionstiffness` | 10 | Resistance to compression |
-| Thickness | `thickness` | 0.01 | Collision thickness |
-| Density | `density` | 0.1 | Mass per area |
-| Damping | `dampingratio` | 0.01 | Motion damping |
-
-### Cloth Material Presets
-
-| Fabric | Stretch | Bend | Density | Notes |
-|--------|---------|------|---------|-------|
-| Silk | 5000 | 0.0001 | 0.05 | Very light, flowing |
-| Cotton T-shirt | 10000 | 0.001 | 0.1 | Default feel |
-| Denim | 50000 | 0.1 | 0.3 | Heavy, stiff |
-| Leather | 100000 | 1.0 | 0.5 | Very stiff, thick |
-| Flag/banner | 8000 | 0.0005 | 0.08 | Light, responsive |
-| Rubber sheet | 5000 | 0.01 | 0.4 | Stretchy, heavy |
-| Chiffon/veil | 3000 | 0.00001 | 0.02 | Ultra-light, delicate |
-
-### Draping
-
-For garments that need to settle onto a body before animation:
-```
-tshirt_geo -> vellumcloth -> vellumdrape -> vellumsolver
-```
-- `vellumdrape` pre-simulates the cloth settling onto the collision body
-- Set `frames` to 50-100 for complex garments
-- Outputs the "rest" position that the actual simulation starts from
+---
 
 ## Hair Setup
 
-### Basic Hair
+```python
+import hou
+
+def setup_hair(geo_node_path, curve_source_node):
+    """Configure vellumhair for guide-curve simulation."""
+    geo = hou.node(geo_node_path)
+
+    hair = geo.createNode("vellumhair", "configure_hair")
+    hair.setInput(0, curve_source_node)   # input = polyline curves
+
+    # ── Stiffness ──────────────────────────────────────────────────────────────
+    hair.parm("stretchstiffness").set(10000)    # along-curve resist
+    hair.parm("bendstiffness").set(0.1)          # 0.01 = very floppy, 1.0+ = stiff/short
+    hair.parm("twistperstiffness").set(0.1)      # resist twisting
+
+    # ── Shape ──────────────────────────────────────────────────────────────────
+    hair.parm("width").set(0.01)                 # strand width for collision
+    hair.parm("density").set(1.0)                # mass per unit length
+
+    # ── Damping ────────────────────────────────────────────────────────────────
+    hair.parm("dampingratio").set(0.02)
+
+    # Solver wiring
+    solver = geo.createNode("vellumsolver", "vellum_solver")
+    solver.setInput(0, hair, 0)    # geo
+    solver.setInput(2, hair, 1)    # constraints
+
+    return hair, solver
+
+# ── Hair stiffness presets ────────────────────────────────────────────────────
+HAIR_PRESETS = {
+    "long_flowing":  {"bendstiffness": 0.01,  "substeps": 5},   # wavy, loose
+    "medium_wavy":   {"bendstiffness": 0.1,   "substeps": 3},   # default
+    "short_stiff":   {"bendstiffness": 2.0,   "substeps": 2},   # cropped, rigid
+    "cable_rope":    {"bendstiffness": 10.0,  "substeps": 5},   # stiff cable
+}
+
+def apply_hair_preset(hair_node, solver_node, preset_name):
+    preset = HAIR_PRESETS[preset_name]
+    hair_node.parm("bendstiffness").set(preset["bendstiffness"])
+    solver_node.parm("substeps").set(preset["substeps"])
 ```
-curves -> vellumhair -> vellumsolver
-```
 
-### Key Parameters (vellumhair)
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Stretch Stiffness | `stretchstiffness` | 10000 | Along-curve stretch |
-| Bend Stiffness | `bendstiffness` | 0.1 | Bending resistance |
-| Width | `width` | 0.01 | Hair strand width |
-| Density | `density` | 1.0 | Mass per length |
-
-### Hair Tips
-- Generate guide curves first, sim guides, then interpolate dense hair for render
-- Pin root points to animated character mesh using `vellumconstraintproperty` with Pin type
-- Use `vellumpostprocess` to smooth results and add clumping
-- For long flowing hair: lower bend stiffness (0.01), increase substeps
-- For short stiff hair: higher bend stiffness (1.0+)
+---
 
 ## Grain Setup
 
-### Basic Grains
+```python
+import hou
+
+def setup_grains(geo_node_path, source_node):
+    """Configure vellumgrains for granular material simulation."""
+    geo = hou.node(geo_node_path)
+
+    grains = geo.createNode("vellumgrains", "configure_grains")
+    grains.setInput(0, source_node)
+
+    # ── Particle size and mass ─────────────────────────────────────────────────
+    grains.parm("particlesep").set(0.05)         # spacing between grain centers
+    grains.parm("density").set(1.0)              # mass per grain
+
+    # ── Inter-grain behavior ───────────────────────────────────────────────────
+    grains.parm("friction").set(0.5)             # higher = piles up more
+    grains.parm("clusterstiffness").set(0.0)     # 0 = free-flowing, 1 = packed/snow
+    grains.parm("clusterradius").set(0.0)        # radius for cluster constraint
+
+    # Solver wiring
+    solver = geo.createNode("vellumsolver", "vellum_solver")
+    solver.setInput(0, grains, 0)
+    solver.setInput(2, grains, 1)
+
+    return grains, solver
+
+
+# ── Grain material presets ────────────────────────────────────────────────────
+# Values: (friction, clusterstiffness, notes)
+GRAIN_PRESETS = {
+    "dry_sand":   (0.5, 0.0,  "free-flowing, angle of repose ~30 deg"),
+    "wet_sand":   (0.8, 0.5,  "clumps, holds shape loosely"),
+    "snow":       (0.3, 0.8,  "packs and holds shape; cluster keeps it together"),
+    "gravel":     (0.7, 0.0,  "rolling, non-sticky"),
+    "sugar_salt": (0.2, 0.0,  "very free-flowing, low friction"),
+}
+
+def apply_grain_preset(grains_node, preset_name):
+    friction, cluster, _ = GRAIN_PRESETS[preset_name]
+    grains_node.parm("friction").set(friction)
+    grains_node.parm("clusterstiffness").set(cluster)
+    print(f"Grain preset '{preset_name}': friction={friction}, cluster={cluster}")
 ```
-source_geo -> vellumgrains -> vellumsolver
-```
 
-### Key Parameters (vellumgrains)
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Particle Size | `pscale` | 0.05 | Grain radius |
-| Friction | `friction` | 0.5 | Inter-grain friction |
-| Density | `density` | 1.0 | Mass per grain |
-| Cluster Stiffness | `clusterstiffness` | 1.0 | Stiffness of clusters |
-
-### Grain Material Presets
-
-| Material | Friction | Cluster | Notes |
-|----------|----------|---------|-------|
-| Dry sand | 0.5 | 0.0 | Free-flowing |
-| Wet sand | 0.8 | 0.5 | Clumps together |
-| Snow | 0.3 | 0.8 | Packs and holds shape |
-| Gravel | 0.7 | 0.0 | Rolling, non-sticky |
-| Sugar/salt | 0.2 | 0.0 | Very free-flowing |
+---
 
 ## Soft Body Setup
 
-### Basic Soft Body
+```python
+import hou
+
+def setup_softbody(geo_node_path, mesh_source_node):
+    """
+    Soft body requires a TETRAHEDRAL mesh as input.
+    Wire: mesh -> remesh (solidconform) -> vellumsoftbody -> vellumsolver
+    """
+    geo = hou.node(geo_node_path)
+
+    # Step 1: Convert surface mesh to solid tet mesh
+    solid = geo.createNode("solidconform", "make_tet_mesh")
+    solid.setInput(0, mesh_source_node)
+    solid.parm("outputtetmesh").set(1)    # produce tetrahedral mesh
+    solid.parm("maxedgelength").set(0.1)  # tet size -- smaller = denser/slower
+
+    # Step 2: Soft body configure
+    softbody = geo.createNode("vellumsoftbody", "configure_softbody")
+    softbody.setInput(0, solid)
+
+    # ── Deformation stiffness ──────────────────────────────────────────────────
+    softbody.parm("shapestiffness").set(1.0)       # resist shape change (jelly < rubber)
+    softbody.parm("volumestiffness").set(0.0)      # 0 = compressible, 1 = incompressible
+    softbody.parm("dampingratio").set(0.1)         # oscillation damping
+
+    # ── Soft body presets ──────────────────────────────────────────────────────
+    # Jelly:   shapestiffness=0.1,  volumestiffness=0.5
+    # Rubber:  shapestiffness=5.0,  volumestiffness=0.8
+    # Muscle:  shapestiffness=10.0, volumestiffness=0.9, dampingratio=0.05
+
+    solver = geo.createNode("vellumsolver", "vellum_solver")
+    solver.setInput(0, softbody, 0)
+    solver.setInput(2, softbody, 1)
+
+    return softbody, solver
 ```
-mesh -> remesh (uniform tets) -> vellumsoftbody -> vellumsolver
+
+---
+
+## Solver Configuration
+
+```python
+import hou
+
+def configure_solver(solver_node, sim_type="cloth"):
+    """
+    Set vellumsolver parameters for different simulation types.
+    sim_type: "cloth", "cloth_fast", "hair", "grains", "softbody"
+    """
+    # ── Substep / iteration presets ───────────────────────────────────────────
+    SOLVER_PRESETS = {
+        #             substeps  iterations  timescale  gravity
+        "cloth":      (5,       100,        1.0,       -9.81),
+        "cloth_fast": (15,      150,        1.0,       -9.81),   # fast-moving cloth
+        "hair":       (4,        80,        1.0,       -9.81),
+        "grains":     (2,        50,        1.0,       -9.81),
+        "softbody":   (5,       100,        1.0,       -9.81),
+    }
+
+    substeps, iterations, timescale, gravity = SOLVER_PRESETS[sim_type]
+
+    solver_node.parm("substeps").set(substeps)
+    solver_node.parm("constraintiterations").set(iterations)
+    solver_node.parm("timescale").set(timescale)
+
+    # Gravity (Y-axis component)
+    solver_node.parm("gravityx").set(0.0)
+    solver_node.parm("gravityy").set(gravity)
+    solver_node.parm("gravityz").set(0.0)
+
+    # ── Ground plane ──────────────────────────────────────────────────────────
+    solver_node.parm("groundplane").set(1)     # implicit ground (fast, no geo needed)
+    solver_node.parm("groundpos").set(0.0)     # Y position of ground
+    solver_node.parm("groundfriction").set(0.5)
+
+    # ── Wind force (optional) ──────────────────────────────────────────────────
+    # solver_node.parm("windx").set(1.0)       # world-space wind vector
+    # solver_node.parm("windy").set(0.0)
+    # solver_node.parm("windz").set(0.0)
+
+    print(f"Solver configured for '{sim_type}': "
+          f"substeps={substeps}, iterations={iterations}")
 ```
 
-### Key Parameters (vellumsoftbody)
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Shape Stiffness | `shapestiffness` | 1.0 | Resistance to deformation |
-| Volume Stiffness | `volumestiffness` | 0.0 | Resistance to volume change |
-| Damping | `dampingratio` | 0.1 | Motion damping |
-
-**Important**: Input mesh MUST be tetrahedral. Use `remesh` or `solidconform` to create tet mesh first.
-
-## Vellum Solver Key Parameters
-
-| Parameter | Name | Default | Description |
-|-----------|------|---------|-------------|
-| Substeps | `substeps` | 5 | Solver accuracy (5-10 for cloth, 1-3 for grains) |
-| Constraint Iterations | `constraintiterations` | 100 | Convergence iterations |
-| Time Scale | `timescale` | 1.0 | Simulation speed |
-| Gravity | `gravity` | -9.81 | Gravity magnitude |
-| Ground Plane | `groundplane` | 1 | Enable implicit ground |
-| Ground Position | `groundpos` | 0 | Ground height |
-| Friction | `friction` | 0.5 | Ground friction |
-
-### Substep Guidelines
-| Simulation Type | Substeps | Iterations |
-|----------------|----------|------------|
-| Cloth (normal) | 5 | 100 |
-| Cloth (fast motion) | 10-20 | 150 |
-| Hair | 3-5 | 80 |
-| Grains | 1-3 | 50 |
-| Soft body | 5 | 100 |
+---
 
 ## Collision Setup
 
-### Self-Collision
-Enable via `selfcollisions` parm on configure node. Essential for cloth folding.
-Increases solve time 2-5x. Disable during early iterations.
+```python
+import hou
 
-### External Colliders
+def setup_collision(geo_node_path, animated_body_node, solver_node):
+    """
+    Prepare an animated mesh as a Vellum collider.
+    Collider connects to solver input 1 (index 1 in 0-based Python API).
+    """
+    geo = hou.node(geo_node_path)
+
+    # Add velocity attribute to collision mesh (required for moving colliders)
+    trail = geo.createNode("trail", "compute_velocity")
+    trail.setInput(0, animated_body_node)
+    trail.parm("result").set(2)              # "Compute Velocity" mode
+    trail.parm("velapproximation").set(0)    # central difference
+
+    # Optionally simplify collision mesh for speed
+    polyreduce = geo.createNode("polyreduce", "simplify_collider")
+    polyreduce.setInput(0, trail)
+    polyreduce.parm("percentage").set(20)    # 20% of original poly count
+    polyreduce.parm("doquality").set(1)
+
+    # Vellum collider prepare node
+    collider = geo.createNode("vellumcollider", "collider_prepare")
+    collider.setInput(0, polyreduce)
+    collider.parm("thickness").set(0.01)     # match cloth thickness for stability
+
+    # Wire to solver: input 1 (0-indexed) = collision geometry
+    solver_node.setInput(1, collider)
+
+    return collider
+
+
+def enable_self_collision(cloth_configure_node, enable=True):
+    """Toggle self-collision on a configure node. Expensive -- disable for preview."""
+    cloth_configure_node.parm("selfcollisions").set(1 if enable else 0)
+    if enable:
+        # Self-collision needs tighter thickness for accuracy
+        current = cloth_configure_node.parm("thickness").eval()
+        print(f"Self-collision ON. Current thickness={current}. "
+              "Increase substeps to 15+ for tight garments.")
 ```
-animated_body -> vellumcollider -> vellumsolver (input 2 = collider)
-```
-- `vellumcollider` SOP prepares collision geometry
-- Input animated/deforming mesh with velocity (`trail` SOP for `v@v`)
-- Set `thickness` to match cloth thickness for stable collisions
 
-### Collision Tips
-- Use simplified collision meshes (polyreduce) for faster solving
-- Enable "Compute Missing Normals" on collider for open meshes
-- For tight-fitting garments: increase substeps to 15-20
-- If cloth passes through: decrease cloth `thickness`, increase `substeps`
+---
 
-## Pinning and Constraints
+## Pinning (VEX in wrangle before configure)
 
-### Pin to Animated Geometry
 ```vex
-// In a wrangle before configure node:
-// Pin top edge of cloth to animated character
-if (@P.y > ch("pin_height")) i@stopped = 1;
+// ─── Attrib Wrangle: pin_by_height ───────────────────────────────────────────
+// Run Over: Points
+// Place BEFORE vellumcloth configure node.
+// Sets i@stopped=1 to freeze points in place (pinned to world-space position).
+
+float pin_height = chf("pin_height");   // create float channel, e.g. 0.9
+
+if (@P.y > pin_height) {
+    i@stopped = 1;    // Vellum reads this -- point won't move
+}
 ```
 
-Or use `vellumconstraintproperty`:
-- Set constraint type to "Pin"
-- Use group to select pinned points
-- Enable "Match Animation" to follow animated geometry
+```vex
+// ─── Attrib Wrangle: pin_to_animated_geo ─────────────────────────────────────
+// Run Over: Points
+// For garment attachment: sample target position from animated mesh.
+// Inputs: input 0 = cloth points, input 1 = animated body mesh
 
-### Constraint Types
-| Type | Description | Use Case |
-|------|-------------|----------|
-| Distance | Maintain distance between points | Stretch resistance |
-| Bend | Maintain angle between edges | Bending resistance |
-| Pin | Fix points to position/animation | Attachment points |
-| Attach to Geometry | Bind to animated mesh | Garment on character |
-| Weld | Fuse two surfaces | Seams, stitching |
-| Stitch | Soft connection between surfaces | Layered cloth |
-| Pressure | Internal pressure | Balloons, inflatable |
+// Snap cloth point to nearest point on animated body
+int nearest = nearpoint(1, @P);
+vector target = point(1, "P", nearest);
 
-## Caching Strategy
-
-Always cache Vellum before rendering:
+// If close enough to body surface, pin it
+float dist = distance(@P, target);
+if (dist < chf("pin_radius")) {           // e.g. 0.05
+    i@stopped = 1;
+    @targetP = target;                    // vellumsolver uses targetP for animated pins
+}
 ```
-vellumsolver -> filecache(file="$HIP/cache/vellum.$F4.bgeo.sc")
+
+```vex
+// ─── Attrib Wrangle: animated_pin_follow ─────────────────────────────────────
+// Run Over: Points  -- place inside the solver's pre-roll or with vellumconstraintproperty
+// Continuously update targetP so pinned points follow animation (per-frame wrangle).
+
+int is_pinned = i@stopped;
+if (is_pinned) {
+    // Re-sample target from animated body each frame
+    int nearest = nearpoint(1, @P);
+    @targetP = point(1, "P", nearest);
+}
 ```
-- Cache constraints too if needed for debugging: second filecache on constraint output
-- For character FX: cache vellum separately from character animation
-- Use `.bgeo.sc` (Blosc compressed) for fastest read/write
 
-## Import to Solaris
+```python
+import hou
 
-Use `sopimport` LOP with `soppath` pointing to the `vellumsolver` output (or filecache in Read mode).
+def add_pin_wrangle(geo_node_path, before_configure_node):
+    """
+    Insert a wrangle before vellumcloth to pin top edge by height.
+    Adds a 'pin_height' channel parameter for easy adjustment.
+    """
+    geo = hou.node(geo_node_path)
 
-For cloth on character: merge vellum sopimport with character sopimport in LOPs, then assign material.
+    wrangle = geo.createNode("attribwrangle", "pin_by_height")
+    wrangle.setInput(0, before_configure_node)
 
-## Rendering Vellum in Karma
+    # VEX: freeze any point above pin_height
+    wrangle.parm("snippet").set(
+        "float pin_height = chf('pin_height');\n"
+        "if (@P.y > pin_height) { i@stopped = 1; }\n"
+    )
 
-### Cloth
-- Apply woven fabric material (base_color from texture, roughness 0.3-0.7)
-- Enable displacement for fabric weave detail
-- Subdivision in render: 1-2 levels for smooth silhouettes
+    # Add the channel with a sensible default
+    ptg = wrangle.parmTemplateGroup()
+    parm = hou.FloatParmTemplate("pin_height", "Pin Height", 1, default_value=(0.9,))
+    ptg.addParmTemplate(parm)
+    wrangle.setParmTemplateGroup(ptg)
+    wrangle.parm("pin_height").set(0.9)
 
-### Hair
-- Use hair shader (mtlxstandard_surface with `thin_walled=1`)
-- Set curve rendering: "Round" cross-section
-- Melanin-based color or direct color attribute from `v@Cd`
+    wrangle.parm("class").set(0)    # run over Points
+    return wrangle
+```
 
-### Grains
-- Render as spheres (point instancing) or use `particlefluidsurface` for meshing
-- For sand: matte material with roughness 0.8-1.0, subtle color variation via `v@Cd`
+---
 
-## Performance Tips
+## Caching
 
-- Start with low-res mesh for cloth (500-2000 polys), refine after blocking
-- Disable self-collision during early iterations
-- Use simplified collision meshes (polyreduce the body)
-- Lower constraint iterations (50) for previewing, increase (150+) for final
-- Cache frequently -- Vellum iteration is fastest with cached inputs
-- For grains: use larger `pscale` for preview, reduce for final detail
-- `vellumdrape` is expensive -- only re-drape when starting pose changes
+```python
+import hou
 
-## Common Vellum Issues
+def setup_vellum_cache(geo_node_path, solver_node, cache_name="cloth"):
+    """
+    Add filecache after vellumsolver for geometry and optionally constraints.
+    Always cache before rendering -- Vellum re-simulates from frame 1 otherwise.
+    """
+    geo = hou.node(geo_node_path)
+    hip = hou.getenv("HIP")
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Cloth falls through body | Thickness too thin or substeps too low | Increase `thickness`, increase `substeps` to 15+ |
-| Cloth explodes | Extremely high stiffness with few substeps | Lower stiffness or increase substeps/iterations |
-| Stretchy cloth (shouldn't be) | Stretch stiffness too low | Increase `stretchstiffness` to 50000+ |
-| Hair goes through body | Missing or bad collision setup | Add `vellumcollider`, increase substeps |
-| Grains pile too high | Friction too high | Lower `friction` to 0.3-0.5 |
-| Soft body collapses | Shape stiffness too low | Increase `shapestiffness`, add volume constraint |
-| Slow simulation | Too many points + self-collision | Simplify mesh, disable self-collision for preview |
-| Jittery result | Insufficient iterations | Increase `constraintiterations` to 150+ |
-| Garment doesn't fit | No drape step | Add `vellumdrape` before solver |
+    # ── Geometry cache ─────────────────────────────────────────────────────────
+    geo_cache = geo.createNode("filecache", f"cache_{cache_name}_geo")
+    geo_cache.setInput(0, solver_node, 0)    # solver output 0 = simulated geometry
+
+    # .bgeo.sc = Blosc compressed (fastest read/write, smaller than .bgeo)
+    geo_cache.parm("file").set(
+        f"{hip}/cache/vellum/{cache_name}/$OS.$F4.bgeo.sc"
+    )
+    geo_cache.parm("loadfromdisk").set(0)    # 0=write (sim), 1=read (playback)
+    geo_cache.parm("filetype").set(0)        # bgeo.sc
+
+    # ── Constraint cache (optional -- useful for debugging) ────────────────────
+    con_cache = geo.createNode("filecache", f"cache_{cache_name}_constraints")
+    con_cache.setInput(0, solver_node, 1)    # solver output 1 = constraints
+
+    con_cache.parm("file").set(
+        f"{hip}/cache/vellum/{cache_name}_constraints/$OS.$F4.bgeo.sc"
+    )
+    con_cache.parm("loadfromdisk").set(0)
+
+    # Output null reads from geo cache
+    out = geo.createNode("null", "OUT_cached")
+    out.setInput(0, geo_cache)
+    out.setDisplayFlag(True)
+    out.setRenderFlag(True)
+
+    print(f"Cache path: {hip}/cache/vellum/{cache_name}/")
+    print("Set loadfromdisk=1 on both caches to read back without re-simulating.")
+
+    return geo_cache, con_cache
+
+
+def switch_cache_to_read(geo_cache_node, con_cache_node=None):
+    """Flip caches to read mode (playback cached sim)."""
+    geo_cache_node.parm("loadfromdisk").set(1)
+    if con_cache_node:
+        con_cache_node.parm("loadfromdisk").set(1)
+    print("Cache switched to READ mode.")
+```
+
+---
+
+## Import to Solaris / LOPs
+
+```python
+import hou
+
+def import_vellum_to_lops(stage_node_path, sop_geo_node_path, vellum_cache_node_name):
+    """
+    Import cached Vellum geometry into LOPs via sopimport.
+    If simulating cloth on a character: merge vellum sopimport with character sopimport.
+    """
+    stage = hou.node(stage_node_path)   # e.g. /stage
+
+    # sopimport LOP: pulls SOP geometry into the USD stage each frame
+    sop_import = stage.createNode("sopimport", "import_vellum_cloth")
+    sop_import.parm("soppath").set(
+        f"{sop_geo_node_path}/{vellum_cache_node_name}"
+    )
+
+    # USD primitive path where cloth will appear
+    sop_import.parm("pathprefix").set("/cloth")
+
+    # Time-varying: let it update every frame
+    sop_import.parm("timevarying").set(1)
+
+    # ── Merge with character (typical layered cloth workflow) ──────────────────
+    # character_import = stage.node("import_character")
+    # merge = stage.createNode("merge", "merge_cloth_and_character")
+    # merge.setInput(0, character_import)
+    # merge.setInput(1, sop_import)
+
+    # ── Assign material to imported cloth ──────────────────────────────────────
+    # mat_assign = stage.createNode("assignmaterial", "cloth_material")
+    # mat_assign.setInput(0, sop_import)
+    # mat_assign.parm("primpattern1").set("/cloth/geo/shape")
+    # mat_assign.parm("matspecpath1").set("/materials/fabric_cotton")
+
+    stage.layoutChildren()
+    return sop_import
+
+
+def full_vellum_lops_pipeline(hip_path, cache_name="cloth"):
+    """
+    Complete pipeline string (text description of node chain for reference).
+    SOP: source -> vellumcloth -> vellumsolver -> filecache (write then read)
+    LOP: sopimport -> (merge with character) -> assignmaterial -> karma
+    """
+    pipeline = {
+        "sop_chain": [
+            "source_geo",
+            "vellumcloth (configure: 2 outputs -- geo + constraints)",
+            "vellumsolver (in0=geo, in2=constraints)",
+            f"filecache (write: {hip_path}/cache/vellum/{cache_name}/$F4.bgeo.sc)",
+        ],
+        "lop_chain": [
+            "sopimport (soppath -> filecache OUT)",
+            "merge (cloth + character)",
+            "assignmaterial (primpattern = exact USD prim path)",
+            "karma LOP",
+            "usdrender ROP",
+        ],
+    }
+    return pipeline
+```
+
+---
+
+## Common Mistakes
+
+**Cloth falls through body**: Collision thickness too thin or substeps too low. Increase `thickness` to match cloth thickness, set substeps to 15+ for tight-fitting garments.
+
+**Cloth explodes on frame 1**: Extremely high stiffness (100000+) with only 5 substeps. Lower stiffness or raise substeps and constraint iterations together.
+
+**Cloth is unexpectedly stretchy**: `stretchstiffness` is too low. Raise to 50000+ for non-stretch fabrics like denim.
+
+**Hair passes through body**: Missing vellumcollider node, or collider not wired to solver input 1. Add Trail SOP before vellumcollider to supply velocity.
+
+**Grains pile too high / won't spread**: Friction too high. Dry sand should be 0.3-0.5.
+
+**Soft body collapses immediately**: Shape stiffness too low or no volume constraint. Raise `shapestiffness`, enable `volumestiffness` to 0.5+ for incompressible materials.
+
+**Simulation is very slow**: Too many points combined with self-collision. Disable self-collision for preview, use simplified collision mesh (polyreduce to 10-20%).
+
+**Jittery result / not converging**: Insufficient constraint iterations. Raise `constraintiterations` to 150+. Also check substeps -- too few for stiffness level.
+
+**Garment starts in wrong position on character**: No drape step. Add `vellumdrape` node between configure and solver. Set frames=60-100, re-run when starting pose changes.
+
+**solver input wiring wrong**: Configure node output 0 = geo -> solver input 0. Configure node output 1 = constraints -> solver input 2 (NOT input 1). Input 1 = collider geometry.
+
+**filecache not updating**: Cache is in read mode (`loadfromdisk=1`). Flip to 0, re-sim, then flip back to 1 for playback.

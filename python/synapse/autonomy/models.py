@@ -103,10 +103,63 @@ class Decision:
 
 
 @dataclass
+class RenderPrediction:
+    """Pre-render prediction for verify-after-render comparison.
+
+    Based on 'Predict Before Executing' (2601.05930): predict scene
+    structure and expected outputs before rendering, then compare
+    actual results to catch discrepancies early.
+
+    Fields split into two groups:
+        - Scene structure predictions (filled pre-render)
+        - Verification results (filled post-render)
+    """
+    # Scene structure predictions
+    render_product_path: str = ""
+    output_file_pattern: str = ""
+    expected_frame_range: tuple = (1, 1)
+    camera_prim: str = ""
+    material_count: int = 0
+    light_count: int = 0
+    geo_prim_count: int = 0
+
+    # Quality predictions
+    expected_resolution: tuple = (1920, 1080)
+    has_motion_blur: bool = False
+    has_displacement: bool = False
+    estimated_render_time_seconds: float = 0.0
+
+    # Pre-render issues found during prediction
+    pre_render_issues: List[str] = field(default_factory=list)
+
+    # Verification results (filled post-render)
+    actual_output_files: List[str] = field(default_factory=list)
+    render_succeeded: bool = False
+    discrepancies: List[str] = field(default_factory=list)
+
+
+@dataclass
+class VerificationResult:
+    """Result of comparing pre-render prediction to post-render reality.
+
+    A high discrepancy count triggers re-evaluation before proceeding
+    to the next frame or sequence.
+    """
+    prediction: RenderPrediction
+    evaluation: Optional[SequenceEvaluation] = None
+    discrepancies: List[str] = field(default_factory=list)
+    score: float = 1.0  # 1.0 = perfect match, 0.0 = total mismatch
+    should_rerender: bool = False
+    reasoning: str = ""
+
+
+@dataclass
 class RenderReport:
     """Final report from an autonomous render execution."""
     plan: RenderPlan
     evaluation: Optional[SequenceEvaluation] = None
+    prediction: Optional[RenderPrediction] = None
+    verification: Optional[VerificationResult] = None
     decisions: List[Decision] = field(default_factory=list)
     iterations: int = 0
     total_time_seconds: float = 0.0

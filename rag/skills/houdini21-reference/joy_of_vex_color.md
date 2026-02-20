@@ -19,8 +19,8 @@ vector center = chv('center');
 float d = distance(pos, center);
 d *= ch('scalePos');
 @Cd = fit(sin(d*chf('time')),-1,1,0,1);
+// Creates an animated color pattern by calculating the distance from each point to a center positio...
 ```
-Creates an animated color pattern by calculating the distance from each point to a center position, applying a sine wave modulated by time, and fitting the result to color values. The position is first scaled by a vector channel parameter, and the distance is further scaled before the sine function creates oscillating values that are remapped from [-1,1] to [0,1] for color output.
 
 ## Color from Normals
 
@@ -31,8 +31,8 @@ Creates an animated color pattern by calculating the distance from each point to
 @Cd = @N;
 
 @Cd = @P.x;
+// Demonstrates how vectors can be assigned to color attributes since both are three-component value...
 ```
-Demonstrates how vectors can be assigned to color attributes since both are three-component values. The normal vector @N (0,1,0 for upward-pointing normals) maps directly to RGB color space, resulting in green when all normals point up. On curved geometry like a sphere or pig head, varying normal directions produce different colors based on their directional components.
 
 ### Visualizing normals with color [Needs Review] [[Ep1, 14:56](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=896s)]
 ```vex
@@ -41,8 +41,8 @@ Demonstrates how vectors can be assigned to color attributes since both are thre
 @Cd = @N;
 
 @Cd = @N.x;
+// Demonstrates how position (@P) and normal (@N) vectors can be visualized as RGB colors by assigni...
 ```
-Demonstrates how position (@P) and normal (@N) vectors can be visualized as RGB colors by assigning them to @Cd. When normals are assigned to color, the resulting RGB values create a visual representation similar to normal maps, with different colors indicating different vector directions. Individual components (like @N.x) can also be visualized, showing a single color channel.
 
 ## Color from Position
 
@@ -51,8 +51,8 @@ Demonstrates how position (@P) and normal (@N) vectors can be visualized as RGB 
 @Cd = @P;
 
 @Cd = @P.x;
+// Demonstrates mapping position (@P) directly to color (@Cd), which visualizes spatial coordinates ...
 ```
-Demonstrates mapping position (@P) directly to color (@Cd), which visualizes spatial coordinates as RGB values. The first example maps the full vector to color, while the second extracts only the X component, creating a gradient. This technique produces colors similar to normal maps, where position/direction values translate to visible color variations across the geometry.
 
 ## Color from Normals
 
@@ -63,8 +63,8 @@ Demonstrates mapping position (@P) directly to color (@Cd), which visualizes spa
 @Cd = @P;
 
 @Cd = @P.x;
+// Demonstrates assigning different point attributes to color (@Cd)
 ```
-Demonstrates assigning different point attributes to color (@Cd). Setting @Cd = @N creates normal-map-like colors with bluish-greenish-reddish hues based on surface orientation. Setting @Cd = @P uses world-space position values as color, which can result in negative values (over-saturated or under-saturated colors outside the 0-1 range).
 
 ## Color from Position
 
@@ -75,8 +75,8 @@ Demonstrates assigning different point attributes to color (@Cd). Setting @Cd = 
 @Cd = @P;
 
 @Cd = @P.x;
+// Demonstrates assigning position values directly to color attributes
 ```
-Demonstrates assigning position values directly to color attributes. Setting @Cd to @P maps XYZ position values to RGB color channels, creating a spatial color gradient. Accessing individual components like @P.x allows isolating specific position axes for color assignment, though this can produce invalid color values when positions are negative or out of the 0-1 range.
 
 ## Color from Normals
 
@@ -89,8 +89,8 @@ Demonstrates assigning position values directly to color attributes. Setting @Cd
 @Cd = @P.x;
 
 @Cd = @N.y;
+// Demonstrates assigning position and normal components to color attributes
 ```
-Demonstrates assigning position and normal components to color attributes. When using @P for color, points maintain their color based on world-space position regardless of transforms applied to the geometry. Component access (.x, .y) allows mapping individual vector components to color values, showing how negative positions result in over-dark colors (below black).
 
 ### Position vs Normal Color Assignment [[Ep1, 17:30](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1050s)]
 ```vex
@@ -99,8 +99,8 @@ Demonstrates assigning position and normal components to color attributes. When 
 @Cd = @P.x;
 
 @Cd = @N.y;
+// Demonstrates the difference between using position (@P) versus normals (@N) for color assignment
 ```
-Demonstrates the difference between using position (@P) versus normals (@N) for color assignment. When color is based on position, transforming geometry changes the colors, but when based on normals, colors stay relative to surface orientation regardless of transforms. Component access (.x, .y) allows isolating individual vector components for color channels.
 
 ### Color from Normals vs Position [[Ep1, 18:08](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1088s)]
 ```vex
@@ -111,14 +111,14 @@ Demonstrates the difference between using position (@P) versus normals (@N) for 
 @Cd = @P.x;
 
 @Cd = @N.y;
+// Demonstrates the visual difference between coloring geometry by normal direction (@N) versus worl...
 ```
-Demonstrates the visual difference between coloring geometry by normal direction (@N) versus world position (@P). Normal-based coloring maintains consistent colors based on surface orientation even when geometry rotates, while position-based coloring stays fixed in world space. Component access (.x, .y) allows isolating individual axes for more controlled color effects.
 
 ### Vector Component Access [[Ep1, 20:30](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1230s)]
 ```vex
 @Cd = @N.y;
+// Sets the color attribute to the Y component of the normal vector, creating a gradient based on ho...
 ```
-Sets the color attribute to the Y component of the normal vector, creating a gradient based on how much the surface faces upward or downward. This technique is similar to the Mask by Feature SOP, which colors geometry based on normal direction. Accessing individual vector components (.x, .y, .z) allows you to extract scalar values from vector attributes.
 
 ### Component-Based Color Assignment [[Ep1, 21:36](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1296s)]
 ```vex
@@ -129,24 +129,24 @@ Sets the color attribute to the Y component of the normal vector, creating a gra
 @Cd = @P.x;
 
 @Cd = @N.y;
+// Demonstrates assigning color based on individual vector components (x or y) from position or norm...
 ```
-Demonstrates assigning color based on individual vector components (x or y) from position or normal attributes. Points with higher y-component values (like 0.4) will be brighter/whiter, while negative y-values will be darker/black. This creates a spatial gradient where color intensity corresponds to vertical position or normal direction.
 
 ## Color Operations
 
 ### Offsetting Color Values [[Ep1, 23:56](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1436s)]
 ```vex
 @Cd = @P.x + 3;
+// Adding a constant value of 3 to the position's x-component shifts the color visualization, moving...
 ```
-Adding a constant value of 3 to the position's x-component shifts the color visualization, moving the zero-point (where color transitions from black to white) to the left into negative space. This demonstrates how arithmetic operations on positional data affect color output and can be used to visualize coordinate shifts.
 
 ## Color from Position
 
 ### Offsetting Color Values with Position [[Ep1, 26:14](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1574s)]
 ```vex
 @Cd = (@P.x - 6) * 0.3;
+// Demonstrates offsetting color values by subtracting a constant (6) from the x-position before sca...
 ```
-Demonstrates offsetting color values by subtracting a constant (6) from the x-position before scaling by 0.3. This shifts the gradient so that most values fall below zero (appearing black), illustrating how grouping operations in parentheses affects value ranges. The instructor emphasizes the importance of always ending VEX statements with semicolons to avoid errors.
 
 ### Remapping Position Components to Color [[Ep1, 30:16](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1816s)]
 ```vex
@@ -157,16 +157,16 @@ Demonstrates offsetting color values by subtracting a constant (6) from the x-po
 @Cd.z = @P.y;
 
 @Cd = @ptnum;
+// Demonstrates remapping position components to color channels in non-standard ways
 ```
-Demonstrates remapping position components to color channels in non-standard ways. Instead of mapping X to red, Y to green, and Z to blue, this code swaps the axes (Z position drives green, Y position drives blue) and applies multipliers to create different color distributions. The final line shows an alternative approach of setting color based on point number.
 
 ### Remapping Position to Color Components [[Ep1, 30:22](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1822s)]
 ```vex
 @Cd.x = @P.x * 3 * 1.2;
 @Cd.y = @P.z * 2;
 @Cd.z = @P.y;
+// Demonstrates remapping position components to color channels in non-standard ways
 ```
-Demonstrates remapping position components to color channels in non-standard ways. The X position (scaled) drives red, the Z position drives green, and the Y position drives blue, creating different color patterns than a direct XYZ-to-RGB mapping. This shows how swapping and scaling position components can create varied color effects.
 
 ## Color Operations
 
@@ -185,8 +185,8 @@ Demonstrates remapping position components to color channels in non-standard way
 @Cd.z = @P.y;
 
 @Cd = @ptnum;
+// Setting color (@Cd) equal to point number (@ptnum) assigns each point a color value based on its ...
 ```
-Setting color (@Cd) equal to point number (@ptnum) assigns each point a color value based on its index. Since point numbers range from 0 to 899, most points exceed the color value of 1 (white), resulting in only point 0 appearing black while others are blown out to white, demonstrating the need for normalization when using point numbers for color.
 
 ### Color from Point Number [[Ep1, 32:54](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1974s)]
 ```vex
@@ -201,8 +201,8 @@ Setting color (@Cd) equal to point number (@ptnum) assigns each point a color va
 @Cd.z = @P.y;
 
 @Cd = @ptnum;
+// Demonstrates assigning point color directly from point number using @ptnum
 ```
-Demonstrates assigning point color directly from point number using @ptnum. The previous attempts using position-based color assignments result in values outside the 0-1 color range, causing most points to appear white. Using @ptnum directly assigns each point's unique index as its color value, though this also needs normalization since point numbers exceed 1.
 
 ### Point Number to Color Mapping [[Ep1, 32:58](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1978s)]
 ```vex
@@ -215,8 +215,8 @@ Demonstrates assigning point color directly from point number using @ptnum. The 
 @Cd = (@P.x * 0.0) * 0.3;
 
 @Cd = @ptnum;
+// Setting color (@Cd) directly to point number (@ptnum) creates undesirable results because point n...
 ```
-Setting color (@Cd) directly to point number (@ptnum) creates undesirable results because point numbers on a grid from 0 to 899 exceed the valid color range of 0 to 1, resulting in nearly all white points except the first one at 0 (black). The code demonstrates this problem by assigning @ptnum to color, showing that point numbers need to be normalized to create a meaningful color gradient across geometry.
 
 ### Color from Point Number [[Ep1, 33:00](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=1980s)]
 ```vex
@@ -227,16 +227,16 @@ Setting color (@Cd) directly to point number (@ptnum) creates undesirable result
 @Cd.z = @P.y;
 
 @Cd = @ptnum;
+// Sets color attribute to the point number value, demonstrating that point numbers go from 0 to 899...
 ```
-Sets color attribute to the point number value, demonstrating that point numbers go from 0 to 899 in this grid. Since color values are interpreted in 0-1 range, most points appear white (values > 1), with only point 0 appearing black. This illustrates the need to normalize point numbers to create a proper color ramp across geometry.
 
 ## Color from Normals
 
 ### Type casting for normalized color values [[Ep1, 35:56](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=2156s)]
 ```vex
 @Cd = float(@ptnum)/@numpt;
+// Demonstrates type casting by wrapping @ptnum in float() to ensure floating-point division when di...
 ```
-Demonstrates type casting by wrapping @ptnum in float() to ensure floating-point division when dividing by @numpt. This creates a normalized gradient from 0.0 to 1.0 across all points, avoiding integer division truncation. The resulting values produce a smooth color ramp from point 0 (black) to the last point (near white).
 
 ### Normalizing point numbers with division [[Ep1, 38:06](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=2286s)]
 ```vex
@@ -244,22 +244,22 @@ Demonstrates type casting by wrapping @ptnum in float() to ensure floating-point
 
 // Alternative using hardcoded value:
 @Cd = float(@ptnum)/100;
+// Demonstrates how to create a gradient by dividing @ptnum by @numpt to get normalized values betwe...
 ```
-Demonstrates how to create a gradient by dividing @ptnum by @numpt to get normalized values between 0 and 1, where @ptnum changes for each point while @numpt remains constant as the total point count. Shows that replacing @numpt with a hardcoded value like 100 changes when the gradient reaches 1 (white), with higher point numbers exceeding 1 and clamping to white in visualization.
 
 ## Color Operations
 
 ### Channel-driven Sine Wave Color [[Ep1, 48:32](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=2912s)]
 ```vex
 @Cd = sin(float(@ptnum)/ch("scale"));
+// Uses a channel reference to control the frequency of a sine wave applied to point color, allowing...
 ```
-Uses a channel reference to control the frequency of a sine wave applied to point color, allowing interactive art direction of the color pattern. The point number is cast to float, divided by a channel parameter, and passed through sin() to create smooth oscillating color values that can be adjusted in real-time via the scale parameter.
 
 ### Color with sine and channel reference [[Ep1, 48:40](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=2920s)]
 ```vex
 @Cd = sin(float(@ptnum)/ch('scale'));
+// Uses a sine wave function to create oscillating color values based on point number, divided by a ...
 ```
-Uses a sine wave function to create oscillating color values based on point number, divided by a channel slider named 'scale' for art-direction control. The sine function creates peaks and valleys (oscillating between -1 and 1), producing varying color patterns that can be interactively adjusted via the scale parameter.
 
 ### Distance-based Color with Sin Function [[Ep1, 65:54](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=3954s)]
 ```vex
@@ -272,8 +272,8 @@ float d = length(@P);
 float d = length(@P);
 d *= ch('scale');
 @Cd = sin(d);
+// Demonstrates progressive refinement of distance-based coloring: first assigning raw distance to c...
 ```
-Demonstrates progressive refinement of distance-based coloring: first assigning raw distance to color, then applying sine function for oscillating patterns, and finally adding a channel reference for interactive scaling control. This shows how to iterate from simple attribute assignment to parameter-driven procedural effects.
 
 ### Distance-based color with sin wave [[Ep1, 67:08](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=4028s)]
 ```vex
@@ -288,8 +288,8 @@ float d = length(@P);
 float d = length(@P);
 d *= ch('scale');
 @Cd = sin(d);
+// Demonstrates progressive development of distance-based coloring by first calculating distance fro...
 ```
-Demonstrates progressive development of distance-based coloring by first calculating distance from origin using length(@P), then applying that to color, then adding a sine wave pattern, and finally making it controllable via a channel reference parameter. Each iteration builds on the previous to create increasingly complex distance-based color patterns.
 
 ### Distance-based color with sine [Needs Review] [[Ep1, 68:06](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=4086s)]
 ```vex
@@ -302,8 +302,8 @@ float d = length(@P);
 float d = length(@P);
 @Cd = ch('scale');
 @Cd = sin(d);
+// Demonstrates using distance from origin to drive color values
 ```
-Demonstrates using distance from origin to drive color values. Shows progression from direct distance assignment to applying sine function for oscillating color patterns. Introduces a channel reference, though the final code appears to have an error where the channel value overwrites the distance before applying sine.
 
 ### Remapping sine values for color [[Ep1, 71:02](https://www.youtube.com/watch?v=9gB1zBa9Lg4&t=4262s)]
 ```vex

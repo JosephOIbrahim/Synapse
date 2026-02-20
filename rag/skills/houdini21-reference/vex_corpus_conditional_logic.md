@@ -4,61 +4,60 @@
 
 ## Beginner (10 examples)
 
-### Search an array with find â
+### Search an array with find
 
 ```vex
 int myint = 0;
 if (@Frame == 1 || @Frame == 25 || @Frame == 225 || @Frame == 35) {
-    myint=1;
+    myint = 1;
 }
+// Set an int attrib to 1 on specific frames. Tip from Tomas Slancik.
 ```
 
-Super nice tip from one man Houdini army Tomas Slancik.
-
-Say you want to set an int attib to be 1 on Frame 1, 25, 225,35.
 
 ### Conditional comparison operators
 
 ```vex
 int foo;
-if (foo == 3) {  // double equals sign for comparison
+if (foo == 3) {
+    // double equals sign for comparison, not assignment
     // do something
 }
+// Use `==` for equality testing, not `=` (assignment).
 ```
 
-Demonstrates the correct syntax for conditional comparison in VEX using the double equals operator (==) for testing equality, as opposed to the single equals (=) used for assignment.
 
 ### Nested Conditionals with Point Position
 
 ```vex
-if(@ptnum > 50){
-    if(@P.x < 2){
-        @Cd = {1,0,0};
+if (@ptnum > 50) {
+    if (@P.x < 2) {
+        @Cd = {1, 0, 0};
     }
 }
+// Nested if: point number > 50 AND x-position < 2.
 ```
 
-Demonstrates nested if statements to apply color conditionally based on two criteria: point number must be greater than 50 AND the x-position must be less than 2.
 
 ### Conditional color assignment with less than
 
 ```vex
-if(@ptnum < 5){
-    @Cd = {1,0,0};
+if (@ptnum < 5) {
+    @Cd = {1, 0, 0};
 }
+// Set points 0–4 to red; leave point 5+ unchanged.
 ```
 
-Uses an if statement with the less-than operator to set points 0-4 to red color while leaving point 5 and above unchanged.
 
 ### Comparison Operators and Modulo
 
 ```vex
-if(@ptnum >= 5){
-    @Cd = {1,0,0};
+if (@ptnum >= 5) {
+    @Cd = {1, 0, 0};
 }
+// Greater-than-or-equal comparison for conditional color.
 ```
 
-Demonstrates using comparison operators (greater than or equal to) to conditionally set point color.
 
 ### Flipping normals based on Z direction
 
@@ -67,9 +66,9 @@ Demonstrates using comparison operators (greater than or equal to) to conditiona
 if (@Cd.z < 0) {
     @Cd = -@N;
 }
+// Color by normal, then flip if Z component is negative.
 ```
 
-Colors points by their normal vector, then checks if the Z component is negative.
 
 ### Conditional Color with If-Else
 
@@ -77,14 +76,14 @@ Colors points by their normal vector, then checks if the Z component is negative
 int a = 3;
 int b = 3;
 
-if(a == b) {
-    @Cd = {1,1,0};
+if (a == b) {
+    @Cd = {1, 1, 0};
 } else {
-    @Cd = {1,0,0};
+    @Cd = {1, 0, 0};
 }
+// Basic if-else comparing two integer variables.
 ```
 
-Demonstrates basic if-else conditional logic by comparing two integer variables.
 
 ### Compound Conditional with AND Operator
 
@@ -92,259 +91,226 @@ Demonstrates basic if-else conditional logic by comparing two integer variables.
 if (@ptnum > 50 && @P.y < 2) {
     @Cd = {1, 0, 0};
 }
+// AND operator (`&&`): both conditions must be true.
 ```
 
-Uses the AND operator (&&) to combine two conditions: checking if the point number is greater than 50 AND if the Y position is less than 2.
 
 ### Logical OR operator in conditionals
 
 ```vex
-if(@ptnum > 50 || @P.x < 2){
-    @Cd = (1,0,0);
+if (@ptnum > 50 || @P.x < 2) {
+    @Cd = {1, 0, 0};
 }
+// OR operator (`||`): either condition is sufficient.
 ```
 
-Demonstrates using the logical OR operator (||) to combine two conditions in an if statement.
 
 ### Modulo Operator for Pattern Selection
 
 ```vex
-if(@ptnum % 5 == 0){
-    @Cd = {1,0,0};
+if (@ptnum % 5 == 0) {
+    @Cd = {1, 0, 0};
 }
+// Modulo selects every fifth point (divisible by 5).
 ```
 
-Uses the modulo operator (%) to test if a point number is divisible by 5, setting every fifth point to red color.
 
 ## Intermediate (37 examples)
 
-### Example: Random delete points by threshold â
+### Random delete points by threshold
 
 ```vex
-if ( rand(@ptnum) > ch('threshold') ) {
-   removepoint(0,@ptnum);
+if (rand(@ptnum) > ch('threshold')) {
+    removepoint(0, @ptnum);
 }
+// Remove points randomly above a threshold. Via Matt Ebb.
 ```
 
-After Matt Ebb showed me this, I use it a million times a day.
 
-### Remove points that don't have normals directly along an axis â
+### Remove points that don't have normals directly along an axis
 
 ```vex
 if (max(abs(normalize(@N))) != 1) {
-ââremovepoint(0,@ptnum);
+    removepoint(0, @ptnum);
 }
+// Keep only axis-aligned normals. Via Matt Ebb.
 ```
 
-Brilliant tip from the brilliant Matt Ebb.
 
-### Joy of Vex Day 11 â
-
-```vex
-if (test in regular brackets)  {
-     code to execute in curly brackets;
-     end each line in a semi colon;
-     and close the if statement with a curly bracket;
- }
-```
-
-If statements
-
-Vex works like most C style languages, you can control execution based on testing against a value.
-
-The trickiest thing with if statements is the punctuation, its easy to trip up and....
-
-### How to format your code â
+### If statement syntax overview
 
 ```vex
-if ( length(@P)*2+@ptnum % 5 == 0) {  @Cd = {1,0,0}; }
-```
-
-Vex, unlike say python, doesn't care where you put space, returns, any of that.
-
-### If Statement Syntax Basics
-
-```vex
-if (test in regular brackets) {
-    code to execute in curly brackets;
-    end each line in a semi colon;
-    inside the if statement - curly bracket;
+// Structure:
+if (test_condition) {
+    // code to execute;
+    // end each line with a semicolon;
+    // close with curly bracket
 }
 
+// Example:
 if (@foo > 1) {
-
-// ...
+    @Cd = {1, 0, 0};
+}
+// VEX if-statement: test in `()`, body in `{}`, each statement ends with `;`.
 ```
 
-Introduction to if statement syntax in VEX, demonstrating the structure with test conditions in parentheses and code blocks in curly braces.
 
-### If Statement Syntax
+### Compact single-line if
 
 ```vex
-if (test in regular brackets) {
-    code to execute in curly brackets;
-    end each line in a semi colon;
-    finish the if statement with a curly bracket;
+if (length(@P) * 2 + @ptnum % 5 == 0) {
+    @Cd = {1, 0, 0};
 }
-
-if (@foo > 1) {
-
-// ...
+// VEX ignores whitespace — braces can be on the same line.
 ```
 
-Introduction to if statement syntax in VEX showing the basic structure with test conditions in parentheses and code blocks in curly brackets.
-
-### If Statement Syntax and Structure
-
-```vex
-// If statement structure:
-if (test in regular brackets) {
-    code to execute in curly brackets;
-    end each line in a semi colon;
-    follow the if with a test in curly bracket;
-}
-
-// Examples:
-// ...
-```
-
-If statements allow conditional execution of code based on logical tests.
-
-### If Statement Syntax Basics
-
-```vex
-if (test in regular brackets) {
-    code to execute in curly brackets;
-    you can have multiple lines of code,
-    and close the if statement with a curly bracket;
-}
-
-if (@foo > 1) {
-    // code here
-// ...
-```
-
-Introduction to if statement syntax in VEX, showing the basic structure with test conditions in parentheses and code blocks in curly brackets.
 
 ### Assignment vs Equality Operators
 
 ```vex
 if (@foo > 1) {
+    // greater-than comparison
 }
 
 if (@ptnum < 50) {
+    // less-than comparison
 }
 
 if (@name == "piece5") {
+    // equality comparison — use == not =
 }
-// ...
+// `==` tests equality; `=` assigns. Mixing them is a common bug.
 ```
 
-Testing for equality in conditional statements requires the double equals operator (==), not the single equals used for assignment (=).
 
 ### Conditional statements and channel references
 
 ```vex
 int ifoo;
-if (foo == 5) {
+if (ifoo == 5) {
     // do something
 }
 
 vector bbox = relpointbbox(0, @P);
 @Cd = {1, 0, 0};
 if (bbox.y < 0.5) {
-// ...
+    @Cd = {0, 1, 0};
+}
+// Combining conditional syntax with channel references and bounding-box queries.
 ```
 
-Demonstrates proper conditional syntax with double equals (==) for comparison versus single equals (=) for assignment, a common pitfall.
 
 ### Logical Operators and Nested Conditionals
 
 ```vex
-if ( abs(foo - bar) < 0.00001 ) {  // close enough
-    // say they're equal, and won't be fooled by negative
-    // numbers
+// Float equality: compare with epsilon
+if (abs(foo - bar) < 0.00001) {
+    // close enough to treat as equal
+    // works correctly for negative numbers too
 }
 
+// Nested equivalent to &&
 if (@ptnum > 50) {
     if (@P.x < 2) {
-        @Cd = {1,0,0};
-// ...
+        @Cd = {1, 0, 0};
+    }
+}
+
+// Flat AND form
+if (@ptnum > 50 && @P.x < 2) {
+    @Cd = {1, 0, 0};
+}
+// Epsilon comparison for floats; AND/OR logical operators; nested vs flat forms.
 ```
 
-Demonstrates logical operators (AND &&, OR ||) and nested conditionals in VEX.
 
-### Logical Operators AND and OR
+### Logical Operators AND and OR (expanded)
 
 ```vex
-if ( abs(foo - bar) < 0.00001 ) {
-    // close enough to say they're equal, and won't be fooled by negative
+// Epsilon equality check
+if (abs(foo - bar) < 0.00001) {
+    // close enough — also handles negatives correctly
 }
 
+// Nested if (equivalent to &&)
 if (@ptnum > 50) {
     if (@P.x < 2) {
-        @Cd = {1,0,0};
+        @Cd = {1, 0, 0};
     }
-// ...
+}
+
+// Flat AND
+if (@ptnum > 50 && @P.x < 2) {
+    @Cd = {1, 0, 0};
+}
+
+// OR
+if (@ptnum > 50 || @P.x < 2) {
+    @Cd = {1, 0, 0};
+}
+// `&&` requires both conditions; `||` requires either one.
 ```
 
-Demonstrates logical operators in VEX: the AND operator (&&) requires both conditions to be true, while the OR operator (||) requires only one condition to be true.
 
 ### Modulo Conditionals and Order of Operations
 
 ```vex
-if(@ptnum != 5)
-    @Cd = {1,0,0};
+// Without braces (single-statement body)
+if (@ptnum != 5)
+    @Cd = {1, 0, 0};
 
-if ( @ptnum != 5 ) {
-    @Cd = {1,0,0};
+// With braces (preferred)
+if (@ptnum != 5) {
+    @Cd = {1, 0, 0};
 }
 
-if ( @ptnum % 5) {
-// ...
+// Modulo: every 5th point
+if (@ptnum % 5 == 0) {
+    @Cd = {1, 0, 0};
+}
+// `!= ` is not-equal. Modulo selects periodic points.
 ```
 
-Demonstrates various conditional statements testing point numbers, including modulo operations to select every fifth point.
 
 ### Time-based conditional color assignment
 
 ```vex
-if (length(@P) * 2 + @ptnum % 5 > dot(@N, {0,1,0}) * @Time){
-    @Cd = {1,0,0};
+if (length(@P) * 2 + @ptnum % 5 > dot(@N, {0, 1, 0}) * @Time) {
+    @Cd = {1, 0, 0};
 }
+// Compares a position/index expression against a time-scaled dot-product.
 ```
 
-This conditional statement compares two complex expressions to determine point color over time.
 
 ### Complex conditional with time-based comparison
 
 ```vex
-if (length(@P) * 2 + @ptnum % 5 > dot(@N, {0,1,0} * @Time)){
-    @Cd = {1,0,0};
+if (length(@P) * 2 + @ptnum % 5 > dot(@N, {0, 1, 0}) * @Time) {
+    @Cd = {1, 0, 0};
 }
+// Left side: position length + modulo index. Right side: normal dot-product scaled by time.
 ```
 
-This conditional compares two calculated values: the left side combines point position length, point number modulo, and multiplication, while the right side uses the dot product of the normal with ....
 
 ### Random Primitive Removal
 
 ```vex
-if(rand(@primnum, ch('seed')) < ch('cutoff')) {
+if (rand(@primnum, ch('seed')) < ch('cutoff')) {
     removeprim(0, @primnum, 1);
 }
+// Per-primitive random removal using seed and cutoff channels.
 ```
 
-Uses random per-primitive values to selectively delete primitives based on a threshold.
 
-### Random Primitive Removal
+### Random Primitive Removal (integer primnum)
 
 ```vex
-if(rand(i@primnum, ch('seed')) < ch('cutoff')) {
-    removeprims(0, @primnum, 1);
+if (rand(i@primnum, ch('seed')) < ch('cutoff')) {
+    removeprim(0, @primnum, 1);
 }
+// Cast `@primnum` to int explicitly before passing to `rand()`.
 ```
 
-Conditionally removes primitives based on a random threshold, using the primitive number and a seed parameter to generate deterministic randomness.
 
 ### If-Else Conditional Logic
 
@@ -352,297 +318,422 @@ Conditionally removes primitives based on a random threshold, using the primitiv
 int a = 3;
 int b = 3;
 
-if(a == b) {
-    @Cd = {1,1,0};
+if (a == b) {
+    @Cd = {1, 1, 0};
+} else {
+    @Cd = {1, 0, 0};
 }
-else {
-    @Cd = {1,0,0};
-// ...
+// Basic if-else comparing two integers.
 ```
 
-Demonstrates basic if-else conditional logic by comparing two integer variables.
 
-### Logical Operators AND and OR
+### Logical Operators AND and OR (nested vs flat)
 
 ```vex
+// Nested form
 if (@ptnum > 50) {
     if (@P.x < 2) {
-        @Cd = {1,0,0};
+        @Cd = {1, 0, 0};
     }
 }
 
+// Flat AND form
 if (@ptnum > 50 && @P.x < 2) {
-    @Cd = {1,0,0};
-// ...
+    @Cd = {1, 0, 0};
+}
+
+// OR form
+if (@ptnum > 50 || @P.x < 2) {
+    @Cd = {1, 0, 0};
+}
+// Nested ifs are equivalent to `&&`. Use `||` for OR logic.
 ```
 
-Demonstrates how to combine conditional tests using logical operators.
 
 ### Conditional Coloring with Complex Expression
 
 ```vex
-if (length(@P)*2+@ptnum % 5 > dot(@N,{0,1,0})*@Time) {
-    @Cd = {1,0,0};
+if (length(@P) * 2 + @ptnum % 5 > dot(@N, {0, 1, 0}) * @Time) {
+    @Cd = {1, 0, 0};
 }
+// Compound expression: position + index modulo vs normal dot-product × time.
 ```
 
-Uses a conditional statement to set points to red based on a complex comparison combining position length, point number modulo, and the dot product of the normal with the up vector scaled by time.
 
 ### Creating Points with addpoint
 
 ```vex
-int pt = addpoint(0, {0,1,0});
+// Store returned point number
+int pt = addpoint(0, {0, 1, 0});
 
-if (@ptnum==0) {
-    addpoint(0, {0,1,0});
+// Only create on point 0 (runs once)
+if (@ptnum == 0) {
+    addpoint(0, {0, 1, 0});
 }
+// `addpoint()` returns the new point's index. Guard with `@ptnum == 0` to avoid duplicates.
 ```
 
-Introduces the addpoint() function for creating new geometry in VEX.
-
-### Creating Points with addpoint
-
-```vex
-int pt = addpoint(0, {0,1,0});
-
-if (@ptnum==0) {
-  addpoint(0, {0,1,0});
-}
-```
-
-Introduction to creating geometry in VEX using the addpoint() function.
 
 ### addpoint return value storage
 
 ```vex
-int pt = addpoint(0, {0,1,0});
+// addpoint returns the new point index
+int pt = addpoint(0, {0, 1, 0});
 
-if (@ptnum==0) {
-    addpoint(1, {0,1,0});
+// Create on input 1 only from point 0
+if (@ptnum == 0) {
+    addpoint(1, {0, 1, 0});
 }
+// Store return value to reference the new point later (e.g., for setpointattrib).
 ```
 
-The addpoint() function returns the point number index of the newly created point, which can be stored in a variable.
 
 ### Conditional Point Creation
 
 ```vex
-if(@ptnum == 0){
-    addpoint(0, {0,0,0});
+if (@ptnum == 0) {
+    addpoint(0, {0, 0, 0});
 }
+// Add a single point at the origin, guarded to run only once.
 ```
 
-Uses a conditional statement to add a single point at the origin only when processing point number 0.
 
 ### Random Point Removal with Seed
 
 ```vex
-if(rand(@ptnum) < ch('cutoff')){
+// Simple random removal
+if (rand(@ptnum) < ch('cutoff')) {
     removepoint(0, @ptnum);
 }
 
-if(rand(@ptnum, ch('seed')) < ch('cutoff')){
+// Seeded random removal
+if (rand(@ptnum, ch('seed')) < ch('cutoff')) {
     removepoint(0, @ptnum, 1);
 }
+// Seeded form allows repeatable results via the seed channel.
 ```
 
-Demonstrates randomly removing points using rand() compared against a channel slider threshold.
 
 ### Random Primitive Deletion
 
 ```vex
-if(rand(@ptnum) < ch('cutoff')){
+if (rand(@ptnum) < ch('cutoff')) {
     removeprim(0, @primnum, 1);
 }
+// Random threshold to delete primitives; channel slider controls density.
 ```
 
-Uses a random threshold to conditionally delete primitives based on a channel slider value.
 
 ### Random Primitive Removal with Seed Control
 
 ```vex
-if(rand(@primuv, ch('seed')) < ch('cutoff')){
+if (rand(@primuv, ch('seed')) < ch('cutoff')) {
     removepoint(0, @primuv, 1);
 }
+// Uses primitive UV for randomness source with seeded control.
 ```
 
-Uses a seeded random function to probabilistically remove points based on primitive UV coordinates and a cutoff threshold.
 
-### Random Primitive Removal
+### Random Primitive Removal (no-brace form)
 
 ```vex
-if(rand(@primnum, ch('seed')) < ch('chance'))
+if (rand(@primnum, ch('seed')) < ch('chance'))
     removepoint(0, @primnum, 1);
+// Single-statement body without braces — valid but less readable.
 ```
 
-Uses a random value per primitive to conditionally remove primitives based on a user-controlled chance parameter.
 
 ### Common Syntax Error: Missing Brackets
 
 ```vex
-if(rand(@primnum, ch('seed')) < ch('cutoff')){
+// Correct: brackets closed
+if (rand(@primnum, ch('seed')) < ch('cutoff')) {
     removepoint(0, @primnum, 1);
 }
+
+// Common error: missing closing brace
+// if (rand(@primnum, ch('seed')) < ch('cutoff')) {
+//     removepoint(0, @primnum, 1);
+// <-- missing }
+// Always close every `{` with a matching `}`. Compiler error if omitted.
 ```
 
-A common syntax error occurs when forgetting to close brackets in conditional statements, especially when using channel references with the ch() function.
 
-### Random Primitive Removal
+### Random Primitive Removal (removeprim variant)
 
 ```vex
-if(rand(@primnum, ch('seed')) < ch('cutoff')){
+if (rand(@primnum, ch('seed')) < ch('cutoff')) {
     removeprim(0, @primnum, 1);
 }
+// `removeprim` vs `removepoint` — use the one matching what you want to delete.
 ```
 
-Conditionally removes primitives based on a random threshold comparison.
 
-### Random Primitive Removal
+### Random Primitive Removal (double-quoted channels)
 
 ```vex
-if(rand(@primnum, ch("seed")) < ch("cutoff")) {
-    removeprims(0, @primnum, 1);
+if (rand(@primnum, ch("seed")) < ch("cutoff")) {
+    removeprim(0, @primnum, 1);
 }
+// Single or double quotes are both valid for channel name strings.
 ```
 
-Conditionally removes primitives based on a random threshold.
 
 ### getsmoothP
 
 ```vex
-shadowfastshadow(){vectorsurfP;if(!getsmoothP(surfP,Eye,I))surfP=Ps;// Set to the Ps (surface P) variablevectorshad=trace(surfP,normalize(L),Time,"raystyle","shadow");Cl*= ({1,1,1}-shad);}
+// Shadow shader using getsmoothP for smooth surface position
+shadow fastshadow() {
+    vector surfP;
+    if (!getsmoothP(surfP, Eye, I)) {
+        // Fall back to surface P if smooth P unavailable
+        surfP = Ps;
+    }
+    vector shad = trace(
+        surfP,
+        normalize(L),
+        Time,
+        "raystyle", "shadow"
+    );
+    Cl *= ({1, 1, 1} - shad);
+}
+// `getsmoothP` retrieves interpolated surface position for shadow rays; fall back to `Ps` on failure.
 ```
 
-Signature: shadowfastshadow(){vectorsurfP;if(!getsmoothP(surfP,Eye,I))surfP=Ps;// Set to the Ps (surface P) variablevectorshad=trace(surfP,normalize(L),Time,"raystyle","shadow");Cl*= ({1,1,1}-shad)....
 
 ### lightstate
 
 ```vex
-vectorCd;if(!lightstate("packed:Cd",Cd))Cd=1;// There was no Cd attribute on packed geometry
+vector Cd;
+if (!lightstate("packed:Cd", Cd)) {
+    // No Cd attribute on packed geometry — use default white
+    Cd = 1;
+}
+// `lightstate` queries light/object properties; returns 0 on failure so `!` triggers the fallback.
 ```
 
-Signature: vectorCd;if(!lightstate("packed:Cd",Cd))Cd=1;// There was no Cd attribute on packed geometry
-
-The following properties are commonly useful and are reproduced here
-for convenience, but yo....
 
 ### objectstate
 
 ```vex
-vectorCd;if(!objectstate("packed:Cd",Cd))Cd=1;// There was no Cd attribute on packed geometry
+vector Cd;
+if (!objectstate("packed:Cd", Cd)) {
+    // No Cd attribute on packed geometry — use default white
+    Cd = 1;
+}
+// `objectstate` queries object properties at shading time; same pattern as lightstate.
 ```
 
-Signature: vectorCd;if(!objectstate("packed:Cd",Cd))Cd=1;// There was no Cd attribute on packed geometry
-
-The following properties are commonly useful and are reproduced here
-for convenience, but y....
 
 ### renderstate
 
 ```vex
-vectorCd;if(!renderstate("packed:Cd",Cd))Cd=1;// There was no Cd attribute on packed geometry
+vector Cd;
+if (!renderstate("packed:Cd", Cd)) {
+    // No Cd attribute on packed geometry — use default white
+    Cd = 1;
+}
+// `renderstate` queries renderer global properties; returns 0 when property is absent.
 ```
 
-Signature: vectorCd;if(!renderstate("packed:Cd",Cd))Cd=1;// There was no Cd attribute on packed geometry
-
-The following properties are commonly useful and are reproduced here
-for convenience, but y....
 
 ### sample_geometry
 
 ```vex
-surfacegeolight(intnsamples=64){vectorsam;vectorclr,pos;floatangle,sx,sy;intsid;inti;sid=newsampler();Cf=0;for(i=0;i<nsamples;i++){nextsample(sid,sx,sy,"mode","qstrat");sam=set(sx,sy,0.0);if(sample_geometry(P,sam,Time,"distribution","solidangle","scope","/obj/sphere_object*","ray:solidangle",angle,"P",pos,"Cf",clr)){if(!trace(P,normalize(pos-P),Time,"scope","/obj/sphere_object*","maxdist",length(pos-P)-0.01)){clr*=angle/ (2*PI);clr*=max(dot(normalize(pos-P),normalize(N)),0);}elseclr=0;}Cf+=clr;}Cf/=nsamples;}
+surface geolight(int nsamples = 64) {
+    vector sam;
+    vector clr, pos;
+    float angle, sx, sy;
+    int sid;
+    int i;
+
+    sid = newsampler();
+    Cf = 0;
+
+    for (i = 0; i < nsamples; i++) {
+        nextsample(sid, sx, sy, "mode", "qstrat");
+        sam = set(sx, sy, 0.0);
+
+        if (sample_geometry(
+                P, sam, Time,
+                "distribution", "solidangle",
+                "scope", "/obj/sphere_object*",
+                "ray:solidangle", angle,
+                "P", pos,
+                "Cf", clr)) {
+
+            if (!trace(
+                    P,
+                    normalize(pos - P),
+                    Time,
+                    "scope", "/obj/sphere_object*",
+                    "maxdist", length(pos - P) - 0.01)) {
+
+                clr *= angle / (2 * PI);
+                clr *= max(dot(normalize(pos - P), normalize(N)), 0);
+            } else {
+                clr = 0;
+            }
+        }
+        Cf += clr;
+    }
+    Cf /= nsamples;
+}
+// Area light sampling loop: `sample_geometry` picks surface points, `trace` checks occlusion, then accumulates irradiance.
 ```
 
-In this mode, points will be distributed over multiple primitives according to
-their area.
 
 ### teximport
 
 ```vex
-matrixndc;if(teximport(map,"texture:worldtoNDC",ndc)){vectorP_ndc=pos*ndc;// If the camera is a perspective camera,// dehomogenize the pointif(getcomp(ndc,2,3) !=0){P_ndc.x=P_ndc.x/P_ndc.z;P_ndc.y=P_ndc.y/P_ndc.z;}// Finally, scale and offset XY// from [-1,1] to [0,1]P_ndc*={.5,.5,1};P_ndc+={.5,.5,0};}
+matrix ndc;
+if (teximport(map, "texture:worldtoNDC", ndc)) {
+    vector P_ndc = pos * ndc;
+
+    // Dehomogenize if perspective camera
+    if (getcomp(ndc, 2, 3) != 0) {
+        P_ndc.x = P_ndc.x / P_ndc.z;
+        P_ndc.y = P_ndc.y / P_ndc.z;
+    }
+
+    // Scale and offset XY from [-1,1] to [0,1]
+    P_ndc *= {.5, .5, 1};
+    P_ndc += {.5, .5, 0};
+}
+// `teximport` reads the world-to-NDC matrix from a texture; the conditional guards against missing metadata.
 ```
 
-Signature: matrixndc;if(teximport(map,"texture:worldtoNDC",ndc)){vectorP_ndc=pos*ndc;// If the camera is a perspective camera,// dehomogenize the pointif(getcomp(ndc,2,3) !=0){P_ndc.x=P_ndc.x/P_ndc....
 
 ## Advanced (5 examples)
 
 ### Logical Operators AND and OR
 
 ```vex
-if(@ptnum > 50 && @P.x < 2){
-    @Cd = {1,0,0};
+// OR: either condition
+if (@ptnum > 50 && @P.x < 2) {
+    @Cd = {1, 0, 0};
 }
 
+// Equivalent nested form
 if (@ptnum > 50) {
     if (@P.x < 2) {
-        @Cd = {1,0,0};
+        @Cd = {1, 0, 0};
     }
-// ...
+}
+
+// OR form
+if (@ptnum > 50 || @P.x < 2) {
+    @Cd = {1, 0, 0};
+}
+// `&&` requires both conditions true; `||` requires at least one.
 ```
 
-Demonstrates logical operators in conditional statements: the AND operator (&&) requires both conditions to be true, while the OR operator (||) requires only one condition to be true.
 
 ### Comparison Operators and Modulo
 
 ```vex
-if(@ptnum >= 5){
-    @Cd = {1,0,0};
+if (@ptnum >= 5) {
+    @Cd = {1, 0, 0};
 }
 
 if (@ptnum > 50 && @P.x < 2) {
-    @Cd = {1,0,0};
+    @Cd = {1, 0, 0};
 }
 
-// ...
+if (@ptnum <= 10) {
+    @Cd = {0, 1, 0};
+}
+
+if (@ptnum != 0) {
+    @Cd = {0, 0, 1};
+}
+
+if (@ptnum % 3 == 0) {
+    @Cd = {1, 1, 0};
+}
+// All comparison operators: `>=`, `<=`, `!=`, and modulo `%` for periodic selection.
 ```
 
-Demonstrates various comparison operators (>=, <=, !=) and the modulo operator (%) for conditional color assignment.
 
 ### Comparison and Modulo Operators
 
 ```vex
-if(@ptnum == 5){
-    @Cd = {1,0,0};
+if (@ptnum == 5) {
+    @Cd = {1, 0, 0};
 }
 
-if (@ptnum > 50 || @P.x < 2 ) {
-    @Cd = {1,0,0};
+if (@ptnum > 50 || @P.x < 2) {
+    @Cd = {1, 0, 0};
 }
 
-// ...
+if (@ptnum != 5) {
+    @Cd = {0, 1, 0};
+}
+
+if (@ptnum % 2 == 0) {
+    @Cd = {0, 0, 1};
+}
+// Full set of comparison operators: `==`, `!=`, `>`, `<`, `>=`, `<=` and logical OR.
 ```
 
-Demonstrates various comparison operators (==, !=, >, <, >=, <=) and logical operators (||) for conditional point coloring.
 
 ### Conditional Operators Comparison
 
 ```vex
+// Nested
 if (@ptnum > 50) {
     if (@P.x > 2) {
-        @Cd = {1,0,0};
+        @Cd = {1, 0, 0};
     }
 }
 
+// AND
 if (@ptnum > 50 && @P.y < 2) {
-    @Cd = {1,0,0};
-// ...
+    @Cd = {1, 0, 0};
+}
+
+// OR
+if (@ptnum < 10 || @P.z > 5) {
+    @Cd = {0, 1, 0};
+}
+
+// NOT EQUAL
+if (@ptnum != 0) {
+    @Cd = {0, 0, 1};
+}
+// All conditional operator forms: nested, `&&`, `||`, `!=`, `>=`, `<=`.
 ```
 
-Demonstrates various conditional operators in VEX including comparison operators (>, <, >=, <=, !=), logical AND (&&), and logical OR (||).
 
 ### Comparison Operators in Conditionals
 
 ```vex
-if(@ptnum > 50) {
-    if (@P.x < 2){
-        @Cd = {1,0,0};
+// Greater than / less than
+if (@ptnum > 50) {
+    if (@P.x < 2) {
+        @Cd = {1, 0, 0};
     }
 }
 
-if (@ptnum > 50 && @P.y < 2 ) {
-    @Cd = {1,0,0};
-// ...
+// AND with different axis
+if (@ptnum > 50 && @P.y < 2) {
+    @Cd = {1, 0, 0};
+}
+
+// Not equal
+if (@ptnum != 0) {
+    @Cd = {0, 1, 0};
+}
+
+// Less than or equal
+if (@ptnum <= 5) {
+    @Cd = {0, 0, 1};
+}
+
+// Greater than or equal
+if (@P.y >= 1.0) {
+    @Cd = {1, 1, 0};
+}
+// All six comparison operators: `>`, `<`, `!=`, `<=`, `>=`, `==`.
 ```
 
-Demonstrates various comparison operators in VEX conditionals including greater than (>), less than (<), not equal (!=), less than or equal (<=), and greater than or equal (>=).

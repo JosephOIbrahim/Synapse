@@ -1,26 +1,17 @@
 # VEX Language Fundamentals
 
-## Execution Contexts
+## Triggers
+vex, wrangle, data type, variable, function, control flow, for loop,
+if else, foreach, array, matrix, vector, type prefix, run over
 
-VEX runs inside **wrangle nodes** or **VOP networks** that compile to VEX.
+## Context
+VEX language fundamentals: types, control flow, inputs/outputs,
+functions, preprocessor. Runs inside wrangle nodes or VOP networks.
 
-| Context | Wrangle Node | Runs Over | Variables Available |
-|---------|-------------|-----------|-------------------|
-| SOP | Attribute Wrangle | Points, Prims, Vertices, Detail | `@ptnum`, `@numpt`, `@primnum`, `@numprim` |
-| DOP | Gas Field Wrangle | Voxels | `@ix`, `@iy`, `@iz`, `@resx`, `@resy`, `@resz` |
-| CHOP | Channel Wrangle | Samples | `@C`, `@I`, `@Time` |
-| COP | Pixel Wrangle | Pixels | `@IX`, `@IY`, `@RESX`, `@RESY` |
-
-### Run-Over Modes (SOP Context)
-- **Points** (default) -- code runs once per point, `@ptnum` is current index
-- **Primitives** -- code runs once per prim, `@primnum` is current index
-- **Vertices** -- code runs once per vertex, `@vtxnum` is current index
-- **Detail** -- code runs once for entire geometry (global operations)
-
-## Data Types
+## Code
 
 ```vex
-// Scalar types
+// Data types: scalars
 int i = 42;
 float f = 3.14;
 string s = "hello";
@@ -42,40 +33,44 @@ string names[] = {"a", "b"};
 vector pts[] = {};                 // Empty vector array
 ```
 
-## Type Prefixes (@-binding)
+```vex
+// Type prefixes for @-binding
+// (none)/f@ = float     @density or f@density
+// i@        = int       i@id
+// v@        = vector    v@velocity
+// u@        = vector2   u@uv
+// p@        = vector4   p@orient
+// s@        = string    s@name
+// 2@        = matrix2   2@mtx
+// 3@        = matrix3   3@transform
+// 4@        = matrix    4@xform
+// Prefix needed on FIRST USE only
 
-| Prefix | Type | Example | Default If New |
-|--------|------|---------|----------------|
-| (none) | float | `@density` | 0.0 |
-| `f@` | float | `f@density` | 0.0 |
-| `i@` | int | `i@id` | 0 |
-| `v@` | vector | `v@velocity` | {0,0,0} |
-| `u@` | vector2 | `u@uv` | {0,0} |
-| `p@` | vector4 | `p@orient` | {0,0,0,0} |
-| `s@` | string | `s@name` | "" |
-| `2@` | matrix2 | `2@mtx` | identity |
-| `3@` | matrix3 | `3@transform` | identity |
-| `4@` | matrix | `4@xform` | identity |
-
-The prefix is only needed on the **first use** of an attribute in your code.
-
-## Control Flow
+f@density = 1.0;
+i@id = @ptnum;
+v@velocity = set(0, 1, 0);
+s@name = sprintf("pt_%d", @ptnum);
+p@orient = quaternion(radians(45), {0, 1, 0});
+```
 
 ```vex
-// Conditionals
-if (condition) {
-    // ...
-} else if (other) {
-    // ...
+// Control flow: conditionals
+if (@P.y > ch("threshold")) {
+    @Cd = {1, 0, 0};  // Red above threshold
+} else if (@P.y > 0) {
+    @Cd = {0, 1, 0};  // Green above zero
 } else {
-    // ...
+    @Cd = {0, 0, 1};  // Blue below zero
 }
 
 // Ternary
-float val = condition ? a : b;
+float val = (@P.y > 0) ? 1.0 : 0.0;
 
 // For loop
-for (int i = 0; i < n; i++) { ... }
+for (int i = 0; i < 10; i++) {
+    vector offset = set(i * 0.1, 0, 0);
+    addpoint(0, @P + offset);
+}
 
 // Foreach (arrays)
 int pts[] = neighbours(0, @ptnum);
@@ -84,60 +79,82 @@ foreach (int pt; pts) {
 }
 
 // While
-while (condition) { ... }
+int count = 0;
+while (count < chi("max_iter")) {
+    count++;
+}
 ```
 
-## Inputs and Outputs
-
-Wrangle nodes have up to 4 geometry inputs, accessed by index:
-
 ```vex
-// Input 0 (default, first input)
-vector pos = point(0, "P", @ptnum);
+// Inputs and outputs: wrangle has up to 4 geometry inputs
+// Input 0 (first, default)
+vector pos0 = point(0, "P", @ptnum);
 
-// Input 1 (second input)
+// Input 1 (second)
 vector target = point(1, "P", @ptnum);
 
 // Input 2, 3
 float val = prim(2, "density", @primnum);
 string name = detail(3, "name");
+
+// Writing @attribute modifies output (input 0 + modifications)
+@P = lerp(@P, target, ch("blend"));
 ```
 
-Writing to `@attribute` modifies the output geometry (always input 0 with modifications).
-
-## User-Defined Functions
-
 ```vex
-// Declared before main code
+// User-defined functions (declared before main code)
+// VEX uses semicolons to separate parameter types
 float remap(float val; float omin, omax, nmin, nmax) {
     float t = clamp((val - omin) / (omax - omin), 0, 1);
     return lerp(nmin, nmax, t);
 }
+
+vector rotate_around_axis(vector p; vector axis; float angle) {
+    matrix3 m = ident();
+    rotate(m, radians(angle), axis);
+    return p * m;
+}
+
+// Usage
+f@remapped = remap(@P.y, 0, 10, 0, 1);
+@P = rotate_around_axis(@P, {0,1,0}, ch("angle"));
 ```
 
-Note: VEX uses semicolons to separate parameter types in function signatures.
-
-## Preprocessor
-
 ```vex
+// Preprocessor
 #include <math.h>
 #include <voplib.h>
 #define PI 3.14159265
 #define SQR(x) ((x) * (x))
+#define LERP(a, b, t) ((a) + (t) * ((b) - (a)))
+
+// Execution contexts:
+// SOP: attribwrangle -- runs over Points/Prims/Vertices/Detail
+// DOP: gasFieldWrangle -- runs over voxels (@ix, @iy, @iz)
+// CHOP: channelWrangle -- runs over samples (@C, @I, @Time)
+// COP: pixelWrangle -- runs over pixels (@IX, @IY, @RESX, @RESY)
+
+// Run-over modes (SOP):
+// Points (default) -- @ptnum is current index
+// Primitives       -- @primnum is current index
+// Vertices         -- @vtxnum is current index
+// Detail           -- runs once for entire geometry
 ```
 
-## VEX vs HScript Expressions
+```vex
+// Spare parameters: ch() reads UI sliders on wrangle node
+float radius = chf("radius");        // Float slider
+int count = chi("count");            // Integer slider
+vector color = chv("color");         // Color picker
+string path = chs("filepath");       // String field
+float ramp_val = chramp("falloff", @P.y / 10.0);  // Ramp
 
-| Feature | VEX (Wrangles) | HScript (Parameter Fields) |
-|---------|----------------|---------------------------|
-| Speed | Compiled, parallel | Interpreted, serial |
-| Geometry access | Full read/write | Read-only via `point()` |
-| Use case | Heavy processing | Simple parameter expressions |
-| Syntax | C-like | `$F`, `ch("parm")` |
-| Variables | `@P`, `@ptnum` | `$PT`, `$NPT` |
+// ch() changes do NOT trigger VEX recompilation (fast to adjust)
+// Changing wrangle code DOES trigger recompilation (first cook slower)
+```
 
-Rule of thumb: If processing more than a few hundred points or modifying geometry, use VEX.
-
-## See Also
-- **Joy of VEX: Attributes** (`joy_of_vex_attribs.md`) -- tutorial examples with attribute creation and binding
-- **Joy of VEX: Flow Control** (`joy_of_vex_flow_control.md`) -- tutorial examples with loops, conditionals, foreach
+## Common Mistakes
+- Missing type prefix on first use -- `@myattr` defaults to float, use `v@myattr` for vector
+- Using VEX for simple expressions -- parameter fields with ch() are simpler for basic math
+- Forgetting semicolons in function parameter types -- VEX uses `;` not `,` between types
+- Using @ptnum in Detail mode -- undefined; use explicit loop with npoints(0)

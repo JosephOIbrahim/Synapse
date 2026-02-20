@@ -1,188 +1,259 @@
 # SOP Solver and Feedback Loops
 
-## Overview
+## Triggers
+solver, sop solver, feedback loop, frame by frame, growth, accumulation,
+prev_frame, trail, custom simulation, reaction diffusion, wave, particle
 
-SOP Solver and Solver SOP enable frame-by-frame feedback loops in Houdini. The output of frame N feeds back as input to frame N+1, enabling custom simulations, growth, and accumulation effects entirely in SOPs.
+## Context
+SOP Solver and Solver SOP enable frame-by-frame feedback loops: output of
+frame N feeds back as input to frame N+1. All code is Houdini Python and VEX.
 
-## Solver SOP
+## Code
 
-### What It Does
-The `solver` SOP creates a feedback loop:
-1. On frame 1: Takes input geometry as starting state
-2. On frame N>1: Takes the OUTPUT of frame N-1 as input
-3. Inside: SOP network processes geometry each frame
-4. Result becomes input for next frame
+```python
+# Create a solver SOP with feedback loop
+import hou
 
-### Basic Setup
+def create_solver_network(geo_path, source_node_name):
+    """Create a solver SOP wired to a source node.
+    Solver: frame 1 takes input as starting state.
+    Frame N>1: takes OUTPUT of frame N-1 as input.
+    Inside: Prev_Frame gives last frame's output, Input_1 gives original input."""
+    geo = hou.node(geo_path)
+    source = geo.node(source_node_name)
+    if not geo or not source:
+        return
+
+    solver = geo.createNode("solver", "feedback_sim")
+    solver.setInput(0, source)
+
+    # Inside the solver: Prev_Frame and Input_1 are automatic
+    # Add wrangles inside for per-frame operations
+    solver_net = solver.node("d/s")  # Solver's internal network
+    if solver_net:
+        prev = solver_net.node("Prev_Frame")
+        # Wrangle operates on previous frame's output
+        wrangle = solver_net.createNode("attribwrangle", "per_frame_op")
+        wrangle.setInput(0, prev)
+        wrangle.parm("snippet").set('// Per-frame operation here\n@P += normalize(@P) * ch("speed") * @TimeInc;\n')
+        solver_net.layoutChildren()
+
+    # Cache after solver
+    cache = geo.createNode("filecache", "solver_cache")
+    cache.setInput(0, solver)
+    cache.parm("sopoutput").set("$HIP/cache/solver.$F4.bgeo.sc")
+
+    null = geo.createNode("null", "OUT")
+    null.setInput(0, cache)
+    null.setDisplayFlag(True)
+    null.setRenderFlag(True)
+
+    geo.layoutChildren()
+    print("Solver: source -> solver (Prev_Frame -> wrangle) -> cache -> OUT")
+    print("Key: must play forward from start frame (no random scrub)")
+    return solver
+
+
+create_solver_network("/obj/geo1", "scatter_pts")
 ```
-source_geo -> solver -> null (output)
-```
 
-Inside the solver:
-```
-prev_frame (automatic) -> [your SOP operations] -> output (automatic)
-```
-
-### Key Rules
-- **Frame-dependent**: Must play forward from start frame (no random access)
-- **Previous frame**: The `Prev_Frame` node inside solver gives last frame's output
-- **Input geometry**: Available via `Input_1` node inside solver
-- **Cache**: Solver auto-caches recent frames for playback
-
-## Common Solver Patterns
-
-### Point Growth
 ```vex
-// Inside solver wrangle (run over Points):
-// Move points outward slowly each frame
+// Point growth: move points outward each frame
+// Inside solver wrangle, run over Points
 @P += normalize(@P) * ch("growth_speed") * @TimeInc;
+
+// Scale growth by noise for organic variation
+float noise_val = noise(@P * ch("freq") + @Time * 0.5);
+@P += normalize(@P) * noise_val * ch("growth_speed") * @TimeInc;
 ```
 
-### Trail / Motion History
 ```vex
-// Inside solver wrangle (run over Detail):
-// Add current position of input as new point each frame
-int pt = addpoint(0, point(1, "P", 0));  // 1 = second input (Input_1)
-setpointattrib(0, "age", pt, 0.0);
+// Trail / motion history: accumulate point positions over time
+// Inside solver wrangle, run over Detail
+// Input 0 = Prev_Frame (accumulated trail), Input 1 = Input_1 (source)
 
-// Age existing points
-float age;
-for (int i = 0; i < npoints(0); i++) {
-    age = point(0, "age", i);
-    setpointattrib(0, "age", i, age + @TimeInc);
+// Add current position of source as new point
+int npts_source = npoints(1);
+for (int i = 0; i < npts_source; i++) {
+    vector pos = point(1, "P", i);
+    int pt = addpoint(0, pos);
+    setpointattrib(0, "age", pt, 0.0);
+    setpointattrib(0, "source_id", pt, i);
 }
 
-// Remove old points
-if (f@age > ch("max_age")) removepoint(0, @ptnum);
+// Age existing points and remove old ones
+float max_age = ch("max_age");  // e.g., 2.0 seconds
+for (int i = npoints(0) - 1; i >= 0; i--) {
+    float age = point(0, "age", i);
+    age += @TimeInc;
+    if (age > max_age) {
+        removepoint(0, i);
+    } else {
+        setpointattrib(0, "age", i, age);
+    }
+}
 ```
 
-### Accumulation (Painting)
 ```vex
-// Inside solver wrangle:
-// Accumulate attribute based on proximity to animated emitter
-int pts[] = pcfind(1, "P", @P, ch("radius"), 1);  // 1 = Input_1
+// Accumulation / painting: build up attribute based on proximity
+// Inside solver wrangle, run over Points
+// Input 1 = Input_1 (animated emitter geometry)
+
+int pts[] = pcfind(1, "P", @P, ch("radius"), 1);
 if (len(pts) > 0) {
     f@painted = min(f@painted + ch("paint_rate") * @TimeInc, 1.0);
 }
+// painted accumulates over time, clamped at 1.0
+v@Cd = set(f@painted, 1.0 - f@painted, 0);  // Visualize as color
 ```
 
-### Custom Particle System
 ```vex
-// Inside solver wrangle (run over Detail):
-// Emit from input geometry, simulate gravity, remove when below ground
-// Emit
+// Custom particle system: emit, integrate, kill
+// Inside solver -- TWO wrangles needed
+
+// Wrangle 1: Emitter (run over Detail)
+// Input 1 = Input_1 (emitter geometry)
 for (int i = 0; i < chi("emit_count"); i++) {
-    vector pos = point(1, "P", int(rand(i + @Frame * 100) * npoints(1)));
+    int src_pt = int(rand(i + @Frame * 137) * npoints(1));
+    vector pos = point(1, "P", src_pt);
     int pt = addpoint(0, pos);
-    setpointattrib(0, "v", pt, set(0, ch("emit_speed"), 0) + rand(pt) * 0.5);
+    vector vel = set(0, ch("emit_speed"), 0);
+    vel += (vector(rand(pt * 3)) - 0.5) * ch("spread");
+    setpointattrib(0, "v", pt, vel);
     setpointattrib(0, "age", pt, 0.0);
+    setpointattrib(0, "pscale", pt, 0.05);
 }
 ```
 
 ```vex
-// Second wrangle inside solver (run over Points):
-// Integrate velocity, apply gravity, kill old
-v@v += set(0, -9.81, 0) * @TimeInc;
-@P += v@v * @TimeInc;
+// Wrangle 2: Integrator (run over Points, after emitter wrangle)
+// Apply gravity, integrate position, kill old particles
+v@v += set(0, -9.81, 0) * @TimeInc;      // Gravity
+@P += v@v * @TimeInc;                      // Euler integration
 f@age += @TimeInc;
-if (@P.y < 0 || f@age > ch("max_life")) removepoint(0, @ptnum);
+
+// Kill conditions
+if (@P.y < ch("ground_y")) removepoint(0, @ptnum);
+if (f@age > ch("max_life")) removepoint(0, @ptnum);
 ```
 
-## SOP Solver DOP
+```vex
+// Wave propagation on a grid
+// Inside solver wrangle, run over Points
+// Requires: f@height (current), f@height_prev (previous frame)
+// Start: perturb center point's height on frame 1
 
-For integrating custom SOP logic inside a DOP simulation:
-- `sopsolver` DOP node runs a SOP network each timestep
-- Input: current simulation geometry
-- Output: modified geometry fed back to DOP
-- Use for: custom forces, attribute modification, conditional behavior
+float c = ch("wave_speed");   // Wave propagation speed
+float damping = ch("damping"); // Energy loss per frame
 
-### In Pyro DOPs
-```
-pyrosolver -> sopsolver (custom gas operations) -> output
-```
+// Laplacian: average of neighbor heights minus current
+int neighbors[] = neighbours(0, @ptnum);
+float avg = 0;
+foreach (int n; neighbors) {
+    avg += point(0, "height", n);
+}
+avg /= max(len(neighbors), 1);
 
-### In RBD DOPs
-```
-rbdsolver -> sopsolver (custom constraint modification) -> output
-```
+float laplacian = avg - f@height;
 
-## For-Each with Time Dependency
+// Wave equation: acceleration = c^2 * laplacian
+float new_height = 2.0 * f@height - f@height_prev + c * c * laplacian;
+new_height *= (1.0 - damping * @TimeInc);  // Damping
 
-For-each loops can simulate solver-like behavior for independent pieces:
-```
-foreach_begin (by pieces) -> [operations] -> foreach_end
-```
-
-But for-each is NOT frame-dependent -- it processes all pieces on the current frame only. For true frame-to-frame feedback, use the solver SOP.
-
-## Simulation Caching
-
-### Manual Cache Inside Solver
-Add `filecache` after solver to save results:
-```
-solver -> filecache(file="$HIP/cache/solver.$F4.bgeo.sc")
+f@height_prev = f@height;
+f@height = new_height;
+@P.y = f@height;
 ```
 
-### Solver Cache Settings
-- `Cache Memory`: Max memory for in-memory frame cache
-- `Allow Caching to Disk`: Overflow to temp files
-- `Start Frame`: Frame to initialize from
+```python
+# SOP Solver in DOPs: custom logic inside DOP simulations
+import hou
 
-## Common Solver Recipes
+def add_sop_solver_to_dop(dopnet_path, existing_solver_name):
+    """Add a SOP solver node after an existing DOP solver.
+    SOP solver runs a SOP network each timestep on simulation geometry."""
+    dopnet = hou.node(dopnet_path)
+    if not dopnet:
+        return
 
-### L-System Growth
+    existing = dopnet.node(existing_solver_name)
+    if not existing:
+        return
+
+    # Create SOP solver DOP
+    sop_solver = dopnet.createNode("sopsolver", "custom_forces")
+
+    # Wire: existing_solver -> sop_solver -> output
+    # Find what existing solver connects to
+    outputs = existing.outputs()
+    for out_node in outputs:
+        for i in range(out_node.inputs().__len__()):
+            if out_node.inputs()[i] == existing:
+                out_node.setInput(i, sop_solver)
+    sop_solver.setInput(0, existing)
+
+    dopnet.layoutChildren()
+    print(f"SOP solver '{sop_solver.name()}' added after '{existing_solver_name}'")
+    print("Edit the SOP network inside to add custom per-timestep logic")
+    return sop_solver
+
+
+add_sop_solver_to_dop("/obj/fx_geo/dopnet1", "pyrosolver")
 ```
-// Start: single point at origin
-// Each frame: branch and extend existing lines
-// Wrangle inside solver adds points, creates lines based on rules
+
+```python
+# Reaction-diffusion setup using solver
+import hou
+
+def create_reaction_diffusion(geo_path, grid_size=100, grid_res=200):
+    """Set up Gray-Scott reaction-diffusion on a grid using solver."""
+    geo = hou.node(geo_path)
+    if not geo:
+        return
+
+    # Grid with initial conditions
+    grid = geo.createNode("grid", "rd_grid")
+    grid.parm("sizex").set(grid_size)
+    grid.parm("sizey").set(grid_size)
+    grid.parm("rows").set(grid_res)
+    grid.parm("cols").set(grid_res)
+
+    # Initialize A=1, B=0 with random seed region
+    init = geo.createNode("attribwrangle", "init_chemicals")
+    init.setInput(0, grid)
+    init.parm("snippet").set('''
+f@A = 1.0;
+f@B = 0.0;
+// Seed region in center
+float d = length(set(@P.x, @P.z, 0));
+if (d < ch("seed_radius")) {
+    f@B = 1.0;
+    f@A = 0.0;
+}
+''')
+
+    # Solver with reaction-diffusion wrangle
+    solver = geo.createNode("solver", "rd_solver")
+    solver.setInput(0, init)
+
+    # Cache
+    cache = geo.createNode("filecache", "rd_cache")
+    cache.setInput(0, solver)
+    cache.parm("sopoutput").set("$HIP/cache/rd.$F4.bgeo.sc")
+
+    geo.layoutChildren()
+    print("Reaction-diffusion: grid -> init -> solver -> cache")
+    print("Inside solver: add wrangle with Gray-Scott diffuse+react equations")
+    return solver
+
+
+create_reaction_diffusion("/obj/geo1")
 ```
 
-### Reaction-Diffusion
-```
-// Start: grid with random f@A and f@B values
-// Each frame: diffuse A and B, react based on Gray-Scott model
-// Wrangle uses pcfilter for diffusion, math for reaction
-```
-
-### Wave Propagation
-```
-// Start: grid with f@height = 0 everywhere
-// Perturb center point
-// Each frame: f@height based on neighbors (wave equation)
-// f@height_new = 2*@height - @height_prev + c^2 * laplacian
-```
-
-### Crowd-like Agent Motion
-```
-// Start: scattered points with v@v velocity
-// Each frame: steer toward goal, avoid neighbors, integrate
-// Uses pcfind for neighbor detection
-```
-
-## Tips
-
-- Always set a start frame on the solver (defaults to $FSTART)
-- Can't randomly scrub -- must play forward from start frame
-- For debugging: step frame-by-frame and inspect intermediate state
-- Heavy solvers: cache to disk immediately, iterate on playback
-- Solver inside for-each: be careful, this is very slow. Usually better to have one solver operating on all pieces.
-- `@TimeInc` is the time step per frame (1/$FPS). Always multiply velocities by `@TimeInc` for frame-rate independence.
-
-## Performance Tips
-
-- Keep geometry count low inside solver (grows each frame = exponential slowdown)
-- Delete old/dead elements inside the solver wrangle
-- Use compiled blocks inside solver for 2-5x speedup
-- For large point counts: use pcfind instead of looping over all points
-- Cache solver output to disk -- replaying from cache is instant
-
-## Common Solver Issues
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Geometry disappears on frame 2 | Not using Prev_Frame output | Wire from Prev_Frame, not Input_1 |
-| Solver resets on scrub | Playing backward or jumping frames | Always play forward from start frame |
-| Exponential slowdown | Adding geometry without removing | Delete old elements based on age/condition |
-| Different result each play | Non-deterministic operations inside solver | Use `@ptnum` or `@id` based seeds, not `rand()` alone |
-| Solver inside for-each is slow | Double iteration overhead | Single solver with piece-aware logic instead |
-| Geometry jitters | Velocities not scaled by @TimeInc | Multiply all velocity changes by `@TimeInc` |
+## Common Mistakes
+- Using Input_1 instead of Prev_Frame for feedback -- geometry disappears on frame 2
+- Scrubbing backward in timeline -- solver must play forward from start frame
+- Adding geometry without removing old -- exponential slowdown each frame
+- Not scaling velocities by @TimeInc -- results change with different FPS
+- Solver inside for-each loop -- extremely slow; use single solver with piece-aware logic
+- Non-deterministic operations inside solver -- use @ptnum or @id based seeds, not rand() alone

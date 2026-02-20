@@ -1,153 +1,134 @@
 # VEX Corpus: Field Analysis
 
-> 15 examples from vex-corpus. Sources: sidefx-vex-reference
+## Triggers
+attribtype, expand_udim, getattribute, hasattrib, mask_bsdf, printf,
+spline, usd vex, usd_clearmetadata, usd_drawmode, usd_getbbox,
+usd_isstage, usd_relationshiptargets, usd_setkind, field analysis
 
-## Intermediate (15 examples)
+## Context
+VEX functions for attribute inspection, USD stage queries, BSDF manipulation,
+and string formatting. Reference examples from SideFX documentation.
 
-### attribtype
-
-```vex
-// Get the type of the position attribute of "defgeo.bgeo"inttype=attribtype("defgeo.bgeo","point","P");
-```
-
-Signature: // Get the type of the position attribute of "defgeo.bgeo"inttype=attribtype("defgeo.bgeo","point","P");
-
-When running in the context of a node (such as a wrangle SOP), this argument can....
-
-### expand_udim
+## Code
 
 ```vex
-// sprintf() will leave the %(UDIM)d format sequence unmodified.stringmap=sprintf("%s/%s_%(UDIM)d.rat",texture_path,texture_base);// Expand the <UDIM>, returning an empty string if the map doesn't exist.map=expand_udim(u,v,map);if(map!="")Cf=texture(map,u,v);
+// attribtype: get the type of an attribute
+// Returns: -1=doesn't exist, 0=int, 1=float, 2=string
+int type_p = attribtype(0, "point", "P");          // 1 (float/vector)
+int type_id = attribtype(0, "point", "id");         // 0 (int)
+int type_name = attribtype(0, "prim", "name");      // 2 (string)
+int type_missing = attribtype(0, "point", "foo");   // -1 (not found)
 ```
-
-Signature: // sprintf() will leave the %(UDIM)d format sequence unmodified.stringmap=sprintf("%s/%s_%(UDIM)d.rat",texture_path,texture_base);// Expand the <UDIM>, returning an empty string if the m....
-
-### getattribute
 
 ```vex
-vectorpos,uv,clr;// Get the position of point 3 in "defgeo.bgeo"getattribute("defgeo.bgeo",pos,"point","P",3,0);// Get the value of the "uv" attribute for vertex 2 of primitive// number 3 in the file defgeo.bgeogetattribute("defgeo.bgeo",uv,"vertex","uv",3,2);// Get the value of the "Cd" attribute for primitive 7// in the SOP specified by the path "/obj/geo1/color1" (Houdini// only)getattribute("op:/obj/geo1/color1",clr,"primitive","Cd",7);
+// hasattrib: check if attribute or group exists
+if (hasattrib(0, "point", "density")) {
+    f@density = point(0, "density", @ptnum);
+}
+if (hasattrib(0, "pointgroup", "selected")) {
+    // Group "selected" exists
+    if (inpointgroup(0, "selected", @ptnum)) {
+        @Cd = {1, 0, 0};
+    }
+}
 ```
-
-Signature: vectorpos,uv,clr;// Get the position of point 3 in "defgeo.bgeo"getattribute("defgeo.bgeo",pos,"point","P",3,0);// Get the value of the "uv" attribute for vertex 2 of primitive// number ....
-
-### hasattrib
 
 ```vex
-// Check whether the point group "pointstouse" exists.if(hasattrib("defgeo.bgeo","pointgroup","pointstouse")){// Do something with the point group}
+// getattribute: read attribute from file or SOP path
+vector pos, uv, clr;
+
+// Read position of point 3 from a file
+getattribute("defgeo.bgeo", pos, "point", "P", 3, 0);
+
+// Read UV of vertex 2 on primitive 3
+getattribute("defgeo.bgeo", uv, "vertex", "uv", 3, 2);
+
+// Read Cd from a SOP path (Houdini only)
+getattribute("op:/obj/geo1/color1", clr, "primitive", "Cd", 7);
 ```
-
-Signature: // Check whether the point group "pointstouse" exists.if(hasattrib("defgeo.bgeo","pointgroup","pointstouse")){// Do something with the point group}
-
-When running in the context of a node....
-
-### mask_bsdf
 
 ```vex
-// outF will have every component from inF except refractionbsdfoutF=mask_bsdf(inF,PBR_ALL_MASK& ~PBR_REFRACT_MASK);
+// printf / sprintf: string formatting
+printf("P = %g, dot(N,P) = %g, pt %d = 0x%x\n",
+       @P, dot(@N, @P), @ptnum, @ptnum);
+printf("RGB = {%g, %g, %g}\n", @Cd.r, @Cd.g, @Cd.b);
+printf("%-20s\n", "Left justified");
+printf("%+08.3g\n", length(@v));
+
+// sprintf returns a string (useful for paths)
+string map_path = sprintf("/maps/map%04d.rat", @ptnum);
+s@label = sprintf("pt_%d_frame_%d", @ptnum, int(@Frame));
 ```
-
-Signature: // outF will have every component from inF except refractionbsdfoutF=mask_bsdf(inF,PBR_ALL_MASK& ~PBR_REFRACT_MASK);
-
-BSDF to mask.
-
-### printf
 
 ```vex
-printf("P = %g, dot(N, P) = %g, %d = %x\n",P,dot(N,P),ptnum,ptnum);printf("RGB = {%g,%g,%g}\n",clr.r,clr.g,clr.b);printf("P = %20s\n","20 chars");printf("%-+20s\n","Left justified and quoted");printf("%+08.3g\n",velocity);printf("%*.*g\n",width,precision,value);Cf=texture(sprintf("/maps/map%d.rat",i));Cf=texture(sprintf("/maps/map%04d.rat",i));
+// expand_udim: resolve UDIM texture path from UV coordinates
+string base_map = sprintf("%s/%s_%%(UDIM)d.rat", chs("texture_path"), chs("texture_base"));
+string resolved = expand_udim(@uv.x, @uv.y, base_map);
+if (resolved != "") {
+    // Texture exists for this UDIM tile
+    vector clr = texture(resolved, @uv.x, @uv.y);
+    @Cd = clr;
+}
 ```
-
-Signature: printf("P = %g, dot(N, P) = %g, %d = %x\n",P,dot(N,P),ptnum,ptnum);printf("RGB = {%g,%g,%g}\n",clr.r,clr.g,clr.b);printf("P = %20s\n","20 chars");printf("%-+20s\n","Left justified and qu....
-
-### resolvemissedray
 
 ```vex
-resolvemissedray(I, 0.0, PBR_REFLECT_MASK);
+// spline: interpolate through key values
+// Basis types: "linear", "catrom", "bezier", "bspline"
+float t = float(@ptnum) / float(@numpt - 1);
+
+// Linear interpolation through 4 values
+float val = spline("linear", t, 0.0, 0.5, 0.8, 1.0);
+
+// Catmull-Rom (smooth) through control points
+vector pos = spline("catrom", t,
+    {0,0,0}, {1,1,0}, {2,0,0}, {3,1,0});
+@P = pos;
 ```
-
-Signature: resolvemissedray(I, 0.0, PBR_REFLECT_MASK);
-
-Adds an item to an array or string.
-
-Returns the indices of a sorted version of an array.
-
-Efficiently creates an array from its arguments.
-
-### spline
 
 ```vex
-spline("linear", t, v0, v1, v2, v3)
+// USD VEX functions (LOP wrangles)
+// usd_isstage: check if input has a valid stage
+int valid = usd_isstage(0);
+
+// usd_drawmode: get/set prim draw mode
+string mode = usd_drawmode(0, "/geo/cube");  // "default", "bounds", etc.
+
+// usd_getbbox_center: bounding box center of a prim
+vector center = usd_getbbox_center(0, "/src/sphere", "render");
+
+// usd_relationshiptargets: get relationship targets
+string targets[] = usd_relationshiptargets(0, "/geo/cube", "some_relationship");
+
+// usd_setkind: set prim kind metadata
+usd_setkind(0, "/geo/sphere", "assembly");
+
+// usd_clearmetadata: remove custom metadata
+usd_clearmetadata(0, "/geo/sphere", "customData:some_name");
 ```
-
-Signature: spline("linear", t, v0, v1, v2, v3)
-
-This version takes a single basis to use for all keys, and takes the (linearly spaced) key values as variadic arguments.
-
-### usd_clearmetadata
 
 ```vex
-// Clear the metadata value.usd_clearmetadata(0,"/geo/sphere","customData:some_name");
+// usd_pointinstance: query instanced geometry bounds
+vector inst_min = usd_pointinstance_getbbox_min(0,
+    "/src/instanced_spheres", 0, "render");
+vector inst_max = usd_pointinstance_getbbox_max(0,
+    "/src/instanced_spheres", 0, "render");
+vector inst_size = inst_max - inst_min;
 ```
-
-Signature: // Clear the metadata value.usd_clearmetadata(0,"/geo/sphere","customData:some_name");
-
-A handle to the stage to write to.
-
-### usd_drawmode
 
 ```vex
-// Get the cube's draw mode, eg, "default", "bounds", etc.stringdraw_mode=usd_drawmode(0,"/geo/cube");
+// mask_bsdf: filter BSDF components for LPE
+// Remove refraction component from a BSDF
+bsdf filtered = mask_bsdf(inF, PBR_ALL_MASK & ~PBR_REFRACT_MASK);
+
+// Keep only diffuse
+bsdf diffuse_only = mask_bsdf(inF, PBR_DIFFUSE_MASK);
+
+// Keep only specular reflection
+bsdf spec_only = mask_bsdf(inF, PBR_REFLECT_MASK);
 ```
 
-Signature: // Get the cube's draw mode, eg, "default", "bounds", etc.stringdraw_mode=usd_drawmode(0,"/geo/cube");
-
-When running in the context of a node (such as a wrangle LOP), this argument can b....
-
-### usd_getbbox_center
-
-```vex
-// Get the center of the sphere's bounding box.vectorcenter=usd_getbbox_center(0,"/src/sphere","render");
-```
-
-Signature: // Get the center of the sphere's bounding box.vectorcenter=usd_getbbox_center(0,"/src/sphere","render");
-
-When running in the context of a node (such as a wrangle LOP), this argument ca....
-
-### usd_isstage
-
-```vex
-// Check if the first input has a valid stage.intis_valid_stage_on_first_input=usd_isstage(0);
-```
-
-Signature: // Check if the first input has a valid stage.intis_valid_stage_on_first_input=usd_isstage(0);
-
-When running in the context of a node (such as a wrangle LOP), this argument can be an int....
-
-### usd_pointinstance_getbbox_min
-
-```vex
-// Get the min of the first instance's boundsng box.vectormin=usd_pointinstance_getbbox_min(0,"/src/instanced_spheres",0,"render");
-```
-
-Signature: // Get the min of the first instance's boundsng box.vectormin=usd_pointinstance_getbbox_min(0,"/src/instanced_spheres",0,"render");
-
-When running in the context of a node (such as a wran....
-
-### usd_relationshiptargets
-
-```vex
-// Get the list of targets in cube's "some_relationship" relationship.stringtargets[] =usd_relationshiptargets(0,"/geo/cube","some_relationship");
-```
-
-Signature: // Get the list of targets in cube's "some_relationship" relationship.stringtargets[] =usd_relationshiptargets(0,"/geo/cube","some_relationship");
-
-When running in the context of a node ....
-
-### usd_setkind
-
-```vex
-// Set the sphere primitive to be an assembly.usd_setkind(0,"/geo/sphere","assembly");
-```
-
-Signature: // Set the sphere primitive to be an assembly.usd_setkind(0,"/geo/sphere","assembly");
-
-A handle to the stage to write to.
+## Common Mistakes
+- Using getattribute with wrong class name -- must be "point", "prim", "vertex", or "detail"
+- Forgetting to check expand_udim result -- returns "" if UDIM tile texture doesn't exist
+- Using printf in production -- creates massive output; use only for debugging
+- Wrong spline basis for smooth curves -- "linear" is piecewise linear; use "catrom" for smooth

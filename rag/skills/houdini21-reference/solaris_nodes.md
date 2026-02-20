@@ -1,607 +1,773 @@
 # Solaris/LOP Node Types Reference
 
-Comprehensive reference for Solaris (LOP context) node types in Houdini 21. Covers node types,
-key parameter names (including the cryptic USD-mangled encodings), common workflows, and gotchas.
+## Triggers
+solaris, lop, lops, stage, usd, sopimport, sublayer, reference, merge, edit, camera, light, domelight, rectlight, spherelight, distantlight, disklight, cylinderlight, materiallibrary, assignmaterial, karmarenderproperties, karmarendersettings, usdrender, render settings, render properties, configureprimitive, componentoutput, switch, null, configurestage, sceneimport, sopcreate, instancer, layout, renderproduct, rendersettings, rendergeometrysettings, mtlxstandard_surface, materiallinker, create node lop, lop node python, solaris python, stage node
 
----
+## Context
+Comprehensive Python reference for creating and configuring Solaris (LOP) nodes in Houdini 21 via `hou.node().createNode()` and `parm().set()`. Covers stage management, geometry import, materials, all light types, cameras, render settings, and layout nodes. Lighting Law: intensity is ALWAYS 1.0; brightness is controlled exclusively by exposure (logarithmic, in stops).
 
-## Stage Management Nodes
+## Code
 
-### Stage Manager (`stagemanager`)
-Top-level container for organizing the LOP graph. Provides a structured way to split work
-into separate branches (geometry, lighting, materials) and merge them.
+### Stage Management — Merge, Switch, Null, Configure Stage
 
-- Usually the entry point of a LOP network.
-- Each branch can be cooked independently for faster iteration.
+```python
+import hou
 
-### Merge (`merge`)
-Combines multiple LOP input streams into a single USD stage.
+stage = hou.node("/stage")
 
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| (auto) | -- | -- | Inputs are merged in order; later inputs are stronger |
+# --- merge: combine multiple LOP input streams ---
+# Later inputs are stronger (higher sublayer priority)
+merge = stage.createNode("merge", "merge1")
+# Connect: merge.setInput(0, geo_branch), merge.setInput(1, light_branch)
 
-- **Workflow**: Wire geometry, lights, materials, and cameras as separate branches, then merge.
-- **Gotcha**: If two inputs define the same prim path, the later (higher-numbered) input wins for conflicting attributes. This is sublayer-strength composition.
+# --- switch: pass one of several inputs downstream ---
+sw = stage.createNode("switch", "switch1")
+sw.parm("input").set(0)  # 0-based index of which input to pass through
 
-### Switch (`switch`)
-Select one of multiple inputs to pass downstream.
+# --- null: pass-through marker / output anchor ---
+# Convention: name your output null OUTPUT or OUT, set display flag on it
+out = stage.createNode("null", "OUTPUT")
+out.setDisplayFlag(True)   # blue flag = render/display output
 
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Input Index | `input` | int | 0-based index of which input to pass through |
-
-- Useful for toggling between lighting rigs, LOD levels, or render settings.
-- Can be driven by expressions or channel references for automated switching.
-
-### Null (`null`)
-Pass-through node with no effect. Used as output markers and organizational anchors.
-
-- **Convention**: Name your output null `OUTPUT` or `OUT` and set it as the display/render flag node.
-- **Workflow**: Place nulls at branch endpoints before merge for clarity.
-- Set the display flag (blue) on the null to mark it as the stage output for rendering.
-
-### Configure Stage (`configurestage`)
-Sets global stage metadata: up axis, meters per unit, default render settings.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Up Axis | `upaxis` | string | `"Y"` (default) or `"Z"` |
-| Meters Per Unit | `metersperunit` | float | Scale factor (0.01 = cm, 1.0 = meters) |
-| Start/End Frame | `startframe`, `endframe` | float | Stage time code range |
-| FPS | `fps` | float | Frames per second |
-
----
-
-## Geometry Nodes
-
-### SOP Import (`sopimport`)
-Imports SOP-level geometry into the USD stage as a Mesh prim.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| SOP Path | `soppath` | string | Path to SOP node (e.g., `/obj/geo1/OUT`) |
-| Prim Path | `primpath` | string | Where to place in USD hierarchy (e.g., `/World/geo/mesh1`) |
-| Path Prefix | `pathprefix` | string | Prefix added to all imported prim paths |
-| Import Style | `importstyle` | menu | `"Flat"` or `"Hierarchy"` |
-| Import at Frame | `importframe` | float | Which frame to cook the SOP at |
-| Subset Groups | `subsetgroups` | string | SOP groups to import as GeomSubsets |
-
-- **Workflow**: Model in SOPs, then bring into Solaris with `sopimport` for lighting/rendering.
-- **Gotcha**: If the SOP has time-varying geometry (animated), set the import frame to `$F` to get per-frame data. Otherwise it imports a static frame.
-- **Gotcha**: Attribute naming -- SOP `Cd` attribute maps to USD `displayColor`. SOP `N` maps to `normals`.
-- Supports importing SOP groups as USD GeomSubsets for per-face material assignment.
-
-### SOP Create (`sopcreate`)
-Embeds a full SOP network inside a LOP node. The SOP network lives inside the LOP and outputs geometry directly to the USD stage.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Prim Path | `primpath` | string | USD prim path for the output geometry |
-
-- **Workflow**: Double-click to enter the embedded SOP network. Build geometry inside, then exit back to LOPs.
-- Best for procedural geometry that only exists in the Solaris context (no separate SOP-level asset).
-- The embedded SOP network has access to stage data via `lopinput` SOP nodes.
-
-### Scene Import (`sceneimport`)
-Imports an entire OBJ-level scene (geometry, lights, cameras) into USD in one step.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Objects | `objects` | string | Object-level path pattern (e.g., `/obj/*`) |
-| Import Path Prefix | `importpathprefix` | string | USD path prefix (e.g., `/World`) |
-| Display | `display` | menu | Import display, render, or both |
-
-- **Workflow**: Quick way to bring a legacy OBJ-based scene into Solaris for USD rendering.
-- Imports cameras and lights as their USD equivalents.
-- **Gotcha**: Does not import SOP-level materials -- you need to reassign materials in LOPs.
-
-### Sphere, Cube, Cone, Cylinder, Capsule (USD Primitives)
-Create basic USD geometric shapes directly in LOPs.
-
-| Node Type | Description | Default Prim Path |
-|-----------|-------------|-------------------|
-| `sphere` | USD Sphere | `/$OS` (node name) |
-| `cube` | USD Cube | `/$OS` |
-| `cone` | USD Cone | `/$OS` |
-| `cylinder` | USD Cylinder | `/$OS` |
-| `capsule` | USD Capsule | `/$OS` |
-
-- These are lightweight USD shapes, not SOP geometry.
-- Transform via an `edit` node downstream (set `tx`, `ty`, `tz`, `rx`, `ry`, `rz`, `sx`, `sy`, `sz`).
-- **IMPORTANT**: There is NO `grid` or `plane` LOP node. Use a `cube` with `sy=0.01` for ground planes.
-
----
-
-## Material Nodes
-
-### Material Library (`materiallibrary`)
-Container node that holds shader networks. Creates USD Material prims.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Material Path Prefix | `matpathprefix` | string | USD path prefix (e.g., `/materials`) |
-| Material Name | `matname1` | string | Name of first material |
-
-- **Workflow**: Create the node, dive inside to build shader graphs using MaterialX nodes.
-- Inside the Material Library, create `mtlxstandard_surface` as the main shader, connect `mtlximage` nodes for textures, and wire to the material output.
-- **CRITICAL GOTCHA**: After creating a `materiallibrary` node via Python, call `matlib.cook(force=True)` before creating child shader nodes. Without cooking, the internal subnet does not exist and `createNode()` returns `None`.
-
-### Assign Material (`assignmaterial`)
-Binds a material to geometry prims via pattern matching.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Prim Pattern | `primpattern1` | string | Target prim USD path (e.g., `/World/geo/mesh1`) |
-| Material Path | `matspecpath1` | string | Material USD path (e.g., `/materials/chrome`) |
-| Number of Assignments | `nummaterials` | int | How many pattern/material pairs |
-
-- Multiple assignments supported: increment suffix (`primpattern2`, `matspecpath2`, etc.).
-- Supports wildcards: `/World/geo/*` assigns to all children.
-- **Gotcha**: Pattern must match actual USD prim paths, not Houdini node paths. Verify paths with `houdini_stage_info` before assigning.
-
-### Material Linker (`materiallinker`)
-Advanced material assignment using collections and binding strength.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Collection Path | `collectionpath` | string | USD collection prim |
-| Material Path | `materialpath` | string | Material to bind |
-| Binding Strength | `bindingstrength` | menu | `"weakerThanDescendants"` or `"strongerThanDescendants"` |
-
-- For complex scenes where simple pattern matching is insufficient.
-- Collection-based binding can target arbitrary prim sets.
-
-### MaterialX Standard Surface (`mtlxstandard_surface`)
-The primary PBR shader for Karma. Created inside a Material Library.
-
-| Parameter | Encoded Name | Type | Range |
-|-----------|-------------|------|-------|
-| Base Color R/G/B | `base_colorr`, `base_colorg`, `base_colorb` | float | 0-1 |
-| Base Weight | `base` | float | 0-1 |
-| Metalness | `metalness` | float | 0-1 |
-| Specular Weight | `specular` | float | 0-1 |
-| Specular Roughness | `specular_roughness` | float | 0-1 |
-| Specular IOR | `specular_IOR` | float | 1.0-3.0 |
-| Coat Weight | `coat` | float | 0-1 |
-| Coat Roughness | `coat_roughness` | float | 0-1 |
-| Transmission | `transmission` | float | 0-1 |
-| Subsurface | `subsurface` | float | 0-1 |
-| Emission Weight | `emission` | float | 0+ |
-| Emission Color R/G/B | `emission_colorr`, `emission_colorg`, `emission_colorb` | float | 0-1 |
-| Sheen | `sheen` | float | 0-1 |
-| Opacity | `opacity` | float | 0-1 |
-| Normal | `normal` | vector3 | tangent-space |
-
----
-
-## Light Nodes
-
-All lights obey the **Lighting Law**: intensity is ALWAYS 1.0 (never change it). Brightness
-is controlled exclusively by **exposure** (logarithmic, in stops). This applies to ALL PBR
-renderers (Karma, Arnold, RenderMan, V-Ray).
-
-### Light Parameter Encoding (All Light Types)
-
-USD attribute names are encoded into Houdini parameter names. These encodings are NOT intuitive.
-
-| Attribute | Encoded Houdini Parm | Type | Notes |
-|-----------|---------------------|------|-------|
-| `inputs:intensity` | `xn__inputsintensity_i0a` | float | **Always 1.0** |
-| `inputs:exposure` | `xn__inputsexposure_vya` | float | Brightness in stops |
-| Exposure Control | `xn__inputsexposure_control_wcb` | string | Must be `"set"` to enable |
-| `inputs:color` | `xn__inputscolor_kya` | vec3 | Light color RGB |
-| `inputs:enableColorTemperature` | `xn__inputsenablecolortemperature_r5a` | bool | Use Kelvin temp |
-| `inputs:colorTemperature` | `xn__inputscolortemperature_u5a` | float | Kelvin (e.g., 6500) |
-| `inputs:texture:file` | `xn__inputstexturefile_i1a` | string | HDRI path (dome light) |
-
-All lights also use standard transform parameters: `tx`, `ty`, `tz`, `rx`, `ry`, `rz`.
-
-### Dome Light (`domelight`)
-Environment/HDRI light that surrounds the entire scene.
-
-| Parameter | Name | Notes |
-|-----------|------|-------|
-| Texture File | `xn__inputstexturefile_i1a` | HDRI map path (.exr, .hdr) |
-| Texture Format | `xn__inputstextureformat_i7a` | `"automatic"`, `"latlong"`, `"mirroredBall"` |
-
-- **Workflow**: Set HDRI file, exposure to 0-2 for ambient base, use as environment fill.
-- **Gotcha**: Without an HDRI texture, the dome light emits uniform white light.
-- Rotation (`ry`) rotates the HDRI environment.
-
-### Distant Light (`distantlight`)
-Parallel rays from a single direction. Simulates sun or directional light.
-
-| Parameter | Name | Notes |
-|-----------|------|-------|
-| Angle | `xn__inputsangle_06a` | Angular diameter in degrees (0.53 = sun) |
-
-- **Workflow**: Key light or sun. Set `rx` for elevation, `ry` for azimuth.
-- Larger angle = softer shadows (like an overcast day).
-- Position (`tx`, `ty`, `tz`) does not affect a distant light; only rotation matters.
-
-### Rect Light (`rectlight`)
-Rectangular area light.
-
-| Parameter | Name | Notes |
-|-----------|------|-------|
-| Width | `xn__inputswidth_e5a` | Rectangle width |
-| Height | `xn__inputsheight_k5a` | Rectangle height |
-| Normalize | `xn__inputsnormalize_ida` | Keep brightness constant as size changes |
-
-- **Workflow**: Soft fill light, window light, practical light simulation.
-- Larger area = softer shadows. Enable normalize to prevent brightness changes when resizing.
-
-### Sphere Light (`spherelight`)
-Point/sphere light source.
-
-| Parameter | Name | Notes |
-|-----------|------|-------|
-| Radius | `xn__inputsradius_o5a` | Sphere radius (0 = point light) |
-| Treat As Point | `xn__inputstreataspointlight_control_cjb` | Force point light behavior |
-
-- **Workflow**: Practical light sources (bulbs, candles, lamps).
-- Radius > 0 produces soft shadows; radius = 0 produces hard point-light shadows.
-
-### Disk Light (`disklight`)
-Circular area light.
-
-| Parameter | Name | Notes |
-|-----------|------|-------|
-| Radius | `xn__inputsradius_o5a` | Disk radius |
-
-- **Workflow**: Spotlight-like soft source, stage light simulation.
-
-### Cylinder Light (`cylinderlight`)
-Tube/cylinder-shaped area light.
-
-| Parameter | Name | Notes |
-|-----------|------|-------|
-| Length | `xn__inputslength_i5a` | Tube length |
-| Radius | `xn__inputsradius_o5a` | Tube radius |
-
-- **Workflow**: Fluorescent tubes, neon lights, linear light strips.
-
----
-
-## Camera Nodes
-
-### Camera (`camera`)
-Creates a USD Camera prim.
-
-| Parameter | USD Name | Type | Default | Notes |
-|-----------|----------|------|---------|-------|
-| Focal Length | `focalLength` | float | 50.0 | In mm. Lower = wider FOV |
-| Horizontal Aperture | `horizontalAperture` | float | 36.0 | Sensor width mm (36 = full frame) |
-| Vertical Aperture | `verticalAperture` | float | 24.0 | Sensor height mm |
-| F-Stop | `fStop` | float | 0.0 | 0 = no DOF. Lower = shallower DOF |
-| Focus Distance | `focusDistance` | float | 0.0 | In scene units. 0 = auto |
-| Near Clip | `clippingRange[0]` | float | 0.1 | Minimum render distance |
-| Far Clip | `clippingRange[1]` | float | 10000.0 | Maximum render distance |
-| Position | `tx`, `ty`, `tz` | float | 0,0,0 | Camera position |
-| Rotation | `rx`, `ry`, `rz` | float | 0,0,0 | Camera orientation (degrees) |
-
-- **Gotcha**: Karma requires the camera as a USD prim path (`/cameras/render_cam`), NOT a Houdini node path (`/stage/render_cam`).
-- **Workflow**: Create camera, position with `tx/ty/tz` and `rx/ry/rz`, then reference the USD prim path in render settings.
-
-### Render Product (`renderproduct`)
-Defines a render output (image file, resolution, AOVs).
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Product Name | `productname` | string | Output file path |
-| Product Type | `producttype` | menu | `"raster"` (image) or `"deep"` |
-| Resolution | `resx`, `resy` | int | Image resolution |
-| Camera | `camera` | string | USD camera prim path |
-
-- **Workflow**: Use for multi-output setups (main beauty + AOV passes to separate files).
-- Wire into a Render Settings node.
-
-### Render Settings (`rendersettings`)
-Defines render delegate settings (which renderer, quality parameters).
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Render Delegate | `renderer` | string | `"BRAY_HdKarma"`, `"HdPrmanLoaderRendererPlugin"`, etc. |
-| Camera | `camera` | string | USD camera prim path |
-| Resolution | `resx`, `resy` | int | Override resolution |
-
-- **Workflow**: Connects to Render Product nodes. Defines the render delegate and global quality settings.
-- Can be used instead of or alongside `karmarenderproperties`.
-
----
-
-## Render Nodes
-
-### Karma Render Properties (`karmarenderproperties`)
-Sets Karma-specific quality parameters as USD render settings on the stage.
-
-| Parameter | Encoded Name | Default | Notes |
-|-----------|-------------|---------|-------|
-| Max Ray Samples | `karma:global:pathtracedsamples` | 64 | Production: 128-256 |
-| Min Ray Samples | `karma:global:minpathtracedsamples` | 1 | Production: 16 |
-| Pixel Oracle | `karma:global:pixeloracle` | `uniform` | `variance` for adaptive |
-| Convergence Threshold | `karma:global:convergencethreshold` | 0.01 | Lower = cleaner |
-| Max Diffuse Bounces | `karma:global:diffuselimit` | 2 | Production: 4-6 |
-| Max Specular Bounces | `karma:global:reflectlimit` | 4 | Production: 6-8 |
-| Volume Step Rate | `karma:global:volumesteprate` | 0.25 | Volumes: 0.5-1.0 |
-| Enable Denoiser | `karma:global:enabledenoise` | 0 | 1 = OIDN denoiser |
-| Shutter Open | `karma:global:shutteropen` | -0.25 | Motion blur start |
-| Shutter Close | `karma:global:shutterclose` | 0.25 | Motion blur end |
-| Engine | `engine` | -- | `"xpu"` (GPU) or `"cpu"` |
-
-- **Workflow**: Place in LOP graph before the output null. Affects all renders from this stage.
-- For preview: 16-32 samples, `uniform` oracle. For production: 128+ samples, `variance` oracle.
-
-### Render Geometry Settings (`rendergeometrysettings`)
-Apply render-time geometry properties to prims (subdivision, displacement, visibility).
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Prim Pattern | `primpattern` | string | USD prim path pattern |
-| Subdivision Scheme | `karma:object:subdivscheme` | string | `"catmullClark"`, `"loop"`, `"none"` |
-| Dicing Quality | `karma:object:dicingquality` | float | 1.0 = standard, higher = finer |
-| Displacement Bound | `karma:object:displacementbound` | float | Must be >= max displacement |
-| Render Visibility | `karma:object:rendervisibility` | string | Camera, shadow, diffuse, etc. |
-| Xform Motion Samples | `karma:object:xform_motionsamples` | int | 2+ for motion blur |
-| Geo Motion Samples | `karma:object:geo_motionsamples` | int | 2+ for deformation blur |
-
-- **Workflow**: Apply after geometry import to control subdivision and displacement per-object.
-- **Gotcha**: `displacementbound` must be set correctly or geometry clips. Too large wastes memory.
-
-### USD Render ROP (`usdrender_rop` in /stage, `usdrender` in /out)
-The render driver that cooks the LOP stage and delegates to a render engine.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| LOP Path | `loppath` | string | Path to LOP display node (e.g., `/stage/OUT`) |
-| Renderer | `renderer` | string | `BRAY_HdKarma` for Karma |
-| Override Camera | `override_camera` | string | USD prim path (e.g., `/cameras/render_cam`) |
-| Override Resolution | `override_res` | string | `""`, `"scale"`, `"specific"` (**string, not int!**) |
-| Width | `res_user1` | int | Resolution width (when `override_res="specific"`) |
-| Height | `res_user2` | int | Resolution height |
-| Output Image | `outputimage` | string | Render output file path |
-
-- **Gotcha**: `override_res` is a string menu, not an integer. Use `"specific"` to enable custom resolution.
-- **Gotcha**: `rop.render(output_file=...)` does NOT work for usdrender ROPs. Set `outputimage` parm directly.
-- **Gotcha**: ROPs in `/out` need `loppath` set to a valid LOP node. The Synapse handler auto-discovers the display node in `/stage`.
-
-### Karma ROP (in /out)
-Native Karma render driver (alternative to the generic `usdrender` ROP).
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Picture | `picture` | string | Output file path |
-| Camera | `camera` | string | USD prim path |
-| Engine | `engine` | string | `"xpu"` (GPU) or `"cpu"` |
-| Resolution X | `resolutionx` | int | Width pixels |
-| Resolution Y | `resolutiony` | int | Height pixels |
-
-- Karma XPU is GPU-accelerated and is the default for most work.
-- Use Karma CPU for nested dielectrics, complex SSS, or volumes with many scattering events.
-- **Gotcha**: Karma XPU has a 10-15 second delay between `render()` returning and the file being fully flushed to disk.
-
----
-
-## Layout and Scene Structure Nodes
-
-### Edit (`edit`)
-Transform, modify attributes, or set metadata on existing USD prims.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Prim Pattern | `primpattern` | string | USD prim path or pattern |
-| Translate | `tx`, `ty`, `tz` | float | Translation |
-| Rotate | `rx`, `ry`, `rz` | float | Rotation in degrees |
-| Scale | `sx`, `sy`, `sz` | float | Scale |
-
-- **Workflow**: Primary node for positioning, rotating, and scaling prims after creation.
-- Handles the full USD xform stack correctly (translate, rotateXYZ, scale in proper order).
-- **Gotcha**: Do NOT set `xformOp:translate` directly via USD attribute. Use `edit` instead -- it manages the xformOpOrder properly.
-
-### Edit Properties (`editproperties`)
-Set arbitrary USD attributes and metadata on prims without using a Python LOP.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Prim Pattern | `primpattern` | string | Target prim paths |
-| Properties | (dynamic) | varies | Add attribute name/value pairs |
-
-- **Workflow**: Set custom attributes, visibility, purpose, or any USD metadata.
-- More user-friendly than a Python LOP for simple attribute edits.
-
-### Configure Primitives (`configureprimitive`)
-Set prim-level metadata: kind, purpose, active state, instanceable flag.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Prim Pattern | `primpattern` | string | Target prims |
-| Kind | `kind` | menu | `"component"`, `"group"`, `"assembly"`, `"subcomponent"` |
-| Purpose | `purpose` | menu | `"default"`, `"render"`, `"proxy"`, `"guide"` |
-| Active | `active` | bool | Deactivated prims are invisible to traversal |
-| Instanceable | `instanceable` | bool | Enable native USD instancing |
-
-- **Workflow**: Mark prims as `component` kind for asset browsers. Set `purpose=proxy` for viewport stand-ins.
-- `kind=component` is required for assets to be recognized in many USD pipelines.
-- `instanceable=True` enables GPU instancing for identical referenced assets.
-
-### Layout (`layout`)
-Interactive placement of USD assets in the viewport.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| USD Files | `files` | string | Paths to USD files to scatter |
-| Brush Size | `brushsize` | float | Scatter radius |
-| Scale Range | `scalemin`, `scalemax` | float | Random scale range |
-
-- **Workflow**: Paint/scatter USD assets interactively in the viewport. Used for environment dressing.
-- Supports brush-based placement, snapping to surfaces, random rotation and scale.
-
-### Instancer (`instancer`)
-Create USD point instances from a point source.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Point Source | `pointsource` | string | SOP or LOP path providing instance points |
-| Prototype Source | `protosource` | menu | Where prototypes come from |
-| Prototype Paths | `protopath1` | string | USD paths of prototype prims |
-
-- **Workflow**: Scatter thousands of instances (trees, rocks, crowd agents) from point clouds.
-- Much faster than individual references -- uses USD native PointInstancer.
-- Point attributes control per-instance transforms: `orient`, `scale`, `pscale`, `instanceId`.
-
-### Reference (`reference`)
-Import external USD files as references under a target prim path.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| File Path | `filepath1` | string | Path to .usd/.usdc/.usda |
-| Prim Path | `primpath` | string | Target prim (e.g., `/World/building`) |
-| Reference Type | `reftype` | menu | `"Reference"` or `"Payload"` |
-
-- References are always loaded. Payloads can be deferred for heavy assets.
-- Referenced content can be overridden by stronger composition arcs (Local, Inherit, Variant).
-
-### Sublayer (`sublayer`)
-Merge an entire USD layer into the current stage.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| File Path | `filepath1` | string | Path to USD file |
-| Layer Position | `position` | menu | Strongest or weakest sublayer |
-
-- **Workflow**: Layer lighting rigs, animation caches, or department overrides on top of a base stage.
-- Later sublayers (strongest position) win on attribute conflicts.
-
-### Component Output (`componentoutput`)
-Package geometry, materials, and variants into a self-contained USD asset.
-
-| Parameter | Name | Type | Notes |
-|-----------|------|------|-------|
-| Output File | `lopoutput` | string | Output .usd file path |
-| Component Name | `componentname` | string | Root prim name |
-| Thumbnail | `thumbnail` | bool | Generate thumbnail image |
-
-- **Workflow**: Final step when publishing an asset. Creates a properly structured component with materials embedded.
-- Automatically sets `kind=component` on the root prim.
-- Can generate variant sets from multiple input branches (e.g., LODs, material variations).
-
----
-
-## Common Parameter Names Across Nodes
-
-Many Solaris nodes share parameter naming patterns. This table covers the most frequently used ones.
-
-### Transform Parameters (shared by edit, lights, cameras)
-
-| Purpose | Parm Names | Notes |
-|---------|-----------|-------|
-| Translation | `tx`, `ty`, `tz` | World-space position |
-| Rotation | `rx`, `ry`, `rz` | Degrees, XYZ order |
-| Scale | `sx`, `sy`, `sz` | Uniform: set all three equal |
-
-### Prim Targeting (shared by edit, assign material, render geometry settings, configure primitives)
-
-| Purpose | Parm Name | Notes |
-|---------|-----------|-------|
-| Prim Pattern | `primpattern` | USD prim path or glob pattern (e.g., `/World/geo/*`) |
-
-### USD Path Parameters
-
-| Purpose | Parm Name | Used By |
-|---------|-----------|---------|
-| SOP Path | `soppath` | sopimport, sopcreate |
-| File Path | `filepath1` | reference, sublayer |
-| Material Path | `matspecpath1` | assignmaterial |
-| Camera Path | `camera`, `override_camera` | rendersettings, usdrender ROP |
-| LOP Path | `loppath` | usdrender ROP (in /out) |
-
-### Light Encoded Parameters (all light types)
-
-| Purpose | Encoded Name | Plain Name |
-|---------|-------------|------------|
-| Intensity | `xn__inputsintensity_i0a` | Always 1.0 |
-| Exposure | `xn__inputsexposure_vya` | Brightness in stops |
-| Exposure Control | `xn__inputsexposure_control_wcb` | Must be `"set"` |
-| Color | `xn__inputscolor_kya` | RGB vec3 |
-| Color Temp Enable | `xn__inputsenablecolortemperature_r5a` | bool |
-| Color Temperature | `xn__inputscolortemperature_u5a` | Kelvin float |
-| Texture File | `xn__inputstexturefile_i1a` | HDRI path (dome) |
-
-### Karma Render Quality Parameters
-
-| Purpose | Encoded Name | Typical Values |
-|---------|-------------|----------------|
-| Max Samples | `karma:global:pathtracedsamples` | Preview: 16-32, Production: 128-256 |
-| Min Samples | `karma:global:minpathtracedsamples` | Preview: 1, Production: 16 |
-| Pixel Oracle | `karma:global:pixeloracle` | `"uniform"` or `"variance"` |
-| Convergence | `karma:global:convergencethreshold` | 0.01-0.001 |
-| Diffuse Bounces | `karma:global:diffuselimit` | Preview: 1-2, Production: 4-6 |
-| Specular Bounces | `karma:global:reflectlimit` | Preview: 2-4, Production: 6-8 |
-| Volume Step | `karma:global:volumesteprate` | Preview: 0.1, Production: 0.5-1.0 |
-| Denoiser | `karma:global:enabledenoise` | 0 = off, 1 = OIDN |
-
----
-
-## Common Workflows
-
-### Minimal Scene Setup (Geometry + Light + Camera + Render)
-
-```
-sopimport (geometry) --\
-                        \
-domelight (environment) ---> merge --> karmarenderproperties --> null (OUTPUT)
-                        /
-camera ----------------/
+# --- configurestage: global stage metadata ---
+cfg = stage.createNode("configurestage", "stage_config")
+cfg.parm("upaxis").set("Y")          # "Y" (default) or "Z"
+cfg.parm("metersperunit").set(0.01)  # 0.01 = centimetres, 1.0 = metres
+cfg.parm("startframe").set(1.0)
+cfg.parm("endframe").set(240.0)
+cfg.parm("fps").set(24.0)
 ```
 
-1. `sopimport` brings SOP geometry to USD.
-2. `domelight` provides environment lighting.
-3. `camera` defines the render viewpoint.
-4. `merge` combines all branches.
-5. `karmarenderproperties` sets quality.
-6. `null` named `OUTPUT` is set as display flag.
-7. Render via a `usdrender` ROP in `/out` pointing `loppath` at the output null.
+### Geometry — SOP Import
 
-### Material Assignment Workflow
+```python
+import hou
 
+stage = hou.node("/stage")
+
+# sopimport: bring SOP geometry into the USD stage as a Mesh prim
+sop_imp = stage.createNode("sopimport", "geo_import")
+
+# Path to SOP node — use the OUT null of the SOP network
+sop_imp.parm("soppath").set("/obj/geo1/OUT")
+
+# Where to place the prim in the USD hierarchy
+sop_imp.parm("primpath").set("/World/geo/mesh1")
+
+# Import style: "Flat" or "Hierarchy" (hierarchy preserves SOP groups)
+sop_imp.parm("importstyle").set("Flat")
+
+# For animated geometry, set importframe to $F so each frame is re-cooked
+sop_imp.parm("importframe").set(hou.frame())  # or expression "$F"
+# sop_imp.parm("importframe").setExpression("$F")
+
+# Import SOP primitive groups as USD GeomSubsets (for per-face material assignment)
+sop_imp.parm("subsetgroups").set("*")
+
+# GOTCHA: SOP 'Cd' attribute → USD 'displayColor'
+#         SOP 'N'  attribute → USD 'normals'
+# These mappings happen automatically; no extra parms needed.
 ```
-sopimport --> materiallibrary --> assignmaterial --> merge (with lights/camera)
+
+### Geometry — SOP Create (embedded SOP network inside LOP)
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# sopcreate: embeds a full SOP network inside a LOP node
+sop_create = stage.createNode("sopcreate", "inline_geo")
+sop_create.parm("primpath").set("/World/geo/inline_mesh")
+
+# Double-click in UI to enter the embedded SOP network.
+# From Python, access the inner network:
+inner = sop_create.node("sopnet")
+box = inner.createNode("box", "box1")
+box.parm("sizex").set(2.0)
+box.parm("sizey").set(1.0)
+box.parm("sizez").set(2.0)
+out = inner.createNode("null", "OUT")
+out.setInput(0, box)
+out.setDisplayFlag(True)
+out.setRenderFlag(True)
 ```
 
-1. Import geometry.
-2. Create Material Library with shaders inside.
-3. Assign Material binds shader to geometry prims.
-4. Merge into the main stage.
+### Geometry — Scene Import (OBJ-level scene to USD)
 
-### Asset Publishing (Component Output)
+```python
+import hou
 
+stage = hou.node("/stage")
+
+# sceneimport: import an entire OBJ-level scene into USD in one step
+scene_imp = stage.createNode("sceneimport", "scene_import")
+scene_imp.parm("objects").set("/obj/*")           # object path pattern
+scene_imp.parm("importpathprefix").set("/World")  # USD path prefix
+# display menu: "display" (viewport only), "render", "both"
+scene_imp.parm("display").set("both")
+
+# GOTCHA: OBJ-level materials are NOT imported — reassign materials in LOPs
 ```
-sopimport --> materiallibrary --> assignmaterial --> configureprimitive (kind=component) --> componentoutput
+
+### Geometry — USD Primitive Shapes
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# USD built-in shapes (lightweight, not SOP geometry)
+sphere  = stage.createNode("sphere",   "sphere1")
+cube    = stage.createNode("cube",     "cube1")
+cone    = stage.createNode("cone",     "cone1")
+cyl     = stage.createNode("cylinder", "cylinder1")
+capsule = stage.createNode("capsule",  "capsule1")
+
+# Default prim path = /$OS (node name). Override:
+sphere.parm("primpath").set("/World/shapes/ball")
+
+# NOTE: there is NO 'grid' or 'plane' LOP node.
+# Simulate a ground plane with a cube scaled flat:
+ground = stage.createNode("cube", "ground_plane")
+ground.parm("primpath").set("/World/ground")
+
+# Then use an edit node to squash it:
+edit_ground = stage.createNode("edit", "edit_ground")
+edit_ground.setInput(0, ground)
+edit_ground.parm("primpattern").set("/World/ground")
+edit_ground.parm("sy").set(0.01)   # nearly flat
+edit_ground.parm("tx").set(0.0)
+edit_ground.parm("ty").set(-0.5)   # sit at y=0
+edit_ground.parm("tz").set(0.0)
 ```
 
-### Progressive Render Validation
+### Materials — Material Library
 
-1. Test at 256x256, 4-8 samples, no displacement, no SSS.
-2. Confirm output exists and is not black.
-3. Scale to 1280x720, 32-64 samples.
-4. Final at 1920x1080, 128+ samples, enable denoiser.
+```python
+import hou
 
----
+stage = hou.node("/stage")
 
-## Gotchas Summary
+# materiallibrary: container for USD Material prims and shader networks
+matlib = stage.createNode("materiallibrary", "matlib1")
+matlib.parm("matpathprefix").set("/materials")
+matlib.parm("matname1").set("chrome")
 
-| Issue | Solution |
-|-------|----------|
-| `materiallibrary` child `createNode()` returns `None` | Call `matlib.cook(force=True)` first |
-| `rop.render(output_file=...)` does nothing | Set `outputimage` or `picture` parm directly |
-| Camera not found in render | Use USD prim path (`/cameras/cam`), not node path (`/stage/cam`) |
-| `override_res` not working | It is a string: `""`, `"scale"`, `"specific"` -- not int |
-| No `grid`/`plane` LOP node | Use `cube` with `sy=0.01` |
-| Transforms not applying | Use `edit` node, not direct USD `xformOp:translate` attribute set |
-| Black render | Check: camera assigned, loppath set, lights exist with exposure > 0 |
-| `soho_foreground=1` hangs Houdini | Never use foreground rendering for heavy scenes |
-| Material not showing | Verify prim pattern matches actual USD paths (use `stage_info` to check) |
-| Displacement clipping | Set `karma:object:displacementbound` >= max displacement value |
-| Karma XPU file missing after render | Wait 10-15 seconds -- XPU has delayed file flush |
-| Encoded light parm wrong name | Use exact encoding: `xn__inputsexposure_vya`, not `intensity` or `exposure` (Synapse aliases handle this automatically) |
+# CRITICAL GOTCHA: cook the matlib BEFORE creating child shader nodes.
+# Without cook(), the internal subnet does not exist and createNode() returns None.
+matlib.cook(force=True)
+
+# Dive inside the material library to build the shader network
+mat_subnet = matlib.node("chrome")   # subnet named after material
+if mat_subnet is None:
+    mat_subnet = matlib.createNode("subnet", "chrome")
+
+# Create the MaterialX standard surface shader
+shader = mat_subnet.createNode("mtlxstandard_surface", "surface_shader")
+
+# Base color (RGB, 0-1)
+shader.parm("base_colorr").set(0.8)
+shader.parm("base_colorg").set(0.8)
+shader.parm("base_colorb").set(0.8)
+shader.parm("base").set(1.0)          # base weight
+
+# Metal / specular
+shader.parm("metalness").set(1.0)     # 0=dielectric, 1=metal
+shader.parm("specular").set(1.0)
+shader.parm("specular_roughness").set(0.05)   # 0=mirror, 1=diffuse
+shader.parm("specular_IOR").set(1.5)
+
+# Coat (clear coat layer)
+shader.parm("coat").set(0.2)
+shader.parm("coat_roughness").set(0.1)
+
+# Transmission (glass)
+shader.parm("transmission").set(0.0)  # 1.0 = fully transparent
+
+# Subsurface scattering
+shader.parm("subsurface").set(0.0)
+
+# Emission
+shader.parm("emission").set(0.0)
+shader.parm("emission_colorr").set(1.0)
+shader.parm("emission_colorg").set(1.0)
+shader.parm("emission_colorb").set(1.0)
+
+# Opacity
+shader.parm("opacity").set(1.0)
+```
+
+### Materials — Assign Material
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# assignmaterial: bind a material to geometry prims by USD path pattern
+assign = stage.createNode("assignmaterial", "assign1")
+
+# First assignment pair
+assign.parm("nummaterials").set(1)   # number of pattern/material pairs
+assign.parm("primpattern1").set("/World/geo/mesh1")          # exact USD prim path
+assign.parm("matspecpath1").set("/materials/chrome")          # material USD path
+
+# Add a second assignment pair
+assign.parm("nummaterials").set(2)
+assign.parm("primpattern2").set("/World/geo/ground")
+assign.parm("matspecpath2").set("/materials/concrete")
+
+# Wildcard pattern: assign to all children of a prim
+assign.parm("primpattern1").set("/World/geo/*")
+
+# GOTCHA: pattern must match actual USD prim paths, NOT Houdini node paths.
+# Verify paths with: stage.node("stage_info_node").cook()
+# or hou.node("/stage").stage().Traverse()
+```
+
+### Lights — Dome Light (HDRI environment)
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+dome = stage.createNode("domelight", "dome_light")
+
+# LIGHTING LAW: intensity is ALWAYS 1.0. Brightness via exposure ONLY.
+dome.parm("xn__inputsintensity_i0a").set(1.0)
+
+# Enable exposure control and set value (in stops)
+dome.parm("xn__inputsexposure_control_wcb").set("set")
+dome.parm("xn__inputsexposure_vya").set(0.25)   # 0.25 stops for HDRI ambient fill
+
+# HDRI texture (Greyscale Gorilla HDRIs or similar)
+dome.parm("xn__inputstexturefile_i1a").set(
+    "D:/GreyscaleGorillaAssetLibrary/HDRIs/studio_01.exr"
+)
+# Format: "automatic" (let Houdini detect), "latlong", "mirroredBall"
+dome.parm("xn__inputstextureformat_i7a").set("automatic")
+
+# Rotate the HDRI environment (azimuth)
+dome.parm("ry").set(45.0)
+
+# Without an HDRI texture the dome emits uniform white light — always set the texture.
+```
+
+### Lights — Distant Light (sun / directional)
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+sun = stage.createNode("distantlight", "key_sun")
+
+# Lighting Law: intensity always 1.0
+sun.parm("xn__inputsintensity_i0a").set(1.0)
+sun.parm("xn__inputsexposure_control_wcb").set("set")
+sun.parm("xn__inputsexposure_vya").set(1.0)   # key light: 1 stop
+
+# Enable color temperature for natural warmth (daylight = ~5600K, tungsten = 3200K)
+sun.parm("xn__inputsenablecolortemperature_r5a").set(True)
+sun.parm("xn__inputscolortemperature_u5a").set(5600.0)
+
+# Angular diameter: 0.53 = sun, larger = softer shadows (overcast)
+sun.parm("xn__inputsangle_06a").set(0.53)
+
+# Rotation controls direction. Position (tx/ty/tz) has NO effect on distant lights.
+sun.parm("rx").set(-45.0)   # elevation: negative = light coming from above
+sun.parm("ry").set(30.0)    # azimuth
+
+# Key:fill ratio 3:1 = 1.585 stops difference, 4:1 = 2.0 stops
+# Fill light at 0 stops, key at 1.585 → ratio 3:1
+```
+
+### Lights — Rect Light (area light)
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+key = stage.createNode("rectlight", "key_rect")
+
+# Lighting Law: intensity = 1.0, brightness via exposure
+key.parm("xn__inputsintensity_i0a").set(1.0)
+key.parm("xn__inputsexposure_control_wcb").set("set")
+key.parm("xn__inputsexposure_vya").set(1.0)   # key light brightness
+
+# Size (larger = softer shadows)
+key.parm("xn__inputswidth_e5a").set(1.5)
+key.parm("xn__inputsheight_k5a").set(1.0)
+
+# Normalize: keep brightness constant as size changes (True = normalize)
+key.parm("xn__inputsnormalize_ida").set(True)
+
+# Position and aim
+key.parm("tx").set(3.0)
+key.parm("ty").set(2.0)
+key.parm("tz").set(2.0)
+key.parm("rx").set(-20.0)
+key.parm("ry").set(-60.0)
+
+# Fill light (lower exposure for 3:1 ratio = key 1.0, fill = 1.0 - 1.585 ≈ -0.585)
+fill = stage.createNode("rectlight", "fill_rect")
+fill.parm("xn__inputsintensity_i0a").set(1.0)
+fill.parm("xn__inputsexposure_control_wcb").set("set")
+fill.parm("xn__inputsexposure_vya").set(-0.585)  # 1.585 stops below key = 3:1 ratio
+fill.parm("xn__inputswidth_e5a").set(2.0)
+fill.parm("xn__inputsheight_k5a").set(1.5)
+fill.parm("tx").set(-3.0)
+fill.parm("ty").set(1.5)
+fill.parm("tz").set(1.5)
+```
+
+### Lights — Sphere Light
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# spherelight: point or sphere area light (practical light source, bulb, candle)
+sph = stage.createNode("spherelight", "bulb_light")
+
+sph.parm("xn__inputsintensity_i0a").set(1.0)
+sph.parm("xn__inputsexposure_control_wcb").set("set")
+sph.parm("xn__inputsexposure_vya").set(0.5)
+
+# Radius > 0 = soft shadows. Radius = 0 = hard point-light shadows.
+sph.parm("xn__inputsradius_o5a").set(0.1)
+
+# Position (spherelight position DOES matter, unlike distantlight)
+sph.parm("tx").set(0.0)
+sph.parm("ty").set(2.0)
+sph.parm("tz").set(0.0)
+
+# Color (warm tungsten)
+sph.parm("xn__inputsenablecolortemperature_r5a").set(True)
+sph.parm("xn__inputscolortemperature_u5a").set(3200.0)
+```
+
+### Lights — Disk Light and Cylinder Light
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# disklight: circular area light — spotlight-like soft source
+disk = stage.createNode("disklight", "disk_light")
+disk.parm("xn__inputsintensity_i0a").set(1.0)
+disk.parm("xn__inputsexposure_control_wcb").set("set")
+disk.parm("xn__inputsexposure_vya").set(0.8)
+disk.parm("xn__inputsradius_o5a").set(0.5)   # disk radius
+disk.parm("tx").set(0.0)
+disk.parm("ty").set(3.0)
+disk.parm("tz").set(0.0)
+disk.parm("rx").set(-90.0)   # aim downward
+
+# cylinderlight: tube/neon/fluorescent strip
+cyl = stage.createNode("cylinderlight", "strip_light")
+cyl.parm("xn__inputsintensity_i0a").set(1.0)
+cyl.parm("xn__inputsexposure_control_wcb").set("set")
+cyl.parm("xn__inputsexposure_vya").set(0.5)
+cyl.parm("xn__inputslength_i5a").set(2.0)    # tube length
+cyl.parm("xn__inputsradius_o5a").set(0.05)   # tube radius
+cyl.parm("tx").set(0.0)
+cyl.parm("ty").set(2.5)
+cyl.parm("tz").set(-1.0)
+```
+
+### Camera
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+cam = stage.createNode("camera", "render_cam")
+cam.parm("primpath").set("/cameras/render_cam")
+
+# Focal length in mm (lower = wider FOV)
+# 25mm = wide angle, 50mm = standard, 85mm = portrait
+cam.parm("focalLength").set(50.0)
+
+# Sensor size (film back) in mm
+cam.parm("horizontalAperture").set(36.0)   # full-frame 35mm = 36mm wide
+cam.parm("verticalAperture").set(24.0)
+
+# Depth of field (f-stop=0 disables DOF entirely)
+cam.parm("fStop").set(0.0)          # 0 = no DOF; 2.8 = shallow; 8.0 = deep
+cam.parm("focusDistance").set(5.0)  # focus distance in scene units
+
+# Clip planes
+cam.parm("clippingRange").set((0.1, 10000.0))   # (near, far)
+
+# Position and orient
+cam.parm("tx").set(0.0)
+cam.parm("ty").set(1.5)
+cam.parm("tz").set(5.0)
+cam.parm("rx").set(-10.0)
+cam.parm("ry").set(0.0)
+cam.parm("rz").set(0.0)
+
+# GOTCHA: Karma needs the USD PRIM path (/cameras/render_cam),
+# NOT the Houdini node path (/stage/render_cam).
+# Always use cam.parm("primpath").eval() when wiring render settings.
+cam_prim_path = cam.parm("primpath").eval()   # "/cameras/render_cam"
+```
+
+### Render — Karma Render Properties (quality settings LOP)
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# karmarenderproperties: sets Karma-specific quality on the USD stage
+krp = stage.createNode("karmarenderproperties", "karma_settings")
+
+# --- Sample counts ---
+# Preview: 16-32 samples. Production: 128-256.
+krp.parm("karma:global:pathtracedsamples").set(128)    # max samples
+krp.parm("karma:global:minpathtracedsamples").set(16)  # min samples
+
+# Pixel oracle: "uniform" = fixed samples, "variance" = adaptive (cleaner, slower)
+krp.parm("karma:global:pixeloracle").set("variance")
+krp.parm("karma:global:convergencethreshold").set(0.01)   # lower = cleaner (0.001 for hero)
+
+# --- Ray bounce limits ---
+krp.parm("karma:global:diffuselimit").set(4)    # diffuse bounces (production: 4-6)
+krp.parm("karma:global:reflectlimit").set(6)    # specular/reflect bounces
+krp.parm("karma:global:refractionlimit").set(6) # refraction bounces
+
+# --- Volumes ---
+krp.parm("karma:global:volumesteprate").set(0.5)   # 0.25=fast, 0.5-1.0=production
+
+# --- Denoiser ---
+krp.parm("karma:global:enabledenoise").set(1)   # 0=off, 1=OIDN (Intel Open Image Denoise)
+
+# --- Motion blur ---
+krp.parm("karma:global:shutteropen").set(-0.25)
+krp.parm("karma:global:shutterclose").set(0.25)
+
+# --- Engine: XPU (GPU) vs CPU ---
+# XPU is GPU-accelerated; use CPU for complex nested dielectrics, volumes with many events
+krp.parm("engine").set("xpu")   # "xpu" or "cpu"
+
+# Preview (fast iteration) settings
+def set_preview_quality(krp_node):
+    krp_node.parm("karma:global:pathtracedsamples").set(16)
+    krp_node.parm("karma:global:minpathtracedsamples").set(1)
+    krp_node.parm("karma:global:pixeloracle").set("uniform")
+    krp_node.parm("karma:global:diffuselimit").set(1)
+    krp_node.parm("karma:global:reflectlimit").set(2)
+    krp_node.parm("karma:global:enabledenoise").set(0)
+    krp_node.parm("engine").set("xpu")
+
+set_preview_quality(krp)
+```
+
+### Render — Render Geometry Settings (per-object subdivision, displacement)
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# rendergeometrysettings: apply render-time geometry properties per-prim
+rgs = stage.createNode("rendergeometrysettings", "geo_settings")
+
+# Target prim (path or pattern)
+rgs.parm("primpattern").set("/World/geo/mesh1")
+
+# Subdivision (Catmull-Clark smoothing at render time)
+rgs.parm("karma:object:subdivscheme").set("catmullClark")   # "catmullClark", "loop", "none"
+rgs.parm("karma:object:dicingquality").set(1.0)   # 1.0 = standard, 2.0 = finer
+
+# Displacement
+# GOTCHA: displacementbound must be >= max displacement value or geometry clips
+rgs.parm("karma:object:displacementbound").set(0.5)   # set to max expected displacement
+
+# Motion blur samples
+rgs.parm("karma:object:xform_motionsamples").set(2)   # transform motion blur
+rgs.parm("karma:object:geo_motionsamples").set(2)     # deformation (point) motion blur
+```
+
+### Render — USD Render ROP (in /out)
+
+```python
+import hou
+
+# The usdrender ROP lives in /out, NOT /stage
+out_net = hou.node("/out")
+
+rop = out_net.createNode("usdrender", "karma_rop")
+
+# loppath: path to the LOP display/output node
+rop.parm("loppath").set("/stage/OUTPUT")
+
+# Renderer
+rop.parm("renderer").set("BRAY_HdKarma")
+
+# Camera (USD prim path, not node path)
+rop.parm("override_camera").set("/cameras/render_cam")
+
+# Resolution override
+# override_res is a STRING menu: "" (use stage), "scale", "specific"
+rop.parm("override_res").set("specific")
+rop.parm("res_user1").set(1920)    # width
+rop.parm("res_user2").set(1080)    # height
+
+# Output image path
+rop.parm("outputimage").set("$HIP/render/beauty.$F4.exr")
+
+# GOTCHA: rop.render(output_file="...") does NOT work for usdrender ROPs.
+# Set outputimage parm directly (as above), then call render with no output_file arg.
+rop.render()
+
+# GOTCHA: soho_foreground=1 blocks Houdini's WebSocket — never use for heavy scenes.
+# For synchronous file write (needed in scripts), use:
+rop.parm("soho_foreground").set(1)
+rop.render()
+rop.parm("soho_foreground").set(0)   # reset after
+```
+
+### Edit — Transform and Attribute Editing
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# edit: transform, modify attributes on existing USD prims
+# CORRECT way to move/rotate/scale prims in Solaris
+edit = stage.createNode("edit", "xform_edit")
+edit.parm("primpattern").set("/World/geo/mesh1")
+
+# Translate
+edit.parm("tx").set(2.0)
+edit.parm("ty").set(0.0)
+edit.parm("tz").set(-1.5)
+
+# Rotate (degrees, XYZ order)
+edit.parm("rx").set(0.0)
+edit.parm("ry").set(45.0)
+edit.parm("rz").set(0.0)
+
+# Scale
+edit.parm("sx").set(1.0)
+edit.parm("sy").set(1.0)
+edit.parm("sz").set(1.0)
+
+# GOTCHA: Do NOT set xformOp:translate directly via set_usd_attribute.
+# Use edit node — it manages xformOpOrder correctly.
+
+# editproperties: set arbitrary USD attributes (visibility, custom metadata)
+edit_props = stage.createNode("editproperties", "attr_edit")
+edit_props.parm("primpattern").set("/World/geo/mesh1")
+
+# configureprimitive: set prim kind, purpose, active state, instanceable
+cfg_prim = stage.createNode("configureprimitive", "configure_asset")
+cfg_prim.parm("primpattern").set("/World/asset")
+cfg_prim.parm("kind").set("component")       # "component", "group", "assembly", "subcomponent"
+cfg_prim.parm("purpose").set("default")      # "default", "render", "proxy", "guide"
+cfg_prim.parm("active").set(True)            # False = invisible to traversal
+cfg_prim.parm("instanceable").set(False)     # True = enable GPU instancing
+```
+
+### Reference and Sublayer (USD file composition)
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# reference: import an external USD file as a reference under a target prim
+ref = stage.createNode("reference", "asset_ref")
+ref.parm("filepath1").set("D:/HOUDINI_PROJECTS_2025/assets/rubbertoy.usdc")
+ref.parm("primpath").set("/World/rubbertoy")
+# reftype: "Reference" (always loaded) or "Payload" (deferred / loadable on demand)
+ref.parm("reftype").set("Reference")
+
+# sublayer: merge an entire USD layer into the current stage (like a comp layer)
+# Best for: lighting rigs, animation caches, department overrides
+# Use sublayer for Karma — assetreference is invisible to Karma.
+sub = stage.createNode("sublayer", "lighting_rig")
+sub.parm("filepath1").set("D:/HOUDINI_PROJECTS_2025/lighting/three_point_rig.usda")
+# Layer position: "strongest" (later / wins conflicts) or "weakest" (base layer)
+sub.parm("position").set("strongest")
+
+# For $HFS test assets (rubbertoy, pig, etc.):
+import os
+hfs = hou.expandString("$HFS")
+pig_path = os.path.join(hfs, "houdini", "usd", "assets", "pig", "pig.usd")
+sub2 = stage.createNode("sublayer", "pig_asset")
+sub2.parm("filepath1").set(pig_path)
+```
+
+### Instancer (USD PointInstancer for scatter)
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# instancer: scatter thousands of instances from a SOP point cloud
+inst = stage.createNode("instancer", "tree_scatter")
+
+# Point source: SOP or LOP providing instance points
+inst.parm("pointsource").set("/obj/scatter_geo/OUT")
+
+# Prototype: which USD prim to instance at each point
+inst.parm("protosource").set("lop")       # "lop" = from LOP stage
+inst.parm("protopath1").set("/World/tree_asset")
+
+# SOP point attributes control per-instance transforms automatically:
+#   'orient'     → rotation quaternion
+#   'scale'/'pscale' → uniform scale
+#   'instanceId' → which prototype to use (for multiple prototypes)
+```
+
+### Full Scene Setup (Minimal Karma Scene, End-to-End)
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# 1. Geometry from SOPs
+geo = stage.createNode("sopimport", "geo")
+geo.parm("soppath").set("/obj/geo1/OUT")
+geo.parm("primpath").set("/World/geo/mesh")
+
+# 2. Material
+matlib = stage.createNode("materiallibrary", "mats")
+matlib.parm("matpathprefix").set("/materials")
+matlib.parm("matname1").set("plastic")
+matlib.cook(force=True)
+shader = matlib.node("plastic").createNode("mtlxstandard_surface", "surface")
+shader.parm("base_colorr").set(0.2)
+shader.parm("base_colorg").set(0.6)
+shader.parm("base_colorb").set(0.9)
+shader.parm("specular_roughness").set(0.3)
+
+# 3. Assign material
+assign = stage.createNode("assignmaterial", "assign")
+assign.parm("primpattern1").set("/World/geo/mesh")
+assign.parm("matspecpath1").set("/materials/plastic")
+
+# 4. HDRI dome light
+dome = stage.createNode("domelight", "dome")
+dome.parm("xn__inputsintensity_i0a").set(1.0)
+dome.parm("xn__inputsexposure_control_wcb").set("set")
+dome.parm("xn__inputsexposure_vya").set(0.25)
+dome.parm("xn__inputstexturefile_i1a").set("D:/HDRIs/studio.exr")
+
+# 5. Key light (rect)
+key = stage.createNode("rectlight", "key")
+key.parm("xn__inputsintensity_i0a").set(1.0)
+key.parm("xn__inputsexposure_control_wcb").set("set")
+key.parm("xn__inputsexposure_vya").set(1.0)
+key.parm("xn__inputswidth_e5a").set(1.5)
+key.parm("xn__inputsheight_k5a").set(1.0)
+key.parm("tx").set(3.0); key.parm("ty").set(3.0); key.parm("tz").set(3.0)
+key.parm("rx").set(-35.0); key.parm("ry").set(-45.0)
+
+# 6. Camera
+cam = stage.createNode("camera", "render_cam")
+cam.parm("primpath").set("/cameras/render_cam")
+cam.parm("focalLength").set(50.0)
+cam.parm("tx").set(0.0); cam.parm("ty").set(1.5); cam.parm("tz").set(6.0)
+cam.parm("rx").set(-10.0)
+cam_path = cam.parm("primpath").eval()
+
+# 7. Karma render settings (preview quality)
+krp = stage.createNode("karmarenderproperties", "karma")
+krp.parm("karma:global:pathtracedsamples").set(32)
+krp.parm("karma:global:pixeloracle").set("uniform")
+krp.parm("karma:global:diffuselimit").set(2)
+krp.parm("engine").set("xpu")
+
+# 8. Merge all branches
+merge = stage.createNode("merge", "merge_all")
+merge.setInput(0, geo)
+merge.setInput(1, matlib)
+merge.setInput(2, assign)
+merge.setInput(3, dome)
+merge.setInput(4, key)
+merge.setInput(5, cam)
+merge.setInput(6, krp)
+
+# 9. Output null
+out_null = stage.createNode("null", "OUTPUT")
+out_null.setInput(0, merge)
+out_null.setDisplayFlag(True)
+
+# 10. USD Render ROP in /out
+rop = hou.node("/out").createNode("usdrender", "karma_rop")
+rop.parm("loppath").set("/stage/OUTPUT")
+rop.parm("renderer").set("BRAY_HdKarma")
+rop.parm("override_camera").set(cam_path)
+rop.parm("override_res").set("specific")
+rop.parm("res_user1").set(1280)
+rop.parm("res_user2").set(720)
+rop.parm("outputimage").set("$HIP/render/beauty.$F4.exr")
+
+# Layout nodes for clarity
+stage.layoutChildren()
+
+print("Scene ready. Render at:", rop.parm("outputimage").eval())
+```
+
+### Component Output (Asset Publishing)
+
+```python
+import hou
+
+stage = hou.node("/stage")
+
+# Upstream: geo + matlib + assign + configureprimitive (kind=component)
+cfg = stage.createNode("configureprimitive", "set_kind")
+cfg.parm("primpattern").set("/World/asset")
+cfg.parm("kind").set("component")   # required for USD pipeline asset recognition
+cfg.parm("instanceable").set(False)
+
+# componentoutput: package into a self-contained USD asset file
+comp_out = stage.createNode("componentoutput", "publish_asset")
+comp_out.parm("lopoutput").set("D:/HOUDINI_PROJECTS_2025/assets/my_asset/my_asset.usdc")
+comp_out.parm("componentname").set("my_asset")
+comp_out.parm("thumbnail").set(True)   # generate thumbnail image on export
+# Automatically sets kind=component on root prim, embeds materials
+```
+
+## Common Mistakes
+
+- **`materiallibrary` child `createNode()` returns None** — Call `matlib.cook(force=True)` before creating any child shader nodes. The internal subnet does not exist until the node is cooked.
+
+- **Intensity > 1.0 on any light** — Always keep `xn__inputsintensity_i0a` at 1.0. Control brightness only via `xn__inputsexposure_vya` (in stops). Enable it with `xn__inputsexposure_control_wcb = "set"`.
+
+- **Wrong camera path format** — Karma requires the USD prim path (`/cameras/render_cam`), not the Houdini node path (`/stage/render_cam`). Use `cam.parm("primpath").eval()` to get the correct value.
+
+- **`rop.render(output_file=...)` does nothing for usdrender** — Set the `outputimage` parm directly, then call `rop.render()` with no arguments.
+
+- **`override_res` type mismatch** — `override_res` is a string menu: `""`, `"scale"`, `"specific"`. Do not pass an integer.
+
+- **No grid or plane LOP node** — Use a `cube` node with `sy=0.01` via an `edit` node to create a flat ground plane.
+
+- **Transforms not applying** — Use an `edit` node to move/rotate/scale prims. Do not write `xformOp:translate` directly as a USD attribute — the `edit` node manages `xformOpOrder` correctly.
+
+- **Material pattern not matching** — Prim patterns in `assignmaterial` must match the actual USD stage paths, not the SOP object names or Houdini node names. Inspect with `hou.node("/stage").stage()` or `synapse_stage_info` before assigning.
+
+- **`soho_foreground=1` hangs Houdini** — Foreground render mode blocks the entire Houdini event loop (including the WebSocket server). Only use it in batch scripts where blocking is acceptable.
+
+- **`sopimport` importing a static frame when animation is needed** — Set `importframe` to `$F` via `sop_imp.parm("importframe").setExpression("$F")` for per-frame geometry.
+
+- **Karma XPU file missing immediately after `rop.render()`** — XPU has a 10-15 second delay between `render()` returning and the file being fully flushed to disk. Add a `time.sleep(15)` or poll for file existence before reading.
+
+- **`sublayer` vs `reference` for Karma** — Use `sublayer` to bring geometry visible to Karma. The `assetreference` LOP node is for viewport work and is NOT visible to Karma renders.
+
+- **Displacement geometry clipping** — `karma:object:displacementbound` must be set to at least the maximum displacement distance. Setting it too small causes geometry to clip at render boundaries.

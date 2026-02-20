@@ -1,156 +1,308 @@
 # Render Analysis Guide
 
-## Overview
+## Triggers
+render analysis, exposure analysis, noise, fireflies, lighting check, material quality,
+composition, stop math, denoiser, convergence, render iteration, lookdev
 
-Analyzing renders is essential for iterating toward production quality. This guide covers what to look for when evaluating lighting, exposure, composition, noise, and material quality in Karma renders.
+## Context
+Analyzing renders for production quality: exposure/stop math, noise diagnosis,
+lighting composition, material quality checks. All code is Houdini Python.
 
-## Exposure Analysis
+## Code
 
-### Key Metrics
-- **Overall brightness**: Is the image correctly exposed? Not too dark (crushed shadows) or too bright (blown highlights)?
-- **Key:fill ratio**: Is the contrast between lit and shadow sides appropriate for the mood?
-- **Highlight clipping**: Are specular highlights pure white (clipped) or retaining detail?
-- **Shadow detail**: Can you see detail in the darkest areas?
+```python
+# Exposure analysis and adjustment via Synapse
+import hou
 
-### Exposure Adjustment via Synapse
+def analyze_exposure(karma_props_path, lights=None):
+    """Analyze and adjust lighting exposure.
+    All adjustments use exposure (stops), never intensity.
+    Stop math: +1 stop = 2x brighter, -1 stop = 0.5x brightness."""
+    node = hou.node(karma_props_path)
+    if not node:
+        return
 
-All adjustments use **exposure** (stops), never intensity:
+    # Stop math reference
+    STOP_MATH = {
+        "+1 stop": "2x brighter",
+        "-1 stop": "0.5x brightness",
+        "+2 stops": "4x brighter",
+        "-2 stops": "0.25x brightness",
+        "+0.5 stop": "~1.4x brighter",
+    }
+
+    if lights is None:
+        lights = {
+            "key":  "/stage/key_light",
+            "fill": "/stage/fill_light",
+            "rim":  "/stage/rim_light",
+            "dome": "/stage/dome_light",
+        }
+
+    report = {}
+    for role, path in lights.items():
+        light = hou.node(path)
+        if not light:
+            continue
+        exposure = light.evalParm("xn__inputsexposure_vya") if light.parm("xn__inputsexposure_vya") else 0
+        intensity = light.evalParm("xn__inputsintensity_i0a") if light.parm("xn__inputsintensity_i0a") else 1.0
+        report[role] = {"exposure": exposure, "intensity": intensity, "path": path}
+
+        # Flag violations
+        if intensity > 1.0:
+            print(f"  WARNING: {role} intensity={intensity} > 1.0 (violates Lighting Law)")
+
+    # Key:fill ratio analysis
+    if "key" in report and "fill" in report:
+        key_exp = report["key"]["exposure"]
+        fill_exp = report["fill"]["exposure"]
+        ratio = 2 ** (key_exp - fill_exp)
+        print(f"Key:fill ratio: {ratio:.1f}:1 ({key_exp - fill_exp:.1f} stops difference)")
+
+    return report
+
+
+def adjust_light_exposure(light_path, delta_stops):
+    """Adjust a light's exposure by delta stops.
+    +1 = double brightness, -1 = halve brightness."""
+    light = hou.node(light_path)
+    if not light:
+        return
+    parm = light.parm("xn__inputsexposure_vya")
+    if parm:
+        current = parm.eval()
+        parm.set(current + delta_stops)
+        print(f"Exposure: {current:.1f} -> {current + delta_stops:.1f} ({'+' if delta_stops > 0 else ''}{delta_stops} stops)")
+
+# Too dark overall: increase key light by 1 stop
+adjust_light_exposure("/stage/key_light", 1.0)
+
+# Fill too weak: increase fill by 0.5 stops
+adjust_light_exposure("/stage/fill_light", 0.5)
 ```
-# Too dark overall: increase key light exposure
-set_parm(node="/stage/key_light", parm="exposure", value=6.0)
 
-# Fill too weak (harsh shadows): increase fill exposure
-set_parm(node="/stage/fill_light", parm="exposure", value=4.0)
+```python
+# Noise analysis and sample settings
+import hou
 
-# Too bright overall: decrease dome/environment exposure
-set_parm(node="/stage/dome_light", parm="exposure", value=-1.0)
+NOISE_TYPES = {
+    "general":  {"fix": "Increase max samples (128 -> 256)", "parm": "karma:global:pathtracedsamples"},
+    "shadow":   {"fix": "Increase min samples, use variance oracle", "parm": "karma:global:minpathtracedsamples"},
+    "specular": {"fix": "Enable clamping, increase specular bounces", "parm": "karma:global:reflectlimit"},
+    "volume":   {"fix": "Increase volume step rate (0.5 -> 1.0)", "parm": "karma:global:volumesteprate"},
+    "caustic":  {"fix": "Enable caustics with higher samples, or disable caustics", "parm": None},
+}
+
+QUALITY_PRESETS = {
+    "preview": {
+        "karma:global:pathtracedsamples": 32,
+        "karma:global:pixeloracle": "uniform",
+    },
+    "lookdev": {
+        "karma:global:pathtracedsamples": 64,
+        "karma:global:minpathtracedsamples": 4,
+        "karma:global:pixeloracle": "variance",
+        "karma:global:convergencethreshold": 0.01,
+    },
+    "production": {
+        "karma:global:pathtracedsamples": 256,
+        "karma:global:minpathtracedsamples": 16,
+        "karma:global:pixeloracle": "variance",
+        "karma:global:convergencethreshold": 0.005,
+    },
+}
+
+
+def diagnose_noise(karma_props_path):
+    """Diagnose noise issues from render settings."""
+    node = hou.node(karma_props_path)
+    if not node:
+        return []
+    issues = []
+    samples = node.evalParm("karma:global:pathtracedsamples") if node.parm("karma:global:pathtracedsamples") else 0
+    if samples < 64:
+        issues.append(f"Low max samples ({samples}) -- increase to 128+ for clean result")
+    min_samples = node.evalParm("karma:global:minpathtracedsamples") if node.parm("karma:global:minpathtracedsamples") else 0
+    if min_samples < 4:
+        issues.append(f"Low min samples ({min_samples}) -- increase to 4+ to reduce shadow noise")
+    oracle = node.evalParm("karma:global:pixeloracle") if node.parm("karma:global:pixeloracle") else ""
+    if oracle != "variance":
+        issues.append(f"Pixel oracle is '{oracle}' -- use 'variance' for adaptive sampling")
+    threshold = node.evalParm("karma:global:convergencethreshold") if node.parm("karma:global:convergencethreshold") else 0
+    if threshold > 0.01:
+        issues.append(f"High convergence threshold ({threshold}) -- lower to 0.005 for production")
+
+    for issue in issues:
+        print(f"  - {issue}")
+    return issues
+
+
+def apply_quality_preset(karma_props_path, preset_name):
+    """Apply a quality preset for noise reduction."""
+    node = hou.node(karma_props_path)
+    if not node:
+        return
+    preset = QUALITY_PRESETS.get(preset_name)
+    if not preset:
+        return
+    for parm_name, value in preset.items():
+        p = node.parm(parm_name)
+        if p:
+            p.set(value)
+    print(f"Applied '{preset_name}' preset")
+
+diagnose_noise("/stage/karmarenderproperties1")
+apply_quality_preset("/stage/karmarenderproperties1", "lookdev")
 ```
 
-### Stop Math Quick Reference
-| Change | Effect |
-|--------|--------|
-| +1 stop | 2x brighter |
-| -1 stop | 0.5x brightness |
-| +2 stops | 4x brighter |
-| -2 stops | 0.25x brightness |
-| +0.5 stop | ~1.4x brighter |
+```python
+# Material quality validation
+import hou
 
-## Noise Analysis
+MATERIAL_ISSUES = {
+    "fireflies":    {"check": "roughness < 0.001", "fix": "Set roughness minimum 0.001"},
+    "plastic_look": {"check": "uniform roughness", "fix": "Add roughness variation via texture"},
+    "black_metal":  {"check": "metal with no env light", "fix": "Add dome light for reflections"},
+    "bad_metalness":{"check": "metalness between 0.3-0.7", "fix": "Use 0.0 (dielectric) or 1.0 (metal)"},
+}
 
-### Types of Render Noise
-| Noise Type | Appearance | Fix |
-|-----------|------------|-----|
-| General noise | Grain across image | Increase max samples (128 -> 256) |
-| Shadow noise | Noisy in dark areas | Increase min samples, use variance oracle |
-| Specular noise | Fireflies on reflective surfaces | Enable clamping, increase specular bounces |
-| Volume noise | Grain in smoke/fog | Increase volume step rate (0.5 -> 1.0) |
-| Caustic noise | Bright speckles through glass | Enable caustics with higher samples, or disable caustics |
 
-### Sample Settings for Noise Reduction
+def check_material_quality(material_path):
+    """Check material for common quality issues."""
+    node = hou.node(material_path)
+    if not node:
+        return []
+    issues = []
+
+    # Check roughness
+    roughness_parm = node.parm("roughness")
+    if roughness_parm:
+        roughness = roughness_parm.eval()
+        if roughness == 0.0:
+            issues.append("Roughness is exactly 0.0 -- causes fireflies. Use 0.001 minimum.")
+        elif roughness < 0.001:
+            issues.append(f"Roughness {roughness} is very low -- may cause fireflies.")
+
+    # Check metalness
+    metalness_parm = node.parm("metalness")
+    if metalness_parm:
+        metalness = metalness_parm.eval()
+        if 0.3 < metalness < 0.7:
+            issues.append(f"Metalness {metalness} is in 0.3-0.7 range (physically incorrect). Use 0.0 or 1.0.")
+
+    for issue in issues:
+        print(f"  - {issue}")
+    return issues
 ```
-# Preview (fast, noisy)
-render_settings(node="/stage/karmarenderproperties1", settings={
-    "karma:global:pathtracedsamples": 32,
-    "karma:global:pixeloracle": "uniform"
-})
 
-# Production (clean)
-render_settings(node="/stage/karmarenderproperties1", settings={
-    "karma:global:pathtracedsamples": 256,
-    "karma:global:minpathtracedsamples": 16,
-    "karma:global:pixeloracle": "variance",
-    "karma:global:convergencethreshold": 0.005
-})
+```python
+# Lighting composition analysis
+import hou
+import math
+
+LIGHTING_SCENARIOS = {
+    "product_beauty": {"key_fill_ratio": 2.0, "env_exposure": 1.0, "mood": "Clean, inviting"},
+    "broadcast":      {"key_fill_ratio": 3.0, "env_exposure": 1.0, "mood": "Professional, clear"},
+    "dramatic":       {"key_fill_ratio": 4.0, "env_exposure": 0.0, "mood": "Moody, cinematic"},
+    "horror_noir":    {"key_fill_ratio": 8.0, "env_exposure": -1.0, "mood": "Dark, tense"},
+    "overcast":       {"key_fill_ratio": 1.5, "env_exposure": 2.0, "mood": "Soft, natural"},
+}
+
+
+def setup_lighting_scenario(scenario_name, key_path, fill_path, dome_path, key_base_exposure=5.0):
+    """Configure lights for a specific scenario.
+    key_base_exposure: absolute exposure for key light."""
+    scenario = LIGHTING_SCENARIOS.get(scenario_name)
+    if not scenario:
+        print(f"Unknown scenario. Available: {list(LIGHTING_SCENARIOS.keys())}")
+        return
+
+    ratio = scenario["key_fill_ratio"]
+    fill_offset = math.log2(ratio)  # Stops below key
+
+    key = hou.node(key_path)
+    fill = hou.node(fill_path)
+    dome = hou.node(dome_path)
+
+    if key and key.parm("xn__inputsexposure_vya"):
+        key.parm("xn__inputsexposure_vya").set(key_base_exposure)
+    if fill and fill.parm("xn__inputsexposure_vya"):
+        fill.parm("xn__inputsexposure_vya").set(key_base_exposure - fill_offset)
+    if dome and dome.parm("xn__inputsexposure_vya"):
+        dome.parm("xn__inputsexposure_vya").set(scenario["env_exposure"])
+
+    print(f"Scenario '{scenario_name}': {scenario['mood']}")
+    print(f"  Key: {key_base_exposure}, Fill: {key_base_exposure - fill_offset:.1f} ({ratio}:1 ratio)")
+    print(f"  Environment: {scenario['env_exposure']}")
+
+
+setup_lighting_scenario("dramatic", "/stage/key_light", "/stage/fill_light", "/stage/dome_light")
 ```
 
-### Denoising
-For faster clean results:
-- Enable built-in OIDN denoiser: `karma:global:enabledenoise = 1`
-- Requires `denoise_albedo` and `denoise_normal` AOVs
-- Denoiser works best on 64+ samples
-- For animation: temporal denoising reduces flickering
+```python
+# Progressive render iteration workflow
+import hou
 
-## Lighting Composition
+ITERATION_STAGES = {
+    "blocking": {
+        "description": "Layout and composition check",
+        "width": 640, "height": 360,
+        "samples": 16, "oracle": "uniform",
+        "check": ["composition", "lighting direction", "overall exposure"],
+    },
+    "lookdev": {
+        "description": "Material and color check",
+        "width": 1280, "height": 720,
+        "samples": 64, "oracle": "variance",
+        "check": ["material quality", "noise", "color accuracy"],
+    },
+    "final": {
+        "description": "Production quality",
+        "width": 1920, "height": 1080,
+        "samples": 256, "oracle": "variance",
+        "check": ["no clipping", "no noise", "no artifacts", "AOVs present"],
+    },
+}
 
-### Three-Point Lighting Check
-1. **Key light**: Dominant light source, defines shadow direction. Should be brightest.
-2. **Fill light**: Softens shadows on opposite side. Should be 1.5-3 stops below key.
-3. **Rim/back light**: Separates subject from background. Similar to key exposure.
 
-### Common Lighting Issues
-| Issue | Visual Sign | Fix |
-|-------|------------|-----|
-| Flat lighting | No shadows, uniform brightness | Increase key:fill ratio (3:1 or higher) |
-| Harsh lighting | Deep black shadows | Add fill light, raise fill exposure |
-| No depth separation | Subject blends with background | Add rim light, adjust exposure |
-| Hot spots | Blown white areas | Lower light exposure, check intensity=1.0 |
-| Wrong mood | Too bright for dramatic scene | Increase key:fill ratio, lower env exposure |
-| Color cast | Unwanted color tint | Check light colors, environment HDRI white balance |
+def configure_iteration_stage(rop_path, karma_props_path, stage_name):
+    """Set up render for a specific iteration stage."""
+    stage = ITERATION_STAGES.get(stage_name)
+    if not stage:
+        return
 
-### Lighting by Scenario
-| Scenario | Key:Fill Ratio | Env Exposure | Mood |
-|----------|---------------|--------------|------|
-| Product beauty | 2:1 | 1.0 | Clean, inviting |
-| Broadcast | 3:1 | 1.0 | Professional, clear |
-| Dramatic | 4:1 | 0.0 | Moody, cinematic |
-| Horror/noir | 8:1+ | -1.0 | Dark, tense |
-| Overcast | 1.5:1 | 2.0 | Soft, natural |
+    rop = hou.node(rop_path)
+    props = hou.node(karma_props_path)
+    if not rop or not props:
+        return
 
-## Material Quality
+    # Resolution
+    rop.parm("override_res").set("specific")
+    rop.parm("res_user1").set(stage["width"])
+    rop.parm("res_user2").set(stage["height"])
 
-### What to Check
-- **Roughness range**: Pure 0.0 roughness causes fireflies. Use 0.001 minimum.
-- **Metalness**: Should be 0.0 (dielectric) or 1.0 (metal). Avoid 0.3-0.7 range (physically incorrect).
-- **Base color value**: Metals have colored specular, not colored diffuse. Dark diffuse + high metalness = correct metal.
-- **Fresnel**: At grazing angles, all materials become more reflective. If edges look wrong, check IOR.
+    # Samples
+    if props.parm("karma:global:pathtracedsamples"):
+        props.parm("karma:global:pathtracedsamples").set(stage["samples"])
+    if props.parm("karma:global:pixeloracle"):
+        props.parm("karma:global:pixeloracle").set(stage["oracle"])
 
-### Common Material Issues
-| Issue | Visual Sign | Fix |
-|-------|------------|-----|
-| Plastic look | Too uniform specular | Add roughness variation via texture |
-| Fireflies | Bright pixel artifacts | Set roughness minimum 0.001, lower max specular bounces |
-| Black metal | Metal with no reflection | Add environment light (dome light) for reflections |
-| Glowing edges | Incorrect fresnel/IOR | Check material IOR setting, verify normal direction |
-| Flat surface | No micro-detail | Add roughness map, displacement, or bump map |
+    # Enable denoiser only for lookdev+
+    if props.parm("karma:global:enabledenoise"):
+        props.parm("karma:global:enabledenoise").set(1 if stage_name != "blocking" else 0)
 
-## Composition Analysis
+    print(f"Stage '{stage_name}': {stage['description']}")
+    print(f"  Resolution: {stage['width']}x{stage['height']}, Samples: {stage['samples']}")
+    print(f"  Check: {', '.join(stage['check'])}")
 
-### Rule of Thirds
-- Key subjects should align with 1/3 grid lines
-- Camera focal point at intersection of thirds
-- Negative space on opposite side of subject
 
-### Depth Cues
-- **Atmospheric perspective**: Distant objects slightly hazier (volume fog)
-- **DOF**: Shallow depth of field draws focus (lower fStop value)
-- **Scale reference**: Include recognizable objects for scale
-- **Occlusion**: Foreground elements overlapping background adds depth
+configure_iteration_stage("/out/karma_render", "/stage/karmarenderproperties1", "lookdev")
+```
 
-## Iteration Workflow
-
-### Fast Iteration (Layout/Blocking)
-1. Render at 640x360 with 16 samples, uniform oracle
-2. Check composition, lighting direction, overall exposure
-3. Adjust light positions and exposures
-4. Re-render until composition reads well
-
-### Quality Iteration (Lookdev)
-1. Render at 1280x720 with 64 samples, variance oracle
-2. Check material quality, noise, color
-3. Adjust materials, add detail textures
-4. Enable denoiser for quick clean preview
-
-### Final Quality
-1. Render at full resolution with 256+ samples
-2. Enable all AOVs for compositing
-3. Verify no clipping, noise, or artifacts
-4. Export EXR with AOVs for post-production
-
-## Render-Analyze-Adjust Loop
-
-The most productive workflow with Synapse:
-1. **Render**: Use `houdini_render` at preview quality
-2. **Analyze**: Look at the returned image — check exposure, noise, composition
-3. **Adjust**: Modify light exposure, camera position, material properties
-4. **Re-render**: Verify the adjustment improved the image
-5. **Iterate**: Repeat until satisfied, then render at final quality
+## Common Mistakes
+- Setting light intensity > 1.0 -- violates Lighting Law; use exposure for brightness
+- Roughness exactly 0.0 -- causes fireflies; use 0.001 minimum
+- Metalness in 0.3-0.7 range -- physically incorrect; use 0.0 (dielectric) or 1.0 (metal)
+- Low samples (16) with heavy denoiser -- produces smearing; use 64+ base samples
+- Jumping to production quality -- iterate at low resolution first, scale up incrementally
+- Pixel oracle set to "uniform" for production -- use "variance" for adaptive sampling

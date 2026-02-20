@@ -1,515 +1,882 @@
 # Lighting in Solaris
 
-## Light Node Types
+## Triggers
 
-| LOP Type | USD Type | Use Case |
-|----------|----------|----------|
-| `domelight` | DomeLight | Environment/HDRI |
-| `distantlight` | DistantLight | Sun/directional |
-| `rectlight` | RectLight | Area light (rectangular) |
-| `disklight` | DiskLight | Disk area light |
-| `cylinderlight` | CylinderLight | Tube light |
-| `spherelight` | SphereLight | Point light (soft) |
+dome light, domelight, HDRI, environment light, area light, rect light, rectlight, distant light, distantlight, sphere light, spherelight, disk light, disklight, cylinder light, three point lighting, 3-point lighting, key light, fill light, rim light, back light, exposure, intensity, light intensity, light exposure, color temperature, kelvin, light linking, light categories, shadow, barn doors, IES, specular contribution, diffuse contribution, light visibility, spot light, cone angle, light shaping, light setup, studio lighting, product lighting, turntable lighting, outdoor lighting, interior lighting, portal light, light ratio, key fill ratio, stops, lighting law, xn__inputsintensity_i0a, xn__inputsexposure_vya, xn__inputscolor_kya
 
-## CRITICAL: Lighting Law
+## Context
 
-**Intensity is ALWAYS 1.0.** Brightness is controlled by **exposure** (logarithmic, in stops).
-This applies to ALL PBR renderers: Karma, Arnold, RenderMan, V-Ray.
+Solaris lights are USD prims created via LOP nodes. All light brightness is controlled by exposure (logarithmic, in stops) — intensity is ALWAYS locked at 1.0. Houdini encodes USD attribute names as `xn__`-prefixed parameter names; use the encoded names when setting parms directly via `hou.node().parm()`.
 
-- **NEVER** set intensity above 1.0. It breaks energy conservation and causes fireflies.
-- Each +1 stop of exposure = 2x brighter. Each -1 stop = 0.5x brighter.
-- Exposure 0 = baseline (1x multiplier). Exposure 5 = 32x multiplier. Exposure 10 = 1024x.
-- The final light contribution = intensity * color * 2^exposure. Since intensity=1.0, it simplifies to color * 2^exposure.
-
----
-
-## CRITICAL: Parameter Name Encoding
-
-Solaris encodes USD attribute names for use as Houdini parameters.
-The encoding is NOT intuitive. Always use the `xn__` encoded names when setting parms directly.
-
-### Complete USD Light Parameter Reference
-
-| USD Attribute | Houdini Encoded Parm | Type | Notes |
-|---------------|---------------------|------|-------|
-| `inputs:intensity` | `xn__inputsintensity_i0a` | float | ALWAYS 1.0 (Lighting Law) |
-| `inputs:color` | `xn__inputscolor_kya` | vec3 | RGB light color, set via parmTuple |
-| `inputs:exposure` | `xn__inputsexposure_vya` | float | Brightness in stops (use THIS for brightness) |
-| `inputs:exposure` (control) | `xn__inputsexposure_control_wcb` | string | Set to `"set"` to enable exposure override |
-| `inputs:diffuse` | `xn__inputsdiffuse_vya` | float | Diffuse multiplier (0-1) |
-| `inputs:specular` | `xn__inputsspecular_01a` | float | Specular multiplier (0-1) |
-| `inputs:shadow:enable` | `xn__inputsshadowenable_2kb` | bool | Enable/disable shadows |
-| `inputs:shadow:color` | `xn__inputsshadowcolor_o5a` | vec3 | Shadow tint color |
-| `inputs:enableColorTemperature` | `xn__inputsenablecolortemperature_r5a` | bool | Use Kelvin color temp instead of RGB |
-| `inputs:colorTemperature` | `xn__inputscolortemperature_u5a` | float | Color temperature in Kelvin |
-| `inputs:normalize` | `xn__inputsnormalize_01a` | bool | Normalize intensity by area |
-| `inputs:texture:file` | `xn__inputstexturefile_i1a` | string | HDRI path (DomeLight only) |
-| `inputs:texture:format` | `xn__inputstextureformat_r1a` | string | Texture mapping mode |
-| `inputs:shaping:cone:angle` | `xn__inputsshapingconeangle_bobja` | float | Spot cone angle in degrees |
-| `inputs:shaping:cone:softness` | `xn__inputsshapingconesoftness_brbja` | float | Spot edge softness (0-1) |
-| `inputs:shaping:focus` | `xn__inputsshapingfocus_i5a` | float | Focus for barn doors/shaping |
-
-### Common Mistakes with Parameter Names
-
-- **WRONG**: `intensity`, `light_intensity`, `inputs:intensity` -- raw USD names do not work as Houdini parms
-- **WRONG**: `xn__inputsexposure_fya` -- outdated/incorrect encoding
-- **RIGHT**: `xn__inputsexposure_vya` -- verified for Houdini 21 Solaris lights
-- **RIGHT**: Use Synapse aliases (`exposure`, `intensity`, `color`) which resolve automatically
-
----
-
-## Rotation
-
-All lights use standard transform parms: `rx`, `ry`, `rz` (degrees).
-Position uses: `tx`, `ty`, `tz`.
-Scale uses: `sx`, `sy`, `sz` (useful for changing area light dimensions).
-
----
-
-## Key:Fill Ratios (Exposure Math)
-
-| Ratio | Stop Difference | Look |
-|-------|----------------|------|
-| 1.5:1 | 0.585 stops | Very flat, overcast |
-| 2:1 | 1.0 stops | Subtle, broadcast, beauty |
-| 3:1 | 1.585 stops (`log2(3)`) | Standard, narrative film |
-| 4:1 | 2.0 stops | Dramatic, moody |
-| 8:1 | 3.0 stops | Noir, extreme contrast |
-| 16:1 | 4.0 stops | Silhouette, extreme low-key |
-
-Formula: `fill_exposure = key_exposure - log2(ratio)`
-
----
-
-## HDRI / Environment Lighting (DomeLight)
-
-### Basic HDRI Setup
-
-1. Create a `domelight` LOP in `/stage`
-2. Set the HDRI texture path: parm `xn__inputstexturefile_i1a`
-3. Set intensity to 1.0 (it already defaults to 1.0)
-4. Adjust brightness via exposure: parm `xn__inputsexposure_vya`
+## Code
 
 ```python
-# Via Synapse
-create_node(parent="/stage", type="domelight", name="env_light")
-set_parm(node="/stage/env_light", parm="xn__inputstexturefile_i1a",
-         value="$HFS/houdini/pic/hdri/HDRIHaven_parking_lot_2k.exr")
-set_parm(node="/stage/env_light", parm="xn__inputsexposure_vya", value=0.0)
+import hou
+import math
+
+# ============================================================
+# LIGHTING LAW — READ THIS FIRST
+# ============================================================
+# intensity is ALWAYS 1.0. NEVER set it above 1.0.
+# Brightness is controlled by EXPOSURE (logarithmic, in stops).
+# Final light contribution = intensity * color * 2^exposure
+# Since intensity == 1.0 always, contribution = color * 2^exposure
+#
+# Key:fill ratios as stop differences:
+#   1.5:1 ratio = 0.585 stops  (log2(1.5))  — flat, broadcast beauty
+#   2:1   ratio = 1.0   stops  (log2(2))    — subtle, beauty
+#   3:1   ratio = 1.585 stops  (log2(3))    — standard narrative
+#   4:1   ratio = 2.0   stops  (log2(4))    — dramatic, moody
+#   8:1   ratio = 3.0   stops  (log2(8))    — noir, extreme contrast
+#  16:1   ratio = 4.0   stops  (log2(16))   — silhouette, low-key
+#
+# Formula: fill_exposure = key_exposure - log2(ratio)
+KEY_EXPOSURE = 5.0
+RATIO_3_TO_1 = math.log2(3)          # 1.585 stops
+FILL_EXPOSURE_3_1 = KEY_EXPOSURE - RATIO_3_TO_1   # 3.415
+FILL_EXPOSURE_4_1 = KEY_EXPOSURE - math.log2(4)   # 3.0
 ```
-
-### HDRI Rotation
-
-Rotate the environment map to position the sun or bright spot:
-- `ry` controls horizontal rotation (pan the environment)
-- `rx` controls vertical tilt
-- Common workflow: render a low-res preview, rotate `ry` by 15-30 degree increments to find optimal sun position
 
 ```python
-# Rotate HDRI to reposition the sun
-set_parm(node="/stage/env_light", parm="ry", value=120.0)
+import hou
+
+# ============================================================
+# COMPLETE ENCODED PARAMETER REFERENCE (Houdini 21 Solaris)
+# ============================================================
+# USD Attribute               Houdini Encoded Parm                  Notes
+# inputs:intensity            xn__inputsintensity_i0a               ALWAYS 1.0 — never change
+# inputs:exposure             xn__inputsexposure_vya                brightness in stops
+# inputs:exposure (control)   xn__inputsexposure_control_wcb        set to "set" to enable
+# inputs:color                xn__inputscolor_kya                   RGB via parmTuple
+# inputs:diffuse              xn__inputsdiffuse_vya                 diffuse multiplier 0-1
+# inputs:specular             xn__inputsspecular_01a                specular multiplier 0-1
+# inputs:shadow:enable        xn__inputsshadowenable_2kb            bool — toggle shadows
+# inputs:shadow:color         xn__inputsshadowcolor_o5a             vec3 — shadow tint
+# inputs:normalize            xn__inputsnormalize_01a               bool — normalize by area
+# inputs:texture:file         xn__inputstexturefile_i1a             HDRI path (DomeLight only)
+# inputs:texture:format       xn__inputstextureformat_r1a           latlong / mirroredBall / angular
+# inputs:enableColorTemperature xn__inputsenablecolortemperature_r5a bool
+# inputs:colorTemperature     xn__inputscolortemperature_u5a        float Kelvin
+# inputs:shaping:cone:angle   xn__inputsshapingconeangle_bobja      spot cone angle degrees
+# inputs:shaping:cone:softness xn__inputsshapingconesoftness_brbja  edge falloff 0-1
+# inputs:shaping:focus        xn__inputsshapingfocus_i5a            focus toward center
+
+
+def _set_light_intensity_law(light_node):
+    """Enforce Lighting Law: intensity always 1.0, brightness via exposure only."""
+    light_node.parm("xn__inputsintensity_i0a").set(1.0)
+    # Enable the exposure control so the value takes effect
+    ctrl = light_node.parm("xn__inputsexposure_control_wcb")
+    if ctrl:
+        ctrl.set("set")
 ```
-
-### Texture Format Modes
-
-The `inputs:texture:format` attribute controls how the HDRI is mapped:
-- `automatic` (default) -- auto-detect based on image
-- `latlong` -- equirectangular (most common for HDRIs)
-- `mirroredBall` -- chrome ball capture
-- `angular` -- angular/light probe format
-
-### DomeLight Best Practices
-
-- Use 2K-4K HDRI for preview, 8K+ for production renders
-- EXR format preferred (full HDR range, no clipping)
-- Start with exposure=0.0 and adjust from there
-- When combining HDRI with CG lights, lower the dome exposure by 1-2 stops to avoid overexposure
-- Use `inputs:diffuse` and `inputs:specular` multipliers to control HDRI contribution separately for diffuse fill vs. reflections
-
----
-
-## Three-Point Lighting Setup
-
-All lights use `intensity=1.0` (never change this). Brightness via exposure only.
-
-```
-Key Light:   distantlight, intensity=1.0, exposure=5.0,  ry=-45, rx=-35
-Fill Light:  rectlight,    intensity=1.0, exposure=3.0,  ry=45,  rx=-20    (4:1 ratio, 2 stops below key)
-Rim Light:   distantlight, intensity=1.0, exposure=4.5,  ry=180, rx=-30
-Environment: domelight,    intensity=1.0, exposure=0.0                     (ambient baseline)
-```
-
-### Exact Parameter Setup for Three-Point Rig
-
-**Key Light (DistantLight)**:
-```python
-create_node(parent="/stage", type="distantlight", name="key_light")
-set_parm(node="/stage/key_light", parm="xn__inputsintensity_i0a", value=1.0)
-set_parm(node="/stage/key_light", parm="xn__inputsexposure_vya", value=5.0)
-set_parm(node="/stage/key_light", parm="ry", value=-45)
-set_parm(node="/stage/key_light", parm="rx", value=-35)
-# Optional: warm color temperature
-set_parm(node="/stage/key_light", parm="xn__inputsenablecolortemperature_r5a", value=True)
-set_parm(node="/stage/key_light", parm="xn__inputscolortemperature_u5a", value=5500)
-```
-
-**Fill Light (RectLight)**:
-```python
-create_node(parent="/stage", type="rectlight", name="fill_light")
-set_parm(node="/stage/fill_light", parm="xn__inputsintensity_i0a", value=1.0)
-set_parm(node="/stage/fill_light", parm="xn__inputsexposure_vya", value=3.0)
-set_parm(node="/stage/fill_light", parm="ry", value=45)
-set_parm(node="/stage/fill_light", parm="rx", value=-20)
-# Large area = softer shadows
-set_parm(node="/stage/fill_light", parm="sx", value=3.0)
-set_parm(node="/stage/fill_light", parm="sz", value=3.0)
-```
-
-**Rim/Back Light (DistantLight)**:
-```python
-create_node(parent="/stage", type="distantlight", name="rim_light")
-set_parm(node="/stage/rim_light", parm="xn__inputsintensity_i0a", value=1.0)
-set_parm(node="/stage/rim_light", parm="xn__inputsexposure_vya", value=4.5)
-set_parm(node="/stage/rim_light", parm="ry", value=180)
-set_parm(node="/stage/rim_light", parm="rx", value=-30)
-```
-
-### Exposure Presets by Scenario
-
-| Scenario | Key | Fill | Rim | Env | Key:Fill |
-|----------|-----|------|-----|-----|----------|
-| Product beauty | 4.0 | 3.0 | 3.5 | 1.0 | 2:1 |
-| Broadcast/commercial | 5.0 | 3.415 | 4.5 | 1.0 | 3:1 |
-| Dramatic narrative | 5.0 | 3.0 | 4.5 | 0.0 | 4:1 |
-| Noir / low-key | 5.0 | 2.0 | 5.0 | -1.0 | 8:1 |
-| Overcast exterior | 3.0 | 2.5 | -- | 2.0 | 1.5:1 |
-| Character portrait | 4.0 | 2.415 | 3.5 | 0.5 | 3:1 |
-
----
-
-## Product / Turntable Lighting
-
-Designed for asset review and product visualization. Even, flattering light with minimal harsh shadows.
-
-### Standard Product Setup
-
-```
-Top/Key:     rectlight,    exposure=4.0, rx=-70, ry=0    (directly above, slightly forward)
-Side Fill A: rectlight,    exposure=3.0, ry=-90, rx=-15  (camera left)
-Side Fill B: rectlight,    exposure=3.0, ry=90,  rx=-15  (camera right, symmetric)
-Backdrop:    rectlight,    exposure=2.5, ry=180, rx=-10  (behind, subtle rim)
-Environment: domelight,    exposure=1.0                  (ambient fill)
-```
-
-### Key Parameters
-
-- Use large RectLights (`sx=5, sz=5`) for soft, wraparound illumination
-- Enable `inputs:normalize` so light intensity stays consistent as you resize the area light
-- Keep key:fill ratio at 2:1 or less for even coverage
-- For turntable animation, lights stay fixed while the asset rotates on a Y-axis animated Xform
-
----
-
-## Outdoor / Natural Lighting
-
-### Sunlight Setup
-
-```
-Sun:         distantlight, exposure=6.0, rx=-45, ry=-30  (high angle, warm)
-Sky:         domelight,    exposure=2.0                  (HDRI sky or solid blue fill)
-Bounce:      rectlight,    exposure=1.0, rx=80, ry=180   (ground bounce, warm)
-```
-
-### Color Temperature Guide for Naturals
-
-| Source | Kelvin | Use |
-|--------|--------|-----|
-| Candlelight | 1800-2000 | Intimate, warm interior |
-| Tungsten/incandescent | 2700-3200 | Indoor warm light |
-| Golden hour sun | 3500-4500 | Warm, cinematic outdoor |
-| Daylight (noon) | 5500-6500 | Neutral white outdoor |
-| Overcast sky | 6500-7500 | Cool, flat outdoor |
-| Blue sky (shade) | 8000-10000 | Cool fill in shadows |
-
-To use color temperature instead of RGB:
-```python
-set_parm(node="/stage/sun_light", parm="xn__inputsenablecolortemperature_r5a", value=True)
-set_parm(node="/stage/sun_light", parm="xn__inputscolortemperature_u5a", value=5500)
-```
-
-### Time of Day Presets
-
-| Time | Sun rx | Sun Exposure | Sky Exposure | Color Temp |
-|------|--------|-------------|-------------|------------|
-| Dawn | -5 | 3.0 | 0.5 | 3000 |
-| Morning | -25 | 5.0 | 1.5 | 4500 |
-| Noon | -80 | 6.0 | 2.0 | 6000 |
-| Golden hour | -10 | 4.0 | 1.0 | 3500 |
-| Dusk | -3 | 2.0 | 0.0 | 2500 |
-| Moonlight | -30 | 0.0 | -2.0 | 8000 |
-
----
-
-## Interior Lighting with Portals
-
-### Portal Lights for Window Illumination
-
-Portal lights help Karma sample outdoor light entering through windows more efficiently. Without portals, light through small windows causes heavy noise.
-
-1. Place a `rectlight` at each window opening, sized to match the window
-2. Set the rect light exposure to match the dome/sun
-3. In Karma render properties, enable portal sampling
-
-### Interior Lighting Setup
-
-```
-Window Portal: rectlight,    exposure=4.0, sized to window, facing inward
-Practical A:   spherelight,  exposure=2.0, tx=lamp_pos  (table lamp)
-Practical B:   spherelight,  exposure=1.5                (accent lamp)
-Ambient:       domelight,    exposure=-1.0               (very low, just enough to prevent pure black)
-```
-
-### Tips for Interiors
-
-- Use RectLights as practical stand-ins for ceiling fixtures (LED panels, fluorescent)
-- CylinderLights work well for tube fluorescent fixtures
-- Keep ambient dome very low (exposure -1 to 0) to maintain contrast
-- Place SphereLight sources inside lamp geometry for realism
-- Use warm color temperatures (2700-3200K) for residential interiors, cooler (4000-5000K) for offices
-
----
-
-## Light Linking and Light Categories
-
-Light linking controls which lights illuminate which objects. In USD/Solaris, this is done through collection-based light linking.
-
-### Setting Up Light Categories
-
-1. On the light LOP, use the `lightcategories` parameter to assign category tags
-2. On geometry, use `lightcategories` to specify which light categories affect it
-3. Categories are string tokens separated by spaces
-
-### Collection-Based Linking (USD)
-
-In USD, light linking uses collections on the light prim:
-- `collection:lightLink:includeRoot` -- whether to include all geometry by default
-- `collection:lightLink:includes` -- explicit list of geometry to illuminate
-- `collection:lightLink:excludes` -- explicit list of geometry to exclude
-
-### Via Python in LOPs
 
 ```python
-# Create a light link edit
-edit_node = stage_node.createNode("lightlinker", "link_key_to_hero")
-# Configure which lights affect which geometry
-# Light: /lights/key_light
-# Geometry: /World/hero_character
+import hou
+
+# ============================================================
+# DOME LIGHT — HDRI ENVIRONMENT
+# ============================================================
+
+def create_dome_light(stage_path="/stage", name="env_light",
+                      hdri_path="", exposure=0.0, ry=0.0):
+    """
+    Create a DomeLight LOP with an HDRI texture.
+    Position (tx/ty/tz) has no effect on DomeLights — only rotation matters.
+    Two DomeLights double the ambient level; use only one per scene.
+    """
+    stage = hou.node(stage_path)
+    dome = stage.createNode("domelight", name)
+
+    # Lighting Law: intensity always 1.0
+    dome.parm("xn__inputsintensity_i0a").set(1.0)
+
+    # Brightness via exposure only (0.0 = baseline, 1x multiplier)
+    dome.parm("xn__inputsexposure_control_wcb").set("set")
+    dome.parm("xn__inputsexposure_vya").set(exposure)
+
+    # HDRI texture — EXR preferred (full HDR range, no clipping)
+    # JPEG/PNG work but clip at 1.0 — no HDR range
+    if hdri_path:
+        dome.parm("xn__inputstexturefile_i1a").set(hdri_path)
+
+    # latlong = equirectangular (most common for HDRIs)
+    # mirroredBall = chrome ball capture, angular = light probe
+    dome.parm("xn__inputstextureformat_r1a").set("latlong")
+
+    # Horizontal rotation — pan environment to reposition sun
+    # ry by 15-30 degree increments during iteration to find optimal sun position
+    dome.parm("ry").set(ry)
+
+    return dome
+
+
+# Example: studio HDRI at moderate exposure
+dome = create_dome_light(
+    hdri_path="D:/GreyscaleGorillaAssetLibrary/HDRIs/parking_lot_2k.exr",
+    exposure=0.25,   # low exposure — HDRI provides its own brightness range
+    ry=120.0         # rotate environment so sun hits from camera-left
+)
+
+# When combining HDRI with CG lights, lower dome exposure 1-2 stops
+# to avoid overexposure — HDRI then acts as ambient fill only
+dome.parm("xn__inputsexposure_vya").set(-1.0)
+
+# Control HDRI contribution separately for diffuse vs. reflections
+dome.parm("xn__inputsdiffuse_vya").set(0.3)    # dim diffuse fill
+dome.parm("xn__inputsspecular_01a").set(1.0)   # full reflections from HDRI
+
+# Built-in Houdini test HDRIs
+hfs_hdri = "$HFS/houdini/pic/hdri/HDRIHaven_parking_lot_2k.exr"
+dome.parm("xn__inputstexturefile_i1a").set(hfs_hdri)
 ```
-
----
-
-## Shadow Controls
-
-### Shadow Parameters
-
-| Parameter | Encoded Name | Type | Notes |
-|-----------|-------------|------|-------|
-| Shadow Enable | `xn__inputsshadowenable_2kb` | bool | Toggle shadows on/off |
-| Shadow Color | `xn__inputsshadowcolor_o5a` | vec3 | Default black (0,0,0). Tint for colored shadows |
-
-### Shadow Quality (Karma Render Properties)
-
-Shadow quality is controlled at the render level, not per-light:
-
-| Parameter | Karma Parm | Default | Notes |
-|-----------|-----------|---------|-------|
-| Shadow bias | `karma:light:shadowbias` | 0.01 | Prevents self-shadowing artifacts |
-
-### Shadow Softness
-
-Shadow softness is determined by the physical size of the light source, not a separate "softness" parameter. This is physically-based behavior:
-- **Larger area light** (bigger sx/sz on RectLight) = softer shadows
-- **Smaller area light** = sharper shadows
-- **DistantLight** angle parameter controls sun disk size, affecting shadow softness
-- **SphereLight** radius controls softness
 
 ```python
-# Soft shadows: make the light source large
-set_parm(node="/stage/fill_light", parm="sx", value=5.0)
-set_parm(node="/stage/fill_light", parm="sz", value=5.0)
+import hou
 
-# Sharp shadows: use small or distant light
-set_parm(node="/stage/key_light", parm="sx", value=0.1)
+# ============================================================
+# AREA LIGHT — RECTLIGHT (RECTANGULAR AREA)
+# ============================================================
+
+def create_rect_light(stage_path="/stage", name="rect_light",
+                      exposure=4.0, tx=0.0, ty=3.0, tz=3.0,
+                      rx=-45.0, ry=0.0, sx=2.0, sz=2.0,
+                      shadows=True, normalize=True):
+    """
+    Create a RectLight LOP.
+    Shadow softness is physically determined by light source size (sx, sz).
+    Larger sx/sz = softer shadows. Smaller = sharper.
+    normalize=True keeps intensity consistent as you resize.
+    """
+    stage = hou.node(stage_path)
+    rect = stage.createNode("rectlight", name)
+
+    # Lighting Law: intensity locked at 1.0
+    rect.parm("xn__inputsintensity_i0a").set(1.0)
+    rect.parm("xn__inputsexposure_control_wcb").set("set")
+    rect.parm("xn__inputsexposure_vya").set(exposure)
+
+    # Position and orientation
+    rect.parm("tx").set(tx)
+    rect.parm("ty").set(ty)
+    rect.parm("tz").set(tz)
+    rect.parm("rx").set(rx)
+    rect.parm("ry").set(ry)
+
+    # Physical size controls shadow softness
+    rect.parm("sx").set(sx)   # width
+    rect.parm("sz").set(sz)   # height
+
+    # Normalize: True = resize without changing total energy output
+    rect.parm("xn__inputsnormalize_01a").set(normalize)
+
+    # Fill lights often look better without shadows (avoids double-shadow artifacts)
+    rect.parm("xn__inputsshadowenable_2kb").set(shadows)
+
+    return rect
+
+
+# Soft key light: large area for wraparound illumination
+key_rect = create_rect_light(
+    name="key_rect",
+    exposure=4.0,
+    tx=-3.0, ty=4.0, tz=2.0,
+    rx=-35.0, ry=-45.0,
+    sx=3.0, sz=3.0    # large = soft shadows
+)
+
+# Sharp accent: small source for crisp highlights
+accent = create_rect_light(
+    name="accent",
+    exposure=3.5,
+    sx=0.2, sz=0.2,   # small = sharp shadows
+    shadows=True
+)
 ```
-
-### Disabling Shadows for Fill
-
-Fill lights often look better without shadows to avoid double-shadow artifacts:
-```python
-set_parm(node="/stage/fill_light", parm="xn__inputsshadowenable_2kb", value=False)
-```
-
----
-
-## Light Shaping, Filters, and Barn Doors
-
-### Spot Light Shaping (Cone)
-
-Any light can be shaped into a spot using shaping attributes:
-
-| Parameter | Encoded Name | Type | Notes |
-|-----------|-------------|------|-------|
-| Cone Angle | `xn__inputsshapingconeangle_bobja` | float | Full cone angle in degrees |
-| Cone Softness | `xn__inputsshapingconesoftness_brbja` | float | Edge falloff (0=hard, 1=soft) |
-| Focus | `xn__inputsshapingfocus_i5a` | float | Focus intensity toward center |
-
-```python
-# Turn a sphere light into a spot light
-set_parm(node="/stage/spot", parm="xn__inputsshapingconeangle_bobja", value=30.0)
-set_parm(node="/stage/spot", parm="xn__inputsshapingconesoftness_brbja", value=0.5)
-```
-
-### Barn Doors (via Light Filters)
-
-Barn doors crop the light beam on four sides. In Karma, barn doors are implemented via light filter prims:
-
-1. Create a `BarnDoorLight` filter prim as a child of the light
-2. Set the four edge parameters (top, bottom, left, right) to control cropping
-3. Edge softness parameters control the falloff at each edge
-
-### IES Profiles
-
-For realistic architectural lighting, use IES light distribution profiles:
-- Set the `inputs:shaping:ies:file` attribute to the IES file path
-- IES profiles define the angular light distribution measured from real luminaires
-- Combine with SphereLight or DiskLight for realistic fixtures
-
----
-
-## Diffuse and Specular Contribution
-
-Each light can independently control its diffuse and specular contributions:
-
-```python
-# Light that only produces specular highlights (no diffuse shading)
-set_parm(node="/stage/spec_only", parm="xn__inputsdiffuse_vya", value=0.0)
-set_parm(node="/stage/spec_only", parm="xn__inputsspecular_01a", value=1.0)
-
-# Light that only fills diffuse (no specular highlights)
-set_parm(node="/stage/diff_fill", parm="xn__inputsdiffuse_vya", value=1.0)
-set_parm(node="/stage/diff_fill", parm="xn__inputsspecular_01a", value=0.0)
-```
-
-This is useful for:
-- Adding specular-only accent lights for eye highlights
-- Diffuse-only fill to lift shadows without adding unwanted reflections
-- Art-directing each light's contribution independently
-
----
-
-## Light Visibility
-
-### Camera Visibility
-
-By default, area lights (RectLight, DiskLight, SphereLight, CylinderLight) are visible to the camera as bright shapes. The DomeLight is visible as the background.
-
-To hide a light from the camera while keeping its illumination:
-- Use `primvars:karma:object:visibility` on the light prim
-- Or set the light's `purpose` to `guide` (visible in viewport, invisible in render)
-
-### Viewport Display
-
-In the Solaris viewport (Scene Viewer):
-- Lights appear as wireframe icons at their position
-- DomeLight shows as a sphere indicator
-- Area lights show their shape and direction
-- Enable **Display Options > Lighting > Use All Scene Lights** to see full lighting in the viewport
-- The viewport uses GL approximations -- always render a test frame for accurate results
-
----
-
-## Iterating on Lighting
-
-### Progressive Render Workflow
-
-1. **Viewport preview**: Use Karma viewport renderer (Hydra Storm or Karma CPU) for interactive feedback
-2. **Low-res test**: Render 320x240, 4-8 samples to check basic exposure and color balance
-3. **Mid-res check**: Render 960x540, 32 samples to evaluate shadows and composition
-4. **Final quality**: Render at production resolution with full samples
-
-### Fast Iteration Tips
-
-- Use Karma XPU for GPU-accelerated renders (10-50x faster than CPU for most scenes)
-- Disable motion blur and DOF during lighting iteration
-- Use `variance` pixel oracle to skip converged pixels
-- Set convergence threshold to 0.05 for fast preview, 0.005 for final
-- Render a single frame before committing to a sequence
-- Use viewport capture (`capture_viewport`) for instant feedback without rendering
-
-### Exposure Adjustment Workflow
-
-When adjusting overall scene brightness:
-1. Set key light exposure first -- this anchors everything
-2. Adjust fill relative to key using ratio math
-3. Set rim exposure by eye (typically 0.5-1.0 stops below key)
-4. Adjust dome exposure last to control ambient level
-5. Never touch intensity -- always use exposure
-
----
-
-## Setting Exposure via Synapse
 
 ```python
-# SOP-level lights (OBJ context)
-set_parm(node="/obj/key_light", parm="light_exposure", value=5.0)
+import hou
 
-# USD lights (LOP context) -- use encoded parm name
-set_parm(node="/stage/key_light", parm="xn__inputsexposure_vya", value=5.0)
-# Or use the human-readable alias (Synapse resolves it automatically)
-set_parm(node="/stage/key_light", parm="exposure", value=5.0)
+# ============================================================
+# DISTANT LIGHT — SUN / DIRECTIONAL
+# ============================================================
+
+def create_distant_light(stage_path="/stage", name="sun_light",
+                         exposure=6.0, rx=-45.0, ry=-30.0,
+                         color_temp_k=None):
+    """
+    Create a DistantLight LOP.
+    DistantLight is infinitely far — position (tx/ty/tz) has no effect.
+    Shadow softness is controlled by the light's angle parm (simulates sun disk size).
+    angle=0 produces perfectly sharp shadows (looks CG); increase for realism.
+    """
+    stage = hou.node(stage_path)
+    dist = stage.createNode("distantlight", name)
+
+    # Lighting Law: intensity always 1.0
+    dist.parm("xn__inputsintensity_i0a").set(1.0)
+    dist.parm("xn__inputsexposure_control_wcb").set("set")
+    dist.parm("xn__inputsexposure_vya").set(exposure)
+
+    # Direction only — rx/ry control sun angle
+    dist.parm("rx").set(rx)
+    dist.parm("ry").set(ry)
+
+    # Optional: color temperature instead of RGB
+    # Guide: 3000K=warm tungsten, 5500K=noon daylight, 8000K=blue sky shade
+    if color_temp_k is not None:
+        dist.parm("xn__inputsenablecolortemperature_r5a").set(True)
+        dist.parm("xn__inputscolortemperature_u5a").set(color_temp_k)
+
+    return dist
+
+
+# Noon sun: high angle, neutral white
+noon_sun = create_distant_light(
+    name="noon_sun",
+    exposure=6.0,
+    rx=-80.0,          # nearly vertical (high noon)
+    ry=-30.0,
+    color_temp_k=6000  # neutral daylight
+)
+
+# Golden hour sun: low angle, warm
+golden_hour = create_distant_light(
+    name="golden_hour_sun",
+    exposure=4.0,
+    rx=-10.0,          # very low on horizon
+    ry=-30.0,
+    color_temp_k=3500  # warm orange-gold
+)
+
+# Moonlight: barely above horizon, cool, dim
+moonlight = create_distant_light(
+    name="moonlight",
+    exposure=0.0,      # very dim (1x multiplier)
+    rx=-30.0,
+    ry=0.0,
+    color_temp_k=8000  # cool blue
+)
 ```
 
----
+```python
+import hou
+import math
 
-## Common Gotchas
+# ============================================================
+# THREE-POINT LIGHTING RIG
+# ============================================================
+# Key:fill ratio 3:1 = 1.585 stops difference (log2(3))
+# Key:fill ratio 4:1 = 2.0   stops difference (log2(4))
 
-### Lighting Law Violations
+def create_three_point_rig(stage_path="/stage",
+                           key_exposure=5.0,
+                           ratio=3.0,
+                           scenario="narrative"):
+    """
+    Build a complete three-point lighting rig.
+    Intensity is NEVER touched — all brightness via exposure.
 
-- **WRONG**: `set_parm(parm="intensity", value=5)` -- violates Lighting Law, causes fireflies and blown highlights
-- **RIGHT**: `set_parm(parm="exposure", value=5)` -- logarithmic brightness control
-- **WRONG**: Using `xn__inputsexposure_fya` -- this is an outdated/incorrect encoding
-- **RIGHT**: Using `xn__inputsexposure_vya` -- verified for Houdini 21 Solaris lights
+    scenario presets:
+      "beauty"    — 2:1 ratio, even and flattering
+      "narrative" — 3:1 ratio, standard film
+      "dramatic"  — 4:1 ratio, moody
+      "noir"      — 8:1 ratio, extreme contrast
+    """
+    PRESETS = {
+        #               key   ratio  rim_offset  env
+        "beauty":     (4.0,  2.0,   -0.5,       1.0),
+        "narrative":  (5.0,  3.0,   -0.5,       0.0),
+        "dramatic":   (5.0,  4.0,   -0.5,       0.0),
+        "noir":       (5.0,  8.0,   0.0,        -1.0),
+    }
+    if scenario in PRESETS:
+        key_exposure, ratio, rim_offset, env_exposure = PRESETS[scenario]
 
-### Exposure Misunderstandings
+    fill_exposure = key_exposure - math.log2(ratio)
+    rim_exposure  = key_exposure + rim_offset   # typically 0.5 stops below key
 
-- Exposure is LOGARITHMIC. Exposure 10 is not "twice as bright" as exposure 5. It is 32x brighter (2^5).
-- Negative exposure is valid. Exposure -2 means 1/4 brightness (useful for very subtle fill or moonlight).
-- Exposure 0 does NOT mean "off". It means 1x multiplier (intensity * 1). Use shadow:enable=False to turn a light off.
+    stage = hou.node(stage_path)
 
-### Area Light Normalization
+    # --- KEY LIGHT (DistantLight, camera left, high angle) ---
+    key = stage.createNode("distantlight", "key_light")
+    key.parm("xn__inputsintensity_i0a").set(1.0)       # Lighting Law
+    key.parm("xn__inputsexposure_control_wcb").set("set")
+    key.parm("xn__inputsexposure_vya").set(key_exposure)
+    key.parm("rx").set(-35.0)   # downward angle
+    key.parm("ry").set(-45.0)   # camera-left
+    # Warm color temperature for natural key
+    key.parm("xn__inputsenablecolortemperature_r5a").set(True)
+    key.parm("xn__inputscolortemperature_u5a").set(5500)  # neutral daylight
 
-- When `inputs:normalize` is ON, resizing an area light does NOT change its total energy output (just softens shadows)
-- When `inputs:normalize` is OFF (default for some types), making a light bigger also makes it brighter
-- For consistent behavior, enable normalize on area lights: `xn__inputsnormalize_01a = True`
+    # --- FILL LIGHT (RectLight, camera right, soft) ---
+    fill = stage.createNode("rectlight", "fill_light")
+    fill.parm("xn__inputsintensity_i0a").set(1.0)      # Lighting Law
+    fill.parm("xn__inputsexposure_control_wcb").set("set")
+    fill.parm("xn__inputsexposure_vya").set(fill_exposure)
+    fill.parm("rx").set(-20.0)
+    fill.parm("ry").set(45.0)   # camera-right
+    fill.parm("sx").set(3.0)    # large = very soft shadows
+    fill.parm("sz").set(3.0)
+    fill.parm("xn__inputsnormalize_01a").set(True)
+    # Fill lights: disable shadows to avoid double-shadow artifacts
+    fill.parm("xn__inputsshadowenable_2kb").set(False)
 
-### DomeLight Pitfalls
+    # --- RIM / BACK LIGHT (DistantLight, behind subject) ---
+    rim = stage.createNode("distantlight", "rim_light")
+    rim.parm("xn__inputsintensity_i0a").set(1.0)       # Lighting Law
+    rim.parm("xn__inputsexposure_control_wcb").set("set")
+    rim.parm("xn__inputsexposure_vya").set(rim_exposure)
+    rim.parm("rx").set(-30.0)
+    rim.parm("ry").set(180.0)   # directly behind subject
 
-- A DomeLight with no texture file produces a uniform white environment
-- HDRI must be in a format Karma can read (EXR, HDR, TIFF). JPEG/PNG work but clip at 1.0 (no HDR range)
-- Rotating the DomeLight rotates the ENTIRE environment including reflections
-- Two DomeLights will double the ambient level -- typically you only want one
-- DomeLight is always infinitely far away; position (`tx/ty/tz`) has no effect, only rotation matters
+    # --- ENVIRONMENT (DomeLight, ambient baseline) ---
+    env = stage.createNode("domelight", "env_dome")
+    env.parm("xn__inputsintensity_i0a").set(1.0)       # Lighting Law
+    env.parm("xn__inputsexposure_control_wcb").set("set")
+    env.parm("xn__inputsexposure_vya").set(
+        -1.0 if scenario == "noir" else env_exposure
+    )
+    # Keep env as subtle fill only
+    env.parm("xn__inputsdiffuse_vya").set(0.5)
+    env.parm("xn__inputsspecular_01a").set(1.0)
 
-### Shadow Issues
+    print(f"Three-point rig '{scenario}': "
+          f"key={key_exposure:.2f} fill={fill_exposure:.2f} "
+          f"rim={rim_exposure:.2f} ratio={ratio}:1")
+    return key, fill, rim, env
 
-- If shadows look blocky or have acne, increase shadow bias or make the light source larger
-- Fill lights should generally have shadows disabled to avoid confusing double shadows
-- DistantLight with angle=0 produces perfectly sharp shadows (may look CG-ish); increase angle for realism
 
-### Light Not Appearing in Render
+# --- STANDARD SCENARIO EXPOSURE PRESETS ---
+# Verify fill math: fill = key - log2(ratio)
+# Product beauty:         key=4.0  fill=3.0   rim=3.5  env=1.0   (2:1)
+# Broadcast/commercial:   key=5.0  fill=3.415 rim=4.5  env=1.0   (3:1)
+# Dramatic narrative:     key=5.0  fill=3.0   rim=4.5  env=0.0   (4:1)
+# Noir/low-key:           key=5.0  fill=2.0   rim=5.0  env=-1.0  (8:1)
+# Overcast exterior:      key=3.0  fill=2.5   rim=--   env=2.0   (1.5:1)
+# Character portrait:     key=4.0  fill=2.415 rim=3.5  env=0.5   (3:1)
 
-1. Check the light is connected in the LOP graph (wired into the merge before render properties)
-2. Check the light prim is active (`active=True`)
-3. Check exposure is not extremely negative (e.g., exposure=-20 is effectively invisible)
-4. Check `inputs:diffuse` and `inputs:specular` are not both 0
-5. Check light linking is not excluding the geometry
+key, fill, rim, env = create_three_point_rig(scenario="narrative")
+```
+
+```python
+import hou
+
+# ============================================================
+# PRODUCT / TURNTABLE LIGHTING RIG
+# ============================================================
+# Even, flattering light with minimal harsh shadows.
+# Key:fill ratio 2:1 or less for even coverage.
+# Large RectLights (sx=5, sz=5) for soft wraparound illumination.
+
+def create_product_rig(stage_path="/stage"):
+    """
+    Standard product lighting rig: top key + two side fills + rim + dome.
+    Normalize ON so resizing area lights doesn't change total energy.
+    Turntable: lights stay fixed, asset rotates on Y-axis animated Xform.
+    """
+    stage = hou.node(stage_path)
+
+    def _rect(name, exposure, rx, ry, sx=3.0, sz=3.0, shadows=True):
+        n = stage.createNode("rectlight", name)
+        n.parm("xn__inputsintensity_i0a").set(1.0)    # Lighting Law
+        n.parm("xn__inputsexposure_control_wcb").set("set")
+        n.parm("xn__inputsexposure_vya").set(exposure)
+        n.parm("rx").set(rx)
+        n.parm("ry").set(ry)
+        n.parm("sx").set(sx)
+        n.parm("sz").set(sz)
+        n.parm("xn__inputsnormalize_01a").set(True)  # consistent as resized
+        n.parm("xn__inputsshadowenable_2kb").set(shadows)
+        return n
+
+    # Top/key: directly above, slightly forward
+    top_key  = _rect("top_key",   exposure=4.0, rx=-70, ry=0,
+                     sx=5.0, sz=5.0)
+
+    # Side fills: symmetric, camera left and right — disable shadows
+    side_a   = _rect("side_fill_a", exposure=3.0, rx=-15, ry=-90,
+                     sx=4.0, sz=4.0, shadows=False)
+    side_b   = _rect("side_fill_b", exposure=3.0, rx=-15, ry=90,
+                     sx=4.0, sz=4.0, shadows=False)
+
+    # Subtle rim from behind
+    backdrop = _rect("backdrop_rim", exposure=2.5, rx=-10, ry=180,
+                     sx=3.0, sz=3.0, shadows=False)
+
+    # Ambient dome — low exposure, acts as fill only
+    dome = stage.createNode("domelight", "env_dome")
+    dome.parm("xn__inputsintensity_i0a").set(1.0)   # Lighting Law
+    dome.parm("xn__inputsexposure_control_wcb").set("set")
+    dome.parm("xn__inputsexposure_vya").set(1.0)
+    dome.parm("xn__inputsdiffuse_vya").set(0.5)
+    dome.parm("xn__inputsspecular_01a").set(1.0)
+
+    return top_key, side_a, side_b, backdrop, dome
+
+create_product_rig()
+```
+
+```python
+import hou
+
+# ============================================================
+# OUTDOOR / NATURAL LIGHTING
+# ============================================================
+
+def create_outdoor_rig(stage_path="/stage", time_of_day="noon"):
+    """
+    Sun + sky + bounce rig for exterior scenes.
+    Color temperature guide:
+      1800-2000K  candlelight
+      2700-3200K  tungsten / incandescent indoor warm
+      3500-4500K  golden hour sun
+      5500-6500K  daylight (noon)
+      6500-7500K  overcast sky
+      8000-10000K blue sky shade (cool fill in shadows)
+
+    time_of_day presets:
+      "dawn"         rx=-5,  exposure=3.0, color_temp=3000
+      "morning"      rx=-25, exposure=5.0, color_temp=4500
+      "noon"         rx=-80, exposure=6.0, color_temp=6000
+      "golden_hour"  rx=-10, exposure=4.0, color_temp=3500
+      "dusk"         rx=-3,  exposure=2.0, color_temp=2500
+      "moonlight"    rx=-30, exposure=0.0, color_temp=8000
+    """
+    TIME_PRESETS = {
+        #                rx     exp    sky_exp  kelvin
+        "dawn":        (-5,   3.0,    0.5,    3000),
+        "morning":     (-25,  5.0,    1.5,    4500),
+        "noon":        (-80,  6.0,    2.0,    6000),
+        "golden_hour": (-10,  4.0,    1.0,    3500),
+        "dusk":        (-3,   2.0,    0.0,    2500),
+        "moonlight":   (-30,  0.0,   -2.0,    8000),
+    }
+
+    rx, sun_exp, sky_exp, kelvin = TIME_PRESETS.get(time_of_day, TIME_PRESETS["noon"])
+
+    stage = hou.node(stage_path)
+
+    # --- SUN (DistantLight) ---
+    sun = stage.createNode("distantlight", "sun")
+    sun.parm("xn__inputsintensity_i0a").set(1.0)      # Lighting Law
+    sun.parm("xn__inputsexposure_control_wcb").set("set")
+    sun.parm("xn__inputsexposure_vya").set(sun_exp)
+    sun.parm("rx").set(rx)
+    sun.parm("ry").set(-30.0)
+    sun.parm("xn__inputsenablecolortemperature_r5a").set(True)
+    sun.parm("xn__inputscolortemperature_u5a").set(kelvin)
+
+    # --- SKY (DomeLight — HDRI sky or solid blue fill) ---
+    sky = stage.createNode("domelight", "sky_dome")
+    sky.parm("xn__inputsintensity_i0a").set(1.0)      # Lighting Law
+    sky.parm("xn__inputsexposure_control_wcb").set("set")
+    sky.parm("xn__inputsexposure_vya").set(sky_exp)
+    # Cool sky color for blue-sky scenarios
+    sky.parmTuple("xn__inputscolor_kya").set((0.6, 0.75, 1.0))
+
+    # --- GROUND BOUNCE (RectLight, pointing up from below) ---
+    bounce = stage.createNode("rectlight", "ground_bounce")
+    bounce.parm("xn__inputsintensity_i0a").set(1.0)   # Lighting Law
+    bounce.parm("xn__inputsexposure_control_wcb").set("set")
+    bounce.parm("xn__inputsexposure_vya").set(1.0)    # subtle bounce
+    bounce.parm("rx").set(80.0)    # nearly flat, pointing upward
+    bounce.parm("ry").set(180.0)
+    bounce.parm("sx").set(6.0)     # large for soft diffuse bounce
+    bounce.parm("sz").set(6.0)
+    # Warm ground bounce (sun-heated ground)
+    bounce.parm("xn__inputsenablecolortemperature_r5a").set(True)
+    bounce.parm("xn__inputscolortemperature_u5a").set(4000)
+    bounce.parm("xn__inputsshadowenable_2kb").set(False)   # no bounce shadows
+
+    return sun, sky, bounce
+
+sun, sky, bounce = create_outdoor_rig(time_of_day="golden_hour")
+```
+
+```python
+import hou
+
+# ============================================================
+# INTERIOR LIGHTING WITH PORTAL LIGHTS
+# ============================================================
+# Portal lights help Karma sample outdoor light through small windows
+# more efficiently. Without portals, tiny window openings cause heavy noise.
+
+def create_interior_rig(stage_path="/stage",
+                        window_positions=None):
+    """
+    Interior rig: window portals + practicals + ambient dome.
+    window_positions: list of (tx, ty, tz, rx, ry, width, height) tuples.
+    Practicals: SphereLight inside lamp geometry for realism.
+    CylinderLights for tube fluorescent fixtures.
+    Residential: 2700-3200K. Office: 4000-5000K.
+    """
+    stage = hou.node(stage_path)
+    lights = []
+
+    # --- WINDOW PORTAL LIGHTS (RectLight sized to match window opening) ---
+    if window_positions:
+        for i, (tx, ty, tz, rx, ry, w, h) in enumerate(window_positions):
+            portal = stage.createNode("rectlight", f"window_portal_{i}")
+            portal.parm("xn__inputsintensity_i0a").set(1.0)   # Lighting Law
+            portal.parm("xn__inputsexposure_control_wcb").set("set")
+            portal.parm("xn__inputsexposure_vya").set(4.0)    # match outdoor brightness
+            portal.parm("tx").set(tx)
+            portal.parm("ty").set(ty)
+            portal.parm("tz").set(tz)
+            portal.parm("rx").set(rx)
+            portal.parm("ry").set(ry)
+            portal.parm("sx").set(w)    # width matches window
+            portal.parm("sz").set(h)    # height matches window
+            portal.parm("xn__inputsnormalize_01a").set(True)
+            lights.append(portal)
+    else:
+        # Default single window portal
+        portal = stage.createNode("rectlight", "window_portal")
+        portal.parm("xn__inputsintensity_i0a").set(1.0)
+        portal.parm("xn__inputsexposure_control_wcb").set("set")
+        portal.parm("xn__inputsexposure_vya").set(4.0)
+        portal.parm("tx").set(0.0)
+        portal.parm("ty").set(1.5)
+        portal.parm("tz").set(-3.0)
+        portal.parm("rx").set(0.0)
+        portal.parm("ry").set(0.0)
+        portal.parm("sx").set(1.2)
+        portal.parm("sz").set(1.5)
+        lights.append(portal)
+
+    # --- TABLE LAMP PRACTICAL (SphereLight inside lamp geometry) ---
+    lamp_a = stage.createNode("spherelight", "table_lamp_a")
+    lamp_a.parm("xn__inputsintensity_i0a").set(1.0)   # Lighting Law
+    lamp_a.parm("xn__inputsexposure_control_wcb").set("set")
+    lamp_a.parm("xn__inputsexposure_vya").set(2.0)
+    lamp_a.parm("tx").set(1.5)
+    lamp_a.parm("ty").set(0.8)
+    lamp_a.parm("tz").set(0.5)
+    lamp_a.parm("xn__inputsenablecolortemperature_r5a").set(True)
+    lamp_a.parm("xn__inputscolortemperature_u5a").set(2700)  # warm tungsten
+    lights.append(lamp_a)
+
+    # --- ACCENT LAMP PRACTICAL ---
+    lamp_b = stage.createNode("spherelight", "table_lamp_b")
+    lamp_b.parm("xn__inputsintensity_i0a").set(1.0)   # Lighting Law
+    lamp_b.parm("xn__inputsexposure_control_wcb").set("set")
+    lamp_b.parm("xn__inputsexposure_vya").set(1.5)
+    lamp_b.parm("tx").set(-1.0)
+    lamp_b.parm("ty").set(0.6)
+    lamp_b.parm("tz").set(1.0)
+    lamp_b.parm("xn__inputsenablecolortemperature_r5a").set(True)
+    lamp_b.parm("xn__inputscolortemperature_u5a").set(2700)
+    lights.append(lamp_b)
+
+    # --- AMBIENT DOME — very low, just enough to prevent pure black ---
+    # Exposure -1 to 0 keeps contrast; higher breaks the interior mood
+    ambient = stage.createNode("domelight", "interior_ambient")
+    ambient.parm("xn__inputsintensity_i0a").set(1.0)  # Lighting Law
+    ambient.parm("xn__inputsexposure_control_wcb").set("set")
+    ambient.parm("xn__inputsexposure_vya").set(-1.0)  # very subtle
+    lights.append(ambient)
+
+    return lights
+
+create_interior_rig()
+```
+
+```python
+import hou
+
+# ============================================================
+# COLOR TEMPERATURE SETUP
+# ============================================================
+
+def set_color_temperature(light_node, kelvin):
+    """
+    Switch a light to use Kelvin color temperature instead of RGB color.
+    Useful for matching real-world sources and time-of-day accuracy.
+
+    Color temperature reference:
+      1800-2000K  candlelight / firelight
+      2700-3200K  tungsten / incandescent (warm indoor)
+      3500-4500K  golden hour / warm halogen
+      5500-6500K  neutral daylight (noon sun)
+      6500-7500K  overcast sky
+      8000-10000K blue sky shade (cool shadow fill)
+    """
+    # Enable color temperature mode (overrides RGB color parm)
+    light_node.parm("xn__inputsenablecolortemperature_r5a").set(True)
+    light_node.parm("xn__inputscolortemperature_u5a").set(kelvin)
+
+
+def set_rgb_color(light_node, r, g, b):
+    """Set light color via RGB (0-1 range). Disables color temperature mode."""
+    light_node.parm("xn__inputsenablecolortemperature_r5a").set(False)
+    light_node.parmTuple("xn__inputscolor_kya").set((r, g, b))
+
+
+# Examples
+key = hou.node("/stage/key_light")
+if key:
+    set_color_temperature(key, 5500)    # neutral noon daylight key
+
+fill = hou.node("/stage/fill_light")
+if fill:
+    set_color_temperature(fill, 6500)   # slightly cooler fill (sky bounce)
+    # Or use a tinted RGB fill:
+    # set_rgb_color(fill, 0.7, 0.85, 1.0)  # faint blue fill tint
+```
+
+```python
+import hou
+
+# ============================================================
+# LIGHT SHAPING — SPOT / CONE + BARN DOORS
+# ============================================================
+
+def make_spot_light(stage_path="/stage", name="spot",
+                    exposure=4.0, cone_angle=30.0, cone_softness=0.3):
+    """
+    Convert a SphereLight into a spot via shaping attributes.
+    cone_angle: full cone angle in degrees (tighter = narrower beam)
+    cone_softness: edge falloff 0=hard edge, 1=very soft edge
+    """
+    stage = hou.node(stage_path)
+    spot = stage.createNode("spherelight", name)
+
+    spot.parm("xn__inputsintensity_i0a").set(1.0)      # Lighting Law
+    spot.parm("xn__inputsexposure_control_wcb").set("set")
+    spot.parm("xn__inputsexposure_vya").set(exposure)
+
+    # Shaping: cone angle and softness
+    spot.parm("xn__inputsshapingconeangle_bobja").set(cone_angle)
+    spot.parm("xn__inputsshapingconesoftness_brbja").set(cone_softness)
+
+    # Optional: focus intensity toward cone center
+    # spot.parm("xn__inputsshapingfocus_i5a").set(0.5)
+
+    return spot
+
+
+# Tight theatrical spot
+theatre_spot = make_spot_light(name="theatre_spot",
+                               exposure=5.0,
+                               cone_angle=15.0,
+                               cone_softness=0.1)   # hard edge
+
+# Wide soft studio spot
+studio_spot = make_spot_light(name="studio_spot",
+                              exposure=3.5,
+                              cone_angle=60.0,
+                              cone_softness=0.6)    # soft falloff
+```
+
+```python
+import hou
+
+# ============================================================
+# DIFFUSE / SPECULAR CONTRIBUTION SPLITTING
+# ============================================================
+
+def split_contribution(light_node, diffuse=1.0, specular=1.0):
+    """
+    Independently control a light's diffuse and specular contribution.
+    Use cases:
+      - diffuse=0, specular=1: specular-only eye highlight accent
+      - diffuse=1, specular=0: diffuse-only fill (lifts shadows, no reflections)
+      - diffuse=0.5, specular=1: half-strength diffuse, full specular
+    """
+    light_node.parm("xn__inputsdiffuse_vya").set(diffuse)
+    light_node.parm("xn__inputsspecular_01a").set(specular)
+
+
+# Art-direct specular eye-highlight light (does NOT shade the face)
+eye_highlight = hou.node("/stage/eye_highlight")
+if eye_highlight:
+    split_contribution(eye_highlight, diffuse=0.0, specular=1.0)
+
+# Diffuse-only fill (lifts dark areas without adding specular hotspots)
+soft_fill = hou.node("/stage/soft_fill")
+if soft_fill:
+    split_contribution(soft_fill, diffuse=1.0, specular=0.0)
+```
+
+```python
+import hou
+
+# ============================================================
+# SHADOW CONTROLS
+# ============================================================
+
+def configure_shadows(light_node, enabled=True, shadow_color=(0, 0, 0)):
+    """
+    Configure shadow casting on a light.
+    Shadow softness = physical size of light source (larger = softer).
+    Fill lights should have shadows disabled to avoid double-shadow artifacts.
+    Shadow bias lives on the Karma render properties, not per-light.
+    """
+    light_node.parm("xn__inputsshadowenable_2kb").set(enabled)
+    if shadow_color != (0, 0, 0):
+        light_node.parmTuple("xn__inputsshadowcolor_o5a").set(shadow_color)
+
+
+# Disable shadows on fill light (standard practice)
+fill = hou.node("/stage/fill_light")
+if fill:
+    configure_shadows(fill, enabled=False)
+
+# Soft shadows: make the source physically large
+rect = hou.node("/stage/key_rect")
+if rect:
+    rect.parm("sx").set(5.0)   # large width  = soft shadows
+    rect.parm("sz").set(5.0)   # large height = soft shadows
+
+# Sharp shadows: small source
+accent = hou.node("/stage/accent")
+if accent:
+    accent.parm("sx").set(0.1)
+    accent.parm("sz").set(0.1)
+
+# Tinted shadow (e.g., blue shadow for a cold key)
+key = hou.node("/stage/key_light")
+if key:
+    configure_shadows(key, enabled=True, shadow_color=(0.1, 0.15, 0.3))
+```
+
+```python
+import hou
+
+# ============================================================
+# LIGHT LINKING VIA COLLECTIONS (USD/Solaris)
+# ============================================================
+# Light linking controls which lights illuminate which objects.
+# In USD, implemented through collection-based linking on light prims.
+# LightLinker LOP provides an artist-friendly graph interface.
+
+def create_light_link(stage_path="/stage",
+                      light_prim_path="/lights/key_light",
+                      geo_prim_path="/World/hero_character",
+                      link_name="key_to_hero"):
+    """
+    Create a LightLinker LOP to restrict a light to specific geometry.
+    The LightLinker node generates USD collection relationships on the light prim:
+      collection:lightLink:includes  — geometry this light illuminates
+      collection:lightLink:excludes  — geometry excluded from this light
+    """
+    stage = hou.node(stage_path)
+    linker = stage.createNode("lightlinker", link_name)
+
+    # Configure which light and which geometry
+    # (LightLinker uses its own UI — set via parms or the node interface)
+    # linker.parm("light1").set(light_prim_path)
+    # linker.parm("geo1").set(geo_prim_path)
+
+    return linker
+
+
+# ---- Category-based linking (simpler) ----
+# On the light LOP: assign a category tag string
+key = hou.node("/stage/key_light")
+if key:
+    # Assign this light to the "hero_lights" category
+    key.parm("lightcategories").set("hero_lights")
+
+# On geometry LOP: specify which light categories affect it
+# hero_geo = hou.node("/stage/hero_geo")
+# hero_geo.parm("lightcategories").set("hero_lights")
+
+# ---- Exclude key light from background geo ----
+# Create a LightLinker and set up exclude relationship on background prims
+# so the hero key doesn't spill onto the background set.
+```
+
+```python
+import hou
+
+# ============================================================
+# EXPOSURE ADJUSTMENT WORKFLOW (correct order)
+# ============================================================
+# Step 1: Set key light exposure — anchors everything else
+# Step 2: Adjust fill relative to key using ratio math
+# Step 3: Set rim exposure by eye (typically 0.5–1.0 stops below key)
+# Step 4: Adjust dome exposure last to control ambient level
+# Step 5: NEVER touch intensity — always use exposure
+
+import math
+
+def adjust_rig_exposure(key_path, fill_path, rim_path, dome_path,
+                        key_exposure, ratio=3.0, rim_offset=-0.5):
+    """
+    Adjust a complete rig's exposure values correctly.
+    Never modifies intensity — only exposure parms.
+    """
+    fill_exposure = key_exposure - math.log2(ratio)
+    rim_exposure  = key_exposure + rim_offset
+
+    def _set_exp(node_path, exp_value):
+        n = hou.node(node_path)
+        if n:
+            n.parm("xn__inputsexposure_control_wcb").set("set")
+            n.parm("xn__inputsexposure_vya").set(exp_value)
+            print(f"  {node_path} exposure = {exp_value:.3f}")
+
+    print(f"Adjusting rig: key={key_exposure} fill={fill_exposure:.3f} "
+          f"rim={rim_exposure:.3f} (ratio {ratio}:1)")
+    _set_exp(key_path,  key_exposure)
+    _set_exp(fill_path, fill_exposure)
+    _set_exp(rim_path,  rim_exposure)
+    # Dome last — set manually based on desired ambient level
+    # _set_exp(dome_path, 0.0)  # call separately after reviewing a test render
+
+
+# Lift entire rig brightness by 1 stop (double the light)
+adjust_rig_exposure(
+    key_path="/stage/key_light",
+    fill_path="/stage/fill_light",
+    rim_path="/stage/rim_light",
+    dome_path="/stage/env_dome",
+    key_exposure=6.0,   # was 5.0 — lifted by 1 stop
+    ratio=3.0
+)
+```
+
+## Common Mistakes
+
+**Violating the Lighting Law (most critical)**
+- Wrong: `node.parm("xn__inputsintensity_i0a").set(5.0)` — breaks energy conservation, causes fireflies and blown highlights
+- Wrong: `node.parm("intensity").set(5.0)` — raw USD name does not work as a Houdini parm anyway
+- Right: keep intensity at 1.0 always; set `xn__inputsexposure_vya` for brightness
+
+**Wrong encoded parameter names**
+- Wrong: `xn__inputsexposure_fya` — outdated/incorrect encoding
+- Wrong: `inputs:exposure`, `light_exposure`, `exposure` (without Synapse alias resolution)
+- Right: `xn__inputsexposure_vya` — verified for Houdini 21 Solaris lights
+
+**Exposure is logarithmic — not linear**
+- Exposure 10 is NOT twice as bright as exposure 5; it is 32x brighter (2^5 = 32)
+- Negative exposure is valid: exposure -2 = 1/4 brightness (useful for moonlight, subtle fill)
+- Exposure 0 does NOT turn a light off; it means 1x multiplier. Use `xn__inputsshadowenable_2kb = False` or disconnect the node to disable
+
+**DomeLight mistakes**
+- Position (`tx/ty/tz`) has NO effect on DomeLights — only rotation matters
+- Two DomeLights in the same stage double the ambient level — use only one
+- No texture file = uniform white environment (not black; will overexpose scenes)
+- JPEG/PNG textures clip at 1.0 — no HDR range; use EXR or HDR format
+
+**Area light normalization**
+- When `xn__inputsnormalize_01a = False` (some types default to off), making the light bigger also makes it brighter
+- Enable normalize on area lights for consistent behavior when resizing for shadow softness
+
+**Missing exposure control enable**
+- Setting `xn__inputsexposure_vya` without setting `xn__inputsexposure_control_wcb = "set"` may not take effect
+- Always set the control parm first when using exposure overrides programmatically
+
+**Fill light double shadows**
+- Fill lights should almost always have `xn__inputsshadowenable_2kb = False`
+- Two shadow-casting lights from different angles produce confusing crossed shadows
+
+**Light not appearing in render**
+- Check the light LOP is wired into the merge node that feeds render properties
+- Check `xn__inputsdiffuse_vya` and `xn__inputsspecular_01a` are not both 0.0
+- Check exposure is not extremely negative (e.g., -20 is effectively invisible)
+- Check light linking collections are not accidentally excluding the target geometry
+- Check the light prim is active (not muted in the LOP network)

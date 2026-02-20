@@ -2,21 +2,24 @@
 
 ## Type Hierarchy
 
-| Type | Size | Description | Literal Example |
-|------|------|-------------|-----------------|
-| `int` | 4 bytes | 32-bit integer | `42`, `-1`, `0xFF` |
-| `float` | 4 bytes | 32-bit float | `3.14`, `1e-5`, `.5` |
-| `vector2` | 8 bytes | 2 floats | `{0.5, 0.5}` |
-| `vector` | 12 bytes | 3 floats (xyz/rgb) | `{1, 2, 3}` |
-| `vector4` | 16 bytes | 4 floats (quaternion/rgba) | `{0, 0, 0, 1}` |
-| `matrix2` | 16 bytes | 2x2 matrix | `ident()` |
-| `matrix3` | 36 bytes | 3x3 matrix (rotation/scale) | `ident()` |
-| `matrix` | 64 bytes | 4x4 matrix (full transform) | `ident()` |
-| `string` | varies | UTF-8 string | `"hello"` |
+```vex
+// VEX data types: name, size, literal example
+int i = 42;               // 4 bytes, 32-bit integer (-1, 0xFF)
+float f = 3.14;           // 4 bytes, 32-bit float (1e-5, .5)
+vector2 uv = {0.5, 0.5};  // 8 bytes, 2 floats
+vector v = {1, 2, 3};     // 12 bytes, 3 floats (xyz/rgb)
+vector4 q = {0, 0, 0, 1}; // 16 bytes, 4 floats (quaternion/rgba)
+matrix2 m2 = ident();     // 16 bytes, 2x2 matrix
+matrix3 m3 = ident();     // 36 bytes, 3x3 (rotation/scale)
+matrix m4 = ident();      // 64 bytes, 4x4 (full transform)
+string s = "hello";       // varies, UTF-8 string
+```
 
 ## Implicit Conversions
 
-VEX promotes types automatically: `int -> float -> vector2 -> vector -> vector4`
+```vex
+// VEX promotes types automatically: int -> float -> vector2 -> vector -> vector4
+```
 
 ```vex
 float f = 5;            // int to float: f = 5.0
@@ -100,6 +103,18 @@ matrix3 rot = lookat(from_pos, to_pos);
 matrix3 rot = dihedral(vec_a, vec_b);
 ```
 
-## See Also
-- **Joy of VEX: Quaternions** (`joy_of_vex_quaternions.md`) -- tutorial examples with slerp, qrotate, orient
-- **Joy of VEX: Vector Math** (`joy_of_vex_vector_math.md`) -- tutorial examples with dot, cross, fit, normalize
+## Common Mistakes
+```vex
+// Using integer division when float expected
+float bad = 1 / 3;           // 0 (integer division!)
+float good = 1.0 / 3.0;     // 0.333...
+float also_good = float(1) / 3;  // 0.333...
+
+// Forgetting vector promotion broadcasts scalar to all components
+vector v = 2.0;   // {2, 2, 2} -- not {2, 0, 0}
+
+// Matrix multiplication order matters (row-major)
+// Point transform: P * matrix (not matrix * P)
+vector world = @P * xform;   // correct
+// vector wrong = xform * @P; // won't compile
+```

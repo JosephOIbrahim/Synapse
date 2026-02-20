@@ -2,13 +2,15 @@
 
 ## Environment Variables
 
-| Variable | Purpose | Separator |
-|----------|---------|-----------|
-| `PXR_PLUGINPATH_NAME` | Directories containing USD plugins | `;` (Windows), `:` (Linux/Mac) |
-| `PXR_AR_DEFAULT_SEARCH_PATH` | Asset resolver search paths | `;` / `:` |
-| `HOUDINI_PATH` | Houdini resource paths (includes `dso/` scanning) | `;` / `:` |
-
-**Primary:** `PXR_PLUGINPATH_NAME` is the main mechanism for USD plugin discovery in Houdini.
+```python
+# USD plugin discovery environment variables
+ENV_VARS = {
+    "PXR_PLUGINPATH_NAME":       "Directories containing USD plugins (primary mechanism)",
+    "PXR_AR_DEFAULT_SEARCH_PATH":"Asset resolver search paths",
+    "HOUDINI_PATH":              "Houdini resource paths (includes dso/ scanning)",
+}
+# Separator: ';' on Windows, ':' on Linux/Mac
+```
 
 ## Discovery Mechanism
 
@@ -33,16 +35,13 @@ A `plugInfo.json` can reference subdirectories:
 }
 ```
 
-This tells PlugRegistry: "scan every immediate subdirectory's `resources/` folder for more `plugInfo.json` files."
-
-**Pattern matching:**
-| Pattern | Matches |
-|---------|---------|
-| `*/resources/` | `hdFoo/resources/`, `usdBar/resources/` |
-| `*/` | Every immediate subdirectory |
-| `subdir/` | Specific subdirectory only |
-
-**Recursive:** Includes are NOT recursive by default. `*/resources/` scans one level of subdirectories, not deeper.
+```python
+# Includes pattern matching:
+# "*/resources/"  -- matches hdFoo/resources/, usdBar/resources/
+# "*/"            -- every immediate subdirectory
+# "subdir/"       -- specific subdirectory only
+# NOT recursive by default: */resources/ scans one level only
+```
 
 ### Discovery Example (hdCarWash)
 
@@ -105,11 +104,12 @@ $HFS/packages/                          <- System-wide (rare)
 }
 ```
 
-| Field | Values | Purpose |
-|-------|--------|---------|
-| `method` | `"append"` | Add to end of existing path |
-| `method` | `"prepend"` | Add to beginning (higher priority) |
-| `method` | `"set"` | Replace entirely (dangerous) |
+```python
+# method values:
+# "append"  -- add to end of existing path
+# "prepend" -- add to beginning (higher priority)
+# "set"     -- replace entirely (dangerous!)
+```
 
 ### Multiple Variables in One Package
 
@@ -133,20 +133,15 @@ $HFS/packages/                          <- System-wide (rare)
 }
 ```
 
-The `"path"` key at root level adds to `HOUDINI_PATH` directly (shorthand).
+```python
+# "path" key at root level adds to HOUDINI_PATH directly (shorthand)
 
-## Dual-Location Deployment Pattern
-
-### Why Two Locations
-
-| Location | Purpose | When Loaded |
-|----------|---------|-------------|
-| **Source (project dir)** | Development, git tracking | Via `Documents/houdini21.0/packages/` |
-| **Runtime (dso/usd/)** | Production, Houdini auto-discovery | Via `houdini21.0/packages/` or auto |
+# Dual-location deployment:
+# Source (project dir): development, git tracking -- via Documents/houdini21.0/packages/
+# Runtime (dso/usd/):  production, Houdini auto-discovery -- via houdini21.0/packages/ or auto
+```
 
 ### Example: hdCarWash Dual Deployment
-
-**Location 1: Source (git-tracked)**
 ```
 C:\Users\User\Downloads\HDCARWAASH\HdCarWash\plugin\
 +-- plugInfo.json                   <- Includes + delegate
@@ -228,25 +223,20 @@ hython -c "from pxr import Plug; [print(p.name) for p in Plug.Registry().GetAllP
 
 ### Root Field
 
-The `Root` field in `plugInfo.json` sets the base directory for resolving `LibraryPath` and `ResourcePath`:
-
 ```json
+// Root field sets base directory for resolving LibraryPath and ResourcePath:
 {
     "Root": ".",
     "LibraryPath": "lib/hdCarWash.dll",
     "ResourcePath": "resources"
 }
+// Root resolution:
+// "."          -- directory containing this plugInfo.json
+// ".."         -- parent of directory containing plugInfo.json
+// Absolute     -- fixed location (avoid -- not portable)
 ```
 
-| Root | Resolves Relative To |
-|------|---------------------|
-| `"."` | Directory containing this `plugInfo.json` |
-| `".."` | Parent of directory containing `plugInfo.json` |
-| Absolute path | Fixed location (avoid -- not portable) |
-
 ### Common Layouts and Their Root Values
-
-**Flat layout** (plugInfo.json next to lib/):
 ```
 plugin/
 +-- plugInfo.json           <- Root: "."
@@ -265,28 +255,123 @@ usdFoo/
     +-- usdFoo.dll          <- LibraryPath: "lib/usdFoo.dll" (relative to Root="..")
 ```
 
-## Common Issues
+## Diagnostic Scripts
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Plugin not discovered | PXR_PLUGINPATH_NAME missing or wrong | Check `hython -c "import os; print(os.environ.get('PXR_PLUGINPATH_NAME'))"` |
-| Schema found but delegate missing | Path points to schema dir only | Point to parent with Includes, not individual resource dir |
-| Package not loading | Wrong packages/ directory | Use `houdini21.0/packages/` (not `houdini21.0.512/packages/`) |
-| DLL not found despite correct path | Root field wrong | Check Root + LibraryPath concatenation resolves correctly |
-| Duplicate plugin warnings | Same plugin on path twice | Remove one of the dual deployment locations |
-| `method: set` overrides everything | Replaces entire path variable | Use `append` or `prepend` instead |
+```python
+# Full plugin discovery diagnostic
+import os
+from pxr import Plug
 
-## Path Priority (Highest First)
+def diagnose_plugin_discovery(search_name=None):
+    """Diagnose USD plugin discovery issues."""
+    # Check environment
+    pxr_path = os.environ.get("PXR_PLUGINPATH_NAME", "NOT SET")
+    print(f"PXR_PLUGINPATH_NAME: {pxr_path}")
 
+    houdini_path = os.environ.get("HOUDINI_PATH", "NOT SET")
+    print(f"HOUDINI_PATH: {houdini_path}")
+
+    # Enumerate all discovered plugins
+    reg = Plug.Registry()
+    all_plugins = reg.GetAllPlugins()
+    print(f"\nTotal discovered plugins: {len(all_plugins)}")
+
+    if search_name:
+        matches = [p for p in all_plugins if search_name.lower() in p.name.lower()]
+        if matches:
+            print(f"\nPlugins matching '{search_name}':")
+            for p in matches:
+                print(f"  Name: {p.name}")
+                print(f"  Path: {p.path}")
+                print(f"  Loaded: {p.isLoaded}")
+        else:
+            print(f"\nNo plugins matching '{search_name}'")
+            # Check if path directories exist
+            if pxr_path != "NOT SET":
+                for d in pxr_path.split(os.pathsep):
+                    exists = os.path.isdir(d)
+                    has_pluginfo = os.path.isfile(os.path.join(d, "plugInfo.json"))
+                    print(f"  {d}: exists={exists}, plugInfo={has_pluginfo}")
+
+    return all_plugins
+
+
+diagnose_plugin_discovery("CarWash")
 ```
-1. PXR_PLUGINPATH_NAME (prepend entries)     <- User overrides
-2. PXR_PLUGINPATH_NAME (append entries)      <- Additional plugins
-3. $HFS/houdini/dso/usd_plugins/            <- Houdini built-in (Karma, Storm)
-4. $HOUDINI_USER_PREF_DIR/dso/usd/          <- User prefs auto-scan
+
+```python
+# Create a Houdini package file for a USD plugin
+import json
+import os
+
+def create_houdini_package(plugin_name, plugin_path,
+                           packages_dir=None, method="prepend"):
+    """Create a package JSON file for USD plugin discovery.
+    method: 'prepend' (high priority), 'append' (low priority), 'set' (replace)."""
+    if packages_dir is None:
+        packages_dir = os.path.expandvars(
+            "$HOUDINI_USER_PREF_DIR/packages")
+
+    package = {
+        "env": [
+            {
+                "HOUDINI_PATH": {
+                    "value": plugin_path.replace("\\", "/"),
+                    "method": method,
+                }
+            },
+            {
+                "PXR_PLUGINPATH_NAME": {
+                    "value": plugin_path.replace("\\", "/"),
+                    "method": method,
+                }
+            },
+        ],
+        "path": plugin_path.replace("\\", "/"),
+    }
+
+    os.makedirs(packages_dir, exist_ok=True)
+    out_path = os.path.join(packages_dir, f"{plugin_name}.json")
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(package, f, indent=4, sort_keys=True)
+    print(f"Package written: {out_path}")
+    return out_path
+
+
+create_houdini_package("hdCarWash", "C:/Users/User/Downloads/HDCARWAASH/HdCarWash/plugin")
 ```
 
-Within each path, the first-discovered plugin with a given name wins.
+```python
+# Verify schema registration after plugin discovery
+from pxr import Usd, Plug
 
----
-*Source: Pixar USD PlugRegistry + Houdini 21.0 package system. Verified against hdCarWash dual-location deployment.*
-*Cross-reference: hydra-delegates.md for what gets discovered, usd-schema-registration.md for plugInfo.json contents.*
+def verify_schema(schema_name):
+    """Check if a USD applied API schema is registered and list its properties."""
+    defn = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(schema_name)
+    if defn:
+        print(f"Schema '{schema_name}' registered")
+        props = defn.GetPropertyNames()
+        print(f"  Properties ({len(props)}):")
+        for prop in sorted(props):
+            print(f"    {prop}")
+        return True
+    else:
+        print(f"Schema '{schema_name}' NOT found")
+        # List similar schemas
+        reg = Plug.Registry()
+        for p in reg.GetAllPlugins():
+            if schema_name.lower()[:4] in p.name.lower():
+                print(f"  Similar plugin: {p.name} ({p.path})")
+        return False
+
+
+verify_schema("MyRenderSettingsAPI")
+```
+
+## Common Mistakes
+- Plugin not discovered -- PXR_PLUGINPATH_NAME missing or wrong; verify with hython diagnostic
+- Schema found but delegate missing -- path points to schema dir only; point to parent with Includes
+- Package not loading -- wrong packages/ directory; use houdini21.0/packages/ not versioned dir
+- DLL not found despite correct path -- Root field wrong; check Root + LibraryPath resolution
+- Duplicate plugin warnings -- same plugin on path twice; remove one deployment location
+- Using method "set" -- replaces entire path variable; use "append" or "prepend" instead
