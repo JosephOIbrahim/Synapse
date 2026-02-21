@@ -244,11 +244,11 @@ class TestTierPinning:
         return TieredRouter(config=config)
 
     def test_pin_recorded_on_tier0_hit(self):
-        """T0 match records a pin."""
+        """T0 match records a pin (key is normalized: strip + lower)."""
         router = self._make_router()
         result = router.route("create a sphere at /obj")
         if result.tier == RoutingTier.INSTANT:
-            key = f"create a sphere at /obj|"
+            key = f"create a sphere at /obj|"  # already lowercase, no whitespace
             assert key in router._tier_pins
             assert router._tier_pins[key] == RoutingTier.INSTANT.value
 
@@ -291,10 +291,19 @@ class TestTierPinning:
         first_key = f"fill_0|ctx"
         assert first_key in router._tier_pins
 
-        # Add one more — should evict first
+        # Add one more — should evict first (key is normalized: strip+lower)
         router._pin_tier("overflow", "ctx", "fast")
         assert first_key not in router._tier_pins
         assert f"overflow|ctx" in router._tier_pins
+
+    def test_pin_key_normalized(self):
+        """Pin keys are normalized (strip + lower) for cache hit consistency."""
+        router = self._make_router()
+        # Route with extra whitespace and mixed case
+        r1 = router.route("  Create a Sphere at /obj  ")
+        r2 = router.route("create a sphere at /obj")
+        # Both should route to the same tier (pin hit on second call)
+        assert r1.tier == r2.tier
 
 
 # =============================================================================

@@ -39,7 +39,7 @@ from ..core.protocol import (
     _to_json_str,
 )
 from ..core.queue import DeterministicCommandQueue, ResponseDeliveryQueue
-from .auth import get_auth_key, authenticate, hash_key_for_log, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
+from .auth import get_auth_key, authenticate, hash_key_for_log, validate_origin, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
 from .handlers import SynapseHandler, _READ_ONLY_COMMANDS
 from .rbac import Role, check_permission, is_rbac_enabled
 from .sessions import (
@@ -327,6 +327,18 @@ class SynapseServer:
                     self._on_client_connect(client_id)
                 except Exception as e:
                     logger.error("Connect callback error: %s", e)
+
+            # Origin validation (DNS rebinding protection)
+            origin = ""
+            try:
+                origin = websocket.request.headers.get("Origin", "")
+            except AttributeError:
+                pass  # Older websockets versions may not expose request
+            deploy_mode = self._deploy_config.mode if self._deploy_config else "local"
+            if not validate_origin(origin, deploy_mode=deploy_mode):
+                logger.warning("Rejected connection from origin: %s", origin)
+                websocket.close(4003, "Origin not allowed")
+                return
 
             # Authentication handshake (if key is configured or studio mode requires it)
             auth_key = get_auth_key()

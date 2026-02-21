@@ -369,3 +369,78 @@ def test_mcp_client_handles_auth_failed():
 
     assert "auth_failed" in source, "Missing auth_failed handling"
     assert "ConnectionError" in source, "Missing error raise on auth failure"
+
+
+# =========================================================================
+# Origin Validation Tests
+# =========================================================================
+
+validate_origin = auth_mod.validate_origin
+
+
+class TestOriginValidation:
+    """Tests for origin header validation (DNS rebinding protection)."""
+
+    def test_empty_origin_allowed(self):
+        """No Origin header (non-browser client) should always pass."""
+        assert validate_origin("") is True
+        assert validate_origin("", deploy_mode="studio") is True
+
+    def test_localhost_http_allowed(self):
+        """http://localhost should always pass."""
+        assert validate_origin("http://localhost") is True
+        assert validate_origin("http://localhost", deploy_mode="studio") is True
+
+    def test_localhost_https_allowed(self):
+        """https://localhost should always pass."""
+        assert validate_origin("https://localhost") is True
+
+    def test_127_0_0_1_allowed(self):
+        """http://127.0.0.1 should always pass."""
+        assert validate_origin("http://127.0.0.1") is True
+        assert validate_origin("https://127.0.0.1") is True
+
+    def test_ipv6_localhost_allowed(self):
+        """http://[::1] should always pass."""
+        assert validate_origin("http://[::1]") is True
+        assert validate_origin("https://[::1]") is True
+
+    def test_localhost_with_port_allowed(self):
+        """Localhost with port should pass (port is stripped)."""
+        assert validate_origin("http://localhost:9999") is True
+        assert validate_origin("https://127.0.0.1:8080") is True
+        assert validate_origin("http://[::1]:3000") is True
+
+    def test_remote_origin_rejected_local_mode(self):
+        """Non-localhost origin rejected in local deploy mode."""
+        assert validate_origin("http://evil.com") is False
+        assert validate_origin("https://attacker.example.com") is False
+        assert validate_origin("http://192.168.1.100") is False
+
+    def test_remote_origin_with_allowlist_studio(self):
+        """Configured origins pass in studio mode."""
+        allowed = {"https://studio.internal"}
+        assert validate_origin(
+            "https://studio.internal", deploy_mode="studio", allowed_origins=allowed
+        ) is True
+
+    def test_remote_origin_not_in_allowlist_studio(self):
+        """Non-allowlisted origins rejected in studio mode."""
+        allowed = {"https://studio.internal"}
+        assert validate_origin(
+            "https://evil.com", deploy_mode="studio", allowed_origins=allowed
+        ) is False
+
+    def test_no_allowlist_studio_rejected(self):
+        """Studio mode with no allowlist = fail-safe reject."""
+        assert validate_origin("https://anything.com", deploy_mode="studio") is False
+
+    def test_case_insensitive(self):
+        """Origin comparison is case-insensitive."""
+        assert validate_origin("HTTP://LOCALHOST") is True
+        assert validate_origin("Http://127.0.0.1") is True
+
+    def test_trailing_slash_stripped(self):
+        """Trailing slash on origin doesn't break comparison."""
+        assert validate_origin("http://localhost/") is True
+        assert validate_origin("https://127.0.0.1/") is True

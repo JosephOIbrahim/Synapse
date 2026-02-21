@@ -194,7 +194,7 @@ class TieredRouter:
         # ---------------------------------------------------------------
         # -1. Tier-pin check (He2025 consistency)
         # ---------------------------------------------------------------
-        pin_key = f"{input_text}|{context_hash}"
+        pin_key = f"{input_text.strip().lower()}|{context_hash}"
         with self._tier_pins_lock.read_lock():
             pinned_tier = self._tier_pins.get(pin_key)
 
@@ -350,7 +350,7 @@ class TieredRouter:
 
         self._cache_result("recipe", text, context_hash, result)
         self._pin_tier(text, context_hash, RoutingTier.RECIPE.value,
-                       pin_key=f"{text}|{context_hash}")
+                       pin_key=f"{text.strip().lower()}|{context_hash}")
         self._record_metric(RoutingTier.RECIPE, result.latency_ms)
         return result
 
@@ -391,7 +391,7 @@ class TieredRouter:
 
         self._cache_result("recipe", text, context_hash, result)
         self._pin_tier(text, context_hash, RoutingTier.RECIPE.value,
-                       pin_key=f"{text}|{context_hash}")
+                       pin_key=f"{text.strip().lower()}|{context_hash}")
         self._record_metric(RoutingTier.RECIPE, result.latency_ms)
         return result
 
@@ -430,7 +430,7 @@ class TieredRouter:
 
         self._cache_result("instant", text, context_hash, result)
         self._pin_tier(text, context_hash, RoutingTier.INSTANT.value,
-                       pin_key=f"{text}|{context_hash}")
+                       pin_key=f"{text.strip().lower()}|{context_hash}")
         self._record_metric(RoutingTier.INSTANT, result.latency_ms)
         return result
 
@@ -460,7 +460,7 @@ class TieredRouter:
 
         self._cache_result("fast", text, context_hash, result)
         self._pin_tier(text, context_hash, RoutingTier.FAST.value,
-                       pin_key=f"{text}|{context_hash}")
+                       pin_key=f"{text.strip().lower()}|{context_hash}")
         self._record_metric(RoutingTier.FAST, result.latency_ms)
         return result
 
@@ -468,7 +468,7 @@ class TieredRouter:
                   pin_key: Optional[str] = None):
         """Record a tier pin for future consistency."""
         if pin_key is None:
-            pin_key = f"{input_text}|{context_hash}"
+            pin_key = f"{input_text.strip().lower()}|{context_hash}"
         with self._tier_pins_lock.write_lock():
             self._tier_pins[pin_key] = tier_value
             if len(self._tier_pins) > _MAX_TIER_PINS:
@@ -601,7 +601,7 @@ class TieredRouter:
 
             self._cache_result("standard", text, context_hash, result)
             self._pin_tier(text, context_hash, RoutingTier.STANDARD.value,
-                           pin_key=f"{text}|{context_hash}")
+                           pin_key=f"{text.strip().lower()}|{context_hash}")
             self._record_metric(RoutingTier.STANDARD, result.latency_ms)
             return result
 
@@ -718,7 +718,7 @@ class TieredRouter:
 
             self._cache_result("deep", text, context_hash, result)
             self._pin_tier(text, context_hash, RoutingTier.DEEP.value,
-                           pin_key=f"{text}|{context_hash}")
+                           pin_key=f"{text.strip().lower()}|{context_hash}")
             self._record_metric(RoutingTier.DEEP, result.latency_ms)
             return result
 

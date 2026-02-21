@@ -51,7 +51,7 @@ from ..core.protocol import (
     SynapseResponse,
     PROTOCOL_VERSION,
 )
-from .auth import get_auth_key, authenticate, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
+from .auth import get_auth_key, authenticate, validate_origin, AUTH_COMMAND_TYPE, AUTH_REQUIRED_TYPE
 from .handlers import SynapseHandler
 from .resilience import RateLimiter, BackpressureController
 from ..session.tracker import get_bridge
@@ -99,6 +99,18 @@ if HWEBSERVER_AVAILABLE:
 
         async def connect(self, req):
             """Accept WebSocket upgrade — lightweight, no context loading."""
+            # Origin validation (DNS rebinding protection)
+            origin = ""
+            try:
+                origin = req.headers().get("Origin", "")
+            except (AttributeError, TypeError):
+                pass
+            deploy_mode = os.environ.get("SYNAPSE_DEPLOY_MODE", "local")
+            if not validate_origin(origin, deploy_mode=deploy_mode):
+                logger.warning("Rejected WebSocket from origin: %s", origin)
+                await self.close(4003, "Origin not allowed")
+                return
+
             self._client_id = _next_client_id()
             self._session_id = None
             self._ws_id = _client_counter

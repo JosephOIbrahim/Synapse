@@ -21,6 +21,7 @@ import hashlib
 import hmac
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -121,3 +122,48 @@ def authenticate(token: str, expected_key: Optional[str] = None) -> bool:
 def hash_key_for_log(key: str) -> str:
     """Hash an API key for safe logging (first 8 chars of SHA-256)."""
     return hashlib.sha256(key.encode("utf-8")).hexdigest()[:8]
+
+
+# =========================================================================
+# Origin validation (DNS rebinding protection)
+# =========================================================================
+
+_LOCALHOST_ORIGINS = frozenset([
+    "http://localhost", "https://localhost",
+    "http://127.0.0.1", "https://127.0.0.1",
+    "http://[::1]", "https://[::1]",
+])
+
+
+def validate_origin(
+    origin: str,
+    *,
+    deploy_mode: str = "local",
+    allowed_origins: Optional[set] = None,
+) -> bool:
+    """Check if an Origin header is acceptable.
+
+    Rules:
+    - No origin header (non-browser client like Claude Code): ALLOW
+    - Localhost origins (with or without port): always ALLOW
+    - Local deploy mode + non-localhost origin: REJECT
+    - Studio mode + allowed_origins configured: check allowlist
+    - Studio mode + no allowlist: REJECT (fail-safe)
+    """
+    if not origin:
+        return True  # Non-browser clients don't send Origin
+
+    # Strip port and trailing slash for comparison
+    origin_no_port = re.sub(r":\d+$", "", origin.lower().rstrip("/"))
+
+    if origin_no_port in _LOCALHOST_ORIGINS:
+        return True
+
+    if deploy_mode == "local":
+        return False  # Non-localhost origin on local deployment
+
+    # Studio mode: check allowlist
+    if allowed_origins:
+        return origin_no_port in allowed_origins
+
+    return False  # No allowlist configured = fail-safe reject

@@ -18,6 +18,7 @@ MCP Protocol Version: 2025-06-18
 
 import json
 import logging
+import os
 import time
 from typing import Any, Optional, Tuple
 
@@ -408,6 +409,20 @@ try:
                     )
         except ImportError:
             pass  # auth module not available — skip
+
+        # Origin validation (DNS rebinding protection)
+        try:
+            from ..server.auth import validate_origin
+            origin = request.headers().get("Origin", "")
+            deploy_mode = os.environ.get("SYNAPSE_DEPLOY_MODE", "local")
+            if not validate_origin(origin, deploy_mode=deploy_mode):
+                return hwebserver.Response(
+                    '{"error": "Origin not allowed"}',
+                    status=403,
+                    content_type="application/json",
+                )
+        except ImportError:
+            pass  # auth module not available
 
         if request.method() == "POST":
             body = request.body()

@@ -1005,3 +1005,18 @@ def dispatch_tool(handler, tool_name: str, arguments: dict) -> dict:
             "content": [{"type": "text", "text": response.error or "Unknown error"}],
             "isError": True,
         }
+
+
+# =========================================================================
+# Public API for payload builders
+# =========================================================================
+# Shared by both stdio bridge (mcp_server.py) and Streamable HTTP (mcp/server.py).
+# Import these in mcp_server.py to eliminate duplicate definitions.
+
+passthrough = _passthrough
+identity = _identity
+execute_python_payload = _execute_python_payload
+stage_info_payload = _stage_info_payload
+decide_payload = _decide_payload
+add_memory_payload = _add_memory_payload
+filter_keys = _filter_keys

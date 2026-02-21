@@ -2301,78 +2301,38 @@ async def list_tools():
 # Tool dispatch
 # ---------------------------------------------------------------------------
 
-# Map MCP tool name → (synapse_command_type, payload_builder)
-# payload_builder receives the MCP arguments dict and returns the Synapse payload dict
+# Payload builders imported from synapse.mcp.tools (single source of truth).
+# mcp/tools.py only imports json, time, orjson (optional), and core.protocol — no hou dependency.
+import sys as _sys
+_sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "python"))
+from synapse.mcp.tools import (
+    passthrough as _passthrough,
+    identity as _identity,
+    execute_python_payload as _execute_python_payload,
+    stage_info_payload as _stage_info_payload,
+    decide_payload as _decide_payload,
+    add_memory_payload as _add_memory_payload,
+    filter_keys as _filter_keys,
+)
 
-def _passthrough(_args: dict) -> dict:
-    return {}
-
-
-def _execute_python_payload(args: dict) -> dict:
-    # MCP uses 'code', Synapse handler resolves 'content'
-    p = {"content": args["code"]}
-    if "dry_run" in args:
-        p["dry_run"] = args["dry_run"]
-    if "atomic" in args:
-        p["atomic"] = args["atomic"]
-    return p
-
-
-def _stage_info_payload(args: dict) -> dict:
-    p = {}
-    if "node" in args:
-        p["node"] = args["node"]
-    return p
-
-
-def _decide_payload(args: dict) -> dict:
-    p = {"decision": args["decision"]}
-    if "reasoning" in args:
-        p["reasoning"] = args["reasoning"]
-    if "alternatives" in args:
-        alt = args["alternatives"]
-        p["alternatives"] = [a.strip() for a in alt.split(",") if a.strip()] if isinstance(alt, str) else alt
-    return p
-
-
-def _add_memory_payload(args: dict) -> dict:
-    p = {"content": args["content"]}
-    if "memory_type" in args:
-        p["memory_type"] = args["memory_type"]
-    if "tags" in args:
-        p["tags"] = args["tags"]
-    return p
-
-
-def _identity(a: dict) -> dict:
-    return a
-
-
+# Map MCP tool name -> (synapse_command_type, payload_builder)
 TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_ping":          ("ping",            _passthrough),
     "synapse_health":        ("get_health",      _passthrough),
     "houdini_scene_info":    ("get_scene_info",  _passthrough),
     "houdini_get_selection": ("get_selection",    _passthrough),
     "houdini_create_node":   ("create_node",     _identity),
-    "houdini_delete_node":   ("delete_node",     lambda a: {"node": a["node"]}),
+    "houdini_delete_node":   ("delete_node",     _filter_keys(["node"])),
     "houdini_connect_nodes": ("connect_nodes",   _identity),
-    "houdini_get_parm":      ("get_parm",        lambda a: {"node": a["node"], "parm": a["parm"]}),
-    "houdini_set_parm":      ("set_parm",        lambda a: {"node": a["node"], "parm": a["parm"], "value": a["value"]}),
+    "houdini_get_parm":      ("get_parm",        _filter_keys(["node", "parm"])),
+    "houdini_set_parm":      ("set_parm",        _filter_keys(["node", "parm", "value"])),
     "houdini_execute_python":("execute_python",  _execute_python_payload),
     "houdini_execute_vex":   ("execute_vex",    _identity),
     "houdini_stage_info":    ("get_stage_info",  _stage_info_payload),
-    "houdini_get_usd_attribute": ("get_usd_attribute", lambda a: {
-        k: a[k] for k in ("node", "prim_path", "attribute_name") if k in a
-    }),
-    "houdini_set_usd_attribute": ("set_usd_attribute", lambda a: {
-        k: a[k] for k in ("node", "prim_path", "attribute_name", "value") if k in a
-    }),
-    "houdini_create_usd_prim": ("create_usd_prim", lambda a: {
-        k: a[k] for k in ("node", "prim_path", "prim_type") if k in a
-    }),
-    "houdini_modify_usd_prim": ("modify_usd_prim", lambda a: {
-        k: a[k] for k in ("node", "prim_path", "kind", "purpose", "active") if k in a
-    }),
+    "houdini_get_usd_attribute":  ("get_usd_attribute",  _filter_keys(["node", "prim_path", "attribute_name"])),
+    "houdini_set_usd_attribute":  ("set_usd_attribute",  _filter_keys(["node", "prim_path", "attribute_name", "value"])),
+    "houdini_create_usd_prim":    ("create_usd_prim",    _filter_keys(["node", "prim_path", "prim_type"])),
+    "houdini_modify_usd_prim":    ("modify_usd_prim",    _filter_keys(["node", "prim_path", "kind", "purpose", "active"])),
     "houdini_capture_viewport": ("capture_viewport", _identity),
     "houdini_render":           ("render",           _identity),
     "houdini_set_keyframe":     ("set_keyframe",     _identity),
@@ -2406,14 +2366,14 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "houdini_read_material":    ("read_material",    _identity),
     "synapse_validate_frame":   ("validate_frame",   _identity),
     "synapse_configure_render_passes": ("configure_render_passes", _identity),
-    "synapse_knowledge_lookup": ("knowledge_lookup", lambda a: {"query": a["query"]}),
+    "synapse_knowledge_lookup": ("knowledge_lookup", _filter_keys(["query"])),
     "synapse_inspect_selection": ("inspect_selection", _identity),
     "synapse_inspect_scene":    ("inspect_scene",     _identity),
     "synapse_inspect_node":     ("inspect_node",      _identity),
     "houdini_network_explain":  ("network_explain",  lambda a: {**{k: v for k, v in a.items() if k != "root_path"}, "node": a["root_path"]}),
     "synapse_context":       ("context",         _passthrough),
-    "synapse_search":        ("search",          lambda a: {"query": a["query"]}),
-    "synapse_recall":        ("recall",          lambda a: {"query": a["query"]}),
+    "synapse_search":        ("search",          _filter_keys(["query"])),
+    "synapse_recall":        ("recall",          _filter_keys(["query"])),
     "synapse_decide":        ("decide",          _decide_payload),
     "synapse_add_memory":    ("add_memory",      _add_memory_payload),
     "synapse_batch":         ("batch_commands",  _identity),
