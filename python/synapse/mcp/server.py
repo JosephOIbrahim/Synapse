@@ -97,7 +97,7 @@ try:
     from importlib.metadata import version as _pkg_version
     _SYNAPSE_VERSION = _pkg_version("synapse")
 except Exception:
-    _SYNAPSE_VERSION = "5.4.0"
+    _SYNAPSE_VERSION = "5.6.0"
 
 
 # =========================================================================

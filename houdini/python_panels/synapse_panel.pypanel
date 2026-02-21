@@ -54,7 +54,7 @@ except ImportError:
 
 # ── Constants ─────────────────────────────────────────────
 
-_VERSION = "5.5.0"
+_VERSION = "5.6.0"
 _STATUS_DOT = "\u25CF"  # Filled circle
 _STATUS_DOT_EMPTY = "\u25CB"  # Empty circle
 _ACTIVITY_MAX_LINES = 200
