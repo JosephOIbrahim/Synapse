@@ -63,6 +63,24 @@ _FONT_SANS = t.FONT_SANS
 _CONTEXT_POLL_MS = 2000
 
 
+def _get_server_class():
+    """Lazily import SynapseServer to avoid import-time issues."""
+    try:
+        from synapse.server.websocket import SynapseServer
+        return SynapseServer
+    except ImportError:
+        return None
+
+
+def _find_running_server():
+    """Find an existing SynapseServer instance via gc (handles zombie servers)."""
+    import gc
+    for obj in gc.get_objects():
+        if type(obj).__name__ == "SynapseServer" and getattr(obj, "_running", False):
+            return obj
+    return None
+
+
 class SynapseChatPanel:
     """Houdini Python Panel for AI-assisted workflow.
 
@@ -75,6 +93,7 @@ class SynapseChatPanel:
         self._bridge = None
         self._context_timer = None
         self._hda_controller = None
+        self._last_context = None
 
     def createInterface(self):
         """Build the panel layout and return the root QWidget.
@@ -154,6 +173,7 @@ class SynapseChatPanel:
         self._bridge.response_received.connect(self._on_response)
         self._bridge.status_changed.connect(self._on_status_changed)
         self._bridge.context_updated.connect(self._on_context_updated)
+        self._bridge.connection_error.connect(self._on_connection_error)
 
         # -- HDA controller (wired in Phase 3, lazy import) -------------
         self._wire_hda_controller()
@@ -171,7 +191,9 @@ class SynapseChatPanel:
         return self._root
 
     def onActivateInterface(self):
-        """Panel becomes visible -- connect WS if not connected."""
+        """Panel becomes visible -- ensure server is running, then connect."""
+        self._ensure_server()
+
         if self._bridge is not None and not self._bridge.isRunning():
             self._bridge.start()
 
@@ -190,6 +212,60 @@ class SynapseChatPanel:
 
         if self._bridge is not None:
             self._bridge.stop()
+
+    # -- Server auto-start -----------------------------------------------
+
+    def _ensure_server(self):
+        """Make sure a SynapseServer is running before the bridge connects.
+
+        Check-or-create hierarchy:
+        1. hou.session._synapse_server (O(1), survives panel reloads)
+        2. gc.get_objects() sweep (catches zombie servers)
+        3. Create + start new SynapseServer (first-open case)
+        4. Write back to hou.session for cross-panel discovery
+        """
+        import os
+
+        try:
+            import hou
+        except ImportError:
+            return  # Not inside Houdini -- nothing to do
+
+        # Step 1: Check hou.session
+        server = getattr(hou.session, "_synapse_server", None)
+        if server is not None and getattr(server, "_running", False):
+            return  # Already running
+
+        # Step 2: gc sweep fallback
+        server = _find_running_server()
+        if server is not None:
+            hou.session._synapse_server = server
+            return
+
+        # Step 3: Create + start
+        SynapseServer = _get_server_class()
+        if SynapseServer is None:
+            self._chat.append_system_message(
+                "Couldn't import SynapseServer -- is the synapse package installed?"
+            )
+            return
+
+        port = int(os.environ.get("SYNAPSE_PORT", "9999"))
+        try:
+            server = SynapseServer(host="localhost", port=port)
+            server.start()
+        except Exception as exc:
+            self._chat.append_system_message(
+                "Couldn't start the server automatically: {}".format(exc)
+            )
+            return
+
+        # Step 4: Persist for cross-panel discovery
+        hou.session._synapse_server = server
+        actual_port = getattr(server, "_actual_port", port)
+        self._chat.append_system_message(
+            "Started SYNAPSE server on port {}.".format(actual_port)
+        )
 
     # -- UI builders -----------------------------------------------------
 
@@ -429,11 +505,33 @@ class SynapseChatPanel:
         return frame
 
     def _on_connect_toggle(self):
-        """Start or stop the WebSocket bridge."""
+        """Start or stop the WebSocket bridge with immediate visual feedback."""
         if self._bridge is not None and self._bridge.isRunning():
             self._bridge.stop()
+            self._conn_btn.setText("Connect")
+            self._conn_btn.setEnabled(True)
         else:
+            self._ensure_server()
             if self._bridge is not None:
+                # Immediate visual feedback -- show "Connecting..." state
+                self._conn_dot.setStyleSheet(
+                    "color: {c}; font-size: 18px; border: none;".format(
+                        c=_SIGNAL
+                    )
+                )
+                self._conn_label.setText("Connecting...")
+                self._conn_label.setStyleSheet(
+                    "color: {c}; font-family: '{mono}', 'Consolas', monospace;"
+                    " font-size: {sz}px; letter-spacing: 1px;"
+                    " border: none;".format(
+                        c=_SIGNAL, mono=_FONT_MONO, sz=_SMALL_PX,
+                    )
+                )
+                self._conn_btn.setText("Cancel")
+                self._conn_btn.setEnabled(True)
+                self._chat.append_system_message(
+                    "Connecting to {url}...".format(url=self._ws_url)
+                )
                 self._bridge.start()
 
     def _on_copy_ws_url(self):
@@ -578,7 +676,14 @@ class SynapseChatPanel:
     # -- Actions ---------------------------------------------------------
 
     def _send_message(self):
-        """Read input field, send via WS bridge, clear input."""
+        """Read input field, send via WS bridge, clear input.
+
+        Uses cached context from the last poll instead of blocking on
+        a fresh ``gather_context()`` call. The poll timer refreshes
+        context every 2s, so the cache is at most 2s stale -- well
+        within tolerance and avoids a synchronous main-thread round-trip
+        that added 5-500ms of latency per message.
+        """
         text = self._input.text().strip()
         if not text:
             return
@@ -586,18 +691,10 @@ class SynapseChatPanel:
         self._input.clear()
         self._chat.append_user_message(text)
 
-        # Gather context on main thread
-        context = None
-        try:
-            if self._bridge is not None:
-                context = self._bridge.gather_context()
-        except Exception:
-            pass
-
         if self._bridge is not None:
             self._bridge.send_command("execute_python", {
                 "content": text,
-                "context": context,
+                "context": self._last_context,
             })
         else:
             self._chat.append_system_message(
@@ -617,8 +714,8 @@ class SynapseChatPanel:
     def _on_status_changed(self, connected):
         """Handle connection status change -- update context bar and connection bar."""
         self._context_bar.set_connected(connected)
+        self._conn_btn.setEnabled(True)
 
-        # Update connection bar widgets
         if connected:
             _sc = _GROW
             self._conn_dot.setStyleSheet(
@@ -644,13 +741,16 @@ class SynapseChatPanel:
                 " border: none;".format(c=_sc, mono=_FONT_MONO, sz=_SMALL_PX)
             )
             self._conn_btn.setText("Connect")
-            self._chat.append_system_message(
-                "Disconnected from SYNAPSE server. Reconnecting..."
-            )
+
+    @Slot(str)
+    def _on_connection_error(self, error_msg):
+        """Surface connection errors in the chat so the user knows what's up."""
+        self._chat.append_system_message(error_msg)
 
     @Slot(dict)
     def _on_context_updated(self, context):
-        """Update context bar with fresh scene state."""
+        """Update context bar and cache for send-time use."""
+        self._last_context = context
         self._context_bar.set_network_path(
             context.get("current_network", "")
         )
@@ -660,31 +760,21 @@ class SynapseChatPanel:
         self._context_bar.set_frame(context.get("frame", 1.0))
 
     def _on_quick_action(self, action):
-        """Handle quick action button press."""
+        """Handle quick action button press.
+
+        Uses cached context from the last poll to avoid blocking on
+        a synchronous main-thread gather before sending.
+        """
         prompt = action.get("prompt", "")
         requires_sel = action.get("requires_selection", False)
 
-        # Check selection requirement
+        # Check selection requirement against cached context
         if requires_sel:
-            context = None
-            try:
-                if self._bridge is not None:
-                    context = self._bridge.gather_context()
-            except Exception:
-                pass
-
-            if context and not context.get("selected_nodes"):
+            if not self._last_context or not self._last_context.get("selected_nodes"):
                 self._chat.append_system_message(
                     "Please select one or more nodes first."
                 )
                 return
-        else:
-            context = None
-            try:
-                if self._bridge is not None:
-                    context = self._bridge.gather_context()
-            except Exception:
-                pass
 
         # Display as user message
         label = action.get("label", "Action")
@@ -696,7 +786,7 @@ class SynapseChatPanel:
         if self._bridge is not None:
             self._bridge.send_command("execute_python", {
                 "content": prompt,
-                "context": context,
+                "context": self._last_context,
             })
 
     def _on_node_clicked(self, node_path):

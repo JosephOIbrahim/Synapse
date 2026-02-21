@@ -496,6 +496,7 @@ class SynapsePanel(QtWidgets.QWidget):
         existing = _find_running_server()
         if existing:
             self._server = existing
+            hou.session._synapse_server = existing
             port = getattr(existing, "_actual_port", _PORT)
             self._set_status("connected", "port {}".format(port))
             self._log_activity("Found running server on port {}".format(port), "success")
@@ -517,6 +518,7 @@ class SynapsePanel(QtWidgets.QWidget):
         try:
             self._server = SynapseServer(host="localhost", port=_PORT)
             self._server.start()
+            hou.session._synapse_server = self._server
         except Exception as e:
             self._log_activity("Server failed to start: {}".format(e), "error")
             self._set_status("error", str(e)[:40])
