@@ -529,16 +529,15 @@ class TestConcurrentDispatch:
             content = f.read()
         assert "async def _recv_loop" in content
 
-    def test_warmup_starts_recv_loop(self):
-        """_warmup calls _start_recv_loop after connecting."""
+    def test_warmup_delegates_to_get_connection(self):
+        """_warmup delegates to _get_connection to avoid connection races."""
         mcp_path = Path(__file__).resolve().parent.parent / "mcp_server.py"
         with open(mcp_path, encoding="utf-8") as f:
             content = f.read()
-        # Check warmup function calls _start_recv_loop
         warmup_section = content[content.index("async def _warmup"):]
-        warmup_end = warmup_section.index("async def main")
+        warmup_end = warmup_section.index("\ndef _atexit_cleanup")
         warmup_body = warmup_section[:warmup_end]
-        assert "_start_recv_loop()" in warmup_body
+        assert "_get_connection()" in warmup_body
 
 
 # =============================================================================

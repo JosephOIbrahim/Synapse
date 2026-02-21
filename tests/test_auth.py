@@ -322,26 +322,26 @@ def test_mcp_client_auth_in_get_connection():
 
 
 def test_mcp_client_auth_in_warmup():
-    """_warmup calls _auth_handshake after websockets.connect."""
+    """_warmup delegates to _get_connection which handles auth."""
     with open(mcp_path, encoding="utf-8") as f:
         source = f.read()
 
+    # Warmup now delegates to _get_connection (which handles auth internally)
     in_warmup = False
-    found_connect = False
-    found_auth = False
+    found_get_connection = False
     for line in source.split("\n"):
         if "async def _warmup" in line:
             in_warmup = True
         elif in_warmup and (line.strip().startswith("async def ") or line.strip().startswith("def ")):
             break
         if in_warmup:
-            if "websockets.connect(" in line:
-                found_connect = True
-            if "await _auth_handshake(" in line and found_connect:
-                found_auth = True
+            if "_get_connection()" in line:
+                found_get_connection = True
 
-    assert found_connect, "_warmup doesn't call websockets.connect"
-    assert found_auth, "_warmup doesn't call _auth_handshake after connect"
+    assert found_get_connection, "_warmup doesn't delegate to _get_connection"
+
+    # Verify _get_connection calls _auth_handshake
+    assert "await _auth_handshake(" in source, "_get_connection doesn't call _auth_handshake"
 
 
 def test_mcp_client_get_auth_key_sources():

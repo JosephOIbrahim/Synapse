@@ -332,7 +332,7 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
         _pending[command_id] = future
 
         try:
-            await ws.send(_dumps(command))
+            await ws.send(_dumps_str(command))
 
             # Direct wait on future set — avoids asyncio.wait_for's internal task overhead
             done, _ = await asyncio.wait({future}, timeout=cmd_timeout)
@@ -2458,19 +2458,13 @@ async def call_tool(name: str, arguments: dict):
 # ---------------------------------------------------------------------------
 
 async def _warmup():
-    """Pre-connect to Synapse on startup — makes first tool call instant."""
-    global _ws_connection
+    """Pre-connect to Synapse on startup — makes first tool call instant.
+
+    Uses _get_connection() to avoid a race with concurrent tool calls
+    that would create a second connection and orphan the recv loop.
+    """
     try:
-        _ws_connection = await websockets.connect(
-            SYNAPSE_URL,
-            open_timeout=3.0,
-            close_timeout=5.0,
-            ping_interval=None,
-            compression=None,
-            max_size=None,
-        )
-        await _auth_handshake(_ws_connection)
-        _start_recv_loop()
+        await _get_connection()
         logger.info("Warmup: connected to %s", SYNAPSE_URL)
     except Exception:
         logger.info("Warmup: Synapse not available yet (will retry on first tool call)")
