@@ -37,6 +37,8 @@ from synapse.panel.chat_display import ChatDisplay
 from synapse.panel.context_bar import ContextBar
 from synapse.panel.ws_bridge import SynapseWSBridge
 from synapse.panel.quick_actions import QUICK_ACTIONS
+from synapse.panel.hda_views import DescribeView, BuildingView, ResultView
+from synapse.panel.styles import get_hda_stylesheet, animate_stack_transition
 
 # -- Design tokens -------------------------------------------------------
 _VOID = "#252525"
@@ -68,6 +70,7 @@ class SynapseChatPanel:
         self._root = None
         self._bridge = None
         self._context_timer = None
+        self._hda_controller = None
 
     def createInterface(self):
         """Build the panel layout and return the root QWidget.
@@ -86,28 +89,64 @@ class SynapseChatPanel:
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # -- Chat display (expanding) ------------------------------------
-        self._chat = ChatDisplay(self._root)
+        # -- Mode toggle toolbar ----------------------------------------
+        toolbar = self._build_mode_toolbar()
+        main_layout.addWidget(toolbar)
+
+        # -- Mode stack: Chat vs HDA ------------------------------------
+        self._mode_stack = QtWidgets.QStackedWidget(self._root)
+        self._mode_stack.setObjectName("ModeStack")
+
+        # Index 0: Chat mode (existing layout wrapped in a widget)
+        self._chat_widget = QtWidgets.QWidget()
+        chat_layout = QtWidgets.QVBoxLayout(self._chat_widget)
+        chat_layout.setContentsMargins(0, 0, 0, 0)
+        chat_layout.setSpacing(0)
+
+        self._chat = ChatDisplay(self._chat_widget)
         self._chat.node_clicked.connect(self._on_node_clicked)
-        main_layout.addWidget(self._chat, stretch=1)
+        chat_layout.addWidget(self._chat, stretch=1)
 
-        # -- Context bar -------------------------------------------------
-        self._context_bar = ContextBar(self._root)
-        main_layout.addWidget(self._context_bar)
+        self._context_bar = ContextBar(self._chat_widget)
+        chat_layout.addWidget(self._context_bar)
 
-        # -- Quick actions -----------------------------------------------
         actions_widget = self._build_quick_actions()
-        main_layout.addWidget(actions_widget)
+        chat_layout.addWidget(actions_widget)
 
-        # -- Input area --------------------------------------------------
         input_widget = self._build_input_area()
-        main_layout.addWidget(input_widget)
+        chat_layout.addWidget(input_widget)
+
+        self._mode_stack.addWidget(self._chat_widget)  # index 0
+
+        # Index 1: HDA mode
+        self._hda_container = QtWidgets.QWidget()
+        self._hda_container.setObjectName("HdaModeWidget")
+        hda_layout = QtWidgets.QVBoxLayout(self._hda_container)
+        hda_layout.setContentsMargins(0, 0, 0, 0)
+        hda_layout.setSpacing(0)
+
+        self._hda_stack = QtWidgets.QStackedWidget()
+        self.describe_view = DescribeView()
+        self.building_view = BuildingView()
+        self.result_view = ResultView()
+        self._hda_stack.addWidget(self.describe_view)   # index 0
+        self._hda_stack.addWidget(self.building_view)    # index 1
+        self._hda_stack.addWidget(self.result_view)      # index 2
+
+        hda_layout.addWidget(self._hda_stack)
+        self._hda_container.setStyleSheet(get_hda_stylesheet())
+        self._mode_stack.addWidget(self._hda_container)  # index 1
+
+        main_layout.addWidget(self._mode_stack, stretch=1)
 
         # -- WebSocket bridge --------------------------------------------
         self._bridge = SynapseWSBridge(self._root)
         self._bridge.response_received.connect(self._on_response)
         self._bridge.status_changed.connect(self._on_status_changed)
         self._bridge.context_updated.connect(self._on_context_updated)
+
+        # -- HDA controller (wired in Phase 3, lazy import) -------------
+        self._wire_hda_controller()
 
         # -- Context polling timer ---------------------------------------
         self._context_timer = QTimer(self._root)
@@ -258,6 +297,119 @@ class SynapseChatPanel:
         layout.addWidget(self._send_btn)
 
         return widget
+
+    # -- Mode toggle -----------------------------------------------------
+
+    def _build_mode_toolbar(self):
+        """Build the Chat / Create HDA mode toggle toolbar."""
+        toolbar = QtWidgets.QWidget(self._root)
+        toolbar.setStyleSheet(
+            "background: {bg}; border-bottom: 1px solid {border};".format(
+                bg=_GRAPHITE, border=_CARBON
+            )
+        )
+        layout = QtWidgets.QHBoxLayout(toolbar)
+        layout.setContentsMargins(8, 4, 8, 4)
+        layout.setSpacing(6)
+
+        self._mode_chat_btn = QtWidgets.QPushButton("Chat")
+        self._mode_chat_btn.setObjectName("ModeToggleActive")
+        self._mode_chat_btn.setCursor(
+            QtGui.QCursor(QtCore.Qt.PointingHandCursor)
+        )
+        self._mode_chat_btn.clicked.connect(
+            lambda: self._set_mode("chat")
+        )
+        layout.addWidget(self._mode_chat_btn)
+
+        self._mode_hda_btn = QtWidgets.QPushButton("Create HDA")
+        self._mode_hda_btn.setObjectName("ModeToggleInactive")
+        self._mode_hda_btn.setCursor(
+            QtGui.QCursor(QtCore.Qt.PointingHandCursor)
+        )
+        self._mode_hda_btn.clicked.connect(
+            lambda: self._set_mode("hda")
+        )
+        layout.addWidget(self._mode_hda_btn)
+
+        layout.addStretch()
+
+        toolbar.setFixedHeight(36)
+        return toolbar
+
+    def _set_mode(self, mode):
+        """Switch between chat and HDA creation modes."""
+        if mode == "chat":
+            animate_stack_transition(self._mode_stack, 0)
+            self._mode_chat_btn.setObjectName("ModeToggleActive")
+            self._mode_hda_btn.setObjectName("ModeToggleInactive")
+        elif mode == "hda":
+            animate_stack_transition(self._mode_stack, 1)
+            self._hda_stack.setCurrentIndex(0)  # Reset to Describe
+            self.describe_view.reset()
+            self._mode_chat_btn.setObjectName("ModeToggleInactive")
+            self._mode_hda_btn.setObjectName("ModeToggleActive")
+
+        # Refresh styling after objectName change
+        for btn in (self._mode_chat_btn, self._mode_hda_btn):
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
+
+    def _wire_hda_controller(self):
+        """Connect HDA views to the controller and bridge signals."""
+        from synapse.panel.hda_controller import HdaController
+
+        self._hda_controller = HdaController(self._bridge)
+
+        # Describe -> Controller
+        self.describe_view.generate_requested.connect(
+            self._hda_controller.execute
+        )
+
+        # Controller -> Building
+        self._hda_controller.progress.connect(
+            self.building_view.update_stage
+        )
+
+        # Auto-switch to Building view when generation starts
+        self.describe_view.generate_requested.connect(
+            lambda *_: animate_stack_transition(self._hda_stack, 1)
+        )
+
+        # Controller -> Result
+        self._hda_controller.result.connect(self._on_hda_result)
+
+        # Result actions
+        self.result_view.action_requested.connect(self._on_hda_action)
+
+        # Cancel -> back to Describe
+        self.building_view.cancel_requested.connect(
+            self._hda_controller.cancel
+        )
+        self.building_view.cancel_requested.connect(
+            lambda: animate_stack_transition(self._hda_stack, 0)
+        )
+
+    @Slot(dict)
+    def _on_hda_result(self, data):
+        """Handle HDA creation result -- switch to result view."""
+        self.result_view.populate(data)
+        animate_stack_transition(self._hda_stack, 2)
+
+    def _on_hda_action(self, action):
+        """Handle result view action buttons."""
+        if action == "new":
+            self.describe_view.reset()
+            self.building_view.reset()
+            animate_stack_transition(self._hda_stack, 0)
+        elif action == "inspect":
+            # Navigate to the created HDA in the network editor
+            path = self.result_view.path_label.text()
+            if path:
+                self._on_node_clicked(path)
+        elif action == "save":
+            # Could trigger file dialog in future
+            pass
 
     # -- Actions ---------------------------------------------------------
 

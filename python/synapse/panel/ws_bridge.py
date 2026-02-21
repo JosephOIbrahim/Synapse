@@ -70,22 +70,42 @@ def _gather_context_on_main_thread():
     return context
 
 
+# HDA Progress stages (sent during hda_package execution)
+HDA_STAGES = [
+    "parsing_prompt",       # Understanding the request
+    "selecting_recipe",     # Choosing HDA template
+    "creating_subnet",      # Building the subnet container
+    "building_nodes",       # Creating internal node network
+    "wiring_connections",   # Connecting internal nodes
+    "promoting_parameters", # Building the HDA interface
+    "validating",           # Cook test + connection check
+    "complete",             # Success
+    "failed",               # Error occurred
+]
+
+
 class SynapseWSBridge(QThread):
     """QThread-based WebSocket client to the SYNAPSE server.
 
     Signals
     -------
     response_received : dict
-        Emitted when a server response arrives.
+        Emitted when a server response arrives (chat messages).
     status_changed : bool
         Emitted when connection status changes (True = connected).
     context_updated : dict
         Emitted when scene context is refreshed (for UI updates).
+    hda_progress : dict
+        Emitted when an HDA build progress update arrives.
+    hda_result : dict
+        Emitted when an HDA build completes (success or failure).
     """
 
     response_received = Signal(dict)
     status_changed = Signal(bool)
     context_updated = Signal(dict)
+    hda_progress = Signal(dict)
+    hda_result = Signal(dict)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -146,7 +166,7 @@ class SynapseWSBridge(QThread):
 
                     try:
                         data = json.loads(raw)
-                        self.response_received.emit(data)
+                        self._dispatch_message(data)
                     except (json.JSONDecodeError, ValueError):
                         self.response_received.emit(
                             {"status": "error", "message": str(raw)}
@@ -175,6 +195,24 @@ class SynapseWSBridge(QThread):
         # QWebSocket requires an event loop; for simplicity we emit
         # disconnected and let the reconnect loop retry.
         self.status_changed.emit(False)
+
+    def _dispatch_message(self, data):
+        """Route incoming WebSocket message to the appropriate signal.
+
+        Messages with ``msg_type`` of ``hda_progress`` or ``hda_result``
+        are routed to their dedicated signals. Everything else (including
+        messages with no ``msg_type``) goes to ``response_received`` for
+        backward compatibility.
+        """
+        msg_type = data.get("msg_type", "chat")
+
+        if msg_type == "hda_progress":
+            self.hda_progress.emit(data)
+        elif msg_type == "hda_result":
+            self.hda_result.emit(data)
+        else:
+            # Default: treat as chat message (backward compatible)
+            self.response_received.emit(data)
 
     def _drain_queue(self):
         """Send all queued messages over the active WebSocket."""
@@ -274,6 +312,26 @@ class SynapseWSBridge(QThread):
         if ctx:
             self.context_updated.emit(ctx)
         return ctx
+
+    def send(self, payload):
+        """Send an arbitrary JSON payload over the WebSocket. Thread-safe.
+
+        Parameters
+        ----------
+        payload : dict
+            The message to send. Serialized to JSON with sorted keys.
+        """
+        msg_json = json.dumps(payload, sort_keys=True)
+
+        if self._ws is not None:
+            try:
+                self._ws.send(msg_json)
+                return
+            except Exception:
+                pass
+
+        with self._queue_lock:
+            self._send_queue.append(msg_json)
 
     def stop(self):
         """Signal the thread to stop and close the WebSocket."""

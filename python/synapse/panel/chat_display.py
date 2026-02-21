@@ -23,7 +23,7 @@ _TEXT = "#E0E0E0"
 _BODY_PX = 26
 
 
-class ChatDisplay(QtWidgets.QTextEdit):
+class ChatDisplay(QtWidgets.QTextBrowser):
     """Read-only rich text display for chat messages.
 
     Renders messages with:
@@ -32,6 +32,8 @@ class ChatDisplay(QtWidgets.QTextEdit):
     - Code blocks with monospace font and dark background
     - Node paths as clickable links
     - Status indicators (success/warning/error via Unicode)
+
+    Uses QTextBrowser (subclass of QTextEdit) for anchor click support.
     """
 
     node_clicked = Signal(str)
@@ -44,7 +46,7 @@ class ChatDisplay(QtWidgets.QTextEdit):
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setStyleSheet(
-            "QTextEdit {{"
+            "QTextBrowser {{"
             "  background: {bg};"
             "  color: {fg};"
             "  font-size: {sz}px;"
