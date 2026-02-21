@@ -7,21 +7,39 @@ Handles plain text, code blocks (```python, ```vex), node paths
 import html
 import re
 
-# -- Design tokens (from ~/.synapse/design/tokens.py) --------------------
-_NEAR_BLACK = "#3C3C3C"
-_CARBON = "#333333"
-_VOID = "#252525"
-_SIGNAL = "#00D4FF"
-_TEXT = "#E0E0E0"
-_TEXT_DIM = "#999999"
-_ERROR = "#FF6B6B"
-_WARNING = "#FFD93D"
-_SUCCESS = "#6BCB77"
+# -- Design tokens (from canonical design system) -------------------------
+try:
+    from synapse.panel import tokens as _t
+    _NEAR_BLACK = _t.NEAR_BLACK
+    _CARBON = _t.CARBON
+    _VOID = _t.VOID
+    _SIGNAL = _t.SIGNAL
+    _TEXT = _t.TEXT
+    _TEXT_DIM = _t.TEXT_DIM
+    _ERROR = _t.ERROR        # Canonical #FF3D71
+    _WARNING = _t.WARN       # Canonical #FFAB00
+    _SUCCESS = _t.GROW       # Canonical #00E676
+    _FONT_MONO = _t.FONT_MONO
+    _FONT_SANS = _t.FONT_SANS
+    _BODY_PX = _t.SIZE_BODY
+    _SMALL_PX = _t.SIZE_SMALL
+except ImportError:
+    _NEAR_BLACK = "#3C3C3C"
+    _CARBON = "#333333"
+    _VOID = "#252525"
+    _SIGNAL = "#00D4FF"
+    _TEXT = "#E0E0E0"
+    _TEXT_DIM = "#999999"
+    _ERROR = "#FF3D71"
+    _WARNING = "#FFAB00"
+    _SUCCESS = "#00E676"
+    _FONT_MONO = "JetBrains Mono"
+    _FONT_SANS = "DM Sans"
+    _BODY_PX = 26
+    _SMALL_PX = 22
 
 # Monospace font stack
-_MONO = "'JetBrains Mono', 'Consolas', 'Courier New', monospace"
-_BODY_PX = 26
-_SMALL_PX = 22
+_MONO = "'{mono}', 'Consolas', 'Courier New', monospace".format(mono=_FONT_MONO)
 
 # Regex patterns
 _CODE_BLOCK_RE = re.compile(
@@ -187,11 +205,15 @@ def format_user_message(text):
     escaped = html.escape(text)
     escaped = escaped.replace("\n", "<br>")
     return (
-        '<div style="background:#2A2A2A; border-radius:8px; padding:10px 14px; '
+        '<div style="background:{bg}; border-radius:8px; padding:10px 14px; '
         'margin:4px 0 4px 40px; color:{fg}; font-size:{sz}px;">'
-        '<span style="color:{dim}; font-size:{sm}px;">You</span><br>'
+        '<span style="color:{dim}; font-size:{sm}px; '
+        'font-family:{mono}; letter-spacing:1px;">You</span><br>'
         "{body}</div>"
-    ).format(fg=_TEXT, sz=_BODY_PX, dim=_TEXT_DIM, sm=_SMALL_PX, body=escaped)
+    ).format(
+        bg=_CARBON, fg=_TEXT, sz=_BODY_PX, dim=_TEXT_DIM,
+        sm=_SMALL_PX, body=escaped, mono=_MONO,
+    )
 
 
 def format_synapse_message(content):
@@ -212,9 +234,10 @@ def format_synapse_message(content):
         '<div style="background:{bg}; border-radius:8px; padding:10px 14px; '
         'margin:4px 40px 4px 0;">'
         '<span style="color:{accent}; font-size:{sm}px; '
-        'font-weight:bold;">SYNAPSE</span><br>'
+        'font-weight:bold; font-family:{mono}; '
+        'letter-spacing:2px;">SYNAPSE</span><br>'
         "{body}</div>"
-    ).format(bg=_VOID, accent=_SIGNAL, sm=_SMALL_PX, body=body)
+    ).format(bg=_VOID, accent=_SIGNAL, sm=_SMALL_PX, body=body, mono=_MONO)
 
 
 def format_system_message(text):

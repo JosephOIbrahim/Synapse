@@ -39,21 +39,25 @@ from synapse.panel.ws_bridge import SynapseWSBridge
 from synapse.panel.quick_actions import QUICK_ACTIONS
 from synapse.panel.hda_views import DescribeView, BuildingView, ResultView
 from synapse.panel.styles import get_hda_stylesheet, animate_stack_transition
+from synapse.panel import tokens as t
 
-# -- Design tokens -------------------------------------------------------
-_VOID = "#252525"
-_GRAPHITE = "#222222"
-_CARBON = "#333333"
-_NEAR_BLACK = "#3C3C3C"
-_TEXT = "#E0E0E0"
-_TEXT_DIM = "#999999"
-_SIGNAL = "#00D4FF"
-_UI_PX = 24
-_BODY_PX = 26
-_SMALL_PX = 22
-
-# Hover color for buttons
-_HOVER = "#484848"
+# -- Design tokens (from canonical design system) -------------------------
+_VOID = t.VOID
+_GRAPHITE = t.GRAPHITE
+_CARBON = t.CARBON
+_NEAR_BLACK = t.NEAR_BLACK
+_TEXT = t.TEXT
+_TEXT_DIM = t.TEXT_DIM
+_SIGNAL = t.SIGNAL
+_GROW = t.GROW
+_ERROR_COLOR = t.ERROR
+_UI_PX = t.SIZE_UI
+_BODY_PX = t.SIZE_BODY
+_SMALL_PX = t.SIZE_SMALL
+_LABEL_PX = t.SIZE_LABEL
+_HOVER = t.HOVER
+_FONT_MONO = t.FONT_MONO
+_FONT_SANS = t.FONT_SANS
 
 # How often to refresh context (ms)
 _CONTEXT_POLL_MS = 2000
@@ -82,7 +86,9 @@ class SynapseChatPanel:
         """
         self._root = QtWidgets.QWidget()
         self._root.setStyleSheet(
-            "QWidget {{ background: {bg}; }}".format(bg=_VOID)
+            "QWidget {{ background: {bg}; "
+            "font-family: '{sans}', 'Segoe UI', sans-serif; "
+            "color: {fg}; }}".format(bg=_VOID, sans=_FONT_SANS, fg=_TEXT)
         )
 
         main_layout = QtWidgets.QVBoxLayout(self._root)
@@ -138,6 +144,10 @@ class SynapseChatPanel:
         self._mode_stack.addWidget(self._hda_container)  # index 1
 
         main_layout.addWidget(self._mode_stack, stretch=1)
+
+        # -- Connection bar ------------------------------------------------
+        conn_bar = self._build_connection_bar()
+        main_layout.addWidget(conn_bar)
 
         # -- WebSocket bridge --------------------------------------------
         self._bridge = SynapseWSBridge(self._root)
@@ -206,20 +216,27 @@ class SynapseChatPanel:
                 "  border: 1px solid {border};"
                 "  border-radius: 4px;"
                 "  padding: 4px 12px;"
+                "  font-family: '{mono}', 'Consolas', monospace;"
                 "  font-size: {sz}px;"
                 "}}"
                 "QPushButton:hover {{"
                 "  background: {hover};"
+                "  border-color: {accent};"
+                "  color: {white};"
                 "}}"
                 "QPushButton:pressed {{"
-                "  background: {pressed};"
+                "  background: rgba(0, 212, 255, 0.15);"
+                "  border-color: {accent};"
+                "  color: {accent};"
                 "}}".format(
                     bg=_CARBON,
                     fg=_TEXT,
                     border=_NEAR_BLACK,
                     sz=_SMALL_PX,
                     hover=_HOVER,
-                    pressed=_SIGNAL,
+                    accent=_SIGNAL,
+                    white="#F0F0F0",
+                    mono=_FONT_MONO,
                 )
             )
             # Capture action in closure
@@ -252,6 +269,7 @@ class SynapseChatPanel:
             "  border: 1px solid {border};"
             "  border-radius: 6px;"
             "  padding: 8px 12px;"
+            "  font-family: '{sans}', 'Segoe UI', sans-serif;"
             "  font-size: {sz}px;"
             "}}"
             "QLineEdit:focus {{"
@@ -262,6 +280,7 @@ class SynapseChatPanel:
                 border=_NEAR_BLACK,
                 sz=_UI_PX,
                 accent=_SIGNAL,
+                sans=_FONT_SANS,
             )
         )
         self._input.returnPressed.connect(self._send_message)
@@ -277,8 +296,10 @@ class SynapseChatPanel:
             "  border: none;"
             "  border-radius: 6px;"
             "  padding: 8px 20px;"
+            "  font-family: '{mono}', 'Consolas', monospace;"
             "  font-size: {sz}px;"
-            "  font-weight: bold;"
+            "  font-weight: 700;"
+            "  letter-spacing: 1px;"
             "}}"
             "QPushButton:hover {{"
             "  background: {hover};"
@@ -289,14 +310,157 @@ class SynapseChatPanel:
                 accent=_SIGNAL,
                 bg=_VOID,
                 sz=_UI_PX,
-                hover="#33DDFF",
-                pressed="#00AADD",
+                hover=t.SIGNAL_HOVER,
+                pressed=t.SIGNAL_PRESS,
+                mono=_FONT_MONO,
             )
         )
         self._send_btn.clicked.connect(self._send_message)
         layout.addWidget(self._send_btn)
 
         return widget
+
+    # -- Connection bar --------------------------------------------------
+
+    def _build_connection_bar(self):
+        """Build the bottom connection status and controls.
+
+        Styled to match the SYNAPSE design system connection_frame pattern:
+        mono font, SIGNAL cyan accents, canonical GROW/ERROR status colors.
+        """
+        import os
+
+        _port = int(os.environ.get("SYNAPSE_PORT", "9999"))
+        _path = os.environ.get("SYNAPSE_PATH", "/synapse")
+        self._ws_url = "ws://localhost:{}{}".format(_port, _path)
+
+        frame = QtWidgets.QWidget(self._root)
+        frame.setObjectName("connection_frame")
+        frame.setStyleSheet(
+            "QWidget#connection_frame {{"
+            "  background: {bg};"
+            "  border-top: 1px solid {border};"
+            "}}".format(bg=_CARBON, border=_GRAPHITE)
+        )
+        layout = QtWidgets.QHBoxLayout(frame)
+        layout.setContentsMargins(12, 6, 12, 6)
+        layout.setSpacing(8)
+
+        # Status dot
+        self._conn_dot = QtWidgets.QLabel("\u25CF")
+        self._conn_dot.setObjectName("status_dot")
+        self._conn_dot.setStyleSheet(
+            "color: {c}; font-size: 18px; border: none;".format(c=_ERROR_COLOR)
+        )
+        layout.addWidget(self._conn_dot)
+
+        # Status label
+        self._conn_label = QtWidgets.QLabel("Disconnected")
+        self._conn_label.setObjectName("status_label")
+        self._conn_label.setStyleSheet(
+            "color: {c}; font-family: '{mono}', 'Consolas', monospace;"
+            " font-size: {sz}px; letter-spacing: 1px;"
+            " border: none;".format(
+                c=_ERROR_COLOR, mono=_FONT_MONO, sz=_SMALL_PX,
+            )
+        )
+        layout.addWidget(self._conn_label)
+
+        layout.addStretch()
+
+        # Connect/Disconnect button (matches design system connect_button)
+        self._conn_btn = QtWidgets.QPushButton("Connect")
+        self._conn_btn.setObjectName("connect_button")
+        self._conn_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self._conn_btn.setStyleSheet(
+            "QPushButton#connect_button {{"
+            "  background: transparent;"
+            "  color: {accent};"
+            "  border: 1px solid {accent};"
+            "  border-radius: 3px;"
+            "  font-family: '{mono}', 'Consolas', monospace;"
+            "  font-size: {sz}px;"
+            "  padding: 4px 12px;"
+            "  min-width: 100px;"
+            "}}"
+            "QPushButton#connect_button:hover {{"
+            "  background: rgba(0, 212, 255, 0.1);"
+            "}}"
+            "QPushButton#connect_button:pressed {{"
+            "  background: rgba(0, 212, 255, 0.2);"
+            "}}".format(
+                accent=_SIGNAL, mono=_FONT_MONO, sz=_SMALL_PX,
+            )
+        )
+        self._conn_btn.clicked.connect(self._on_connect_toggle)
+        layout.addWidget(self._conn_btn)
+
+        # WS URL button (matches design system ws_path_button)
+        ws_btn = QtWidgets.QPushButton(self._ws_url)
+        ws_btn.setObjectName("ws_path_button")
+        ws_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        ws_btn.setStyleSheet(
+            "QPushButton#ws_path_button {{"
+            "  background: transparent;"
+            "  color: {slate};"
+            "  border: 1px solid {border};"
+            "  border-radius: 3px;"
+            "  font-family: '{mono}', 'Consolas', monospace;"
+            "  font-size: {sz}px;"
+            "  padding: 4px 8px;"
+            "}}"
+            "QPushButton#ws_path_button:hover {{"
+            "  color: {accent};"
+            "  border-color: {accent};"
+            "  background: rgba(0, 212, 255, 0.1);"
+            "}}"
+            "QPushButton#ws_path_button:pressed {{"
+            "  background: rgba(0, 212, 255, 0.2);"
+            "}}".format(
+                slate=t.SLATE, border=_GRAPHITE, mono=_FONT_MONO,
+                sz=_LABEL_PX, accent=_SIGNAL,
+            )
+        )
+        ws_btn.setToolTip("Copy WebSocket URL to clipboard")
+        ws_btn.clicked.connect(self._on_copy_ws_url)
+        layout.addWidget(ws_btn)
+
+        frame.setFixedHeight(44)
+        return frame
+
+    def _on_connect_toggle(self):
+        """Start or stop the WebSocket bridge."""
+        if self._bridge is not None and self._bridge.isRunning():
+            self._bridge.stop()
+        else:
+            if self._bridge is not None:
+                self._bridge.start()
+
+    def _on_copy_ws_url(self):
+        """Copy WebSocket URL to clipboard."""
+        import subprocess, platform
+        url = getattr(self, "_ws_url", "ws://localhost:9999/synapse")
+        if platform.system() == "Windows":
+            try:
+                subprocess.run(
+                    ["clip"], input=url.encode("utf-8"),
+                    creationflags=0x08000000, timeout=5,
+                )
+                self._chat.append_system_message(
+                    "Copied: {}".format(url)
+                )
+                return
+            except Exception:
+                pass
+        try:
+            app = QtWidgets.QApplication.instance()
+            if app:
+                app.clipboard().setText(url)
+                self._chat.append_system_message(
+                    "Copied: {}".format(url)
+                )
+        except Exception:
+            pass
 
     # -- Mode toggle -----------------------------------------------------
 
@@ -451,11 +615,35 @@ class SynapseChatPanel:
 
     @Slot(bool)
     def _on_status_changed(self, connected):
-        """Handle connection status change."""
+        """Handle connection status change -- update context bar and connection bar."""
         self._context_bar.set_connected(connected)
+
+        # Update connection bar widgets
         if connected:
+            _sc = _GROW
+            self._conn_dot.setStyleSheet(
+                "color: {c}; font-size: 18px; border: none;".format(c=_sc)
+            )
+            self._conn_label.setText("Connected")
+            self._conn_label.setStyleSheet(
+                "color: {c}; font-family: '{mono}', 'Consolas', monospace;"
+                " font-size: {sz}px; letter-spacing: 1px;"
+                " border: none;".format(c=_sc, mono=_FONT_MONO, sz=_SMALL_PX)
+            )
+            self._conn_btn.setText("Disconnect")
             self._chat.append_system_message("Connected to SYNAPSE server.")
         else:
+            _sc = _ERROR_COLOR
+            self._conn_dot.setStyleSheet(
+                "color: {c}; font-size: 18px; border: none;".format(c=_sc)
+            )
+            self._conn_label.setText("Disconnected")
+            self._conn_label.setStyleSheet(
+                "color: {c}; font-family: '{mono}', 'Consolas', monospace;"
+                " font-size: {sz}px; letter-spacing: 1px;"
+                " border: none;".format(c=_sc, mono=_FONT_MONO, sz=_SMALL_PX)
+            )
+            self._conn_btn.setText("Connect")
             self._chat.append_system_message(
                 "Disconnected from SYNAPSE server. Reconnecting..."
             )

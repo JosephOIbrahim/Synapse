@@ -171,23 +171,25 @@ class TestMessageFormatterStatus:
 
     def test_status_ok(self):
         result = format_response({"status": "ok", "message": "All good"})
-        # Should contain a green circle indicator
-        assert "#6BCB77" in result
+        # Should contain a green circle indicator (canonical GROW #00E676)
+        assert "#00E676" in result
 
     def test_status_error(self):
         result = format_response({"status": "error", "message": "Failed"})
-        assert "#FF6B6B" in result
+        # Canonical ERROR #FF3D71
+        assert "#FF3D71" in result
 
     def test_status_warning(self):
         result = format_response({"status": "warning", "message": "Careful"})
-        assert "#FFD93D" in result
+        # Canonical WARN #FFAB00
+        assert "#FFAB00" in result
 
     def test_no_status_no_indicator(self):
         result = format_response("Plain text")
         # No status color indicators
-        assert "#6BCB77" not in result
-        assert "#FF6B6B" not in result
-        assert "#FFD93D" not in result
+        assert "#00E676" not in result
+        assert "#FF3D71" not in result
+        assert "#FFAB00" not in result
 
 
 class TestUserMessageFormat:
@@ -199,7 +201,8 @@ class TestUserMessageFormat:
 
     def test_user_message_has_background(self):
         result = format_user_message("Hello")
-        assert "#2A2A2A" in result
+        # User bubble uses CARBON (#333333) from design system
+        assert "#333333" in result
 
     def test_user_message_escapes_html(self):
         result = format_user_message("<script>alert(1)</script>")

@@ -8,25 +8,18 @@
 import sys
 import os
 
-# Ensure synapse package is importable from the repo source tree.
-# The panel file lives at python/synapse/panel/synapse_chat.pypanel;
-# we need python/ on sys.path.
-_panel_dir = os.path.dirname(os.path.abspath(__file__))
-_pkg_root = _panel_dir
-# Walk up to find the python/ directory
-for _i in range(5):
-    _candidate = os.path.join(_pkg_root, "python")
-    if os.path.isdir(_candidate):
-        if _candidate not in sys.path:
-            sys.path.insert(0, _candidate)
-        break
-    _pkg_root = os.path.dirname(_pkg_root)
-
-# Also check SYNAPSE env var or well-known location
+# Ensure synapse package is importable.
+# Houdini runs pypanel scripts via exec() so __file__ is not defined.
+# Use SYNAPSE_ROOT env var or well-known location to find the package.
 _synapse_root = os.environ.get("SYNAPSE_ROOT", r"C:\Users\User\SYNAPSE")
 _synapse_py = os.path.join(_synapse_root, "python")
 if os.path.isdir(_synapse_py) and _synapse_py not in sys.path:
     sys.path.insert(0, _synapse_py)
+
+# Also ensure design system is importable for tokens
+_design_dir = os.path.join(os.path.expanduser("~"), ".synapse", "design")
+if os.path.isdir(_design_dir) and _design_dir not in sys.path:
+    sys.path.insert(0, _design_dir)
 
 from synapse.panel.chat_panel import SynapseChatPanel
 

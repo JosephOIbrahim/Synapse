@@ -14,16 +14,19 @@ except ImportError:
     from PySide2 import QtWidgets, QtCore, QtGui
     from PySide2.QtCore import Signal, Slot
 
-# -- Design tokens -------------------------------------------------------
-_GRAPHITE = "#222222"
-_CARBON = "#333333"
-_TEXT = "#E0E0E0"
-_TEXT_DIM = "#999999"
-_SIGNAL = "#00D4FF"
-_SUCCESS = "#6BCB77"
-_ERROR = "#FF6B6B"
-_UI_PX = 24
-_SMALL_PX = 22
+# -- Design tokens (from canonical design system) -------------------------
+from synapse.panel import tokens as _t
+
+_GRAPHITE = _t.GRAPHITE
+_CARBON = _t.CARBON
+_TEXT = _t.TEXT
+_TEXT_DIM = _t.TEXT_DIM
+_SIGNAL = _t.SIGNAL
+_SUCCESS = _t.GROW       # Canonical green (was #6BCB77)
+_ERROR = _t.ERROR        # Canonical red (was #FF6B6B)
+_UI_PX = _t.SIZE_UI
+_SMALL_PX = _t.SIZE_SMALL
+_FONT_MONO = _t.FONT_MONO
 
 
 class ContextBar(QtWidgets.QWidget):
@@ -51,8 +54,9 @@ class ContextBar(QtWidgets.QWidget):
         # Network path label
         self._path_label = QtWidgets.QLabel("")
         self._path_label.setStyleSheet(
-            "color: {c}; font-size: {s}px; font-family: 'JetBrains Mono', "
-            "'Consolas', monospace; border: none;".format(c=_SIGNAL, s=_SMALL_PX)
+            "color: {c}; font-size: {s}px; font-family: '{mono}', "
+            "'Consolas', monospace; letter-spacing: 0.5px;"
+            " border: none;".format(c=_SIGNAL, s=_SMALL_PX, mono=_FONT_MONO)
         )
         layout.addWidget(self._path_label)
 

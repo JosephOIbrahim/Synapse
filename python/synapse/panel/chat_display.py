@@ -16,11 +16,14 @@ from synapse.panel.message_formatter import (
     format_synapse_message,
     format_system_message,
 )
+from synapse.panel import tokens as t
 
-# -- Design tokens -------------------------------------------------------
-_VOID = "#252525"
-_TEXT = "#E0E0E0"
-_BODY_PX = 26
+# -- Design tokens (from canonical design system) -------------------------
+_VOID = t.VOID
+_TEXT = t.TEXT
+_BODY_PX = t.SIZE_BODY
+_GRAPHITE = t.GRAPHITE
+_FONT_SANS = t.FONT_SANS
 
 
 class ChatDisplay(QtWidgets.QTextBrowser):
@@ -49,22 +52,34 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             "QTextBrowser {{"
             "  background: {bg};"
             "  color: {fg};"
+            "  font-family: '{sans}', 'Segoe UI', sans-serif;"
             "  font-size: {sz}px;"
             "  border: none;"
             "  padding: 8px;"
+            "  selection-background-color: rgba(0, 212, 255, 0.3);"
+            "  selection-color: #F0F0F0;"
             "}}"
             "QScrollBar:vertical {{"
-            "  width: 8px;"
+            "  width: 10px;"
             "  background: {bg};"
             "}}"
             "QScrollBar::handle:vertical {{"
-            "  background: #444444;"
-            "  border-radius: 4px;"
+            "  background: {scrollbar};"
+            "  border-radius: 5px;"
             "  min-height: 30px;"
+            "}}"
+            "QScrollBar::handle:vertical:hover {{"
+            "  background: {scrollhover};"
             "}}"
             "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{"
             "  height: 0;"
-            "}}".format(bg=_VOID, fg=_TEXT, sz=_BODY_PX)
+            "}}"
+            "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{"
+            "  background: transparent;"
+            "}}".format(
+                bg=_VOID, fg=_TEXT, sz=_BODY_PX, sans=_FONT_SANS,
+                scrollbar=_GRAPHITE, scrollhover=t.SLATE,
+            )
         )
 
         # Connect anchor clicks
