@@ -907,6 +907,26 @@ _TOOL_DEFS: list[tuple] = [
      }, "required": ["intent"]},
      False, True, False),
 
+    # -- Safe / Progressive Render --
+    ("synapse_safe_render", "safe_render", _identity,
+     "Render with pre-flight validation. Checks camera, materials, and output path "
+     "before rendering. Auto-forces background mode for high-resolution renders to prevent Houdini lockup.",
+     {"type": "object", "properties": {
+         "rop_path": {"type": "string", "description": "Path to the usdrender ROP node (auto-discovered if omitted)"},
+         "soho_foreground": {"type": "integer", "enum": [0, 1], "description": "Force foreground (1) or background (0) rendering. If omitted, auto-decides based on resolution."},
+     }, "required": []},
+     False, True, False),
+
+    ("synapse_render_progressively", "render_progressively", _identity,
+     "Progressive 3-pass render: test (256x256, 4 samples) -> preview (720p, 16 samples) "
+     "-> production (user settings). Validates each pass before proceeding.",
+     {"type": "object", "properties": {
+         "rop_path": {"type": "string", "description": "Path to the usdrender ROP node (auto-discovered if omitted)"},
+         "resolution": {"type": "array", "items": {"type": "integer"}, "description": "Production resolution [width, height]. Default: [1920, 1080]"},
+         "samples": {"type": "integer", "description": "Production pixel samples. Default: 64"},
+     }, "required": []},
+     False, True, False),
+
     # -- Live Metrics (Sprint E) --
     ("synapse_live_metrics", "get_live_metrics", _identity,
      "Get live metrics snapshot: scene health, routing, resilience, sessions. "

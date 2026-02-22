@@ -954,3 +954,64 @@ class TestP1ToolGroupModules:
             assert not missing, f"Tools not in any group: {missing}"
         finally:
             sys.path.pop(0)
+
+
+# =========================================================================
+# Tests: Safe / Progressive Render MCP tools
+# =========================================================================
+
+class TestSafeRenderMCPTools:
+    """Verify safe_render and render_progressively are properly registered in MCP."""
+
+    def test_safe_render_in_tools_list(self):
+        assert tools_mod.has_tool("synapse_safe_render")
+
+    def test_render_progressively_in_tools_list(self):
+        assert tools_mod.has_tool("synapse_render_progressively")
+
+    def test_safe_render_annotations(self):
+        tools = tools_mod.get_tools()
+        tool = next(t for t in tools if t["name"] == "synapse_safe_render")
+        assert tool["annotations"]["readOnlyHint"] is False
+        assert tool["annotations"]["destructiveHint"] is True
+
+    def test_render_progressively_annotations(self):
+        tools = tools_mod.get_tools()
+        tool = next(t for t in tools if t["name"] == "synapse_render_progressively")
+        assert tool["annotations"]["readOnlyHint"] is False
+        assert tool["annotations"]["destructiveHint"] is True
+
+    def test_safe_render_schema(self):
+        tools = tools_mod.get_tools()
+        tool = next(t for t in tools if t["name"] == "synapse_safe_render")
+        props = tool["inputSchema"]["properties"]
+        assert "rop_path" in props
+        assert "soho_foreground" in props
+
+    def test_render_progressively_schema(self):
+        tools = tools_mod.get_tools()
+        tool = next(t for t in tools if t["name"] == "synapse_render_progressively")
+        props = tool["inputSchema"]["properties"]
+        assert "rop_path" in props
+        assert "resolution" in props
+        assert "samples" in props
+
+    def test_safe_render_dispatch(self):
+        response = MagicMock()
+        response.success = True
+        response.data = {"passed": True}
+        handler = MagicMock()
+        handler.handle.return_value = response
+        result = tools_mod.dispatch_tool(handler, "synapse_safe_render", {})
+        assert "isError" not in result
+        assert len(result["content"]) == 1
+
+    def test_render_progressively_dispatch(self):
+        response = MagicMock()
+        response.success = True
+        response.data = {"success": True}
+        handler = MagicMock()
+        handler.handle.return_value = response
+        result = tools_mod.dispatch_tool(handler, "synapse_render_progressively", {})
+        assert "isError" not in result
+        assert len(result["content"]) == 1

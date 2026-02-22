@@ -112,6 +112,9 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "tops_multi_shot": AuditCategory.PIPELINE,
     # Autonomous render
     "autonomous_render": AuditCategory.RENDER,
+    # Safe / progressive render
+    "safe_render": AuditCategory.RENDER,
+    "render_progressively": AuditCategory.RENDER,
     # Chat routing
     "route_chat": AuditCategory.SYNAPSE,
     # Undo / Redo
@@ -404,6 +407,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         # Render farm
         reg.register("render_sequence", self._handle_render_sequence)
         reg.register("render_farm_status", self._handle_render_farm_status)
+
+        # Safe / progressive render
+        reg.register("safe_render", self._handle_safe_render)
+        reg.register("render_progressively", self._handle_render_progressively)
 
         # Knowledge lookup (RAG)
         reg.register("knowledge_lookup", self._handle_knowledge_lookup)
@@ -1070,8 +1077,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         message = resolve_param(payload, "content")
         context = payload.get("context", {})
 
-        router = TieredRouter.get_instance()
-        result = router.route(message, context=context)
+        if not hasattr(self, "_router"):
+            self._router = TieredRouter()
+        result = self._router.route(message, context=context)
 
         return {
             "response": result.answer,

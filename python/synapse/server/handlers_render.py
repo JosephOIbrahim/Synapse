@@ -975,6 +975,383 @@ class RenderHandlerMixin:
 
         return run_on_main(_on_main)
 
+    # =========================================================================
+    # SAFE RENDER (pre-flight + auto-background for large renders)
+    # =========================================================================
+
+    def _handle_safe_render(self, payload: Dict) -> Dict:
+        """Render with automatic pre-flight validation and safety guards.
+
+        Runs lightweight pre-flight checks (camera, materials, output path)
+        before rendering. If resolution exceeds 512 on either axis and the
+        caller hasn't explicitly set soho_foreground, forces background
+        rendering to prevent Houdini lockup.
+
+        Payload:
+            rop_path (str, optional): Path to the render ROP node.
+            soho_foreground (int, optional): 0=background, 1=foreground.
+                If omitted and resolution > 512, defaults to 0 (background).
+            width (int, optional): Resolution width override.
+            height (int, optional): Resolution height override.
+            Any additional keys are passed through to the render handler.
+
+        Returns:
+            dict with 'preflight' summary and 'render' result (or diagnostic
+            if pre-flight failed).
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        rop_path = resolve_param_with_default(payload, "rop_path", None)
+        user_foreground = payload.get("soho_foreground", None)
+        width = resolve_param_with_default(payload, "width", None)
+        height = resolve_param_with_default(payload, "height", None)
+
+        # ----- Pre-flight checks (synchronous, lightweight) -----
+        checks = []
+
+        # Check 1: Camera exists on the stage
+        try:
+            stage_info = self._handle_get_stage_info({})
+            cameras = stage_info.get("cameras", [])
+            if not cameras:
+                checks.append({
+                    "name": "camera",
+                    "passed": False,
+                    "severity": "hard_fail",
+                    "message": (
+                        "Couldn't find a render camera on the stage -- "
+                        "add a Camera LOP before rendering"
+                    ),
+                })
+            else:
+                checks.append({
+                    "name": "camera",
+                    "passed": True,
+                    "severity": "hard_fail",
+                    "message": f"Found {len(cameras)} camera(s)",
+                })
+        except Exception as exc:
+            checks.append({
+                "name": "camera",
+                "passed": False,
+                "severity": "hard_fail",
+                "message": f"Couldn't query stage for cameras: {exc}",
+            })
+
+        # Check 2: Materials bound (soft warning only)
+        try:
+            unassigned = stage_info.get("unassigned_material_prims", [])
+            if unassigned:
+                paths = ", ".join(str(p) for p in unassigned[:5])
+                suffix = f" (and {len(unassigned) - 5} more)" if len(unassigned) > 5 else ""
+                checks.append({
+                    "name": "materials",
+                    "passed": False,
+                    "severity": "soft_warn",
+                    "message": (
+                        f"Found {len(unassigned)} prim(s) without materials: "
+                        f"{paths}{suffix}. They'll render with the default grey shader."
+                    ),
+                })
+            else:
+                checks.append({
+                    "name": "materials",
+                    "passed": True,
+                    "severity": "soft_warn",
+                    "message": "All geometry prims have materials assigned.",
+                })
+        except Exception:
+            # stage_info may not have this field -- soft warning
+            checks.append({
+                "name": "materials",
+                "passed": True,
+                "severity": "soft_warn",
+                "message": "Couldn't verify material assignments (non-blocking).",
+            })
+
+        # Check 3: Output path is valid
+        if rop_path:
+            try:
+                settings = self._handle_render_settings({"node": rop_path})
+                current_settings = settings.get("settings", {})
+                output = current_settings.get("outputimage", "") or current_settings.get("picture", "")
+                if output:
+                    output_dir = os.path.dirname(output)
+                    # Expand Houdini variables for directory check
+                    if "$" not in output_dir and output_dir:
+                        if not os.path.isdir(output_dir):
+                            checks.append({
+                                "name": "output_path",
+                                "passed": False,
+                                "severity": "soft_warn",
+                                "message": (
+                                    f"Output directory doesn't exist: {output_dir} -- "
+                                    "we'll try to create it during render"
+                                ),
+                            })
+                        else:
+                            checks.append({
+                                "name": "output_path",
+                                "passed": True,
+                                "severity": "soft_warn",
+                                "message": f"Output path configured: {output}",
+                            })
+                    else:
+                        checks.append({
+                            "name": "output_path",
+                            "passed": True,
+                            "severity": "soft_warn",
+                            "message": f"Output path configured (contains variables): {output}",
+                        })
+                else:
+                    checks.append({
+                        "name": "output_path",
+                        "passed": False,
+                        "severity": "soft_warn",
+                        "message": (
+                            "Couldn't find an output path configured -- "
+                            "the render handler will assign a default path"
+                        ),
+                    })
+            except Exception as exc:
+                checks.append({
+                    "name": "output_path",
+                    "passed": False,
+                    "severity": "soft_warn",
+                    "message": f"Couldn't verify output path: {exc}",
+                })
+
+        # ----- Evaluate pre-flight result -----
+        hard_failures = [c for c in checks if not c["passed"] and c["severity"] == "hard_fail"]
+        all_passed = len(hard_failures) == 0
+
+        if not all_passed:
+            suggestions = []
+            for fail in hard_failures:
+                suggestions.append(fail["message"])
+            return {
+                "passed": False,
+                "checks": sorted(checks, key=lambda c: c["name"]),
+                "suggestion": "; ".join(suggestions),
+            }
+
+        # ----- Safety: force background render for large resolutions -----
+        render_payload = dict(payload)
+        # Remove safe_render-specific keys before passing to _handle_render
+        render_payload.pop("rop_path", None)
+        render_payload.pop("soho_foreground", None)
+        if rop_path:
+            render_payload["node"] = rop_path
+
+        effective_w = int(width) if width else 0
+        effective_h = int(height) if height else 0
+        forced_background = False
+
+        if (effective_w > 512 or effective_h > 512) and user_foreground is None:
+            # Force background render to prevent Houdini lockup
+            forced_background = True
+            logger.info(
+                "safe_render: resolution %dx%d exceeds 512 -- "
+                "forcing background render (soho_foreground=0)",
+                effective_w, effective_h,
+            )
+            # Set soho_foreground=0 on the ROP node before rendering
+            if rop_path:
+                try:
+                    self._handle_render_settings({
+                        "node": rop_path,
+                        "settings": {"soho_foreground": 0},
+                    })
+                except Exception:
+                    pass  # Best effort -- render handler handles this too
+        elif user_foreground is not None:
+            # Respect explicit user setting
+            if rop_path:
+                try:
+                    self._handle_render_settings({
+                        "node": rop_path,
+                        "settings": {"soho_foreground": int(user_foreground)},
+                    })
+                except Exception:
+                    pass
+
+        # ----- Delegate to existing render handler -----
+        render_result = self._handle_render(render_payload)
+
+        # ----- Build enriched response -----
+        return {
+            "passed": True,
+            "checks": sorted(checks, key=lambda c: c["name"]),
+            "render": render_result,
+            "forced_background": forced_background,
+        }
+
+    # =========================================================================
+    # PROGRESSIVE RENDER (test -> preview -> production)
+    # =========================================================================
+
+    def _handle_render_progressively(self, payload: Dict) -> Dict:
+        """Render in 3 progressive passes with validation between each.
+
+        Implements a test-preview-production pipeline that catches issues
+        early at low cost before committing to expensive production renders.
+
+        Pass 1 (test):       256x256, 4 samples, soho_foreground=1 (fast, blocks)
+        Pass 2 (preview):    1280x720, 16 samples, soho_foreground=0 (background)
+        Pass 3 (production): user resolution & samples, soho_foreground=0
+
+        After each pass, validates the rendered frame for black frames, NaN,
+        clipping, and underexposure. Stops on first validation failure.
+
+        Payload:
+            rop_path (str, optional): Path to the render ROP node.
+            resolution (list[int,int], optional): Production resolution [w, h].
+                Defaults to [1920, 1080].
+            samples (int, optional): Production pixel samples. Defaults to 64.
+
+        Returns:
+            dict with 'passes' list and 'final_image' path (or None if failed).
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        rop_path = resolve_param_with_default(payload, "rop_path", None)
+        prod_resolution = resolve_param_with_default(payload, "resolution", [1920, 1080])
+        prod_samples = int(resolve_param_with_default(payload, "samples", 64))
+
+        if isinstance(prod_resolution, list) and len(prod_resolution) == 2:
+            prod_w, prod_h = int(prod_resolution[0]), int(prod_resolution[1])
+        else:
+            prod_w, prod_h = 1920, 1080
+
+        # Define the 3 passes
+        pass_configs = [
+            {
+                "name": "test",
+                "width": 256,
+                "height": 256,
+                "samples": 4,
+                "soho_foreground": 1,
+            },
+            {
+                "name": "preview",
+                "width": 1280,
+                "height": 720,
+                "samples": 16,
+                "soho_foreground": 0,
+            },
+            {
+                "name": "production",
+                "width": prod_w,
+                "height": prod_h,
+                "samples": prod_samples,
+                "soho_foreground": 0,
+            },
+        ]
+
+        passes = []
+        final_image = None
+
+        for config in pass_configs:
+            pass_name = config["name"]
+            w, h = config["width"], config["height"]
+            samples = config["samples"]
+            foreground = config["soho_foreground"]
+
+            # Apply render settings (samples + foreground mode) on the ROP
+            if rop_path:
+                settings_overrides = {"soho_foreground": foreground}
+                # Try common sample parm names
+                for sample_parm in ("pathtracedsamples", "pixelsamples", "vm_samplesx"):
+                    settings_overrides[sample_parm] = samples
+                try:
+                    self._handle_render_settings({
+                        "node": rop_path,
+                        "settings": settings_overrides,
+                    })
+                except Exception:
+                    pass  # Best effort -- some parms may not exist
+
+            # Build render payload
+            render_payload = {
+                "width": w,
+                "height": h,
+            }
+            if rop_path:
+                render_payload["node"] = rop_path
+
+            # Execute the render
+            pass_result = {
+                "name": pass_name,
+                "resolution": f"{w}x{h}",
+                "samples": samples,
+                "quality": pass_name,
+                "status": "pending",
+                "validation": None,
+            }
+
+            try:
+                render_result = self._handle_render(render_payload)
+                image_path = render_result.get("image_path") or render_result.get("output_file")
+
+                if not image_path:
+                    pass_result["status"] = "failed"
+                    pass_result["validation"] = {
+                        "valid": False,
+                        "summary": "Render produced no output image",
+                    }
+                    passes.append(pass_result)
+                    break
+
+                # Validate the rendered frame
+                try:
+                    validation = self._handle_validate_frame({
+                        "image_path": image_path,
+                    })
+                    pass_result["validation"] = validation
+
+                    if validation.get("valid", False):
+                        pass_result["status"] = "passed"
+                        final_image = image_path
+                    else:
+                        pass_result["status"] = "failed"
+                        passes.append(pass_result)
+                        logger.warning(
+                            "render_progressively: %s pass failed validation -- %s",
+                            pass_name, validation.get("summary", "unknown issue"),
+                        )
+                        break
+                except Exception as val_exc:
+                    # Validation itself failed (e.g. OIIO unavailable)
+                    # Treat as passed with warning -- don't block render pipeline
+                    pass_result["status"] = "passed"
+                    pass_result["validation"] = {
+                        "valid": True,
+                        "summary": f"Couldn't run full validation: {val_exc}",
+                        "oiio_available": False,
+                    }
+                    final_image = image_path
+
+            except Exception as render_exc:
+                pass_result["status"] = "failed"
+                pass_result["validation"] = {
+                    "valid": False,
+                    "summary": f"Render failed: {render_exc}",
+                }
+                passes.append(pass_result)
+                break
+
+            passes.append(pass_result)
+
+        return {
+            "passes": passes,
+            "final_image": final_image,
+            "completed_passes": len(passes),
+            "total_passes": len(pass_configs),
+            "success": final_image is not None and len(passes) == len(pass_configs),
+        }
+
     @staticmethod
     def _validate_file_integrity(image_path: str) -> Dict:
         """Check file exists and has non-zero size."""

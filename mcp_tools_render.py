@@ -27,6 +27,8 @@ TOOL_NAMES = [
     "synapse_render_sequence",
     "synapse_render_farm_status",
     "synapse_autonomous_render",
+    "synapse_safe_render",
+    "synapse_render_progressively",
     "synapse_validate_ordering",
 ]
 
@@ -41,5 +43,7 @@ DISPATCH_KEYS = {
     "synapse_render_sequence":    ("render_sequence",      "identity"),
     "synapse_render_farm_status": ("render_farm_status",   "passthrough"),
     "synapse_autonomous_render":  ("autonomous_render",    "identity"),
+    "synapse_safe_render":        ("safe_render",          "identity"),
+    "synapse_render_progressively": ("render_progressively", "identity"),
     "synapse_validate_ordering":  ("solaris_validate_ordering", "identity"),
 }

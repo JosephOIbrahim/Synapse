@@ -3174,3 +3174,195 @@ class RecipeRegistry:
                 ),
             ],
         ))
+
+        # --- Safe Render (pre-flight validation) ---
+        self.register(Recipe(
+            name="safe_render",
+            description=(
+                "Render with pre-flight validation -- checks camera, "
+                "materials, output path before rendering"
+            ),
+            triggers=[
+                r"^(?:safe|validated?)\s+render",
+                r"^render\s+(?:safe|with\s+validation)",
+            ],
+            parameters=[],
+            gate_level=GateLevel.REVIEW,
+            category="render",
+            steps=[
+                RecipeStep(
+                    action="safe_render",
+                    payload_template={},
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- Progressive Render (3-pass) ---
+        self.register(Recipe(
+            name="render_progressively",
+            description=(
+                "Progressive 3-pass render: test (256x256) -> "
+                "preview (720p) -> production"
+            ),
+            triggers=[
+                r"^(?:progressive|incremental)\s+render",
+                r"^render\s+progressive(?:ly)?",
+            ],
+            parameters=[],
+            gate_level=GateLevel.REVIEW,
+            category="render",
+            steps=[
+                RecipeStep(
+                    action="render_progressively",
+                    payload_template={},
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- DOP Network Setup ---
+        self.register(Recipe(
+            name="dop_network_setup",
+            description=(
+                "Create a properly wired DOP network with solver, "
+                "object, and merge nodes"
+            ),
+            triggers=[
+                r"^(?:set\s*up|create|build)\s+(?:a\s+)?dop\s+(?:network|sim)",
+                r"^(?:simulation|dynamics)\s+setup",
+            ],
+            parameters=[],
+            gate_level=GateLevel.REVIEW,
+            category="sim",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import hou\n"
+                            "\n"
+                            "# Create DOP network\n"
+                            "obj = hou.node('/obj')\n"
+                            "dopnet = obj.createNode('dopnet', 'simulation')\n"
+                            "\n"
+                            "# Create gravity force\n"
+                            "gravity = dopnet.createNode('gravity', 'gravity_force')\n"
+                            "\n"
+                            "# Create RBD solver\n"
+                            "solver = dopnet.createNode('rigidbodysolver', 'rbd_solver')\n"
+                            "\n"
+                            "# Create RBD packed object\n"
+                            "rbd_obj = dopnet.createNode('rbdpackedobject', 'rbd_object')\n"
+                            "\n"
+                            "# Create merge to wire forces into solver "
+                            "(DOP convention: merge, not direct wires)\n"
+                            "merge = dopnet.createNode('merge', 'force_merge')\n"
+                            "merge.setInput(0, gravity)\n"
+                            "\n"
+                            "# Wire: object + merged forces -> solver\n"
+                            "solver.setInput(0, merge)\n"
+                            "solver.setInput(1, rbd_obj)\n"
+                            "\n"
+                            "# Create output null\n"
+                            "out = dopnet.createNode('output', 'OUT')\n"
+                            "out.setInput(0, solver)\n"
+                            "out.setDisplayFlag(True)\n"
+                            "out.setRenderFlag(True)\n"
+                            "\n"
+                            "# Layout\n"
+                            "dopnet.layoutChildren()\n"
+                            "\n"
+                            "result = {'dopnet': dopnet.path(), "
+                            "'solver': solver.path(), "
+                            "'object': rbd_obj.path(), "
+                            "'gravity': gravity.path(), "
+                            "'output': out.path()}\n"
+                        ),
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- Verify Installation ---
+        self.register(Recipe(
+            name="verify_installation",
+            description=(
+                "Compare source and deployed file checksums to "
+                "detect installation drift"
+            ),
+            triggers=[
+                r"^verify\s+(?:install(?:ation)?|deployment|sync)",
+                r"^check\s+(?:install|drift|sync)",
+            ],
+            parameters=[],
+            gate_level=GateLevel.INFORM,
+            category="utility",
+            steps=[
+                RecipeStep(
+                    action="execute_python",
+                    payload_template={
+                        "code": (
+                            "import os\n"
+                            "import hashlib\n"
+                            "import json\n"
+                            "\n"
+                            "def _file_hash(path):\n"
+                            "    try:\n"
+                            "        with open(path, 'rb') as f:\n"
+                            "            return hashlib.sha256(f.read()).hexdigest()\n"
+                            "    except (OSError, IOError):\n"
+                            "        return None\n"
+                            "\n"
+                            "home = os.path.expanduser('~')\n"
+                            "source_dir = os.path.join(home, '.synapse', 'houdini')\n"
+                            "deploy_dir = os.path.join(home, 'houdini21.0')\n"
+                            "\n"
+                            "file_map = {\n"
+                            "    'python_panels/synapse_panel.pypanel': "
+                            "'python_panels/synapse_panel.pypanel',\n"
+                            "    'toolbar/synapse.shelf': "
+                            "'toolbar/synapse.shelf',\n"
+                            "    'scripts/python/synapse_shelf.py': "
+                            "'scripts/python/synapse_shelf.py',\n"
+                            "}\n"
+                            "\n"
+                            "drift = []\n"
+                            "missing = []\n"
+                            "synced = []\n"
+                            "\n"
+                            "for src_rel, dst_rel in sorted(file_map.items()):\n"
+                            "    src_path = os.path.join(source_dir, src_rel)\n"
+                            "    dst_path = os.path.join(deploy_dir, dst_rel)\n"
+                            "    src_hash = _file_hash(src_path)\n"
+                            "    dst_hash = _file_hash(dst_path)\n"
+                            "    if src_hash is None:\n"
+                            "        missing.append({'file': src_rel, "
+                            "'issue': 'source missing'})\n"
+                            "    elif dst_hash is None:\n"
+                            "        missing.append({'file': dst_rel, "
+                            "'issue': 'not deployed'})\n"
+                            "    elif src_hash != dst_hash:\n"
+                            "        drift.append({'file': src_rel, "
+                            "'source_hash': src_hash[:12], "
+                            "'deployed_hash': dst_hash[:12]})\n"
+                            "    else:\n"
+                            "        synced.append(src_rel)\n"
+                            "\n"
+                            "result = json.dumps({'synced': len(synced), "
+                            "'drift': drift, 'missing': missing"
+                            "}, sort_keys=True)\n"
+                            "if drift:\n"
+                            "    result = json.dumps({'synced': len(synced), "
+                            "'drift': drift, 'missing': missing, "
+                            "'suggestion': "
+                            "'Run: python ~/.synapse/install.py --verify'"
+                            "}, sort_keys=True)\n"
+                            "print(result)\n"
+                        ),
+                    },
+                    gate_level=GateLevel.INFORM,
+                ),
+            ],
+        ))

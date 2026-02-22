@@ -15,7 +15,7 @@ except ImportError:
 
 from ..core.aliases import resolve_param, resolve_param_with_default
 from .handlers_usd import _usd_to_json
-from .handler_helpers import _HOUDINI_UNAVAILABLE
+from .handler_helpers import _HOUDINI_UNAVAILABLE, _suggest_prim_paths
 
 
 class MaterialHandlerMixin:
@@ -165,11 +165,33 @@ class MaterialHandlerMixin:
             assign_node.parm("primpattern1").set(prim_pattern)
             assign_node.parm("matspecpath1").set(material_path)
 
-            return {
+            # Validate prim pattern against the upstream stage
+            warning = ""
+            try:
+                upstream_stage = node.stage()
+                if upstream_stage and not prim_pattern.startswith("/**"):
+                    # Check if any prim matches the pattern exactly
+                    test_prim = upstream_stage.GetPrimAtPath(prim_pattern)
+                    if not test_prim or not test_prim.IsValid():
+                        suggestions = _suggest_prim_paths(
+                            upstream_stage, prim_pattern
+                        )
+                        if suggestions:
+                            warning = (
+                                f"Couldn't find a prim matching '{prim_pattern}'"
+                                f" -- did you mean one of these?{suggestions}"
+                            )
+            except Exception:
+                pass
+
+            result = {
                 "node_path": assign_node.path(),
                 "prim_pattern": prim_pattern,
                 "material_path": material_path,
             }
+            if warning:
+                result["warning"] = warning
+            return result
 
         return run_on_main(_on_main)
 
@@ -199,10 +221,13 @@ class MaterialHandlerMixin:
 
             prim = stage.GetPrimAtPath(prim_path)
             if not prim.IsValid():
-                raise ValueError(
-                    f"Couldn't find a prim at {prim_path} -- "
-                    "double-check the path on the USD stage"
-                )
+                suggestions = _suggest_prim_paths(stage, prim_path)
+                msg = f"Couldn't find a prim at '{prim_path}'"
+                if suggestions:
+                    msg += f" -- did you mean one of these?{suggestions}"
+                else:
+                    msg += " -- double-check the path on the USD stage"
+                raise ValueError(msg)
 
             from pxr import UsdShade
 
@@ -485,6 +510,24 @@ class MaterialHandlerMixin:
                 assign_node.parm("matspecpath1").set(material_usd_path)
                 result["assign_node"] = assign_node.path()
                 result["geo_pattern"] = geo_pattern
+
+                # Validate geo_pattern against the matlib stage
+                try:
+                    matlib_stage = matlib.stage()
+                    if matlib_stage and not geo_pattern.startswith("/**"):
+                        test_prim = matlib_stage.GetPrimAtPath(geo_pattern)
+                        if not test_prim or not test_prim.IsValid():
+                            suggestions = _suggest_prim_paths(
+                                matlib_stage, geo_pattern
+                            )
+                            if suggestions:
+                                result["warning"] = (
+                                    f"Couldn't find a prim matching "
+                                    f"'{geo_pattern}' -- did you mean one "
+                                    f"of these?{suggestions}"
+                                )
+                except Exception:
+                    pass
 
             # Handle displacement separately (needs render settings context)
             if displacement_map:

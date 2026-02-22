@@ -101,6 +101,10 @@ class CommandType(Enum):
     # Autonomous render pipeline
     AUTONOMOUS_RENDER = "autonomous_render"
 
+    # Safe / progressive render
+    SAFE_RENDER = "safe_render"
+    RENDER_PROGRESSIVELY = "render_progressively"
+
     # HDA (Houdini Digital Asset) operations
     HDA_CREATE = "hda_create"
     HDA_PROMOTE_PARM = "hda_promote_parm"

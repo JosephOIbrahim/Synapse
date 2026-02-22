@@ -662,3 +662,286 @@ class TestRenderAliases:
         aliases_mod = sys.modules["synapse.core.aliases"]
         assert "frame" in aliases_mod.PARAM_ALIASES
         assert "frame_number" in aliases_mod.PARAM_ALIASES["frame"]
+
+
+# ---------------------------------------------------------------------------
+# Tests: _handle_safe_render
+# ---------------------------------------------------------------------------
+
+class TestSafeRender:
+    """Tests for the safe_render handler (pre-flight validation + auto-background)."""
+
+    def _make_handler(self):
+        h = handlers_mod.SynapseHandler()
+        h._bridge = MagicMock()
+        return h
+
+    def test_hard_fail_no_camera(self):
+        """Pre-flight fails hard if no cameras on stage."""
+        h = self._make_handler()
+        # Mock _handle_get_stage_info to return no cameras
+        h._handle_get_stage_info = MagicMock(return_value={"cameras": []})
+        result = h._handle_safe_render({})
+        assert result["passed"] is False
+        assert any(c["name"] == "camera" and not c["passed"] for c in result["checks"])
+
+    def test_passes_with_camera(self):
+        """Pre-flight passes when camera exists, delegates to render."""
+        h = self._make_handler()
+        h._handle_get_stage_info = MagicMock(return_value={
+            "cameras": ["/cameras/cam1"],
+        })
+        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        result = h._handle_safe_render({})
+        assert result["passed"] is True
+        assert "render" in result
+        h._handle_render.assert_called_once()
+
+    def test_forces_background_for_large_resolution(self):
+        """Resolutions >512 auto-force background render."""
+        h = self._make_handler()
+        h._handle_get_stage_info = MagicMock(return_value={"cameras": ["/cameras/cam1"]})
+        h._handle_render_settings = MagicMock(return_value={})
+        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        result = h._handle_safe_render({
+            "rop_path": "/out/karma",
+            "width": 1920,
+            "height": 1080,
+        })
+        assert result["passed"] is True
+        assert result["forced_background"] is True
+
+    def test_respects_explicit_foreground(self):
+        """User-specified soho_foreground overrides auto-background."""
+        h = self._make_handler()
+        h._handle_get_stage_info = MagicMock(return_value={"cameras": ["/cameras/cam1"]})
+        h._handle_render_settings = MagicMock(return_value={})
+        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        result = h._handle_safe_render({
+            "rop_path": "/out/karma",
+            "soho_foreground": 1,
+            "width": 1920,
+            "height": 1080,
+        })
+        assert result["forced_background"] is False
+
+    def test_soft_warn_unassigned_materials(self):
+        """Unassigned materials produce a soft warning, not a hard fail."""
+        h = self._make_handler()
+        h._handle_get_stage_info = MagicMock(return_value={
+            "cameras": ["/cameras/cam1"],
+            "unassigned_material_prims": ["/geo/sphere"],
+        })
+        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        result = h._handle_safe_render({})
+        assert result["passed"] is True
+        mat_check = [c for c in result["checks"] if c["name"] == "materials"]
+        assert len(mat_check) == 1
+        assert mat_check[0]["severity"] == "soft_warn"
+
+    def test_output_path_check_with_rop(self):
+        """Output path validation runs when rop_path is given."""
+        h = self._make_handler()
+        h._handle_get_stage_info = MagicMock(return_value={"cameras": ["/cameras/cam1"]})
+        h._handle_render_settings = MagicMock(return_value={
+            "settings": {"outputimage": "/tmp/renders/test.exr"},
+        })
+        h._handle_render = MagicMock(return_value={"image_path": "/tmp/renders/test.exr"})
+        result = h._handle_safe_render({"rop_path": "/out/karma"})
+        assert result["passed"] is True
+        path_checks = [c for c in result["checks"] if c["name"] == "output_path"]
+        assert len(path_checks) == 1
+
+
+# ---------------------------------------------------------------------------
+# Tests: _handle_render_progressively
+# ---------------------------------------------------------------------------
+
+class TestRenderProgressively:
+    """Tests for the render_progressively handler (3-pass pipeline)."""
+
+    def _make_handler(self):
+        h = handlers_mod.SynapseHandler()
+        h._bridge = MagicMock()
+        return h
+
+    def test_three_passes_on_success(self):
+        """All 3 passes complete when render + validation succeed."""
+        h = self._make_handler()
+        h._handle_render_settings = MagicMock(return_value={})
+        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        h._handle_validate_frame = MagicMock(return_value={"valid": True, "summary": "OK"})
+
+        result = h._handle_render_progressively({})
+        assert result["success"] is True
+        assert result["completed_passes"] == 3
+        assert result["total_passes"] == 3
+        assert result["final_image"] == "/tmp/render.exr"
+        assert len(result["passes"]) == 3
+        assert [p["name"] for p in result["passes"]] == ["test", "preview", "production"]
+
+    def test_stops_on_validation_failure(self):
+        """Pipeline stops after first validation failure."""
+        h = self._make_handler()
+        h._handle_render_settings = MagicMock(return_value={})
+        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        # Test pass fails validation
+        h._handle_validate_frame = MagicMock(return_value={
+            "valid": False, "summary": "Black frame detected",
+        })
+
+        result = h._handle_render_progressively({})
+        assert result["success"] is False
+        assert result["completed_passes"] == 1
+        assert result["final_image"] is None
+        assert result["passes"][0]["status"] == "failed"
+
+    def test_stops_on_render_failure(self):
+        """Pipeline stops if render itself throws."""
+        h = self._make_handler()
+        h._handle_render_settings = MagicMock(return_value={})
+        h._handle_render = MagicMock(side_effect=RuntimeError("Render crashed"))
+
+        result = h._handle_render_progressively({})
+        assert result["success"] is False
+        assert result["completed_passes"] == 1
+        assert result["passes"][0]["status"] == "failed"
+        assert "crashed" in result["passes"][0]["validation"]["summary"].lower()
+
+    def test_no_output_image_fails(self):
+        """Render returning no image_path fails the pass."""
+        h = self._make_handler()
+        h._handle_render_settings = MagicMock(return_value={})
+        h._handle_render = MagicMock(return_value={})
+
+        result = h._handle_render_progressively({})
+        assert result["success"] is False
+        assert result["passes"][0]["status"] == "failed"
+
+    def test_validation_exception_treated_as_pass(self):
+        """If validate_frame throws (e.g., no OIIO), treat as passed with warning."""
+        h = self._make_handler()
+        h._handle_render_settings = MagicMock(return_value={})
+        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        h._handle_validate_frame = MagicMock(side_effect=ImportError("No OIIO"))
+
+        result = h._handle_render_progressively({})
+        assert result["success"] is True
+        assert result["completed_passes"] == 3
+        for p in result["passes"]:
+            assert p["status"] == "passed"
+
+    def test_custom_resolution_and_samples(self):
+        """Custom production resolution and samples are passed through."""
+        h = self._make_handler()
+        h._handle_render_settings = MagicMock(return_value={})
+        h._handle_render = MagicMock(return_value={"image_path": "/tmp/render.exr"})
+        h._handle_validate_frame = MagicMock(return_value={"valid": True})
+
+        result = h._handle_render_progressively({
+            "resolution": [3840, 2160],
+            "samples": 128,
+        })
+        assert result["success"] is True
+        prod_pass = result["passes"][2]
+        assert prod_pass["resolution"] == "3840x2160"
+        assert prod_pass["samples"] == 128
+
+
+# ---------------------------------------------------------------------------
+# Tests: handler_helpers — _suggest_prim_paths
+# ---------------------------------------------------------------------------
+
+class TestSuggestPrimPaths:
+    """Tests for _suggest_prim_paths in handler_helpers."""
+
+    def setup_method(self):
+        helpers_path = Path(__file__).resolve().parent.parent / "python" / "synapse" / "server" / "handler_helpers.py"
+        if "synapse.server.handler_helpers" not in sys.modules:
+            spec = importlib.util.spec_from_file_location("synapse.server.handler_helpers", helpers_path)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules["synapse.server.handler_helpers"] = mod
+            spec.loader.exec_module(mod)
+        self.helpers = sys.modules["synapse.server.handler_helpers"]
+
+    def test_returns_empty_for_none_stage(self):
+        assert self.helpers._suggest_prim_paths(None, "/foo") == ""
+
+    def test_returns_empty_for_empty_path(self):
+        stage = MagicMock()
+        stage.Traverse.return_value = []
+        assert self.helpers._suggest_prim_paths(stage, "") == ""
+
+    def test_suggests_similar_paths(self):
+        prim1 = MagicMock()
+        prim1.GetPath.return_value = "/scene/rubbertoy/geo"
+        prim2 = MagicMock()
+        prim2.GetPath.return_value = "/scene/rubbertoy/geo/shape"
+        stage = MagicMock()
+        stage.Traverse.return_value = [prim1, prim2]
+
+        result = self.helpers._suggest_prim_paths(stage, "/scene/rubbertoy/geo/shap")
+        assert "Similar prims:" in result
+        assert "/scene/rubbertoy/geo/shape" in result
+
+    def test_deterministic_ordering(self):
+        """Same inputs produce same order (He2025 determinism)."""
+        prims = []
+        for path in ["/a/b", "/a/c", "/a/d"]:
+            p = MagicMock()
+            p.GetPath.return_value = path
+            prims.append(p)
+        stage = MagicMock()
+        stage.Traverse.return_value = prims
+
+        r1 = self.helpers._suggest_prim_paths(stage, "/a/b")
+        r2 = self.helpers._suggest_prim_paths(stage, "/a/b")
+        assert r1 == r2
+
+    def test_respects_max_suggestions(self):
+        prims = []
+        for i in range(10):
+            p = MagicMock()
+            p.GetPath.return_value = f"/scene/geo{i}"
+            prims.append(p)
+        stage = MagicMock()
+        stage.Traverse.return_value = prims
+
+        result = self.helpers._suggest_prim_paths(stage, "/scene/geo5", max_suggestions=2)
+        if result:
+            paths = result.replace(" Similar prims: ", "").split(", ")
+            assert len(paths) <= 2
+
+
+# ---------------------------------------------------------------------------
+# Tests: handler_helpers — _render_diagnostic_checklist
+# ---------------------------------------------------------------------------
+
+class TestRenderDiagnosticChecklist:
+    """Tests for _render_diagnostic_checklist in handler_helpers."""
+
+    def setup_method(self):
+        self.helpers = sys.modules["synapse.server.handler_helpers"]
+
+    def test_none_node_returns_all_false(self):
+        result = self.helpers._render_diagnostic_checklist(None)
+        assert all(v is False for v in result.values())
+
+    def test_camera_detected(self):
+        node = MagicMock()
+        cam_parm = MagicMock()
+        cam_parm.eval.return_value = "/cameras/cam1"
+        node.parm.side_effect = lambda name: cam_parm if name == "camera" else None
+        node.type.return_value = None
+        result = self.helpers._render_diagnostic_checklist(node)
+        assert result["camera_set"] is True
+
+    def test_output_path_detected(self):
+        node = MagicMock()
+        pic_parm = MagicMock()
+        pic_parm.eval.return_value = "/tmp/renders/test.exr"
+        node.parm.side_effect = lambda name: pic_parm if name == "picture" else None
+        node.type.return_value = None
+        result = self.helpers._render_diagnostic_checklist(node)
+        # output_path_exists depends on actual filesystem — just check the key exists
+        assert "output_path_exists" in result

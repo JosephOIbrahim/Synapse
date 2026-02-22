@@ -177,6 +177,8 @@ _SLOW_COMMANDS = {
     "tops_render_sequence": 600.0,
     "tops_multi_shot": 600.0,
     "autonomous_render": 600.0,
+    "safe_render": 120.0,
+    "render_progressively": 120.0,
     "hda_package": 120.0,
 }
 
@@ -2132,6 +2134,57 @@ async def list_tools():
                 "required": ["intent"],
             },
         ),
+        # -- Safe / Progressive Render --
+        Tool(
+            name="synapse_safe_render",
+            description=(
+                "Render with pre-flight validation. Checks camera, materials, and "
+                "output path before rendering. Auto-forces background mode for "
+                "high-resolution renders to prevent Houdini lockup."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "rop_path": {
+                        "type": "string",
+                        "description": "Path to the usdrender ROP node (auto-discovered if omitted)",
+                    },
+                    "soho_foreground": {
+                        "type": "integer",
+                        "enum": [0, 1],
+                        "description": "Force foreground (1) or background (0) rendering. If omitted, auto-decides based on resolution.",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="synapse_render_progressively",
+            description=(
+                "Progressive 3-pass render: test (256x256, 4 samples) -> preview "
+                "(720p, 16 samples) -> production (user settings). Validates each "
+                "pass before proceeding."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "rop_path": {
+                        "type": "string",
+                        "description": "Path to the usdrender ROP node (auto-discovered if omitted)",
+                    },
+                    "resolution": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": "Production resolution [width, height]. Default: [1920, 1080]",
+                    },
+                    "samples": {
+                        "type": "integer",
+                        "description": "Production pixel samples. Default: 64",
+                    },
+                },
+                "required": [],
+            },
+        ),
         # -- Undo / Redo --
         Tool(
             name="houdini_undo",
@@ -2487,6 +2540,8 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
     "synapse_render_sequence":    ("render_sequence",      _identity),
     "synapse_render_farm_status": ("render_farm_status",   _passthrough),
     "synapse_autonomous_render":  ("autonomous_render",    _identity),
+    "synapse_safe_render":        ("safe_render",          _identity),
+    "synapse_render_progressively": ("render_progressively", _identity),
     "synapse_validate_ordering": ("solaris_validate_ordering", _identity),
     "houdini_undo":              ("undo",                     _passthrough),
     "houdini_redo":              ("redo",                     _passthrough),
