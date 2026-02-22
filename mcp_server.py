@@ -445,6 +445,14 @@ async def list_tools():
         # Parameter names on USD nodes use encoded format.
         # ===================================================================
         Tool(
+            name="synapse_group_scene",
+            description=(
+                "[TOOL GROUP: Scene / Node / Parameters] "
+                + mcp_tools_scene.GROUP_KNOWLEDGE
+            ),
+            inputSchema={"type": "object", "properties": {}, "required": []},
+        ),
+        Tool(
             name="synapse_ping",
             description=(
                 "Check if Houdini/Synapse is connected and responding. "
@@ -668,6 +676,14 @@ async def list_tools():
         # matlib.cook(force=True) before createNode() on shader children.
         # ===================================================================
         Tool(
+            name="synapse_group_usd",
+            description=(
+                "[TOOL GROUP: USD / Solaris / Materials] "
+                + mcp_tools_usd.GROUP_KNOWLEDGE
+            ),
+            inputSchema={"type": "object", "properties": {}, "required": []},
+        ),
+        Tool(
             name="houdini_stage_info",
             description=(
                 "Get USD stage information: prim list and types. Optionally specify a LOP node path. "
@@ -804,6 +820,14 @@ async def list_tools():
         # Start at 256x256 with 4-8 samples. Never soho_foreground=1 for
         # heavy scenes. Karma camera = USD prim path, not node path.
         # ===================================================================
+        Tool(
+            name="synapse_group_render",
+            description=(
+                "[TOOL GROUP: Render / Viewport / Keyframe] "
+                + mcp_tools_render.GROUP_KNOWLEDGE
+            ),
+            inputSchema={"type": "object", "properties": {}, "required": []},
+        ),
         Tool(
             name="houdini_capture_viewport",
             description=(
@@ -964,6 +988,14 @@ async def list_tools():
         # health checks, diagnose for failures. cook_and_validate auto-retries.
         # tops_render_sequence for frame ranges. tops_multi_shot for cameras.
         # ===================================================================
+        Tool(
+            name="synapse_group_tops",
+            description=(
+                "[TOOL GROUP: TOPS / PDG] "
+                + mcp_tools_tops.GROUP_KNOWLEDGE
+            ),
+            inputSchema={"type": "object", "properties": {}, "required": []},
+        ),
         Tool(
             name="houdini_wedge",
             description=(
@@ -1578,6 +1610,14 @@ async def list_tools():
         # Memory: Charmander->Charmeleon->Charizard evolution.
         # HDA: hda_package is the high-level orchestrator.
         # ===================================================================
+        Tool(
+            name="synapse_group_memory",
+            description=(
+                "[TOOL GROUP: Memory / Knowledge / HDA] "
+                + mcp_tools_memory.GROUP_KNOWLEDGE
+            ),
+            inputSchema={"type": "object", "properties": {}, "required": []},
+        ),
         Tool(
             name="synapse_knowledge_lookup",
             description=(
@@ -2459,9 +2499,23 @@ TOOL_DISPATCH: dict[str, tuple[str, callable]] = {
 }
 
 
+# Group knowledge — served locally, no Houdini connection needed
+_GROUP_INFO_TOOLS = {
+    "synapse_group_scene": mcp_tools_scene.GROUP_KNOWLEDGE,
+    "synapse_group_render": mcp_tools_render.GROUP_KNOWLEDGE,
+    "synapse_group_usd": mcp_tools_usd.GROUP_KNOWLEDGE,
+    "synapse_group_tops": mcp_tools_tops.GROUP_KNOWLEDGE,
+    "synapse_group_memory": mcp_tools_memory.GROUP_KNOWLEDGE,
+}
+
+
 @server.call_tool()
 async def call_tool(name: str, arguments: dict):
     """Dispatch MCP tool call to Synapse via WebSocket."""
+    # Group-info tools return knowledge preamble directly (no Houdini)
+    if name in _GROUP_INFO_TOOLS:
+        return [TextContent(type="text", text=_GROUP_INFO_TOOLS[name])]
+
     if name not in TOOL_DISPATCH:
         return [TextContent(type="text", text=f"I don't recognize the tool '{name}' \u2014 check the available tools list")]
 

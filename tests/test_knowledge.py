@@ -376,3 +376,256 @@ class TestRealRAGContent:
         """Should find MaterialX shader parameters."""
         result = real_knowledge.lookup("materialx base color metalness")
         assert result.found
+
+
+# ---------------------------------------------------------------------------
+# Phase P2: Tool group knowledge preambles
+# ---------------------------------------------------------------------------
+
+class TestToolGroupKnowledge:
+    """Validate that tool group modules expose GROUP_KNOWLEDGE constants."""
+
+    @pytest.fixture
+    def tool_group_modules(self):
+        """Import all 5 tool group modules."""
+        import importlib
+        modules = {}
+        for name in ["mcp_tools_scene", "mcp_tools_render", "mcp_tools_usd",
+                      "mcp_tools_tops", "mcp_tools_memory"]:
+            spec = importlib.util.spec_from_file_location(
+                name, ROOT / f"{name}.py"
+            )
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            modules[name] = mod
+        return modules
+
+    def test_all_groups_have_knowledge(self, tool_group_modules):
+        """Every tool group module must have a non-empty GROUP_KNOWLEDGE constant."""
+        for name, mod in tool_group_modules.items():
+            assert hasattr(mod, "GROUP_KNOWLEDGE"), f"{name} missing GROUP_KNOWLEDGE"
+            assert isinstance(mod.GROUP_KNOWLEDGE, str), f"{name}.GROUP_KNOWLEDGE not a string"
+            assert len(mod.GROUP_KNOWLEDGE) > 50, f"{name}.GROUP_KNOWLEDGE too short"
+
+    def test_all_groups_have_tool_names(self, tool_group_modules):
+        """Every tool group module must have a TOOL_NAMES list."""
+        for name, mod in tool_group_modules.items():
+            assert hasattr(mod, "TOOL_NAMES"), f"{name} missing TOOL_NAMES"
+            assert isinstance(mod.TOOL_NAMES, list), f"{name}.TOOL_NAMES not a list"
+            assert len(mod.TOOL_NAMES) >= 3, f"{name}.TOOL_NAMES has too few tools"
+
+    def test_all_groups_have_dispatch_keys(self, tool_group_modules):
+        """Every tool group module must have a DISPATCH_KEYS dict."""
+        for name, mod in tool_group_modules.items():
+            assert hasattr(mod, "DISPATCH_KEYS"), f"{name} missing DISPATCH_KEYS"
+            assert isinstance(mod.DISPATCH_KEYS, dict)
+            # DISPATCH_KEYS should cover all TOOL_NAMES
+            for tool in mod.TOOL_NAMES:
+                assert tool in mod.DISPATCH_KEYS, (
+                    f"{name}: tool '{tool}' in TOOL_NAMES but missing from DISPATCH_KEYS"
+                )
+
+    def test_render_knowledge_mentions_exposure(self, tool_group_modules):
+        """Render group knowledge must mention the Lighting Law (exposure)."""
+        knowledge = tool_group_modules["mcp_tools_render"].GROUP_KNOWLEDGE
+        assert "exposure" in knowledge.lower()
+        assert "1.0" in knowledge
+
+    def test_usd_knowledge_mentions_encoded_params(self, tool_group_modules):
+        """USD group knowledge must mention encoded parameter names."""
+        knowledge = tool_group_modules["mcp_tools_usd"].GROUP_KNOWLEDGE
+        assert "xn__" in knowledge
+
+    def test_memory_knowledge_mentions_project_setup(self, tool_group_modules):
+        """Memory group knowledge must mention synapse_project_setup."""
+        knowledge = tool_group_modules["mcp_tools_memory"].GROUP_KNOWLEDGE
+        assert "project_setup" in knowledge.lower() or "synapse_project_setup" in knowledge
+
+
+# ---------------------------------------------------------------------------
+# Phase P2: Context enrichment module
+# ---------------------------------------------------------------------------
+
+# Load context_enrichment module
+_ce_spec = importlib.util.spec_from_file_location(
+    "context_enrichment",
+    ROOT / "python" / "synapse" / "routing" / "context_enrichment.py",
+)
+_ce_mod = importlib.util.module_from_spec(_ce_spec)
+_ce_spec.loader.exec_module(_ce_mod)
+enrich_context = _ce_mod.enrich_context
+register_group_knowledge = _ce_mod.register_group_knowledge
+get_group_for_tool = _ce_mod.get_group_for_tool
+
+
+class TestContextEnrichment:
+    """Tests for the context_enrichment module."""
+
+    def test_plain_message_passes_through(self):
+        """Without any enrichment sources, message is returned as-is."""
+        result = enrich_context("hello world")
+        assert result == "hello world"
+
+    def test_tier1_hint_injected(self):
+        """Tier 1 knowledge should be injected as XML context."""
+        hint = KnowledgeLookupResult(
+            found=True,
+            answer="Use xn__inputsintensity_i0a for intensity",
+            confidence=0.85,
+        )
+        result = enrich_context("set light intensity", tier1_hint=hint)
+        assert '<context source="tier1"' in result
+        assert "xn__inputsintensity_i0a" in result
+        assert "set light intensity" in result
+
+    def test_tier1_not_found_skipped(self):
+        """Tier 1 hint with found=False should not inject context."""
+        hint = KnowledgeLookupResult(found=False)
+        result = enrich_context("set light intensity", tier1_hint=hint)
+        assert "<context" not in result
+        assert result == "set light intensity"
+
+    def test_group_knowledge_injected(self):
+        """Tool group knowledge should be injected when group specified."""
+        register_group_knowledge({"render": "Intensity ALWAYS 1.0"})
+        result = enrich_context("render scene", tool_group="render")
+        assert '<context source="tool_group"' in result
+        assert "Intensity ALWAYS 1.0" in result
+
+    def test_unknown_group_ignored(self):
+        """Unknown tool group should not inject anything."""
+        result = enrich_context("hello", tool_group="nonexistent")
+        assert "<context" not in result
+
+    def test_memory_injected(self):
+        """Memory search results should be included."""
+        mock_memory = MagicMock()
+        mock_result = MagicMock()
+        mock_result.memory.summary = "Previous render used Karma XPU"
+        mock_result.memory.content = "Full memory content here"
+        mock_memory.search.return_value = [mock_result]
+
+        result = enrich_context("render setup", memory=mock_memory)
+        assert "<memory>" in result
+        assert "Previous render used Karma XPU" in result
+
+    def test_memory_failure_graceful(self):
+        """Memory search failure should not crash enrichment."""
+        mock_memory = MagicMock()
+        mock_memory.search.side_effect = RuntimeError("DB unavailable")
+
+        result = enrich_context("render setup", memory=mock_memory)
+        assert "render setup" in result
+        # No crash, no memory section
+        assert "<memory>" not in result
+
+    def test_all_sources_combined(self):
+        """All enrichment sources should combine in order."""
+        register_group_knowledge({"usd": "USD composition rules"})
+        hint = KnowledgeLookupResult(
+            found=True, answer="Stage hierarchy", confidence=0.7,
+        )
+        mock_memory = MagicMock()
+        mock_result = MagicMock()
+        mock_result.memory.summary = "Prev session context"
+        mock_result.memory.content = "Full"
+        mock_memory.search.return_value = [mock_result]
+
+        result = enrich_context(
+            "query stage",
+            tier1_hint=hint,
+            memory=mock_memory,
+            tool_group="usd",
+        )
+        # All sections present
+        assert "tool_group" in result
+        assert "tier1" in result
+        assert "<memory>" in result
+        assert "query stage" in result
+
+        # Order: group knowledge before tier1 before memory before message
+        group_pos = result.index("tool_group")
+        tier1_pos = result.index("tier1")
+        memory_pos = result.index("<memory>")
+        msg_pos = result.index("query stage")
+        assert group_pos < tier1_pos < memory_pos < msg_pos
+
+
+class TestGetGroupForTool:
+    """Tests for tool-to-group resolution."""
+
+    def test_render_tools(self):
+        assert get_group_for_tool("houdini_render") == "render"
+        assert get_group_for_tool("houdini_capture_viewport") == "render"
+        assert get_group_for_tool("synapse_validate_frame") == "render"
+
+    def test_usd_tools(self):
+        assert get_group_for_tool("houdini_stage_info") == "usd"
+        assert get_group_for_tool("houdini_create_material") == "usd"
+        assert get_group_for_tool("houdini_assign_material") == "usd"
+
+    def test_tops_tools(self):
+        assert get_group_for_tool("tops_cook_node") == "tops"
+        assert get_group_for_tool("tops_diagnose") == "tops"
+
+    def test_memory_tools(self):
+        assert get_group_for_tool("synapse_knowledge_lookup") == "memory"
+        assert get_group_for_tool("houdini_hda_create") == "memory"
+
+    def test_scene_default(self):
+        """Unmatched houdini_/synapse_ tools default to scene group."""
+        assert get_group_for_tool("synapse_ping") == "scene"
+        assert get_group_for_tool("houdini_create_node") == "scene"
+
+    def test_unknown_tool(self):
+        """Completely unknown tools return None."""
+        assert get_group_for_tool("unknown_tool") is None
+
+
+# ---------------------------------------------------------------------------
+# Phase P2: Semantic index coverage validation
+# ---------------------------------------------------------------------------
+
+class TestSemanticIndexCoverage:
+    """Validate that the semantic index meets P2 coverage targets."""
+
+    @pytest.fixture
+    def real_index(self):
+        index_path = ROOT / "rag" / "documentation" / "_metadata" / "semantic_index.json"
+        if not index_path.exists():
+            pytest.skip("Real semantic index not available")
+        with open(index_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def test_minimum_topic_count(self, real_index):
+        """Semantic index must have >= 40 topics (P2 target)."""
+        # Index is flat format: each key is a topic
+        assert len(real_index) >= 40, (
+            f"Only {len(real_index)} topics, need >= 40"
+        )
+
+    def test_minimum_keyword_count(self, real_index):
+        """Semantic index must have >= 600 total keywords (P2 target)."""
+        total_keywords = sum(
+            len(topic.get("keywords", []))
+            for topic in real_index.values()
+            if isinstance(topic, dict)
+        )
+        assert total_keywords >= 600, (
+            f"Only {total_keywords} keywords, need >= 600"
+        )
+
+    def test_cops_topic_exists(self, real_index):
+        """COPs/compositing topic must exist."""
+        cops_topics = [k for k in real_index if "cop" in k.lower()]
+        assert cops_topics, "No COPs-related topic in semantic index"
+
+    def test_usd_composition_topic_exists(self, real_index):
+        """USD composition patterns topic must exist."""
+        usd_topics = [k for k in real_index if "usd" in k.lower() and "compos" in k.lower()]
+        assert usd_topics, "No USD composition topic in semantic index"
+
+    def test_tops_topic_exists(self, real_index):
+        """TOPS/PDG batch processing topic must exist."""
+        tops_topics = [k for k in real_index if "tops" in k.lower() or "pdg" in k.lower()]
+        assert tops_topics, "No TOPS/PDG topic in semantic index"
