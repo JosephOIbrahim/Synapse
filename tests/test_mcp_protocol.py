@@ -706,3 +706,246 @@ class TestModuleSingleton:
         assert s1 is s2
         # Cleanup
         server_mod._mcp_server = None
+
+
+# ===========================================================================
+# Tests: P1 Intelligence — Enriched Instructions
+# ===========================================================================
+
+class TestP1EnrichedInstructions:
+    """P1: Verify MCP initialize instructions include workflow protocol."""
+
+    def test_instructions_include_workflow(self, server):
+        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
+        resp_body, _ = server.handle_request(body)
+        resp = _parse_response(resp_body)
+        instructions = resp["result"]["instructions"]
+        assert "inspect before mutating" in instructions
+
+    def test_instructions_include_one_mutation(self, server):
+        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
+        resp_body, _ = server.handle_request(body)
+        resp = _parse_response(resp_body)
+        instructions = resp["result"]["instructions"]
+        assert "One mutation per tool call" in instructions
+
+    def test_instructions_include_usd_convention(self, server):
+        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
+        resp_body, _ = server.handle_request(body)
+        resp = _parse_response(resp_body)
+        instructions = resp["result"]["instructions"]
+        assert "xn__inputsintensity_i0a" in instructions
+
+    def test_instructions_include_lighting_law(self, server):
+        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
+        resp_body, _ = server.handle_request(body)
+        resp = _parse_response(resp_body)
+        instructions = resp["result"]["instructions"]
+        assert "Intensity is ALWAYS 1.0" in instructions
+
+    def test_instructions_include_session_start(self, server):
+        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
+        resp_body, _ = server.handle_request(body)
+        resp = _parse_response(resp_body)
+        instructions = resp["result"]["instructions"]
+        assert "synapse_project_setup" in instructions
+
+
+# ===========================================================================
+# Tests: P1 Intelligence — Enriched Tool Descriptions
+# ===========================================================================
+
+class TestP1EnrichedDescriptions:
+    """P1: Verify critical tool descriptions are enriched."""
+
+    def test_project_setup_description_first_in_session(self):
+        tools = {t["name"]: t for t in tools_mod.get_tools()}
+        desc = tools["synapse_project_setup"]["description"]
+        assert "FIRST" in desc
+
+    def test_execute_python_description_one_mutation(self):
+        tools = {t["name"]: t for t in tools_mod.get_tools()}
+        desc = tools["houdini_execute_python"]["description"]
+        assert "ONE mutation" in desc
+
+    def test_set_parm_description_encoded_names(self):
+        tools = {t["name"]: t for t in tools_mod.get_tools()}
+        desc = tools["houdini_set_parm"]["description"]
+        assert "xn__inputsintensity_i0a" in desc
+
+
+# ===========================================================================
+# Tests: P1 Intelligence — Auto-Init Project Context
+# ===========================================================================
+
+class TestP1AutoInitProjectContext:
+    """P1: Verify project context auto-loads on session start."""
+
+    def test_session_has_project_context_attribute(self):
+        """MCPSession should have a project_context slot."""
+        mgr = session_mod.MCPSessionManager()
+        sid = mgr.create_session({"name": "test"})
+        session = mgr.get_session(sid)
+        assert hasattr(session, "project_context")
+        assert session.project_context is None
+
+    def test_auto_init_calls_project_setup(self):
+        """Initialize should attempt to call project_setup."""
+        handler = MagicMock()
+        response = MagicMock()
+        response.success = True
+        response.data = {"stage": "charmander", "scene_memory": {}}
+        handler.handle.return_value = response
+
+        srv = server_mod.MCPServer(handler=handler)
+        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
+        resp_body, headers = srv.handle_request(body)
+
+        # Verify handler.handle was called (for project_setup auto-init)
+        assert handler.handle.called
+        # Verify the command was project_setup
+        call_args = handler.handle.call_args_list[0][0][0]
+        assert call_args.type == "project_setup"
+
+    def test_auto_init_caches_context_on_session(self):
+        """Project context should be cached on the MCPSession."""
+        handler = MagicMock()
+        response = MagicMock()
+        response.success = True
+        response.data = {"stage": "charmander", "scene_memory": {"entries": []}}
+        handler.handle.return_value = response
+
+        srv = server_mod.MCPServer(handler=handler)
+        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
+        _, headers = srv.handle_request(body)
+
+        sid = headers["Mcp-Session-Id"]
+        session = srv._sessions.get_session(sid)
+        assert session.project_context is not None
+
+    def test_auto_init_failure_doesnt_break_init(self):
+        """If project_setup fails, initialize should still succeed."""
+        handler = MagicMock()
+        handler.handle.side_effect = Exception("Houdini not ready")
+
+        srv = server_mod.MCPServer(handler=handler)
+        body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}})
+        resp_body, headers = srv.handle_request(body)
+
+        resp = _parse_response(resp_body)
+        assert "result" in resp
+        assert "Mcp-Session-Id" in headers
+
+
+# ===========================================================================
+# Tests: P1 Intelligence — Project Context Resource
+# ===========================================================================
+
+class TestP1ProjectContextResource:
+    """P1: Verify synapse://project/context resource is registered."""
+
+    def test_project_context_resource_exists(self, server):
+        """synapse://project/context should appear in resources/list."""
+        init_body = _jsonrpc("initialize", {}, msg_id=1)
+        _, headers = server.handle_request(init_body)
+        sid = headers["Mcp-Session-Id"]
+
+        body = _jsonrpc("resources/list", {}, msg_id=2)
+        resp_body, _ = server.handle_request(body, session_id=sid)
+        resp = _parse_response(resp_body)
+        uris = [r["uri"] for r in resp["result"]["resources"]]
+        assert "synapse://project/context" in uris
+
+    def test_project_context_resource_has_description(self):
+        """Resource should have a meaningful description."""
+        from synapse.mcp.resources import get_resources
+        resources = get_resources()
+        ctx_resource = [r for r in resources if r["uri"] == "synapse://project/context"]
+        assert len(ctx_resource) == 1
+        assert "project memory" in ctx_resource[0]["description"].lower()
+
+
+# ===========================================================================
+# Tests: P1 Intelligence — Tool Group Modules
+# ===========================================================================
+
+class TestP1ToolGroupModules:
+    """P1: Verify tool group modules are importable and consistent."""
+
+    def test_scene_group_importable(self):
+        """mcp_tools_scene should be importable."""
+        import importlib
+        _repo = Path(__file__).resolve().parent.parent
+        sys.path.insert(0, str(_repo))
+        try:
+            mod = importlib.import_module("mcp_tools_scene")
+            assert hasattr(mod, "GROUP_KNOWLEDGE")
+            assert hasattr(mod, "TOOL_NAMES")
+            assert hasattr(mod, "DISPATCH_KEYS")
+            assert len(mod.TOOL_NAMES) > 0
+        finally:
+            sys.path.pop(0)
+
+    def test_render_group_importable(self):
+        import importlib
+        _repo = Path(__file__).resolve().parent.parent
+        sys.path.insert(0, str(_repo))
+        try:
+            mod = importlib.import_module("mcp_tools_render")
+            assert "LIGHTING LAW" in mod.GROUP_KNOWLEDGE or "Intensity" in mod.GROUP_KNOWLEDGE
+            assert "houdini_render" in mod.TOOL_NAMES
+        finally:
+            sys.path.pop(0)
+
+    def test_usd_group_importable(self):
+        import importlib
+        _repo = Path(__file__).resolve().parent.parent
+        sys.path.insert(0, str(_repo))
+        try:
+            mod = importlib.import_module("mcp_tools_usd")
+            assert "xn__inputs" in mod.GROUP_KNOWLEDGE
+            assert "houdini_stage_info" in mod.TOOL_NAMES
+        finally:
+            sys.path.pop(0)
+
+    def test_tops_group_importable(self):
+        import importlib
+        _repo = Path(__file__).resolve().parent.parent
+        sys.path.insert(0, str(_repo))
+        try:
+            mod = importlib.import_module("mcp_tools_tops")
+            assert "tops_cook_node" in mod.TOOL_NAMES
+        finally:
+            sys.path.pop(0)
+
+    def test_memory_group_importable(self):
+        import importlib
+        _repo = Path(__file__).resolve().parent.parent
+        sys.path.insert(0, str(_repo))
+        try:
+            mod = importlib.import_module("mcp_tools_memory")
+            assert "synapse_project_setup" in mod.TOOL_NAMES
+            assert "FIRST" in mod.GROUP_KNOWLEDGE or "project_setup" in mod.GROUP_KNOWLEDGE
+        finally:
+            sys.path.pop(0)
+
+    def test_all_tools_covered_by_groups(self):
+        """Every tool in the registry should belong to exactly one group."""
+        import importlib
+        _repo = Path(__file__).resolve().parent.parent
+        sys.path.insert(0, str(_repo))
+        try:
+            all_group_tools = set()
+            for mod_name in ["mcp_tools_scene", "mcp_tools_render", "mcp_tools_usd",
+                             "mcp_tools_tops", "mcp_tools_memory"]:
+                mod = importlib.import_module(mod_name)
+                for name in mod.TOOL_NAMES:
+                    assert name not in all_group_tools, f"Duplicate: {name}"
+                    all_group_tools.add(name)
+
+            # Every tool in the registry should be in a group
+            registry_tools = set(tools_mod.get_tool_names())
+            missing = registry_tools - all_group_tools
+            assert not missing, f"Tools not in any group: {missing}"
+        finally:
+            sys.path.pop(0)
