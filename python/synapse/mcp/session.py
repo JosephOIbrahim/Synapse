@@ -28,7 +28,7 @@ class MCPSession:
 
     __slots__ = (
         "session_id", "client_info", "created_at",
-        "protocol_version", "initialized",
+        "protocol_version", "initialized", "project_context",
     )
 
     def __init__(self, session_id: str, client_info: dict):
@@ -37,6 +37,7 @@ class MCPSession:
         self.created_at = time.time()
         self.protocol_version = "2025-06-18"
         self.initialized = False
+        self.project_context = None
 
     def to_dict(self) -> dict:
         return {

@@ -42,6 +42,18 @@ _STATIC_RESOURCES: list[dict] = [
         "_handler": "get_stage_info",
         "_payload": {},
     },
+    {
+        "uri": "synapse://project/context",
+        "name": "Project Context",
+        "description": (
+            "Project memory, scene memory, agent state, and evolution stage. "
+            "Auto-loaded on session start. Read this to understand the artist's "
+            "project history, previous decisions, and current scene context."
+        ),
+        "mimeType": "application/json",
+        "_handler": "project_setup",
+        "_payload": {},
+    },
 ]
 
 # Resource templates (URI contains {parameters})

@@ -409,12 +409,41 @@ except FileNotFoundError:
 
 server = Server("synapse", instructions=_tone_instructions or None)
 
+# ---------------------------------------------------------------------------
+# Tool group modules — knowledge preambles and manifests
+# ---------------------------------------------------------------------------
+import mcp_tools_scene
+import mcp_tools_render
+import mcp_tools_usd
+import mcp_tools_tops
+import mcp_tools_memory
+
+TOOL_GROUPS = {
+    "scene": mcp_tools_scene,
+    "render": mcp_tools_render,
+    "usd": mcp_tools_usd,
+    "tops": mcp_tools_tops,
+    "memory": mcp_tools_memory,
+}
+
 
 @server.list_tools()
 async def list_tools():
-    """Register all Synapse MCP tools."""
+    """Register all Synapse MCP tools.
+
+    Tools are organized into 5 groups with domain knowledge preambles:
+    - Scene: Node graph manipulation, parameters, execution, introspection
+    - Render: Karma/Mantra rendering, viewport, validation, farm
+    - USD: Stage assembly, materials, composition, light linking
+    - TOPS: PDG pipelines, wedging, batch cooking, monitoring
+    - Memory: Project memory, knowledge lookup, HDA, metrics
+    """
     return [
-        # -- Utility --
+        # ===================================================================
+        # GROUP: SCENE (mcp_tools_scene.py)
+        # Knowledge: Always inspect before mutating. One mutation per call.
+        # Parameter names on USD nodes use encoded format.
+        # ===================================================================
         Tool(
             name="synapse_ping",
             description=(
@@ -549,8 +578,11 @@ async def list_tools():
             name="houdini_set_parm",
             description=(
                 "Set a parameter value on a Houdini node. "
+                "For USD/Solaris nodes, parameter names are encoded "
+                "(e.g. xn__inputsintensity_i0a not 'intensity'). "
+                "Use houdini_inspect_node first to discover exact names. "
                 "When reporting success, describe the change in artist-friendly terms "
-                "(e.g. 'Bumped the light intensity to 5.0') rather than raw parameter names."
+                "(e.g. 'Bumped the light exposure to 3.0') rather than raw parameter names."
             ),
             inputSchema={
                 "type": "object",
@@ -575,11 +607,14 @@ async def list_tools():
             name="houdini_execute_python",
             description=(
                 "Execute Python code in Houdini's runtime environment. "
+                "ONE mutation per call. Never combine node creation + connection + "
+                "parameter setting in a single call. "
                 "The code runs with 'hou' module available. "
                 "Set a 'result' variable to return data. "
+                "Result is wrapped in undo group -- automatic rollback on failure. "
                 "When presenting results: celebrate progress, explain errors in "
                 "plain language with next steps, and frame everything as "
-                "collaborative iteration \u2014 'we tried X, let's adjust' not 'X failed'."
+                "collaborative iteration -- 'we tried X, let's adjust' not 'X failed'."
             ),
             inputSchema={
                 "type": "object",
@@ -626,7 +661,12 @@ async def list_tools():
                 "required": ["snippet"],
             },
         ),
-        # -- USD/Solaris --
+        # ===================================================================
+        # GROUP: USD / SOLARIS / MATERIALS (mcp_tools_usd.py)
+        # Knowledge: Encoded parameter names (xn__inputs*). Inspect first.
+        # Composition: stronger opinions win. Layer order matters.
+        # matlib.cook(force=True) before createNode() on shader children.
+        # ===================================================================
         Tool(
             name="houdini_stage_info",
             description=(
@@ -758,7 +798,12 @@ async def list_tools():
                 "required": ["prim_path"],
             },
         ),
-        # -- Viewport --
+        # ===================================================================
+        # GROUP: RENDER / VIEWPORT (mcp_tools_render.py)
+        # Knowledge: Intensity ALWAYS 1.0. Brightness via exposure (stops).
+        # Start at 256x256 with 4-8 samples. Never soho_foreground=1 for
+        # heavy scenes. Karma camera = USD prim path, not node path.
+        # ===================================================================
         Tool(
             name="houdini_capture_viewport",
             description=(
@@ -913,7 +958,12 @@ async def list_tools():
                 "required": ["node"],
             },
         ),
-        # -- TOPs / PDG --
+        # ===================================================================
+        # GROUP: TOPS / PDG (mcp_tools_tops.py)
+        # Knowledge: Generate items first, then cook. pipeline_status for
+        # health checks, diagnose for failures. cook_and_validate auto-retries.
+        # tops_render_sequence for frame ranges. tops_multi_shot for cameras.
+        # ===================================================================
         Tool(
             name="houdini_wedge",
             description=(
@@ -1521,7 +1571,13 @@ async def list_tools():
                 "required": ["prim_path"],
             },
         ),
-        # -- Knowledge / RAG --
+        # ===================================================================
+        # GROUP: MEMORY / KNOWLEDGE / HDA (mcp_tools_memory.py)
+        # Knowledge: Call synapse_project_setup FIRST in every session.
+        # Use knowledge_lookup before guessing parameter names.
+        # Memory: Charmander->Charmeleon->Charizard evolution.
+        # HDA: hda_package is the high-level orchestrator.
+        # ===================================================================
         Tool(
             name="synapse_knowledge_lookup",
             description=(
@@ -1758,9 +1814,11 @@ async def list_tools():
         Tool(
             name="synapse_project_setup",
             description=(
-                "Initialize or load SYNAPSE project structure for the current scene. "
-                "Creates claude/ directories, seeds memory files, loads existing context. "
-                "Idempotent. Call this after synapse_ping to load full scene context."
+                "Call this FIRST in every session. "
+                "Returns project memory, scene memory, agent state, and evolution stage. "
+                "Without this, you have no context about the artist's project. "
+                "Creates project directories and seeds memory files if needed. "
+                "Idempotent -- safe to call multiple times."
             ),
             inputSchema={
                 "type": "object",

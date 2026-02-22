@@ -160,7 +160,10 @@ _TOOL_DEFS: list[tuple] = [
 
     ("houdini_set_parm", "set_parm",
      lambda a: {"node": a["node"], "parm": a["parm"], "value": a["value"]},
-     "Set a parameter value on a Houdini node.",
+     "Set a parameter value on a Houdini node. "
+     "For USD/Solaris nodes, parameter names are encoded "
+     "(e.g. xn__inputsintensity_i0a not 'intensity'). "
+     "Use houdini_inspect_node first to discover exact names.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "Node path"},
          "parm": {"type": "string", "description": "Parameter name"},
@@ -170,7 +173,8 @@ _TOOL_DEFS: list[tuple] = [
 
     # -- Execution --
     ("houdini_execute_python", "execute_python", _execute_python_payload,
-     "Execute Python code in Houdini's runtime environment.",
+     "Execute Python code in Houdini's runtime environment. "
+     "ONE mutation per call. Wrapped in undo group -- automatic rollback on failure.",
      {"type": "object", "properties": {
          "code": {"type": "string", "description": "Python code to execute"},
          "dry_run": {"type": "boolean", "description": "Syntax-check only (default: false)"},
@@ -730,7 +734,8 @@ _TOOL_DEFS: list[tuple] = [
 
     # -- Scene Memory (Living Memory) --
     ("synapse_project_setup", "project_setup", _identity,
-     "Initialize or load SYNAPSE project structure for the current scene.",
+     "Call this FIRST in every session. Returns project memory, scene memory, "
+     "agent state, and evolution stage. Without this, you have no context.",
      {"type": "object", "properties": {
          "force_refresh": {"type": "boolean", "description": "Force re-read (default: false)"},
      }},

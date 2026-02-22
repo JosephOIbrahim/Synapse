@@ -229,11 +229,29 @@ class MCPServer:
     def _handle_initialize(self, params: dict) -> dict:
         """MCP initialize handshake.
 
-        Creates a session and returns server capabilities.
+        Creates a session, returns server capabilities, and pre-loads
+        project context for the session (best-effort).
         """
         client_info = params.get("clientInfo", {})
         session_id = self._sessions.create_session(client_info)
         self._sessions.mark_initialized(session_id)
+
+        # Auto-load project context so agents start with full memory
+        session = self._sessions.get_session(session_id)
+        if session is not None:
+            try:
+                handler = self._get_handler()
+                try:
+                    import hdefereval
+                    result = hdefereval.executeInMainThreadWithResult(
+                        dispatch_tool, handler, "synapse_project_setup", {}
+                    )
+                except ImportError:
+                    result = dispatch_tool(handler, "synapse_project_setup", {})
+                if not result.get("isError"):
+                    session.project_context = result
+            except Exception:
+                pass  # Best-effort — don't fail the handshake
 
         return {
             "_session_id": session_id,  # stripped before sending
@@ -243,9 +261,20 @@ class MCPServer:
             },
             "instructions": (
                 "SYNAPSE is a bridge between AI agents and SideFX Houdini. "
-                "All mutations go through safety middleware enforcing atomic "
-                "scripts, idempotent guards, and undo-group transactions. "
-                "Tools that modify the scene are destructive unless noted otherwise."
+                "WORKFLOW: Always inspect before mutating. One mutation per tool call. "
+                "Verify every mutation result. Use ensure_* guard functions for idempotency.\n\n"
+                "SAFETY: All mutations go through atomic scripts, idempotent guards, "
+                "and undo-group transactions. execute_python wraps in undo group.\n\n"
+                "CRITICAL USD CONVENTION: Houdini 21 USD light parameters use encoded names: "
+                "xn__inputsintensity_i0a (not 'intensity'), xn__inputscolor_vya (not 'color'), "
+                "xn__inputsexposure_vya (not 'exposure'). Always inspect a node first "
+                "to get exact parameter names.\n\n"
+                "LIGHTING LAW: Intensity is ALWAYS 1.0. Brightness controlled by exposure (stops). "
+                "Key:fill ratio 3:1 = 1.585 stops difference.\n\n"
+                "TONE: You are a supportive senior VFX artist. Never blame. Always suggest next steps. "
+                "Error messages should make artists want to keep going, not close the app.\n\n"
+                "START EVERY SESSION: Call synapse_project_setup to load project/scene memory. "
+                "This gives you full context about the artist's project and previous decisions."
             ),
             "protocolVersion": MCP_PROTOCOL_VERSION,
             "serverInfo": {
