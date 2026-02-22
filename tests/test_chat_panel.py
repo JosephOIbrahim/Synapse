@@ -50,7 +50,28 @@ try:
         from PySide2 import QtWidgets, QtCore
     _QT_AVAILABLE = True
 except ImportError:
-    pass
+    # Stub PySide6 so chat_panel.py can be imported without Qt.
+    # Widget-level tests remain skipped via _QT_AVAILABLE checks;
+    # logic-only tests (stale context, response handling) work fine.
+    # MagicMock auto-creates attributes (QTextBrowser, etc.) on access,
+    # which handles classes used as base classes in panel modules.
+    _mock_qt_core = MagicMock()
+    _mock_qt_core.Signal = lambda *a, **kw: MagicMock()
+    _mock_qt_core.Slot = lambda *a, **kw: (lambda fn: fn)
+    _mock_qt_core.QTimer = MagicMock
+
+    _mock_qt_widgets = MagicMock()
+    _mock_qt_gui = MagicMock()
+
+    _mock_pyside6 = MagicMock()
+    _mock_pyside6.QtWidgets = _mock_qt_widgets
+    _mock_pyside6.QtCore = _mock_qt_core
+    _mock_pyside6.QtGui = _mock_qt_gui
+
+    sys.modules["PySide6"] = _mock_pyside6
+    sys.modules["PySide6.QtWidgets"] = _mock_qt_widgets
+    sys.modules["PySide6.QtCore"] = _mock_qt_core
+    sys.modules["PySide6.QtGui"] = _mock_qt_gui
 
 # Need a QApplication for widget tests
 _app = None
@@ -292,18 +313,30 @@ class TestWSBridgeMessageFormat:
         assert parsed["command"] == "inspect_scene"
         assert "payload" in parsed
 
-    def test_send_chat_structure(self):
-        """Verify the JSON structure of a chat message."""
+    def test_send_chat_uses_route_chat(self):
+        """Verify chat messages use route_chat command."""
         payload = {
-            "command": "execute_python",
+            "command": "route_chat",
             "payload": {
-                "content": "test message",
+                "message": "test message",
             },
         }
         dumped = json.dumps(payload, sort_keys=True)
         parsed = json.loads(dumped)
-        assert parsed["command"] == "execute_python"
-        assert parsed["payload"]["content"] == "test message"
+        assert parsed["command"] == "route_chat"
+        assert parsed["payload"]["message"] == "test message"
+
+    def test_chat_no_longer_uses_execute_python(self):
+        """Ensure chat dispatch does not use execute_python."""
+        # route_chat uses "message" key, not "content"
+        payload = {
+            "command": "route_chat",
+            "payload": {"message": "scatter rocks on terrain"},
+        }
+        dumped = json.dumps(payload, sort_keys=True)
+        parsed = json.loads(dumped)
+        assert parsed["command"] != "execute_python"
+        assert "message" in parsed["payload"]
 
     def test_context_included_when_provided(self):
         """Verify context dict is included in the message."""
@@ -314,8 +347,8 @@ class TestWSBridgeMessageFormat:
             "frame": 24.0,
         }
         msg = {
-            "command": "execute_python",
-            "payload": {"content": "hello"},
+            "command": "route_chat",
+            "payload": {"message": "hello"},
             "context": context,
         }
         dumped = json.dumps(msg, sort_keys=True)
@@ -456,6 +489,180 @@ class TestChatDisplayNodeClick:
 
         display._on_anchor_clicked(QUrl("https://example.com"))
         assert received == []
+
+
+# ===========================================================================
+# Stale Context Tests
+# ===========================================================================
+
+
+class TestStaleContextGather:
+    """Test the stale-check context gathering logic."""
+
+    def test_fresh_context_skips_gather(self):
+        """When context is fresh (<5s old), gather is not called."""
+        import time
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+        panel._last_context = {"current_network": "/obj"}
+        panel._last_context_time = time.time() * 1000  # now
+
+        result = panel._gather_context_if_stale()
+        assert result == {"current_network": "/obj"}
+        panel._bridge.gather_context.assert_not_called()
+
+    def test_stale_context_triggers_gather(self):
+        """When context is stale (>5s old), gather is called."""
+        import time
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+        panel._last_context = {"current_network": "/obj"}
+        # Set time 10s in the past
+        panel._last_context_time = (time.time() - 10) * 1000
+
+        panel._gather_context_if_stale()
+        panel._bridge.gather_context.assert_called_once()
+
+    def test_no_context_time_triggers_gather(self):
+        """When context has never been gathered, trigger a gather."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+        panel._last_context = None
+        panel._last_context_time = None
+
+        panel._gather_context_if_stale()
+        panel._bridge.gather_context.assert_called_once()
+
+    def test_no_bridge_skips_gather(self):
+        """When bridge is None, gather is skipped gracefully."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._bridge = None
+        panel._last_context = None
+        panel._last_context_time = None
+
+        result = panel._gather_context_if_stale()
+        assert result is None
+
+
+# ===========================================================================
+# Route Chat Response Tests
+# ===========================================================================
+
+
+class TestRouteChatResponse:
+    """Test the response handler for route_chat format."""
+
+    def test_route_chat_response_with_text(self):
+        """Response with text and tier is displayed correctly."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._chat = MagicMock()
+
+        response = {
+            "response": "Created scatter network",
+            "tier": "recipe",
+            "commands": [],
+            "confidence": 0.95,
+        }
+        panel._on_response(response)
+        panel._chat.append_synapse_message.assert_called_once_with(
+            {"message": "Created scatter network", "tier": "recipe"}
+        )
+
+    def test_route_chat_response_with_commands(self):
+        """Response with commands shows them as pending actions."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._chat = MagicMock()
+
+        response = {
+            "response": "Setting up lighting",
+            "tier": "recipe",
+            "commands": [
+                {"type": "create_node", "description": "Create area light"},
+                {"type": "set_parm", "description": "Set exposure to 8"},
+            ],
+            "confidence": 0.9,
+        }
+        panel._on_response(response)
+        # Text message + 2 system messages for commands
+        assert panel._chat.append_synapse_message.call_count == 1
+        assert panel._chat.append_system_message.call_count == 2
+
+    def test_error_response_handled(self):
+        """Error responses are passed through to chat display."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._chat = MagicMock()
+
+        response = {"status": "error", "message": "Couldn't find node"}
+        panel._on_response(response)
+        panel._chat.append_synapse_message.assert_called_once_with(response)
+
+    def test_legacy_response_fallback(self):
+        """Responses without route_chat keys fall back to legacy display."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._chat = MagicMock()
+
+        response = {"status": "ok", "message": "Done"}
+        panel._on_response(response)
+        panel._chat.append_synapse_message.assert_called_once_with(response)
+
+
+# ===========================================================================
+# Chat Panel Source Verification
+# ===========================================================================
+
+
+class TestChatPanelSource:
+    """Verify chat_panel.py source patterns."""
+
+    def test_no_execute_python_in_chat_dispatch(self):
+        """chat_panel.py should not use execute_python for chat messages."""
+        import inspect
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        send_src = inspect.getsource(SynapseChatPanel._send_message)
+        assert "execute_python" not in send_src
+        assert "route_chat" in send_src
+
+    def test_no_execute_python_in_quick_action(self):
+        """_on_quick_action should use route_chat, not execute_python."""
+        import inspect
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        action_src = inspect.getsource(SynapseChatPanel._on_quick_action)
+        assert "execute_python" not in action_src
+        assert "route_chat" in action_src
+
+    def test_gather_context_if_stale_exists(self):
+        """_gather_context_if_stale method should exist."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        assert hasattr(SynapseChatPanel, "_gather_context_if_stale")
+
+    def test_last_context_time_initialized(self):
+        """Panel should initialize _last_context_time to None."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        assert panel._last_context_time is None
 
 
 # ---------------------------------------------------------------------------

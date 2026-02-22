@@ -194,6 +194,152 @@ def get_hda_stylesheet():
     )
 
 
+# ── Chat Panel Component Stylesheets ──────────────────────────────────
+
+
+def get_quick_action_button_stylesheet():
+    """Quick action button: mono font, outlined, cyan hover/press."""
+    return (
+        "QPushButton {{"
+        "  background: {bg};"
+        "  color: {fg};"
+        "  border: 1px solid {border};"
+        "  border-radius: 4px;"
+        "  padding: 4px 12px;"
+        "  font-family: '{mono}', 'Consolas', monospace;"
+        "  font-size: {sz}px;"
+        "}}"
+        "QPushButton:hover {{"
+        "  background: {hover};"
+        "  border-color: {accent};"
+        "  color: {white};"
+        "}}"
+        "QPushButton:pressed {{"
+        "  background: rgba(0, 212, 255, 0.15);"
+        "  border-color: {accent};"
+        "  color: {accent};"
+        "}}".format(
+            bg=t.CARBON, fg=t.TEXT, border=t.NEAR_BLACK,
+            sz=t.SIZE_SMALL, hover=t.HOVER, accent=t.SIGNAL,
+            white="#F0F0F0", mono=t.FONT_MONO,
+        )
+    )
+
+
+def get_input_stylesheet():
+    """Standard text input field: rounded, cyan focus border."""
+    return (
+        "QLineEdit {{"
+        "  background: {bg};"
+        "  color: {fg};"
+        "  border: 1px solid {border};"
+        "  border-radius: 6px;"
+        "  padding: 8px 12px;"
+        "  font-family: '{sans}', 'Segoe UI', sans-serif;"
+        "  font-size: {sz}px;"
+        "}}"
+        "QLineEdit:focus {{"
+        "  border: 1px solid {accent};"
+        "}}".format(
+            bg=t.VOID, fg=t.TEXT, border=t.NEAR_BLACK,
+            sz=t.SIZE_UI, accent=t.SIGNAL, sans=t.FONT_SANS,
+        )
+    )
+
+
+def get_send_button_stylesheet():
+    """Primary send button: solid cyan background, mono bold."""
+    return (
+        "QPushButton {{"
+        "  background: {accent};"
+        "  color: {bg};"
+        "  border: none;"
+        "  border-radius: 6px;"
+        "  padding: 8px 20px;"
+        "  font-family: '{mono}', 'Consolas', monospace;"
+        "  font-size: {sz}px;"
+        "  font-weight: 700;"
+        "  letter-spacing: 1px;"
+        "}}"
+        "QPushButton:hover {{"
+        "  background: {hover};"
+        "}}"
+        "QPushButton:pressed {{"
+        "  background: {pressed};"
+        "}}".format(
+            accent=t.SIGNAL, bg=t.VOID, sz=t.SIZE_UI,
+            hover=t.SIGNAL_HOVER, pressed=t.SIGNAL_PRESS,
+            mono=t.FONT_MONO,
+        )
+    )
+
+
+def get_connect_button_stylesheet():
+    """Outlined connect/disconnect button: cyan border, transparent bg."""
+    return (
+        "QPushButton#connect_button {{"
+        "  background: transparent;"
+        "  color: {accent};"
+        "  border: 1px solid {accent};"
+        "  border-radius: 3px;"
+        "  font-family: '{mono}', 'Consolas', monospace;"
+        "  font-size: {sz}px;"
+        "  padding: 4px 12px;"
+        "  min-width: 100px;"
+        "}}"
+        "QPushButton#connect_button:hover {{"
+        "  background: rgba(0, 212, 255, 0.1);"
+        "}}"
+        "QPushButton#connect_button:pressed {{"
+        "  background: rgba(0, 212, 255, 0.2);"
+        "}}".format(
+            accent=t.SIGNAL, mono=t.FONT_MONO, sz=t.SIZE_SMALL,
+        )
+    )
+
+
+def get_ws_url_button_stylesheet():
+    """WebSocket URL button: subtle outlined, cyan hover."""
+    return (
+        "QPushButton#ws_path_button {{"
+        "  background: transparent;"
+        "  color: {slate};"
+        "  border: 1px solid {border};"
+        "  border-radius: 3px;"
+        "  font-family: '{mono}', 'Consolas', monospace;"
+        "  font-size: {sz}px;"
+        "  padding: 4px 8px;"
+        "}}"
+        "QPushButton#ws_path_button:hover {{"
+        "  color: {accent};"
+        "  border-color: {accent};"
+        "  background: rgba(0, 212, 255, 0.1);"
+        "}}"
+        "QPushButton#ws_path_button:pressed {{"
+        "  background: rgba(0, 212, 255, 0.2);"
+        "}}".format(
+            slate=t.SLATE, border=t.GRAPHITE, mono=t.FONT_MONO,
+            sz=t.SIZE_LABEL, accent=t.SIGNAL,
+        )
+    )
+
+
+def get_status_dot_stylesheet(color):
+    """Status dot indicator with given color."""
+    return "color: {c}; font-size: 18px; border: none;".format(c=color)
+
+
+def get_status_label_stylesheet(color):
+    """Mono-font status label with given color."""
+    return (
+        "color: {c}; font-family: '{mono}', 'Consolas', monospace;"
+        " font-size: {sz}px; letter-spacing: 1px;"
+        " border: none;".format(
+            c=color, mono=t.FONT_MONO, sz=t.SIZE_SMALL,
+        )
+    )
+
+
 def animate_stack_transition(stacked_widget, new_index, duration_ms=200):
     """Smooth opacity fade between QStackedWidget pages.
 
