@@ -630,6 +630,142 @@ class TestRouteChatResponse:
 # ===========================================================================
 
 
+# ===========================================================================
+# Project Auto-Init Tests
+# ===========================================================================
+
+
+class TestProjectAutoInit:
+    """Test project memory auto-initialization on first message."""
+
+    def test_project_initialized_starts_false(self):
+        """Panel should initialize _project_initialized to False."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        assert panel._project_initialized is False
+
+    def test_ensure_project_fires_project_setup(self):
+        """First call to _ensure_project_initialized sends project_setup."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+
+        panel._ensure_project_initialized()
+
+        panel._bridge.send_command.assert_called_once_with(
+            "project_setup", {}
+        )
+        assert panel._project_initialized is True
+
+    def test_ensure_project_skips_when_already_initialized(self):
+        """Second call to _ensure_project_initialized is a no-op."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+        panel._project_initialized = True
+
+        panel._ensure_project_initialized()
+
+        panel._bridge.send_command.assert_not_called()
+
+    def test_ensure_project_skips_when_disconnected(self):
+        """_ensure_project_initialized skips when bridge is disconnected."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = False
+
+        panel._ensure_project_initialized()
+
+        panel._bridge.send_command.assert_not_called()
+        assert panel._project_initialized is False
+
+    def test_ensure_project_skips_when_no_bridge(self):
+        """_ensure_project_initialized skips when bridge is None."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._bridge = None
+
+        panel._ensure_project_initialized()
+        assert panel._project_initialized is False
+
+    def test_ensure_project_retries_on_exception(self):
+        """If send_command raises, flag stays False for retry."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+        panel._bridge.send_command.side_effect = Exception("ws closed")
+
+        panel._ensure_project_initialized()
+
+        assert panel._project_initialized is False
+
+    def test_send_message_calls_ensure_project(self):
+        """_send_message should call _ensure_project_initialized."""
+        import inspect
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        send_src = inspect.getsource(SynapseChatPanel._send_message)
+        assert "_ensure_project_initialized" in send_src
+
+
+# ===========================================================================
+# Context Bar Project Context Tests
+# ===========================================================================
+
+
+@pytest.mark.skipif(not _QT_AVAILABLE, reason="Qt not available")
+class TestContextBarProjectContext:
+    """Test context bar project memory display."""
+
+    def test_set_project_context_charmander(self):
+        from synapse.panel.context_bar import ContextBar
+
+        bar = ContextBar()
+        bar.set_project_context("my_project", "charmander")
+        assert bar._project_name == "my_project"
+        assert bar._evolution_stage == "charmander"
+
+    def test_set_project_context_charmeleon(self):
+        from synapse.panel.context_bar import ContextBar
+
+        bar = ContextBar()
+        bar.set_project_context("my_project", "charmeleon")
+        assert bar._evolution_stage == "charmeleon"
+
+    def test_set_project_context_charizard(self):
+        from synapse.panel.context_bar import ContextBar
+
+        bar = ContextBar()
+        bar.set_project_context("big_project", "charizard")
+        assert bar._evolution_stage == "charizard"
+        assert bar._project_name == "big_project"
+
+    def test_set_project_context_empty(self):
+        from synapse.panel.context_bar import ContextBar
+
+        bar = ContextBar()
+        bar.set_project_context("", "")
+        assert bar._project_name == ""
+        assert bar._evolution_stage == ""
+
+    def test_set_project_context_initializes_empty(self):
+        from synapse.panel.context_bar import ContextBar
+
+        bar = ContextBar()
+        assert bar._project_name == ""
+        assert bar._evolution_stage == ""
+
+
 class TestChatPanelSource:
     """Verify chat_panel.py source patterns."""
 
@@ -663,6 +799,249 @@ class TestChatPanelSource:
 
         panel = SynapseChatPanel()
         assert panel._last_context_time is None
+
+
+# ===========================================================================
+# Keyboard Shortcuts Tests
+# ===========================================================================
+
+
+class TestKeyboardShortcuts:
+    """Test keyboard shortcut infrastructure."""
+
+    def test_last_sent_message_initialized(self):
+        """Panel should initialize _last_sent_message to empty string."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        assert panel._last_sent_message == ""
+
+    def test_waiting_for_response_initialized(self):
+        """Panel should initialize _waiting_for_response to False."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        assert panel._waiting_for_response is False
+
+    def test_send_message_stores_last_sent(self):
+        """_send_message should store the sent text in _last_sent_message."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._input = MagicMock()
+        panel._input.text.return_value = "scatter rocks"
+        panel._chat = MagicMock()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+
+        panel._send_message()
+        assert panel._last_sent_message == "scatter rocks"
+
+    def test_send_message_sets_waiting_flag(self):
+        """_send_message should set _waiting_for_response to True."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._input = MagicMock()
+        panel._input.text.return_value = "hello"
+        panel._chat = MagicMock()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+
+        panel._send_message()
+        assert panel._waiting_for_response is True
+
+    def test_response_clears_waiting_flag(self):
+        """_on_response should clear _waiting_for_response."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._chat = MagicMock()
+        panel._waiting_for_response = True
+
+        panel._on_response({"response": "done", "tier": "recipe"})
+        assert panel._waiting_for_response is False
+
+    def test_shortcut_clear_chat(self):
+        """_shortcut_clear_chat should call chat.clear()."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._chat = MagicMock()
+        panel._shortcut_clear_chat()
+        panel._chat.clear.assert_called_once()
+
+    def test_shortcut_focus_input(self):
+        """_shortcut_focus_input should call input.setFocus()."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._input = MagicMock()
+        panel._shortcut_focus_input()
+        panel._input.setFocus.assert_called_once()
+
+    def test_shortcut_escape_clears_input(self):
+        """_shortcut_escape should clear the input field."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._input = MagicMock()
+        panel._shortcut_escape()
+        panel._input.clear.assert_called_once()
+
+    def test_install_shortcuts_method_exists(self):
+        """_install_shortcuts method should exist on SynapseChatPanel."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        assert hasattr(SynapseChatPanel, "_install_shortcuts")
+
+    def test_event_filter_method_exists(self):
+        """eventFilter method should exist on SynapseChatPanel."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        assert hasattr(SynapseChatPanel, "eventFilter")
+
+
+# ===========================================================================
+# Typing Indicator Tests
+# ===========================================================================
+
+
+class TestTypingIndicator:
+    """Test the typing indicator in chat display."""
+
+    def test_send_shows_typing_indicator(self):
+        """_send_message should call show_typing_indicator on the chat."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._input = MagicMock()
+        panel._input.text.return_value = "test"
+        panel._chat = MagicMock()
+        panel._bridge = MagicMock()
+        panel._bridge.connected = True
+
+        panel._send_message()
+        panel._chat.show_typing_indicator.assert_called_once()
+
+    def test_response_hides_typing_indicator(self):
+        """_on_response should call hide_typing_indicator on the chat."""
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        panel = SynapseChatPanel()
+        panel._chat = MagicMock()
+
+        panel._on_response({"response": "done", "tier": "cache"})
+        panel._chat.hide_typing_indicator.assert_called_once()
+
+    def test_typing_html_contains_signal_color(self):
+        """Typing indicator HTML should use SIGNAL cyan color."""
+        import inspect
+        src = inspect.getsource(
+            sys.modules["synapse.panel.chat_display"]
+        )
+        # The class defines _TYPING_HTML with SIGNAL color
+        assert "#00D4FF" in src or "t.SIGNAL" in src
+
+    def test_typing_html_contains_thinking(self):
+        """Typing indicator should show 'thinking...' text."""
+        import inspect
+        src = inspect.getsource(
+            sys.modules["synapse.panel.chat_display"]
+        )
+        assert "thinking..." in src
+
+
+# ===========================================================================
+# CSS Consolidation Verification Tests
+# ===========================================================================
+
+
+class TestCSSConsolidation:
+    """Verify all inline CSS has been moved to styles.py."""
+
+    def test_no_inline_css_in_chat_panel_root(self):
+        """Root widget should use get_root_widget_stylesheet()."""
+        import inspect
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        src = inspect.getsource(SynapseChatPanel.createInterface)
+        assert "get_root_widget_stylesheet()" in src
+        assert "font-family:" not in src
+
+    def test_no_inline_css_in_build_quick_actions(self):
+        """Quick actions should use get_section_container_stylesheet()."""
+        import inspect
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        src = inspect.getsource(SynapseChatPanel._build_quick_actions)
+        assert "get_section_container_stylesheet()" in src
+        assert "background:" not in src
+
+    def test_no_inline_css_in_build_input_area(self):
+        """Input area should use get_section_container_stylesheet()."""
+        import inspect
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        src = inspect.getsource(SynapseChatPanel._build_input_area)
+        assert "get_section_container_stylesheet()" in src
+
+    def test_no_inline_css_in_connection_bar(self):
+        """Connection bar should use get_connection_frame_stylesheet()."""
+        import inspect
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        src = inspect.getsource(SynapseChatPanel._build_connection_bar)
+        assert "get_connection_frame_stylesheet()" in src
+        assert "border-top:" not in src
+
+    def test_no_inline_css_in_mode_toolbar(self):
+        """Mode toolbar should use get_mode_toolbar_stylesheet()."""
+        import inspect
+        from synapse.panel.chat_panel import SynapseChatPanel
+
+        src = inspect.getsource(SynapseChatPanel._build_mode_toolbar)
+        assert "get_mode_toolbar_stylesheet()" in src
+        assert "border-bottom:" not in src
+
+
+# ===========================================================================
+# New Style Function Tests
+# ===========================================================================
+
+
+class TestNewStyleFunctions:
+    """Verify new stylesheet functions from styles.py."""
+
+    def test_root_widget_stylesheet(self):
+        from synapse.panel.styles import get_root_widget_stylesheet
+        ss = get_root_widget_stylesheet()
+        assert "background" in ss
+        assert "font-family" in ss
+
+    def test_section_container_stylesheet(self):
+        from synapse.panel.styles import get_section_container_stylesheet
+        ss = get_section_container_stylesheet()
+        assert "background" in ss
+
+    def test_connection_frame_stylesheet(self):
+        from synapse.panel.styles import get_connection_frame_stylesheet
+        ss = get_connection_frame_stylesheet()
+        assert "connection_frame" in ss
+        assert "border-top" in ss
+
+    def test_mode_toolbar_stylesheet(self):
+        from synapse.panel.styles import get_mode_toolbar_stylesheet
+        ss = get_mode_toolbar_stylesheet()
+        assert "background" in ss
+        assert "border-bottom" in ss
+
+    def test_chat_display_stylesheet(self):
+        from synapse.panel.styles import get_chat_display_stylesheet
+        ss = get_chat_display_stylesheet()
+        assert "QTextBrowser" in ss
+        assert "QScrollBar" in ss
+        assert "selection-background-color" in ss
 
 
 # ---------------------------------------------------------------------------

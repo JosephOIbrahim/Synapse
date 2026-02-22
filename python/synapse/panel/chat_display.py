@@ -16,14 +16,8 @@ from synapse.panel.message_formatter import (
     format_synapse_message,
     format_system_message,
 )
+from synapse.panel.styles import get_chat_display_stylesheet
 from synapse.panel import tokens as t
-
-# -- Design tokens (from canonical design system) -------------------------
-_VOID = t.VOID
-_TEXT = t.TEXT
-_BODY_PX = t.SIZE_BODY
-_GRAPHITE = t.GRAPHITE
-_FONT_SANS = t.FONT_SANS
 
 
 class ChatDisplay(QtWidgets.QTextBrowser):
@@ -41,46 +35,25 @@ class ChatDisplay(QtWidgets.QTextBrowser):
 
     node_clicked = Signal(str)
 
+    # Typing indicator HTML — styled to match SYNAPSE message format
+    _TYPING_HTML = (
+        '<div style="margin:4px 0; padding:6px 10px;">'
+        '<span style="color:{sig}; font-family:monospace; font-size:10px;'
+        ' letter-spacing:1px; font-weight:700;">SYNAPSE</span>'
+        '<br/>'
+        '<span style="color:{dim}; font-style:italic;">'
+        'thinking...</span></div>'
+    ).format(sig=t.SIGNAL, dim=t.TEXT_DIM if hasattr(t, "TEXT_DIM") else "#999")
+
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._typing_indicator_active = False
         self.setReadOnly(True)
         self.setAcceptRichText(True)
         self.setOpenExternalLinks(False)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setStyleSheet(
-            "QTextBrowser {{"
-            "  background: {bg};"
-            "  color: {fg};"
-            "  font-family: '{sans}', 'Segoe UI', sans-serif;"
-            "  font-size: {sz}px;"
-            "  border: none;"
-            "  padding: 8px;"
-            "  selection-background-color: rgba(0, 212, 255, 0.3);"
-            "  selection-color: #F0F0F0;"
-            "}}"
-            "QScrollBar:vertical {{"
-            "  width: 10px;"
-            "  background: {bg};"
-            "}}"
-            "QScrollBar::handle:vertical {{"
-            "  background: {scrollbar};"
-            "  border-radius: 5px;"
-            "  min-height: 30px;"
-            "}}"
-            "QScrollBar::handle:vertical:hover {{"
-            "  background: {scrollhover};"
-            "}}"
-            "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{"
-            "  height: 0;"
-            "}}"
-            "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{"
-            "  background: transparent;"
-            "}}".format(
-                bg=_VOID, fg=_TEXT, sz=_BODY_PX, sans=_FONT_SANS,
-                scrollbar=_GRAPHITE, scrollhover=t.SLATE,
-            )
-        )
+        self.setStyleSheet(get_chat_display_stylesheet())
 
         # Connect anchor clicks
         self.anchorClicked.connect(self._on_anchor_clicked)
@@ -119,11 +92,14 @@ class ChatDisplay(QtWidgets.QTextBrowser):
     def append_synapse_message(self, content):
         """Append a SYNAPSE response message to the chat history.
 
+        Automatically hides the typing indicator if visible.
+
         Parameters
         ----------
         content : dict or str
             Response payload from the server.
         """
+        self.hide_typing_indicator()
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
         cursor.insertHtml(format_synapse_message(content))
@@ -145,3 +121,27 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         cursor.insertBlock()
         self.setTextCursor(cursor)
         self._scroll_to_bottom()
+
+    def show_typing_indicator(self):
+        """Show a 'thinking...' indicator at the bottom of the chat."""
+        if self._typing_indicator_active:
+            return
+        self._typing_indicator_active = True
+        cursor = self.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.insertHtml(self._TYPING_HTML)
+        cursor.insertBlock()
+        self.setTextCursor(cursor)
+        self._scroll_to_bottom()
+
+    def hide_typing_indicator(self):
+        """Remove the typing indicator by deleting the last block."""
+        if not self._typing_indicator_active:
+            return
+        self._typing_indicator_active = False
+        cursor = self.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.movePosition(QtGui.QTextCursor.StartOfBlock, QtGui.QTextCursor.KeepAnchor)
+        cursor.removeSelectedText()
+        cursor.deletePreviousChar()  # Remove the block separator
+        self.setTextCursor(cursor)

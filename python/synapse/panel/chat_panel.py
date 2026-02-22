@@ -48,26 +48,17 @@ from synapse.panel.styles import (
     get_ws_url_button_stylesheet,
     get_status_dot_stylesheet,
     get_status_label_stylesheet,
+    get_root_widget_stylesheet,
+    get_section_container_stylesheet,
+    get_connection_frame_stylesheet,
+    get_mode_toolbar_stylesheet,
 )
 from synapse.panel import tokens as t
 
 # -- Design tokens (from canonical design system) -------------------------
-_VOID = t.VOID
-_GRAPHITE = t.GRAPHITE
-_CARBON = t.CARBON
-_NEAR_BLACK = t.NEAR_BLACK
-_TEXT = t.TEXT
-_TEXT_DIM = t.TEXT_DIM
 _SIGNAL = t.SIGNAL
 _GROW = t.GROW
 _ERROR_COLOR = t.ERROR
-_UI_PX = t.SIZE_UI
-_BODY_PX = t.SIZE_BODY
-_SMALL_PX = t.SIZE_SMALL
-_LABEL_PX = t.SIZE_LABEL
-_HOVER = t.HOVER
-_FONT_MONO = t.FONT_MONO
-_FONT_SANS = t.FONT_SANS
 
 # Max age before context is re-gathered on send (ms)
 _CONTEXT_MAX_AGE_MS = 5000
@@ -105,6 +96,9 @@ class SynapseChatPanel:
         self._hda_controller = None
         self._last_context = None
         self._last_context_time = None
+        self._project_initialized = False
+        self._last_sent_message = ""
+        self._waiting_for_response = False
 
     def createInterface(self):
         """Build the panel layout and return the root QWidget.
@@ -115,11 +109,7 @@ class SynapseChatPanel:
             The root widget for the Houdini panel.
         """
         self._root = QtWidgets.QWidget()
-        self._root.setStyleSheet(
-            "QWidget {{ background: {bg}; "
-            "font-family: '{sans}', 'Segoe UI', sans-serif; "
-            "color: {fg}; }}".format(bg=_VOID, sans=_FONT_SANS, fg=_TEXT)
-        )
+        self._root.setStyleSheet(get_root_widget_stylesheet())
 
         main_layout = QtWidgets.QVBoxLayout(self._root)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -193,6 +183,9 @@ class SynapseChatPanel:
         self._context_timer = QTimer(self._root)
         self._context_timer.timeout.connect(self._poll_context)
         self._context_timer.setInterval(10000)
+
+        # -- Keyboard shortcuts -------------------------------------------
+        self._install_shortcuts()
 
         # -- Welcome message ---------------------------------------------
         self._chat.append_synapse_message(
@@ -278,14 +271,88 @@ class SynapseChatPanel:
             "Started SYNAPSE server on port {}.".format(actual_port)
         )
 
+    # -- Project memory auto-init ----------------------------------------
+
+    def _ensure_project_initialized(self):
+        """Auto-call project_setup on first interaction.
+
+        Non-blocking -- if the server is unreachable the flag stays False
+        and will retry on the next message.
+        """
+        if self._project_initialized:
+            return
+        if self._bridge is not None and self._bridge.connected:
+            try:
+                self._bridge.send_command("project_setup", {})
+                self._project_initialized = True
+            except Exception:
+                pass  # Non-blocking, will retry next message
+
+    # -- Keyboard shortcuts -----------------------------------------------
+
+    def _install_shortcuts(self):
+        """Install keyboard shortcuts on the root widget.
+
+        Bindings:
+        - Ctrl+L  -- clear chat history
+        - Ctrl+K  -- focus the input field
+        - Escape  -- clear input / cancel waiting
+        - Up      -- recall last sent message (when input is empty)
+        """
+        # Ctrl+L — clear chat
+        clear_sc = QtWidgets.QShortcut(
+            QtGui.QKeySequence("Ctrl+L"), self._root
+        )
+        clear_sc.activated.connect(self._shortcut_clear_chat)
+
+        # Ctrl+K — focus input
+        focus_sc = QtWidgets.QShortcut(
+            QtGui.QKeySequence("Ctrl+K"), self._root
+        )
+        focus_sc.activated.connect(self._shortcut_focus_input)
+
+        # Escape — clear input text or cancel
+        esc_sc = QtWidgets.QShortcut(
+            QtGui.QKeySequence("Escape"), self._root
+        )
+        esc_sc.activated.connect(self._shortcut_escape)
+
+        # Up arrow recall is handled via event filter on the input
+        self._input.installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        """Intercept Up-arrow in empty input to recall last message."""
+        if obj is self._input and event.type() == QtCore.QEvent.KeyPress:
+            if (
+                event.key() == QtCore.Qt.Key_Up
+                and not self._input.text()
+                and self._last_sent_message
+            ):
+                self._input.setText(self._last_sent_message)
+                return True
+        return False
+
+    def _shortcut_clear_chat(self):
+        """Ctrl+L — clear all chat history."""
+        if self._chat is not None:
+            self._chat.clear()
+
+    def _shortcut_focus_input(self):
+        """Ctrl+K — focus the message input field."""
+        if self._input is not None:
+            self._input.setFocus()
+
+    def _shortcut_escape(self):
+        """Escape — clear input text. If already empty, no-op."""
+        if self._input is not None:
+            self._input.clear()
+
     # -- UI builders -----------------------------------------------------
 
     def _build_quick_actions(self):
         """Build the quick action buttons row."""
         widget = QtWidgets.QWidget(self._root)
-        widget.setStyleSheet(
-            "background: {bg};".format(bg=_GRAPHITE)
-        )
+        widget.setStyleSheet(get_section_container_stylesheet())
 
         # Use a flow layout via QHBoxLayout with wrapping
         layout = QtWidgets.QHBoxLayout(widget)
@@ -309,9 +376,7 @@ class SynapseChatPanel:
     def _build_input_area(self):
         """Build the message input field and send button."""
         widget = QtWidgets.QWidget(self._root)
-        widget.setStyleSheet(
-            "background: {bg};".format(bg=_GRAPHITE)
-        )
+        widget.setStyleSheet(get_section_container_stylesheet())
 
         layout = QtWidgets.QHBoxLayout(widget)
         layout.setContentsMargins(8, 6, 8, 8)
@@ -349,12 +414,7 @@ class SynapseChatPanel:
 
         frame = QtWidgets.QWidget(self._root)
         frame.setObjectName("connection_frame")
-        frame.setStyleSheet(
-            "QWidget#connection_frame {{"
-            "  background: {bg};"
-            "  border-top: 1px solid {border};"
-            "}}".format(bg=_CARBON, border=_GRAPHITE)
-        )
+        frame.setStyleSheet(get_connection_frame_stylesheet())
         layout = QtWidgets.QHBoxLayout(frame)
         layout.setContentsMargins(12, 6, 12, 6)
         layout.setSpacing(8)
@@ -446,11 +506,7 @@ class SynapseChatPanel:
     def _build_mode_toolbar(self):
         """Build the Chat / Create HDA mode toggle toolbar."""
         toolbar = QtWidgets.QWidget(self._root)
-        toolbar.setStyleSheet(
-            "background: {bg}; border-bottom: 1px solid {border};".format(
-                bg=_GRAPHITE, border=_CARBON
-            )
-        )
+        toolbar.setStyleSheet(get_mode_toolbar_stylesheet())
         layout = QtWidgets.QHBoxLayout(toolbar)
         layout.setContentsMargins(8, 4, 8, 4)
         layout.setSpacing(6)
@@ -502,7 +558,10 @@ class SynapseChatPanel:
         """Connect HDA views to the controller and bridge signals."""
         from synapse.panel.hda_controller import HdaController
 
-        self._hda_controller = HdaController(self._bridge)
+        self._hda_controller = HdaController(
+            self._bridge,
+            context_source=lambda: self._last_context,
+        )
 
         # Describe -> Controller
         self.describe_view.generate_requested.connect(
@@ -584,10 +643,14 @@ class SynapseChatPanel:
         if not text:
             return
 
+        self._last_sent_message = text
         self._input.clear()
         self._chat.append_user_message(text)
 
         if self._bridge is not None:
+            self._ensure_project_initialized()
+            self._waiting_for_response = True
+            self._chat.show_typing_indicator()
             ctx = self._gather_context_if_stale()
             self._bridge.send_command("route_chat", {
                 "message": text,
@@ -613,6 +676,9 @@ class SynapseChatPanel:
                 "latency_ms": 1.2
             }
         """
+        self._waiting_for_response = False
+        self._chat.hide_typing_indicator()
+
         status = response.get("status", "")
 
         if status == "error":
@@ -678,6 +744,11 @@ class SynapseChatPanel:
             len(context.get("selected_nodes", []))
         )
         self._context_bar.set_frame(context.get("frame", 1.0))
+
+        # Update project memory indicator if present
+        project_name = context.get("project_name", "")
+        evolution_stage = context.get("evolution_stage", "")
+        self._context_bar.set_project_context(project_name, evolution_stage)
 
     def _on_quick_action(self, action):
         """Handle quick action button press.
