@@ -39,8 +39,8 @@ MAX_TOKENS = 16384
 MAX_AGENT_TURNS = 30  # Safety limit on agentic loop iterations
 
 
-def _load_system_prompt() -> str:
-    """Build the system prompt from CLAUDE.md + inline essentials."""
+def _load_system_prompt(profile_path: str | None = None) -> str:
+    """Build the system prompt from CLAUDE.md + optional profile + inline essentials."""
     agent_dir = Path(__file__).parent
     claude_md = agent_dir / "CLAUDE.md"
 
@@ -48,7 +48,19 @@ def _load_system_prompt() -> str:
     if claude_md.exists():
         personality = claude_md.read_text(encoding="utf-8")
 
-    return (
+    # Load specialist profile if provided
+    profile_content = ""
+    if profile_path:
+        profile_file = Path(profile_path)
+        if not profile_file.is_absolute():
+            profile_file = agent_dir / profile_file
+        if profile_file.exists():
+            profile_content = profile_file.read_text(encoding="utf-8")
+            logger.info("Loaded profile: %s", profile_file.name)
+        else:
+            logger.warning("Profile not found: %s", profile_path)
+
+    base = (
         "You are the Synapse VFX Co-Pilot — an AI assistant embedded in a "
         "professional VFX artist's Houdini workflow. You have direct access to "
         "their live Houdini scene via custom tools. Your communication style "
@@ -61,11 +73,54 @@ def _load_system_prompt() -> str:
         "ensure_parm) for idempotent operations.\n\n"
         "ONE MUTATION PER synapse_execute CALL. Never combine node creation + "
         "connection + parameter setting in one script.\n\n"
-        f"{personality}"
     )
 
+    parts = [base]
+    if profile_content:
+        parts.append(profile_content)
+    if personality:
+        parts.append(personality)
+    return "\n\n".join(parts)
 
-async def run_agent(goal: str):
+
+def _filter_tools(tools: list, profile_path: str | None) -> list:
+    """Filter tool definitions based on profile's ## Tools section."""
+    if not profile_path:
+        return tools
+
+    profile_file = Path(profile_path)
+    if not profile_file.is_absolute():
+        profile_file = Path(__file__).parent / profile_file
+    if not profile_file.exists():
+        return tools
+
+    content = profile_file.read_text(encoding="utf-8")
+    lines = content.split("\n")
+
+    # Find the ## Tools section and get the next non-empty line
+    in_tools_section = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped == "## Tools":
+            in_tools_section = True
+            continue
+        if in_tools_section and stripped:
+            if stripped.startswith("#"):
+                break  # Next section
+            allowed = {t.strip() for t in stripped.split(",") if t.strip()}
+            if allowed:
+                return [t for t in tools if t["name"] in allowed]
+            break
+
+    return tools
+
+
+async def run_agent(
+    goal: str,
+    profile: str | None = None,
+    role: str = "general",
+    max_turns: int = MAX_AGENT_TURNS,
+):
     """
     Initialize Synapse connection, then run the agentic tool-use loop.
     """
@@ -90,7 +145,8 @@ async def run_agent(goal: str):
     # --- Step 2: Create Anthropic client ---
     client = Anthropic()
 
-    system_prompt = _load_system_prompt()
+    system_prompt = _load_system_prompt(profile)
+    tools = _filter_tools(TOOL_DEFINITIONS, profile)
 
     # Initial message with goal and scene context
     user_message = (
@@ -105,18 +161,18 @@ async def run_agent(goal: str):
 
     logger.info("Starting agent with goal: %s", goal)
     print(f"\n{'='*60}")
-    print(f"  SYNAPSE AGENT — Goal: {goal}")
+    print(f"  SYNAPSE AGENT [{role}] — Goal: {goal}")
     print(f"{'='*60}\n")
 
     # --- Step 3: Agentic loop ---
-    for turn in range(MAX_AGENT_TURNS):
-        logger.info("Agent turn %d/%d", turn + 1, MAX_AGENT_TURNS)
+    for turn in range(max_turns):
+        logger.info("Agent turn %d/%d", turn + 1, max_turns)
 
         response = client.messages.create(
             model=MODEL,
             max_tokens=MAX_TOKENS,
             system=system_prompt,
-            tools=TOOL_DEFINITIONS,
+            tools=tools,
             messages=messages,
         )
 
@@ -179,8 +235,8 @@ async def run_agent(goal: str):
         messages.append({"role": "user", "content": tool_results})
 
     else:
-        logger.warning("Agent hit max turns (%d)", MAX_AGENT_TURNS)
-        print(f"\n[Agent reached {MAX_AGENT_TURNS} turns — stopping to avoid runaway loops]")
+        logger.warning("Agent hit max turns (%d)", max_turns)
+        print(f"\n[Agent reached {max_turns} turns — stopping to avoid runaway loops]")
 
     # --- Cleanup ---
     await synapse.disconnect()
@@ -192,13 +248,43 @@ async def run_agent(goal: str):
 
 def main():
     """CLI entry point."""
-    if len(sys.argv) < 2:
-        print("Usage: python synapse_agent.py \"<goal>\"")
-        print('Example: python synapse_agent.py "Set up three-point lighting"')
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Synapse VFX Co-Pilot Agent",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Example: python synapse_agent.py \"Set up three-point lighting\"",
+    )
+    parser.add_argument(
+        "goal", nargs="*", default=[],
+        help="Task goal for the agent",
+    )
+    parser.add_argument(
+        "--profile", type=str, default=None,
+        help="Path to specialist profile .md file",
+    )
+    parser.add_argument(
+        "--role", type=str, default="general",
+        help="Agent role name (default: general)",
+    )
+    parser.add_argument(
+        "--max-turns", type=int, default=MAX_AGENT_TURNS,
+        help=f"Maximum agent turns (default: {MAX_AGENT_TURNS})",
+    )
+
+    args = parser.parse_args()
+    goal = " ".join(args.goal)
+
+    if not goal:
+        parser.print_help()
         sys.exit(1)
 
-    goal = " ".join(sys.argv[1:])
-    asyncio.run(run_agent(goal))
+    asyncio.run(run_agent(
+        goal,
+        profile=args.profile,
+        role=args.role,
+        max_turns=args.max_turns,
+    ))
 
 
 if __name__ == "__main__":
