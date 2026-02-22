@@ -33,6 +33,32 @@ from .context_enrichment import enrich_context
 
 logger = logging.getLogger(__name__)
 
+# =============================================================================
+# Conversational patterns (pre-cascade, O(1))
+# =============================================================================
+
+import re as _re
+
+_GREETING_RE = _re.compile(
+    r"^(?:h(?:i|ello|ey|owdy)|yo|sup|good\s+(?:morning|afternoon|evening)"
+    r"|what'?s?\s+up|gm|greetings)[\s!.,?]*$",
+    _re.IGNORECASE,
+)
+_THANKS_RE = _re.compile(
+    r"^(?:thanks?(?:\s+you)?|ty|cheers|appreciate\s+it|thx)[\s!.,]*$",
+    _re.IGNORECASE,
+)
+_BYE_RE = _re.compile(
+    r"^(?:bye|goodbye|see\s+ya|later|cya|peace|good\s*night)[\s!.,]*$",
+    _re.IGNORECASE,
+)
+
+_CONVERSATIONAL = [
+    (_GREETING_RE, "Hey -- ready when you are. What are we building?"),
+    (_THANKS_RE, "Anytime. What's next?"),
+    (_BYE_RE, "See you next session. Save your scene!"),
+]
+
 
 # =============================================================================
 # Data Models
@@ -191,6 +217,22 @@ class TieredRouter:
         start = time.monotonic()
         context = context or {}
         context_hash = self._hash_context(context)
+
+        # ---------------------------------------------------------------
+        # Conversational short-circuit (greetings, thanks, bye)
+        # No commands, no cascade — just a friendly response.
+        # ---------------------------------------------------------------
+        text_stripped = input_text.strip()
+        for pattern, reply in _CONVERSATIONAL:
+            if pattern.match(text_stripped):
+                return RoutingResult(
+                    success=True,
+                    tier=RoutingTier.INSTANT,
+                    answer=reply,
+                    confidence=1.0,
+                    latency_ms=(time.monotonic() - start) * 1000,
+                    metadata={"conversational": True},
+                )
 
         # ---------------------------------------------------------------
         # -1. Tier-pin check (He2025 consistency)
