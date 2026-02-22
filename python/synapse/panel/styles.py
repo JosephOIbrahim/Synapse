@@ -340,6 +340,211 @@ def get_status_label_stylesheet(color):
     )
 
 
+# ── Context Bar Stylesheets ───────────────────────────────────────────
+
+
+def get_context_bar_stylesheet():
+    """Context bar container: graphite bg, carbon top-border."""
+    return (
+        "background: {bg}; border-top: 1px solid {border};".format(
+            bg=t.GRAPHITE, border=t.CARBON
+        )
+    )
+
+
+def get_context_bar_path_stylesheet():
+    """Context bar path label: mono font, SIGNAL cyan."""
+    return (
+        "color: {c}; font-size: {s}px; font-family: '{mono}', "
+        "'Consolas', monospace; letter-spacing: 0.5px;"
+        " border: none;".format(
+            c=t.SIGNAL, s=t.SIZE_SMALL, mono=t.FONT_MONO
+        )
+    )
+
+
+def get_context_bar_dim_label_stylesheet():
+    """Context bar dim label: selection count, frame, connection text."""
+    return (
+        "color: {c}; font-size: {s}px; border: none;".format(
+            c=t.TEXT_DIM, s=t.SIZE_SMALL
+        )
+    )
+
+
+def get_context_bar_led_stylesheet(color):
+    """Context bar LED indicator with given color."""
+    return (
+        "background: {c}; border-radius: 6px; border: none;".format(c=color)
+    )
+
+
+def get_context_bar_conn_label_stylesheet(color):
+    """Context bar connection label with given color."""
+    return (
+        "color: {c}; font-size: {s}px; border: none;".format(
+            c=color, s=t.SIZE_SMALL
+        )
+    )
+
+
+def get_evolution_label_stylesheet(color):
+    """Evolution stage label with given stage color."""
+    return (
+        "color: {c}; font-size: {s}px; font-family: '{mono}', "
+        "'Consolas', monospace; font-weight: 700; border: none;".format(
+            c=color, s=t.SIZE_SMALL, mono=t.FONT_MONO
+        )
+    )
+
+
+def get_project_name_stylesheet():
+    """Project name label in context bar."""
+    return (
+        "color: {c}; font-size: {s}px; font-family: '{mono}', "
+        "'Consolas', monospace; border: none;".format(
+            c=t.SILVER, s=t.SIZE_SMALL, mono=t.FONT_MONO
+        )
+    )
+
+
+# ── HDA Views Inline Style Helpers ───────────────────────────────────
+
+
+def get_section_label_stylesheet():
+    """HDA Describe view section label: mono, SIGNAL cyan, letter-spaced."""
+    return (
+        "color: {sig}; font-size: 10px; "
+        "font-family: monospace; letter-spacing: 2px;".format(sig=t.SIGNAL)
+    )
+
+
+def get_option_label_stylesheet(color=None):
+    """HDA Describe view option/checkbox label: mono, given color."""
+    c = color or t.SLATE
+    return (
+        "color: {c}; font-family: monospace; font-size: 11px;".format(c=c)
+    )
+
+
+def get_stage_label_stylesheet():
+    """HDA Building view stage label: mono, BONE, bold."""
+    return (
+        "color: {c}; font-family: monospace; font-size: 14px; "
+        "font-weight: 700;".format(c=t.BONE)
+    )
+
+
+def get_stage_dot_stylesheet(color, size=8):
+    """HDA Building view stage dot: colored circle at given size."""
+    return "color: {c}; font-size: {s}px;".format(c=color, s=size)
+
+
+def get_detail_label_stylesheet():
+    """HDA Building view detail text: mono, SLATE, small."""
+    return (
+        "color: {c}; font-family: monospace; font-size: 10px;".format(
+            c=t.SLATE
+        )
+    )
+
+
+def get_result_status_stylesheet(color):
+    """HDA Result view status header: mono, bold, given color."""
+    return (
+        "color: {c}; font-family: monospace; font-size: 14px; "
+        "font-weight: 700;".format(c=color)
+    )
+
+
+def get_result_path_stylesheet(fg_color, bg_color):
+    """HDA Result view node path label: mono, colored bg."""
+    return (
+        "color: {fg}; font-family: monospace; font-size: 12px; "
+        "padding: 8px 12px; background: {bg}; "
+        "border-radius: 4px;".format(fg=fg_color, bg=bg_color)
+    )
+
+
+def get_validation_label_stylesheet():
+    """HDA Result view validation summary: mono, SLATE, small."""
+    return (
+        "color: {c}; font-family: monospace; font-size: 10px;".format(
+            c=t.SLATE
+        )
+    )
+
+
+def get_root_widget_stylesheet():
+    """Root panel QWidget: dark background, sans font, light text."""
+    return (
+        "QWidget {{ background: {bg}; "
+        "font-family: '{sans}', 'Segoe UI', sans-serif; "
+        "color: {fg}; }}".format(bg=t.VOID, sans=t.FONT_SANS, fg=t.TEXT)
+    )
+
+
+def get_section_container_stylesheet():
+    """Container widget for quick actions row or input area: GRAPHITE bg."""
+    return "background: {bg};".format(bg=t.GRAPHITE)
+
+
+def get_connection_frame_stylesheet():
+    """Connection bar frame: CARBON bg, GRAPHITE top border."""
+    return (
+        "QWidget#connection_frame {{"
+        "  background: {bg};"
+        "  border-top: 1px solid {border};"
+        "}}".format(bg=t.CARBON, border=t.GRAPHITE)
+    )
+
+
+def get_mode_toolbar_stylesheet():
+    """Mode toggle toolbar: GRAPHITE bg, CARBON bottom border."""
+    return (
+        "background: {bg}; border-bottom: 1px solid {border};".format(
+            bg=t.GRAPHITE, border=t.CARBON
+        )
+    )
+
+
+def get_chat_display_stylesheet():
+    """Chat display QTextBrowser: dark bg, styled scrollbars, selection color."""
+    return (
+        "QTextBrowser {{"
+        "  background: {bg};"
+        "  color: {fg};"
+        "  font-family: '{sans}', 'Segoe UI', sans-serif;"
+        "  font-size: {sz}px;"
+        "  border: none;"
+        "  padding: 8px;"
+        "  selection-background-color: rgba(0, 212, 255, 0.3);"
+        "  selection-color: #F0F0F0;"
+        "}}"
+        "QScrollBar:vertical {{"
+        "  width: 10px;"
+        "  background: {bg};"
+        "}}"
+        "QScrollBar::handle:vertical {{"
+        "  background: {scrollbar};"
+        "  border-radius: 5px;"
+        "  min-height: 30px;"
+        "}}"
+        "QScrollBar::handle:vertical:hover {{"
+        "  background: {scrollhover};"
+        "}}"
+        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{"
+        "  height: 0;"
+        "}}"
+        "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{"
+        "  background: transparent;"
+        "}}".format(
+            bg=t.VOID, fg=t.TEXT, sz=t.SIZE_BODY, sans=t.FONT_SANS,
+            scrollbar=t.GRAPHITE, scrollhover=t.SLATE,
+        )
+    )
+
+
 def animate_stack_transition(stacked_widget, new_index, duration_ms=200):
     """Smooth opacity fade between QStackedWidget pages.
 
