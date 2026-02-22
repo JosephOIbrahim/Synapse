@@ -259,7 +259,7 @@ _TOOL_DEFS: list[tuple] = [
          "frame": {"type": "number", "description": "Frame to render"},
          "width": {"type": "integer", "description": "Override resolution width"},
          "height": {"type": "integer", "description": "Override resolution height"},
-     }},
+     }, "required": []},
      False, True, False),
 
     ("synapse_validate_frame", "validate_frame", _identity,
@@ -738,7 +738,7 @@ _TOOL_DEFS: list[tuple] = [
      "agent state, and evolution stage. Without this, you have no context.",
      {"type": "object", "properties": {
          "force_refresh": {"type": "boolean", "description": "Force re-read (default: false)"},
-     }},
+     }, "required": []},
      False, False, True),
 
     ("synapse_memory_write", "memory_write", _identity,
@@ -769,7 +769,7 @@ _TOOL_DEFS: list[tuple] = [
          "scope": {"type": "string", "enum": ["scene", "project"]},
          "target_stage": {"type": "string", "enum": ["charmeleon", "charizard"]},
          "dry_run": {"type": "boolean", "description": "Preview without evolving (default: true)"},
-     }},
+     }, "required": []},
      False, False, False),
 
     # -- HDA (Houdini Digital Asset) --
@@ -843,7 +843,7 @@ _TOOL_DEFS: list[tuple] = [
     ("houdini_hda_list", "hda_list", _passthrough,
      "List all Synapse-authored HDAs currently loaded in Houdini. "
      "Scans loaded HDA files for definitions with author=synapse metadata.",
-     {"type": "object", "properties": {}},
+     {"type": "object", "properties": {}, "required": []},
      True, False, False),
 
     # -- Undo / Redo --

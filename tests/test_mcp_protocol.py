@@ -254,7 +254,12 @@ class TestToolRegistry:
     def test_get_tools_returns_list(self):
         tools = tools_mod.get_tools()
         assert isinstance(tools, list)
-        assert len(tools) >= 40  # 44 tools registered
+        assert len(tools) >= 70  # 80 tools registered
+
+    def test_tool_count_minimum(self):
+        """Ensure we don't accidentally lose tools during refactoring."""
+        tools = tools_mod.get_tools()
+        assert len(tools) >= 80, f"Expected >= 80 tools, got {len(tools)}"
 
     def test_tools_sorted_by_name(self):
         """He2025: tool list must be sorted."""
@@ -372,7 +377,7 @@ class TestToolsList:
         resp = _parse_response(resp_body)
         assert "result" in resp
         assert "tools" in resp["result"]
-        assert len(resp["result"]["tools"]) >= 40
+        assert len(resp["result"]["tools"]) >= 80
 
     def test_tools_list_invalid_session(self, server):
         body = _jsonrpc("tools/list")
