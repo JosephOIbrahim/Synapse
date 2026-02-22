@@ -212,19 +212,39 @@ class SynapseWSBridge(QThread):
         """Route incoming WebSocket message to the appropriate signal.
 
         Messages with ``msg_type`` of ``hda_progress`` or ``hda_result``
-        are routed to their dedicated signals. Everything else (including
-        messages with no ``msg_type``) goes to ``response_received`` for
-        backward compatibility.
+        are routed to their dedicated signals. Chat responses (route_chat)
+        are unwrapped from the protocol envelope and emitted via
+        ``response_received``. Non-chat responses (project_setup, context,
+        ping, etc.) are silently dropped to avoid polluting the chat display.
         """
-        msg_type = data.get("msg_type", "chat")
+        msg_type = data.get("msg_type", "")
 
         if msg_type == "hda_progress":
             self.hda_progress.emit(data)
-        elif msg_type == "hda_result":
+            return
+        if msg_type == "hda_result":
             self.hda_result.emit(data)
-        else:
-            # Default: treat as chat message (backward compatible)
-            self.response_received.emit(data)
+            return
+
+        # Unwrap protocol envelope: {data: {...}, success, error, ...}
+        inner = data.get("data", data)
+
+        # Surface server errors
+        error = data.get("error")
+        if error:
+            self.response_received.emit({
+                "status": "error",
+                "message": str(error),
+            })
+            return
+
+        # Only emit chat responses (route_chat returns "response" + "tier")
+        if isinstance(inner, dict) and ("response" in inner or "tier" in inner):
+            self.response_received.emit(inner)
+            return
+
+        # Non-chat responses (project_setup, context, ping, etc.) are
+        # silently dropped -- they are internal bookkeeping, not messages.
 
     def _drain_queue(self):
         """Send all queued messages over the active WebSocket."""
@@ -251,7 +271,7 @@ class SynapseWSBridge(QThread):
             automatically (requires main-thread callback).
         """
         payload = {
-            "command": "execute_python",
+            "type": "execute_python",
             "payload": {
                 "content": message,
             },
@@ -284,7 +304,7 @@ class SynapseWSBridge(QThread):
             Command payload.
         """
         msg = {
-            "command": command,
+            "type": command,
             "payload": payload or {},
         }
         msg_json = json.dumps(msg, sort_keys=True)

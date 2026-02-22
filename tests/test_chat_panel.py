@@ -515,8 +515,9 @@ class TestStaleContextGather:
         panel._bridge.gather_context.assert_not_called()
 
     def test_stale_context_triggers_gather(self):
-        """When context is stale (>5s old), gather is called."""
+        """When context is stale (>5s old), gather runs directly."""
         import time
+        from unittest.mock import patch
         from synapse.panel.chat_panel import SynapseChatPanel
 
         panel = SynapseChatPanel()
@@ -526,11 +527,15 @@ class TestStaleContextGather:
         # Set time 10s in the past
         panel._last_context_time = (time.time() - 10) * 1000
 
-        panel._gather_context_if_stale()
-        panel._bridge.gather_context.assert_called_once()
+        fresh = {"current_network": "/stage", "selected_nodes": [], "scene_file": "", "frame": 1.0}
+        with patch("synapse.panel.ws_bridge._gather_context_on_main_thread", return_value=fresh):
+            result = panel._gather_context_if_stale()
+
+        assert result["current_network"] == "/stage"
 
     def test_no_context_time_triggers_gather(self):
         """When context has never been gathered, trigger a gather."""
+        from unittest.mock import patch
         from synapse.panel.chat_panel import SynapseChatPanel
 
         panel = SynapseChatPanel()
@@ -539,11 +544,15 @@ class TestStaleContextGather:
         panel._last_context = None
         panel._last_context_time = None
 
-        panel._gather_context_if_stale()
-        panel._bridge.gather_context.assert_called_once()
+        fresh = {"current_network": "/obj", "selected_nodes": [], "scene_file": "", "frame": 1.0}
+        with patch("synapse.panel.ws_bridge._gather_context_on_main_thread", return_value=fresh):
+            result = panel._gather_context_if_stale()
+
+        assert result["current_network"] == "/obj"
 
     def test_no_bridge_skips_gather(self):
-        """When bridge is None, gather is skipped gracefully."""
+        """When bridge is None, gather still works (runs on main thread)."""
+        from unittest.mock import patch
         from synapse.panel.chat_panel import SynapseChatPanel
 
         panel = SynapseChatPanel()
@@ -551,8 +560,12 @@ class TestStaleContextGather:
         panel._last_context = None
         panel._last_context_time = None
 
-        result = panel._gather_context_if_stale()
-        assert result is None
+        fresh = {"current_network": "", "selected_nodes": [], "scene_file": "", "frame": 1.0}
+        with patch("synapse.panel.ws_bridge._gather_context_on_main_thread", return_value=fresh):
+            result = panel._gather_context_if_stale()
+
+        # Context is gathered even without bridge (main-thread direct call)
+        assert result is not None
 
 
 # ===========================================================================
@@ -613,16 +626,16 @@ class TestRouteChatResponse:
         panel._on_response(response)
         panel._chat.append_synapse_message.assert_called_once_with(response)
 
-    def test_legacy_response_fallback(self):
-        """Responses without route_chat keys fall back to legacy display."""
+    def test_non_chat_response_ignored(self):
+        """Responses without route_chat keys are silently ignored."""
         from synapse.panel.chat_panel import SynapseChatPanel
 
         panel = SynapseChatPanel()
         panel._chat = MagicMock()
 
-        response = {"status": "ok", "message": "Done"}
+        response = {"status": "ok", "data": "something"}
         panel._on_response(response)
-        panel._chat.append_synapse_message.assert_called_once_with(response)
+        panel._chat.append_synapse_message.assert_not_called()
 
 
 # ===========================================================================
@@ -895,11 +908,11 @@ class TestKeyboardShortcuts:
 
         assert hasattr(SynapseChatPanel, "_install_shortcuts")
 
-    def test_event_filter_method_exists(self):
-        """eventFilter method should exist on SynapseChatPanel."""
-        from synapse.panel.chat_panel import SynapseChatPanel
+    def test_event_filter_class_exists(self):
+        """_InputEventFilter class handles Up-arrow recall for the input field."""
+        from synapse.panel.chat_panel import _InputEventFilter
 
-        assert hasattr(SynapseChatPanel, "eventFilter")
+        assert hasattr(_InputEventFilter, "eventFilter")
 
 
 # ===========================================================================

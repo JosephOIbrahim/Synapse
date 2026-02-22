@@ -82,6 +82,25 @@ def _find_running_server():
     return None
 
 
+class _InputEventFilter(QtCore.QObject):
+    """QObject-based event filter for Up-arrow recall in the input field."""
+
+    def __init__(self, panel, parent=None):
+        super().__init__(parent)
+        self._panel = panel
+
+    def eventFilter(self, obj, event):
+        if obj is self._panel._input and event.type() == QtCore.QEvent.KeyPress:
+            if (
+                event.key() == QtCore.Qt.Key_Up
+                and not self._panel._input.text()
+                and self._panel._last_sent_message
+            ):
+                self._panel._input.setText(self._panel._last_sent_message)
+                return True
+        return False
+
+
 class SynapseChatPanel:
     """Houdini Python Panel for AI-assisted workflow.
 
@@ -300,37 +319,28 @@ class SynapseChatPanel:
         - Up      -- recall last sent message (when input is empty)
         """
         # Ctrl+L — clear chat
-        clear_sc = QtWidgets.QShortcut(
+        _QShortcut = getattr(QtGui, "QShortcut", None) or QtWidgets.QShortcut
+        clear_sc = _QShortcut(
             QtGui.QKeySequence("Ctrl+L"), self._root
         )
         clear_sc.activated.connect(self._shortcut_clear_chat)
 
         # Ctrl+K — focus input
-        focus_sc = QtWidgets.QShortcut(
+        focus_sc = _QShortcut(
             QtGui.QKeySequence("Ctrl+K"), self._root
         )
         focus_sc.activated.connect(self._shortcut_focus_input)
 
         # Escape — clear input text or cancel
-        esc_sc = QtWidgets.QShortcut(
+        esc_sc = _QShortcut(
             QtGui.QKeySequence("Escape"), self._root
         )
         esc_sc.activated.connect(self._shortcut_escape)
 
-        # Up arrow recall is handled via event filter on the input
-        self._input.installEventFilter(self)
-
-    def eventFilter(self, obj, event):
-        """Intercept Up-arrow in empty input to recall last message."""
-        if obj is self._input and event.type() == QtCore.QEvent.KeyPress:
-            if (
-                event.key() == QtCore.Qt.Key_Up
-                and not self._input.text()
-                and self._last_sent_message
-            ):
-                self._input.setText(self._last_sent_message)
-                return True
-        return False
+        # Up arrow recall is handled via event filter on the input.
+        # SynapseChatPanel isn't a QObject, so use a small helper.
+        self._event_filter = _InputEventFilter(self, parent=self._input)
+        self._input.installEventFilter(self._event_filter)
 
     def _shortcut_clear_chat(self):
         """Ctrl+L — clear all chat history."""
@@ -620,16 +630,23 @@ class SynapseChatPanel:
 
         Returns the cached context dict. Triggers a fresh gather via the
         bridge only when the cache is older than *max_age_ms* (default 5s).
+
+        NOTE: This runs on the main thread (Qt slot), so we call the
+        gather function directly instead of via hdefereval which would
+        deadlock.
         """
         import time
         now = time.time() * 1000
         if self._last_context_time and (now - self._last_context_time) < max_age_ms:
             return self._last_context
-        if self._bridge is not None and self._bridge.connected:
-            try:
-                self._bridge.gather_context()
-            except Exception:
-                pass
+        try:
+            from synapse.panel.ws_bridge import _gather_context_on_main_thread
+            ctx = _gather_context_on_main_thread()
+            if ctx:
+                self._last_context = ctx
+                self._last_context_time = time.time() * 1000
+        except Exception:
+            pass
         return self._last_context
 
     def _send_message(self):
@@ -686,15 +703,13 @@ class SynapseChatPanel:
             return
 
         # route_chat returns {response, tier, commands, confidence}
+        # (already unwrapped from protocol envelope by ws_bridge)
         text = response.get("response", "")
         tier = response.get("tier", "")
         commands = response.get("commands", [])
 
         if text:
             self._chat.append_synapse_message({"message": text, "tier": tier})
-        elif not commands:
-            # Fallback for non-route_chat responses (legacy compat)
-            self._chat.append_synapse_message(response)
 
         # Show generated commands as pending actions
         if commands:
@@ -803,9 +818,19 @@ class SynapseChatPanel:
             pass
 
     def _poll_context(self):
-        """Periodically refresh scene context for the context bar."""
+        """Periodically refresh scene context for the context bar.
+
+        Runs on the main thread (QTimer), so call the gather function
+        directly instead of via hdefereval which would deadlock.
+        """
         if self._bridge is not None and self._bridge.connected:
             try:
-                self._bridge.gather_context()
+                import time as _time
+                from synapse.panel.ws_bridge import _gather_context_on_main_thread
+                ctx = _gather_context_on_main_thread()
+                if ctx:
+                    self._last_context = ctx
+                    self._last_context_time = _time.time() * 1000
+                    self._bridge.context_updated.emit(ctx)
             except Exception:
                 pass

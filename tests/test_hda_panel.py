@@ -226,16 +226,16 @@ class TestBridgeMessageRouting:
         return bridge
 
     def test_chat_message_routes_to_chat_signal(self):
-        """Messages with msg_type='chat' emit response_received."""
+        """Route_chat responses (with 'response' key in data) emit response_received."""
         bridge = self._make_bridge()
         received = []
         bridge.response_received.connect(lambda d: received.append(d))
 
-        data = {"msg_type": "chat", "text": "hello"}
+        data = {"data": {"response": "hello", "tier": "recipe"}, "success": True}
         bridge._dispatch_message(data)
 
         assert len(received) == 1
-        assert received[0]["text"] == "hello"
+        assert received[0]["response"] == "hello"
 
     def test_hda_progress_routes_to_hda_signal(self):
         """Messages with msg_type='hda_progress' emit hda_progress."""
@@ -261,18 +261,19 @@ class TestBridgeMessageRouting:
         assert len(received) == 1
         assert received[0]["success"] is True
 
-    def test_backward_compat_no_msg_type(self):
-        """Messages without msg_type default to chat routing."""
+    def test_non_chat_response_silently_dropped(self):
+        """Non-chat responses (no 'response'/'tier' in data) are silently dropped."""
         bridge = self._make_bridge()
         chat_received = []
         hda_received = []
         bridge.response_received.connect(lambda d: chat_received.append(d))
         bridge.hda_progress.connect(lambda d: hda_received.append(d))
 
-        data = {"status": "ok", "result": "something"}
+        # project_setup-style response — should NOT reach chat
+        data = {"data": {"agent_state": {}, "paths": {}}, "success": True}
         bridge._dispatch_message(data)
 
-        assert len(chat_received) == 1
+        assert len(chat_received) == 0
         assert len(hda_received) == 0
 
     def test_hda_stages_constant(self):
@@ -437,7 +438,7 @@ class TestHdaController:
         # Should have called bridge.send with hda_package payload
         bridge.send.assert_called_once()
         payload = bridge.send.call_args[0][0]
-        assert payload["command"] == "hda_package"
+        assert payload["type"] == "hda_package"
         assert "scatter" in payload["payload"]["name"]
 
     def test_execute_emits_failure_on_no_match(self):
@@ -513,7 +514,7 @@ class TestE2EFlow:
 
         # Verify bridge.send was called with correct payload
         bridge_call = mock_bridge.send.call_args[0][0]
-        assert bridge_call["command"] == "hda_package"
+        assert bridge_call["type"] == "hda_package"
         assert bridge_call["payload"]["category"] == "Sop"
         assert len(bridge_call["payload"]["nodes"]) >= 2
 
@@ -566,7 +567,7 @@ class TestRegression:
         bridge.send_command("ping", {"msg": "hello"})
         assert len(bridge._send_queue) == 1
         msg = json.loads(bridge._send_queue[0])
-        assert msg["command"] == "ping"
+        assert msg["type"] == "ping"
         assert msg["payload"]["msg"] == "hello"
 
     def test_recipes_import_cleanly(self):
