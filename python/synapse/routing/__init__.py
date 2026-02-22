@@ -23,6 +23,7 @@ from .router import (
     RoutingConfig,
 )
 from .adaptation import EpochAdapter, TierEpoch, TierThresholds
+from .context_enrichment import enrich_context, register_group_knowledge, get_group_for_tool
 
 __all__ = [
     # Tier 0
@@ -46,4 +47,8 @@ __all__ = [
     "EpochAdapter",
     "TierEpoch",
     "TierThresholds",
+    # Context enrichment
+    "enrich_context",
+    "register_group_knowledge",
+    "get_group_for_tool",
 ]

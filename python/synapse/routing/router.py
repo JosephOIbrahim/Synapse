@@ -29,6 +29,7 @@ from .recipes import RecipeRegistry, Recipe
 from .planner import WorkflowPlanner
 from .cache import ResponseCache
 from .adaptation import EpochAdapter
+from .context_enrichment import enrich_context
 
 logger = logging.getLogger(__name__)
 
@@ -124,15 +125,6 @@ class TieredRouter:
     Routes artist input through increasingly capable (and slower) tiers
     until one handles it with sufficient confidence.
     """
-
-    _instance: Optional["TieredRouter"] = None
-
-    @classmethod
-    def get_instance(cls) -> "TieredRouter":
-        """Return the singleton router instance, creating one if needed."""
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
 
     def __init__(
         self,
@@ -523,33 +515,12 @@ class TieredRouter:
             if client is None:
                 return None
 
-            # Build user message with optional RAG context
-            user_parts = []
-
-            # Include Tier 1 knowledge as enrichment (even if below T1 threshold)
-            if tier1_hint and tier1_hint.found:
-                user_parts.append(
-                    f"<context source=\"tier1\" confidence=\"{tier1_hint.confidence:.2f}\">\n"
-                    f"{tier1_hint.answer}\n</context>\n"
-                )
-
-            # Include memory context
-            if self._memory:
-                try:
-                    recent = self._memory.search(query=text, limit=3)
-                    if recent:
-                        mem_parts = [
-                            f"- {r.memory.summary or r.memory.content[:100]}"
-                            for r in recent
-                        ]
-                        user_parts.append(
-                            f"<memory>\n" + "\n".join(mem_parts) + "\n</memory>\n"
-                        )
-                except Exception:
-                    pass
-
-            user_parts.append(text)
-            user_message = "\n".join(user_parts)
+            # Build enriched user message via context_enrichment module
+            user_message = enrich_context(
+                message=text,
+                tier1_hint=tier1_hint,
+                memory=self._memory,
+            )
 
             response = client.messages.create(
                 model=self._config.llm_model_fast,
@@ -692,15 +663,11 @@ class TieredRouter:
             if client is None:
                 return None
 
-            # Build user message with Tier 1 enrichment
-            user_parts = []
-            if tier1_hint and tier1_hint.found:
-                user_parts.append(
-                    f"<context source=\"tier1\" confidence=\"{tier1_hint.confidence:.2f}\">\n"
-                    f"{tier1_hint.answer}\n</context>\n"
-                )
-            user_parts.append(text)
-            user_message = "\n".join(user_parts)
+            # Build enriched user message via context_enrichment module
+            user_message = enrich_context(
+                message=text,
+                tier1_hint=tier1_hint,
+            )
 
             # Use deeper model for planning
             response = client.messages.create(
