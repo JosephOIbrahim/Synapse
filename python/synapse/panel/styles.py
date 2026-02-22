@@ -198,14 +198,15 @@ def get_hda_stylesheet():
 
 
 def get_quick_action_button_stylesheet():
-    """Quick action button: mono font, outlined, cyan hover/press."""
+    """Quick action button: matches main panel tool_button style."""
     return (
         "QPushButton {{"
         "  background: {bg};"
         "  color: {fg};"
         "  border: 1px solid {border};"
         "  border-radius: 4px;"
-        "  padding: 4px 12px;"
+        "  padding: {pad}px;"
+        "  min-height: 36px;"
         "  font-family: '{mono}', 'Consolas', monospace;"
         "  font-size: {sz}px;"
         "}}"
@@ -219,9 +220,9 @@ def get_quick_action_button_stylesheet():
         "  border-color: {accent};"
         "  color: {accent};"
         "}}".format(
-            bg=t.CARBON, fg=t.TEXT, border=t.NEAR_BLACK,
-            sz=t.SIZE_SMALL, hover=t.HOVER, accent=t.SIGNAL,
-            white="#F0F0F0", mono=t.FONT_MONO,
+            bg=t.CARBON, fg=t.BONE, border=t.GRAPHITE,
+            sz=t.SIZE_SMALL, pad=t.SPACE_SM, hover=t.HOVER,
+            accent=t.SIGNAL, white=t.WHITE, mono=t.FONT_MONO,
         )
     )
 
@@ -241,7 +242,7 @@ def get_input_stylesheet():
         "QLineEdit:focus {{"
         "  border: 1px solid {accent};"
         "}}".format(
-            bg=t.VOID, fg=t.TEXT, border=t.NEAR_BLACK,
+            bg=t.VOID, fg=t.BONE, border=t.GRAPHITE,
             sz=t.SIZE_UI, accent=t.SIGNAL, sans=t.FONT_SANS,
         )
     )
@@ -476,50 +477,53 @@ def get_validation_label_stylesheet():
 
 
 def get_root_widget_stylesheet():
-    """Root panel QWidget: dark background, sans font, light text."""
+    """Root panel QWidget: matches main Synapse panel bg and font."""
     return (
         "QWidget {{ background: {bg}; "
         "font-family: '{sans}', 'Segoe UI', sans-serif; "
-        "color: {fg}; }}".format(bg=t.VOID, sans=t.FONT_SANS, fg=t.TEXT)
+        "color: {fg}; }}".format(bg=t.NEAR_BLACK, sans=t.FONT_SANS, fg=t.BONE)
     )
 
 
 def get_section_container_stylesheet():
-    """Container widget for quick actions row or input area: GRAPHITE bg."""
-    return "background: {bg};".format(bg=t.GRAPHITE)
+    """Container widget for quick actions row or input area: transparent bg."""
+    return "background: transparent;"
 
 
 def get_connection_frame_stylesheet():
-    """Connection bar frame: CARBON bg, GRAPHITE top border."""
+    """Connection bar frame: CARBON bg, GRAPHITE top border, matched height."""
     return (
         "QWidget#connection_frame {{"
         "  background: {bg};"
         "  border-top: 1px solid {border};"
+        "  min-height: 52px;"
+        "  max-height: 52px;"
         "}}".format(bg=t.CARBON, border=t.GRAPHITE)
     )
 
 
 def get_mode_toolbar_stylesheet():
-    """Mode toggle toolbar: GRAPHITE bg, CARBON bottom border."""
+    """Mode toggle toolbar: CARBON bg, GRAPHITE bottom border (matches status bar)."""
     return (
         "background: {bg}; border-bottom: 1px solid {border};".format(
-            bg=t.GRAPHITE, border=t.CARBON
+            bg=t.CARBON, border=t.GRAPHITE
         )
     )
 
 
 def get_chat_display_stylesheet():
-    """Chat display QTextBrowser: dark bg, styled scrollbars, selection color."""
+    """Chat display QTextBrowser: matches main panel activity log style."""
     return (
         "QTextBrowser {{"
         "  background: {bg};"
         "  color: {fg};"
         "  font-family: '{sans}', 'Segoe UI', sans-serif;"
         "  font-size: {sz}px;"
-        "  border: none;"
-        "  padding: 8px;"
+        "  border: 1px solid {border};"
+        "  border-radius: 4px;"
+        "  padding: {pad}px;"
         "  selection-background-color: rgba(0, 212, 255, 0.3);"
-        "  selection-color: #F0F0F0;"
+        "  selection-color: {white};"
         "}}"
         "QScrollBar:vertical {{"
         "  width: 10px;"
@@ -539,7 +543,8 @@ def get_chat_display_stylesheet():
         "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{"
         "  background: transparent;"
         "}}".format(
-            bg=t.VOID, fg=t.TEXT, sz=t.SIZE_BODY, sans=t.FONT_SANS,
+            bg=t.VOID, fg=t.SILVER, sz=t.SIZE_SMALL, sans=t.FONT_SANS,
+            border=t.GRAPHITE, pad=t.SPACE_SM, white=t.WHITE,
             scrollbar=t.GRAPHITE, scrollhover=t.SLATE,
         )
     )

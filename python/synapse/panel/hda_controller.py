@@ -20,9 +20,10 @@ class HdaController(QObject):
     result = Signal(dict)              # success/failure result
     error = Signal(str)                # error message
 
-    def __init__(self, bridge=None, parent=None):
+    def __init__(self, bridge=None, parent=None, context_source=None):
         super().__init__(parent)
         self._bridge = bridge
+        self._context_source = context_source
         self._active = False
 
         # Connect bridge signals if available
@@ -76,7 +77,7 @@ class HdaController(QObject):
         # Build the hda_package payload from the recipe
         category = CONTEXT_TO_CATEGORY.get(context, "Sop")
         payload = {
-            "command": "hda_package",
+            "type": "hda_package",
             "payload": {
                 "description": prompt,
                 "name": recipe["name"],
