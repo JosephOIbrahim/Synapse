@@ -128,6 +128,7 @@ async def run_agent(
     from synapse_ws import SynapseClient
     from synapse_tools import set_client, execute_tool, TOOL_DEFINITIONS
     from synapse_hooks import validate_execute_code
+    from shared_state import write_agent_state
 
     # --- Step 1: Connect to Houdini ---
     logger.info("Connecting to Synapse...")
@@ -165,8 +166,22 @@ async def run_agent(
     print(f"{'='*60}\n")
 
     # --- Step 3: Agentic loop ---
+    heartbeat_interval = 5  # Emit heartbeat every N turns
+
     for turn in range(max_turns):
         logger.info("Agent turn %d/%d", turn + 1, max_turns)
+
+        # Heartbeat: write agent state every heartbeat_interval turns
+        if turn % heartbeat_interval == 0:
+            try:
+                await write_agent_state(
+                    synapse,
+                    role=role,
+                    status="active",
+                    data={"turn": turn + 1, "max_turns": max_turns, "goal": goal[:200]},
+                )
+            except Exception as hb_err:
+                logger.debug("Heartbeat write skipped: %s", hb_err)
 
         response = client.messages.create(
             model=MODEL,
@@ -237,6 +252,17 @@ async def run_agent(
     else:
         logger.warning("Agent hit max turns (%d)", max_turns)
         print(f"\n[Agent reached {max_turns} turns — stopping to avoid runaway loops]")
+
+    # Final heartbeat: mark agent as completed
+    try:
+        await write_agent_state(
+            synapse,
+            role=role,
+            status="completed",
+            data={"turns_used": min(turn + 1, max_turns), "goal": goal[:200]},
+        )
+    except Exception:
+        pass  # Best-effort on shutdown
 
     # --- Cleanup ---
     await synapse.disconnect()
