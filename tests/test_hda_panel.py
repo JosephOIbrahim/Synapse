@@ -39,107 +39,133 @@ if "hdefereval" not in sys.modules:
     _hde.executeInMainThreadWithResult = lambda fn: fn()
     sys.modules["hdefereval"] = _hde
 
-# Qt stub -- provide just enough for Signal, QThread, QObject, QWidget, etc.
-_qt_core_stub = None
-_qt_widgets_stub = None
-_qt_gui_stub = None
+# Qt stub -- ALWAYS use fakes. These tests run without a Qt event loop.
+# Real PySide6/PySide2 may be installed but unusable in headless/WSL
+# environments, so we force stubs regardless.
 
-for qt_pkg in ("PySide6", "PySide2"):
-    try:
-        __import__(qt_pkg)
-        break  # Real Qt available, no stub needed
-    except ImportError:
-        continue
-else:
-    # No Qt available -- provide stubs
-    class _FakeSignal:
-        def __init__(self, *args):
-            self._slots = []
-        def connect(self, slot):
-            self._slots.append(slot)
-        def emit(self, *args):
-            for s in self._slots:
-                s(*args)
-        def disconnect(self, slot=None):
-            if slot:
-                self._slots.remove(slot)
-            else:
-                self._slots.clear()
 
-    class _FakeQObject:
-        def __init__(self, parent=None):
-            pass
+class _AutoMockModule(types.ModuleType):
+    """Module stub that auto-provides MagicMock for missing attributes.
 
-    class _FakeQThread(_FakeQObject):
-        def isRunning(self):
-            return False
-        def start(self):
-            pass
-        def wait(self, timeout=0):
-            pass
-        def msleep(self, ms):
-            pass
+    Explicit attributes (Signal, QObject, etc.) take priority. Anything
+    else returns a fresh MagicMock so ``from PySide6.QtFoo import Bar``
+    always succeeds regardless of which Qt class ``Bar`` is.
+    """
 
-    class _FakeQWidget(_FakeQObject):
-        def setObjectName(self, name):
-            self._objectName = name
-        def objectName(self):
-            return getattr(self, "_objectName", "")
-        def setStyleSheet(self, ss):
-            pass
-        def setMinimumHeight(self, h):
-            pass
-        def setMaximumHeight(self, h):
-            pass
-        def setMinimumWidth(self, w):
-            pass
-        def style(self):
-            m = MagicMock()
-            return m
+    def __getattr__(self, name):
+        if name.startswith("_"):
+            raise AttributeError(name)
+        mock = MagicMock()
+        object.__setattr__(self, name, mock)
+        return mock
 
-    # Build PySide6 stub modules
-    pyside6 = types.ModuleType("PySide6")
-    pyside6_core = types.ModuleType("PySide6.QtCore")
-    pyside6_core.Signal = _FakeSignal
-    pyside6_core.Slot = lambda *a, **k: (lambda f: f)
-    pyside6_core.QObject = _FakeQObject
-    pyside6_core.QThread = _FakeQThread
-    pyside6_core.QTimer = MagicMock
-    pyside6_core.QMetaObject = MagicMock()
-    pyside6_core.Qt = MagicMock()
-    pyside6_core.Q_ARG = MagicMock()
-    pyside6_core.QPropertyAnimation = MagicMock
-    pyside6_core.QEasingCurve = MagicMock()
 
-    pyside6_widgets = types.ModuleType("PySide6.QtWidgets")
-    pyside6_widgets.QWidget = _FakeQWidget
-    pyside6_widgets.QVBoxLayout = MagicMock
-    pyside6_widgets.QHBoxLayout = MagicMock
-    pyside6_widgets.QStackedWidget = MagicMock
-    pyside6_widgets.QLabel = MagicMock
-    pyside6_widgets.QTextEdit = MagicMock
-    pyside6_widgets.QPushButton = MagicMock
-    pyside6_widgets.QComboBox = MagicMock
-    pyside6_widgets.QCheckBox = MagicMock
-    pyside6_widgets.QProgressBar = MagicMock
-    pyside6_widgets.QTableWidget = MagicMock
-    pyside6_widgets.QTableWidgetItem = MagicMock
-    pyside6_widgets.QGraphicsOpacityEffect = MagicMock
-    pyside6_widgets.QAbstractItemView = MagicMock()
-    pyside6_widgets.QFrame = MagicMock
-    pyside6_widgets.QGridLayout = MagicMock
-    pyside6_widgets.QLineEdit = MagicMock
-    pyside6_widgets.QApplication = MagicMock
+class _FakeSignal:
+    def __init__(self, *args):
+        self._slots = []
+    def connect(self, slot):
+        self._slots.append(slot)
+    def emit(self, *args):
+        for s in self._slots:
+            s(*args)
+    def disconnect(self, slot=None):
+        if slot:
+            self._slots.remove(slot)
+        else:
+            self._slots.clear()
 
-    pyside6_gui = types.ModuleType("PySide6.QtGui")
-    pyside6_gui.QCursor = MagicMock
-    pyside6_gui.QTextCursor = MagicMock()
-    pyside6_gui.QGuiApplication = MagicMock
+class _FakeQObject:
+    def __init__(self, parent=None):
+        pass
 
-    sys.modules["PySide6"] = pyside6
-    sys.modules["PySide6.QtCore"] = pyside6_core
-    sys.modules["PySide6.QtWidgets"] = pyside6_widgets
-    sys.modules["PySide6.QtGui"] = pyside6_gui
+class _FakeQThread(_FakeQObject):
+    def isRunning(self):
+        return False
+    def start(self):
+        pass
+    def wait(self, timeout=0):
+        pass
+    def msleep(self, ms):
+        pass
+
+class _FakeQWidget(_FakeQObject):
+    def setObjectName(self, name):
+        self._objectName = name
+    def objectName(self):
+        return getattr(self, "_objectName", "")
+    def setStyleSheet(self, ss):
+        pass
+    def setMinimumHeight(self, h):
+        pass
+    def setMaximumHeight(self, h):
+        pass
+    def setMinimumWidth(self, w):
+        pass
+    def style(self):
+        m = MagicMock()
+        return m
+
+# Build PySide6 stub modules using _AutoMockModule so missing Qt classes
+# auto-resolve to MagicMock (prevents ImportError for any Qt class).
+pyside6 = _AutoMockModule("PySide6")
+pyside6.__path__ = []  # Makes it a package
+pyside6_core = _AutoMockModule("PySide6.QtCore")
+pyside6_core.Signal = _FakeSignal
+pyside6_core.Slot = lambda *a, **k: (lambda f: f)
+pyside6_core.QObject = _FakeQObject
+pyside6_core.QThread = _FakeQThread
+pyside6_core.QTimer = MagicMock
+pyside6_core.QMetaObject = MagicMock()
+pyside6_core.Qt = MagicMock()
+pyside6_core.Q_ARG = MagicMock()
+pyside6_core.QUrl = MagicMock
+pyside6_core.QPropertyAnimation = MagicMock
+pyside6_core.QEasingCurve = MagicMock()
+
+pyside6_widgets = _AutoMockModule("PySide6.QtWidgets")
+pyside6_widgets.QWidget = _FakeQWidget
+pyside6_widgets.QVBoxLayout = MagicMock
+pyside6_widgets.QHBoxLayout = MagicMock
+pyside6_widgets.QStackedWidget = MagicMock
+pyside6_widgets.QLabel = MagicMock
+pyside6_widgets.QTextEdit = MagicMock
+pyside6_widgets.QPushButton = MagicMock
+pyside6_widgets.QComboBox = MagicMock
+pyside6_widgets.QCheckBox = MagicMock
+pyside6_widgets.QProgressBar = MagicMock
+pyside6_widgets.QTableWidget = MagicMock
+pyside6_widgets.QTableWidgetItem = MagicMock
+pyside6_widgets.QGraphicsOpacityEffect = MagicMock
+pyside6_widgets.QAbstractItemView = MagicMock()
+pyside6_widgets.QFrame = MagicMock
+pyside6_widgets.QGridLayout = MagicMock
+pyside6_widgets.QLineEdit = MagicMock
+pyside6_widgets.QApplication = MagicMock
+
+pyside6_gui = _AutoMockModule("PySide6.QtGui")
+pyside6_gui.QCursor = MagicMock
+pyside6_gui.QTextCursor = MagicMock()
+pyside6_gui.QGuiApplication = MagicMock
+
+# Wire submodules as attributes so `from PySide6 import QtCore` works
+pyside6.QtCore = pyside6_core
+pyside6.QtWidgets = pyside6_widgets
+pyside6.QtGui = pyside6_gui
+
+# Evict any real PySide6/PySide2 so panel modules pick up our stubs.
+# Only evict the specific panel modules THIS file reimports — leave
+# other panel modules (chat_panel, message_formatter, etc.) untouched
+# so sibling test files aren't affected.
+for _key in list(sys.modules):
+    if _key.startswith(("PySide6", "PySide2")):
+        del sys.modules[_key]
+for _key in ("synapse.panel.ws_bridge", "synapse.panel.hda_controller"):
+    sys.modules.pop(_key, None)
+
+sys.modules["PySide6"] = pyside6
+sys.modules["PySide6.QtCore"] = pyside6_core
+sys.modules["PySide6.QtWidgets"] = pyside6_widgets
+sys.modules["PySide6.QtGui"] = pyside6_gui
 
 
 # ---------------------------------------------------------------------------

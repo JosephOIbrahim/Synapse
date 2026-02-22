@@ -1374,3 +1374,155 @@ class TestRoutingBenchmark:
             f"Routing accuracy {accuracy:.1%} below 95% threshold. "
             f"Failures: {failures}"
         )
+
+
+# =============================================================================
+# ROUTE_CHAT HANDLER TESTS (P0)
+# =============================================================================
+
+class TestRouteChatHandler:
+    """Tests for the route_chat command handler (P0: Chat Routing Dispatch)."""
+
+    def setup_method(self):
+        """Fresh router + handler for each test."""
+        # Reset singleton to avoid cross-test pollution
+        TieredRouter._instance = None
+        self.router = TieredRouter(config=RoutingConfig(
+            enable_tier2=False,
+            enable_tier3=False,
+        ))
+        # Install as singleton so handler's get_instance() finds it
+        TieredRouter._instance = self.router
+
+    def teardown_method(self):
+        TieredRouter._instance = None
+
+    def test_route_chat_command_type_exists(self):
+        """ROUTE_CHAT CommandType is defined in protocol."""
+        from synapse.core.protocol import CommandType
+        assert hasattr(CommandType, "ROUTE_CHAT")
+        assert CommandType.ROUTE_CHAT.value == "route_chat"
+
+    def test_route_chat_registered_in_handler(self):
+        """route_chat is registered in the handler registry."""
+        import types
+
+        # Minimal hou stub (needs Node class for guards.py type annotations)
+        mock_hou = types.ModuleType("hou")
+        mock_hou.hipFile = Mock()
+        mock_hou.hipFile.name = Mock(return_value="untitled.hip")
+        mock_hou.applicationVersion = Mock(return_value=(21, 0, 0))
+        mock_hou.node = Mock(return_value=None)
+        mock_hou.undos = Mock()
+        mock_hou.NodeTypeCategory = Mock()
+        mock_hou.Node = type("Node", (), {})
+        mock_hou.Parm = type("Parm", (), {})
+        mock_hou.OperationFailed = type("OperationFailed", (Exception,), {})
+        saved_hou = sys.modules.get("hou")
+        sys.modules["hou"] = mock_hou
+        # Clear cached imports so fresh hou stub is picked up
+        _cached = {}
+        for mod_name in list(sys.modules):
+            if mod_name.startswith("synapse.server"):
+                _cached[mod_name] = sys.modules.pop(mod_name)
+        try:
+            from synapse.server.handlers import SynapseHandler
+            handler = SynapseHandler()
+            assert handler._registry.has("route_chat"), "route_chat not registered"
+        finally:
+            # Restore everything
+            for mod_name in list(sys.modules):
+                if mod_name.startswith("synapse.server"):
+                    sys.modules.pop(mod_name, None)
+            sys.modules.update(_cached)
+            if saved_hou is not None:
+                sys.modules["hou"] = saved_hou
+            else:
+                sys.modules.pop("hou", None)
+
+    def test_route_chat_create_node_routes_to_command(self):
+        """'create a sphere at /obj' should route to Tier 0 regex, not execute_python."""
+        result = self.router.route("create a sphere at /obj")
+        assert result.success
+        # Should route to instant (regex) tier
+        assert result.tier == RoutingTier.INSTANT, (
+            f"Expected instant tier, got {result.tier.value}"
+        )
+        # Should produce a create_node command, not execute_python
+        assert len(result.commands) > 0
+        for cmd in result.commands:
+            assert cmd.type != "execute_python", (
+                "Chat should never route to execute_python"
+            )
+            assert cmd.type == "create_node"
+
+    def test_route_chat_scene_info_routes_correctly(self):
+        """'scene info' should route to get_scene_info via Tier 0 regex."""
+        result = self.router.route("scene info")
+        assert result.success
+        assert result.tier == RoutingTier.INSTANT, (
+            f"Expected instant tier, got {result.tier.value}"
+        )
+        assert len(result.commands) > 0
+        assert result.commands[0].type == "get_scene_info"
+
+    def test_route_chat_unknown_falls_through(self):
+        """Unknown/ambiguous query should fall through gracefully."""
+        result = self.router.route("xyzzy plugh 12345")
+        # Either fails gracefully or gets a low-confidence answer
+        assert isinstance(result, RoutingResult)
+        assert isinstance(result.answer, str)
+        assert result.tier is not None
+
+    def test_route_chat_response_format(self):
+        """Handler response has required keys."""
+        result = self.router.route("create a box")
+        # Simulate what the handler does: build the dict
+        response = {
+            "response": result.answer,
+            "tier": result.tier.value,
+            "commands": [
+                {"type": cmd.type, "id": cmd.id, "payload": cmd.payload}
+                for cmd in result.commands
+            ] if result.commands else [],
+            "confidence": result.confidence,
+            "cached": result.cached,
+            "latency_ms": result.latency_ms,
+        }
+        assert "response" in response
+        assert "tier" in response
+        assert "commands" in response
+        assert "confidence" in response
+        assert isinstance(response["tier"], str)
+        assert isinstance(response["commands"], list)
+        assert isinstance(response["confidence"], float)
+
+    def test_route_chat_with_context(self):
+        """route_chat accepts optional context dict."""
+        result = self.router.route(
+            "add a light",
+            context={"scene_path": "/obj", "frame": 1},
+        )
+        assert isinstance(result, RoutingResult)
+
+    def test_route_chat_singleton_accessor(self):
+        """TieredRouter.get_instance() returns singleton."""
+        TieredRouter._instance = None
+        r1 = TieredRouter.get_instance()
+        r2 = TieredRouter.get_instance()
+        assert r1 is r2
+        TieredRouter._instance = None
+
+    def test_route_chat_message_alias_resolution(self):
+        """'message' param alias resolves to 'content' canonical."""
+        from synapse.core.aliases import resolve_param
+        payload = {"message": "create a sphere"}
+        val = resolve_param(payload, "content")
+        assert val == "create a sphere"
+
+    def test_route_chat_text_alias_resolution(self):
+        """'text' param alias resolves to 'content' canonical."""
+        from synapse.core.aliases import resolve_param
+        payload = {"text": "create a light"}
+        val = resolve_param(payload, "content")
+        assert val == "create a light"

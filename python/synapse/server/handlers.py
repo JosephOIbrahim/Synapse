@@ -112,6 +112,8 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "tops_multi_shot": AuditCategory.PIPELINE,
     # Autonomous render
     "autonomous_render": AuditCategory.RENDER,
+    # Chat routing
+    "route_chat": AuditCategory.SYNAPSE,
     # Undo / Redo
     "undo": AuditCategory.PIPELINE,
     "redo": AuditCategory.PIPELINE,
@@ -140,6 +142,7 @@ _READ_ONLY_COMMANDS = frozenset({
     "tops_get_work_items", "tops_get_dependency_graph", "tops_get_cook_stats",
     "tops_query_items",
     "tops_diagnose", "tops_pipeline_status",
+    "route_chat",
 })
 
 
@@ -412,6 +415,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
         # Batch
         reg.register("batch_commands", self._handle_batch_commands)
+
+        # Chat routing
+        reg.register("route_chat", self._handle_route_chat)
 
         # Metrics / Router stats / Recipes
         reg.register("get_metrics", self._handle_get_metrics)
@@ -1049,6 +1055,34 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         return {
             "count": len(recipes),
             "recipes": sorted(recipes, key=lambda r: r["name"]),
+        }
+
+    def _handle_route_chat(self, payload: Dict) -> Dict:
+        """Route a natural language message through the tiered routing cascade.
+
+        This is the PRIMARY entry point for the chat panel. Messages go through:
+        Cache -> Recipe -> Planner -> Regex -> Knowledge -> LLM -> Agent
+
+        NOT execute_python. Never execute_python for chat.
+        """
+        from ..routing.router import TieredRouter
+
+        message = resolve_param(payload, "content")
+        context = payload.get("context", {})
+
+        router = TieredRouter.get_instance()
+        result = router.route(message, context=context)
+
+        return {
+            "response": result.answer,
+            "tier": result.tier.value,
+            "commands": [
+                {"type": cmd.type, "id": cmd.id, "payload": cmd.payload}
+                for cmd in result.commands
+            ] if result.commands else [],
+            "confidence": result.confidence,
+            "cached": result.cached,
+            "latency_ms": result.latency_ms,
         }
 
     # ------------------------------------------------------------------

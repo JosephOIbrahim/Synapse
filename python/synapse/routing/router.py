@@ -125,6 +125,15 @@ class TieredRouter:
     until one handles it with sufficient confidence.
     """
 
+    _instance: Optional["TieredRouter"] = None
+
+    @classmethod
+    def get_instance(cls) -> "TieredRouter":
+        """Return the singleton router instance, creating one if needed."""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
     def __init__(
         self,
         command_fn: Optional[Callable[[SynapseCommand], SynapseResponse]] = None,

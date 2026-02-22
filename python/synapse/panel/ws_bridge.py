@@ -106,6 +106,7 @@ class SynapseWSBridge(QThread):
     context_updated = Signal(dict)
     hda_progress = Signal(dict)
     hda_result = Signal(dict)
+    connection_error = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -122,20 +123,30 @@ class SynapseWSBridge(QThread):
     def run(self):
         """Thread main loop -- maintain WebSocket with auto-reconnect."""
         self._running = True
+        attempts = 0
 
         while self._running:
             try:
                 self._connect_and_listen()
-            except Exception:
-                pass
+                attempts = 0  # Reset on successful connection
+            except Exception as exc:
+                attempts += 1
+                err_msg = str(exc) if str(exc) else type(exc).__name__
+                if attempts <= 3:
+                    self.connection_error.emit(
+                        "Couldn't connect ({n}/3): {e}".format(
+                            n=attempts, e=err_msg,
+                        )
+                    )
 
             self.status_changed.emit(False)
 
             if not self._running:
                 break
 
-            # Wait before reconnecting
-            self.msleep(_RECONNECT_INTERVAL_MS)
+            # Back off: 2s first retry, 3s second, 5s thereafter
+            delay = 2000 if attempts <= 1 else (3000 if attempts <= 2 else 5000)
+            self.msleep(delay)
 
     def _connect_and_listen(self):
         """Establish connection and process messages until disconnect."""
@@ -175,8 +186,9 @@ class SynapseWSBridge(QThread):
         except ImportError:
             # websockets not installed -- try QWebSocket if available
             self._connect_qt_websocket(url)
-        except Exception:
-            pass
+        except Exception as exc:
+            err = str(exc) if str(exc) else type(exc).__name__
+            self.connection_error.emit(err)
         finally:
             self._ws = None
 

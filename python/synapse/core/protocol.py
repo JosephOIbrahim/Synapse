@@ -108,6 +108,9 @@ class CommandType(Enum):
     HDA_PACKAGE = "hda_package"
     HDA_LIST = "hda_list"
 
+    # Chat routing
+    ROUTE_CHAT = "route_chat"
+
     # Undo / Redo
     UNDO = "undo"
     REDO = "redo"

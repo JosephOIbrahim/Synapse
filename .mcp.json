@@ -1,8 +1,12 @@
 {
   "mcpServers": {
     "synapse": {
+      "type": "stdio",
       "command": "python",
-      "args": ["mcp_server.py"]
+      "args": [
+        "mcp_server.py"
+      ],
+      "env": {}
     }
   }
 }
