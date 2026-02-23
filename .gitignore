@@ -38,6 +38,7 @@ Desktop.ini
 .coverage
 htmlcov/
 .tox/
+MagicMock/
 
 # Distribution
 *.tar.gz
