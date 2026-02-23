@@ -574,6 +574,111 @@ class TestSQLitePersistence:
 
 
 # =============================================================================
+# JSONL MEMORYSTORE — BACKGROUND LOAD RACE CONDITION
+# =============================================================================
+
+class TestMemoryStoreBackgroundLoadRace:
+    """Verify _wait_loaded() guard prevents add-during-load race."""
+
+    def test_add_during_background_load_preserved(self, tmp_path):
+        """Memory added while background load is in progress must survive.
+
+        Regression test: without _wait_loaded() in add(), the background
+        loader's final write to _memories can overwrite the newly added entry.
+        """
+        from synapse.memory.store import MemoryStore
+
+        # Pre-seed a memory file so the loader has something to read
+        mem_file = tmp_path / "memory.jsonl"
+        seed = _make_memory("seed-from-disk")
+        mem_file.write_text(seed.to_json() + "\n", encoding="utf-8")
+
+        # Control the loader timing: block _load until we signal
+        load_started = threading.Event()
+        proceed_load = threading.Event()
+
+        original_load = MemoryStore._load
+
+        def slow_load(self_store):
+            load_started.set()          # Signal that load has begun
+            proceed_load.wait(timeout=5) # Wait until test says go
+            original_load(self_store)    # Run the real load
+
+        with patch.object(MemoryStore, "_load", slow_load):
+            store = MemoryStore(tmp_path, background_load=True)
+
+        # Wait for the loader thread to start (but it's blocked)
+        assert load_started.wait(timeout=5), "Loader thread didn't start"
+
+        # add() should block on _wait_loaded() until the load completes.
+        # Run it in a thread so we can unblock the loader from the main thread.
+        added_mem = _make_memory("added-during-load")
+        add_result = [None]
+        add_error = [None]
+
+        def do_add():
+            try:
+                add_result[0] = store.add(added_mem)
+            except Exception as e:
+                add_error[0] = e
+
+        add_thread = threading.Thread(target=do_add)
+        add_thread.start()
+
+        # Give the add thread a moment to reach _wait_loaded() and block
+        time.sleep(0.1)
+
+        # Now unblock the loader — it will finish loading from disk,
+        # then add() will proceed and write the new memory
+        proceed_load.set()
+
+        add_thread.join(timeout=5)
+        assert add_error[0] is None, f"add() raised: {add_error[0]}"
+
+        # The added memory must be retrievable — NOT overwritten by the loader
+        got = store.get(added_mem.id)
+        assert got is not None, "Memory added during background load was lost"
+        assert got.content == "added-during-load"
+
+        # The seed memory from disk should also be present
+        got_seed = store.get(seed.id)
+        assert got_seed is not None, "Seed memory from disk was lost"
+
+        # Cleanup flusher thread
+        store._flusher_running = False
+
+    def test_update_waits_for_load(self, tmp_path):
+        """update() must also wait for background load to complete."""
+        from synapse.memory.store import MemoryStore
+
+        store = MemoryStore(tmp_path, background_load=False)
+        mem = _make_memory("to-update")
+        store.add(mem)
+
+        # Verify update doesn't raise (it now calls _wait_loaded)
+        mem.content = "updated content"
+        store.update(mem)
+
+        got = store.get(mem.id)
+        assert got.content == "updated content"
+
+        store._flusher_running = False
+
+    def test_delete_waits_for_load(self, tmp_path):
+        """delete() must also wait for background load to complete."""
+        from synapse.memory.store import MemoryStore
+
+        store = MemoryStore(tmp_path, background_load=False)
+        mem = _make_memory("to-delete")
+        store.add(mem)
+
+        assert store.delete(mem.id) is True
+        assert store.get(mem.id) is None
+
+        store._flusher_running = False
+
+
+# =============================================================================
 # FLUSH AND SAVE ARE NO-OPS
 # =============================================================================
 

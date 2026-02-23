@@ -766,7 +766,12 @@ class TestTieredRouter:
     # --- Cache behavior ---
 
     def test_cache_hit(self):
-        """Tier 1 results are cached (TTL=1h). Tier 0 is not (TTL=0, already instant)."""
+        """Tier 1 results are cached (TTL=1h). Tier 0 is not (TTL=0, already instant).
+
+        After C1a fix: tier pins take precedence over cache. A pinned input
+        re-executes through its pinned tier rather than returning a cached
+        result. The second call still resolves to FAST tier via the pin path.
+        """
         tmp_dir = tempfile.mkdtemp()
         try:
             _make_rag_dir(tmp_dir)
@@ -778,14 +783,13 @@ class TestTieredRouter:
             )
             router = TieredRouter(config=config)
 
-            # First call → Tier 1 lookup (cached)
+            # First call → Tier 1 lookup (pins to FAST)
             r1 = router.route("karma rendering xpu")
             assert r1.tier == RoutingTier.FAST
             assert not r1.cached
 
-            # Second call → cache hit
+            # Second call → pin takes precedence, re-executes FAST tier
             r2 = router.route("karma rendering xpu")
-            assert r2.cached
             assert r2.tier == RoutingTier.FAST
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -801,6 +805,47 @@ class TestTieredRouter:
         r2 = router.route("ping")
         assert not r1.cached
         assert not r2.cached  # No caching
+
+    def test_tier_pin_takes_precedence_over_cache(self):
+        """He2025: a pinned input must re-execute through its pinned tier,
+        NOT return a stale cache entry from a different tier."""
+        tmp_dir = tempfile.mkdtemp()
+        try:
+            _make_rag_dir(tmp_dir)
+            config = RoutingConfig(
+                rag_root=tmp_dir,
+                enable_tier2=False,
+                enable_tier3=False,
+            )
+            router = TieredRouter(config=config)
+
+            # Step 1: Route a recipe input so it gets pinned to RECIPE tier
+            r1 = router.route("set up three-point lighting at /obj")
+            assert r1.success
+            assert r1.tier == RoutingTier.RECIPE
+
+            # Step 2: Manually inject a DIFFERENT cache entry for the same
+            # canonicalized input, pretending it came from the FAST tier
+            fake_cached = RoutingResult(
+                success=True,
+                tier=RoutingTier.FAST,
+                answer="fake knowledge answer",
+                confidence=0.9,
+            )
+            context_hash = router._hash_context({})
+            router._cache.put("fast", "set up three-point lighting at /obj",
+                              context_hash, fake_cached)
+
+            # Step 3: Route the same input again
+            r2 = router.route("set up three-point lighting at /obj")
+
+            # Step 4: Assert the pinned tier (RECIPE) won, NOT the cached FAST
+            assert r2.tier == RoutingTier.RECIPE, (
+                f"Expected RECIPE (pinned), got {r2.tier.value} -- "
+                f"cache from wrong tier took precedence over pin"
+            )
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
     # --- Cascade behavior ---
 

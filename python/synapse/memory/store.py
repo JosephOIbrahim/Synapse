@@ -368,6 +368,7 @@ class MemoryStore:
         Buffers disk write for background flush (saves 1-5ms per call).
         In-memory state is updated immediately for read consistency.
         """
+        self._wait_loaded()  # Block until background load completes
         with self._lock.write_lock():
             self._memories[memory.id] = memory
             self._index_memory(memory)
@@ -395,6 +396,7 @@ class MemoryStore:
 
     def update(self, memory: Memory):
         """Update an existing memory."""
+        self._wait_loaded()  # Block until background load completes
         with self._lock.write_lock():
             if memory.id in self._memories:
                 memory.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -404,6 +406,7 @@ class MemoryStore:
 
     def delete(self, memory_id: str) -> bool:
         """Delete a memory by ID."""
+        self._wait_loaded()  # Block until background load completes
         with self._lock.write_lock():
             if memory_id in self._memories:
                 del self._memories[memory_id]

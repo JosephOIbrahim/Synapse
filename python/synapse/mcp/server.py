@@ -293,6 +293,10 @@ class MCPServer:
         Tool calls go through hdefereval.executeInMainThreadWithResult()
         because hwebserver @urlHandler callbacks run on worker threads,
         but hou.* calls require the main thread.
+
+        If dispatch_tool returns isError=True, we raise a JsonRpcError so
+        MCP clients receive a proper JSON-RPC error response instead of a
+        success response with error content buried inside.
         """
         tool_name = params.get("name")
         if not tool_name:
@@ -303,12 +307,22 @@ class MCPServer:
 
         try:
             import hdefereval
-            return hdefereval.executeInMainThreadWithResult(
+            result = hdefereval.executeInMainThreadWithResult(
                 dispatch_tool, handler, tool_name, arguments
             )
         except ImportError:
             # Not inside Houdini (testing) — call directly
-            return dispatch_tool(handler, tool_name, arguments)
+            result = dispatch_tool(handler, tool_name, arguments)
+
+        # Propagate tool errors to JSON-RPC layer so MCP clients detect failures
+        if isinstance(result, dict) and result.get("isError"):
+            error_text = "Unknown error"
+            content = result.get("content", [])
+            if content and isinstance(content[0], dict):
+                error_text = content[0].get("text", error_text)
+            raise JsonRpcError(INTERNAL_ERROR, error_text)
+
+        return result
 
     def _handle_ping(self) -> dict:
         """MCP ping — empty result."""

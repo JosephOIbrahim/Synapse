@@ -1891,7 +1891,7 @@ class TopsHandlerMixin:
                 item_count = len(pdg_node.workItems) if pdg_node else 0
 
                 # 6. Start cook
-                job_id = f"render-seq-{deterministic_uuid(f'tops_render_seq_{rop_path}_{frame_range}')[:8]}"
+                job_id = f"render-seq-{deterministic_uuid(f'tops_render_seq_{rop_path}_{start_frame}_{end_frame}')[:8]}"
                 cook_status = "pending"
 
                 if item_count > 0:

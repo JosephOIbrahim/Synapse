@@ -11,6 +11,7 @@ Logs are append-only, tamper-evident (hash chain), and human-readable.
 """
 
 import json
+import logging
 import time
 import hashlib
 import threading
@@ -20,6 +21,8 @@ from typing import Optional, List, Dict, Any, Callable, Tuple
 from enum import Enum
 
 from .determinism import deterministic_uuid
+
+logger = logging.getLogger(__name__)
 
 try:
     from .crypto import CryptoEngine, ENCRYPTION_AVAILABLE
@@ -275,7 +278,12 @@ class AuditLog:
                 try:
                     callback(entry)
                 except Exception:
-                    pass  # Don't let callback errors break logging
+                    logger.error(
+                        "Audit callback %s failed for entry %s",
+                        getattr(callback, "__name__", repr(callback)),
+                        entry.operation_id,
+                        exc_info=True,
+                    )
 
             return entry
 

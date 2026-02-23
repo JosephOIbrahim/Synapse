@@ -12,6 +12,7 @@ Gate Levels:
 """
 
 import json
+import logging
 import time
 import threading
 from pathlib import Path
@@ -21,6 +22,8 @@ from enum import Enum
 
 from .determinism import deterministic_uuid
 from .audit import audit_log, AuditLevel, AuditCategory
+
+logger = logging.getLogger(__name__)
 
 try:
     from .crypto import CryptoEngine, ENCRYPTION_AVAILABLE
@@ -357,7 +360,11 @@ class HumanGate:
                 try:
                     callback(proposal)
                 except Exception:
-                    pass
+                    logger.error(
+                        "Gate callback %s failed",
+                        getattr(callback, "__name__", repr(callback)),
+                        exc_info=True,
+                    )
 
             return proposal
 
@@ -393,7 +400,11 @@ class HumanGate:
                 try:
                     callback(batch)
                 except Exception:
-                    pass
+                    logger.error(
+                        "Gate callback %s failed",
+                        getattr(callback, "__name__", repr(callback)),
+                        exc_info=True,
+                    )
 
         return batch
 
@@ -458,7 +469,11 @@ class HumanGate:
                 try:
                     callback(proposal, decision)
                 except Exception:
-                    pass
+                    logger.error(
+                        "Gate callback %s failed",
+                        getattr(callback, "__name__", repr(callback)),
+                        exc_info=True,
+                    )
 
             return proposal
 

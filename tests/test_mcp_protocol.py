@@ -416,6 +416,50 @@ class TestToolsCall:
         assert "error" in resp
         assert resp["error"]["code"] == protocol_mod.INVALID_PARAMS
 
+    def test_tool_error_propagated_as_jsonrpc_error(self):
+        """C3a: dispatch_tool isError must surface as JSON-RPC error, not success."""
+        # Handler that returns failure from dispatch_tool
+        handler = MagicMock()
+        response = MagicMock()
+        response.success = False
+        response.error = "Couldn't find node /obj/missing"
+        response.data = None
+        handler.handle.return_value = response
+
+        srv = server_mod.MCPServer(handler=handler)
+
+        # Initialize to get a session
+        # Override handler temporarily to let init succeed
+        init_response = MagicMock()
+        init_response.success = True
+        init_response.data = {"stage": "charmander"}
+        handler.handle.return_value = init_response
+
+        init_body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}}, msg_id=1)
+        _, headers = srv.handle_request(init_body)
+        sid = headers["Mcp-Session-Id"]
+
+        # Now set handler to return failure for the tool call
+        fail_response = MagicMock()
+        fail_response.success = False
+        fail_response.error = "Couldn't find node /obj/missing"
+        fail_response.data = None
+        handler.handle.return_value = fail_response
+
+        # Call a tool that will fail
+        call_body = _jsonrpc("tools/call", {
+            "name": "synapse_ping",
+            "arguments": {},
+        }, msg_id=2)
+        resp_body, _ = srv.handle_request(call_body, session_id=sid)
+        resp = _parse_response(resp_body)
+
+        # Must be a JSON-RPC error, NOT a success with isError in content
+        assert "error" in resp, "Tool failure must produce JSON-RPC error response"
+        assert "result" not in resp, "Tool failure must NOT produce a result"
+        assert resp["error"]["code"] == protocol_mod.INTERNAL_ERROR
+        assert "Couldn't find node" in resp["error"]["message"]
+
 
 class TestPing:
     def test_ping_returns_empty(self, server):

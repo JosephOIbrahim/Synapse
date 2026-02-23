@@ -251,7 +251,20 @@ class TieredRouter:
             pinned_tier = self._tier_pins.get(pin_key)
 
         # ---------------------------------------------------------------
-        # 0. Cache check (He2025)
+        # 0. Pinned-tier fast path (He2025: same input → same tier)
+        # ---------------------------------------------------------------
+        if pinned_tier:
+            result = self._try_pinned_tier(
+                pinned_tier, input_text, context, context_hash, start
+            )
+            if result:
+                return result
+            # Stale pin — tier returned None; delete and fall through
+            with self._tier_pins_lock.write_lock():
+                self._tier_pins.pop(pin_key, None)
+
+        # ---------------------------------------------------------------
+        # 0.5. Cache check (He2025)
         # ---------------------------------------------------------------
         if self._config.enable_cache:
             for tier_name in ("recipe", "instant", "fast", "standard", "deep"):
@@ -270,19 +283,6 @@ class TieredRouter:
                     )
                     self._record_metric(RoutingTier.CACHE, result.latency_ms)
                     return result
-
-        # ---------------------------------------------------------------
-        # 0.5. Pinned-tier fast path (He2025: same input → same tier)
-        # ---------------------------------------------------------------
-        if pinned_tier:
-            result = self._try_pinned_tier(
-                pinned_tier, input_text, context, context_hash, start
-            )
-            if result:
-                return result
-            # Stale pin — tier returned None; delete and fall through
-            with self._tier_pins_lock.write_lock():
-                self._tier_pins.pop(pin_key, None)
 
         # ---------------------------------------------------------------
         # 1. Recipe match
@@ -522,10 +522,12 @@ class TieredRouter:
         if pin_key is None:
             pin_key = f"{input_text.strip().lower()}|{context_hash}"
         with self._tier_pins_lock.write_lock():
+            # LRU eviction: remove oldest 10% when at capacity
+            if len(self._tier_pins) >= _MAX_TIER_PINS and pin_key not in self._tier_pins:
+                evict_count = max(1, len(self._tier_pins) // 10)
+                for old_key in list(self._tier_pins.keys())[:evict_count]:
+                    del self._tier_pins[old_key]
             self._tier_pins[pin_key] = tier_value
-            if len(self._tier_pins) > _MAX_TIER_PINS:
-                # Evict oldest (dict is insertion-ordered in Python 3.7+)
-                self._tier_pins.pop(next(iter(self._tier_pins)))
 
     def _try_pinned_tier(
         self,
