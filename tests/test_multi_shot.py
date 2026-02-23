@@ -302,3 +302,200 @@ class TestMultiShotHandler:
         """tops_multi_shot should be registered in the handler registry."""
         handler = SynapseHandler()
         assert handler._registry.has("tops_multi_shot")
+
+    def test_multi_shot_sets_generation_script(self):
+        """Handler should set pythonscript parm on the genericgenerator node."""
+        handler = SynapseHandler()
+
+        mock_topnet = MagicMock()
+        mock_topnet.path.return_value = "/tasks/multi_shot_render"
+        mock_topnet.type.return_value.category.return_value.name.return_value = "TopNet"
+        mock_topnet.children.return_value = [
+            MagicMock(type=MagicMock(return_value=MagicMock(
+                name=MagicMock(return_value="localscheduler")
+            )))
+        ]
+
+        mock_gen = MagicMock()
+        mock_gen.path.return_value = "/tasks/multi_shot_render/shot_generator"
+        mock_pdg_node = MagicMock()
+        mock_pdg_node.workItems = [MagicMock(), MagicMock()]
+        mock_gen.getPDGNode.return_value = mock_pdg_node
+
+        # Track parm calls with a dict of mock parms
+        itemcount_parm = MagicMock()
+        pythonscript_parm = MagicMock()
+
+        def gen_parm_lookup(name):
+            if name == "itemcount":
+                return itemcount_parm
+            if name == "pythonscript":
+                return pythonscript_parm
+            return MagicMock()
+
+        mock_gen.parm.side_effect = gen_parm_lookup
+
+        mock_rop_fetch = MagicMock()
+        mock_rop_fetch.path.return_value = "/tasks/multi_shot_render/render_shots"
+        mock_rop_fetch.parm.return_value = MagicMock()
+
+        mock_partition = MagicMock()
+        mock_partition.path.return_value = "/tasks/multi_shot_render/partition_by_shot"
+        mock_partition.parm.return_value = MagicMock()
+
+        mock_tasks_net = MagicMock()
+        mock_tasks_net.createNode.return_value = mock_topnet
+        mock_topnet.createNode.side_effect = [mock_gen, mock_rop_fetch, mock_partition]
+
+        mock_out = MagicMock()
+        mock_out.children.return_value = []
+
+        def _mock_node(path):
+            if path == "/tasks":
+                return mock_tasks_net
+            if path == "/out":
+                return mock_out
+            return None
+
+        with patch.object(_handlers_hou, "node", side_effect=_mock_node):
+            handler._handle_tops_multi_shot({
+                "shots": [
+                    {"name": "shot_010", "frame_start": 1001, "frame_end": 1048},
+                    {"name": "shot_020", "frame_start": 1001, "frame_end": 1048},
+                ],
+            })
+
+        # pythonscript parm should have been set with a string
+        pythonscript_parm.set.assert_called_once()
+        script_arg = pythonscript_parm.set.call_args[0][0]
+        assert isinstance(script_arg, str)
+        assert len(script_arg) > 0
+
+    def test_multi_shot_gen_script_contains_shot_data(self):
+        """The generation script should embed shot names, frame_start, frame_end, camera."""
+        handler = SynapseHandler()
+
+        mock_topnet = MagicMock()
+        mock_topnet.path.return_value = "/tasks/multi_shot_render"
+        mock_topnet.type.return_value.category.return_value.name.return_value = "TopNet"
+        mock_topnet.children.return_value = [
+            MagicMock(type=MagicMock(return_value=MagicMock(
+                name=MagicMock(return_value="localscheduler")
+            )))
+        ]
+
+        mock_gen = MagicMock()
+        mock_gen.path.return_value = "/tasks/multi_shot_render/shot_generator"
+        mock_pdg_node = MagicMock()
+        mock_pdg_node.workItems = [MagicMock(), MagicMock()]
+        mock_gen.getPDGNode.return_value = mock_pdg_node
+
+        pythonscript_parm = MagicMock()
+
+        def gen_parm_lookup(name):
+            if name == "pythonscript":
+                return pythonscript_parm
+            return MagicMock()
+
+        mock_gen.parm.side_effect = gen_parm_lookup
+
+        mock_rop_fetch = MagicMock()
+        mock_rop_fetch.path.return_value = "/tasks/multi_shot_render/render_shots"
+        mock_rop_fetch.parm.return_value = MagicMock()
+
+        mock_partition = MagicMock()
+        mock_partition.path.return_value = "/tasks/multi_shot_render/partition_by_shot"
+        mock_partition.parm.return_value = MagicMock()
+
+        mock_tasks_net = MagicMock()
+        mock_tasks_net.createNode.return_value = mock_topnet
+        mock_topnet.createNode.side_effect = [mock_gen, mock_rop_fetch, mock_partition]
+
+        mock_out = MagicMock()
+        mock_out.children.return_value = []
+
+        def _mock_node(path):
+            if path == "/tasks":
+                return mock_tasks_net
+            if path == "/out":
+                return mock_out
+            return None
+
+        with patch.object(_handlers_hou, "node", side_effect=_mock_node):
+            handler._handle_tops_multi_shot({
+                "shots": [
+                    {"name": "shot_010", "frame_start": 1001, "frame_end": 1048},
+                    {"name": "shot_020", "frame_start": 1049, "frame_end": 1096},
+                ],
+            })
+
+        # Capture the script string passed to pythonscript.set()
+        pythonscript_parm.set.assert_called_once()
+        gen_script = pythonscript_parm.set.call_args[0][0]
+
+        # Shot names must appear in the embedded JSON
+        assert "shot_010" in gen_script
+        assert "shot_020" in gen_script
+
+        # Script must reference frame_start, frame_end, and camera attributes
+        assert "frame_start" in gen_script
+        assert "frame_end" in gen_script
+        assert "camera" in gen_script
+
+    def test_multi_shot_uses_deterministic_id(self):
+        """Handler should use deterministic_uuid (not uuid.uuid4) for job IDs."""
+        handler = SynapseHandler()
+
+        mock_topnet = MagicMock()
+        mock_topnet.path.return_value = "/tasks/multi_shot_render"
+        mock_topnet.type.return_value.category.return_value.name.return_value = "TopNet"
+        mock_topnet.children.return_value = [
+            MagicMock(type=MagicMock(return_value=MagicMock(
+                name=MagicMock(return_value="localscheduler")
+            )))
+        ]
+
+        mock_gen = MagicMock()
+        mock_gen.path.return_value = "/tasks/multi_shot_render/shot_generator"
+        mock_gen.parm.return_value = MagicMock()
+        mock_pdg_node = MagicMock()
+        mock_pdg_node.workItems = [MagicMock()]
+        mock_gen.getPDGNode.return_value = mock_pdg_node
+
+        mock_rop_fetch = MagicMock()
+        mock_rop_fetch.path.return_value = "/tasks/multi_shot_render/render_shots"
+        mock_rop_fetch.parm.return_value = MagicMock()
+
+        mock_partition = MagicMock()
+        mock_partition.path.return_value = "/tasks/multi_shot_render/partition_by_shot"
+        mock_partition.parm.return_value = MagicMock()
+
+        mock_tasks_net = MagicMock()
+        mock_tasks_net.createNode.return_value = mock_topnet
+        mock_topnet.createNode.side_effect = [mock_gen, mock_rop_fetch, mock_partition]
+
+        mock_out = MagicMock()
+        mock_out.children.return_value = []
+
+        def _mock_node(path):
+            if path == "/tasks":
+                return mock_tasks_net
+            if path == "/out":
+                return mock_out
+            return None
+
+        # Patch deterministic_uuid in the handlers_tops module
+        _tops_module = sys.modules.get("synapse.server.handlers_tops")
+        det_target = _tops_module if _tops_module else sys.modules["synapse.core.determinism"]
+
+        with patch.object(_handlers_hou, "node", side_effect=_mock_node), \
+             patch.object(det_target, "deterministic_uuid", return_value="abc12345def67890") as mock_det:
+            result = handler._handle_tops_multi_shot({
+                "shots": [{"name": "shot_010"}],
+            })
+
+        # deterministic_uuid must have been called
+        mock_det.assert_called()
+        # The job_id should incorporate the deterministic UUID
+        assert result["job_id"].startswith("multi-shot-")
+        assert "abc12345" in result["job_id"]

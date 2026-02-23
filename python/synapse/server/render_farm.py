@@ -121,6 +121,10 @@ class RenderFarmOrchestrator:
     def cancel(self):
         """Request cancellation of the current render sequence."""
         self._cancelled = True
+        # Cancel any pending validation future so it doesn't block shutdown
+        pending = getattr(self, "_pending_future", None)
+        if pending is not None and not pending.done():
+            pending.cancel()
 
     @property
     def is_running(self) -> bool:
@@ -342,6 +346,80 @@ class RenderFarmOrchestrator:
         return result
 
     # -----------------------------------------------------------------
+    # Overlap helpers (GPU renders while CPU validates previous frame)
+    # -----------------------------------------------------------------
+
+    def _render_frame_only(
+        self,
+        rop: str,
+        frame: int,
+    ) -> FrameResult:
+        """Render a single frame without validation.
+
+        Returns a FrameResult with render_time and image_path populated.
+        Validation fields are left at defaults (caller submits to CPU pool).
+        """
+        result = FrameResult(frame=frame, success=False)
+        t0 = time.time()
+        try:
+            render_resp = self._cb.render_frame({
+                "node": rop,
+                "frame": frame,
+            })
+            result.render_time = round_float(time.time() - t0)
+            result.image_path = render_resp.get("image_path", "")
+        except Exception as e:
+            result.render_time = round_float(time.time() - t0)
+            result.error = str(e)
+            return result
+
+        if not result.image_path:
+            result.error = "Render produced no output image"
+            return result
+
+        # Mark success provisionally — validation may revise this
+        result.success = True
+        return result
+
+    def _validate_frame_only(
+        self,
+        frame_result: FrameResult,
+    ) -> FrameResult:
+        """Validate a rendered frame on the CPU pool. Thread-safe.
+
+        Mutates and returns the same FrameResult with validation fields
+        populated. If validation fails, sets success=False and records
+        the failed checks in issues.
+        """
+        if not frame_result.image_path:
+            return frame_result
+
+        t1 = time.time()
+        try:
+            val_resp = self._cb.validate_frame({
+                "image_path": frame_result.image_path,
+            })
+            frame_result.validate_time = round_float(time.time() - t1)
+        except Exception as e:
+            frame_result.validate_time = round_float(time.time() - t1)
+            # Validation error is not a render failure
+            logger.warning("Validation error on frame %d: %s", frame_result.frame, e)
+            return frame_result
+
+        if val_resp.get("valid", True):
+            return frame_result
+
+        # Validation failed — record issues
+        failed_checks = [
+            name for name, check in sorted(val_resp.get("checks", {}).items())
+            if not check.get("passed", True)
+        ]
+        frame_result.issues.extend(failed_checks)
+        frame_result.success = False
+        frame_result.error = f"Validation failed: {', '.join(failed_checks)}"
+        return frame_result
+
+    # -----------------------------------------------------------------
     # Full sequence
     # -----------------------------------------------------------------
 
@@ -402,17 +480,76 @@ class RenderFarmOrchestrator:
 
         report.settings_used = dict(initial_settings)
 
-        # Phase 1: Render each frame
+        # Phase 1: Render each frame with GPU/CPU overlap
+        # While the GPU renders frame N+1, the CPU pool validates frame N.
         pending_validation: Optional[Future] = None
+        self._pending_future = None  # expose for cancel()
         milestone_thresholds = {
             int(total * 0.25): "25%",
             int(total * 0.50): "50%",
             int(total * 0.75): "75%",
         }
 
+        def _collect_pending() -> None:
+            """Collect the previous frame's async validation result."""
+            nonlocal pending_validation
+            if pending_validation is None:
+                return
+            try:
+                val_result = pending_validation.result()
+            except Exception:
+                # Future was cancelled or raised — result already in report
+                pending_validation = None
+                self._pending_future = None
+                return
+
+            report.frame_results.append(val_result)
+            report.total_render_time += val_result.render_time
+            if val_result.success:
+                report.successful_frames += 1
+            else:
+                report.failed_frames += 1
+                # If validation failed and auto-fix is enabled, run the
+                # full render_frame_validated path for this frame (retries
+                # with settings adjustment).  Replace the fast-path result.
+                if self._auto_fix and val_result.issues and not self._cancelled:
+                    report.frame_results.pop()  # remove fast-path result
+                    report.total_render_time -= val_result.render_time
+                    report.failed_frames -= 1
+                    retry_result = self.render_frame_validated(
+                        rop=rop,
+                        frame=val_result.frame,
+                        current_settings=initial_settings,
+                    )
+                    report.frame_results.append(retry_result)
+                    report.total_render_time += retry_result.render_time
+                    if retry_result.success:
+                        report.successful_frames += 1
+                    else:
+                        report.failed_frames += 1
+                        if retry_result.retries >= self._max_retries:
+                            notify_persistent_failure(
+                                retry_result.frame,
+                                retry_result.issues[0] if retry_result.issues else "unknown",
+                                retry_result.retries,
+                            )
+                elif val_result.issues:
+                    # auto_fix disabled or cancelled — notify if persistent
+                    if val_result.retries >= self._max_retries:
+                        notify_persistent_failure(
+                            val_result.frame,
+                            val_result.issues[0] if val_result.issues else "unknown",
+                            val_result.retries,
+                        )
+            pending_validation = None
+            self._pending_future = None
+
         for idx, frame in enumerate(frames):
             if self._cancelled:
                 break
+
+            # Collect previous frame's validation (blocks until done)
+            _collect_pending()
 
             # Broadcast progress
             if self._cb.broadcast:
@@ -425,27 +562,20 @@ class RenderFarmOrchestrator:
                 except Exception:
                     pass
 
-            # Render and validate this frame
-            frame_result = self.render_frame_validated(
-                rop=rop,
-                frame=frame,
-                current_settings=initial_settings,
-            )
+            # Render this frame on the main thread (GPU-blocking)
+            render_result = self._render_frame_only(rop=rop, frame=frame)
 
-            report.frame_results.append(frame_result)
-            report.total_render_time += frame_result.render_time
-
-            if frame_result.success:
-                report.successful_frames += 1
+            if render_result.success and render_result.image_path:
+                # Submit validation to CPU pool (overlaps with next render)
+                pending_validation = self._cpu_pool.submit(
+                    self._validate_frame_only, render_result,
+                )
+                self._pending_future = pending_validation
             else:
+                # Render itself failed — record immediately, no validation
+                report.frame_results.append(render_result)
+                report.total_render_time += render_result.render_time
                 report.failed_frames += 1
-                # Notify on persistent failure
-                if frame_result.retries >= self._max_retries:
-                    notify_persistent_failure(
-                        frame,
-                        frame_result.issues[0] if frame_result.issues else "unknown",
-                        frame_result.retries,
-                    )
 
             # Milestone notifications
             if self._notify_milestones and (idx + 1) in milestone_thresholds:
@@ -460,6 +590,9 @@ class RenderFarmOrchestrator:
                         ))
                     except Exception:
                         pass
+
+        # Drain last pending validation
+        _collect_pending()
 
         # Phase 2: Finalize
         report.total_wall_time = round_float(time.time() - wall_start)
@@ -511,4 +644,8 @@ class RenderFarmOrchestrator:
 
     def shutdown(self):
         """Clean up the CPU thread pool."""
+        self._cancelled = True
+        pending = getattr(self, "_pending_future", None)
+        if pending is not None and not pending.done():
+            pending.cancel()
         self._cpu_pool.shutdown(wait=False)

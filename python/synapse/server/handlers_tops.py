@@ -8,7 +8,6 @@ for the SynapseHandler class.
 import os
 import time
 import threading
-import uuid
 from typing import Any, Dict, List, Optional
 
 try:
@@ -20,7 +19,7 @@ except ImportError:
 import logging
 
 from ..core.aliases import resolve_param, resolve_param_with_default
-from ..core.determinism import round_float, kahan_sum
+from ..core.determinism import round_float, kahan_sum, deterministic_uuid
 from .handler_helpers import _HOUDINI_UNAVAILABLE
 
 logger = logging.getLogger("synapse.handlers.tops")
@@ -1493,7 +1492,7 @@ class TopsHandlerMixin:
 
             import pdg as _pdg
 
-            mid = f"monitor-{uuid.uuid4().hex[:8]}"
+            mid = f"monitor-{deterministic_uuid(f'tops_monitor_{node_path}')[:8]}"
             events_list: List[Dict] = []
             start_time = time.monotonic()
             total_items = [0]  # mutable for closure
@@ -1787,7 +1786,7 @@ class TopsHandlerMixin:
                 item_count = len(pdg_node.workItems) if pdg_node else 0
 
                 # 6. Start cook
-                job_id = f"render-seq-{uuid.uuid4().hex[:8]}"
+                job_id = f"render-seq-{deterministic_uuid(f'tops_render_seq_{rop_path}_{frame_range}')[:8]}"
                 cook_status = "pending"
 
                 if item_count > 0:
@@ -1928,6 +1927,11 @@ class TopsHandlerMixin:
             if script_parm:
                 script_parm.set(len(shots))
 
+            # Apply the generation script for shot-specific attributes
+            gen_script_parm = gen_node.parm("pythonscript")
+            if gen_script_parm:
+                gen_script_parm.set(gen_script)
+
             # 2. Create ropfetch for rendering
             rop_fetch = target_topnet.createNode("ropfetch", "render_shots")
             rop_fetch.setInput(0, gen_node)
@@ -1975,7 +1979,7 @@ class TopsHandlerMixin:
             item_count = len(pdg_node.workItems) if pdg_node else 0
 
             # 6. Start cook if items were generated
-            job_id = f"multi-shot-{uuid.uuid4().hex[:8]}"
+            job_id = f"multi-shot-{deterministic_uuid(f'tops_multi_shot_{len(shots)}')[:8]}"
             cook_status = "pending"
 
             last_node = encode_node or partition

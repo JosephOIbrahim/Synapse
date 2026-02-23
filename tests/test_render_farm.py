@@ -369,3 +369,159 @@ class TestShutdown:
         farm.shutdown()
         # Should not raise even if called multiple times
         farm.shutdown()
+
+
+# ---------------------------------------------------------------------------
+# Tests: GPU/CPU render overlap pipeline
+# ---------------------------------------------------------------------------
+
+import threading
+
+
+class TestGpuCpuOverlap:
+    """Tests for the GPU/CPU pipeline overlap in render_sequence.
+
+    The overlap design: while the GPU renders frame N+1, the CPU pool
+    validates frame N.  These tests verify the _cpu_pool.submit path,
+    result collection, the post-loop drain, and cancellation mid-sequence.
+    """
+
+    @patch("synapse.server.render_farm.notify_batch_complete")
+    def test_render_sequence_submits_to_cpu_pool(self, mock_notify, tmp_path):
+        """Verify that render_sequence delegates validation to the CPU pool."""
+        mock_notify.return_value = {"report_path": "/tmp/report.md"}
+
+        cb = _make_callbacks(
+            render_resp={"image_path": "/tmp/test.exr", "rop": "/out/karma1"},
+            validate_resp={"valid": True, "checks": {}},
+            settings_resp={"settings": {}},
+        )
+        farm = RenderFarmOrchestrator(
+            callbacks=cb, max_retries=1, auto_fix=False,
+            report_dir=str(tmp_path),
+        )
+
+        # Patch _cpu_pool.submit to spy on it while still delegating
+        original_submit = farm._cpu_pool.submit
+        submit_calls = []
+
+        def tracked_submit(fn, *args, **kwargs):
+            submit_calls.append((fn, args, kwargs))
+            return original_submit(fn, *args, **kwargs)
+
+        with patch.object(farm._cpu_pool, "submit", side_effect=tracked_submit):
+            report = farm.render_sequence(rop="/out/karma1", frame_range=(1, 3))
+
+        # _cpu_pool.submit should have been called once per successfully rendered frame
+        assert len(submit_calls) == 3, (
+            f"Expected 3 CPU pool submissions (one per frame), got {len(submit_calls)}"
+        )
+        # All submissions should target _validate_frame_only
+        for fn, args, kwargs in submit_calls:
+            assert fn == farm._validate_frame_only
+
+        # validate_frame callback should have been invoked (from within the pool)
+        assert cb.validate_frame.call_count == 3
+
+    @patch("synapse.server.render_farm.notify_batch_complete")
+    def test_render_sequence_collects_all_frames(self, mock_notify, tmp_path):
+        """For a 3-frame sequence, verify the report has 3 frame_results entries."""
+        mock_notify.return_value = {}
+
+        cb = _make_callbacks(
+            render_resp={"image_path": "/tmp/test.exr", "rop": "/out/karma1"},
+            validate_resp={"valid": True, "checks": {}},
+            settings_resp={"settings": {}},
+        )
+        farm = RenderFarmOrchestrator(
+            callbacks=cb, max_retries=1, auto_fix=False,
+            report_dir=str(tmp_path),
+        )
+        report = farm.render_sequence(rop="/out/karma1", frame_range=(1, 3))
+
+        assert len(report.frame_results) == 3, (
+            f"Expected 3 frame_results, got {len(report.frame_results)}"
+        )
+        assert report.successful_frames == 3
+        assert report.failed_frames == 0
+        # Verify each frame number is present
+        result_frames = sorted(r.frame for r in report.frame_results)
+        assert result_frames == [1, 2, 3]
+
+    @patch("synapse.server.render_farm.notify_batch_complete")
+    def test_render_sequence_drain_pending_validation(self, mock_notify, tmp_path):
+        """For a 1-frame sequence, verify the post-loop drain collects it."""
+        mock_notify.return_value = {}
+
+        cb = _make_callbacks(
+            render_resp={"image_path": "/tmp/test.exr", "rop": "/out/karma1"},
+            validate_resp={"valid": True, "checks": {}},
+            settings_resp={"settings": {}},
+        )
+        farm = RenderFarmOrchestrator(
+            callbacks=cb, max_retries=1, auto_fix=False,
+            report_dir=str(tmp_path),
+        )
+        report = farm.render_sequence(rop="/out/karma1", frame_range=(1, 1))
+
+        # Single frame: rendered in loop iteration 0, validation submitted,
+        # loop ends, _collect_pending() called after loop drains it.
+        assert len(report.frame_results) == 1, (
+            f"Expected 1 frame_result from drain, got {len(report.frame_results)}"
+        )
+        assert report.frame_results[0].frame == 1
+        assert report.frame_results[0].success is True
+        assert report.successful_frames == 1
+        assert report.failed_frames == 0
+
+    @patch("synapse.server.render_farm.notify_batch_complete")
+    def test_cancel_during_render_sequence(self, mock_notify, tmp_path):
+        """Cancel from another thread after the first frame renders."""
+        mock_notify.return_value = {}
+
+        cb = _make_callbacks(
+            render_resp={"image_path": "/tmp/test.exr", "rop": "/out/karma1"},
+            validate_resp={"valid": True, "checks": {}},
+            settings_resp={"settings": {}},
+        )
+        farm = RenderFarmOrchestrator(
+            callbacks=cb, max_retries=1, auto_fix=False,
+            report_dir=str(tmp_path),
+        )
+
+        render_count = [0]
+        cancel_event = threading.Event()
+
+        def render_and_cancel(payload):
+            render_count[0] += 1
+            if render_count[0] == 1:
+                # Signal cancellation after first frame renders
+                cancel_event.set()
+            # Small delay to let cancel propagate on subsequent frames
+            if render_count[0] > 1:
+                time.sleep(0.01)
+            return {"image_path": "/tmp/test.exr", "rop": "/out/karma1"}
+
+        cb.render_frame.side_effect = render_and_cancel
+
+        def cancel_worker():
+            cancel_event.wait(timeout=5.0)
+            farm.cancel()
+
+        cancel_thread = threading.Thread(target=cancel_worker, daemon=True)
+        cancel_thread.start()
+
+        # Large range so cancellation has room to take effect
+        report = farm.render_sequence(rop="/out/karma1", frame_range=(1, 100))
+
+        cancel_thread.join(timeout=5.0)
+
+        # Should have fewer frames than the full range
+        assert len(report.frame_results) < 100, (
+            f"Expected fewer than 100 frames after cancel, got {len(report.frame_results)}"
+        )
+        # At least the first frame should have rendered
+        assert len(report.frame_results) >= 1
+        # No exceptions should have leaked — the report is well-formed
+        assert report.total_frames == 100
+        assert report.total_wall_time >= 0

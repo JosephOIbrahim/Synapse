@@ -82,6 +82,7 @@ class UsdHandlerMixin:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         node_path = resolve_param(payload, "node", required=False)
+        limit = int(resolve_param_with_default(payload, "limit", 500))
 
         from .main_thread import run_on_main
 
@@ -109,20 +110,73 @@ class UsdHandlerMixin:
                     "it may need to cook first, or check the LOP network is set up"
                 )
 
-            root = stage.GetPseudoRoot()
+            # Import USD types inside _on_main (only available in Houdini context)
+            try:
+                from pxr import UsdGeom, UsdLux, UsdShade
+                _has_pxr = True
+            except ImportError:
+                _has_pxr = False
+
+            cameras = []
+            lights = []
+            renderable_prims = 0
+            unassigned_material_prims = []
+            unresolved_references = []
             prims = []
-            for prim in root.GetAllChildren():
-                prims.append({
-                    "path": str(prim.GetPath()),
-                    "type": str(prim.GetTypeName()),
-                })
-                if len(prims) >= 100:
+
+            for prim in stage.Traverse():
+                if len(prims) >= limit:
                     break
+                path_str = str(prim.GetPath())
+                type_name = str(prim.GetTypeName())
+                prims.append({"path": path_str, "type": type_name})
+
+                if _has_pxr:
+                    # Cameras
+                    if prim.IsA(UsdGeom.Camera):
+                        cameras.append(path_str)
+                    # Lights -- check schema and fallback to type name
+                    if prim.IsA(UsdLux.LightAPI) or "Light" in type_name:
+                        lights.append(path_str)
+                    # Renderable geometry
+                    if prim.IsA(UsdGeom.Gprim):
+                        renderable_prims += 1
+                        # Check material binding
+                        try:
+                            binding_api = UsdShade.MaterialBindingAPI(prim)
+                            mat, _ = binding_api.ComputeBoundMaterial()
+                            if not mat:
+                                unassigned_material_prims.append(path_str)
+                        except Exception:
+                            pass
+                    # Unresolved references
+                    try:
+                        if prim.HasAuthoredReferences():
+                            composer = prim.GetPrimStack()
+                            for spec in composer:
+                                for ref in spec.referenceList.prependedItems:
+                                    if ref.assetPath:
+                                        resolved = stage.ResolveIdentifierToEditTarget(
+                                            ref.assetPath
+                                        )
+                                        if not resolved:
+                                            unresolved_references.append({
+                                                "prim": path_str,
+                                                "asset": str(ref.assetPath),
+                                            })
+                    except Exception:
+                        pass
 
             return {
                 "node": node.path(),
                 "prim_count": len(prims),
                 "prims": prims,
+                "cameras": sorted(cameras),
+                "lights": sorted(lights),
+                "renderable_prims": renderable_prims,
+                "unassigned_material_prims": sorted(unassigned_material_prims)[:50],
+                "unresolved_references": unresolved_references[:20],
+                "truncated": len(prims) >= limit,
             }
 
         return run_on_main(_on_main)
@@ -185,29 +239,45 @@ class UsdHandlerMixin:
         def _on_main():
             node = self._resolve_lop_node(node_path_arg)
 
-            parent = node.parent()
-            safe_name = f"set_{attr_name.replace(':', '_').replace('.', '_')}"
-            py_lop = parent.createNode("pythonscript", safe_name)
-            py_lop.setInput(0, node)
-            py_lop.moveToGoodPosition()
+            with hou.undos.group("SYNAPSE: set_usd_attribute"):
+                parent = node.parent()
+                safe_name = f"set_{attr_name.replace(':', '_').replace('.', '_')}"
+                py_lop = parent.createNode("pythonscript", safe_name)
+                py_lop.setInput(0, node)
+                py_lop.moveToGoodPosition()
 
-            code = (
-                "from pxr import Sdf\n"
-                "stage = hou.pwd().editableStage()\n"
-                f"prim = stage.GetPrimAtPath({repr(prim_path)})\n"
-                "if prim:\n"
-                f"    attr = prim.GetAttribute({repr(attr_name)})\n"
-                "    if attr:\n"
-                f"        attr.Set({repr(value)})\n"
-            )
-            py_lop.parm("python").set(code)
+                code = (
+                    "from pxr import Sdf\n"
+                    "stage = hou.pwd().editableStage()\n"
+                    f"prim = stage.GetPrimAtPath({repr(prim_path)})\n"
+                    "if prim:\n"
+                    f"    attr = prim.GetAttribute({repr(attr_name)})\n"
+                    "    if attr:\n"
+                    f"        attr.Set({repr(value)})\n"
+                )
+                py_lop.parm("python").set(code)
 
-            return {
-                "created_node": py_lop.path(),
-                "prim_path": prim_path,
-                "attribute": attr_name,
-                "value": value,
-            }
+                # Cook and verify -- catch errors now instead of silent cook-time failure
+                try:
+                    py_lop.cook(force=True)
+                except hou.OperationFailed as e:
+                    error_msg = str(e)
+                    return {
+                        "created_node": py_lop.path(),
+                        "prim_path": prim_path,
+                        "cook_error": (
+                            f"The node was created but hit a snag when cooking -- {error_msg}. "
+                            "The pythonscript node is still in the network so you can inspect it. "
+                            "Check that the prim path exists and the attribute types match."
+                        ),
+                    }
+
+                return {
+                    "created_node": py_lop.path(),
+                    "prim_path": prim_path,
+                    "attribute": attr_name,
+                    "value": value,
+                }
 
         return run_on_main(_on_main)
 
@@ -222,23 +292,39 @@ class UsdHandlerMixin:
         def _on_main():
             node = self._resolve_lop_node(node_path_arg)
 
-            parent = node.parent()
-            safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
-            py_lop = parent.createNode("pythonscript", f"create_{safe_name}")
-            py_lop.setInput(0, node)
-            py_lop.moveToGoodPosition()
+            with hou.undos.group("SYNAPSE: create_usd_prim"):
+                parent = node.parent()
+                safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
+                py_lop = parent.createNode("pythonscript", f"create_{safe_name}")
+                py_lop.setInput(0, node)
+                py_lop.moveToGoodPosition()
 
-            code = (
-                "stage = hou.pwd().editableStage()\n"
-                f"stage.DefinePrim({repr(prim_path)}, {repr(prim_type)})\n"
-            )
-            py_lop.parm("python").set(code)
+                code = (
+                    "stage = hou.pwd().editableStage()\n"
+                    f"stage.DefinePrim({repr(prim_path)}, {repr(prim_type)})\n"
+                )
+                py_lop.parm("python").set(code)
 
-            return {
-                "created_node": py_lop.path(),
-                "prim_path": prim_path,
-                "prim_type": prim_type,
-            }
+                # Cook and verify -- catch errors now instead of silent cook-time failure
+                try:
+                    py_lop.cook(force=True)
+                except hou.OperationFailed as e:
+                    error_msg = str(e)
+                    return {
+                        "created_node": py_lop.path(),
+                        "prim_path": prim_path,
+                        "cook_error": (
+                            f"The node was created but hit a snag when cooking -- {error_msg}. "
+                            "The pythonscript node is still in the network so you can inspect it. "
+                            "Check that the prim path exists and the attribute types match."
+                        ),
+                    }
+
+                return {
+                    "created_node": py_lop.path(),
+                    "prim_path": prim_path,
+                    "prim_type": prim_type,
+                }
 
         return run_on_main(_on_main)
 
@@ -271,33 +357,49 @@ class UsdHandlerMixin:
         def _on_main():
             node = self._resolve_lop_node(node_path_arg)
 
-            parent = node.parent()
-            safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
-            py_lop = parent.createNode("pythonscript", f"modify_{safe_name}")
-            py_lop.setInput(0, node)
-            py_lop.moveToGoodPosition()
+            with hou.undos.group("SYNAPSE: modify_usd_prim"):
+                parent = node.parent()
+                safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
+                py_lop = parent.createNode("pythonscript", f"modify_{safe_name}")
+                py_lop.setInput(0, node)
+                py_lop.moveToGoodPosition()
 
-            lines = [
-                "from pxr import Usd, UsdGeom, Sdf, Kind",
-                "stage = hou.pwd().editableStage()",
-                f"prim = stage.GetPrimAtPath({repr(prim_path)})",
-                "if prim:",
-            ]
-            if kind is not None:
-                lines.append(f"    Usd.ModelAPI(prim).SetKind({repr(kind)})")
-            if purpose is not None:
-                lines.append(f"    UsdGeom.Imageable(prim).GetPurposeAttr().Set({repr(purpose)})")
-            if active is not None:
-                lines.append(f"    prim.SetActive({active})")
+                lines = [
+                    "from pxr import Usd, UsdGeom, Sdf, Kind",
+                    "stage = hou.pwd().editableStage()",
+                    f"prim = stage.GetPrimAtPath({repr(prim_path)})",
+                    "if prim:",
+                ]
+                if kind is not None:
+                    lines.append(f"    Usd.ModelAPI(prim).SetKind({repr(kind)})")
+                if purpose is not None:
+                    lines.append(f"    UsdGeom.Imageable(prim).GetPurposeAttr().Set({repr(purpose)})")
+                if active is not None:
+                    lines.append(f"    prim.SetActive({active})")
 
-            code = "\n".join(lines)
-            py_lop.parm("python").set(code)
+                code = "\n".join(lines)
+                py_lop.parm("python").set(code)
 
-            return {
-                "created_node": py_lop.path(),
-                "prim_path": prim_path,
-                "modifications": mods,
-            }
+                # Cook and verify -- catch errors now instead of silent cook-time failure
+                try:
+                    py_lop.cook(force=True)
+                except hou.OperationFailed as e:
+                    error_msg = str(e)
+                    return {
+                        "created_node": py_lop.path(),
+                        "prim_path": prim_path,
+                        "cook_error": (
+                            f"The node was created but hit a snag when cooking -- {error_msg}. "
+                            "The pythonscript node is still in the network so you can inspect it. "
+                            "Check that the prim path and modifications are valid."
+                        ),
+                    }
+
+                return {
+                    "created_node": py_lop.path(),
+                    "prim_path": prim_path,
+                    "modifications": mods,
+                }
 
         return run_on_main(_on_main)
 
@@ -340,39 +442,40 @@ class UsdHandlerMixin:
                     "verify this path exists (default is /stage)"
                 )
 
-            if mode == "sublayer":
-                node = parent_node.createNode("sublayer", "sublayer_import")
-                node.parm("filepath1").set(file_path)
-            else:
-                # Both 'reference' and 'payload' use the reference LOP node
-                node = parent_node.createNode("reference", "ref_import")
-                node.parm("filepath1").set(file_path)
-                if prim_path != "/":
-                    node.parm("primpath").set(prim_path)
+            with hou.undos.group("SYNAPSE: reference_usd"):
+                if mode == "sublayer":
+                    node = parent_node.createNode("sublayer", "sublayer_import")
+                    node.parm("filepath1").set(file_path)
+                else:
+                    # Both 'reference' and 'payload' use the reference LOP node
+                    node = parent_node.createNode("reference", "ref_import")
+                    node.parm("filepath1").set(file_path)
+                    if prim_path != "/":
+                        node.parm("primpath").set(prim_path)
 
-                # Set reference type: payload uses deferred loading
-                if mode == "payload":
-                    reftype_parm = node.parm("reftype")
-                    if reftype_parm is not None:
-                        reftype_parm.set("payload")
+                    # Set reference type: payload uses deferred loading
+                    if mode == "payload":
+                        reftype_parm = node.parm("reftype")
+                        if reftype_parm is not None:
+                            reftype_parm.set("payload")
 
-            result = {
-                "node": node.path(),
-                "file": file_path,
-                "mode": mode,
-                "prim_path": prim_path,
-            }
+                result = {
+                    "node": node.path(),
+                    "file": file_path,
+                    "mode": mode,
+                    "prim_path": prim_path,
+                }
 
-            # Add Karma visibility advisory for non-sublayer modes
-            if mode in ("reference", "payload"):
-                result["advisory"] = (
-                    "For Karma rendering, 'sublayer' is the most reliable import "
-                    "mode. If this asset isn't visible in renders, try switching "
-                    "to mode='sublayer' or ensure the imported prims have "
-                    "purpose='default' and kind='component' metadata."
-                )
+                # Add Karma visibility advisory for non-sublayer modes
+                if mode in ("reference", "payload"):
+                    result["advisory"] = (
+                        "For Karma rendering, 'sublayer' is the most reliable import "
+                        "mode. If this asset isn't visible in renders, try switching "
+                        "to mode='sublayer' or ensure the imported prims have "
+                        "purpose='default' and kind='component' metadata."
+                    )
 
-            return result
+                return result
 
         return run_on_main(_on_main)
 
@@ -566,35 +669,51 @@ class UsdHandlerMixin:
                         "For 'create' action, pass 'variants' as a list of "
                         "variant names (e.g. ['red', 'blue', 'green'])"
                     )
-                parent = node.parent()
-                safe_name = variant_set_name.replace(" ", "_").replace("/", "_")
-                py_lop = parent.createNode("pythonscript", f"vset_{safe_name}")
-                py_lop.setInput(0, node)
-                py_lop.moveToGoodPosition()
+                with hou.undos.group("SYNAPSE: manage_variant_set"):
+                    parent = node.parent()
+                    safe_name = variant_set_name.replace(" ", "_").replace("/", "_")
+                    py_lop = parent.createNode("pythonscript", f"vset_{safe_name}")
+                    py_lop.setInput(0, node)
+                    py_lop.moveToGoodPosition()
 
-                lines = [
-                    "from pxr import Usd, Sdf",
-                    "stage = hou.pwd().editableStage()",
-                    f"prim = stage.GetPrimAtPath({repr(prim_path)})",
-                    "if prim:",
-                    f"    vset = prim.GetVariantSets().AddVariantSet({repr(variant_set_name)})",
-                ]
-                for v in variants:
-                    lines.append(f"    vset.AddVariant({repr(v)})")
-                # Select the first variant by default
-                if variants:
-                    lines.append(f"    vset.SetVariantSelection({repr(variants[0])})")
+                    lines = [
+                        "from pxr import Usd, Sdf",
+                        "stage = hou.pwd().editableStage()",
+                        f"prim = stage.GetPrimAtPath({repr(prim_path)})",
+                        "if prim:",
+                        f"    vset = prim.GetVariantSets().AddVariantSet({repr(variant_set_name)})",
+                    ]
+                    for v in variants:
+                        lines.append(f"    vset.AddVariant({repr(v)})")
+                    # Select the first variant by default
+                    if variants:
+                        lines.append(f"    vset.SetVariantSelection({repr(variants[0])})")
 
-                code = "\n".join(lines)
-                py_lop.parm("python").set(code)
+                    code = "\n".join(lines)
+                    py_lop.parm("python").set(code)
 
-                return {
-                    "node": py_lop.path(),
-                    "prim_path": prim_path,
-                    "variant_set": variant_set_name,
-                    "variants": variants,
-                    "default_selection": variants[0] if variants else None,
-                }
+                    # Cook and verify -- catch errors now instead of silent cook-time failure
+                    try:
+                        py_lop.cook(force=True)
+                    except hou.OperationFailed as e:
+                        error_msg = str(e)
+                        return {
+                            "node": py_lop.path(),
+                            "prim_path": prim_path,
+                            "cook_error": (
+                                f"The node was created but hit a snag when cooking -- {error_msg}. "
+                                "The pythonscript node is still in the network so you can inspect it. "
+                                "Check that the prim path exists and the variant set is valid."
+                            ),
+                        }
+
+                    return {
+                        "node": py_lop.path(),
+                        "prim_path": prim_path,
+                        "variant_set": variant_set_name,
+                        "variants": variants,
+                        "default_selection": variants[0] if variants else None,
+                    }
 
             else:  # select
                 if not variant:
@@ -701,44 +820,45 @@ class UsdHandlerMixin:
                         "For 'create' action, pass 'paths' as a list of "
                         "prim paths to include (e.g. ['/World/geo/mesh1'])"
                     )
-                parent = node.parent()
-                safe_name = collection_name.replace(" ", "_").replace("/", "_")
-                py_lop = parent.createNode("pythonscript", f"coll_{safe_name}")
-                py_lop.setInput(0, node)
-                py_lop.moveToGoodPosition()
+                with hou.undos.group("SYNAPSE: manage_collection"):
+                    parent = node.parent()
+                    safe_name = collection_name.replace(" ", "_").replace("/", "_")
+                    py_lop = parent.createNode("pythonscript", f"coll_{safe_name}")
+                    py_lop.setInput(0, node)
+                    py_lop.moveToGoodPosition()
 
-                path_reprs = ", ".join(repr(p) for p in paths)
-                lines = [
-                    "from pxr import Usd, Sdf",
-                    "stage = hou.pwd().editableStage()",
-                    f"prim = stage.GetPrimAtPath({repr(prim_path)})",
-                    "if prim:",
-                    f"    coll = Usd.CollectionAPI.Apply(prim, {repr(collection_name)})",
-                    f"    coll.GetExpansionRuleAttr().Set({repr(expansion_rule)})",
-                    f"    includes = coll.GetIncludesRel()",
-                    f"    for p in [{path_reprs}]:",
-                    f"        includes.AddTarget(Sdf.Path(p))",
-                ]
+                    path_reprs = ", ".join(repr(p) for p in paths)
+                    lines = [
+                        "from pxr import Usd, Sdf",
+                        "stage = hou.pwd().editableStage()",
+                        f"prim = stage.GetPrimAtPath({repr(prim_path)})",
+                        "if prim:",
+                        f"    coll = Usd.CollectionAPI.Apply(prim, {repr(collection_name)})",
+                        f"    coll.GetExpansionRuleAttr().Set({repr(expansion_rule)})",
+                        f"    includes = coll.GetIncludesRel()",
+                        f"    for p in [{path_reprs}]:",
+                        f"        includes.AddTarget(Sdf.Path(p))",
+                    ]
 
-                if exclude_paths and isinstance(exclude_paths, list):
-                    excl_reprs = ", ".join(repr(p) for p in exclude_paths)
-                    lines.append(f"    excludes = coll.GetExcludesRel()")
-                    lines.append(f"    for p in [{excl_reprs}]:")
-                    lines.append(f"        excludes.AddTarget(Sdf.Path(p))")
+                    if exclude_paths and isinstance(exclude_paths, list):
+                        excl_reprs = ", ".join(repr(p) for p in exclude_paths)
+                        lines.append(f"    excludes = coll.GetExcludesRel()")
+                        lines.append(f"    for p in [{excl_reprs}]:")
+                        lines.append(f"        excludes.AddTarget(Sdf.Path(p))")
 
-                code = "\n".join(lines)
-                py_lop.parm("python").set(code)
+                    code = "\n".join(lines)
+                    py_lop.parm("python").set(code)
 
-                result = {
-                    "node": py_lop.path(),
-                    "prim_path": prim_path,
-                    "collection_name": collection_name,
-                    "includes": paths,
-                    "expansion_rule": expansion_rule,
-                }
-                if exclude_paths:
-                    result["excludes"] = exclude_paths
-                return result
+                    result = {
+                        "node": py_lop.path(),
+                        "prim_path": prim_path,
+                        "collection_name": collection_name,
+                        "includes": paths,
+                        "expansion_rule": expansion_rule,
+                    }
+                    if exclude_paths:
+                        result["excludes"] = exclude_paths
+                    return result
 
             else:  # add or remove
                 if not paths or not isinstance(paths, list):
@@ -746,36 +866,37 @@ class UsdHandlerMixin:
                         f"For '{action}' action, pass 'paths' as a list of "
                         "prim paths to add/remove"
                     )
-                parent = node.parent()
-                safe_name = collection_name.replace(" ", "_").replace("/", "_")
-                verb = "add" if action == "add" else "rm"
-                py_lop = parent.createNode("pythonscript", f"coll_{verb}_{safe_name}")
-                py_lop.setInput(0, node)
-                py_lop.moveToGoodPosition()
+                with hou.undos.group("SYNAPSE: manage_collection"):
+                    parent = node.parent()
+                    safe_name = collection_name.replace(" ", "_").replace("/", "_")
+                    verb = "add" if action == "add" else "rm"
+                    py_lop = parent.createNode("pythonscript", f"coll_{verb}_{safe_name}")
+                    py_lop.setInput(0, node)
+                    py_lop.moveToGoodPosition()
 
-                path_reprs = ", ".join(repr(p) for p in paths)
-                op = "AddTarget" if action == "add" else "RemoveTarget"
-                lines = [
-                    "from pxr import Usd, Sdf",
-                    "stage = hou.pwd().editableStage()",
-                    f"prim = stage.GetPrimAtPath({repr(prim_path)})",
-                    "if prim:",
-                    f"    coll = Usd.CollectionAPI.Get(prim, {repr(collection_name)})",
-                    f"    includes = coll.GetIncludesRel()",
-                    f"    for p in [{path_reprs}]:",
-                    f"        includes.{op}(Sdf.Path(p))",
-                ]
+                    path_reprs = ", ".join(repr(p) for p in paths)
+                    op = "AddTarget" if action == "add" else "RemoveTarget"
+                    lines = [
+                        "from pxr import Usd, Sdf",
+                        "stage = hou.pwd().editableStage()",
+                        f"prim = stage.GetPrimAtPath({repr(prim_path)})",
+                        "if prim:",
+                        f"    coll = Usd.CollectionAPI.Get(prim, {repr(collection_name)})",
+                        f"    includes = coll.GetIncludesRel()",
+                        f"    for p in [{path_reprs}]:",
+                        f"        includes.{op}(Sdf.Path(p))",
+                    ]
 
-                code = "\n".join(lines)
-                py_lop.parm("python").set(code)
+                    code = "\n".join(lines)
+                    py_lop.parm("python").set(code)
 
-                return {
-                    "node": py_lop.path(),
-                    "prim_path": prim_path,
-                    "collection_name": collection_name,
-                    "action": action,
-                    "paths": paths,
-                }
+                    return {
+                        "node": py_lop.path(),
+                        "prim_path": prim_path,
+                        "collection_name": collection_name,
+                        "action": action,
+                        "paths": paths,
+                    }
 
         return run_on_main(_on_main)
 
@@ -818,83 +939,85 @@ class UsdHandlerMixin:
 
         def _on_main():
             node = self._resolve_lop_node(node_path_arg)  # type: ignore[attr-defined]
-            parent = node.parent()
 
-            safe_light = light_path.rstrip("/").rsplit("/", 1)[-1] or "light"
-            py_lop = parent.createNode("pythonscript", f"lightlink_{safe_light}")
-            py_lop.setInput(0, node)
-            py_lop.moveToGoodPosition()
+            with hou.undos.group("SYNAPSE: configure_light_linking"):
+                parent = node.parent()
 
-            lines = [
-                "from pxr import Usd, UsdLux, Sdf",
-                "stage = hou.pwd().editableStage()",
-                f"light = stage.GetPrimAtPath({repr(light_path)})",
-                "if light:",
-            ]
+                safe_light = light_path.rstrip("/").rsplit("/", 1)[-1] or "light"
+                py_lop = parent.createNode("pythonscript", f"lightlink_{safe_light}")
+                py_lop.setInput(0, node)
+                py_lop.moveToGoodPosition()
 
-            if action == "reset":
-                # Remove custom light linking — restore default illumination
-                lines.extend([
-                    "    ll = UsdLux.LightAPI(light)",
-                    "    coll = ll.GetLightLinkCollectionAPI()",
-                    "    includes = coll.GetIncludesRel()",
-                    "    includes.ClearTargets(True)",
-                    "    includes.AddTarget(Sdf.Path('/'))",
-                ])
-            elif action in ("include", "exclude"):
-                coll_method = "GetLightLinkCollectionAPI"
-                if action == "include":
-                    path_reprs = ", ".join(repr(p) for p in geo_paths)
+                lines = [
+                    "from pxr import Usd, UsdLux, Sdf",
+                    "stage = hou.pwd().editableStage()",
+                    f"light = stage.GetPrimAtPath({repr(light_path)})",
+                    "if light:",
+                ]
+
+                if action == "reset":
+                    # Remove custom light linking -- restore default illumination
                     lines.extend([
                         "    ll = UsdLux.LightAPI(light)",
-                        f"    coll = ll.{coll_method}()",
+                        "    coll = ll.GetLightLinkCollectionAPI()",
                         "    includes = coll.GetIncludesRel()",
                         "    includes.ClearTargets(True)",
-                        f"    for p in [{path_reprs}]:",
-                        "        includes.AddTarget(Sdf.Path(p))",
+                        "    includes.AddTarget(Sdf.Path('/'))",
                     ])
-                else:  # exclude
-                    path_reprs = ", ".join(repr(p) for p in geo_paths)
-                    lines.extend([
-                        "    ll = UsdLux.LightAPI(light)",
-                        f"    coll = ll.{coll_method}()",
-                        "    excludes = coll.GetExcludesRel()",
-                        f"    for p in [{path_reprs}]:",
-                        "        excludes.AddTarget(Sdf.Path(p))",
-                    ])
-            else:  # shadow_include or shadow_exclude
-                coll_method = "GetShadowLinkCollectionAPI"
-                if action == "shadow_include":
-                    path_reprs = ", ".join(repr(p) for p in geo_paths)
-                    lines.extend([
-                        "    ll = UsdLux.LightAPI(light)",
-                        f"    coll = ll.{coll_method}()",
-                        "    includes = coll.GetIncludesRel()",
-                        "    includes.ClearTargets(True)",
-                        f"    for p in [{path_reprs}]:",
-                        "        includes.AddTarget(Sdf.Path(p))",
-                    ])
-                else:  # shadow_exclude
-                    path_reprs = ", ".join(repr(p) for p in geo_paths)
-                    lines.extend([
-                        "    ll = UsdLux.LightAPI(light)",
-                        f"    coll = ll.{coll_method}()",
-                        "    excludes = coll.GetExcludesRel()",
-                        f"    for p in [{path_reprs}]:",
-                        "        excludes.AddTarget(Sdf.Path(p))",
-                    ])
+                elif action in ("include", "exclude"):
+                    coll_method = "GetLightLinkCollectionAPI"
+                    if action == "include":
+                        path_reprs = ", ".join(repr(p) for p in geo_paths)
+                        lines.extend([
+                            "    ll = UsdLux.LightAPI(light)",
+                            f"    coll = ll.{coll_method}()",
+                            "    includes = coll.GetIncludesRel()",
+                            "    includes.ClearTargets(True)",
+                            f"    for p in [{path_reprs}]:",
+                            "        includes.AddTarget(Sdf.Path(p))",
+                        ])
+                    else:  # exclude
+                        path_reprs = ", ".join(repr(p) for p in geo_paths)
+                        lines.extend([
+                            "    ll = UsdLux.LightAPI(light)",
+                            f"    coll = ll.{coll_method}()",
+                            "    excludes = coll.GetExcludesRel()",
+                            f"    for p in [{path_reprs}]:",
+                            "        excludes.AddTarget(Sdf.Path(p))",
+                        ])
+                else:  # shadow_include or shadow_exclude
+                    coll_method = "GetShadowLinkCollectionAPI"
+                    if action == "shadow_include":
+                        path_reprs = ", ".join(repr(p) for p in geo_paths)
+                        lines.extend([
+                            "    ll = UsdLux.LightAPI(light)",
+                            f"    coll = ll.{coll_method}()",
+                            "    includes = coll.GetIncludesRel()",
+                            "    includes.ClearTargets(True)",
+                            f"    for p in [{path_reprs}]:",
+                            "        includes.AddTarget(Sdf.Path(p))",
+                        ])
+                    else:  # shadow_exclude
+                        path_reprs = ", ".join(repr(p) for p in geo_paths)
+                        lines.extend([
+                            "    ll = UsdLux.LightAPI(light)",
+                            f"    coll = ll.{coll_method}()",
+                            "    excludes = coll.GetExcludesRel()",
+                            f"    for p in [{path_reprs}]:",
+                            "        excludes.AddTarget(Sdf.Path(p))",
+                        ])
 
-            code = "\n".join(lines)
-            py_lop.parm("python").set(code)
+                code = "\n".join(lines)
+                py_lop.parm("python").set(code)
 
-            result = {
-                "node": py_lop.path(),
-                "light_path": light_path,
-                "action": action,
-            }
-            if geo_paths:
-                result["geo_paths"] = geo_paths
-            return result
+                result = {
+                    "node": py_lop.path(),
+                    "light_path": light_path,
+                    "action": action,
+                }
+                if geo_paths:
+                    result["geo_paths"] = geo_paths
+                return result
 
         return run_on_main(_on_main)
 

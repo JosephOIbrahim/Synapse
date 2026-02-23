@@ -262,3 +262,358 @@ class TestParameterAliasRoundtrip:
             )
         assert resp.success is False
         assert "couldn't find" in resp.error.lower()
+
+
+# ---------------------------------------------------------------------------
+# Tests: USD handler enrichment, undo groups, cook-and-verify
+# ---------------------------------------------------------------------------
+
+# Ensure hdefereval.executeDeferred is available for run_on_main
+_hdefereval = sys.modules.get("hdefereval")
+if _hdefereval is not None and not hasattr(_hdefereval, "executeDeferred"):
+    _hdefereval.executeDeferred = lambda fn: fn()
+
+class TestGetStageInfoEnriched:
+    """Tests for the enriched get_stage_info handler that returns cameras,
+    lights, renderable prim count, and unassigned material prims."""
+
+    def _handler(self):
+        return handlers_mod.SynapseHandler()
+
+    def _make_prim(self, path, type_name, is_camera=False, is_light=False,
+                   is_gprim=False, has_light_api=False, bound_material=None):
+        """Build a mock USD prim with configurable schema checks."""
+        prim = MagicMock()
+        prim.GetPath.return_value = path
+        prim.GetTypeName.return_value = type_name
+        prim.HasAuthoredReferences.return_value = False
+
+        def _is_a(schema):
+            name = schema.__name__ if hasattr(schema, '__name__') else str(schema)
+            if 'Camera' in str(name):
+                return is_camera
+            if 'LightAPI' in str(name):
+                return has_light_api
+            if 'Gprim' in str(name):
+                return is_gprim
+            return False
+
+        prim.IsA = _is_a
+        prim._bound_material = bound_material
+        return prim
+
+    def test_get_stage_info_returns_cameras(self):
+        """Stage with a Camera prim includes it in the cameras list."""
+        from unittest.mock import patch
+
+        cam_prim = self._make_prim("/cameras/render_cam", "Camera", is_camera=True)
+        geo_prim = self._make_prim("/world/geo", "Mesh", is_gprim=True)
+
+        mock_stage = MagicMock()
+        mock_stage.Traverse.return_value = [cam_prim, geo_prim]
+
+        mock_node = MagicMock()
+        mock_node.path.return_value = "/stage/lop1"
+        type(mock_node).stage = MagicMock(return_value=mock_stage)
+
+        mock_UsdGeom = MagicMock()
+        mock_UsdLux = MagicMock()
+        mock_UsdShade = MagicMock()
+
+        mock_UsdGeom.Camera = type("Camera", (), {})
+        mock_UsdGeom.Gprim = type("Gprim", (), {})
+        mock_UsdLux.LightAPI = type("LightAPI", (), {})
+
+        mock_binding = MagicMock()
+        mock_binding.ComputeBoundMaterial.return_value = (None, None)
+        mock_UsdShade.MaterialBindingAPI.return_value = mock_binding
+
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True), \
+             patch.object(_handlers_hou, "selectedNodes", return_value=[], create=True), \
+             patch.dict(sys.modules, {"pxr": MagicMock(UsdGeom=mock_UsdGeom,
+                                                        UsdLux=mock_UsdLux,
+                                                        UsdShade=mock_UsdShade),
+                                      "pxr.UsdGeom": mock_UsdGeom,
+                                      "pxr.UsdLux": mock_UsdLux,
+                                      "pxr.UsdShade": mock_UsdShade}):
+            h = self._handler()
+            result = h._handle_get_stage_info({"node": "/stage/lop1"})
+
+        assert "cameras" in result
+        assert "/cameras/render_cam" in result["cameras"]
+
+    def test_get_stage_info_returns_lights(self):
+        """Stage with a light prim includes it in the lights list."""
+        from unittest.mock import patch
+
+        light_prim = self._make_prim("/lights/key", "DomeLight",
+                                     has_light_api=True)
+        geo_prim = self._make_prim("/world/geo", "Mesh", is_gprim=True)
+
+        mock_stage = MagicMock()
+        mock_stage.Traverse.return_value = [light_prim, geo_prim]
+
+        mock_node = MagicMock()
+        mock_node.path.return_value = "/stage/lop1"
+        type(mock_node).stage = MagicMock(return_value=mock_stage)
+
+        mock_UsdGeom = MagicMock()
+        mock_UsdLux = MagicMock()
+        mock_UsdShade = MagicMock()
+
+        mock_UsdGeom.Camera = type("Camera", (), {})
+        mock_UsdGeom.Gprim = type("Gprim", (), {})
+        mock_UsdLux.LightAPI = type("LightAPI", (), {})
+
+        mock_binding = MagicMock()
+        mock_binding.ComputeBoundMaterial.return_value = (None, None)
+        mock_UsdShade.MaterialBindingAPI.return_value = mock_binding
+
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True), \
+             patch.object(_handlers_hou, "selectedNodes", return_value=[], create=True), \
+             patch.dict(sys.modules, {"pxr": MagicMock(UsdGeom=mock_UsdGeom,
+                                                        UsdLux=mock_UsdLux,
+                                                        UsdShade=mock_UsdShade),
+                                      "pxr.UsdGeom": mock_UsdGeom,
+                                      "pxr.UsdLux": mock_UsdLux,
+                                      "pxr.UsdShade": mock_UsdShade}):
+            h = self._handler()
+            result = h._handle_get_stage_info({"node": "/stage/lop1"})
+
+        assert "lights" in result
+        assert "/lights/key" in result["lights"]
+
+    def test_get_stage_info_returns_renderable_prims_count(self):
+        """Gprim prims are counted in renderable_prims."""
+        from unittest.mock import patch
+
+        prims = [
+            self._make_prim("/world/mesh1", "Mesh", is_gprim=True),
+            self._make_prim("/world/mesh2", "Mesh", is_gprim=True),
+            self._make_prim("/world/mesh3", "Mesh", is_gprim=True),
+            self._make_prim("/world/xform", "Xform"),
+        ]
+
+        mock_stage = MagicMock()
+        mock_stage.Traverse.return_value = prims
+
+        mock_node = MagicMock()
+        mock_node.path.return_value = "/stage/lop1"
+        type(mock_node).stage = MagicMock(return_value=mock_stage)
+
+        mock_UsdGeom = MagicMock()
+        mock_UsdLux = MagicMock()
+        mock_UsdShade = MagicMock()
+
+        mock_UsdGeom.Camera = type("Camera", (), {})
+        mock_UsdGeom.Gprim = type("Gprim", (), {})
+        mock_UsdLux.LightAPI = type("LightAPI", (), {})
+
+        mock_binding = MagicMock()
+        mock_binding.ComputeBoundMaterial.return_value = (MagicMock(), "binding")
+        mock_UsdShade.MaterialBindingAPI.return_value = mock_binding
+
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True), \
+             patch.object(_handlers_hou, "selectedNodes", return_value=[], create=True), \
+             patch.dict(sys.modules, {"pxr": MagicMock(UsdGeom=mock_UsdGeom,
+                                                        UsdLux=mock_UsdLux,
+                                                        UsdShade=mock_UsdShade),
+                                      "pxr.UsdGeom": mock_UsdGeom,
+                                      "pxr.UsdLux": mock_UsdLux,
+                                      "pxr.UsdShade": mock_UsdShade}):
+            h = self._handler()
+            result = h._handle_get_stage_info({"node": "/stage/lop1"})
+
+        assert result["renderable_prims"] == 3
+
+    def test_get_stage_info_returns_unassigned_material_prims(self):
+        """Gprim prims without bound materials appear in unassigned list."""
+        from unittest.mock import patch
+
+        prims = [
+            self._make_prim("/world/bound", "Mesh", is_gprim=True),
+            self._make_prim("/world/unbound", "Mesh", is_gprim=True),
+        ]
+
+        mock_stage = MagicMock()
+        mock_stage.Traverse.return_value = prims
+
+        mock_node = MagicMock()
+        mock_node.path.return_value = "/stage/lop1"
+        type(mock_node).stage = MagicMock(return_value=mock_stage)
+
+        mock_UsdGeom = MagicMock()
+        mock_UsdLux = MagicMock()
+        mock_UsdShade = MagicMock()
+
+        mock_UsdGeom.Camera = type("Camera", (), {})
+        mock_UsdGeom.Gprim = type("Gprim", (), {})
+        mock_UsdLux.LightAPI = type("LightAPI", (), {})
+
+        def _make_binding_api(prim):
+            mock_b = MagicMock()
+            path_str = str(prim.GetPath())
+            if path_str == "/world/bound":
+                mock_b.ComputeBoundMaterial.return_value = (MagicMock(), "binding")
+            else:
+                mock_b.ComputeBoundMaterial.return_value = (None, None)
+            return mock_b
+
+        mock_UsdShade.MaterialBindingAPI = _make_binding_api
+
+        with patch.object(_handlers_hou, "node", return_value=mock_node, create=True), \
+             patch.object(_handlers_hou, "selectedNodes", return_value=[], create=True), \
+             patch.dict(sys.modules, {"pxr": MagicMock(UsdGeom=mock_UsdGeom,
+                                                        UsdLux=mock_UsdLux,
+                                                        UsdShade=mock_UsdShade),
+                                      "pxr.UsdGeom": mock_UsdGeom,
+                                      "pxr.UsdLux": mock_UsdLux,
+                                      "pxr.UsdShade": mock_UsdShade}):
+            h = self._handler()
+            result = h._handle_get_stage_info({"node": "/stage/lop1"})
+
+        assert "unassigned_material_prims" in result
+        assert "/world/unbound" in result["unassigned_material_prims"]
+        assert "/world/bound" not in result["unassigned_material_prims"]
+
+
+class TestUsdUndoGroups:
+    """Tests verifying that USD mutation handlers wrap operations in undo groups."""
+
+    def _handler(self):
+        return handlers_mod.SynapseHandler()
+
+    def _mock_lop_node(self):
+        """Create a mock LOP node with stage and parent for mutations."""
+        py_lop = MagicMock()
+        py_lop.path.return_value = "/stage/pythonscript1"
+        py_lop.parm.return_value = MagicMock()
+        py_lop.cook = MagicMock()
+
+        parent = MagicMock()
+        parent.createNode.return_value = py_lop
+
+        node = MagicMock()
+        node.path.return_value = "/stage/lop1"
+        node.parent.return_value = parent
+        node.stage = MagicMock(return_value=MagicMock())
+        return node, py_lop
+
+    def test_set_usd_attribute_uses_undo_group(self):
+        """set_usd_attribute wraps mutation in a SYNAPSE: undo group."""
+        from unittest.mock import patch
+
+        node, py_lop = self._mock_lop_node()
+
+        _handlers_hou.undos = MagicMock()
+        _handlers_hou.undos.group = MagicMock(return_value=MagicMock())
+
+        with patch.object(_handlers_hou, "node", return_value=node, create=True), \
+             patch.object(_handlers_hou, "selectedNodes", return_value=[node], create=True):
+            h = self._handler()
+            h._handle_set_usd_attribute({
+                "node": "/stage/lop1",
+                "prim_path": "/World/sphere",
+                "usd_attribute": "radius",
+                "value": 2.0,
+            })
+
+        _handlers_hou.undos.group.assert_called_once()
+        call_args = _handlers_hou.undos.group.call_args[0][0]
+        assert "SYNAPSE:" in call_args
+
+    def test_create_usd_prim_uses_undo_group(self):
+        """create_usd_prim wraps mutation in a SYNAPSE: undo group."""
+        from unittest.mock import patch
+
+        node, py_lop = self._mock_lop_node()
+
+        _handlers_hou.undos = MagicMock()
+        _handlers_hou.undos.group = MagicMock(return_value=MagicMock())
+
+        with patch.object(_handlers_hou, "node", return_value=node, create=True), \
+             patch.object(_handlers_hou, "selectedNodes", return_value=[node], create=True):
+            h = self._handler()
+            h._handle_create_usd_prim({
+                "node": "/stage/lop1",
+                "prim_path": "/World/new_xform",
+                "prim_type": "Xform",
+            })
+
+        _handlers_hou.undos.group.assert_called_once()
+        call_args = _handlers_hou.undos.group.call_args[0][0]
+        assert "SYNAPSE:" in call_args
+
+
+class TestUsdCookAndVerify:
+    """Tests for cook-and-verify behavior in USD pythonscript handlers."""
+
+    def _handler(self):
+        return handlers_mod.SynapseHandler()
+
+    def _mock_lop_node(self):
+        """Create a mock LOP node with stage and parent."""
+        py_lop = MagicMock()
+        py_lop.path.return_value = "/stage/create_new_xform"
+        py_lop.parm.return_value = MagicMock()
+        py_lop.cook = MagicMock()
+
+        parent = MagicMock()
+        parent.createNode.return_value = py_lop
+
+        node = MagicMock()
+        node.path.return_value = "/stage/lop1"
+        node.parent.return_value = parent
+        node.stage = MagicMock(return_value=MagicMock())
+        return node, py_lop
+
+    def test_create_usd_prim_cook_verify_success(self):
+        """Successful cook produces no cook_error in the response."""
+        from unittest.mock import patch
+
+        node, py_lop = self._mock_lop_node()
+        py_lop.cook = MagicMock()
+
+        _handlers_hou.undos = MagicMock()
+        _handlers_hou.undos.group = MagicMock(return_value=MagicMock())
+
+        with patch.object(_handlers_hou, "node", return_value=node, create=True), \
+             patch.object(_handlers_hou, "selectedNodes", return_value=[node], create=True):
+            h = self._handler()
+            result = h._handle_create_usd_prim({
+                "node": "/stage/lop1",
+                "prim_path": "/World/new_xform",
+                "prim_type": "Xform",
+            })
+
+        assert "cook_error" not in result
+        assert "created_node" in result
+        assert result["prim_path"] == "/World/new_xform"
+        assert result["prim_type"] == "Xform"
+
+    def test_create_usd_prim_cook_verify_failure(self):
+        """Failed cook returns cook_error with coaching tone (contains 'snag')."""
+        from unittest.mock import patch
+
+        node, py_lop = self._mock_lop_node()
+
+        _handlers_hou.OperationFailed = type("OperationFailed", (Exception,), {})
+        py_lop.cook = MagicMock(
+            side_effect=_handlers_hou.OperationFailed("invalid prim type")
+        )
+
+        _handlers_hou.undos = MagicMock()
+        _handlers_hou.undos.group = MagicMock(return_value=MagicMock())
+
+        with patch.object(_handlers_hou, "node", return_value=node, create=True), \
+             patch.object(_handlers_hou, "selectedNodes", return_value=[node], create=True):
+            h = self._handler()
+            result = h._handle_create_usd_prim({
+                "node": "/stage/lop1",
+                "prim_path": "/World/bad_prim",
+                "prim_type": "NonexistentType",
+            })
+
+        assert "cook_error" in result
+        assert "snag" in result["cook_error"]
+        assert "created_node" in result
