@@ -961,7 +961,7 @@ class TestCommandTypeEnums:
 
 class TestHandlerRegistration:
     def test_all_tops_handlers_registered(self, handler):
-        """All 14 TOPS handlers should be in the command registry."""
+        """All 16 TOPS handlers should be in the command registry."""
         reg = handler._registry
         for cmd in [
             "tops_get_work_items",
@@ -971,6 +971,8 @@ class TestHandlerRegistration:
             "tops_generate_items",
             "tops_configure_scheduler",
             "tops_cancel_cook",
+            "tops_pause_cook",
+            "tops_resume_cook",
             "tops_dirty_node",
             "tops_setup_wedge",
             "tops_batch_cook",
@@ -995,6 +997,8 @@ class TestHandlerRegistration:
         assert "tops_generate_items" not in _READ_ONLY_COMMANDS
         assert "tops_configure_scheduler" not in _READ_ONLY_COMMANDS
         assert "tops_cancel_cook" not in _READ_ONLY_COMMANDS
+        assert "tops_pause_cook" not in _READ_ONLY_COMMANDS
+        assert "tops_resume_cook" not in _READ_ONLY_COMMANDS
         assert "tops_dirty_node" not in _READ_ONLY_COMMANDS
         assert "tops_setup_wedge" not in _READ_ONLY_COMMANDS
         assert "tops_batch_cook" not in _READ_ONLY_COMMANDS
@@ -1012,6 +1016,8 @@ class TestHandlerRegistration:
             "tops_generate_items",
             "tops_configure_scheduler",
             "tops_cancel_cook",
+            "tops_pause_cook",
+            "tops_resume_cook",
             "tops_dirty_node",
             "tops_setup_wedge",
             "tops_batch_cook",

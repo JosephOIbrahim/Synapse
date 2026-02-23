@@ -102,6 +102,8 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "tops_generate_items": AuditCategory.PIPELINE,
     "tops_configure_scheduler": AuditCategory.PIPELINE,
     "tops_cancel_cook": AuditCategory.PIPELINE,
+    "tops_pause_cook": AuditCategory.PIPELINE,
+    "tops_resume_cook": AuditCategory.PIPELINE,
     "tops_dirty_node": AuditCategory.PIPELINE,
     "tops_setup_wedge": AuditCategory.PIPELINE,
     "tops_batch_cook": AuditCategory.PIPELINE,
@@ -361,6 +363,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         # TOPS / PDG (Phase 2)
         reg.register("tops_configure_scheduler", self._handle_tops_configure_scheduler)
         reg.register("tops_cancel_cook", self._handle_tops_cancel_cook)
+        reg.register("tops_pause_cook", self._handle_tops_pause_cook)
+        reg.register("tops_resume_cook", self._handle_tops_resume_cook)
         reg.register("tops_dirty_node", self._handle_tops_dirty_node)
 
         # TOPS / PDG (Phase 3)

@@ -272,12 +272,19 @@ class UsdHandlerMixin:
                         ),
                     }
 
-                return {
+                result = {
                     "created_node": py_lop.path(),
                     "prim_path": prim_path,
                     "attribute": attr_name,
                     "value": value,
                 }
+                if isinstance(value, (list, tuple)):
+                    result["advisory"] = (
+                        f"The value is a {type(value).__name__} with {len(value)} elements. "
+                        "If the USD attribute expects a specific type (like GfVec3f), "
+                        "you may need to use execute_python with explicit type construction."
+                    )
+                return result
 
         return run_on_main(_on_main)
 
@@ -440,6 +447,15 @@ class UsdHandlerMixin:
                 raise ValueError(
                     f"Couldn't find the parent node at {parent} -- "
                     "verify this path exists (default is /stage)"
+                )
+
+            # Validate file path exists (catch missing assets early)
+            import os as _os
+            if not file_path.startswith(("$", "op:")) and not _os.path.isfile(file_path):
+                raise ValueError(
+                    f"Couldn't find the file at '{file_path}' -- "
+                    "double-check the path exists. If you're using a Houdini "
+                    "variable like $HIP or $HFS, make sure it's set correctly."
                 )
 
             with hou.undos.group("SYNAPSE: reference_usd"):
@@ -1027,6 +1043,7 @@ class UsdHandlerMixin:
     # These are merge-like LOPs: sublayer stacks, merges, etc.
     _ORDER_DEPENDENT_TYPES = frozenset({
         "merge", "sublayer", "merge::2.0",
+        "graft", "graft::2.0", "layerbreak",
     })
 
     # Node types where input selection is explicit (switch, blend) --

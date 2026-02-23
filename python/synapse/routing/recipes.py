@@ -3366,3 +3366,61 @@ class RecipeRegistry:
                 ),
             ],
         ))
+
+        # --- TOPS Workflow Recipes ---
+
+        self.register(Recipe(
+            name="resume_failed_tops_cook",
+            description="Dirty failed work items and re-cook a TOP node",
+            triggers=[
+                r"^(?:re-?)?cook\s+failed\s+(?:items?\s+)?(?:in\s+|on\s+)?(?P<node>.+)$",
+                r"^retry\s+failed\s+(?:tops?\s+)?(?:in\s+|on\s+)?(?P<node>.+)$",
+                r"^resume\s+(?:failed\s+)?(?:tops?\s+)?cook\s+(?:in\s+|on\s+)?(?P<node>.+)$",
+            ],
+            parameters=["node"],
+            gate_level=GateLevel.REVIEW,
+            category="tops",
+            steps=[
+                RecipeStep(
+                    action="tops_dirty_node",
+                    payload_template={"node": "{node}", "dirty_upstream": False},
+                    gate_level=GateLevel.INFORM,
+                ),
+                RecipeStep(
+                    action="tops_cook_node",
+                    payload_template={"node": "{node}", "block": True},
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        self.register(Recipe(
+            name="tops_monitored_render",
+            description="Render a frame sequence via TOPS with live monitoring",
+            triggers=[
+                r"^render\s+(?:frames?\s+)?(?P<frame_start>\d+)\s*[-\u2013to]+\s*(?P<frame_end>\d+)\s+with\s+monitor(?:ing)?$",
+                r"^(?:tops?\s+)?render\s+(?:and\s+)?monitor\s+(?:frames?\s+)?(?P<frame_start>\d+)\s*[-\u2013to]+\s*(?P<frame_end>\d+)$",
+                r"^monitored?\s+render\s+(?P<frame_start>\d+)\s*[-\u2013to]+\s*(?P<frame_end>\d+)$",
+            ],
+            parameters=["frame_start", "frame_end"],
+            gate_level=GateLevel.REVIEW,
+            category="tops",
+            steps=[
+                RecipeStep(
+                    action="tops_render_sequence",
+                    payload_template={
+                        "frame_range": ["{frame_start}", "{frame_end}"],
+                        "blocking": False,
+                    },
+                    gate_level=GateLevel.REVIEW,
+                    output_var="render",
+                ),
+                RecipeStep(
+                    action="tops_monitor_stream",
+                    payload_template={
+                        "node": "$render.topnet",
+                    },
+                    gate_level=GateLevel.INFORM,
+                ),
+            ],
+        ))

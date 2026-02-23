@@ -24,6 +24,11 @@ from .handler_helpers import _HOUDINI_UNAVAILABLE
 
 logger = logging.getLogger("synapse.handlers.tops")
 
+# Maximum number of monitor events kept in memory per monitor stream.
+# Prevents unbounded growth during large cooks (thousands of work items).
+# Override via SYNAPSE_MONITOR_EVENT_CAP environment variable.
+_MAX_MONITOR_EVENTS = int(os.environ.get("SYNAPSE_MONITOR_EVENT_CAP", "5000"))
+
 
 # =========================================================================
 # PDG-aware execution — extended timeout for graph context initialization
@@ -142,8 +147,12 @@ def _ensure_tops_warm_standby(topnet_path: str) -> Optional[Dict]:
                 return None
 
         # No scheduler found — create one with sensible defaults
-        cpu_count = os.cpu_count() or 4
-        max_procs = max(1, cpu_count - 2)
+        env_procs = os.environ.get("SYNAPSE_TOPS_MAX_PROCS")
+        if env_procs is not None:
+            max_procs = max(1, int(env_procs))
+        else:
+            cpu_count = os.cpu_count() or 4
+            max_procs = max(1, cpu_count - 2)
 
         scheduler = node.createNode("localscheduler", "localscheduler")
         scheduler.moveToGoodPosition()
@@ -667,7 +676,98 @@ class TopsHandlerMixin:
             return {
                 "node": node_path,
                 "status": "cancelled",
-                "note": "Currently cooking items may finish before cancellation takes effect",
+                "note": (
+                    "We've sent the cancel signal -- items already in progress "
+                    "may finish up before stopping completely."
+                ),
+            }
+
+        return _run_in_main_thread_pdg(_run)
+
+    def _handle_tops_pause_cook(self, payload: Dict) -> Dict:
+        """Pause an active cook on a TOP network.
+
+        Pauses PDG cooking so the artist can inspect intermediate results.
+        Work items currently in progress will finish, but no new items start.
+        Use tops_resume_cook to continue.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import hdefereval
+
+        node_path = resolve_param(payload, "node")
+
+        def _run():
+            node = hou.node(node_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {node_path} -- "
+                    "double-check the path exists"
+                )
+
+            cat = node.type().category().name()
+            if cat != "TopNet":
+                raise ValueError(
+                    f"Pause requires a TOP network, but {node_path} is a {cat} -- "
+                    "pass the topnet path instead of a single TOP node"
+                )
+
+            ctx = node.getPDGGraphContext()
+            if ctx is None:
+                raise ValueError(
+                    f"No PDG context found on {node_path} -- "
+                    "it may not have been cooked yet"
+                )
+
+            ctx.pauseCook()
+            return {
+                "node": node_path,
+                "status": "paused",
+                "note": (
+                    "Cook is paused -- items already in progress will finish up. "
+                    "Use tops_resume_cook when you're ready to continue."
+                ),
+            }
+
+        return _run_in_main_thread_pdg(_run)
+
+    def _handle_tops_resume_cook(self, payload: Dict) -> Dict:
+        """Resume a paused cook on a TOP network."""
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import hdefereval
+
+        node_path = resolve_param(payload, "node")
+
+        def _run():
+            node = hou.node(node_path)
+            if node is None:
+                raise ValueError(
+                    f"Couldn't find a node at {node_path} -- "
+                    "double-check the path exists"
+                )
+
+            cat = node.type().category().name()
+            if cat != "TopNet":
+                raise ValueError(
+                    f"Resume requires a TOP network, but {node_path} is a {cat} -- "
+                    "pass the topnet path instead of a single TOP node"
+                )
+
+            ctx = node.getPDGGraphContext()
+            if ctx is None:
+                raise ValueError(
+                    f"No PDG context found on {node_path} -- "
+                    "it may not have been cooked yet"
+                )
+
+            ctx.resumeCook()
+            return {
+                "node": node_path,
+                "status": "resumed",
+                "note": "Cook resumed -- pending work items are being scheduled.",
             }
 
         return _run_in_main_thread_pdg(_run)
@@ -1500,6 +1600,11 @@ class TopsHandlerMixin:
             def _on_event(event):
                 """PDG event callback -- must not block the cook thread."""
                 try:
+                    # Cap event list to prevent unbounded memory growth.
+                    # Keep the last 80% to avoid trimming on every single event.
+                    if len(events_list) > _MAX_MONITOR_EVENTS:
+                        events_list[:] = events_list[-(int(_MAX_MONITOR_EVENTS * 0.8)):]
+
                     etype = event.type
                     now = time.monotonic()
                     elapsed = now - start_time
