@@ -86,7 +86,7 @@ After editing source files, remind the user to redeploy if needed (`python ~/.sy
 pip install -e ".[dev]"
 pip install -e ".[dev,websocket,mcp,routing,encryption]"   # all optional features
 
-# Run all core tests (~2,055 tests across 50+ test files, no Houdini required)
+# Run all core tests (~2,075 tests across 50+ test files, no Houdini required)
 python -m pytest tests/ -v
 
 # Type checking (mypy, 0 errors on 49 source files)
