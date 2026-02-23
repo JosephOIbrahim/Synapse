@@ -569,8 +569,8 @@ class TestRouterStatsAndRecipeDiscovery:
         """list_recipes handler should return all registered recipes."""
         handler = SynapseHandler()
         result = handler._handle_list_recipes({})
-        assert result["count"] == 48
-        assert len(result["recipes"]) == 48
+        assert result["count"] == 57
+        assert len(result["recipes"]) == 57
         # Should be sorted by name
         names = [r["name"] for r in result["recipes"]]
         assert names == sorted(names)

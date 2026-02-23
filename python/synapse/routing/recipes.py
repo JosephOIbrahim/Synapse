@@ -2910,6 +2910,229 @@ class RecipeRegistry:
             ],
         ))
 
+        # --- Copernicus Procedural Texture ---
+        self.register(Recipe(
+            name="copernicus_procedural_texture",
+            description="Generate a procedural noise texture in Copernicus (perlin/worley/simplex)",
+            triggers=[
+                r"^(?:create|make|generate)\s+(?:a\s+)?(?:copernicus\s+)?procedural\s+(?:noise\s+)?texture(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+                r"^(?:copernicus|cops?)\s+(?:noise|procedural)\s+texture(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+            ],
+            parameters=["parent"],
+            gate_level=GateLevel.REVIEW,
+            category="copernicus",
+            steps=[
+                RecipeStep(
+                    action="cops_procedural_texture",
+                    payload_template={
+                        "parent": "{parent}",
+                        "noise_type": "perlin",
+                        "frequency": 1.0,
+                        "octaves": 4,
+                        "resolution": [1024, 1024],
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- Copernicus Pixel Sort ---
+        self.register(Recipe(
+            name="copernicus_pixel_sort",
+            description="Apply pixel sorting effect in Copernicus (motion design)",
+            triggers=[
+                r"^(?:create|apply|make)\s+(?:a\s+)?(?:copernicus\s+)?pixel\s+sort(?:ing)?(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+                r"^(?:copernicus|cops?)\s+pixel\s+sort(?:ing)?(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+            ],
+            parameters=["parent"],
+            gate_level=GateLevel.REVIEW,
+            category="copernicus",
+            steps=[
+                RecipeStep(
+                    action="cops_pixel_sort",
+                    payload_template={
+                        "parent": "{parent}",
+                        "sort_by": "luminance",
+                        "direction": "vertical",
+                        "threshold_low": 0.2,
+                        "threshold_high": 0.8,
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- Copernicus Reaction-Diffusion ---
+        self.register(Recipe(
+            name="copernicus_reaction_diffusion",
+            description="Create a Gray-Scott reaction-diffusion simulation in Copernicus",
+            triggers=[
+                r"^(?:create|make|set up|setup)\s+(?:a\s+)?(?:copernicus\s+)?reaction[\s-]diffusion(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+                r"^(?:copernicus|cops?)\s+(?:gray[\s-]scott\s+)?reaction[\s-]diffusion(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+                r"^(?:copernicus|cops?)\s+r[\s-]?d\s+(?:sim(?:ulation)?)?(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+            ],
+            parameters=["parent"],
+            gate_level=GateLevel.REVIEW,
+            category="copernicus",
+            steps=[
+                RecipeStep(
+                    action="cops_reaction_diffusion",
+                    payload_template={
+                        "parent": "{parent}",
+                        "feed_rate": 0.055,
+                        "kill_rate": 0.062,
+                        "iterations": 100,
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- Copernicus Growth ---
+        self.register(Recipe(
+            name="copernicus_growth",
+            description="Create a DLA-style growth propagation solver in Copernicus",
+            triggers=[
+                r"^(?:create|make|set up|setup)\s+(?:a\s+)?(?:copernicus\s+)?growth(?:\s+propagation)?(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+                r"^(?:copernicus|cops?)\s+growth(?:\s+propagation)?(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+                r"^(?:copernicus|cops?)\s+dla(?:\s+growth)?(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+            ],
+            parameters=["parent"],
+            gate_level=GateLevel.REVIEW,
+            category="copernicus",
+            steps=[
+                RecipeStep(
+                    action="cops_growth_propagation",
+                    payload_template={
+                        "parent": "{parent}",
+                        "iterations": 20,
+                        "growth_rate": 0.5,
+                        "blur_amount": 1.0,
+                        "threshold": 0.5,
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- Copernicus Stylize ---
+        self.register(Recipe(
+            name="copernicus_stylize",
+            description="Apply NPR stylization effects in Copernicus (toon, risograph, posterize)",
+            triggers=[
+                r"^(?:create|apply|make)\s+(?:a\s+)?(?:copernicus\s+)?(?:toon|risograph|posterize|edge[\s_]detect)(?:\s+effect)?(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+                r"^(?:copernicus|cops?)\s+(?:stylize|npr|toon|risograph)(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+            ],
+            parameters=["parent"],
+            gate_level=GateLevel.REVIEW,
+            category="copernicus",
+            steps=[
+                RecipeStep(
+                    action="cops_stylize",
+                    payload_template={
+                        "parent": "{parent}",
+                        "style_type": "toon",
+                        "levels": 6,
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- Copernicus Wetmap ---
+        self.register(Recipe(
+            name="copernicus_wetmap",
+            description="Create a wetmap effect with temporal decay in Copernicus",
+            triggers=[
+                r"^(?:create|make|set up|setup)\s+(?:a\s+)?(?:copernicus\s+)?wetmap(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+                r"^(?:copernicus|cops?)\s+wetmap(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+            ],
+            parameters=["parent"],
+            gate_level=GateLevel.REVIEW,
+            category="copernicus",
+            steps=[
+                RecipeStep(
+                    action="cops_wetmap",
+                    payload_template={
+                        "parent": "{parent}",
+                        "decay": 0.95,
+                        "blur": 2.0,
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- Copernicus Bake Textures ---
+        self.register(Recipe(
+            name="copernicus_bake_textures",
+            description="Set up UV texture baking in Copernicus (normal, AO, curvature maps)",
+            triggers=[
+                r"^(?:create|set up|setup)\s+(?:a\s+)?(?:copernicus\s+)?(?:texture\s+)?bak(?:e|ing)(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+                r"^(?:copernicus|cops?)\s+bak(?:e|ing)(?:\s+textures?)?(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+            ],
+            parameters=["parent"],
+            gate_level=GateLevel.REVIEW,
+            category="copernicus",
+            steps=[
+                RecipeStep(
+                    action="cops_bake_textures",
+                    payload_template={
+                        "parent": "{parent}",
+                        "map_types": ["normal", "ao"],
+                        "resolution": [2048, 2048],
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- Copernicus Stamp Scatter ---
+        self.register(Recipe(
+            name="copernicus_stamp_scatter",
+            description="Scatter stamp images with randomized transforms in Copernicus",
+            triggers=[
+                r"^(?:create|make|set up|setup)\s+(?:a\s+)?(?:copernicus\s+)?stamp\s+scatter(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+                r"^(?:copernicus|cops?)\s+stamp(?:\s+scatter)?(?:\s+(?:in|at|under)\s+(?P<parent>.+))?$",
+            ],
+            parameters=["parent"],
+            gate_level=GateLevel.REVIEW,
+            category="copernicus",
+            steps=[
+                RecipeStep(
+                    action="cops_stamp_scatter",
+                    payload_template={
+                        "parent": "{parent}",
+                        "count": 50,
+                        "seed": 42,
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
+        # --- Copernicus Batch Process ---
+        self.register(Recipe(
+            name="copernicus_batch_process",
+            description="Batch-process multiple COP nodes in Copernicus",
+            triggers=[
+                r"^(?:copernicus|cops?)\s+batch\s+(?:cook|process)(?:\s+(?P<node_list>.+))?$",
+                r"^batch\s+cook\s+cops?(?:\s+(?P<node_list>.+))?$",
+            ],
+            parameters=["node_list"],
+            gate_level=GateLevel.REVIEW,
+            category="copernicus",
+            steps=[
+                RecipeStep(
+                    action="cops_batch_cook",
+                    payload_template={
+                        "nodes": ["{node_list}"],
+                    },
+                    gate_level=GateLevel.REVIEW,
+                ),
+            ],
+        ))
+
         # --- Camera Match Real ---
         self.register(Recipe(
             name="camera_match_real",

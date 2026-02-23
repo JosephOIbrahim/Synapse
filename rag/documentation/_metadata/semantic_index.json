@@ -121,7 +121,15 @@
       "multiply",
       "image",
       "2d",
-      "correction"
+      "correction",
+      "cops_create_network",
+      "cops_create_node",
+      "cops_connect",
+      "cops_read_layer_info",
+      "cops_composite_aovs",
+      "cops_batch_cook",
+      "cop2net",
+      "cop network"
     ],
     "summary": "COPs 2D compositing nodes and workflows"
   },
@@ -147,7 +155,12 @@
       "gpu compute",
       "float4",
       "native math",
-      "debug kernel"
+      "debug kernel",
+      "cops_set_opencl",
+      "cops_reaction_diffusion",
+      "cops_pixel_sort",
+      "cops_growth_propagation",
+      "kernelcode"
     ],
     "reference_file": "copernicus_opencl_reference",
     "summary": "OpenCL kernel reference for Copernicus: #bind syntax, built-in variables, kernel patterns, performance optimization, debugging"
@@ -174,7 +187,12 @@
       "pattern generation",
       "procedural",
       "organic",
-      "cache"
+      "cache",
+      "cops_create_solver",
+      "cops_growth_propagation",
+      "cops_reaction_diffusion",
+      "cops_wetmap",
+      "cops_procedural_texture"
     ],
     "reference_file": "copernicus_solver_patterns",
     "summary": "Copernicus solver patterns: Block Begin/End, growth propagation, reaction-diffusion, Flow Block 2D fluid, caching, memory management"
@@ -201,7 +219,13 @@
       "animated texture",
       "beauty rebuild",
       "light pass",
-      "texture bake"
+      "texture bake",
+      "cops_to_materialx",
+      "cops_composite_aovs",
+      "cops_slap_comp",
+      "cops_bake_textures",
+      "cops_analyze_render",
+      "cops_temporal_analysis"
     ],
     "reference_file": "copernicus_interop_pipelines",
     "summary": "Copernicus interop: SOP/COP/MaterialX/Karma/PDG cross-context workflows, op: path textures, AOV compositing, wetmaps, batch processing"
@@ -228,7 +252,11 @@
       "motion blur",
       "ink",
       "hatching",
-      "cel shading"
+      "cel shading",
+      "cops_pixel_sort",
+      "cops_stylize",
+      "cops_stamp_scatter",
+      "cops_procedural_texture"
     ],
     "reference_file": "copernicus_motion_stylization",
     "summary": "Copernicus motion design: pixel sorting, risograph, NPR/toon, directional AO, stamp texturing, frame blend, animation patterns"
@@ -255,7 +283,13 @@
       "display flag",
       "render flag",
       "layout",
-      "pixel data"
+      "pixel data",
+      "cops_create_network",
+      "cops_create_node",
+      "cops_connect",
+      "cops_set_opencl",
+      "cops_read_layer_info",
+      "cops_create_solver"
     ],
     "reference_file": "copernicus_python_api",
     "summary": "Copernicus Python API: network/node creation, OpenCL configuration, solver setup, cooking, exporting, SYNAPSE integration"
@@ -282,7 +316,10 @@
       "work group",
       "warp",
       "divergent",
-      "memory bandwidth"
+      "memory bandwidth",
+      "cops_batch_cook",
+      "cops_analyze_render",
+      "cops_temporal_analysis"
     ],
     "reference_file": "copernicus_performance",
     "summary": "Copernicus GPU performance: RTX 4090 benchmarks, memory estimation, optimization patterns, profiling, resolution strategy"

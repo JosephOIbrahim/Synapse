@@ -98,6 +98,34 @@ class CommandType(Enum):
     TOPS_RENDER_SEQUENCE = "tops_render_sequence"
     TOPS_MULTI_SHOT = "tops_multi_shot"
 
+    # Copernicus (COPs) — Foundation
+    COPS_CREATE_NETWORK = "cops_create_network"
+    COPS_CREATE_NODE = "cops_create_node"
+    COPS_CONNECT = "cops_connect"
+    COPS_SET_OPENCL = "cops_set_opencl"
+    COPS_READ_LAYER_INFO = "cops_read_layer_info"
+
+    # Copernicus (COPs) — Pipeline Integration
+    COPS_TO_MATERIALX = "cops_to_materialx"
+    COPS_COMPOSITE_AOVS = "cops_composite_aovs"
+    COPS_ANALYZE_RENDER = "cops_analyze_render"
+    COPS_SLAP_COMP = "cops_slap_comp"
+
+    # Copernicus (COPs) — Procedural & Motion Design
+    COPS_CREATE_SOLVER = "cops_create_solver"
+    COPS_PROCEDURAL_TEXTURE = "cops_procedural_texture"
+    COPS_GROWTH_PROPAGATION = "cops_growth_propagation"
+    COPS_REACTION_DIFFUSION = "cops_reaction_diffusion"
+    COPS_PIXEL_SORT = "cops_pixel_sort"
+    COPS_STYLIZE = "cops_stylize"
+
+    # Copernicus (COPs) — Advanced
+    COPS_WETMAP = "cops_wetmap"
+    COPS_BAKE_TEXTURES = "cops_bake_textures"
+    COPS_TEMPORAL_ANALYSIS = "cops_temporal_analysis"
+    COPS_STAMP_SCATTER = "cops_stamp_scatter"
+    COPS_BATCH_COOK = "cops_batch_cook"
+
     # Autonomous render pipeline
     AUTONOMOUS_RENDER = "autonomous_render"
 

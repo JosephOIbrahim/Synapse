@@ -942,7 +942,7 @@ class TestP1ToolGroupModules:
         try:
             all_group_tools = set()
             for mod_name in ["mcp_tools_scene", "mcp_tools_render", "mcp_tools_usd",
-                             "mcp_tools_tops", "mcp_tools_memory"]:
+                             "mcp_tools_tops", "mcp_tools_memory", "mcp_tools_cops"]:
                 mod = importlib.import_module(mod_name)
                 for name in mod.TOOL_NAMES:
                     assert name not in all_group_tools, f"Duplicate: {name}"

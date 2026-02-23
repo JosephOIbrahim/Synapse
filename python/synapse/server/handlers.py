@@ -41,6 +41,7 @@ from .handlers_tops import TopsHandlerMixin
 from .handlers_material import MaterialHandlerMixin
 from .handlers_memory import MemoryHandlerMixin
 from .handlers_hda import HdaHandlerMixin
+from .handlers_cops import CopsHandlerMixin
 
 
 
@@ -128,6 +129,29 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "hda_set_help": AuditCategory.PIPELINE,
     "hda_package": AuditCategory.PIPELINE,
     "hda_list": AuditCategory.PIPELINE,
+    # Copernicus (COPs) — Foundation
+    "cops_create_network": AuditCategory.PIPELINE,
+    "cops_create_node": AuditCategory.PIPELINE,
+    "cops_connect": AuditCategory.PIPELINE,
+    "cops_set_opencl": AuditCategory.PIPELINE,
+    # cops_read_layer_info is read-only, no category needed
+    # Copernicus (COPs) — Pipeline
+    "cops_to_materialx": AuditCategory.PIPELINE,
+    "cops_composite_aovs": AuditCategory.RENDER,
+    "cops_analyze_render": AuditCategory.RENDER,
+    "cops_slap_comp": AuditCategory.PIPELINE,
+    # Copernicus (COPs) — Procedural
+    "cops_create_solver": AuditCategory.PIPELINE,
+    "cops_procedural_texture": AuditCategory.PIPELINE,
+    "cops_growth_propagation": AuditCategory.PIPELINE,
+    "cops_reaction_diffusion": AuditCategory.PIPELINE,
+    "cops_pixel_sort": AuditCategory.PIPELINE,
+    "cops_stylize": AuditCategory.PIPELINE,
+    # Copernicus (COPs) — Advanced
+    "cops_wetmap": AuditCategory.PIPELINE,
+    "cops_bake_textures": AuditCategory.PIPELINE,
+    "cops_stamp_scatter": AuditCategory.PIPELINE,
+    "cops_batch_cook": AuditCategory.PIPELINE,
 }
 
 # Commands that don't modify state — skip memory logging for these
@@ -148,6 +172,9 @@ _READ_ONLY_COMMANDS = frozenset({
     "tops_query_items",
     "tops_diagnose", "tops_pipeline_status",
     "route_chat",
+    "cops_read_layer_info",
+    "cops_analyze_render",
+    "cops_temporal_analysis",
 })
 
 
@@ -187,7 +214,7 @@ class CommandHandlerRegistry:
 # SYNAPSE HANDLER
 # =============================================================================
 
-class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin):
+class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin):
     """
     Main command handler for the Synapse server.
 
@@ -459,6 +486,34 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("hda_set_help", self._handle_hda_set_help)
         reg.register("hda_package", self._handle_hda_package)
         reg.register("hda_list", self._handle_hda_list)
+
+        # Copernicus (COPs) — Foundation
+        reg.register("cops_create_network", self._handle_cops_create_network)
+        reg.register("cops_create_node", self._handle_cops_create_node)
+        reg.register("cops_connect", self._handle_cops_connect)
+        reg.register("cops_set_opencl", self._handle_cops_set_opencl)
+        reg.register("cops_read_layer_info", self._handle_cops_read_layer_info)
+
+        # Copernicus (COPs) — Pipeline Integration
+        reg.register("cops_to_materialx", self._handle_cops_to_materialx)
+        reg.register("cops_composite_aovs", self._handle_cops_composite_aovs)
+        reg.register("cops_analyze_render", self._handle_cops_analyze_render)
+        reg.register("cops_slap_comp", self._handle_cops_slap_comp)
+
+        # Copernicus (COPs) — Procedural & Motion Design
+        reg.register("cops_create_solver", self._handle_cops_create_solver)
+        reg.register("cops_procedural_texture", self._handle_cops_procedural_texture)
+        reg.register("cops_growth_propagation", self._handle_cops_growth_propagation)
+        reg.register("cops_reaction_diffusion", self._handle_cops_reaction_diffusion)
+        reg.register("cops_pixel_sort", self._handle_cops_pixel_sort)
+        reg.register("cops_stylize", self._handle_cops_stylize)
+
+        # Copernicus (COPs) — Advanced
+        reg.register("cops_wetmap", self._handle_cops_wetmap)
+        reg.register("cops_bake_textures", self._handle_cops_bake_textures)
+        reg.register("cops_temporal_analysis", self._handle_cops_temporal_analysis)
+        reg.register("cops_stamp_scatter", self._handle_cops_stamp_scatter)
+        reg.register("cops_batch_cook", self._handle_cops_batch_cook)
 
         # Undo / Redo
         reg.register("undo", self._handle_undo)

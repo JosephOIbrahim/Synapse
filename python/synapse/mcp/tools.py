@@ -935,6 +935,225 @@ _TOOL_DEFS: list[tuple] = [
          "history_count": {"type": "integer", "description": "Historical snapshots to return (0 = latest)"},
      }, "required": []},
      True, False, True),
+
+    # -- Copernicus (COPs) — Foundation --
+    ("cops_create_network", "cops_create_network", _identity,
+     "Create a COP2 network container for Copernicus image processing.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "Parent node path (default: /obj)"},
+         "name": {"type": "string", "description": "Network name (default: cop2net)"},
+         "initial_nodes": {"type": "array", "items": {"type": "string"},
+                           "description": "COP node types to create inside"},
+     }, "required": []},
+     False, True, False),
+
+    ("cops_create_node", "cops_create_node", _identity,
+     "Create a COP node inside a COP network.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "COP network path"},
+         "type": {"type": "string", "description": "COP node type"},
+         "name": {"type": "string", "description": "Optional node name"},
+     }, "required": ["parent", "type"]},
+     False, True, False),
+
+    ("cops_connect", "cops_connect", _identity,
+     "Connect two COP nodes together.",
+     {"type": "object", "properties": {
+         "source": {"type": "string", "description": "Source COP node path"},
+         "target": {"type": "string", "description": "Target COP node path"},
+         "source_output": {"type": "integer", "description": "Source output index (default: 0)"},
+         "target_input": {"type": "integer", "description": "Target input index (default: 0)"},
+     }, "required": ["source", "target"]},
+     False, True, False),
+
+    ("cops_set_opencl", "cops_set_opencl", _identity,
+     "Set OpenCL kernel code on a COP node for GPU-accelerated processing.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "COP node path"},
+         "kernel_code": {"type": "string", "description": "OpenCL kernel source"},
+         "kernel_name": {"type": "string", "description": "Kernel entry point function name"},
+     }, "required": ["node", "kernel_code"]},
+     False, True, False),
+
+    ("cops_read_layer_info", "cops_read_layer_info",
+     lambda a: {"node": a["node"]},
+     "Read layer info from a COP node: resolution, data type, channels, cook status.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "COP node path"},
+     }, "required": ["node"]},
+     True, False, True),
+
+    # -- Copernicus (COPs) — Pipeline Integration --
+    ("cops_to_materialx", "cops_to_materialx", _identity,
+     "Connect COP output to MaterialX shader via op: path for live procedural textures.",
+     {"type": "object", "properties": {
+         "cop_path": {"type": "string", "description": "COP node path (texture source)"},
+         "material_node": {"type": "string", "description": "MaterialX shader node path"},
+         "input_name": {"type": "string", "description": "Shader texture input (default: base_color_texture)"},
+         "plane": {"type": "string", "description": "COP plane (default: C)"},
+     }, "required": ["cop_path", "material_node"]},
+     False, True, False),
+
+    ("cops_composite_aovs", "cops_composite_aovs", _identity,
+     "Build a COP network to composite Karma AOV layers from EXR renders.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "Parent node path (default: /obj)"},
+         "exr_path": {"type": "string", "description": "Path to multi-layer EXR file"},
+         "aov_list": {"type": "array", "items": {"type": "string"},
+                      "description": "AOV layer names"},
+         "name": {"type": "string", "description": "Network name (default: aov_comp)"},
+     }, "required": ["exr_path"]},
+     False, True, False),
+
+    ("cops_analyze_render", "cops_analyze_render", _identity,
+     "Analyze rendered image in COPs: black pixels, dynamic range, clipping, noise.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "COP node with image"},
+         "checks": {"type": "array", "items": {"type": "string"},
+                    "description": "Checks to run (default: all)"},
+     }, "required": ["node"]},
+     True, False, True),
+
+    ("cops_slap_comp", "cops_slap_comp", _identity,
+     "Configure live viewport compositing overlay using COP output.",
+     {"type": "object", "properties": {
+         "cop_path": {"type": "string", "description": "COP node for overlay"},
+         "blend_mode": {"type": "string", "description": "over, add, multiply (default: over)"},
+         "opacity": {"type": "number", "description": "Overlay opacity 0-1 (default: 1.0)"},
+     }, "required": ["cop_path"]},
+     False, True, False),
+
+    # -- Copernicus (COPs) — Procedural & Motion Design --
+    ("cops_create_solver", "cops_create_solver", _identity,
+     "Create Block Begin/End solver pair for iterative COP processing.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "COP network path"},
+         "name": {"type": "string", "description": "Solver name (default: solver)"},
+         "iterations": {"type": "integer", "description": "Iterations (default: 10)"},
+         "method": {"type": "string", "description": "singlepass or simulate (default: singlepass)"},
+     }, "required": ["parent"]},
+     False, True, False),
+
+    ("cops_procedural_texture", "cops_procedural_texture", _identity,
+     "Generate procedural texture: noise (perlin/worley/simplex), ramp, tiling.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "COP network path"},
+         "noise_type": {"type": "string", "description": "perlin, worley, simplex, alligator"},
+         "frequency": {"type": "number", "description": "Noise frequency (default: 1.0)"},
+         "octaves": {"type": "integer", "description": "Fractal octaves (default: 4)"},
+         "resolution": {"type": "array", "items": {"type": "integer"}, "description": "[w, h]"},
+         "name": {"type": "string", "description": "Node name"},
+     }, "required": ["parent"]},
+     False, True, False),
+
+    ("cops_growth_propagation", "cops_growth_propagation", _identity,
+     "DLA-style growth solver: iterative dilate/blur/threshold from seed mask.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "COP network path"},
+         "seed_mask": {"type": "string", "description": "Seed mask COP node path"},
+         "iterations": {"type": "integer", "description": "Growth iterations (default: 20)"},
+         "growth_rate": {"type": "number", "description": "Growth rate 0-1 (default: 0.5)"},
+         "blur_amount": {"type": "number", "description": "Blur between iterations (default: 1.0)"},
+         "threshold": {"type": "number", "description": "Threshold cutoff (default: 0.5)"},
+         "name": {"type": "string", "description": "Solver name"},
+     }, "required": ["parent"]},
+     False, True, False),
+
+    ("cops_reaction_diffusion", "cops_reaction_diffusion", _identity,
+     "Gray-Scott reaction-diffusion solver via OpenCL for organic patterns.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "COP network path"},
+         "feed_rate": {"type": "number", "description": "Feed rate F (default: 0.055)"},
+         "kill_rate": {"type": "number", "description": "Kill rate k (default: 0.062)"},
+         "diffusion_a": {"type": "number", "description": "Diffusion A (default: 1.0)"},
+         "diffusion_b": {"type": "number", "description": "Diffusion B (default: 0.5)"},
+         "iterations": {"type": "integer", "description": "Iterations (default: 100)"},
+         "resolution": {"type": "array", "items": {"type": "integer"}, "description": "[w, h]"},
+         "name": {"type": "string", "description": "Solver name"},
+     }, "required": ["parent"]},
+     False, True, False),
+
+    ("cops_pixel_sort", "cops_pixel_sort", _identity,
+     "Pixel sorting effect by luminance/hue with threshold and direction.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "COP network path"},
+         "input_node": {"type": "string", "description": "Input COP node"},
+         "sort_by": {"type": "string", "description": "luminance, hue, saturation, value"},
+         "direction": {"type": "string", "description": "horizontal, vertical, diagonal"},
+         "threshold_low": {"type": "number", "description": "Low threshold 0-1 (default: 0.2)"},
+         "threshold_high": {"type": "number", "description": "High threshold 0-1 (default: 0.8)"},
+         "name": {"type": "string", "description": "Node name"},
+     }, "required": ["parent"]},
+     False, True, False),
+
+    ("cops_stylize", "cops_stylize", _identity,
+     "NPR stylization: toon, risograph, posterize, edge detect.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "COP network path"},
+         "input_node": {"type": "string", "description": "Input COP node"},
+         "style_type": {"type": "string", "description": "toon, risograph, posterize, edge_detect"},
+         "levels": {"type": "integer", "description": "Quantization levels (default: 6)"},
+         "edge_width": {"type": "number", "description": "Edge width (default: 1.0)"},
+         "name": {"type": "string", "description": "Node name"},
+     }, "required": ["parent"]},
+     False, True, False),
+
+    # -- Copernicus (COPs) — Advanced --
+    ("cops_wetmap", "cops_wetmap", _identity,
+     "Wetmap effect: temporal decay from SOP velocity/collision in UV space.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "COP network path"},
+         "sop_path": {"type": "string", "description": "SOP velocity/collision source"},
+         "decay": {"type": "number", "description": "Decay rate 0-1 (default: 0.95)"},
+         "blur": {"type": "number", "description": "Spread blur (default: 2.0)"},
+         "resolution": {"type": "array", "items": {"type": "integer"}, "description": "UV res"},
+         "name": {"type": "string", "description": "Node name"},
+     }, "required": ["parent"]},
+     False, True, False),
+
+    ("cops_bake_textures", "cops_bake_textures", _identity,
+     "UV texture baking setup: normal, AO, curvature, position maps.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "COP network path"},
+         "high_res": {"type": "string", "description": "High-res SOP path"},
+         "low_res": {"type": "string", "description": "Low-res SOP path"},
+         "map_types": {"type": "array", "items": {"type": "string"}, "description": "Maps to bake"},
+         "resolution": {"type": "array", "items": {"type": "integer"}, "description": "Output res"},
+         "name": {"type": "string", "description": "Setup name"},
+     }, "required": ["parent"]},
+     False, True, False),
+
+    ("cops_temporal_analysis", "cops_temporal_analysis", _identity,
+     "Temporal coherence analysis: flicker, frame diff, consistency check.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "COP node path"},
+         "frame_range": {"type": "array", "items": {"type": "integer"}, "description": "[start, end]"},
+         "metrics": {"type": "array", "items": {"type": "string"}, "description": "Metrics to compute"},
+     }, "required": ["node"]},
+     True, False, True),
+
+    ("cops_stamp_scatter", "cops_stamp_scatter", _identity,
+     "Stamp image scattering with randomized transform per instance.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "COP network path"},
+         "stamp_source": {"type": "string", "description": "Stamp COP node"},
+         "count": {"type": "integer", "description": "Instance count (default: 50)"},
+         "scale_range": {"type": "array", "items": {"type": "number"}, "description": "[min, max] scale"},
+         "rotation_range": {"type": "array", "items": {"type": "number"}, "description": "[min, max] degrees"},
+         "seed": {"type": "integer", "description": "Random seed (default: 42)"},
+         "name": {"type": "string", "description": "Node name"},
+     }, "required": ["parent"]},
+     False, True, False),
+
+    ("cops_batch_cook", "cops_batch_cook", _identity,
+     "Batch-cook multiple COP nodes sequentially.",
+     {"type": "object", "properties": {
+         "nodes": {"type": "array", "items": {"type": "string"}, "description": "COP node paths"},
+         "parallel": {"type": "boolean", "description": "Use TOPS (default: false)"},
+         "frame_range": {"type": "array", "items": {"type": "integer"}, "description": "[start, end]"},
+         "name": {"type": "string", "description": "Batch name"},
+     }, "required": ["nodes"]},
+     False, True, False),
 ]
 
 
