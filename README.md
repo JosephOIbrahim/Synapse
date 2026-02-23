@@ -5,10 +5,10 @@
 <p align="center"><b>AI-Houdini Bridge with Persistent Project Memory</b></p>
 
 <p align="center">
-  <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-5.3.0-blue.svg" alt="Version"></a>
+  <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-5.7.0-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-blue.svg" alt="Python"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-1%2C427%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-2%2C055%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="python/synapse/core/protocol.py"><img src="https://img.shields.io/badge/protocol-v4.0.0-orange.svg" alt="Protocol"></a>
 </p>
 
@@ -22,7 +22,7 @@ Built as a standalone package with zero required dependencies.
 
 ## Key Features
 
-- **43 MCP Tools** -- Full Houdini control from Claude: nodes, parameters, USD, materials, lighting, rendering, viewport capture
+- **87 MCP Tools** -- Full Houdini control from Claude: nodes, parameters, USD, materials, lighting, rendering, viewport capture, TOPS/PDG, HDA creation
 - **Persistent Memory** -- Project memory stored alongside your HIP file with search, decisions, and context summaries
 - **Living Memory** -- Evolving per-project and per-scene markdown journals that grow with your work
 - **Wire Protocol** -- Typed commands over WebSocket with parameter aliasing and deterministic queuing
@@ -31,9 +31,9 @@ Built as a standalone package with zero required dependencies.
 - **VEX Execution** -- Run VEX wrangles directly from conversation
 - **Production Resilience** -- Rate limiter, circuit breaker, port failover, watchdog, backpressure
 - **Viewport + Render Capture** -- AI can see what you see via flipbook and Karma renders
-- **RAG-Powered Routing** -- Knowledge lookup from Houdini documentation (21 built-in workflow recipes) plus 2,079 labeled VEX examples from [vex-corpus](https://github.com/JosephOIbrahim/vex-corpus)
+- **RAG-Powered Routing** -- Knowledge lookup from Houdini documentation (48 built-in workflow recipes) plus 2,079 labeled VEX examples from [vex-corpus](https://github.com/JosephOIbrahim/vex-corpus)
 - **Determinism** -- Canonical ordering and tier pinning ([He2025] inspired), plus fixed-precision rounding, content-based IDs, and Kahan summation
-- **Houdini Optional** -- All 1,427 tests run without Houdini; core library has zero required dependencies
+- **Houdini Optional** -- All 2,055 tests run without Houdini; core library has zero required dependencies
 
 ---
 

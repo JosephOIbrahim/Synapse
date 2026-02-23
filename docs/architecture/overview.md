@@ -5,7 +5,7 @@
 ```
 Claude Desktop/Code
     |  stdio / JSON-RPC
-mcp_server.py  (43 tools, concurrent dispatch)
+mcp_server.py  (87 tools, concurrent dispatch)
     |  WebSocket: ws://localhost:9999/synapse
 SynapseServer  (daemon thread inside Houdini)
     |  CommandHandlerRegistry
@@ -24,7 +24,7 @@ Houdini USD Stage / Solaris / Karma
 | Agent | `synapse.agent` | Prepare/propose/execute/learn lifecycle, task/plan/step protocol |
 | Server | `synapse.server` | WebSocket server, command handlers, resilience stack, introspection, authentication |
 | Session | `synapse.session` | SynapseBridge singleton, session summaries |
-| UI | `synapse.ui` | Qt panel with 5 tabs (requires PySide2) |
+| UI | `synapse.ui` | Qt panel with 5 tabs (requires PySide6 on Houdini 21+, PySide2 fallback) |
 
 ## Routing Cascade
 
