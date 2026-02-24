@@ -15,7 +15,7 @@ from typing import Dict, List, Any, Optional
 
 PARAM_ALIASES: Dict[str, List[str]] = {
     # Node references
-    "source": ["source", "from_node", "from", "src", "input_node"],
+    "source": ["source", "from_node", "from", "src"],
     "target": ["target", "to_node", "to", "dst", "output_node", "dest"],
     "node": ["node", "path", "node_path"],
     "parent": ["parent", "parent_path", "parent_node"],
@@ -33,14 +33,14 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "name": ["name", "node_name", "nodeName"],
 
     # USD
-    "prim_path": ["prim_path", "path", "primPath"],
-    "prim_type": ["prim_type", "type", "primType"],
-    "usd_attribute": ["usd_attribute", "attribute_name", "attrName", "attr_name"],
+    "prim_path": ["prim_path", "primPath"],
+    "prim_type": ["prim_type", "primType"],
+    "usd_attribute": ["usd_attribute", "usd_attr_name", "attrName"],
 
     # Memory operations
-    "query": ["query", "q", "search", "text"],
+    "query": ["query", "q", "search"],
     "content": ["content", "text", "message", "body"],
-    "memory_type": ["memory_type", "type", "memoryType"],
+    "memory_type": ["memory_type", "memoryType"],
     "tags": ["tags", "labels", "categories"],
     "keywords": ["keywords", "keys", "concepts"],
     "limit": ["limit", "max", "count"],
@@ -66,13 +66,13 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "max_concurrent": ["max_concurrent", "max_procs", "concurrency"],
     "working_dir": ["working_dir", "work_dir", "pdg_workingdir"],
     "dirty_upstream": ["dirty_upstream", "upstream", "recursive"],
-    "wedge_name": ["wedge_name", "name"],
+    "wedge_name": ["wedge_name", "wedge_label"],
     "attributes": ["attributes", "wedge_attributes", "wedge_attrs"],
     "node_paths": ["node_paths", "nodes", "paths"],
     "stop_on_error": ["stop_on_error", "stop_on_fail", "fail_fast"],
-    "query_attribute": ["query_attribute", "attribute_name", "attr_name", "attrib"],
+    "query_attribute": ["query_attribute", "attrib", "query_attr"],
     "filter_op": ["filter_op", "operator", "op"],
-    "filter_value": ["filter_value", "value", "match_value"],
+    "filter_value": ["filter_value", "match_value"],
     "max_retries": ["max_retries", "retries", "retry_count"],
     "validate_states": ["validate_states", "validate", "check_states"],
     "include_scheduler": ["include_scheduler", "check_scheduler"],
@@ -80,7 +80,7 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "include_items": ["include_items", "show_items"],
 
     # USD scene assembly
-    "file": ["file", "filepath", "file_path", "path", "usd_file"],
+    "file": ["file", "filepath", "file_path", "usd_file"],
     "mode": ["mode", "import_mode"],
     "settings": ["settings", "overrides", "params"],
 
@@ -111,7 +111,7 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     "input_node": ["input_node", "input", "input_geo"],
 
     # Frame validation
-    "image_path": ["image_path", "image", "file_path", "frame_path"],
+    "image_path": ["image_path", "image", "frame_path"],
     "checks": ["checks", "validations", "check_list"],
     "thresholds": ["thresholds", "threshold_overrides", "limits"],
 

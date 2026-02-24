@@ -396,7 +396,19 @@ class AuditLog:
         expected_hash = "genesis"
 
         for i, entry in enumerate(self._entries):
+            # Verify chain link: previous_hash must match prior entry's hash
             if entry.previous_hash != expected_hash:
+                result = (False, i)
+                self._last_verify_mtime = current_mtime
+                self._last_verify_result = result
+                return result
+            # Verify content integrity: recompute hash and compare
+            recomputed = entry._compute_hash()
+            if recomputed != entry.entry_hash:
+                logger.warning(
+                    "Audit entry %d content hash mismatch: stored=%s recomputed=%s",
+                    i, entry.entry_hash[:12], recomputed[:12],
+                )
                 result = (False, i)
                 self._last_verify_mtime = current_mtime
                 self._last_verify_result = result

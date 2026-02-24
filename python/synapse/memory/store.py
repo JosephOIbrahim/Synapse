@@ -160,12 +160,16 @@ class MemoryStore:
     - Basic search and filtering
     """
 
+    # Throttle evolution checks: at most once per N add() calls
+    _EVOLUTION_CHECK_INTERVAL = 10
+
     def __init__(self, storage_dir: Path, background_load: bool = True):
         self.storage_dir = Path(storage_dir)
         self.memory_file = self.storage_dir / "memory.jsonl"
         self.index_file = self.storage_dir / "index.json"
 
         self._memories: Dict[str, Memory] = {}
+        self._add_count = 0  # Counter for evolution throttle
         self._index: Dict[str, Any] = {
             "by_type": {},
             "by_tag": {},
@@ -177,6 +181,7 @@ class MemoryStore:
         }
         self._lock = ReadWriteLock()
         self._dirty = False
+        self._needs_rewrite = False  # Set by update/delete to trigger full save
         self._loaded = threading.Event()
 
         # Write buffer — defers disk I/O to background thread (saves 1-5ms per add)
@@ -222,7 +227,24 @@ class MemoryStore:
             self._flush_writes()
 
     def _flush_writes(self):
-        """Flush buffered memory lines to disk."""
+        """Flush buffered memory lines to disk.
+
+        If _needs_rewrite is set (from update/delete), does a full rewrite
+        via save() since JSONL append-only format can't express mutations.
+        Otherwise, appends buffered add() lines.
+        """
+        # Check if a full rewrite is needed (update/delete happened)
+        if self._needs_rewrite:
+            # Drain the append buffer (those adds are already in _memories)
+            with self._write_lock:
+                self._write_buffer.clear()
+            self._needs_rewrite = False
+            try:
+                self.save()
+            except Exception as e:
+                logger.error("Full rewrite flush error: %s", e)
+            return
+
         with self._write_lock:
             if not self._write_buffer:
                 return
@@ -394,7 +416,31 @@ class MemoryStore:
             if len(self._write_buffer) >= self._flush_max:
                 self._flush_event.set()
 
+        # Throttled evolution check (Charmander -> Charmeleon)
+        self._add_count += 1
+        if self._add_count % self._EVOLUTION_CHECK_INTERVAL == 0:
+            self._check_evolution()
+
         return memory.id
+
+    def _check_evolution(self):
+        """Check if memory should evolve (e.g., markdown -> USD).
+
+        Runs in the caller thread but is cheap (file stat + line scan).
+        Only triggers when storage_dir looks like a project .synapse/ dir.
+        """
+        try:
+            from .evolution import check_evolution
+            result = check_evolution(str(self.storage_dir))
+            if result.get("should_evolve"):
+                logger.info(
+                    "Memory evolution triggered: %s -> %s (triggers: %s)",
+                    result.get("current", "?"),
+                    result.get("target", "?"),
+                    ", ".join(result.get("triggers_met", [])),
+                )
+        except Exception as e:
+            logger.debug("Evolution check skipped: %s", e)
 
     def get(self, memory_id: str) -> Optional[Memory]:
         """Get a memory by ID."""
@@ -403,7 +449,11 @@ class MemoryStore:
             return self._memories.get(memory_id)
 
     def update(self, memory: Memory):
-        """Update an existing memory."""
+        """Update an existing memory.
+
+        Schedules a full JSONL rewrite on next flush cycle since
+        append-only format can't express inline mutations.
+        """
         self._wait_loaded()  # Block until background load completes
         with self._lock.write_lock():
             if memory.id in self._memories:
@@ -411,14 +461,24 @@ class MemoryStore:
                 self._memories[memory.id] = memory
                 self._index_memory(memory)
                 self._dirty = True
+                self._needs_rewrite = True
+        # Wake flusher to persist the change
+        self._flush_event.set()
 
     def delete(self, memory_id: str) -> bool:
-        """Delete a memory by ID."""
+        """Delete a memory by ID.
+
+        Schedules a full JSONL rewrite on next flush cycle since
+        append-only format can't express deletions.
+        """
         self._wait_loaded()  # Block until background load completes
         with self._lock.write_lock():
             if memory_id in self._memories:
                 del self._memories[memory_id]
                 self._dirty = True
+                self._needs_rewrite = True
+                # Wake flusher to persist the change
+                self._flush_event.set()
                 return True
             return False
 

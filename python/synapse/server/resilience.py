@@ -876,8 +876,19 @@ SERVICE_ERROR_TYPES = (
 
 
 def is_service_error(error: Exception) -> bool:
-    """Check if an error should trip the circuit breaker."""
-    return isinstance(error, SERVICE_ERROR_TYPES)
+    """Check if an error should trip the circuit breaker.
+
+    Includes static SERVICE_ERROR_TYPES plus dynamic Houdini errors
+    (hou.OperationFailed, hou.ObjectWasDeleted) which aren't available
+    at import time.
+    """
+    if isinstance(error, SERVICE_ERROR_TYPES):
+        return True
+    # Houdini errors: check by class name since hou may not be imported
+    err_name = type(error).__qualname__
+    if err_name in ("OperationFailed", "ObjectWasDeleted", "InitializationError"):
+        return True
+    return False
 
 
 def is_user_error(error: Exception) -> bool:

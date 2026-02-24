@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/guard-edit-targets.py",
+            "command": "python C:/Users/User/SYNAPSE/.claude/hooks/guard-edit-targets.py",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/check-python.sh",
+            "command": "C:/Users/User/SYNAPSE/.claude/hooks/check-python.sh",
             "timeout": 30
           }
         ]
