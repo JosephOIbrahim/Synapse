@@ -7,23 +7,25 @@ the SYNAPSE server via WebSocket.
 Layout::
 
     +-------------------------------------+
-    | Chat History (QTextEdit, read-only)  |  <- expanding
-    |                                      |
-    | [SYNAPSE] Ready. What shall we       |
-    | work on?                             |
-    |                                      |
-    | [You] Scatter rocks on terrain       |
-    |                                      |
-    | [SYNAPSE] Done -- created scatter    |
-    | network at /obj/geo1/rock_scatter    |
-    +--------------------------------------+
-    | /obj/geo1  * Connected   3 nodes     |  <- context bar
-    +--------------------------------------+
-    | [Explain] [Make HDA] [Fix Error]     |  <- quick actions
-    | [Optimize] [VEX Help]                |
-    +--------------------------------------+
-    | Type a message...          | Send |  |  <- input area
-    +--------------------------------------+
+    | [Chat] [Create HDA]                |  <- mode toolbar
+    +-------------------------------------+
+    | Chat History (QTextBrowser)         |  <- expanding
+    |                                     |
+    | SYNAPSE                             |
+    | Ready. What shall we work on?       |
+    |                           2:34 PM   |
+    |                                     |
+    |                    You              |
+    |    Scatter rocks on terrain         |
+    |                           2:35 PM   |
+    +-------------------------------------+
+    | v [Explain] [Make HDA] [Fix Error]  |  <- collapsible quick action pills
+    +-------------------------------------+
+    | * /obj/geo1  3 nodes  F24           |  <- context chips (inline)
+    | Type a message...         [Aa] Send |  <- growing multi-line input
+    +-------------------------------------+
+    | * Connected  ws://...    [Connect]  |  <- connection bar
+    +-------------------------------------+
 """
 
 try:
@@ -34,15 +36,16 @@ except ImportError:
     from PySide2.QtCore import Signal, Slot, QTimer
 
 from synapse.panel.chat_display import ChatDisplay
-from synapse.panel.context_bar import ContextBar
+from synapse.panel.context_bar import ContextChips
 from synapse.panel.ws_bridge import SynapseWSBridge
-from synapse.panel.quick_actions import QUICK_ACTIONS
+from synapse.panel.quick_actions import (
+    QUICK_ACTIONS, CONTEXT_MENU_EXTRAS, QuickActionPills,
+)
 from synapse.panel.hda_views import DescribeView, BuildingView, ResultView
 from synapse.panel.styles import (
     get_hda_stylesheet,
     animate_stack_transition,
-    get_quick_action_button_stylesheet,
-    get_input_stylesheet,
+    get_growing_input_stylesheet,
     get_send_button_stylesheet,
     get_connect_button_stylesheet,
     get_ws_url_button_stylesheet,
@@ -52,6 +55,7 @@ from synapse.panel.styles import (
     get_section_container_stylesheet,
     get_connection_frame_stylesheet,
     get_mode_toolbar_stylesheet,
+    get_font_size_button_stylesheet,
 )
 from synapse.panel import tokens as t
 
@@ -83,21 +87,41 @@ def _find_running_server():
 
 
 class _InputEventFilter(QtCore.QObject):
-    """QObject-based event filter for Up-arrow recall in the input field."""
+    """Event filter for Enter-to-send, Shift+Enter-for-newline, and Up-arrow recall."""
 
     def __init__(self, panel, parent=None):
         super().__init__(parent)
         self._panel = panel
 
     def eventFilter(self, obj, event):
-        if obj is self._panel._input and event.type() == QtCore.QEvent.KeyPress:
-            if (
-                event.key() == QtCore.Qt.Key_Up
-                and not self._panel._input.text()
-                and self._panel._last_sent_message
-            ):
-                self._panel._input.setText(self._panel._last_sent_message)
+        if obj is not self._panel._input:
+            return False
+        if event.type() != QtCore.QEvent.KeyPress:
+            return False
+
+        key = event.key()
+        mods = event.modifiers()
+
+        # Enter/Return sends message (without Shift)
+        if key in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
+            if mods & QtCore.Qt.ShiftModifier:
+                # Shift+Enter: insert newline (default QTextEdit behavior)
+                return False
+            # Plain Enter: send
+            self._panel._send_message()
+            return True
+
+        # Up arrow recalls last message when input is empty
+        if key == QtCore.Qt.Key_Up:
+            text = self._panel._input.toPlainText()
+            if not text and self._panel._last_sent_message:
+                self._panel._input.setPlainText(self._panel._last_sent_message)
+                # Move cursor to end
+                cursor = self._panel._input.textCursor()
+                cursor.movePosition(QtGui.QTextCursor.End)
+                self._panel._input.setTextCursor(cursor)
                 return True
+
         return False
 
 
@@ -118,6 +142,8 @@ class SynapseChatPanel:
         self._project_initialized = False
         self._last_sent_message = ""
         self._waiting_for_response = False
+        self._font_scale = t.FONT_SCALE_DEFAULT
+        self._font_scale_index = t.FONT_SCALE_STEPS.index(t.FONT_SCALE_DEFAULT)
 
     def createInterface(self):
         """Build the panel layout and return the root QWidget.
@@ -142,24 +168,25 @@ class SynapseChatPanel:
         self._mode_stack = QtWidgets.QStackedWidget(self._root)
         self._mode_stack.setObjectName("ModeStack")
 
-        # Index 0: Chat mode (existing layout wrapped in a widget)
+        # Index 0: Chat mode
         self._chat_widget = QtWidgets.QWidget()
         chat_layout = QtWidgets.QVBoxLayout(self._chat_widget)
         chat_layout.setContentsMargins(0, 0, 0, 0)
         chat_layout.setSpacing(0)
 
+        # 1. Chat display (expanding)
         self._chat = ChatDisplay(self._chat_widget)
         self._chat.node_clicked.connect(self._on_node_clicked)
         chat_layout.addWidget(self._chat, stretch=1)
 
-        self._context_bar = ContextBar(self._chat_widget)
-        chat_layout.addWidget(self._context_bar)
+        # 2. Quick actions (collapsible pills)
+        self._quick_actions = QuickActionPills(self._chat_widget)
+        self._quick_actions.action_triggered.connect(self._on_quick_action)
+        chat_layout.addWidget(self._quick_actions)
 
-        actions_widget = self._build_quick_actions()
-        chat_layout.addWidget(actions_widget)
-
-        input_widget = self._build_input_area()
-        chat_layout.addWidget(input_widget)
+        # 3. Context chips + input area (merged)
+        input_container = self._build_input_area()
+        chat_layout.addWidget(input_container)
 
         self._mode_stack.addWidget(self._chat_widget)  # index 0
 
@@ -198,13 +225,17 @@ class SynapseChatPanel:
         # -- HDA controller (wired in Phase 3, lazy import) -------------
         self._wire_hda_controller()
 
-        # -- Context background refresh (lazy — primary freshness via gather-on-send)
+        # -- Context background refresh
         self._context_timer = QTimer(self._root)
         self._context_timer.timeout.connect(self._poll_context)
         self._context_timer.setInterval(10000)
 
         # -- Keyboard shortcuts -------------------------------------------
         self._install_shortcuts()
+
+        # -- Right-click context menu on chat display --------------------
+        self._chat.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self._chat.customContextMenuRequested.connect(self._show_context_menu)
 
         # -- Welcome message ---------------------------------------------
         self._chat.append_synapse_message(
@@ -239,33 +270,23 @@ class SynapseChatPanel:
     # -- Server auto-start -----------------------------------------------
 
     def _ensure_server(self):
-        """Make sure a SynapseServer is running before the bridge connects.
-
-        Check-or-create hierarchy:
-        1. hou.session._synapse_server (O(1), survives panel reloads)
-        2. gc.get_objects() sweep (catches zombie servers)
-        3. Create + start new SynapseServer (first-open case)
-        4. Write back to hou.session for cross-panel discovery
-        """
+        """Make sure a SynapseServer is running before the bridge connects."""
         import os
 
         try:
             import hou
         except ImportError:
-            return  # Not inside Houdini -- nothing to do
+            return
 
-        # Step 1: Check hou.session
         server = getattr(hou.session, "_synapse_server", None)
         if server is not None and getattr(server, "_running", False):
-            return  # Already running
+            return
 
-        # Step 2: gc sweep fallback
         server = _find_running_server()
         if server is not None:
             hou.session._synapse_server = server
             return
 
-        # Step 3: Create + start
         SynapseServer = _get_server_class()
         if SynapseServer is None:
             self._chat.append_system_message(
@@ -283,7 +304,6 @@ class SynapseChatPanel:
             )
             return
 
-        # Step 4: Persist for cross-panel discovery
         hou.session._synapse_server = server
         actual_port = getattr(server, "_actual_port", port)
         self._chat.append_system_message(
@@ -293,11 +313,7 @@ class SynapseChatPanel:
     # -- Project memory auto-init ----------------------------------------
 
     def _ensure_project_initialized(self):
-        """Auto-call project_setup on first interaction.
-
-        Non-blocking -- if the server is unreachable the flag stays False
-        and will retry on the next message.
-        """
+        """Auto-call project_setup on first interaction."""
         if self._project_initialized:
             return
         if self._bridge is not None and self._bridge.connected:
@@ -305,117 +321,213 @@ class SynapseChatPanel:
                 self._bridge.send_command("project_setup", {})
                 self._project_initialized = True
             except Exception:
-                pass  # Non-blocking, will retry next message
+                pass
 
     # -- Keyboard shortcuts -----------------------------------------------
 
     def _install_shortcuts(self):
-        """Install keyboard shortcuts on the root widget.
-
-        Bindings:
-        - Ctrl+L  -- clear chat history
-        - Ctrl+K  -- focus the input field
-        - Escape  -- clear input / cancel waiting
-        - Up      -- recall last sent message (when input is empty)
-        """
-        # Ctrl+L — clear chat
+        """Install keyboard shortcuts on the root widget."""
         _QShortcut = getattr(QtGui, "QShortcut", None) or QtWidgets.QShortcut
+
         clear_sc = _QShortcut(
             QtGui.QKeySequence("Ctrl+L"), self._root
         )
         clear_sc.activated.connect(self._shortcut_clear_chat)
 
-        # Ctrl+K — focus input
         focus_sc = _QShortcut(
             QtGui.QKeySequence("Ctrl+K"), self._root
         )
         focus_sc.activated.connect(self._shortcut_focus_input)
 
-        # Escape — clear input text or cancel
         esc_sc = _QShortcut(
             QtGui.QKeySequence("Escape"), self._root
         )
         esc_sc.activated.connect(self._shortcut_escape)
 
-        # Up arrow recall is handled via event filter on the input.
-        # SynapseChatPanel isn't a QObject, so use a small helper.
+        # Event filter for Enter/Shift+Enter/Up on QTextEdit input
         self._event_filter = _InputEventFilter(self, parent=self._input)
         self._input.installEventFilter(self._event_filter)
 
     def _shortcut_clear_chat(self):
-        """Ctrl+L — clear all chat history."""
+        """Ctrl+L -- clear all chat history."""
         if self._chat is not None:
             self._chat.clear()
 
     def _shortcut_focus_input(self):
-        """Ctrl+K — focus the message input field."""
+        """Ctrl+K -- focus the message input field."""
         if self._input is not None:
             self._input.setFocus()
 
     def _shortcut_escape(self):
-        """Escape — clear input text. If already empty, no-op."""
+        """Escape -- clear input text."""
         if self._input is not None:
             self._input.clear()
 
     # -- UI builders -----------------------------------------------------
 
-    def _build_quick_actions(self):
-        """Build the quick action buttons row."""
-        widget = QtWidgets.QWidget(self._root)
-        widget.setStyleSheet(get_section_container_stylesheet())
-
-        # Use a flow layout via QHBoxLayout with wrapping
-        layout = QtWidgets.QHBoxLayout(widget)
-        layout.setContentsMargins(8, 6, 8, 6)
-        layout.setSpacing(6)
-
-        for action in QUICK_ACTIONS:
-            btn = QtWidgets.QPushButton(action["label"], widget)
-            btn.setToolTip(action.get("tooltip", ""))
-            btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-            btn.setStyleSheet(get_quick_action_button_stylesheet())
-            # Capture action in closure
-            btn.clicked.connect(
-                lambda checked=False, a=action: self._on_quick_action(a)
-            )
-            layout.addWidget(btn)
-
-        layout.addStretch()
-        return widget
-
     def _build_input_area(self):
-        """Build the message input field and send button."""
-        widget = QtWidgets.QWidget(self._root)
-        widget.setStyleSheet(get_section_container_stylesheet())
+        """Build the merged context chips + growing input + send button + font control."""
+        container = QtWidgets.QWidget(self._root)
+        container.setStyleSheet(get_section_container_stylesheet())
 
-        layout = QtWidgets.QHBoxLayout(widget)
-        layout.setContentsMargins(8, 6, 8, 8)
-        layout.setSpacing(8)
+        outer_layout = QtWidgets.QVBoxLayout(container)
+        outer_layout.setContentsMargins(8, 6, 8, 8)
+        outer_layout.setSpacing(4)
 
-        # Text input
-        self._input = QtWidgets.QLineEdit(widget)
+        # Context chips row (above input)
+        self._context_chips = ContextChips(container)
+        outer_layout.addWidget(self._context_chips)
+
+        # Input row: QTextEdit + font button + send button
+        input_row = QtWidgets.QHBoxLayout()
+        input_row.setSpacing(8)
+
+        # Growing text input (replaces QLineEdit)
+        self._input = QtWidgets.QTextEdit(container)
         self._input.setPlaceholderText("Type a message...")
-        self._input.setStyleSheet(get_input_stylesheet())
-        self._input.returnPressed.connect(self._send_message)
-        layout.addWidget(self._input, stretch=1)
+        self._input.setStyleSheet(get_growing_input_stylesheet())
+        self._input.setMinimumHeight(t.CHAT_INPUT_MIN_H)
+        self._input.setMaximumHeight(t.CHAT_INPUT_MAX_H)
+        self._input.setAcceptRichText(False)
+        self._input.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self._input.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self._input.textChanged.connect(self._adjust_input_height)
+        input_row.addWidget(self._input, stretch=1)
+
+        # Right-side controls (vertical stack: font icon on top, send below)
+        controls_layout = QtWidgets.QVBoxLayout()
+        controls_layout.setSpacing(4)
+
+        # Font size control "Aa" button
+        self._font_btn = QtWidgets.QPushButton("Aa", container)
+        self._font_btn.setFixedSize(28, 22)
+        self._font_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self._font_btn.setToolTip(
+            "Font size: {:.0f}%".format(self._font_scale * 100)
+        )
+        self._font_btn.setStyleSheet(get_font_size_button_stylesheet())
+        self._font_btn.clicked.connect(self._cycle_font_size)
+        controls_layout.addWidget(self._font_btn, alignment=QtCore.Qt.AlignRight)
 
         # Send button
-        self._send_btn = QtWidgets.QPushButton("Send", widget)
+        self._send_btn = QtWidgets.QPushButton("Send", container)
         self._send_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self._send_btn.setStyleSheet(get_send_button_stylesheet())
         self._send_btn.clicked.connect(self._send_message)
-        layout.addWidget(self._send_btn)
+        controls_layout.addWidget(self._send_btn)
 
-        return widget
+        input_row.addLayout(controls_layout)
+        outer_layout.addLayout(input_row)
+
+        return container
+
+    def _adjust_input_height(self):
+        """Auto-grow the QTextEdit based on content, up to max height."""
+        doc = self._input.document()
+        # Add padding/margins to the document height
+        doc_height = int(doc.size().height()) + 12
+        new_h = max(t.CHAT_INPUT_MIN_H, min(doc_height, t.CHAT_INPUT_MAX_H))
+        self._input.setFixedHeight(new_h)
+
+    def _cycle_font_size(self):
+        """Cycle through font scale steps: 0.75x -> 1.0x -> 1.25x -> 1.5x."""
+        steps = t.FONT_SCALE_STEPS
+        self._font_scale_index = (self._font_scale_index + 1) % len(steps)
+        self._font_scale = steps[self._font_scale_index]
+
+        # Update chat display
+        self._chat.font_scale = self._font_scale
+
+        # Update tooltip
+        self._font_btn.setToolTip(
+            "Font size: {:.0f}%".format(self._font_scale * 100)
+        )
+
+    # -- Right-click context menu ----------------------------------------
+
+    def _show_context_menu(self, pos):
+        """Build and show context menu on right-click in chat display."""
+        menu = QtWidgets.QMenu(self._chat)
+        menu.setStyleSheet(
+            "QMenu {{ background: {bg}; color: {fg}; border: 1px solid {border}; }}"
+            "QMenu::item:selected {{ background: {hover}; }}".format(
+                bg=t.CARBON, fg=t.BONE, border=t.GRAPHITE, hover=t.HOVER,
+            )
+        )
+
+        # Quick actions
+        for action in QUICK_ACTIONS:
+            act = menu.addAction(action["label"])
+            act.setToolTip(action.get("tooltip", ""))
+            act.triggered.connect(
+                lambda checked=False, a=action: self._on_quick_action(a)
+            )
+
+        menu.addSeparator()
+
+        # Extra context menu actions
+        for extra in CONTEXT_MENU_EXTRAS:
+            act = menu.addAction(extra["label"])
+            action_key = extra.get("action", "")
+            act.triggered.connect(
+                lambda checked=False, key=action_key: self._on_context_menu_action(key)
+            )
+
+        menu.exec_(self._chat.mapToGlobal(pos))
+
+    def _on_context_menu_action(self, action_key):
+        """Handle context menu extra actions."""
+        if action_key == "clear_chat":
+            self._chat.clear()
+        elif action_key == "copy_last":
+            self._copy_last_response()
+        elif action_key == "toggle_actions":
+            expanded = self._quick_actions._expanded
+            self._quick_actions.set_expanded(not expanded)
+
+    def _copy_last_response(self):
+        """Copy the last SYNAPSE response text to clipboard."""
+        import subprocess
+        import platform
+
+        # Extract plain text from the chat display
+        text = self._chat.toPlainText()
+        # Find the last SYNAPSE block
+        lines = text.split("\n")
+        last_synapse_lines = []
+        in_synapse = False
+        for line in reversed(lines):
+            stripped = line.strip()
+            if stripped == "SYNAPSE":
+                in_synapse = True
+                break
+            if in_synapse or stripped:
+                last_synapse_lines.insert(0, line)
+
+        response_text = "\n".join(last_synapse_lines).strip()
+        if not response_text:
+            return
+
+        if platform.system() == "Windows":
+            try:
+                subprocess.run(
+                    ["clip"], input=response_text.encode("utf-8"),
+                    creationflags=0x08000000, timeout=5,
+                )
+                return
+            except Exception:
+                pass
+        try:
+            app = QtWidgets.QApplication.instance()
+            if app:
+                app.clipboard().setText(response_text)
+        except Exception:
+            pass
 
     # -- Connection bar --------------------------------------------------
 
     def _build_connection_bar(self):
-        """Build the bottom connection status and controls.
-
-        Styled to match the SYNAPSE design system connection_frame pattern:
-        mono font, SIGNAL cyan accents, canonical GROW/ERROR status colors.
-        """
+        """Build the bottom connection status and controls."""
         import os
 
         _port = int(os.environ.get("SYNAPSE_PORT", "9999"))
@@ -443,7 +555,7 @@ class SynapseChatPanel:
 
         layout.addStretch()
 
-        # Connect/Disconnect button (matches design system connect_button)
+        # Connect/Disconnect button
         self._conn_btn = QtWidgets.QPushButton("Connect")
         self._conn_btn.setObjectName("connect_button")
         self._conn_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
@@ -451,7 +563,7 @@ class SynapseChatPanel:
         self._conn_btn.clicked.connect(self._on_connect_toggle)
         layout.addWidget(self._conn_btn)
 
-        # WS URL button (matches design system ws_path_button)
+        # WS URL button
         ws_btn = QtWidgets.QPushButton(self._ws_url)
         ws_btn.setObjectName("ws_path_button")
         ws_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
@@ -472,7 +584,6 @@ class SynapseChatPanel:
         else:
             self._ensure_server()
             if self._bridge is not None:
-                # Immediate visual feedback -- show "Connecting..." state
                 self._conn_dot.setStyleSheet(get_status_dot_stylesheet(_SIGNAL))
                 self._conn_label.setText("Connecting...")
                 self._conn_label.setStyleSheet(
@@ -487,7 +598,9 @@ class SynapseChatPanel:
 
     def _on_copy_ws_url(self):
         """Copy WebSocket URL to clipboard."""
-        import subprocess, platform
+        import subprocess
+        import platform
+
         url = getattr(self, "_ws_url", "ws://localhost:9999/synapse")
         if platform.system() == "Windows":
             try:
@@ -554,12 +667,11 @@ class SynapseChatPanel:
             self._mode_hda_btn.setObjectName("ModeToggleInactive")
         elif mode == "hda":
             animate_stack_transition(self._mode_stack, 1)
-            self._hda_stack.setCurrentIndex(0)  # Reset to Describe
+            self._hda_stack.setCurrentIndex(0)
             self.describe_view.reset()
             self._mode_chat_btn.setObjectName("ModeToggleInactive")
             self._mode_hda_btn.setObjectName("ModeToggleActive")
 
-        # Refresh styling after objectName change
         for btn in (self._mode_chat_btn, self._mode_hda_btn):
             btn.style().unpolish(btn)
             btn.style().polish(btn)
@@ -573,28 +685,17 @@ class SynapseChatPanel:
             context_source=lambda: self._last_context,
         )
 
-        # Describe -> Controller
         self.describe_view.generate_requested.connect(
             self._hda_controller.execute
         )
-
-        # Controller -> Building
         self._hda_controller.progress.connect(
             self.building_view.update_stage
         )
-
-        # Auto-switch to Building view when generation starts
         self.describe_view.generate_requested.connect(
             lambda *_: animate_stack_transition(self._hda_stack, 1)
         )
-
-        # Controller -> Result
         self._hda_controller.result.connect(self._on_hda_result)
-
-        # Result actions
         self.result_view.action_requested.connect(self._on_hda_action)
-
-        # Cancel -> back to Describe
         self.building_view.cancel_requested.connect(
             self._hda_controller.cancel
         )
@@ -615,26 +716,16 @@ class SynapseChatPanel:
             self.building_view.reset()
             animate_stack_transition(self._hda_stack, 0)
         elif action == "inspect":
-            # Navigate to the created HDA in the network editor
             path = self.result_view.path_label.text()
             if path:
                 self._on_node_clicked(path)
         elif action == "save":
-            # Could trigger file dialog in future
             pass
 
     # -- Actions ---------------------------------------------------------
 
     def _gather_context_if_stale(self, max_age_ms=_CONTEXT_MAX_AGE_MS):
-        """Gather context only if cached data is stale.
-
-        Returns the cached context dict. Triggers a fresh gather via the
-        bridge only when the cache is older than *max_age_ms* (default 5s).
-
-        NOTE: This runs on the main thread (Qt slot), so we call the
-        gather function directly instead of via hdefereval which would
-        deadlock.
-        """
+        """Gather context only if cached data is stale."""
         import time
         now = time.time() * 1000
         if self._last_context_time and (now - self._last_context_time) < max_age_ms:
@@ -650,13 +741,8 @@ class SynapseChatPanel:
         return self._last_context
 
     def _send_message(self):
-        """Read input field, send via WS bridge, clear input.
-
-        Gathers fresh context only when the cache is stale (>5s old).
-        Otherwise reuses the cached context to avoid blocking the main
-        thread on every send.
-        """
-        text = self._input.text().strip()
+        """Read input field, send via WS bridge, clear input."""
+        text = self._input.toPlainText().strip()
         if not text:
             return
 
@@ -680,19 +766,7 @@ class SynapseChatPanel:
 
     @Slot(dict)
     def _on_response(self, response):
-        """Handle server response from route_chat.
-
-        Expected format::
-
-            {
-                "response": "...",
-                "tier": "recipe",
-                "commands": [...],
-                "confidence": 0.95,
-                "cached": false,
-                "latency_ms": 1.2
-            }
-        """
+        """Handle server response from route_chat."""
         self._waiting_for_response = False
         self._chat.hide_typing_indicator()
 
@@ -702,8 +776,6 @@ class SynapseChatPanel:
             self._chat.append_synapse_message(response)
             return
 
-        # route_chat returns {response, tier, commands, confidence}
-        # (already unwrapped from protocol envelope by ws_bridge)
         text = response.get("response", "")
         tier = response.get("tier", "")
         commands = response.get("commands", [])
@@ -711,7 +783,6 @@ class SynapseChatPanel:
         if text:
             self._chat.append_synapse_message({"message": text, "tier": tier})
 
-        # Show generated commands as pending actions
         if commands:
             for cmd in commands:
                 self._chat.append_system_message(
@@ -723,8 +794,8 @@ class SynapseChatPanel:
 
     @Slot(bool)
     def _on_status_changed(self, connected):
-        """Handle connection status change -- update context bar and connection bar."""
-        self._context_bar.set_connected(connected)
+        """Handle connection status change."""
+        self._context_chips.set_connected(connected)
         self._conn_btn.setEnabled(True)
 
         if connected:
@@ -743,39 +814,34 @@ class SynapseChatPanel:
 
     @Slot(str)
     def _on_connection_error(self, error_msg):
-        """Surface connection errors in the chat so the user knows what's up."""
+        """Surface connection errors in the chat."""
         self._chat.append_system_message(error_msg)
 
     @Slot(dict)
     def _on_context_updated(self, context):
-        """Update context bar and cache for send-time use."""
+        """Update context chips and cache for send-time use."""
         import time
         self._last_context = context
         self._last_context_time = time.time() * 1000
-        self._context_bar.set_network_path(
+        self._context_chips.set_network_path(
             context.get("current_network", "")
         )
-        self._context_bar.set_selection_count(
+        self._context_chips.set_selection_count(
             len(context.get("selected_nodes", []))
         )
-        self._context_bar.set_frame(context.get("frame", 1.0))
+        self._context_chips.set_frame(context.get("frame", 1.0))
 
-        # Update project memory indicator if present
         project_name = context.get("project_name", "")
         evolution_stage = context.get("evolution_stage", "")
-        self._context_bar.set_project_context(project_name, evolution_stage)
+        self._context_chips.set_project_context(project_name, evolution_stage)
 
     def _on_quick_action(self, action):
-        """Handle quick action button press.
-
-        Gathers fresh context if stale before sending.
-        """
+        """Handle quick action pill press."""
         prompt = action.get("prompt", "")
         requires_sel = action.get("requires_selection", False)
 
         ctx = self._gather_context_if_stale()
 
-        # Check selection requirement against cached context
         if requires_sel:
             if not ctx or not ctx.get("selected_nodes"):
                 self._chat.append_system_message(
@@ -783,13 +849,11 @@ class SynapseChatPanel:
                 )
                 return
 
-        # Display as user message
         label = action.get("label", "Action")
         self._chat.append_user_message("[{label}] {prompt}".format(
             label=label, prompt=prompt
         ))
 
-        # Send to server
         if self._bridge is not None:
             self._bridge.send_command("route_chat", {
                 "message": prompt,
@@ -803,9 +867,7 @@ class SynapseChatPanel:
 
             node = hou.node(node_path)
             if node is not None:
-                # Select the node
                 node.setSelected(True, clear_all_selected=True)
-                # Navigate network editor to it
                 editors = [
                     p
                     for p in hou.ui.paneTabs()
@@ -818,11 +880,7 @@ class SynapseChatPanel:
             pass
 
     def _poll_context(self):
-        """Periodically refresh scene context for the context bar.
-
-        Runs on the main thread (QTimer), so call the gather function
-        directly instead of via hdefereval which would deadlock.
-        """
+        """Periodically refresh scene context for the context chips."""
         if self._bridge is not None and self._bridge.connected:
             try:
                 import time as _time

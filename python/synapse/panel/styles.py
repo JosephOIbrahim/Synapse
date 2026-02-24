@@ -486,8 +486,12 @@ def get_root_widget_stylesheet():
 
 
 def get_section_container_stylesheet():
-    """Container widget for quick actions row or input area: transparent bg."""
-    return "background: transparent;"
+    """Container widget for quick actions row or input area."""
+    return (
+        "background: transparent; border-top: 1px solid {border};".format(
+            border=t.GRAPHITE
+        )
+    )
 
 
 def get_connection_frame_stylesheet():
@@ -512,7 +516,7 @@ def get_mode_toolbar_stylesheet():
 
 
 def get_chat_display_stylesheet():
-    """Chat display QTextBrowser: matches main panel activity log style."""
+    """Chat display QTextBrowser: spacious padding for conversational feel."""
     return (
         "QTextBrowser {{"
         "  background: {bg};"
@@ -544,9 +548,106 @@ def get_chat_display_stylesheet():
         "  background: transparent;"
         "}}".format(
             bg=t.VOID, fg=t.SILVER, sz=t.SIZE_SMALL, sans=t.FONT_SANS,
-            border=t.GRAPHITE, pad=t.SPACE_SM, white=t.WHITE,
+            border=t.GRAPHITE, pad=t.SPACE_MD, white=t.WHITE,
             scrollbar=t.GRAPHITE, scrollhover=t.SLATE,
         )
+    )
+
+
+# ── Chat Panel Redesign Stylesheets ──────────────────────────────────
+
+
+def get_growing_input_stylesheet():
+    """Growing QTextEdit input: replaces QLineEdit for multi-line support."""
+    return (
+        "QTextEdit {{"
+        "  background: {bg};"
+        "  color: {fg};"
+        "  border: 1px solid {border};"
+        "  border-radius: 6px;"
+        "  padding: 8px 12px;"
+        "  font-family: '{sans}', 'Segoe UI', sans-serif;"
+        "  font-size: {sz}px;"
+        "}}"
+        "QTextEdit:focus {{"
+        "  border: 1px solid {accent};"
+        "}}".format(
+            bg=t.VOID, fg=t.BONE, border=t.GRAPHITE,
+            sz=t.SIZE_UI, accent=t.SIGNAL, sans=t.FONT_SANS,
+        )
+    )
+
+
+def get_context_chip_stylesheet(accent=False):
+    """Pill chip for context info above input."""
+    fg = t.SIGNAL if accent else t.TEXT_DIM
+    return (
+        "background: {bg}; border: 1px solid {border}; "
+        "border-radius: 10px; padding: 2px 8px; "
+        "font-size: {sz}px; color: {fg}; "
+        "font-family: '{mono}', 'Consolas', monospace;".format(
+            bg=t.GRAPHITE, border=t.CARBON, sz=t.SIZE_LABEL,
+            fg=fg, mono=t.FONT_MONO,
+        )
+    )
+
+
+def get_quick_action_pill_stylesheet():
+    """Smaller pill version of action buttons."""
+    return (
+        "QPushButton {{"
+        "  background: {bg};"
+        "  color: {fg};"
+        "  border: 1px solid {border};"
+        "  border-radius: 14px;"
+        "  padding: 4px 12px;"
+        "  font-family: '{mono}', 'Consolas', monospace;"
+        "  font-size: {sz}px;"
+        "}}"
+        "QPushButton:hover {{"
+        "  background: {hover};"
+        "  border-color: {accent};"
+        "  color: {white};"
+        "}}"
+        "QPushButton:pressed {{"
+        "  background: rgba(0, 212, 255, 0.15);"
+        "  border-color: {accent};"
+        "  color: {accent};"
+        "}}".format(
+            bg=t.CARBON, fg=t.BONE, border=t.GRAPHITE,
+            sz=t.SIZE_LABEL, hover=t.HOVER,
+            accent=t.SIGNAL, white=t.WHITE, mono=t.FONT_MONO,
+        )
+    )
+
+
+def get_font_size_button_stylesheet():
+    """The 'Aa' font control icon button."""
+    return (
+        "QPushButton {{"
+        "  background: transparent;"
+        "  color: {fg};"
+        "  border: 1px solid {border};"
+        "  border-radius: 4px;"
+        "  padding: 2px 4px;"
+        "  font-family: '{sans}', 'Segoe UI', sans-serif;"
+        "  font-size: {sz}px;"
+        "  font-weight: 700;"
+        "}}"
+        "QPushButton:hover {{"
+        "  color: {accent};"
+        "  border-color: {accent};"
+        "}}".format(
+            fg=t.TEXT_DIM, border=t.GRAPHITE, accent=t.SIGNAL,
+            sans=t.FONT_SANS, sz=t.SIZE_LABEL,
+        )
+    )
+
+
+def get_typing_indicator_stylesheet():
+    """Styling for the animated typing dots area."""
+    return (
+        "color: {sig}; font-style: italic;".format(sig=t.SIGNAL)
     )
 
 

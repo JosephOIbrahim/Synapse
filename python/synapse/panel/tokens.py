@@ -103,3 +103,22 @@ MODE_ACTIVE_BG = SIGNAL + "15"
 MODE_ACTIVE_BORDER = SIGNAL + "40"
 MODE_INACTIVE_BG = "transparent"
 MODE_INACTIVE_BORDER = GRAPHITE
+
+
+# ── Chat Layout Tokens ───────────────────────────────────────────────
+CHAT_BUBBLE_PADDING = 14       # Inner bubble padding (px)
+CHAT_BUBBLE_RADIUS = 12        # Bubble corner radius (px)
+CHAT_BUBBLE_MARGIN_Y = 2       # Between messages in same group (px)
+CHAT_GROUP_MARGIN_Y = 16       # Between different-sender groups (px)
+CHAT_BUBBLE_MAX_WIDTH_PCT = 85  # Bubble max width (percentage)
+CHAT_INPUT_MIN_H = 44          # Minimum input height (px)
+CHAT_INPUT_MAX_H = 160         # Maximum input height (~6 lines, px)
+CHAT_TIMESTAMP_SIZE = 18       # Timestamp font size (px)
+CHAT_TYPING_DOT_SIZE = 8       # Typing indicator dot diameter (px)
+
+# Font size control (user-adjustable via Aa icon)
+FONT_SCALE_MIN = 0.75
+FONT_SCALE_MAX = 1.5
+FONT_SCALE_DEFAULT = 1.0
+FONT_SCALE_STEP = 0.125
+FONT_SCALE_STEPS = [0.75, 1.0, 1.25, 1.5]

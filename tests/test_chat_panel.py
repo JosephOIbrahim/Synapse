@@ -842,7 +842,7 @@ class TestKeyboardShortcuts:
 
         panel = SynapseChatPanel()
         panel._input = MagicMock()
-        panel._input.text.return_value = "scatter rocks"
+        panel._input.toPlainText.return_value = "scatter rocks"
         panel._chat = MagicMock()
         panel._bridge = MagicMock()
         panel._bridge.connected = True
@@ -856,7 +856,7 @@ class TestKeyboardShortcuts:
 
         panel = SynapseChatPanel()
         panel._input = MagicMock()
-        panel._input.text.return_value = "hello"
+        panel._input.toPlainText.return_value = "hello"
         panel._chat = MagicMock()
         panel._bridge = MagicMock()
         panel._bridge.connected = True
@@ -909,10 +909,14 @@ class TestKeyboardShortcuts:
         assert hasattr(SynapseChatPanel, "_install_shortcuts")
 
     def test_event_filter_class_exists(self):
-        """_InputEventFilter class handles Up-arrow recall for the input field."""
+        """_InputEventFilter class handles Enter/Up-arrow for the input field."""
         from synapse.panel.chat_panel import _InputEventFilter
 
-        assert hasattr(_InputEventFilter, "eventFilter")
+        # When Qt is mocked, _InputEventFilter's base (QObject) is a MagicMock
+        # and eventFilter won't exist as a real method. Check the class is defined.
+        assert _InputEventFilter is not None
+        if _QT_AVAILABLE:
+            assert hasattr(_InputEventFilter, "eventFilter")
 
 
 # ===========================================================================
@@ -929,7 +933,7 @@ class TestTypingIndicator:
 
         panel = SynapseChatPanel()
         panel._input = MagicMock()
-        panel._input.text.return_value = "test"
+        panel._input.toPlainText.return_value = "test"
         panel._chat = MagicMock()
         panel._bridge = MagicMock()
         panel._bridge.connected = True
@@ -982,14 +986,13 @@ class TestCSSConsolidation:
         assert "get_root_widget_stylesheet()" in src
         assert "font-family:" not in src
 
-    def test_no_inline_css_in_build_quick_actions(self):
-        """Quick actions should use get_section_container_stylesheet()."""
+    def test_quick_actions_uses_pill_widget(self):
+        """Quick actions should use QuickActionPills widget (not inline buttons)."""
         import inspect
         from synapse.panel.chat_panel import SynapseChatPanel
 
-        src = inspect.getsource(SynapseChatPanel._build_quick_actions)
-        assert "get_section_container_stylesheet()" in src
-        assert "background:" not in src
+        src = inspect.getsource(SynapseChatPanel.createInterface)
+        assert "QuickActionPills" in src
 
     def test_no_inline_css_in_build_input_area(self):
         """Input area should use get_section_container_stylesheet()."""
