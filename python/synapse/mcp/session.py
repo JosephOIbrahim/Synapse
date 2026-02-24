@@ -10,6 +10,9 @@ import time
 from typing import Dict, Optional
 
 
+_MAX_SESSIONS = 100
+_SESSION_TTL = 3600  # 1 hour in seconds
+
 # He2025: deterministic session IDs (sequential counter, not uuid4)
 _session_counter = 0
 _counter_lock = threading.Lock()
@@ -57,12 +60,31 @@ class MCPSessionManager:
         self._lock = threading.Lock()
 
     def create_session(self, client_info: Optional[dict] = None) -> str:
-        """Create a new session and return its ID."""
+        """Create a new session. Sweeps expired sessions first."""
+        self._sweep_expired()
         session_id = _next_session_id()
         session = MCPSession(session_id, client_info or {})
         with self._lock:
             self._sessions[session_id] = session
         return session_id
+
+    def _sweep_expired(self):
+        """Remove sessions older than TTL and enforce max count."""
+        now = time.time()
+        with self._lock:
+            # Remove expired
+            expired = [
+                sid for sid, s in self._sessions.items()
+                if (now - s.created_at) > _SESSION_TTL
+            ]
+            for sid in expired:
+                del self._sessions[sid]
+            # Enforce max count (remove oldest first)
+            if len(self._sessions) > _MAX_SESSIONS:
+                by_age = sorted(self._sessions.items(), key=lambda x: x[1].created_at)
+                excess = len(self._sessions) - _MAX_SESSIONS
+                for sid, _ in by_age[:excess]:
+                    del self._sessions[sid]
 
     def get_session(self, session_id: str) -> Optional[MCPSession]:
         """Get a session by ID, or None if not found."""

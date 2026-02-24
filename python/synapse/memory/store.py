@@ -216,9 +216,9 @@ class MemoryStore:
         the worst-case 4s latency under low write frequency.
         """
         while self._flusher_running:
-            # Wait up to flush_interval, but wake early if signaled
-            self._flush_event.wait(timeout=self._flush_interval)
+            # Clear before wait to prevent eating a set() signal from another thread
             self._flush_event.clear()
+            self._flush_event.wait(timeout=self._flush_interval)
             self._flush_writes()
 
     def _flush_writes(self):
@@ -233,7 +233,10 @@ class MemoryStore:
             with open(self.memory_file, 'a', encoding='utf-8') as f:
                 f.write("".join(lines))
         except Exception as e:
-            logger.error("Write flush error: %s", e)
+            logger.error("Write flush error, restoring %d lines to buffer: %s", len(lines), e)
+            with self._write_lock:
+                # Prepend failed lines back (they're older than anything new)
+                self._write_buffer[0:0] = lines
 
     def flush(self):
         """Force-flush any buffered writes (call on shutdown)."""
@@ -289,7 +292,12 @@ class MemoryStore:
                                 k: set(v) if isinstance(v, list) else v
                                 for k, v in loaded[section].items()
                             }
-                    self._index = loaded
+                    # Live index built from JSONL is authoritative — don't overwrite
+                    logger.debug(
+                        "Saved index loaded (%d types, %d tags) but live index from JSONL is authoritative",
+                        len(loaded.get("by_type", {})),
+                        len(loaded.get("by_tag", {})),
+                    )
                 except Exception as e:
                     logger.warning("Failed to load index: %s", e)
 

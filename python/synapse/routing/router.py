@@ -259,9 +259,10 @@ class TieredRouter:
             )
             if result:
                 return result
-            # Stale pin — tier returned None; delete and fall through
+            # Stale pin — tier returned None; delete ONLY if value unchanged
             with self._tier_pins_lock.write_lock():
-                self._tier_pins.pop(pin_key, None)
+                if self._tier_pins.get(pin_key) == pinned_tier:
+                    self._tier_pins.pop(pin_key, None)
 
         # ---------------------------------------------------------------
         # 0.5. Cache check (He2025)
@@ -314,8 +315,17 @@ class TieredRouter:
             t0_future = _tier_pool.submit(self._try_tier0, input_text, context_hash, start)
             t1_lookup_future = _tier_pool.submit(self._knowledge.lookup, input_text)
 
-            t0_result = t0_future.result()
-            tier1_hint = t1_lookup_future.result()
+            try:
+                t0_result = t0_future.result(timeout=2.0)
+            except Exception:
+                logger.warning("Tier 0 lookup failed, falling through")
+                t0_result = None
+
+            try:
+                tier1_hint = t1_lookup_future.result(timeout=2.0)
+            except Exception:
+                logger.warning("Knowledge lookup failed, falling through")
+                tier1_hint = None
 
             if t0_result:
                 return t0_result

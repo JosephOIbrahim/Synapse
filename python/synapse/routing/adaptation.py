@@ -16,6 +16,7 @@ He2025 compliance:
 
 import logging
 import threading
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 
@@ -32,6 +33,9 @@ HIGH_SUCCESS_THRESHOLD = 0.9  # Above this, prefer this tier more aggressively
 
 # Number of epochs before a pin is considered stale
 PIN_STALE_EPOCHS = 2
+
+# Maximum epoch history entries retained
+_MAX_EPOCH_HISTORY = 100
 
 
 @dataclass
@@ -118,7 +122,7 @@ class EpochAdapter:
         self._epoch_size = epoch_size
         self._current_epoch = TierEpoch(epoch_id=0, epoch_size=epoch_size)
         self._thresholds = TierThresholds()
-        self._epoch_history: List[Dict[str, float]] = []  # past epoch aggregates
+        self._epoch_history: deque = deque(maxlen=_MAX_EPOCH_HISTORY)  # past epoch aggregates
         self._lock = threading.Lock()
 
     @property

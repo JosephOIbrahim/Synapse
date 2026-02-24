@@ -553,16 +553,19 @@ class HumanGate:
 
     def _persist_proposal(self, proposal: GateProposal) -> None:
         """Write proposal to disk"""
-        date_str = proposal.created_at[:10]
-        file_path = self._storage_dir / f"proposals_{date_str}.jsonl"
+        try:
+            date_str = proposal.created_at[:10]
+            file_path = self._storage_dir / f"proposals_{date_str}.jsonl"
 
-        line = json.dumps(proposal.to_dict(), sort_keys=True)
-        crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
-        if crypto:
-            line = crypto.encrypt_line(line)
+            line = json.dumps(proposal.to_dict(), sort_keys=True)
+            crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+            if crypto:
+                line = crypto.encrypt_line(line)
 
-        with open(file_path, 'a', encoding='utf-8') as f:
-            f.write(line + '\n')
+            with open(file_path, 'a', encoding='utf-8') as f:
+                f.write(line + '\n')
+        except Exception as e:
+            logger.error("Failed to persist gate proposal %s: %s", proposal.operation, e)
 
     def clear_batch(self, sequence_id: str) -> None:
         """Clear batch after processing (keeps proposals in storage)"""

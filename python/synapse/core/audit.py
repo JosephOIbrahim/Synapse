@@ -326,17 +326,20 @@ class AuditLog:
 
     def _persist_entry(self, entry: AuditEntry) -> None:
         """Write entry to disk (hash computed on plaintext before encryption)"""
-        # Daily log files
-        date_str = entry.timestamp_utc[:10]
-        log_file = self._log_dir / f"audit_{date_str}.jsonl"
+        try:
+            # Daily log files
+            date_str = entry.timestamp_utc[:10]
+            log_file = self._log_dir / f"audit_{date_str}.jsonl"
 
-        line = json.dumps(entry.to_dict(), sort_keys=True)
-        crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
-        if crypto:
-            line = crypto.encrypt_line(line)
+            line = json.dumps(entry.to_dict(), sort_keys=True)
+            crypto = CryptoEngine.get_instance() if ENCRYPTION_AVAILABLE else None
+            if crypto:
+                line = crypto.encrypt_line(line)
 
-        with open(log_file, 'a', encoding='utf-8') as f:
-            f.write(line + '\n')
+            with open(log_file, 'a', encoding='utf-8') as f:
+                f.write(line + '\n')
+        except Exception as e:
+            logger.error("Failed to persist audit entry %s: %s", entry.operation, e)
 
     def get_entries(
         self,

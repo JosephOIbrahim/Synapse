@@ -1003,8 +1003,18 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             except Exception:
                 pass
 
+            # Clean up temp nodes on failure when no input was provided
+            if (cook_errors or node_errors) and not input_node:
+                try:
+                    temp_parent = wrangle.parent()
+                    if temp_parent and temp_parent.name().startswith("synapse_vex_temp"):
+                        temp_parent.destroy()
+                        wrangle = None  # Node no longer exists
+                except Exception:
+                    pass  # Best-effort cleanup
+
             result = {
-                "node": wrangle.path(),
+                "node": wrangle.path() if wrangle else "(cleaned up)",
                 "snippet": snippet,
                 "run_over": run_over,
                 "class": class_val,

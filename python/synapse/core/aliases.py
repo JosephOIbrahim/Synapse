@@ -5,6 +5,7 @@ Centralized parameter aliasing system to accept multiple naming conventions.
 Allows clients to use different naming conventions (camelCase, snake_case, etc.)
 """
 
+import threading
 from typing import Dict, List, Any, Optional
 
 
@@ -252,12 +253,18 @@ def get_all_aliases(canonical: str) -> List[str]:
     return PARAM_ALIASES.get(canonical, [canonical])
 
 
+_alias_lock = threading.Lock()
+
+
 def add_alias(canonical: str, alias: str):
-    """Add a new alias for a canonical parameter name."""
-    if canonical not in PARAM_ALIASES:
-        PARAM_ALIASES[canonical] = [canonical]
-    if alias not in PARAM_ALIASES[canonical]:
-        PARAM_ALIASES[canonical].append(alias)
+    """Add a new alias for a canonical parameter name. Thread-safe."""
+    with _alias_lock:
+        if canonical not in PARAM_ALIASES:
+            PARAM_ALIASES[canonical] = [canonical]
+        if alias not in PARAM_ALIASES[canonical]:
+            PARAM_ALIASES[canonical].append(alias)
+        # Keep reverse map in sync
+        _REVERSE_ALIASES[alias] = canonical
 
 
 def resolve_usd_parm(name: str) -> Optional[str]:

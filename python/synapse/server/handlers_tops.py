@@ -1499,13 +1499,17 @@ class TopsHandlerMixin:
             self._tops_monitors: Dict[str, Dict[str, Any]] = {}
 
         if action == "stop":
-            if not monitor_id or monitor_id not in self._tops_monitors:
+            if not monitor_id:
+                raise ValueError(
+                    "Couldn't find monitor -- "
+                    "please provide the monitor_id returned when you started monitoring"
+                )
+            monitor = self._tops_monitors.pop(monitor_id, None)
+            if monitor is None:
                 raise ValueError(
                     f"Couldn't find monitor '{monitor_id}' -- "
-                    "check the monitor_id returned when you started monitoring"
+                    "it may have already been stopped"
                 )
-
-            monitor = self._tops_monitors.pop(monitor_id)
 
             # Unregister callback in main thread
             def _stop():
@@ -1685,13 +1689,22 @@ class TopsHandlerMixin:
                     # Fallback: some PDG versions use different API
                     pass
 
-            self._tops_monitors[mid] = {
-                "node_path": node_path,
-                "pdg_node": pdg_node,
-                "callback_id": callback_id,
-                "events": events_list,
-                "start_time": start_time,
-            }
+            try:
+                self._tops_monitors[mid] = {
+                    "node_path": node_path,
+                    "pdg_node": pdg_node,
+                    "callback_id": callback_id,
+                    "events": events_list,
+                    "start_time": start_time,
+                }
+            except Exception:
+                # If storage fails, unregister the callback to prevent leak
+                if callback_id is not None and ctx is not None:
+                    try:
+                        ctx.removeEventHandler(callback_id)
+                    except Exception:
+                        pass
+                raise
 
             return {
                 "monitor_id": mid,

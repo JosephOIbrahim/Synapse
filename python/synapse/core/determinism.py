@@ -84,6 +84,15 @@ def round_float(value: float, precision: Optional[int] = None) -> float:
     if precision is None:
         precision = _config.float_precision
 
+    # Guard: IEEE 754 special values can't be rounded
+    if isinstance(value, float):
+        if value != value:  # NaN check (fastest, no math import needed)
+            return 0.0
+        if value == float('inf'):
+            return float('inf')
+        if value == float('-inf'):
+            return float('-inf')
+
     if _config.strict_mode:
         # Use Decimal for exact rounding (slower but deterministic)
         d = Decimal(str(value))

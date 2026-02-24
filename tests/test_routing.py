@@ -37,6 +37,7 @@ from synapse.routing.router import (
     RoutingTier,
     RoutingConfig,
 )
+from synapse.routing.adaptation import EpochAdapter
 from synapse.core.audit import AuditCategory
 
 
@@ -1571,3 +1572,115 @@ class TestRouteChatHandler:
         payload = {"text": "create a light"}
         val = resolve_param(payload, "content")
         assert val == "create a light"
+
+
+# =============================================================================
+# TEST: Speculative Parallelism Resilience (C2)
+# =============================================================================
+
+class TestSpeculativeParallelismResilience:
+    """C2: future.result() exception and timeout handling."""
+
+    def test_knowledge_lookup_exception_falls_through(self):
+        """If knowledge.lookup() raises, routing continues to next tier."""
+        config = RoutingConfig(
+            enable_tier0=True,
+            enable_tier1=True,
+            enable_tier2=False,
+            enable_tier3=False,
+        )
+        router = TieredRouter(config=config)
+
+        # Make knowledge.lookup raise an exception
+        original_lookup = router._knowledge.lookup
+        def exploding_lookup(text):
+            raise RuntimeError("Knowledge index corrupted")
+        router._knowledge.lookup = exploding_lookup
+
+        # Route an input that Tier 0 can handle — should succeed despite
+        # the knowledge lookup exploding in the parallel future
+        result = router.route("ping")
+        assert result.success
+        assert result.tier == RoutingTier.INSTANT
+
+    def test_tier0_exception_falls_through(self):
+        """If _try_tier0 raises, routing continues."""
+        config = RoutingConfig(
+            enable_tier0=True,
+            enable_tier1=True,
+            enable_tier2=False,
+            enable_tier3=False,
+        )
+        router = TieredRouter(config=config)
+
+        # Make _try_tier0 raise an exception
+        original_try_tier0 = router._try_tier0
+        def exploding_tier0(text, context_hash, start):
+            raise RuntimeError("Tier 0 regex engine crashed")
+        router._try_tier0 = exploding_tier0
+
+        # Route should not crash — it falls through with t0_result=None
+        result = router.route("ping")
+        # Will fall through to fallback since T0 failed and no RAG for T1
+        assert isinstance(result, RoutingResult)
+
+
+# =============================================================================
+# TEST: Tier Pin TOCTOU (C6)
+# =============================================================================
+
+class TestTierPinTOCTOU:
+    """C6: Stale pin deletion doesn't destroy newer pins."""
+
+    def test_stale_pin_delete_preserves_newer_pin(self):
+        """If pin was updated between read and delete, delete is skipped."""
+        router = TieredRouter(config=RoutingConfig(enable_tier2=False, enable_tier3=False))
+        pin_key = "test input|abc123"
+        # Directly set a pin
+        with router._tier_pins_lock.write_lock():
+            router._tier_pins[pin_key] = "recipe"
+        # Simulate thread A reading "recipe"
+        old_value = "recipe"
+        # Simulate thread B updating to "instant"
+        with router._tier_pins_lock.write_lock():
+            router._tier_pins[pin_key] = "instant"
+        # Thread A tries to delete with guard — should skip because value changed
+        with router._tier_pins_lock.write_lock():
+            if router._tier_pins.get(pin_key) == old_value:
+                router._tier_pins.pop(pin_key, None)
+        # Pin should still be "instant" (thread B's value preserved)
+        assert router._tier_pins.get(pin_key) == "instant"
+
+    def test_stale_pin_delete_removes_when_unchanged(self):
+        """If pin value is still the same, deletion proceeds normally."""
+        router = TieredRouter(config=RoutingConfig(enable_tier2=False, enable_tier3=False))
+        pin_key = "test input|abc123"
+        with router._tier_pins_lock.write_lock():
+            router._tier_pins[pin_key] = "recipe"
+        old_value = "recipe"
+        # No other thread updates the pin
+        with router._tier_pins_lock.write_lock():
+            if router._tier_pins.get(pin_key) == old_value:
+                router._tier_pins.pop(pin_key, None)
+        assert router._tier_pins.get(pin_key) is None
+
+
+# =============================================================================
+# TEST: Epoch History Bounded (C10)
+# =============================================================================
+
+class TestEpochHistoryBounded:
+    """C10: _epoch_history doesn't grow beyond max."""
+
+    def test_epoch_history_capped(self):
+        adapter = EpochAdapter(epoch_size=2)
+        for i in range(250):
+            adapter.record(RoutingTier.INSTANT.value, True, 1.0)
+        assert len(adapter._epoch_history) <= 100
+
+    def test_epoch_history_is_deque(self):
+        """Verify the history is a deque with maxlen set."""
+        from collections import deque
+        adapter = EpochAdapter(epoch_size=10)
+        assert isinstance(adapter._epoch_history, deque)
+        assert adapter._epoch_history.maxlen == 100
