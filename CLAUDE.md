@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Synapse v5.7.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 107 MCP tools (36 houdini_, 34 synapse_, 17 tops_, 20 cops_) to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, TOPS/PDG pipeline orchestration, HDA creation from prompts, Copernicus GPU image processing, and viewport/render capture.
+Synapse v5.7.0 is an AI-Houdini Bridge — a standalone Python package (zero required dependencies) that lets AI assistants control SideFX Houdini via WebSocket. It exposes 108 MCP tools (36 houdini_, 35 synapse_, 17 tops_, 20 cops_) to Claude Desktop/Code for real-time scene manipulation, persistent project memory, adaptive tiered LLM routing, TOPS/PDG pipeline orchestration, HDA creation from prompts, Copernicus GPU image processing, and viewport/render capture.
 
 Two repos make up the full system:
 - **`C:\Users\User\Synapse\`** — Core server, protocol, handlers, memory, routing, MCP bridge
@@ -86,7 +86,7 @@ After editing source files, remind the user to redeploy if needed (`python ~/.sy
 pip install -e ".[dev]"
 pip install -e ".[dev,websocket,mcp,routing,encryption]"   # all optional features
 
-# Run all core tests (~2,075 tests across 50+ test files, no Houdini required)
+# Run all core tests (~2,141 tests across 55+ test files, no Houdini required)
 python -m pytest tests/ -v
 
 # Type checking (mypy, 0 errors on 49 source files)
@@ -149,7 +149,7 @@ MCP Protocol Layer  (synapse/mcp/)
                           |
 Claude Desktop/Code       |  (existing stdio path preserved)
     |  stdio / JSON-RPC   |
-mcp_server.py  (107 tools) |
+mcp_server.py  (108 tools) |
     |                     |
     ├─────────────────────┘
     |  WebSocket: ws://localhost:9999/synapse
@@ -170,8 +170,8 @@ Both MCP Streamable HTTP and the existing WebSocket/stdio paths converge at the 
 | Memory | `memory/` | JSONL store (`store.py`) or SQLite store (`sqlite_store.py`, via `SYNAPSE_MEMORY_BACKEND=sqlite`), data models (`models.py`), shot context (`context.py`), markdown export (`markdown.py`), **Living Memory**: scene memory (`scene_memory.py`), agent state USD (`agent_state.py`), evolution system (`evolution.py`) |
 | Routing | `routing/` | Tiered LLM dispatch (`router.py`), regex parser (`parser.py`), RAG knowledge (`knowledge.py`), recipes (`recipes.py`), deterministic cache (`cache.py`), workflow planner (`planner.py`), epoch-based tier adaptation (`adaptation.py`) |
 | Agent | `agent/` | prepare/propose/execute/learn lifecycle (`executor.py`), task/plan/step protocol (`protocol.py`), outcome tracking (`learning.py`) |
-| MCP | `mcp/` | MCP Streamable HTTP protocol layer. `server.py` (endpoint handler, JSON-RPC router), `session.py` (session manager), `tools.py` (tool registry, 107 tools), `resources.py` (scene state resources), `prompts.py` (workflow prompts), `protocol.py` (JSON-RPC utilities, error codes), `types.py` (type definitions, schemas) |
-| Server | `server/` | WebSocket server (`websocket.py`), command handlers split across 8 files: `handlers.py` (core registry + 18 handlers), `handlers_render.py` (viewport/render/keyframe/settings/validation/farm), `handlers_tops.py` (wedge + 17 tops_* PDG handlers), `handlers_material.py` (create/assign/read material), `handlers_memory.py` (memory/context), `handlers_node.py` (node ops), `handlers_usd.py` (USD/Solaris), `handlers_cops.py` (20 Copernicus/COP2 handlers). Shared utilities in `handler_helpers.py`. Plus: resilience stack (`resilience.py`), introspection (`introspection.py`), hwebserver adapter (`hwebserver_adapter.py`), REST adapter (`api_adapter.py`), guards (`guards.py`), auth (`auth.py`), metrics (`metrics.py`), RBAC (`rbac.py`), multi-user sessions (`sessions.py`), live metrics (`live_metrics.py`), dashboard (`dashboard.py`), render farm (`render_farm.py`, `render_farm_handler.py`), render diagnostics (`render_diagnostics.py`), render notifications (`render_notify.py`) |
+| MCP | `mcp/` | MCP Streamable HTTP protocol layer. `server.py` (endpoint handler, JSON-RPC router), `session.py` (session manager), `tools.py` (thin wrapper over `_tool_registry.py`, 102 tools), `resources.py` (scene state resources), `prompts.py` (workflow prompts), `protocol.py` (JSON-RPC utilities, error codes), `types.py` (type definitions, schemas) |
+| Server | `server/` | WebSocket server (`websocket.py`), command handlers split across 9 files: `handlers.py` (core registry + 22 handlers), `handlers_render.py` (viewport/render/keyframe/settings/validation/farm), `handlers_tops.py` (20 tops_* PDG handlers), `handlers_hda.py` (5 HDA creation/packaging), `handlers_material.py` (create/assign/read material), `handlers_memory.py` (memory/context), `handlers_node.py` (node ops), `handlers_usd.py` (USD/Solaris), `handlers_cops.py` (20 Copernicus/COP2 handlers). Shared utilities in `handler_helpers.py`. Plus: resilience stack (`resilience.py`), introspection (`introspection.py`), hwebserver adapter (`hwebserver_adapter.py`), REST adapter (`api_adapter.py`), guards (`guards.py`), auth (`auth.py`), metrics (`metrics.py`), RBAC (`rbac.py`), multi-user sessions (`sessions.py`), live metrics (`live_metrics.py`), dashboard (`dashboard.py`), render farm (`render_farm.py`, `render_farm_handler.py`), render diagnostics (`render_diagnostics.py`), render notifications (`render_notify.py`) |
 | Autonomy | `autonomy/` | Autonomous render loop (`planner.py`), pre-flight validation (`validator.py`), render evaluation (`evaluator.py`), orchestration (`driver.py`), data models (`models.py`) |
 | Session | `session/` | SynapseBridge singleton hub (`tracker.py`), session summaries (`summary.py`) |
 | UI | `ui/` | Qt panel with 5 tabs (`panel.py`), tab widgets in `tabs/` |
@@ -210,7 +210,7 @@ When enabled, first WebSocket message must be an `authenticate` command with `{"
 
 ### MCP Server — stdio Bridge (`mcp_server.py`)
 
-107 tools (36 houdini_, 34 synapse_, 17 tops_, 20 cops_). Key operational details:
+108 tools (36 houdini_, 35 synapse_, 17 tops_, 20 cops_). Key operational details:
 - **Concurrent dispatch**: `_pending` dict + `_recv_loop` coroutine — no blocking lock, true parallel tool calls
 - **Timeouts**: Default 10s. Overrides: execute_python/execute_vex/capture_viewport/inspect_* at 30s, render/wedge at 120s, batch at 60s
 - **JSON**: Uses `orjson` (fast, sort_keys via `OPT_SORT_KEYS`) when available, falls back to stdlib `json`
@@ -361,9 +361,10 @@ URIs with `{path}` are resource templates — the client fills in the parameter.
 synapse/
 ├── mcp/                          # MCP Streamable HTTP protocol
 │   ├── __init__.py
+│   ├── _tool_registry.py         # Single source of truth: 102 tool definitions, schemas, annotations
 │   ├── server.py                 # Endpoint handler, JSON-RPC router, hwebserver registration
-│   ├── session.py                # Session manager (create, track, destroy)
-│   ├── tools.py                  # Tool registry (maps to existing handlers in handlers.py)
+│   ├── session.py                # Session manager (create, track, destroy, TTL expiry)
+│   ├── tools.py                  # Thin wrapper over _tool_registry (dispatch, get_tools)
 │   ├── resources.py              # Resource definitions and readers
 │   ├── prompts.py                # Prompt templates (Phase 2)
 │   ├── protocol.py               # JSON-RPC utilities, error codes, response builders
@@ -440,14 +441,13 @@ with patch.object(hou, "flipbook", create=True):
 ### Adding a new MCP tool
 
 1. Add `CommandType` variant in `core/protocol.py`
-2. Add handler method `_handle_<name>` in the appropriate handler file (`handlers.py` for core, `handlers_render.py` for render/viewport/keyframe/validation, `handlers_tops.py` for TOPS/PDG, `handlers_cops.py` for COPs/Copernicus, `handlers_material.py` for materials, `handlers_usd.py` for USD, `handlers_memory.py` for memory, `handlers_node.py` for node ops) and register it in `SynapseHandler._register_handlers()`
+2. Add handler method `_handle_<name>` in the appropriate handler file (`handlers.py` for core, `handlers_render.py` for render/viewport/keyframe/validation, `handlers_tops.py` for TOPS/PDG, `handlers_cops.py` for COPs/Copernicus, `handlers_hda.py` for HDAs, `handlers_material.py` for materials, `handlers_usd.py` for USD, `handlers_memory.py` for memory, `handlers_node.py` for node ops) and register it in `SynapseHandler._register_handlers()`
 3. Add parameter aliases in `core/aliases.py` if the tool has new parameter names
-4. Add `Tool(...)` entry to `list_tools()` and dispatch case to `call_tool()` in `mcp_server.py` (uses `Server.list_tools()`/`Server.call_tool()` decorators, not `@mcp.tool()` decorator pattern). All 107 tools defined in one `list_tools()` function with a single `call_tool()` switch
-5. **Add MCP tool definition in `mcp/tools.py`** — include `inputSchema` (JSON Schema for arguments) and `annotations` (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`). The tool dispatches to the same handler registered in step 2.
-6. Add timeout override to `_SLOW_COMMANDS` in `mcp_server.py` if >10s expected
-7. Write tests — bootstrap a `hou` stub inline via `sys.modules`, import handlers via `importlib`, patch `_handlers_hou` (not `sys.modules["hou"]`). **Also write a test in `test_mcp_protocol.py`** verifying the tool appears in `tools/list` and `tools/call` dispatches correctly.
+4. **Add tool definition in `mcp/_tool_registry.py`** — add a tuple to `TOOL_DEFS` with `(name, command_type, payload_builder, description, inputSchema, read_only, destructive, idempotent)`. Both `mcp_server.py` (stdio) and `mcp/tools.py` (HTTP) import from this single registry automatically
+5. Add timeout override to `_SLOW_COMMANDS` in `mcp_server.py` if >10s expected
+6. Write tests — bootstrap a `hou` stub inline via `sys.modules`, import handlers via `importlib`, patch `_handlers_hou` (not `sys.modules["hou"]`). **Also write a test in `test_mcp_protocol.py`** verifying the tool appears in `tools/list` and `tools/call` dispatches correctly
 
-**Going forward, steps 5 and 7 (MCP registration + MCP test) are mandatory for all new tools.** The MCP tool registry is now the standard way to expose SYNAPSE functionality to external clients.
+**The `_tool_registry.py` is the single source of truth for all tool definitions.** Both transports consume it automatically — no need to register tools in two places.
 
 ### Adding a routing recipe
 
@@ -546,8 +546,7 @@ $HIP/.synapse/           # Per-project memory
 - **synapse_shelf.py**: Security hooks block `parm.eval()` patterns; use `node.evalParm("parm_name")` method instead
 - **Agent SDK websockets**: Must import at module level (not inside connect()) — patch target is `synapse_ws.websockets`
 - **Zombie servers**: Multiple SynapseServer instances can linger in Houdini; use `gc.get_objects()` + `_actual_port` to find the active one
-- **MCP tool registration (stdio bridge)**: Uses `@server.list_tools()` returning `Tool(...)` list + `@server.call_tool()` dispatcher — NOT the `@mcp.tool()` decorator pattern. All 107 tools defined in one `list_tools()` function with a single `call_tool()` switch
-- **MCP tool registration (Streamable HTTP)**: Uses the tool registry in `mcp/tools.py` which maps to the same handlers. Both registries must stay in sync — when adding a tool to `mcp_server.py`, also add it to `mcp/tools.py`
+- **MCP tool registration**: All 102 tools defined in `mcp/_tool_registry.py` (single source of truth). Both `mcp_server.py` (stdio) and `mcp/tools.py` (Streamable HTTP) import from the registry. Add new tools to `_tool_registry.py` only — both transports pick them up automatically
 - **MCP session headers**: `Mcp-Session-Id` must be returned on the `initialize` response and included by the client on all subsequent requests. hwebserver header access may require case-insensitive lookup
 - **MCP notifications return 202**: `notifications/initialized` and other notification methods return HTTP 202 Accepted with empty body — NOT 200 with a JSON-RPC response
 - **MCP protocol version header**: Clients may send `MCP-Protocol-Version` header. If present and unsupported, respond with 400 Bad Request per spec
