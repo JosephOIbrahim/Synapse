@@ -46,6 +46,7 @@ MagicMock/
 
 # Dev scratch scripts
 _*.py
+!python/synapse/mcp/_tool_registry.py
 _*.ps1
 _*.txt
 houdini_exec.py

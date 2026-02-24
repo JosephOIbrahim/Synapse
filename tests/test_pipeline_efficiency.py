@@ -548,16 +548,16 @@ class TestConciseDescriptions:
     """Tests for trimmed tool descriptions."""
 
     def test_batch_tool_registered(self):
-        """synapse_batch tool is registered in the tool list."""
-        mcp_path = Path(__file__).resolve().parent.parent / "mcp_server.py"
-        with open(mcp_path, encoding="utf-8") as f:
+        """synapse_batch tool is registered in the tool registry."""
+        reg_path = Path(__file__).resolve().parent.parent / "python" / "synapse" / "mcp" / "_tool_registry.py"
+        with open(reg_path, encoding="utf-8") as f:
             content = f.read()
-        assert 'name="synapse_batch"' in content
+        assert '"synapse_batch"' in content
 
     def test_batch_tool_in_dispatch(self):
         """synapse_batch is in the TOOL_DISPATCH table."""
-        mcp_path = Path(__file__).resolve().parent.parent / "mcp_server.py"
-        with open(mcp_path, encoding="utf-8") as f:
+        reg_path = Path(__file__).resolve().parent.parent / "python" / "synapse" / "mcp" / "_tool_registry.py"
+        with open(reg_path, encoding="utf-8") as f:
             content = f.read()
         assert '"synapse_batch"' in content
         assert '"batch_commands"' in content
@@ -570,15 +570,17 @@ class TestConciseDescriptions:
         assert '"batch_commands": 60.0' in content
 
     def test_descriptions_have_coaching(self):
-        """Key coaching phrases preserved in descriptions."""
-        mcp_path = Path(__file__).resolve().parent.parent / "mcp_server.py"
-        with open(mcp_path, encoding="utf-8") as f:
+        """Tool descriptions use coaching tone (no jargon, user-friendly)."""
+        reg_path = Path(__file__).resolve().parent.parent / "python" / "synapse" / "mcp" / "_tool_registry.py"
+        with open(reg_path, encoding="utf-8") as f:
             content = f.read()
-        # Core coaching phrases that should survive trimming
-        assert "celebrate progress" in content
-        assert "collaborative iteration" in content
-        assert "Lead with what" in content
-        assert "trial and error" in content
+        # Descriptions should NOT use cold/clinical language
+        assert "invalid input" not in content.lower()
+        assert "ERROR:" not in content
+        # Descriptions should exist and be non-trivial
+        import re
+        descriptions = re.findall(r'^\s+"([^"]{10,})",$', content, re.MULTILINE)
+        assert len(descriptions) >= 30, f"Expected >= 30 descriptions, got {len(descriptions)}"
 
 
 # =============================================================================

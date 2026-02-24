@@ -303,9 +303,9 @@ class TestVEXHandler:
         assert handler._registry.has("execute_vex")
 
     def test_mcp_tool_defined(self):
-        """houdini_execute_vex should be in MCP tool dispatch."""
-        mcp_path = _PROJECT_ROOT / "mcp_server.py"
-        content = mcp_path.read_text(encoding="utf-8", errors="replace")
+        """houdini_execute_vex should be in MCP tool registry."""
+        reg_path = _PROJECT_ROOT / "python" / "synapse" / "mcp" / "_tool_registry.py"
+        content = reg_path.read_text(encoding="utf-8", errors="replace")
         assert "houdini_execute_vex" in content
 
     def test_slow_command_timeout(self):
@@ -580,9 +580,9 @@ class TestRouterStatsAndRecipeDiscovery:
         assert handler._registry.has("get_metrics")
 
     def test_mcp_dispatch_entries(self):
-        """New tools should have dispatch entries."""
-        mcp_path = _PROJECT_ROOT / "mcp_server.py"
-        content = mcp_path.read_text(encoding="utf-8", errors="replace")
+        """New tools should have dispatch entries in the registry."""
+        reg_path = _PROJECT_ROOT / "python" / "synapse" / "mcp" / "_tool_registry.py"
+        content = reg_path.read_text(encoding="utf-8", errors="replace")
         assert "synapse_metrics" in content
         assert "synapse_router_stats" in content
         assert "synapse_list_recipes" in content
@@ -655,11 +655,13 @@ class TestIntegration:
         assert "epoch_id" in stats["epoch"]
 
     def test_mcp_tool_count(self):
-        """MCP server should declare 37 tools (34 original + 3 new)."""
-        mcp_path = _PROJECT_ROOT / "mcp_server.py"
-        content = mcp_path.read_text(encoding="utf-8", errors="replace")
-        # Count Tool( declarations
-        tool_count = content.count("Tool(\n")
+        """Tool registry should declare 37+ tools."""
+        reg_path = _PROJECT_ROOT / "python" / "synapse" / "mcp" / "_tool_registry.py"
+        content = reg_path.read_text(encoding="utf-8", errors="replace")
+        # Count tool tuple entries in TOOL_DEFS list
+        import re
+        # Each tool entry starts with ("tool_name", at the beginning of a tuple
+        tool_count = len(re.findall(r'^\s+\("[\w]+",', content, re.MULTILINE))
         assert tool_count >= 37, f"Expected >= 37 tools, got {tool_count}"
 
     def test_handler_count(self):

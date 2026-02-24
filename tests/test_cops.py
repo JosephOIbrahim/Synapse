@@ -893,7 +893,7 @@ class TestCopsMcpTools:
             spec.loader.exec_module(mod)
 
         mcp_tools_mod = sys.modules["synapse.mcp.tools"]
-        tool_names = [t[0] for t in mcp_tools_mod._TOOL_DEFS]
+        tool_names = [t[0] for t in mcp_tools_mod.TOOL_DEFS]
 
         cops_tools = [n for n in tool_names if n.startswith("cops_")]
         assert len(cops_tools) == 20

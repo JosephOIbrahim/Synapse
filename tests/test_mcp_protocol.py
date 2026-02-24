@@ -48,8 +48,9 @@ for mod_name, fpath in _core_modules.items():
         sys.modules[mod_name] = mod
         spec.loader.exec_module(mod)
 
-# Load MCP modules
+# Load MCP modules (registry must load before tools.py which imports from it)
 _mcp_modules = {
+    "synapse.mcp._tool_registry": _base / "mcp" / "_tool_registry.py",
     "synapse.mcp.protocol": _base / "mcp" / "protocol.py",
     "synapse.mcp.session": _base / "mcp" / "session.py",
     "synapse.mcp.tools": _base / "mcp" / "tools.py",
@@ -326,6 +327,33 @@ class TestToolRegistry:
             assert "destructiveHint" in ann
             assert "idempotentHint" in ann
             assert ann["openWorldHint"] is False
+
+
+# ===========================================================================
+# Tests: Tool Registry Parity (_tool_registry.py)
+# ===========================================================================
+
+class TestToolRegistryParity:
+    def test_tool_registry_parity(self):
+        """Both transports must serve the same tools from the shared registry."""
+        from synapse.mcp._tool_registry import TOOL_DEFS, TOOL_DISPATCH, TOOL_JSON
+        from synapse.mcp.tools import get_tools, get_tool_names, has_tool
+
+        # Registry internal consistency
+        assert len(TOOL_DEFS) == len(TOOL_DISPATCH)
+        assert len(TOOL_DEFS) == len(TOOL_JSON)
+
+        # Public API matches registry
+        assert len(get_tools()) == len(TOOL_DEFS)
+        assert len(get_tool_names()) == len(TOOL_DEFS)
+
+        # Every tool is findable
+        for name, *_ in TOOL_DEFS:
+            assert has_tool(name), f"has_tool('{name}') returned False"
+
+        # No duplicate names
+        names = [t[0] for t in TOOL_DEFS]
+        assert len(names) == len(set(names))
 
 
 # ===========================================================================
