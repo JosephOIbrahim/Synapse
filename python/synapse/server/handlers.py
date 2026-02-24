@@ -1141,13 +1141,16 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
         NOT execute_python. Never execute_python for chat.
         """
-        from ..routing.router import TieredRouter
+        import os
+        from ..routing.router import TieredRouter, RoutingConfig
 
         message = resolve_param(payload, "content")
         context = payload.get("context", {})
 
         if not hasattr(self, "_router"):
-            self._router = TieredRouter()
+            api_key = os.environ.get("ANTHROPIC_API_KEY")
+            config = RoutingConfig(llm_api_key=api_key) if api_key else None
+            self._router = TieredRouter(config=config)
         result = self._router.route(message, context=context)
 
         return {

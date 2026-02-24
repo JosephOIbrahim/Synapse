@@ -38,7 +38,7 @@ except ImportError:
     _HAS_DESIGN = False
     SIGNAL = "#00D4FF"
     VOID = "#252525"
-    NEAR_BLACK = "#3C3C3C"
+    NEAR_BLACK = "#3A3A3A"
     CARBON = "#333333"
     GRAPHITE = "#222222"
     SLATE = "#888888"
