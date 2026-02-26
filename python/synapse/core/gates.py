@@ -355,18 +355,23 @@ class HumanGate:
             # Persist
             self._persist_proposal(proposal)
 
-            # Notify callbacks
-            for callback in self._on_proposal:
-                try:
-                    callback(proposal)
-                except Exception:
-                    logger.error(
-                        "Gate callback %s failed",
-                        getattr(callback, "__name__", repr(callback)),
-                        exc_info=True,
-                    )
+            # Snapshot callback list under lock, iterate AFTER releasing.
+            # Callbacks may cross thread boundaries (e.g. Qt signal emission)
+            # and must not run while _write_lock is held.
+            callbacks = list(self._on_proposal)
 
-            return proposal
+        # -- lock released --
+        for callback in callbacks:
+            try:
+                callback(proposal)
+            except Exception:
+                logger.error(
+                    "Gate callback %s failed",
+                    getattr(callback, "__name__", repr(callback)),
+                    exc_info=True,
+                )
+
+        return proposal
 
     def _get_or_create_batch(self, sequence_id: str) -> GateBatch:
         """Get existing batch or create new one"""
@@ -464,18 +469,21 @@ class HumanGate:
             # Persist
             self._persist_proposal(proposal)
 
-            # Notify callbacks
-            for callback in self._on_decision:
-                try:
-                    callback(proposal, decision)
-                except Exception:
-                    logger.error(
-                        "Gate callback %s failed",
-                        getattr(callback, "__name__", repr(callback)),
-                        exc_info=True,
-                    )
+            # Snapshot callback list under lock, iterate AFTER releasing.
+            callbacks = list(self._on_decision)
 
-            return proposal
+        # -- lock released --
+        for callback in callbacks:
+            try:
+                callback(proposal, decision)
+            except Exception:
+                logger.error(
+                    "Gate callback %s failed",
+                    getattr(callback, "__name__", repr(callback)),
+                    exc_info=True,
+                )
+
+        return proposal
 
     def decide_batch(
         self,
