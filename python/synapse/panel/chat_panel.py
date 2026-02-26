@@ -576,15 +576,15 @@ class SynapseChatPanel:
         self._conn_label.setStyleSheet(get_status_label_stylesheet(_ERROR_COLOR))
         layout.addWidget(self._conn_label)
 
-        # Emergency halt button
+        layout.addStretch()
+
+        # Emergency halt button (next to disconnect for quick access)
         self._halt_btn = QtWidgets.QPushButton("HALT")
         self._halt_btn.setStyleSheet(get_halt_button_stylesheet())
         self._halt_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self._halt_btn.setToolTip("Emergency halt -- cancel all agent operations")
         self._halt_btn.clicked.connect(self._on_emergency_halt)
         layout.addWidget(self._halt_btn)
-
-        layout.addStretch()
 
         # Connect/Disconnect button
         self._conn_btn = QtWidgets.QPushButton("Connect")

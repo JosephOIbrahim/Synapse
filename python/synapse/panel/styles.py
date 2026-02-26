@@ -782,7 +782,7 @@ def get_integrity_bar_stylesheet():
 
 
 def get_halt_button_stylesheet():
-    """Red outlined emergency halt button."""
+    """Light orange outlined emergency halt button."""
     return (
         "QPushButton {{"
         "  background: transparent;"
@@ -800,5 +800,5 @@ def get_halt_button_stylesheet():
         "}}"
         "QPushButton:pressed {{"
         "  background: {c}40;"
-        "}}".format(c=t.ERROR, mono=t.FONT_MONO, sz=t.SIZE_LABEL)
+        "}}".format(c=t.FIRE, mono=t.FONT_MONO, sz=t.SIZE_LABEL)
     )
