@@ -10,7 +10,7 @@ CHARIZARD:  memory.usd + composition arcs (cross-scene, sublayered)
 
 Elegant Revision R3: Native OpenUSD generation via pxr.Usd.Stage.CreateInMemory()
   - Eliminates string-template escaping bugs
-  - Sdf.Path.MakeValidIdentifier ensures safe prim names
+  - Tf.MakeValidIdentifier ensures safe prim names (H21 compatible)
   - Vt.StringArray handles arrays without manual quoting
   - ExportToString() produces syntactically perfect USDA
 
@@ -31,11 +31,12 @@ from datetime import datetime
 # ── OpenUSD Import Guard ────────────────────────────────────────
 _PXR_AVAILABLE = False
 try:
-    from pxr import Usd, Sdf, Vt
+    from pxr import Usd, Sdf, Tf, Vt
     _PXR_AVAILABLE = True
 except ImportError:
     Usd = None  # type: ignore[assignment]
     Sdf = None  # type: ignore[assignment]
+    Tf = None   # type: ignore[assignment]
     Vt = None   # type: ignore[assignment]
 
 # ── Houdini Import Guard (R10: viewport sync) ──────────────────
@@ -361,7 +362,7 @@ class LosslessEvolution:
     def _build_usd_native(self, parsed: ParsedMemory) -> str:
         """
         R3: Native pxr.Usd generation. Eliminates ALL string-template bugs:
-          - Sdf.Path.MakeValidIdentifier() ensures safe prim names
+          - Tf.MakeValidIdentifier() ensures safe prim names
           - Vt.StringArray() handles arrays without manual quoting
           - Native String attributes auto-escape VEX slashes, quotes, linebreaks
           - ExportToString() produces syntactically perfect USDA
@@ -387,7 +388,7 @@ class LosslessEvolution:
         # ── Sessions ────────────────────────────────────────
         sessions_prim = stage.DefinePrim(f"{memory_prim.GetPath()}/sessions", "Xform")
         for session in parsed.sessions:
-            safe_id = Sdf.Path.MakeValidIdentifier(session.id)
+            safe_id = Tf.MakeValidIdentifier(session.id)
             sess_prim = stage.DefinePrim(f"{sessions_prim.GetPath()}/{safe_id}", "Xform")
 
             sess_prim.CreateAttribute("synapse:date", Sdf.ValueTypeNames.String).Set(session.date)
@@ -405,7 +406,7 @@ class LosslessEvolution:
         # ── Decisions ───────────────────────────────────────
         decisions_prim = stage.DefinePrim(f"{memory_prim.GetPath()}/decisions", "Xform")
         for decision in parsed.decisions:
-            safe_slug = Sdf.Path.MakeValidIdentifier(decision.slug)
+            safe_slug = Tf.MakeValidIdentifier(decision.slug)
             d_prim = stage.DefinePrim(f"{decisions_prim.GetPath()}/{safe_slug}", "Xform")
 
             d_prim.CreateAttribute("synapse:choice", Sdf.ValueTypeNames.String).Set(decision.choice)
@@ -419,7 +420,7 @@ class LosslessEvolution:
         # ── Assets ──────────────────────────────────────────
         assets_prim = stage.DefinePrim(f"{memory_prim.GetPath()}/assets", "Xform")
         for asset in parsed.assets:
-            safe_name = Sdf.Path.MakeValidIdentifier(asset.name)
+            safe_name = Tf.MakeValidIdentifier(asset.name)
             a_prim = stage.DefinePrim(f"{assets_prim.GetPath()}/{safe_name}", "Xform")
 
             a_prim.CreateAttribute("synapse:path", Sdf.ValueTypeNames.Asset).Set(asset.path)
@@ -432,7 +433,7 @@ class LosslessEvolution:
         # ── Parameters ──────────────────────────────────────
         params_prim = stage.DefinePrim(f"{memory_prim.GetPath()}/parameters", "Xform")
         for param in parsed.parameters:
-            safe_slug = Sdf.Path.MakeValidIdentifier(param.slug)
+            safe_slug = Tf.MakeValidIdentifier(param.slug)
             p_prim = stage.DefinePrim(f"{params_prim.GetPath()}/{safe_slug}", "Xform")
 
             p_prim.CreateAttribute("synapse:node_path", Sdf.ValueTypeNames.String).Set(param.node)
