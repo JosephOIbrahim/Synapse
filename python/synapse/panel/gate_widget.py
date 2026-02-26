@@ -139,14 +139,16 @@ class _ProposalCard(QtWidgets.QFrame):
             reject_btn.setStyleSheet(get_gate_reject_btn_stylesheet())
             reject_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
             reject_btn.clicked.connect(
-                lambda: self.reject_clicked.emit(self._proposal_id)
+                lambda checked=False, pid=self._proposal_id: self.reject_clicked.emit(pid)
             )
             btn_row.addWidget(reject_btn)
 
             approve_btn = QtWidgets.QPushButton("Approve")
             approve_btn.setStyleSheet(get_gate_approve_btn_stylesheet())
             approve_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-            approve_btn.clicked.connect(self._on_approve_clicked)
+            approve_btn.clicked.connect(
+                lambda checked=False: self._on_approve_clicked()
+            )
             btn_row.addWidget(approve_btn)
 
             layout.addLayout(btn_row)
