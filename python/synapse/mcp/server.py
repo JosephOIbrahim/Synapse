@@ -65,10 +65,13 @@ _READ_ONLY_TOOLS: frozenset = frozenset(
 
 # Synapse version — read from package metadata if available, else hardcoded
 try:
-    from importlib.metadata import version as _pkg_version
-    _SYNAPSE_VERSION = _pkg_version("synapse")
+    from synapse import __version__ as _SYNAPSE_VERSION
 except Exception:
-    _SYNAPSE_VERSION = "5.7.0"
+    try:
+        from importlib.metadata import version as _pkg_version
+        _SYNAPSE_VERSION = _pkg_version("synapse-houdini")
+    except Exception:
+        _SYNAPSE_VERSION = "5.8.0"
 
 
 # =========================================================================

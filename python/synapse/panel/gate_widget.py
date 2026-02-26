@@ -9,6 +9,7 @@ them to the Qt main thread via a Signal before touching any widgets.
 
 import time
 import logging
+from functools import partial
 
 try:
     from PySide6 import QtWidgets, QtCore, QtGui
@@ -46,22 +47,31 @@ _LEVEL_TIMEOUTS = {
 }
 
 
-class _ProposalCard(QtWidgets.QFrame):
-    """Single gate proposal card with level badge and action buttons."""
+class _ProposalCard(QtWidgets.QWidget):
+    """Single gate proposal card with level badge and action buttons.
+
+    Uses QWidget (not QFrame) to avoid Houdini's global QFrame styles
+    that can intercept mouse events and block button clicks in PySide6.
+    """
 
     approve_clicked = Signal(str)  # proposal_id
     reject_clicked = Signal(str)   # proposal_id
 
     def __init__(self, proposal_data, parent=None):
         super().__init__(parent)
+        self.setAutoFillBackground(True)
         self._proposal_id = proposal_data.get("proposal_id", "")
         self._level = proposal_data.get("level", "review")
         self._timeout = _LEVEL_TIMEOUTS.get(self._level, 0)
         self._created_at = proposal_data.get("created_at", "")
         self._pulse_on = False
+        self._reject_btn = None
+        self._approve_btn = None
 
         level_color = _LEVEL_COLORS.get(self._level, t.SIGNAL)
-        self.setStyleSheet(get_gate_card_stylesheet(level_color))
+        # Use object-name-qualified selector to prevent cascade to children
+        self.setObjectName("gateCard")
+        self._apply_card_style(level_color)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(10, 8, 10, 8)
@@ -135,21 +145,20 @@ class _ProposalCard(QtWidgets.QFrame):
 
             btn_row.addStretch()
 
-            reject_btn = QtWidgets.QPushButton("Reject")
-            reject_btn.setStyleSheet(get_gate_reject_btn_stylesheet())
-            reject_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-            reject_btn.clicked.connect(
-                lambda checked=False, pid=self._proposal_id: self.reject_clicked.emit(pid)
+            # Store as instance vars to prevent GC before layout takes ownership
+            self._reject_btn = QtWidgets.QPushButton("Reject")
+            self._reject_btn.setStyleSheet(get_gate_reject_btn_stylesheet())
+            self._reject_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+            self._reject_btn.clicked.connect(
+                partial(self._emit_reject, self._proposal_id)
             )
-            btn_row.addWidget(reject_btn)
+            btn_row.addWidget(self._reject_btn)
 
-            approve_btn = QtWidgets.QPushButton("Approve")
-            approve_btn.setStyleSheet(get_gate_approve_btn_stylesheet())
-            approve_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-            approve_btn.clicked.connect(
-                lambda checked=False: self._on_approve_clicked()
-            )
-            btn_row.addWidget(approve_btn)
+            self._approve_btn = QtWidgets.QPushButton("Approve")
+            self._approve_btn.setStyleSheet(get_gate_approve_btn_stylesheet())
+            self._approve_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+            self._approve_btn.clicked.connect(self._on_approve_clicked)
+            btn_row.addWidget(self._approve_btn)
 
             layout.addLayout(btn_row)
 
@@ -169,7 +178,22 @@ class _ProposalCard(QtWidgets.QFrame):
             self._pulse_timer.setInterval(800)
             self._pulse_timer.start()
 
-    def _on_approve_clicked(self):
+    def _apply_card_style(self, level_color):
+        """Apply card stylesheet. Uses property-only (no type selector) to
+        avoid cascading to child widgets like QPushButtons."""
+        from synapse.panel import tokens as t
+        self.setStyleSheet(
+            "background: {bg}; border: none; border-left: 3px solid {lc}; "
+            "border-radius: 4px; margin: 2px 0;".format(
+                bg=t.CARBON, lc=level_color,
+            )
+        )
+
+    def _emit_reject(self, proposal_id, checked=False):
+        """Slot for reject button. Accepts checked arg from clicked(bool)."""
+        self.reject_clicked.emit(proposal_id)
+
+    def _on_approve_clicked(self, checked=False):
         """Handle approve click. CRITICAL requires confirmation."""
         if self._level == "critical":
             reply = QtWidgets.QMessageBox.warning(
@@ -202,7 +226,7 @@ class _ProposalCard(QtWidgets.QFrame):
         """Toggle CRITICAL card border for pulsing effect."""
         self._pulse_on = not self._pulse_on
         color = t.ERROR if self._pulse_on else t.GRAPHITE
-        self.setStyleSheet(get_gate_card_stylesheet(color))
+        self._apply_card_style(color)
 
     def mark_decided(self, decision):
         """Visually mark the card as decided."""
@@ -213,7 +237,7 @@ class _ProposalCard(QtWidgets.QFrame):
             self._pulse_timer.stop()
 
         color = t.GROW if decision == "approved" else t.ERROR
-        self.setStyleSheet(get_gate_card_stylesheet(color))
+        self._apply_card_style(color)
         self.setEnabled(False)
 
 
@@ -270,24 +294,16 @@ class GateWidget(QtWidgets.QWidget):
         body_layout.setContentsMargins(8, 4, 8, 4)
         body_layout.setSpacing(4)
 
-        # Scrollable proposals area
-        self._proposals_area = QtWidgets.QScrollArea(self._body)
-        self._proposals_area.setWidgetResizable(True)
-        self._proposals_area.setMaximumHeight(200)
-        self._proposals_area.setFrameShape(QtWidgets.QFrame.NoFrame)
-        self._proposals_area.setStyleSheet("background: transparent;")
-        self._proposals_area.setHorizontalScrollBarPolicy(
-            QtCore.Qt.ScrollBarAlwaysOff
-        )
-
-        self._proposals_container = QtWidgets.QWidget()
+        # Proposals container (direct layout — no QScrollArea, which eats
+        # mouse events on Windows 11 / PySide6 and blocks button clicks)
+        self._proposals_container = QtWidgets.QWidget(self._body)
+        self._proposals_container.setMaximumHeight(200)
         self._proposals_layout = QtWidgets.QVBoxLayout(self._proposals_container)
         self._proposals_layout.setContentsMargins(0, 0, 0, 0)
         self._proposals_layout.setSpacing(4)
         self._proposals_layout.addStretch()
-        self._proposals_area.setWidget(self._proposals_container)
 
-        body_layout.addWidget(self._proposals_area)
+        body_layout.addWidget(self._proposals_container)
 
         # -- Integrity status row --
         self._integrity_row = QtWidgets.QWidget(self._body)
