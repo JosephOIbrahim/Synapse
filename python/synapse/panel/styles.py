@@ -691,3 +691,114 @@ def animate_stack_transition(stacked_widget, new_index, duration_ms=200):
     # Store reference to prevent GC
     stacked_widget._current_anim = anim
     anim.start()
+
+
+# ── Gate Widget Stylesheets ──────────────────────────────────────────
+
+
+def get_gate_widget_stylesheet():
+    """Container for gate proposals + integrity bar."""
+    return (
+        "background: {bg}; border: 1px solid {border}; "
+        "border-radius: 4px;".format(bg=t.VOID, border=t.GRAPHITE)
+    )
+
+
+def get_gate_card_stylesheet(level_color):
+    """Proposal card with colored left stripe indicating gate level."""
+    return (
+        "QFrame {{"
+        "  background: {bg};"
+        "  border: none;"
+        "  border-left: 3px solid {lc};"
+        "  border-radius: 4px;"
+        "  margin: 2px 0;"
+        "}}".format(bg=t.CARBON, lc=level_color)
+    )
+
+
+def get_gate_badge_stylesheet(color):
+    """Small badge showing gate level name."""
+    return (
+        "background: {c}20; color: {c}; border: 1px solid {c}40; "
+        "border-radius: 3px; padding: 1px 6px; "
+        "font-family: '{mono}', 'Consolas', monospace; "
+        "font-size: {sz}px; font-weight: 700;".format(
+            c=color, mono=t.FONT_MONO, sz=t.SIZE_LABEL,
+        )
+    )
+
+
+def get_gate_approve_btn_stylesheet():
+    """Green outlined approve button."""
+    return (
+        "QPushButton {{"
+        "  background: transparent;"
+        "  color: {c};"
+        "  border: 1px solid {c};"
+        "  border-radius: 3px;"
+        "  padding: 3px 12px;"
+        "  font-family: '{mono}', 'Consolas', monospace;"
+        "  font-size: {sz}px;"
+        "  font-weight: 700;"
+        "}}"
+        "QPushButton:hover {{"
+        "  background: {c}20;"
+        "}}"
+        "QPushButton:pressed {{"
+        "  background: {c}40;"
+        "}}".format(c=t.GROW, mono=t.FONT_MONO, sz=t.SIZE_LABEL)
+    )
+
+
+def get_gate_reject_btn_stylesheet():
+    """Red outlined reject button."""
+    return (
+        "QPushButton {{"
+        "  background: transparent;"
+        "  color: {c};"
+        "  border: 1px solid {c};"
+        "  border-radius: 3px;"
+        "  padding: 3px 12px;"
+        "  font-family: '{mono}', 'Consolas', monospace;"
+        "  font-size: {sz}px;"
+        "}}"
+        "QPushButton:hover {{"
+        "  background: {c}20;"
+        "}}"
+        "QPushButton:pressed {{"
+        "  background: {c}40;"
+        "}}".format(c=t.ERROR, mono=t.FONT_MONO, sz=t.SIZE_LABEL)
+    )
+
+
+def get_integrity_bar_stylesheet():
+    """Single-row integrity status bar."""
+    return (
+        "background: {bg}; border-top: 1px solid {border};".format(
+            bg=t.VOID, border=t.GRAPHITE
+        )
+    )
+
+
+def get_halt_button_stylesheet():
+    """Red outlined emergency halt button."""
+    return (
+        "QPushButton {{"
+        "  background: transparent;"
+        "  color: {c};"
+        "  border: 1px solid {c};"
+        "  border-radius: 3px;"
+        "  padding: 4px 10px;"
+        "  font-family: '{mono}', 'Consolas', monospace;"
+        "  font-size: {sz}px;"
+        "  font-weight: 700;"
+        "  letter-spacing: 1px;"
+        "}}"
+        "QPushButton:hover {{"
+        "  background: {c}20;"
+        "}}"
+        "QPushButton:pressed {{"
+        "  background: {c}40;"
+        "}}".format(c=t.ERROR, mono=t.FONT_MONO, sz=t.SIZE_LABEL)
+    )

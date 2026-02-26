@@ -41,11 +41,7 @@ from .tabs.decisions import DecisionsTab
 from .tabs.activity import ActivityTab
 from .tabs.search import SearchTab
 
-__title__ = "Synapse"
-__version__ = "4.0.0"
-__author__ = "Joe Ibrahim"
-__license__ = "MIT"
-__product__ = "Synapse - AI-Houdini Bridge"
+from synapse import __version__
 
 
 class SynapsePanel(QtWidgets.QWidget):

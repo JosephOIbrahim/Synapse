@@ -107,6 +107,8 @@ class SynapseWSBridge(QThread):
     hda_progress = Signal(dict)
     hda_result = Signal(dict)
     connection_error = Signal(str)
+    gate_proposal = Signal(dict)     # Gate proposal for artist decision
+    session_report = Signal(dict)    # Bridge integrity report
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -224,6 +226,12 @@ class SynapseWSBridge(QThread):
             return
         if msg_type == "hda_result":
             self.hda_result.emit(data)
+            return
+        if msg_type == "gate_proposal":
+            self.gate_proposal.emit(data)
+            return
+        if msg_type == "session_report":
+            self.session_report.emit(data)
             return
 
         # Unwrap protocol envelope: {data: {...}, success, error, ...}

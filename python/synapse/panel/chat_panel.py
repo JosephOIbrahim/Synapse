@@ -42,6 +42,7 @@ from synapse.panel.quick_actions import (
     QUICK_ACTIONS, CONTEXT_MENU_EXTRAS, QuickActionPills,
 )
 from synapse.panel.hda_views import DescribeView, BuildingView, ResultView
+from synapse.panel.gate_widget import GateWidget
 from synapse.panel.styles import (
     get_hda_stylesheet,
     animate_stack_transition,
@@ -56,6 +57,7 @@ from synapse.panel.styles import (
     get_connection_frame_stylesheet,
     get_mode_toolbar_stylesheet,
     get_font_size_button_stylesheet,
+    get_halt_button_stylesheet,
 )
 from synapse.panel import tokens as t
 
@@ -184,6 +186,10 @@ class SynapseChatPanel:
         self._quick_actions.action_triggered.connect(self._on_quick_action)
         chat_layout.addWidget(self._quick_actions)
 
+        # 2.5. Gate proposals + integrity (collapsible)
+        self._gate_widget = GateWidget(self._chat_widget)
+        chat_layout.addWidget(self._gate_widget)
+
         # 3. Context chips + input area (merged)
         input_container = self._build_input_area()
         chat_layout.addWidget(input_container)
@@ -221,6 +227,8 @@ class SynapseChatPanel:
         self._bridge.status_changed.connect(self._on_status_changed)
         self._bridge.context_updated.connect(self._on_context_updated)
         self._bridge.connection_error.connect(self._on_connection_error)
+        self._bridge.gate_proposal.connect(self._gate_widget.handle_ws_proposal)
+        self._bridge.session_report.connect(self._gate_widget.handle_ws_report)
 
         # -- HDA controller (wired in Phase 3, lazy import) -------------
         self._wire_hda_controller()
@@ -229,6 +237,11 @@ class SynapseChatPanel:
         self._context_timer = QTimer(self._root)
         self._context_timer.timeout.connect(self._poll_context)
         self._context_timer.setInterval(10000)
+
+        # -- Integrity polling (gate widget)
+        self._integrity_timer = QTimer(self._root)
+        self._integrity_timer.timeout.connect(self._poll_integrity)
+        self._integrity_timer.setInterval(5000)
 
         # -- Keyboard shortcuts -------------------------------------------
         self._install_shortcuts()
@@ -254,15 +267,24 @@ class SynapseChatPanel:
         if self._context_timer is not None:
             self._context_timer.start()
 
+        if self._integrity_timer is not None:
+            self._integrity_timer.start()
+
     def onDeactivateInterface(self):
         """Panel hidden -- keep WS alive but pause UI updates."""
         if self._context_timer is not None:
             self._context_timer.stop()
 
+        if self._integrity_timer is not None:
+            self._integrity_timer.stop()
+
     def onDestroyInterface(self):
         """Panel closing -- clean up bridge thread."""
         if self._context_timer is not None:
             self._context_timer.stop()
+
+        if self._integrity_timer is not None:
+            self._integrity_timer.stop()
 
         if self._bridge is not None:
             self._bridge.stop()
@@ -552,6 +574,14 @@ class SynapseChatPanel:
         self._conn_label.setObjectName("status_label")
         self._conn_label.setStyleSheet(get_status_label_stylesheet(_ERROR_COLOR))
         layout.addWidget(self._conn_label)
+
+        # Emergency halt button
+        self._halt_btn = QtWidgets.QPushButton("HALT")
+        self._halt_btn.setStyleSheet(get_halt_button_stylesheet())
+        self._halt_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self._halt_btn.setToolTip("Emergency halt -- cancel all agent operations")
+        self._halt_btn.clicked.connect(self._on_emergency_halt)
+        layout.addWidget(self._halt_btn)
 
         layout.addStretch()
 
@@ -878,6 +908,19 @@ class SynapseChatPanel:
                     editors[0].homeToSelection()
         except Exception:
             pass
+
+    def _on_emergency_halt(self):
+        """Emergency halt -- cancel all agent operations."""
+        self._chat.append_system_message("Emergency halt triggered.")
+        if self._bridge is not None and self._bridge.connected:
+            self._bridge.send_command(
+                "emergency_halt", {"reason": "Artist triggered panel halt"}
+            )
+
+    def _poll_integrity(self):
+        """Poll bridge for integrity report and update gate widget."""
+        if self._bridge is not None and self._bridge.connected:
+            self._bridge.send_command("get_session_report", {})
 
     def _poll_context(self):
         """Periodically refresh scene context for the context chips."""
