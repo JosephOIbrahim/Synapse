@@ -188,6 +188,7 @@ class SynapseChatPanel:
 
         # 2.5. Gate proposals + integrity (collapsible)
         self._gate_widget = GateWidget(self._chat_widget)
+        self._gate_widget.decision_announced.connect(self._on_gate_decision)
         chat_layout.addWidget(self._gate_widget)
 
         # 3. Context chips + input area (merged)
@@ -912,6 +913,16 @@ class SynapseChatPanel:
                     editors[0].homeToSelection()
         except Exception:
             pass
+
+    def _on_gate_decision(self, operation, decision, level):
+        """Post gate decision to chat so the artist sees confirmation."""
+        icon = "+" if decision == "approved" else "x"
+        label = decision.upper()
+        self._chat.append_system_message(
+            "[{icon}] {label}: {op} ({lvl})".format(
+                icon=icon, label=label, op=operation, lvl=level.upper(),
+            )
+        )
 
     def _on_emergency_halt(self):
         """Emergency halt -- cancel all agent operations."""

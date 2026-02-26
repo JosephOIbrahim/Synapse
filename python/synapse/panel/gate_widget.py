@@ -64,6 +64,7 @@ class _ProposalCard(QtWidgets.QWidget):
         self._level = proposal_data.get("level", "review")
         self._timeout = _LEVEL_TIMEOUTS.get(self._level, 0)
         self._created_at = proposal_data.get("created_at", "")
+        self._operation = proposal_data.get("operation", "unknown")
         self._pulse_on = False
         self._reject_btn = None
         self._approve_btn = None
@@ -229,14 +230,55 @@ class _ProposalCard(QtWidgets.QWidget):
         self._apply_card_style(color)
 
     def mark_decided(self, decision):
-        """Visually mark the card as decided."""
+        """Visually mark the card as decided with triple feedback:
+        1. Green/red flash on the card background
+        2. Status text replacing countdown
+        3. Card dims after flash (chat message handled by GateWidget)
+        """
         # Stop timers
         if hasattr(self, "_countdown_timer"):
             self._countdown_timer.stop()
         if hasattr(self, "_pulse_timer"):
             self._pulse_timer.stop()
 
-        color = t.GROW if decision == "approved" else t.ERROR
+        is_approved = decision == "approved"
+        color = t.GROW if is_approved else t.ERROR
+        label = "APPROVED" if is_approved else "REJECTED"
+
+        # 1. Flash: bright background pulse
+        flash_bg = "{c}30".format(c=color)
+        self.setStyleSheet(
+            "background: {fb}; border: none; border-left: 4px solid {c}; "
+            "border-radius: 4px; margin: 2px 0;".format(fb=flash_bg, c=color)
+        )
+
+        # 2. Status text replacing countdown
+        if hasattr(self, "_countdown_label"):
+            self._countdown_label.setText(label)
+            self._countdown_label.setStyleSheet(
+                "color: {c}; font-size: {sz}px; font-weight: 700; "
+                "font-family: '{mono}', 'Consolas', monospace; "
+                "border: none;".format(
+                    c=color, sz=t.SIZE_LABEL, mono=t.FONT_MONO,
+                )
+            )
+
+        # Hide buttons
+        if self._approve_btn:
+            self._approve_btn.setVisible(False)
+        if self._reject_btn:
+            self._reject_btn.setVisible(False)
+
+        # 3. Dim after 600ms flash
+        self._decision = decision
+        self._flash_timer = QTimer(self)
+        self._flash_timer.setSingleShot(True)
+        self._flash_timer.timeout.connect(self._end_flash)
+        self._flash_timer.start(600)
+
+    def _end_flash(self):
+        """Dim the card after the flash."""
+        color = t.GROW if self._decision == "approved" else t.ERROR
         self._apply_card_style(color)
         self.setEnabled(False)
 
@@ -252,6 +294,9 @@ class GateWidget(QtWidgets.QWidget):
     # Thread-safe relays: gate callbacks -> Qt main thread
     _proposal_received = Signal(object)
     _decision_made = Signal(str, str)  # proposal_id, decision
+
+    # Public signal for chat panel to show decision messages
+    decision_announced = Signal(str, str, str)  # operation, decision, level
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -450,6 +495,11 @@ class GateWidget(QtWidgets.QWidget):
         card = self._cards.get(proposal_id)
         if card:
             card.mark_decided("approved")
+            op = card._proposal_id
+            # Emit for chat panel to post a visible message
+            self.decision_announced.emit(
+                getattr(card, '_operation', op), "approved", card._level
+            )
         self._update_header_text()
 
     def _on_reject(self, proposal_id):
@@ -464,6 +514,10 @@ class GateWidget(QtWidgets.QWidget):
         card = self._cards.get(proposal_id)
         if card:
             card.mark_decided("rejected")
+            op = card._proposal_id
+            self.decision_announced.emit(
+                getattr(card, '_operation', op), "rejected", card._level
+            )
         self._update_header_text()
 
     @Slot(str, str)
