@@ -803,6 +803,10 @@ class SynapseChatPanel:
         status = response.get("status", "")
 
         if status == "error":
+            # Suppress errors from internal polling commands
+            msg = response.get("message", "")
+            if "get_session_report" in msg or "emergency_halt" in msg:
+                return
             self._chat.append_synapse_message(response)
             return
 
