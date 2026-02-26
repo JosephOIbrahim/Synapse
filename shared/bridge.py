@@ -16,7 +16,7 @@ Elegant Revisions integrated:
   R2: Unbreakable async→sync boundary (hdefereval.executeInMainThreadWithResult)
   R4: Structural disk-write gate override (touches_disk → APPROVE)
   R7: Blast radius inference — auto-detect SOP→LOP bleed via dependency tracing
-  R8: PDG async cook bridge — event callbacks + asyncio.Event for farm cooks
+  R8: PDG async cook bridge — pdg.PyEventHandler + asyncio.Event for farm cooks (H21)
 """
 
 from __future__ import annotations
@@ -479,8 +479,10 @@ class LosslessExecutionBridge:
         """
         R8: Safely bridges PDG asynchronous cooks with FastMCP async loops.
 
-        Uses hou.pdgEventType callbacks + asyncio.Event so the agent
-        sleeps while the farm cook runs, but FastMCP remains responsive.
+        H21 moved PDG events from hou.pdgEventType to the standalone pdg module.
+        Cook events use pdg.GraphContext.addEventHandler with pdg.PyEventHandler
+        instead of hou TopNode.addEventCallback (which handles hou.nodeEventType).
+
         On failure: wipes caches via dirtyAllTasks(remove_files=True).
         """
         integrity.main_thread_executed = True
@@ -499,27 +501,49 @@ class LosslessExecutionBridge:
 
         integrity.scene_hash_before = self._compute_scene_hash(node_path)
 
-        cook_complete = asyncio.Event()
-        cook_success = [False]
-        cook_error = [""]
-
-        def on_cook_event(event_type, work_item):
-            if event_type == hou.pdgEventType.CookComplete:
-                cook_success[0] = True
-                cook_complete.set()
-            elif event_type == hou.pdgEventType.CookFailed:
-                cook_success[0] = False
-                cook_error[0] = str(work_item) if work_item else "Unknown PDG error"
-                cook_complete.set()
-
         top_node = hou.node(node_path)
         if not top_node:
             return self._fail_with_integrity(
                 integrity, f"TOP node not found: {node_path}", "invalid_node"
             )
 
+        cook_complete = asyncio.Event()
+        cook_success = [False]
+        cook_error = [""]
+
+        # H21: PDG events live in the standalone pdg module
         try:
-            top_node.addEventCallback(on_cook_event)
+            import pdg as _pdg
+        except ImportError:
+            _pdg = None
+
+        if _pdg is None:
+            return self._fail_with_integrity(
+                integrity, "pdg module not available", "missing_dependency"
+            )
+
+        # Get the PDG graph context from the TOP node
+        graph_context = top_node.getPDGGraphContext()
+        if not graph_context:
+            return self._fail_with_integrity(
+                integrity, f"No PDG graph context on {node_path}", "invalid_node"
+            )
+
+        handler = None
+        try:
+            # H21: pdg.PyEventHandler wraps a Python callback for PDG events
+            def on_cook_event(event):
+                if event.type == _pdg.EventType.CookComplete:
+                    cook_success[0] = True
+                    cook_complete.set()
+                elif event.type == _pdg.EventType.CookError:
+                    cook_success[0] = False
+                    cook_error[0] = event.message if event.message else "Unknown PDG error"
+                    cook_complete.set()
+
+            handler = _pdg.PyEventHandler(on_cook_event)
+            graph_context.addEventHandler(handler, _pdg.EventType.CookComplete)
+            graph_context.addEventHandler(handler, _pdg.EventType.CookError)
 
             # Trigger cook on main thread, don't block FastMCP
             hdefereval.executeInMainThread(lambda: top_node.executeGraph())
@@ -527,15 +551,16 @@ class LosslessExecutionBridge:
             # Agent sleeps here. FastMCP server remains responsive.
             await cook_complete.wait()
 
-            top_node.removeEventCallback(on_cook_event)
         except Exception as e:
-            try:
-                top_node.removeEventCallback(on_cook_event)
-            except Exception:
-                pass
             return self._fail_with_integrity(
                 integrity, f"PDG callback error: {e}", "pdg_error"
             )
+        finally:
+            if handler is not None:
+                try:
+                    graph_context.removeEventHandler(handler)
+                except Exception:
+                    pass
 
         if not cook_success[0]:
             # Disk-based rollback: wipe generated caches

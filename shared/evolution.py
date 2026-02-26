@@ -327,12 +327,27 @@ class LosslessEvolution:
         this file (via sublayer or reference) will be stale. This method
         finds those nodes and force-cooks them so the Solaris viewport
         immediately reflects the evolved data.
+
+        H21: hou.lopNetworks() was removed. We walk the node tree from root
+        and collect hou.LopNetwork instances instead.
         """
         if not _HOU_AVAILABLE:
             return
 
         try:
-            for lop_net in hou.lopNetworks():
+            # H21: find LOP networks by walking the node tree
+            lop_networks = []
+            stack = [hou.node("/")]
+            while stack:
+                n = stack.pop()
+                if isinstance(n, hou.LopNetwork):
+                    lop_networks.append(n)
+                try:
+                    stack.extend(n.children())
+                except Exception:
+                    pass
+
+            for lop_net in lop_networks:
                 for node in lop_net.children():
                     if node.type().name() in ("sublayer", "reference"):
                         file_parm = node.parm("filepath1")
