@@ -932,6 +932,8 @@ class SynapsePanel(QtWidgets.QWidget):
             self._do_vex(arg)
         elif cmd == "/recipes" or cmd == "/recipe":
             self._do_recipes(arg)
+        elif cmd == "/apex":
+            self._do_apex(arg)
         elif cmd == "/help":
             self._show_help()
         else:
@@ -952,6 +954,9 @@ class SynapsePanel(QtWidgets.QWidget):
             "  /vex help &lt;function&gt; -- VEX function reference and tutorial",
             "  /vex write &lt;description&gt; -- Generate VEX code from description",
             "  /trace [network_path] -- Trace data flow through a network",
+            "",
+            "  <b>Rigging</b>",
+            "  /apex -- APEX rigging tools (explain, trace, recipes, migrate)",
             "",
             "  <b>Check</b>",
             "  /diagnose [scope] -- Run scene doctor (scope: all, render, materials, current_network)",
@@ -1322,6 +1327,324 @@ class SynapsePanel(QtWidgets.QWidget):
             )
         except Exception:
             pass
+
+    # ── APEX Rigging Tools ────────────────────────────────────
+
+    def _do_apex(self, arg=""):
+        """APEX rigging tools: explain, trace, recipes, build, overview, concept, migrate."""
+        parts = arg.strip().split(None, 1) if arg else []
+        subcmd = parts[0].lower() if parts else ""
+        subarg = parts[1] if len(parts) > 1 else ""
+
+        # Display user intent
+        user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+        display_text = "/apex {}".format(arg) if arg else "/apex"
+        self._chat_display.append(
+            '<div style="margin: 8px 0 4px 0;">'
+            '<b style="color: {};">You</b></div>'
+            '<div style="margin: 0 0 8px 10px;">{}</div>'.format(
+                user_color, display_text,
+            )
+        )
+
+        if not subcmd or subcmd == "help":
+            color = SILVER if _HAS_DESIGN else "#999999"
+            sz = SIZE_SMALL if _HAS_DESIGN else 11
+            help_lines = [
+                "<b>APEX Rigging Tools:</b>",
+                "",
+                "  /apex explain [node] -- Explain any APEX node",
+                "  /apex trace [node] -- Trace an APEX graph's execution",
+                "  /apex recipes -- Browse APEX rigging recipes",
+                "  /apex recipes &lt;name&gt; -- Show recipe details",
+                "  /apex build &lt;recipe&gt; -- Build an APEX recipe",
+                "  /apex overview -- Introduction to APEX",
+                "  /apex concept &lt;name&gt; -- Look up an APEX concept",
+                "  /apex migrate -- KineFX to APEX migration guide",
+            ]
+            html_out = '<div style="color: {}; font-size: {}pt; margin: 4px 0;">{}</div>'.format(
+                color, sz, "<br>".join(help_lines),
+            )
+            self._chat_display.append(html_out)
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+
+        elif subcmd == "explain":
+            try:
+                from synapse.panel.apex_explainer import (
+                    gather_apex_context, build_apex_explain_prompt,
+                    build_apex_messages,
+                )
+            except ImportError as e:
+                self._sys("APEX explainer unavailable: " + str(e))
+                return
+
+            node_path = subarg.strip()
+            if not node_path:
+                try:
+                    sel = hou.selectedNodes()
+                    if sel:
+                        node_path = sel[0].path()
+                except Exception:
+                    pass
+            if not node_path:
+                self._sys("Select an APEX node first, or type /apex explain &lt;node_path&gt;")
+                return
+
+            context = gather_apex_context(node_path)
+            if context.get("errors") and not context.get("is_apex_node"):
+                for err in context["errors"]:
+                    self._sys(str(err))
+                return
+
+            explain_prompt = build_apex_explain_prompt(context)
+            messages = build_apex_messages(context)
+
+            try:
+                from synapse.panel.system_prompt import build_system_prompt
+                base = build_system_prompt(self._gather_context())
+            except ImportError:
+                base = "You are SYNAPSE, an AI co-pilot inside Houdini 21."
+            system_prompt = self._build_memory_system_prompt(base + "\n\n" + explain_prompt)
+
+            self._launch_worker(messages, system_prompt)
+
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/apex", "explain {}".format(node_path))
+            except Exception:
+                pass
+
+        elif subcmd == "trace":
+            try:
+                from synapse.panel.apex_trace import (
+                    trace_apex_graph, format_apex_trace_html,
+                    build_apex_trace_prompt, build_apex_trace_messages,
+                )
+            except ImportError as e:
+                self._sys("APEX trace unavailable: " + str(e))
+                return
+
+            invoke_path = subarg.strip()
+            if not invoke_path:
+                try:
+                    sel = hou.selectedNodes()
+                    if sel:
+                        invoke_path = sel[0].path()
+                except Exception:
+                    pass
+            if not invoke_path:
+                self._sys("Select an APEX Invoke node first, or type /apex trace &lt;node_path&gt;")
+                return
+
+            trace = trace_apex_graph(invoke_path)
+
+            # Display trace HTML inline
+            self._chat_display.append(format_apex_trace_html(trace))
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+
+            # Also send to Claude for interpretation
+            trace_prompt = build_apex_trace_prompt(trace)
+            messages = build_apex_trace_messages(trace)
+
+            try:
+                from synapse.panel.system_prompt import build_system_prompt
+                base = build_system_prompt(self._gather_context())
+            except ImportError:
+                base = "You are SYNAPSE, an AI co-pilot inside Houdini 21."
+            system_prompt = self._build_memory_system_prompt(base + "\n\n" + trace_prompt)
+
+            self._launch_worker(messages, system_prompt)
+
+            self._log_activity("APEX trace: " + trace.summary, "info")
+
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/apex", "trace {}".format(invoke_path))
+            except Exception:
+                pass
+
+        elif subcmd == "recipes":
+            if subarg:
+                # Show specific recipe detail
+                try:
+                    from synapse.panel.apex_recipes import format_apex_recipe_detail_html
+                except ImportError as e:
+                    self._sys("APEX recipes unavailable: " + str(e))
+                    return
+                self._chat_display.append(format_apex_recipe_detail_html(subarg.strip()))
+            else:
+                # Show all APEX recipes overview
+                try:
+                    from synapse.panel.apex_recipes import format_apex_recipes_html
+                except ImportError as e:
+                    self._sys("APEX recipes unavailable: " + str(e))
+                    return
+                self._chat_display.append(format_apex_recipes_html())
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/apex", "recipes {}".format(subarg).strip())
+            except Exception:
+                pass
+
+        elif subcmd == "build":
+            if not subarg:
+                self._sys("Usage: /apex build &lt;recipe_name&gt;")
+                return
+
+            try:
+                from synapse.panel.apex_recipes import (
+                    get_apex_recipe, build_apex_recipe_messages,
+                )
+            except ImportError as e:
+                self._sys("APEX recipes unavailable: " + str(e))
+                return
+
+            recipe_name = subarg.strip()
+            recipe = get_apex_recipe(recipe_name)
+            if recipe is None:
+                self._sys(
+                    "APEX recipe '{}' not found. Type /apex recipes to browse.".format(
+                        recipe_name
+                    )
+                )
+                return
+
+            context = self._gather_context()
+            parent_path = context.get("network", "/obj/geo1")
+            messages = build_apex_recipe_messages(
+                recipe_name, {"parent_path": parent_path}
+            )
+            if not messages:
+                self._sys("Could not build messages for this recipe.")
+                return
+
+            try:
+                from synapse.panel.system_prompt import build_system_prompt
+                base = build_system_prompt(context)
+            except ImportError:
+                base = "You are SYNAPSE, an AI co-pilot inside Houdini 21."
+            system_prompt = self._build_memory_system_prompt(base)
+
+            self._launch_worker(messages, system_prompt)
+
+            self._log_activity(
+                "Building APEX recipe: {}".format(recipe_name), "action"
+            )
+
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/apex", "build {}".format(recipe_name))
+            except Exception:
+                pass
+
+        elif subcmd == "overview":
+            try:
+                from synapse.panel.apex_explainer import build_apex_overview_prompt
+            except ImportError as e:
+                self._sys("APEX explainer unavailable: " + str(e))
+                return
+
+            overview_prompt = build_apex_overview_prompt()
+            messages = [{"role": "user", "content": "Give me an introduction to APEX in Houdini 21."}]
+
+            try:
+                from synapse.panel.system_prompt import build_system_prompt
+                base = build_system_prompt(self._gather_context())
+            except ImportError:
+                base = "You are SYNAPSE, an AI co-pilot inside Houdini 21."
+            system_prompt = self._build_memory_system_prompt(base + "\n\n" + overview_prompt)
+
+            self._launch_worker(messages, system_prompt)
+
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/apex", "overview")
+            except Exception:
+                pass
+
+        elif subcmd == "concept":
+            if not subarg:
+                # List all concept names
+                try:
+                    from synapse.panel.apex_explainer import APEX_CONCEPTS
+                except ImportError as e:
+                    self._sys("APEX explainer unavailable: " + str(e))
+                    return
+                names = sorted(APEX_CONCEPTS.keys())
+                color = SILVER if _HAS_DESIGN else "#999999"
+                sz = SIZE_SMALL if _HAS_DESIGN else 11
+                lines = ["<b>APEX Concepts:</b><br>"]
+                for name in names:
+                    title = APEX_CONCEPTS[name].get("title", name)
+                    lines.append("  <b>{}</b> -- {}<br>".format(name, title))
+                lines.append(
+                    '<br><span style="color: {}; font-size: {}pt;">'
+                    "Type /apex concept &lt;name&gt; for details.</span>".format(color, sz)
+                )
+                self._chat_display.append(
+                    '<div style="color: {};">{}</div>'.format(
+                        BONE if _HAS_DESIGN else "#CCCCCC",
+                        "\n".join(lines),
+                    )
+                )
+            else:
+                try:
+                    from synapse.panel.apex_explainer import format_concept_html, APEX_CONCEPTS
+                except ImportError as e:
+                    self._sys("APEX explainer unavailable: " + str(e))
+                    return
+                concept_key = subarg.strip().lower()
+                self._chat_display.append(format_concept_html(concept_key))
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/apex", "concept {}".format(subarg).strip())
+            except Exception:
+                pass
+
+        elif subcmd == "migrate":
+            try:
+                from synapse.panel.apex_recipes import KINEFX_MIGRATION_GUIDE
+            except ImportError as e:
+                self._sys("APEX recipes unavailable: " + str(e))
+                return
+
+            # Format migration guide as styled HTML
+            import html as _html_mod
+            escaped = _html_mod.escape(KINEFX_MIGRATION_GUIDE)
+            escaped = escaped.replace("\n", "<br>")
+            mono = FONT_MONO if _HAS_DESIGN else "monospace"
+            sz = SIZE_SMALL if _HAS_DESIGN else 11
+            self._chat_display.append(
+                '<div style="font-family: {}; font-size: {}pt; color: {}; '
+                'padding: 8px; line-height: 1.6;">{}</div>'.format(
+                    mono, sz,
+                    BONE if _HAS_DESIGN else "#CCCCCC",
+                    escaped,
+                )
+            )
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/apex", "migrate")
+            except Exception:
+                pass
+
+        else:
+            self._sys(
+                "Unknown APEX subcommand: {}. Type /apex help for available commands.".format(
+                    subcmd
+                )
+            )
 
     # ── Welcome Experience ───────────────────────────────────
 
