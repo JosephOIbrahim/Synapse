@@ -295,6 +295,10 @@ class SynapsePanel(QtWidgets.QWidget):
         # Initial shot login
         self._do_shot_login()
 
+        # Show welcome on first launch (no memory loaded)
+        if not self._login_data or not self._login_data.get("logged_in"):
+            self._show_welcome()
+
     def _build_ui(self):
         """Construct the panel layout."""
         layout = QtWidgets.QVBoxLayout(self)
@@ -819,58 +823,13 @@ class SynapsePanel(QtWidgets.QWidget):
         context = self._gather_context()
         system_prompt = build_system_prompt(context)
         system_prompt += "\n\n" + HDA_DESIGN_PROMPT
-
-        # Append memory context from shot login
-        if self._login_data and self._login_data.get("logged_in"):
-            try:
-                from synapse.panel.shot_login import format_memory_for_prompt
-                memory_ctx = format_memory_for_prompt(self._login_data)
-                if memory_ctx:
-                    system_prompt += "\n\n" + memory_ctx
-            except ImportError:
-                pass
+        system_prompt = self._build_memory_system_prompt(system_prompt)
 
         # Build messages
         parsed = parse_hda_command("/hda " + description)
         messages = build_hda_messages(parsed["description"], context)
 
-        # Launch worker (same flow as _chat but with HDA prompt)
-        self._send_btn.setEnabled(False)
-        self._streaming_text = ""
-
-        synapse_color = GROW if _HAS_DESIGN else "#00E676"
-        self._chat_display.append(
-            '<div style="margin: 8px 0 4px 0;">'
-            '<b style="color: {};">SYNAPSE</b></div>'
-            '<div id="stream_target" style="margin: 0 0 8px 10px;">'.format(
-                synapse_color
-            )
-        )
-
-        try:
-            from synapse.panel.claude_worker import ClaudeWorker as NewWorker
-            WorkerClass = NewWorker
-            _has_tools = True
-        except ImportError:
-            WorkerClass = _FallbackClaudeWorker
-            _has_tools = False
-
-        self._worker = WorkerClass(
-            messages=messages,
-            system_prompt=system_prompt,
-            parent=self,
-        )
-        self._worker.token_received.connect(self._on_token)
-        self._worker.stream_done.connect(self._on_done)
-        self._worker.stream_error.connect(self._on_error)
-
-        if _has_tools:
-            executor = self._ensure_tool_executor()
-            if executor is not None:
-                self._worker.tool_requested.connect(executor.execute_tool)
-            self._worker.tool_status.connect(self._on_tool_status)
-
-        self._worker.start()
+        self._launch_worker(messages, system_prompt)
 
     # ── Chat Methods ───────────────────────────────────────
 
@@ -965,6 +924,14 @@ class SynapsePanel(QtWidgets.QWidget):
             self._do_journal(arg)
         elif cmd == "/login":
             self._do_shot_login()
+        elif cmd == "/explain":
+            self._do_explain(arg)
+        elif cmd == "/trace":
+            self._do_trace(arg)
+        elif cmd == "/vex":
+            self._do_vex(arg)
+        elif cmd == "/recipes" or cmd == "/recipe":
+            self._do_recipes(arg)
         elif cmd == "/help":
             self._show_help()
         else:
@@ -974,10 +941,24 @@ class SynapsePanel(QtWidgets.QWidget):
         """Display available slash commands in the chat."""
         help_lines = [
             "<b>Available commands:</b>",
+            "",
+            "  <b>Build</b>",
             "  /hda &lt;description&gt; -- Design and build an HDA from a description",
+            "  /recipes [category] [recipe] -- Browse and build network recipes",
+            "",
+            "  <b>Learn</b>",
+            "  /explain [node_path] -- Explain selected node or network data flow",
+            "  /vex explain -- Explain VEX code in selected wrangle",
+            "  /vex help &lt;function&gt; -- VEX function reference and tutorial",
+            "  /vex write &lt;description&gt; -- Generate VEX code from description",
+            "  /trace [network_path] -- Trace data flow through a network",
+            "",
+            "  <b>Check</b>",
             "  /diagnose [scope] -- Run scene doctor (scope: all, render, materials, current_network)",
             "  /fix -- Apply auto-fixes from last /diagnose",
             "  /preflight [node] -- Render preflight check (auto-detects render node)",
+            "",
+            "  <b>Session</b>",
             "  /journal [query] -- View session journal (optional search query)",
             "  /login -- Re-run shot login (reload memory context)",
             "  /help -- Show this help message",
@@ -990,6 +971,394 @@ class SynapsePanel(QtWidgets.QWidget):
         self._chat_display.append(html)
         sb = self._chat_display.verticalScrollBar()
         sb.setValue(sb.maximum())
+
+    def _html_assistant_start(self):
+        """Return the HTML header for an assistant (SYNAPSE) message block."""
+        synapse_color = GROW if _HAS_DESIGN else "#00E676"
+        return (
+            '<div style="margin: 8px 0 4px 0;">'
+            '<b style="color: {};">SYNAPSE</b></div>'
+            '<div id="stream_target" style="margin: 0 0 8px 10px;">'.format(
+                synapse_color
+            )
+        )
+
+    def _launch_worker(self, messages, system_prompt):
+        """Launch a ClaudeWorker with standard signal wiring."""
+        self._send_btn.setEnabled(False)
+        self._streaming_text = ""
+        self._chat_display.append(self._html_assistant_start())
+
+        try:
+            from synapse.panel.claude_worker import ClaudeWorker as NewWorker
+            WorkerClass = NewWorker
+            _has_tools = True
+        except ImportError:
+            WorkerClass = _FallbackClaudeWorker
+            _has_tools = False
+
+        self._worker = WorkerClass(
+            messages=messages,
+            system_prompt=system_prompt,
+            parent=self,
+        )
+        self._worker.token_received.connect(self._on_token)
+        self._worker.stream_done.connect(self._on_done)
+        self._worker.stream_error.connect(self._on_error)
+
+        if _has_tools:
+            executor = self._ensure_tool_executor()
+            if executor is not None:
+                self._worker.tool_requested.connect(executor.execute_tool)
+            self._worker.tool_status.connect(self._on_tool_status)
+
+        self._worker.start()
+
+    def _build_memory_system_prompt(self, base_prompt):
+        """Append memory context from shot login to a base system prompt."""
+        system_prompt = base_prompt
+        if self._login_data and self._login_data.get("logged_in"):
+            try:
+                from synapse.panel.shot_login import format_memory_for_prompt
+                memory_ctx = format_memory_for_prompt(self._login_data)
+                if memory_ctx:
+                    system_prompt += "\n\n" + memory_ctx
+            except ImportError:
+                pass
+        return system_prompt
+
+    # ── Explain Mode ─────────────────────────────────────────
+
+    def _do_explain(self, arg=""):
+        """Explain a selected node or network data flow via Claude."""
+        try:
+            from synapse.panel.explain_mode import (
+                gather_node_context, gather_network_context,
+                build_explain_prompt, build_explain_messages,
+            )
+        except ImportError as e:
+            self._sys("Explain mode unavailable: " + str(e))
+            return
+
+        arg = arg.strip()
+
+        # Determine mode: network path (starts with /) or node
+        is_network = False
+        if arg.startswith("/"):
+            # Check if this resolves to a network (container with children)
+            try:
+                node = hou.node(arg)
+                if node is not None and len(node.children()) > 0:
+                    is_network = True
+            except Exception:
+                pass
+
+        if is_network:
+            context = gather_network_context(arg)
+            mode = "network"
+        else:
+            # Node mode: use arg as path, or fall back to selection
+            node_path = arg
+            if not node_path:
+                try:
+                    sel = hou.selectedNodes()
+                    if sel:
+                        node_path = sel[0].path()
+                except Exception:
+                    pass
+            if not node_path:
+                self._sys("Select a node first, or type /explain &lt;node_path&gt;")
+                return
+            context = gather_node_context(node_path)
+            mode = "node"
+
+        if context.get("error"):
+            self._sys(context["error"])
+            return
+
+        # Display user intent
+        user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+        target = context.get("network_path") or context.get("node_path", "")
+        self._chat_display.append(
+            '<div style="margin: 8px 0 4px 0;">'
+            '<b style="color: {};">You</b></div>'
+            '<div style="margin: 0 0 8px 10px;">/explain {}</div>'.format(
+                user_color, target,
+            )
+        )
+
+        # Build prompts and launch worker
+        explain_prompt = build_explain_prompt(context, mode)
+        messages = build_explain_messages(context, mode)
+
+        # Separate system message from user messages
+        sys_content = explain_prompt
+        user_messages = [m for m in messages if m["role"] != "system"]
+
+        try:
+            from synapse.panel.system_prompt import build_system_prompt
+            base = build_system_prompt(self._gather_context())
+        except ImportError:
+            base = "You are SYNAPSE, an AI co-pilot inside Houdini 21."
+        system_prompt = self._build_memory_system_prompt(base + "\n\n" + sys_content)
+
+        self._launch_worker(user_messages, system_prompt)
+
+        # Log to journal
+        try:
+            from synapse.panel.session_journal import get_journal
+            get_journal().log_command("/explain", "{} ({})".format(target, mode))
+        except Exception:
+            pass
+
+    # ── Network Trace ────────────────────────────────────────
+
+    def _do_trace(self, network_path=""):
+        """Trace data flow through a network and display results."""
+        try:
+            from synapse.panel.network_trace import trace_network, format_trace_html
+        except ImportError as e:
+            self._sys("Network trace unavailable: " + str(e))
+            return
+
+        network_path = network_path.strip()
+        report = trace_network(network_path)
+        self._chat_display.append(format_trace_html(report))
+        sb = self._chat_display.verticalScrollBar()
+        sb.setValue(sb.maximum())
+
+        self._log_activity("Trace: " + report.summary, "info")
+
+        # Log to journal
+        try:
+            from synapse.panel.session_journal import get_journal
+            get_journal().log_command("/trace", report.summary)
+        except Exception:
+            pass
+
+    # ── VEX Tutor ────────────────────────────────────────────
+
+    def _do_vex(self, arg=""):
+        """VEX tutor: explain, help, or write VEX code."""
+        try:
+            from synapse.panel.vex_tutor import (
+                parse_vex_command, VEX_REFERENCE,
+                gather_wrangle_context, build_vex_messages,
+                format_vex_reference_html,
+            )
+        except ImportError as e:
+            self._sys("VEX tutor unavailable: " + str(e))
+            return
+
+        parsed = parse_vex_command("/vex " + arg)
+        mode = parsed["mode"]
+        vex_arg = parsed["arg"]
+
+        # Display user intent
+        user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+        display_text = "/vex {}".format(arg) if arg else "/vex"
+        self._chat_display.append(
+            '<div style="margin: 8px 0 4px 0;">'
+            '<b style="color: {};">You</b></div>'
+            '<div style="margin: 0 0 8px 10px;">{}</div>'.format(
+                user_color, display_text,
+            )
+        )
+
+        # Show usage if bare /vex help with no argument
+        if mode == "help" and not vex_arg:
+            self._sys(
+                "<b>VEX Tutor commands:</b><br>"
+                "  /vex explain -- Explain VEX in selected wrangle<br>"
+                "  /vex help &lt;function&gt; -- Quick reference for a VEX function<br>"
+                "  /vex write &lt;description&gt; -- Generate VEX from a description<br>"
+                "  /vex &lt;function&gt; -- Shortcut for /vex help &lt;function&gt;"
+            )
+            return
+
+        # Gather wrangle context for all modes
+        context = gather_wrangle_context()
+
+        # If help mode and function is in reference, show inline card first
+        if mode == "help" and vex_arg in VEX_REFERENCE:
+            ref = VEX_REFERENCE[vex_arg]
+            self._chat_display.append(format_vex_reference_html(vex_arg, ref))
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+
+        # For explain mode, check we have code
+        if mode == "explain" and not context.get("vex_code"):
+            self._sys("Select a wrangle node with VEX code first, then try /vex explain again.")
+            return
+
+        # Build messages and launch Claude
+        messages = build_vex_messages(mode, vex_arg, context)
+        # Separate system from user messages
+        sys_msgs = [m for m in messages if m["role"] == "system"]
+        user_msgs = [m for m in messages if m["role"] != "system"]
+        sys_content = sys_msgs[0]["content"] if sys_msgs else ""
+
+        try:
+            from synapse.panel.system_prompt import build_system_prompt
+            base = build_system_prompt(self._gather_context())
+        except ImportError:
+            base = "You are SYNAPSE, an AI co-pilot inside Houdini 21."
+        system_prompt = self._build_memory_system_prompt(base + "\n\n" + sys_content)
+
+        self._launch_worker(user_msgs, system_prompt)
+
+        # Log to journal
+        try:
+            from synapse.panel.session_journal import get_journal
+            get_journal().log_command("/vex", "{} {}".format(mode, vex_arg).strip())
+        except Exception:
+            pass
+
+    # ── Recipe Book ──────────────────────────────────────────
+
+    def _do_recipes(self, arg=""):
+        """Browse and build network recipes."""
+        try:
+            from synapse.panel.recipe_book import (
+                parse_recipe_command, format_categories_html,
+                format_category_html, format_recipe_html,
+                search_recipes, build_recipe_messages, get_recipe,
+            )
+        except ImportError as e:
+            self._sys("Recipe book unavailable: " + str(e))
+            return
+
+        parsed = parse_recipe_command("/recipes " + arg)
+        action = parsed["action"]
+
+        if action == "list":
+            self._chat_display.append(format_categories_html())
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+        elif action == "category":
+            self._chat_display.append(format_category_html(parsed["category"]))
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+        elif action == "detail":
+            self._chat_display.append(
+                format_recipe_html(parsed["category"], parsed["recipe"])
+            )
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+        elif action == "search":
+            results = search_recipes(parsed["query"])
+            if not results:
+                self._sys("No recipes found matching '{}'.".format(parsed["query"]))
+            else:
+                color = SILVER if _HAS_DESIGN else "#999999"
+                lines = [
+                    '<div style="color: {};">'.format(
+                        BONE if _HAS_DESIGN else "#CCCCCC"
+                    ),
+                    "<b>Search results for '{}':</b><br>".format(parsed["query"]),
+                ]
+                for cat, name, title, match_ctx in results:
+                    lines.append(
+                        "  <b>{}/{}</b> -- {}<br>".format(cat, name, title)
+                    )
+                lines.append(
+                    '<span style="color: {};">Type /recipes &lt;category&gt; '
+                    "&lt;recipe&gt; for details.</span>".format(color)
+                )
+                lines.append("</div>")
+                self._chat_display.append("\n".join(lines))
+                sb = self._chat_display.verticalScrollBar()
+                sb.setValue(sb.maximum())
+        elif action == "build":
+            category = parsed["category"]
+            recipe_name = parsed["recipe"]
+            recipe = get_recipe(category, recipe_name)
+            if recipe is None:
+                self._sys(
+                    "Recipe '{}/{}' not found. Type /recipes to browse.".format(
+                        category, recipe_name
+                    )
+                )
+                return
+
+            # Display user intent
+            user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+            self._chat_display.append(
+                '<div style="margin: 8px 0 4px 0;">'
+                '<b style="color: {};">You</b></div>'
+                '<div style="margin: 0 0 8px 10px;">'
+                '/recipes build {} {}</div>'.format(
+                    user_color, category, recipe_name,
+                )
+            )
+
+            context = self._gather_context()
+            parent_path = context.get("network", "/obj/geo1")
+            messages = build_recipe_messages(
+                category, recipe_name, {"parent_path": parent_path}
+            )
+            if not messages:
+                self._sys("Could not build messages for this recipe.")
+                return
+
+            try:
+                from synapse.panel.system_prompt import build_system_prompt
+                base = build_system_prompt(context)
+            except ImportError:
+                base = "You are SYNAPSE, an AI co-pilot inside Houdini 21."
+            system_prompt = self._build_memory_system_prompt(base)
+
+            self._launch_worker(messages, system_prompt)
+
+            self._log_activity(
+                "Building recipe: {}/{}".format(category, recipe_name), "action"
+            )
+
+        # Log to journal
+        try:
+            from synapse.panel.session_journal import get_journal
+            get_journal().log_command(
+                "/recipes", "{} {}".format(action, arg).strip()
+            )
+        except Exception:
+            pass
+
+    # ── Welcome Experience ───────────────────────────────────
+
+    def _show_welcome(self):
+        """Display first-time welcome message in the chat area."""
+        signal = SIGNAL if _HAS_DESIGN else "#00D4FF"
+        text = BONE if _HAS_DESIGN else "#CCCCCC"
+        dim = SILVER if _HAS_DESIGN else "#999999"
+        sz = SIZE_BODY if _HAS_DESIGN else 13
+        sz_sm = SIZE_SMALL if _HAS_DESIGN else 11
+        html = (
+            '<div style="color: {text}; font-size: {sz}pt; margin: 12px 8px;">'
+            '<b style="color: {signal}; font-size: {sz_lg}pt;">SYNAPSE</b>'
+            '<br><br>'
+            "I'm here to help you build, learn, and ship."
+            '<br><br>'
+            '<span style="color: {dim};">Three things to try:</span>'
+            '<br>'
+            '<b style="color: {signal};">Tell me what to build</b> '
+            '-- "create a grid with mountain displacement"'
+            '<br>'
+            '<b style="color: {signal};">Ask me to explain</b> '
+            '-- select a node and type <b>/explain</b>'
+            '<br>'
+            '<b style="color: {signal};">Check your work</b> '
+            '-- <b>/diagnose</b> scans for problems'
+            '<br><br>'
+            '<span style="color: {dim}; font-size: {sz_sm}pt;">'
+            'Type anything to get started. <b>/help</b> shows all commands.'
+            '</span>'
+            '</div>'
+        ).format(
+            text=text, signal=signal, dim=dim,
+            sz=sz, sz_sm=sz_sm,
+            sz_lg=SIZE_TITLE if _HAS_DESIGN else 16,
+        )
+        self._chat_display.append(html)
 
     def _chat(self, user_text):
         """Send a message to Claude and stream the response."""
@@ -1006,7 +1375,6 @@ class SynapsePanel(QtWidgets.QWidget):
         self._messages.append({"role": "user", "content": user_text})
 
         # Build system prompt
-        system_prompt = ""
         try:
             from synapse.panel.system_prompt import build_system_prompt
             system_prompt = build_system_prompt(self._gather_context())
@@ -1015,59 +1383,9 @@ class SynapsePanel(QtWidgets.QWidget):
                 "You are SYNAPSE, an AI co-pilot inside Houdini 21. "
                 "Help the artist with VFX tasks."
             )
+        system_prompt = self._build_memory_system_prompt(system_prompt)
 
-        # Append memory context from shot login
-        if self._login_data and self._login_data.get("logged_in"):
-            try:
-                from synapse.panel.shot_login import format_memory_for_prompt
-                memory_ctx = format_memory_for_prompt(self._login_data)
-                if memory_ctx:
-                    system_prompt += "\n\n" + memory_ctx
-            except ImportError:
-                pass
-
-        # Try importing the full ClaudeWorker with tool support
-        WorkerClass = _FallbackClaudeWorker
-        _has_tools = False
-        try:
-            from synapse.panel.claude_worker import ClaudeWorker
-            WorkerClass = ClaudeWorker
-            _has_tools = True
-        except ImportError:
-            self._sys("Tool-use worker not available -- using text-only mode.")
-
-        # Disable send while streaming
-        self._send_btn.setEnabled(False)
-        self._streaming_text = ""
-
-        # Prepare assistant message placeholder
-        synapse_color = GROW if _HAS_DESIGN else "#00E676"
-        self._chat_display.append(
-            '<div style="margin: 8px 0 4px 0;">'
-            '<b style="color: {};">SYNAPSE</b></div>'
-            '<div id="stream_target" style="margin: 0 0 8px 10px;">'.format(
-                synapse_color
-            )
-        )
-
-        # Create and wire worker
-        self._worker = WorkerClass(
-            messages=self._messages,
-            system_prompt=system_prompt,
-            parent=self,
-        )
-        self._worker.token_received.connect(self._on_token)
-        self._worker.stream_done.connect(self._on_done)
-        self._worker.stream_error.connect(self._on_error)
-
-        # Wire tool signals if the full worker is in use
-        if _has_tools:
-            executor = self._ensure_tool_executor()
-            if executor is not None:
-                self._worker.tool_requested.connect(executor.execute_tool)
-            self._worker.tool_status.connect(self._on_tool_status)
-
-        self._worker.start()
+        self._launch_worker(self._messages, system_prompt)
 
     def _on_token(self, text):
         """Handle a streamed text token from the worker."""
