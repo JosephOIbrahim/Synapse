@@ -738,6 +738,19 @@ class SynapsePanel(QtWidgets.QWidget):
                     get_journal().log_event("LOGIN", stage_info)
                 except Exception:
                     pass
+                # Gather cross-scene project context
+                try:
+                    from synapse.panel.cross_scene import gather_project_context, format_project_context_for_prompt
+                    project_dir = self._login_data.get("project_dir", "")
+                    if project_dir:
+                        insights = gather_project_context(project_dir, hip)
+                        if insights:
+                            self._login_data["project_insights"] = format_project_context_for_prompt(insights)
+                            self._sys("Project context: {} insights from other scenes".format(len(insights)))
+                except ImportError:
+                    pass
+                except Exception:
+                    pass
             else:
                 self._sys("Shot login: no memory loaded (outside project)")
         except ImportError:
@@ -980,6 +993,14 @@ class SynapsePanel(QtWidgets.QWidget):
             self._do_apex(arg)
         elif cmd == "/help":
             self._show_help()
+        elif cmd == "/deps":
+            self._do_deps(arg)
+        elif cmd == "/profile":
+            self._do_profile(arg)
+        elif cmd in ("/save-shot", "/save"):
+            self._do_save_shot(arg)
+        elif cmd == "/shots":
+            self._do_shots(arg)
         elif cmd in ("/bookmark", "/bookmarks"):
             self._do_bookmark(arg)
         elif cmd == "/palette":
@@ -1010,6 +1031,12 @@ class SynapsePanel(QtWidgets.QWidget):
             "  /diagnose [scope] -- Run scene doctor (scope: all, render, materials, current_network)",
             "  /fix -- Apply auto-fixes from last /diagnose",
             "  /preflight [node] -- Render preflight check (auto-detects render node)",
+            "",
+            "  <b>Production</b>",
+            "  /deps [scope] -- Scan scene dependencies (scope: all, textures, geo, hda, usd)",
+            "  /profile [network] -- Profile network cook times and find bottlenecks",
+            "  /save-shot [note] -- Save session snapshot (conversation + scene state)",
+            "  /shots [search query] -- List or search saved session snapshots",
             "",
             "  <b>Session</b>",
             "  /journal [query] -- View session journal (optional search query)",
@@ -1082,7 +1109,127 @@ class SynapsePanel(QtWidgets.QWidget):
                     system_prompt += "\n\n" + memory_ctx
             except ImportError:
                 pass
+        # Append cross-scene project insights if available
+        if self._login_data and self._login_data.get("project_insights"):
+            system_prompt += "\n\n" + self._login_data["project_insights"]
         return system_prompt
+
+    # ── Production Pipeline ────────────────────────────────
+
+    def _do_deps(self, scope=""):
+        """Scan scene dependencies and display results."""
+        scope = scope.strip() or "all"
+        self._log_activity("Scanning dependencies ({})...".format(scope), "action")
+        try:
+            from synapse.panel.dependency_map import scan_dependencies, format_deps_html
+            report = scan_dependencies(scope)
+            self._chat_display.append(format_deps_html(report))
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+            self._log_activity(report.summary, "info")
+            # Log to journal
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/deps", report.summary)
+            except Exception:
+                pass
+            # Offer Claude analysis if missing deps found
+            if report.missing_count:
+                self._sys(
+                    "{} missing file{}. Ask me to help resolve them.".format(
+                        report.missing_count,
+                        "s" if report.missing_count != 1 else "",
+                    )
+                )
+        except ImportError:
+            self._sys("Dependency scanner unavailable (synapse.panel.dependency_map not found)")
+        except Exception as e:
+            self._sys("Dependency scan error: " + str(e))
+
+    def _do_profile(self, network=""):
+        """Profile a network for cook-time bottlenecks."""
+        network = network.strip()
+        label = network if network else "current network"
+        self._log_activity("Profiling {}...".format(label), "action")
+        try:
+            from synapse.panel.performance_profiler import (
+                profile_network, format_profile_html, build_profile_messages,
+            )
+            report = profile_network(network)
+            self._chat_display.append(format_profile_html(report))
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+            self._log_activity(report.summary, "info")
+            # Log to journal
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/profile", report.summary)
+            except Exception:
+                pass
+            # If bottlenecks found, launch Claude worker for deeper analysis
+            if report.bottlenecks:
+                messages = build_profile_messages(report)
+                system_prompt = self._build_memory_system_prompt(
+                    "You are SYNAPSE, a Houdini performance advisor."
+                )
+                self._launch_worker(messages, system_prompt)
+        except ImportError:
+            self._sys("Profiler unavailable (synapse.panel.performance_profiler not found)")
+        except Exception as e:
+            self._sys("Profile error: " + str(e))
+
+    def _do_save_shot(self, note=""):
+        """Save a session snapshot to disk."""
+        self._log_activity("Saving session snapshot...", "action")
+        try:
+            from synapse.panel.save_shot import save_shot, format_save_html
+            snapshot = save_shot(note, self._messages, self._login_data)
+            self._chat_display.append(format_save_html(snapshot))
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+            self._log_activity("Snapshot saved: " + snapshot.save_path, "success")
+            # Log to journal
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/save-shot", "saved to " + snapshot.save_path)
+            except Exception:
+                pass
+        except ImportError:
+            self._sys("Save-shot unavailable (synapse.panel.save_shot not found)")
+        except Exception as e:
+            self._sys("Save-shot error: " + str(e))
+
+    def _do_shots(self, arg=""):
+        """List or search saved session snapshots."""
+        try:
+            from synapse.panel.save_shot import (
+                parse_save_command, list_snapshots, format_snapshots_html,
+            )
+            parsed = parse_save_command("/shots " + arg)
+            if parsed.get("action") == "search":
+                query = parsed.get("query", "").lower()
+                snapshots = list_snapshots()
+                snapshots = [
+                    s for s in snapshots
+                    if query in s.get("note_preview", "").lower()
+                    or query in s.get("filename", "").lower()
+                ]
+            else:
+                snapshots = list_snapshots()
+            self._chat_display.append(format_snapshots_html(snapshots))
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+            self._log_activity("{} snapshot(s) found".format(len(snapshots)), "info")
+            # Log to journal
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/shots", "{} snapshots".format(len(snapshots)))
+            except Exception:
+                pass
+        except ImportError:
+            self._sys("Shots unavailable (synapse.panel.save_shot not found)")
+        except Exception as e:
+            self._sys("Shots error: " + str(e))
 
     # ── Explain Mode ─────────────────────────────────────────
 
