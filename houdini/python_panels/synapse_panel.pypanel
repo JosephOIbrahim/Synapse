@@ -10,6 +10,7 @@ PySide6/PySide2 panel providing:
   - Title bar with branding
   - Status indicator with animated dot
   - Tool grid (Inspect Selection, Inspect Scene, Last Result, Health Check, Project Setup)
+  - Chat interface with Claude API streaming + tool execution
   - Scrolling activity log
   - Connection controls (connect/disconnect + port display)
 """
@@ -21,6 +22,22 @@ import time
 import os
 import sys
 import threading
+import copy
+import http.client
+import ssl
+
+
+# ── Bootstrap SYNAPSE Python path ─────────────────────────
+
+import sys as _sys_mod
+import os as _os_mod
+_synapse_python = _os_mod.environ.get(
+    "SYNAPSE_ROOT",
+    _os_mod.path.join(_os_mod.path.expanduser("~"), "SYNAPSE"),
+)
+_synapse_python = _os_mod.path.join(_synapse_python, "python")
+if _synapse_python not in _sys_mod.path:
+    _sys_mod.path.insert(0, _synapse_python)
 
 
 # ── Bootstrap Design System imports ───────────────────────
@@ -54,7 +71,7 @@ except ImportError:
 
 # ── Constants ─────────────────────────────────────────────
 
-_VERSION = "5.7.0"
+_VERSION = "6.1.0"
 _STATUS_DOT = "\u25CF"  # Filled circle
 _STATUS_DOT_EMPTY = "\u25CB"  # Empty circle
 _ACTIVITY_MAX_LINES = 200
@@ -121,6 +138,113 @@ class StatusDotAnimator(QtCore.QObject):
             self.color_changed.emit(alpha_color)
 
 
+# ── Fallback ClaudeWorker (text-only, no tools) ──────────
+
+class _FallbackClaudeWorker(QtCore.QThread):
+    """Minimal text-only Claude streaming worker.
+
+    Used when synapse.panel.claude_worker cannot be imported.
+    Streams text tokens but does NOT support tool use.
+    """
+
+    token_received = QtCore.Signal(str)
+    stream_done = QtCore.Signal()
+    stream_error = QtCore.Signal(str)
+    # Stubs -- never emitted, but wired so the panel doesn't crash
+    tool_requested = QtCore.Signal(object)
+    tool_status = QtCore.Signal(str, str)
+
+    _API_HOST = "api.anthropic.com"
+    _API_PATH = "/v1/messages"
+    _API_VERSION = "2023-06-01"
+    _MODEL = "claude-sonnet-4-20250514"
+    _MAX_TOKENS = 4096
+
+    def __init__(self, messages, system_prompt="", parent=None):
+        super().__init__(parent)
+        self._messages = copy.deepcopy(messages)
+        self._system = system_prompt
+        self._abort = False
+
+    def abort(self):
+        self._abort = True
+
+    def get_messages(self):
+        return copy.deepcopy(self._messages)
+
+    def run(self):
+        try:
+            api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+            if not api_key:
+                self.stream_error.emit("ANTHROPIC_API_KEY not set in environment")
+                return
+
+            body = {
+                "model": self._MODEL,
+                "max_tokens": self._MAX_TOKENS,
+                "stream": True,
+                "messages": self._messages,
+            }
+            if self._system:
+                body["system"] = self._system
+
+            payload = json.dumps(body).encode("utf-8")
+            ctx = ssl.create_default_context()
+            conn = http.client.HTTPSConnection(
+                self._API_HOST, timeout=60, context=ctx
+            )
+
+            try:
+                conn.request(
+                    "POST", self._API_PATH, body=payload,
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-api-key": api_key,
+                        "anthropic-version": self._API_VERSION,
+                    },
+                )
+                response = conn.getresponse()
+                if response.status != 200:
+                    error_body = response.read().decode("utf-8", errors="replace")
+                    self.stream_error.emit(
+                        "API error {}: {}".format(response.status, error_body[:200])
+                    )
+                    return
+
+                self._parse_stream(response)
+                if not self._abort:
+                    self.stream_done.emit()
+            finally:
+                conn.close()
+
+        except Exception as exc:
+            self.stream_error.emit(str(exc))
+
+    def _parse_stream(self, response):
+        buf = ""
+        while True:
+            if self._abort:
+                return
+            chunk = response.read(4096)
+            if not chunk:
+                break
+            buf += chunk.decode("utf-8", errors="replace")
+            while "\n" in buf:
+                line, buf = buf.split("\n", 1)
+                line = line.strip()
+                if line.startswith("data:"):
+                    data_str = line[5:].strip()
+                    if data_str and data_str != "[DONE]":
+                        try:
+                            data = json.loads(data_str)
+                            delta = data.get("delta", {})
+                            text = delta.get("text", "")
+                            if text:
+                                self.token_received.emit(text)
+                        except (json.JSONDecodeError, KeyError):
+                            pass
+
+
 # ── Main Panel Widget ────────────────────────────────────
 
 class SynapsePanel(QtWidgets.QWidget):
@@ -136,6 +260,12 @@ class SynapsePanel(QtWidgets.QWidget):
         self._server = None
         self._dot_animator = StatusDotAnimator(self)
         self._dot_animator.color_changed.connect(self._on_dot_color)
+
+        # Chat state
+        self._messages = []
+        self._worker = None
+        self._tool_executor = None  # lazy init
+        self._streaming_text = ""
 
         self._build_ui()
 
@@ -174,8 +304,11 @@ class SynapsePanel(QtWidgets.QWidget):
         # Tool grid
         layout.addWidget(self._build_tool_grid())
 
-        # Activity log (stretches)
-        layout.addWidget(self._build_activity_log(), stretch=1)
+        # Chat area (display + input + send)
+        layout.addWidget(self._build_chat_area(), stretch=1)
+
+        # Activity log (compact, below chat)
+        layout.addWidget(self._build_activity_log())
 
         # Connection controls
         layout.addWidget(self._build_connection_bar())
@@ -258,6 +391,51 @@ class SynapsePanel(QtWidgets.QWidget):
             btn.setToolTip(tooltip)
             btn.clicked.connect(callback)
             grid.addWidget(btn, i // cols, i % cols)
+
+        return frame
+
+    def _build_chat_area(self):
+        """Build the chat display, input field, and send button."""
+        frame = QtWidgets.QFrame()
+        frame.setObjectName("chat_frame")
+        layout = QtWidgets.QVBoxLayout(frame)
+        margin = SPACE_SM if _HAS_DESIGN else 8
+        layout.setContentsMargins(margin, margin, margin, 0)
+        layout.setSpacing(SPACE_XS if _HAS_DESIGN else 4)
+
+        # Chat display (read-only HTML area)
+        self._chat_display = QtWidgets.QTextEdit()
+        self._chat_display.setObjectName("chat_display")
+        self._chat_display.setReadOnly(True)
+        self._chat_display.setPlaceholderText("Chat with SYNAPSE...")
+        font_size = SIZE_BODY if _HAS_DESIGN else 13
+        bg = VOID if _HAS_DESIGN else "#252525"
+        fg = BONE if _HAS_DESIGN else "#CCCCCC"
+        self._chat_display.setStyleSheet(
+            "QTextEdit {{ background: {}; color: {}; border: none; "
+            "font-size: {}pt; font-family: {}; }}".format(
+                bg, fg, font_size,
+                FONT_MONO if _HAS_DESIGN else "Consolas, monospace",
+            )
+        )
+        layout.addWidget(self._chat_display, stretch=1)
+
+        # Input row: text field + send button
+        input_row = QtWidgets.QHBoxLayout()
+        input_row.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
+
+        self._chat_input = QtWidgets.QLineEdit()
+        self._chat_input.setObjectName("chat_input")
+        self._chat_input.setPlaceholderText("Type a message...")
+        self._chat_input.returnPressed.connect(self._on_send_chat)
+        input_row.addWidget(self._chat_input, stretch=1)
+
+        self._send_btn = QtWidgets.QPushButton("Send")
+        self._send_btn.setObjectName("send_button")
+        self._send_btn.clicked.connect(self._on_send_chat)
+        input_row.addWidget(self._send_btn)
+
+        layout.addLayout(input_row)
 
         return frame
 
@@ -480,6 +658,193 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception as e:
             self._log_activity(f"Health check failed: {e}", "error")
             self._set_status("warning", str(e)[:40])
+
+    # ── Chat Methods ───────────────────────────────────────
+
+    def _sys(self, msg):
+        """Append a system-level message to the chat display."""
+        color = SILVER if _HAS_DESIGN else "#999999"
+        html = '<div style="color: {}; font-size: {}pt; margin: 4px 0;">{}</div>'.format(
+            color, SIZE_SMALL if _HAS_DESIGN else 11, msg,
+        )
+        self._chat_display.append(html)
+        sb = self._chat_display.verticalScrollBar()
+        sb.setValue(sb.maximum())
+
+    def _gather_context(self):
+        """Gather current Houdini scene context for the system prompt."""
+        ctx = {
+            "network": "/obj",
+            "selection": [],
+            "frame": 1,
+            "hip": "untitled.hip",
+        }
+        try:
+            ctx["network"] = hou.ui.paneTabOfType(
+                hou.paneTabType.NetworkEditor
+            ).pwd().path()
+        except Exception:
+            pass
+        try:
+            ctx["selection"] = [n.path() for n in hou.selectedNodes()]
+        except Exception:
+            pass
+        try:
+            ctx["frame"] = int(hou.frame())
+        except Exception:
+            pass
+        try:
+            ctx["hip"] = hou.hipFile.name()
+        except Exception:
+            pass
+        return ctx
+
+    def _ensure_tool_executor(self):
+        """Lazily create the main-thread ToolExecutor."""
+        if self._tool_executor is None:
+            try:
+                from synapse.panel.tool_executor import ToolExecutor
+                self._tool_executor = ToolExecutor(parent=self)
+            except ImportError as e:
+                self._sys("Tool executor not available: " + str(e))
+        return self._tool_executor
+
+    def _on_send_chat(self):
+        """Handle send button click or Enter key in chat input."""
+        text = self._chat_input.text().strip()
+        if not text:
+            return
+        self._chat_input.clear()
+        self._chat(text)
+
+    def _chat(self, user_text):
+        """Send a message to Claude and stream the response."""
+        # Display user message
+        user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+        user_html = (
+            '<div style="margin: 8px 0 4px 0;">'
+            '<b style="color: {};">You</b></div>'
+            '<div style="margin: 0 0 8px 10px;">{}</div>'
+        ).format(user_color, user_text.replace("\n", "<br>"))
+        self._chat_display.append(user_html)
+
+        # Append to conversation history
+        self._messages.append({"role": "user", "content": user_text})
+
+        # Build system prompt
+        system_prompt = ""
+        try:
+            from synapse.panel.system_prompt import build_system_prompt
+            system_prompt = build_system_prompt(self._gather_context())
+        except ImportError:
+            system_prompt = (
+                "You are SYNAPSE, an AI co-pilot inside Houdini 21. "
+                "Help the artist with VFX tasks."
+            )
+
+        # Try importing the full ClaudeWorker with tool support
+        WorkerClass = _FallbackClaudeWorker
+        _has_tools = False
+        try:
+            from synapse.panel.claude_worker import ClaudeWorker
+            WorkerClass = ClaudeWorker
+            _has_tools = True
+        except ImportError:
+            self._sys("Tool-use worker not available -- using text-only mode.")
+
+        # Disable send while streaming
+        self._send_btn.setEnabled(False)
+        self._streaming_text = ""
+
+        # Prepare assistant message placeholder
+        synapse_color = GROW if _HAS_DESIGN else "#00E676"
+        self._chat_display.append(
+            '<div style="margin: 8px 0 4px 0;">'
+            '<b style="color: {};">SYNAPSE</b></div>'
+            '<div id="stream_target" style="margin: 0 0 8px 10px;">'.format(
+                synapse_color
+            )
+        )
+
+        # Create and wire worker
+        self._worker = WorkerClass(
+            messages=self._messages,
+            system_prompt=system_prompt,
+            parent=self,
+        )
+        self._worker.token_received.connect(self._on_token)
+        self._worker.stream_done.connect(self._on_done)
+        self._worker.stream_error.connect(self._on_error)
+
+        # Wire tool signals if the full worker is in use
+        if _has_tools:
+            executor = self._ensure_tool_executor()
+            if executor is not None:
+                self._worker.tool_requested.connect(executor.execute_tool)
+            self._worker.tool_status.connect(self._on_tool_status)
+
+        self._worker.start()
+
+    def _on_token(self, text):
+        """Handle a streamed text token from the worker."""
+        self._streaming_text += text
+        # Move cursor to end and insert text
+        cursor = self._chat_display.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.insertText(text)
+        self._chat_display.setTextCursor(cursor)
+        sb = self._chat_display.verticalScrollBar()
+        sb.setValue(sb.maximum())
+
+    def _on_done(self):
+        """Handle stream completion."""
+        # Close the streaming div
+        cursor = self._chat_display.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.insertHtml("</div>")
+        self._chat_display.setTextCursor(cursor)
+
+        self._send_btn.setEnabled(True)
+
+        # Sync conversation history from the worker (includes tool loop turns)
+        if self._worker:
+            self._messages = self._worker.get_messages()
+
+    def _on_error(self, error_msg):
+        """Handle stream error."""
+        error_color = ERROR if _HAS_DESIGN else "#FF3D71"
+        self._chat_display.append(
+            '<div style="color: {}; margin: 4px 0 8px 10px;">'
+            'Error: {}</div>'.format(error_color, error_msg[:300])
+        )
+        self._send_btn.setEnabled(True)
+
+    def _on_tool_status(self, tool_name, status):
+        """Display a compact inline indicator showing tool execution status."""
+        icons = {"running": "\u2699", "done": "\u2713", "error": "\u2717"}
+        colors = {
+            "running": FIRE if _HAS_DESIGN else "#FF6B35",
+            "done": GROW if _HAS_DESIGN else "#00E676",
+            "error": ERROR if _HAS_DESIGN else "#FF3D71",
+        }
+        display = tool_name.replace("houdini_", "").replace("synapse_", "")
+        display = display.replace("_", " ").title()
+        text_sec = SILVER if _HAS_DESIGN else "#999999"
+        color = colors.get(status, text_sec)
+        icon = icons.get(status, "")
+        sz = SIZE_SMALL if _HAS_DESIGN else 11
+        html = (
+            '<div style="margin:2px 0 2px 20px; padding:3px 10px; '
+            'font-size:{}pt; color:{}; '
+            'border-left:2px solid {};">'
+            '{} {}'
+            '</div>'
+        ).format(sz, color, color, icon, display)
+        self._chat_display.append(html)
+        sb = self._chat_display.verticalScrollBar()
+        sb.setValue(sb.maximum())
+
+    # ── Server Controls ──────────────────────────────────
 
     def _on_connect_toggle(self):
         """Start or stop the WebSocket server."""
