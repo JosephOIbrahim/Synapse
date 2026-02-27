@@ -416,7 +416,7 @@ class MemoryStore:
             if len(self._write_buffer) >= self._flush_max:
                 self._flush_event.set()
 
-        # Throttled evolution check (Charmander -> Charmeleon)
+        # Throttled evolution check (Flat -> Structured)
         self._add_count += 1
         if self._add_count % self._EVOLUTION_CHECK_INTERVAL == 0:
             self._check_evolution()

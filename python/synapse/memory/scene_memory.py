@@ -2,7 +2,7 @@
 Synapse Scene Memory -- Living Memory System
 
 Persistent, layered memory that lives alongside Houdini scene files.
-Memory evolves: Charmander (markdown) -> Charmeleon (USD) -> Charizard (composed USD).
+Memory evolves: Flat (markdown) -> Structured (USD) -> Composed (composed USD).
 
 This module handles all file operations for the scene memory system.
 Every function is idempotent, non-destructive, and encoding-safe.
@@ -140,7 +140,7 @@ def seed_project_md(path: str, job_name: str, fps: float = 24.0) -> None:
     content = (
         f"# Project Memory: {job_name}\n"
         f"# Created: {now}\n"
-        f"# Evolution: Charmander (markdown)\n"
+        f"# Evolution: Flat (markdown)\n"
         f"# Schema: {SCHEMA_VERSION}\n\n---\n\n"
         f"## Pipeline Configuration\n"
         f"- **Frame Rate:** {fps}fps\n\n"
@@ -161,7 +161,7 @@ def seed_scene_md(path: str, scene_name: str, project_name: str) -> None:
         f"# Scene Memory: {scene_name}\n"
         f"# Project: {project_name}\n"
         f"# Created: {now}\n"
-        f"# Evolution: Charmander (markdown)\n"
+        f"# Evolution: Flat (markdown)\n"
         f"# Schema: {SCHEMA_VERSION}\n\n---\n\n"
     )
     lock = _get_file_lock(path)
@@ -223,7 +223,7 @@ def load_memory(claude_dir: str, name: str = "memory") -> Dict[str, Any]:
                     "format": "usd",
                     "path": usd_path,
                     "content": content,
-                    "evolution": "charmeleon",
+                    "evolution": "structured",
                 }
         except Exception as e:
             logger.warning("Could not read USD %s: %s", usd_path, e)
@@ -234,7 +234,7 @@ def load_memory(claude_dir: str, name: str = "memory") -> Dict[str, Any]:
             "format": "md",
             "path": md_path,
             "content": content,
-            "evolution": "charmander",
+            "evolution": "flat",
         }
 
     return {
@@ -717,7 +717,7 @@ def search_memory(content: str, query: str, type_filter: str = "") -> List[Dict[
 
 
 def get_evolution_stage(claude_dir: str, name: str = "memory") -> str:
-    """Detect current evolution stage: charmander, charmeleon, or charizard."""
+    """Detect current evolution stage: flat, structured, or composed."""
     claude_dir = os.path.normpath(claude_dir)
     usd_path = os.path.join(claude_dir, f"{name}.usd")
     md_path = os.path.join(claude_dir, f"{name}.md")
@@ -729,29 +729,29 @@ def get_evolution_stage(claude_dir: str, name: str = "memory") -> str:
             stage = Usd.Stage.Open(usd_path)
             layer_data = stage.GetRootLayer().customLayerData
             evo = layer_data.get("synapse:evolution", "")
-            if evo == "charizard":
-                return "charizard"
-            if evo == "charmeleon":
-                return "charmeleon"
+            if evo == "composed":
+                return "composed"
+            if evo == "structured":
+                return "structured"
             # Check sublayers as fallback
             if list(stage.GetRootLayer().subLayerPaths):
-                return "charizard"
-            return "charmeleon"
+                return "composed"
+            return "structured"
         except ImportError:
             pass
         # Fallback: text scan for USDA files
         try:
             content = _read_file(usd_path)
-            if '"synapse:evolution" = "charizard"' in content:
-                return "charizard"
+            if '"synapse:evolution" = "composed"' in content:
+                return "composed"
             if "subLayers" in content or "references" in content:
-                return "charizard"
+                return "composed"
         except Exception:
             pass
-        return "charmeleon"
+        return "structured"
 
     if os.path.exists(md_path):
-        return "charmander"
+        return "flat"
 
     return "none"
 

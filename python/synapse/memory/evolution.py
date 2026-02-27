@@ -1,5 +1,5 @@
 """
-Synapse Memory Evolution -- Charmander -> Charmeleon -> Charizard
+Synapse Memory Evolution -- Flat -> Structured -> Composed
 
 Detects when markdown memory should evolve to USD. Handles the
 conversion process and maintains companion markdown.
@@ -13,7 +13,7 @@ from typing import Dict, List, Any, Optional
 logger = logging.getLogger("synapse.evolution")
 
 EVOLUTION_TRIGGERS = {
-    "charmeleon": {
+    "structured": {
         "structured_data_count": 5,
         "asset_references": 3,
         "parameter_records": 5,
@@ -28,7 +28,7 @@ EVOLUTION_TRIGGERS = {
 def count_structured_data(md_path: str) -> Dict[str, Any]:
     """Count structured elements in a markdown memory file."""
     if not os.path.exists(md_path):
-        return {k: 0 for k in EVOLUTION_TRIGGERS["charmeleon"]}
+        return {k: 0 for k in EVOLUTION_TRIGGERS["structured"]}
 
     with open(md_path, "r", encoding="utf-8") as f:
         content = f.read()
@@ -79,12 +79,12 @@ def check_evolution(claude_dir: str, latest_entry: Dict = None) -> Dict[str, Any
 
     stage = get_evolution_stage(claude_dir)
 
-    if stage != "charmander":
+    if stage != "flat":
         return {"should_evolve": False, "triggers_met": [], "target": None, "current": stage}
 
     md_path = os.path.join(claude_dir, "memory.md")
     counts = count_structured_data(md_path)
-    triggers = EVOLUTION_TRIGGERS["charmeleon"]
+    triggers = EVOLUTION_TRIGGERS["structured"]
 
     triggers_met = []
     for key, threshold in sorted(triggers.items()):
@@ -94,7 +94,7 @@ def check_evolution(claude_dir: str, latest_entry: Dict = None) -> Dict[str, Any
     return {
         "should_evolve": len(triggers_met) > 0,
         "triggers_met": triggers_met,
-        "target": "charmeleon" if triggers_met else None,
+        "target": "structured" if triggers_met else None,
         "current": stage,
         "counts": counts,
     }
@@ -199,7 +199,7 @@ def parse_markdown_memory(md_path: str) -> Dict[str, List]:
     }
 
 
-def evolve_to_charmeleon(md_path: str, usd_path: str) -> Dict[str, Any]:
+def evolve_to_structured(md_path: str, usd_path: str) -> Dict[str, Any]:
     """
     Convert markdown memory to USD. Lossless.
 
@@ -250,7 +250,7 @@ def evolve_to_charmeleon(md_path: str, usd_path: str) -> Dict[str, Any]:
     stage.GetRootLayer().customLayerData = {
         "synapse:version": "0.1.0",
         "synapse:type": "scene_memory",
-        "synapse:evolution": "charmeleon",
+        "synapse:evolution": "structured",
     }
     stage.GetRootLayer().Save()
 
@@ -284,7 +284,7 @@ def generate_companion_md(usd_path: str, md_path: str) -> None:
 
     stage = Usd.Stage.Open(usd_path)
     lines = [
-        "# Scene Memory (Charmeleon - auto-generated from USD)",
+        "# Scene Memory (Structured - auto-generated from USD)",
         f"# Source: {os.path.basename(usd_path)}",
         "# Do not edit -- this file is regenerated from memory.usd",
         "",
@@ -372,7 +372,7 @@ def prune_memory(claude_dir: str, max_sessions_full: int = 5) -> Dict[str, Any]:
     return {"pruned_sessions": pruned_count, "new_size_kb": new_size}
 
 
-def evolve_to_charizard(scene_usd_path: str, project_usd_path: str) -> Dict[str, Any]:
+def evolve_to_composed(scene_usd_path: str, project_usd_path: str) -> Dict[str, Any]:
     """
     Set up composition arcs so scene memory sublayers project memory.
     Scene-level opinions are stronger (override project defaults).
@@ -400,7 +400,7 @@ def evolve_to_charizard(scene_usd_path: str, project_usd_path: str) -> Dict[str,
 
     # Update evolution metadata
     data = dict(layer.customLayerData)
-    data["synapse:evolution"] = "charizard"
+    data["synapse:evolution"] = "composed"
     layer.customLayerData = data
 
     layer.Save()

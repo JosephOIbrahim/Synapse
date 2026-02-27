@@ -1,12 +1,12 @@
 """
-SYNAPSE Memory Evolution — Lossless Pokémon Model
+SYNAPSE Memory Evolution — Lossless Evolution Pipeline
 
 Markdown → USD → USD+Composition
 Each evolution is verified lossless. If fidelity < 1.0, rollback.
 
-CHARMANDER: memory.md (flat text, no schema overhead)
-CHARMELEON: memory.usd (typed prims + text attributes, composable)
-CHARIZARD:  memory.usd + composition arcs (cross-scene, sublayered)
+FLAT:       memory.md (flat text, no schema overhead)
+STRUCTURED: memory.usd (typed prims + text attributes, composable)
+COMPOSED:   memory.usd + composition arcs (cross-scene, sublayered)
 
 Elegant Revision R3: Native OpenUSD generation via pxr.Usd.Stage.CreateInMemory()
   - Eliminates string-template escaping bugs
@@ -98,7 +98,7 @@ class ParsedMemory:
 
 # ── Evolution Triggers ──────────────────────────────────────────
 
-CHARMELEON_TRIGGERS = {
+STRUCTURED_TRIGGERS = {
     "structured_data_count": 5,
     "asset_references": 3,
     "parameter_records": 5,
@@ -120,7 +120,7 @@ class EvolutionCheck:
 
 def check_evolution_triggers(md_path: str) -> EvolutionCheck:
     if not os.path.exists(md_path):
-        return EvolutionCheck(False, "charmander", "charmander", [], [])
+        return EvolutionCheck(False, "flat", "flat", [], [])
 
     content = open(md_path, 'r').read()
     stats = count_structured_data(content)
@@ -128,7 +128,7 @@ def check_evolution_triggers(md_path: str) -> EvolutionCheck:
     triggers_met = []
     triggers_pending = []
 
-    for trigger_name, threshold in CHARMELEON_TRIGGERS.items():
+    for trigger_name, threshold in STRUCTURED_TRIGGERS.items():
         current = stats.get(trigger_name, 0)
         if current >= threshold:
             triggers_met.append(f"{trigger_name}: {current} >= {threshold}")
@@ -138,8 +138,8 @@ def check_evolution_triggers(md_path: str) -> EvolutionCheck:
     should_evolve = len(triggers_met) > 0
     return EvolutionCheck(
         should_evolve=should_evolve,
-        current_stage="charmander",
-        target_stage="charmeleon" if should_evolve else "charmander",
+        current_stage="flat",
+        target_stage="structured" if should_evolve else "flat",
         triggers_met=triggers_met,
         triggers_pending=triggers_pending,
     )
@@ -249,7 +249,7 @@ class EvolutionIntegrity:
 @dataclass
 class EvolutionResult:
     evolved: bool
-    stage: str = "charmander"
+    stage: str = "flat"
     fidelity: float = 1.0
     clean_hash: str = ""
     archive_path: str = ""
@@ -259,9 +259,9 @@ class EvolutionResult:
 # ── Lossless Evolution ──────────────────────────────────────────
 
 class LosslessEvolution:
-    """Pokémon evolution with formal lossless guarantees."""
+    """Pipeline evolution with formal lossless guarantees."""
 
-    def evolve_to_charmeleon(self, md_path: str, usd_path: str) -> EvolutionResult:
+    def evolve_to_structured(self, md_path: str, usd_path: str) -> EvolutionResult:
         """
         Lossless or rollback. Five-stage pipeline:
           1 DETECT → 2 EXTRACT → 3a PRESERVE → 3b CONVERT → 4 COMBINE → 5 VERIFY
@@ -314,7 +314,7 @@ class LosslessEvolution:
         self._sync_solaris_viewport(usd_path)
 
         return EvolutionResult(
-            evolved=True, stage="charmeleon", fidelity=integrity.fidelity,
+            evolved=True, stage="structured", fidelity=integrity.fidelity,
             clean_hash=clean_hash, archive_path=archive_path,
         )
 
@@ -375,7 +375,7 @@ class LosslessEvolution:
         # Layer metadata
         stage.GetRootLayer().customLayerData = {
             "synapse:version": "2.0.0-lossless",
-            "synapse:evolution_stage": "charmeleon",
+            "synapse:evolution_stage": "structured",
             "synapse:evolved_at": datetime.now().isoformat(),
             "synapse:session_count": len(parsed.sessions),
             "synapse:decision_count": len(parsed.decisions),
@@ -458,7 +458,7 @@ class LosslessEvolution:
             '    doc = "SYNAPSE Scene Memory — Evolved from Markdown (fallback)"',
             '    customLayerData = {',
             '        string synapse:version = "2.0.0-lossless"',
-            f'        string synapse:evolution_stage = "charmeleon"',
+            f'        string synapse:evolution_stage = "structured"',
             f'        string synapse:evolved_at = "{datetime.now().isoformat()}"',
             f'        int synapse:session_count = {len(parsed.sessions)}',
             f'        int synapse:decision_count = {len(parsed.decisions)}',
@@ -537,7 +537,7 @@ class LosslessEvolution:
         lines = [
             '# SYNAPSE Scene Memory (Companion — source of truth is memory.usd)',
             '',
-            f'*Evolution stage: Charmeleon | {len(parsed.sessions)} sessions | '
+            f'*Evolution stage: Structured | {len(parsed.sessions)} sessions | '
             f'{len(parsed.decisions)} decisions | {len(parsed.assets)} assets*',
             '',
         ]

@@ -460,7 +460,7 @@ class TestToolsCall:
         # Override handler temporarily to let init succeed
         init_response = MagicMock()
         init_response.success = True
-        init_response.data = {"stage": "charmander"}
+        init_response.data = {"stage": "flat"}
         handler.handle.return_value = init_response
 
         init_body = _jsonrpc("initialize", {"clientInfo": {"name": "test"}}, msg_id=1)
@@ -871,7 +871,7 @@ class TestP1AutoInitProjectContext:
         handler = MagicMock()
         response = MagicMock()
         response.success = True
-        response.data = {"stage": "charmander", "scene_memory": {}}
+        response.data = {"stage": "flat", "scene_memory": {}}
         handler.handle.return_value = response
 
         srv = server_mod.MCPServer(handler=handler)
@@ -889,7 +889,7 @@ class TestP1AutoInitProjectContext:
         handler = MagicMock()
         response = MagicMock()
         response.success = True
-        response.data = {"stage": "charmander", "scene_memory": {"entries": []}}
+        response.data = {"stage": "flat", "scene_memory": {"entries": []}}
         handler.handle.return_value = response
 
         srv = server_mod.MCPServer(handler=handler)

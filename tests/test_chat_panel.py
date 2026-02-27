@@ -740,27 +740,27 @@ class TestProjectAutoInit:
 class TestContextBarProjectContext:
     """Test context bar project memory display."""
 
-    def test_set_project_context_charmander(self):
+    def test_set_project_context_flat(self):
         from synapse.panel.context_bar import ContextBar
 
         bar = ContextBar()
-        bar.set_project_context("my_project", "charmander")
+        bar.set_project_context("my_project", "flat")
         assert bar._project_name == "my_project"
-        assert bar._evolution_stage == "charmander"
+        assert bar._evolution_stage == "flat"
 
-    def test_set_project_context_charmeleon(self):
+    def test_set_project_context_structured(self):
         from synapse.panel.context_bar import ContextBar
 
         bar = ContextBar()
-        bar.set_project_context("my_project", "charmeleon")
-        assert bar._evolution_stage == "charmeleon"
+        bar.set_project_context("my_project", "structured")
+        assert bar._evolution_stage == "structured"
 
-    def test_set_project_context_charizard(self):
+    def test_set_project_context_composed(self):
         from synapse.panel.context_bar import ContextBar
 
         bar = ContextBar()
-        bar.set_project_context("big_project", "charizard")
-        assert bar._evolution_stage == "charizard"
+        bar.set_project_context("big_project", "composed")
+        assert bar._evolution_stage == "composed"
         assert bar._project_name == "big_project"
 
     def test_set_project_context_empty(self):
