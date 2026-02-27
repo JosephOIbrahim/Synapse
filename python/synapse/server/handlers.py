@@ -63,7 +63,8 @@ except ImportError:
 # These indicate the script itself is broken — partial mutations are unwanted.
 # Operational errors (RuntimeError, hou.OperationFailed, IOError, etc.) do NOT
 # trigger rollback because earlier mutations (node creation, wiring) may be valid.
-_ROLLBACK_ERRORS = (NameError, SyntaxError, TypeError, AttributeError, IndexError)
+_ROLLBACK_ERRORS = (NameError, SyntaxError, TypeError, AttributeError, IndexError,
+                    KeyError, ValueError, UnboundLocalError)
 
 # Map command types to audit categories for structured logging
 _CMD_CATEGORY: Dict[str, AuditCategory] = {

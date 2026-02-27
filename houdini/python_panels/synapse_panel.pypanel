@@ -337,12 +337,26 @@ class SynapsePanel(QtWidgets.QWidget):
             self._set_status("disconnected")
             self._log_activity("Server not running -- click Connect to start", "info")
 
-        # Initial shot login
-        self._do_shot_login()
+        # Deferred shot login (avoid blocking panel init)
+        QtCore.QTimer.singleShot(200, self._deferred_shot_login)
 
-        # Show welcome on first launch (no memory loaded)
+    def _deferred_shot_login(self):
+        """Run shot login after panel is visible, show welcome if needed."""
+        self._do_shot_login()
         if not self._login_data or not self._login_data.get("logged_in"):
             self._show_welcome()
+
+    def closeEvent(self, event):
+        """Clean up timers and workers to prevent orphaned resources."""
+        if self._health_timer:
+            self._health_timer.stop()
+        if self._dot_animator and hasattr(self._dot_animator, '_timer'):
+            self._dot_animator._timer.stop()
+        if self._worker and self._worker.isRunning():
+            self._worker.abort()
+            self._worker.quit()
+            self._worker.wait(2000)
+        super().closeEvent(event)
 
     def _build_ui(self):
         """Construct the panel layout (Pentagram redesign)."""
