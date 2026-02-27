@@ -270,6 +270,12 @@ class SynapsePanel(QtWidgets.QWidget):
         self._last_hip = ""         # track hip changes for re-login
         self._last_diagnosis = None # last scene doctor report
 
+        # Sprint 5: UI Evolution state
+        self._context_bar_widget = None
+        self._context_bar_state = None
+        self._palette = None  # lazy init on Ctrl+K
+        self._results_display = None  # lazy split-view results panel
+
         self._build_ui()
 
         if _HAS_DESIGN:
@@ -279,6 +285,20 @@ class SynapsePanel(QtWidgets.QWidget):
         self._health_timer = QtCore.QTimer(self)
         self._health_timer.setInterval(_HEALTH_POLL_MS)
         self._health_timer.timeout.connect(self._poll_server_health)
+
+        # Sprint 5: Ctrl+K command palette shortcut
+        try:
+            from PySide6.QtGui import QShortcut, QKeySequence
+        except ImportError:
+            try:
+                from PySide2.QtGui import QShortcut, QKeySequence
+            except ImportError:
+                QShortcut = None
+                QKeySequence = None
+        if QShortcut is not None:
+            _palette_shortcut = QShortcut(QKeySequence("Ctrl+K"), self)
+            _palette_shortcut.activated.connect(self._show_palette)
+            self._palette_shortcut = _palette_shortcut  # prevent GC
 
         # Check for an already-running server (e.g. from a previous panel instance)
         existing = _find_running_server()
@@ -313,6 +333,30 @@ class SynapsePanel(QtWidgets.QWidget):
 
         # Tool grid
         layout.addWidget(self._build_tool_grid())
+
+        # Context Bar v2 (Sprint 5)
+        try:
+            from synapse.panel.context_bar import (
+                build_context_bar_widget, update_context, ContextBarState,
+            )
+            self._context_bar_state = update_context(
+                self._login_data, self._last_diagnosis,
+            )
+            self._context_bar_widget = build_context_bar_widget(
+                self._context_bar_state, self,
+            )
+            layout.addWidget(self._context_bar_widget)
+            # Wire quick-action buttons to _route_cmd
+            for btn in self._context_bar_widget.findChildren(
+                QtWidgets.QPushButton,
+            ):
+                cmd = btn.property("command")
+                if cmd:
+                    btn.clicked.connect(
+                        lambda checked=False, c=cmd: self._route_cmd(c)
+                    )
+        except Exception:
+            pass  # context bar not available, panel still works
 
         # Chat area (display + input + send)
         layout.addWidget(self._build_chat_area(), stretch=1)
@@ -936,6 +980,10 @@ class SynapsePanel(QtWidgets.QWidget):
             self._do_apex(arg)
         elif cmd == "/help":
             self._show_help()
+        elif cmd in ("/bookmark", "/bookmarks"):
+            self._do_bookmark(arg)
+        elif cmd == "/palette":
+            self._show_palette()
         else:
             self._sys("Unknown command: {}. Type /help for available commands.".format(cmd))
 
@@ -965,8 +1013,12 @@ class SynapsePanel(QtWidgets.QWidget):
             "",
             "  <b>Session</b>",
             "  /journal [query] -- View session journal (optional search query)",
+            "  /bookmark [label] -- Save and find conversation bookmarks",
             "  /login -- Re-run shot login (reload memory context)",
             "  /help -- Show this help message",
+            "",
+            "  <b>Shortcuts</b>",
+            "  Ctrl+K -- Open command palette (fuzzy search all commands)",
         ]
         color = SILVER if _HAS_DESIGN else "#999999"
         sz = SIZE_SMALL if _HAS_DESIGN else 11
@@ -1817,6 +1869,112 @@ class SynapsePanel(QtWidgets.QWidget):
             # Start the server
             self._start_server()
 
+    # ── Sprint 5: Command Palette ───────────────────────────
+
+    def _show_palette(self):
+        """Open the fuzzy-search command palette (Ctrl+K)."""
+        try:
+            from synapse.panel.command_palette import CommandPaletteWidget
+        except ImportError:
+            self._sys("Command palette not available")
+            return
+
+        if self._palette is None:
+            self._palette = CommandPaletteWidget(parent=self)
+            self._palette.command_selected.connect(self._on_palette_command)
+
+        # Feed recent journal entries if available
+        recent = []
+        try:
+            from synapse.panel.session_journal import get_journal
+            recent = get_journal().get_entries(10)
+        except Exception:
+            pass
+
+        self._palette.show_palette(recent)
+
+    def _on_palette_command(self, command):
+        """Handle a command selected from the palette."""
+        self._route_cmd(command)
+
+    # ── Sprint 5: Bookmarks ──────────────────────────────────
+
+    def _do_bookmark(self, arg=""):
+        """Handle /bookmark commands."""
+        try:
+            from synapse.panel.bookmarks import (
+                get_bookmark_manager, parse_bookmark_command,
+                format_bookmarks_html,
+            )
+        except ImportError:
+            self._sys("Bookmarks not available")
+            return
+
+        parsed = parse_bookmark_command(
+            "/bookmark " + arg if arg else "/bookmark"
+        )
+        manager = get_bookmark_manager()
+
+        if parsed["action"] == "list":
+            bookmarks = manager.get_all()
+            html = format_bookmarks_html(bookmarks)
+            self._chat_display.append(html)
+
+        elif parsed["action"] == "add":
+            # Bookmark the last assistant message
+            preview = ""
+            msg_idx = len(self._messages) - 1
+            if self._messages:
+                last = self._messages[-1]
+                if isinstance(last.get("content"), str):
+                    preview = last["content"][:100]
+                elif isinstance(last.get("content"), list):
+                    for block in last["content"]:
+                        if isinstance(block, dict) and block.get("type") == "text":
+                            preview = block["text"][:100]
+                            break
+
+            bookmark = manager.add(parsed["label"], msg_idx, preview)
+            self._sys("Bookmarked: {}".format(bookmark.label))
+
+            # Log to journal
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/bookmark", bookmark.label)
+            except Exception:
+                pass
+
+        elif parsed["action"] == "search":
+            results = manager.search(parsed["query"])
+            html = format_bookmarks_html(results, parsed["query"])
+            self._chat_display.append(html)
+
+        elif parsed["action"] == "remove":
+            if manager.remove(parsed["id"]):
+                self._sys("Bookmark removed")
+            else:
+                self._sys("Bookmark not found: " + parsed["id"])
+
+        sb = self._chat_display.verticalScrollBar()
+        sb.setValue(sb.maximum())
+
+    # ── Sprint 5: Results Display ────────────────────────────
+
+    def _show_results(self, html, title=""):
+        """Show structured results in the chat with a visual separator."""
+        separator = '<div style="margin:8px 0; border-top:1px solid #484848;"></div>'
+        if title:
+            header = (
+                '<div style="font-weight:bold; color:#e8833a;'
+                ' margin:4px 0;">{}</div>'.format(title)
+            )
+            self._chat_display.append(separator + header + html)
+        else:
+            self._chat_display.append(separator + html)
+
+        sb = self._chat_display.verticalScrollBar()
+        sb.setValue(sb.maximum())
+
     def _start_server(self):
         """Start the Synapse WebSocket server."""
         # Check for zombie server first
@@ -1883,6 +2041,34 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._do_shot_login()
         except Exception:
             pass
+
+        # Sprint 5: Update context bar on each health poll
+        if self._context_bar_widget is not None:
+            try:
+                from synapse.panel.context_bar import (
+                    update_context, update_context_bar_widget,
+                )
+                self._context_bar_state = update_context(
+                    self._login_data, self._last_diagnosis,
+                )
+                update_context_bar_widget(
+                    self._context_bar_widget, self._context_bar_state,
+                )
+                # Re-wire any new quick-action buttons
+                for btn in self._context_bar_widget.findChildren(
+                    QtWidgets.QPushButton,
+                ):
+                    cmd = btn.property("command")
+                    if cmd:
+                        try:
+                            btn.clicked.disconnect()
+                        except Exception:
+                            pass
+                        btn.clicked.connect(
+                            lambda checked=False, c=cmd: self._route_cmd(c)
+                        )
+            except Exception:
+                pass
 
         if self._server and getattr(self._server, "_running", False):
             # Server is alive

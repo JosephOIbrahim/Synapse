@@ -1,149 +1,662 @@
-"""Inline context chips for the Synapse chat input area.
+"""Context Bar v2 -- rich contextual status bar for the Synapse panel.
 
-Replaces the old fixed-height ContextBar with compact pill-shaped chips
-that sit above the text input. Each chip shows contextual info:
-- Network path (e.g. /obj/geo1)
-- Selection count (e.g. 3 nodes)
-- Current frame (e.g. F24)
-- Connection LED (green/red dot)
-- Project name + evolution stage (if available)
+Shows breadcrumb path, memory status, health indicator, contextual quick
+action buttons (adapting to SOP/LOP/DOP/TOP/APEX network types), and the
+current frame number.
+
+Replaces the v1 ContextChips implementation while keeping backward compat.
 """
 
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import List, Optional, Tuple
+
+# ── Qt imports (PySide6 primary, PySide2 fallback, None standalone) ─────
+_QT_AVAILABLE = False
 try:
-    from PySide6 import QtWidgets, QtCore, QtGui
-    from PySide6.QtCore import Signal, Slot
+    from PySide6 import QtWidgets, QtCore, QtGui  # noqa: F401
+    from PySide6.QtCore import Signal
+    _QT_AVAILABLE = True
 except ImportError:
-    from PySide2 import QtWidgets, QtCore, QtGui
-    from PySide2.QtCore import Signal, Slot
+    try:
+        from PySide2 import QtWidgets, QtCore, QtGui  # noqa: F401
+        from PySide2.QtCore import Signal
+        _QT_AVAILABLE = True
+    except ImportError:
+        QtWidgets = None
+        QtCore = None
+        QtGui = None
+        Signal = None
 
-from synapse.panel import tokens as _t
+# ── Houdini import (optional for standalone/testing) ────────────────────
+_HOU_AVAILABLE = False
+try:
+    import hou
+    _HOU_AVAILABLE = True
+except ImportError:
+    hou = None
+
+# ── Design tokens (panel-local re-exports) ──────────────────────────────
+try:
+    from synapse.panel import tokens as _t
+    FIRE = _t.FIRE
+    GROW = _t.GROW
+    WARN = getattr(_t, "WARN", "#FFAB00")
+    ERROR = _t.ERROR
+    VOID = _t.VOID
+    CARBON = _t.CARBON
+    GRAPHITE = _t.GRAPHITE
+    NEAR_BLACK = _t.NEAR_BLACK
+    BONE = _t.BONE
+    TEXT = getattr(_t, "TEXT", "#E0E0E0")
+    TEXT_DIM = getattr(_t, "TEXT_DIM", "#999999")
+    HOVER = getattr(_t, "HOVER", "#484848")
+    SIGNAL = _t.SIGNAL
+    FONT_MONO = _t.FONT_MONO
+    SIZE_LABEL = _t.SIZE_LABEL
+    SPACE_SM = _t.SPACE_SM
+    SPACE_XS = _t.SPACE_XS
+except ImportError:
+    FIRE = "#e8833a"
+    GROW = "#4caf50"
+    WARN = "#ff9800"
+    ERROR = "#f44336"
+    VOID = "#252525"
+    CARBON = "#333333"
+    GRAPHITE = "#222222"
+    NEAR_BLACK = "#3c3c3c"
+    BONE = "#cccccc"
+    TEXT = "#E0E0E0"
+    TEXT_DIM = "#999999"
+    HOVER = "#484848"
+    SIGNAL = "#00D4FF"
+    FONT_MONO = "JetBrains Mono"
+    SIZE_LABEL = 22
+    SPACE_SM = 8
+    SPACE_XS = 4
 
 
-class ContextChips(QtWidgets.QWidget):
-    """Inline context pills for the input area."""
+# ======================================================================
+# 1. State
+# ======================================================================
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self._connected = False
-        self._network_path = ""
-        self._selection_count = 0
-        self._frame = 1.0
-        self._project_name = ""
-        self._evolution_stage = ""
-        self._build_ui()
+@dataclass
+class ContextBarState:
+    """Holds current state for the context bar.  Updated periodically."""
 
-    def _build_ui(self):
-        layout = QtWidgets.QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(6)
+    network_path: str = "/"
+    breadcrumbs: List[str] = field(default_factory=list)
+    memory_stage: str = "none"          # "flat", "structured", "composed", "none"
+    health: str = "good"                # "good", "warning", "error"
+    health_issues: int = 0
+    network_type: str = "OBJ"           # SOP, LOP, DOP, TOP, APEX, OBJ, OUT, SHOP
+    frame: int = 1
+    frame_range: Tuple[int, int] = (1, 240)
+    selected_count: int = 0
+    quick_actions: List[Tuple[str, str]] = field(default_factory=list)
 
-        # Connection LED chip (just a dot)
-        self._led = QtWidgets.QLabel()
-        self._led.setFixedSize(10, 10)
-        self._update_led()
-        layout.addWidget(self._led)
 
-        # Network path chip
-        self._path_chip = self._make_chip("")
-        self._path_chip.setStyleSheet(self._chip_style(accent=True))
-        layout.addWidget(self._path_chip)
+# ======================================================================
+# 2. Quick-action lookup
+# ======================================================================
 
-        # Selection chip
-        self._sel_chip = self._make_chip("")
-        layout.addWidget(self._sel_chip)
+def _get_quick_actions(network_type: str, has_selection: bool) -> List[Tuple[str, str]]:
+    """Return contextual action buttons based on *network_type*.
 
-        # Frame chip
-        self._frame_chip = self._make_chip("F1")
-        layout.addWidget(self._frame_chip)
+    Each entry is ``(label, command)`` where *command* is a slash-command
+    string the panel routes via ``_route_cmd``.
+    """
+    ntype = (network_type or "").upper()
 
-        # Project chip (evolution stage)
-        self._project_chip = self._make_chip("")
-        layout.addWidget(self._project_chip)
+    if ntype in ("SOP", "OBJ"):
+        actions = [
+            ("Explain", "/explain"),
+            ("Diagnose", "/diagnose"),
+            ("Trace", "/trace"),
+        ]
+        if has_selection:
+            actions.append(("Inspect", "/inspect"))
+        return actions
 
-        layout.addStretch()
+    if ntype == "LOP":
+        return [
+            ("Stage Info", "/scene"),
+            ("Materials", "/explain"),
+            ("Preflight", "/preflight"),
+            ("Render", "/preflight"),
+        ]
 
-        # Start with chips hidden until data arrives
-        self._path_chip.setVisible(False)
-        self._sel_chip.setVisible(False)
-        self._frame_chip.setVisible(False)
-        self._project_chip.setVisible(False)
+    if ntype == "DOP":
+        return [
+            ("Explain", "/explain"),
+            ("Diagnose", "/diagnose"),
+        ]
 
-        self.setFixedHeight(24)
+    if ntype == "TOP":
+        return [
+            ("Explain", "/explain"),
+            ("Diagnose", "/diagnose"),
+        ]
 
-    def _make_chip(self, text):
-        """Create a pill-shaped QLabel chip."""
-        label = QtWidgets.QLabel(text, self)
-        label.setStyleSheet(self._chip_style())
-        label.setAlignment(QtCore.Qt.AlignCenter)
-        return label
+    if ntype == "APEX":
+        return [
+            ("APEX Explain", "/apex explain"),
+            ("APEX Trace", "/apex trace"),
+            ("APEX Recipes", "/apex recipes"),
+        ]
 
-    def _chip_style(self, accent=False):
-        """Return stylesheet for a context chip."""
-        fg = _t.SIGNAL if accent else _t.TEXT_DIM
-        return (
-            "background: {bg}; border: 1px solid {border}; "
-            "border-radius: 10px; padding: 2px 8px; "
-            "font-size: {sz}px; color: {fg}; "
-            "font-family: '{mono}', 'Consolas', monospace;"
-        ).format(
-            bg=_t.GRAPHITE, border=_t.CARBON, sz=_t.SIZE_LABEL,
-            fg=fg, mono=_t.FONT_MONO,
-        )
+    if ntype == "OUT":
+        return [
+            ("Preflight", "/preflight"),
+            ("Diagnose", "/diagnose"),
+        ]
 
-    def _update_led(self):
-        color = _t.GROW if self._connected else _t.ERROR
-        self._led.setStyleSheet(
-            "background: {c}; border-radius: 5px; border: none;".format(c=color)
-        )
+    # Default fallback
+    return [
+        ("Explain", "/explain"),
+        ("Diagnose", "/diagnose"),
+    ]
 
-    @Slot(bool)
-    def set_connected(self, connected):
-        """Update connection status display."""
-        self._connected = connected
-        self._update_led()
 
-    def set_network_path(self, path):
-        """Update displayed network path."""
-        self._network_path = path
-        if path:
-            self._path_chip.setText(path)
-            self._path_chip.setVisible(True)
+# ======================================================================
+# 3. State builder
+# ======================================================================
+
+def _detect_network_type(path: str) -> str:
+    """Infer network type from a Houdini node path string."""
+    if not path or path == "/":
+        return "OBJ"
+
+    # If hou is available, try the node directly
+    if _HOU_AVAILABLE and hou is not None:
+        try:
+            node = hou.node(path)
+            if node is not None:
+                cat = node.childTypeCategory()
+                if cat is not None:
+                    cat_name = cat.name()
+                    mapping = {
+                        "Sop": "SOP",
+                        "Lop": "LOP",
+                        "Dop": "DOP",
+                        "Top": "TOP",
+                        "apex": "APEX",
+                        "Object": "OBJ",
+                        "Driver": "OUT",
+                        "Shop": "SHOP",
+                    }
+                    for key, value in mapping.items():
+                        if key.lower() in cat_name.lower():
+                            return value
+        except Exception:
+            pass
+
+    # Fallback: heuristic from path segments
+    path_lower = path.lower()
+    if "/stage" in path_lower or "/lop" in path_lower:
+        return "LOP"
+    if "/out" in path_lower:
+        return "OUT"
+    if "/dop" in path_lower:
+        return "DOP"
+    if "/topnet" in path_lower or "/top" in path_lower:
+        return "TOP"
+    if "/apex" in path_lower:
+        return "APEX"
+    if "/shop" in path_lower:
+        return "SHOP"
+    if "/obj" in path_lower:
+        # Could be OBJ level or inside a SOP network
+        parts = path.strip("/").split("/")
+        if len(parts) >= 2:
+            return "SOP"
+        return "OBJ"
+    return "OBJ"
+
+
+def update_context(
+    login_data: Optional[dict] = None,
+    last_diagnosis=None,
+) -> ContextBarState:
+    """Gather current state from Houdini and return a populated state object.
+
+    Parameters
+    ----------
+    login_data : dict, optional
+        Shot-login payload; used to read ``memory_stage``.
+    last_diagnosis : object, optional
+        Result from the scene doctor.  Expects ``.items`` list where each item
+        has a ``.severity`` string (``"critical"``, ``"error"``, ``"warning"``).
+    """
+    state = ContextBarState()
+
+    # -- Network path + breadcrumbs ------------------------------------
+    if _HOU_AVAILABLE and hou is not None:
+        try:
+            editor = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
+            if editor is not None:
+                state.network_path = editor.pwd().path()
+        except Exception:
+            state.network_path = "/"
+    else:
+        state.network_path = "/"
+
+    crumbs = [c for c in state.network_path.strip("/").split("/") if c]
+    state.breadcrumbs = crumbs if crumbs else ["/"]
+
+    # -- Memory stage --------------------------------------------------
+    if login_data and isinstance(login_data, dict):
+        stage = login_data.get("memory_stage", "none")
+        if stage in ("flat", "structured", "composed", "none"):
+            state.memory_stage = stage
         else:
-            self._path_chip.setVisible(False)
+            state.memory_stage = "none"
+    else:
+        state.memory_stage = "none"
 
-    def set_selection_count(self, count):
-        """Update selected node count."""
-        self._selection_count = count
-        if count > 0:
-            self._sel_chip.setText(
-                "{n} node{s}".format(n=count, s="s" if count != 1 else "")
+    # -- Health --------------------------------------------------------
+    if last_diagnosis is not None:
+        items = getattr(last_diagnosis, "items", None) or []
+        crits = 0
+        warns = 0
+        for item in items:
+            sev = getattr(item, "severity", "").lower()
+            if sev in ("critical", "error"):
+                crits += 1
+            elif sev == "warning":
+                warns += 1
+        total = crits + warns
+        state.health_issues = total
+        if crits > 0:
+            state.health = "error"
+        elif warns > 0:
+            state.health = "warning"
+        else:
+            state.health = "good"
+    else:
+        state.health = "good"
+        state.health_issues = 0
+
+    # -- Network type --------------------------------------------------
+    state.network_type = _detect_network_type(state.network_path)
+
+    # -- Frame ---------------------------------------------------------
+    if _HOU_AVAILABLE and hou is not None:
+        try:
+            state.frame = int(hou.frame())
+        except Exception:
+            state.frame = 1
+        try:
+            fr = hou.playbar.frameRange()
+            state.frame_range = (int(fr[0]), int(fr[1]))
+        except Exception:
+            state.frame_range = (1, 240)
+    else:
+        state.frame = 1
+        state.frame_range = (1, 240)
+
+    # -- Selection -----------------------------------------------------
+    if _HOU_AVAILABLE and hou is not None:
+        try:
+            state.selected_count = len(hou.selectedNodes())
+        except Exception:
+            state.selected_count = 0
+    else:
+        state.selected_count = 0
+
+    # -- Quick actions -------------------------------------------------
+    state.quick_actions = _get_quick_actions(
+        state.network_type, state.selected_count > 0,
+    )
+
+    return state
+
+
+# ======================================================================
+# 4. Widget helpers (used by builder + updater)
+# ======================================================================
+
+_HEALTH_COLORS = {
+    "good": GROW,
+    "warning": WARN,
+    "error": ERROR,
+}
+
+_MEMORY_COLORS = {
+    "none": TEXT_DIM,
+    "flat": TEXT_DIM,
+    "structured": SIGNAL,
+    "composed": GROW,
+}
+
+_MEMORY_ICONS = {
+    "none": "",
+    "flat": "flat",
+    "structured": "structured",
+    "composed": "composed",
+}
+
+
+def _breadcrumb_text(state: ContextBarState) -> str:
+    """Format breadcrumbs with separator."""
+    if not state.breadcrumbs or state.breadcrumbs == ["/"]:
+        return "/"
+    return "/" + " > ".join(state.breadcrumbs)
+
+
+def _health_label(state: ContextBarState) -> str:
+    """Human-readable health string."""
+    if state.health == "warning":
+        return "{n} issue{s}".format(
+            n=state.health_issues,
+            s="s" if state.health_issues != 1 else "",
+        )
+    if state.health == "error":
+        return "{n} error{s}".format(
+            n=state.health_issues,
+            s="s" if state.health_issues != 1 else "",
+        )
+    return "Ready"
+
+
+def _btn_stylesheet() -> str:
+    """Stylesheet for compact action buttons."""
+    return (
+        "QPushButton {{"
+        "  background: {bg}; color: {fg}; border: 1px solid {border};"
+        "  border-radius: 4px; padding: 2px 8px;"
+        "  font-size: 9pt; font-family: '{mono}', Consolas, monospace;"
+        "}}"
+        "QPushButton:hover {{"
+        "  background: {hover}; border-color: {accent};"
+        "}}"
+        "QPushButton:pressed {{"
+        "  background: {pressed};"
+        "}}"
+    ).format(
+        bg=NEAR_BLACK, fg=TEXT, border=CARBON, mono=FONT_MONO,
+        hover=HOVER, accent=FIRE, pressed=GRAPHITE,
+    )
+
+
+# ======================================================================
+# 5. Widget builder + updater (Qt-dependent)
+# ======================================================================
+
+if _QT_AVAILABLE:
+
+    def build_context_bar_widget(
+        state: ContextBarState,
+        parent: Optional[QtWidgets.QWidget] = None,
+    ) -> "QtWidgets.QWidget":
+        """Create the full context bar as a Qt widget.
+
+        Layout::
+
+            +-------------------------------------------------------+
+            | /obj/geo1 > mountain_setup   structured   * Ready     |
+            | [Explain] [Diagnose] [Trace]              frame 24    |
+            +-------------------------------------------------------+
+
+        Quick-action buttons store their command string in the Qt property
+        ``"command"``.  The host panel connects ``clicked`` to a handler
+        that reads ``sender().property("command")``.
+        """
+        root = QtWidgets.QWidget(parent)
+        root.setObjectName("context_bar_v2")
+        root.setStyleSheet(
+            "QWidget#context_bar_v2 {{"
+            "  background: {bg}; border-bottom: 1px solid {border};"
+            "}}".format(bg=VOID, border=CARBON)
+        )
+
+        outer = QtWidgets.QVBoxLayout(root)
+        outer.setContentsMargins(SPACE_SM, SPACE_XS, SPACE_SM, SPACE_XS)
+        outer.setSpacing(SPACE_XS)
+
+        # -- Row 1: breadcrumb | stretch | memory badge | health dot --
+        row1 = QtWidgets.QHBoxLayout()
+        row1.setSpacing(SPACE_SM)
+
+        breadcrumb = QtWidgets.QLabel(_breadcrumb_text(state))
+        breadcrumb.setObjectName("ctx_breadcrumb")
+        breadcrumb.setStyleSheet(
+            "color: {fg}; font-size: 10pt;"
+            " font-family: '{mono}', Consolas, monospace;"
+            " background: transparent;".format(fg=SIGNAL, mono=FONT_MONO)
+        )
+        row1.addWidget(breadcrumb)
+
+        row1.addStretch()
+
+        # Memory stage badge
+        mem_color = _MEMORY_COLORS.get(state.memory_stage, TEXT_DIM)
+        mem_text = _MEMORY_ICONS.get(state.memory_stage, "")
+        memory_label = QtWidgets.QLabel(mem_text)
+        memory_label.setObjectName("ctx_memory")
+        memory_label.setStyleSheet(
+            "color: {fg}; font-size: 9pt;"
+            " font-family: '{mono}', Consolas, monospace;"
+            " background: transparent; padding: 0 4px;".format(
+                fg=mem_color, mono=FONT_MONO,
             )
-            self._sel_chip.setVisible(True)
-        else:
-            self._sel_chip.setVisible(False)
+        )
+        if not mem_text:
+            memory_label.setVisible(False)
+        row1.addWidget(memory_label)
 
-    def set_frame(self, frame):
-        """Update current frame display."""
-        self._frame = frame
-        if float(frame) == int(frame):
-            self._frame_chip.setText("F{f}".format(f=int(frame)))
-        else:
-            self._frame_chip.setText("F{f:.1f}".format(f=frame))
-        self._frame_chip.setVisible(True)
+        # Health indicator (colored dot + label)
+        health_color = _HEALTH_COLORS.get(state.health, GROW)
+        health_text = _health_label(state)
 
-    def set_project_context(self, project_name, evolution_stage=""):
-        """Update project name and evolution stage chip."""
-        self._project_name = project_name
-        self._evolution_stage = evolution_stage
-        if project_name:
-            text = project_name
-            if evolution_stage:
-                text = "{} | {}".format(project_name, evolution_stage)
-            self._project_chip.setText(text)
-            self._project_chip.setVisible(True)
-        else:
-            self._project_chip.setVisible(False)
+        health_label = QtWidgets.QLabel(
+            "<span style='color:{dot};'>&#9679;</span> {txt}".format(
+                dot=health_color, txt=health_text,
+            )
+        )
+        health_label.setObjectName("ctx_health")
+        health_label.setStyleSheet(
+            "color: {fg}; font-size: 9pt;"
+            " font-family: '{mono}', Consolas, monospace;"
+            " background: transparent;".format(fg=health_color, mono=FONT_MONO)
+        )
+        row1.addWidget(health_label)
 
+        outer.addLayout(row1)
 
-# Backwards compatibility alias
-ContextBar = ContextChips
+        # -- Row 2: quick actions | stretch | frame number ------------
+        row2 = QtWidgets.QHBoxLayout()
+        row2.setSpacing(SPACE_XS)
+
+        actions_container = QtWidgets.QWidget()
+        actions_container.setObjectName("ctx_actions")
+        actions_container.setStyleSheet("background: transparent;")
+        actions_layout = QtWidgets.QHBoxLayout(actions_container)
+        actions_layout.setContentsMargins(0, 0, 0, 0)
+        actions_layout.setSpacing(SPACE_XS)
+
+        btn_style = _btn_stylesheet()
+        for label, command in state.quick_actions:
+            btn = QtWidgets.QPushButton(label)
+            btn.setProperty("command", command)
+            btn.setObjectName(
+                "ctx_action_" + label.lower().replace(" ", "_")
+            )
+            btn.setStyleSheet(btn_style)
+            btn.setCursor(QtCore.Qt.PointingHandCursor)
+            actions_layout.addWidget(btn)
+
+        row2.addWidget(actions_container)
+        row2.addStretch()
+
+        frame_label = QtWidgets.QLabel("frame {f}".format(f=state.frame))
+        frame_label.setObjectName("ctx_frame")
+        frame_label.setStyleSheet(
+            "color: {fg}; font-size: 9pt;"
+            " font-family: '{mono}', Consolas, monospace;"
+            " background: transparent;".format(fg=TEXT_DIM, mono=FONT_MONO)
+        )
+        row2.addWidget(frame_label)
+
+        outer.addLayout(row2)
+
+        return root
+
+    def update_context_bar_widget(
+        widget: "QtWidgets.QWidget",
+        state: ContextBarState,
+    ) -> None:
+        """Update an existing context-bar widget with new state (no rebuild).
+
+        Finds child widgets by object names and updates text / styles.
+        Called every few seconds by the panel's refresh timer.
+        """
+        # Breadcrumb
+        breadcrumb = widget.findChild(QtWidgets.QLabel, "ctx_breadcrumb")
+        if breadcrumb is not None:
+            breadcrumb.setText(_breadcrumb_text(state))
+
+        # Memory badge
+        memory = widget.findChild(QtWidgets.QLabel, "ctx_memory")
+        if memory is not None:
+            mem_text = _MEMORY_ICONS.get(state.memory_stage, "")
+            mem_color = _MEMORY_COLORS.get(state.memory_stage, TEXT_DIM)
+            memory.setText(mem_text)
+            memory.setStyleSheet(
+                "color: {fg}; font-size: 9pt;"
+                " font-family: '{mono}', Consolas, monospace;"
+                " background: transparent; padding: 0 4px;".format(
+                    fg=mem_color, mono=FONT_MONO,
+                )
+            )
+            memory.setVisible(bool(mem_text))
+
+        # Health
+        health = widget.findChild(QtWidgets.QLabel, "ctx_health")
+        if health is not None:
+            health_color = _HEALTH_COLORS.get(state.health, GROW)
+            health_text = _health_label(state)
+            health.setText(
+                "<span style='color:{dot};'>&#9679;</span> {txt}".format(
+                    dot=health_color, txt=health_text,
+                )
+            )
+            health.setStyleSheet(
+                "color: {fg}; font-size: 9pt;"
+                " font-family: '{mono}', Consolas, monospace;"
+                " background: transparent;".format(
+                    fg=health_color, mono=FONT_MONO,
+                )
+            )
+
+        # Frame
+        frame_lbl = widget.findChild(QtWidgets.QLabel, "ctx_frame")
+        if frame_lbl is not None:
+            frame_lbl.setText("frame {f}".format(f=state.frame))
+
+        # Quick actions -- rebuild buttons inside the container
+        actions_container = widget.findChild(
+            QtWidgets.QWidget, "ctx_actions",
+        )
+        if actions_container is not None:
+            layout = actions_container.layout()
+            if layout is not None:
+                # Clear existing buttons
+                while layout.count():
+                    item = layout.takeAt(0)
+                    w = item.widget()
+                    if w is not None:
+                        w.deleteLater()
+
+                # Add new buttons
+                btn_style = _btn_stylesheet()
+                for label, command in state.quick_actions:
+                    btn = QtWidgets.QPushButton(label)
+                    btn.setProperty("command", command)
+                    btn.setObjectName(
+                        "ctx_action_" + label.lower().replace(" ", "_")
+                    )
+                    btn.setStyleSheet(btn_style)
+                    btn.setCursor(QtCore.Qt.PointingHandCursor)
+                    layout.addWidget(btn)
+
+    # ==================================================================
+    # Backwards compatibility wrapper
+    # ==================================================================
+
+    class ContextChips(QtWidgets.QWidget):
+        """Thin backwards-compat wrapper around v2 context bar.
+
+        Existing panel code that instantiates ``ContextChips`` and calls
+        ``set_network_path`` / ``set_frame`` etc. continues to work.
+        """
+
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self._state = ContextBarState()
+            self._inner = build_context_bar_widget(self._state, self)
+            lay = QtWidgets.QVBoxLayout(self)
+            lay.setContentsMargins(0, 0, 0, 0)
+            lay.addWidget(self._inner)
+
+        def _refresh(self):
+            update_context_bar_widget(self._inner, self._state)
+
+        def set_connected(self, connected):
+            # v2 doesn't have a connection LED; no-op for compat.
+            pass
+
+        def set_network_path(self, path):
+            self._state.network_path = path or "/"
+            crumbs = (
+                [c for c in path.strip("/").split("/") if c]
+                if path else ["/"]
+            )
+            self._state.breadcrumbs = crumbs
+            self._state.network_type = _detect_network_type(path or "/")
+            self._state.quick_actions = _get_quick_actions(
+                self._state.network_type, self._state.selected_count > 0,
+            )
+            self._refresh()
+
+        def set_selection_count(self, count):
+            self._state.selected_count = count
+            self._state.quick_actions = _get_quick_actions(
+                self._state.network_type, count > 0,
+            )
+            self._refresh()
+
+        def set_frame(self, frame):
+            self._state.frame = int(frame)
+            self._refresh()
+
+        def set_project_context(self, project_name, evolution_stage=""):
+            stage_map = {
+                "charmander": "flat",
+                "charmeleon": "structured",
+                "charizard": "composed",
+            }
+            self._state.memory_stage = stage_map.get(
+                (evolution_stage or "").lower(),
+                "flat" if project_name else "none",
+            )
+            self._refresh()
+
+    # Keep old alias
+    ContextBar = ContextChips
+
+else:
+    # No Qt -- stub out widget-dependent names so pure-data imports work.
+
+    def build_context_bar_widget(state, parent=None):
+        raise RuntimeError("Qt (PySide6/PySide2) is required for widgets")
+
+    def update_context_bar_widget(widget, state):
+        raise RuntimeError("Qt (PySide6/PySide2) is required for widgets")
+
+    class ContextChips:
+        """Stub -- Qt unavailable."""
+        pass
+
+    ContextBar = ContextChips
