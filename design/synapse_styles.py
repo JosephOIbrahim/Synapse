@@ -236,6 +236,31 @@ QPushButton#send_button:disabled {{
     border-color: {GRAPHITE};
 }}
 
+/* ── Stop Button ────────────────────────────────────── */
+
+QPushButton#stop_button {{
+    background-color: transparent;
+    color: {ERROR};
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    min-width: 36px;
+    max-width: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    padding: 0px;
+}}
+
+QPushButton#stop_button:hover {{
+    background-color: {CARBON};
+    color: {WHITE};
+}}
+
+QPushButton#stop_button:pressed {{
+    background-color: {GRAPHITE};
+    color: {ERROR};
+}}
+
 /* ── Attach Button ──────────────────────────────────── */
 
 QPushButton#attach_button {{

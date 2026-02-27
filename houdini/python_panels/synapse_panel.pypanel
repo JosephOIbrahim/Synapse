@@ -536,6 +536,14 @@ class SynapsePanel(QtWidgets.QWidget):
         input_row.setContentsMargins(0, 0, 0, 0)
         input_row.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
 
+        self._stop_btn = QtWidgets.QPushButton("\u25A0")
+        self._stop_btn.setObjectName("stop_button")
+        self._stop_btn.setFixedSize(36, 36)
+        self._stop_btn.setToolTip("Stop response")
+        self._stop_btn.setVisible(False)
+        self._stop_btn.clicked.connect(self._on_stop_stream)
+        input_row.addWidget(self._stop_btn)
+
         self._attach_btn = QtWidgets.QPushButton("\U0001F4CE")
         self._attach_btn.setObjectName("attach_button")
         self._attach_btn.setFixedSize(36, 36)
@@ -1057,6 +1065,15 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._sys("Tool executor not available: " + str(e))
         return self._tool_executor
 
+    def _on_stop_stream(self):
+        """Stop the active Claude response stream."""
+        if self._worker and self._worker.isRunning():
+            self._worker.abort()
+            self._log_activity("Response stopped", "info")
+        self._send_btn.setEnabled(True)
+        self._stop_btn.setVisible(False)
+        self._attach_btn.setVisible(True)
+
     def _on_attach_image(self):
         """Open file picker to attach a reference image."""
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -1222,6 +1239,8 @@ class SynapsePanel(QtWidgets.QWidget):
     def _launch_worker(self, messages, system_prompt):
         """Launch a ClaudeWorker with standard signal wiring."""
         self._send_btn.setEnabled(False)
+        self._stop_btn.setVisible(True)
+        self._attach_btn.setVisible(False)
         self._streaming_text = ""
         self._chat_display.append(self._html_assistant_start())
 
@@ -2161,6 +2180,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._chat_display.setTextCursor(cursor)
 
         self._send_btn.setEnabled(True)
+        self._stop_btn.setVisible(False)
+        self._attach_btn.setVisible(True)
 
         # Sync conversation history from the worker (includes tool loop turns)
         if self._worker:
@@ -2177,6 +2198,8 @@ class SynapsePanel(QtWidgets.QWidget):
                 sb = self._chat_display.verticalScrollBar()
                 sb.setValue(sb.maximum())
                 self._send_btn.setEnabled(True)
+                self._stop_btn.setVisible(False)
+                self._attach_btn.setVisible(True)
                 # Log to journal
                 try:
                     from synapse.panel.session_journal import get_journal
@@ -2194,6 +2217,8 @@ class SynapsePanel(QtWidgets.QWidget):
             'We hit a snag: {}</div>'.format(error_color, error_msg[:300])
         )
         self._send_btn.setEnabled(True)
+        self._stop_btn.setVisible(False)
+        self._attach_btn.setVisible(True)
         # Log to journal
         try:
             from synapse.panel.session_journal import get_journal
