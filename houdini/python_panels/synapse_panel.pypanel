@@ -447,7 +447,7 @@ class SynapsePanel(QtWidgets.QWidget):
         fg = BONE if _HAS_DESIGN else "#CCCCCC"
         self._chat_display.setStyleSheet(
             "QTextEdit {{ background: {}; color: {}; border: none; "
-            "font-size: {}pt; font-family: {}; }}".format(
+            "font-size: {}px; font-family: {}; }}".format(
                 bg, fg, font_size,
                 FONT_MONO if _HAS_DESIGN else "Consolas, monospace",
             )
@@ -918,7 +918,7 @@ class SynapsePanel(QtWidgets.QWidget):
         if not self._should_show_message(msg):
             return
         color = SLATE if _HAS_DESIGN else "#555555"
-        html = '<div style="color: {}; font-size: {}pt; margin: 2px 0;">{}</div>'.format(
+        html = '<div style="color: {}; font-size: {}px; margin: 2px 0;">{}</div>'.format(
             color, SIZE_LABEL if _HAS_DESIGN else 9, msg,
         )
         self._chat_display.append(html)
@@ -1074,7 +1074,7 @@ class SynapsePanel(QtWidgets.QWidget):
         ]
         color = SILVER if _HAS_DESIGN else "#999999"
         sz = SIZE_SMALL if _HAS_DESIGN else 11
-        html = '<div style="color: {}; font-size: {}pt; margin: 4px 0;">{}</div>'.format(
+        html = '<div style="color: {}; font-size: {}px; margin: 4px 0;">{}</div>'.format(
             color, sz, "<br>".join(help_lines),
         )
         self._chat_display.append(html)
@@ -1087,7 +1087,7 @@ class SynapsePanel(QtWidgets.QWidget):
         sz = SIZE_LABEL if _HAS_DESIGN else 9
         return (
             '<div style="margin: 10px 0 2px 0;">'
-            '<span style="color: {}; font-size: {}pt; letter-spacing: 1px;">'
+            '<span style="color: {}; font-size: {}px; letter-spacing: 1px;">'
             'SYNAPSE</span></div>'
             '<div id="stream_target" style="margin: 0 0 8px 0;">'.format(
                 label_color, sz,
@@ -1588,7 +1588,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 "  /apex concept &lt;name&gt; -- Look up an APEX concept",
                 "  /apex migrate -- KineFX to APEX migration guide",
             ]
-            html_out = '<div style="color: {}; font-size: {}pt; margin: 4px 0;">{}</div>'.format(
+            html_out = '<div style="color: {}; font-size: {}px; margin: 4px 0;">{}</div>'.format(
                 color, sz, "<br>".join(help_lines),
             )
             self._chat_display.append(html_out)
@@ -1809,7 +1809,7 @@ class SynapsePanel(QtWidgets.QWidget):
                     title = APEX_CONCEPTS[name].get("title", name)
                     lines.append("  <b>{}</b> -- {}<br>".format(name, title))
                 lines.append(
-                    '<br><span style="color: {}; font-size: {}pt;">'
+                    '<br><span style="color: {}; font-size: {}px;">'
                     "Type /apex concept &lt;name&gt; for details.</span>".format(color, sz)
                 )
                 self._chat_display.append(
@@ -1849,7 +1849,7 @@ class SynapsePanel(QtWidgets.QWidget):
             mono = FONT_MONO if _HAS_DESIGN else "monospace"
             sz = SIZE_SMALL if _HAS_DESIGN else 11
             self._chat_display.append(
-                '<div style="font-family: {}; font-size: {}pt; color: {}; '
+                '<div style="font-family: {}; font-size: {}px; color: {}; '
                 'padding: 8px; line-height: 1.6;">{}</div>'.format(
                     mono, sz,
                     BONE if _HAS_DESIGN else "#CCCCCC",
@@ -1882,8 +1882,8 @@ class SynapsePanel(QtWidgets.QWidget):
         sz = SIZE_BODY if _HAS_DESIGN else 13
         sz_sm = SIZE_SMALL if _HAS_DESIGN else 11
         html = (
-            '<div style="color: {text}; font-size: {sz}pt; margin: 12px 8px;">'
-            '<b style="color: {signal}; font-size: {sz_lg}pt;">SYNAPSE</b>'
+            '<div style="color: {text}; font-size: {sz}px; margin: 12px 8px;">'
+            '<b style="color: {signal}; font-size: {sz_lg}px;">SYNAPSE</b>'
             '<br><br>'
             "I'm here to help you build, learn, and ship."
             '<br><br>'
@@ -1898,7 +1898,7 @@ class SynapsePanel(QtWidgets.QWidget):
             '<b style="color: {signal};">Check your work</b> '
             '-- <b>/diagnose</b> scans for problems'
             '<br><br>'
-            '<span style="color: {dim}; font-size: {sz_sm}pt;">'
+            '<span style="color: {dim}; font-size: {sz_sm}px;">'
             'Type anything to get started. <b>/help</b> shows all commands.'
             '</span>'
             '</div>'
@@ -2012,7 +2012,7 @@ class SynapsePanel(QtWidgets.QWidget):
         sz = SIZE_SMALL if _HAS_DESIGN else 11
         html = (
             '<div style="margin:2px 0 2px 20px; padding:3px 10px; '
-            'font-size:{}pt; color:{}; '
+            'font-size:{}px; color:{}; '
             'border-left:2px solid {};">'
             '{} {}'
             '</div>'
