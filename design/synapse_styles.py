@@ -261,6 +261,33 @@ QPushButton#stop_button:pressed {{
     color: {ERROR};
 }}
 
+/* ── Zoom Buttons (A- / A+) ────────────────────────── */
+
+QPushButton#zoom_button {{
+    background-color: transparent;
+    color: {SLATE};
+    border: none;
+    border-radius: 3px;
+    font-family: {MONO_FAMILY};
+    font-size: {SIZE_LABEL}px;
+    font-weight: 600;
+    min-width: 28px;
+    max-width: 28px;
+    min-height: 28px;
+    max-height: 28px;
+    padding: 0px;
+}}
+
+QPushButton#zoom_button:hover {{
+    color: {WHITE};
+    background-color: {GRAPHITE};
+}}
+
+QPushButton#zoom_button:pressed {{
+    color: {SIGNAL};
+    background-color: {GRAPHITE};
+}}
+
 /* ── Attach Button ──────────────────────────────────── */
 
 QPushButton#attach_button {{

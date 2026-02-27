@@ -298,6 +298,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self._palette = None  # lazy init on Ctrl+K
         self._results_display = None  # lazy split-view results panel
 
+        # Font zoom level (persisted across sessions)
+        self._font_zoom = 0
+        self._load_font_zoom()
+
         # Message deduplication (hash -> timestamp)
         self._msg_dedup = {}
 
@@ -357,6 +361,57 @@ class SynapsePanel(QtWidgets.QWidget):
             self._worker.quit()
             self._worker.wait(2000)
         super().closeEvent(event)
+
+    # ── Font Zoom ──────────────────────────────────────────
+
+    _FONT_ZOOM_PATH = os.path.join(
+        os.path.expanduser("~"), ".synapse", "chat_font_zoom"
+    )
+
+    def _load_font_zoom(self):
+        """Load saved font zoom level from ~/.synapse/chat_font_zoom."""
+        try:
+            with open(self._FONT_ZOOM_PATH, encoding="utf-8") as f:
+                self._font_zoom = int(f.read().strip())
+        except (FileNotFoundError, ValueError):
+            self._font_zoom = 0
+
+    def _save_font_zoom(self):
+        """Persist current font zoom level."""
+        try:
+            os.makedirs(os.path.dirname(self._FONT_ZOOM_PATH), exist_ok=True)
+            with open(self._FONT_ZOOM_PATH, "w", encoding="utf-8") as f:
+                f.write(str(self._font_zoom))
+        except OSError:
+            pass
+
+    def _apply_font_zoom(self):
+        """Apply stored zoom level to the chat display."""
+        if self._font_zoom > 0:
+            self._chat_display.zoomIn(self._font_zoom)
+        elif self._font_zoom < 0:
+            self._chat_display.zoomOut(abs(self._font_zoom))
+
+    def _on_zoom_in(self):
+        """Increase chat font size."""
+        self._font_zoom += 1
+        self._chat_display.zoomIn(1)
+        self._save_font_zoom()
+
+    def _on_zoom_out(self):
+        """Decrease chat font size."""
+        self._font_zoom -= 1
+        self._chat_display.zoomOut(1)
+        self._save_font_zoom()
+
+    def _on_zoom_reset(self):
+        """Reset chat font size to default."""
+        if self._font_zoom > 0:
+            self._chat_display.zoomOut(self._font_zoom)
+        elif self._font_zoom < 0:
+            self._chat_display.zoomIn(abs(self._font_zoom))
+        self._font_zoom = 0
+        self._save_font_zoom()
 
     def _build_ui(self):
         """Construct the panel layout (Pentagram redesign)."""
@@ -432,6 +487,21 @@ class SynapsePanel(QtWidgets.QWidget):
         self._status_detail.setObjectName("status_detail")
         layout.addWidget(self._status_detail)
 
+        # Font zoom buttons (A- / A+)
+        zoom_out_btn = QtWidgets.QPushButton("A\u2212")
+        zoom_out_btn.setObjectName("zoom_button")
+        zoom_out_btn.setFixedSize(28, 28)
+        zoom_out_btn.setToolTip("Decrease chat font size")
+        zoom_out_btn.clicked.connect(self._on_zoom_out)
+        layout.addWidget(zoom_out_btn)
+
+        zoom_in_btn = QtWidgets.QPushButton("A+")
+        zoom_in_btn.setObjectName("zoom_button")
+        zoom_in_btn.setFixedSize(28, 28)
+        zoom_in_btn.setToolTip("Increase chat font size")
+        zoom_in_btn.clicked.connect(self._on_zoom_in)
+        layout.addWidget(zoom_in_btn)
+
         # Overflow menu button
         overflow_btn = QtWidgets.QToolButton()
         overflow_btn.setObjectName("overflow_button")
@@ -498,6 +568,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 FONT_MONO if _HAS_DESIGN else "Consolas, monospace",
             )
         )
+        self._apply_font_zoom()
         splitter.addWidget(self._chat_display)
 
         # Bottom: input area (preview strip + input row)
