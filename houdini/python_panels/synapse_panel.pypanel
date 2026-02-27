@@ -266,6 +266,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._worker = None
         self._tool_executor = None  # lazy init
         self._streaming_text = ""
+        self._login_data = None     # shot login context
+        self._last_hip = ""         # track hip changes for re-login
 
         self._build_ui()
 
@@ -288,6 +290,9 @@ class SynapsePanel(QtWidgets.QWidget):
         else:
             self._set_status("disconnected")
             self._log_activity("Server not running -- click Connect to start", "info")
+
+        # Initial shot login
+        self._do_shot_login()
 
     def _build_ui(self):
         """Construct the panel layout."""
@@ -426,7 +431,7 @@ class SynapsePanel(QtWidgets.QWidget):
 
         self._chat_input = QtWidgets.QLineEdit()
         self._chat_input.setObjectName("chat_input")
-        self._chat_input.setPlaceholderText("Type a message...")
+        self._chat_input.setPlaceholderText("Type a message or /help for commands...")
         self._chat_input.returnPressed.connect(self._on_send_chat)
         input_row.addWidget(self._chat_input, stretch=1)
 
@@ -659,6 +664,103 @@ class SynapsePanel(QtWidgets.QWidget):
             self._log_activity(f"Health check failed: {e}", "error")
             self._set_status("warning", str(e)[:40])
 
+    # ── Shot Login & HDA ────────────────────────────────────
+
+    def _do_shot_login(self):
+        """Load memory context from all layers (shot login)."""
+        try:
+            from synapse.panel.shot_login import shot_login, format_memory_for_prompt
+            hip = ""
+            try:
+                import hou as _hou
+                hip = _hou.hipFile.path()
+            except Exception:
+                pass
+            self._login_data = shot_login(hip)
+            self._last_hip = hip
+            if self._login_data.get("logged_in"):
+                stage_info = "project={}, scene={}".format(
+                    self._login_data.get("project_evolution", "?"),
+                    self._login_data.get("scene_evolution", "?"),
+                )
+                self._sys("Shot login: " + stage_info)
+            else:
+                self._sys("Shot login: no memory loaded (outside project)")
+        except ImportError:
+            self._login_data = None
+            self._sys("Shot login unavailable (synapse.panel.shot_login not found)")
+        except Exception as e:
+            self._login_data = None
+            self._sys("Shot login error: " + str(e))
+
+    def _do_hda(self, description):
+        """Launch HDA design conversation with Claude."""
+        try:
+            from synapse.panel.prompt_to_hda import (
+                HDA_DESIGN_PROMPT, parse_hda_command, build_hda_messages,
+            )
+            from synapse.panel.system_prompt import build_system_prompt
+        except ImportError as e:
+            self._sys("HDA workflow unavailable: " + str(e))
+            return
+
+        # Build HDA-specific system prompt
+        context = self._gather_context()
+        system_prompt = build_system_prompt(context)
+        system_prompt += "\n\n" + HDA_DESIGN_PROMPT
+
+        # Append memory context from shot login
+        if self._login_data and self._login_data.get("logged_in"):
+            try:
+                from synapse.panel.shot_login import format_memory_for_prompt
+                memory_ctx = format_memory_for_prompt(self._login_data)
+                if memory_ctx:
+                    system_prompt += "\n\n" + memory_ctx
+            except ImportError:
+                pass
+
+        # Build messages
+        parsed = parse_hda_command("/hda " + description)
+        messages = build_hda_messages(parsed["description"], context)
+
+        # Launch worker (same flow as _chat but with HDA prompt)
+        self._send_btn.setEnabled(False)
+        self._streaming_text = ""
+
+        synapse_color = GROW if _HAS_DESIGN else "#00E676"
+        self._chat_display.append(
+            '<div style="margin: 8px 0 4px 0;">'
+            '<b style="color: {};">SYNAPSE</b></div>'
+            '<div id="stream_target" style="margin: 0 0 8px 10px;">'.format(
+                synapse_color
+            )
+        )
+
+        try:
+            from synapse.panel.claude_worker import ClaudeWorker as NewWorker
+            WorkerClass = NewWorker
+            _has_tools = True
+        except ImportError:
+            WorkerClass = _FallbackClaudeWorker
+            _has_tools = False
+
+        self._worker = WorkerClass(
+            messages=messages,
+            system_prompt=system_prompt,
+            parent=self,
+        )
+        self._worker.token_received.connect(self._on_token)
+        self._worker.stream_done.connect(self._on_done)
+        self._worker.stream_error.connect(self._on_error)
+
+        if _has_tools:
+            executor = self._ensure_tool_executor()
+            if executor is not None:
+                self._worker.tool_requested.connect(executor.execute_tool)
+            self._worker.tool_status.connect(self._on_tool_status)
+
+        self._worker.start()
+
     # ── Chat Methods ───────────────────────────────────────
 
     def _sys(self, msg):
@@ -715,7 +817,56 @@ class SynapsePanel(QtWidgets.QWidget):
         if not text:
             return
         self._chat_input.clear()
+
+        # Route slash commands
+        if text.startswith("/"):
+            self._route_cmd(text)
+            return
+
         self._chat(text)
+
+    def _route_cmd(self, text):
+        """Route slash commands to their handlers."""
+        parts = text.split(None, 1)
+        cmd = parts[0].lower()
+        arg = parts[1].strip() if len(parts) > 1 else ""
+
+        if cmd == "/hda":
+            if not arg:
+                self._sys("Usage: /hda &lt;describe what you want to build&gt;")
+                return
+            # Display user message
+            user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+            user_html = (
+                '<div style="margin: 8px 0 4px 0;">'
+                '<b style="color: {};">You</b></div>'
+                '<div style="margin: 0 0 8px 10px;">{}</div>'
+            ).format(user_color, arg.replace("\n", "<br>"))
+            self._chat_display.append(user_html)
+            self._do_hda(arg)
+        elif cmd == "/login":
+            self._do_shot_login()
+        elif cmd == "/help":
+            self._show_help()
+        else:
+            self._sys("Unknown command: {}. Type /help for available commands.".format(cmd))
+
+    def _show_help(self):
+        """Display available slash commands in the chat."""
+        help_lines = [
+            "<b>Available commands:</b>",
+            "  /hda &lt;description&gt; -- Design and build an HDA from a description",
+            "  /login -- Re-run shot login (reload memory context)",
+            "  /help -- Show this help message",
+        ]
+        color = SILVER if _HAS_DESIGN else "#999999"
+        sz = SIZE_SMALL if _HAS_DESIGN else 11
+        html = '<div style="color: {}; font-size: {}pt; margin: 4px 0;">{}</div>'.format(
+            color, sz, "<br>".join(help_lines),
+        )
+        self._chat_display.append(html)
+        sb = self._chat_display.verticalScrollBar()
+        sb.setValue(sb.maximum())
 
     def _chat(self, user_text):
         """Send a message to Claude and stream the response."""
@@ -741,6 +892,16 @@ class SynapsePanel(QtWidgets.QWidget):
                 "You are SYNAPSE, an AI co-pilot inside Houdini 21. "
                 "Help the artist with VFX tasks."
             )
+
+        # Append memory context from shot login
+        if self._login_data and self._login_data.get("logged_in"):
+            try:
+                from synapse.panel.shot_login import format_memory_for_prompt
+                memory_ctx = format_memory_for_prompt(self._login_data)
+                if memory_ctx:
+                    system_prompt += "\n\n" + memory_ctx
+            except ImportError:
+                pass
 
         # Try importing the full ClaudeWorker with tool support
         WorkerClass = _FallbackClaudeWorker
@@ -912,7 +1073,16 @@ class SynapsePanel(QtWidgets.QWidget):
         self._log_activity("Server stopped", "warning")
 
     def _poll_server_health(self):
-        """Periodic check that the server is still running."""
+        """Periodic check that the server is still running + hip change detection."""
+        # Check if hip file changed (re-login if needed)
+        try:
+            current_hip = hou.hipFile.path()
+            from synapse.panel.shot_login import check_login_needed
+            if check_login_needed(current_hip, self._last_hip):
+                self._do_shot_login()
+        except Exception:
+            pass
+
         if self._server and getattr(self._server, "_running", False):
             # Server is alive
             if self._status not in ("connected", "idle", "executing"):
