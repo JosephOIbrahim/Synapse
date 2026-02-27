@@ -988,12 +988,14 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._sys("Usage: /hda &lt;describe what you want to build&gt;")
                 return
             # Display user message
-            user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+            label_color = SILVER if _HAS_DESIGN else "#999999"
+            label_sz = SIZE_LABEL if _HAS_DESIGN else 9
             user_html = (
                 '<div style="margin: 8px 0 4px 0;">'
-                '<b style="color: {};">You</b></div>'
+                '<span style="color: {}; font-size: {}px; letter-spacing: 1px;">'
+                'YOU</span></div>'
                 '<div style="margin: 0 0 8px 10px;">{}</div>'
-            ).format(user_color, arg.replace("\n", "<br>"))
+            ).format(label_color, label_sz, arg.replace("\n", "<br>"))
             self._chat_display.append(user_html)
             self._do_hda(arg)
         elif cmd == "/diagnose":
@@ -1308,13 +1310,15 @@ class SynapsePanel(QtWidgets.QWidget):
             return
 
         # Display user intent
-        user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+        label_color = SILVER if _HAS_DESIGN else "#999999"
+        label_sz = SIZE_LABEL if _HAS_DESIGN else 9
         target = context.get("network_path") or context.get("node_path", "")
         self._chat_display.append(
             '<div style="margin: 8px 0 4px 0;">'
-            '<b style="color: {};">You</b></div>'
+            '<span style="color: {}; font-size: {}px; letter-spacing: 1px;">'
+            'YOU</span></div>'
             '<div style="margin: 0 0 8px 10px;">/explain {}</div>'.format(
-                user_color, target,
+                label_color, label_sz, target,
             )
         )
 
@@ -1386,13 +1390,15 @@ class SynapsePanel(QtWidgets.QWidget):
         vex_arg = parsed["arg"]
 
         # Display user intent
-        user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+        label_color = SILVER if _HAS_DESIGN else "#999999"
+        label_sz = SIZE_LABEL if _HAS_DESIGN else 9
         display_text = "/vex {}".format(arg) if arg else "/vex"
         self._chat_display.append(
             '<div style="margin: 8px 0 4px 0;">'
-            '<b style="color: {};">You</b></div>'
+            '<span style="color: {}; font-size: {}px; letter-spacing: 1px;">'
+            'YOU</span></div>'
             '<div style="margin: 0 0 8px 10px;">{}</div>'.format(
-                user_color, display_text,
+                label_color, label_sz, display_text,
             )
         )
 
@@ -1513,13 +1519,15 @@ class SynapsePanel(QtWidgets.QWidget):
                 return
 
             # Display user intent
-            user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+            label_color = SILVER if _HAS_DESIGN else "#999999"
+            label_sz = SIZE_LABEL if _HAS_DESIGN else 9
             self._chat_display.append(
                 '<div style="margin: 8px 0 4px 0;">'
-                '<b style="color: {};">You</b></div>'
+                '<span style="color: {}; font-size: {}px; letter-spacing: 1px;">'
+                'YOU</span></div>'
                 '<div style="margin: 0 0 8px 10px;">'
                 '/recipes build {} {}</div>'.format(
-                    user_color, category, recipe_name,
+                    label_color, label_sz, category, recipe_name,
                 )
             )
 
@@ -1563,13 +1571,15 @@ class SynapsePanel(QtWidgets.QWidget):
         subarg = parts[1] if len(parts) > 1 else ""
 
         # Display user intent
-        user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+        label_color = SILVER if _HAS_DESIGN else "#999999"
+        label_sz = SIZE_LABEL if _HAS_DESIGN else 9
         display_text = "/apex {}".format(arg) if arg else "/apex"
         self._chat_display.append(
             '<div style="margin: 8px 0 4px 0;">'
-            '<b style="color: {};">You</b></div>'
+            '<span style="color: {}; font-size: {}px; letter-spacing: 1px;">'
+            'YOU</span></div>'
             '<div style="margin: 0 0 8px 10px;">{}</div>'.format(
-                user_color, display_text,
+                label_color, label_sz, display_text,
             )
         )
 
@@ -1912,12 +1922,14 @@ class SynapsePanel(QtWidgets.QWidget):
     def _chat(self, user_text):
         """Send a message to Claude and stream the response."""
         # Display user message
-        user_color = SIGNAL if _HAS_DESIGN else "#00D4FF"
+        label_color = SILVER if _HAS_DESIGN else "#999999"
+        label_sz = SIZE_LABEL if _HAS_DESIGN else 9
         user_html = (
             '<div style="margin: 8px 0 4px 0;">'
-            '<b style="color: {};">You</b></div>'
+            '<span style="color: {}; font-size: {}px; letter-spacing: 1px;">'
+            'YOU</span></div>'
             '<div style="margin: 0 0 8px 10px;">{}</div>'
-        ).format(user_color, user_text.replace("\n", "<br>"))
+        ).format(label_color, label_sz, user_text.replace("\n", "<br>"))
         self._chat_display.append(user_html)
 
         # Append to conversation history
