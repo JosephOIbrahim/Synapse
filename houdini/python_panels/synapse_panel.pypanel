@@ -268,6 +268,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._streaming_text = ""
         self._login_data = None     # shot login context
         self._last_hip = ""         # track hip changes for re-login
+        self._last_diagnosis = None # last scene doctor report
 
         self._build_ui()
 
@@ -684,6 +685,11 @@ class SynapsePanel(QtWidgets.QWidget):
                     self._login_data.get("scene_evolution", "?"),
                 )
                 self._sys("Shot login: " + stage_info)
+                try:
+                    from synapse.panel.session_journal import get_journal
+                    get_journal().log_event("LOGIN", stage_info)
+                except Exception:
+                    pass
             else:
                 self._sys("Shot login: no memory loaded (outside project)")
         except ImportError:
@@ -692,6 +698,111 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception as e:
             self._login_data = None
             self._sys("Shot login error: " + str(e))
+
+    def _do_diagnose(self, scope=""):
+        """Run scene doctor and display results."""
+        scope = scope.strip() or "all"
+        self._log_activity("Running scene doctor ({})...".format(scope), "action")
+        try:
+            from synapse.panel.scene_doctor import diagnose_scene, format_report_html
+            report = diagnose_scene(scope)
+            self._chat_display.append(format_report_html(report))
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+            self._last_diagnosis = report
+            self._log_activity(report.summary, "info")
+            # Log to journal
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/diagnose", report.summary)
+            except Exception:
+                pass
+            # Hint about /fix if fixable issues exist
+            fixable = sum(1 for i in report.issues if i.fix_available)
+            if fixable:
+                self._sys(
+                    "{} issue{} can be auto-fixed. Type /fix to apply.".format(
+                        fixable, "s" if fixable != 1 else ""
+                    )
+                )
+        except ImportError:
+            self._sys("Scene doctor unavailable (synapse.panel.scene_doctor not found)")
+        except Exception as e:
+            self._sys("Scene doctor error: " + str(e))
+
+    def _do_fix(self):
+        """Apply auto-fixes from the last /diagnose run."""
+        if self._last_diagnosis is None:
+            self._sys("No diagnosis to fix. Run /diagnose first.")
+            return
+        fixable = [i for i in self._last_diagnosis.issues if i.fix_available and i.fix_fn is not None]
+        if not fixable:
+            self._sys("No fixable issues in the last diagnosis.")
+            self._last_diagnosis = None
+            return
+        self._log_activity("Applying {} auto-fix(es)...".format(len(fixable)), "action")
+        try:
+            from synapse.panel.scene_doctor import apply_fixes
+            result = apply_fixes(self._last_diagnosis.issues)
+            msg = "Fixed {}, failed {}, skipped {}".format(
+                result["fixed"], result["failed"], result["skipped"]
+            )
+            self._sys(msg)
+            self._log_activity(msg, "success" if result["failed"] == 0 else "warning")
+            # Log to journal
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/fix", msg)
+            except Exception:
+                pass
+            self._last_diagnosis = None
+            # Re-run diagnose to show remaining issues
+            self._do_diagnose("")
+        except ImportError:
+            self._sys("Scene doctor unavailable (synapse.panel.scene_doctor not found)")
+        except Exception as e:
+            self._sys("Fix error: " + str(e))
+
+    def _do_preflight(self, render_node=""):
+        """Run render preflight checks."""
+        render_node = render_node.strip()
+        label = render_node if render_node else "auto-detect"
+        self._log_activity("Running preflight ({})...".format(label), "action")
+        try:
+            from synapse.panel.render_preflight import run_preflight, format_preflight_html
+            report = run_preflight(render_node)
+            self._chat_display.append(format_preflight_html(report))
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+            self._log_activity(report.summary, "success" if report.ready else "warning")
+            # Log to journal
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_command("/preflight", report.summary)
+            except Exception:
+                pass
+        except ImportError:
+            self._sys("Preflight unavailable (synapse.panel.render_preflight not found)")
+        except Exception as e:
+            self._sys("Preflight error: " + str(e))
+
+    def _do_journal(self, query=""):
+        """Display session journal entries."""
+        query = query.strip()
+        try:
+            from synapse.panel.session_journal import get_journal, format_journal_html
+            journal = get_journal()
+            if query:
+                entries = journal.search(query)
+            else:
+                entries = journal.get_entries(50)
+            self._chat_display.append(format_journal_html(entries, query))
+            sb = self._chat_display.verticalScrollBar()
+            sb.setValue(sb.maximum())
+        except ImportError:
+            self._sys("Journal unavailable (synapse.panel.session_journal not found)")
+        except Exception as e:
+            self._sys("Journal error: " + str(e))
 
     def _do_hda(self, description):
         """Launch HDA design conversation with Claude."""
@@ -844,6 +955,14 @@ class SynapsePanel(QtWidgets.QWidget):
             ).format(user_color, arg.replace("\n", "<br>"))
             self._chat_display.append(user_html)
             self._do_hda(arg)
+        elif cmd == "/diagnose":
+            self._do_diagnose(arg)
+        elif cmd == "/fix":
+            self._do_fix()
+        elif cmd == "/preflight":
+            self._do_preflight(arg)
+        elif cmd == "/journal":
+            self._do_journal(arg)
         elif cmd == "/login":
             self._do_shot_login()
         elif cmd == "/help":
@@ -856,6 +975,10 @@ class SynapsePanel(QtWidgets.QWidget):
         help_lines = [
             "<b>Available commands:</b>",
             "  /hda &lt;description&gt; -- Design and build an HDA from a description",
+            "  /diagnose [scope] -- Run scene doctor (scope: all, render, materials, current_network)",
+            "  /fix -- Apply auto-fixes from last /diagnose",
+            "  /preflight [node] -- Render preflight check (auto-detects render node)",
+            "  /journal [query] -- View session journal (optional search query)",
             "  /login -- Re-run shot login (reload memory context)",
             "  /help -- Show this help message",
         ]
@@ -972,13 +1095,39 @@ class SynapsePanel(QtWidgets.QWidget):
             self._messages = self._worker.get_messages()
 
     def _on_error(self, error_msg):
-        """Handle stream error."""
+        """Handle stream error with optional translation."""
+        # Try to translate the error into a coaching-tone explanation
+        try:
+            from synapse.panel.error_translator import translate_error, format_translation_html
+            translation = translate_error(error_msg)
+            if translation:
+                self._chat_display.append(format_translation_html(translation))
+                sb = self._chat_display.verticalScrollBar()
+                sb.setValue(sb.maximum())
+                self._send_btn.setEnabled(True)
+                # Log to journal
+                try:
+                    from synapse.panel.session_journal import get_journal
+                    get_journal().log_event("ERROR", error_msg[:200])
+                except Exception:
+                    pass
+                return
+        except ImportError:
+            pass
+
+        # No pattern match or translator unavailable -- show raw error
         error_color = ERROR if _HAS_DESIGN else "#FF3D71"
         self._chat_display.append(
             '<div style="color: {}; margin: 4px 0 8px 10px;">'
-            'Error: {}</div>'.format(error_color, error_msg[:300])
+            'We hit a snag: {}</div>'.format(error_color, error_msg[:300])
         )
         self._send_btn.setEnabled(True)
+        # Log to journal
+        try:
+            from synapse.panel.session_journal import get_journal
+            get_journal().log_event("ERROR", error_msg[:200])
+        except Exception:
+            pass
 
     def _on_tool_status(self, tool_name, status):
         """Display a compact inline indicator showing tool execution status."""
@@ -1004,6 +1153,17 @@ class SynapsePanel(QtWidgets.QWidget):
         self._chat_display.append(html)
         sb = self._chat_display.verticalScrollBar()
         sb.setValue(sb.maximum())
+
+        # Log completed/failed tool executions to the session journal
+        if status in ("done", "error"):
+            try:
+                from synapse.panel.session_journal import get_journal
+                get_journal().log_tool(
+                    tool_name, {}, None,
+                    error=("Tool error" if status == "error" else None),
+                )
+            except Exception:
+                pass
 
     # ── Server Controls ──────────────────────────────────
 
