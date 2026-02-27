@@ -589,6 +589,24 @@ class SynapseServer:
                     ).to_json())
                     return
 
+            # Fast-fail if main thread is persistently unresponsive —
+            # prevents 30s blocking per command during stall cascades
+            try:
+                from synapse.server.main_thread import is_main_thread_stalled
+                if is_main_thread_stalled():
+                    if self._circuit_breaker:
+                        self._circuit_breaker.record_failure()
+                    websocket.send(SynapseResponse(
+                        id=command.id,
+                        success=False,
+                        error="Houdini's main thread is unresponsive — commands will resume when it recovers",
+                        data={"retry_after": 5.0},
+                        sequence=command.sequence,
+                    ).to_json())
+                    return
+            except ImportError:
+                pass
+
             # Process command with latency tracking
             t0 = time.monotonic()
             response = self._handler.handle(command)
@@ -615,7 +633,13 @@ class SynapseServer:
             ).to_json())
         except Exception as e:
             # Notify circuit breaker on handler exceptions (service errors)
-            if self._circuit_breaker and is_service_error(e):
+            # Also catch main-thread timeouts (RuntimeError) which aren't
+            # in SERVICE_ERROR_TYPES but indicate infrastructure failure
+            is_timeout = (
+                isinstance(e, RuntimeError)
+                and "main thread" in str(e).lower()
+            )
+            if self._circuit_breaker and (is_service_error(e) or is_timeout):
                 self._circuit_breaker.record_failure()
             websocket.send(SynapseResponse(
                 id="unknown",
