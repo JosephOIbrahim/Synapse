@@ -407,12 +407,12 @@ if _QT_AVAILABLE:
         root.setObjectName("context_bar_v2")
         root.setStyleSheet(
             "QWidget#context_bar_v2 {{"
-            "  background: {bg}; border-bottom: 1px solid {border};"
-            "}}".format(bg=VOID, border=CARBON)
+            "  background: transparent;"
+            "}}".format()
         )
 
         outer = QtWidgets.QVBoxLayout(root)
-        outer.setContentsMargins(SPACE_SM, SPACE_XS, SPACE_SM, SPACE_XS)
+        outer.setContentsMargins(16, SPACE_XS, 16, SPACE_XS)
         outer.setSpacing(SPACE_XS)
 
         # -- Row 1: breadcrumb | stretch | memory badge | health dot --

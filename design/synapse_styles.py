@@ -54,12 +54,11 @@ QWidget#synapse_panel {{
     font-size: {SIZE_BODY}px;
 }}
 
-/* ── Title Bar ───────────────────────────────────────── */
+/* ── Unified Header ──────────────────────────────────── */
 
-QFrame#title_bar {{
+QWidget#panel_header {{
     background-color: {VOID};
     border-bottom: 1px solid {GRAPHITE};
-    padding: {SPACE_SM}px {SPACE_MD}px;
     min-height: 36px;
     max-height: 36px;
 }}
@@ -70,22 +69,6 @@ QLabel#title_label {{
     font-size: {SIZE_TITLE}px;
     font-weight: 600;
     letter-spacing: 2px;
-}}
-
-QLabel#version_label {{
-    color: {SLATE};
-    font-family: {MONO_FAMILY};
-    font-size: {SIZE_LABEL}px;
-}}
-
-/* ── Status Bar ──────────────────────────────────────── */
-
-QFrame#status_bar {{
-    background-color: {CARBON};
-    border-bottom: 1px solid {GRAPHITE};
-    padding: {SPACE_XS}px {SPACE_MD}px;
-    min-height: 28px;
-    max-height: 28px;
 }}
 
 QLabel#status_dot {{
@@ -107,56 +90,67 @@ QLabel#status_detail {{
     font-size: {SIZE_LABEL}px;
 }}
 
-/* ── Tool Grid ───────────────────────────────────────── */
-
-QFrame#tool_grid {{
+QToolButton#overflow_button {{
     background-color: transparent;
-    padding: {SPACE_SM}px;
+    color: {SILVER};
+    border: none;
+    font-family: {MONO_FAMILY};
+    font-size: {SIZE_UI}px;
+    padding: 2px {SPACE_SM}px;
+    min-width: 28px;
 }}
 
-QPushButton.tool_button {{
+QToolButton#overflow_button:hover {{
+    color: {WHITE};
+    background-color: {GRAPHITE};
+    border-radius: 3px;
+}}
+
+QToolButton#overflow_button::menu-indicator {{
+    image: none;
+}}
+
+/* ── Overflow Menu ───────────────────────────────────── */
+
+QMenu#overflow_menu {{
     background-color: {CARBON};
     color: {BONE};
     border: 1px solid {GRAPHITE};
     border-radius: 4px;
     font-family: {MONO_FAMILY};
-    font-size: {SIZE_UI}px;
-    padding: {SPACE_SM}px;
-    min-height: 56px;
-    text-align: center;
+    font-size: {SIZE_SMALL}px;
+    padding: {SPACE_XS}px 0px;
 }}
 
-QPushButton.tool_button:hover {{
+QMenu#overflow_menu::item {{
+    padding: {SPACE_SM}px {SPACE_MD}px;
+}}
+
+QMenu#overflow_menu::item:selected {{
     background-color: {GRAPHITE};
-    border-color: {SIGNAL};
-    color: {WHITE};
-}}
-
-QPushButton.tool_button:pressed {{
-    background-color: rgba(0, 212, 255, 0.15);
-    border-color: {SIGNAL};
     color: {SIGNAL};
 }}
 
-QPushButton.tool_button:disabled {{
-    background-color: {NEAR_BLACK};
-    color: {SLATE};
-    border-color: {NEAR_BLACK};
-}}
-
-/* ── Activity Log ────────────────────────────────────── */
+/* ── Activity Log (collapsible) ──────────────────────── */
 
 QFrame#activity_frame {{
     background-color: transparent;
     padding: 0px {SPACE_SM}px;
 }}
 
-QLabel#activity_header {{
+QPushButton#activity_toggle {{
+    background-color: transparent;
     color: {SLATE};
+    border: none;
     font-family: {MONO_FAMILY};
     font-size: {SIZE_LABEL}px;
     letter-spacing: 2px;
     padding: {SPACE_XS}px 0px;
+    text-align: left;
+}}
+
+QPushButton#activity_toggle:hover {{
+    color: {SILVER};
 }}
 
 QTextEdit#activity_log {{
@@ -167,6 +161,7 @@ QTextEdit#activity_log {{
     font-family: {MONO_FAMILY};
     font-size: {SIZE_SMALL}px;
     padding: {SPACE_SM}px;
+    max-height: 150px;
     selection-background-color: rgba(0, 212, 255, 0.3);
     selection-color: {WHITE};
 }}
@@ -197,14 +192,54 @@ QScrollBar::sub-page:vertical {{
     background-color: transparent;
 }}
 
-/* ── Connection Controls ─────────────────────────────── */
+/* ── Chat Input & Send ──────────────────────────────── */
+
+QLineEdit#chat_input {{
+    background-color: {VOID};
+    color: {BONE};
+    border: 1px solid {GRAPHITE};
+    border-radius: 6px;
+    font-family: {MONO_FAMILY};
+    font-size: {SIZE_BODY}px;
+    padding: {SPACE_SM}px {SPACE_MD}px;
+}}
+
+QLineEdit#chat_input:focus {{
+    border-color: {SIGNAL};
+}}
+
+QPushButton#send_button {{
+    background-color: transparent;
+    color: {SIGNAL};
+    border: 1px solid {SIGNAL};
+    border-radius: 6px;
+    font-family: {MONO_FAMILY};
+    font-size: {SIZE_SMALL}px;
+    padding: {SPACE_SM}px {SPACE_MD}px;
+    min-width: 56px;
+}}
+
+QPushButton#send_button:hover {{
+    background-color: rgba(0, 212, 255, 0.1);
+}}
+
+QPushButton#send_button:pressed {{
+    background-color: rgba(0, 212, 255, 0.2);
+}}
+
+QPushButton#send_button:disabled {{
+    color: {SLATE};
+    border-color: {GRAPHITE};
+}}
+
+/* ── Connection Controls (compact footer) ────────────── */
 
 QFrame#connection_frame {{
     background-color: {CARBON};
     border-top: 1px solid {GRAPHITE};
-    padding: {SPACE_SM}px {SPACE_MD}px;
-    min-height: 32px;
-    max-height: 32px;
+    padding: {SPACE_XS}px {SPACE_MD}px;
+    min-height: 28px;
+    max-height: 28px;
 }}
 
 QPushButton#connect_button {{
@@ -214,8 +249,8 @@ QPushButton#connect_button {{
     border-radius: 3px;
     font-family: {MONO_FAMILY};
     font-size: {SIZE_SMALL}px;
-    padding: {SPACE_XS}px {SPACE_SM}px;
-    min-width: 80px;
+    padding: 2px {SPACE_SM}px;
+    min-width: 72px;
 }}
 
 QPushButton#connect_button:hover {{
@@ -224,6 +259,12 @@ QPushButton#connect_button:hover {{
 
 QPushButton#connect_button:pressed {{
     background-color: rgba(0, 212, 255, 0.2);
+}}
+
+QLabel#version_label {{
+    color: {SLATE};
+    font-family: {MONO_FAMILY};
+    font-size: {SIZE_LABEL}px;
 }}
 
 QLabel#port_label {{

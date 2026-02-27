@@ -4,19 +4,19 @@
              help_url="">
     <script><![CDATA[
 """
-Synapse AI Co-Pilot — Houdini Python Panel
+Synapse AI Co-Pilot — Houdini Python Panel (Pentagram layout)
 
 PySide6/PySide2 panel providing:
-  - Title bar with branding
-  - Status indicator with animated dot
-  - Tool grid (Inspect Selection, Inspect Scene, Last Result, Health Check, Project Setup)
-  - Chat interface with Claude API streaming + tool execution
-  - Scrolling activity log
-  - Connection controls (connect/disconnect + port display)
+  - Unified header (branding + status + overflow menu)
+  - Context bar with breadcrumb + quick actions
+  - Chat interface with Claude API streaming + tool execution (dominant)
+  - Collapsible activity log (hidden by default)
+  - Compact footer (disconnect + version + ws URL)
 """
 
 import hou
 import gc
+import hashlib
 import json
 import time
 import os
@@ -276,6 +276,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._palette = None  # lazy init on Ctrl+K
         self._results_display = None  # lazy split-view results panel
 
+        # Message deduplication (hash -> timestamp)
+        self._msg_dedup = {}
+
         self._build_ui()
 
         if _HAS_DESIGN:
@@ -320,21 +323,15 @@ class SynapsePanel(QtWidgets.QWidget):
             self._show_welcome()
 
     def _build_ui(self):
-        """Construct the panel layout."""
+        """Construct the panel layout (Pentagram redesign)."""
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # Title bar
-        layout.addWidget(self._build_title_bar())
+        # 1. Unified header (title + status + overflow)
+        layout.addWidget(self._build_header())
 
-        # Status bar
-        layout.addWidget(self._build_status_bar())
-
-        # Tool grid
-        layout.addWidget(self._build_tool_grid())
-
-        # Context Bar v2 (Sprint 5)
+        # 2. Context Bar v2
         try:
             from synapse.panel.context_bar import (
                 build_context_bar_widget, update_context, ContextBarState,
@@ -358,104 +355,87 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass  # context bar not available, panel still works
 
-        # Chat area (display + input + send)
+        # 3. Chat area (dominant, stretch=1)
         layout.addWidget(self._build_chat_area(), stretch=1)
 
-        # Activity log (compact, below chat)
+        # 4. Activity log (collapsible, hidden by default)
         layout.addWidget(self._build_activity_log())
 
-        # Connection controls
+        # 5. Compact footer
         layout.addWidget(self._build_connection_bar())
 
-    def _build_title_bar(self):
-        """Build the title bar with branding."""
-        frame = QtWidgets.QFrame()
-        frame.setObjectName("title_bar")
-        layout = QtWidgets.QHBoxLayout(frame)
-        layout.setContentsMargins(
-            SPACE_MD if _HAS_DESIGN else 16,
-            SPACE_SM if _HAS_DESIGN else 8,
-            SPACE_MD if _HAS_DESIGN else 16,
-            SPACE_SM if _HAS_DESIGN else 8,
-        )
+    def _build_header(self):
+        """Build unified header: SYNAPSE + status dot + label + detail + overflow."""
+        header = QtWidgets.QWidget()
+        header.setObjectName("panel_header")
+        layout = QtWidgets.QHBoxLayout(header)
+        margin_h = SPACE_MD if _HAS_DESIGN else 16
+        margin_v = SPACE_XS if _HAS_DESIGN else 4
+        layout.setContentsMargins(margin_h, margin_v, margin_h, margin_v)
+        layout.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
 
+        # Title
         title = QtWidgets.QLabel("SYNAPSE")
         title.setObjectName("title_label")
         layout.addWidget(title)
 
-        layout.addStretch()
-
-        version = QtWidgets.QLabel("v" + _VERSION)
-        version.setObjectName("version_label")
-        layout.addWidget(version)
-
-        return frame
-
-    def _build_status_bar(self):
-        """Build the status bar with animated dot."""
-        frame = QtWidgets.QFrame()
-        frame.setObjectName("status_bar")
-        layout = QtWidgets.QHBoxLayout(frame)
-        layout.setContentsMargins(
-            SPACE_MD if _HAS_DESIGN else 16,
-            SPACE_XS if _HAS_DESIGN else 4,
-            SPACE_MD if _HAS_DESIGN else 16,
-            SPACE_XS if _HAS_DESIGN else 4,
-        )
-        layout.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
-
+        # Status dot (inline)
         self._dot_label = QtWidgets.QLabel(_STATUS_DOT)
         self._dot_label.setObjectName("status_dot")
         layout.addWidget(self._dot_label)
 
+        # Status text
         self._status_label = QtWidgets.QLabel("Idle")
         self._status_label.setObjectName("status_label")
         layout.addWidget(self._status_label)
 
         layout.addStretch()
 
+        # Status detail (port, clients, etc.)
         self._status_detail = QtWidgets.QLabel("")
         self._status_detail.setObjectName("status_detail")
         layout.addWidget(self._status_detail)
 
-        return frame
+        # Overflow menu button
+        overflow_btn = QtWidgets.QToolButton()
+        overflow_btn.setObjectName("overflow_button")
+        overflow_btn.setText("\u22EF")  # midline horizontal ellipsis
+        overflow_btn.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        overflow_btn.setMenu(self._build_overflow_menu())
+        layout.addWidget(overflow_btn)
 
-    def _build_tool_grid(self):
-        """Build the tool grid."""
-        frame = QtWidgets.QFrame()
-        frame.setObjectName("tool_grid")
-        grid = QtWidgets.QGridLayout(frame)
-        grid.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
-        margin = SPACE_SM if _HAS_DESIGN else 8
-        grid.setContentsMargins(margin, margin, margin, margin)
+        return header
+
+    def _build_overflow_menu(self):
+        """Build the overflow QMenu containing the 6 tool actions."""
+        menu = QtWidgets.QMenu(self)
+        menu.setObjectName("overflow_menu")
 
         tools = [
-            ("Project\nSetup", "Initialize project memory", self._on_project_setup),
-            ("RAG\nFolder", "Set RAG knowledge folder", self._on_rag_folder),
-            ("Inspect\nSelection", "Analyze selected nodes", self._on_inspect_selection),
-            ("Inspect\nScene", "Analyze full scene", self._on_inspect_scene),
-            ("Health\nCheck", "Run scene check", self._on_health_check),
-            ("Last\nResult", "Copy last result", self._on_last_result),
+            ("Project Setup", "Initialize project memory", self._on_project_setup),
+            ("RAG Folder", "Set RAG knowledge folder", self._on_rag_folder),
+            ("Inspect Selection", "Analyze selected nodes", self._on_inspect_selection),
+            ("Inspect Scene", "Analyze full scene", self._on_inspect_scene),
+            ("Health Check", "Run scene check", self._on_health_check),
+            ("Last Result", "Copy last result", self._on_last_result),
         ]
 
-        cols = 2
-        for i, (label, tooltip, callback) in enumerate(tools):
-            btn = QtWidgets.QPushButton(label)
-            btn.setProperty("class", "tool_button")
-            btn.setToolTip(tooltip)
-            btn.clicked.connect(callback)
-            grid.addWidget(btn, i // cols, i % cols)
+        for label, tooltip, callback in tools:
+            action = menu.addAction(label)
+            action.setToolTip(tooltip)
+            action.triggered.connect(callback)
 
-        return frame
+        return menu
 
     def _build_chat_area(self):
         """Build the chat display, input field, and send button."""
         frame = QtWidgets.QFrame()
         frame.setObjectName("chat_frame")
         layout = QtWidgets.QVBoxLayout(frame)
-        margin = SPACE_SM if _HAS_DESIGN else 8
-        layout.setContentsMargins(margin, margin, margin, 0)
-        layout.setSpacing(SPACE_XS if _HAS_DESIGN else 4)
+        margin_h = SPACE_SM if _HAS_DESIGN else 8
+        margin_top = SPACE_MD if _HAS_DESIGN else 16
+        layout.setContentsMargins(margin_h, margin_top, margin_h, 0)
+        layout.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
 
         # Chat display (read-only HTML area)
         self._chat_display = QtWidgets.QTextEdit()
@@ -494,36 +474,48 @@ class SynapsePanel(QtWidgets.QWidget):
         return frame
 
     def _build_activity_log(self):
-        """Build the scrolling activity log."""
+        """Build the collapsible activity log (hidden by default)."""
         frame = QtWidgets.QFrame()
         frame.setObjectName("activity_frame")
         layout = QtWidgets.QVBoxLayout(frame)
         layout.setContentsMargins(
             SPACE_SM if _HAS_DESIGN else 8, 0,
-            SPACE_SM if _HAS_DESIGN else 8, SPACE_SM if _HAS_DESIGN else 8,
+            SPACE_SM if _HAS_DESIGN else 8, 0,
         )
-        layout.setSpacing(SPACE_XS if _HAS_DESIGN else 4)
+        layout.setSpacing(0)
 
-        header = QtWidgets.QLabel("ACTIVITY")
-        header.setObjectName("activity_header")
-        layout.addWidget(header)
+        # Toggle button
+        self._activity_toggle = QtWidgets.QPushButton("\u25B6 ACTIVITY")
+        self._activity_toggle.setObjectName("activity_toggle")
+        self._activity_toggle.clicked.connect(self._on_toggle_activity)
+        layout.addWidget(self._activity_toggle)
 
+        # Log (hidden by default)
         self._log = QtWidgets.QTextEdit()
         self._log.setObjectName("activity_log")
         self._log.setReadOnly(True)
         self._log.setPlaceholderText("Synapse activity will appear here...")
+        self._log.setVisible(False)
         layout.addWidget(self._log)
 
         return frame
 
+    def _on_toggle_activity(self):
+        """Toggle activity log visibility."""
+        visible = not self._log.isVisible()
+        self._log.setVisible(visible)
+        if visible:
+            self._activity_toggle.setText("\u25BC ACTIVITY")
+        else:
+            self._activity_toggle.setText("\u25B6 ACTIVITY")
+
     def _build_connection_bar(self):
-        """Build the bottom connection controls."""
+        """Build compact footer: disconnect + version + ws URL."""
         frame = QtWidgets.QFrame()
         frame.setObjectName("connection_frame")
         layout = QtWidgets.QHBoxLayout(frame)
         margin_h = SPACE_MD if _HAS_DESIGN else 16
-        margin_v = SPACE_SM if _HAS_DESIGN else 8
-        layout.setContentsMargins(margin_h, margin_v, margin_h, margin_v)
+        layout.setContentsMargins(margin_h, 2, margin_h, 2)
         layout.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
 
         self._connect_btn = QtWidgets.QPushButton("Connect")
@@ -533,13 +525,44 @@ class SynapsePanel(QtWidgets.QWidget):
 
         layout.addStretch()
 
+        version = QtWidgets.QLabel("v" + _VERSION)
+        version.setObjectName("version_label")
+        layout.addWidget(version)
+
         self._ws_path_btn = QtWidgets.QPushButton(_WS_URL)
         self._ws_path_btn.setObjectName("ws_path_button")
         self._ws_path_btn.setToolTip("Copy WebSocket URL to clipboard")
         self._ws_path_btn.clicked.connect(self._on_copy_ws_path)
+        ws_sz = SIZE_LABEL if _HAS_DESIGN else 11
+        self._ws_path_btn.setStyleSheet(
+            "QPushButton {{ background: transparent; color: {c}; border: none; "
+            "font-size: {sz}px; font-family: {f}; }}".format(
+                c=SLATE if _HAS_DESIGN else "#555555",
+                sz=ws_sz,
+                f=FONT_MONO if _HAS_DESIGN else "Consolas",
+            )
+        )
         layout.addWidget(self._ws_path_btn)
 
         return frame
+
+    # ── Message Deduplication ─────────────────────────────
+
+    def _should_show_message(self, msg):
+        """Return True if this message hasn't been shown in the last 5 seconds."""
+        now = time.time()
+        h = hashlib.md5(msg.encode("utf-8", errors="replace")).hexdigest()
+        last = self._msg_dedup.get(h, 0)
+        if now - last < 5.0:
+            return False
+        self._msg_dedup[h] = now
+        # Prune old entries
+        if len(self._msg_dedup) > 100:
+            cutoff = now - 10.0
+            self._msg_dedup = {
+                k: v for k, v in self._msg_dedup.items() if v > cutoff
+            }
+        return True
 
     # ── Status Management ────────────────────────────────
 
@@ -891,7 +914,9 @@ class SynapsePanel(QtWidgets.QWidget):
     # ── Chat Methods ───────────────────────────────────────
 
     def _sys(self, msg):
-        """Append a system-level message to the chat display."""
+        """Append a system-level message to the chat display (with dedup)."""
+        if not self._should_show_message(msg):
+            return
         color = SILVER if _HAS_DESIGN else "#999999"
         html = '<div style="color: {}; font-size: {}pt; margin: 4px 0;">{}</div>'.format(
             color, SIZE_SMALL if _HAS_DESIGN else 11, msg,
