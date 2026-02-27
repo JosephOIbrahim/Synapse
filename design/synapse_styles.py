@@ -194,18 +194,18 @@ QScrollBar::sub-page:vertical {{
 
 /* ── Chat Input & Send (WhatsApp pill) ─────────────── */
 
-QLineEdit#chat_input {{
+QPlainTextEdit#chat_input {{
     background-color: {CARBON};
     color: {BONE};
     border: 1px solid {GRAPHITE};
-    border-radius: 20px;
+    border-radius: 12px;
     font-family: {MONO_FAMILY};
     font-size: {SIZE_BODY}px;
-    padding: 10px {SPACE_MD}px;
-    min-height: 20px;
+    padding: 8px {SPACE_MD}px;
+    min-height: 36px;
 }}
 
-QLineEdit#chat_input:focus {{
+QPlainTextEdit#chat_input:focus {{
     border-color: {SLATE};
 }}
 
@@ -234,6 +234,31 @@ QPushButton#send_button:pressed {{
 QPushButton#send_button:disabled {{
     color: {SLATE};
     border-color: {GRAPHITE};
+}}
+
+/* ── Attach Button ──────────────────────────────────── */
+
+QPushButton#attach_button {{
+    background-color: transparent;
+    color: {SILVER};
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    min-width: 36px;
+    max-width: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    padding: 0px;
+}}
+
+QPushButton#attach_button:hover {{
+    background-color: {CARBON};
+    color: {WHITE};
+}}
+
+QPushButton#attach_button:pressed {{
+    background-color: {GRAPHITE};
+    color: {SIGNAL};
 }}
 
 /* ── Connection Controls (compact footer) ────────────── */

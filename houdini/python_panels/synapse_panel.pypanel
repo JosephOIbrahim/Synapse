@@ -17,6 +17,7 @@ PySide6/PySide2 panel providing:
 import hou
 import gc
 import hashlib
+import base64
 import json
 import time
 import os
@@ -99,6 +100,26 @@ def _get_server_module():
         return SynapseServer
     except ImportError:
         return None
+
+
+# ── Chat Input Key Filter ─────────────────────────────────
+
+class _InputKeyFilter(QtCore.QObject):
+    """Enter sends chat, Shift+Enter inserts newline."""
+
+    def __init__(self, text_edit, panel, parent=None):
+        super().__init__(parent or text_edit)
+        self._text_edit = text_edit
+        self._panel = panel
+
+    def eventFilter(self, obj, event):
+        if obj is self._text_edit and event.type() == QtCore.QEvent.KeyPress:
+            if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
+                if event.modifiers() & QtCore.Qt.ShiftModifier:
+                    return False  # Let Shift+Enter insert newline
+                self._panel._on_send_chat()
+                return True
+        return super().eventFilter(obj, event)
 
 
 # ── Status Dot Animation ─────────────────────────────────
@@ -266,6 +287,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._worker = None
         self._tool_executor = None  # lazy init
         self._streaming_text = ""
+        self._pending_image_path = None  # attached image awaiting send
         self._login_data = None     # shot login context
         self._last_hip = ""         # track hip changes for re-login
         self._last_diagnosis = None # last scene doctor report
@@ -428,16 +450,26 @@ class SynapsePanel(QtWidgets.QWidget):
         return menu
 
     def _build_chat_area(self):
-        """Build the chat display, input field, and send button."""
+        """Build the chat display, input field, and send button with draggable splitter."""
         frame = QtWidgets.QFrame()
         frame.setObjectName("chat_frame")
         layout = QtWidgets.QVBoxLayout(frame)
         margin_h = SPACE_SM if _HAS_DESIGN else 8
         margin_top = SPACE_MD if _HAS_DESIGN else 16
         layout.setContentsMargins(margin_h, margin_top, margin_h, 0)
-        layout.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
+        layout.setSpacing(0)
 
-        # Chat display (read-only HTML area)
+        # Vertical splitter: chat display on top, input area on bottom
+        splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        splitter.setObjectName("chat_splitter")
+        splitter.setChildrenCollapsible(False)
+        handle_color = GRAPHITE if _HAS_DESIGN else "#222222"
+        splitter.setStyleSheet(
+            "QSplitter::handle {{ background: {}; height: 3px; }}"
+            .format(handle_color)
+        )
+
+        # Top: chat display (read-only HTML area)
         self._chat_display = QtWidgets.QTextEdit()
         self._chat_display.setObjectName("chat_display")
         self._chat_display.setReadOnly(True)
@@ -452,16 +484,72 @@ class SynapsePanel(QtWidgets.QWidget):
                 FONT_MONO if _HAS_DESIGN else "Consolas, monospace",
             )
         )
-        layout.addWidget(self._chat_display, stretch=1)
+        splitter.addWidget(self._chat_display)
 
-        # Input row: text field + send button
-        input_row = QtWidgets.QHBoxLayout()
+        # Bottom: input area (preview strip + input row)
+        input_widget = QtWidgets.QWidget()
+        input_layout = QtWidgets.QVBoxLayout(input_widget)
+        input_layout.setContentsMargins(0, SPACE_SM if _HAS_DESIGN else 4, 0, 0)
+        input_layout.setSpacing(0)
+
+        # Image preview strip (hidden by default)
+        self._image_preview = QtWidgets.QWidget()
+        self._image_preview.setVisible(False)
+        preview_row = QtWidgets.QHBoxLayout(self._image_preview)
+        preview_row.setContentsMargins(0, 0, 0, 4)
+        preview_row.setSpacing(SPACE_SM if _HAS_DESIGN else 6)
+
+        self._image_thumb = QtWidgets.QLabel()
+        self._image_thumb.setFixedHeight(48)
+        self._image_thumb.setScaledContents(False)
+        preview_row.addWidget(self._image_thumb)
+
+        self._image_name = QtWidgets.QLabel()
+        self._image_name.setStyleSheet(
+            "color: {}; font-size: {}px;".format(
+                SILVER if _HAS_DESIGN else "#999999",
+                SIZE_SMALL if _HAS_DESIGN else 11,
+            )
+        )
+        preview_row.addWidget(self._image_name, stretch=1)
+
+        clear_btn = QtWidgets.QPushButton("\u2715")
+        clear_btn.setFixedSize(24, 24)
+        clear_btn.setStyleSheet(
+            "QPushButton {{ background: transparent; color: {c}; border: none; "
+            "font-size: 14px; border-radius: 4px; }}"
+            "QPushButton:hover {{ background: {bg}; color: {w}; }}".format(
+                c=SLATE if _HAS_DESIGN else "#555555",
+                bg=CARBON if _HAS_DESIGN else "#333333",
+                w=WHITE if _HAS_DESIGN else "#FFFFFF",
+            )
+        )
+        clear_btn.setToolTip("Remove attached image")
+        clear_btn.clicked.connect(self._on_clear_image)
+        preview_row.addWidget(clear_btn)
+
+        input_layout.addWidget(self._image_preview)
+
+        # Input row (attach + text area + send button)
+        input_row_widget = QtWidgets.QWidget()
+        input_row = QtWidgets.QHBoxLayout(input_row_widget)
+        input_row.setContentsMargins(0, 0, 0, 0)
         input_row.setSpacing(SPACE_SM if _HAS_DESIGN else 8)
 
-        self._chat_input = QtWidgets.QLineEdit()
+        self._attach_btn = QtWidgets.QPushButton("\U0001F4CE")
+        self._attach_btn.setObjectName("attach_button")
+        self._attach_btn.setFixedSize(36, 36)
+        self._attach_btn.setToolTip("Attach reference image")
+        self._attach_btn.clicked.connect(self._on_attach_image)
+        input_row.addWidget(self._attach_btn)
+
+        self._chat_input = QtWidgets.QPlainTextEdit()
         self._chat_input.setObjectName("chat_input")
         self._chat_input.setPlaceholderText("Type a message or /help for commands...")
-        self._chat_input.returnPressed.connect(self._on_send_chat)
+        self._chat_input.setTabChangesFocus(True)
+        self._chat_input.setMinimumHeight(40)
+        self._chat_input.setMaximumHeight(200)
+        self._chat_input.installEventFilter(_InputKeyFilter(self._chat_input, self))
         input_row.addWidget(self._chat_input, stretch=1)
 
         self._send_btn = QtWidgets.QPushButton("Send")
@@ -469,7 +557,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._send_btn.clicked.connect(self._on_send_chat)
         input_row.addWidget(self._send_btn)
 
-        layout.addLayout(input_row)
+        input_layout.addWidget(input_row_widget)
+        splitter.addWidget(input_widget)
+
+        # Chat dominant, input compact
+        splitter.setSizes([700, 80])
+
+        layout.addWidget(splitter)
 
         return frame
 
@@ -963,14 +1057,43 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._sys("Tool executor not available: " + str(e))
         return self._tool_executor
 
+    def _on_attach_image(self):
+        """Open file picker to attach a reference image."""
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Attach Reference Image", "",
+            "Images (*.png *.jpg *.jpeg *.bmp *.tga *.tif *.tiff *.exr)"
+        )
+        if not path:
+            return
+        self._pending_image_path = path
+
+        # Show preview strip
+        pixmap = QtGui.QPixmap(path)
+        if not pixmap.isNull():
+            scaled = pixmap.scaledToHeight(
+                48, QtCore.Qt.SmoothTransformation
+            )
+            self._image_thumb.setPixmap(scaled)
+        else:
+            self._image_thumb.setText("[img]")
+        self._image_name.setText(os.path.basename(path))
+        self._image_preview.setVisible(True)
+
+    def _on_clear_image(self):
+        """Remove the pending attached image."""
+        self._pending_image_path = None
+        self._image_preview.setVisible(False)
+        self._image_thumb.clear()
+        self._image_name.clear()
+
     def _on_send_chat(self):
         """Handle send button click or Enter key in chat input."""
-        text = self._chat_input.text().strip()
-        if not text:
+        text = self._chat_input.toPlainText().strip()
+        if not text and not self._pending_image_path:
             return
         self._chat_input.clear()
 
-        # Route slash commands
+        # Route slash commands (no image attachment for commands)
         if text.startswith("/"):
             self._route_cmd(text)
             return
@@ -1921,19 +2044,93 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _chat(self, user_text):
         """Send a message to Claude and stream the response."""
-        # Display user message
         label_color = SILVER if _HAS_DESIGN else "#999999"
         label_sz = SIZE_LABEL if _HAS_DESIGN else 9
+
+        # Build image content block if an image is attached
+        image_block = None
+        image_html = ""
+        if self._pending_image_path:
+            try:
+                with open(self._pending_image_path, "rb") as f:
+                    img_data = base64.standard_b64encode(f.read()).decode("ascii")
+                ext = os.path.splitext(self._pending_image_path)[1].lower()
+                media_map = {
+                    ".png": "image/png", ".jpg": "image/jpeg",
+                    ".jpeg": "image/jpeg", ".bmp": "image/bmp",
+                    ".tga": "image/png", ".tif": "image/tiff",
+                    ".tiff": "image/tiff", ".exr": "image/png",
+                }
+                media_type = media_map.get(ext, "image/png")
+                image_block = {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": media_type,
+                        "data": img_data,
+                    },
+                }
+                # Inline thumbnail via QTextDocument resource
+                fname = os.path.basename(self._pending_image_path)
+                pixmap = QtGui.QPixmap(self._pending_image_path)
+                if not pixmap.isNull():
+                    if pixmap.width() > 200:
+                        pixmap = pixmap.scaledToWidth(
+                            200, QtCore.Qt.SmoothTransformation
+                        )
+                    res_name = "attach_{}".format(int(time.time() * 1000))
+                    self._chat_display.document().addResource(
+                        QtGui.QTextDocument.ImageResource,
+                        QtCore.QUrl(res_name),
+                        pixmap,
+                    )
+                    image_html = (
+                        '<div style="margin: 0 0 4px 10px;">'
+                        '<img src="{src}" />'
+                        '<br/><span style="color: {c}; font-size: {sz}px;">'
+                        '{fn}</span></div>'
+                    ).format(
+                        src=res_name,
+                        c=SLATE if _HAS_DESIGN else "#555555",
+                        sz=SIZE_SMALL if _HAS_DESIGN else 11,
+                        fn=fname,
+                    )
+            except Exception as exc:
+                self._log_activity(
+                    "Couldn't read image: {}".format(exc), "warning"
+                )
+
+            # Clear the pending image state
+            self._pending_image_path = None
+            self._image_preview.setVisible(False)
+            self._image_thumb.clear()
+            self._image_name.clear()
+
+        # Display user message in chat
         user_html = (
             '<div style="margin: 8px 0 4px 0;">'
             '<span style="color: {}; font-size: {}px; letter-spacing: 1px;">'
             'YOU</span></div>'
-            '<div style="margin: 0 0 8px 10px;">{}</div>'
-        ).format(label_color, label_sz, user_text.replace("\n", "<br>"))
+        ).format(label_color, label_sz)
+        if image_html:
+            user_html += image_html
+        if user_text:
+            user_html += (
+                '<div style="margin: 0 0 8px 10px;">{}</div>'
+            ).format(user_text.replace("\n", "<br>"))
         self._chat_display.append(user_html)
 
+        # Build message content (multi-part if image attached)
+        if image_block:
+            content = []
+            content.append(image_block)
+            if user_text:
+                content.append({"type": "text", "text": user_text})
+        else:
+            content = user_text
+
         # Append to conversation history
-        self._messages.append({"role": "user", "content": user_text})
+        self._messages.append({"role": "user", "content": content})
 
         # Build system prompt
         try:
