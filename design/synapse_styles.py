@@ -192,39 +192,43 @@ QScrollBar::sub-page:vertical {{
     background-color: transparent;
 }}
 
-/* ── Chat Input & Send ──────────────────────────────── */
+/* ── Chat Input & Send (WhatsApp pill) ─────────────── */
 
 QLineEdit#chat_input {{
-    background-color: {VOID};
+    background-color: {CARBON};
     color: {BONE};
     border: 1px solid {GRAPHITE};
-    border-radius: 6px;
+    border-radius: 20px;
     font-family: {MONO_FAMILY};
     font-size: {SIZE_BODY}px;
-    padding: {SPACE_SM}px {SPACE_MD}px;
+    padding: 10px {SPACE_MD}px;
+    min-height: 20px;
 }}
 
 QLineEdit#chat_input:focus {{
-    border-color: {SIGNAL};
+    border-color: {SLATE};
 }}
 
 QPushButton#send_button {{
-    background-color: transparent;
-    color: {SIGNAL};
-    border: 1px solid {SIGNAL};
-    border-radius: 6px;
+    background-color: {SIGNAL};
+    color: {VOID};
+    border: none;
+    border-radius: 18px;
     font-family: {MONO_FAMILY};
     font-size: {SIZE_SMALL}px;
-    padding: {SPACE_SM}px {SPACE_MD}px;
-    min-width: 56px;
+    font-weight: 600;
+    padding: 10px 16px;
+    min-width: 40px;
+    min-height: 36px;
+    max-height: 36px;
 }}
 
 QPushButton#send_button:hover {{
-    background-color: rgba(0, 212, 255, 0.1);
+    background-color: #33DFFF;
 }}
 
 QPushButton#send_button:pressed {{
-    background-color: rgba(0, 212, 255, 0.2);
+    background-color: #00A8CC;
 }}
 
 QPushButton#send_button:disabled {{

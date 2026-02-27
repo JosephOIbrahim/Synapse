@@ -442,8 +442,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._chat_display.setObjectName("chat_display")
         self._chat_display.setReadOnly(True)
         self._chat_display.setPlaceholderText("Chat with SYNAPSE...")
-        font_size = SIZE_BODY if _HAS_DESIGN else 13
-        bg = VOID if _HAS_DESIGN else "#252525"
+        font_size = SIZE_LABEL if _HAS_DESIGN else 9
+        bg = VOID if _HAS_DESIGN else "#0A0A0A"
         fg = BONE if _HAS_DESIGN else "#CCCCCC"
         self._chat_display.setStyleSheet(
             "QTextEdit {{ background: {}; color: {}; border: none; "
@@ -917,9 +917,9 @@ class SynapsePanel(QtWidgets.QWidget):
         """Append a system-level message to the chat display (with dedup)."""
         if not self._should_show_message(msg):
             return
-        color = SILVER if _HAS_DESIGN else "#999999"
-        html = '<div style="color: {}; font-size: {}pt; margin: 4px 0;">{}</div>'.format(
-            color, SIZE_SMALL if _HAS_DESIGN else 11, msg,
+        color = SLATE if _HAS_DESIGN else "#555555"
+        html = '<div style="color: {}; font-size: {}pt; margin: 2px 0;">{}</div>'.format(
+            color, SIZE_LABEL if _HAS_DESIGN else 9, msg,
         )
         self._chat_display.append(html)
         sb = self._chat_display.verticalScrollBar()
@@ -1083,12 +1083,14 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _html_assistant_start(self):
         """Return the HTML header for an assistant (SYNAPSE) message block."""
-        synapse_color = GROW if _HAS_DESIGN else "#00E676"
+        label_color = SILVER if _HAS_DESIGN else "#999999"
+        sz = SIZE_LABEL if _HAS_DESIGN else 9
         return (
-            '<div style="margin: 8px 0 4px 0;">'
-            '<b style="color: {};">SYNAPSE</b></div>'
-            '<div id="stream_target" style="margin: 0 0 8px 10px;">'.format(
-                synapse_color
+            '<div style="margin: 10px 0 2px 0;">'
+            '<span style="color: {}; font-size: {}pt; letter-spacing: 1px;">'
+            'SYNAPSE</span></div>'
+            '<div id="stream_target" style="margin: 0 0 8px 0;">'.format(
+                label_color, sz,
             )
         )
 
