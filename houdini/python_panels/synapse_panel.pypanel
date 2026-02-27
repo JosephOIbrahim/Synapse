@@ -2052,37 +2052,33 @@ class SynapsePanel(QtWidgets.QWidget):
         image_html = ""
         if self._pending_image_path:
             try:
-                with open(self._pending_image_path, "rb") as f:
-                    img_data = base64.standard_b64encode(f.read()).decode("ascii")
-                ext = os.path.splitext(self._pending_image_path)[1].lower()
-                media_map = {
-                    ".png": "image/png", ".jpg": "image/jpeg",
-                    ".jpeg": "image/jpeg", ".bmp": "image/bmp",
-                    ".tga": "image/png", ".tif": "image/tiff",
-                    ".tiff": "image/tiff", ".exr": "image/png",
-                }
-                media_type = media_map.get(ext, "image/png")
-                image_block = {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": media_type,
-                        "data": img_data,
-                    },
-                }
-                # Inline thumbnail via QTextDocument resource
+                from synapse.panel.image_prep import prepare_image_block
+                result = prepare_image_block(self._pending_image_path)
+                image_block = result["block"]
                 fname = os.path.basename(self._pending_image_path)
-                pixmap = QtGui.QPixmap(self._pending_image_path)
-                if not pixmap.isNull():
-                    if pixmap.width() > 200:
-                        pixmap = pixmap.scaledToWidth(
-                            200, QtCore.Qt.SmoothTransformation
-                        )
+
+                if result["resized"]:
+                    w, h = result["dimensions"]
+                    self._log_activity(
+                        "{} resized to {}x{} ({:.0f}KB -> {:.0f}KB)".format(
+                            fname, w, h,
+                            result["orig_bytes"] / 1024,
+                            result["sent_bytes"] / 1024,
+                        ), "info"
+                    )
+
+                # Inline thumbnail via QTextDocument resource
+                thumb = QtGui.QPixmap(self._pending_image_path)
+                if not thumb.isNull() and thumb.width() > 200:
+                    thumb = thumb.scaledToWidth(
+                        200, QtCore.Qt.SmoothTransformation
+                    )
+                if not thumb.isNull():
                     res_name = "attach_{}".format(int(time.time() * 1000))
                     self._chat_display.document().addResource(
                         QtGui.QTextDocument.ImageResource,
                         QtCore.QUrl(res_name),
-                        pixmap,
+                        thumb,
                     )
                     image_html = (
                         '<div style="margin: 0 0 4px 10px;">'
