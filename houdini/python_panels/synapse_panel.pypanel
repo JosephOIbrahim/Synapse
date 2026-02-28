@@ -298,9 +298,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._palette = None  # lazy init on Ctrl+K
         self._results_display = None  # lazy split-view results panel
 
-        # Font zoom level (persisted across sessions)
-        self._font_zoom = 0
-        self._load_font_zoom()
+        # Font scale (persisted across sessions)
+        self._font_scale = 1.0
+        self._load_font_scale()
 
         # Message deduplication (hash -> timestamp)
         self._msg_dedup = {}
@@ -362,56 +362,90 @@ class SynapsePanel(QtWidgets.QWidget):
             self._worker.wait(2000)
         super().closeEvent(event)
 
-    # ── Font Zoom ──────────────────────────────────────────
+    # ── Font Scale ─────────────────────────────────────────
 
-    _FONT_ZOOM_PATH = os.path.join(
+    import re as _re  # for regex rescaling
+
+    _FONT_SCALE_PATH = os.path.join(
         os.path.expanduser("~"), ".synapse", "chat_font_zoom"
     )
+    _SCALE_STEP = 0.15
+    _SCALE_MIN = 0.5
+    _SCALE_MAX = 3.0
 
-    def _load_font_zoom(self):
-        """Load saved font zoom level from ~/.synapse/chat_font_zoom."""
+    def _sz(self, base):
+        """Scale a base pixel size by the current font scale factor."""
+        return max(1, int(round(base * self._font_scale)))
+
+    def _load_font_scale(self):
+        """Load saved font scale from ~/.synapse/chat_font_zoom."""
         try:
-            with open(self._FONT_ZOOM_PATH, encoding="utf-8") as f:
-                self._font_zoom = int(f.read().strip())
+            with open(self._FONT_SCALE_PATH, encoding="utf-8") as f:
+                self._font_scale = float(f.read().strip())
         except (FileNotFoundError, ValueError):
-            self._font_zoom = 0
+            self._font_scale = 1.0
 
-    def _save_font_zoom(self):
-        """Persist current font zoom level."""
+    def _save_font_scale(self):
+        """Persist current font scale."""
         try:
-            os.makedirs(os.path.dirname(self._FONT_ZOOM_PATH), exist_ok=True)
-            with open(self._FONT_ZOOM_PATH, "w", encoding="utf-8") as f:
-                f.write(str(self._font_zoom))
+            os.makedirs(os.path.dirname(self._FONT_SCALE_PATH), exist_ok=True)
+            with open(self._FONT_SCALE_PATH, "w", encoding="utf-8") as f:
+                f.write("{:.2f}".format(self._font_scale))
         except OSError:
             pass
 
-    def _apply_font_zoom(self):
-        """Apply stored zoom level to the chat display."""
-        if self._font_zoom > 0:
-            self._chat_display.zoomIn(self._font_zoom)
-        elif self._font_zoom < 0:
-            self._chat_display.zoomOut(abs(self._font_zoom))
+    def _rescale_existing_content(self, old_scale, new_scale):
+        """Regex-replace all font-size values in existing chat HTML."""
+        if abs(old_scale - new_scale) < 0.001:
+            return
+        ratio = new_scale / old_scale
+        html = self._chat_display.toHtml()
+        def _scale(m):
+            px = float(m.group(1))
+            return "font-size:{}px".format(max(1, int(round(px * ratio))))
+        html = self._re.sub(r'font-size:\s*(\d+(?:\.\d+)?)px', _scale, html)
+        # Preserve scroll position
+        sb = self._chat_display.verticalScrollBar()
+        pos = sb.value()
+        self._chat_display.setHtml(html)
+        sb.setValue(pos)
+
+    def _update_chat_stylesheet(self):
+        """Re-set the chat display stylesheet with scaled base font."""
+        font_size = self._sz(SIZE_LABEL if _HAS_DESIGN else 9)
+        bg = VOID if _HAS_DESIGN else "#0A0A0A"
+        fg = BONE if _HAS_DESIGN else "#CCCCCC"
+        self._chat_display.setStyleSheet(
+            "QTextEdit {{ background: {}; color: {}; border: none; "
+            "font-size: {}px; font-family: {}; }}".format(
+                bg, fg, font_size,
+                FONT_MONO if _HAS_DESIGN else "Consolas, monospace",
+            )
+        )
 
     def _on_zoom_in(self):
         """Increase chat font size."""
-        self._font_zoom += 1
-        self._chat_display.zoomIn(1)
-        self._save_font_zoom()
+        old = self._font_scale
+        self._font_scale = min(self._SCALE_MAX, old + self._SCALE_STEP)
+        self._rescale_existing_content(old, self._font_scale)
+        self._update_chat_stylesheet()
+        self._save_font_scale()
 
     def _on_zoom_out(self):
         """Decrease chat font size."""
-        self._font_zoom -= 1
-        self._chat_display.zoomOut(1)
-        self._save_font_zoom()
+        old = self._font_scale
+        self._font_scale = max(self._SCALE_MIN, old - self._SCALE_STEP)
+        self._rescale_existing_content(old, self._font_scale)
+        self._update_chat_stylesheet()
+        self._save_font_scale()
 
     def _on_zoom_reset(self):
         """Reset chat font size to default."""
-        if self._font_zoom > 0:
-            self._chat_display.zoomOut(self._font_zoom)
-        elif self._font_zoom < 0:
-            self._chat_display.zoomIn(abs(self._font_zoom))
-        self._font_zoom = 0
-        self._save_font_zoom()
+        old = self._font_scale
+        self._font_scale = 1.0
+        self._rescale_existing_content(old, 1.0)
+        self._update_chat_stylesheet()
+        self._save_font_scale()
 
     def _build_ui(self):
         """Construct the panel layout (Pentagram redesign)."""
@@ -487,20 +521,28 @@ class SynapsePanel(QtWidgets.QWidget):
         self._status_detail.setObjectName("status_detail")
         layout.addWidget(self._status_detail)
 
-        # Font zoom buttons (A- / A+)
+        # Font zoom buttons (A- / A+) with separator spacing
+        zoom_spacer = QtWidgets.QWidget()
+        zoom_spacer.setFixedWidth(SPACE_SM if _HAS_DESIGN else 6)
+        layout.addWidget(zoom_spacer)
+
         zoom_out_btn = QtWidgets.QPushButton("A\u2212")
         zoom_out_btn.setObjectName("zoom_button")
-        zoom_out_btn.setFixedSize(28, 28)
-        zoom_out_btn.setToolTip("Decrease chat font size")
+        zoom_out_btn.setFixedSize(30, 28)
+        zoom_out_btn.setToolTip("Decrease chat font size (click to shrink)")
         zoom_out_btn.clicked.connect(self._on_zoom_out)
         layout.addWidget(zoom_out_btn)
 
         zoom_in_btn = QtWidgets.QPushButton("A+")
         zoom_in_btn.setObjectName("zoom_button")
-        zoom_in_btn.setFixedSize(28, 28)
-        zoom_in_btn.setToolTip("Increase chat font size")
+        zoom_in_btn.setFixedSize(30, 28)
+        zoom_in_btn.setToolTip("Increase chat font size (click to enlarge)")
         zoom_in_btn.clicked.connect(self._on_zoom_in)
         layout.addWidget(zoom_in_btn)
+
+        zoom_spacer2 = QtWidgets.QWidget()
+        zoom_spacer2.setFixedWidth(SPACE_SM if _HAS_DESIGN else 6)
+        layout.addWidget(zoom_spacer2)
 
         # Overflow menu button
         overflow_btn = QtWidgets.QToolButton()
@@ -558,17 +600,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._chat_display.setObjectName("chat_display")
         self._chat_display.setReadOnly(True)
         self._chat_display.setPlaceholderText("Chat with SYNAPSE...")
-        font_size = SIZE_LABEL if _HAS_DESIGN else 9
-        bg = VOID if _HAS_DESIGN else "#0A0A0A"
-        fg = BONE if _HAS_DESIGN else "#CCCCCC"
-        self._chat_display.setStyleSheet(
-            "QTextEdit {{ background: {}; color: {}; border: none; "
-            "font-size: {}px; font-family: {}; }}".format(
-                bg, fg, font_size,
-                FONT_MONO if _HAS_DESIGN else "Consolas, monospace",
-            )
-        )
-        self._apply_font_zoom()
+        self._update_chat_stylesheet()
         splitter.addWidget(self._chat_display)
 
         # Bottom: input area (preview strip + input row)
