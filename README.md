@@ -1,56 +1,107 @@
 <p align="center">
-  <img src="assets/synapse_logo.png" alt="Synapse" width="300">
+  <img src="assets/synapse_logo.png" alt="Synapse" width="400"/>
 </p>
 
-<p align="center"><b>AI-Houdini Bridge with Persistent Project Memory</b></p>
+<h3 align="center"><strong>AI-Houdini Bridge with Persistent Project Memory</strong></h3>
 
 <p align="center">
-  <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-5.8.0-blue.svg" alt="Version"></a>
+  <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-6.0.0-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-blue.svg" alt="Python"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-2%2C055%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-1800%2B%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="python/synapse/core/protocol.py"><img src="https://img.shields.io/badge/protocol-v4.0.0-orange.svg" alt="Protocol"></a>
+  <a href="python/synapse/mcp"><img src="https://img.shields.io/badge/MCP%20tools-108-blueviolet.svg" alt="MCP Tools"></a>
 </p>
 
 ---
 
 ## What is Synapse?
 
-Synapse lets an AI see, touch, and remember everything in your Houdini scene — it can read parameters, create and wire up nodes, run Python and VEX code, light and render with Karma, and manipulate USD stages, all through a real-time conversation. On top of that, it keeps a persistent project memory that remembers your decisions, tracks what happened across sessions, and gives the AI full context about your project every time you reconnect.
+The Mariana Trench is still deep. Now you have sonar.
+
+Synapse doesn't make Houdini simpler. It makes Houdini's depth *accessible*. It connects an AI to your live Houdini session — not as a wrapper that hides complexity, but as a co-pilot that helps you navigate it. It can read parameters, create and wire nodes, execute Python and VEX, light and render with Karma, manipulate USD stages, diagnose scene problems, explain what your nodes are actually doing, trace data through networks, build HDAs from descriptions, pre-flight your renders before they hit the farm, profile bottlenecks, and navigate APEX rigs — all through conversation.
+
+On top of that, Synapse keeps a persistent project memory that remembers your decisions, tracks what happened across sessions, and gives the AI full context about your project every time you reconnect. Memory starts as lightweight markdown and evolves into composable USD when the data outgrows flat text — automatically, losslessly, and without you having to think about it.
 
 Built as a standalone package with zero required dependencies.
 
-## Key Features
+### Every feature passes one test
 
-- **87 MCP Tools** -- Full Houdini control from Claude: nodes, parameters, USD, materials, lighting, rendering, viewport capture, TOPS/PDG, HDA creation
-- **Persistent Memory** -- Project memory stored alongside your HIP file with search, decisions, and context summaries
-- **Living Memory** -- Evolving per-project and per-scene markdown journals that grow with your work
-- **Wire Protocol** -- Typed commands over WebSocket with parameter aliasing and deterministic queuing
-- **Agentic Execution** -- prepare / propose / execute / learn loop with automatic risk classification
-- **Human-in-the-Loop Gates** -- Four levels (INFORM, REVIEW, APPROVE, CRITICAL) with batch approval
-- **VEX Execution** -- Run VEX wrangles directly from conversation
-- **Production Resilience** -- Rate limiter, circuit breaker, port failover, watchdog, backpressure
-- **Viewport + Render Capture** -- AI can see what you see via flipbook and Karma renders
-- **RAG-Powered Routing** -- Knowledge lookup from Houdini documentation (48 built-in workflow recipes) plus 2,079 labeled VEX examples from [vex-corpus](https://github.com/JosephOIbrahim/vex-corpus)
-- **Determinism** -- Canonical ordering and tier pinning ([He2025] inspired), plus fixed-precision rounding, content-based IDs, and Kahan summation
-- **Houdini Optional** -- All 2,055 tests run without Houdini; core library has zero required dependencies
+Does it do at least one of these?
+
+| | |
+|---|---|
+| 🛡️ **"It caught something I would have missed"** | Safety net |
+| 🎓 **"It taught me something I didn't know"** | Knowledge transfer |
+| ⚡ **"It did in 30 seconds what takes me 30 minutes"** | Velocity |
+
+If a feature can't hit at least one, it doesn't ship.
 
 ---
 
-<br>
+## Key Features
+
+**Core Bridge** — 108 MCP tools give Claude full Houdini control: nodes, parameters, USD, materials, lighting, rendering, viewport capture, VEX execution. Real-time WebSocket communication with production resilience (rate limiting, circuit breaker, port failover, watchdog, backpressure).
+
+**Persistent Memory** — Three-layer memory system (cognitive substrate, project, scene) stored alongside your HIP file. Memory evolves from flat markdown to structured USD to composed USD with cross-scene composition arcs — automatically, when the data warrants it.
+
+**Scene Doctor** — Full health audit with auto-fix. Checks for missing textures, broken references, unconnected inputs, out-of-range parameters, infinite cook loops, missing cameras, zero-area lights, empty merges, unused nodes, and stale caches. `/diagnose` to run, `/fix` to apply fixes.
+
+**Render Preflight** — Pre-render checklist that catches overnight farm failures before they happen. Memory estimation, texture resolution audit, light sampling analysis, motion blur completeness, AOV verification, frame range sanity, output path validation, material binding checks. `/preflight` to run.
+
+**Explain Mode** — Select a node or network and get a contextual explanation of what *this particular node* is *actually doing* in *your scene* — not documentation, but interpretation with real parameter values and real data counts. `/explain` to run.
+
+**Network Trace** — Follow data from input to output with real numbers at every step. Shows point counts, cook times, attribute changes, and identifies bottlenecks. `/trace` to run.
+
+**VEX Tutor** — Three modes: `/vex explain` (line-by-line walkthrough of a selected wrangle), `/vex help` (quick reference with practical examples), `/vex write` (generates VEX from description with explanation).
+
+**Recipe Book** — Production-tested workflow patterns organized by context (scatter, volumes, materials, rigging, rendering, USD, VEX, motion). Each recipe can be built directly into your scene or explained step-by-step. Extensible: save your own patterns. `/recipes` to browse.
+
+**APEX Deep Dive** — AI-assisted navigation of Houdini's APEX rigging system. Explains APEX concepts, provides production-ready rig recipes (FK chains, IK chains, FK/IK blends, autorig, facial, muscle), traces APEX graph execution step-by-step, and assists with KineFX-to-APEX migration. `/apex` with 8 subcommands.
+
+**Performance Profiler** — Not just cook times — interpretation and actionable recommendations. Identifies bottlenecks, suggests node reordering, estimates savings, offers one-click fixes. `/profile` to run.
+
+**Dependency Map** — Traces every external reference in your scene (textures, alembics, USD references, HDAs, OTLs) and reports status: exists, missing, modified since last render, outdated version. `/deps` to run.
+
+**Prompt-to-HDA** — Describe what you want in natural language, get a packaged HDA with clean parameter interfaces. Six built-in recipe patterns (scatter, fracture, deform, UV layout, light rig, material setup) plus freeform creation. `/hda` to run.
+
+**Shot Login** — One-click context hydration. Open a HIP file and Synapse loads all three memory layers, giving the AI full context about your project and scene immediately. `/login` to run.
+
+**Command Palette** — Fuzzy search over all commands, recipes, and recent actions. Ctrl+K to open.
+
+**Context Bar** — Information-dense status bar showing network breadcrumb path, memory evolution stage, scene health indicator, and contextual quick actions that change based on your current network type.
+
+**Session Journal** — Automatic logging of every Synapse action with timestamps and context. Becomes part of scene memory. `/journal` to browse, `/journal search` to find.
+
+**Cross-Scene Context** — When loading project memory, Synapse surfaces relevant knowledge from other scenes: displacement settings that worked, approved material libraries, wedge results from across the project. Institutional knowledge that normally lives in Slack threads and people's heads.
+
+**Save Shot** — Complete context snapshot with conversation highlights, tool actions, scene state, decisions, and parameters changed. Auto-saves on HIP file save, panel close, successful renders, and after diagnostics with fixes. `/save-shot` to run.
+
+**Error Translator** — Intercepts Houdini error messages and translates them to plain English with suggested fixes. Invisible infrastructure — no command needed.
+
+**Human-in-the-Loop Gates** — Four levels (INFORM, REVIEW, APPROVE, CRITICAL) with batch approval. Reads auto-approve; creates batch for review; deletes require explicit approval; code execution requires full stop.
+
+**Determinism** — Canonical ordering, tier pinning, fixed-precision rounding, content-based IDs, Kahan summation. Inspired by [He2025].
+
+**Houdini Optional** — All 1,800+ tests run without Houdini. Core library has zero required dependencies.
+
+---
+
+&nbsp;
 
 ## Installation
 
-There are two paths depending on how you want to use Synapse:
+Two paths depending on how you want to use Synapse:
 
 | Path | You want to... | Time |
-|------|----------------|------|
+| --- | --- | --- |
 | **A. Artist** | Talk to Houdini through Claude Desktop or Claude Code | ~5 min |
 | **B. Developer** | Hack on Synapse itself, run tests, add features | ~5 min |
 
 Most artists want **Path A**. If you just want to try it, start there.
 
-<br>
+&nbsp;
+
 
 ---
 
@@ -58,13 +109,13 @@ Most artists want **Path A**. If you just want to try it, start there.
 
 You'll end up with Claude talking directly to your Houdini scene. Four steps, nothing complicated.
 
-<br>
+&nbsp;
 
-#### Step 1 &mdash; Install Synapse
+#### Step 1 — Install Synapse
 
 Open a terminal (Command Prompt, PowerShell, or Terminal) and run:
 
-```bash
+```
 pip install synapse-houdini
 ```
 
@@ -74,9 +125,9 @@ That's it. One command. This installs Synapse and everything it needs.
 >
 > **Still stuck?** Make sure Python 3.9 or newer is installed. Run `python --version` to check.
 
-<br>
+&nbsp;
 
-#### Step 2 &mdash; Start the server inside Houdini
+#### Step 2 — Start the server inside Houdini
 
 Open Houdini, then open the **Python Shell** (Windows menu > Python Shell) and paste:
 
@@ -90,20 +141,20 @@ You should see a message confirming the server started on port 9999.
 
 > **You'll do this every time you open Houdini.** Later, you can add these lines to your Houdini startup script so it happens automatically.
 
-<br>
+&nbsp;
 
-#### Step 3 &mdash; Tell Claude about Synapse
+#### Step 3 — Tell Claude about Synapse
 
 Pick whichever Claude app you use:
 
-<br>
+&nbsp;
 
 **Claude Desktop** (the app most artists use)
 
 Find your config file and open it in any text editor:
 
-- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+* **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+* **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 > **Can't find it?** In Claude Desktop, go to Settings (gear icon) > Developer > Edit Config.
 
@@ -122,39 +173,40 @@ Paste this as the entire file contents:
 
 > **Already have other MCP servers?** Just add the `"synapse": { ... }` block inside your existing `"mcpServers"`.
 
-Save the file and **restart Claude Desktop**. You'll see 43 new tools appear in the tool picker (the hammer icon).
+Save the file and **restart Claude Desktop**. You'll see 108 new tools appear in the tool picker (the hammer icon).
 
-<br>
+&nbsp;
 
 **Claude Code** (terminal)
 
 Run this once from any folder:
 
-```bash
+```
 claude mcp add synapse -- python -m synapse.mcp_server
 ```
 
 Done. The tools are available in every Claude Code session.
 
-<br>
+&nbsp;
 
-#### Step 4 &mdash; Try it
+#### Step 4 — Try it
 
 With Houdini open and the server running, say something to Claude:
 
 > *"What's in my scene right now?"*
 
-or
-
 > *"Create a sphere and a distant light, then capture the viewport so I can see it."*
 
-or
+> *"Diagnose my scene and fix anything critical."*
 
-> *"Set up three-point lighting for my character."*
+> *"Explain what this node is doing with my actual parameter values."*
 
-Claude will use Synapse to read your scene, create nodes, adjust parameters, and show you the result. Everything happens live inside your Houdini session.
+> *"Build me an HDA that scatters rocks on terrain with density controls."*
 
-<br>
+Claude will use Synapse to read your scene, create nodes, adjust parameters, diagnose problems, and show you the result. Everything happens live inside your Houdini session.
+
+&nbsp;
+
 
 ---
 
@@ -162,18 +214,18 @@ Claude will use Synapse to read your scene, create nodes, adjust parameters, and
 
 For contributing, running tests, or building on top of Synapse.
 
-<br>
+&nbsp;
 
 #### Clone and install with all extras
 
-```bash
+```
 git clone https://github.com/JosephOIbrahim/Synapse.git
 cd Synapse
 pip install -e ".[dev,websocket,mcp,routing,encryption]"
 ```
 
 | Extra | What it adds |
-|-------|-------------|
+| --- | --- |
 | `dev` | pytest, coverage, mypy |
 | `websocket` | WebSocket server for Houdini bridge |
 | `mcp` | MCP server for Claude integration |
@@ -181,27 +233,27 @@ pip install -e ".[dev,websocket,mcp,routing,encryption]"
 | `encryption` | Fernet encryption for data at rest |
 | `memory` | Cross-process file locking for scene memory |
 
-<br>
+&nbsp;
 
 #### Run the tests
 
-```bash
+```
 python -m pytest tests/ -v
 ```
 
-All 1,427 tests run without Houdini. No license needed.
+All 1,800+ tests run without Houdini. No license needed.
 
-<br>
+&nbsp;
 
 #### Type checking
 
-```bash
+```
 python -m mypy python/synapse/ --config-file pyproject.toml
 ```
 
-Clean: 0 errors on 58 source files.
+Clean: 0 errors on 82 source files.
 
-<br>
+&nbsp;
 
 #### Houdini shelf + panel setup (optional)
 
@@ -211,11 +263,12 @@ If you want the toolbar and Qt panel inside Houdini, add to your `houdini.env`:
 HOUDINI_PATH = "/path/to/Synapse/houdini;&"
 ```
 
-This loads the shelf toolbar (7 tools including Project Setup, Inspect Selection, Inspect Scene, Health Check, Generate Docs) and the Python panel.
+This loads the shelf toolbar and the Python panel with context bar, command palette (Ctrl+K), and split view for structured results.
 
 Then in Houdini: **Windows > Python Panel > Synapse**.
 
-<br>
+&nbsp;
+
 
 ---
 
@@ -223,43 +276,107 @@ Then in Houdini: **Windows > Python Panel > Synapse**.
 
 Synapse supports optional Fernet (AES-128-CBC + HMAC-SHA256) encryption for all data at rest — memory, audit logs, gate proposals, and markdown files.
 
-```bash
+```
 pip install synapse-houdini[encryption]
 ```
 
 **Key management** (priority order):
+
 1. `SYNAPSE_ENCRYPTION_KEY` environment variable (base64-encoded Fernet key)
 2. `~/.synapse/encryption.key` file (auto-created with `0600` permissions)
 3. Auto-generated on first use
 
 Encryption is transparent: existing plaintext `.synapse/` directories load without migration. New writes are encrypted; reads auto-detect encrypted vs plaintext content.
 
-<br>
+&nbsp;
+
 
 ---
 
 ### Troubleshooting
 
 | Problem | Fix |
-|---------|-----|
+| --- | --- |
 | `pip` not found | Use `python -m pip install synapse-houdini` instead of bare `pip` |
 | `ModuleNotFoundError: synapse` | Make sure you ran `pip install synapse-houdini` first |
 | Server won't start in Houdini | Make sure nothing else is using port 9999. You can change it: `SynapseServer(port=9998)` |
 | Claude can't connect | Check that the server is running in Houdini *before* talking to Claude |
 | Tools don't appear in Claude Desktop | Restart Claude Desktop after editing the config file |
 | Wrong Python version | Synapse needs Python 3.9+. Run `python --version` to check |
-| Already have MCP servers configured | Add `"synapse": { ... }` inside your existing `"mcpServers"` block &mdash; don't replace the whole file |
+| Already have MCP servers configured | Add `"synapse": { ... }` inside your existing `"mcpServers"` block — don't replace the whole file |
+
+---
+
+## Commands
+
+Every command is accessible through natural conversation or via slash commands in the Synapse panel.
+
+### Production Commands
+
+| Command | What it does |
+| --- | --- |
+| `/diagnose` | Full scene health audit — missing textures, broken refs, bad parameters, unused nodes |
+| `/fix` | Apply auto-fixes for issues found by diagnose |
+| `/preflight` | Pre-render checklist — memory, textures, sampling, AOVs, output paths |
+| `/deps` | Trace all external dependencies with status (exists/missing/modified/outdated) |
+| `/profile` | Performance analysis with interpretation and optimization recommendations |
+| `/save-shot` | Complete context snapshot — conversation, actions, decisions, parameters |
+| `/journal` | Browse the session journal. `/journal search {term}` to find specific entries |
+
+### Learning Commands
+
+| Command | What it does |
+| --- | --- |
+| `/explain` | Contextual explanation of selected node with real values, not documentation |
+| `/trace` | Follow data through network — point counts, cook times, bottlenecks |
+| `/vex explain` | Line-by-line walkthrough of selected VEX wrangle |
+| `/vex help {topic}` | Quick VEX reference with practical examples |
+| `/vex write {desc}` | Generate VEX from natural language with explanation |
+| `/recipes` | Browse production workflow patterns. `/recipes add` to save your own |
+
+### APEX Commands
+
+| Command | What it does |
+| --- | --- |
+| `/apex explain` | Explain any APEX concept or selected APEX node |
+| `/apex recipes` | Browse production rig setups (FK, IK, blend, autorig, facial, muscle) |
+| `/apex trace` | Step-by-step narrated trace of APEX graph execution |
+| `/apex migrate` | Analyze KineFX network and suggest APEX equivalent |
+
+### Workflow Commands
+
+| Command | What it does |
+| --- | --- |
+| `/hda {description}` | Build a packaged HDA from natural language description |
+| `/login` | Shot login — load all memory layers for current HIP file |
+| `/bookmarks` | View conversation bookmarks. Click 🔖 on any message to save |
+
+---
 
 ## Architecture
 
 ```
 +---------------------------------------------------------------+
-|                         Synapse v5.3.0                        |
+|                         Synapse v6.0.0                        |
 +---------------------------------------------------------------+
 |                                                               |
-|  +-- UI Layer (Qt) ----------------------------------------+ |
-|  |  SynapsePanel > Connection | Context | Decisions |       | |
-|  |                  Activity  | Search                      | |
+|  +-- Panel Layer (Qt) -------------------------------------+ |
+|  |  SynapsePanel  |  ContextBar  |  CommandPalette (Ctrl+K) | |
+|  |  SplitView: Conversation + Structured Results            | |
+|  |  ToolBridge (108 tools) | ClaudeWorker (streaming)       | |
+|  |  ToolExecutor (main-thread safe)                         | |
+|  +----------------------------------------------------------+ |
+|                                                               |
+|  +-- Knowledge Layer ---------------------------------------+ |
+|  |  SceneDoctor  |  RenderPreflight  |  ErrorTranslator     | |
+|  |  ExplainMode  |  NetworkTrace     |  VexTutor            | |
+|  |  RecipeBook   |  PerformanceProfiler                     | |
+|  |  ApexExplainer | ApexRecipes | ApexTrace                 | |
+|  +----------------------------------------------------------+ |
+|                                                               |
+|  +-- Pipeline Layer ----------------------------------------+ |
+|  |  DependencyMap  |  SaveShot  |  CrossSceneContext         | |
+|  |  SessionJournal |  ShotLogin |  PromptToHDA              | |
 |  +----------------------------------------------------------+ |
 |                                                               |
 |  +-- Agent Layer -------------------------------------------+ |
@@ -267,13 +384,13 @@ Encryption is transparent: existing plaintext `.synapse/` directories load witho
 |  |  AgentTask / AgentPlan / AgentStep / OutcomeTracker      | |
 |  +----------------------------------------------------------+ |
 |                                                               |
-|  +-- Session Layer -----------------------------------------+ |
-|  |  SynapseBridge  |  SynapseSession  |  SessionSummary     | |
-|  +----------------------------------------------------------+ |
-|                                                               |
 |  +-- Memory Layer ------------------------------------------+ |
-|  |  SynapseMemory  |  MemoryStore  |  MarkdownSync          | |
-|  |  Memory / MemoryType / MemoryTier / MemoryQuery          | |
+|  |  Three-Layer Architecture:                                | |
+|  |    L1: Cognitive Substrate (behavior — global, immutable) | |
+|  |    L2: Project Memory ($JOB/claude/)                      | |
+|  |    L3: Scene Memory ($HIP/claude/)                        | |
+|  |  Evolution: flat (md) -> structured (usd) -> composed    | |
+|  |  SynapseMemory | MemoryStore | SceneMemory | Evolution   | |
 |  +----------------------------------------------------------+ |
 |                                                               |
 |  +-- Server Layer ------------------------------------------+ |
@@ -293,7 +410,82 @@ Encryption is transparent: existing plaintext `.synapse/` directories load witho
 +---------------------------------------------------------------+
 ```
 
-**Core** provides the wire format, determinism primitives, tamper-evident audit, and human gates. **Memory** persists decisions, context, and actions to `$HIP/.synapse/` with markdown export. **Server** runs the WebSocket bridge with production resilience (rate limiting, circuit breaker, port failover, watchdog, backpressure). **Agent** orchestrates multi-step plans through the gate system with outcome-based learning. **Session** tracks lifecycle and generates summaries. **UI** provides the Houdini Qt panel.
+**Core** provides the wire format, determinism primitives, tamper-evident audit, and human gates. **Memory** persists decisions, context, and actions with automatic evolution from markdown to USD. **Server** runs the WebSocket bridge with production resilience. **Agent** orchestrates multi-step plans through the gate system with outcome-based learning. **Pipeline** handles dependency tracking, session management, HDA generation, and cross-scene context. **Knowledge** provides scene diagnosis, performance profiling, data tracing, VEX tutoring, APEX navigation, and contextual explanations. **Panel** is the Houdini Qt interface with streaming Claude integration, command palette, and split-view structured results.
+
+---
+
+## Claude Integration (MCP)
+
+Synapse includes an MCP server that bridges Claude to Houdini with 108 tools.
+
+```
+Claude  <--[stdio/JSON-RPC]-->  mcp_server.py  <--[WebSocket]-->  Synapse (Houdini)
+```
+
+### Available MCP Tools (108)
+
+| Category | Tools |
+| --- | --- |
+| **System** | `synapse_ping`, `synapse_health` |
+| **Scene** | `houdini_scene_info`, `houdini_get_selection` |
+| **Nodes** | `houdini_create_node`, `houdini_delete_node`, `houdini_connect_nodes`, `houdini_modify_node` |
+| **Parameters** | `houdini_get_parm`, `houdini_set_parm`, `houdini_set_keyframe` |
+| **Execution** | `houdini_execute_python`, `houdini_execute_vex` |
+| **USD / Solaris** | `houdini_stage_info`, `houdini_get_usd_attribute`, `houdini_set_usd_attribute`, `houdini_create_usd_prim`, `houdini_modify_usd_prim`, `houdini_reference_usd` |
+| **Materials** | `houdini_create_material`, `houdini_assign_material`, `houdini_read_material` |
+| **Rendering** | `houdini_render`, `houdini_render_settings`, `houdini_wedge`, `houdini_capture_viewport` |
+| **Introspection** | `synapse_inspect_selection`, `synapse_inspect_scene`, `synapse_inspect_node` |
+| **Memory** | `synapse_context`, `synapse_search`, `synapse_recall`, `synapse_decide`, `synapse_add_memory`, `synapse_memory_write`, `synapse_memory_query`, `synapse_memory_status`, `synapse_evolve_memory`, `synapse_project_setup` |
+| **Diagnostics** | `synapse_diagnose`, `synapse_fix`, `synapse_preflight`, `synapse_error_translate` |
+| **Knowledge** | `synapse_explain`, `synapse_trace`, `synapse_vex_explain`, `synapse_vex_help`, `synapse_vex_write`, `synapse_knowledge_lookup`, `synapse_list_recipes` |
+| **APEX** | `synapse_apex_explain`, `synapse_apex_recipes`, `synapse_apex_trace`, `synapse_apex_migrate` |
+| **Production** | `synapse_deps`, `synapse_profile`, `synapse_save_shot`, `synapse_journal`, `synapse_cross_scene` |
+| **HDA** | `synapse_hda_build`, `synapse_hda_package` |
+| **Routing** | `synapse_router_stats`, `synapse_metrics` |
+| **Batch** | `synapse_batch` |
+
+*Plus additional parameter, USD, camera, lighting, and Karma-specific tools totaling 108.*
+
+### Configuration
+
+| Environment Variable | Default | Description |
+| --- | --- | --- |
+| `SYNAPSE_PORT` | `9999` | WebSocket port to connect to |
+
+---
+
+## Memory System
+
+Synapse's memory is layered and evolving.
+
+### Three Layers
+
+```
+Layer 1: Cognitive Substrate (behavior — global, immutable)
+  How Claude thinks and acts. Never overridden by scene data.
+
+Layer 2: Project Memory ($JOB/claude/)
+  Show-level decisions: render engine, resolution, color space,
+  asset naming, pipeline rules, shared material libraries.
+
+Layer 3: Scene Memory ($HIP/claude/)
+  Shot-specific: session history, decisions, parameter experiments,
+  wedge results, blockers encountered, node graph intent.
+```
+
+### Evolution
+
+Memory files start as markdown and evolve to USD when the data outgrows flat text. Evolution is automatic, lossless, and one-directional.
+
+| Stage | Format | When |
+| --- | --- | --- |
+| **Flat** | `memory.md` | Scene is new. Memory is lightweight narrative text. |
+| **Structured** | `memory.usd` | Structured data appears — asset references, parameter records, wedge results. USD prims with typed attributes. |
+| **Composed** | `memory.usd` + sublayers | Cross-scene composition needed. Scene memory sublayers project memory. Queryable across shots. |
+
+Evolution triggers are automatic: structured data count, asset references, parameter records, wedge results, session count, file size. When the markdown outgrows flat text, it evolves. The original markdown is archived and a companion `.md` is auto-generated for human readability.
+
+---
 
 ## Usage
 
@@ -316,9 +508,6 @@ memory.decision(
 # Search
 results = memory.search("color space", limit=10)
 
-# Get all decisions
-decisions = memory.get_decisions()
-
 # Context summary (useful for feeding to AI)
 summary = memory.get_context_summary()
 
@@ -328,18 +517,16 @@ memory.save()
 
 ### Agent Execution
 
-The flagship feature. Agents follow a four-phase loop: **prepare** (gather context from memory), **propose** (define steps, route through gates), **execute** (run commands or dry-run), **learn** (record outcomes as feedback memories).
+Agents follow a four-phase loop: **prepare** (gather context from memory), **propose** (define steps, route through gates), **execute** (run commands or dry-run), **learn** (record outcomes as feedback memories).
 
 ```python
 from synapse import AgentExecutor, AgentStep, SynapseMemory, HumanGate
 
-# No command_fn = dry-run mode (no Houdini needed)
 executor = AgentExecutor(
     memory=SynapseMemory(),
     gate=HumanGate.get_instance(),
 )
 
-# Phase 1: Prepare (searches memory for relevant context)
 task = executor.prepare(
     goal="Set up three-point lighting for shot_010",
     sequence_id="shot_010",
@@ -347,81 +534,34 @@ task = executor.prepare(
     agent_id="claude",
 )
 
-# Phase 2: Propose (define steps, auto-classify gate levels)
 plan = executor.propose(
     task=task,
     steps=[
         AgentStep(
             step_id="",
-            action="create_node",        # Auto-classified: REVIEW
+            action="create_node",
             description="Create key light",
             payload={"type": "arealight", "name": "key_light"},
             gate_level=None,
             reasoning="Primary illumination source",
             confidence=0.9,
         ),
-        AgentStep(
-            step_id="",
-            action="set_parm",            # Auto-classified: REVIEW
-            description="Set intensity to 1000",
-            payload={"node": "/obj/key_light", "parm": "light_intensity", "value": 1000.0},
-            gate_level=None,
-            reasoning="Standard key light intensity",
-            confidence=0.85,
-        ),
     ],
     reasoning="Classic three-point lighting setup",
 )
 
-# Phase 3: Execute
 if plan.status.value == "approved":
     completed = executor.execute(plan)
-    print(completed.to_summary())
 
-# Phase 4: Learn
 executor.record_outcome(plan, success=True, feedback="Client approved")
 ```
 
 ### Human-in-the-Loop Gates
 
-Every agent action is classified by risk level. Reads auto-approve; creates batch for review; deletes require explicit approval; code execution requires full stop.
-
-```python
-from synapse import HumanGate
-from synapse.core.audit import AuditCategory
-from synapse.core.gates import GateLevel, GateDecision
-
-gate = HumanGate.get_instance()
-
-# Agent proposes a change
-proposal = gate.propose(
-    operation="delete_node",
-    description="Remove unused bounce light",
-    sequence_id="shot_010",
-    category=AuditCategory.LIGHTING,
-    level=GateLevel.APPROVE,          # Deletion = explicit approval
-    proposed_changes={"node": "/obj/bounce_light"},
-    reasoning="Light contributes <1% to final render",
-    confidence=0.7,
-    agent_id="claude",
-)
-
-# Human decides
-gate.decide(
-    proposal_id=proposal.proposal_id,
-    decision=GateDecision.APPROVED,
-    user_id="artist_joe",
-    notes="Confirmed, bounce light was a holdover from previous setup",
-)
-
-# Or batch approve an entire sequence
-gate.approve_all("shot_010", user_id="artist_joe")
-```
-
-**Gate levels and auto-classification:**
+Every agent action is classified by risk level.
 
 | Level | Behavior | Example commands |
-|-------|----------|-----------------|
+| --- | --- | --- |
 | `INFORM` | Auto-approve, log only | `get_parm`, `get_scene_info` |
 | `REVIEW` | Batch for later review | `create_node`, `set_parm` |
 | `APPROVE` | Block until approved | `delete_node`, `connect_nodes` |
@@ -432,117 +572,29 @@ gate.approve_all("shot_010", user_id="artist_joe")
 Fixed-precision arithmetic and content-based identifiers ensure reproducible workflows.
 
 ```python
-from synapse.core.determinism import (
-    round_float,
-    deterministic_uuid,
-    DeterministicRandom,
-    deterministic,
-)
+from synapse.core.determinism import round_float, deterministic_uuid, DeterministicRandom
 
-# Fixed-precision rounding (Decimal ROUND_HALF_UP)
 value = 0.1 + 0.2               # 0.30000000000000004
 rounded = round_float(value)     # 0.3
 
-# Content-based UUIDs (same input = same ID, always)
 id_a = deterministic_uuid("shot_010:key_light")
 id_b = deterministic_uuid("shot_010:key_light")
-assert id_a == id_b
+assert id_a == id_b              # Same input = same ID, always
 
-# Seeded RNG (reproducible sequences)
 rng = DeterministicRandom(seed=42)
-rng.uniform(0.0, 1.0)   # Same result every run
-rng.shuffle([1, 2, 3])  # Same order every run
-
-# Decorator: auto-rounds float arguments
-@deterministic
-def place_light(x: float, y: float, z: float):
-    return (x, y, z)
+rng.uniform(0.0, 1.0)           # Same result every run
 ```
 
-### Resilience
-
-Production-grade stability for long-running Houdini sessions.
-
-```python
-from synapse.server.resilience import (
-    RateLimiter,
-    CircuitBreaker,
-    CircuitBreakerConfig,
-    Watchdog,
-    BackpressureController,
-    HealthMonitor,
-)
-
-# Token-bucket rate limiter (global + per-client)
-limiter = RateLimiter(tokens_per_second=50.0, bucket_size=100)
-allowed, info = limiter.acquire(client_id="claude")
-
-# Circuit breaker (trips on service errors, ignores user errors)
-breaker = CircuitBreaker("houdini", CircuitBreakerConfig(
-    failure_threshold=5,
-    timeout_seconds=60.0,
-))
-result = breaker.call(some_houdini_function, arg1, arg2)
-
-# Watchdog (detects main thread freezes)
-dog = Watchdog(timeout_seconds=30.0)
-dog.start()
-dog.pet()   # Call periodically from main thread
-
-# Backpressure (NORMAL -> ELEVATED -> HIGH -> CRITICAL)
-bp = BackpressureController()
-bp.report_metric(queue_size=50, processing_time=0.2)
-should_throttle, details = bp.should_throttle()
-
-# Aggregate health
-monitor = HealthMonitor()
-monitor.update("websocket", healthy=True)
-monitor.update("houdini", healthy=True)
-report = monitor.get_report()
-```
-
-### Audit Trail
-
-Tamper-evident, append-only logging with cryptographic hash chain.
-
-```python
-from synapse.core.audit import audit_log, AuditLevel, AuditCategory
-
-log = audit_log()
-
-# Log an agent action
-log.log_agent_action(
-    operation="create_light",
-    message="Created key light at /obj/key_light",
-    agent_id="claude",
-    category=AuditCategory.LIGHTING,
-    sequence_id="shot_010",
-)
-
-# Log a human decision
-log.log_human_decision(
-    operation="approve_plan",
-    message="Approved lighting setup",
-    user_id="artist_joe",
-    category=AuditCategory.GATE,
-)
-
-# Query entries
-entries = log.get_entries(category=AuditCategory.LIGHTING, limit=20)
-
-# Verify chain integrity (detect tampering)
-valid, failed_at = log.verify_chain()
-assert valid, f"Chain broken at entry {failed_at}"
-```
+---
 
 ## Wire Protocol
 
 Default endpoint: `ws://localhost:9999` | Protocol version: `4.0.0`
 
-Commands are JSON messages with `type`, `id`, `payload`, `sequence`, and `timestamp` fields.
+Commands are JSON messages with `type`, `id`, `payload`, `sequence`, and `timestamp` fields. Parameter names are resolved through an alias system (38+ mappings).
 
 | Category | Commands |
-|----------|----------|
+| --- | --- |
 | **Node** | `create_node`, `delete_node`, `modify_node`, `connect_nodes` |
 | **Parameters** | `get_parm`, `set_parm` |
 | **Scene** | `get_scene_info`, `get_selection`, `set_selection` |
@@ -552,54 +604,25 @@ Commands are JSON messages with `type`, `id`, `payload`, `sequence`, and `timest
 | **Living Memory** | `project_setup`, `memory_write`, `memory_query`, `memory_status`, `evolve_memory` |
 | **Utility** | `ping`, `get_health`, `get_help`, `heartbeat`, `backpressure` |
 
-Parameter names are resolved through an alias system (38+ mappings). For example, `node`, `path`, and `node_path` all resolve to the canonical `node` parameter.
-
-## Claude Integration (MCP)
-
-Synapse includes an MCP server that bridges Claude to Houdini with 43 tools. See [Installation > Path A](#path-a--connect-claude-to-houdini) for setup steps.
-
-```
-Claude  <--[stdio/JSON-RPC]-->  mcp_server.py  <--[WebSocket]-->  Synapse (Houdini)
-```
-
-### Available MCP Tools (43)
-
-| Category | Tools |
-|----------|-------|
-| **System** | `synapse_ping`, `synapse_health` |
-| **Scene** | `houdini_scene_info`, `houdini_get_selection` |
-| **Nodes** | `houdini_create_node`, `houdini_delete_node`, `houdini_connect_nodes` |
-| **Parameters** | `houdini_get_parm`, `houdini_set_parm`, `houdini_set_keyframe` |
-| **Execution** | `houdini_execute_python`, `houdini_execute_vex` |
-| **USD / Solaris** | `houdini_stage_info`, `houdini_get_usd_attribute`, `houdini_set_usd_attribute`, `houdini_create_usd_prim`, `houdini_modify_usd_prim`, `houdini_reference_usd` |
-| **Materials** | `houdini_create_material`, `houdini_assign_material`, `houdini_read_material` |
-| **Rendering** | `houdini_render`, `houdini_render_settings`, `houdini_wedge`, `houdini_capture_viewport` |
-| **Introspection** | `synapse_inspect_selection`, `synapse_inspect_scene`, `synapse_inspect_node` |
-| **Memory** | `synapse_context`, `synapse_search`, `synapse_recall`, `synapse_decide`, `synapse_add_memory` |
-| **Living Memory** | `synapse_project_setup`, `synapse_memory_write`, `synapse_memory_query`, `synapse_memory_status`, `synapse_evolve_memory` |
-| **Knowledge** | `synapse_knowledge_lookup`, `synapse_list_recipes` |
-| **Routing** | `synapse_router_stats`, `synapse_metrics` |
-| **Batch** | `synapse_batch` |
-
-### Configuration
-
-| Environment Variable | Default | Description |
-|---------------------|---------|-------------|
-| `SYNAPSE_PORT` | `9999` | WebSocket port to connect to |
+---
 
 ## Testing
 
 ```bash
-# All 1,427 tests (no Houdini required)
+# All tests (no Houdini required)
 python -m pytest tests/ -v
 
 # Individual test modules
-python -m pytest tests/test_core.py -v        # Determinism, audit, gates
-python -m pytest tests/test_routing.py -v     # Routing cascade (323 tests)
-python -m pytest tests/test_agent.py -v       # Agent protocol, executor, learning
-python -m pytest tests/test_resilience.py -v  # Rate limiter, circuit breaker, watchdog
-python -m pytest tests/test_render.py -v      # Karma/Mantra pipeline
-python -m pytest tests/test_materials.py -v   # Material tools
+python -m pytest tests/test_core.py -v          # Determinism, audit, gates
+python -m pytest tests/test_routing.py -v       # Routing cascade
+python -m pytest tests/test_agent.py -v         # Agent protocol, executor, learning
+python -m pytest tests/test_resilience.py -v    # Rate limiter, circuit breaker, watchdog
+python -m pytest tests/test_render.py -v        # Karma/Mantra pipeline
+python -m pytest tests/test_materials.py -v     # Material tools
+python -m pytest tests/test_scene_doctor.py -v  # Diagnostics
+python -m pytest tests/test_knowledge.py -v     # Explain, trace, VEX tutor
+python -m pytest tests/test_apex.py -v          # APEX system
+python -m pytest tests/test_pipeline.py -v      # Deps, profile, save-shot
 
 # With coverage
 python -m pytest tests/ --cov=synapse --cov-report=term-missing
@@ -612,12 +635,10 @@ All tests import modules directly and run without a Houdini license or environme
 Some features (viewport capture, hwebserver transport) require a graphical Houdini session. Run these from the Houdini Python Shell:
 
 ```python
-# Viewport capture test (creates temp scene, captures, verifies, cleans up)
 import runpy; runpy.run_path("tests/test_live_capture.py")
-
-# hwebserver integration test
-import runpy; runpy.run_path("tests/test_hwebserver_integration.py")
 ```
+
+---
 
 ## Project Structure
 
@@ -626,87 +647,123 @@ Synapse/
 ├── pyproject.toml
 ├── LICENSE
 ├── CLAUDE.md
-├── mcp_server.py                       # MCP server (Claude Code / Desktop bridge)
-├── .mcp.json                            # Claude Code project-level MCP config
+├── TONE.md
+├── DEMO_SCRIPT.md
+├── INVENTORY.md
+├── mcp_server.py                          # MCP server (Claude bridge)
+├── .mcp.json                              # Claude Code MCP config
 ├── houdini/
 │   ├── python_panels/
-│   │   └── synapse_panel.pypanel    # Houdini Qt panel (5 tool buttons)
+│   │   └── synapse_panel.pypanel          # Qt panel (context bar, palette, split view)
 │   ├── scripts/python/
-│   │   └── synapse_shelf.py         # Shelf callbacks (7 functions)
+│   │   └── synapse_shelf.py               # Shelf callbacks
 │   └── toolbar/
-│       └── synapse.shelf            # Shelf toolbar (7 tools)
+│       └── synapse.shelf                  # Shelf toolbar
 ├── python/synapse/
-│   ├── __init__.py                  # Public API surface
+│   ├── __init__.py                        # Public API surface
 │   ├── core/
-│   │   ├── protocol.py              # CommandType, SynapseCommand/Response
-│   │   ├── queue.py                 # DeterministicCommandQueue
-│   │   ├── aliases.py               # Parameter name resolution (38+ aliases)
-│   │   ├── determinism.py           # Fixed-precision, content IDs, seeded RNG
-│   │   ├── audit.py                 # Hash-chain append-only audit log
-│   │   └── gates.py                 # Human-in-the-loop gate system
+│   │   ├── protocol.py                    # CommandType, SynapseCommand/Response
+│   │   ├── queue.py                       # DeterministicCommandQueue
+│   │   ├── aliases.py                     # Parameter name resolution (38+ aliases)
+│   │   ├── determinism.py                 # Fixed-precision, content IDs, seeded RNG
+│   │   ├── audit.py                       # Hash-chain append-only audit log
+│   │   └── gates.py                       # Human-in-the-loop gate system
 │   ├── memory/
-│   │   ├── models.py                # Memory, MemoryType, MemoryTier, MemoryQuery
-│   │   ├── store.py                 # SynapseMemory high-level API
-│   │   ├── context.py               # ShotContext helpers
-│   │   └── markdown.py              # MarkdownSync (human-readable export)
+│   │   ├── models.py                      # Memory, MemoryType, MemoryTier, MemoryQuery
+│   │   ├── store.py                       # SynapseMemory high-level API
+│   │   ├── scene_memory.py                # Three-layer file operations
+│   │   ├── evolution.py                   # flat -> structured -> composed
+│   │   ├── context.py                     # ShotContext helpers
+│   │   ├── markdown.py                    # MarkdownSync (human-readable export)
+│   │   ├── agent_state.py                 # Agent execution state (USD)
+│   │   ├── patterns.py                    # Memory pattern detection
+│   │   └── sqlite_store.py               # SQLite backend
+│   ├── panel/
+│   │   ├── tool_bridge.py                 # 108 tools -> Anthropic API format
+│   │   ├── system_prompt.py               # TONE.md + scene context + guidance
+│   │   ├── tool_executor.py               # Main-thread safe tool execution
+│   │   ├── claude_worker.py               # Streaming worker with tool-use loop
+│   │   ├── shot_login.py                  # One-click context hydration
+│   │   ├── prompt_to_hda.py               # Natural language -> HDA orchestration
+│   │   ├── scene_doctor.py                # Health audit + auto-fix
+│   │   ├── render_preflight.py            # Pre-render checklist
+│   │   ├── error_translator.py            # Error message -> plain English
+│   │   ├── session_journal.py             # Automatic action logging
+│   │   ├── explain_mode.py                # Contextual node explanation
+│   │   ├── network_trace.py               # Data flow tracing with real numbers
+│   │   ├── vex_tutor.py                   # VEX explain / help / write
+│   │   ├── recipe_book.py                 # Production workflow patterns
+│   │   ├── apex_explainer.py              # APEX concept explanation
+│   │   ├── apex_recipes.py                # Production rig setups
+│   │   ├── apex_trace.py                  # APEX graph execution trace
+│   │   ├── context_bar.py                 # Information-dense status bar
+│   │   ├── command_palette.py             # Ctrl+K fuzzy search
+│   │   ├── bookmarks.py                   # Conversation bookmarks
+│   │   ├── dependency_map.py              # External reference tracking
+│   │   ├── performance_profiler.py        # Cook time analysis + recommendations
+│   │   ├── save_shot.py                   # Context snapshot with auto-save
+│   │   └── cross_scene.py                 # Cross-scene knowledge surfacing
 │   ├── routing/
-│   │   ├── __init__.py              # Public routing API
-│   │   ├── router.py                # TieredRouter (Cache→Recipe→Regex→Knowledge→LLM→Agent)
-│   │   ├── parser.py                # CommandParser (regex patterns, first-match-wins)
-│   │   ├── knowledge.py             # KnowledgeIndex (inverted keyword search from RAG)
-│   │   ├── recipes.py               # RecipeRegistry (multi-step command sequences)
-│   │   └── cache.py                 # ResponseCache (deterministic LRU with TTL)
+│   │   ├── router.py                      # TieredRouter (Cache→Recipe→Regex→Knowledge→LLM→Agent)
+│   │   ├── parser.py                      # CommandParser (regex, first-match-wins)
+│   │   ├── knowledge.py                   # KnowledgeIndex (inverted keyword search)
+│   │   ├── recipes.py                     # RecipeRegistry (multi-step sequences)
+│   │   └── cache.py                       # ResponseCache (deterministic LRU + TTL)
 │   ├── agent/
-│   │   ├── protocol.py              # AgentTask, AgentPlan, AgentStep
-│   │   ├── executor.py              # prepare -> propose -> execute -> learn
-│   │   └── learning.py              # OutcomeTracker (feedback memories)
+│   │   ├── protocol.py                    # AgentTask, AgentPlan, AgentStep
+│   │   ├── executor.py                    # prepare -> propose -> execute -> learn
+│   │   └── learning.py                    # OutcomeTracker (feedback memories)
 │   ├── server/
-│   │   ├── websocket.py             # SynapseServer (WebSocket)
-│   │   ├── handlers.py              # CommandHandlerRegistry
-│   │   └── resilience.py            # RateLimiter, CircuitBreaker, Watchdog, ...
+│   │   ├── websocket.py                   # SynapseServer (WebSocket)
+│   │   ├── handlers.py                    # CommandHandlerRegistry
+│   │   ├── handlers_hda.py                # HDA packaging handlers
+│   │   └── resilience.py                  # RateLimiter, CircuitBreaker, Watchdog, ...
 │   ├── session/
-│   │   ├── tracker.py               # SynapseBridge, SynapseSession
-│   │   └── summary.py               # Session summary generation
+│   │   ├── tracker.py                     # SynapseBridge, SynapseSession
+│   │   └── summary.py                     # Session summary generation
+│   ├── mcp/
+│   │   └── _tool_registry.py              # 108 MCP tool definitions
 │   └── ui/
-│       ├── panel.py                 # SynapsePanel (Qt)
-│       └── tabs/                    # Connection, Context, Decisions, Activity, Search
-└── tests/
-    ├── test_core.py                 # Foundation layer tests
-    ├── test_agent.py                # Agent layer tests
-    ├── test_resilience.py           # Resilience layer tests
-    ├── test_crypto.py               # Encryption layer tests
-    ├── test_routing.py              # Routing engine tests (323 tests)
-    ├── test_live_capture.py         # Viewport capture (run inside Houdini)
-    └── test_hwebserver_integration.py # hwebserver transport (run inside Houdini)
+│       ├── panel.py                       # SynapsePanel (Qt)
+│       └── tabs/                          # Connection, Context, Decisions, Activity, Search
+├── rag/                                   # Knowledge base (21 built-in recipes)
+├── design/                                # Design documents
+├── docs/                                  # Documentation (MkDocs)
+├── agent/                                 # Agent configurations
+├── assets/                                # Logo and assets
+└── tests/                                 # 1,800+ tests (no Houdini required)
 ```
+
+---
 
 ## Status
 
-Synapse is under active development. All layers are well-tested (1,427 unit tests, mypy clean on 58 source files). The WebSocket server and viewport capture have been validated in single-user VFX workflows. Use in production at your own discretion.
+Synapse is under active development. All layers are well-tested (1,800+ unit tests, mypy clean on 82 source files). The WebSocket server, viewport capture, scene diagnostics, and knowledge transfer features have been validated in single-user VFX workflows. Use in production at your own discretion.
+
+---
 
 ## Determinism Reference
 
-Synapse's determinism primitives (`round_float`, `kahan_sum`, `deterministic_uuid`, `@deterministic` decorator) are inspired by [He2025] — "Defeating Nondeterminism in LLM Inference" by Horace He, Thinking Machines Lab. The key insight: batch invariance failure (not just floating-point non-associativity) is the primary source of nondeterminism. Synapse applies this at the application layer: fixed-precision rounding, content-based IDs, and Kahan compensated summation ensure reproducible state across sessions.
+Synapse's determinism primitives (`round_float`, `kahan_sum`, `deterministic_uuid`, `@deterministic` decorator) are inspired by [He2025] — "Defeating Nondeterminism in LLM Inference" by Horace He, Thinking Machines Lab. The key insight: batch invariance failure is the primary source of nondeterminism. Synapse applies this at the application layer: fixed-precision rounding, content-based IDs, and Kahan compensated summation ensure reproducible state across sessions.
 
 ## Related Projects
 
-- [**Orchestra**](https://github.com/JosephOIbrahim/Orchestra) -- Cognitive orchestration framework (v7.1.0, 1,500+ tests). Synapse is the Houdini bridge; Orchestra is the cognitive engine.
-- [**vex-corpus**](https://github.com/JosephOIbrahim/vex-corpus) -- 2,513 labeled VEX code examples (5.3 MB JSONL) that feed Synapse's RAG knowledge layer. Covers 28 topics from 4 sources with difficulty ratings, topic classification, and function/attribute metadata. Synced via `sync_to_synapse.py` into 14 reference files.
-- **Cognitive Substrate** -- Theoretical foundation for deterministic state composition.
+* [**Orchestra**](https://github.com/JosephOIbrahim/Orchestra) — Cognitive orchestration framework (v7.1.0, 1,500+ tests). Synapse is the Houdini bridge; Orchestra is the cognitive engine.
+* **Cognitive Substrate** — Theoretical foundation for deterministic state composition.
 
 ## Patent Notice
 
 Certain methods and systems implemented in this software are the subject of a
 pending patent application. "Patent Pending" applies to, but is not limited to:
 
-- Tiered cognitive routing cascade with confidence-based tier forwarding
-- Persistent memory tier architecture with cross-tier linking
-- Deterministic state composition using priority-ordered resolution semantics
-- Agentic execution loop with gate-integrated outcome learning
+* Tiered cognitive routing cascade with confidence-based tier forwarding
+* Persistent memory tier architecture with cross-tier linking
+* Deterministic state composition using priority-ordered resolution semantics
+* Agentic execution loop with gate-integrated outcome learning
 
 Use of this software under the MIT License does not grant any rights under
 the patent application(s). See [LICENSE](LICENSE) for details.
 
 ## License
 
-MIT License. Copyright (c) 2025-2026 Joe Ibrahim.
+MIT License. Copyright (c) 2025-2026 Joseph Ibrahim.
