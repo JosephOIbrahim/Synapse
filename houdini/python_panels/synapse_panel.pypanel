@@ -22,6 +22,7 @@ import json
 import time
 import os
 import sys
+import re
 import threading
 import copy
 import http.client
@@ -364,8 +365,6 @@ class SynapsePanel(QtWidgets.QWidget):
 
     # ── Font Scale ─────────────────────────────────────────
 
-    import re as _re  # for regex rescaling
-
     _FONT_SCALE_PATH = os.path.join(
         os.path.expanduser("~"), ".synapse", "chat_font_zoom"
     )
@@ -381,7 +380,9 @@ class SynapsePanel(QtWidgets.QWidget):
         """Load saved font scale from ~/.synapse/chat_font_zoom."""
         try:
             with open(self._FONT_SCALE_PATH, encoding="utf-8") as f:
-                self._font_scale = float(f.read().strip())
+                val = float(f.read().strip())
+                # Old format saved int zoom steps (0, 1, 2...) — treat < 0.4 as default
+                self._font_scale = val if val >= 0.4 else 1.0
         except (FileNotFoundError, ValueError):
             self._font_scale = 1.0
 
@@ -403,7 +404,7 @@ class SynapsePanel(QtWidgets.QWidget):
         def _scale(m):
             px = float(m.group(1))
             return "font-size:{}px".format(max(1, int(round(px * ratio))))
-        html = self._re.sub(r'font-size:\s*(\d+(?:\.\d+)?)px', _scale, html)
+        html = re.sub(r'font-size:\s*(\d+(?:\.\d+)?)px', _scale, html)
         # Preserve scroll position
         sb = self._chat_display.verticalScrollBar()
         pos = sb.value()
