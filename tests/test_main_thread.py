@@ -98,14 +98,28 @@ class TestRunOnMain:
             run_on_main(_boom)
 
     def test_timeout_raises_runtime_error(self):
-        """fn never completes -- verify RuntimeError after timeout."""
-        # Replace executeDeferred with a no-op so the event never gets set
+        """fn never completes -- verify RuntimeError after timeout.
+
+        Must run from a non-main thread so run_on_main actually defers
+        through hdefereval instead of taking the main-thread fast path.
+        """
         original = _hdefereval.executeDeferred
         _hdefereval.executeDeferred = lambda fn: None  # swallow the fn
 
-        try:
-            with pytest.raises(RuntimeError, match="main thread didn't respond"):
+        result_holder = [None]
+
+        def _call_from_thread():
+            try:
                 run_on_main(lambda: 42, timeout=0.1)
+            except RuntimeError as e:
+                result_holder[0] = e
+
+        try:
+            t = threading.Thread(target=_call_from_thread)
+            t.start()
+            t.join(timeout=5.0)
+            assert result_holder[0] is not None
+            assert "main thread didn't respond" in str(result_holder[0])
         finally:
             _hdefereval.executeDeferred = original
 
@@ -136,10 +150,13 @@ class TestRunOnMain:
         assert not getattr(_tls, "on_main", False)
 
     def test_custom_timeout(self):
-        """Custom timeout is respected."""
+        """Custom timeout is respected.
+
+        Must run from a non-main thread so run_on_main actually defers
+        through hdefereval instead of taking the main-thread fast path.
+        """
         import time
 
-        # executeDeferred runs fn after a delay longer than timeout
         original = _hdefereval.executeDeferred
 
         def _delayed_exec(fn):
@@ -151,8 +168,40 @@ class TestRunOnMain:
 
         _hdefereval.executeDeferred = _delayed_exec
 
-        try:
-            with pytest.raises(RuntimeError, match="main thread didn't respond"):
+        result_holder = [None]
+
+        def _call_from_thread():
+            try:
                 run_on_main(lambda: 42, timeout=0.05)
+            except RuntimeError as e:
+                result_holder[0] = e
+
+        try:
+            t = threading.Thread(target=_call_from_thread)
+            t.start()
+            t.join(timeout=5.0)
+            assert result_holder[0] is not None
+            assert "main thread didn't respond" in str(result_holder[0])
+        finally:
+            _hdefereval.executeDeferred = original
+
+    def test_main_thread_direct_execution(self):
+        """When called from the main thread (e.g. Qt slot), fn runs directly
+        without deferring through hdefereval -- avoids deadlock."""
+        # We ARE on the main thread in tests, so this should take the fast path
+        original = _hdefereval.executeDeferred
+        defer_called = [False]
+
+        def _track_defer(fn):
+            defer_called[0] = True
+            fn()
+
+        _hdefereval.executeDeferred = _track_defer
+
+        try:
+            result = run_on_main(lambda: "direct")
+            assert result == "direct"
+            # executeDeferred should NOT have been called -- fast path 2
+            assert not defer_called[0], "Should not defer when already on main thread"
         finally:
             _hdefereval.executeDeferred = original
