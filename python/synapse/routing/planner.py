@@ -148,6 +148,22 @@ _WORKFLOW_INTENTS: List[Tuple[re.Pattern, str, List[str]]] = [
         re.IGNORECASE,
     ), "render_pipeline", ["modifiers"]),
 
+    # Solaris scene pipeline (specific)
+    (re.compile(
+        r"(?:set up|setup|create|build)\s+(?:a\s+)?(?:complete\s+)?"
+        r"solaris\s+scene\s*(?:pipeline)?\s*"
+        r"(?:with\s+(?P<modifiers>.+))?",
+        re.IGNORECASE,
+    ), "solaris_scene_pipeline", ["modifiers"]),
+
+    # Solaris scene pipeline (broad: "set up a scene with X")
+    (re.compile(
+        r"(?:set up|setup|create|build)\s+(?:a\s+)?(?:complete\s+)?"
+        r"scene\s+"
+        r"(?:with\s+(?P<modifiers>.+))",
+        re.IGNORECASE,
+    ), "solaris_scene_pipeline", ["modifiers"]),
+
     # Ocean with interaction
     (re.compile(
         r"(?:set up|setup|create|build)\s+(?:an?\s+)?(?:complete\s+)?ocean\s+"
@@ -194,6 +210,23 @@ _MODIFIER_KEYWORDS = {
     "interaction": "add_flip",
     "foam": "add_whitewater",
     "spray": "add_whitewater",
+    # Solaris scene pipeline
+    "geometry": "add_geometry",
+    "sphere": "add_geometry",
+    "cube": "add_geometry",
+    "box": "add_geometry",
+    "font": "add_geometry",
+    "grid": "add_geometry",
+    "material": "add_material",
+    "camera": "add_camera",
+    "three-point": "add_three_point",
+    "three point": "add_three_point",
+    "3-point": "add_three_point",
+    "3 point": "add_three_point",
+    "lighting": "add_lighting",
+    "light": "add_lighting",
+    "karma": "add_render",
+    "render": "add_render",
 }
 
 
@@ -565,6 +598,107 @@ def _build_pyro_pipeline(
     return cmds
 
 
+def _build_solaris_scene_pipeline(
+    params: Dict[str, str], modifiers: set
+) -> List[SynapseCommand]:
+    """Build a Solaris scene pipeline as a single execute_python command.
+
+    Creates a wired LOP chain in /stage with geometry, material, camera,
+    lighting, and render nodes — each connected via setInput(0, prev).
+    Ends with layoutChildren() and display flag on OUTPUT null.
+    """
+    # Determine geometry type from modifiers
+    geo_type = "sphere"
+    for geo in ("cube", "box", "font", "grid", "sphere"):
+        if geo in (params.get("modifiers", "") or "").lower():
+            geo_type = geo
+            break
+    if geo_type == "box":
+        geo_type = "cube"
+
+    lines = [
+        "import hou",
+        "",
+        "stage = hou.node('/stage')",
+        "if not stage:",
+        "    stage = hou.node('/').createNode('lopnet', 'stage')",
+        "",
+        "# --- Geometry ---",
+        f"geo = stage.createNode('{geo_type}', 'geo_{geo_type}')",
+        "prev = geo",
+    ]
+
+    if "add_material" in modifiers:
+        lines += [
+            "",
+            "# --- Material ---",
+            "matlib = stage.createNode('materiallibrary', 'matlib')",
+            "matlib.setInput(0, prev)",
+            "prev = matlib",
+            "assign = stage.createNode('assignmaterial', 'assign_material')",
+            "assign.setInput(0, prev)",
+            "prev = assign",
+        ]
+
+    if "add_camera" in modifiers:
+        lines += [
+            "",
+            "# --- Camera ---",
+            "cam = stage.createNode('camera', 'cam')",
+            "cam.setInput(0, prev)",
+            "prev = cam",
+        ]
+
+    if "add_three_point" in modifiers:
+        lines += [
+            "",
+            "# --- Three-Point Lighting ---",
+            "key = stage.createNode('light', 'key_light')",
+            "key.setInput(0, prev)",
+            "prev = key",
+            "fill = stage.createNode('light', 'fill_light')",
+            "fill.setInput(0, prev)",
+            "prev = fill",
+            "rim = stage.createNode('light', 'rim_light')",
+            "rim.setInput(0, prev)",
+            "prev = rim",
+        ]
+    elif "add_lighting" in modifiers:
+        lines += [
+            "",
+            "# --- Lighting ---",
+            "light = stage.createNode('light', 'scene_light')",
+            "light.setInput(0, prev)",
+            "prev = light",
+        ]
+
+    if "add_render" in modifiers:
+        lines += [
+            "",
+            "# --- Render Settings ---",
+            "rs = stage.createNode('karmarenderproperties', 'render_settings')",
+            "rs.setInput(0, prev)",
+            "prev = rs",
+            "karma = stage.createNode('karma', 'karma')",
+            "karma.setInput(0, prev)",
+            "prev = karma",
+        ]
+
+    lines += [
+        "",
+        "# --- OUTPUT ---",
+        "out = stage.createNode('null', 'OUTPUT')",
+        "out.setInput(0, prev)",
+        "out.setDisplayFlag(True)",
+        "stage.layoutChildren()",
+        "result = {'output': out.path(), 'parent': stage.path()}",
+    ]
+
+    code = "\n".join(lines)
+
+    return [_cmd("execute_python", {"code": code})]
+
+
 # ------------------------------------------------------------------
 # Command builder helper
 # ------------------------------------------------------------------
@@ -589,6 +723,7 @@ _WORKFLOW_BUILDERS = {
     "render_pipeline": _build_render_pipeline,
     "ocean_pipeline": _build_ocean_pipeline,
     "pyro_pipeline": _build_pyro_pipeline,
+    "solaris_scene_pipeline": _build_solaris_scene_pipeline,
 }
 
 
