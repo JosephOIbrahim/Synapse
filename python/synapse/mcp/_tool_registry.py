@@ -584,6 +584,25 @@ TOOL_DEFS: list[tuple] = [
      }, "required": []},
      True, False, True),
 
+    ("synapse_solaris_assemble_chain", "solaris_assemble_chain", _identity,
+     "Auto-wire unwired LOP nodes in /stage into the canonical Solaris chain. "
+     "Three modes: 'all' scans for unwired nodes and wires them in canonical "
+     "order (SOPCreate -> MaterialLibrary -> AssignMaterial -> Camera -> Lights "
+     "-> RenderProperties -> OUTPUT null). 'nodes' wires specific node paths. "
+     "'after' appends nodes after a given chain tail. Supports dry_run to "
+     "preview wiring without mutating the scene.",
+     {"type": "object", "properties": {
+         "mode": {"type": "string", "enum": ["all", "nodes", "after"],
+                  "description": "Assembly mode: 'all' (scan unwired), 'nodes' (specific paths), 'after' (append). Default: 'all'."},
+         "parent": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "nodes": {"type": "array", "items": {"type": "string"},
+                   "description": "Node paths to wire (required for 'nodes' and 'after' modes)"},
+         "after": {"type": "string", "description": "Node path to append after (required for 'after' mode)"},
+         "sort": {"type": "boolean", "description": "Sort nodes by canonical Solaris order (default: true)"},
+         "dry_run": {"type": "boolean", "description": "Preview wiring plan without mutating (default: false)"},
+     }, "required": []},
+     False, False, True),
+
     ("houdini_configure_light_linking", "configure_light_linking", _identity,
      "Configure light linking between lights and geometry via USD collections. "
      "Control which geometry a light illuminates or casts shadows on. "
