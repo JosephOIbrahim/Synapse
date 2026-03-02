@@ -84,28 +84,67 @@ execute_python when possible."""
 _SOLARIS_CONTEXT_GUIDANCE = """\
 ## Solaris / LOP Context
 
-You are currently inside a Solaris (LOP) network. Key rules:
+You are currently inside a Solaris (LOP) network. Follow these rules exactly.
 
-- **Use sublayer** LOP nodes to bring geometry into the stage (not \
-assetreference -- assetreference is invisible to Karma).
-- Use **Asset Reference** nodes only for viewport-only work or production geo.
+### Wiring Rules
+- **Every node connects to the previous**: `node.setInput(0, prev)` — no \
+floating nodes. If a node has no input wired, it is invisible to the stage.
+- After creating a node, ALWAYS wire it into the chain before setting parameters.
+- The last node in the chain gets the display flag: `node.setDisplayFlag(True)`.
+
+### Canonical Chain Order
+Build Solaris scenes in this order:
+```
+SOPCreate → MaterialLibrary → AssignMaterial → Camera → Lights → RenderProperties → OUTPUT null
+```
+- **sopcreate** for new geometry (NOT sopimport). sopcreate embeds a SOP \
+network inside the LOP node.
+- **sublayer** to bring existing geometry into the stage (not assetreference \
+-- assetreference is invisible to Karma).
 - Wire order in merge: geometry first, then lights, then referenced assets.
-- **Material library** with multiple subnets is preferred over separate \
+- **Material library** with multiple subnets preferred over separate \
 matlib + assign nodes. Assign geo paths directly in matlib (geopath1, \
 geopath2) -- no separate assign nodes needed.
 - Material prim patterns must match exact USD prim paths \
 (e.g. /rubbertoy/geo/shape, NOT /rubbertoy/*).
-- Always use **HDRI on dome light** for lighting. Dome light exposure \
-~0.25 for studio HDRI.
+- **OUTPUT null** with display flag at the end of every chain.
+
+### execute_python Guidance
+- Prefer standard LOP node creation via MCP tools over execute_python \
+when possible.
+- **For 2+ node creation**: use execute_python with an atomic script that \
+creates all nodes, wires them, and sets the display flag in one call. \
+This avoids partial chains (some nodes created, not yet wired).
+- Always call `stage.layoutChildren()` at the end of an execute_python \
+script to keep the network tidy.
+- Every execute_python script must end with the chain fully wired and \
+the display flag set on the final node.
+
+### Chain Insertion Pattern
+When adding nodes to an existing chain:
+1. Find the current display-flagged node: \
+`display_node = [n for n in stage.children() if n.isDisplayFlagSet()][0]`
+2. Get its input: `prev = display_node.input(0)` (may be None if first node).
+3. Create new node, wire it after prev: `new_node.setInput(0, prev)`.
+4. Rewire display node to new node: `display_node.setInput(0, new_node)`.
+5. Layout: `stage.layoutChildren()`.
+
+### Lighting Law
+- **Intensity is ALWAYS 1.0** -- control brightness via exposure only.
+- Always use **HDRI on dome light** for environment lighting. Dome \
+exposure ~0.25 for studio HDRI.
 - Key light: enable color temperature for natural warmth, exposure ~1.0.
-- **Intensity is always 1.0** -- control brightness via exposure only \
-(Lighting Law).
-- Clean chain: merge -> matlib -> camera -> render_settings -> karma.
+
+### Encoded Parameter Names
+- USD/Solaris nodes use encoded parm names like xn__inputsintensity_i0a, \
+xn__inputsexposure_vya, xn__inputsenablecolortemperature_r4b.
+- Use houdini_inspect_node to discover these before setting them.
+
+### Render Pipeline
 - Karma LOP feeds usdrender ROP in /out. Set picture on Karma LOP AND \
-outputimage on ROP.
+outputimage on ROP for reliable output.
 - Set soho_foreground=1 on usdrender ROP for synchronous file write.
-- Use houdini_inspect_node to discover encoded parameter names \
-(e.g. xn__inputsintensity_i0a, xn__inputsexposure_vya).
+- Camera focalLength in mm: 25=wide, 50=standard, 85=portrait.
 - Houdini ships test assets at $HFS/houdini/usd/assets/ (rubbertoy, pig, etc.)."""
 
 _OBJ_CONTEXT_GUIDANCE = """\
