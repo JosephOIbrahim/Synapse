@@ -27,6 +27,56 @@ logger = logging.getLogger("synapse.planner")
 
 
 # ------------------------------------------------------------------
+# Context-aware parent inference — eliminates /obj default bias
+# ------------------------------------------------------------------
+
+SOLARIS_SIGNALS = {
+    "stage", "lop", "solaris", "usd", "karma", "hydra",
+    "render", "light", "material", "sublayer", "reference",
+    "prim", "sdf", "layer",
+}
+
+SOP_SIGNALS = {
+    "obj", "sop", "geo", "geometry", "dop", "vellum", "pyro",
+    "flip", "rbd", "particle", "pop", "wire", "grain",
+    "ocean", "cloth", "destruction", "fracture",
+}
+
+
+def _infer_parent(params: Dict[str, str]) -> str:
+    """Infer the correct parent network path from context.
+
+    Replaces hardcoded '/obj' default with context-aware inference:
+    - If params has explicit 'parent', use it
+    - If params values contain Solaris signals, default to '/stage'
+    - Otherwise default to '/obj' (SOP context)
+    """
+    explicit = params.get("parent")
+    if explicit:
+        return explicit
+
+    context = " ".join(str(v).lower() for v in params.values())
+    solaris_score = sum(1 for s in SOLARIS_SIGNALS if s in context)
+    sop_score = sum(1 for s in SOP_SIGNALS if s in context)
+
+    if solaris_score > sop_score:
+        return "/stage"
+    return "/obj"
+
+
+def _generate_parent_line(params: Dict[str, str]) -> str:
+    """Generate a context-aware parent resolution line for execute_python code.
+
+    Instead of: parent = hou.node('/obj') or hou.node('/obj')
+    Generates:  parent = hou.node('<inferred>') or hou.node('<fallback>')
+    where fallback matches the inferred context.
+    """
+    parent = _infer_parent(params)
+    fallback = "/stage" if parent.startswith("/stage") else "/obj"
+    return f"parent = hou.node('{parent}') or hou.node('{fallback}')"
+
+
+# ------------------------------------------------------------------
 # Operation catalog — atomic operations the planner can compose
 # ------------------------------------------------------------------
 
@@ -183,13 +233,13 @@ def _build_cloth_pipeline(
 ) -> List[SynapseCommand]:
     """Build Vellum cloth pipeline with optional steps."""
     cmds: List[SynapseCommand] = []
-    parent = params.get("parent", "/obj")
+    parent = _infer_parent(params)
 
     # Core: vellumcloth + solver
     cmds.append(_cmd("execute_python", {
         "code": (
             "import hou\n"
-            f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+            f"{_generate_parent_line(params)}\n"
             "cloth = parent.createNode('vellumcloth', 'vellum_cloth')\n"
             "cloth.parm('stretchstiffness').set(10000)\n"
             "cloth.parm('bendstiffness').set(0.001)\n"
@@ -205,7 +255,7 @@ def _build_cloth_pipeline(
         cmds.append(_cmd("execute_python", {
             "code": (
                 "import hou\n"
-                f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+                f"{_generate_parent_line(params)}\n"
                 "drape = parent.createNode('vellumdrape', 'drape')\n"
                 "solver = parent.node('vellum_solver')\n"
                 "if solver: drape.setInput(0, solver, 0)\n"
@@ -217,7 +267,7 @@ def _build_cloth_pipeline(
         cmds.append(_cmd("execute_python", {
             "code": (
                 "import hou\n"
-                f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+                f"{_generate_parent_line(params)}\n"
                 "collider = parent.createNode('vellumcollider', 'collider')\n"
                 "solver = parent.node('vellum_solver')\n"
                 "if solver: solver.setInput(1, collider, 0)\n"
@@ -229,7 +279,7 @@ def _build_cloth_pipeline(
         cmds.append(_cmd("execute_python", {
             "code": (
                 "import hou\n"
-                f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+                f"{_generate_parent_line(params)}\n"
                 "wind = parent.createNode('vellumconstraintproperty', 'wind')\n"
                 "wind.parm('windspeed').set(5)\n"
                 "solver = parent.node('vellum_solver')\n"
@@ -243,7 +293,7 @@ def _build_cloth_pipeline(
         cmds.append(_cmd("execute_python", {
             "code": (
                 "import hou\n"
-                f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+                f"{_generate_parent_line(params)}\n"
                 "last = parent.node('vellum_solver')\n"
                 "cache = parent.createNode('filecache', 'cloth_cache')\n"
                 "cache.parm('file').set('$HIP/cache/cloth.$F4.bgeo.sc')\n"
@@ -263,13 +313,13 @@ def _build_destruction_pipeline(
 ) -> List[SynapseCommand]:
     """Build RBD destruction pipeline with optional debris/dust."""
     cmds: List[SynapseCommand] = []
-    parent = params.get("parent", "/obj")
+    parent = _infer_parent(params)
 
     # Core: fracture + assemble + constraints + solver
     cmds.append(_cmd("execute_python", {
         "code": (
             "import hou\n"
-            f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+            f"{_generate_parent_line(params)}\n"
             "frac = parent.createNode('rbdmaterialfracture', 'fracture')\n"
             "frac.parm('numpieces').set(50)\n"
             "asm = parent.createNode('assemble', 'assemble')\n"
@@ -292,7 +342,7 @@ def _build_destruction_pipeline(
         cmds.append(_cmd("execute_python", {
             "code": (
                 "import hou\n"
-                f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+                f"{_generate_parent_line(params)}\n"
                 "solver = parent.node('rbd_solver')\n"
                 "debris = parent.createNode('popnet', 'debris_particles')\n"
                 "if solver: debris.setInput(0, solver, 0)\n"
@@ -304,7 +354,7 @@ def _build_destruction_pipeline(
         cmds.append(_cmd("execute_python", {
             "code": (
                 "import hou\n"
-                f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+                f"{_generate_parent_line(params)}\n"
                 "solver = parent.node('rbd_solver')\n"
                 "pyro = parent.createNode('pyrosolver', 'dust_sim')\n"
                 "pyro.parm('divsize').set(0.1)\n"
@@ -317,7 +367,7 @@ def _build_destruction_pipeline(
     cmds.append(_cmd("execute_python", {
         "code": (
             "import hou\n"
-            f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+            f"{_generate_parent_line(params)}\n"
             "solver = parent.node('rbd_solver')\n"
             "cache = parent.createNode('filecache', 'rbd_cache')\n"
             "cache.parm('file').set('$HIP/cache/rbd.$F4.bgeo.sc')\n"
@@ -429,13 +479,13 @@ def _build_ocean_pipeline(
 ) -> List[SynapseCommand]:
     """Build ocean pipeline with optional FLIP interaction and whitewater."""
     cmds: List[SynapseCommand] = []
-    parent = params.get("parent", "/obj")
+    parent = _infer_parent(params)
 
     # Core: spectrum + evaluate
     cmds.append(_cmd("execute_python", {
         "code": (
             "import hou\n"
-            f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+            f"{_generate_parent_line(params)}\n"
             "spec = parent.createNode('oceanspectrum', 'ocean_spectrum')\n"
             "spec.parm('speed').set(15)\n"
             "spec.parm('chop').set(0.7)\n"
@@ -449,7 +499,7 @@ def _build_ocean_pipeline(
         cmds.append(_cmd("execute_python", {
             "code": (
                 "import hou\n"
-                f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+                f"{_generate_parent_line(params)}\n"
                 "flat = parent.createNode('oceanflat', 'ocean_flat')\n"
                 "solver = parent.createNode('flipsolver', 'flip_solver')\n"
                 "solver.parm('particlesep').set(0.1)\n"
@@ -463,7 +513,7 @@ def _build_ocean_pipeline(
         cmds.append(_cmd("execute_python", {
             "code": (
                 "import hou\n"
-                f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+                f"{_generate_parent_line(params)}\n"
                 "ww_src = parent.createNode('whitewatersource', 'ww_source')\n"
                 "ww_solve = parent.createNode('whitewatersolver', 'ww_solver')\n"
                 "ww_solve.setInput(0, ww_src, 0)\n"
@@ -482,13 +532,13 @@ def _build_pyro_pipeline(
 ) -> List[SynapseCommand]:
     """Build pyro fire/smoke pipeline."""
     cmds: List[SynapseCommand] = []
-    parent = params.get("parent", "/obj")
+    parent = _infer_parent(params)
 
     # Core: source + rasterize + solver
     cmds.append(_cmd("execute_python", {
         "code": (
             "import hou\n"
-            f"parent = hou.node('{parent}') or hou.node('/obj')\n"
+            f"{_generate_parent_line(params)}\n"
             "scatter = parent.createNode('scatter', 'pyro_pts')\n"
             "scatter.parm('npts').set(5000)\n"
             "wrangle = parent.createNode('attribwrangle', 'emission')\n"
