@@ -81,6 +81,48 @@ the last node in a chain.
 - For Solaris networks: prefer creating standard LOP nodes over \
 execute_python when possible."""
 
+_SOLARIS_CONTEXT_GUIDANCE = """\
+## Solaris / LOP Context
+
+You are currently inside a Solaris (LOP) network. Key rules:
+
+- **Use sublayer** LOP nodes to bring geometry into the stage (not \
+assetreference -- assetreference is invisible to Karma).
+- Use **Asset Reference** nodes only for viewport-only work or production geo.
+- Wire order in merge: geometry first, then lights, then referenced assets.
+- **Material library** with multiple subnets is preferred over separate \
+matlib + assign nodes. Assign geo paths directly in matlib (geopath1, \
+geopath2) -- no separate assign nodes needed.
+- Material prim patterns must match exact USD prim paths \
+(e.g. /rubbertoy/geo/shape, NOT /rubbertoy/*).
+- Always use **HDRI on dome light** for lighting. Dome light exposure \
+~0.25 for studio HDRI.
+- Key light: enable color temperature for natural warmth, exposure ~1.0.
+- **Intensity is always 1.0** -- control brightness via exposure only \
+(Lighting Law).
+- Clean chain: merge -> matlib -> camera -> render_settings -> karma.
+- Karma LOP feeds usdrender ROP in /out. Set picture on Karma LOP AND \
+outputimage on ROP.
+- Set soho_foreground=1 on usdrender ROP for synchronous file write.
+- Use houdini_inspect_node to discover encoded parameter names \
+(e.g. xn__inputsintensity_i0a, xn__inputsexposure_vya).
+- Houdini ships test assets at $HFS/houdini/usd/assets/ (rubbertoy, pig, etc.)."""
+
+_OBJ_CONTEXT_GUIDANCE = """\
+## OBJ / SOP Context
+
+You are currently at the OBJ or SOP level. Key rules:
+
+- Prefer creating standard SOP nodes and wiring networks over \
+execute_python when possible.
+- Set the display flag (blue) on the last node the artist should see.
+- Set the render flag (purple) on the node that should be rendered.
+- Use Merge SOPs to combine geometry streams.
+- For procedural setups: use Attribute Wrangle for VEX, not \
+Point/Primitive SOPs (deprecated workflow).
+- When modifying geometry attributes, inspect the node first to \
+discover available attributes and their types."""
+
 
 def _format_scene_context(context: dict) -> str:
     """Format the live scene context block."""
@@ -105,6 +147,22 @@ def _format_scene_context(context: dict) -> str:
     lines.append(f"- File: {hip}")
 
     return "\n".join(lines)
+
+
+def _solaris_context_block(context: dict) -> str | None:
+    """Return context-aware guidance based on the current network type.
+
+    Returns Solaris guidance when inside a LOP network, OBJ/SOP guidance
+    when at the object or geometry level, or None for other contexts.
+    """
+    network = context.get("network", "/obj")
+    network_lower = network.lower()
+
+    if "/stage" in network_lower or "/lop" in network_lower:
+        return _SOLARIS_CONTEXT_GUIDANCE
+    if network_lower in ("/", "/obj") or "/obj/" in network_lower:
+        return _OBJ_CONTEXT_GUIDANCE
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -133,5 +191,9 @@ def build_system_prompt(context: dict) -> str:
 
     sections.append(_TOOL_GUIDANCE)
     sections.append(_format_scene_context(context))
+
+    ctx_guidance = _solaris_context_block(context)
+    if ctx_guidance:
+        sections.append(ctx_guidance)
 
     return "\n\n".join(sections)
