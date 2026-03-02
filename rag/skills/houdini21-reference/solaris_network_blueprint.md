@@ -176,3 +176,55 @@ rop.parm("soho_foreground").set(1)  # Wait for render to finish before returning
 10. **OUTPUT null with display flag** at chain end — convention for render/display output
 11. **soho_foreground=1** on usdrender ROP for synchronous file write
 12. **Set picture on Karma LOP AND outputimage on ROP** for reliable output paths
+
+## Auto-Assembly Tool
+
+Use `synapse_solaris_assemble_chain` to automatically wire unwired LOP nodes into
+the canonical chain order. This is a safety net — if nodes were created but not
+wired (e.g. after multiple `houdini_create_node` calls), this tool detects them
+and connects them in the correct Solaris order.
+
+### Modes
+
+| Mode | Use Case | Required Params |
+|------|----------|-----------------|
+| `all` | Scan /stage for all unwired nodes, sort by canonical order, wire linearly | none (auto-discovers) |
+| `nodes` | Wire specific node paths in canonical or given order | `nodes` list |
+| `after` | Append nodes after a specific chain tail | `after` + `nodes` |
+
+### Canonical Sort Order
+
+```
+sopcreate/sopimport  100   (geometry)
+materiallibrary      200   (materials)
+assignmaterial       220   (assignment)
+camera               400   (camera)
+rectlight            500   (area light)
+distantlight         500   (distant light)
+domelight            600   (environment)
+karmarenderproperties 700  (render settings)
+null                 900   (OUTPUT)
+```
+
+### Examples
+
+```python
+# Auto-wire everything unwired in /stage
+synapse_solaris_assemble_chain()
+
+# Preview what would be wired (no mutations)
+synapse_solaris_assemble_chain(dry_run=True)
+
+# Wire specific nodes
+synapse_solaris_assemble_chain(mode="nodes", nodes=["/stage/cam1", "/stage/dome1"])
+
+# Append after an existing chain tail
+synapse_solaris_assemble_chain(mode="after", after="/stage/materials", nodes=["/stage/cam1"])
+```
+
+### When to Use
+
+- After creating multiple LOP nodes that aren't wired yet
+- When floating nodes are detected in /stage
+- As a cleanup pass before rendering
+- To restore a broken chain after manual edits

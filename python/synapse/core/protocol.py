@@ -69,6 +69,7 @@ class CommandType(Enum):
     MANAGE_COLLECTION = "manage_collection"
     CONFIGURE_LIGHT_LINKING = "configure_light_linking"
     SOLARIS_VALIDATE_ORDERING = "solaris_validate_ordering"
+    SOLARIS_ASSEMBLE_CHAIN = "solaris_assemble_chain"
 
     # Utility
     PING = "ping"
