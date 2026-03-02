@@ -42,6 +42,7 @@ from .handlers_material import MaterialHandlerMixin
 from .handlers_memory import MemoryHandlerMixin
 from .handlers_hda import HdaHandlerMixin
 from .handlers_cops import CopsHandlerMixin
+from .handlers_solaris_assemble import SolarisAssembleMixin
 
 
 
@@ -90,6 +91,7 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "manage_collection": AuditCategory.PIPELINE,
     "configure_light_linking": AuditCategory.PIPELINE,
     "solaris_validate_ordering": AuditCategory.PIPELINE,
+    "solaris_assemble_chain": AuditCategory.PIPELINE,
     "create_material": AuditCategory.MATERIAL,
     "create_textured_material": AuditCategory.MATERIAL,
     "assign_material": AuditCategory.MATERIAL,
@@ -215,7 +217,7 @@ class CommandHandlerRegistry:
 # SYNAPSE HANDLER
 # =============================================================================
 
-class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin):
+class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin):
     """
     Main command handler for the Synapse server.
 
@@ -419,6 +421,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
         # Solaris ordering validation
         reg.register("solaris_validate_ordering", self._handle_solaris_validate_ordering)
+
+        # Solaris auto-assembly
+        reg.register("solaris_assemble_chain", self._handle_solaris_assemble_chain)
 
         # Keyframe / Render Settings
         reg.register("set_keyframe", self._handle_set_keyframe)
