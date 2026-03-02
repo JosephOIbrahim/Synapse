@@ -14,7 +14,11 @@ GROUP_KNOWLEDGE = (
     "COMPOSITION: Stronger opinions win. Layer order matters in sublayers "
     "and merges -- use synapse_validate_ordering before rendering. "
     "MATERIALS: matlib.cook(force=True) MUST be called before createNode() "
-    "on shader children. MaterialX standard_surface is the default shader."
+    "on shader children. MaterialX standard_surface is the default shader. "
+    "SOLARIS CHAIN: Always create LOP nodes in /stage, never /obj. "
+    "Canonical order: SOPCreate \u2192 MaterialLibrary \u2192 AssignMaterial \u2192 "
+    "Camera \u2192 Lights \u2192 RenderProperties \u2192 OUTPUT null. Wire linearly "
+    "with setInput(0, prev). Use sopcreate (not sopimport) for new geometry."
 )
 
 # Tools in this group

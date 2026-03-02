@@ -12,7 +12,9 @@ GROUP_KNOWLEDGE = (
     "Parameter names on USD/Solaris nodes use encoded format "
     "(e.g. xn__inputsintensity_i0a not 'intensity'). "
     "Use houdini_get_parm to read, houdini_set_parm to write. "
-    "execute_python wraps in undo group -- automatic rollback on failure."
+    "execute_python wraps in undo group -- automatic rollback on failure. "
+    "CONTEXT AWARENESS: When creating Solaris/LOP node types (lights, cameras, "
+    "materials, render settings), parent MUST be /stage."
 )
 
 # Tools in this group
