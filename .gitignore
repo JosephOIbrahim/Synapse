@@ -46,6 +46,7 @@ MagicMock/
 
 # Dev scratch scripts
 _*.py
+!__init__.py
 !python/synapse/mcp/_tool_registry.py
 _*.ps1
 _*.txt
