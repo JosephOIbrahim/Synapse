@@ -20,16 +20,67 @@ from .handler_helpers import _HOUDINI_UNAVAILABLE
 
 # Canonical Solaris chain ordering.  Lower number = earlier in chain.
 _SOLARIS_NODE_ORDER: Dict[str, int] = {
+    # --- Scene hierarchy (Pattern 4: Hierarchy Discipline) ---
+    "primitive": 10,                # Xform hierarchy root (Kind=Group)
+    # --- Geometry import (Pattern 1: chain sequentially, NEVER merge) ---
     "sopcreate": 100,
     "sopimport": 100,
+    # --- Component Builder internals (Pattern 2) ---
+    "componentgeometry": 110,       # SOPs inside: geo → default/proxy/simproxy
+    "componentmaterial": 120,       # Auto-assigns materials to geometry
+    "componentoutput": 130,         # Export: name, path, thumbnail
+    "componentgeometryvariants": 115,  # Pattern 5: merge geometry variants
+    # --- Materials ---
     "materiallibrary": 200,
     "assignmaterial": 220,
+    # --- References (Pattern 6: Megascans material import trick) ---
+    "reference": 250,               # /materials/* wildcard for material import
+    # --- Cameras ---
     "camera": 400,
+    # --- Lighting ---
     "rectlight": 500,
     "distantlight": 500,
     "domelight": 600,
+    "karmaphysicalsky": 610,        # Pattern 1: physical sky lighting
+    # --- Layout + Physics (Pattern 8) ---
+    "layout": 650,                  # Instanceable Reference mode for physics
+    "edit": 660,                    # Add Physics + Use Physics
+    # --- Variants (Pattern 5) ---
+    "explorevariants": 670,         # Preview variants interactively
+    "setvariant": 675,              # Commit variant selection
+    # --- Render (Pattern 1: Canonical LOP Chain) ---
+    "karmarendersettings": 700,
     "karmarenderproperties": 700,
+    "usdrender_rop": 800,           # Final render output
     "null": 900,
+}
+
+# Named chain templates for multi-node tool creation (RELAY-SOLARIS Phase 2)
+_SOLARIS_CHAIN_TEMPLATES: Dict[str, List[str]] = {
+    # Pattern 1: Full scene skeleton
+    "scene_template": [
+        "primitive",
+        "sopimport",
+        "camera",
+        "materiallibrary",
+        "karmaphysicalsky",
+        "karmarendersettings",
+        "usdrender_rop",
+    ],
+    # Pattern 2: Component Builder internals
+    "component_builder": [
+        "componentgeometry",
+        "componentmaterial",
+        "componentoutput",
+    ],
+    # Pattern 6: Megascans SOP pipeline (inside Component Geometry)
+    "megascans_sop_import": [
+        "usdimport",
+        "xform",
+        "matchsize",
+        "polyreduce",
+        "output",
+    ],
 }
 
 

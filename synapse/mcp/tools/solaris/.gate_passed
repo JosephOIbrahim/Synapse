@@ -1,0 +1,40 @@
+RELAY-SOLARIS Phase 2: Tool Mapping — GATE PASSED
+Agent: AGENT-ARC (Pipeline Architect)
+Date: 2026-03-08
+
+Tool Audit Summary:
+  5 NEW tools designed (schema files created)
+  2 EXTENDED (_SOLARIS_NODE_ORDER + chain templates)
+  2 COVERED by existing infrastructure (low priority)
+
+New Tool Schemas:
+  schema_scene_template.py       — P1+P4: Full canonical scene skeleton with hierarchy
+  schema_component_builder.py    — P2: Component Builder subnet (HARDEST BRANCH)
+  schema_set_purpose.py          — P3: USD purpose on Component Geometry outputs
+  schema_create_variants.py      — P5: Material + geometry variant creation
+  schema_import_megascans.py     — P6: Megascans/Fab .usdc import pipeline
+
+Extended:
+  _SOLARIS_NODE_ORDER            — 14 new entries (primitive, karmaphysicalsky, component*, layout, etc.)
+  _SOLARIS_CHAIN_TEMPLATES       — 3 named chain templates (scene, component, megascans_sop)
+
+Covered (no new tool needed):
+  P7 (Asset Gallery + TOPs)      — existing tops_cook_node + recipe/guide
+  P8 (Layout + Physics)          — existing create_node + set_parm + recipe/guide
+
+Verification Script:
+  synapse/validation/solaris/verify_component_builder.py
+  MUST run before Phase 3 to determine NATIVE vs SUBNET strategy
+
+Gate Checklist:
+  [x] All 8 patterns mapped to existing or new tools
+  [x] Tool schemas have parameter definitions and return types
+  [x] _SOLARIS_NODE_ORDER extended with no conflicts
+  [x] _SOLARIS_CHAIN_TEMPLATES added for multi-node creation
+  [x] Dependency graph documented (component_builder depends on scene_template for hierarchy)
+  [x] Atomic operation boundaries defined in each schema
+  [ ] AGENT-SUP reviews for parameter completeness (pending)
+
+BLOCKER for Phase 3:
+  verify_component_builder.py must execute in live Houdini BEFORE implementation starts.
+  Result determines whether component_builder tool uses native node or manual subnet.
