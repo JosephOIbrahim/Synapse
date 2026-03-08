@@ -1,0 +1,101 @@
+{
+    "pattern_id": "SOLARIS_P6_MEGASCANS_IMPORT",
+    "source": "nodeflow_mario_leone_v1",
+    "video": "Video 3: Create an Asset Library with Megascans (11:10)",
+    "confidence": "high",
+    "evolution": "charmeleon",
+    "node_sequence": [
+        {
+            "type": "usdimport",
+            "order": 1,
+            "context": "SOP (inside Component Geometry)",
+            "description": "Import .usdc file with unpack to polygons enabled",
+            "parameters": {
+                "filepath": "<megascans_usdc_path>",
+                "unpack_to_polygons": true
+            },
+            "notes": "Downloads from Fab/Megascans in USDC format (high quality). Unpack to polygons must be ON."
+        },
+        {
+            "type": "xform",
+            "order": 2,
+            "context": "SOP (inside Component Geometry)",
+            "description": "Scale from Unreal to Houdini units",
+            "parameters": {
+                "uniform_scale": 0.01
+            },
+            "notes": "Megascans assets are in Unreal units (centimeters). Houdini uses meters. Scale by 0.01."
+        },
+        {
+            "type": "matchsize",
+            "order": 3,
+            "context": "SOP (inside Component Geometry)",
+            "description": "Ground the asset by justifying Y minimum",
+            "parameters": {
+                "justify_y": "Minimum"
+            },
+            "notes": "Ensures the asset sits on the ground plane. Justify Y: Minimum moves the bounding box bottom to Y=0."
+        },
+        {
+            "type": "xform",
+            "order": 3.5,
+            "context": "SOP (inside Component Geometry)",
+            "description": "Optional rotation correction",
+            "parameters": {},
+            "notes": "Optional — only needed if asset orientation is wrong after import."
+        },
+        {
+            "type": "polyreduce",
+            "order": 4,
+            "context": "SOP (inside Component Geometry)",
+            "description": "Generate proxy and sim proxy geometry",
+            "parameters": {
+                "percentage": 0.05
+            },
+            "notes": "5% reduction. Connect output to both 'proxy' AND 'sim proxy' outputs of Component Geometry."
+        },
+        {
+            "type": "output",
+            "order": 5,
+            "context": "SOP (inside Component Geometry)",
+            "description": "SOP output node",
+            "parameters": {},
+            "notes": "Ensures correct export from the SOP context."
+        }
+    ],
+    "parameters": {
+        "download_format": "USDC (high quality) from Fab/Megascans",
+        "scale_factor": 0.01,
+        "match_size_justify_y": "Minimum",
+        "polyreduce_percentage": "5%",
+        "material_reference_prim_target": "/materials/*",
+        "material_save_location": "asset/mtl/"
+    },
+    "constraints": [
+        "Megascans .usdc files contain BOTH geometry and materials in layers — they must be imported separately.",
+        "Geometry: USD Import inside Component Geometry SOPs with unpack to polygons ON.",
+        "Materials: Use a Reference LOP pointing to the SAME .usdc file with /materials/* wildcard.",
+        "Material save location must be 'asset/mtl/' to match the component hierarchy.",
+        "Use Paste Relative Reference on file paths so you only need to change one path per asset.",
+        "Scale factor 0.01 converts from Unreal centimeters to Houdini meters.",
+        "Match Size with Justify Y: Minimum grounds the asset on the ground plane.",
+        "PolyReduce output connects to BOTH proxy and sim proxy outputs."
+    ],
+    "primitive_paths": {
+        "material_wildcard": "/materials/*",
+        "material_save_location": "asset/mtl/"
+    },
+    "test_criteria": "Import a Megascans .usdc file: (1) USD Import with unpack to polygons produces geometry. (2) Transform 0.01 scales correctly. (3) Match Size grounds the asset. (4) PolyReduce 5% produces proxy geo. (5) Reference LOP with /materials/* imports all materials. (6) Material save location 'asset/mtl/' allows Component Material to find them. (7) Component Output exports a valid .usd with both geo and materials.",
+    "synapse_tools": [
+        "synapse_solaris_import_megascans",
+        "synapse_solaris_component_builder"
+    ],
+    "material_import_trick": {
+        "description": "Megascans .usdc files contain both geometry and materials. To import materials separately: use a Reference LOP pointing to the same .usdc file, set primitive target to /materials/* (wildcard catches all material names), set save location to asset/mtl/ so Component Geometry can find them.",
+        "reference_lop_filepath": "<same .usdc as geometry import>",
+        "reference_lop_primtarget": "/materials/*",
+        "reference_lop_savelocation": "asset/mtl/",
+        "paste_relative_reference": "Use Paste Relative Reference on file paths so only one path change per asset",
+        "confidence": "high"
+    }
+}

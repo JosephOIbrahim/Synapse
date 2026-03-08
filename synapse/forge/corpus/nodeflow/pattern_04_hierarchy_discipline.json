@@ -1,0 +1,70 @@
+{
+    "pattern_id": "SOLARIS_P4_HIERARCHY_DISCIPLINE",
+    "source": "nodeflow_mario_leone_v1",
+    "video": "Video 1: Full USD Scene Workflow from Scratch (12:17)",
+    "confidence": "high",
+    "evolution": "charmeleon",
+    "node_sequence": [
+        {
+            "type": "primitive",
+            "order": 1,
+            "description": "Creates the root scene Xform with Kind=Group",
+            "parameters": {
+                "primpath": "/shot",
+                "primtype": "Xform",
+                "primkind": "Group"
+            },
+            "notes": "The Primitive LOP defines the scene root. Kind=Group enables proper hierarchy delegation in USD. Child Xforms are created for each category."
+        }
+    ],
+    "parameters": {
+        "root_primpath": "/shot",
+        "root_primtype": "Xform",
+        "root_primkind": "Group",
+        "os_variable": "$OS evaluates to the node name, providing automatic unique naming"
+    },
+    "constraints": [
+        "Always use Primitive LOP with Xform type and Kind=Group for the root hierarchy.",
+        "Four canonical child paths must exist: geo, LGT, MTL, cam.",
+        "$OS variable in primitive paths evaluates to the node name, providing automatic unique naming.",
+        "Hierarchy affects render delegation — Kind=Group enables proper USD assembly.",
+        "Consistent path convention across all nodes: /shot/{category}/$OS.",
+        "Every node in the chain must reference one of the four canonical paths."
+    ],
+    "primitive_paths": {
+        "root": "/shot",
+        "geometry": "/shot/geo/$OS",
+        "lighting": "/shot/LGT/$OS",
+        "materials": "/shot/MTL/$OS",
+        "cameras": "/shot/cam/$OS"
+    },
+    "test_criteria": "Create Primitive LOP with /shot root. Verify: (1) Scene Outliner shows /shot as Xform with Kind=Group. (2) Four child paths (geo, LGT, MTL, cam) exist. (3) Adding a SOP Import with primpath /shot/geo/$OS places geometry under /shot/geo/<nodename>. (4) $OS substitution works correctly for all node types.",
+    "synapse_tools": [
+        "synapse_solaris_scene_template",
+        "synapse_solaris_assemble_chain"
+    ],
+    "hierarchy_tree": {
+        "/shot": {
+            "type": "Xform",
+            "kind": "Group",
+            "children": {
+                "/shot/geo": {
+                    "purpose": "All scene geometry (SOP imports/creates)",
+                    "path_pattern": "/shot/geo/$OS"
+                },
+                "/shot/LGT": {
+                    "purpose": "All lighting (physical sky, area lights, etc.)",
+                    "path_pattern": "/shot/LGT/$OS"
+                },
+                "/shot/MTL": {
+                    "purpose": "All materials (material libraries)",
+                    "path_pattern": "/shot/MTL/$OS"
+                },
+                "/shot/cam": {
+                    "purpose": "All cameras",
+                    "path_pattern": "/shot/cam/$OS"
+                }
+            }
+        }
+    }
+}

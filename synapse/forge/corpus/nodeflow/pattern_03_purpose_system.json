@@ -1,0 +1,52 @@
+{
+    "pattern_id": "SOLARIS_P3_PURPOSE_SYSTEM",
+    "source": "nodeflow_mario_leone_v1",
+    "video": "Video 2: Intro to Component Builder (11:27)",
+    "confidence": "high",
+    "evolution": "charmeleon",
+    "node_sequence": [],
+    "parameters": {
+        "render_purpose": "Full-resolution geometry displayed at render time",
+        "proxy_purpose": "Low-poly geometry displayed in viewport for performance",
+        "simproxy_purpose": "Low-poly geometry used for physics and collision tools",
+        "viewport_toggle": "Glasses icon in viewport toolbar"
+    },
+    "constraints": [
+        "Every production asset should have at minimum render + proxy purpose defined.",
+        "Render purpose = full-res geometry shown at final render time.",
+        "Proxy purpose = low-poly version shown in viewport for interactive performance.",
+        "Sim proxy purpose = low-poly version used by physics/collision tools.",
+        "Viewport toggle between proxy and render: Glasses icon -> 'Preview' shows proxy, 'Final Render' shows render purpose.",
+        "Purpose is set via Component Geometry outputs: 'default' = render, 'proxy' = proxy, 'sim proxy' = sim proxy.",
+        "PolyReduce at 5-10% of original is the standard for generating proxy geometry."
+    ],
+    "primitive_paths": {},
+    "test_criteria": "In a Component Builder: (1) Wire full-res geo to 'default' output (render purpose). (2) Wire PolyReduce geo to 'proxy' output. (3) Toggle viewport glasses icon between 'Preview' and 'Final Render'. (4) Verify proxy shows low-poly in viewport, render shows full-res at render time.",
+    "synapse_tools": [
+        "synapse_solaris_set_purpose",
+        "synapse_solaris_component_builder"
+    ],
+    "purpose_definitions": {
+        "render": {
+            "component_geometry_output": "default",
+            "when_visible": "At render time (final output)",
+            "geometry_quality": "Full resolution"
+        },
+        "proxy": {
+            "component_geometry_output": "proxy",
+            "when_visible": "In viewport when glasses icon set to 'Preview'",
+            "geometry_quality": "PolyReduce 5-10% of original"
+        },
+        "simproxy": {
+            "component_geometry_output": "sim proxy",
+            "when_visible": "Used by physics and collision systems",
+            "geometry_quality": "PolyReduce 5-10% of original (can share proxy geo)"
+        }
+    },
+    "viewport_toggle": {
+        "location": "Glasses icon in Solaris viewport toolbar",
+        "preview_mode": "Shows proxy purpose geometry",
+        "final_render_mode": "Shows render purpose geometry",
+        "confidence": "high"
+    }
+}

@@ -1,0 +1,69 @@
+{
+    "pattern_id": "SOLARIS_P2_COMPONENT_BUILDER",
+    "source": "nodeflow_mario_leone_v1",
+    "video": "Video 2: Intro to Component Builder (11:27)",
+    "confidence": "high",
+    "evolution": "charmeleon",
+    "node_sequence": [
+        {
+            "type": "componentgeometry",
+            "order": 1,
+            "description": "SOPs context for geometry with purpose outputs",
+            "parameters": {},
+            "notes": "Contains SOP network inside. File/Import geometry, connect to 'default' output for full-res render, PolyReduce (5-10%) to 'proxy' output, optional 'simproxy' output for physics."
+        },
+        {
+            "type": "materiallibrary",
+            "order": 2,
+            "description": "Contains Karma Material Builder nodes",
+            "parameters": {},
+            "notes": "One KMB per material, named descriptively (e.g., 'red', 'wood')."
+        },
+        {
+            "type": "componentmaterial",
+            "order": 3,
+            "description": "Auto-assigns materials to geometry within the component",
+            "parameters": {},
+            "notes": "Handles the material binding between Component Geometry outputs and Material Library materials."
+        },
+        {
+            "type": "componentoutput",
+            "order": 4,
+            "description": "Exports the assembled component as a USD file",
+            "parameters": {
+                "name": "<asset_name>",
+                "filepath": "<export_path>",
+                "thumbnail": true
+            },
+            "notes": "Name defines the exported asset name. File path sets where the .usd is saved. Generate thumbnail via View Thumbnail Camera. Order: Generate Thumbnail -> Save to Disk."
+        }
+    ],
+    "parameters": {
+        "component_builder_type": "subnet",
+        "proxy_reduction_percentage": "5-10%",
+        "default_output": "full-res render geometry",
+        "proxy_output": "low-poly viewport geometry",
+        "simproxy_output": "low-poly physics/collision geometry"
+    },
+    "constraints": [
+        "Component Builder is a subnet containing componentgeometry, materiallibrary, componentmaterial, and componentoutput.",
+        "The 'default' output of Component Geometry maps to render purpose (full resolution).",
+        "The 'proxy' output maps to proxy purpose (low-poly for viewport).",
+        "The 'sim proxy' output maps to simulation proxy purpose (low-poly for physics).",
+        "Order of export operations: Generate Thumbnail FIRST, then Save to Disk.",
+        "To load the exported asset back into a scene, use a Reference LOP with the exported .usd file path."
+    ],
+    "primitive_paths": {
+        "component_root": "/<asset_name>",
+        "geometry": "/<asset_name>/geo",
+        "materials": "/<asset_name>/mtl"
+    },
+    "test_criteria": "Create a Component Builder subnet with: (1) Component Geometry with default and proxy outputs wired. (2) Material Library with at least one KMB. (3) Component Material auto-assigning. (4) Component Output with name and file path set. (5) Export produces a valid .usd file. (6) Reference LOP can load the exported asset back into a scene.",
+    "synapse_tools": [
+        "synapse_solaris_component_builder"
+    ],
+    "export_reference_roundtrip": {
+        "description": "After Save to Disk, use Reference LOP to paste the exported .usd path. The asset loads from disk as a reference, preserving variants and purposes.",
+        "confidence": "high"
+    }
+}

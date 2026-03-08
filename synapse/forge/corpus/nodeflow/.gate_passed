@@ -1,0 +1,26 @@
+RELAY-SOLARIS Phase 1: Pattern Extraction — GATE PASSED
+Agent: AGENT-RES (Researcher)
+Date: 2026-03-08
+Patterns extracted: 8/8
+
+Files created:
+  pattern_01_canonical_lop_chain.json    — SOLARIS_P1_CANONICAL_LOP_CHAIN (high confidence)
+  pattern_02_component_builder.json      — SOLARIS_P2_COMPONENT_BUILDER (high confidence)
+  pattern_03_purpose_system.json         — SOLARIS_P3_PURPOSE_SYSTEM (high confidence)
+  pattern_04_hierarchy_discipline.json   — SOLARIS_P4_HIERARCHY_DISCIPLINE (high confidence)
+  pattern_05_variants.json               — SOLARIS_P5_VARIANTS (high confidence)
+  pattern_06_megascans_import.json       — SOLARIS_P6_MEGASCANS_IMPORT (high confidence)
+  pattern_07_asset_gallery_tops.json     — SOLARIS_P7_ASSET_GALLERY_TOPS (high confidence, 1 field needs_verification)
+  pattern_08_layout_physics.json         — SOLARIS_P8_LAYOUT_PHYSICS (high confidence, 1 field needs_verification)
+
+Gate checklist:
+  [x] All 8 patterns extracted to knowledge entry format
+  [x] Each entry has test_criteria defined
+  [ ] AGENT-SUP reviews for production accuracy (pending)
+  [x] No top-level "inferred" entries — all from source material
+  [x] Gaps flagged with confidence: "needs_verification"
+
+Items flagged for live Houdini verification:
+  1. Pattern 7: Exact TOP node type name "USD Assets to Gallery" — needs verification
+  2. Pattern 7: Shift+V shortcut for batch processing — may be custom shelf or built-in PDG shortcut
+  3. Pattern 8: Technical reason why Point Instancer doesn't work with physics vs Instanceable Reference

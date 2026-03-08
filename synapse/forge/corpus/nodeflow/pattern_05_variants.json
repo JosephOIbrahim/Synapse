@@ -1,0 +1,52 @@
+{
+    "pattern_id": "SOLARIS_P5_VARIANTS",
+    "source": "nodeflow_mario_leone_v1",
+    "video": "Video 2: Intro to Component Builder (11:27)",
+    "confidence": "high",
+    "evolution": "charmeleon",
+    "node_sequence": [],
+    "parameters": {
+        "material_variant_method": "Duplicate Component Material nodes with different KMB settings",
+        "geometry_variant_method": "Duplicate Component Geometry + use Component Geometry Variants node",
+        "explore_variants_node": "Previews variants interactively without committing",
+        "set_variant_node": "Permanently selects a variant (created via right-click on asset)"
+    },
+    "constraints": [
+        "Material variants: duplicate Component Material nodes inside the Component Builder, each with a different Karma Material Builder.",
+        "Geometry variants: duplicate Component Geometry nodes, modify each, then use 'Component Geometry Variants' node to merge them.",
+        "The Component Builder automatically creates variant sets when multiple Component Material or Component Geometry nodes exist.",
+        "Explore Variants node is for PREVIEWING — it lets you switch between variants interactively without committing.",
+        "Set Variant node COMMITS a variant choice — created by selecting asset, right-click, choose variant.",
+        "Geometry and material variant sets are independent — you can have nested variant sets (geo x material).",
+        "Each geometry variant can have its own material variants."
+    ],
+    "primitive_paths": {},
+    "test_criteria": "Inside a Component Builder: (1) Create two Component Material nodes with different KMBs (e.g., 'red' and 'blue'). (2) Verify Component Builder auto-creates a material variant set. (3) Use Explore Variants to preview switching between variants. (4) Create Set Variant node and verify it commits a choice. (5) For geometry variants: duplicate Component Geometry, use Component Geometry Variants node, verify nested variant sets work.",
+    "synapse_tools": [
+        "synapse_solaris_create_variants"
+    ],
+    "material_variants": {
+        "workflow": [
+            "Duplicate Component Material nodes inside Component Builder",
+            "Each duplicate gets a different Karma Material Builder with different settings",
+            "Component Builder automatically creates a material variant set",
+            "Preview with Explore Variants node",
+            "Commit with Set Variant (right-click asset -> choose variant)"
+        ],
+        "confidence": "high"
+    },
+    "geometry_variants": {
+        "workflow": [
+            "Duplicate Component Geometry nodes inside Component Builder",
+            "Modify each geometry variant (e.g., different proportions, shapes)",
+            "Use Component Geometry Variants node to merge geometry variants",
+            "Each geometry variant can independently have its own material variants",
+            "Explore with Explore Variants node — switch between geo and material sets independently"
+        ],
+        "confidence": "high"
+    },
+    "nested_variants": {
+        "description": "Geometry and material variant sets are orthogonal. A single asset can have N geometry variants x M material variants, all independently selectable.",
+        "confidence": "high"
+    }
+}

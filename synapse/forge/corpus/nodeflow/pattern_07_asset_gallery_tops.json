@@ -1,0 +1,72 @@
+{
+    "pattern_id": "SOLARIS_P7_ASSET_GALLERY_TOPS",
+    "source": "nodeflow_mario_leone_v1",
+    "video": "Video 2: Intro to Component Builder (11:27) + Video 3: Create an Asset Library with Megascans (11:10)",
+    "confidence": "high",
+    "evolution": "charmeleon",
+    "node_sequence": [
+        {
+            "type": "asset_catalog_pane",
+            "order": 1,
+            "context": "Houdini UI",
+            "description": "Open the Asset Catalog pane",
+            "parameters": {},
+            "notes": "Menu: New Pane -> Solaris -> Asset Catalog. This is a UI pane, not a node."
+        },
+        {
+            "type": "asset_database",
+            "order": 2,
+            "context": "Asset Catalog pane",
+            "description": "Create a new asset database file",
+            "parameters": {},
+            "notes": "Gear icon in Asset Catalog pane -> 'Create New Asset Database File'. This creates the backing .db file."
+        },
+        {
+            "type": "component_output_thumbnail",
+            "order": 3,
+            "context": "Component Builder",
+            "description": "Generate thumbnail for the asset",
+            "parameters": {},
+            "notes": "In Component Output: View Thumbnail Camera -> Generate Thumbnail. MUST be done BEFORE Save to Disk."
+        },
+        {
+            "type": "component_output_save",
+            "order": 4,
+            "context": "Component Builder",
+            "description": "Save the component to disk",
+            "parameters": {},
+            "notes": "Component Output -> Save to Disk. Exports the .usd file."
+        },
+        {
+            "type": "add_to_gallery",
+            "order": 5,
+            "context": "Component Builder / Asset Catalog",
+            "description": "Add the saved asset to the Asset Catalog",
+            "parameters": {},
+            "notes": "After saving, add to the Asset Catalog. Assets can then be dragged and dropped into any scene."
+        }
+    ],
+    "parameters": {
+        "order_of_operations": "Generate Thumbnail -> Save to Disk -> Add to Asset Catalog",
+        "tops_batch_node": "USD Assets to Gallery",
+        "tops_shortcut": "Shift+V"
+    },
+    "constraints": [
+        "Order of operations is CRITICAL: Generate Thumbnail -> Save to Disk -> Add to Asset Catalog. Do NOT skip or reorder.",
+        "The Asset Catalog is a UI pane opened via New Pane -> Solaris -> Asset Catalog.",
+        "Asset database must be created first (Gear icon -> Create New Asset Database File).",
+        "For batch processing multiple assets, use TOPs (PDG) with 'USD Assets to Gallery' node.",
+        "Shift+V in the TOP network triggers batch processing of all assets into the gallery.",
+        "Assets in the gallery can be dragged and dropped directly into Solaris viewports."
+    ],
+    "primitive_paths": {},
+    "test_criteria": "Manual workflow: (1) Open Asset Catalog pane. (2) Create new database. (3) In Component Builder: Generate Thumbnail, Save to Disk, Add to Gallery. (4) Verify asset appears in catalog with thumbnail. (5) Drag asset from catalog into a scene — verify Reference LOP is created. For batch: (6) Create TOP network with 'USD Assets to Gallery' node. (7) Press Shift+V to batch process.",
+    "synapse_tools": [],
+    "tops_batch": {
+        "description": "Instead of manually clicking 'Add to Asset Gallery' for each asset, create a TOP Network with 'USD Assets to Gallery' node and press Shift+V to batch process all assets in the folder into the gallery.",
+        "node_type": "USD Assets to Gallery",
+        "trigger": "Shift+V",
+        "confidence": "needs_verification",
+        "verification_note": "The exact TOP node type name 'USD Assets to Gallery' needs live Houdini verification. The Shift+V shortcut for batch processing also needs verification — it may be a custom shelf tool or a built-in PDG shortcut."
+    }
+}

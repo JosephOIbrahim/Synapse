@@ -1,0 +1,110 @@
+{
+    "pattern_id": "SOLARIS_P1_CANONICAL_LOP_CHAIN",
+    "source": "nodeflow_mario_leone_v1",
+    "video": "Video 1: Full USD Scene Workflow from Scratch (12:17)",
+    "confidence": "high",
+    "evolution": "charmeleon",
+    "node_sequence": [
+        {
+            "type": "primitive",
+            "order": 1,
+            "description": "Defines Xform hierarchy for scene organization",
+            "parameters": {
+                "primpath": "/shot",
+                "primtype": "Xform",
+                "primkind": "Group"
+            },
+            "notes": "Creates the root scene hierarchy. Set Kind=Group for proper hierarchy delegation. Creates child Xforms for /shot/geo, /shot/LGT, /shot/MTL, /shot/cam."
+        },
+        {
+            "type": "sopcreate",
+            "order": 2,
+            "description": "Imports or creates geometry into the USD stage",
+            "parameters": {
+                "primpath": "/shot/geo/$OS"
+            },
+            "notes": "Inside the SOP Create: geometry + Name attribute + Output node. The Name attribute gives geometry identity in the USD hierarchy. The Output node ensures export regardless of display flag. Can substitute SOP Import for existing geometry."
+        },
+        {
+            "type": "camera",
+            "order": 3,
+            "description": "Creates a USD camera",
+            "parameters": {
+                "primpath": "/shot/cam/$OS"
+            },
+            "notes": "Drag camera into viewport, Lock, then Pilot to position interactively."
+        },
+        {
+            "type": "materiallibrary",
+            "order": 4,
+            "description": "Contains Karma Material Builder nodes for shading",
+            "parameters": {
+                "primpath": "/shot/MTL/$OS"
+            },
+            "notes": "Inside: one Karma Material Builder (KMB) per material, named per asset. Use Auto-fill Materials to assign geometry per material."
+        },
+        {
+            "type": "karmaphysicalsky",
+            "order": 5,
+            "description": "Adds physical sky lighting to the scene",
+            "parameters": {
+                "primpath": "/shot/LGT/$OS"
+            },
+            "notes": "Standard environment light for Karma scenes."
+        },
+        {
+            "type": "karmarendersettings",
+            "order": 6,
+            "description": "Configures Karma render engine and resolution",
+            "parameters": {
+                "engine": "Karma XPU",
+                "camera": "/shot/cam/camera1"
+            },
+            "notes": "Created via the 'Karma' setup node which produces 2 nodes (render settings + render properties). Set resolution here. Karma XPU = GPU rendering."
+        },
+        {
+            "type": "usdrender_rop",
+            "order": 7,
+            "description": "Final render output node",
+            "parameters": {
+                "outputpath": "$HIP/render/$HIPNAME.png"
+            },
+            "notes": "References settings from Karma Render Settings above. Click 'Render to Disk' to execute."
+        }
+    ],
+    "parameters": {
+        "primitive_primpath": "/shot",
+        "primitive_primtype": "Xform",
+        "primitive_primkind": "Group",
+        "sopcreate_primpath": "/shot/geo/$OS",
+        "camera_primpath": "/shot/cam/$OS",
+        "materiallibrary_primpath": "/shot/MTL/$OS",
+        "karmaphysicalsky_primpath": "/shot/LGT/$OS",
+        "usdrender_outputpath": "$HIP/render/$HIPNAME.png",
+        "karma_engine": "Karma XPU"
+    },
+    "constraints": [
+        "Chain SOP imports sequentially — NEVER merge. This relates to USD layer composition ordering.",
+        "Always add an Output node inside SOP Create to ensure name attribute and operations export correctly regardless of display flag.",
+        "Name attribute inside SOPs gives geometry identity in the USD hierarchy.",
+        "Primitive Kind must be set to 'Group' on Xforms in the Primitive LOP for proper hierarchy.",
+        "Save scene (Ctrl+S) to dismiss import warnings after initial setup.",
+        "Primitive paths follow the convention: /shot/{category}/$OS where category is geo, LGT, MTL, or cam."
+    ],
+    "primitive_paths": {
+        "root": "/shot",
+        "geometry": "/shot/geo/$OS",
+        "lighting": "/shot/LGT/$OS",
+        "materials": "/shot/MTL/$OS",
+        "cameras": "/shot/cam/$OS"
+    },
+    "test_criteria": "Create the full 7-node chain from Primitive to USD Render ROP. Verify: (1) Scene Outliner shows /shot with geo, LGT, MTL, cam children. (2) All primitive paths resolve correctly with $OS substitution. (3) Karma XPU engine is selected. (4) Render output produces an image at $HIP/render/$HIPNAME.png. (5) Chain is sequential with no merge nodes.",
+    "synapse_tools": [
+        "synapse_solaris_assemble_chain",
+        "synapse_solaris_scene_template"
+    ],
+    "template_creation": {
+        "description": "After building the network, delete specific geometry/materials, leave skeleton with paths intact. Drag into Shelf Tab, name it, set input=Primitive LOP, output=USD Render ROP, assign hotkey.",
+        "confidence": "high"
+    }
+}

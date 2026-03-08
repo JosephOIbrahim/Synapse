@@ -1,0 +1,77 @@
+{
+    "pattern_id": "SOLARIS_P8_LAYOUT_PHYSICS",
+    "source": "nodeflow_mario_leone_v1",
+    "video": "Video 3: Create an Asset Library with Megascans (11:10)",
+    "confidence": "high",
+    "evolution": "charmeleon",
+    "node_sequence": [
+        {
+            "type": "layout",
+            "order": 1,
+            "context": "LOPs (Solaris)",
+            "description": "Place assets from gallery into the scene",
+            "parameters": {
+                "instance_mode": "Instanceable Reference"
+            },
+            "notes": "Drag assets from Asset Gallery into viewport. Layout LOP modes: place, line, paint, stack, scale. CRITICAL: Change from 'Point Instancer' to 'Instanceable Reference' — required for physics to work."
+        },
+        {
+            "type": "edit",
+            "order": 2,
+            "context": "LOPs (Solaris)",
+            "description": "Add and run physics simulation on placed assets",
+            "parameters": {
+                "add_physics": true,
+                "use_physics": true
+            },
+            "notes": "Select assets -> Add Physics -> Use Physics. Enables real-time physics interactions (collisions, gravity). Select individual or all assets. Transform: T, Rotate: R, Scale: E."
+        },
+        {
+            "type": "grid_collision",
+            "order": 0,
+            "context": "Scene setup",
+            "description": "Grid acts as static collision surface for physics",
+            "parameters": {},
+            "notes": "The viewport grid serves as the static collision ground plane. No special setup needed — it's implicit."
+        }
+    ],
+    "parameters": {
+        "layout_modes": ["place", "line", "paint", "stack", "scale"],
+        "instance_mode": "Instanceable Reference",
+        "instance_mode_wrong": "Point Instancer",
+        "physics_operations": ["Add Physics", "Use Physics"],
+        "transform_hotkeys": {
+            "translate": "T",
+            "rotate": "R",
+            "scale": "E"
+        }
+    },
+    "constraints": [
+        "CRITICAL: Layout LOP must use 'Instanceable Reference' mode, NOT 'Point Instancer'. Point Instancer will not work with physics.",
+        "Physics workflow: select assets in Edit LOP -> Add Physics -> Use Physics.",
+        "The grid acts as a static collision surface — no special setup needed.",
+        "Real-time physics interactions include collisions and gravity.",
+        "Transform hotkeys during physics: T (translate), R (rotate), E (scale).",
+        "Layout LOP modes: place (single), line (along line), paint (brush), stack (vertical), scale (resize)."
+    ],
+    "primitive_paths": {},
+    "test_criteria": "Layout workflow: (1) Layout LOP in 'Instanceable Reference' mode places assets from gallery. (2) Edit LOP with Add Physics + Use Physics enables collisions. (3) Assets fall under gravity and collide with grid. (4) Verify Point Instancer mode does NOT work with physics (negative test). (5) Transform tools (T/R/E) work on physics-enabled assets.",
+    "synapse_tools": [],
+    "quick_render_chain": {
+        "description": "After layout and physics, the quick render chain is: Layout -> Edit (physics) -> Karma Physical Sky -> Karma Setup -> Camera. Camera shortcut: click camera shift tool icon to create camera at current viewport angle.",
+        "confidence": "high"
+    },
+    "layout_modes": {
+        "place": "Single asset placement at click location",
+        "line": "Place assets along a line",
+        "paint": "Brush-based scattering of assets",
+        "stack": "Vertical stacking of assets",
+        "scale": "Place with scale variation"
+    },
+    "physics_notes": {
+        "instanceable_reference_required": true,
+        "reason": "Point Instancer creates lightweight instances that don't carry individual physics properties. Instanceable Reference creates proper USD references that each support physics attributes.",
+        "confidence": "needs_verification",
+        "verification_note": "The exact technical reason why Point Instancer doesn't work with physics needs live Houdini verification. The source states it as a rule but doesn't explain the underlying USD mechanism."
+    }
+}
