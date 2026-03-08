@@ -22,6 +22,82 @@
             "timeout": 30
           }
         ]
+      },
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/Users/User/SYNAPSE/.claude/hooks/synapse_hooks_bridge.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/Users/User/SYNAPSE/.claude/hooks/synapse_hooks_bridge.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/Users/User/SYNAPSE/.claude/hooks/synapse_hooks_bridge.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/Users/User/SYNAPSE/.claude/hooks/synapse_hooks_bridge.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/Users/User/SYNAPSE/.claude/hooks/synapse_hooks_bridge.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/Users/User/SYNAPSE/.claude/hooks/synapse_hooks_bridge.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/Users/User/SYNAPSE/.claude/hooks/synapse_hooks_bridge.py",
+            "timeout": 5
+          }
+        ]
       }
     ]
   }

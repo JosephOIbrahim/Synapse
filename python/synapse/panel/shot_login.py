@@ -62,6 +62,69 @@ def _normalize_evolution(stage: str) -> str:
     return _EVOLUTION_MAP.get(stage, stage)
 
 
+def _check_evolution_triggers(claude_dir: str, name: str, current_stage: str) -> bool:
+    """Check if memory should be recommended for evolution.
+
+    Evaluates the CLAUDE.md-defined triggers (structured_data_count >= 5,
+    asset_references >= 3, parameter_records >= 5, node_path_references >= 10,
+    session_count >= 10, file_size_kb >= 100) against the markdown file.
+    Any single trigger met returns True.
+    """
+    if current_stage in ("structured", "composed"):
+        return False  # already evolved
+
+    md_path = os.path.join(claude_dir, "{}.md".format(name))
+    if not os.path.exists(md_path):
+        return False
+
+    try:
+        with open(md_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except OSError:
+        return False
+
+    lines = content.splitlines()
+
+    # Count structured data indicators
+    structured_count = 0
+    asset_refs = 0
+    param_records = 0
+    node_refs = 0
+    session_count = 0
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("- **") or stripped.startswith("| "):
+            structured_count += 1
+        if "/obj/" in stripped or "/stage/" in stripped or "/out/" in stripped:
+            node_refs += 1
+        if "asset" in stripped.lower() and (":" in stripped or "=" in stripped):
+            asset_refs += 1
+        if any(k in stripped.lower() for k in ("exposure", "intensity", "roughness", "focal")):
+            param_records += 1
+        if stripped.startswith("## Session") or stripped.startswith("### Session"):
+            session_count += 1
+
+    # File size check
+    size_kb = len(content.encode("utf-8")) / 1024
+
+    # Any ONE trigger met = recommend evolution
+    if structured_count >= 5:
+        return True
+    if asset_refs >= 3:
+        return True
+    if param_records >= 5:
+        return True
+    if node_refs >= 10:
+        return True
+    if session_count >= 10:
+        return True
+    if size_kb >= 100:
+        return True
+
+    return False
+
+
 def shot_login(hip_path: str = "") -> dict:
     """
     Main entry point for shot login. Loads context from all memory layers.
@@ -132,6 +195,19 @@ def shot_login(hip_path: str = "") -> dict:
             claude_scene, "memory"
         )
 
+    # Check evolution triggers
+    scene_evolution_recommended = False
+    project_evolution_recommended = False
+
+    if scene_evolution == "flat" and os.path.isdir(claude_scene):
+        scene_evolution_recommended = _check_evolution_triggers(
+            claude_scene, "memory", scene_evolution
+        )
+    if project_evolution == "flat" and claude_project and os.path.isdir(claude_project):
+        project_evolution_recommended = _check_evolution_triggers(
+            claude_project, "project", project_evolution
+        )
+
     result = {
         "project_dir": project_dir or "",
         "scene_dir": scene_dir,
@@ -139,6 +215,8 @@ def shot_login(hip_path: str = "") -> dict:
         "scene_context": scene_context,
         "project_evolution": project_evolution,
         "scene_evolution": scene_evolution,
+        "scene_evolution_recommended": scene_evolution_recommended,
+        "project_evolution_recommended": project_evolution_recommended,
         "hip_file": hip_path,
         "logged_in": True,
     }
@@ -390,6 +468,8 @@ def _minimal_login(reason: str = "") -> dict:
         "scene_context": "",
         "project_evolution": "none",
         "scene_evolution": "none",
+        "scene_evolution_recommended": False,
+        "project_evolution_recommended": False,
         "hip_file": "",
         "logged_in": False,
         "reason": reason,
