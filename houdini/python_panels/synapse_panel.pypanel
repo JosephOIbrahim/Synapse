@@ -174,12 +174,12 @@ class _FallbackClaudeWorker(QtCore.QThread):
     stream_error = QtCore.Signal(str)
     # Stubs -- never emitted, but wired so the panel doesn't crash
     tool_requested = QtCore.Signal(object)
-    tool_status = QtCore.Signal(str, str)
+    tool_status = QtCore.Signal(str, str, str)
 
     _API_HOST = "api.anthropic.com"
     _API_PATH = "/v1/messages"
     _API_VERSION = "2023-06-01"
-    _MODEL = "claude-sonnet-4-20250514"
+    _MODEL = "claude-sonnet-4-6"
     _MAX_TOKENS = 4096
 
     def __init__(self, messages, system_prompt="", parent=None):
@@ -267,6 +267,120 @@ class _FallbackClaudeWorker(QtCore.QThread):
                             pass
 
 
+# ── SSE Event Poller ─────────────────────────────────────
+
+class _SSEPoller(QtCore.QObject):
+    """Polls the MCP SSE endpoint for server-initiated events.
+
+    Uses a QTimer to periodically GET /mcp with Accept: text/event-stream.
+    Emits event_received for each SSE event so the panel can display them.
+    """
+
+    event_received = QtCore.Signal(str, str)  # (event_type, data_json)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._timer = QtCore.QTimer(self)
+        self._timer.timeout.connect(self._poll)
+        self._session_id = None
+        self._last_event_id = None
+        self._port = None
+        self._interval_ms = 3000  # 3 seconds default
+        self._consecutive_empties = 0
+
+    def start(self, session_id, port):
+        """Start polling with the given MCP session ID and port."""
+        self._session_id = session_id
+        self._port = port
+        self._last_event_id = None
+        self._consecutive_empties = 0
+        self._interval_ms = 3000
+        self._timer.start(self._interval_ms)
+
+    def stop(self):
+        """Stop polling."""
+        self._timer.stop()
+        self._session_id = None
+
+    @property
+    def active(self):
+        return self._timer.isActive()
+
+    def _poll(self):
+        """GET /mcp for SSE events."""
+        if not self._session_id or not self._port:
+            return
+
+        try:
+            conn = http.client.HTTPConnection("localhost", self._port, timeout=5)
+            headers = {
+                "Accept": "text/event-stream",
+                "Mcp-Session-Id": self._session_id,
+            }
+            if self._last_event_id:
+                headers["Last-Event-ID"] = self._last_event_id
+
+            conn.request("GET", "/mcp", headers=headers)
+            resp = conn.getresponse()
+            body = resp.read().decode("utf-8", errors="replace")
+            conn.close()
+
+            if resp.status != 200:
+                return
+
+            # Parse SSE events from body
+            events = self._parse_sse(body)
+
+            if not events:
+                # Adaptive backoff: slow down when idle
+                self._consecutive_empties += 1
+                if self._consecutive_empties > 5:
+                    new_interval = min(self._interval_ms + 1000, 10000)
+                    if new_interval != self._interval_ms:
+                        self._interval_ms = new_interval
+                        self._timer.setInterval(self._interval_ms)
+            else:
+                # Events received -- reset to fast polling
+                self._consecutive_empties = 0
+                if self._interval_ms != 3000:
+                    self._interval_ms = 3000
+                    self._timer.setInterval(self._interval_ms)
+
+                for evt in events:
+                    self._last_event_id = evt.get("id")
+                    self.event_received.emit(
+                        evt.get("event", "unknown"),
+                        evt.get("data", "{}"),
+                    )
+
+        except Exception:
+            pass  # Best-effort -- don't crash the panel
+
+    @staticmethod
+    def _parse_sse(body):
+        """Parse SSE text into list of event dicts."""
+        events = []
+        current = {}
+        for line in body.split("\n"):
+            line = line.strip()
+            if line.startswith("id: "):
+                current["id"] = line[4:]
+            elif line.startswith("event: "):
+                current["event"] = line[7:]
+            elif line.startswith("data: "):
+                current["data"] = line[6:]
+            elif line == "" and current:
+                if "event" in current:
+                    events.append(current)
+                current = {}
+            elif line.startswith(":"):
+                pass  # SSE comment (e.g., ": no events")
+        # Handle last event if no trailing blank line
+        if current and "event" in current:
+            events.append(current)
+        return events
+
+
 # ── Main Panel Widget ────────────────────────────────────
 
 class SynapsePanel(QtWidgets.QWidget):
@@ -342,6 +456,11 @@ class SynapsePanel(QtWidgets.QWidget):
             self._set_status("disconnected")
             self._log_activity("Server not running -- click Connect to start", "info")
 
+        # SSE event poller for MCP server-initiated events
+        self._sse_poller = _SSEPoller(self)
+        self._sse_poller.event_received.connect(self._on_sse_event)
+        QtCore.QTimer.singleShot(2000, self._start_sse_polling)
+
         # Deferred shot login (avoid blocking panel init)
         QtCore.QTimer.singleShot(200, self._deferred_shot_login)
 
@@ -353,6 +472,8 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def closeEvent(self, event):
         """Clean up timers and workers to prevent orphaned resources."""
+        if self._sse_poller and self._sse_poller.active:
+            self._sse_poller.stop()
         if self._health_timer:
             self._health_timer.stop()
         if self._dot_animator and hasattr(self._dot_animator, '_timer'):
@@ -478,14 +599,24 @@ class SynapsePanel(QtWidgets.QWidget):
                     btn.clicked.connect(
                         lambda checked=False, c=cmd: self._route_cmd(c)
                     )
-        except Exception:
-            pass  # context bar not available, panel still works
+        except Exception as exc:
+            # Deferred log -- _log is built after this in _build_activity_log
+            self._context_bar_error = str(exc)
 
         # 3. Chat area (dominant, stretch=1)
         layout.addWidget(self._build_chat_area(), stretch=1)
 
         # 4. Activity log (collapsible, hidden by default)
         layout.addWidget(self._build_activity_log())
+
+        # Surface any context bar init failure
+        if getattr(self, "_context_bar_error", None):
+            QtCore.QTimer.singleShot(
+                100, lambda: self._log_activity(
+                    "Context bar couldn't load: {}".format(self._context_bar_error),
+                    "warning",
+                )
+            )
 
         # 5. Compact footer
         layout.addWidget(self._build_connection_bar())
@@ -754,12 +885,15 @@ class SynapsePanel(QtWidgets.QWidget):
         self._ws_path_btn.setToolTip("Copy WebSocket URL to clipboard")
         self._ws_path_btn.clicked.connect(self._on_copy_ws_path)
         ws_sz = SIZE_LABEL if _HAS_DESIGN else 11
+        ws_color = SLATE if _HAS_DESIGN else "#555555"
+        ws_hover = SILVER if _HAS_DESIGN else "#888888"
+        ws_font = FONT_MONO if _HAS_DESIGN else "Consolas"
+        self._ws_path_btn.setCursor(QtCore.Qt.PointingHandCursor)
         self._ws_path_btn.setStyleSheet(
             "QPushButton {{ background: transparent; color: {c}; border: none; "
-            "font-size: {sz}px; font-family: {f}; }}".format(
-                c=SLATE if _HAS_DESIGN else "#555555",
-                sz=ws_sz,
-                f=FONT_MONO if _HAS_DESIGN else "Consolas",
+            "font-size: {sz}px; font-family: {f}; text-decoration: none; }}"
+            "QPushButton:hover {{ color: {h}; text-decoration: underline; }}".format(
+                c=ws_color, sz=ws_sz, f=ws_font, h=ws_hover,
             )
         )
         layout.addWidget(self._ws_path_btn)
@@ -882,6 +1016,81 @@ class SynapsePanel(QtWidgets.QWidget):
                 doc.blockCount() - _ACTIVITY_MAX_LINES,
             )
             cursor.removeSelectedText()
+
+    # ── SSE Event Handling ─────────────────────────────────
+
+    def _on_sse_event(self, event_type, data_json):
+        """Handle an SSE event from the MCP server."""
+        try:
+            data = json.loads(data_json)
+        except (json.JSONDecodeError, TypeError):
+            data = {}
+
+        if event_type == "synapse/render_progress":
+            status = data.get("status", "unknown")
+            tool = data.get("tool", "render")
+            self._log_activity(
+                "Render {}: {}".format(status, tool), "action"
+            )
+
+        elif event_type == "synapse/gate_request":
+            op = data.get("operation", "unknown")
+            level = data.get("level", "unknown")
+            self._log_activity(
+                "Gate check ({}) for {}".format(level, op), "warning"
+            )
+
+        elif event_type == "synapse/health_update":
+            status = data.get("status", "unknown")
+            reason = data.get("reason", "")
+            msg = "Health: {}".format(status)
+            if reason:
+                msg += " -- {}".format(reason[:80])
+            lvl = "warning" if status == "degraded" else "success"
+            self._log_activity(msg, lvl)
+
+        elif event_type == "synapse/memory_evolved":
+            self._log_activity("Memory evolved to next stage", "success")
+
+        elif event_type == "synapse/tools_changed":
+            self._log_activity("Tool list updated", "info")
+
+    def _start_sse_polling(self):
+        """Start SSE polling if hwebserver is available."""
+        try:
+            port = hou.webServer.port()
+        except Exception:
+            return
+
+        if not port:
+            return
+
+        # Get or create an MCP session for the panel
+        try:
+            conn = http.client.HTTPConnection("localhost", port, timeout=5)
+            body = json.dumps({
+                "jsonrpc": "2.0",
+                "id": "panel-sse-init",
+                "method": "initialize",
+                "params": {
+                    "clientInfo": {"name": "synapse-panel-sse", "version": "1.0.0"},
+                    "protocolVersion": "2025-06-18",
+                },
+            }, sort_keys=True).encode("utf-8")
+            conn.request("POST", "/mcp", body=body, headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            })
+            resp = conn.getresponse()
+            session_id = resp.getheader("Mcp-Session-Id")
+            resp.read()  # drain
+            conn.close()
+
+            if session_id:
+                self._sse_poller.start(session_id, port)
+                self._log_activity("SSE polling started", "info")
+        except Exception:
+            pass  # Best-effort
 
     # ── Tool Callbacks ───────────────────────────────────
 
@@ -1354,7 +1563,7 @@ class SynapsePanel(QtWidgets.QWidget):
             )
         )
 
-    def _launch_worker(self, messages, system_prompt):
+    def _launch_worker(self, messages, system_prompt, tools=None):
         """Launch a ClaudeWorker with standard signal wiring."""
         self._send_btn.setEnabled(False)
         self._stop_btn.setVisible(True)
@@ -1370,11 +1579,15 @@ class SynapsePanel(QtWidgets.QWidget):
             WorkerClass = _FallbackClaudeWorker
             _has_tools = False
 
-        self._worker = WorkerClass(
+        worker_kwargs = dict(
             messages=messages,
             system_prompt=system_prompt,
             parent=self,
         )
+        if tools is not None and _has_tools:
+            worker_kwargs["tools"] = tools
+
+        self._worker = WorkerClass(**worker_kwargs)
         self._worker.token_received.connect(self._on_token)
         self._worker.stream_done.connect(self._on_done)
         self._worker.stream_error.connect(self._on_error)
@@ -2276,7 +2489,35 @@ class SynapsePanel(QtWidgets.QWidget):
             )
         system_prompt = self._build_memory_system_prompt(system_prompt)
 
-        self._launch_worker(self._messages, system_prompt)
+        # MOE: Filter tools by domain and specialize prompt
+        filtered_tools = None
+        user_text_for_routing = user_text if isinstance(content, str) else user_text
+        try:
+            from synapse.panel.tool_filter import filter_tools
+            from synapse.panel.tool_bridge import get_anthropic_tools
+            all_tools = get_anthropic_tools()
+            filtered_tools, routing_decision = filter_tools(
+                user_text_for_routing, all_tools,
+            )
+            # Specialize system prompt based on routing
+            if routing_decision is not None:
+                try:
+                    from synapse.panel.agent_prompts import build_specialized_prompt
+                    system_prompt = build_specialized_prompt(
+                        system_prompt, routing_decision, self._gather_context(),
+                    )
+                except ImportError:
+                    pass
+                # Log routing decision (Phase 5)
+                try:
+                    from synapse.panel.routing_log import get_routing_log
+                    get_routing_log().log_decision(routing_decision)
+                except Exception:
+                    pass
+        except ImportError:
+            filtered_tools = None
+
+        self._launch_worker(self._messages, system_prompt, tools=filtered_tools)
 
     def _on_token(self, text):
         """Handle a streamed text token from the worker."""
@@ -2304,6 +2545,26 @@ class SynapsePanel(QtWidgets.QWidget):
         # Sync conversation history from the worker (includes tool loop turns)
         if self._worker:
             self._messages = self._worker.get_messages()
+
+        # Session integrity check (best-effort, never blocks)
+        try:
+            from synapse.panel.session_integrity import get_tracker
+            tracker = get_tracker()
+            if tracker.should_warn():
+                self._log_activity(
+                    "Integrity: {} violations detected (fidelity {:.0%})".format(
+                        tracker.violation_count, tracker.session_fidelity,
+                    ), "warning"
+                )
+            if tracker.should_evolve(
+                getattr(self, "_login_data", None)
+            ):
+                self._log_activity(
+                    "Memory evolution recommended -- structured data accumulated",
+                    "info",
+                )
+        except Exception:
+            pass
 
     def _on_error(self, error_msg):
         """Handle stream error with optional translation."""
@@ -2344,7 +2605,7 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
 
-    def _on_tool_status(self, tool_name, status):
+    def _on_tool_status(self, tool_name, status, summary=""):
         """Display a compact inline indicator showing tool execution status."""
         icons = {"running": "\u2699", "done": "\u2713", "error": "\u2717"}
         colors = {
@@ -2374,7 +2635,8 @@ class SynapsePanel(QtWidgets.QWidget):
             try:
                 from synapse.panel.session_journal import get_journal
                 get_journal().log_tool(
-                    tool_name, {}, None,
+                    tool_name, {"summary": summary} if summary else {},
+                    None,
                     error=("Tool error" if status == "error" else None),
                 )
             except Exception:

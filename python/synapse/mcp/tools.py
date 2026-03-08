@@ -12,6 +12,8 @@ Tool definitions are maintained in _tool_registry.py (single source of truth).
 This module re-exports the public API that server.py and mcp_server.py consume.
 """
 
+import time
+
 from ..core.protocol import SynapseCommand
 
 # =========================================================================
@@ -66,6 +68,20 @@ def has_tool(name: str) -> bool:
     return name in _TOOL_DISPATCH
 
 
+def _truncate_args(args, max_keys=5, max_val_len=100):
+    """Truncate tool arguments for journal logging."""
+    if not args or not isinstance(args, dict):
+        return args or {}
+    result = {}
+    for i, (k, v) in enumerate(sorted(args.items())):
+        if i >= max_keys:
+            result["..."] = "{} more keys".format(len(args) - max_keys)
+            break
+        sv = str(v)
+        result[k] = sv[:max_val_len] if len(sv) > max_val_len else sv
+    return result
+
+
 def dispatch_tool(handler, tool_name: str, arguments: dict) -> dict:
     """Dispatch an MCP tools/call request to SynapseHandler.
 
@@ -77,33 +93,67 @@ def dispatch_tool(handler, tool_name: str, arguments: dict) -> dict:
     Returns:
         MCP result dict with 'content' list and optional 'isError'.
     """
-    entry = _TOOL_DISPATCH.get(tool_name)
-    if entry is None:
-        return {
-            "content": [{"type": "text", "text": f"Unknown tool: {tool_name}"}],
-            "isError": True,
-        }
+    t0 = time.monotonic()
+    error_text = None
 
-    cmd_type, payload_fn = entry
-    payload = payload_fn(arguments)
+    try:
+        entry = _TOOL_DISPATCH.get(tool_name)
+        if entry is None:
+            error_text = f"Unknown tool: {tool_name}"
+            return {
+                "content": [{"type": "text", "text": error_text}],
+                "isError": True,
+            }
 
-    # Create a SynapseCommand and dispatch through the handler
-    command = SynapseCommand(
-        type=cmd_type,
-        id=_next_call_id(tool_name),
-        payload=payload,
-    )
-    response = handler.handle(command)
+        cmd_type, payload_fn = entry
+        payload = payload_fn(arguments)
 
-    if response.success:
-        data = response.data
-        text = _dumps_str(data) if isinstance(data, dict) else str(data or "")
-        return {"content": [{"type": "text", "text": text}]}
-    else:
-        return {
-            "content": [{"type": "text", "text": response.error or "Unknown error"}],
-            "isError": True,
-        }
+        # Create a SynapseCommand and dispatch through the handler
+        command = SynapseCommand(
+            type=cmd_type,
+            id=_next_call_id(tool_name),
+            payload=payload,
+        )
+
+        # Try bridge dispatch for undo/integrity wrapping
+        try:
+            from synapse.panel.bridge_adapter import (
+                execute_through_bridge, is_read_only,
+            )
+            if not is_read_only(tool_name):
+                response = execute_through_bridge(tool_name, handler, command)
+            else:
+                response = handler.handle(command)
+        except ImportError:
+            response = handler.handle(command)
+
+        if response.success:
+            data = response.data
+            text = _dumps_str(data) if isinstance(data, dict) else str(data or "")
+            return {"content": [{"type": "text", "text": text}]}
+        else:
+            error_text = response.error or "Unknown error"
+            return {
+                "content": [{"type": "text", "text": error_text}],
+                "isError": True,
+            }
+    except Exception as e:
+        error_text = str(e)
+        raise
+    finally:
+        # Log to session journal (best-effort, never breaks dispatch)
+        elapsed_ms = int((time.monotonic() - t0) * 1000)
+        try:
+            from synapse.panel.session_journal import get_journal
+            get_journal().log_tool(
+                tool_name,
+                _truncate_args(arguments),
+                None,
+                error=error_text,
+                duration_ms=elapsed_ms,
+            )
+        except Exception:
+            pass  # Journal unavailable -- don't break tool dispatch
 
 
 # =========================================================================

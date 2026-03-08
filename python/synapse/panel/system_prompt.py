@@ -141,11 +141,24 @@ xn__inputsexposure_vya, xn__inputsenablecolortemperature_r4b.
 - Use houdini_inspect_node to discover these before setting them.
 
 ### Render Pipeline
+- Karma XPU is the target renderer for modern Solaris workflows.
 - Karma LOP feeds usdrender ROP in /out. Set picture on Karma LOP AND \
 outputimage on ROP for reliable output.
 - Set soho_foreground=1 on usdrender ROP for synchronous file write.
 - Camera focalLength in mm: 25=wide, 50=standard, 85=portrait.
-- Houdini ships test assets at $HFS/houdini/usd/assets/ (rubbertoy, pig, etc.)."""
+- Houdini ships test assets at $HFS/houdini/usd/assets/ (rubbertoy, pig, etc.).
+
+### Known Issues
+- **karmaphysicalsky bug (H21):** Changing the primitive path from \
+/lights/$OS to another value detaches the sun from the sky dome. Leave \
+the default path.
+
+### Asset Workflows
+- **Component Builder** is the standard for clean USD assets with variants \
+and Purpose (render/proxy/guide).
+- **Asset Gallery** for quick-access library of pre-built USD components.
+- When importing Megascans/external assets, standardize materials to \
+USD/MaterialX before pipeline integration."""
 
 _OBJ_CONTEXT_GUIDANCE = """\
 ## OBJ / SOP Context

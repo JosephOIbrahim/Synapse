@@ -24,7 +24,7 @@ except ImportError:
     from PySide2.QtCore import QThread, Signal
 
 from .tool_bridge import get_anthropic_tools
-from .tool_executor import ToolRequest
+from .tool_executor import ToolRequest, try_mcp_tool_call
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ _HTTP_TIMEOUT = 60
 _API_HOST = "api.anthropic.com"
 _API_PATH = "/v1/messages"
 _API_VERSION = "2023-06-01"
-_MODEL = "claude-sonnet-4-20250514"
+_MODEL = "claude-sonnet-4-6"
 _MAX_TOKENS = 4096
 
 
@@ -46,25 +46,26 @@ class ClaudeWorker(QThread):
         stream_done():        Conversation loop completed successfully.
         stream_error(str):    Error message on failure.
         tool_requested(object): Emits a ToolRequest for main-thread execution.
-        tool_status(str, str):  (tool_name, status) -- "running"/"done"/"error".
+        tool_status(str, str, str):  (tool_name, status, summary) -- status is "running"/"done"/"error".
     """
 
     token_received = Signal(str)
     stream_done = Signal()
     stream_error = Signal(str)
     tool_requested = Signal(object)
-    tool_status = Signal(str, str)
+    tool_status = Signal(str, str, str)
 
     def __init__(
         self,
         messages: list[dict],
         system_prompt: str = "",
         parent=None,
+        tools: list[dict] | None = None,
     ) -> None:
         super().__init__(parent)
         self._messages: list[dict] = copy.deepcopy(messages)
         self._system: str = system_prompt
-        self._tools: list[dict] = get_anthropic_tools()
+        self._tools: list[dict] = tools if tools is not None else get_anthropic_tools()
         self._abort: bool = False
 
     # ------------------------------------------------------------------
@@ -164,7 +165,11 @@ class ClaudeWorker(QThread):
     # ------------------------------------------------------------------
 
     def _execute_tool_block(self, block: dict) -> dict:
-        """Execute one tool_use block via the main-thread executor.
+        """Execute one tool_use block, preferring MCP dispatch.
+
+        Tries the local MCP endpoint first (worker-thread safe, gets
+        resilience + journal logging). Falls back to Qt signal-based
+        main-thread dispatch if MCP is unavailable.
 
         Returns a tool_result content block for the next API call.
         """
@@ -172,13 +177,49 @@ class ClaudeWorker(QThread):
         tool_name = block["name"]
         tool_input = block.get("input", {})
 
+        summary = json.dumps(tool_input, default=str)[:120] if tool_input else ""
+        self.tool_status.emit(tool_name, "running", summary)
+
+        # Track tool call for session integrity (best-effort)
+        try:
+            from synapse.panel.session_integrity import get_tracker
+            get_tracker().record_tool_call(tool_name, tool_input)
+        except Exception:
+            pass
+
+        # --- Try MCP dispatch first (worker-thread safe) ---
+        try:
+            mcp_result = try_mcp_tool_call(tool_name, tool_input)
+            if mcp_result is not None:
+                # Extract integrity block if present in result
+                self._track_integrity(mcp_result)
+                self.tool_status.emit(tool_name, "done", summary)
+                content_str = json.dumps(mcp_result, default=str)
+                return {
+                    "type": "tool_result",
+                    "tool_use_id": tool_use_id,
+                    "content": content_str,
+                    "is_error": False,
+                }
+        except RuntimeError as exc:
+            # MCP returned a JSON-RPC error — tool-level failure
+            self.tool_status.emit(tool_name, "error", summary)
+            return {
+                "type": "tool_result",
+                "tool_use_id": tool_use_id,
+                "content": str(exc),
+                "is_error": True,
+            }
+        except Exception:
+            pass  # MCP unavailable — fall through to signal path
+
+        # --- Fallback: Qt signal to main-thread executor ---
         request = ToolRequest(
             tool_use_id=tool_use_id,
             tool_name=tool_name,
             tool_input=tool_input,
         )
 
-        self.tool_status.emit(tool_name, "running")
         self.tool_requested.emit(request)
 
         # Block until executor completes (or timeout)
@@ -188,12 +229,13 @@ class ClaudeWorker(QThread):
 
         # Determine status
         if request.error:
-            self.tool_status.emit(tool_name, "error")
+            self.tool_status.emit(tool_name, "error", summary)
             content_str = request.error
             is_error = True
         else:
-            self.tool_status.emit(tool_name, "done")
+            self.tool_status.emit(tool_name, "done", summary)
             if isinstance(request.result, dict):
+                self._track_integrity(request.result)
                 content_str = json.dumps(request.result, default=str)
             elif request.result is not None:
                 content_str = str(request.result)
@@ -207,6 +249,44 @@ class ClaudeWorker(QThread):
             "content": content_str,
             "is_error": is_error,
         }
+
+    # ------------------------------------------------------------------
+    # Integrity tracking (best-effort)
+    # ------------------------------------------------------------------
+
+    def _track_integrity(self, result: dict | None) -> None:
+        """Extract and record integrity block from tool result."""
+        if not result or not isinstance(result, dict):
+            return
+        try:
+            # MCP results may nest integrity in content or at top level
+            integrity = None
+            if "_integrity" in result:
+                integrity = result["_integrity"]
+            elif "content" in result and isinstance(result["content"], list):
+                for item in result["content"]:
+                    if isinstance(item, dict) and "text" in item:
+                        try:
+                            parsed = json.loads(item["text"])
+                            if isinstance(parsed, dict) and "_integrity" in parsed:
+                                integrity = parsed["_integrity"]
+                                break
+                        except (json.JSONDecodeError, TypeError):
+                            pass
+
+            if integrity and isinstance(integrity, dict):
+                from synapse.panel.session_integrity import get_tracker
+                get_tracker().record(integrity)
+
+                # Warn on low fidelity
+                fidelity = integrity.get("fidelity", 1.0)
+                if fidelity < 1.0:
+                    logger.warning(
+                        "Integrity violation: fidelity=%.2f op=%s",
+                        fidelity, integrity.get("operation", "unknown"),
+                    )
+        except Exception:
+            pass  # Never break tool dispatch for integrity tracking
 
     # ------------------------------------------------------------------
     # Streaming API request

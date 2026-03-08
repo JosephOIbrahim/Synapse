@@ -12,10 +12,19 @@ This module provides a ToolRequest + ToolExecutor pair that bridges the gap:
   6. Worker's request.done.wait() unblocks
 
 All hou.* calls happen on the main thread. The worker never touches hou.
+
+An optional MCP dispatch path is available via :func:`try_mcp_tool_call`.
+Worker threads can call this *before* emitting the Qt signal to route
+through the local hwebserver MCP endpoint, gaining resilience (circuit
+breaker, rate limiter), journal logging, and session tracking for free.
+The MCP path must NOT be called from the main thread (deadlock risk with
+hdefereval).
 """
 
 from __future__ import annotations
 
+import http.client
+import json
 import logging
 import threading
 import time
@@ -57,6 +66,141 @@ class ToolRequest:
     result: Any = field(default=None, repr=False)
     error: Optional[str] = None
     done: threading.Event = field(default_factory=threading.Event, repr=False)
+
+
+# ---------------------------------------------------------------------------
+# MCP local client (lightweight -- stdlib only)
+# ---------------------------------------------------------------------------
+
+class _MCPLocalClient:
+    """Lightweight JSON-RPC client for the local hwebserver MCP endpoint.
+
+    Uses http.client (stdlib) so there are zero external dependencies.
+    Manages a single MCP session with auto-initialize on first use.
+
+    NOT safe to use from the main thread -- the MCP endpoint dispatches
+    tool calls back to the main thread via hdefereval, so calling from
+    the main thread would deadlock.
+    """
+
+    def __init__(self):
+        self._session_id: Optional[str] = None
+        self._port: Optional[int] = None
+        self._lock = threading.Lock()
+
+    def _detect_port(self) -> Optional[int]:
+        """Detect hwebserver port from Houdini."""
+        try:
+            import hou
+            return hou.webServer.port()
+        except Exception:
+            return None
+
+    @property
+    def available(self) -> bool:
+        """Check if MCP endpoint is likely reachable."""
+        if self._port is None:
+            self._port = self._detect_port()
+        return self._port is not None
+
+    def _post(self, body: dict, headers: Optional[dict] = None) -> dict:
+        """POST JSON-RPC to localhost MCP endpoint. Returns parsed response."""
+        if self._port is None:
+            raise ConnectionError("hwebserver port unknown")
+
+        all_headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        if headers:
+            all_headers.update(headers)
+
+        payload = json.dumps(body, sort_keys=True).encode("utf-8")
+
+        conn = http.client.HTTPConnection("localhost", self._port, timeout=35)
+        try:
+            conn.request("POST", "/mcp", body=payload, headers=all_headers)
+            resp = conn.getresponse()
+            data = resp.read().decode("utf-8")
+
+            # Capture session ID from response headers
+            session_hdr = resp.getheader("Mcp-Session-Id")
+            if session_hdr:
+                self._session_id = session_hdr
+
+            return json.loads(data)
+        finally:
+            conn.close()
+
+    def _ensure_session(self) -> str:
+        """Initialize an MCP session if we don't have one."""
+        with self._lock:
+            if self._session_id is not None:
+                return self._session_id
+
+            result = self._post({
+                "jsonrpc": "2.0",
+                "id": "panel-init-{}".format(int(time.time() * 1000)),
+                "method": "initialize",
+                "params": {
+                    "clientInfo": {
+                        "name": "synapse-panel",
+                        "version": "1.0.0",
+                    },
+                    "protocolVersion": "2025-06-18",
+                },
+            })
+
+            if "error" in result:
+                raise ConnectionError(
+                    "MCP initialize failed: {}".format(result["error"])
+                )
+
+            if self._session_id is None:
+                raise ConnectionError("No Mcp-Session-Id in response")
+
+            return self._session_id
+
+    def call_tool(self, tool_name: str, arguments: dict) -> dict:
+        """Call a tool via MCP. Returns the result dict.
+
+        Raises ConnectionError if MCP is unreachable.
+        Raises RuntimeError if the tool call returns a JSON-RPC error.
+        """
+        session_id = self._ensure_session()
+
+        result = self._post(
+            {
+                "jsonrpc": "2.0",
+                "id": "panel-{}-{}".format(tool_name, int(time.time() * 1000)),
+                "method": "tools/call",
+                "params": {
+                    "name": tool_name,
+                    "arguments": arguments,
+                },
+            },
+            headers={"Mcp-Session-Id": session_id},
+        )
+
+        if "error" in result:
+            error_msg = result["error"].get("message", "Unknown MCP error")
+            # Session may have expired -- clear it so next call re-initializes
+            if result["error"].get("code") == -32003:  # SESSION_INVALID
+                with self._lock:
+                    self._session_id = None
+            raise RuntimeError(error_msg)
+
+        return result.get("result", {})
+
+    def reset(self) -> None:
+        """Reset the client (e.g., on session expiry)."""
+        with self._lock:
+            self._session_id = None
+            self._port = None
+
+
+# Module-level MCP client singleton
+_mcp_client = _MCPLocalClient()
 
 
 # ---------------------------------------------------------------------------
@@ -159,8 +303,19 @@ class ToolExecutor(QtCore.QObject):
                 )
                 return
 
-            # 5. Dispatch
-            response = handler.handle(command)
+            # 5. Dispatch (through bridge if available, direct otherwise)
+            try:
+                from synapse.panel.bridge_adapter import (
+                    execute_through_bridge, is_read_only,
+                )
+                if not is_read_only(request.tool_name):
+                    response = execute_through_bridge(
+                        request.tool_name, handler, command,
+                    )
+                else:
+                    response = handler.handle(command)
+            except ImportError:
+                response = handler.handle(command)
 
             # 6. Transfer result
             if response.success:
@@ -177,3 +332,29 @@ class ToolExecutor(QtCore.QObject):
         finally:
             # ALWAYS signal done -- the worker thread is blocking on this
             request.done.set()
+
+
+# ---------------------------------------------------------------------------
+# MCP dispatch helper (for worker threads)
+# ---------------------------------------------------------------------------
+
+def try_mcp_tool_call(
+    tool_name: str, arguments: dict
+) -> Optional[dict]:
+    """Try dispatching a tool call through the local MCP endpoint.
+
+    Safe to call from any thread (worker threads, background threads).
+    NOT safe to call from the main thread (will deadlock with hdefereval).
+
+    Returns:
+        Result dict on success, None if MCP is unavailable.
+
+    Raises:
+        RuntimeError: If MCP returned a JSON-RPC error (tool-level failure).
+    """
+    if not _mcp_client.available:
+        return None
+    try:
+        return _mcp_client.call_tool(tool_name, arguments)
+    except (ConnectionError, OSError):
+        return None
