@@ -1,0 +1,23 @@
+{
+  "id": "CE-4369bd715d75",
+  "created_cycle": 0,
+  "created_by": "RESEARCHER",
+  "created_at": "2026-03-09T00:17:27.020434",
+  "stage": "rule",
+  "category": "asset_import",
+  "pattern": "Solaris asset_import pattern: usdimport ->xform ->matchsize ->xform ->polyreduce ->output",
+  "context": "Source: Video 3: Create an Asset Library with Megascans (11:10). Evolution: charmeleon. MCP tool: synapse_solaris_import_megascans. Live validated: T6 PASS (H21.0.631). Constraints: Megascans .usdc files contain BOTH geometry and materials in layers \u2014 they must be imported separately.; Geometry: USD Import inside Component Geometry SOPs with unpack to polygons ON.; Materials: Use a Reference LOP pointing to the SAME .usdc file with /materials/* wildcard.",
+  "domain": "pipeline",
+  "confidence": 1.0,
+  "validation_count": 1,
+  "recurrence_count": 7,
+  "derived_from": [
+    "relay-solaris:SOLARIS_P6_MEGASCANS_IMPORT"
+  ],
+  "validated_by": [
+    "smoke_test:T6"
+  ],
+  "supersedes": null,
+  "promoted_at": null,
+  "promoted_to_file": null
+}

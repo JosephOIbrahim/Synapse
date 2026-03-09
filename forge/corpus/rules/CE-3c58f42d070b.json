@@ -1,0 +1,24 @@
+{
+  "id": "CE-3c58f42d070b",
+  "created_cycle": 0,
+  "created_by": "RESEARCHER",
+  "created_at": "2026-03-09T00:17:26.959364",
+  "stage": "rule",
+  "category": "scene_setup",
+  "pattern": "Solaris scene_setup pattern: primitive ->sopcreate ->camera ->materiallibrary ->karmaphysicalsky ->karmarendersettings ->usdrender_rop",
+  "context": "Source: Video 1: Full USD Scene Workflow from Scratch (12:17). Evolution: charmeleon. MCP tool: synapse_solaris_scene_template. Live validated: T1, T7 PASS (H21.0.631). Constraints: Chain SOP imports sequentially \u2014 NEVER merge. This relates to USD layer composition ordering.; Always add an Output node inside SOP Create to ensure name attribute and operations export correctly regardless of display flag.; Name attribute inside SOPs gives geometry identity in the USD hierarchy.",
+  "domain": "pipeline",
+  "confidence": 1.0,
+  "validation_count": 2,
+  "recurrence_count": 7,
+  "derived_from": [
+    "relay-solaris:SOLARIS_P1_CANONICAL_LOP_CHAIN"
+  ],
+  "validated_by": [
+    "smoke_test:T1",
+    "smoke_test:T7"
+  ],
+  "supersedes": null,
+  "promoted_at": null,
+  "promoted_to_file": null
+}

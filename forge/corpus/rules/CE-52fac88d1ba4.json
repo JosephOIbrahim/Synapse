@@ -1,0 +1,23 @@
+{
+  "id": "CE-52fac88d1ba4",
+  "created_cycle": 0,
+  "created_by": "RESEARCHER",
+  "created_at": "2026-03-09T00:17:26.996937",
+  "stage": "rule",
+  "category": "hierarchy",
+  "pattern": "Solaris hierarchy pattern: primitive",
+  "context": "Source: Video 1: Full USD Scene Workflow from Scratch (12:17). Evolution: charmeleon. MCP tool: synapse_solaris_scene_template. Live validated: T4 PASS (H21.0.631). Constraints: Always use Primitive LOP with Xform type and Kind=Group for the root hierarchy.; Four canonical child paths must exist: geo, LGT, MTL, cam.; $OS variable in primitive paths evaluates to the node name, providing automatic unique naming.",
+  "domain": "pipeline",
+  "confidence": 1.0,
+  "validation_count": 1,
+  "recurrence_count": 7,
+  "derived_from": [
+    "relay-solaris:SOLARIS_P4_HIERARCHY_DISCIPLINE"
+  ],
+  "validated_by": [
+    "smoke_test:T4"
+  ],
+  "supersedes": null,
+  "promoted_at": null,
+  "promoted_to_file": null
+}

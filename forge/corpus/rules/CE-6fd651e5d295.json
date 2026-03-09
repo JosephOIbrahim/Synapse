@@ -1,0 +1,23 @@
+{
+  "id": "CE-6fd651e5d295",
+  "created_cycle": 0,
+  "created_by": "RESEARCHER",
+  "created_at": "2026-03-09T00:17:26.984988",
+  "stage": "rule",
+  "category": "purpose_system",
+  "pattern": "Solaris purpose_system pattern from nodeflow_mario_leone",
+  "context": "Source: Video 2: Intro to Component Builder (11:27). Evolution: charmeleon. MCP tool: synapse_solaris_set_purpose. Live validated: T3 PASS (H21.0.631). Constraints: Every production asset should have at minimum render + proxy purpose defined.; Render purpose = full-res geometry shown at final render time.; Proxy purpose = low-poly version shown in viewport for interactive performance.",
+  "domain": "lookdev",
+  "confidence": 1.0,
+  "validation_count": 1,
+  "recurrence_count": 7,
+  "derived_from": [
+    "relay-solaris:SOLARIS_P3_PURPOSE_SYSTEM"
+  ],
+  "validated_by": [
+    "smoke_test:T3"
+  ],
+  "supersedes": null,
+  "promoted_at": null,
+  "promoted_to_file": null
+}

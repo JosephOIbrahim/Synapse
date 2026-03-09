@@ -1,0 +1,21 @@
+{
+  "id": "CE-babbf69783bb",
+  "created_cycle": 0,
+  "created_by": "RESEARCHER",
+  "created_at": "2026-03-09T00:17:27.033624",
+  "stage": "observation",
+  "category": "batch_pipeline",
+  "pattern": "Solaris batch_pipeline pattern: asset_catalog_pane ->asset_database ->component_output_thumbnail ->component_output_save ->add_to_gallery",
+  "context": "Source: Video 2: Intro to Component Builder (11:27) + Video 3: Create an Asset Library with Megascans (11:10). Evolution: charmeleon. Constraints: Order of operations is CRITICAL: Generate Thumbnail -> Save to Disk -> Add to Asset Catalog. Do NOT skip or reorder.; The Asset Catalog is a UI pane opened via New Pane -> Solaris -> Asset Catalog.; Asset database must be created first (Gear icon -> Create New Asset Database File).",
+  "domain": "pipeline",
+  "confidence": 0.9,
+  "validation_count": 0,
+  "recurrence_count": 1,
+  "derived_from": [
+    "relay-solaris:SOLARIS_P7_ASSET_GALLERY_TOPS"
+  ],
+  "validated_by": [],
+  "supersedes": null,
+  "promoted_at": null,
+  "promoted_to_file": null
+}

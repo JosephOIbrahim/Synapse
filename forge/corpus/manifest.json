@@ -9,12 +9,14 @@
       "stage": "observation",
       "category": "PARAMETER_CONFUSION",
       "domain": "lighting",
-      "pattern": "Dome light texture file parameter is xn__inputstexturefile_r3ah — not guessable from convention. Requires execute_python discovery.",
+      "pattern": "Dome light texture file parameter is xn__inputstexturefile_r3ah \u2014 not guessable from convention. Requires execute_python discovery.",
       "context": "Setting HDRI on dome light LOP in Houdini 21",
       "confidence": 0.2,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T1-LGT-001"]
+      "derived_from": [
+        "T1-LGT-001"
+      ]
     },
     "OBS-002": {
       "id": "OBS-002",
@@ -28,7 +30,9 @@
       "confidence": 0.3,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T1-LGT-002"]
+      "derived_from": [
+        "T1-LGT-002"
+      ]
     },
     "OBS-003": {
       "id": "OBS-003",
@@ -42,7 +46,10 @@
       "confidence": 0.5,
       "validation_count": 2,
       "recurrence_count": 2,
-      "derived_from": ["T1-MTL-001", "T3-FULL-001"]
+      "derived_from": [
+        "T1-MTL-001",
+        "T3-FULL-001"
+      ]
     },
     "OBS-004": {
       "id": "OBS-004",
@@ -56,7 +63,9 @@
       "confidence": 0.2,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T1-MTL-001"]
+      "derived_from": [
+        "T1-MTL-001"
+      ]
     },
     "OBS-005": {
       "id": "OBS-005",
@@ -70,7 +79,11 @@
       "confidence": 0.5,
       "validation_count": 2,
       "recurrence_count": 2,
-      "derived_from": ["T1-RND-001", "T2-LGT-001", "T2-RND-001"]
+      "derived_from": [
+        "T1-RND-001",
+        "T2-LGT-001",
+        "T2-RND-001"
+      ]
     },
     "OBS-006": {
       "id": "OBS-006",
@@ -84,7 +97,9 @@
       "confidence": 0.3,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T1-RND-001"]
+      "derived_from": [
+        "T1-RND-001"
+      ]
     },
     "OBS-007": {
       "id": "OBS-007",
@@ -93,12 +108,14 @@
       "stage": "observation",
       "category": "PARAMETER_CONFUSION",
       "domain": "lighting",
-      "pattern": "Light color parameters are split into individual R/G/B components: xn__inputscolor_ztar (R), xn__inputscolor_ztag (G), xn__inputscolor_ztab (B). No tuple set available via set_parm — requires 3 separate calls.",
+      "pattern": "Light color parameters are split into individual R/G/B components: xn__inputscolor_ztar (R), xn__inputscolor_ztag (G), xn__inputscolor_ztab (B). No tuple set available via set_parm \u2014 requires 3 separate calls.",
       "context": "Setting light color on any USD light in Solaris",
       "confidence": 0.2,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T1-PAR-001"]
+      "derived_from": [
+        "T1-PAR-001"
+      ]
     },
     "OBS-008": {
       "id": "OBS-008",
@@ -107,12 +124,15 @@
       "stage": "pattern",
       "category": "MISSING_CONVENTION",
       "domain": "general",
-      "pattern": "execute_python with atomic=true (default) prevents hou.undos.performUndo() inside the code block — 'Cannot undo within an undo group' error. Must pass atomic=false for any code that calls undo/redo. Also breaks auto-rollback on NameError/TypeError — orphan nodes persist.",
+      "pattern": "execute_python with atomic=true (default) prevents hou.undos.performUndo() inside the code block \u2014 'Cannot undo within an undo group' error. Must pass atomic=false for any code that calls undo/redo. Also breaks auto-rollback on NameError/TypeError \u2014 orphan nodes persist.",
       "context": "Using undo system via execute_python MCP tool",
       "confidence": 0.5,
       "validation_count": 2,
       "recurrence_count": 2,
-      "derived_from": ["T1-SAF-001", "T2-SAF-001"]
+      "derived_from": [
+        "T1-SAF-001",
+        "T2-SAF-001"
+      ]
     },
     "OBS-009": {
       "id": "OBS-009",
@@ -126,7 +146,9 @@
       "confidence": 0.2,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T1-SAF-001"]
+      "derived_from": [
+        "T1-SAF-001"
+      ]
     },
     "OBS-010": {
       "id": "OBS-010",
@@ -140,7 +162,9 @@
       "confidence": 0.2,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T1-MEM-001"]
+      "derived_from": [
+        "T1-MEM-001"
+      ]
     },
     "OBS-011": {
       "id": "OBS-011",
@@ -154,7 +178,11 @@
       "confidence": 0.3,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T1-LGT-001", "T1-LGT-002", "T1-PAR-001"]
+      "derived_from": [
+        "T1-LGT-001",
+        "T1-LGT-002",
+        "T1-PAR-001"
+      ]
     },
     "OBS-012": {
       "id": "OBS-012",
@@ -163,12 +191,14 @@
       "stage": "observation",
       "category": "WORKFLOW_FRICTION",
       "domain": "general",
-      "pattern": "synapse_batch fails with 'undos object has no attribute beginGroup' when atomic=true. Batch command undo grouping is broken — must use individual tool calls instead.",
+      "pattern": "synapse_batch fails with 'undos object has no attribute beginGroup' when atomic=true. Batch command undo grouping is broken \u2014 must use individual tool calls instead.",
       "context": "Using synapse_batch to set multiple parameters atomically",
       "confidence": 0.3,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T2-LGT-001"]
+      "derived_from": [
+        "T2-LGT-001"
+      ]
     },
     "OBS-013": {
       "id": "OBS-013",
@@ -182,7 +212,11 @@
       "confidence": 0.6,
       "validation_count": 3,
       "recurrence_count": 3,
-      "derived_from": ["T1-RND-001", "T2-RND-001", "T3-FULL-001"]
+      "derived_from": [
+        "T1-RND-001",
+        "T2-RND-001",
+        "T3-FULL-001"
+      ]
     },
     "OBS-014": {
       "id": "OBS-014",
@@ -196,7 +230,9 @@
       "confidence": 0.3,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T2-SAF-001"]
+      "derived_from": [
+        "T2-SAF-001"
+      ]
     },
     "OBS-015": {
       "id": "OBS-015",
@@ -205,12 +241,14 @@
       "stage": "observation",
       "category": "WORKFLOW_FRICTION",
       "domain": "render",
-      "pattern": "render_settings tool correctly round-trips all parameter types: resolution (int), samples (int), pixel filter (string menu), AOV toggles (bool). No friction on settings read/write — only on output file persistence.",
+      "pattern": "render_settings tool correctly round-trips all parameter types: resolution (int), samples (int), pixel filter (string menu), AOV toggles (bool). No friction on settings read/write \u2014 only on output file persistence.",
       "context": "Karma render settings configuration via MCP",
       "confidence": 0.4,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T2-RND-001"]
+      "derived_from": [
+        "T2-RND-001"
+      ]
     },
     "OBS-016": {
       "id": "OBS-016",
@@ -219,12 +257,14 @@
       "stage": "observation",
       "category": "MISSING_CONVENTION",
       "domain": "render",
-      "pattern": "LOP nodes have no setRenderFlag() method — only setDisplayFlag(). Calling setRenderFlag() raises AttributeError. Display flag is sufficient for karma rendering.",
+      "pattern": "LOP nodes have no setRenderFlag() method \u2014 only setDisplayFlag(). Calling setRenderFlag() raises AttributeError. Display flag is sufficient for karma rendering.",
       "context": "Setting up karma render chain in LOPs",
       "confidence": 0.4,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T2-RND-001"]
+      "derived_from": [
+        "T2-RND-001"
+      ]
     },
     "OBS-017": {
       "id": "OBS-017",
@@ -233,12 +273,15 @@
       "stage": "validated",
       "category": "MISSING_CONVENTION",
       "domain": "general",
-      "pattern": "Error messages from SYNAPSE follow coaching tone consistently: 'Couldn't find parameter', 'Couldn't find a node at', 'The attempted operation failed'. All errors are recoverable — subsequent operations work normally after any error.",
+      "pattern": "Error messages from SYNAPSE follow coaching tone consistently: 'Couldn't find parameter', 'Couldn't find a node at', 'The attempted operation failed'. All errors are recoverable \u2014 subsequent operations work normally after any error.",
       "context": "Error handling and recovery across all MCP tools",
       "confidence": 0.7,
       "validation_count": 8,
       "recurrence_count": 8,
-      "derived_from": ["T2-SAF-001", "T3-STRESS-001"]
+      "derived_from": [
+        "T2-SAF-001",
+        "T3-STRESS-001"
+      ]
     },
     "OBS-018": {
       "id": "OBS-018",
@@ -252,7 +295,9 @@
       "confidence": 0.5,
       "validation_count": 3,
       "recurrence_count": 1,
-      "derived_from": ["T3-FULL-001"]
+      "derived_from": [
+        "T3-FULL-001"
+      ]
     },
     "OBS-019": {
       "id": "OBS-019",
@@ -266,7 +311,10 @@
       "confidence": 0.4,
       "validation_count": 2,
       "recurrence_count": 2,
-      "derived_from": ["T1-MTL-001", "T3-FULL-001"]
+      "derived_from": [
+        "T1-MTL-001",
+        "T3-FULL-001"
+      ]
     },
     "OBS-020": {
       "id": "OBS-020",
@@ -280,7 +328,9 @@
       "confidence": 0.5,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T3-STRESS-001"]
+      "derived_from": [
+        "T3-STRESS-001"
+      ]
     },
     "OBS-021": {
       "id": "OBS-021",
@@ -289,12 +339,14 @@
       "stage": "observation",
       "category": "MISSING_CONVENTION",
       "domain": "lighting",
-      "pattern": "set_parm accepts any value for intensity parameters including values >1.0, negative, and extreme values. No Lighting Law warning emitted. Intensity should always be 1.0 — brightness via exposure only.",
+      "pattern": "set_parm accepts any value for intensity parameters including values >1.0, negative, and extreme values. No Lighting Law warning emitted. Intensity should always be 1.0 \u2014 brightness via exposure only.",
       "context": "Setting light intensity via MCP tools",
       "confidence": 0.4,
       "validation_count": 1,
       "recurrence_count": 1,
-      "derived_from": ["T3-STRESS-001"]
+      "derived_from": [
+        "T3-STRESS-001"
+      ]
     },
     "OBS-022": {
       "id": "OBS-022",
@@ -308,7 +360,9 @@
       "confidence": 0.4,
       "validation_count": 2,
       "recurrence_count": 2,
-      "derived_from": ["T3-STRESS-001"]
+      "derived_from": [
+        "T3-STRESS-001"
+      ]
     },
     "OBS-023": {
       "id": "OBS-023",
@@ -322,14 +376,95 @@
       "confidence": 0.5,
       "validation_count": 2,
       "recurrence_count": 2,
-      "derived_from": ["T2-RND-001", "T3-FULL-001"]
+      "derived_from": [
+        "T2-RND-001",
+        "T3-FULL-001"
+      ]
+    },
+    "CE-02e077fe89b1": {
+      "stage": "rule",
+      "content_hash": "7fda10f6624465b4",
+      "confidence": 1.0,
+      "updated": "2026-03-09T00:16:56.568107"
+    },
+    "CE-77bcbb9e7823": {
+      "stage": "rule",
+      "content_hash": "7fda10f6624465b4",
+      "confidence": 1.0,
+      "updated": "2026-03-09T00:17:07.955231"
+    },
+    "CE-3c58f42d070b": {
+      "stage": "rule",
+      "content_hash": "0cda556a85c0b9bb",
+      "confidence": 1.0,
+      "updated": "2026-03-09T00:17:26.965727"
+    },
+    "CE-9ce3ec8e4957": {
+      "stage": "rule",
+      "content_hash": "7614e847a2c29973",
+      "confidence": 1.0,
+      "updated": "2026-03-09T00:17:26.977230"
+    },
+    "CE-6fd651e5d295": {
+      "stage": "rule",
+      "content_hash": "977e89b491ee6c37",
+      "confidence": 1.0,
+      "updated": "2026-03-09T00:17:26.991429"
+    },
+    "CE-52fac88d1ba4": {
+      "stage": "rule",
+      "content_hash": "68e16fd5bc7a6d9d",
+      "confidence": 1.0,
+      "updated": "2026-03-09T00:17:27.002009"
+    },
+    "CE-69b6a447b3e3": {
+      "stage": "rule",
+      "content_hash": "6e1c00b393f18cfc",
+      "confidence": 1.0,
+      "updated": "2026-03-09T00:17:27.014111"
+    },
+    "CE-4369bd715d75": {
+      "stage": "rule",
+      "content_hash": "c2ef95a9dcfd4602",
+      "confidence": 1.0,
+      "updated": "2026-03-09T00:17:27.026743"
+    },
+    "CE-babbf69783bb": {
+      "stage": "observation",
+      "content_hash": "ab350bbafa6a183c",
+      "confidence": 0.9,
+      "updated": "2026-03-09T00:17:27.039628"
+    },
+    "CE-ff3af8e4589e": {
+      "stage": "observation",
+      "content_hash": "2ac4a4f2790cd54f",
+      "confidence": 0.9,
+      "updated": "2026-03-09T00:17:27.051717"
     }
   },
   "stats": {
-    "total": 23,
-    "by_stage": {"observation": 17, "pattern": 5, "validated": 1},
-    "by_domain": {"lighting": 5, "lookdev": 3, "render": 7, "general": 6, "pipeline": 1, "layout": 0},
-    "by_category": {"PARAMETER_CONFUSION": 4, "HALLUCINATED_API": 2, "WORKFLOW_FRICTION": 9, "MISSING_CONVENTION": 5, "TOOL_GAP": 1, "SAFETY_CONCERN": 2},
-    "avg_confidence": 0.38
+    "total": 18,
+    "by_stage": {
+      "observation": 10,
+      "rule": 8
+    },
+    "by_domain": {
+      "general": 8,
+      "pipeline": 7,
+      "layout": 1,
+      "lookdev": 2
+    },
+    "by_category": {
+      "unknown": 8,
+      "batch_pipeline": 1,
+      "layout": 1,
+      "scene_setup": 3,
+      "asset_import": 1,
+      "hierarchy": 1,
+      "variants": 1,
+      "purpose_system": 1,
+      "asset_pipeline": 1
+    },
+    "avg_confidence": 0.5888888888888889
   }
 }
