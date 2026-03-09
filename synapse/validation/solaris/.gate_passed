@@ -1,0 +1,33 @@
+RELAY-SOLARIS Phase 4: Live Validation — GATE PASSED
+Agent: AGENT-SUP (VFX Supervisor)
+Date: 2026-03-08
+Houdini: 21.0.631 at ws://localhost:9999/synapse
+Synapse Protocol: 4.0.0
+
+Component Builder Strategy: SUBNET (no native componentbuilder in H21)
+  - componentgeometry: AVAILABLE
+  - componentmaterial: AVAILABLE
+  - componentoutput: AVAILABLE
+
+Smoke Tests: 7/7 PASSED
+  T1: Scene Template — PASS (blocker)
+  T2: Component Builder — PASS (blocker)
+  T3: Purpose Toggle — PASS
+  T4: Hierarchy Check — PASS (blocker)
+  T5: Variant Creation — PASS
+  T6: Megascans Import — PASS
+  T7: Render Output — PASS (blocker) — 26KB PNG rendered
+
+Known Issues (non-blocking):
+  - execute_python scoping bug with multi-line dict literals
+  - karmarendersettings resolutiony permission lock (auto-driven by aspect ratio)
+  - materiallibrary has no primpath parm (tool should skip)
+  - print() not captured by execute_python (use expression-return)
+
+Phase 4 Gate Checklist:
+  [x] Connection verified (H21.0.631)
+  [x] Component builder strategy determined (SUBNET)
+  [x] All 4 blocker tests pass (T1, T2, T4, T7)
+  [x] All 7 smoke tests pass
+  [x] Results documented in smoke_test_results.md
+  [x] Known issues catalogued (non-blocking)
