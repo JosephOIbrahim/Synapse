@@ -143,6 +143,7 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     # Batch
     "synapse_batch": "build_from_manifest",
     "synapse_solaris_assemble_chain": "build_from_manifest",
+    "synapse_solaris_build_graph": "build_from_manifest",
 }
 
 # ── Tool name → inferred AgentID ─────────────────────────────────

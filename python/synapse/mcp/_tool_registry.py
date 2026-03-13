@@ -603,6 +603,34 @@ TOOL_DEFS: list[tuple] = [
      }, "required": []},
      False, False, True),
 
+    ("synapse_solaris_build_graph", "solaris_build_graph", _identity,
+     "Build a Solaris LOP network with arbitrary topology: merge nodes, "
+     "sublayer stacks, parallel streams. Specify nodes and connections as "
+     "a directed acyclic graph. Supports pre-built templates for common "
+     "patterns (multi_asset_merge, sublayer_stack, render_pass_split, "
+     "lighting_rig). Use assemble_chain for simple linear wiring.",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "nodes": {"type": "array", "items": {"type": "object", "properties": {
+             "id": {"type": "string", "description": "Local graph ID for connections"},
+             "type": {"type": "string", "description": "LOP node type (e.g. merge, sopcreate)"},
+             "name": {"type": "string", "description": "Houdini node name (defaults to id)"},
+             "parms": {"type": "object", "description": "Parameter values to set"},
+         }, "required": ["id", "type"]}, "description": "Nodes to create"},
+         "connections": {"type": "array", "items": {"type": "object", "properties": {
+             "from": {"type": "string", "description": "Source node id"},
+             "to": {"type": "string", "description": "Target node id"},
+             "input": {"type": "integer", "description": "Target input index (default: 0). Order matters for merge/sublayer."},
+             "output": {"type": "integer", "description": "Source output index (default: 0)"},
+         }, "required": ["from", "to"]}, "description": "Connection wiring"},
+         "display_node": {"type": "string", "description": "Node id to set display flag (auto-detects if omitted)"},
+         "template": {"type": "string", "enum": ["multi_asset_merge", "sublayer_stack", "render_pass_split", "lighting_rig"],
+                      "description": "Pre-built topology template (optional)"},
+         "template_params": {"type": "object", "description": "Parameters for template expansion"},
+         "dry_run": {"type": "boolean", "description": "Preview graph without creating (default: false)"},
+     }, "required": ["nodes", "connections"]},
+     False, False, True),
+
     ("houdini_configure_light_linking", "configure_light_linking", _identity,
      "Configure light linking between lights and geometry via USD collections. "
      "Control which geometry a light illuminates or casts shadows on. "

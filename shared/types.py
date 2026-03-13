@@ -131,6 +131,36 @@ class NodeManifest:
         }
 
 
+# ── Graph Specification (DAG Assembly) ──────────────────────────
+
+@dataclass
+class GraphNodeSpec:
+    """Node specification for graph assembly (uses local id for connections)."""
+    id: str
+    type: str
+    name: str = ""
+    parms: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class GraphConnectionSpec:
+    """Connection in a graph (references node ids, not paths)."""
+    from_id: str
+    to_id: str
+    input: int = 0
+    output: int = 0
+
+
+@dataclass
+class GraphSpec:
+    """DAG specification for Solaris graph assembly."""
+    parent: str = "/stage"
+    nodes: list[GraphNodeSpec] = field(default_factory=list)
+    connections: list[GraphConnectionSpec] = field(default_factory=list)
+    display_node: str | None = None
+    template: str | None = None
+
+
 # ── Geometry Summary ────────────────────────────────────────────
 
 @dataclass

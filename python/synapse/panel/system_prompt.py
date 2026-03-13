@@ -148,6 +148,18 @@ outputimage on ROP for reliable output.
 - Camera focalLength in mm: 25=wide, 50=standard, 85=portrait.
 - Houdini ships test assets at $HFS/houdini/usd/assets/ (rubbertoy, pig, etc.).
 
+### Graph Assembly (build_graph vs assemble_chain)
+- **assemble_chain**: Linear wiring only. Use for simple sequential chains \
+(SOPCreate → Materials → Camera → Lights → Render → OUTPUT).
+- **build_graph**: Arbitrary DAG topology. Use when you need merge nodes, \
+sublayer stacks, parallel streams, or any multi-input wiring.
+- Merge input ordering matters: input 0 has highest opinion strength in USD \
+composition. Wire geometry first, lights second, referenced assets last.
+- Templates: multi_asset_merge (N streams → merge → tail), \
+sublayer_stack (N sublayers → merge), render_pass_split (source → N renders), \
+lighting_rig (N lights → merge).
+- Always prefer build_graph over execute_python for multi-stream topologies.
+
 ### Known Issues
 - **karmaphysicalsky bug (H21):** Changing the primitive path from \
 /lights/$OS to another value detaches the sun from the sky dome. Leave \

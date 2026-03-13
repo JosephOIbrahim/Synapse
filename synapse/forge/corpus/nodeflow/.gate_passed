@@ -20,6 +20,11 @@ Gate checklist:
   [x] No top-level "inferred" entries — all from source material
   [x] Gaps flagged with confidence: "needs_verification"
 
+Post-extraction addition (2026-03-13):
+  pattern_09_branching_topology.json  — SOLARIS_P9_BRANCHING_TOPOLOGY (high confidence, live-validated H21)
+  Added by: HANDS (primary) + INTEGRATOR (advisory)
+  Validation: Live smoke test in H21.0.631 — 3-stream merge template built and verified
+
 Items flagged for live Houdini verification:
   1. Pattern 7: Exact TOP node type name "USD Assets to Gallery" — needs verification
   2. Pattern 7: Shift+V shortcut for batch processing — may be custom shelf or built-in PDG shortcut

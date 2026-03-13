@@ -38,6 +38,7 @@ TOOL_NAMES = [
     "houdini_assign_material",
     "houdini_read_material",
     "synapse_solaris_assemble_chain",
+    "synapse_solaris_build_graph",
 ]
 
 # Dispatch entries for this group
@@ -57,4 +58,5 @@ DISPATCH_KEYS = {
     "houdini_assign_material":      ("assign_material",        "identity"),
     "houdini_read_material":        ("read_material",          "identity"),
     "synapse_solaris_assemble_chain": ("solaris_assemble_chain", "identity"),
+    "synapse_solaris_build_graph":    ("solaris_build_graph",    "identity"),
 }

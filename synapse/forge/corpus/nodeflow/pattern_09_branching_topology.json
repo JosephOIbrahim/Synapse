@@ -1,0 +1,77 @@
+{
+    "pattern_id": "SOLARIS_P9_BRANCHING_TOPOLOGY",
+    "source": "live_validation_h21_0_631",
+    "confidence": "high",
+    "evolution": "charmeleon",
+    "description": "Rules for non-linear Solaris LOP topologies — when to merge vs chain, ROP terminal behavior, and canonical ordering within DAGs.",
+    "rules": [
+        {
+            "rule_id": "MERGE_ONLY_FOR_USD_LAYERS",
+            "severity": "critical",
+            "description": "Merge nodes combine separate USD layer streams (parallel asset pipelines, department outputs). Individual scene elements (cameras, lights, materials) chain LINEARLY — they do NOT need merging.",
+            "correct": "sopcreate_A → merge ← sopcreate_B (two asset streams)",
+            "wrong": "rectlight_key → merge ← rectlight_fill (lights are not separate USD layers)",
+            "validated": true
+        },
+        {
+            "rule_id": "ROP_IS_TERMINAL",
+            "severity": "critical",
+            "description": "usdrender_rop is a RopNode with maxNumOutputs=0. Nothing can wire after it. It branches off the main chain — it does NOT continue it.",
+            "correct": "karmarenderproperties → OUTPUT null (display) AND karmarenderproperties → usdrender_rop (branch)",
+            "wrong": "karmarenderproperties → usdrender_rop → OUTPUT null (invalid — ROP has zero outputs)",
+            "validated": true,
+            "houdini_api": "hou.RopNode has no setDisplayFlag()"
+        },
+        {
+            "rule_id": "DISPLAY_FLAG_ON_NULL",
+            "severity": "high",
+            "description": "Display flag goes on the OUTPUT null at the end of the main chain. ROP nodes cannot receive display flags (they are RopNode, not LopNode).",
+            "validated": true
+        },
+        {
+            "rule_id": "CANONICAL_RENDER_TAIL",
+            "severity": "high",
+            "description": "After any merge or source node, the render tail follows FORGE Pattern 1 order: materiallibrary → camera → domelight → karmarenderproperties → OUTPUT null, with usdrender_rop branching off karmarenderproperties.",
+            "node_order": [
+                {"type": "materiallibrary", "order": 200, "required": true},
+                {"type": "camera", "order": 400, "required": true},
+                {"type": "domelight", "order": 600, "required": true},
+                {"type": "karmarenderproperties", "order": 700, "required": true},
+                {"type": "null", "order": 900, "role": "OUTPUT", "display_flag": true},
+                {"type": "usdrender_rop", "order": 800, "role": "branch_from_karma", "terminal": true}
+            ],
+            "validated": true
+        },
+        {
+            "rule_id": "LAYOUT_AFTER_ALL_CONNECTIONS",
+            "severity": "high",
+            "description": "layoutChildren() must be called AFTER all nodes are created and ALL connections are wired. Calling it mid-construction produces messy layouts.",
+            "validated": true
+        },
+        {
+            "rule_id": "MERGE_INPUT_ORDER_IS_OPINION_STRENGTH",
+            "severity": "medium",
+            "description": "In merge nodes, input 0 has the strongest USD composition opinion. Wire geometry first (input 0), then lights, then referenced assets. Gaps in input indices produce warnings.",
+            "validated": true
+        }
+    ],
+    "templates": {
+        "multi_asset_merge": "N geo streams → merge → materiallibrary → camera → domelight → karma → OUTPUT null (+ ROP branch). Merge is valid: combining parallel asset streams.",
+        "sublayer_stack": "N sublayer refs → merge → karma → OUTPUT null (+ ROP branch). Merge is valid: combining separate USD layers.",
+        "render_pass_split": "Scene input null → N × (karma → ROP). Fan-out for multi-pass rendering.",
+        "lighting_rig": "Scene input null → domelight → key → fill → karma → OUTPUT null (+ ROP branch). Lights chain LINEARLY."
+    },
+    "constraints": [
+        "NEVER merge individual lights — chain them linearly",
+        "NEVER wire anything after usdrender_rop — it has zero outputs",
+        "ALWAYS include karmarenderproperties in a renderable scene",
+        "ALWAYS include materiallibrary — scenes without materials render as grey default",
+        "ALWAYS call layoutChildren() after all connections are complete",
+        "ALWAYS set display flag on OUTPUT null, not on ROP"
+    ],
+    "synapse_tools": [
+        "synapse_solaris_build_graph",
+        "synapse_solaris_assemble_chain"
+    ],
+    "test_criteria": "Build a 3-stream multi_asset_merge template in /stage. Verify: (1) 10 nodes created. (2) karma_settings outputs to both OUTPUT and render. (3) Display flag on OUTPUT null. (4) No merge nodes for lights. (5) Canonical order: matlib → camera → domelight → karma → OUTPUT. (6) Layout clean after layoutChildren()."
+}
