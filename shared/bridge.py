@@ -29,6 +29,18 @@ import hashlib
 import json
 
 from shared.types import AgentID, ExecutionResult
+from shared.constants import (
+    AGENT_CONTEXT_REQUIREMENTS,
+    FIDELITY_DEGRADED,
+    FIDELITY_PERFECT,
+    GATE_POLL_INTERVAL,
+    GATE_TIMEOUT_APPROVE,
+    GATE_TIMEOUT_CRITICAL,
+    HASH_LENGTH,
+    OPERATION_GATES as _OPERATION_GATES_RAW,
+    READ_ONLY_OPS,
+    READ_ONLY_PREFIXES,
+)
 
 # ── Houdini Import Guard ────────────────────────────────────────
 # Production: real hou + hdefereval inside Houdini
@@ -96,13 +108,9 @@ class IntegrityBlock:
         """1.0 = pipeline functioning. <1.0 = pipeline bug."""
         if not self.anchors_hold:
             return 0.0
-        read_only_ops = (
-            "read_only", "read_network", "inspect_geometry",
-            "read_stage", "capture_viewport",
-        )
-        if not self.delta_hash and self.operation_type not in read_only_ops:
-            return 0.5
-        return 1.0
+        if not self.delta_hash and self.operation_type not in READ_ONLY_OPS:
+            return FIDELITY_DEGRADED
+        return FIDELITY_PERFECT
 
     def to_dict(self) -> dict:
         return {
@@ -131,26 +139,7 @@ class GateLevel(str, Enum):
 
 
 OPERATION_GATES: dict[str, GateLevel] = {
-    "read_network": GateLevel.INFORM,
-    "inspect_geometry": GateLevel.INFORM,
-    "read_stage": GateLevel.INFORM,
-    "capture_viewport": GateLevel.INFORM,
-    "create_node": GateLevel.INFORM,
-    "set_parameter": GateLevel.INFORM,
-    "connect_nodes": GateLevel.INFORM,
-    "apply_vex": GateLevel.INFORM,
-    "create_material": GateLevel.INFORM,
-    "lock_seed": GateLevel.INFORM,
-    "delete_node": GateLevel.REVIEW,
-    "build_from_manifest": GateLevel.REVIEW,
-    "build_rig_logic": GateLevel.REVIEW,
-    "evolve_memory": GateLevel.REVIEW,
-    "submit_render": GateLevel.APPROVE,
-    "export_file": GateLevel.APPROVE,
-    "cook_pdg_chain": GateLevel.APPROVE,
-    "prune_memory": GateLevel.APPROVE,
-    "execute_python": GateLevel.CRITICAL,
-    "execute_vex": GateLevel.CRITICAL,
+    op: GateLevel(level) for op, level in _OPERATION_GATES_RAW.items()
 }
 
 
@@ -180,7 +169,7 @@ class Operation:
 
     @property
     def is_read_only(self) -> bool:
-        return self.operation_type.startswith(("read_", "inspect_", "capture_"))
+        return self.operation_type.startswith(READ_ONLY_PREFIXES)
 
 
 # ── Lossless Execution Bridge ───────────────────────────────────
@@ -211,16 +200,16 @@ class LosslessExecutionBridge:
         R1: Topological scene hashing via Houdini change-detection APIs.
 
         H21 replaced several H20 APIs:
-          H20 hou.updateGraphTick()    → H21 node.cookCount() + child count
-          H20 node.modificationCount() → H21 node.cookCount()
-          H20 geometry().dataId()      → H21 geo intrinsics composite
+          H20 hou.updateGraphTick()    -> H21 node.cookCount() + child count
+          H20 node.modificationCount() -> H21 node.cookCount()
+          H20 geometry().dataId()      -> H21 geo intrinsics composite
 
         Falls back to timestamp-based hashing in standalone/test mode.
         """
         if not _HOU_AVAILABLE or target_node_path is None:
             return hashlib.sha256(
                 datetime.now().isoformat().encode()
-            ).hexdigest()[:16]
+            ).hexdigest()[:HASH_LENGTH]
 
         node = hou.node(target_node_path)
         if not node:
@@ -256,11 +245,11 @@ class LosslessExecutionBridge:
         if not hash_data:
             return hashlib.sha256(
                 datetime.now().isoformat().encode()
-            ).hexdigest()[:16]
+            ).hexdigest()[:HASH_LENGTH]
 
         return hashlib.sha256(
             "|".join(str(x) for x in hash_data).encode("utf-8")
-        ).hexdigest()[:16]
+        ).hexdigest()[:HASH_LENGTH]
 
     # ── R7: Blast Radius Inference ─────────────────────────────
 
@@ -271,7 +260,7 @@ class LosslessExecutionBridge:
         Traces the dependency graph forward from the operation's target node
         to detect if a SOP mutation bleeds into Solaris via any downstream
         LOP node. If it does, auto-sets touches_stage=True and stage_path
-        to the first affected LOP — ensuring the Scene Integrity anchor
+        to the first affected LOP -- ensuring the Scene Integrity anchor
         fires even when the agent didn't flag it.
         """
         if operation.touches_stage:
@@ -343,7 +332,7 @@ class LosslessExecutionBridge:
             if integrity.scene_hash_before != integrity.scene_hash_after:
                 integrity.delta_hash = hashlib.sha256(
                     f"{integrity.scene_hash_before}:{integrity.scene_hash_after}".encode()
-                ).hexdigest()[:16]
+                ).hexdigest()[:HASH_LENGTH]
             else:
                 integrity.delta_hash = "no_change"
 
@@ -370,7 +359,7 @@ class LosslessExecutionBridge:
                 if integrity.scene_hash_before != integrity.scene_hash_after:
                     integrity.delta_hash = hashlib.sha256(
                         f"{integrity.scene_hash_before}:{integrity.scene_hash_after}".encode()
-                    ).hexdigest()[:16]
+                    ).hexdigest()[:HASH_LENGTH]
                 else:
                     integrity.delta_hash = "no_change"
 
@@ -396,7 +385,7 @@ class LosslessExecutionBridge:
 
     async def execute_async(self, operation: Operation) -> ExecutionResult:
         """
-        R2: The unbreakable async→sync execution boundary.
+        R2: The unbreakable async-to-sync execution boundary.
 
         Called from FastMCP async event loop. Dispatches the synchronous
         Houdini payload to main thread via hdefereval without blocking
@@ -446,7 +435,7 @@ class LosslessExecutionBridge:
                     if integrity.scene_hash_before != integrity.scene_hash_after:
                         integrity.delta_hash = hashlib.sha256(
                             f"{integrity.scene_hash_before}:{integrity.scene_hash_after}".encode()
-                        ).hexdigest()[:16]
+                        ).hexdigest()[:HASH_LENGTH]
                     else:
                         integrity.delta_hash = "no_change"
 
@@ -580,7 +569,7 @@ class LosslessExecutionBridge:
         integrity.scene_hash_after = self._compute_scene_hash(node_path)
         integrity.delta_hash = hashlib.sha256(
             f"{integrity.scene_hash_before}:{integrity.scene_hash_after}".encode()
-        ).hexdigest()[:16]
+        ).hexdigest()[:HASH_LENGTH]
 
         return self._finalize(operation, integrity, {
             "pdg": "cook_complete",
@@ -592,7 +581,7 @@ class LosslessExecutionBridge:
     def _finalize(self, operation: Operation, integrity: IntegrityBlock,
                   result: Any) -> ExecutionResult:
         fidelity = integrity.fidelity
-        if fidelity < 1.0:
+        if fidelity < FIDELITY_PERFECT:
             self._anchor_violations += 1
             return self._fail_with_integrity(
                 integrity, f"Integrity check failed: fidelity={fidelity}",
@@ -603,8 +592,7 @@ class LosslessExecutionBridge:
         self._operation_log.append(integrity)
 
         if isinstance(result, ExecutionResult):
-            result.integrity = integrity
-            return result
+            return result.with_integrity(integrity)
         return ExecutionResult(
             success=True, result=result,
             agent_id=operation.agent_id, integrity=integrity,
@@ -623,7 +611,7 @@ class LosslessExecutionBridge:
         if self._consent_callback is not None:
             return self._consent_callback(operation)
 
-        # Path 3: Standalone/test — auto-approve (preserves existing behavior)
+        # Path 3: Standalone/test -- auto-approve (preserves existing behavior)
         return True
 
     def _check_consent_gate(self, operation: Operation) -> bool:
@@ -645,15 +633,15 @@ class LosslessExecutionBridge:
 
         # APPROVE: must wait for explicit artist decision
         if operation.gate_level == GateLevel.APPROVE:
-            return self._wait_for_decision(proposal, timeout=120.0)
+            return self._wait_for_decision(proposal, timeout=GATE_TIMEOUT_APPROVE)
 
         # CRITICAL: same as APPROVE but longer timeout
         if operation.gate_level == GateLevel.CRITICAL:
-            return self._wait_for_decision(proposal, timeout=300.0)
+            return self._wait_for_decision(proposal, timeout=GATE_TIMEOUT_CRITICAL)
 
         return True
 
-    def _wait_for_decision(self, proposal, timeout: float = 120.0) -> bool:
+    def _wait_for_decision(self, proposal, timeout: float = GATE_TIMEOUT_APPROVE) -> bool:
         """Poll for artist decision on APPROVE/CRITICAL-level proposals."""
         import time as _time
         deadline = _time.monotonic() + timeout
@@ -663,8 +651,8 @@ class LosslessExecutionBridge:
                     GateDecision.APPROVED,
                     GateDecision.MODIFIED,
                 )
-            _time.sleep(0.25)
-        # Timeout — treat as rejection (safe default)
+            _time.sleep(GATE_POLL_INTERVAL)
+        # Timeout -- treat as rejection (safe default)
         return False
 
     def _verify_composition(self, stage_path: str) -> bool:
@@ -692,8 +680,7 @@ class LosslessExecutionBridge:
             error=error, error_type=error_type,
             agent_id=AgentID(integrity.agent_id) if integrity.agent_id else None,
         )
-        result.integrity = integrity
-        return result
+        return result.with_integrity(integrity)
 
     # ── Session Reporting ────────────────────────────────────
 
@@ -733,7 +720,7 @@ class AgentHandoff:
     provenance: list[tuple[str, str]] = field(default_factory=list)
 
     def verify(self) -> bool:
-        if self.source_fidelity < 1.0:
+        if self.source_fidelity < FIDELITY_PERFECT:
             return False
         if not self.source_output.success:
             return False
@@ -742,16 +729,6 @@ class AgentHandoff:
 
     def extend_provenance(self, agent_id: AgentID, summary: str) -> None:
         self.provenance.append((agent_id.value, summary))
-
-
-AGENT_CONTEXT_REQUIREMENTS: dict[AgentID, set[str]] = {
-    AgentID.SUBSTRATE: {"operation_type"},
-    AgentID.BRAINSTEM: {"node_path"},
-    AgentID.OBSERVER: {"network_path"},
-    AgentID.HANDS: {"domain"},
-    AgentID.CONDUCTOR: set(),
-    AgentID.INTEGRATOR: {"files_touched"},
-}
 
 
 # ── Emergency Halt ────────────────────────────────────────────────

@@ -73,7 +73,7 @@ for mod_name, fpath in [
     ("synapse.core.determinism", _base / "core" / "determinism.py"),
     ("synapse.core.gates", _base / "core" / "gates.py"),
     ("synapse.server.handlers", _base / "server" / "handlers.py"),
-    ("synapse.routing.recipes", _base / "routing" / "recipes.py"),
+    ("synapse.routing.recipes", _base / "routing" / "recipes" / "__init__.py"),
 ]:
     if mod_name not in sys.modules:
         spec = importlib.util.spec_from_file_location(mod_name, fpath)
@@ -484,9 +484,11 @@ class TestMultiShotHandler:
                 return mock_out
             return None
 
-        # Patch deterministic_uuid in the handlers_tops module
-        _tops_module = sys.modules.get("synapse.server.handlers_tops")
-        det_target = _tops_module if _tops_module else sys.modules["synapse.core.determinism"]
+        # Patch deterministic_uuid in the handlers_tops render_sequence submodule
+        _render_seq_mod = sys.modules.get("synapse.server.handlers_tops.render_sequence")
+        det_target = _render_seq_mod if _render_seq_mod else sys.modules.get(
+            "synapse.server.handlers_tops", sys.modules["synapse.core.determinism"]
+        )
 
         with patch.object(_handlers_hou, "node", side_effect=_mock_node), \
              patch.object(det_target, "deterministic_uuid", return_value="abc12345def67890") as mock_det:

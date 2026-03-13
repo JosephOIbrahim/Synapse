@@ -23,7 +23,7 @@ class TestTopsMonitorRace:
         """Stopping an already-stopped monitor raises ValueError, not KeyError."""
         # Load handlers_tops
         spec = importlib.util.spec_from_file_location(
-            "synapse.server.handlers_tops", _base / "server" / "handlers_tops.py"
+            "synapse.server.handlers_tops", _base / "server" / "handlers_tops" / "__init__.py"
         )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -79,7 +79,7 @@ class TestPdgCallbackCleanup:
     def test_callback_cleanup_pattern_exists(self):
         """The monitor start code should have cleanup logic."""
         spec = importlib.util.spec_from_file_location(
-            "synapse.server.handlers_tops", _base / "server" / "handlers_tops.py"
+            "synapse.server.handlers_tops", _base / "server" / "handlers_tops" / "__init__.py"
         )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)

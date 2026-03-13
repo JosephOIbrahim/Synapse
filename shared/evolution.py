@@ -27,6 +27,12 @@ import re
 import os
 import shutil
 from datetime import datetime
+from shared.constants import (
+    EVOLUTION_STAGE_FLAT,
+    EVOLUTION_STAGE_STRUCTURED,
+    EVOLUTION_TRIGGERS,
+    FIDELITY_PERFECT,
+)
 
 # ── OpenUSD Import Guard ────────────────────────────────────────
 _PXR_AVAILABLE = False
@@ -98,15 +104,7 @@ class ParsedMemory:
 
 # ── Evolution Triggers ──────────────────────────────────────────
 
-STRUCTURED_TRIGGERS = {
-    "structured_data_count": 5,
-    "asset_references": 3,
-    "parameter_records": 5,
-    "wedge_results": 1,
-    "session_count": 10,
-    "file_size_kb": 100,
-    "node_path_references": 10,
-}
+STRUCTURED_TRIGGERS = EVOLUTION_TRIGGERS
 
 
 @dataclass
@@ -120,7 +118,7 @@ class EvolutionCheck:
 
 def check_evolution_triggers(md_path: str) -> EvolutionCheck:
     if not os.path.exists(md_path):
-        return EvolutionCheck(False, "flat", "flat", [], [])
+        return EvolutionCheck(False, EVOLUTION_STAGE_FLAT, EVOLUTION_STAGE_FLAT, [], [])
 
     content = open(md_path, 'r').read()
     stats = count_structured_data(content)
@@ -138,8 +136,8 @@ def check_evolution_triggers(md_path: str) -> EvolutionCheck:
     should_evolve = len(triggers_met) > 0
     return EvolutionCheck(
         should_evolve=should_evolve,
-        current_stage="flat",
-        target_stage="structured" if should_evolve else "flat",
+        current_stage=EVOLUTION_STAGE_FLAT,
+        target_stage=EVOLUTION_STAGE_STRUCTURED if should_evolve else EVOLUTION_STAGE_FLAT,
         triggers_met=triggers_met,
         triggers_pending=triggers_pending,
     )
@@ -293,7 +291,7 @@ class LosslessEvolution:
         companion_parsed = parse_markdown_memory_from_string(companion)
         integrity = self._verify_lossless(parsed, companion_parsed)
 
-        if integrity.fidelity < 1.0:
+        if integrity.fidelity < FIDELITY_PERFECT:
             if os.path.exists(usd_path):
                 os.remove(usd_path)
             if os.path.exists(archive_path):
@@ -314,7 +312,7 @@ class LosslessEvolution:
         self._sync_solaris_viewport(usd_path)
 
         return EvolutionResult(
-            evolved=True, stage="structured", fidelity=integrity.fidelity,
+            evolved=True, stage=EVOLUTION_STAGE_STRUCTURED, fidelity=integrity.fidelity,
             clean_hash=clean_hash, archive_path=archive_path,
         )
 
@@ -375,7 +373,7 @@ class LosslessEvolution:
         # Layer metadata
         stage.GetRootLayer().customLayerData = {
             "synapse:version": "2.0.0-lossless",
-            "synapse:evolution_stage": "structured",
+            "synapse:evolution_stage": EVOLUTION_STAGE_STRUCTURED,
             "synapse:evolved_at": datetime.now().isoformat(),
             "synapse:session_count": len(parsed.sessions),
             "synapse:decision_count": len(parsed.decisions),
@@ -458,7 +456,7 @@ class LosslessEvolution:
             '    doc = "SYNAPSE Scene Memory — Evolved from Markdown (fallback)"',
             '    customLayerData = {',
             '        string synapse:version = "2.0.0-lossless"',
-            f'        string synapse:evolution_stage = "structured"',
+            f'        string synapse:evolution_stage = "{EVOLUTION_STAGE_STRUCTURED}"',
             f'        string synapse:evolved_at = "{datetime.now().isoformat()}"',
             f'        int synapse:session_count = {len(parsed.sessions)}',
             f'        int synapse:decision_count = {len(parsed.decisions)}',

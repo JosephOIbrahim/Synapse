@@ -4,15 +4,66 @@ All agents import from this module. INTEGRATOR owns write access.
 """
 
 from __future__ import annotations
+
 from dataclasses import dataclass, field, asdict
 from typing import Any, Literal
 from enum import Enum
 import json
 
 
+# ── Type Aliases ───────────────────────────────────────────────
+
+NodePath = str      # e.g., "/obj/geo1"
+PrimPath = str      # e.g., "/World/Assets/Chair"
+Fingerprint = str   # routing fingerprint, e.g. "architecture|moderate|async+mcp|normal"
+SceneHash = str     # 16-char hex from topological hashing
+
+
+# ── Constants ──────────────────────────────────────────────────
+
+FIDELITY_THRESHOLD = 1.0
+FIDELITY_DEGRADED = 0.99
+
+GATE_TIMEOUT_REVIEW = 0        # REVIEW: non-blocking (log and continue)
+GATE_TIMEOUT_APPROVE = 120     # seconds
+GATE_TIMEOUT_CRITICAL = 300    # seconds
+
+GATE_LEVEL_INFORM = "INFORM"
+GATE_LEVEL_REVIEW = "REVIEW"
+GATE_LEVEL_APPROVE = "APPROVE"
+GATE_LEVEL_CRITICAL = "CRITICAL"
+
+COMPLEXITY_TRIVIAL_MAX_WORDS = 10
+COMPLEXITY_TRIVIAL_MAX_DOMAINS = 1
+COMPLEXITY_RESEARCH_MIN_DOMAINS = 4
+
+DOMAIN_KEYWORDS: dict[str, list[str]] = {
+    "async":          ["async", "await", "concurrent", "thread", "deferred"],
+    "error_handling": ["error", "exception", "recovery", "retry", "fail"],
+    "geometry":       ["geometry", "geo", "mesh", "points", "prims", "verts"],
+    "usd":            ["usd", "solaris", "lop", "stage", "prim", "layer", "composition"],
+    "pdg":            ["pdg", "top", "work_item", "scheduler", "farm", "batch"],
+    "mcp":            ["mcp", "server", "transport", "tool", "protocol"],
+    "vex":            ["vex", "wrangle", "snippet", "attrib"],
+    "rendering":      ["render", "karma", "hydra", "delegate", "aov", "light"],
+    "testing":        ["test", "assert", "fixture", "mock", "pytest"],
+    "apex":           ["apex", "rig", "skeleton", "bone", "constraint"],
+    "cops":           ["cop", "composite", "pixel", "image", "texture"],
+    "materialx":      ["materialx", "mtlx", "shader", "material", "bsdf"],
+}
+
+URGENCY_BLOCKING_KEYWORDS = [
+    "urgent", "broken", "crash", "fix", "halt", "immediately",
+]
+URGENCY_EXPLORATORY_KEYWORDS = [
+    "explore", "experiment", "maybe", "could", "try",
+]
+
+
 # ── Agent Identity ──────────────────────────────────────────────
 
 class AgentID(str, Enum):
+    __slots__ = ()
     SUBSTRATE = "SUBSTRATE"
     BRAINSTEM = "BRAINSTEM"
     OBSERVER = "OBSERVER"
@@ -24,6 +75,7 @@ class AgentID(str, Enum):
 # ── Task Status ─────────────────────────────────────────────────
 
 class TaskStatus(str, Enum):
+    __slots__ = ()
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -33,7 +85,7 @@ class TaskStatus(str, Enum):
 
 # ── Execution Results ───────────────────────────────────────────
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ExecutionResult:
     """Universal result type — ALL agent operations return this."""
     success: bool
@@ -56,8 +108,10 @@ class ExecutionResult:
         return json.dumps(self.to_dict(), default=str)
 
     @classmethod
-    def ok(cls, result: Any = None, agent_id: AgentID | None = None) -> ExecutionResult:
-        return cls(success=True, result=result, agent_id=agent_id)
+    def ok(cls, result: Any = None, agent_id: AgentID | None = None,
+           integrity: Any | None = None) -> ExecutionResult:
+        return cls(success=True, result=result, agent_id=agent_id,
+                   integrity=integrity)
 
     @classmethod
     def fail(cls, error: str, error_type: str = "unknown",
@@ -66,10 +120,24 @@ class ExecutionResult:
         return cls(success=False, error=error, error_type=error_type,
                    retry_hint=retry_hint, agent_id=agent_id)
 
+    def with_integrity(self, integrity: Any) -> ExecutionResult:
+        """Return a new ExecutionResult with integrity attached."""
+        return ExecutionResult(
+            success=self.success,
+            result=self.result,
+            error=self.error,
+            error_type=self.error_type,
+            retry_hint=self.retry_hint,
+            attempts=self.attempts,
+            max_attempts=self.max_attempts,
+            agent_id=self.agent_id,
+            integrity=integrity,
+        )
+
 
 # ── Task Specification ──────────────────────────────────────────
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TaskSpec:
     """Task specification for inter-agent dispatch."""
     task_id: str
@@ -78,12 +146,12 @@ class TaskSpec:
     advisory_agent: AgentID | None = None
     context: dict = field(default_factory=dict)
     constraints: dict = field(default_factory=dict)
-    depends_on: list[str] = field(default_factory=list)
+    depends_on: tuple[str, ...] = ()
     status: TaskStatus = TaskStatus.PENDING
     deliverable_format: str = "ExecutionResult"
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class AgentDispatch:
     """Dispatch message from Orchestrator to Agent."""
     agent_id: AgentID
@@ -93,27 +161,27 @@ class AgentDispatch:
 
 # ── Node Manifest (Declarative Network Builder) ────────────────
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ConnectionSpec:
     from_node: str
     from_output: int = 0
     to_input: int = 0
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class NodeSpec:
     type: str
     name: str
     parms: dict[str, Any] = field(default_factory=dict)
-    connections: list[ConnectionSpec] = field(default_factory=list)
+    connections: tuple[ConnectionSpec, ...] = ()
     vex_snippet: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class NodeManifest:
     """Declarative network specification for atomic construction."""
     parent: str
-    nodes: list[NodeSpec] = field(default_factory=list)
+    nodes: tuple[NodeSpec, ...] = ()
 
     def to_dict(self) -> dict:
         return {
@@ -133,7 +201,7 @@ class NodeManifest:
 
 # ── Graph Specification (DAG Assembly) ──────────────────────────
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class GraphNodeSpec:
     """Node specification for graph assembly (uses local id for connections)."""
     id: str
@@ -142,7 +210,7 @@ class GraphNodeSpec:
     parms: dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class GraphConnectionSpec:
     """Connection in a graph (references node ids, not paths)."""
     from_id: str
@@ -151,19 +219,19 @@ class GraphConnectionSpec:
     output: int = 0
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class GraphSpec:
     """DAG specification for Solaris graph assembly."""
     parent: str = "/stage"
-    nodes: list[GraphNodeSpec] = field(default_factory=list)
-    connections: list[GraphConnectionSpec] = field(default_factory=list)
+    nodes: tuple[GraphNodeSpec, ...] = ()
+    connections: tuple[GraphConnectionSpec, ...] = ()
     display_node: str | None = None
     template: str | None = None
 
 
 # ── Geometry Summary ────────────────────────────────────────────
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class GeoSummary:
     """Token-efficient geometry summary. Target: <100 tokens."""
     geo_type: str
@@ -174,7 +242,7 @@ class GeoSummary:
     prim_attribs: dict[str, str]
     detail_attribs: dict[str, str]
     bounds: tuple[float, float, float, float, float, float]
-    groups: list[str]
+    groups: tuple[str, ...]
     has_normals: bool
     has_uvs: bool
     memory_mb: float
@@ -187,6 +255,7 @@ class GeoSummary:
 # ── MOE Routing ─────────────────────────────────────────────────
 
 class DomainSignal(str, Enum):
+    __slots__ = ()
     ASYNC = "async"
     ERROR_HANDLING = "error_handling"
     GEOMETRY = "geometry"
@@ -202,6 +271,7 @@ class DomainSignal(str, Enum):
 
 
 class TaskType(str, Enum):
+    __slots__ = ()
     ARCHITECTURE = "architecture"
     EXECUTION = "execution"
     OBSERVATION = "observation"
@@ -211,6 +281,7 @@ class TaskType(str, Enum):
 
 
 class Complexity(str, Enum):
+    __slots__ = ()
     TRIVIAL = "trivial"
     MODERATE = "moderate"
     COMPLEX = "complex"
@@ -218,20 +289,21 @@ class Complexity(str, Enum):
 
 
 class Urgency(str, Enum):
+    __slots__ = ()
     BLOCKING = "blocking"
     NORMAL = "normal"
     EXPLORATORY = "exploratory"
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class RoutingFeatures:
     """Feature vector for MOE sparse routing."""
     task_type: TaskType
     complexity: Complexity
-    domain_signals: list[DomainSignal]
+    domain_signals: tuple[DomainSignal, ...]
     urgency: Urgency
 
-    def fingerprint(self) -> str:
+    def fingerprint(self) -> Fingerprint:
         """Unique fingerprint for fast-path matching."""
         domains = "+".join(sorted(d.value for d in self.domain_signals))
         return f"{self.task_type.value}|{self.complexity.value}|{domains}|{self.urgency.value}"
@@ -239,19 +311,19 @@ class RoutingFeatures:
 
 # ── PDG Chain Specification ─────────────────────────────────────
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ChainStep:
     id: str
     agent: AgentID
     prompt: str
-    depends_on: list[str] = field(default_factory=list)
+    depends_on: tuple[str, ...] = ()
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ChainSpec:
     name: str
-    steps: list[ChainStep] = field(default_factory=list)
-    parallel_groups: list[list[str]] = field(default_factory=list)
+    steps: tuple[ChainStep, ...] = ()
+    parallel_groups: tuple[tuple[str, ...], ...] = ()
 
 
 # ── File Ownership Registry ─────────────────────────────────────
@@ -278,3 +350,28 @@ FILE_OWNERSHIP: dict[str, AgentID] = {
     "tests/": AgentID.INTEGRATOR,
     "shared/": AgentID.INTEGRATOR,
 }
+
+
+# ── Public API ──────────────────────────────────────────────────
+
+__all__ = [
+    # Type aliases
+    "NodePath", "PrimPath", "Fingerprint", "SceneHash",
+    # Constants
+    "FIDELITY_THRESHOLD", "FIDELITY_DEGRADED",
+    "GATE_TIMEOUT_REVIEW", "GATE_TIMEOUT_APPROVE", "GATE_TIMEOUT_CRITICAL",
+    "GATE_LEVEL_INFORM", "GATE_LEVEL_REVIEW", "GATE_LEVEL_APPROVE", "GATE_LEVEL_CRITICAL",
+    "COMPLEXITY_TRIVIAL_MAX_WORDS", "COMPLEXITY_TRIVIAL_MAX_DOMAINS",
+    "COMPLEXITY_RESEARCH_MIN_DOMAINS",
+    "DOMAIN_KEYWORDS", "URGENCY_BLOCKING_KEYWORDS", "URGENCY_EXPLORATORY_KEYWORDS",
+    # Enums
+    "AgentID", "TaskStatus", "DomainSignal", "TaskType", "Complexity", "Urgency",
+    # Dataclasses
+    "ExecutionResult", "TaskSpec", "AgentDispatch",
+    "ConnectionSpec", "NodeSpec", "NodeManifest",
+    "GraphNodeSpec", "GraphConnectionSpec", "GraphSpec",
+    "GeoSummary", "RoutingFeatures",
+    "ChainStep", "ChainSpec",
+    # Registry
+    "FILE_OWNERSHIP",
+]
