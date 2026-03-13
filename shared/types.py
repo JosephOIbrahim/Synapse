@@ -20,13 +20,15 @@ SceneHash = str     # 16-char hex from topological hashing
 
 
 # ── Constants ──────────────────────────────────────────────────
+# Authoritative definitions live in shared/constants.py.
+# Values here are kept in sync; constants.py is the source of truth.
 
-FIDELITY_THRESHOLD = 1.0
-FIDELITY_DEGRADED = 0.99
+FIDELITY_THRESHOLD: float = 1.0
+FIDELITY_DEGRADED: float = 0.5
 
-GATE_TIMEOUT_REVIEW = 0        # REVIEW: non-blocking (log and continue)
-GATE_TIMEOUT_APPROVE = 120     # seconds
-GATE_TIMEOUT_CRITICAL = 300    # seconds
+GATE_TIMEOUT_REVIEW: float = 0.0     # REVIEW: non-blocking
+GATE_TIMEOUT_APPROVE: float = 120.0
+GATE_TIMEOUT_CRITICAL: float = 300.0
 
 GATE_LEVEL_INFORM = "INFORM"
 GATE_LEVEL_REVIEW = "REVIEW"
@@ -36,28 +38,6 @@ GATE_LEVEL_CRITICAL = "CRITICAL"
 COMPLEXITY_TRIVIAL_MAX_WORDS = 10
 COMPLEXITY_TRIVIAL_MAX_DOMAINS = 1
 COMPLEXITY_RESEARCH_MIN_DOMAINS = 4
-
-DOMAIN_KEYWORDS: dict[str, list[str]] = {
-    "async":          ["async", "await", "concurrent", "thread", "deferred"],
-    "error_handling": ["error", "exception", "recovery", "retry", "fail"],
-    "geometry":       ["geometry", "geo", "mesh", "points", "prims", "verts"],
-    "usd":            ["usd", "solaris", "lop", "stage", "prim", "layer", "composition"],
-    "pdg":            ["pdg", "top", "work_item", "scheduler", "farm", "batch"],
-    "mcp":            ["mcp", "server", "transport", "tool", "protocol"],
-    "vex":            ["vex", "wrangle", "snippet", "attrib"],
-    "rendering":      ["render", "karma", "hydra", "delegate", "aov", "light"],
-    "testing":        ["test", "assert", "fixture", "mock", "pytest"],
-    "apex":           ["apex", "rig", "skeleton", "bone", "constraint"],
-    "cops":           ["cop", "composite", "pixel", "image", "texture"],
-    "materialx":      ["materialx", "mtlx", "shader", "material", "bsdf"],
-}
-
-URGENCY_BLOCKING_KEYWORDS = [
-    "urgent", "broken", "crash", "fix", "halt", "immediately",
-]
-URGENCY_EXPLORATORY_KEYWORDS = [
-    "explore", "experiment", "maybe", "could", "try",
-]
 
 
 # ── Agent Identity ──────────────────────────────────────────────
@@ -363,7 +343,6 @@ __all__ = [
     "GATE_LEVEL_INFORM", "GATE_LEVEL_REVIEW", "GATE_LEVEL_APPROVE", "GATE_LEVEL_CRITICAL",
     "COMPLEXITY_TRIVIAL_MAX_WORDS", "COMPLEXITY_TRIVIAL_MAX_DOMAINS",
     "COMPLEXITY_RESEARCH_MIN_DOMAINS",
-    "DOMAIN_KEYWORDS", "URGENCY_BLOCKING_KEYWORDS", "URGENCY_EXPLORATORY_KEYWORDS",
     # Enums
     "AgentID", "TaskStatus", "DomainSignal", "TaskType", "Complexity", "Urgency",
     # Dataclasses
