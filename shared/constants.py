@@ -49,6 +49,9 @@ __all__ = [
     "PIPELINE_STAGES",
     # Agent context requirements
     "AGENT_CONTEXT_REQUIREMENTS",
+    # Render validation
+    "RENDER_VALIDATE_CHECKS",
+    "RENDER_VALIDATE_DEFAULTS",
 ]
 
 
@@ -289,4 +292,22 @@ AGENT_CONTEXT_REQUIREMENTS: dict[AgentID, set[str]] = {
     AgentID.HANDS: {"domain"},
     AgentID.CONDUCTOR: set(),
     AgentID.INTEGRATOR: {"files_touched"},
+}
+
+
+# ---------------------------------------------------------------------------
+# Render Validation
+# ---------------------------------------------------------------------------
+
+RENDER_VALIDATE_CHECKS: tuple[str, ...] = (
+    "file_integrity", "black_frame", "nan_check",
+    "clipping", "underexposure", "saturation",
+)
+
+RENDER_VALIDATE_DEFAULTS: dict[str, float] = {
+    "black_frame_mean": 0.001,
+    "clipping_pct": 0.5,
+    "underexposure_mean": 0.05,
+    "saturation_pct": 0.1,
+    "saturation_multiplier": 10.0,
 }

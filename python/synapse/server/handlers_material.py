@@ -5,7 +5,8 @@ Extracted from handlers_render.py -- contains material creation, assignment,
 and reading handlers for the SynapseHandler class.
 """
 
-from typing import Dict
+import logging
+from typing import Dict, Tuple
 
 try:
     import hou
@@ -16,6 +17,91 @@ except ImportError:
 from ..core.aliases import resolve_param, resolve_param_with_default
 from .handlers_usd import _usd_to_json
 from .handler_helpers import _HOUDINI_UNAVAILABLE, _suggest_prim_paths
+
+_log = logging.getLogger(__name__)
+
+
+def _query_material_usd_path(matlib_node, desired_name: str) -> str:
+    """Cook a materiallibrary node and find the actual USD material path.
+
+    Tries to cook the node and walk the stage to find a material prim
+    matching *desired_name*.  If the stage is unavailable or the walk
+    fails, returns a fallback path and logs a warning — never silently
+    swallows exceptions.
+    """
+    fallback = f"/materials/{desired_name}"
+    try:
+        matlib_node.cook(force=True)
+        stage = matlib_node.stage()
+        if stage is None:
+            _log.warning(
+                "_query_material_usd_path: stage is None after cooking %s — "
+                "using fallback path %s",
+                matlib_node.path(), fallback,
+            )
+            return fallback
+
+        from pxr import UsdShade
+
+        materials_prim = stage.GetPrimAtPath("/materials")
+        if not materials_prim or not materials_prim.IsValid():
+            _log.warning(
+                "_query_material_usd_path: /materials prim not found on %s — "
+                "using fallback path %s",
+                matlib_node.path(), fallback,
+            )
+            return fallback
+
+        for child in materials_prim.GetChildren():
+            child_path = str(child.GetPath())
+            if UsdShade.Material(child).GetPrim().IsValid():
+                if desired_name in child_path:
+                    return child_path
+
+        _log.warning(
+            "_query_material_usd_path: no material matching '%s' found "
+            "under /materials on %s — using fallback path %s",
+            desired_name, matlib_node.path(), fallback,
+        )
+        return fallback
+    except Exception as exc:
+        _log.warning(
+            "_query_material_usd_path: stage query failed on %s: %s — "
+            "using fallback path %s",
+            matlib_node.path(), exc, fallback,
+        )
+        return fallback
+
+
+def _validate_prim_pattern(stage, pattern: str) -> Tuple[bool, str]:
+    """Check whether *pattern* resolves to any prims on *stage*.
+
+    Returns ``(is_valid, message)`` where *message* contains suggestions
+    when the pattern does not match.  Never silently swallows exceptions.
+    """
+    if stage is None:
+        return False, "Stage is not available — cannot validate prim pattern"
+
+    if pattern.startswith("/**"):
+        return True, ""
+
+    try:
+        test_prim = stage.GetPrimAtPath(pattern)
+        if test_prim and test_prim.IsValid():
+            return True, ""
+
+        suggestions = _suggest_prim_paths(stage, pattern)
+        msg = f"Couldn't find a prim at '{pattern}'"
+        if suggestions:
+            msg += f" -- did you mean one of these?{suggestions}"
+        else:
+            msg += " -- double-check the path on the USD stage"
+        return False, msg
+    except Exception as exc:
+        _log.warning(
+            "_validate_prim_pattern: error validating '%s': %s", pattern, exc,
+        )
+        return False, f"Could not validate pattern '{pattern}': {exc}"
 
 
 class MaterialHandlerMixin:
@@ -107,28 +193,7 @@ class MaterialHandlerMixin:
                         if p:
                             p.set(float(subsurface_color[i]))
 
-            # Read actual USD material path from the stage (not hardcoded)
-            material_usd_path = f"/materials/{name}"
-            try:
-                matlib.cook(force=True)
-                stage = matlib.stage()
-                if stage:
-                    from pxr import UsdShade
-                    # Walk /materials/ prims to find the one matching our name
-                    materials_prim = stage.GetPrimAtPath("/materials")
-                    if materials_prim and materials_prim.IsValid():
-                        for child in materials_prim.GetChildren():
-                            child_path = str(child.GetPath())
-                            if UsdShade.Material(child).GetPrim().IsValid():
-                                # Match by name prefix — matlib may append _shader
-                                if name in child_path:
-                                    material_usd_path = child_path
-                                    break
-            except Exception as _stage_err:
-                import logging as _log
-                _log.getLogger(__name__).warning(
-                    "create_material stage query failed: %s", _stage_err
-                )
+            material_usd_path = _query_material_usd_path(matlib, name)
 
             return {
                 "matlib_path": matlib.path(),
@@ -165,32 +230,17 @@ class MaterialHandlerMixin:
             assign_node.parm("primpattern1").set(prim_pattern)
             assign_node.parm("matspecpath1").set(material_path)
 
-            # Validate prim pattern against the upstream stage
-            warning = ""
-            try:
-                upstream_stage = node.stage()
-                if upstream_stage and not prim_pattern.startswith("/**"):
-                    # Check if any prim matches the pattern exactly
-                    test_prim = upstream_stage.GetPrimAtPath(prim_pattern)
-                    if not test_prim or not test_prim.IsValid():
-                        suggestions = _suggest_prim_paths(
-                            upstream_stage, prim_pattern
-                        )
-                        if suggestions:
-                            warning = (
-                                f"Couldn't find a prim matching '{prim_pattern}'"
-                                f" -- did you mean one of these?{suggestions}"
-                            )
-            except Exception:
-                pass
-
             result = {
                 "node_path": assign_node.path(),
                 "prim_pattern": prim_pattern,
                 "material_path": material_path,
             }
-            if warning:
-                result["warning"] = warning
+
+            upstream_stage = node.stage()
+            is_valid, message = _validate_prim_pattern(upstream_stage, prim_pattern)
+            if not is_valid and message:
+                result["warning"] = message
+
             return result
 
         return run_on_main(_on_main)
@@ -221,13 +271,10 @@ class MaterialHandlerMixin:
 
             prim = stage.GetPrimAtPath(prim_path)
             if not prim.IsValid():
-                suggestions = _suggest_prim_paths(stage, prim_path)
-                msg = f"Couldn't find a prim at '{prim_path}'"
-                if suggestions:
-                    msg += f" -- did you mean one of these?{suggestions}"
-                else:
-                    msg += " -- double-check the path on the USD stage"
-                raise ValueError(msg)
+                _, message = _validate_prim_pattern(stage, prim_path)
+                raise ValueError(
+                    message or f"Couldn't find a prim at '{prim_path}'"
+                )
 
             from pxr import UsdShade
 
@@ -470,26 +517,7 @@ class MaterialHandlerMixin:
             # Layout nodes cleanly
             matlib.layoutChildren()
 
-            # Query actual USD material path from stage
-            material_usd_path = f"/materials/{name}"
-            try:
-                matlib.cook(force=True)
-                stage = matlib.stage()
-                if stage:
-                    from pxr import UsdShade
-                    materials_prim = stage.GetPrimAtPath("/materials")
-                    if materials_prim and materials_prim.IsValid():
-                        for child in materials_prim.GetChildren():
-                            child_path = str(child.GetPath())
-                            if UsdShade.Material(child).GetPrim().IsValid():
-                                if name in child_path:
-                                    material_usd_path = child_path
-                                    break
-            except Exception as _e:
-                import logging as _log
-                _log.getLogger(__name__).warning(
-                    "create_textured_material stage query: %s", _e
-                )
+            material_usd_path = _query_material_usd_path(matlib, name)
 
             result = {
                 "matlib_path": matlib.path(),
@@ -511,23 +539,10 @@ class MaterialHandlerMixin:
                 result["assign_node"] = assign_node.path()
                 result["geo_pattern"] = geo_pattern
 
-                # Validate geo_pattern against the matlib stage
-                try:
-                    matlib_stage = matlib.stage()
-                    if matlib_stage and not geo_pattern.startswith("/**"):
-                        test_prim = matlib_stage.GetPrimAtPath(geo_pattern)
-                        if not test_prim or not test_prim.IsValid():
-                            suggestions = _suggest_prim_paths(
-                                matlib_stage, geo_pattern
-                            )
-                            if suggestions:
-                                result["warning"] = (
-                                    f"Couldn't find a prim matching "
-                                    f"'{geo_pattern}' -- did you mean one "
-                                    f"of these?{suggestions}"
-                                )
-                except Exception:
-                    pass
+                matlib_stage = matlib.stage()
+                is_valid, message = _validate_prim_pattern(matlib_stage, geo_pattern)
+                if not is_valid and message:
+                    result["warning"] = message
 
             # Handle displacement separately (needs render settings context)
             if displacement_map:

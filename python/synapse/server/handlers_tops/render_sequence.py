@@ -4,8 +4,12 @@ Synapse TOPS/PDG Handler Mixin -- Render Sequence
 Auto-extracted from the monolith handlers_tops.py.
 """
 
+import logging
+import os
 import time
 from typing import Any, Dict, List, Optional
+
+_log = logging.getLogger(__name__)
 
 try:
     import hou
@@ -17,6 +21,51 @@ from ...core.aliases import resolve_param, resolve_param_with_default
 from ...core.determinism import round_float, kahan_sum, deterministic_uuid
 from ..handler_helpers import _HOUDINI_UNAVAILABLE
 from ._common import _run_in_main_thread_pdg, _ensure_tops_warm_standby, _MAX_MONITOR_EVENTS
+
+
+def _validate_rendered_frames(
+    output_dir: str,
+    prefix: str,
+    start_frame: int,
+    end_frame: int,
+    step: int,
+) -> Dict[str, Any]:
+    """Check the output directory for rendered frames and report gaps."""
+    expected_frames = list(range(start_frame, end_frame + 1, step))
+    expected_count = len(expected_frames)
+
+    missing_frames: List[int] = []
+    zero_size_frames: List[int] = []
+    found_count = 0
+
+    resolved_dir = output_dir
+    if HOU_AVAILABLE:
+        try:
+            resolved_dir = hou.text.expandString(output_dir)
+        except Exception:
+            pass
+
+    for frame in expected_frames:
+        padded = str(frame).zfill(4)
+        found = False
+        for ext in ("exr", "png", "jpg", "tif", "tiff", "rat"):
+            candidate = os.path.join(resolved_dir, f"{prefix}.{padded}.{ext}")
+            if os.path.isfile(candidate):
+                found = True
+                if os.path.getsize(candidate) == 0:
+                    zero_size_frames.append(frame)
+                break
+        if found:
+            found_count += 1
+        else:
+            missing_frames.append(frame)
+
+    return {
+        "expected_frames": expected_count,
+        "found_frames": found_count,
+        "missing_frames": missing_frames,
+        "zero_size_frames": zero_size_frames,
+    }
 
 
 class TopsRenderSequenceMixin:
@@ -55,6 +104,7 @@ class TopsRenderSequenceMixin:
         pixel_samples = resolve_param(payload, "pixel_samples", required=False)
         resolution = resolve_param(payload, "resolution", required=False)
         blocking = resolve_param_with_default(payload, "blocking", False)
+        aov_passes = resolve_param(payload, "aov_passes", required=False)
 
         # Validate frame range
         start_frame = int(start_frame)
@@ -204,6 +254,19 @@ class TopsRenderSequenceMixin:
                             out_path = f"{output_dir}/{output_prefix}.$F4.exr"
                             out_parm.set(out_path)
 
+                # 4b. Configure AOV passes if requested
+                if aov_passes and isinstance(aov_passes, list):
+                    handler = getattr(self, "_handle_configure_render_passes", None)
+                    if handler is not None:
+                        try:
+                            handler({"passes": aov_passes})
+                        except Exception as exc:
+                            _log.warning("AOV setup skipped: %s", exc)
+                    else:
+                        _log.warning(
+                            "AOV setup skipped: _handle_configure_render_passes not available"
+                        )
+
                 # 5. Generate work items
                 rop_fetch.generateStaticItems()
                 pdg_node = rop_fetch.getPDGNode()
@@ -240,6 +303,14 @@ class TopsRenderSequenceMixin:
                     result["camera"] = camera
                 if output_dir:
                     result["output_dir"] = output_dir
+                if aov_passes:
+                    result["aov_passes"] = aov_passes
+
+                # 7. Post-cook frame validation
+                if blocking and cook_status == "cooked" and output_dir:
+                    result["validation"] = _validate_rendered_frames(
+                        output_dir, output_prefix, start_frame, end_frame, step,
+                    )
 
                 return result
 

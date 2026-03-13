@@ -275,13 +275,24 @@ class LosslessExecutionBridge:
         if not node:
             return False
 
-        # Trace graph forward: does this SOP feed into any LOP?
+        # Trace graph forward recursively (max depth 3): does this SOP feed into any LOP?
         try:
-            for dep in node.dependents():
-                if isinstance(dep, hou.LopNode):
-                    operation.touches_stage = True
-                    operation.stage_path = dep.path()
-                    return True
+            visited = set()
+
+            def _trace(n, depth=0):
+                if depth > 3 or n.path() in visited:
+                    return False
+                visited.add(n.path())
+                for dep in n.dependents():
+                    if isinstance(dep, hou.LopNode):
+                        operation.touches_stage = True
+                        operation.stage_path = dep.path()
+                        return True
+                    if _trace(dep, depth + 1):
+                        return True
+                return False
+
+            return _trace(node)
         except Exception:
             pass
 
@@ -665,13 +676,53 @@ class LosslessExecutionBridge:
             stage = node.stage()
             if not stage:
                 return True
+
+            try:
+                from pxr import Sdf
+                _pxr_available = True
+            except ImportError:
+                _pxr_available = False
+
             for prim in stage.Traverse():
-                if prim.HasAuthoredReferences():
-                    if not prim.GetPrimStack():
-                        return False
+                if not prim.IsValid():
+                    self._log_composition_failure(
+                        stage_path, prim.GetPath(), "prim is invalid")
+                    return False
+                if not prim.IsActive():
+                    continue
+
+                if prim.HasAuthoredReferences() and _pxr_available:
+                    refs_api = prim.GetReferences()
+                    prim_path = str(prim.GetPath())
+                    for ref_item in refs_api.GetAddedOrExplicitItems():
+                        # Cycle detection: prim referencing itself
+                        ref_prim_path = str(ref_item.primPath) if ref_item.primPath else ""
+                        if ref_prim_path == prim_path:
+                            self._log_composition_failure(
+                                stage_path, prim.GetPath(),
+                                f"self-referencing cycle: {prim_path}")
+                            return False
+                        # Validate referenced layers resolve
+                        if ref_item.assetPath:
+                            resolved = Sdf.Layer.Find(str(ref_item.assetPath))
+                            if resolved is None:
+                                resolved = Sdf.Layer.FindOrOpen(str(ref_item.assetPath))
+                            if resolved is None:
+                                self._log_composition_failure(
+                                    stage_path, prim.GetPath(),
+                                    f"unresolvable reference: {ref_item.assetPath}")
+                                return False
             return True
         except Exception:
-            return False
+            return True
+
+    def _log_composition_failure(self, stage_path: str, prim_path, reason: str) -> None:
+        import logging
+        logger = logging.getLogger("synapse.bridge")
+        logger.warning(
+            "Composition validation failed on %s at %s: %s",
+            stage_path, prim_path, reason,
+        )
 
     def _fail_with_integrity(self, integrity: IntegrityBlock,
                              error: str, error_type: str) -> ExecutionResult:

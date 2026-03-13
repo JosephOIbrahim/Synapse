@@ -19,26 +19,64 @@ from .handler_helpers import _HOUDINI_UNAVAILABLE
 
 
 def _usd_to_json(value):
-    """Convert USD attribute values to JSON-serializable Python types."""
+    """Convert USD attribute values to JSON-safe types, preserving type info."""
     if value is None:
         return None
     # Scalars
     if isinstance(value, (bool, int, float, str)):
         return value
-    # Matrix types (GfMatrix4d, GfMatrix3d) -- check BEFORE generic sequence
+
+    # Type-aware conversion when pxr is available
+    try:
+        from pxr import Gf, Sdf, Vt
+
+        # Integer vectors — preserve int type
+        if isinstance(value, (Gf.Vec2i, Gf.Vec3i, Gf.Vec4i)):
+            return [int(v) for v in value]
+
+        # Float vectors
+        if isinstance(value, (Gf.Vec2f, Gf.Vec3f, Gf.Vec4f,
+                              Gf.Vec2d, Gf.Vec3d, Gf.Vec4d)):
+            return [float(v) for v in value]
+
+        # Quaternions — preserve named components
+        if isinstance(value, (Gf.Quatf, Gf.Quatd, Gf.Quath)):
+            img = value.GetImaginary()
+            return {"r": float(value.GetReal()),
+                    "i": float(img[0]), "j": float(img[1]), "k": float(img[2])}
+
+        # Matrices
+        if isinstance(value, (Gf.Matrix4d, Gf.Matrix4f)):
+            return [[float(value[r][c]) for c in range(4)] for r in range(4)]
+
+        if isinstance(value, (Gf.Matrix3d, Gf.Matrix3f)):
+            return [[float(value[r][c]) for c in range(3)] for r in range(3)]
+
+        # Asset paths — preserve URI semantics
+        if isinstance(value, Sdf.AssetPath):
+            return {"path": str(value.path), "resolved": str(value.resolvedPath)}
+
+        # Vt arrays
+        if isinstance(value, (Vt.StringArray, Vt.IntArray, Vt.FloatArray)):
+            return list(value)
+
+    except ImportError:
+        pass
+
+    # Fallback: matrix types via duck-typing (works without pxr)
     if hasattr(value, 'GetRow'):
         try:
             size = 4 if hasattr(value, 'IsIdentity') else 3
             return [[float(value[r][c]) for c in range(size)] for r in range(size)]
         except Exception:
             pass
-    # Tuples/vectors (GfVec2f, GfVec3f, GfVec4f, GfQuatf, etc.)
+    # Fallback: generic sequences (GfVec-like without pxr isinstance)
     if hasattr(value, '__len__') and hasattr(value, '__getitem__'):
         try:
             return [float(v) for v in value]
         except (TypeError, ValueError):
             return [_usd_to_json(v) for v in value]
-    # Asset paths
+    # Fallback: asset-path-like via duck-typing
     if hasattr(value, 'path'):
         return str(value.path)
     return str(value)

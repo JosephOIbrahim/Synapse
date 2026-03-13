@@ -19,6 +19,10 @@ try:
 except ImportError:
     HOU_AVAILABLE = False
 
+from shared.constants import (
+    RENDER_VALIDATE_CHECKS as _VALIDATE_CHECKS,
+    RENDER_VALIDATE_DEFAULTS as _VALIDATE_DEFAULTS,
+)
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.determinism import round_float, kahan_sum
 from .handler_helpers import _suggest_parms, _HOUDINI_UNAVAILABLE
@@ -71,18 +75,6 @@ def _detect_karma_engine(node, node_type: str) -> str:
             return f"karma_{val}" if val else "karma"
 
     return "karma"
-
-
-_VALIDATE_CHECKS = ("file_integrity", "black_frame", "nan_check",
-                     "clipping", "underexposure", "saturation")
-
-_VALIDATE_DEFAULTS = {
-    "black_frame_mean": 0.001,
-    "clipping_pct": 0.5,
-    "underexposure_mean": 0.05,
-    "saturation_pct": 0.1,
-    "saturation_multiplier": 10.0,
-}
 
 
 class RenderHandlerMixin:
@@ -462,6 +454,7 @@ class RenderHandlerMixin:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
         node_path = resolve_param(payload, "node")
         overrides = resolve_param_with_default(payload, "settings", {})
+        advanced_karma = resolve_param_with_default(payload, "advanced_karma", None)
 
         from .main_thread import run_on_main
 
@@ -491,6 +484,14 @@ class RenderHandlerMixin:
                     if p:
                         p.set(v)
                         settings[k] = v
+
+            # Apply Karma advanced settings if provided in payload
+            if isinstance(advanced_karma, dict) and advanced_karma:
+                applied = RenderHandlerMixin._apply_karma_advanced_settings(
+                    node, advanced_karma
+                )
+                if applied:
+                    settings["_karma_advanced_applied"] = applied
 
             return {"node": node_path, "settings": settings}
 
@@ -1351,6 +1352,79 @@ class RenderHandlerMixin:
             "total_passes": len(pass_configs),
             "success": final_image is not None and len(passes) == len(pass_configs),
         }
+
+    # =========================================================================
+    # KARMA ADVANCED SETTINGS
+    # =========================================================================
+
+    @staticmethod
+    def _apply_karma_advanced_settings(rop_node, settings: dict) -> dict:
+        """Apply advanced Karma-specific render settings to a ROP node.
+
+        Accepts and applies the following settings (all optional -- pass None
+        or omit to leave unchanged):
+
+            path_samples (int): Number of path-traced samples per path vertex.
+            pixel_samples (int): Alias for samplesPerPixel (primary ray samples).
+            roughness_clamp (float): Clamp roughness to suppress fireflies (0.0-1.0).
+            enable_caustics (bool): Enable/disable caustic light paths.
+            volume_samples (int): Sample count for volumetric scattering.
+            sample_distribution (str): "uniform" or "stratified" distribution.
+            max_ray_depth (int): Maximum total ray depth.
+
+        Each setting checks if the parameter exists on the node before applying.
+        Missing parameters are silently skipped (not all Karma versions have all
+        params). Returns a dict of actually-applied settings.
+
+        This function must be called on the main thread (inside a run_on_main
+        closure or hdefereval context).
+        """
+        # Map of setting name -> list of candidate Karma ROP parm names
+        _KARMA_PARM_MAP = {
+            "path_samples": ["pathtracedsamples"],
+            "pixel_samples": ["samplesperpixel"],
+            "roughness_clamp": ["roughnessclamp", "karma:global:roughnessclamp"],
+            "enable_caustics": ["enablecaustics", "karma:global:enablecaustics"],
+            "volume_samples": ["volumesamples", "karma:global:volumesamples"],
+            "sample_distribution": ["sampledistribution"],
+            "max_ray_depth": ["maxraydepth", "karma:global:maxraydepth"],
+        }
+
+        applied = {}
+
+        for setting_name, parm_candidates in _KARMA_PARM_MAP.items():
+            value = settings.get(setting_name)
+            if value is None:
+                continue
+
+            # Type coercion and validation
+            if setting_name == "enable_caustics":
+                value = bool(value)
+            elif setting_name == "roughness_clamp":
+                value = max(0.0, min(1.0, float(value)))
+            elif setting_name == "sample_distribution":
+                value = str(value).lower()
+                if value not in ("uniform", "stratified"):
+                    continue  # Invalid value -- skip silently
+            elif setting_name in ("path_samples", "pixel_samples",
+                                  "volume_samples", "max_ray_depth"):
+                value = int(value)
+
+            # Try each candidate parm name until one is found and set
+            for parm_name in parm_candidates:
+                try:
+                    parm = rop_node.parm(parm_name)
+                    if parm is not None:
+                        if isinstance(value, bool):
+                            parm.set(1 if value else 0)
+                        else:
+                            parm.set(value)
+                        applied[setting_name] = value
+                        break  # Applied successfully -- move to next setting
+                except Exception:
+                    pass  # Parm exists but set failed -- try next candidate
+
+        return applied
 
     @staticmethod
     def _validate_file_integrity(image_path: str) -> Dict:

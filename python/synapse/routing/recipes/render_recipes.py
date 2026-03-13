@@ -898,6 +898,308 @@ def register_render_recipes(registry):
         ],
     ))
 
+    # --- Spotlight Rig ---
+    registry.register(Recipe(
+        name="spotlight_rig",
+        description=(
+            "Create a Karma spotlight (SphereLight with shaping). "
+            "Lighting Law: intensity always 1.0, brightness via exposure. "
+            "Penumbra angle = cone_angle * 0.1 for soft falloff."
+        ),
+        triggers=[
+            r"^(?:set up|setup|create)\s+(?:a\s+)?spot\s*light(?:\s+(?:at|in|under)\s+(?P<position>.+))?$",
+            r"^(?:add|create)\s+(?:a\s+)?(?:karma\s+)?spot\s*light(?:\s+(?:aimed|targeting|at)\s+(?P<target>.+))?$",
+        ],
+        parameters=["position", "target", "cone_angle"],
+        gate_level=GateLevel.REVIEW,
+        category="lighting",
+        steps=[
+            RecipeStep(
+                action="create_usd_prim",
+                payload_template={
+                    "prim_path": "/lights/spotlight",
+                    "prim_type": "SphereLight",
+                },
+                gate_level=GateLevel.REVIEW,
+                output_var="spotlight",
+            ),
+            # Lighting Law: intensity always 1.0
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/spotlight",
+                    "attribute_name": "xn__inputsintensity_i0a",
+                    "value": 1.0,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Shaping: cone angle (default 45 degrees)
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/spotlight",
+                    "attribute_name": "xn__inputsshapingconeangle_hgbb",
+                    "value": "{cone_angle}",
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Penumbra = cone_angle * 0.1 (soft falloff)
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/spotlight",
+                    "attribute_name": "xn__inputsshapingconeSoftness_jlbb",
+                    "value": 0.1,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Brightness via exposure
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/spotlight",
+                    "attribute_name": "xn__inputsexposure_vya",
+                    "value": 4.0,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Color temperature (default 6500K neutral)
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/spotlight",
+                    "attribute_name": "xn__inputsenableColorTemperature_znb",
+                    "value": True,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/spotlight",
+                    "attribute_name": "xn__inputscolorTemperature_r8a",
+                    "value": 6500,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+        ],
+    ))
+
+    # --- Distant Light (Sun) ---
+    registry.register(Recipe(
+        name="distant_light_sun",
+        description=(
+            "Create a directional/sun light (DistantLight). "
+            "Lighting Law: intensity always 1.0, brightness via exposure. "
+            "Default color temperature 5500K for natural sunlight."
+        ),
+        triggers=[
+            r"^(?:set up|setup|create)\s+(?:a\s+)?(?:distant|directional|sun)\s*light$",
+            r"^(?:add|create)\s+(?:a\s+)?(?:distant|sun|directional)\s*light$",
+        ],
+        parameters=["direction", "exposure", "color_temp"],
+        gate_level=GateLevel.REVIEW,
+        category="lighting",
+        steps=[
+            RecipeStep(
+                action="create_usd_prim",
+                payload_template={
+                    "prim_path": "/lights/sun_light",
+                    "prim_type": "DistantLight",
+                },
+                gate_level=GateLevel.REVIEW,
+                output_var="sun",
+            ),
+            # Lighting Law: intensity always 1.0
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/sun_light",
+                    "attribute_name": "xn__inputsintensity_i0a",
+                    "value": 1.0,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Angular diameter (0.53 degrees = real sun)
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/sun_light",
+                    "attribute_name": "xn__inputsangle_06a",
+                    "value": 0.53,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Brightness via exposure (default 0 = bright sun)
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/sun_light",
+                    "attribute_name": "xn__inputsexposure_vya",
+                    "value": 0,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Color temperature (default 5500K natural sunlight)
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/sun_light",
+                    "attribute_name": "xn__inputsenableColorTemperature_znb",
+                    "value": True,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/sun_light",
+                    "attribute_name": "xn__inputscolorTemperature_r8a",
+                    "value": 5500,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+        ],
+    ))
+
+    # --- Area Light Panel ---
+    registry.register(Recipe(
+        name="area_light_panel",
+        description=(
+            "Create a rectangular area light panel (RectLight) with "
+            "configurable width and height. Large area = soft shadows. "
+            "Lighting Law: intensity always 1.0, brightness via exposure. "
+            "Different from existing RectLight recipes — focused on "
+            "studio panel lighting with explicit size control."
+        ),
+        triggers=[
+            r"^(?:set up|setup|create)\s+(?:a\s+)?(?:area|panel)\s*light$",
+            r"^(?:add|create)\s+(?:a\s+)?(?:area|panel|soft)\s*light$",
+        ],
+        parameters=["width", "height", "exposure"],
+        gate_level=GateLevel.REVIEW,
+        category="lighting",
+        steps=[
+            RecipeStep(
+                action="create_usd_prim",
+                payload_template={
+                    "prim_path": "/lights/area_panel",
+                    "prim_type": "RectLight",
+                },
+                gate_level=GateLevel.REVIEW,
+                output_var="panel",
+            ),
+            # Lighting Law: intensity always 1.0
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/area_panel",
+                    "attribute_name": "xn__inputsintensity_i0a",
+                    "value": 1.0,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Width (default 2.0 meters for soft shadows)
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/area_panel",
+                    "attribute_name": "xn__inputswidth_e5a",
+                    "value": "{width}",
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Height (default 2.0 meters)
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/area_panel",
+                    "attribute_name": "xn__inputsheight_i5a",
+                    "value": "{height}",
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Brightness via exposure
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/area_panel",
+                    "attribute_name": "xn__inputsexposure_vya",
+                    "value": 3.0,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Normalize power by area so brightness is independent of size
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/area_panel",
+                    "attribute_name": "xn__inputsnormalize_01a",
+                    "value": True,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+        ],
+    ))
+
+    # --- Mesh Light (Emissive Geometry) ---
+    registry.register(Recipe(
+        name="mesh_light_emission",
+        description=(
+            "Create a mesh light from emissive geometry (MeshLight). "
+            "Targets a USD prim pattern for the emitting mesh. "
+            "Lighting Law: intensity always 1.0, brightness via exposure."
+        ),
+        triggers=[
+            r"^(?:set up|setup|create)\s+(?:a\s+)?mesh\s*light(?:\s+(?:from|on|for)\s+(?P<target_geo_pattern>.+))?$",
+            r"^(?:add|create)\s+(?:a\s+)?(?:mesh|emissive|emission)\s*light(?:\s+(?:from|on|for)\s+(?P<target_geo_pattern>.+))?$",
+        ],
+        parameters=["target_geo_pattern"],
+        gate_level=GateLevel.REVIEW,
+        category="lighting",
+        steps=[
+            RecipeStep(
+                action="create_usd_prim",
+                payload_template={
+                    "prim_path": "/lights/mesh_light",
+                    "prim_type": "MeshLight",
+                },
+                gate_level=GateLevel.REVIEW,
+                output_var="meshlight",
+            ),
+            # Lighting Law: intensity always 1.0
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/mesh_light",
+                    "attribute_name": "xn__inputsintensity_i0a",
+                    "value": 1.0,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Target geometry pattern
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/mesh_light",
+                    "attribute_name": "xn__inputsgeometry_01a",
+                    "value": "{target_geo_pattern}",
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # Brightness via exposure
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "prim_path": "/lights/mesh_light",
+                    "attribute_name": "xn__inputsexposure_vya",
+                    "value": 2.0,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+        ],
+    ))
+
     # --- Safe Render (pre-flight validation) ---
     registry.register(Recipe(
         name="safe_render",
