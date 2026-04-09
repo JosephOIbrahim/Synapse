@@ -49,6 +49,14 @@ from .router import (
     RoutingDecision,
 )
 
+from .conductor_advisor import (
+    ConductorAdvisor,
+    HistoryEntry,
+    Recommendation,
+    RecommendationHistory,
+    advise_from_bridge,
+)
+
 from . import constants
 
 __all__ = [
@@ -89,6 +97,12 @@ __all__ = [
     # --- router.py ---
     "MOERouter",
     "RoutingDecision",
+    # --- conductor_advisor.py ---
+    "ConductorAdvisor",
+    "HistoryEntry",
+    "Recommendation",
+    "RecommendationHistory",
+    "advise_from_bridge",
     # --- constants.py ---
     "constants",
 ]
