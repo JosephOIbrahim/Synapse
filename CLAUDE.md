@@ -223,7 +223,7 @@ orchestration|complex|pdg+rendering|normal      → CONDUCTOR + BRAINSTEM
 integration|moderate|testing|normal             → INTEGRATOR only
 ```
 
-**Session learning:** Same fingerprint seen 3+ times → promoted to session-local fast path via `router.learn_fast_path()`.
+**Session learning:** Inside `MOERouter.route()`, every fingerprint increments a counter. Once a fingerprint reaches `FAST_PATH_PROMOTION_THRESHOLD` (default 3) and isn't already a hand-tuned `FAST_PATHS` entry, it's auto-promoted to `_session_fast_paths` stamped with the current `CONSTANTS_HASH`. Subsequent calls hit the session fast path. If the keyword tables drift (CONSTANTS_HASH changes), stamped entries are skipped — silent misses become loud invalidations. External injection via `router.learn_fast_path()` is still supported for the panel/RoutingLog layer.
 
 ### 2.4 Execution Modes
 
@@ -689,6 +689,106 @@ All revisions verified live on Houdini 21.0.596 / SYNAPSE v5.8.0.
 | R7 | Blast radius inference | `bridge.py` | `hou.LopNode` isinstance + `node.dependents()` | original |
 | R8 | PDG async cook bridge | `bridge.py` | `pdg.EventType` + `pdg.PyEventHandler` + `pdg.GraphContext` | 3ae4737 |
 | R10 | Solaris viewport sync | `evolution.py` | `hou.LopNetwork` isinstance walk from root | 3ae4737 |
+
+---
+
+## 16. Recursive Observability Loop
+
+SYNAPSE reads its own runtime telemetry and recommends substrate tuning. The
+loop is closed end-to-end across six tested layers — every API in this
+section is public, frozen, and pinned by tests.
+
+### 16.1 Data flow
+
+```
+LosslessExecutionBridge.operation_stats()      ──┐
+  per-agent counters, success rates, anchor      │
+  violations, log size, session id               │
+                                                 │
+MOERouter.fingerprint_counts()                 ──┤
+  fingerprint → call-count snapshot              │
+                                                 ▼
+LosslessEvolution → EvolutionIntegrity         ──→  ConductorAdvisor.analyze()
+  failure list with category prefixes               returns list[Recommendation]
+  ("Decision content drift: …" etc)
+                                                     │
+                                                     ▼
+                                                RecommendationHistory
+                                                  capped deque + JSONL
+                                                  persistence (.tmp + replace)
+                                                     │
+                                                     ▼
+                                                ConductorAdvisor.analyze_history()
+                                                  meta-recursion: same
+                                                  (kind, target) ≥5×
+                                                  → escalate
+```
+
+### 16.2 Public API surface
+
+| Component | Method | Returns | Owner |
+|---|---|---|---|
+| `LosslessExecutionBridge` | `operation_stats()` | dict with `per_agent`, `per_agent_verified`, `per_agent_success_rate`, `success_rate`, `anchor_violations`, `operations_total`, `operations_verified`, `log_size`, `log_capacity`, `per_operation_type`, `session_id` | SUBSTRATE |
+| `LosslessExecutionBridge` | `recent_operations(n=100)` | list[IntegrityBlock] copy | SUBSTRATE |
+| `LosslessExecutionBridge` | `clear_operation_log()` | int dropped | SUBSTRATE |
+| `MOERouter` | `fingerprint_counts()` | dict[str, int] copy | SUBSTRATE |
+| `LosslessEvolution._verify_lossless` | (internal) | EvolutionIntegrity with content-hash failures | CONDUCTOR |
+| `ConductorAdvisor` | `analyze(bridge_stats, evolution_failures, routing_fingerprints)` | list[Recommendation] | CONDUCTOR |
+| `ConductorAdvisor` | `analyze_history(history)` | list[Recommendation] meta | CONDUCTOR |
+| `RecommendationHistory` | `record(recs, timestamp)` | int recorded | CONDUCTOR |
+| `RecommendationHistory` | `recent(n=50)` / `all()` / `clear()` | list[HistoryEntry] / int | CONDUCTOR |
+| `RecommendationHistory` | `to_jsonl(path)` / `from_jsonl(path)` | int / RecommendationHistory | CONDUCTOR |
+| `advise_from_bridge` | one-shot helper | list[Recommendation] | CONDUCTOR |
+
+### 16.3 Recommendation schema
+
+`Recommendation` is `frozen=True, slots=True` and serializes via `.to_dict()`:
+
+```
+kind        — agent_health | evolution_writer_fix | router_promote |
+              trigger_tune | repeated_recommendation
+target      — subject identifier (agent id, fingerprint, category, slug)
+rationale   — one-line human explanation
+confidence  — 0..1 (scales with sample size)
+severity    — info | warn | critical (informational; gates still apply)
+evidence    — dict of supporting facts
+```
+
+### 16.4 Design constraints
+
+- **Read-only by construction.** The advisor cannot mutate constants, router
+  state, or bridge logs. Verified by `test_advisor_never_mutates_inputs`.
+- **Statistically silent.** Below `MIN_OPS_FOR_VERDICT` (10) and
+  `DRIFT_FIELD_CLUSTER_THRESHOLD` (3) the advisor returns nothing. No alarm
+  fatigue.
+- **Severity is informational.** Even 'critical' recommendations route
+  through the bridge gate system before any tuning is applied. The artist
+  remains the decision authority.
+- **History is bounded.** `RecommendationHistory.DEFAULT_CAPACITY=500` —
+  oldest entries drop FIFO. JSONL persistence is atomic via `.tmp + replace`
+  and tolerates malformed lines on read (best-effort recovery).
+- **Meta-recursion threshold.** `REPEATED_RECOMMENDATION_THRESHOLD=5` —
+  five occurrences of the same `(kind, target)` flag a chronic issue. Ten+
+  escalates to CRITICAL.
+- **Per-agent counters are lifetime.** They survive operation log eviction;
+  bounded log only caps the IntegrityBlock detail, not the aggregate
+  counters.
+
+### 16.5 Tests pinning the loop
+
+| Pin | File |
+|---|---|
+| Router conformance + auto-promotion | `tests/test_router_internals.py` |
+| Bridge per-agent + log accessors + evolution archive + content-aware verify | `tests/test_evolution_bridge_internals.py` |
+| ConductorAdvisor analyze + per-agent + drift + promotion | `tests/test_conductor_advisor.py` |
+| Per-agent advisor + canonical-constant pinning helper | `tests/test_pass7_per_agent_and_canonical.py` |
+| Router accessor + history JSONL round-trip + meta-analysis + end-to-end | `tests/test_pass8_history_and_meta.py` |
+
+If any of the API surface in §16.2 changes, the corresponding test in §16.5
+fails. The doc/code conformance test in `tests/test_router_internals.py`
+pins specific identifiers from this section so future doc drift fails loud.
+
+---
 
 ### Current Status
 
