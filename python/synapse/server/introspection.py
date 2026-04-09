@@ -76,11 +76,15 @@ def _connections(node) -> Dict[str, list]:
     return {"inputs": inputs, "outputs": outputs}
 
 
+_LARGE_GEO_THRESHOLD = 1_000_000  # Skip attribute sampling above this
+
+
 def _geometry_summary(node, max_samples: int = 5) -> Optional[Dict[str, Any]]:
-    """Point/prim/vertex counts and attribute overview.
+    """Point/prim/vertex counts, bounding box, primitive types, and attributes.
 
     Returns ``None`` when geometry isn't accessible (e.g. OBJ-level nodes).
     Attribute values are sampled up to *max_samples* with total count appended.
+    Skips sampling on large geometry (> 1M points) for safety.
     """
     try:
         geo = node.geometry()
@@ -88,6 +92,10 @@ def _geometry_summary(node, max_samples: int = 5) -> Optional[Dict[str, Any]]:
         return None
     if geo is None:
         return None
+
+    pt_count = len(geo.points())
+    prim_count = len(geo.prims())
+    is_large = pt_count > _LARGE_GEO_THRESHOLD
 
     def _attr_info(attrs, elem_count):
         result = []
@@ -98,39 +106,74 @@ def _geometry_summary(node, max_samples: int = 5) -> Optional[Dict[str, Any]]:
                 "size": attr.size(),
                 "count": elem_count,
             }
-            # Sample a few values
-            try:
-                limit = min(max_samples, elem_count)
-                samples = []
-                dtype = str(attr.dataType())
-                if "String" in dtype:
-                    raw = attr.strings()
-                    samples = list(raw[:limit])
-                else:
-                    raw = attr.floatListData()
-                    if raw:
+            # Skip sampling on large geometry to avoid hangs
+            if is_large:
+                info["samples"] = []
+                info["sample_status"] = "skipped (large geometry)"
+            else:
+                try:
+                    limit = min(max_samples, elem_count)
+                    samples = []
+                    dtype = str(attr.dataType())
+                    if "String" in dtype:
+                        raw = attr.strings()
                         samples = list(raw[:limit])
-            except Exception:
-                samples = []
-            info["samples"] = samples
+                    else:
+                        raw = attr.floatListData()
+                        if raw:
+                            samples = list(raw[:limit])
+                except Exception as e:
+                    samples = []
+                    info["sample_status"] = f"error: {str(e)[:80]}"
+                info["samples"] = samples
             result.append(info)
         return result
 
-    pt_count = len(geo.points())
-    prim_count = len(geo.prims())
+    # Bounding box
+    bbox_dict = None
+    try:
+        bbox = geo.boundingBox()
+        if bbox is not None:
+            bbox_dict = {
+                "min": [float(bbox.minvec()[i]) for i in range(3)],
+                "max": [float(bbox.maxvec()[i]) for i in range(3)],
+            }
+    except Exception:
+        pass
 
-    return {
+    # Primitive type distribution (detect VDB/volume/packed/etc)
+    prim_types: Dict[str, int] = {}
+    has_volumes = False
+    try:
+        for prim in geo.prims():
+            ptype = prim.type().name()
+            prim_types[ptype] = prim_types.get(ptype, 0) + 1
+            if "volume" in ptype.lower() or "vdb" in ptype.lower():
+                has_volumes = True
+    except Exception:
+        pass
+
+    result: Dict[str, Any] = {
         "points": pt_count,
         "prims": prim_count,
         "vertices": len(geo.vertices()) if hasattr(geo, "vertices") else 0,
+        "is_empty": pt_count == 0 and prim_count == 0,
+        "bounding_box": bbox_dict,
         "point_attributes": _attr_info(geo.pointAttribs(), pt_count),
         "prim_attributes": _attr_info(geo.primAttribs(), prim_count),
         "detail_attributes": _attr_info(geo.globalAttribs(), 1),
     }
+    if prim_types:
+        result["primitive_types"] = prim_types
+    if has_volumes:
+        result["has_volumes"] = True
+    if is_large:
+        result["large_geometry"] = True
+    return result
 
 
-def _node_issues(node) -> Dict[str, list]:
-    """Warnings and errors from the node's cook state."""
+def _node_issues(node) -> Dict[str, Any]:
+    """Warnings, errors, and node state flags from the cook state."""
     warnings: List[str] = []
     errors: List[str] = []
     try:
@@ -141,7 +184,28 @@ def _node_issues(node) -> Dict[str, list]:
         errors = list(node.errors())
     except Exception:
         pass
-    return {"warnings": warnings, "errors": errors}
+
+    result: Dict[str, Any] = {"warnings": warnings, "errors": errors}
+
+    # Node state flags — display, render, bypass, lock.
+    # Only set if the method exists and returns a bool (avoids MagicMock leaks
+    # in tests and non-SOP node types that lack these methods).
+    for flag_method, flag_key in (
+        ("isDisplayFlagSet", "display_flag"),
+        ("isRenderFlagSet", "render_flag"),
+        ("isBypassed", "bypass"),
+        ("isHardLocked", "locked"),
+    ):
+        try:
+            fn = getattr(node, flag_method, None)
+            if fn is not None and callable(fn):
+                val = fn()
+                if isinstance(val, bool):
+                    result[flag_key] = val
+        except Exception:
+            pass
+
+    return result
 
 
 def _node_code(node) -> Optional[str]:

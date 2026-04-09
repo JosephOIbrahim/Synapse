@@ -20,26 +20,41 @@ from .handler_helpers import _HOUDINI_UNAVAILABLE
 
 # Canonical Solaris chain ordering.  Lower number = earlier in chain.
 _SOLARIS_NODE_ORDER: Dict[str, int] = {
+    # --- Stage defaults ---
+    "stagemanager": 5,              # HIP-level stage defaults (kitchen-sink config)
     # --- Scene hierarchy (Pattern 4: Hierarchy Discipline) ---
     "primitive": 10,                # Xform hierarchy root (Kind=Group)
     # --- Geometry import (Pattern 1: chain sequentially, NEVER merge) ---
     "sopcreate": 100,
     "sopimport": 100,
+    "sceneimport": 105,             # Import full scene from external file
     # --- Component Builder internals (Pattern 2) ---
     "componentgeometry": 110,       # SOPs inside: geo → default/proxy/simproxy
     "componentmaterial": 120,       # Auto-assigns materials to geometry
     "componentoutput": 130,         # Export: name, path, thumbnail
     "componentgeometryvariants": 115,  # Pattern 5: merge geometry variants
+    # --- Layer composition ---
+    "sublayer": 150,                # USD sublayer composition
+    "payload": 155,                 # Deferred USD payload loading
     # --- Materials ---
     "materiallibrary": 200,
     "assignmaterial": 220,
     # --- References (Pattern 6: Megascans material import trick) ---
     "reference": 250,               # /materials/* wildcard for material import
+    # --- Collections & pruning ---
+    "collection": 280,              # USD collection for light linking / grouping
+    "prune": 290,                   # Prune prims from stage (deactivate)
+    # --- Instancing ---
+    "pointinstancer": 300,          # USD native point instancing
+    "instancer": 310,               # Legacy instancer
     # --- Cameras ---
     "camera": 400,
     # --- Lighting ---
     "rectlight": 500,
     "distantlight": 500,
+    "spherelight": 500,
+    "disklight": 500,
+    "cylinderlight": 500,
     "domelight": 600,
     "karmaphysicalsky": 610,        # Pattern 1: physical sky lighting
     # --- Layout + Physics (Pattern 8) ---
@@ -51,8 +66,12 @@ _SOLARIS_NODE_ORDER: Dict[str, int] = {
     # --- Render (Pattern 1: Canonical LOP Chain) ---
     "karmarendersettings": 700,
     "karmarenderproperties": 700,
+    "rendergeometrysettings": 710,  # Per-prim render settings
+    "rendersettings": 720,          # USD RenderSettings prim
     "usdrender_rop": 800,           # Final render output
+    # --- Output ---
     "null": 900,
+    "output": 900,                  # Named output node
 }
 
 # Named chain templates for multi-node tool creation (RELAY-SOLARIS Phase 2)
