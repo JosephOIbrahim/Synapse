@@ -50,6 +50,8 @@ __all__ = [
     # Render validation
     "RENDER_VALIDATE_CHECKS",
     "RENDER_VALIDATE_DEFAULTS",
+    # PDG
+    "PDG_DEFER_TIMEOUT",
 ]
 
 
@@ -319,6 +321,13 @@ AGENT_CONTEXT_REQUIREMENTS: dict[AgentID, set[str]] = {
     AgentID.CONDUCTOR: set(),
     AgentID.INTEGRATOR: {"files_touched"},
 }
+
+
+# ---------------------------------------------------------------------------
+# PDG / TOPS
+# ---------------------------------------------------------------------------
+
+PDG_DEFER_TIMEOUT: float = 60.0    # extended timeout for PDG graph context cold-start
 
 
 # ---------------------------------------------------------------------------

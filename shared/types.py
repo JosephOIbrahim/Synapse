@@ -6,9 +6,12 @@ All agents import from this module. INTEGRATOR owns write access.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from typing import Any, Literal
+from typing import Any, Literal, TYPE_CHECKING
 from enum import Enum
 import json
+
+if TYPE_CHECKING:
+    from shared.bridge import IntegrityBlock
 
 
 # ── Type Aliases ───────────────────────────────────────────────
@@ -65,9 +68,9 @@ class ExecutionResult:
     attempts: int = 1
     max_attempts: int = 3
     agent_id: AgentID | None = None
-    integrity: Any | None = None  # IntegrityBlock when routed through bridge
+    integrity: IntegrityBlock | None = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         if self.agent_id:
             d["agent_id"] = self.agent_id.value
@@ -78,7 +81,7 @@ class ExecutionResult:
 
     @classmethod
     def ok(cls, result: Any = None, agent_id: AgentID | None = None,
-           integrity: Any | None = None) -> ExecutionResult:
+           integrity: IntegrityBlock | None = None) -> ExecutionResult:
         return cls(success=True, result=result, agent_id=agent_id,
                    integrity=integrity)
 
@@ -89,7 +92,7 @@ class ExecutionResult:
         return cls(success=False, error=error, error_type=error_type,
                    retry_hint=retry_hint, agent_id=agent_id)
 
-    def with_integrity(self, integrity: Any) -> ExecutionResult:
+    def with_integrity(self, integrity: IntegrityBlock) -> ExecutionResult:
         """Return a new ExecutionResult with integrity attached."""
         return ExecutionResult(
             success=self.success,
@@ -113,8 +116,8 @@ class TaskSpec:
     summary: str
     primary_agent: AgentID
     advisory_agent: AgentID | None = None
-    context: dict = field(default_factory=dict)
-    constraints: dict = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict)
+    constraints: dict[str, Any] = field(default_factory=dict)
     depends_on: tuple[str, ...] = ()
     status: TaskStatus = TaskStatus.PENDING
     deliverable_format: str = "ExecutionResult"

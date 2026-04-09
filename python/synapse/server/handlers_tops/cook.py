@@ -63,7 +63,16 @@ class TopsCookMixin:
                     "work_items": item_count,
                 }
 
-            node.cook(block=bool(blocking))
+            try:
+                node.cook(block=bool(blocking))
+            except Exception as e:
+                logger.error("PDG cook failed for %s: %s", node_path, e)
+                return {
+                    "node": node_path,
+                    "status": "error",
+                    "work_items": len(pdg_node.workItems) if pdg_node else 0,
+                    "error": str(e),
+                }
             item_count = len(pdg_node.workItems)
             return {
                 "node": node_path,

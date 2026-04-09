@@ -113,7 +113,7 @@ class IntegrityBlock:
             return FIDELITY_DEGRADED
         return FIDELITY_PERFECT
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "anchors_hold": self.anchors_hold,
             "fidelity": self.fidelity,

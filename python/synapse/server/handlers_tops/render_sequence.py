@@ -276,9 +276,15 @@ class TopsRenderSequenceMixin:
                 job_id = f"render-seq-{deterministic_uuid(f'tops_render_seq_{rop_path}_{start_frame}_{end_frame}')[:8]}"
                 cook_status = "pending"
 
+                cook_error = None
                 if item_count > 0:
-                    rop_fetch.cook(block=bool(blocking))
-                    cook_status = "cooked" if blocking else "cooking"
+                    try:
+                        rop_fetch.cook(block=bool(blocking))
+                        cook_status = "cooked" if blocking else "cooking"
+                    except Exception as e:
+                        _log.error("PDG cook failed for %s: %s", rop_path, e)
+                        cook_status = "error"
+                        cook_error = str(e)
 
                 # Build result
                 result = {
@@ -296,6 +302,8 @@ class TopsRenderSequenceMixin:
                     "status": cook_status,
                     "created_network": created_network,
                 }
+                if cook_error:
+                    result["error"] = cook_error
 
                 if scheduler_info:
                     result["scheduler"] = scheduler_info
@@ -479,9 +487,15 @@ class TopsRenderSequenceMixin:
             cook_status = "pending"
 
             last_node = encode_node or partition
+            cook_error = None
             if item_count > 0:
-                last_node.cook(block=bool(blocking))
-                cook_status = "cooked" if blocking else "cooking"
+                try:
+                    last_node.cook(block=bool(blocking))
+                    cook_status = "cooked" if blocking else "cooking"
+                except Exception as e:
+                    _log.error("Multi-shot PDG cook failed: %s", e)
+                    cook_status = "error"
+                    cook_error = str(e)
 
             # Build result
             shot_summary = []
@@ -516,6 +530,8 @@ class TopsRenderSequenceMixin:
                 result["encode_node"] = encode_node.path()
             if scheduler_info:
                 result["scheduler"] = scheduler_info
+            if cook_error:
+                result["error"] = cook_error
 
             return result
 
