@@ -42,7 +42,7 @@ If a feature can't hit at least one, it doesn't ship.
 
 ## Key Features
 
-**Core Bridge** — 108 MCP tools give Claude full Houdini control: nodes, parameters, USD, materials, lighting, rendering, viewport capture, VEX execution. Material presets (glass, metal, skin, cloth, etc.) with category hierarchy. Karma advanced rendering with 17 configurable parameters including denoiser, adaptive sampling, bounce limits, and motion blur. Real-time WebSocket communication with production resilience (rate limiting, circuit breaker, port failover, watchdog, backpressure).
+**Core Bridge** — 108 MCP tools give Claude full Houdini control: nodes, parameters, USD, materials, lighting, rendering, viewport capture, VEX execution. Material presets (glass, metal, skin, cloth, etc.) with category hierarchy. Karma advanced rendering with 23 configurable parameters including bounce limits, denoiser, adaptive sampling, motion blur timing, and XPU optimizations. Real-time WebSocket communication with production resilience (rate limiting, circuit breaker, port failover, watchdog, backpressure). PDG cook failures caught and surfaced (never crash silently).
 
 **Persistent Memory** — Three-layer memory system (cognitive substrate, project, scene) stored alongside your HIP file. Memory evolves from flat markdown to structured USD to composed USD with cross-scene composition arcs — automatically, when the data warrants it.
 
@@ -452,7 +452,7 @@ flowchart TB
         Light --> Layout["Layout/Edit\n(650)"]
         Layout --> Var["Variants\n(670)"]
         Var --> Karma["KarmaRenderSettings\n(700)"]
-        Karma --> |"17 advanced params:\ndiffuse_limit, denoiser,\nadaptive, motion blur..."| ROP["USDRender ROP\n(800)"]
+        Karma --> |"23 advanced params:\nbounce limits, denoiser,\nadaptive, motion blur,\nXPU culling..."| ROP["USDRender ROP\n(800)"]
         ROP --> Out["Output\n(900)"]
     end
     subgraph AOV["Render Passes (auto-wired)"]
@@ -463,7 +463,28 @@ flowchart TB
     end
 ```
 
-Material creation supports 10 presets (glass, mirror, rough_metal, polished_metal, skin, cloth, plastic, ceramic, wax, rubber) with category-based organization (`/materials/{category}/{name}`). Explicit parameters override preset values. Karma advanced settings cover 17 parameters including bounce depth limits, denoiser, adaptive sampling, and motion blur. Scene assembly can auto-configure AOV passes in a single call. All material mutations are undo-wrapped (`hou.undos.group`).
+Material creation supports 10 presets (glass, mirror, rough_metal, polished_metal, skin, cloth, plastic, ceramic, wax, rubber) with category-based organization (`/materials/{category}/{name}`). Explicit parameters override preset values. Karma advanced settings cover 23 parameters including bounce depth limits, denoiser, adaptive sampling, motion blur timing (shutter open/close, transform/geo samples), variance threshold, and XPU light culling. Scene assembly can auto-configure AOV passes in a single call. All material mutations are undo-wrapped (`hou.undos.group`).
+
+### Solaris Graph Templates
+
+```mermaid
+flowchart LR
+    subgraph Scene["Scene Templates"]
+        MA["multi_asset_merge\nN geo streams → merge"]
+        SL["sublayer_stack\nN USD layers → merge"]
+        IA["instanceable_assets\nN refs → layout"]
+    end
+    subgraph Light["Lighting Templates"]
+        LR2["lighting_rig\nkey + fill + env"]
+        HD["hdri_lighting\ndome + sky + sun"]
+    end
+    subgraph Utility["Utility Templates"]
+        RP["render_pass_split\nN karma → N ROPs"]
+        VS["variant_selector\nexplore → set"]
+    end
+```
+
+Seven pre-built topology templates for common Solaris DAG patterns. Scene templates produce renderable scenes with canonical render tails. Lighting templates provide photorealistic setups (HDRI outdoor, studio 3-point). Utility templates handle render pass fan-out and variant preview workflows.
 
 ### Lossless Execution Bridge
 
@@ -495,6 +516,23 @@ Four structural anchors enforced on every operation:
 | **Scene Integrity** | USD composition validation after mutation; rollback on violation; exceptions logged |
 
 The PDG async cook bridge uses `threading.Event` (not `asyncio.Event`) for cross-thread safety between Houdini's main thread and FastMCP's async loop. Cook errors are captured and propagated rather than silently hanging.
+
+### Error Hierarchy
+
+```mermaid
+flowchart TB
+    SE["SynapseError"] --> SUE["SynapseUserError\n(does NOT trip circuit breaker)"]
+    SE --> SSE["SynapseServiceError\n(DOES trip circuit breaker)"]
+    SUE --> NNF["NodeNotFoundError"]
+    SUE --> PE["ParameterError"]
+    SUE --> VE["ValidationError"]
+    SSE --> EE["ExecutionError\n(code bugs)"]
+    SSE --> HUE["HoudiniUnavailableError"]
+    SSE --> OTE["OperationTimeoutError\n(main thread stalls)"]
+    SSE --> OFE["OperationFailedError\n(render crash, cook error)"]
+```
+
+Two-branch hierarchy: user errors (bad input) don't trip the circuit breaker; service errors (Houdini down, timeouts, crashes) do. `OperationTimeoutError` fires when `hdefereval` exceeds 120s. `OperationFailedError` captures render crashes, GPU OOM, and cook failures with node path context.
 
 ### Self-Observability Loop
 
@@ -544,7 +582,7 @@ sequenceDiagram
 | **Execution** | `houdini_execute_python`, `houdini_execute_vex` |
 | **USD / Solaris** | `houdini_stage_info`, `houdini_get_usd_attribute`, `houdini_set_usd_attribute`, `houdini_create_usd_prim`, `houdini_modify_usd_prim`, `houdini_reference_usd` |
 | **Materials** | `houdini_create_material` (presets, categories, transmission/coat/IOR), `houdini_assign_material`, `houdini_read_material`, `houdini_create_textured_material` |
-| **Rendering** | `houdini_render`, `houdini_render_settings` (engine detection, 17 Karma advanced params), `houdini_wedge`, `houdini_capture_viewport` |
+| **Rendering** | `houdini_render`, `houdini_render_settings` (engine detection, 23 Karma advanced params), `houdini_wedge`, `houdini_capture_viewport` |
 | **Introspection** | `synapse_inspect_selection` (bbox, VDB detect, prim types, node flags), `synapse_inspect_scene`, `synapse_inspect_node` |
 | **Memory** | `synapse_context`, `synapse_search`, `synapse_recall`, `synapse_decide`, `synapse_add_memory`, `synapse_memory_write`, `synapse_memory_query`, `synapse_memory_status`, `synapse_evolve_memory`, `synapse_project_setup` |
 | **Diagnostics** | `synapse_diagnose`, `synapse_fix`, `synapse_preflight`, `synapse_error_translate` |
