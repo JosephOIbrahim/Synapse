@@ -885,7 +885,7 @@ class RenderHandlerMixin:
             "crypto_asset":    ("crypto_asset",      "color4f", "raw"),
         }
 
-        from .main_thread import run_on_main
+        from .main_thread import run_on_main, _SLOW_TIMEOUT
 
         def _on_main():
             node = self._resolve_lop_node(node_path_arg)  # type: ignore[attr-defined]
@@ -961,11 +961,26 @@ class RenderHandlerMixin:
 
             code = "\n".join(lines)
 
-            # Create Python LOP to author the render vars
-            py_lop = parent.createNode("pythonscript", "render_passes")
-            py_lop.setInput(0, node)
-            py_lop.moveToGoodPosition()
-            py_lop.parm("python").set(code)
+            # Create Python LOP then set code and force-cook inside undo
+            # group so the pxr imports are validated before the undo exits.
+            # Without the cook, Houdini defers validation to undo
+            # serialization time, which can corrupt the undo stack if the
+            # pythonscript code has import errors.
+            try:
+                with hou.undos.group("SYNAPSE: configure_render_passes"):
+                    py_lop = parent.createNode("pythonscript", "render_passes")
+                    py_lop.setInput(0, node)
+                    py_lop.moveToGoodPosition()
+                    py_lop.parm("python").set(code)
+                    # Force cook validates the python code NOW, not at undo
+                    # serialization time — catches pxr import errors early.
+                    py_lop.cook(force=True)
+            except Exception:
+                try:
+                    hou.undos.performUndo()
+                except Exception:
+                    pass
+                raise
 
             return {
                 "node": py_lop.path(),
@@ -974,7 +989,7 @@ class RenderHandlerMixin:
                 "clear_existing": bool(clear_existing),
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
 
     # =========================================================================
     # SAFE RENDER (pre-flight + auto-background for large renders)

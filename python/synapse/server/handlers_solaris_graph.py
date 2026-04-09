@@ -307,7 +307,11 @@ class SolarisGraphMixin:
             }
 
         # ── Execute on main thread ──
-        from .main_thread import run_on_main
+        # Use _SLOW_TIMEOUT: Solaris network builds with Karma nodes
+        # involve GPU context init and USD stage authoring that routinely
+        # exceed the default 10s timeout, triggering the stall-detection
+        # death spiral (timeout → ghost callback → duplicate nodes → crash).
+        from .main_thread import run_on_main, _SLOW_TIMEOUT
 
         def _on_main():
             parent_node = hou.node(parent_path)
@@ -321,54 +325,73 @@ class SolarisGraphMixin:
             nodes_created = []
             connections_made = []
 
-            with hou.undos.group("SYNAPSE: build_graph"):
-                # 1. Create all nodes in topo order
-                for nid in sorted_ids:
-                    spec = node_map[nid]
-                    node_type = spec["type"]
-                    node_name = spec.get("name", nid) or nid
-                    node = parent_node.createNode(node_type, node_name)
-                    id_to_hou[nid] = node
-                    nodes_created.append({"id": nid, "path": node.path()})
+            try:
+                with hou.undos.group("SYNAPSE: build_graph"):
+                    # 1. Create all nodes in topo order
+                    for nid in sorted_ids:
+                        spec = node_map[nid]
+                        node_type = spec["type"]
+                        node_name = spec.get("name", nid) or nid
+                        node = parent_node.createNode(node_type, node_name)
+                        id_to_hou[nid] = node
+                        nodes_created.append({"id": nid, "path": node.path()})
 
-                # 2. Set parameters
-                for nid in sorted_ids:
-                    spec = node_map[nid]
-                    parms = spec.get("parms", {})
-                    node = id_to_hou[nid]
-                    for parm_name, parm_value in parms.items():
-                        p = node.parm(parm_name)
-                        if p is not None:
-                            p.set(parm_value)
+                    # 2. Set parameters
+                    for nid in sorted_ids:
+                        spec = node_map[nid]
+                        parms = spec.get("parms", {})
+                        node = id_to_hou[nid]
+                        for parm_name, parm_value in parms.items():
+                            p = node.parm(parm_name)
+                            if p is not None:
+                                p.set(parm_value)
 
-                # 3. Wire connections
-                for conn in raw_connections:
-                    source = id_to_hou[conn["from"]]
-                    target = id_to_hou[conn["to"]]
-                    input_idx = conn.get("input", 0)
-                    output_idx = conn.get("output", 0)
-                    target.setInput(input_idx, source, output_idx)
-                    connections_made.append({
-                        "from": source.path(),
-                        "to": target.path(),
-                        "input": input_idx,
-                    })
+                    # 3. Wire connections
+                    for conn in raw_connections:
+                        source = id_to_hou[conn["from"]]
+                        target = id_to_hou[conn["to"]]
+                        input_idx = conn.get("input", 0)
+                        output_idx = conn.get("output", 0)
+                        target.setInput(input_idx, source, output_idx)
+                        connections_made.append({
+                            "from": source.path(),
+                            "to": target.path(),
+                            "input": input_idx,
+                        })
 
-                # 4. Display flag (ROP nodes don't support display flag)
-                display_hou = id_to_hou[display_node_id]
-                if hasattr(display_hou, "setDisplayFlag"):
-                    try:
-                        display_hou.setDisplayFlag(True)
-                    except AttributeError:
-                        pass  # RopNode — no display flag
+                    # 4. Stamp provenance
+                    for node in id_to_hou.values():
+                        node.setComment("SYNAPSE: build_graph")
+                        node.setGenericFlag(hou.nodeFlag.DisplayComment, True)
 
-                # 5. Stamp provenance
-                for node in id_to_hou.values():
-                    node.setComment("SYNAPSE: build_graph")
-                    node.setGenericFlag(hou.nodeFlag.DisplayComment, True)
+                    # 5. Layout BEFORE display flag — layoutChildren() can
+                    # trigger a cook cascade via display-state evaluation.
+                    # If the display flag is already on a karmarenderproperties
+                    # node, layout forces Karma XPU GPU context init on the
+                    # main thread while the viewport may also be initializing
+                    # the same GPU context → CUDA double-init → segfault.
+                    parent_node.layoutChildren()
 
-                # 6. Layout
-                parent_node.layoutChildren()
+                    # 6. Display flag AFTER layout — now the cook triggered
+                    # by setDisplayFlag runs on a fully-laid-out, wired
+                    # network with no concurrent layout evaluation.
+                    display_hou = id_to_hou[display_node_id]
+                    if hasattr(display_hou, "setDisplayFlag"):
+                        try:
+                            display_hou.setDisplayFlag(True)
+                        except AttributeError:
+                            pass  # RopNode — no display flag
+
+            except Exception:
+                # Safe undo fallback — the C++ undo layer for LOP nodes
+                # with USD stage data can throw during __exit__ if GPU
+                # resources are being deallocated. Catch and explicitly
+                # undo to prevent undo stack corruption.
+                try:
+                    hou.undos.performUndo()
+                except Exception:
+                    pass
+                raise
 
             return {
                 "status": "created",
@@ -381,4 +404,4 @@ class SolarisGraphMixin:
                 "dry_run": False,
             }
 
-        return run_on_main(_on_main)
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)

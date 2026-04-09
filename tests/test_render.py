@@ -23,9 +23,12 @@ if "hou" not in sys.modules:
     _hou.frame = MagicMock(return_value=24.0)
     _hou.text = MagicMock()
     _hou.text.expandString = MagicMock(return_value="/tmp/houdini_temp")
+    _hou.undos = MagicMock()
     sys.modules["hou"] = _hou
 else:
     _hou = sys.modules["hou"]
+    if not hasattr(_hou, "undos"):
+        _hou.undos = MagicMock()
 
 if "hdefereval" not in sys.modules:
     _hdefereval = types.ModuleType("hdefereval")
@@ -69,6 +72,8 @@ handlers_mod = sys.modules["synapse.server.handlers"]
 # Get the hou module that handlers.py actually imported — may differ from
 # sys.modules["hou"] if earlier test files replaced it without restoring.
 _handlers_hou = handlers_mod.hou
+if not hasattr(_handlers_hou, "undos"):
+    _handlers_hou.undos = MagicMock()
 
 
 # ---------------------------------------------------------------------------
