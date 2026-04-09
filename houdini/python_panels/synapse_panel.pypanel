@@ -33,13 +33,16 @@ import ssl
 
 import sys as _sys_mod
 import os as _os_mod
-_synapse_python = _os_mod.environ.get(
+_SYNAPSE_ROOT = _os_mod.environ.get(
     "SYNAPSE_ROOT",
     _os_mod.path.join(_os_mod.path.expanduser("~"), "SYNAPSE"),
 )
-_synapse_python = _os_mod.path.join(_synapse_python, "python")
+_synapse_python = _os_mod.path.join(_SYNAPSE_ROOT, "python")
 if _synapse_python not in _sys_mod.path:
     _sys_mod.path.insert(0, _synapse_python)
+# shared/ lives at repo root — needed for bridge, router, conductor_advisor
+if _SYNAPSE_ROOT not in _sys_mod.path:
+    _sys_mod.path.insert(0, _SYNAPSE_ROOT)
 
 
 # ── Bootstrap Design System imports ───────────────────────
@@ -609,6 +612,9 @@ class SynapsePanel(QtWidgets.QWidget):
         # 4. Activity log (collapsible, hidden by default)
         layout.addWidget(self._build_activity_log())
 
+        # 5. Agent health (collapsible, hidden by default)
+        layout.addWidget(self._build_agent_health())
+
         # Surface any context bar init failure
         if getattr(self, "_context_bar_error", None):
             QtCore.QTimer.singleShot(
@@ -618,7 +624,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 )
             )
 
-        # 5. Compact footer
+        # 6. Compact footer
         layout.addWidget(self._build_connection_bar())
 
     def _build_header(self):
@@ -859,6 +865,90 @@ class SynapsePanel(QtWidgets.QWidget):
             self._activity_toggle.setText("\u25BC ACTIVITY")
         else:
             self._activity_toggle.setText("\u25B6 ACTIVITY")
+
+    # ── Agent Health Panel ─────────────────────────────────
+
+    def _build_agent_health(self):
+        """Build collapsible agent health section (MOE observability loop surface)."""
+        frame = QtWidgets.QFrame()
+        frame.setObjectName("agent_health_frame")
+        layout = QtWidgets.QVBoxLayout(frame)
+        layout.setContentsMargins(
+            SPACE_SM if _HAS_DESIGN else 8, 0,
+            SPACE_SM if _HAS_DESIGN else 8, 0,
+        )
+        layout.setSpacing(0)
+
+        # Toggle button (matches activity log pattern)
+        self._health_toggle = QtWidgets.QPushButton("\u25B6 AGENT HEALTH")
+        self._health_toggle.setObjectName("activity_toggle")
+        self._health_toggle.clicked.connect(self._on_toggle_health)
+        layout.addWidget(self._health_toggle)
+
+        # Health display (hidden by default)
+        self._health_display = QtWidgets.QTextEdit()
+        self._health_display.setObjectName("activity_log")
+        self._health_display.setReadOnly(True)
+        self._health_display.setPlaceholderText(
+            "Agent health data will appear when the bridge is running..."
+        )
+        self._health_display.setMaximumHeight(200)
+        self._health_display.setVisible(False)
+        layout.addWidget(self._health_display)
+
+        return frame
+
+    def _on_toggle_health(self):
+        """Toggle agent health panel visibility."""
+        visible = not self._health_display.isVisible()
+        self._health_display.setVisible(visible)
+        if visible:
+            self._health_toggle.setText("\u25BC AGENT HEALTH")
+            # Immediate refresh on open
+            self._update_agent_health()
+        else:
+            self._health_toggle.setText("\u25B6 AGENT HEALTH")
+
+    def _update_agent_health(self):
+        """Refresh agent health display from bridge stats (best-effort)."""
+        if not hasattr(self, "_health_display"):
+            return
+        try:
+            from synapse.panel.agent_health import (
+                get_agent_health, format_agent_health_html, get_evolution_display,
+            )
+            health = get_agent_health()
+            if health is not None:
+                html = format_agent_health_html(health)
+                self._health_display.setHtml(html)
+
+                # Update the toggle with a status indicator
+                recs = health.get("recommendations", [])
+                critical = sum(
+                    1 for r in recs
+                    if getattr(r, "severity", "") == "critical"
+                )
+                warns = sum(
+                    1 for r in recs
+                    if getattr(r, "severity", "") == "warn"
+                )
+                if critical > 0:
+                    indicator = " \u26A0"  # Warning triangle
+                elif warns > 0:
+                    indicator = " \u25CF"  # Dot
+                else:
+                    indicator = ""
+
+                arrow = "\u25BC" if self._health_display.isVisible() else "\u25B6"
+                stats = health.get("bridge_stats", {})
+                total = stats.get("operations_total", 0)
+                if total > 0:
+                    rate = stats.get("success_rate", 0.0)
+                    self._health_toggle.setText(
+                        "{} AGENT HEALTH  {:.0%}{}".format(arrow, rate, indicator)
+                    )
+        except Exception:
+            pass
 
     def _build_connection_bar(self):
         """Build compact footer: disconnect + version + ws URL."""
@@ -2508,10 +2598,21 @@ class SynapsePanel(QtWidgets.QWidget):
                     )
                 except ImportError:
                     pass
-                # Log routing decision (Phase 5)
+                # Log routing decision (Phase 5) + surface agent in activity
                 try:
                     from synapse.panel.routing_log import get_routing_log
                     get_routing_log().log_decision(routing_decision)
+                    if hasattr(routing_decision, "primary"):
+                        agent_name = (
+                            routing_decision.primary.value
+                            if hasattr(routing_decision.primary, "value")
+                            else str(routing_decision.primary)
+                        )
+                        method = getattr(routing_decision, "method", "scored")
+                        self._log_activity(
+                            "Routed to {} ({})".format(agent_name, method),
+                            "info",
+                        )
                 except Exception:
                     pass
         except ImportError:
@@ -2559,10 +2660,36 @@ class SynapsePanel(QtWidgets.QWidget):
             if tracker.should_evolve(
                 getattr(self, "_login_data", None)
             ):
-                self._log_activity(
-                    "Memory evolution recommended -- structured data accumulated",
-                    "info",
-                )
+                # Show evolution stage with Pokémon name
+                try:
+                    from synapse.panel.agent_health import get_evolution_display
+                    evo = get_evolution_display(getattr(self, "_login_data", None))
+                    self._log_activity(
+                        "Memory evolution recommended ({} -> next stage)".format(
+                            evo.get("label", "unknown"),
+                        ), "info",
+                    )
+                except Exception:
+                    self._log_activity(
+                        "Memory evolution recommended -- structured data accumulated",
+                        "info",
+                    )
+        except Exception:
+            pass
+
+        # Surface critical advisor recommendations (best-effort)
+        try:
+            from synapse.panel.agent_health import get_agent_health
+            health = get_agent_health()
+            if health and health.get("recommendations"):
+                for rec in health["recommendations"]:
+                    if getattr(rec, "severity", "") == "critical":
+                        self._log_activity(
+                            "Advisor: {} -- {}".format(
+                                getattr(rec, "target", ""),
+                                getattr(rec, "rationale", ""),
+                            ), "warning",
+                        )
         except Exception:
             pass
 
@@ -2853,6 +2980,9 @@ class SynapsePanel(QtWidgets.QWidget):
                         )
             except Exception:
                 pass
+
+        # Agent health update (every poll, best-effort, never blocks)
+        self._update_agent_health()
 
         if self._server and getattr(self._server, "_running", False):
             # Server is alive
