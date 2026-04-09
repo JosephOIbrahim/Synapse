@@ -223,7 +223,7 @@ def load_memory(claude_dir: str, name: str = "memory") -> Dict[str, Any]:
                     "format": "usd",
                     "path": usd_path,
                     "content": content,
-                    "evolution": "structured",
+                    "evolution": "charmeleon",
                 }
         except Exception as e:
             logger.warning("Could not read USD %s: %s", usd_path, e)
@@ -234,7 +234,7 @@ def load_memory(claude_dir: str, name: str = "memory") -> Dict[str, Any]:
             "format": "md",
             "path": md_path,
             "content": content,
-            "evolution": "flat",
+            "evolution": "charmander",
         }
 
     return {
@@ -717,7 +717,13 @@ def search_memory(content: str, query: str, type_filter: str = "") -> List[Dict[
 
 
 def get_evolution_stage(claude_dir: str, name: str = "memory") -> str:
-    """Detect current evolution stage: flat, structured, or composed."""
+    """Detect current evolution stage: charmander, charmeleon, or charizard.
+
+    Pokémon naming is the canonical convention used across the forge corpus,
+    CLAUDE.md §6, the living-memory design plan, and the scene_memory tests.
+    Both the legacy ('flat'/'structured'/'composed') and canonical names are
+    accepted on read so existing on-disk USD layers do not invalidate.
+    """
     claude_dir = os.path.normpath(claude_dir)
     usd_path = os.path.join(claude_dir, f"{name}.usd")
     md_path = os.path.join(claude_dir, f"{name}.md")
@@ -729,29 +735,30 @@ def get_evolution_stage(claude_dir: str, name: str = "memory") -> str:
             stage = Usd.Stage.Open(usd_path)
             layer_data = stage.GetRootLayer().customLayerData
             evo = layer_data.get("synapse:evolution", "")
-            if evo == "composed":
-                return "composed"
-            if evo == "structured":
-                return "structured"
+            if evo in ("charizard", "composed"):
+                return "charizard"
+            if evo in ("charmeleon", "structured"):
+                return "charmeleon"
             # Check sublayers as fallback
             if list(stage.GetRootLayer().subLayerPaths):
-                return "composed"
-            return "structured"
+                return "charizard"
+            return "charmeleon"
         except ImportError:
             pass
         # Fallback: text scan for USDA files
         try:
             content = _read_file(usd_path)
-            if '"synapse:evolution" = "composed"' in content:
-                return "composed"
+            if '"synapse:evolution" = "charizard"' in content or \
+               '"synapse:evolution" = "composed"' in content:
+                return "charizard"
             if "subLayers" in content or "references" in content:
-                return "composed"
+                return "charizard"
         except Exception:
             pass
-        return "structured"
+        return "charmeleon"
 
     if os.path.exists(md_path):
-        return "flat"
+        return "charmander"
 
     return "none"
 

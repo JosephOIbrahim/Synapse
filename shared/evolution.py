@@ -120,7 +120,8 @@ def check_evolution_triggers(md_path: str) -> EvolutionCheck:
     if not os.path.exists(md_path):
         return EvolutionCheck(False, EVOLUTION_STAGE_FLAT, EVOLUTION_STAGE_FLAT, [], [])
 
-    content = open(md_path, 'r').read()
+    with open(md_path, 'r', encoding='utf-8') as _f:
+        content = _f.read()
     stats = count_structured_data(content)
 
     triggers_met = []
@@ -162,7 +163,8 @@ def count_structured_data(content: str) -> dict:
 
 def parse_markdown_memory(md_path: str) -> ParsedMemory:
     if isinstance(md_path, str) and os.path.exists(md_path):
-        content = open(md_path, 'r').read()
+        with open(md_path, 'r', encoding='utf-8') as _f:
+            content = _f.read()
     else:
         content = md_path
     return parse_markdown_memory_from_string(content)
@@ -173,6 +175,9 @@ def parse_markdown_memory_from_string(content: str) -> ParsedMemory:
     lines = content.split('\n')
     current_session = None
     current_section = None
+    current_decision: Decision | None = None  # E5: track for date/alternatives lookahead
+    current_asset: AssetRef | None = None     # E5: track for variants lookahead
+    current_param: ParameterRecord | None = None  # E5: track for parameter field lookahead
 
     for i, line in enumerate(lines):
         session_match = re.match(r'^##\s+Session\s+(\d{4}-\d{2}-\d{2})', line)
@@ -185,6 +190,9 @@ def parse_markdown_memory_from_string(content: str) -> ParsedMemory:
                 date=date, text="",
             )
             current_section = "session"
+            current_decision = None
+            current_asset = None
+            current_param = None
             continue
 
         decision_match = re.match(r'^\*\*Decision:\*\*\s*(.*)|^###\s+Decision:\s*(.*)', line)
@@ -195,14 +203,38 @@ def parse_markdown_memory_from_string(content: str) -> ParsedMemory:
             for j in range(i + 1, min(i + 5, len(lines))):
                 if lines[j].startswith('#') or lines[j].startswith('**'):
                     break
+                if re.match(r'^\s*-\s*(Slug|Date|Alternatives):', lines[j]):
+                    break
                 reasoning += lines[j] + " "
-            memory.decisions.append(Decision(
+            current_decision = Decision(
                 slug=slug, choice=choice, reasoning=reasoning.strip(),
                 date=current_session.date if current_session else "",
-            ))
+            )
+            memory.decisions.append(current_decision)
             if current_session:
                 current_session.decisions.append(choice)
+            # Section is now decision — reset other section pointers so their
+            # field-line handlers don't grab our `- Slug:` line and vice versa.
+            current_param = None
+            current_asset = None
             continue
+
+        # E5: pick up decision metadata that the companion writer now emits
+        if current_decision is not None:
+            slug_match = re.match(r'^\s*-\s*Slug:\s*(.+)$', line)
+            if slug_match:
+                current_decision.slug = slug_match.group(1).strip()
+                continue
+            date_match = re.match(r'^\s*-\s*Date:\s*(.+)$', line)
+            if date_match:
+                current_decision.date = date_match.group(1).strip()
+                continue
+            alts_match = re.match(r'^\s*-\s*Alternatives:\s*(.+)$', line)
+            if alts_match:
+                current_decision.alternatives = [
+                    a.strip() for a in alts_match.group(1).split('|') if a.strip()
+                ]
+                continue
 
         if '⚠' in line and 'Blocker' in line:
             blocker_text = re.sub(r'^###\s+⚠\s+Blocker:\s*', '', line).strip()
@@ -211,21 +243,59 @@ def parse_markdown_memory_from_string(content: str) -> ParsedMemory:
             continue
 
         asset_match = re.findall(r'@([^@]+)@', line)
-        for asset_path in asset_match:
-            name = os.path.basename(asset_path).replace('.usd', '').replace('.usda', '')
-            if not any(a.path == asset_path for a in memory.assets):
-                memory.assets.append(AssetRef(name=name, path=asset_path, notes=line.strip()))
+        if asset_match:
+            for asset_path in asset_match:
+                name = os.path.basename(asset_path).replace('.usd', '').replace('.usda', '')
+                # E10 partial: case-insensitive dedup for Windows paths
+                if not any(a.path.lower() == asset_path.lower() for a in memory.assets):
+                    current_asset = AssetRef(name=name, path=asset_path, notes="")
+                    memory.assets.append(current_asset)
+            # Mutually exclusive sections
+            current_decision = None
+            current_param = None
+            continue
+
+        # E5: notes + variants lines follow the asset line
+        if current_asset is not None:
+            notes_match = re.match(r'^\s*-\s*Notes:\s*(.+)$', line)
+            if notes_match:
+                current_asset.notes = notes_match.group(1).strip()
+                continue
+            variants_match = re.match(r'^\s*-\s*Variants:\s*(.+)$', line)
+            if variants_match:
+                current_asset.variants = [
+                    v.strip() for v in variants_match.group(1).split('|') if v.strip()
+                ]
+                continue
 
         param_match = re.match(r'^###\s+Parameter:\s*(.*)', line)
         if param_match:
             param_desc = param_match.group(1).strip()
             slug = re.sub(r'[^a-z0-9]+', '_', param_desc.lower())[:50]
-            memory.parameters.append(ParameterRecord(
+            current_param = ParameterRecord(
                 slug=slug, node="", name=param_desc,
                 before="", after="", result="",
                 date=current_session.date if current_session else "",
-            ))
+            )
+            memory.parameters.append(current_param)
+            # Mutually exclusive sections — see decision_match handler
+            current_decision = None
+            current_asset = None
             continue
+
+        # E5: pick up parameter fields the companion writer now emits
+        if current_param is not None:
+            for field_name in ("Slug", "Node", "Before", "After", "Result", "Date"):
+                m = re.match(rf'^\s*-\s*{field_name}:\s*(.*)$', line)
+                if m:
+                    val = m.group(1).strip()
+                    setattr(current_param, field_name.lower(), val)
+                    break
+            else:
+                # not a parameter field line — fall through
+                pass
+            if re.match(r'^\s*-\s*(Slug|Node|Before|After|Result|Date):', line):
+                continue
 
         if current_session and current_section == "session":
             current_session.text += line + "\n"
@@ -275,7 +345,8 @@ class LosslessEvolution:
         # Stage 3a: PRESERVE (immutable backup for rollback)
         archive_path = md_path.replace('.md', '_pre_evolution.md')
         shutil.copy2(md_path, archive_path)
-        clean_hash = hashlib.sha256(open(md_path, 'rb').read()).hexdigest()
+        with open(md_path, 'rb') as _f:
+            clean_hash = hashlib.sha256(_f.read()).hexdigest()
 
         # Stage 3b + 4: CONVERT + COMBINE
         if _PXR_AVAILABLE:
@@ -283,7 +354,7 @@ class LosslessEvolution:
         else:
             usd_content = self._build_usd_fallback(parsed)
 
-        with open(usd_path, 'w') as f:
+        with open(usd_path, 'w', encoding='utf-8') as f:
             f.write(usd_content)
 
         # Stage 5: VERIFY
@@ -292,17 +363,19 @@ class LosslessEvolution:
         integrity = self._verify_lossless(parsed, companion_parsed)
 
         if integrity.fidelity < FIDELITY_PERFECT:
+            # E3 fix: NEVER delete the archive on rollback. The archive is the
+            # immutable backup that lets the artist (and any audit) recover the
+            # pre-evolution state. Only the failed USD output is removed.
             if os.path.exists(usd_path):
                 os.remove(usd_path)
-            if os.path.exists(archive_path):
-                os.remove(archive_path)
             return EvolutionResult(
                 evolved=False,
                 reason=f"Lossless verification failed: {integrity.failures}",
                 fidelity=integrity.fidelity,
+                archive_path=archive_path,
             )
 
-        with open(md_path, 'w') as f:
+        with open(md_path, 'w', encoding='utf-8') as f:
             f.write(companion)
             f.write(f"\n<!-- Evolved from markdown. Archive: {archive_path} -->\n")
             f.write(f"<!-- Clean hash: {clean_hash} -->\n")
@@ -554,54 +627,113 @@ class LosslessEvolution:
                 lines.append(f'### Decision: {d.choice}')
                 if d.reasoning:
                     lines.append(d.reasoning)
+                # E5: emit slug + date + alternatives so they round-trip
+                lines.append(f'- Slug: {d.slug}')
+                if d.date:
+                    lines.append(f'- Date: {d.date}')
+                if d.alternatives:
+                    lines.append(f'- Alternatives: {" | ".join(d.alternatives)}')
                 lines.append('')
 
         if parsed.assets:
             lines.append('## Assets')
             for a in parsed.assets:
-                lines.append(f'- @{a.path}@ — {a.notes}')
+                lines.append(f'- @{a.path}@')
+                if a.notes:
+                    lines.append(f'  - Notes: {a.notes}')
+                if a.variants:
+                    lines.append(f'  - Variants: {" | ".join(a.variants)}')
             lines.append('')
 
         if parsed.parameters:
             lines.append('## Parameters')
             for p in parsed.parameters:
                 lines.append(f'### Parameter: {p.name}')
+                # E5: emit every field so the parameter round-trips losslessly
+                lines.append(f'- Slug: {p.slug}')
                 if p.node:
-                    lines.append(f'Node: {p.node}')
-                if p.before and p.after:
-                    lines.append(f'Changed: {p.before} → {p.after}')
+                    lines.append(f'- Node: {p.node}')
+                lines.append(f'- Before: {p.before}')
+                lines.append(f'- After: {p.after}')
                 if p.result:
-                    lines.append(f'Result: {p.result}')
+                    lines.append(f'- Result: {p.result}')
+                if p.date:
+                    lines.append(f'- Date: {p.date}')
                 lines.append('')
 
         return '\n'.join(lines)
 
-    # ── Lossless Verification ────────────────────────────────
+    # ── E5: Content-Aware Lossless Verification ──────────────
+    #
+    # The previous implementation only checked counts and slugs. A round-trip
+    # could silently drop decision.date, asset.variants, or rewrite reasoning
+    # to "" and still report fidelity=1.0. The hash-based check below catches
+    # content drift in addition to deletion — making "lossless" actually mean
+    # lossless. Each item produces a stable content hash; comparison is by
+    # slug-keyed dict, so we report exactly which items drifted and how.
+
+    @staticmethod
+    def _decision_hash(d: Decision) -> str:
+        payload = "|".join([
+            d.slug, d.choice, d.reasoning, d.date,
+            "/".join(d.alternatives or []),
+        ])
+        return hashlib.sha1(payload.encode("utf-8")).hexdigest()[:12]
+
+    @staticmethod
+    def _asset_hash(a: AssetRef) -> str:
+        payload = "|".join([
+            a.name, a.path.lower(), a.notes,
+            "/".join(a.variants or []),
+        ])
+        return hashlib.sha1(payload.encode("utf-8")).hexdigest()[:12]
+
+    @staticmethod
+    def _parameter_hash(p: ParameterRecord) -> str:
+        payload = "|".join([
+            p.slug, p.node, p.name, p.before, p.after, p.result,
+        ])
+        return hashlib.sha1(payload.encode("utf-8")).hexdigest()[:12]
 
     def _verify_lossless(self, original: ParsedMemory,
                          reconstructed: ParsedMemory) -> EvolutionIntegrity:
-        failures = []
+        failures: list[str] = []
 
+        # Sessions: count must match (text content drift is allowed because
+        # the companion summarizes — sessions are narrative, not structured).
         if len(original.sessions) != len(reconstructed.sessions):
             failures.append(
                 f"Session count: {len(original.sessions)} → {len(reconstructed.sessions)}"
             )
 
-        orig_d = {d.slug for d in original.decisions}
-        recon_d = {d.slug for d in reconstructed.decisions}
-        lost = orig_d - recon_d
-        if lost:
-            failures.append(f"Decisions lost: {lost}")
+        # Decisions: per-item content hash comparison
+        orig_d = {d.slug: self._decision_hash(d) for d in original.decisions}
+        recon_d = {d.slug: self._decision_hash(d) for d in reconstructed.decisions}
+        for slug in orig_d.keys() - recon_d.keys():
+            failures.append(f"Decision lost: {slug}")
+        for slug in orig_d.keys() & recon_d.keys():
+            if orig_d[slug] != recon_d[slug]:
+                failures.append(f"Decision content drift: {slug}")
 
-        orig_a = {a.name for a in original.assets}
-        recon_a = {a.name for a in reconstructed.assets}
-        if orig_a - recon_a:
-            failures.append(f"Assets lost: {orig_a - recon_a}")
+        # Assets: per-item content hash comparison
+        orig_a = {a.name: self._asset_hash(a) for a in original.assets}
+        recon_a = {a.name: self._asset_hash(a) for a in reconstructed.assets}
+        for name in orig_a.keys() - recon_a.keys():
+            failures.append(f"Asset lost: {name}")
+        for name in orig_a.keys() & recon_a.keys():
+            if orig_a[name] != recon_a[name]:
+                failures.append(f"Asset content drift: {name}")
 
-        orig_p = {p.slug for p in original.parameters}
-        recon_p = {p.slug for p in reconstructed.parameters}
-        if orig_p - recon_p:
-            failures.append(f"Parameters lost: {orig_p - recon_p}")
+        # Parameters: per-item content hash comparison
+        orig_p = {p.slug: self._parameter_hash(p) for p in original.parameters}
+        recon_p = {p.slug: self._parameter_hash(p) for p in reconstructed.parameters}
+        for slug in orig_p.keys() - recon_p.keys():
+            failures.append(f"Parameter lost: {slug}")
+        for slug in orig_p.keys() & recon_p.keys():
+            if orig_p[slug] != recon_p[slug]:
+                failures.append(f"Parameter content drift: {slug}")
 
-        fidelity = max(0.0, 1.0 - len(failures) * 0.1)
+        # Binary fidelity: anything <1.0 already triggers rollback. The old
+        # graduated 0.1-per-failure scale was meaningless and is removed (E7).
+        fidelity = FIDELITY_PERFECT if not failures else 0.0
         return EvolutionIntegrity(fidelity=fidelity, failures=failures)

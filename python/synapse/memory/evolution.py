@@ -79,7 +79,9 @@ def check_evolution(claude_dir: str, latest_entry: Dict = None) -> Dict[str, Any
 
     stage = get_evolution_stage(claude_dir)
 
-    if stage != "flat":
+    # Accept both canonical (charmander) and legacy (flat) stage names so any
+    # on-disk USD layers from prior versions still trigger evolution checks.
+    if stage not in ("charmander", "flat"):
         return {"should_evolve": False, "triggers_met": [], "target": None, "current": stage}
 
     md_path = os.path.join(claude_dir, "memory.md")

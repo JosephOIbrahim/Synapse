@@ -20,6 +20,7 @@ Elegant Revisions integrated:
 """
 
 from __future__ import annotations
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable
@@ -180,11 +181,27 @@ class LosslessExecutionBridge:
     Anchors are HERE, not in agents. No bypass path exists.
     """
 
-    def __init__(self, consent_callback: Callable[[Operation], bool] | None = None):
-        self._operation_log: list[IntegrityBlock] = []
+    #: Default cap on the in-memory operation log. Bounds long-running session
+    #: memory growth — older entries are dropped FIFO when the cap is exceeded.
+    DEFAULT_LOG_MAX_SIZE: int = 1000
+
+    def __init__(
+        self,
+        consent_callback: Callable[[Operation], bool] | None = None,
+        log_max_size: int | None = None,
+    ):
+        # B1: bounded deque so long sessions don't leak unbounded memory.
+        max_size = log_max_size if log_max_size is not None else self.DEFAULT_LOG_MAX_SIZE
+        self._log_max_size: int = max_size
+        self._operation_log: deque[IntegrityBlock] = deque(maxlen=max_size)
         self._anchor_violations: int = 0
         self._operations_total: int = 0
         self._operations_verified: int = 0
+        # Pass 7: per-agent counters so the ConductorAdvisor can flag a
+        # specific agent rather than the bridge as a whole. Lifetime totals
+        # — survive operation log eviction.
+        self._per_agent_total: dict[str, int] = {}
+        self._per_agent_verified: dict[str, int] = {}
         self._consent_callback = consent_callback
         self._gate = (
             HumanGate.get_instance()
@@ -192,6 +209,58 @@ class LosslessExecutionBridge:
             else None
         )
         self._session_id = datetime.now().strftime("bridge_%Y%m%d_%H%M%S")
+
+    # ── B2: Public read access to the operation log ──────────────
+    # The operation log was previously a write-only sink. These accessors let
+    # OBSERVER (and any future self-observability layer) read execution history
+    # without reaching into private state. See pass-1 review for the missing
+    # observability loop this enables.
+
+    def recent_operations(self, n: int = 100) -> list[IntegrityBlock]:
+        """Return the last *n* IntegrityBlocks (newest last). Caller-owned copy."""
+        if n <= 0:
+            return []
+        log = list(self._operation_log)
+        return log[-n:]
+
+    def operation_stats(self) -> dict[str, Any]:
+        """Aggregate execution statistics. Cheap O(N over current log)."""
+        log = list(self._operation_log)
+        per_op: dict[str, int] = {}
+        for ib in log:
+            per_op[ib.operation_type] = per_op.get(ib.operation_type, 0) + 1
+        success_rate = (
+            self._operations_verified / self._operations_total
+            if self._operations_total > 0 else 0.0
+        )
+        # Pass 7: per-agent lifetime totals + success rates so the
+        # ConductorAdvisor can flag a specific agent rather than the bridge
+        # as a whole. These survive operation log eviction.
+        per_agent_success_rate: dict[str, float] = {}
+        for agent_key, total in self._per_agent_total.items():
+            verified = self._per_agent_verified.get(agent_key, 0)
+            per_agent_success_rate[agent_key] = (
+                verified / total if total > 0 else 0.0
+            )
+        return {
+            "operations_total": self._operations_total,
+            "operations_verified": self._operations_verified,
+            "anchor_violations": self._anchor_violations,
+            "success_rate": success_rate,
+            "log_size": len(log),
+            "log_capacity": self._log_max_size,
+            "per_agent": dict(self._per_agent_total),
+            "per_agent_verified": dict(self._per_agent_verified),
+            "per_agent_success_rate": per_agent_success_rate,
+            "per_operation_type": per_op,
+            "session_id": self._session_id,
+        }
+
+    def clear_operation_log(self) -> int:
+        """Clear the operation log. Returns the number of entries dropped."""
+        n = len(self._operation_log)
+        self._operation_log.clear()
+        return n
 
     # ── R1: Cryptographic Topological Hashing ────────────────
 
@@ -303,6 +372,8 @@ class LosslessExecutionBridge:
     def execute(self, operation: Operation) -> ExecutionResult:
         """Synchronous path. For async MCP server, use execute_async()."""
         self._operations_total += 1
+        agent_key = operation.agent_id.value if operation.agent_id else ""
+        self._per_agent_total[agent_key] = self._per_agent_total.get(agent_key, 0) + 1
 
         integrity = IntegrityBlock(
             agent_id=operation.agent_id.value,
@@ -403,6 +474,8 @@ class LosslessExecutionBridge:
         the MCP server. All anchors enforced inside the closure.
         """
         self._operations_total += 1
+        agent_key = operation.agent_id.value if operation.agent_id else ""
+        self._per_agent_total[agent_key] = self._per_agent_total.get(agent_key, 0) + 1
 
         integrity = IntegrityBlock(
             agent_id=operation.agent_id.value,
@@ -600,6 +673,10 @@ class LosslessExecutionBridge:
             )
 
         self._operations_verified += 1
+        agent_key = operation.agent_id.value if operation.agent_id else ""
+        self._per_agent_verified[agent_key] = (
+            self._per_agent_verified.get(agent_key, 0) + 1
+        )
         self._operation_log.append(integrity)
 
         if isinstance(result, ExecutionResult):
