@@ -72,6 +72,8 @@ If a feature can't hit at least one, it doesn't ship.
 
 **Context Bar** — Information-dense status bar showing network breadcrumb path, memory evolution stage, scene health indicator, and contextual quick actions that change based on your current network type.
 
+**Agent Health Panel** — Collapsible section showing live MOE agent telemetry: per-agent success rate bars with color coding, bridge health stats, anchor violation alerts, and ConductorAdvisor recommendations with severity. Auto-refreshes every 3 seconds. Surfaces critical recommendations in the activity log and shows which agent handled each request (e.g. "Routed to HANDS (scored)").
+
 **Session Journal** — Automatic logging of every Synapse action with timestamps and context. Becomes part of scene memory. `/journal` to browse, `/journal search` to find.
 
 **Cross-Scene Context** — When loading project memory, Synapse surfaces relevant knowledge from other scenes: displacement settings that worked, approved material libraries, wedge results from across the project. Institutional knowledge that normally lives in Slack threads and people's heads.
@@ -360,7 +362,7 @@ Every command is accessible through natural conversation or via slash commands i
 block-beta
     columns 1
     block:panel["Panel Layer (Qt)"]
-        p1["SynapsePanel"] p2["ContextBar"] p3["CommandPalette"] p4["ToolBridge (108 tools)"]
+        p1["SynapsePanel"] p2["ContextBar"] p3["CommandPalette"] p4["ToolBridge (108 tools)"] p5["AgentHealth"]
     end
     block:knowledge["Knowledge Layer"]
         k1["SceneDoctor"] k2["RenderPreflight"] k3["ExplainMode"] k4["VexTutor"] k5["APEX"]
@@ -452,9 +454,11 @@ flowchart TB
     Recs --> History["RecommendationHistory\nJSONL persistence"]
     History --> Meta["ConductorAdvisor\n.analyze_history()"]
     Meta --> |"same issue 5+ times\n→ escalate"| Recs
+    Recs --> Panel["Agent Health Panel\n(collapsible Qt section)"]
+    Panel --> |"per-agent bars\n+ advisor recs\n+ routing log"| Artist["Artist"]
 ```
 
-The advisor is read-only by construction. Recommendations are structured proposals (never auto-applied) that route through the artist consent system. History persists across sessions via JSONL, enabling longitudinal trend analysis.
+The advisor is read-only by construction. Recommendations are structured proposals (never auto-applied) that route through the artist consent system. The Agent Health Panel in Houdini surfaces per-agent success rates, bridge stats, and advisor recommendations live — auto-refreshing every 3 seconds. History persists across sessions via JSONL, enabling longitudinal trend analysis.
 
 ---
 
@@ -775,7 +779,8 @@ Synapse/
 │   │   ├── dependency_map.py              # External reference tracking
 │   │   ├── performance_profiler.py        # Cook time analysis + recommendations
 │   │   ├── save_shot.py                   # Context snapshot with auto-save
-│   │   └── cross_scene.py                 # Cross-scene knowledge surfacing
+│   │   ├── cross_scene.py                 # Cross-scene knowledge surfacing
+│   │   └── agent_health.py                # Agent health data provider (MOE observability)
 │   ├── routing/
 │   │   ├── router.py                      # TieredRouter (Cache→Recipe→Regex→Knowledge→LLM→Agent)
 │   │   ├── parser.py                      # CommandParser (regex, first-match-wins)
