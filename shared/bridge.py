@@ -790,8 +790,13 @@ class LosslessExecutionBridge:
                                     f"unresolvable reference: {ref_item.assetPath}")
                                 return False
             return True
-        except Exception:
-            return True
+        except Exception as exc:
+            import logging
+            logging.getLogger("synapse.bridge").warning(
+                "Composition validation fallback on %s: %s: %s",
+                stage_path, type(exc).__name__, exc,
+            )
+            return True  # Defensive — validation is best-effort
 
     def _log_composition_failure(self, stage_path: str, prim_path, reason: str) -> None:
         import logging

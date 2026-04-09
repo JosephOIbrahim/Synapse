@@ -42,7 +42,7 @@ If a feature can't hit at least one, it doesn't ship.
 
 ## Key Features
 
-**Core Bridge** — 108 MCP tools give Claude full Houdini control: nodes, parameters, USD, materials, lighting, rendering, viewport capture, VEX execution. Real-time WebSocket communication with production resilience (rate limiting, circuit breaker, port failover, watchdog, backpressure).
+**Core Bridge** — 108 MCP tools give Claude full Houdini control: nodes, parameters, USD, materials, lighting, rendering, viewport capture, VEX execution. Material presets (glass, metal, skin, cloth, etc.) with category hierarchy. Karma advanced rendering with 17 configurable parameters including denoiser, adaptive sampling, bounce limits, and motion blur. Real-time WebSocket communication with production resilience (rate limiting, circuit breaker, port failover, watchdog, backpressure).
 
 **Persistent Memory** — Three-layer memory system (cognitive substrate, project, scene) stored alongside your HIP file. Memory evolves from flat markdown to structured USD to composed USD with cross-scene composition arcs — automatically, when the data warrants it.
 
@@ -428,7 +428,29 @@ flowchart LR
     Bridge --> Verify["IntegrityBlock\nfidelity = 1.0"]
 ```
 
-Feature extraction uses word-boundary matching across domain keywords, task type classification, complexity inference (domain-driven, not word-count), and urgency detection. The router scores all 6 agents, selects a primary (owns the deliverable) and an advisory (reviews), with auto-promotion of frequent fingerprints to session fast paths.
+Feature extraction uses word-boundary matching across 66 domain keywords covering 12 signal domains (async, MCP, error handling, VEX, geometry, USD, MaterialX, APEX, COPs, rendering, PDG, testing). Includes renderer-specific terms (xpu, mantra, ipr, denoiser, aov, lpe), SOP vocabulary (sop, volume, polygon), USD composition terms (payload, sublayer, collection), and MaterialX concepts (texture, bsdf, nodegraph). The router scores all 6 agents, selects a primary (owns the deliverable) and an advisory (reviews), with 10 hand-tuned fast paths and auto-promotion of frequent fingerprints to session fast paths.
+
+### Solaris Pipeline
+
+```mermaid
+flowchart TB
+    subgraph Chain["Canonical Solaris Chain"]
+        SOP["SOPCreate\n(100)"] --> MatLib["MaterialLibrary\n(200)"]
+        MatLib --> |"preset: glass, metal,\nskin, cloth..."| Assign["AssignMaterial\n(220)"]
+        Assign --> Cam["Camera\n(400)"]
+        Cam --> Light["Lights\n(500-610)"]
+        Light --> Karma["KarmaRenderSettings\n(700)"]
+        Karma --> |"advanced: diffuse_limit,\ndenoiser, adaptive..."| ROP["USDRender ROP\n(800)"]
+    end
+    subgraph AOV["Render Passes (auto-wired)"]
+        ROP --> Beauty["beauty"]
+        ROP --> Diff["diffuse"]
+        ROP --> Norm["normal"]
+        ROP --> Crypto["cryptomatte"]
+    end
+```
+
+Material creation supports 10 presets (glass, mirror, rough_metal, polished_metal, skin, cloth, plastic, ceramic, wax, rubber) with category-based organization (`/materials/{category}/{name}`). Explicit parameters override preset values. Karma advanced settings cover 17 parameters including bounce depth limits, denoiser, adaptive sampling, and motion blur. Scene assembly can auto-configure AOV passes in a single call.
 
 ### Lossless Execution Bridge
 
@@ -488,8 +510,8 @@ sequenceDiagram
 | **Parameters** | `houdini_get_parm`, `houdini_set_parm`, `houdini_set_keyframe` |
 | **Execution** | `houdini_execute_python`, `houdini_execute_vex` |
 | **USD / Solaris** | `houdini_stage_info`, `houdini_get_usd_attribute`, `houdini_set_usd_attribute`, `houdini_create_usd_prim`, `houdini_modify_usd_prim`, `houdini_reference_usd` |
-| **Materials** | `houdini_create_material`, `houdini_assign_material`, `houdini_read_material` |
-| **Rendering** | `houdini_render`, `houdini_render_settings`, `houdini_wedge`, `houdini_capture_viewport` |
+| **Materials** | `houdini_create_material` (presets, categories, transmission/coat/IOR), `houdini_assign_material`, `houdini_read_material`, `houdini_create_textured_material` |
+| **Rendering** | `houdini_render`, `houdini_render_settings` (engine detection, 17 Karma advanced params), `houdini_wedge`, `houdini_capture_viewport` |
 | **Introspection** | `synapse_inspect_selection`, `synapse_inspect_scene`, `synapse_inspect_node` |
 | **Memory** | `synapse_context`, `synapse_search`, `synapse_recall`, `synapse_decide`, `synapse_add_memory`, `synapse_memory_write`, `synapse_memory_query`, `synapse_memory_status`, `synapse_evolve_memory`, `synapse_project_setup` |
 | **Diagnostics** | `synapse_diagnose`, `synapse_fix`, `synapse_preflight`, `synapse_error_translate` |

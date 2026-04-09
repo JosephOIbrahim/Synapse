@@ -38,12 +38,6 @@ __all__ = [
     "RESEARCH_INTEGRATOR_FLOOR",
     "COMPLEX_SOLO_DOMAINS",
     "CONSTANTS_HASH",
-    # Routing — complexity thresholds (legacy; word_count fields kept for back-compat)
-    "TRIVIAL_WORD_LIMIT",
-    "TRIVIAL_DOMAIN_LIMIT",
-    "MODERATE_WORD_LIMIT",
-    "MODERATE_DOMAIN_LIMIT",
-    "COMPLEX_DOMAIN_LIMIT",
     # Evolution
     "EVOLUTION_TRIGGERS",
     "EVOLUTION_STAGE_FLAT",
@@ -146,18 +140,25 @@ DOMAIN_KEYWORDS: dict[str, DomainSignal] = {
     # VEX
     "vex": DomainSignal.VEX, "wrangle": DomainSignal.VEX,
     "snippet": DomainSignal.VEX, "attrib": DomainSignal.VEX,
+    "expression": DomainSignal.VEX, "channel": DomainSignal.VEX,
     # Geometry
     "geometry": DomainSignal.GEOMETRY, "mesh": DomainSignal.GEOMETRY,
     "points": DomainSignal.GEOMETRY, "prims": DomainSignal.GEOMETRY,
     "introspect": DomainSignal.GEOMETRY, "inspect": DomainSignal.GEOMETRY,
+    "sop": DomainSignal.GEOMETRY, "volume": DomainSignal.GEOMETRY,
+    "polygon": DomainSignal.GEOMETRY,
     # USD / Solaris
     "usd": DomainSignal.USD, "solaris": DomainSignal.USD,
     "lop": DomainSignal.USD, "stage": DomainSignal.USD,
     "prim": DomainSignal.USD, "composition": DomainSignal.USD,
     "variant": DomainSignal.USD, "layer": DomainSignal.USD,
+    "payload": DomainSignal.USD, "sublayer": DomainSignal.USD,
+    "collection": DomainSignal.USD,
     # MaterialX
     "materialx": DomainSignal.MATERIALX, "mtlx": DomainSignal.MATERIALX,
     "shader": DomainSignal.MATERIALX, "material": DomainSignal.MATERIALX,
+    "texture": DomainSignal.MATERIALX, "bsdf": DomainSignal.MATERIALX,
+    "nodegraph": DomainSignal.MATERIALX,
     # APEX
     "apex": DomainSignal.APEX, "rig": DomainSignal.APEX,
     "autorig": DomainSignal.APEX, "skeleton": DomainSignal.APEX,
@@ -167,10 +168,14 @@ DOMAIN_KEYWORDS: dict[str, DomainSignal] = {
     # Rendering
     "render": DomainSignal.RENDERING, "karma": DomainSignal.RENDERING,
     "wedge": DomainSignal.RENDERING, "lookdev": DomainSignal.RENDERING,
+    "xpu": DomainSignal.RENDERING, "mantra": DomainSignal.RENDERING,
+    "ipr": DomainSignal.RENDERING, "denoiser": DomainSignal.RENDERING,
+    "aov": DomainSignal.RENDERING, "lpe": DomainSignal.RENDERING,
     # PDG
     "pdg": DomainSignal.PDG, "tops": DomainSignal.PDG,
     "farm": DomainSignal.PDG, "batch": DomainSignal.PDG,
     "pipeline": DomainSignal.PDG, "orchestrat": DomainSignal.PDG,
+    "work_item": DomainSignal.PDG, "scheduler": DomainSignal.PDG,
     # Testing
     "test": DomainSignal.TESTING, "pytest": DomainSignal.TESTING,
     "validate": DomainSignal.TESTING, "ci": DomainSignal.TESTING,
@@ -232,6 +237,8 @@ FAST_PATHS: dict[str, tuple[AgentID, AgentID | None]] = {
     "generation|complex|cops|normal":                   (AgentID.HANDS, AgentID.OBSERVER),
     "orchestration|complex|pdg+rendering|normal":       (AgentID.CONDUCTOR, AgentID.BRAINSTEM),
     "integration|moderate|testing|normal":              (AgentID.INTEGRATOR, None),
+    "generation|moderate|materialx+rendering|normal":  (AgentID.HANDS, AgentID.CONDUCTOR),
+    "execution|moderate|rendering|blocking":           (AgentID.CONDUCTOR, AgentID.BRAINSTEM),
 }
 
 
@@ -255,14 +262,10 @@ COMPLEX_SOLO_DOMAINS: frozenset = frozenset({
     DomainSignal.COPS,
 })
 
-# Legacy word-count thresholds — retained for back-compat but no longer
-# consulted by extract_features(). Word count of an LLM-rewritten prompt has
-# no relationship to task complexity (verbose users != hard tasks).
-TRIVIAL_WORD_LIMIT: int = 10
-TRIVIAL_DOMAIN_LIMIT: int = 1
-MODERATE_WORD_LIMIT: int = 30
-MODERATE_DOMAIN_LIMIT: int = 2
-COMPLEX_DOMAIN_LIMIT: int = 3
+
+# Legacy word-count thresholds removed in April 2026 — never consulted by
+# extract_features(). Word count of an LLM-rewritten prompt has no
+# relationship to task complexity.
 
 
 # ---------------------------------------------------------------------------

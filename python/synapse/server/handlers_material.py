@@ -20,6 +20,51 @@ from .handler_helpers import _HOUDINI_UNAVAILABLE, _suggest_prim_paths
 
 _log = logging.getLogger(__name__)
 
+# Material presets — common physically-based starting points.
+# Keys map to mtlxstandard_surface parm names.
+MATERIAL_PRESETS: Dict[str, Dict] = {
+    "glass": {
+        "base_color": (1.0, 1.0, 1.0), "specular_roughness": 0.0,
+        "transmission": 1.0, "specular_IOR": 1.5, "metalness": 0.0,
+    },
+    "mirror": {
+        "base_color": (1.0, 1.0, 1.0), "specular_roughness": 0.0,
+        "metalness": 1.0,
+    },
+    "rough_metal": {
+        "base_color": (0.7, 0.7, 0.7), "metalness": 1.0,
+        "specular_roughness": 0.35,
+    },
+    "polished_metal": {
+        "base_color": (0.8, 0.8, 0.8), "metalness": 1.0,
+        "specular_roughness": 0.05,
+    },
+    "skin": {
+        "base_color": (0.8, 0.55, 0.45), "subsurface": 0.5,
+        "subsurface_color": (0.9, 0.4, 0.3), "specular_roughness": 0.4,
+    },
+    "cloth": {
+        "base_color": (0.4, 0.4, 0.5), "specular_roughness": 0.8,
+        "sheen": 0.3,
+    },
+    "plastic": {
+        "base_color": (0.8, 0.1, 0.1), "specular_roughness": 0.3,
+        "metalness": 0.0, "coat": 0.5, "coat_roughness": 0.1,
+    },
+    "ceramic": {
+        "base_color": (0.9, 0.88, 0.85), "specular_roughness": 0.15,
+        "coat": 1.0, "coat_roughness": 0.05,
+    },
+    "wax": {
+        "base_color": (0.9, 0.8, 0.6), "subsurface": 0.8,
+        "subsurface_color": (0.9, 0.6, 0.3), "specular_roughness": 0.4,
+    },
+    "rubber": {
+        "base_color": (0.05, 0.05, 0.05), "specular_roughness": 0.7,
+        "metalness": 0.0,
+    },
+}
+
 
 def _query_material_usd_path(matlib_node, desired_name: str) -> str:
     """Cook a materiallibrary node and find the actual USD material path.
@@ -118,9 +163,24 @@ class MaterialHandlerMixin:
 
         node_path_arg = resolve_param(payload, "node", required=False)
         name = resolve_param_with_default(payload, "name", "material")
+        category = resolve_param(payload, "category", required=False)
+        preset_name = resolve_param(payload, "preset", required=False)
         shader_type = resolve_param_with_default(
             payload, "shader_type", "mtlxstandard_surface"
         )
+
+        # Resolve preset defaults — explicit params override preset values
+        preset_vals = {}
+        if preset_name:
+            if preset_name not in MATERIAL_PRESETS:
+                available = ", ".join(sorted(MATERIAL_PRESETS.keys()))
+                raise ValueError(
+                    f"Unknown preset '{preset_name}'. "
+                    f"Available presets: {available}"
+                )
+            preset_vals = dict(MATERIAL_PRESETS[preset_name])
+
+        # Explicit params from payload (override preset)
         base_color = resolve_param(payload, "base_color", required=False)
         metalness = resolve_param(payload, "metalness", required=False)
         roughness = resolve_param(payload, "roughness", required=False)
@@ -129,8 +189,26 @@ class MaterialHandlerMixin:
         emission_color = resolve_param(payload, "emission_color", required=False)
         subsurface = resolve_param(payload, "subsurface", required=False)
         subsurface_color = resolve_param(payload, "subsurface_color", required=False)
+        transmission = resolve_param(payload, "transmission", required=False)
+        coat = resolve_param(payload, "coat", required=False)
+        coat_roughness = resolve_param(payload, "coat_roughness", required=False)
+        ior = resolve_param(payload, "ior", required=False)
 
         from .main_thread import run_on_main
+
+        def _apply_shader_parm(shader, parm_name, value):
+            """Set a scalar or color parm on a shader node."""
+            if value is None:
+                return
+            if isinstance(value, (list, tuple)) and len(value) >= 3:
+                for i, ch in enumerate(("r", "g", "b")):
+                    p = shader.parm(f"{parm_name}{ch}")
+                    if p:
+                        p.set(float(value[i]))
+            else:
+                p = shader.parm(parm_name)
+                if p:
+                    p.set(float(value))
 
         def _on_main():
             node = self._resolve_lop_node(node_path_arg)  # type: ignore[attr-defined]
@@ -141,6 +219,13 @@ class MaterialHandlerMixin:
             matlib = parent.createNode("materiallibrary", name)
             matlib.setInput(0, node)
             matlib.moveToGoodPosition()
+
+            # Set material path prefix for category-based organization
+            # e.g. category="metal" -> /materials/metal/{name}
+            if category:
+                prefix_parm = matlib.parm("matpathprefix")
+                if prefix_parm:
+                    prefix_parm.set(f"/materials/{category}")
 
             # Cook the matlib so its internal network is ready for child creation
             matlib.cook(force=True)
@@ -153,55 +238,38 @@ class MaterialHandlerMixin:
                     "-- check that this shader type is available in your Houdini build"
                 )
 
-            # Set optional shader parameters
-            if base_color is not None:
-                if isinstance(base_color, (list, tuple)) and len(base_color) >= 3:
-                    for i, ch in enumerate(("r", "g", "b")):
-                        p = shader.parm(f"base_color{ch}")
-                        if p:
-                            p.set(float(base_color[i]))
-            if metalness is not None:
-                p = shader.parm("metalness")
-                if p:
-                    p.set(float(metalness))
-            if roughness is not None:
-                p = shader.parm("specular_roughness")
-                if p:
-                    p.set(float(roughness))
-            if opacity is not None:
-                p = shader.parm("opacity")
-                if p:
-                    p.set(float(opacity))
-            if emission is not None:
-                p = shader.parm("emission")
-                if p:
-                    p.set(float(emission))
-            if emission_color is not None:
-                if isinstance(emission_color, (list, tuple)) and len(emission_color) >= 3:
-                    for i, ch in enumerate(("r", "g", "b")):
-                        p = shader.parm(f"emission_color{ch}")
-                        if p:
-                            p.set(float(emission_color[i]))
-            if subsurface is not None:
-                p = shader.parm("subsurface")
-                if p:
-                    p.set(float(subsurface))
-            if subsurface_color is not None:
-                if isinstance(subsurface_color, (list, tuple)) and len(subsurface_color) >= 3:
-                    for i, ch in enumerate(("r", "g", "b")):
-                        p = shader.parm(f"subsurface_color{ch}")
-                        if p:
-                            p.set(float(subsurface_color[i]))
+            # Apply preset defaults first (if any), then explicit overrides
+            for parm_name, val in preset_vals.items():
+                _apply_shader_parm(shader, parm_name, val)
+
+            # Explicit params override preset values
+            _apply_shader_parm(shader, "base_color", base_color)
+            _apply_shader_parm(shader, "metalness", metalness)
+            _apply_shader_parm(shader, "specular_roughness", roughness)
+            _apply_shader_parm(shader, "opacity", opacity)
+            _apply_shader_parm(shader, "emission", emission)
+            _apply_shader_parm(shader, "emission_color", emission_color)
+            _apply_shader_parm(shader, "subsurface", subsurface)
+            _apply_shader_parm(shader, "subsurface_color", subsurface_color)
+            _apply_shader_parm(shader, "transmission", transmission)
+            _apply_shader_parm(shader, "coat", coat)
+            _apply_shader_parm(shader, "coat_roughness", coat_roughness)
+            _apply_shader_parm(shader, "specular_IOR", ior)
 
             material_usd_path = _query_material_usd_path(matlib, name)
 
-            return {
+            result = {
                 "matlib_path": matlib.path(),
                 "shader_path": shader.path(),
                 "material_usd_path": material_usd_path,
                 "shader_type": shader_type,
                 "name": name,
             }
+            if category:
+                result["category"] = category
+            if preset_name:
+                result["preset"] = preset_name
+            return result
 
         return run_on_main(_on_main)
 

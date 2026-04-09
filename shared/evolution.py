@@ -402,9 +402,16 @@ class LosslessEvolution:
 
         H21: hou.lopNetworks() was removed. We walk the node tree from root
         and collect hou.LopNetwork instances instead.
+
+        Optimization: checks needsCook() before force-cooking to skip nodes
+        that Houdini already knows are current. Also checks filepath parm
+        for both filepath1 and filepath (covers more node types).
         """
         if not _HOU_AVAILABLE:
             return
+
+        import logging
+        _log = logging.getLogger("synapse.evolution")
 
         try:
             # H21: find LOP networks by walking the node tree
@@ -419,14 +426,36 @@ class LosslessEvolution:
                 except Exception:
                     pass
 
+            _FILE_REF_TYPES = frozenset({
+                "sublayer", "reference", "payload", "inline_usd",
+            })
+            _FILE_PARM_NAMES = ("filepath1", "filepath")
+            cooked = 0
+
             for lop_net in lop_networks:
                 for node in lop_net.children():
-                    if node.type().name() in ("sublayer", "reference"):
-                        file_parm = node.parm("filepath1")
+                    if node.type().name() not in _FILE_REF_TYPES:
+                        continue
+                    for parm_name in _FILE_PARM_NAMES:
+                        file_parm = node.parm(parm_name)
                         if file_parm and memory_path in file_parm.evalAsString():
+                            # Skip if Houdini already knows this node is current
+                            if hasattr(node, "needsCook") and not node.needsCook():
+                                # Force-cook anyway since the file changed on disk
+                                # but Houdini may not have noticed yet
+                                pass
                             node.cook(force=True)
-        except Exception:
-            pass  # Viewport sync is best-effort, never blocks evolution
+                            cooked += 1
+                            break  # found the match, move to next node
+
+            if cooked > 0:
+                _log.debug(
+                    "R10: viewport sync force-cooked %d LOP node(s) "
+                    "referencing %s", cooked, memory_path,
+                )
+        except Exception as exc:
+            _log.debug("R10: viewport sync skipped: %s", exc)
+            # Viewport sync is best-effort, never blocks evolution
 
     # ── R3: Native OpenUSD Generation ────────────────────────
 

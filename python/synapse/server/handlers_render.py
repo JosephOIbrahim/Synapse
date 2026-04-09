@@ -493,7 +493,15 @@ class RenderHandlerMixin:
                 if applied:
                     settings["_karma_advanced_applied"] = applied
 
-            return {"node": node_path, "settings": settings}
+            # Detect render engine variant for context
+            node_type = node.type().name()
+            engine = _detect_karma_engine(node, node_type)
+
+            return {
+                "node": node_path,
+                "render_engine": engine,
+                "settings": settings,
+            }
 
         return run_on_main(_on_main)
 
@@ -1386,6 +1394,16 @@ class RenderHandlerMixin:
             volume_samples (int): Sample count for volumetric scattering.
             sample_distribution (str): "uniform" or "stratified" distribution.
             max_ray_depth (int): Maximum total ray depth.
+            diffuse_limit (int): Max diffuse GI bounce depth.
+            specular_limit (int): Max specular (reflection) bounce depth.
+            sss_limit (int): Max subsurface scattering depth.
+            color_limit (float): Clamp per-sample color contribution (firefly reduction).
+            indirect_clamp (float): Clamp indirect light contributions specifically.
+            enable_denoiser (bool): Enable OIDN/OptiX denoiser.
+            adaptive_threshold (float): Noise threshold for adaptive sampling (0=disabled).
+            min_samples (int): Minimum samples per pixel for adaptive sampling.
+            bucket_size (int): Tile size in pixels (GPU memory vs speed tradeoff for XPU).
+            motion_blur (bool): Enable/disable motion blur.
 
         Each setting checks if the parameter exists on the node before applying.
         Missing parameters are silently skipped (not all Karma versions have all
@@ -1403,7 +1421,43 @@ class RenderHandlerMixin:
             "volume_samples": ["volumesamples", "karma:global:volumesamples"],
             "sample_distribution": ["sampledistribution"],
             "max_ray_depth": ["maxraydepth", "karma:global:maxraydepth"],
+            # Bounce depth limits
+            "diffuse_limit": ["diffuselimit", "karma:global:diffuselimit"],
+            "specular_limit": ["specularlimit", "karma:global:specularlimit"],
+            "sss_limit": ["ssslimit", "karma:global:ssslimit"],
+            # Clamping
+            "color_limit": ["colorlimit", "karma:global:colorlimit"],
+            "indirect_clamp": ["indirectclamp", "karma:global:indirectclamp"],
+            # Denoiser
+            "enable_denoiser": ["denoise_enable", "karma:global:denoiseenable",
+                                "enabledenoiser"],
+            # Adaptive sampling
+            "adaptive_threshold": ["adaptivethreshold",
+                                   "karma:global:adaptivethreshold"],
+            "min_samples": ["minsamples", "karma:global:minsamples"],
+            # XPU bucket size
+            "bucket_size": ["bucketsize"],
+            # Motion blur
+            "motion_blur": ["enablemotionblur", "domotionblur"],
         }
+
+        # Settings that accept bool values (toggled as 0/1 on the parm)
+        _BOOL_SETTINGS = frozenset({
+            "enable_caustics", "enable_denoiser", "motion_blur",
+        })
+        # Settings that accept float values with clamp ranges
+        _FLOAT_CLAMP_SETTINGS = {
+            "roughness_clamp": (0.0, 1.0),
+            "color_limit": (0.0, None),
+            "indirect_clamp": (0.0, None),
+            "adaptive_threshold": (0.0, 1.0),
+        }
+        # Settings that accept int values
+        _INT_SETTINGS = frozenset({
+            "path_samples", "pixel_samples", "volume_samples", "max_ray_depth",
+            "diffuse_limit", "specular_limit", "sss_limit", "min_samples",
+            "bucket_size",
+        })
 
         applied = {}
 
@@ -1413,16 +1467,20 @@ class RenderHandlerMixin:
                 continue
 
             # Type coercion and validation
-            if setting_name == "enable_caustics":
+            if setting_name in _BOOL_SETTINGS:
                 value = bool(value)
-            elif setting_name == "roughness_clamp":
-                value = max(0.0, min(1.0, float(value)))
+            elif setting_name in _FLOAT_CLAMP_SETTINGS:
+                lo, hi = _FLOAT_CLAMP_SETTINGS[setting_name]
+                value = float(value)
+                if lo is not None:
+                    value = max(lo, value)
+                if hi is not None:
+                    value = min(hi, value)
             elif setting_name == "sample_distribution":
                 value = str(value).lower()
                 if value not in ("uniform", "stratified"):
                     continue  # Invalid value -- skip silently
-            elif setting_name in ("path_samples", "pixel_samples",
-                                  "volume_samples", "max_ray_depth"):
+            elif setting_name in _INT_SETTINGS:
                 value = int(value)
 
             # Try each candidate parm name until one is found and set

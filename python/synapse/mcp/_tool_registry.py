@@ -600,6 +600,8 @@ TOOL_DEFS: list[tuple] = [
          "after": {"type": "string", "description": "Node path to append after (required for 'after' mode)"},
          "sort": {"type": "boolean", "description": "Sort nodes by canonical Solaris order (default: true)"},
          "dry_run": {"type": "boolean", "description": "Preview wiring plan without mutating (default: false)"},
+         "aov_passes": {"type": "array", "items": {"type": "string"},
+                        "description": "Auto-configure render passes after wiring (e.g. ['beauty', 'diffuse', 'normal', 'depth'])"},
      }, "required": []},
      False, False, True),
 
@@ -669,11 +671,14 @@ TOOL_DEFS: list[tuple] = [
      False, True, False),
 
     ("houdini_create_material", "create_material", _identity,
-     "Create a material with a shader in the LOP network. Supports base color, "
-     "metalness, roughness, opacity, emission, and subsurface parameters.",
+     "Create a material with a shader in the LOP network. Supports presets "
+     "(glass, mirror, rough_metal, polished_metal, skin, cloth, plastic, ceramic, wax, rubber) "
+     "and category-based organization. Explicit params override preset values.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "LOP node to wire after (optional)"},
          "name": {"type": "string", "description": "Material name"},
+         "preset": {"type": "string", "description": "Material preset (glass, mirror, rough_metal, polished_metal, skin, cloth, plastic, ceramic, wax, rubber). Explicit params override preset values"},
+         "category": {"type": "string", "description": "Material category for organization (e.g. 'metal', 'cloth'). Creates /materials/{category}/{name} hierarchy"},
          "shader_type": {"type": "string", "description": "Shader type (default: mtlxstandard_surface)"},
          "base_color": {"type": "array", "items": {"type": "number"}, "description": "[r, g, b] 0-1"},
          "metalness": {"type": "number", "description": "Metalness 0-1"},
@@ -683,6 +688,10 @@ TOOL_DEFS: list[tuple] = [
          "emission_color": {"type": "array", "items": {"type": "number"}, "description": "Emission color [r, g, b] 0-1"},
          "subsurface": {"type": "number", "description": "Subsurface scattering weight 0-1"},
          "subsurface_color": {"type": "array", "items": {"type": "number"}, "description": "Subsurface color [r, g, b] 0-1"},
+         "transmission": {"type": "number", "description": "Transmission weight 0-1 (glass, liquids)"},
+         "coat": {"type": "number", "description": "Clearcoat weight 0-1 (car paint, varnish)"},
+         "coat_roughness": {"type": "number", "description": "Clearcoat roughness 0-1"},
+         "ior": {"type": "number", "description": "Index of refraction (glass=1.5, water=1.33, diamond=2.42)"},
      }, "required": []},
      False, True, False),
 

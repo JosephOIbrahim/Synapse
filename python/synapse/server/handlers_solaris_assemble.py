@@ -141,6 +141,7 @@ class SolarisAssembleMixin:
         after_path = payload.get("after", None)
         sort_nodes = payload.get("sort", True)
         dry_run = payload.get("dry_run", False)
+        aov_passes = payload.get("aov_passes", None)
 
         from .main_thread import run_on_main
 
@@ -273,11 +274,39 @@ class SolarisAssembleMixin:
             if not dry_run and wired:
                 parent_node.layoutChildren()
 
-            return {
+            result = {
                 "wired": wired,
                 "skipped": skipped,
                 "chain": chain_paths,
                 "dry_run": dry_run,
             }
+
+            # Auto-configure render passes if requested
+            if aov_passes and not dry_run:
+                configure_handler = getattr(
+                    self, "_handle_configure_render_passes", None
+                )
+                if configure_handler is not None:
+                    # Find the render settings node in the chain to wire after
+                    render_node = None
+                    for path in reversed(chain_paths):
+                        n = hou.node(path)
+                        if n and n.type().name() in (
+                            "karmarendersettings", "karmarenderproperties",
+                        ):
+                            render_node = n
+                            break
+                    try:
+                        aov_payload = {"passes": aov_passes}
+                        if render_node:
+                            aov_payload["node"] = render_node.path()
+                        aov_result = configure_handler(aov_payload)
+                        result["aov_passes"] = aov_result
+                    except Exception as exc:
+                        result["aov_warning"] = (
+                            f"AOV setup skipped: {exc}"
+                        )
+
+            return result
 
         return run_on_main(_on_main)
