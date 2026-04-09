@@ -487,8 +487,12 @@ class TestTemplates:
         assert "rop_depth" in node_ids
 
     def test_all_templates_renderable(self):
-        """Every template (except render_pass_split) includes render settings."""
+        """Scene templates include render settings; utility templates may not."""
+        # Utility templates are wired into scenes, not standalone render targets
+        _UTILITY_TEMPLATES = {"variant_selector"}
         for name, fn in TEMPLATES.items():
+            if name in _UTILITY_TEMPLATES:
+                continue
             result = fn()
             node_types = {n["type"] for n in result["nodes"]}
             if name == "render_pass_split":

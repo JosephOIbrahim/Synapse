@@ -289,12 +289,178 @@ def lighting_rig(
     return {"nodes": nodes, "connections": connections, "display_node": "output"}
 
 
+def hdri_lighting(
+    include_sun: bool = True,
+    include_render: bool = True,
+) -> Dict[str, Any]:
+    """HDRI-based outdoor lighting rig: domelight + physical sky + optional sun.
+
+    Produces a photorealistic outdoor lighting setup:
+      SCENE_INPUT → domelight → karmaphysicalsky → [distantlight] →
+      karmarenderproperties → OUTPUT
+
+    The domelight provides image-based environment lighting, the physical
+    sky adds atmospheric scattering, and the optional distant light acts
+    as a directional sun for sharper shadows.
+
+    Args:
+        include_sun: Add a distant light for directional sun (default: True).
+        include_render: Add karma render settings + ROP (default: True).
+    """
+    nodes: List[Dict[str, Any]] = []
+    connections: List[Dict[str, Any]] = []
+
+    nodes.append({"id": "scene_input", "type": "null", "name": "SCENE_INPUT"})
+
+    # HDRI environment dome
+    nodes.append({"id": "hdri_dome", "type": "domelight", "name": "hdri_env"})
+    connections.append({"from": "scene_input", "to": "hdri_dome", "input": 0})
+    tail = "hdri_dome"
+
+    # Physical sky for atmospheric scattering
+    nodes.append({
+        "id": "physical_sky", "type": "karmaphysicalsky",
+        "name": "physical_sky",
+    })
+    connections.append({"from": tail, "to": "physical_sky", "input": 0})
+    tail = "physical_sky"
+
+    if include_sun:
+        nodes.append({
+            "id": "sun", "type": "distantlight", "name": "sun_light",
+        })
+        connections.append({"from": tail, "to": "sun", "input": 0})
+        tail = "sun"
+
+    if include_render:
+        nodes.append({
+            "id": "karma_settings", "type": "karmarenderproperties",
+            "name": "karma_settings",
+        })
+        connections.append({"from": tail, "to": "karma_settings", "input": 0})
+        tail = "karma_settings"
+
+    nodes.append({"id": "output", "type": "null", "name": "OUTPUT"})
+    connections.append({"from": tail, "to": "output", "input": 0})
+
+    if include_render:
+        nodes.append({
+            "id": "rop", "type": "usdrender_rop", "name": "render",
+        })
+        connections.append({"from": "karma_settings", "to": "rop", "input": 0})
+
+    return {"nodes": nodes, "connections": connections, "display_node": "output"}
+
+
+def instanceable_assets(
+    asset_count: int = 3,
+    include_camera: bool = True,
+    include_lights: bool = True,
+    include_render: bool = True,
+) -> Dict[str, Any]:
+    """N asset references → layout (instanceable) → render tail.
+
+    Creates a populated scene from multiple referenced assets using USD
+    native instancing. Each asset is loaded via a reference node, then
+    a layout node arranges instances with Instanceable Reference mode.
+
+    Args:
+        asset_count: Number of distinct assets to reference (default: 3).
+        include_camera: Add a camera node (default: True).
+        include_lights: Add lighting (default: True).
+        include_render: Add karma render settings + ROP (default: True).
+    """
+    if asset_count < 1:
+        raise ValueError("asset_count must be >= 1")
+
+    nodes: List[Dict[str, Any]] = []
+    connections: List[Dict[str, Any]] = []
+
+    # Asset references (parallel streams — valid merge use case)
+    for i in range(asset_count):
+        nodes.append({
+            "id": f"asset_{i}",
+            "type": "reference",
+            "name": f"asset_{i}",
+        })
+
+    # Merge asset streams
+    nodes.append({"id": "merge", "type": "merge", "name": "asset_merge"})
+    for i in range(asset_count):
+        connections.append({"from": f"asset_{i}", "to": "merge", "input": i})
+
+    # Layout node for instanced scattering
+    nodes.append({"id": "layout", "type": "layout", "name": "scatter_layout"})
+    connections.append({"from": "merge", "to": "layout", "input": 0})
+
+    # Canonical render tail
+    display = _build_render_tail(
+        nodes, connections, "layout",
+        include_camera=include_camera,
+        include_lights=include_lights,
+        include_render=include_render,
+    )
+
+    return {"nodes": nodes, "connections": connections, "display_node": display}
+
+
+def variant_selector(
+    variant_count: int = 3,
+    variant_names: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Asset input → explorevariants → setvariant → output.
+
+    Creates a variant preview and selection chain. The explorevariants node
+    lets the artist interactively browse available variants, and setvariant
+    commits the selection for downstream use (rendering, export).
+
+    Args:
+        variant_count: Number of variant set entries to prepare (default: 3).
+        variant_names: Names for variant options (defaults to variant_0, ...).
+    """
+    names = variant_names or [f"variant_{i}" for i in range(variant_count)]
+
+    nodes: List[Dict[str, Any]] = []
+    connections: List[Dict[str, Any]] = []
+
+    # Asset input
+    nodes.append({"id": "asset_input", "type": "null", "name": "ASSET_INPUT"})
+
+    # Explore variants interactively
+    nodes.append({
+        "id": "explore", "type": "explorevariants",
+        "name": "explore_variants",
+    })
+    connections.append({"from": "asset_input", "to": "explore", "input": 0})
+
+    # Commit variant selection
+    nodes.append({
+        "id": "select", "type": "setvariant",
+        "name": "set_variant",
+    })
+    connections.append({"from": "explore", "to": "select", "input": 0})
+
+    # Output
+    nodes.append({"id": "output", "type": "null", "name": "OUTPUT"})
+    connections.append({"from": "select", "to": "output", "input": 0})
+
+    return {
+        "nodes": nodes,
+        "connections": connections,
+        "display_node": "output",
+        "variant_names": names,
+    }
+
+
 # Template registry — maps name to function
 TEMPLATES = {
     "multi_asset_merge": multi_asset_merge,
     "sublayer_stack": sublayer_stack,
     "render_pass_split": render_pass_split,
     "lighting_rig": lighting_rig,
+    "hdri_lighting": hdri_lighting,
+    "instanceable_assets": instanceable_assets,
+    "variant_selector": variant_selector,
 }
 
 

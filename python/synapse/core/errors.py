@@ -10,6 +10,8 @@ Two-branch tree:
   +-- SynapseServiceError  (Houdini down, execution crash, timeout)
       +-- ExecutionError
       +-- HoudiniUnavailableError
+      +-- OperationTimeoutError
+      +-- OperationFailedError
 
 Circuit breaker: only SynapseServiceError trips it.
 Handler.handle(): SynapseUserError -> success=False (don't trip CB).
@@ -89,3 +91,39 @@ class HoudiniUnavailableError(SynapseServiceError):
                 "and Synapse is started from the Python Panel"
             )
         super().__init__(message)
+
+
+class OperationTimeoutError(SynapseServiceError):
+    """A Houdini operation exceeded its time limit.
+
+    Trips the circuit breaker — repeated timeouts indicate Houdini is stalled.
+    """
+
+    def __init__(self, operation: str = "", timeout_seconds: float = 0):
+        self.operation = operation
+        self.timeout_seconds = timeout_seconds
+        msg = "Operation timed out"
+        if operation:
+            msg = f"Operation '{operation}' timed out"
+        if timeout_seconds > 0:
+            msg += f" after {timeout_seconds:.0f}s"
+        msg += " -- the scene may be unresponsive or a heavy cook is blocking"
+        super().__init__(msg)
+
+
+class OperationFailedError(SynapseServiceError):
+    """A Houdini operation (render, cook, etc.) failed at runtime.
+
+    Distinguished from ExecutionError (code bugs) — this is an operational
+    failure (render crash, cook error, disk full, GPU OOM).
+    """
+
+    def __init__(self, operation: str, message: str = "", node_path: str = ""):
+        self.operation = operation
+        self.node_path = node_path
+        msg = f"Operation '{operation}' failed"
+        if node_path:
+            msg += f" on {node_path}"
+        if message:
+            msg += f": {message}"
+        super().__init__(msg)

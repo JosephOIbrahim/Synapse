@@ -445,7 +445,7 @@ class TopsDiagnosticsMixin:
                 failed = sum(1 for e in events if e.get("type") == "work_item_failed")
                 total = completed + failed
 
-                return {
+                result = {
                     "monitor_id": monitor_id,
                     "status": "stopped",
                     "elapsed_seconds": round_float(elapsed),
@@ -456,6 +456,14 @@ class TopsDiagnosticsMixin:
                         "total_processed": total,
                     },
                 }
+                if monitor.get("was_truncated"):
+                    result["events_truncated"] = True
+                    result["events_truncated_note"] = (
+                        f"Event buffer exceeded {_MAX_MONITOR_EVENTS} — oldest "
+                        "events were dropped. Increase SYNAPSE_MONITOR_EVENT_CAP "
+                        "or reduce cook complexity."
+                    )
+                return result
 
             return _run_in_main_thread_pdg(_stop)
 
@@ -521,6 +529,7 @@ class TopsDiagnosticsMixin:
                     # Keep the last 80% to avoid trimming on every single event.
                     if len(events_list) > _MAX_MONITOR_EVENTS:
                         events_list[:] = events_list[-(int(_MAX_MONITOR_EVENTS * 0.8)):]
+                        monitor["was_truncated"] = True
 
                     etype = event.type
                     now = time.monotonic()
