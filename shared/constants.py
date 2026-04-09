@@ -31,10 +31,14 @@ __all__ = [
     # Routing — scoring
     "ROUTER_CALIBRATION_PERIOD",
     "ADVISORY_SCORE_THRESHOLD",
+    "ADVISORY_GAP_RATIO",
+    "FAST_PATH_PROMOTION_THRESHOLD",
     "BLOCKING_URGENCY_BOOST",
     "COMPLEX_SCORE_MULTIPLIER",
     "RESEARCH_INTEGRATOR_FLOOR",
-    # Routing — complexity thresholds
+    "COMPLEX_SOLO_DOMAINS",
+    "CONSTANTS_HASH",
+    # Routing — complexity thresholds (legacy; word_count fields kept for back-compat)
     "TRIVIAL_WORD_LIMIT",
     "TRIVIAL_DOMAIN_LIMIT",
     "MODERATE_WORD_LIMIT",
@@ -236,11 +240,24 @@ FAST_PATHS: dict[str, tuple[AgentID, AgentID | None]] = {
 # ---------------------------------------------------------------------------
 
 ROUTER_CALIBRATION_PERIOD: int = 10
-ADVISORY_SCORE_THRESHOLD: float = 0.3
+ADVISORY_SCORE_THRESHOLD: float = 0.3       # absolute floor — never route on noise
+ADVISORY_GAP_RATIO: float = 0.6             # advisory must be >= ratio * primary score
+FAST_PATH_PROMOTION_THRESHOLD: int = 3      # fingerprint count → auto-promoted to session fast path
 BLOCKING_URGENCY_BOOST: float = 0.2
 COMPLEX_SCORE_MULTIPLIER: float = 1.2
 RESEARCH_INTEGRATOR_FLOOR: float = 0.5
 
+# Domains intrinsically complex even when seen alone — APEX rigging and COPs
+# graphs require COMPLEX classification regardless of how many other signals
+# co-occur. Mirrors hand-tuned entries in FAST_PATHS.
+COMPLEX_SOLO_DOMAINS: frozenset = frozenset({
+    DomainSignal.APEX,
+    DomainSignal.COPS,
+})
+
+# Legacy word-count thresholds — retained for back-compat but no longer
+# consulted by extract_features(). Word count of an LLM-rewritten prompt has
+# no relationship to task complexity (verbose users != hard tasks).
 TRIVIAL_WORD_LIMIT: int = 10
 TRIVIAL_DOMAIN_LIMIT: int = 1
 MODERATE_WORD_LIMIT: int = 30
@@ -262,9 +279,15 @@ EVOLUTION_TRIGGERS: dict[str, int | float] = {
     "node_path_references": 10,
 }
 
-EVOLUTION_STAGE_FLAT: str = "flat"
-EVOLUTION_STAGE_STRUCTURED: str = "structured"
-EVOLUTION_STAGE_COMPOSED: str = "composed"
+# Canonical evolution stage values use the Pokémon model documented in
+# CLAUDE.md §6 and referenced by the forge corpus, scene memory tests, and
+# the living-memory design plan. The variable names below are internal
+# aliases that describe the *technical* layer (flat text → structured prims
+# → composition arcs); the *value* is what gets serialized into agent.usd
+# and round-tripped by every consumer.
+EVOLUTION_STAGE_FLAT: str = "charmander"        # memory.md, no schema
+EVOLUTION_STAGE_STRUCTURED: str = "charmeleon"  # memory.usd, typed prims
+EVOLUTION_STAGE_COMPOSED: str = "charizard"     # memory.usd + composition arcs
 
 
 # ---------------------------------------------------------------------------
@@ -311,3 +334,27 @@ RENDER_VALIDATE_DEFAULTS: dict[str, float] = {
     "saturation_pct": 0.1,
     "saturation_multiplier": 10.0,
 }
+
+
+# ---------------------------------------------------------------------------
+# Constants Hash — feature schema fingerprint
+# ---------------------------------------------------------------------------
+# Computed at module load from the routing tables that influence fingerprint
+# generation. If any of these change, CONSTANTS_HASH changes, and any
+# session-learned fast paths stamped with the old hash are invalidated by
+# MOERouter on the next call. Hand-maintained FAST_PATHS entries are NOT
+# invalidated automatically — they're validated by tests/test_router_internals.py.
+
+import hashlib as _hashlib
+
+def _compute_constants_hash() -> str:
+    parts = [
+        repr(sorted((k, v.value) for k, v in DOMAIN_KEYWORDS.items())),
+        repr(sorted((k, v.value) for k, v in TASK_TYPE_KEYWORDS.items())),
+        URGENCY_BLOCKING_PATTERN,
+        URGENCY_EXPLORATORY_PATTERN,
+        repr(sorted(FAST_PATHS.keys())),
+    ]
+    return _hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()[:12]
+
+CONSTANTS_HASH: str = _compute_constants_hash()
