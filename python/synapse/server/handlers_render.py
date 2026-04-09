@@ -1410,6 +1410,12 @@ class RenderHandlerMixin:
             min_samples (int): Minimum samples per pixel for adaptive sampling.
             bucket_size (int): Tile size in pixels (GPU memory vs speed tradeoff for XPU).
             motion_blur (bool): Enable/disable motion blur.
+            shutter_open (float): Shutter open time (-1.0 to 1.0, default 0).
+            shutter_close (float): Shutter close time (-1.0 to 1.0, default 0.5).
+            xform_motionsamples (int): Transform motion blur samples.
+            geo_motionsamples (int): Geometry deformation motion blur samples.
+            light_culling_threshold (float): XPU light culling threshold (0=disabled).
+            variance_threshold (float): Variance threshold for adaptive sampling.
 
         Each setting checks if the parameter exists on the node before applying.
         Missing parameters are silently skipped (not all Karma versions have all
@@ -1445,6 +1451,18 @@ class RenderHandlerMixin:
             "bucket_size": ["bucketsize"],
             # Motion blur
             "motion_blur": ["enablemotionblur", "domotionblur"],
+            "shutter_open": ["shutteropen", "karma:global:shutteropen"],
+            "shutter_close": ["shutterclose", "karma:global:shutterclose"],
+            "xform_motionsamples": ["xform_motionsamples",
+                                    "karma:object:xform_motionsamples"],
+            "geo_motionsamples": ["geo_motionsamples",
+                                  "karma:object:geo_motionsamples"],
+            # XPU optimizations
+            "light_culling_threshold": ["lightcullingthreshold",
+                                        "karma:global:lightcullingthreshold"],
+            # Variance threshold (adaptive sampling alias)
+            "variance_threshold": ["variancethreshold",
+                                   "karma:global:variancethreshold"],
         }
 
         # Settings that accept bool values (toggled as 0/1 on the parm)
@@ -1457,12 +1475,16 @@ class RenderHandlerMixin:
             "color_limit": (0.0, None),
             "indirect_clamp": (0.0, None),
             "adaptive_threshold": (0.0, 1.0),
+            "shutter_open": (-1.0, 1.0),
+            "shutter_close": (-1.0, 1.0),
+            "variance_threshold": (0.0, 1.0),
+            "light_culling_threshold": (0.0, None),
         }
         # Settings that accept int values
         _INT_SETTINGS = frozenset({
             "path_samples", "pixel_samples", "volume_samples", "max_ray_depth",
             "diffuse_limit", "specular_limit", "sss_limit", "min_samples",
-            "bucket_size",
+            "bucket_size", "xform_motionsamples", "geo_motionsamples",
         })
 
         applied = {}
