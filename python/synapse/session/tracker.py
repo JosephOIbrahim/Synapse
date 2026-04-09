@@ -264,7 +264,7 @@ class SynapseBridge:
                     "fps": hou.fps(),
                     "selection": [n.path() for n in hou.selectedNodes()[:5]]
                 }
-            except:
+            except Exception:
                 pass
 
         # Memory stats

@@ -539,11 +539,24 @@ class LosslessExecutionBridge:
                 return self._fail_with_integrity(integrity, str(e), "execution_error")
 
         # ── Dispatch to main thread without blocking FastMCP ──
+        # Timeout prevents indefinite hang if Houdini main thread stalls.
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None,
-            lambda: hdefereval.executeInMainThreadWithResult(_sync_payload)
-        )
+        try:
+            return await asyncio.wait_for(
+                loop.run_in_executor(
+                    None,
+                    lambda: hdefereval.executeInMainThreadWithResult(_sync_payload)
+                ),
+                timeout=120.0,
+            )
+        except asyncio.TimeoutError:
+            integrity.delta_hash = "timeout"
+            return self._fail_with_integrity(
+                integrity,
+                "Houdini main thread did not respond within 120s — "
+                "the scene may be unresponsive or a heavy cook is blocking",
+                "execution_timeout",
+            )
 
     # ── R8: PDG Async Cook Bridge ──────────────────────────
 
@@ -580,7 +593,11 @@ class LosslessExecutionBridge:
                 integrity, f"TOP node not found: {node_path}", "invalid_node"
             )
 
-        cook_complete = asyncio.Event()
+        # R8 threading fix: asyncio.Event is NOT thread-safe. PDG callbacks
+        # fire on Houdini's main thread while await runs in the FastMCP async
+        # loop. Use threading.Event and poll it from the async loop.
+        import threading as _threading
+        cook_complete = _threading.Event()
         cook_success = [False]
         cook_error = [""]
 
@@ -604,7 +621,9 @@ class LosslessExecutionBridge:
 
         handler = None
         try:
-            # H21: pdg.PyEventHandler wraps a Python callback for PDG events
+            # H21: pdg.PyEventHandler wraps a Python callback for PDG events.
+            # This callback fires on Houdini's main thread — thread-safe
+            # threading.Event.set() is safe to call from any thread.
             def on_cook_event(event):
                 if event.type == _pdg.EventType.CookComplete:
                     cook_success[0] = True
@@ -618,11 +637,22 @@ class LosslessExecutionBridge:
             graph_context.addEventHandler(handler, _pdg.EventType.CookComplete)
             graph_context.addEventHandler(handler, _pdg.EventType.CookError)
 
-            # Trigger cook on main thread, don't block FastMCP
-            hdefereval.executeInMainThread(lambda: top_node.executeGraph())
+            # Trigger cook on main thread — wrap in try/except so exceptions
+            # don't silently vanish in the fire-and-forget dispatch.
+            def _exec_graph_safe():
+                try:
+                    top_node.executeGraph()
+                except Exception as e:
+                    cook_error[0] = str(e)
+                    cook_complete.set()
 
-            # Agent sleeps here. FastMCP server remains responsive.
-            await cook_complete.wait()
+            hdefereval.executeInMainThread(_exec_graph_safe)
+
+            # Poll the threading.Event from the async loop so FastMCP stays
+            # responsive. 250ms poll interval matches gate polling cadence.
+            loop = asyncio.get_running_loop()
+            while not cook_complete.is_set():
+                await asyncio.sleep(0.25)
 
         except Exception as e:
             return self._fail_with_integrity(

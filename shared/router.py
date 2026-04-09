@@ -19,6 +19,13 @@ Revisions:
 """
 
 from __future__ import annotations
+
+__all__ = [
+    "MOERouter", "RoutingDecision",
+    "extract_features", "route_task",
+    "get_default_router", "reset_default_router",
+]
+
 from dataclasses import dataclass, field
 import re
 from datetime import datetime

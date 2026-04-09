@@ -802,7 +802,7 @@ class SynapseMemory:
                 version_match = re.search(r'_v(\d+)', hip_file)
                 if version_match:
                     hip_version = int(version_match.group(1))
-            except:
+            except Exception:
                 pass
             frame = int(hou.frame())
 

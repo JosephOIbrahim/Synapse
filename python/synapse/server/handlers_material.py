@@ -215,61 +215,62 @@ class MaterialHandlerMixin:
 
             parent = node.parent()
 
-            # Create materiallibrary node and wire it after the resolved LOP node
-            matlib = parent.createNode("materiallibrary", name)
-            matlib.setInput(0, node)
-            matlib.moveToGoodPosition()
+            with hou.undos.group("SYNAPSE: create_material"):
+                # Create materiallibrary node and wire it after the resolved LOP node
+                matlib = parent.createNode("materiallibrary", name)
+                matlib.setInput(0, node)
+                matlib.moveToGoodPosition()
 
-            # Set material path prefix for category-based organization
-            # e.g. category="metal" -> /materials/metal/{name}
-            if category:
-                prefix_parm = matlib.parm("matpathprefix")
-                if prefix_parm:
-                    prefix_parm.set(f"/materials/{category}")
+                # Set material path prefix for category-based organization
+                # e.g. category="metal" -> /materials/metal/{name}
+                if category:
+                    prefix_parm = matlib.parm("matpathprefix")
+                    if prefix_parm:
+                        prefix_parm.set(f"/materials/{category}")
 
-            # Cook the matlib so its internal network is ready for child creation
-            matlib.cook(force=True)
+                # Cook the matlib so its internal network is ready for child creation
+                matlib.cook(force=True)
 
-            # Create shader node inside the materiallibrary
-            shader = matlib.createNode(shader_type, name + "_shader")
-            if shader is None:
-                raise RuntimeError(
-                    f"Couldn't create a '{shader_type}' shader inside the material library "
-                    "-- check that this shader type is available in your Houdini build"
-                )
+                # Create shader node inside the materiallibrary
+                shader = matlib.createNode(shader_type, name + "_shader")
+                if shader is None:
+                    raise RuntimeError(
+                        f"Couldn't create a '{shader_type}' shader inside the material library "
+                        "-- check that this shader type is available in your Houdini build"
+                    )
 
-            # Apply preset defaults first (if any), then explicit overrides
-            for parm_name, val in preset_vals.items():
-                _apply_shader_parm(shader, parm_name, val)
+                # Apply preset defaults first (if any), then explicit overrides
+                for parm_name, val in preset_vals.items():
+                    _apply_shader_parm(shader, parm_name, val)
 
-            # Explicit params override preset values
-            _apply_shader_parm(shader, "base_color", base_color)
-            _apply_shader_parm(shader, "metalness", metalness)
-            _apply_shader_parm(shader, "specular_roughness", roughness)
-            _apply_shader_parm(shader, "opacity", opacity)
-            _apply_shader_parm(shader, "emission", emission)
-            _apply_shader_parm(shader, "emission_color", emission_color)
-            _apply_shader_parm(shader, "subsurface", subsurface)
-            _apply_shader_parm(shader, "subsurface_color", subsurface_color)
-            _apply_shader_parm(shader, "transmission", transmission)
-            _apply_shader_parm(shader, "coat", coat)
-            _apply_shader_parm(shader, "coat_roughness", coat_roughness)
-            _apply_shader_parm(shader, "specular_IOR", ior)
+                # Explicit params override preset values
+                _apply_shader_parm(shader, "base_color", base_color)
+                _apply_shader_parm(shader, "metalness", metalness)
+                _apply_shader_parm(shader, "specular_roughness", roughness)
+                _apply_shader_parm(shader, "opacity", opacity)
+                _apply_shader_parm(shader, "emission", emission)
+                _apply_shader_parm(shader, "emission_color", emission_color)
+                _apply_shader_parm(shader, "subsurface", subsurface)
+                _apply_shader_parm(shader, "subsurface_color", subsurface_color)
+                _apply_shader_parm(shader, "transmission", transmission)
+                _apply_shader_parm(shader, "coat", coat)
+                _apply_shader_parm(shader, "coat_roughness", coat_roughness)
+                _apply_shader_parm(shader, "specular_IOR", ior)
 
-            material_usd_path = _query_material_usd_path(matlib, name)
+                material_usd_path = _query_material_usd_path(matlib, name)
 
-            result = {
-                "matlib_path": matlib.path(),
-                "shader_path": shader.path(),
-                "material_usd_path": material_usd_path,
-                "shader_type": shader_type,
-                "name": name,
-            }
-            if category:
-                result["category"] = category
-            if preset_name:
-                result["preset"] = preset_name
-            return result
+                result = {
+                    "matlib_path": matlib.path(),
+                    "shader_path": shader.path(),
+                    "material_usd_path": material_usd_path,
+                    "shader_type": shader_type,
+                    "name": name,
+                }
+                if category:
+                    result["category"] = category
+                if preset_name:
+                    result["preset"] = preset_name
+                return result
 
         return run_on_main(_on_main)
 
@@ -288,15 +289,17 @@ class MaterialHandlerMixin:
             node = self._resolve_lop_node(node_path_arg)  # type: ignore[attr-defined]
 
             parent = node.parent()
-            # Safe node name from the material path
-            safe_name = material_path.rstrip("/").rsplit("/", 1)[-1] or "mat"
-            assign_node = parent.createNode("assignmaterial", f"assign_{safe_name}")
-            assign_node.setInput(0, node)
-            assign_node.moveToGoodPosition()
 
-            # Set the prim pattern and material spec path
-            assign_node.parm("primpattern1").set(prim_pattern)
-            assign_node.parm("matspecpath1").set(material_path)
+            with hou.undos.group("SYNAPSE: assign_material"):
+                # Safe node name from the material path
+                safe_name = material_path.rstrip("/").rsplit("/", 1)[-1] or "mat"
+                assign_node = parent.createNode("assignmaterial", f"assign_{safe_name}")
+                assign_node.setInput(0, node)
+                assign_node.moveToGoodPosition()
+
+                # Set the prim pattern and material spec path
+                assign_node.parm("primpattern1").set(prim_pattern)
+                assign_node.parm("matspecpath1").set(material_path)
 
             result = {
                 "node_path": assign_node.path(),
@@ -472,158 +475,159 @@ class MaterialHandlerMixin:
             node = self._resolve_lop_node(node_path_arg)  # type: ignore[attr-defined]
             parent = node.parent()
 
-            # Create materiallibrary and cook before adding children
-            matlib = parent.createNode("materiallibrary", name)
-            matlib.setInput(0, node)
-            matlib.moveToGoodPosition()
-            matlib.cook(force=True)
+            with hou.undos.group("SYNAPSE: create_textured_material"):
+                # Create materiallibrary and cook before adding children
+                matlib = parent.createNode("materiallibrary", name)
+                matlib.setInput(0, node)
+                matlib.moveToGoodPosition()
+                matlib.cook(force=True)
 
-            # Create the main shader
-            shader = matlib.createNode("mtlxstandard_surface", name + "_shader")
-            if shader is None:
-                raise RuntimeError(
-                    "Couldn't create mtlxstandard_surface shader -- "
-                    "check that MaterialX is available in your Houdini build"
-                )
+                # Create the main shader
+                shader = matlib.createNode("mtlxstandard_surface", name + "_shader")
+                if shader is None:
+                    raise RuntimeError(
+                        "Couldn't create mtlxstandard_surface shader -- "
+                        "check that MaterialX is available in your Houdini build"
+                    )
 
-            # Create UV coordinate node (shared by all texture readers)
-            uv_node = matlib.createNode("mtlxgeompropvalue", "uv_reader")
-            if uv_node:
-                # Set to read 'st' (UV) attribute as vector2
-                sig_parm = uv_node.parm("signature")
-                if sig_parm:
-                    sig_parm.set("vector2")
-                prop_parm = uv_node.parm("geomprop")
-                if prop_parm:
-                    prop_parm.set("st")
-
-            connected_maps = []
-
-            def _create_texture(tex_path, tex_name, shader_input, is_color=False):
-                """Create an mtlximage node and connect it to the shader."""
-                img = matlib.createNode("mtlximage", tex_name)
-                if img is None:
-                    return None
-
-                # Set file path
-                file_parm = img.parm("file")
-                if file_parm:
-                    file_parm.set(tex_path)
-
-                # Set signature based on whether this is color or scalar
-                sig_parm = img.parm("signature")
-                if sig_parm:
-                    if is_color:
-                        sig_parm.set("color3")
-                    else:
-                        sig_parm.set("float")
-
-                # Connect UV reader to texture's texcoord input
+                # Create UV coordinate node (shared by all texture readers)
+                uv_node = matlib.createNode("mtlxgeompropvalue", "uv_reader")
                 if uv_node:
-                    img.setNamedInput("texcoord", uv_node, 0)
+                    # Set to read 'st' (UV) attribute as vector2
+                    sig_parm = uv_node.parm("signature")
+                    if sig_parm:
+                        sig_parm.set("vector2")
+                    prop_parm = uv_node.parm("geomprop")
+                    if prop_parm:
+                        prop_parm.set("st")
 
-                # Connect texture output to shader input
-                shader.setNamedInput(shader_input, img, 0)
+                connected_maps = []
 
-                connected_maps.append({
-                    "map": tex_name,
-                    "file": tex_path,
-                    "shader_input": shader_input,
-                    "node": img.path(),
-                    "udim": "<UDIM>" in tex_path or "<udim>" in tex_path,
-                })
-                return img
+                def _create_texture(tex_path, tex_name, shader_input, is_color=False):
+                    """Create an mtlximage node and connect it to the shader."""
+                    img = matlib.createNode("mtlximage", tex_name)
+                    if img is None:
+                        return None
 
-            # Wire texture maps to shader inputs
-            if diffuse_map:
-                _create_texture(diffuse_map, "diffuse_tex", "base_color", is_color=True)
+                    # Set file path
+                    file_parm = img.parm("file")
+                    if file_parm:
+                        file_parm.set(tex_path)
 
-            if roughness_map:
-                _create_texture(roughness_map, "roughness_tex", "specular_roughness")
-            elif roughness_value is not None:
-                p = shader.parm("specular_roughness")
-                if p:
-                    p.set(float(roughness_value))
+                    # Set signature based on whether this is color or scalar
+                    sig_parm = img.parm("signature")
+                    if sig_parm:
+                        if is_color:
+                            sig_parm.set("color3")
+                        else:
+                            sig_parm.set("float")
 
-            if metalness_map:
-                _create_texture(metalness_map, "metalness_tex", "metalness")
-            elif metalness_value is not None:
-                p = shader.parm("metalness")
-                if p:
-                    p.set(float(metalness_value))
-
-            if normal_map:
-                # Normal maps need a mtlxnormalmap node between the image and shader
-                normal_img = matlib.createNode("mtlximage", "normal_tex")
-                if normal_img:
-                    fp = normal_img.parm("file")
-                    if fp:
-                        fp.set(normal_map)
-                    sig = normal_img.parm("signature")
-                    if sig:
-                        sig.set("vector3")
+                    # Connect UV reader to texture's texcoord input
                     if uv_node:
-                        normal_img.setNamedInput("texcoord", uv_node, 0)
+                        img.setNamedInput("texcoord", uv_node, 0)
 
-                    # Create normalmap converter
-                    normal_conv = matlib.createNode("mtlxnormalmap", "normal_convert")
-                    if normal_conv:
-                        normal_conv.setNamedInput("in", normal_img, 0)
-                        shader.setNamedInput("normal", normal_conv, 0)
+                    # Connect texture output to shader input
+                    shader.setNamedInput(shader_input, img, 0)
 
                     connected_maps.append({
-                        "map": "normal_tex",
-                        "file": normal_map,
-                        "shader_input": "normal",
-                        "node": normal_img.path(),
-                        "udim": "<UDIM>" in normal_map or "<udim>" in normal_map,
+                        "map": tex_name,
+                        "file": tex_path,
+                        "shader_input": shader_input,
+                        "node": img.path(),
+                        "udim": "<UDIM>" in tex_path or "<udim>" in tex_path,
+                    })
+                    return img
+
+                # Wire texture maps to shader inputs
+                if diffuse_map:
+                    _create_texture(diffuse_map, "diffuse_tex", "base_color", is_color=True)
+
+                if roughness_map:
+                    _create_texture(roughness_map, "roughness_tex", "specular_roughness")
+                elif roughness_value is not None:
+                    p = shader.parm("specular_roughness")
+                    if p:
+                        p.set(float(roughness_value))
+
+                if metalness_map:
+                    _create_texture(metalness_map, "metalness_tex", "metalness")
+                elif metalness_value is not None:
+                    p = shader.parm("metalness")
+                    if p:
+                        p.set(float(metalness_value))
+
+                if normal_map:
+                    # Normal maps need a mtlxnormalmap node between the image and shader
+                    normal_img = matlib.createNode("mtlximage", "normal_tex")
+                    if normal_img:
+                        fp = normal_img.parm("file")
+                        if fp:
+                            fp.set(normal_map)
+                        sig = normal_img.parm("signature")
+                        if sig:
+                            sig.set("vector3")
+                        if uv_node:
+                            normal_img.setNamedInput("texcoord", uv_node, 0)
+
+                        # Create normalmap converter
+                        normal_conv = matlib.createNode("mtlxnormalmap", "normal_convert")
+                        if normal_conv:
+                            normal_conv.setNamedInput("in", normal_img, 0)
+                            shader.setNamedInput("normal", normal_conv, 0)
+
+                        connected_maps.append({
+                            "map": "normal_tex",
+                            "file": normal_map,
+                            "shader_input": "normal",
+                            "node": normal_img.path(),
+                            "udim": "<UDIM>" in normal_map or "<udim>" in normal_map,
+                        })
+
+                if opacity_map:
+                    _create_texture(opacity_map, "opacity_tex", "opacity", is_color=True)
+
+                # Layout nodes cleanly
+                matlib.layoutChildren()
+
+                material_usd_path = _query_material_usd_path(matlib, name)
+
+                result = {
+                    "matlib_path": matlib.path(),
+                    "shader_path": shader.path(),
+                    "material_usd_path": material_usd_path,
+                    "name": name,
+                    "connected_maps": connected_maps,
+                }
+
+                # Optional: create inline material assignment
+                if geo_pattern:
+                    assign_node = parent.createNode(
+                        "assignmaterial", f"assign_{name}"
+                    )
+                    assign_node.setInput(0, matlib)
+                    assign_node.moveToGoodPosition()
+                    assign_node.parm("primpattern1").set(geo_pattern)
+                    assign_node.parm("matspecpath1").set(material_usd_path)
+                    result["assign_node"] = assign_node.path()
+                    result["geo_pattern"] = geo_pattern
+
+                    matlib_stage = matlib.stage()
+                    is_valid, message = _validate_prim_pattern(matlib_stage, geo_pattern)
+                    if not is_valid and message:
+                        result["warning"] = message
+
+                # Handle displacement separately (needs render settings context)
+                if displacement_map:
+                    connected_maps.append({
+                        "map": "displacement_tex",
+                        "file": displacement_map,
+                        "shader_input": "displacement",
+                        "node": None,
+                        "udim": "<UDIM>" in displacement_map or "<udim>" in displacement_map,
+                        "note": "Displacement requires a displacementshader setup — "
+                                "use set_usd_attribute to configure displacement on the geometry prim",
                     })
 
-            if opacity_map:
-                _create_texture(opacity_map, "opacity_tex", "opacity", is_color=True)
-
-            # Layout nodes cleanly
-            matlib.layoutChildren()
-
-            material_usd_path = _query_material_usd_path(matlib, name)
-
-            result = {
-                "matlib_path": matlib.path(),
-                "shader_path": shader.path(),
-                "material_usd_path": material_usd_path,
-                "name": name,
-                "connected_maps": connected_maps,
-            }
-
-            # Optional: create inline material assignment
-            if geo_pattern:
-                assign_node = parent.createNode(
-                    "assignmaterial", f"assign_{name}"
-                )
-                assign_node.setInput(0, matlib)
-                assign_node.moveToGoodPosition()
-                assign_node.parm("primpattern1").set(geo_pattern)
-                assign_node.parm("matspecpath1").set(material_usd_path)
-                result["assign_node"] = assign_node.path()
-                result["geo_pattern"] = geo_pattern
-
-                matlib_stage = matlib.stage()
-                is_valid, message = _validate_prim_pattern(matlib_stage, geo_pattern)
-                if not is_valid and message:
-                    result["warning"] = message
-
-            # Handle displacement separately (needs render settings context)
-            if displacement_map:
-                connected_maps.append({
-                    "map": "displacement_tex",
-                    "file": displacement_map,
-                    "shader_input": "displacement",
-                    "node": None,
-                    "udim": "<UDIM>" in displacement_map or "<udim>" in displacement_map,
-                    "note": "Displacement requires a displacementshader setup — "
-                            "use set_usd_attribute to configure displacement on the geometry prim",
-                })
-
-            return result
+                return result
 
         return run_on_main(_on_main)

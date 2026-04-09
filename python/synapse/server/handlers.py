@@ -5,11 +5,14 @@ Registry-based command handler system for the Synapse WebSocket server.
 Routes incoming commands to appropriate handler functions.
 """
 
+import logging
 import math
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Any, Callable, Optional
+
+_log = logging.getLogger(__name__)
 
 try:
     import hou
@@ -773,8 +776,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                                 "Intensity is usually 1.0 — consider using "
                                 "exposure for brightness control (Lighting Law)"
                             )
-                    except Exception:
-                        pass  # Node type check is best-effort
+                    except Exception as e:
+                        _log.debug("Lighting Law check skipped: %s", e)
                 return result
 
             # Try as parm tuple
@@ -794,8 +797,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                                 "Intensity is usually 1.0 — consider using "
                                 "exposure for brightness control (Lighting Law)"
                             )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        _log.debug("Lighting Law check skipped: %s", e)
                 return result
 
             hint = _suggest_parms(node, parm_name)
@@ -909,8 +912,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 if _needs_rollback:
                     try:
                         hou.undos.performUndo()
-                    except Exception:
-                        pass  # Best effort — group may already be empty
+                    except Exception as e:
+                        _log.debug("Undo rollback best-effort failed: %s", e)
                     raise _rollback_exc
             else:
                 _run_compiled(compiled, exec_globals, exec_locals)
@@ -1009,8 +1012,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                         diagnoses = diagnose_vex_error(all_errors, snippet, wrangle.path())
                         if diagnoses:
                             diagnosis_text = format_diagnosis(diagnoses, snippet)
-            except Exception:
-                pass
+            except Exception as e:
+                _log.debug("VEX error diagnosis failed: %s", e)
 
             # Clean up temp nodes on failure when no input was provided
             if (cook_errors or node_errors) and not input_node:
@@ -1019,8 +1022,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                     if temp_parent and temp_parent.name().startswith("synapse_vex_temp"):
                         temp_parent.destroy()
                         wrangle = None  # Node no longer exists
-                except Exception:
-                    pass  # Best-effort cleanup
+                except Exception as e:
+                    _log.debug("VEX temp node cleanup failed: %s", e)
 
             result = {
                 "node": wrangle.path() if wrangle else "(cleaned up)",
@@ -1098,8 +1101,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             bridge = self._get_bridge()
             if hasattr(bridge, "_memory") and bridge._memory:
                 memory_count = len(bridge._memory.get_all())
-        except Exception:
-            pass
+        except Exception as e:
+            _log.debug("Bridge memory count fetch failed: %s", e)
 
         live_snapshot = None
         agg = getattr(self, "_metrics_aggregator", None)
@@ -1219,8 +1222,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             try:
                 from ..memory.store import get_synapse_memory
                 memory = get_synapse_memory()
-            except Exception:
-                pass
+            except Exception as e:
+                _log.debug("KnowledgeIndex memory init failed: %s", e)
             self._knowledge = KnowledgeIndex(
                 rag_root=rag_root if _Path(rag_root).exists() else None,
                 memory=memory,
@@ -1298,8 +1301,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         try:
             from ..memory.store import get_synapse_memory
             memory = get_synapse_memory()
-        except Exception:
-            pass
+        except Exception as e:
+            _log.debug("Decision memory init failed: %s", e)
 
         planner = RenderPlanner()
         validator = PreFlightValidator(adapter)

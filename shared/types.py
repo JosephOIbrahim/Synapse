@@ -23,21 +23,10 @@ SceneHash = str     # 16-char hex from topological hashing
 # Authoritative definitions live in shared/constants.py.
 # Values here are kept in sync; constants.py is the source of truth.
 
-FIDELITY_THRESHOLD: float = 1.0
 FIDELITY_DEGRADED: float = 0.5
 
-GATE_TIMEOUT_REVIEW: float = 0.0     # REVIEW: non-blocking
 GATE_TIMEOUT_APPROVE: float = 120.0
 GATE_TIMEOUT_CRITICAL: float = 300.0
-
-GATE_LEVEL_INFORM = "INFORM"
-GATE_LEVEL_REVIEW = "REVIEW"
-GATE_LEVEL_APPROVE = "APPROVE"
-GATE_LEVEL_CRITICAL = "CRITICAL"
-
-COMPLEXITY_TRIVIAL_MAX_WORDS = 10
-COMPLEXITY_TRIVIAL_MAX_DOMAINS = 1
-COMPLEXITY_RESEARCH_MIN_DOMAINS = 4
 
 
 # ── Agent Identity ──────────────────────────────────────────────
@@ -338,11 +327,8 @@ __all__ = [
     # Type aliases
     "NodePath", "PrimPath", "Fingerprint", "SceneHash",
     # Constants
-    "FIDELITY_THRESHOLD", "FIDELITY_DEGRADED",
-    "GATE_TIMEOUT_REVIEW", "GATE_TIMEOUT_APPROVE", "GATE_TIMEOUT_CRITICAL",
-    "GATE_LEVEL_INFORM", "GATE_LEVEL_REVIEW", "GATE_LEVEL_APPROVE", "GATE_LEVEL_CRITICAL",
-    "COMPLEXITY_TRIVIAL_MAX_WORDS", "COMPLEXITY_TRIVIAL_MAX_DOMAINS",
-    "COMPLEXITY_RESEARCH_MIN_DOMAINS",
+    "FIDELITY_DEGRADED",
+    "GATE_TIMEOUT_APPROVE", "GATE_TIMEOUT_CRITICAL",
     # Enums
     "AgentID", "TaskStatus", "DomainSignal", "TaskType", "Complexity", "Urgency",
     # Dataclasses

@@ -114,6 +114,12 @@ class RenderHandlerMixin:
                 )
 
             vp = sv.curViewport()
+            if vp is None:
+                raise ValueError(
+                    "The viewport is in an invalid state (minimized, hidden, "
+                    "or GPU context lost) -- make sure the Scene Viewer pane "
+                    "is visible and active"
+                )
             settings = sv.flipbookSettings()
             cur = int(hou.frame())
             settings.frameRange((cur, cur))

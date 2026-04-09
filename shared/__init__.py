@@ -8,9 +8,8 @@ from .types import (
     # Type aliases
     NodePath, PrimPath, Fingerprint, SceneHash,
     # Constants
-    FIDELITY_THRESHOLD, FIDELITY_DEGRADED,
-    GATE_TIMEOUT_REVIEW, GATE_TIMEOUT_APPROVE, GATE_TIMEOUT_CRITICAL,
-    GATE_LEVEL_INFORM, GATE_LEVEL_REVIEW, GATE_LEVEL_APPROVE, GATE_LEVEL_CRITICAL,
+    FIDELITY_DEGRADED,
+    GATE_TIMEOUT_APPROVE, GATE_TIMEOUT_CRITICAL,
     # Enums
     AgentID, TaskStatus, DomainSignal, TaskType, Complexity, Urgency,
     # Dataclasses
@@ -47,6 +46,10 @@ from .evolution import (
 from .router import (
     MOERouter,
     RoutingDecision,
+    extract_features,
+    route_task,
+    get_default_router,
+    reset_default_router,
 )
 
 from .conductor_advisor import (
@@ -64,9 +67,8 @@ __all__ = [
     # Type aliases
     "NodePath", "PrimPath", "Fingerprint", "SceneHash",
     # Constants
-    "FIDELITY_THRESHOLD", "FIDELITY_DEGRADED",
-    "GATE_TIMEOUT_REVIEW", "GATE_TIMEOUT_APPROVE", "GATE_TIMEOUT_CRITICAL",
-    "GATE_LEVEL_INFORM", "GATE_LEVEL_REVIEW", "GATE_LEVEL_APPROVE", "GATE_LEVEL_CRITICAL",
+    "FIDELITY_DEGRADED",
+    "GATE_TIMEOUT_APPROVE", "GATE_TIMEOUT_CRITICAL",
     # Enums
     "AgentID", "TaskStatus", "DomainSignal", "TaskType", "Complexity", "Urgency",
     # Dataclasses
@@ -97,6 +99,10 @@ __all__ = [
     # --- router.py ---
     "MOERouter",
     "RoutingDecision",
+    "extract_features",
+    "route_task",
+    "get_default_router",
+    "reset_default_router",
     # --- conductor_advisor.py ---
     "ConductorAdvisor",
     "HistoryEntry",
