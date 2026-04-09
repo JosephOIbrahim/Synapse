@@ -8,9 +8,10 @@
   <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-6.0.0-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-blue.svg" alt="Python"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-1800%2B%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-2500%2B%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="python/synapse/core/protocol.py"><img src="https://img.shields.io/badge/protocol-v4.0.0-orange.svg" alt="Protocol"></a>
   <a href="python/synapse/mcp"><img src="https://img.shields.io/badge/MCP%20tools-108-blueviolet.svg" alt="MCP Tools"></a>
+  <a href="shared"><img src="https://img.shields.io/badge/MOE%20agents-6-ff69b4.svg" alt="MOE Agents"></a>
 </p>
 
 ---
@@ -83,7 +84,7 @@ If a feature can't hit at least one, it doesn't ship.
 
 **Determinism** — Canonical ordering, tier pinning, fixed-precision rounding, content-based IDs, Kahan summation. Inspired by [He2025].
 
-**Houdini Optional** — All 1,800+ tests run without Houdini. Core library has zero required dependencies.
+**Houdini Optional** — All 2,500+ tests run without Houdini. Core library has zero required dependencies.
 
 ---
 
@@ -241,7 +242,7 @@ pip install -e ".[dev,websocket,mcp,routing,encryption]"
 python -m pytest tests/ -v
 ```
 
-All 1,800+ tests run without Houdini. No license needed.
+All 2,500+ tests run without Houdini. No license needed.
 
 &nbsp;
 
@@ -355,62 +356,105 @@ Every command is accessible through natural conversation or via slash commands i
 
 ## Architecture
 
-```
-+---------------------------------------------------------------+
-|                         Synapse v6.0.0                        |
-+---------------------------------------------------------------+
-|                                                               |
-|  +-- Panel Layer (Qt) -------------------------------------+ |
-|  |  SynapsePanel  |  ContextBar  |  CommandPalette (Ctrl+K) | |
-|  |  SplitView: Conversation + Structured Results            | |
-|  |  ToolBridge (108 tools) | ClaudeWorker (streaming)       | |
-|  |  ToolExecutor (main-thread safe)                         | |
-|  +----------------------------------------------------------+ |
-|                                                               |
-|  +-- Knowledge Layer ---------------------------------------+ |
-|  |  SceneDoctor  |  RenderPreflight  |  ErrorTranslator     | |
-|  |  ExplainMode  |  NetworkTrace     |  VexTutor            | |
-|  |  RecipeBook   |  PerformanceProfiler                     | |
-|  |  ApexExplainer | ApexRecipes | ApexTrace                 | |
-|  +----------------------------------------------------------+ |
-|                                                               |
-|  +-- Pipeline Layer ----------------------------------------+ |
-|  |  DependencyMap  |  SaveShot  |  CrossSceneContext         | |
-|  |  SessionJournal |  ShotLogin |  PromptToHDA              | |
-|  +----------------------------------------------------------+ |
-|                                                               |
-|  +-- Agent Layer -------------------------------------------+ |
-|  |  AgentExecutor: prepare -> propose -> execute -> learn   | |
-|  |  AgentTask / AgentPlan / AgentStep / OutcomeTracker      | |
-|  +----------------------------------------------------------+ |
-|                                                               |
-|  +-- Memory Layer ------------------------------------------+ |
-|  |  Three-Layer Architecture:                                | |
-|  |    L1: Cognitive Substrate (behavior — global, immutable) | |
-|  |    L2: Project Memory ($JOB/claude/)                      | |
-|  |    L3: Scene Memory ($HIP/claude/)                        | |
-|  |  Evolution: flat (md) -> structured (usd) -> composed    | |
-|  |  SynapseMemory | MemoryStore | SceneMemory | Evolution   | |
-|  +----------------------------------------------------------+ |
-|                                                               |
-|  +-- Server Layer ------------------------------------------+ |
-|  |  SynapseServer (WebSocket)  |  CommandHandlerRegistry    | |
-|  |  RateLimiter | CircuitBreaker | PortManager | Watchdog   | |
-|  |  BackpressureController | HealthMonitor                  | |
-|  +----------------------------------------------------------+ |
-|                                                               |
-|  +-- Core Layer (Foundation) -------------------------------+ |
-|  |  protocol.py   Wire format, CommandType, aliases         | |
-|  |  queue.py      DeterministicCommandQueue                 | |
-|  |  determinism.py Fixed-precision, content IDs, seeded RNG | |
-|  |  audit.py      Hash-chain append-only log                | |
-|  |  gates.py      INFORM / REVIEW / APPROVE / CRITICAL      | |
-|  +----------------------------------------------------------+ |
-|                                                               |
-+---------------------------------------------------------------+
+```mermaid
+block-beta
+    columns 1
+    block:panel["Panel Layer (Qt)"]
+        p1["SynapsePanel"] p2["ContextBar"] p3["CommandPalette"] p4["ToolBridge (108 tools)"]
+    end
+    block:knowledge["Knowledge Layer"]
+        k1["SceneDoctor"] k2["RenderPreflight"] k3["ExplainMode"] k4["VexTutor"] k5["APEX"]
+    end
+    block:pipeline["Pipeline Layer"]
+        pl1["DependencyMap"] pl2["SaveShot"] pl3["CrossScene"] pl4["PromptToHDA"]
+    end
+    block:agent["Agent Layer"]
+        a1["AgentExecutor: prepare → propose → execute → learn"]
+    end
+    block:moe["MOE Agent Team"]
+        m1["SUBSTRATE"] m2["BRAINSTEM"] m3["OBSERVER"] m4["HANDS"] m5["CONDUCTOR"] m6["INTEGRATOR"]
+    end
+    block:memory["Memory Layer"]
+        mem1["L1: Cognitive Substrate"] mem2["L2: Project ($JOB)"] mem3["L3: Scene ($HIP)"]
+    end
+    block:server["Server Layer"]
+        s1["WebSocket Server"] s2["RateLimiter"] s3["CircuitBreaker"] s4["Watchdog"]
+    end
+    block:core["Core Layer"]
+        c1["Protocol"] c2["Determinism"] c3["Audit"] c4["Gates"]
+    end
+
+    panel --> knowledge
+    knowledge --> pipeline
+    pipeline --> agent
+    agent --> moe
+    moe --> memory
+    memory --> server
+    server --> core
 ```
 
-**Core** provides the wire format, determinism primitives, tamper-evident audit, and human gates. **Memory** persists decisions, context, and actions with automatic evolution from markdown to USD. **Server** runs the WebSocket bridge with production resilience. **Agent** orchestrates multi-step plans through the gate system with outcome-based learning. **Pipeline** handles dependency tracking, session management, HDA generation, and cross-scene context. **Knowledge** provides scene diagnosis, performance profiling, data tracing, VEX tutoring, APEX navigation, and contextual explanations. **Panel** is the Houdini Qt interface with streaming Claude integration, command palette, and split-view structured results.
+**Core** provides the wire format, determinism primitives, tamper-evident audit, and human gates. **Server** runs the WebSocket bridge with production resilience. **Memory** persists decisions, context, and actions with automatic evolution from markdown to USD. **MOE Agent Team** decomposes tasks across 6 specialist agents with lossless execution guarantees. **Agent** orchestrates multi-step plans through the gate system with outcome-based learning. **Pipeline** handles dependency tracking, session management, HDA generation, and cross-scene context. **Knowledge** provides scene diagnosis, performance profiling, data tracing, VEX tutoring, APEX navigation, and contextual explanations. **Panel** is the Houdini Qt interface with streaming Claude integration, command palette, and split-view structured results.
+
+---
+
+## MOE Agent Team
+
+Synapse decomposes VFX pipeline tasks using a Mixture-of-Experts (MOE) router that dispatches to 6 specialist agents. Every agent operation flows through the **Lossless Execution Bridge** — a structural safety layer guaranteeing undo-wrapped, thread-safe, integrity-verified execution.
+
+### Agent Roster
+
+| Agent | Codename | Domain |
+|---|---|---|
+| **SUBSTRATE** | The Substrate | Thread-safe async, MCP server, deferred execution |
+| **BRAINSTEM** | The Brain | Self-healing execution, error recovery, VEX compiler feedback |
+| **OBSERVER** | The Eyes | Network graphs, geometry introspection, viewport capture |
+| **HANDS** | The Hands | USD/Solaris, APEX rigging, Copernicus, MaterialX |
+| **CONDUCTOR** | The Conductor | PDG orchestration, memory evolution, batch determinism |
+| **INTEGRATOR** | The Integrator | API contracts, type safety, tests, conflict resolution |
+
+### MOE Routing Pipeline
+
+```mermaid
+flowchart LR
+    Task["Inbound Task"] --> FE["Feature Extraction\n(4 dimensions)"]
+    FE --> |"task_type\ncomplexity\ndomain_signals\nurgency"| Router["MOE Router\n(Top-K=2)"]
+    Router --> |PRIMARY| Agent1["Specialist Agent"]
+    Router --> |ADVISORY| Agent2["Review Agent"]
+    Agent1 --> Bridge["Lossless\nExecution Bridge"]
+    Agent2 -.-> Bridge
+    Bridge --> |"undo + thread\n+ consent + integrity"| Houdini["Houdini"]
+    Bridge --> Verify["IntegrityBlock\nfidelity = 1.0"]
+```
+
+Feature extraction uses word-boundary matching across domain keywords, task type classification, complexity inference (domain-driven, not word-count), and urgency detection. The router scores all 6 agents, selects a primary (owns the deliverable) and an advisory (reviews), with auto-promotion of frequent fingerprints to session fast paths.
+
+### Lossless Execution Bridge
+
+Four structural anchors enforced on every operation:
+
+| Anchor | Guarantee |
+|---|---|
+| **Undo Safety** | Every mutation wrapped in `hou.undos.group()` |
+| **Thread Safety** | All `hou.*` calls on main thread via `hdefereval` |
+| **Artist Consent** | INFORM / REVIEW / APPROVE / CRITICAL gates |
+| **Scene Integrity** | USD composition validation after mutation; rollback on violation |
+
+### Self-Observability Loop
+
+The agent team reads its own runtime telemetry and recommends substrate tuning:
+
+```mermaid
+flowchart TB
+    Bridge["Bridge\noperation_stats()"] --> Advisor
+    Router["Router\nfingerprint_counts()"] --> Advisor
+    Evolution["Evolution\nEvolutionIntegrity failures"] --> Advisor
+    Advisor["ConductorAdvisor\n.analyze()"] --> Recs["list[Recommendation]\nkind / target / severity"]
+    Recs --> History["RecommendationHistory\nJSONL persistence"]
+    History --> Meta["ConductorAdvisor\n.analyze_history()"]
+    Meta --> |"same issue 5+ times\n→ escalate"| Recs
+```
+
+The advisor is read-only by construction. Recommendations are structured proposals (never auto-applied) that route through the artist consent system. History persists across sessions via JSONL, enabling longitudinal trend analysis.
 
 ---
 
@@ -418,8 +462,16 @@ Every command is accessible through natural conversation or via slash commands i
 
 Synapse includes an MCP server that bridges Claude to Houdini with 108 tools.
 
-```
-Claude  <--[stdio/JSON-RPC]-->  mcp_server.py  <--[WebSocket]-->  Synapse (Houdini)
+```mermaid
+sequenceDiagram
+    participant C as Claude
+    participant M as mcp_server.py
+    participant S as Synapse (Houdini)
+
+    C->>M: stdio / JSON-RPC
+    M->>S: WebSocket (port 9999)
+    S-->>M: Result + IntegrityBlock
+    M-->>C: Tool response
 ```
 
 ### Available MCP Tools (108)
@@ -460,30 +512,51 @@ Synapse's memory is layered and evolving.
 
 ### Three Layers
 
-```
-Layer 1: Cognitive Substrate (behavior — global, immutable)
-  How Claude thinks and acts. Never overridden by scene data.
-
-Layer 2: Project Memory ($JOB/claude/)
-  Show-level decisions: render engine, resolution, color space,
-  asset naming, pipeline rules, shared material libraries.
-
-Layer 3: Scene Memory ($HIP/claude/)
-  Shot-specific: session history, decisions, parameter experiments,
-  wedge results, blockers encountered, node graph intent.
+```mermaid
+graph TB
+    subgraph L1["L1: Cognitive Substrate (global, immutable)"]
+        cs["How Claude thinks and acts.\nNever overridden by scene data."]
+    end
+    subgraph L2["L2: Project Memory ($JOB/claude/)"]
+        pm["Render engine, resolution, color space,\nasset naming, pipeline rules, shared materials."]
+    end
+    subgraph L3["L3: Scene Memory ($HIP/claude/)"]
+        sm["Session history, decisions, parameter experiments,\nwedge results, blockers, node graph intent."]
+    end
+    L1 --> L2 --> L3
 ```
 
 ### Evolution
 
 Memory files start as markdown and evolve to USD when the data outgrows flat text. Evolution is automatic, lossless, and one-directional.
 
-| Stage | Format | When |
-| --- | --- | --- |
-| **Flat** | `memory.md` | Scene is new. Memory is lightweight narrative text. |
-| **Structured** | `memory.usd` | Structured data appears — asset references, parameter records, wedge results. USD prims with typed attributes. |
-| **Composed** | `memory.usd` + sublayers | Cross-scene composition needed. Scene memory sublayers project memory. Queryable across shots. |
+```mermaid
+stateDiagram-v2
+    [*] --> Charmander: Scene created
+    Charmander --> Charmeleon: Triggers met\n(assets, params, sessions)
+    Charmeleon --> Charizard: Cross-scene\ncomposition needed
 
-Evolution triggers are automatic: structured data count, asset references, parameter records, wedge results, session count, file size. When the markdown outgrows flat text, it evolves. The original markdown is archived and a companion `.md` is auto-generated for human readability.
+    state Charmander {
+        [*] --> md: memory.md
+        note right of md: Flat text, no schema overhead.\nLightweight narrative.
+    }
+    state Charmeleon {
+        [*] --> usd: memory.usd
+        note right of usd: Typed prims + text attributes.\nComposable USD.
+    }
+    state Charizard {
+        [*] --> usd_comp: memory.usd + sublayers
+        note right of usd_comp: Composition arcs.\nCross-scene references.
+    }
+```
+
+| Stage | Codename | Format | When |
+| --- | --- | --- | --- |
+| **Flat** | Charmander | `memory.md` | Scene is new. Memory is lightweight narrative text. |
+| **Structured** | Charmeleon | `memory.usd` | Structured data appears — asset references, parameter records, wedge results. USD prims with typed attributes. |
+| **Composed** | Charizard | `memory.usd` + sublayers | Cross-scene composition needed. Scene memory sublayers project memory. Queryable across shots. |
+
+Evolution triggers are automatic: structured data count, asset references, parameter records, wedge results, session count, file size. When the markdown outgrows flat text, it evolves. The original markdown is archived and a companion `.md` is auto-generated for human readability. Evolution verification uses per-item content hashing — if any field drifts during the round-trip, the evolution is rolled back and the original is preserved.
 
 ---
 
@@ -726,19 +799,27 @@ Synapse/
 │   └── ui/
 │       ├── panel.py                       # SynapsePanel (Qt)
 │       └── tabs/                          # Connection, Context, Decisions, Activity, Search
+├── shared/                                # MOE Agent Team shared infrastructure
+│   ├── types.py                           # Canonical type definitions (AgentID, enums, dataclasses)
+│   ├── constants.py                       # Single source of truth for all constants
+│   ├── bridge.py                          # Lossless Execution Bridge (4 safety anchors)
+│   ├── router.py                          # MOE sparse routing engine (feature extraction, top-K)
+│   ├── evolution.py                       # Memory evolution pipeline (md → USD, lossless verify)
+│   └── conductor_advisor.py               # Self-observability loop (advisor, history, meta-analysis)
+├── agents/                                # MOE agent definitions (6 specialist .md files)
 ├── rag/                                   # Knowledge base (21 built-in recipes)
 ├── design/                                # Design documents
 ├── docs/                                  # Documentation (MkDocs)
 ├── agent/                                 # Agent configurations
 ├── assets/                                # Logo and assets
-└── tests/                                 # 1,800+ tests (no Houdini required)
+└── tests/                                 # 2,500+ tests (no Houdini required)
 ```
 
 ---
 
 ## Status
 
-Synapse is under active development. All layers are well-tested (1,800+ unit tests, mypy clean on 82 source files). The WebSocket server, viewport capture, scene diagnostics, and knowledge transfer features have been validated in single-user VFX workflows. Use in production at your own discretion.
+Synapse is under active development. All layers are well-tested (2,500+ unit tests, mypy clean on 148 source files). The WebSocket server, viewport capture, scene diagnostics, knowledge transfer, and MOE agent infrastructure have been validated in single-user VFX workflows. The self-observability loop is tested end-to-end with 116 conformance tests pinning the recursive substrate. Use in production at your own discretion.
 
 ---
 
