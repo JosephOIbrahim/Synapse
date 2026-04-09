@@ -8,6 +8,7 @@ Thread-safe, works with or without Houdini (hou).
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 import tempfile
@@ -15,6 +16,8 @@ import threading
 import time
 from html import escape as html_escape
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Houdini import guard
@@ -142,10 +145,7 @@ class SessionJournal:
                 with open(self._log_path, "a", encoding="utf-8") as fh:
                     fh.write(line + "\n")
             except OSError as exc:
-                print(
-                    f"[synapse.journal] write error: {exc}",
-                    file=sys.stderr,
-                )
+                logger.warning("journal write error: %s", exc)
 
     # -- public API ---------------------------------------------------------
 
@@ -195,10 +195,7 @@ class SessionJournal:
         except FileNotFoundError:
             return []
         except OSError as exc:
-            print(
-                f"[synapse.journal] read error: {exc}",
-                file=sys.stderr,
-            )
+            logger.warning("journal read error: %s", exc)
             return []
 
         matched = [ln for ln in lines if query_lower in ln.lower()]
@@ -223,10 +220,7 @@ class SessionJournal:
         except FileNotFoundError:
             return []
         except OSError as exc:
-            print(
-                f"[synapse.journal] read error: {exc}",
-                file=sys.stderr,
-            )
+            logger.warning("journal read error: %s", exc)
             return []
 
         return lines[-limit:]

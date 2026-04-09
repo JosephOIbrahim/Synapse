@@ -86,9 +86,9 @@ class TestSessionExpiry:
 
         mgr = mod.MCPSessionManager()
         sid = mgr.create_session({"name": "old_client"})
-        # Age the session beyond TTL
+        # Age the session beyond TTL (sweep uses last_activity, not created_at)
         with mgr._lock:
-            mgr._sessions[sid].created_at = time.time() - 7200
+            mgr._sessions[sid].last_activity = time.time() - 7200
         mgr.create_session({"name": "new_client"})
         assert mgr.get_session(sid) is None
 
