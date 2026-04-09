@@ -86,6 +86,10 @@ If a feature can't hit at least one, it doesn't ship.
 
 **Determinism** — Canonical ordering, tier pinning, fixed-precision rounding, content-based IDs, Kahan summation. Inspired by [He2025].
 
+**Thread Safety** — PDG async cook bridge uses `threading.Event` for cross-thread safety. Main thread dispatch has 120s timeout to prevent indefinite hangs. All material mutations undo-wrapped. Exception logging throughout (zero bare `except: pass`).
+
+**Geometry Introspection** — Bounding box, primitive type distribution (polygon/mesh/VDB/volume/packed), empty geometry detection, node state flags (display/render/bypass/lock). Large geometry guard skips attribute sampling above 1M points to prevent hangs.
+
 **Houdini Optional** — All 2,500+ tests run without Houdini. Core library has zero required dependencies.
 
 ---
@@ -383,7 +387,7 @@ block-beta
         s1["WebSocket Server"] s2["RateLimiter"] s3["CircuitBreaker"] s4["Watchdog"]
     end
     block:core["Core Layer"]
-        c1["Protocol"] c2["Determinism"] c3["Audit"] c4["Gates"]
+        c1["Protocol"] c2["Determinism"] c3["Audit"] c4["Gates"] c5["Threading"]
     end
 
     panel --> knowledge
@@ -434,13 +438,22 @@ Feature extraction uses word-boundary matching across 66 domain keywords coverin
 
 ```mermaid
 flowchart TB
-    subgraph Chain["Canonical Solaris Chain"]
-        SOP["SOPCreate\n(100)"] --> MatLib["MaterialLibrary\n(200)"]
+    subgraph Chain["Canonical Solaris Chain (39 node types)"]
+        Stage["StageManager\n(5)"] --> Prim["Primitive\n(10)"]
+        Prim --> SOP["SOPCreate/Import\n(100)"]
+        SOP --> Sub["Sublayer/Payload\n(150)"]
+        Sub --> MatLib["MaterialLibrary\n(200)"]
         MatLib --> |"preset: glass, metal,\nskin, cloth..."| Assign["AssignMaterial\n(220)"]
-        Assign --> Cam["Camera\n(400)"]
+        Assign --> Ref["Reference\n(250)"]
+        Ref --> Coll["Collection/Prune\n(280)"]
+        Coll --> Inst["PointInstancer\n(300)"]
+        Inst --> Cam["Camera\n(400)"]
         Cam --> Light["Lights\n(500-610)"]
-        Light --> Karma["KarmaRenderSettings\n(700)"]
-        Karma --> |"advanced: diffuse_limit,\ndenoiser, adaptive..."| ROP["USDRender ROP\n(800)"]
+        Light --> Layout["Layout/Edit\n(650)"]
+        Layout --> Var["Variants\n(670)"]
+        Var --> Karma["KarmaRenderSettings\n(700)"]
+        Karma --> |"17 advanced params:\ndiffuse_limit, denoiser,\nadaptive, motion blur..."| ROP["USDRender ROP\n(800)"]
+        ROP --> Out["Output\n(900)"]
     end
     subgraph AOV["Render Passes (auto-wired)"]
         ROP --> Beauty["beauty"]
@@ -450,18 +463,38 @@ flowchart TB
     end
 ```
 
-Material creation supports 10 presets (glass, mirror, rough_metal, polished_metal, skin, cloth, plastic, ceramic, wax, rubber) with category-based organization (`/materials/{category}/{name}`). Explicit parameters override preset values. Karma advanced settings cover 17 parameters including bounce depth limits, denoiser, adaptive sampling, and motion blur. Scene assembly can auto-configure AOV passes in a single call.
+Material creation supports 10 presets (glass, mirror, rough_metal, polished_metal, skin, cloth, plastic, ceramic, wax, rubber) with category-based organization (`/materials/{category}/{name}`). Explicit parameters override preset values. Karma advanced settings cover 17 parameters including bounce depth limits, denoiser, adaptive sampling, and motion blur. Scene assembly can auto-configure AOV passes in a single call. All material mutations are undo-wrapped (`hou.undos.group`).
 
 ### Lossless Execution Bridge
+
+```mermaid
+flowchart LR
+    subgraph Bridge["Lossless Execution Bridge"]
+        Op["Operation"] --> Undo["Undo Wrap\nhou.undos.group()"]
+        Undo --> Thread["Thread Safety\nhdefereval + 120s timeout"]
+        Thread --> Consent["Artist Consent\nINFORM/REVIEW/\nAPPROVE/CRITICAL"]
+        Consent --> Exec["Execute"]
+        Exec --> Integrity["Scene Integrity\nUSD composition\nvalidation"]
+    end
+    Integrity --> |"fidelity=1.0"| OK["✓ Commit"]
+    Integrity --> |"fidelity<1.0"| Rollback["✗ Undo + Surface"]
+    
+    subgraph PDG["PDG Async Bridge"]
+        Cook["Cook Request"] --> ThreadEvent["threading.Event\n(cross-thread safe)"]
+        ThreadEvent --> |"poll 250ms"| AsyncLoop["FastMCP\nAsync Loop"]
+    end
+```
 
 Four structural anchors enforced on every operation:
 
 | Anchor | Guarantee |
 |---|---|
-| **Undo Safety** | Every mutation wrapped in `hou.undos.group()` |
-| **Thread Safety** | All `hou.*` calls on main thread via `hdefereval` |
-| **Artist Consent** | INFORM / REVIEW / APPROVE / CRITICAL gates |
-| **Scene Integrity** | USD composition validation after mutation; rollback on violation |
+| **Undo Safety** | Every mutation wrapped in `hou.undos.group()` — materials, nodes, renders |
+| **Thread Safety** | All `hou.*` calls on main thread via `hdefereval` with 120s timeout |
+| **Artist Consent** | INFORM / REVIEW / APPROVE / CRITICAL gates with timeout-to-rejection |
+| **Scene Integrity** | USD composition validation after mutation; rollback on violation; exceptions logged |
+
+The PDG async cook bridge uses `threading.Event` (not `asyncio.Event`) for cross-thread safety between Houdini's main thread and FastMCP's async loop. Cook errors are captured and propagated rather than silently hanging.
 
 ### Self-Observability Loop
 
@@ -512,7 +545,7 @@ sequenceDiagram
 | **USD / Solaris** | `houdini_stage_info`, `houdini_get_usd_attribute`, `houdini_set_usd_attribute`, `houdini_create_usd_prim`, `houdini_modify_usd_prim`, `houdini_reference_usd` |
 | **Materials** | `houdini_create_material` (presets, categories, transmission/coat/IOR), `houdini_assign_material`, `houdini_read_material`, `houdini_create_textured_material` |
 | **Rendering** | `houdini_render`, `houdini_render_settings` (engine detection, 17 Karma advanced params), `houdini_wedge`, `houdini_capture_viewport` |
-| **Introspection** | `synapse_inspect_selection`, `synapse_inspect_scene`, `synapse_inspect_node` |
+| **Introspection** | `synapse_inspect_selection` (bbox, VDB detect, prim types, node flags), `synapse_inspect_scene`, `synapse_inspect_node` |
 | **Memory** | `synapse_context`, `synapse_search`, `synapse_recall`, `synapse_decide`, `synapse_add_memory`, `synapse_memory_write`, `synapse_memory_query`, `synapse_memory_status`, `synapse_evolve_memory`, `synapse_project_setup` |
 | **Diagnostics** | `synapse_diagnose`, `synapse_fix`, `synapse_preflight`, `synapse_error_translate` |
 | **Knowledge** | `synapse_explain`, `synapse_trace`, `synapse_vex_explain`, `synapse_vex_help`, `synapse_vex_write`, `synapse_knowledge_lookup`, `synapse_list_recipes` |
