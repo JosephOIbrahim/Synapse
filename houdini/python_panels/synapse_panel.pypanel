@@ -727,10 +727,16 @@ class SynapsePanel(QtWidgets.QWidget):
         splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         splitter.setObjectName("chat_splitter")
         splitter.setChildrenCollapsible(False)
-        handle_color = GRAPHITE if _HAS_DESIGN else "#222222"
+        handle_bg = GRAPHITE if _HAS_DESIGN else "#222222"
+        handle_border = CARBON if _HAS_DESIGN else "#333333"
         splitter.setStyleSheet(
-            "QSplitter::handle {{ background: {}; height: 3px; }}"
-            .format(handle_color)
+            "QSplitter::handle {{"
+            "  background: {bg};"
+            "  height: 5px;"
+            "  border-top: 1px solid {bd};"
+            "  border-bottom: 1px solid {bd};"
+            "}}"
+            .format(bg=handle_bg, bd=handle_border)
         )
 
         # Top: chat display (read-only HTML area)
@@ -797,34 +803,38 @@ class SynapsePanel(QtWidgets.QWidget):
         self._stop_btn.setToolTip("Stop response")
         self._stop_btn.setVisible(False)
         self._stop_btn.clicked.connect(self._on_stop_stream)
-        input_row.addWidget(self._stop_btn)
+        input_row.addWidget(self._stop_btn, 0, QtCore.Qt.AlignBottom)
 
         self._attach_btn = QtWidgets.QPushButton("\U0001F4CE")
         self._attach_btn.setObjectName("attach_button")
         self._attach_btn.setFixedSize(36, 36)
         self._attach_btn.setToolTip("Attach reference image")
         self._attach_btn.clicked.connect(self._on_attach_image)
-        input_row.addWidget(self._attach_btn)
+        input_row.addWidget(self._attach_btn, 0, QtCore.Qt.AlignBottom)
 
         self._chat_input = QtWidgets.QPlainTextEdit()
         self._chat_input.setObjectName("chat_input")
         self._chat_input.setPlaceholderText("Type a message or /help for commands...")
         self._chat_input.setTabChangesFocus(True)
         self._chat_input.setMinimumHeight(40)
-        self._chat_input.setMaximumHeight(200)
+        self._chat_input.setMaximumHeight(300)
         self._chat_input.installEventFilter(_InputKeyFilter(self._chat_input, self))
-        input_row.addWidget(self._chat_input, stretch=1)
+        input_row.addWidget(self._chat_input, 1)
 
         self._send_btn = QtWidgets.QPushButton("Send")
         self._send_btn.setObjectName("send_button")
         self._send_btn.clicked.connect(self._on_send_chat)
-        input_row.addWidget(self._send_btn)
+        input_row.addWidget(self._send_btn, 0, QtCore.Qt.AlignBottom)
 
         input_layout.addWidget(input_row_widget)
         splitter.addWidget(input_widget)
 
-        # Chat dominant, input compact
-        splitter.setSizes([700, 80])
+        # Chat dominant, input roomy — 2x default height gives the artist
+        # enough room to compose multi-line prompts without resizing first.
+        # Stretch factor 0 on input keeps it stable when the panel resizes.
+        splitter.setStretchFactor(0, 1)   # chat display stretches
+        splitter.setStretchFactor(1, 0)   # input stays fixed
+        splitter.setSizes([600, 160])
 
         layout.addWidget(splitter)
 
