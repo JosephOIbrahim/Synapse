@@ -42,7 +42,7 @@ If a feature can't hit at least one, it doesn't ship.
 
 ## Key Features
 
-**Core Bridge** — 108 MCP tools give Claude full Houdini control: nodes, parameters, USD, materials, lighting, rendering, viewport capture, VEX execution. Material presets (glass, metal, skin, cloth, etc.) with category hierarchy. Karma advanced rendering with 23 configurable parameters including bounce limits, denoiser, adaptive sampling, motion blur timing, and XPU optimizations. Real-time WebSocket communication with production resilience (rate limiting, circuit breaker, port failover, watchdog, backpressure). PDG cook failures caught and surfaced (never crash silently).
+**Core Bridge** — 108 MCP tools give Claude full Houdini control: nodes, parameters, USD, materials, lighting, rendering, viewport capture, VEX execution. Material presets (glass, metal, skin, cloth, etc.) with category hierarchy. MaterialX auto-populate: creating a materiallibrary node automatically scaffolds an `mtlxstandard_surface` shader and UV reader — no empty shells. Professional vertical layout: Solaris networks wire as clean top-to-bottom columns matching studio conventions, not Houdini's default scattered arrangement. Karma advanced rendering with 23 configurable parameters including bounce limits, denoiser, adaptive sampling, motion blur timing, and XPU optimizations. Real-time WebSocket communication with production resilience (rate limiting, circuit breaker, port failover, watchdog, backpressure). PDG cook failures caught and surfaced (never crash silently).
 
 **Persistent Memory** — Three-layer memory system (cognitive substrate, project, scene) stored alongside your HIP file. Memory evolves from flat markdown to structured USD to composed USD with cross-scene composition arcs — automatically, when the data warrants it.
 
@@ -465,6 +465,41 @@ flowchart TB
 
 Material creation supports 10 presets (glass, mirror, rough_metal, polished_metal, skin, cloth, plastic, ceramic, wax, rubber) with category-based organization (`/materials/{category}/{name}`). Explicit parameters override preset values. Karma advanced settings cover 23 parameters including bounce depth limits, denoiser, adaptive sampling, motion blur timing (shutter open/close, transform/geo samples), variance threshold, and XPU light culling. Scene assembly can auto-configure AOV passes in a single call. All material mutations are undo-wrapped (`hou.undos.group`).
 
+### Node Layout (Professional Vertical Wiring)
+
+```mermaid
+flowchart TB
+    subgraph Before["Before: layoutChildren() ❌"]
+        direction TB
+        B1["Scattered nodes"] -.-> B2["Unpredictable\narrangement"]
+        B2 -.-> B3["Horizontal sprawl"]
+    end
+    subgraph After["After: setPosition() ✓"]
+        direction TB
+        A1["componentgeometry"] --> A2["materiallibrary\n+ auto mtlxstandard_surface"]
+        A2 --> A3["componentoutput"]
+        A3 --> A4["camera"]
+        A4 --> A5["domelight"]
+        A5 --> A6["rendersettings"]
+        A6 --> A7["usd_rop"]
+    end
+    subgraph DAG["DAG Layout (merge topologies)"]
+        direction TB
+        D1["asset_A"] & D2["asset_B"] & D3["asset_C"] --> D4["merge"]
+        D4 --> D5["materiallibrary"]
+        D5 --> D6["karma → rop"]
+    end
+```
+
+Two layout modes replace Houdini's black-box `layoutChildren()`:
+
+| Mode | When | Algorithm |
+|---|---|---|
+| **Vertical Chain** | Linear topologies (assemble_chain, linear build_graph) | Single column, 1.2 unit spacing, top-to-bottom |
+| **Layered DAG** | Merge/fan-out topologies (DAG build_graph) | Depth layers via topo sort, centered horizontal spread per layer |
+
+Layout uses explicit `node.setPosition(hou.Vector2(x, y))` — deterministic, predictable, and matching the vertical column style used by professional VFX artists in production Solaris networks.
+
 ### Solaris Graph Templates
 
 ```mermaid
@@ -577,7 +612,7 @@ sequenceDiagram
 | --- | --- |
 | **System** | `synapse_ping`, `synapse_health` |
 | **Scene** | `houdini_scene_info`, `houdini_get_selection` |
-| **Nodes** | `houdini_create_node`, `houdini_delete_node`, `houdini_connect_nodes`, `houdini_modify_node` |
+| **Nodes** | `houdini_create_node` (auto-populates materiallibrary with MaterialX), `houdini_delete_node`, `houdini_connect_nodes`, `houdini_modify_node` |
 | **Parameters** | `houdini_get_parm`, `houdini_set_parm`, `houdini_set_keyframe` |
 | **Execution** | `houdini_execute_python`, `houdini_execute_vex` |
 | **USD / Solaris** | `houdini_stage_info`, `houdini_get_usd_attribute`, `houdini_set_usd_attribute`, `houdini_create_usd_prim`, `houdini_modify_usd_prim`, `houdini_reference_usd` |

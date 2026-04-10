@@ -6,8 +6,17 @@ Extracted to avoid circular imports between handler modules.
 """
 
 import os
+from collections import defaultdict
+from typing import Any, Dict, List, Optional
 
 from ..core.aliases import USD_PARM_ALIASES
+
+try:
+    import hou
+    _HOU_AVAILABLE = True
+except ImportError:
+    hou = None  # type: ignore[assignment]
+    _HOU_AVAILABLE = False
 
 
 _HOUDINI_UNAVAILABLE = (
@@ -229,3 +238,109 @@ def _render_diagnostic_checklist(node):
         pass
 
     return result
+
+
+# ── Vertical Layout Helpers ────────────────────────────────────────────────
+#
+# Professional VFX artists wire Solaris networks as clean vertical columns —
+# top-to-bottom, single-column for linear chains, layered columns for DAGs.
+# These helpers replace Houdini's `layoutChildren()` black-box algorithm with
+# explicit `setPosition()` calls that produce network layouts matching the
+# reference style used in professional studios.
+#
+# Houdini network editor coordinates:
+#   - X increases rightward
+#   - Y increases upward (so top-to-bottom flow = decreasing Y)
+#
+# Spacing constants tuned to match H21 default node sizes in LOP networks.
+
+# Vertical distance between consecutive nodes (units in network editor)
+VERTICAL_SPACING = 1.2
+# Horizontal distance between parallel streams in a DAG
+HORIZONTAL_SPACING = 3.5
+
+
+def _layout_vertical_chain(
+    nodes: list,
+    start_x: float = 0.0,
+    start_y: float = 0.0,
+    spacing: float = VERTICAL_SPACING,
+) -> None:
+    """Position nodes in a clean vertical column, top to bottom.
+
+    This is the layout professional VFX artists use for linear Solaris chains:
+    componentgeometry → materiallibrary → camera → domelight → rendersettings → rop
+
+    Args:
+        nodes: List of hou.Node objects in chain order (first = top).
+        start_x: X coordinate for the column center.
+        start_y: Y coordinate for the top node.
+        spacing: Vertical distance between nodes.
+    """
+    if not _HOU_AVAILABLE or not nodes:
+        return
+    for i, node in enumerate(nodes):
+        node.setPosition(hou.Vector2(start_x, start_y - i * spacing))
+
+
+def _layout_dag_vertical(
+    sorted_ids: List[str],
+    connections: List[Dict[str, Any]],
+    id_to_hou: Dict[str, Any],
+    start_x: float = 0.0,
+    start_y: float = 0.0,
+    v_spacing: float = VERTICAL_SPACING,
+    h_spacing: float = HORIZONTAL_SPACING,
+) -> None:
+    """Position DAG nodes in layered vertical columns.
+
+    Assigns each node to a depth layer (BFS from roots), then positions
+    layers top-to-bottom. Nodes within the same layer are spread
+    horizontally, centered on start_x. Single-node layers stay on the
+    center column for a clean vertical spine.
+
+    Args:
+        sorted_ids: Topologically sorted node IDs.
+        connections: List of {from, to, input?, output?} connection dicts.
+        id_to_hou: Mapping from node ID to hou.Node.
+        start_x: X center coordinate.
+        start_y: Y coordinate for the top layer.
+        v_spacing: Vertical distance between layers.
+        h_spacing: Horizontal distance between nodes in the same layer.
+    """
+    if not _HOU_AVAILABLE or not sorted_ids:
+        return
+
+    # Build parent→children adjacency
+    children_of: Dict[str, List[str]] = defaultdict(list)
+    parents_of: Dict[str, List[str]] = defaultdict(list)
+    for conn in connections:
+        children_of[conn["from"]].append(conn["to"])
+        parents_of[conn["to"]].append(conn["from"])
+
+    # Assign depth: each node's depth = max(parent depths) + 1
+    # Roots (no parents) get depth 0. This stretches the graph vertically
+    # so connections flow cleanly downward without crossing.
+    depth: Dict[str, int] = {}
+    for nid in sorted_ids:
+        parent_depths = [depth[p] for p in parents_of[nid] if p in depth]
+        depth[nid] = (max(parent_depths) + 1) if parent_depths else 0
+
+    # Group nodes by depth layer
+    layers: Dict[int, List[str]] = defaultdict(list)
+    for nid in sorted_ids:
+        layers[depth[nid]].append(nid)
+
+    # Position each layer
+    max_depth = max(layers.keys()) if layers else 0
+    for d in range(max_depth + 1):
+        layer_nodes = layers[d]
+        n = len(layer_nodes)
+        # Center the layer horizontally around start_x
+        layer_width = (n - 1) * h_spacing
+        left_x = start_x - layer_width / 2.0
+        y = start_y - d * v_spacing
+        for i, nid in enumerate(layer_nodes):
+            if nid in id_to_hou:
+                x = left_x + i * h_spacing
+                id_to_hou[nid].setPosition(hou.Vector2(x, y))

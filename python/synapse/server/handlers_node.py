@@ -15,9 +15,13 @@ try:
 except ImportError:
     HOU_AVAILABLE = False
 
+import logging
+
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.errors import NodeNotFoundError, HoudiniUnavailableError
 from .handler_helpers import _HOUDINI_UNAVAILABLE
+
+_log = logging.getLogger(__name__)
 
 
 def _suggest_children(parent_path: str) -> str:
@@ -59,6 +63,48 @@ class NodeHandlerMixin:
 
             new_node.moveToGoodPosition()
 
+            result = {
+                "path": new_node.path(),
+                "type": node_type,
+                "name": new_node.name(),
+            }
+
+            # Auto-populate materiallibrary with MaterialX shader nodes.
+            # Professional VFX artists expect a materiallibrary to contain
+            # a ready-to-use MaterialX standard surface shader — creating
+            # an empty materiallibrary is never useful.
+            if node_type in ("materiallibrary",):
+                try:
+                    new_node.cook(force=True)
+                    mat_name = new_node.name()
+                    shader = new_node.createNode(
+                        "mtlxstandard_surface", mat_name + "_shader"
+                    )
+                    if shader is not None:
+                        # Create UV coordinate reader (shared across textures)
+                        uv_node = new_node.createNode(
+                            "mtlxgeompropvalue", "uv_reader"
+                        )
+                        if uv_node:
+                            sig_parm = uv_node.parm("signature")
+                            if sig_parm:
+                                sig_parm.set("vector2")
+                            prop_parm = uv_node.parm("geomprop")
+                            if prop_parm:
+                                prop_parm.set("st")
+                        new_node.layoutChildren()
+                        result["shader_path"] = shader.path()
+                        result["shader_type"] = "mtlxstandard_surface"
+                        if uv_node:
+                            result["uv_reader_path"] = uv_node.path()
+                        result["materialx_ready"] = True
+                except Exception as exc:
+                    _log.warning(
+                        "Auto-populate materiallibrary with MaterialX failed: %s",
+                        exc,
+                    )
+                    result["materialx_ready"] = False
+
             # Track node in session (logging handled by generic executor in handle())
             bridge = self._get_bridge()  # type: ignore[attr-defined]
             if bridge and self._session_id:  # type: ignore[attr-defined]
@@ -66,11 +112,7 @@ class NodeHandlerMixin:
                 if session:
                     session.nodes_created.append(new_node.path())
 
-            return {
-                "path": new_node.path(),
-                "type": node_type,
-                "name": new_node.name(),
-            }
+            return result
 
         return run_on_main(_on_main)
 

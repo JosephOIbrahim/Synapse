@@ -15,7 +15,7 @@ except ImportError:
 
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.errors import NodeNotFoundError, HoudiniUnavailableError
-from .handler_helpers import _HOUDINI_UNAVAILABLE
+from .handler_helpers import _HOUDINI_UNAVAILABLE, _layout_vertical_chain
 
 
 # Canonical Solaris chain ordering.  Lower number = earlier in chain.
@@ -289,9 +289,27 @@ class SolarisAssembleMixin:
                 chain_paths.append(node.path())
                 prev = node
 
-            # Layout for readability
+            # Layout: position all chain nodes in a clean vertical column.
+            # Professional VFX artists wire Solaris networks top-to-bottom
+            # in a single column — this replaces layoutChildren() which
+            # produces unpredictable arrangements.
             if not dry_run and wired:
-                parent_node.layoutChildren()
+                # Collect ordered chain nodes for positioning
+                chain_hou_nodes = []
+                for path in chain_paths:
+                    n = hou.node(path)
+                    if n is not None:
+                        chain_hou_nodes.append(n)
+                # Anchor position: if we have an anchor node, start from
+                # its position. Otherwise start at origin.
+                if anchor is not None:
+                    anchor_pos = anchor.position()
+                    start_x = anchor_pos[0]
+                    start_y = anchor_pos[1]
+                else:
+                    start_x = 0.0
+                    start_y = 0.0
+                _layout_vertical_chain(chain_hou_nodes, start_x, start_y)
 
             result = {
                 "wired": wired,

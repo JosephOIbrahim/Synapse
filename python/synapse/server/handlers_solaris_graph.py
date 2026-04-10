@@ -18,6 +18,7 @@ except ImportError:
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.errors import NodeNotFoundError, HoudiniUnavailableError, SynapseUserError
 from .solaris_graph_templates import expand_template, TEMPLATES
+from .handler_helpers import _layout_dag_vertical, _layout_vertical_chain
 
 logger = logging.getLogger(__name__)
 
@@ -364,13 +365,21 @@ class SolarisGraphMixin:
                         node.setComment("SYNAPSE: build_graph")
                         node.setGenericFlag(hou.nodeFlag.DisplayComment, True)
 
-                    # 5. Layout BEFORE display flag — layoutChildren() can
-                    # trigger a cook cascade via display-state evaluation.
-                    # If the display flag is already on a karmarenderproperties
-                    # node, layout forces Karma XPU GPU context init on the
-                    # main thread while the viewport may also be initializing
-                    # the same GPU context → CUDA double-init → segfault.
-                    parent_node.layoutChildren()
+                    # 5. Layout BEFORE display flag — position nodes in clean
+                    # vertical columns instead of Houdini's black-box
+                    # layoutChildren(). Professional VFX artists use top-to-
+                    # bottom vertical chains. This also avoids the GPU context
+                    # init race condition that layoutChildren() can trigger
+                    # with Karma nodes (CUDA double-init → segfault).
+                    if topology == "linear":
+                        # Simple vertical column for linear chains
+                        ordered_nodes = [id_to_hou[nid] for nid in sorted_ids]
+                        _layout_vertical_chain(ordered_nodes)
+                    else:
+                        # Layered vertical DAG for merge/fan-out topologies
+                        _layout_dag_vertical(
+                            sorted_ids, raw_connections, id_to_hou
+                        )
 
                     # 6. Display flag AFTER layout — now the cook triggered
                     # by setDisplayFlag runs on a fully-laid-out, wired
