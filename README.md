@@ -8,7 +8,7 @@
   <a href="https://github.com/JosephOIbrahim/Synapse"><img src="https://img.shields.io/badge/version-6.0.0-blue.svg" alt="Version"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-%3E%3D3.9-blue.svg" alt="Python"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-2500%2B%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-2559%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="python/synapse/core/protocol.py"><img src="https://img.shields.io/badge/protocol-v4.0.0-orange.svg" alt="Protocol"></a>
   <a href="python/synapse/mcp"><img src="https://img.shields.io/badge/MCP%20tools-108-blueviolet.svg" alt="MCP Tools"></a>
   <a href="shared"><img src="https://img.shields.io/badge/MOE%20agents-6-ff69b4.svg" alt="MOE Agents"></a>
@@ -86,11 +86,11 @@ If a feature can't hit at least one, it doesn't ship.
 
 **Determinism** — Canonical ordering, tier pinning, fixed-precision rounding, content-based IDs, Kahan summation. Inspired by [He2025].
 
-**Thread Safety** — PDG async cook bridge uses `threading.Event` for cross-thread safety. Main thread dispatch has 120s timeout to prevent indefinite hangs. All material mutations undo-wrapped. Exception logging throughout (zero bare `except: pass`).
+**Thread Safety** — PDG async cook bridge uses `threading.Event` for cross-thread safety. Main thread dispatch has 120s timeout to prevent indefinite hangs. All `hou.*` calls in memory and render handlers routed through `run_on_main()`. RecommendationHistory protected by `threading.Lock` for concurrent CONDUCTOR/panel access. All material mutations undo-wrapped. Exception logging throughout (zero bare `except: pass`).
 
 **Geometry Introspection** — Bounding box, primitive type distribution (polygon/mesh/VDB/volume/packed), empty geometry detection, node state flags (display/render/bypass/lock). Large geometry guard skips attribute sampling above 1M points to prevent hangs.
 
-**Houdini Optional** — All 2,500+ tests run without Houdini. Core library has zero required dependencies.
+**Houdini Optional** — All 2,559 tests run without Houdini. Core library has zero required dependencies.
 
 ---
 
@@ -248,7 +248,7 @@ pip install -e ".[dev,websocket,mcp,routing,encryption]"
 python -m pytest tests/ -v
 ```
 
-All 2,500+ tests run without Houdini. No license needed.
+All 2,559 tests run without Houdini. No license needed.
 
 &nbsp;
 
@@ -432,7 +432,7 @@ flowchart LR
     Bridge --> Verify["IntegrityBlock\nfidelity = 1.0"]
 ```
 
-Feature extraction uses word-boundary matching across 66 domain keywords covering 12 signal domains (async, MCP, error handling, VEX, geometry, USD, MaterialX, APEX, COPs, rendering, PDG, testing). Includes renderer-specific terms (xpu, mantra, ipr, denoiser, aov, lpe), SOP vocabulary (sop, volume, polygon), USD composition terms (payload, sublayer, collection), and MaterialX concepts (texture, bsdf, nodegraph). The router scores all 6 agents, selects a primary (owns the deliverable) and an advisory (reviews), with 10 hand-tuned fast paths and auto-promotion of frequent fingerprints to session fast paths.
+Feature extraction uses word-boundary matching across 73 domain keywords covering 12 signal domains (async, MCP, error handling, VEX, geometry, USD, MaterialX, APEX, COPs, rendering, PDG, testing). Includes renderer-specific terms (xpu, mantra, ipr, denoiser, aov, lpe), SOP vocabulary (sop, volume, polygon), USD composition terms (payload, sublayer, collection, inherits, specializes, reference, relationship, attribute, schema, scenegraph), and MaterialX concepts (texture, bsdf, nodegraph). The router scores all 6 agents, selects a primary (owns the deliverable) and an advisory (reviews), with 10 hand-tuned fast paths and auto-promotion of frequent fingerprints to session fast paths.
 
 ### Solaris Pipeline
 
@@ -519,7 +519,7 @@ flowchart LR
     end
 ```
 
-Seven pre-built topology templates for common Solaris DAG patterns. Scene templates produce renderable scenes with canonical render tails. Lighting templates provide photorealistic setups (HDRI outdoor, studio 3-point). Utility templates handle render pass fan-out and variant preview workflows.
+Seven pre-built topology templates for common Solaris DAG patterns, all validated by 63 pure-Python tests. Scene templates produce renderable scenes with canonical render tails. Lighting templates provide photorealistic setups (HDRI outdoor, studio 3-point). Utility templates handle render pass fan-out and variant preview workflows.
 
 ### Lossless Execution Bridge
 
@@ -579,7 +579,7 @@ flowchart TB
     Router["Router\nfingerprint_counts()"] --> Advisor
     Evolution["Evolution\nEvolutionIntegrity failures"] --> Advisor
     Advisor["ConductorAdvisor\n.analyze()"] --> Recs["list[Recommendation]\nkind / target / severity"]
-    Recs --> History["RecommendationHistory\nJSONL persistence"]
+    Recs --> History["RecommendationHistory\nJSONL persistence\nthreading.Lock protected"]
     History --> Meta["ConductorAdvisor\n.analyze_history()"]
     Meta --> |"same issue 5+ times\n→ escalate"| Recs
     Recs --> Panel["Agent Health Panel\n(collapsible Qt section)"]
@@ -952,7 +952,7 @@ Synapse/
 
 ## Status
 
-Synapse is under active development. All layers are well-tested (2,500+ unit tests, mypy clean on 148 source files). The WebSocket server, viewport capture, scene diagnostics, knowledge transfer, and MOE agent infrastructure have been validated in single-user VFX workflows. The self-observability loop is tested end-to-end with 116 conformance tests pinning the recursive substrate. Use in production at your own discretion.
+Synapse is under active development. All layers are well-tested (2,559 unit tests, mypy clean on 148 source files). The WebSocket server, viewport capture, scene diagnostics, knowledge transfer, and MOE agent infrastructure have been validated in single-user VFX workflows. The self-observability loop is tested end-to-end with 116 conformance tests pinning the recursive substrate. Use in production at your own discretion.
 
 ---
 
