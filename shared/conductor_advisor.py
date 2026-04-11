@@ -28,6 +28,7 @@ failure modes — now CONDUCTOR interprets it for action.
 from __future__ import annotations
 
 import json
+import threading
 from collections import Counter, deque
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -366,6 +367,10 @@ class RecommendationHistory:
     bridge operation log from pass 4). Each `record()` call appends one or
     more entries; `recent(n)` returns the most recent. Persistence is JSONL
     so it's diff-friendly, append-friendly, and survives partial writes.
+
+    Thread-safe: all mutations and reads are protected by a lock. The
+    CONDUCTOR agent may run in a background thread while the panel reads
+    history for display — the lock prevents deque corruption.
     """
 
     DEFAULT_CAPACITY: int = 500
@@ -374,13 +379,15 @@ class RecommendationHistory:
         cap = capacity if capacity is not None else self.DEFAULT_CAPACITY
         self._capacity: int = cap
         self._entries: deque[HistoryEntry] = deque(maxlen=cap)
+        self._lock = threading.Lock()
 
     @property
     def capacity(self) -> int:
         return self._capacity
 
     def __len__(self) -> int:
-        return len(self._entries)
+        with self._lock:
+            return len(self._entries)
 
     def record(
         self,
@@ -390,22 +397,26 @@ class RecommendationHistory:
         """Append recommendations with a single timestamp. Returns count."""
         ts = timestamp or datetime.now().isoformat()
         n = 0
-        for rec in recommendations:
-            self._entries.append(HistoryEntry(timestamp=ts, recommendation=rec))
-            n += 1
+        with self._lock:
+            for rec in recommendations:
+                self._entries.append(HistoryEntry(timestamp=ts, recommendation=rec))
+                n += 1
         return n
 
     def recent(self, n: int = 50) -> list[HistoryEntry]:
         if n <= 0:
             return []
-        return list(self._entries)[-n:]
+        with self._lock:
+            return list(self._entries)[-n:]
 
     def all(self) -> list[HistoryEntry]:
-        return list(self._entries)
+        with self._lock:
+            return list(self._entries)
 
     def clear(self) -> int:
-        n = len(self._entries)
-        self._entries.clear()
+        with self._lock:
+            n = len(self._entries)
+            self._entries.clear()
         return n
 
     # ── Persistence ────────────────────────────────────────────
@@ -416,11 +427,13 @@ class RecommendationHistory:
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         tmp = p.with_suffix(p.suffix + ".tmp")
+        with self._lock:
+            snapshot = list(self._entries)
         with tmp.open("w", encoding="utf-8") as f:
-            for entry in self._entries:
+            for entry in snapshot:
                 f.write(json.dumps(entry.to_dict(), default=str) + "\n")
         tmp.replace(p)
-        return len(self._entries)
+        return len(snapshot)
 
     @classmethod
     def from_jsonl(

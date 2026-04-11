@@ -156,6 +156,10 @@ DOMAIN_KEYWORDS: dict[str, DomainSignal] = {
     "variant": DomainSignal.USD, "layer": DomainSignal.USD,
     "payload": DomainSignal.USD, "sublayer": DomainSignal.USD,
     "collection": DomainSignal.USD,
+    "inherits": DomainSignal.USD, "specializes": DomainSignal.USD,
+    "reference": DomainSignal.USD, "relationship": DomainSignal.USD,
+    "attribute": DomainSignal.USD, "schema": DomainSignal.USD,
+    "scenegraph": DomainSignal.USD,
     # MaterialX
     "materialx": DomainSignal.MATERIALX, "mtlx": DomainSignal.MATERIALX,
     "shader": DomainSignal.MATERIALX, "material": DomainSignal.MATERIALX,
