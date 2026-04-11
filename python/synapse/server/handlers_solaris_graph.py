@@ -398,8 +398,10 @@ class SolarisGraphMixin:
                 # undo to prevent undo stack corruption.
                 try:
                     hou.undos.performUndo()
-                except Exception:
-                    pass
+                except Exception as undo_exc:
+                    logger.warning(
+                        "build_graph: undo rollback also failed: %s", undo_exc
+                    )
                 raise
 
             return {

@@ -28,6 +28,9 @@ from synapse.server.solaris_graph_templates import (
     sublayer_stack,
     render_pass_split,
     lighting_rig,
+    hdri_lighting,
+    instanceable_assets,
+    variant_selector,
     expand_template,
     TEMPLATES,
 )
@@ -533,3 +536,148 @@ class TestSystemPromptGuidance:
         """Guidance explains merge input ordering."""
         from synapse.panel.system_prompt import _SOLARIS_CONTEXT_GUIDANCE
         assert "opinion strength" in _SOLARIS_CONTEXT_GUIDANCE or "input 0" in _SOLARIS_CONTEXT_GUIDANCE
+
+
+# =============================================================================
+# TestHdriLighting — hdri_lighting template
+# =============================================================================
+
+
+class TestHdriLighting:
+    """Tests for hdri_lighting() template."""
+
+    def test_default_includes_sun_and_render(self):
+        result = hdri_lighting()
+        node_ids = {n["id"] for n in result["nodes"]}
+        assert "hdri_dome" in node_ids
+        assert "physical_sky" in node_ids
+        assert "sun" in node_ids
+        assert "karma_settings" in node_ids
+        assert "rop" in node_ids
+        assert "output" in node_ids
+
+    def test_no_sun(self):
+        result = hdri_lighting(include_sun=False)
+        node_ids = {n["id"] for n in result["nodes"]}
+        assert "sun" not in node_ids
+        assert "hdri_dome" in node_ids
+        assert "physical_sky" in node_ids
+
+    def test_no_render(self):
+        result = hdri_lighting(include_render=False)
+        node_ids = {n["id"] for n in result["nodes"]}
+        assert "karma_settings" not in node_ids
+        assert "rop" not in node_ids
+        assert "output" in node_ids
+
+    def test_linear_chain_valid(self):
+        result = hdri_lighting()
+        valid, errors, _ = validate_graph(
+            result["nodes"], result["connections"], result["display_node"]
+        )
+        assert valid, f"hdri_lighting graph invalid: {errors}"
+
+    def test_display_node_is_output(self):
+        result = hdri_lighting()
+        assert result["display_node"] == "output"
+
+    def test_connection_flow_top_to_bottom(self):
+        """All connections flow scene_input → dome → sky → sun → ... → output."""
+        result = hdri_lighting()
+        from_ids = [c["from"] for c in result["connections"]]
+        assert from_ids[0] == "scene_input"
+        assert "hdri_dome" in from_ids
+        assert "physical_sky" in from_ids
+
+
+# =============================================================================
+# TestInstanceableAssets — instanceable_assets template
+# =============================================================================
+
+
+class TestInstanceableAssets:
+    """Tests for instanceable_assets() template."""
+
+    def test_default_three_assets(self):
+        result = instanceable_assets()
+        node_ids = {n["id"] for n in result["nodes"]}
+        assert "asset_0" in node_ids
+        assert "asset_1" in node_ids
+        assert "asset_2" in node_ids
+        assert "merge" in node_ids
+        assert "layout" in node_ids
+
+    def test_custom_asset_count(self):
+        result = instanceable_assets(asset_count=5)
+        node_ids = {n["id"] for n in result["nodes"]}
+        for i in range(5):
+            assert f"asset_{i}" in node_ids
+
+    def test_merge_inputs_contiguous(self):
+        """Each asset connects to merge at contiguous input indices."""
+        result = instanceable_assets(asset_count=4)
+        merge_inputs = [
+            c["input"] for c in result["connections"] if c["to"] == "merge"
+        ]
+        assert sorted(merge_inputs) == [0, 1, 2, 3]
+
+    def test_asset_count_zero_raises(self):
+        with pytest.raises(ValueError, match="asset_count must be >= 1"):
+            instanceable_assets(asset_count=0)
+
+    def test_valid_graph(self):
+        result = instanceable_assets()
+        valid, errors, _ = validate_graph(
+            result["nodes"], result["connections"], result["display_node"]
+        )
+        assert valid, f"instanceable_assets graph invalid: {errors}"
+
+    def test_no_camera_no_lights(self):
+        result = instanceable_assets(include_camera=False, include_lights=False)
+        node_types = {n["type"] for n in result["nodes"]}
+        assert "camera" not in node_types
+        assert "domelight" not in node_types
+
+
+# =============================================================================
+# TestVariantSelector — variant_selector template
+# =============================================================================
+
+
+class TestVariantSelector:
+    """Tests for variant_selector() template."""
+
+    def test_default_structure(self):
+        result = variant_selector()
+        node_ids = {n["id"] for n in result["nodes"]}
+        assert "asset_input" in node_ids
+        assert "explore" in node_ids
+        assert "select" in node_ids
+        assert "output" in node_ids
+
+    def test_default_variant_names(self):
+        result = variant_selector(variant_count=3)
+        assert result["variant_names"] == ["variant_0", "variant_1", "variant_2"]
+
+    def test_custom_variant_names(self):
+        result = variant_selector(variant_names=["red", "green", "blue"])
+        assert result["variant_names"] == ["red", "green", "blue"]
+
+    def test_linear_chain_order(self):
+        """asset_input → explore → select → output."""
+        result = variant_selector()
+        conn_pairs = [(c["from"], c["to"]) for c in result["connections"]]
+        assert ("asset_input", "explore") in conn_pairs
+        assert ("explore", "select") in conn_pairs
+        assert ("select", "output") in conn_pairs
+
+    def test_valid_graph(self):
+        result = variant_selector()
+        valid, errors, _ = validate_graph(
+            result["nodes"], result["connections"], result["display_node"]
+        )
+        assert valid, f"variant_selector graph invalid: {errors}"
+
+    def test_display_node_is_output(self):
+        result = variant_selector()
+        assert result["display_node"] == "output"

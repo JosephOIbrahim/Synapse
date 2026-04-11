@@ -776,8 +776,8 @@ class RenderHandlerMixin:
                                     if child.type().name() == "karmarenderproperties":
                                         karma_lop_path = child.path()
                                         break
-            except Exception:
-                pass  # Fall back to ROP path for settings
+            except Exception as exc:
+                logger.debug("Karma LOP discovery failed, using ROP path: %s", exc)
 
         # Wrap get/set_render_settings to target the Karma LOP if discovered.
         # The orchestrator always passes the ROP path, but the quality parms

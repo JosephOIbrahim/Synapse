@@ -80,6 +80,31 @@ class MOERouter:
         self._session_fast_paths: dict[str, tuple[AgentID, AgentID | None, str]] = {}
 
     def route(self, features: RoutingFeatures) -> RoutingDecision:
+        """Route a task to primary + optional advisory agent.
+
+        Decision hierarchy (first match wins):
+          1. Hand-tuned FAST_PATHS (after calibration period)
+          2. Session-learned fast paths (R12 auto-promoted, R16 hash-validated)
+          3. Full scoring across all 6 agents
+
+        Advisory selection (R15): second-highest agent must clear both an
+        absolute score floor (ADVISORY_SCORE_THRESHOLD) and a relative gap
+        ratio (ADVISORY_GAP_RATIO * primary_score) to be included.
+
+        Auto-promotion (R12): fingerprints hitting FAST_PATH_PROMOTION_THRESHOLD
+        are promoted to session fast paths, stamped with CONSTANTS_HASH so
+        they auto-invalidate if the keyword tables change.
+
+        Args:
+            features: 4-dimension feature vector (task_type, complexity,
+                      domain_signals, urgency) with .fingerprint() for
+                      fast-path lookup.
+
+        Returns:
+            RoutingDecision with primary agent, optional advisory, scores,
+            method ('fast_path', 'session_fast_path', or 'scored'), and
+            the input features for audit.
+        """
         self._call_count += 1
         fingerprint = features.fingerprint()
         self._fingerprint_counts[fingerprint] = (
