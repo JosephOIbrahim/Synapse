@@ -27,13 +27,22 @@ class MemoryHandlerMixin:
 
         Returns: {hip_path, hip_dir, job_path}
         Raises RuntimeError if Houdini is not available.
+
+        Thread-safe: dispatches hou.* calls to the main thread via
+        run_on_main() to avoid crashes when called from the MCP async loop.
         """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
-        hip_path = hou.hipFile.path()
-        hip_dir = os.path.dirname(hip_path)
-        job_path = hou.getenv("JOB", hip_dir)
-        return {"hip_path": hip_path, "hip_dir": hip_dir, "job_path": job_path}
+
+        from .main_thread import run_on_main
+
+        def _on_main():
+            hip_path = hou.hipFile.path()
+            hip_dir = os.path.dirname(hip_path)
+            job_path = hou.getenv("JOB", hip_dir)
+            return {"hip_path": hip_path, "hip_dir": hip_dir, "job_path": job_path}
+
+        return run_on_main(_on_main)
 
     def _handle_memory_context(self, payload: Dict) -> Dict:
         """Handle context/engram_context command."""

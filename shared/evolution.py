@@ -342,6 +342,16 @@ class LosslessEvolution:
         # Stage 2: EXTRACT
         parsed = parse_markdown_memory(md_path)
 
+        # Guard: reject empty parsed memory — evolving nothing to USD
+        # would produce a valid but useless file, and the lossless
+        # verification would pass (empty → empty = fidelity 1.0).
+        if (not parsed.sessions and not parsed.decisions
+                and not parsed.assets and not parsed.parameters):
+            return EvolutionResult(
+                evolved=False,
+                reason="Parsed memory contains no structured data",
+            )
+
         # Stage 3a: PRESERVE (immutable backup for rollback)
         archive_path = md_path.replace('.md', '_pre_evolution.md')
         shutil.copy2(md_path, archive_path)

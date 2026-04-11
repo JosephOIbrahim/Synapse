@@ -97,14 +97,14 @@ class RenderHandlerMixin:
         width = resolve_param_with_default(payload, "width", 800)
         height = resolve_param_with_default(payload, "height", 600)
 
-        temp_dir = Path(hou.text.expandString("$HOUDINI_TEMP_DIR"))
         ext = "jpg" if fmt == "jpeg" else "png"
         timestamp = int(time.time() * 1000)
-        # Flipbook requires $F4 frame pattern in output path
-        out_pattern = str(temp_dir / f"synapse_cap_{timestamp}.$F4.{ext}")
 
         def _flipbook_on_main_thread():
             """Runs on Houdini's main thread."""
+            # hou.text.expandString must run on main thread (thread safety)
+            temp_dir = Path(hou.text.expandString("$HOUDINI_TEMP_DIR"))
+            out_pattern = str(temp_dir / f"synapse_cap_{timestamp}.$F4.{ext}")
             desktop = hou.ui.curDesktop()
             sv = desktop.paneTabOfType(hou.paneTabType.SceneViewer)
             if sv is None:
@@ -802,11 +802,12 @@ class RenderHandlerMixin:
             broadcast=getattr(self, '_broadcast', None),
         )
 
-        # Resolve report directory
+        # Resolve report directory — dispatch to main thread for thread safety
         report_dir = None
         if HOU_AVAILABLE:
             try:
-                hip = hou.text.expandString("$HIP")
+                from .main_thread import run_on_main
+                hip = run_on_main(lambda: hou.text.expandString("$HIP"))
                 if hip and hip != "$HIP":
                     report_dir = os.path.join(hip, ".synapse", "render_reports")
             except Exception:

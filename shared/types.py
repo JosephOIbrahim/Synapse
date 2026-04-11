@@ -24,7 +24,10 @@ SceneHash = str     # 16-char hex from topological hashing
 
 # ── Constants ──────────────────────────────────────────────────
 # Authoritative definitions live in shared/constants.py.
-# Values here are kept in sync; constants.py is the source of truth.
+# These are kept here ONLY for backward compatibility — always
+# import from shared.constants in new code.
+# Cannot re-export via import because constants.py imports from
+# types.py (circular dependency).
 
 FIDELITY_DEGRADED: float = 0.5
 
