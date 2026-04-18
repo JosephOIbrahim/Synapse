@@ -448,6 +448,140 @@ from synapse.mcp._tool_registry import (
     TOOL_DISPATCH,
 )
 
+# ---------------------------------------------------------------------------
+# Inspector tool wiring (Sprint 2 Week 1 — synapse_inspect_stage, tool #44)
+# ---------------------------------------------------------------------------
+# synapse_inspect_stage doesn't fit the TOOL_DEFS single-cmd_type pattern:
+# it composes a Base64-wrapped extraction script locally, sends ONE
+# execute_python round-trip, and parses the response into a StageAST.
+# Handled via a dedicated branch in call_tool() below.
+import textwrap as _inspector_textwrap
+from synapse.inspector import (
+    StageAST as _InspectorStageAST,
+    synapse_inspect_stage as _synapse_inspect_stage,
+)
+from synapse.inspector.exceptions import InspectorError as _InspectorError
+
+_INSPECTOR_TOOL_NAME = "synapse_inspect_stage"
+_INSPECTOR_TOOL_DESC = (
+    "Extracts the AST of the Houdini Solaris /stage context. Returns USD "
+    "prim paths, topology, error states, and flags for every node. Enables "
+    "scene-aware responses across sessions."
+)
+_INSPECTOR_TOOL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "target_path": {
+            "type": "string",
+            "description": (
+                "Houdini context path to inspect. Defaults to '/stage'. "
+                "Must be absolute and match /[a-zA-Z0-9_/]+."
+            ),
+        },
+        "timeout": {
+            "type": "number",
+            "description": (
+                "Per-call transport timeout in seconds (default 30)."
+            ),
+        },
+    },
+    "required": [],
+}
+
+
+def _inspector_wrap_stdout_capture(code: str) -> str:
+    """Wrap code with per-call stdout capture so the extraction script's
+    print() output returns through _handle_execute_python's "result" field.
+
+    Per-call isolation: every wrapped script constructs its own io.StringIO
+    locally inside Houdini. No module-level buffer; two concurrent calls
+    cannot share state.
+    """
+    indented = _inspector_textwrap.indent(code, "    ")
+    return (
+        "import io as _synapse_io\n"
+        "import contextlib as _synapse_cl\n"
+        "_synapse_buf = _synapse_io.StringIO()\n"
+        "with _synapse_cl.redirect_stdout(_synapse_buf):\n"
+        f"{indented}\n"
+        "result = _synapse_buf.getvalue()"
+    )
+
+
+async def _inspector_call_tool(arguments: dict) -> list:
+    """Handle synapse_inspect_stage MCP tool invocation.
+
+    Architecture:
+      1. Build a sync transport closure that wraps code with stdout
+         capture and posts work to the running event loop via
+         run_coroutine_threadsafe (the only safe async→sync bridge
+         when the caller runs inside the loop's own thread).
+      2. Run synapse_inspect_stage() in a worker thread via to_thread
+         — the sync transport then schedules send_command on the loop
+         from that worker thread and awaits the result.
+      3. Serialize the StageAST via .to_json() for MCP delivery.
+      4. Convert Inspector exceptions into JSON-safe error envelopes.
+    """
+    target_path = arguments.get("target_path", "/stage")
+    timeout_arg = arguments.get("timeout")
+    effective_timeout = (
+        float(timeout_arg) if timeout_arg is not None else 30.0
+    )
+    loop = asyncio.get_running_loop()
+
+    def _sync_transport(code: str, *, timeout=None) -> str:
+        wrapped = _inspector_wrap_stdout_capture(code)
+        fut = asyncio.run_coroutine_threadsafe(
+            send_command(
+                "execute_python",
+                {"content": wrapped, "atomic": False},
+            ),
+            loop,
+        )
+        try:
+            data = fut.result(
+                timeout=timeout if timeout is not None else effective_timeout
+            )
+        except Exception as e:
+            raise RuntimeError(f"execute_python transport failed: {e}") from e
+        return (data or {}).get("result", "") or ""
+
+    try:
+        ast = await asyncio.to_thread(
+            _synapse_inspect_stage,
+            target_path,
+            execute_python_fn=_sync_transport,
+            timeout=effective_timeout,
+        )
+    except _InspectorError as e:
+        return [TextContent(
+            type="text",
+            text=_dumps_str({
+                "error": type(e).__name__,
+                "message": str(e),
+                "target_path": target_path,
+            }),
+        )]
+    except ConnectionError as e:
+        return [TextContent(
+            type="text",
+            text=f"Couldn't reach Synapse \u2014 {e}",
+        )]
+    except RuntimeError as e:
+        return [TextContent(type="text", text=f"Synapse hit a snag: {e}")]
+    except Exception as e:
+        logger.exception("Unexpected error in synapse_inspect_stage")
+        return [TextContent(
+            type="text",
+            text=_dumps_str({
+                "error": type(e).__name__,
+                "message": str(e),
+                "target_path": target_path,
+            }),
+        )]
+
+    return [TextContent(type="text", text=ast.to_json())]
+
 
 @server.list_tools()
 async def list_tools():
@@ -474,6 +608,15 @@ async def list_tools():
             inputSchema={"type": "object", "properties": {}, "required": []},
         ))
 
+    # Inspector tool #44 -- local Python composing one execute_python
+    # round-trip plus client-side StageAST construction. Dispatched via
+    # a dedicated branch in call_tool() rather than TOOL_DISPATCH.
+    tools.append(Tool(
+        name=_INSPECTOR_TOOL_NAME,
+        description=_INSPECTOR_TOOL_DESC,
+        inputSchema=_INSPECTOR_TOOL_SCHEMA,
+    ))
+
     return tools
 
 
@@ -494,6 +637,11 @@ async def call_tool(name: str, arguments: dict):
     # Group-info tools return knowledge preamble directly (no Houdini)
     if name in _GROUP_INFO_TOOLS:
         return [TextContent(type="text", text=_GROUP_INFO_TOOLS[name])]
+
+    # Inspector tool #44 -- custom pipeline (script composition, single
+    # execute_python round-trip, StageAST parse, JSON serialization).
+    if name == _INSPECTOR_TOOL_NAME:
+        return await _inspector_call_tool(arguments)
 
     if name not in TOOL_DISPATCH:
         return [TextContent(type="text", text=f"I don't recognize the tool '{name}' \u2014 check the available tools list")]

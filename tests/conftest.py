@@ -196,3 +196,124 @@ class _MockUndoCtx:
 def mock_undo_group():
     """Mock hou.undos.group() context manager."""
     return _MockUndoCtx
+
+
+# ===========================================================================
+# Inspector subsystem fixtures (added Sprint 2 Week 1, 2026-04-18)
+# ---------------------------------------------------------------------------
+# These fixtures support tests/test_inspect_mock.py and
+# tests/test_inspect_live.py.
+#
+# Safety notes for the existing SYNAPSE test suite:
+#   - The _cleanup_transport fixture below is autouse — it calls
+#     reset_transport() before/after every test in the session.
+#     It has no effect on tests that do not use the Inspector's
+#     transport registration (i.e. every existing test), because
+#     reset_transport() is a no-op when no transport is configured.
+#   - All other Inspector fixtures are opt-in by name.
+#
+# If the synapse.inspector module is unavailable (e.g. during a
+# partial install or pre-merge state), the import fails gracefully
+# and the Inspector fixtures simply don't register. Existing tests
+# continue to collect and run as normal.
+# ===========================================================================
+
+import json as _inspector_json
+from pathlib import Path as _InspectorPath
+
+try:
+    from synapse.inspector import reset_transport as _inspector_reset_transport
+    _INSPECTOR_AVAILABLE = True
+except ImportError:
+    _INSPECTOR_AVAILABLE = False
+
+# Fixture file paths — resolved relative to this conftest.py
+_INSPECTOR_FIXTURES_DIR = _InspectorPath(__file__).parent / "fixtures"
+_INSPECTOR_GOLDEN_JSON_PATH = (
+    _INSPECTOR_FIXTURES_DIR / "inspector_week1_flat.golden.json"
+)
+_INSPECTOR_GOLDEN_HIP_PATH = (
+    _INSPECTOR_FIXTURES_DIR / "inspector_week1_flat.hip"
+)
+
+
+if _INSPECTOR_AVAILABLE:
+    @pytest.fixture(autouse=True)
+    def _inspector_cleanup_transport():
+        """Reset Inspector global transport state before/after every test.
+
+        The Inspector's configure_transport() mutates module-level state.
+        Without cleanup, a test that calls configure_transport() would
+        leak its transport to subsequent tests.
+
+        This fixture is a no-op for tests that don't touch the Inspector
+        transport registration (i.e. every existing SYNAPSE test).
+        """
+        _inspector_reset_transport()
+        yield
+        _inspector_reset_transport()
+
+
+@pytest.fixture
+def golden_json_str() -> str:
+    """Raw JSON content of the Inspector golden fixture file.
+
+    Used by tests/test_inspect_mock.py.
+    """
+    assert _INSPECTOR_GOLDEN_JSON_PATH.exists(), (
+        f"Inspector golden fixture missing: {_INSPECTOR_GOLDEN_JSON_PATH}. "
+        "Did you delete it accidentally?"
+    )
+    return _INSPECTOR_GOLDEN_JSON_PATH.read_text(encoding="utf-8")
+
+
+@pytest.fixture
+def golden_payload(golden_json_str: str) -> dict:
+    """Parsed Inspector golden payload dict."""
+    return _inspector_json.loads(golden_json_str)
+
+
+@pytest.fixture
+def mock_transport(golden_json_str: str):
+    """Mock Inspector transport that always returns the golden JSON.
+
+    Usage:
+        def test_something(mock_transport):
+            ast = synapse_inspect_stage(execute_python_fn=mock_transport)
+            assert len(ast) == 8
+    """
+
+    def _transport(code: str, *, timeout=None) -> str:
+        return golden_json_str
+
+    return _transport
+
+
+@pytest.fixture
+def mock_transport_legacy(golden_json_str: str):
+    """Mock Inspector transport WITHOUT the timeout kwarg (legacy signature).
+
+    Used to verify the Inspector's graceful fallback when the configured
+    transport predates timeout support.
+    """
+
+    def _transport(code: str) -> str:
+        return golden_json_str
+
+    return _transport
+
+
+def make_mock_transport(response: str):
+    """Helper for Inspector tests that need custom response content.
+
+    Not a fixture — use directly:
+
+        transport = make_mock_transport('{"synapse_error": "stage_not_found"}')
+        with pytest.raises(StageNotFoundError):
+            synapse_inspect_stage(execute_python_fn=transport)
+    """
+
+    def _transport(code: str, *, timeout=None) -> str:
+        return response
+
+    return _transport

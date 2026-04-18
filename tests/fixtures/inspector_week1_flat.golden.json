@@ -1,0 +1,138 @@
+{
+  "nodes": [
+    {
+      "bypass_flag": true,
+      "children": [],
+      "display_flag": false,
+      "error_message": null,
+      "error_state": "error",
+      "hou_path": "/stage/bypassed_node",
+      "inputs": [
+        {"index": 0, "path": "/stage/multi"}
+      ],
+      "key_parms": {},
+      "node_name": "bypassed_node",
+      "node_type": "xform",
+      "outputs": ["/stage/comp"],
+      "provenance": null,
+      "usd_prim_paths": []
+    },
+    {
+      "bypass_flag": false,
+      "children": [],
+      "display_flag": true,
+      "error_message": null,
+      "error_state": "error",
+      "hou_path": "/stage/comp",
+      "inputs": [
+        {"index": 0, "path": "/stage/bypassed_node"}
+      ],
+      "key_parms": {},
+      "node_name": "comp",
+      "node_type": "sublayer",
+      "outputs": [],
+      "provenance": null,
+      "usd_prim_paths": []
+    },
+    {
+      "bypass_flag": false,
+      "children": [],
+      "display_flag": false,
+      "error_message": null,
+      "error_state": "clean",
+      "hou_path": "/stage/geo",
+      "inputs": [],
+      "key_parms": {},
+      "node_name": "geo",
+      "node_type": "sopcreate",
+      "outputs": ["/stage/xf"],
+      "provenance": null,
+      "usd_prim_paths": ["/geo"]
+    },
+    {
+      "bypass_flag": false,
+      "children": [],
+      "display_flag": false,
+      "error_message": null,
+      "error_state": "clean",
+      "hou_path": "/stage/mats",
+      "inputs": [],
+      "key_parms": {},
+      "node_name": "mats",
+      "node_type": "materiallibrary",
+      "outputs": ["/stage/multi"],
+      "provenance": null,
+      "usd_prim_paths": []
+    },
+    {
+      "bypass_flag": false,
+      "children": [],
+      "display_flag": false,
+      "error_message": null,
+      "error_state": "error",
+      "hou_path": "/stage/multi",
+      "inputs": [
+        {"index": 0, "path": "/stage/xf"},
+        {"index": 1, "path": "/stage/mats"},
+        {"index": 2, "path": "/stage/ref"}
+      ],
+      "key_parms": {},
+      "node_name": "multi",
+      "node_type": "merge",
+      "outputs": ["/stage/bypassed_node"],
+      "provenance": null,
+      "usd_prim_paths": []
+    },
+    {
+      "bypass_flag": false,
+      "children": [],
+      "display_flag": false,
+      "error_message": null,
+      "error_state": "clean",
+      "hou_path": "/stage/orphan",
+      "inputs": [],
+      "key_parms": {},
+      "node_name": "orphan",
+      "node_type": "null",
+      "outputs": [],
+      "provenance": null,
+      "usd_prim_paths": []
+    },
+    {
+      "bypass_flag": false,
+      "children": [],
+      "display_flag": false,
+      "error_message": "Unable to load file C:/invalid_synapse_path/does_not_exist.usd",
+      "error_state": "error",
+      "hou_path": "/stage/ref",
+      "inputs": [
+        {"index": 0, "path": "/stage/xf"}
+      ],
+      "key_parms": {},
+      "node_name": "ref",
+      "node_type": "reference::2.0",
+      "outputs": ["/stage/multi"],
+      "provenance": null,
+      "usd_prim_paths": []
+    },
+    {
+      "bypass_flag": false,
+      "children": [],
+      "display_flag": false,
+      "error_message": null,
+      "error_state": "clean",
+      "hou_path": "/stage/xf",
+      "inputs": [
+        {"index": 0, "path": "/stage/geo"}
+      ],
+      "key_parms": {},
+      "node_name": "xf",
+      "node_type": "xform",
+      "outputs": ["/stage/multi", "/stage/ref"],
+      "provenance": null,
+      "usd_prim_paths": ["/geo"]
+    }
+  ],
+  "schema_version": "1.0.0",
+  "target_path": "/stage"
+}

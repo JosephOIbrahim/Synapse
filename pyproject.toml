@@ -25,7 +25,9 @@ classifiers = [
     "Topic :: Multimedia :: Graphics :: 3D Modeling",
 ]
 keywords = ["houdini", "vfx", "ai", "websocket", "memory", "automation", "synapse"]
-dependencies = []
+dependencies = [
+    "pydantic>=2.0",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -71,6 +73,9 @@ where = ["python"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
+markers = [
+    "live: requires a running Houdini session with SYNAPSE WebSocket server (not collected by default in CI)",
+]
 
 [tool.mypy]
 python_version = "3.11"
@@ -129,6 +134,10 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "cryptography.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "synapse.inspector.*"
+strict = true
 
 [tool.coverage.run]
 source = ["python/synapse"]

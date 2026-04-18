@@ -80,6 +80,31 @@ except ImportError:
     CryptoEngine = None  # type: ignore[assignment,misc]
     get_crypto = None  # type: ignore[assignment]
 
+# Inspector (Sprint 2 Week 1) — pydantic-only at import time, safe to eager
+# load. Gives scene-awareness via /stage AST extraction.
+try:
+    from .inspector import (
+        ASTNode,
+        SCHEMA_VERSION as INSPECTOR_SCHEMA_VERSION,
+        StageAST,
+        configure_transport as inspector_configure_transport,
+        synapse_inspect_stage,
+    )
+    from .inspector.exceptions import (
+        InspectorError,
+        StageNotFoundError,
+    )
+    INSPECTOR_AVAILABLE = True
+except ImportError:
+    INSPECTOR_AVAILABLE = False
+    ASTNode = None  # type: ignore[assignment,misc]
+    StageAST = None  # type: ignore[assignment,misc]
+    synapse_inspect_stage = None  # type: ignore[assignment]
+    inspector_configure_transport = None  # type: ignore[assignment]
+    INSPECTOR_SCHEMA_VERSION = None  # type: ignore[assignment]
+    InspectorError = None  # type: ignore[assignment,misc]
+    StageNotFoundError = None  # type: ignore[assignment,misc]
+
 # Memory system
 from .memory.models import (
     Memory,
@@ -561,6 +586,16 @@ __all__ = [
     'CryptoEngine',
     'ENCRYPTION_AVAILABLE',
     'get_crypto',
+
+    # Inspector (Sprint 2 Week 1)
+    'ASTNode',
+    'StageAST',
+    'synapse_inspect_stage',
+    'inspector_configure_transport',
+    'INSPECTOR_SCHEMA_VERSION',
+    'INSPECTOR_AVAILABLE',
+    'InspectorError',
+    'StageNotFoundError',
 
     # UI
     'SynapsePanel',
