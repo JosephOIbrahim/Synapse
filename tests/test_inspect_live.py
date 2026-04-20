@@ -271,15 +271,41 @@ def load_fixture(live_transport):
 
     Runs before every test. The fixture file is loaded fresh each time
     so individual tests cannot pollute each other.
+
+    Post-load, primes LOP cooks across ``/stage`` so Inspector
+    assertions that read from ``lastModifiedPrims()`` and
+    ``errors()`` see live cook data even in headless hython.
+    Graphical Houdini auto-cooks on display-flag evaluation;
+    headless has no viewport trigger, so we cook explicitly here.
+    Scoped to the test-fixture load path — the production Inspector
+    stays read-only.
     """
     if not FIXTURE_PATH.exists():
         pytest.skip(f"Fixture file not found: {FIXTURE_PATH}")
 
     hip_path_hou = str(FIXTURE_PATH).replace("\\", "/")
     load_cmd = (
-        "import hou; "
-        "hou.hipFile.clear(suppress_save_prompt=True); "
-        f"hou.hipFile.load('{hip_path_hou}', suppress_save_prompt=True); "
+        "import hou\n"
+        "hou.hipFile.clear(suppress_save_prompt=True)\n"
+        f"hou.hipFile.load('{hip_path_hou}', suppress_save_prompt=True)\n"
+        "\n"
+        "# Prime LOP cooks — GUI Houdini's display flag auto-cooks on\n"
+        "# load, but headless hython has no viewport trigger. Without\n"
+        "# this prime, lastModifiedPrims() returns [] and errors()\n"
+        "# returns [] because the nodes never attempted composition.\n"
+        "stage = hou.node('/stage')\n"
+        "if stage is not None:\n"
+        "    for child in stage.children():\n"
+        "        try:\n"
+        "            child.cook(force=True)\n"
+        "        except hou.OperationFailed:\n"
+        "            # Some nodes legitimately fail to cook in the\n"
+        "            # fixture (e.g. the 'ref' LOP pointing at a\n"
+        "            # missing USD file — that's exactly what\n"
+        "            # test_live_error_state_on_reference asserts).\n"
+        "            # Other exception types propagate.\n"
+        "            pass\n"
+        "\n"
         "print('FIXTURE_LOADED')"
     )
 

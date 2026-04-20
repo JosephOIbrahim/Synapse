@@ -173,15 +173,149 @@ class TestDialogSuppression:
 
 
 class TestMainThreadExecutor:
-    """Outside Houdini: executor refuses to run; MainThreadTimeoutError is
-    a TimeoutError subclass."""
+    """Three-state runtime detection + executor behaviour per mode.
 
-    def test_raises_runtimeerror_outside_houdini(self, monkeypatch):
+    Spike 2.1 replaced the binary stock-vs-Houdini check with a
+    stock / gui / headless tri-state. These tests pin each branch.
+    """
+
+    # -- Runtime mode detection -----------------------------------------
+
+    def test_detects_stock_when_no_hou(self, monkeypatch):
+        from synapse.host.main_thread_executor import (
+            RUNTIME_STOCK,
+            detect_runtime_mode,
+        )
+
+        monkeypatch.setitem(sys.modules, "hou", None)
+        assert detect_runtime_mode() == RUNTIME_STOCK
+
+    def test_detects_gui_when_is_ui_available_true(self, monkeypatch):
+        from synapse.host.main_thread_executor import (
+            RUNTIME_GUI,
+            detect_runtime_mode,
+        )
+
+        fake_hou = types.ModuleType("hou")
+        fake_hou.isUIAvailable = lambda: True  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "hou", fake_hou)
+        assert detect_runtime_mode() == RUNTIME_GUI
+
+    def test_detects_headless_when_is_ui_available_false(self, monkeypatch):
+        from synapse.host.main_thread_executor import (
+            RUNTIME_HEADLESS,
+            detect_runtime_mode,
+        )
+
+        fake_hou = types.ModuleType("hou")
+        fake_hou.isUIAvailable = lambda: False  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "hou", fake_hou)
+        assert detect_runtime_mode() == RUNTIME_HEADLESS
+
+    def test_detection_raises_when_isuiavailable_missing(self, monkeypatch):
+        from synapse.host.main_thread_executor import detect_runtime_mode
+
+        fake_hou = types.ModuleType("hou")
+        monkeypatch.setitem(sys.modules, "hou", fake_hou)
+        with pytest.raises(RuntimeError, match="isUIAvailable is missing"):
+            detect_runtime_mode()
+
+    # -- Execution per mode ---------------------------------------------
+
+    def test_stock_mode_raises_with_testing_advice(self, monkeypatch):
         from synapse.host import main_thread_executor as mte
 
-        monkeypatch.setattr(mte, "_HDEFEREVAL_AVAILABLE", False)
-        with pytest.raises(RuntimeError, match="hdefereval"):
+        monkeypatch.setitem(sys.modules, "hou", None)
+        with pytest.raises(RuntimeError, match="is_testing=True"):
             mte.main_thread_exec(lambda: {"x": 1}, {})
+
+    def test_headless_mode_runs_directly_on_calling_thread(self, monkeypatch):
+        """Spike 2.1 bug fix — headless must NOT hit hdefereval."""
+        from synapse.host import main_thread_executor as mte
+
+        fake_hou = types.ModuleType("hou")
+        fake_hou.isUIAvailable = lambda: False  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "hou", fake_hou)
+
+        caller_thread = threading.current_thread().ident
+        seen_threads: list = []
+
+        def _probe(value):
+            seen_threads.append(threading.current_thread().ident)
+            return {"got": value, "thread": threading.current_thread().ident}
+
+        result = mte.main_thread_exec(_probe, {"value": "hi"})
+        assert result == {"got": "hi", "thread": caller_thread}
+        # Confirm we ran on the caller's thread, not a worker.
+        assert seen_threads == [caller_thread]
+
+    def test_headless_mode_propagates_exceptions(self, monkeypatch):
+        from synapse.host import main_thread_executor as mte
+
+        fake_hou = types.ModuleType("hou")
+        fake_hou.isUIAvailable = lambda: False  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "hou", fake_hou)
+
+        def _boom():
+            raise ValueError("headless explosion")
+
+        with pytest.raises(ValueError, match="headless explosion"):
+            mte.main_thread_exec(_boom, {})
+
+    def test_headless_mode_does_not_touch_hdefereval(self, monkeypatch):
+        """Regression guard — if this ever hits hdefereval, headless is broken."""
+        from synapse.host import main_thread_executor as mte
+
+        fake_hou = types.ModuleType("hou")
+        fake_hou.isUIAvailable = lambda: False  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "hou", fake_hou)
+
+        sentinel = MagicMock()
+        sentinel.executeInMainThreadWithResult.side_effect = AssertionError(
+            "headless mode must not call hdefereval"
+        )
+        monkeypatch.setattr(mte, "hdefereval", sentinel)
+        monkeypatch.setattr(mte, "_HDEFEREVAL_AVAILABLE", True)
+
+        mte.main_thread_exec(lambda: {"ok": True}, {})
+        sentinel.executeInMainThreadWithResult.assert_not_called()
+
+    def test_gui_mode_routes_through_hdefereval(self, monkeypatch):
+        from synapse.host import main_thread_executor as mte
+
+        fake_hou = types.ModuleType("hou")
+        fake_hou.isUIAvailable = lambda: True  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "hou", fake_hou)
+
+        captured: list = []
+
+        def _fake_execute(callable_arg):
+            captured.append("called")
+            return callable_arg()
+
+        fake_hdefereval = types.SimpleNamespace(
+            executeInMainThreadWithResult=_fake_execute
+        )
+        monkeypatch.setattr(mte, "hdefereval", fake_hdefereval)
+        monkeypatch.setattr(mte, "_HDEFEREVAL_AVAILABLE", True)
+
+        result = mte.main_thread_exec(lambda: {"via": "hdefereval"}, {})
+        assert result == {"via": "hdefereval"}
+        assert captured == ["called"]
+
+    def test_gui_mode_raises_if_hdefereval_missing(self, monkeypatch):
+        """Defensive: UI=True + hdefereval unavailable is inconsistent."""
+        from synapse.host import main_thread_executor as mte
+
+        fake_hou = types.ModuleType("hou")
+        fake_hou.isUIAvailable = lambda: True  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "hou", fake_hou)
+        monkeypatch.setattr(mte, "_HDEFEREVAL_AVAILABLE", False)
+
+        with pytest.raises(RuntimeError, match="hdefereval is not"):
+            mte.main_thread_exec(lambda: {"x": 1}, {})
+
+    # -- Timeout + contract constants -----------------------------------
 
     def test_timeout_error_is_timeout_error(self):
         from synapse.host.main_thread_executor import MainThreadTimeoutError

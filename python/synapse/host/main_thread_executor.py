@@ -1,23 +1,53 @@
-"""Main-thread executor for Houdini (Sprint 3 Spike 1).
+"""Main-thread executor for Houdini (Sprint 3 Spike 1 + 2.1 bugfix).
 
 Implements the ``main_thread_executor`` callable contract consumed by
-``synapse.cognitive.dispatcher.Dispatcher``. Wraps
-``hdefereval.executeInMainThreadWithResult`` with a hard timeout so a
-stuck tool can't wedge the agent loop indefinitely.
+``synapse.cognitive.dispatcher.Dispatcher``.
 
-Spike 2 lock: the timeout default is 30 seconds. Change in lockstep
-with the Crucible's deadlock-prevention budget — not in isolation.
+Runtime mode detection (three-state)
+------------------------------------
+Stock Python, graphical Houdini, and headless Houdini are three
+distinct runtime contexts. Collapsing them to a binary
+"hdefereval importable or not" produced a real bug (Spike 2.1):
+the deferred ``test_inspect_live.py`` gate run under ``hython``
+would raise ``RuntimeError`` with the message "use is_testing=True" —
+wrong advice for a live-tool invocation — because the headless path
+was misclassified.
+
+The modes:
+
+- ``stock``    — no ``hou`` at all. Raise ``RuntimeError``; caller
+                  must use ``Dispatcher(is_testing=True)`` for
+                  stock-Python / CI work.
+- ``gui``      — ``hou`` present AND ``hou.isUIAvailable()`` True.
+                  Marshal through
+                  ``hdefereval.executeInMainThreadWithResult`` with
+                  hard timeout — the Qt event loop is running, the
+                  caller is typically on a background thread (agent
+                  daemon or WS handler).
+- ``headless`` — ``hou`` present AND ``hou.isUIAvailable()`` False.
+                  No Qt event loop to marshal to. The caller IS on
+                  the only Python thread — execute the tool body
+                  synchronously on the calling thread.
+
+``hou.isUIAvailable()`` is the same primitive the daemon boot gate
+uses (``synapse.host.daemon.SynapseDaemon._check_boot_gate``). One
+detection primitive, two call sites — symmetry keeps the host layer
+coherent.
 
 Design notes
 ------------
-- ``hdefereval.executeInMainThreadWithResult`` is blocking. To impose a
-  timeout from the caller, we dispatch from a worker thread and wait on
-  an Event. On timeout, the caller regains control; the main-thread
-  payload keeps executing (Python can't safely kill a thread
-  mid-operation). Spike 2 pairs this with ``threading.Event('cancel_
-  requested')`` inside tool bodies so cooperative cancellation actually
-  lands.
-- Testing path: use ``synapse.cognitive.dispatcher.Dispatcher(
+- ``hdefereval.executeInMainThreadWithResult`` is blocking. To impose
+  a timeout in GUI mode, we dispatch from a worker thread and wait
+  on an Event. Payload keeps executing after timeout; Python can't
+  safely kill a thread mid-op. Spike 2 Phase 2 pairs this with
+  ``threading.Event('cancel_requested')`` inside tool bodies so
+  cooperative cancellation actually lands.
+- Headless mode does NOT apply the timeout. The caller IS on the
+  main thread; spawning a worker to enforce timeout would move tool
+  execution off the main thread, which breaks Houdini API
+  thread-safety. Tool bodies running in headless that need to bound
+  themselves can wrap their own work.
+- Testing path: ``synapse.cognitive.dispatcher.Dispatcher(
   is_testing=True)``. This module has no test-mode — it exists to
   touch ``hou`` and ``hdefereval``.
 """
@@ -40,62 +70,85 @@ DEFAULT_MAIN_THREAD_TIMEOUT_SECONDS: float = 30.0
 
 
 class MainThreadTimeoutError(TimeoutError):
-    """Main-thread dispatch exceeded the timeout budget.
+    """GUI-mode main-thread dispatch exceeded the timeout budget.
 
-    Subclass of the stdlib ``TimeoutError`` so callers can catch either
-    the specific class or the broader category. Raised from
-    ``main_thread_exec``; caught at the Dispatcher's exception boundary
-    and wrapped as ``AgentToolError(error_type="MainThreadTimeoutError")``
-    so the LLM sees timeouts as structured tool data.
+    Subclass of the stdlib ``TimeoutError`` so callers can catch
+    either the specific class or the broader category. Only ever
+    raised from the GUI-mode path — headless mode executes
+    synchronously on the calling thread without a timeout wrapper.
     """
 
 
-def main_thread_exec(
-    fn: Callable[..., Dict[str, Any]],
-    kwargs: Dict[str, Any],
-    *,
-    timeout: Optional[float] = None,
-) -> Dict[str, Any]:
-    """Marshal ``fn(**kwargs)`` onto Houdini's main thread with a timeout.
+# -- Runtime mode detection -------------------------------------------------
 
-    Args:
-        fn: Callable returning a JSON-serializable dict.
-        kwargs: Keyword arguments passed to ``fn``.
-        timeout: Hard timeout in seconds. ``None`` uses
-            ``DEFAULT_MAIN_THREAD_TIMEOUT_SECONDS``.
 
-    Returns:
-        Whatever ``fn`` returned (expected ``Dict[str, Any]``, but this
-        module does not type-check the return — the Dispatcher does).
+RUNTIME_STOCK: str = "stock"
+RUNTIME_GUI: str = "gui"
+RUNTIME_HEADLESS: str = "headless"
+
+
+def detect_runtime_mode() -> str:
+    """Return ``RUNTIME_STOCK``, ``RUNTIME_GUI``, or ``RUNTIME_HEADLESS``.
+
+    Detection rules:
+      - No ``hou`` import  → stock.
+      - ``hou`` but no ``isUIAvailable`` attr → raises; we don't
+        guess against unsupported Houdini builds.
+      - ``hou.isUIAvailable()`` True  → gui.
+      - ``hou.isUIAvailable()`` False → headless.
+
+    Called every ``main_thread_exec`` invocation rather than cached
+    because ``hou.isUIAvailable()`` can legitimately change across
+    a session (rare, but possible when UI is dynamically torn down).
 
     Raises:
-        MainThreadTimeoutError: main-thread dispatch took longer than
-            ``timeout`` seconds.
-        RuntimeError: running outside Houdini (``hdefereval`` unavailable).
-            Use ``Dispatcher(is_testing=True)`` for tests / CI.
-        BaseException: any exception raised by ``fn`` propagates through
-            unchanged. The Dispatcher catches it at its own exception
-            boundary.
+        RuntimeError: ``hou`` is present but ``hou.isUIAvailable``
+            is missing. We don't guess — file a bug instead.
+    """
+    try:
+        import hou  # type: ignore[import-not-found]
+    except ImportError:
+        return RUNTIME_STOCK
+
+    is_ui_available = getattr(hou, "isUIAvailable", None)
+    if is_ui_available is None:
+        raise RuntimeError(
+            "hou is importable but hou.isUIAvailable is missing — this "
+            "Houdini build pre-dates the API synapse.host relies on. "
+            "File a bug with the Houdini version and hython launch mode."
+        )
+    return RUNTIME_GUI if is_ui_available() else RUNTIME_HEADLESS
+
+
+# -- Execution paths --------------------------------------------------------
+
+
+def _exec_gui(
+    fn: Callable[..., Dict[str, Any]],
+    kwargs: Dict[str, Any],
+    effective_timeout: float,
+) -> Dict[str, Any]:
+    """GUI-mode execution: marshal to Houdini's main thread via hdefereval.
+
+    The hdefereval call blocks the worker thread until the callable
+    runs on the main thread. We wrap it so a stuck main-thread
+    payload returns control to the caller after ``effective_timeout``.
+    The main-thread work keeps running in the background — Python
+    can't safely kill a thread mid-op.
     """
     if not _HDEFEREVAL_AVAILABLE:
         raise RuntimeError(
-            "main_thread_exec requires hdefereval, which is only available "
-            "inside a Houdini process. For tests and CI, construct the "
-            "Dispatcher with is_testing=True."
+            "hou.isUIAvailable() returned True but hdefereval is not "
+            "importable. This state is inconsistent — file a bug "
+            "with the Houdini version, hython launch mode, and "
+            "full sys.path."
         )
 
-    effective_timeout: float = (
-        timeout if timeout is not None else DEFAULT_MAIN_THREAD_TIMEOUT_SECONDS
-    )
-
-    # Thread-local result handoff. list is used as a mutable cell;
-    # populated by exactly one of the two slots below.
     result_holder: list[Any] = []
     error_holder: list[BaseException] = []
     done = threading.Event()
 
     def _dispatch_on_main() -> None:
-        """Run on the worker thread — blocks on hdefereval until main runs fn."""
         try:
             result = hdefereval.executeInMainThreadWithResult(
                 lambda: fn(**kwargs)
@@ -114,10 +167,6 @@ def main_thread_exec(
     worker.start()
 
     if not done.wait(timeout=effective_timeout):
-        # Work is still queued / executing on main thread. We cannot
-        # safely kill it — Python threads don't support forced
-        # termination. Control returns to the caller; the payload will
-        # still complete (or hang Houdini) on its own timeline.
         raise MainThreadTimeoutError(
             f"Main-thread dispatch of {getattr(fn, '__name__', repr(fn))!r} "
             f"exceeded {effective_timeout:g}s timeout. The dispatched "
@@ -126,5 +175,68 @@ def main_thread_exec(
 
     if error_holder:
         raise error_holder[0]
-    # Exactly one of result/error is populated if done is set.
     return result_holder[0]
+
+
+def _exec_headless(
+    fn: Callable[..., Dict[str, Any]],
+    kwargs: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Headless-mode execution: direct call on the calling thread.
+
+    Headless hython runs on a single Python thread. There is no Qt
+    event loop to marshal through, and no other thread that would be
+    the "main" thread. Spawning a worker to enforce a timeout would
+    move tool execution off the main thread, breaking Houdini API
+    thread-safety. Tool bodies that need to bound themselves in
+    headless must wrap their own timing.
+    """
+    return fn(**kwargs)
+
+
+def main_thread_exec(
+    fn: Callable[..., Dict[str, Any]],
+    kwargs: Dict[str, Any],
+    *,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Execute ``fn(**kwargs)`` on Houdini's main thread when marshaling
+    is needed; otherwise run it directly.
+
+    Args:
+        fn: Callable returning a JSON-serializable dict.
+        kwargs: Keyword arguments passed to ``fn``.
+        timeout: Hard timeout in seconds — honoured only in GUI mode
+            (see module docstring). ``None`` uses
+            ``DEFAULT_MAIN_THREAD_TIMEOUT_SECONDS``.
+
+    Returns:
+        Whatever ``fn`` returned.
+
+    Raises:
+        RuntimeError: running in stock Python (no ``hou``), or in a
+            Houdini build that lacks ``hou.isUIAvailable``, or in GUI
+            mode where ``hdefereval`` is inexplicably unavailable.
+        MainThreadTimeoutError: GUI-mode dispatch took longer than
+            ``timeout`` seconds.
+        BaseException: any exception ``fn`` raised propagates through.
+    """
+    mode = detect_runtime_mode()
+
+    if mode == RUNTIME_STOCK:
+        raise RuntimeError(
+            "main_thread_exec requires a Houdini process "
+            "(hython graphical or headless). For stock-Python / CI "
+            "test work, construct Dispatcher(is_testing=True) to "
+            "bypass host-thread marshaling entirely."
+        )
+
+    if mode == RUNTIME_HEADLESS:
+        return _exec_headless(fn, kwargs)
+
+    # GUI mode.
+    effective_timeout: float = (
+        timeout if timeout is not None
+        else DEFAULT_MAIN_THREAD_TIMEOUT_SECONDS
+    )
+    return _exec_gui(fn, kwargs, effective_timeout)
