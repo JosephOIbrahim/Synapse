@@ -317,3 +317,33 @@ def make_mock_transport(response: str):
         return response
 
     return _transport
+
+
+# ===========================================================================
+# Cognitive-layer Dispatcher fixture (added Sprint 3 Spike 1.0, 2026-04-20)
+# ---------------------------------------------------------------------------
+# Session-scoped, opt-in by name (NO autouse). Existing 2606 tests do not
+# request this fixture and are unaffected by its presence — pytest only
+# instantiates a fixture the first time a test asks for it by parameter name.
+# ===========================================================================
+
+
+@pytest.fixture(scope="session")
+def dispatcher():
+    """Session-scoped Dispatcher in test-mode bypass.
+
+    Invariant 1 (SPRINT3): the Dispatcher MUST expose ``is_testing=True``
+    that runs synchronously on the calling thread, bypassing
+    ``hdefereval.executeInMainThreadWithResult``. Headless ``hython`` and
+    stock pytest CI both lack a Qt event loop to pump, so anything that
+    depends on it hangs forever.
+
+    Tests opt in by requesting the fixture by name::
+
+        def test_something(dispatcher):
+            dispatcher.register('tool', lambda: {'ok': True})
+            result = dispatcher.execute('tool', {})
+            assert result == {'ok': True}
+    """
+    from synapse.cognitive.dispatcher import Dispatcher
+    return Dispatcher(is_testing=True)
