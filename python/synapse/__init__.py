@@ -17,6 +17,42 @@ Author: Joe Ibrahim
 Version: 5.8.0
 """
 
+# ---------------------------------------------------------------------------
+# Vendored dependencies (Sprint 3 Spike 2.2)
+# ---------------------------------------------------------------------------
+# Houdini point releases (21.0.631, 21.0.671, 21.5.x) ship separate Python
+# site-packages directories. A ``pip install anthropic`` into one release's
+# site-packages is invisible to the next. Vendoring the SDK + its deps
+# directly into SYNAPSE's tree fixes this — every Houdini install that can
+# see ``python/synapse/`` automatically gets anthropic, httpx, pydantic, etc.
+#
+# The prepend MUST run before any ``from .inspector import ...`` or other
+# synapse-internal import that transitively pulls pydantic / httpx /
+# anthropic — otherwise an older copy on sys.path wins and the vendor path
+# never gets consulted. Hence: top of module, before everything else.
+#
+# ABI lock (Python 3.11 win_amd64): _vendor/pydantic_core carries a
+# ``.cp311-win_amd64.pyd`` binary. Prepending _vendor on a non-3.11
+# interpreter would break imports (stock Python 3.14 in particular — the
+# 2684-test suite runs there and resolves pydantic from the user site,
+# untouched by this vendoring). The version gate below keeps the vendor
+# active only for Python 3.11 consumers, which covers every current
+# Houdini point release.
+import os as _synapse_os
+import sys as _synapse_sys
+
+_vendor_path: str = _synapse_os.path.join(
+    _synapse_os.path.dirname(__file__), "_vendor"
+)
+
+if (
+    _synapse_sys.version_info[:2] == (3, 11)
+    and _synapse_os.path.isdir(_vendor_path)
+    and _vendor_path not in _synapse_sys.path
+):
+    _synapse_sys.path.insert(0, _vendor_path)
+
+
 __title__ = "Synapse"
 __version__ = "5.8.0"
 __author__ = "Joe Ibrahim"

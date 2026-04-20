@@ -86,10 +86,23 @@ class TestStructuredLogging:
     ]
 
     def test_no_print_in_source(self):
-        """Grep-style check: no print() calls in the source tree."""
+        """Grep-style check: no print() calls in SYNAPSE source.
+
+        Excludes ``synapse/_vendor/`` — third-party vendored packages
+        (pydantic docstring examples, certifi CLI entry-point, etc.)
+        are not SYNAPSE source. Sprint 3 Spike 2.2 added the vendor
+        tree; restoring the test's original scope preserves its
+        intent without false positives.
+        """
         src_dir = _PKG / "synapse"
+        vendor_dir = src_dir / "_vendor"
         violations = []
         for py_file in src_dir.rglob("*.py"):
+            try:
+                py_file.relative_to(vendor_dir)
+                continue  # inside _vendor — skip
+            except ValueError:
+                pass
             content = py_file.read_text(encoding="utf-8", errors="replace")
             in_triple_quote = False
             for i, line in enumerate(content.splitlines(), 1):
