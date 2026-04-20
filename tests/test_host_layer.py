@@ -22,7 +22,14 @@ import pytest
 
 
 class TestAuth:
-    """API-key resolution: hou.secure → env var → None."""
+    """API-key resolution: hou.secure (forward-compat) → env var → None.
+
+    Spike 2.3 field finding: ``hou.secure`` is absent in Houdini
+    21.0.671 (only ``secureSelectionOption`` matches ``secure`` in
+    ``dir(hou)``). The module keeps the ``hou.secure`` probe as a
+    forward-compat path — these tests pin the probe's behaviour so
+    it works cleanly if SideFX ships the API in a future release.
+    """
 
     def test_env_var_fallback(self, monkeypatch):
         from synapse.host.auth import get_anthropic_api_key
@@ -31,6 +38,27 @@ class TestAuth:
         # Make sure hou import fails so we fall through
         monkeypatch.setitem(sys.modules, "hou", None)
         assert get_anthropic_api_key() == "sk-ant-test-123"
+
+    def test_hou_without_secure_falls_back_to_env(self, monkeypatch):
+        """Spike 2.3 production path: hou present, hou.secure absent."""
+        from synapse.host.auth import get_anthropic_api_key
+
+        # Real Houdini 21.0.671 state — hou exists, no ``secure`` attr
+        fake_hou = types.ModuleType("hou")
+        fake_hou.secureSelectionOption = MagicMock()  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "hou", fake_hou)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-env-wins")
+        assert get_anthropic_api_key() == "sk-env-wins"
+
+    def test_hou_secure_without_password_falls_back_to_env(self, monkeypatch):
+        """Partial API: ``hou.secure`` present but missing ``.password``."""
+        from synapse.host.auth import get_anthropic_api_key
+
+        fake_hou = types.ModuleType("hou")
+        fake_hou.secure = types.SimpleNamespace()  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "hou", fake_hou)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-env-wins")
+        assert get_anthropic_api_key() == "sk-env-wins"
 
     def test_env_var_whitespace_treated_as_missing(self, monkeypatch):
         from synapse.host.auth import get_anthropic_api_key
@@ -558,6 +586,103 @@ class TestDaemonAuthResolution:
         d.start()
         try:
             assert d._resolved_api_key == "sk-env-resolved"
+        finally:
+            d.stop(timeout=2)
+
+
+class TestDaemonInspectorTransportWiring:
+    """Spike 2.3: daemon.start() must register the Inspector transport.
+
+    Baseline Crucible hit ``TransportNotConfiguredError`` on first
+    tool call because the daemon never called
+    ``synapse.inspector.configure_transport``. These tests pin the
+    fix: transport is wired during start(), idempotently, and a
+    pre-registered transport survives a restart.
+    """
+
+    def _make_daemon(self, **overrides):
+        from synapse.host.daemon import SynapseDaemon
+        defaults = dict(
+            api_key="test",
+            boot_gate=False,
+            main_thread_executor=lambda fn, kwargs: fn(**kwargs),
+            anthropic_client_factory=lambda k: MagicMock(),
+        )
+        defaults.update(overrides)
+        return SynapseDaemon(**defaults)
+
+    def test_start_configures_inspector_transport(self):
+        from synapse.inspector import (
+            is_transport_configured,
+            reset_transport,
+        )
+        reset_transport()
+        assert not is_transport_configured()
+
+        d = self._make_daemon()
+        d.start()
+        try:
+            assert is_transport_configured(), (
+                "daemon.start() should have called configure_transport"
+            )
+        finally:
+            d.stop(timeout=2)
+
+    def test_start_does_not_override_existing_transport(self):
+        """If a transport is already configured (e.g. test fixture),
+        daemon must leave it intact — the caller had a reason."""
+        from synapse.inspector import (
+            configure_transport,
+            get_transport,
+            reset_transport,
+        )
+        reset_transport()
+
+        def _sentinel_transport(code, *, timeout=None):
+            return '{"schema_version": "1.0.0", "target_path": "/stage", "nodes": []}'
+
+        configure_transport(_sentinel_transport)
+        assert get_transport() is _sentinel_transport
+
+        d = self._make_daemon()
+        d.start()
+        try:
+            assert get_transport() is _sentinel_transport, (
+                "daemon.start() overwrote pre-registered transport — "
+                "idempotency is broken"
+            )
+        finally:
+            d.stop(timeout=2)
+            reset_transport()
+
+    def test_start_seeds_env_var_if_unset(self, monkeypatch):
+        monkeypatch.delenv(
+            "SYNAPSE_INSPECTOR_LIVE_TRANSPORT_MODULE", raising=False
+        )
+        d = self._make_daemon()
+        d.start()
+        try:
+            assert os.environ.get(
+                "SYNAPSE_INSPECTOR_LIVE_TRANSPORT_MODULE"
+            ) == "synapse.host.transport"
+        finally:
+            d.stop(timeout=2)
+
+    def test_start_preserves_existing_env_var(self, monkeypatch):
+        """If the operator already pointed the env var somewhere,
+        daemon must not stomp on it."""
+        monkeypatch.setenv(
+            "SYNAPSE_INSPECTOR_LIVE_TRANSPORT_MODULE",
+            "custom.transport.module",
+        )
+        d = self._make_daemon()
+        d.start()
+        try:
+            assert os.environ[
+                "SYNAPSE_INSPECTOR_LIVE_TRANSPORT_MODULE"
+            ] == "custom.transport.module", (
+                "daemon.start() overwrote operator-set env var"
+            )
         finally:
             d.stop(timeout=2)
 
