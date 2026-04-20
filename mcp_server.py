@@ -449,18 +449,27 @@ from synapse.mcp._tool_registry import (
 )
 
 # ---------------------------------------------------------------------------
-# Inspector tool wiring (Sprint 2 Week 1 — synapse_inspect_stage, tool #44)
+# Inspector tool wiring (Sprint 2 Week 1 / Sprint 3 Spike 1 — tool #44)
 # ---------------------------------------------------------------------------
-# synapse_inspect_stage doesn't fit the TOOL_DEFS single-cmd_type pattern:
-# it composes a Base64-wrapped extraction script locally, sends ONE
-# execute_python round-trip, and parses the response into a StageAST.
-# Handled via a dedicated branch in call_tool() below.
+# Sprint 2 Week 1 shipped synapse_inspect_stage as a custom call_tool branch
+# that composed the extraction script locally and awaited one execute_python
+# round-trip over the WebSocket.
+#
+# Sprint 3 Spike 1 is the Strangler Fig port: the same branch now routes
+# through the cognitive Dispatcher (synapse.cognitive.dispatcher.Dispatcher)
+# with the Inspector tool registered as synapse.cognitive.tools.inspect_stage.
+# JSON-RPC marshalling to MCP callers is unchanged — the error envelope
+# shape is preserved byte-for-byte by mapping AgentToolError back to the
+# {"error": ..., "message": ..., "target_path": ...} dict Sprint 2 used.
 import textwrap as _inspector_textwrap
 from synapse.inspector import (
-    StageAST as _InspectorStageAST,
-    synapse_inspect_stage as _synapse_inspect_stage,
+    configure_transport as _inspector_configure_transport,
 )
-from synapse.inspector.exceptions import InspectorError as _InspectorError
+from synapse.cognitive.dispatcher import (
+    AgentToolError as _AgentToolError,
+    Dispatcher as _Dispatcher,
+)
+from synapse.cognitive.tools.inspect_stage import inspect_stage as _inspect_stage_tool
 
 _INSPECTOR_TOOL_NAME = "synapse_inspect_stage"
 _INSPECTOR_TOOL_DESC = (
@@ -508,28 +517,29 @@ def _inspector_wrap_stdout_capture(code: str) -> str:
     )
 
 
-async def _inspector_call_tool(arguments: dict) -> list:
-    """Handle synapse_inspect_stage MCP tool invocation.
+# Lazy Dispatcher singleton. Built once on first invocation so the
+# asyncio loop exists before we capture it in the transport closure.
+# Caches across calls because the loop is stable for the MCP session.
+_inspector_dispatcher: _Dispatcher | None = None
 
-    Architecture:
-      1. Build a sync transport closure that wraps code with stdout
-         capture and posts work to the running event loop via
-         run_coroutine_threadsafe (the only safe async→sync bridge
-         when the caller runs inside the loop's own thread).
-      2. Run synapse_inspect_stage() in a worker thread via to_thread
-         — the sync transport then schedules send_command on the loop
-         from that worker thread and awaits the result.
-      3. Serialize the StageAST via .to_json() for MCP delivery.
-      4. Convert Inspector exceptions into JSON-safe error envelopes.
+
+def _get_inspector_dispatcher() -> _Dispatcher:
+    """Build the Dispatcher singleton on first use, return it thereafter.
+
+    Must be called from within a running asyncio event loop (i.e. from
+    inside an async handler) because the sync transport closure captures
+    the loop to bridge back to it via ``run_coroutine_threadsafe``.
     """
-    target_path = arguments.get("target_path", "/stage")
-    timeout_arg = arguments.get("timeout")
-    effective_timeout = (
-        float(timeout_arg) if timeout_arg is not None else 30.0
-    )
+    global _inspector_dispatcher
+    if _inspector_dispatcher is not None:
+        return _inspector_dispatcher
+
     loop = asyncio.get_running_loop()
 
     def _sync_transport(code: str, *, timeout=None) -> str:
+        """Inspector transport: runs on a worker thread; marshals the
+        execute_python command back onto the MCP event loop, waits for
+        the response, returns the captured stdout string."""
         wrapped = _inspector_wrap_stdout_capture(code)
         fut = asyncio.run_coroutine_threadsafe(
             send_command(
@@ -538,39 +548,59 @@ async def _inspector_call_tool(arguments: dict) -> list:
             ),
             loop,
         )
+        effective = timeout if timeout is not None else 30.0
         try:
-            data = fut.result(
-                timeout=timeout if timeout is not None else effective_timeout
-            )
+            data = fut.result(timeout=effective)
         except Exception as e:
             raise RuntimeError(f"execute_python transport failed: {e}") from e
         return (data or {}).get("result", "") or ""
 
+    _inspector_configure_transport(_sync_transport)
+    _inspector_dispatcher = _Dispatcher(
+        is_testing=True,
+        tools={_INSPECTOR_TOOL_NAME: _inspect_stage_tool},
+    )
+    return _inspector_dispatcher
+
+
+async def _inspector_call_tool(arguments: dict) -> list:
+    """Handle synapse_inspect_stage MCP tool invocation via the Dispatcher.
+
+    Spike 1 Strangler Fig port:
+      1. The Dispatcher (cognitive layer) owns tool dispatch. Its
+         ``is_testing=True`` path runs the tool synchronously on the
+         worker thread — no Qt event loop required.
+      2. The tool (``synapse.cognitive.tools.inspect_stage.inspect_stage``)
+         is a pure-Python port of the Sprint 2 Inspector. It calls the
+         Inspector's transport (configured above) under the hood.
+      3. ``asyncio.to_thread`` runs the whole chain off the event loop;
+         the transport closure posts work back onto it via
+         ``run_coroutine_threadsafe``.
+
+    Error handling: Dispatcher never raises. Tool exceptions come back
+    as ``AgentToolError`` values and are mapped back to the Sprint 2 WS
+    error envelope shape so external MCP consumers see no contract
+    change.
+    """
+    target_path = arguments.get("target_path", "/stage")
+    timeout_arg = arguments.get("timeout")
+
+    kwargs: dict = {"target_path": target_path}
+    if timeout_arg is not None:
+        kwargs["timeout"] = float(timeout_arg)
+
     try:
-        ast = await asyncio.to_thread(
-            _synapse_inspect_stage,
-            target_path,
-            execute_python_fn=_sync_transport,
-            timeout=effective_timeout,
+        dispatcher = _get_inspector_dispatcher()
+        result = await asyncio.to_thread(
+            dispatcher.execute, _INSPECTOR_TOOL_NAME, kwargs,
         )
-    except _InspectorError as e:
-        return [TextContent(
-            type="text",
-            text=_dumps_str({
-                "error": type(e).__name__,
-                "message": str(e),
-                "target_path": target_path,
-            }),
-        )]
     except ConnectionError as e:
         return [TextContent(
             type="text",
             text=f"Couldn't reach Synapse \u2014 {e}",
         )]
-    except RuntimeError as e:
-        return [TextContent(type="text", text=f"Synapse hit a snag: {e}")]
     except Exception as e:
-        logger.exception("Unexpected error in synapse_inspect_stage")
+        logger.exception("Unexpected error dispatching synapse_inspect_stage")
         return [TextContent(
             type="text",
             text=_dumps_str({
@@ -580,7 +610,19 @@ async def _inspector_call_tool(arguments: dict) -> list:
             }),
         )]
 
-    return [TextContent(type="text", text=ast.to_json())]
+    if isinstance(result, _AgentToolError):
+        # Preserve the Sprint 2 WS adapter error envelope shape so MCP
+        # callers don't see a contract change from the Strangler Fig.
+        return [TextContent(
+            type="text",
+            text=_dumps_str({
+                "error": result.error_type,
+                "message": result.error_message,
+                "target_path": target_path,
+            }),
+        )]
+
+    return [TextContent(type="text", text=_dumps_str(result))]
 
 
 @server.list_tools()
