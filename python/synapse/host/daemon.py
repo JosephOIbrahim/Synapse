@@ -49,12 +49,24 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import queue
 import sys
 import threading
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional
 
+from synapse.cognitive.agent_loop import (
+    AgentTurnConfig,
+    AgentTurnResult,
+    STATUS_CANCELLED,
+    STATUS_API_ERROR,
+    run_turn,
+)
 from synapse.cognitive.dispatcher import Dispatcher
-from synapse.cognitive.tools.inspect_stage import inspect_stage
+from synapse.cognitive.tools.inspect_stage import (
+    INSPECT_STAGE_SCHEMA,
+    inspect_stage,
+)
 from synapse.host.auth import get_anthropic_api_key
 from synapse.host.dialog_suppression import suppress_modal_dialogs
 from synapse.host.main_thread_executor import main_thread_exec
@@ -67,6 +79,24 @@ DEFAULT_START_TIMEOUT_SECONDS: float = 5.0
 
 DEFAULT_STOP_TIMEOUT_SECONDS: float = 10.0
 """Max time to wait for the daemon thread to exit after cancel."""
+
+_REQUEST_POLL_INTERVAL_SECONDS: float = 0.25
+"""How often the daemon thread checks its request queue AND the
+cancel event. Short enough that ``cancel()`` → exit latency is
+bounded; long enough that idle loops don't peg a core."""
+
+
+@dataclass
+class _AgentRequest:
+    """Internal envelope for a submit_turn request queued to the daemon.
+
+    Kept private — callers use ``SynapseDaemon.submit_turn``.
+    """
+
+    user_prompt: str
+    config: AgentTurnConfig
+    result_queue: "queue.Queue[AgentTurnResult]"
+    submitted_at: float = field(default_factory=lambda: 0.0)
 
 
 class DaemonBootError(RuntimeError):
@@ -105,6 +135,7 @@ class SynapseDaemon:
         main_thread_executor: Optional[
             Callable[[Callable, Dict[str, Any]], Dict[str, Any]]
         ] = None,
+        anthropic_client_factory: Optional[Callable[[str], Any]] = None,
     ) -> None:
         """Construct the daemon (boot is deferred to ``start()``).
 
@@ -123,14 +154,22 @@ class SynapseDaemon:
                 ``suppress_modal_dialogs()`` around
                 ``main_thread_exec``. Tests can inject a pure-Python
                 stub to exercise the daemon outside Houdini.
+            anthropic_client_factory: Optional callable that accepts
+                the resolved API key and returns a client object with
+                a ``messages.create(...)`` method. Default imports
+                ``anthropic.Anthropic`` at boot time. Tests inject a
+                mock so no real API calls are made.
         """
         self._api_key_override = api_key
         self._thread_name = thread_name
         self._boot_gate_enabled = boot_gate
         self._custom_executor = main_thread_executor
+        self._client_factory = anthropic_client_factory
 
         self._thread: Optional[threading.Thread] = None
         self._dispatcher: Optional[Dispatcher] = None
+        self._anthropic_client: Optional[Any] = None
+        self._request_queue: "queue.Queue[_AgentRequest]" = queue.Queue()
         self._cancel_event = threading.Event()
         self._started_event = threading.Event()
         self._exit_event = threading.Event()
@@ -191,8 +230,11 @@ class SynapseDaemon:
         self._apply_event_loop_policy()
         self._warn_if_user_site_active()
         self._dispatcher = self._build_dispatcher()
+        self._anthropic_client = self._build_anthropic_client()
 
-        # Reset signals for a fresh run
+        # Reset signals for a fresh run. The request queue is drained
+        # so any stale submit_turn()s from a prior cycle don't fire.
+        self._drain_request_queue()
         self._cancel_event.clear()
         self._started_event.clear()
         self._exit_event.clear()
@@ -337,30 +379,187 @@ class SynapseDaemon:
         executor = self._custom_executor or _default_executor
         return Dispatcher(
             tools={"synapse_inspect_stage": inspect_stage},
+            schemas={"synapse_inspect_stage": INSPECT_STAGE_SCHEMA},
             main_thread_executor=executor,
         )
+
+    def _build_anthropic_client(self) -> Any:
+        """Construct the Anthropic client for the agent loop.
+
+        Default: imports ``anthropic.Anthropic`` lazily so stock-Python
+        test paths don't pay the import cost. Tests inject
+        ``anthropic_client_factory`` to bypass the real SDK entirely.
+
+        Raises:
+            DaemonBootError: anthropic SDK is not installed and no
+                factory was provided. Actionable because Spike 0's
+                install recipe for hython's site-packages is
+                ``hython -m pip install anthropic`` (with the
+                sys.path-stripping launcher documented there).
+        """
+        if self._client_factory is not None:
+            return self._client_factory(self._resolved_api_key or "")
+
+        try:
+            from anthropic import Anthropic  # type: ignore[import-not-found]
+        except ImportError as exc:
+            raise DaemonBootError(
+                "anthropic SDK is not installed in this Python. "
+                "See Spike 0's install recipe for hython; for stock-"
+                "Python tests pass anthropic_client_factory explicitly."
+            ) from exc
+        return Anthropic(api_key=self._resolved_api_key)
+
+    def _drain_request_queue(self) -> None:
+        """Empty the request queue. Called on start() before the thread
+        takes over, so stale requests from a prior cycle don't fire
+        into the new agent loop."""
+        try:
+            while True:
+                self._request_queue.get_nowait()
+        except queue.Empty:
+            pass
+
+    # -- submit_turn -----------------------------------------------------
+
+    def submit_turn(
+        self,
+        user_prompt: str,
+        *,
+        system: str = "",
+        model: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        max_iterations: Optional[int] = None,
+        wait_timeout: Optional[float] = None,
+    ) -> AgentTurnResult:
+        """Submit a prompt to the agent loop; block until it returns.
+
+        Blocks the caller's thread while the daemon thread runs the
+        turn. Tool dispatches inside the turn go through the
+        Dispatcher (and thus through the host-layer main-thread
+        executor → hdefereval in GUI mode, direct exec in headless).
+
+        Args:
+            user_prompt: The user message kicking off the turn.
+            system: Optional system prompt.
+            model: Override the default model for this turn.
+            max_tokens: Override per-response token ceiling.
+            max_iterations: Override the cap on API round-trips.
+            wait_timeout: How long to wait for the daemon thread to
+                return a result. ``None`` = wait indefinitely. Tests
+                should always pass a small finite timeout so stuck
+                tests surface loudly.
+
+        Returns:
+            ``AgentTurnResult`` on normal completion.
+
+        Raises:
+            DaemonBootError: daemon is not running.
+            TimeoutError: ``wait_timeout`` elapsed without a result.
+                The request may still be pending or actively running
+                on the daemon thread; use ``cancel()`` + ``stop()``
+                to tear down if needed.
+        """
+        if not self.is_running:
+            raise DaemonBootError(
+                "submit_turn requires a running daemon — call start() first."
+            )
+
+        config = AgentTurnConfig(
+            model=model or AgentTurnConfig.model,
+            max_tokens=max_tokens if max_tokens is not None
+                       else AgentTurnConfig.max_tokens,
+            max_iterations=(max_iterations if max_iterations is not None
+                            else AgentTurnConfig.max_iterations),
+            system=system,
+        )
+        result_queue: "queue.Queue[AgentTurnResult]" = queue.Queue(maxsize=1)
+        request = _AgentRequest(
+            user_prompt=user_prompt,
+            config=config,
+            result_queue=result_queue,
+        )
+        self._request_queue.put(request)
+
+        try:
+            return result_queue.get(timeout=wait_timeout)
+        except queue.Empty as exc:
+            raise TimeoutError(
+                f"submit_turn did not complete within {wait_timeout}s"
+            ) from exc
 
     # -- Thread entry point ---------------------------------------------
 
     def _thread_main(self) -> None:
-        """Phase 1 loop body — signal ready, wait for cancel, exit.
+        """Daemon loop body.
 
-        Phase 2 replaces the single ``wait()`` with the Agent SDK loop.
-        The scaffolding (signal / exit events, error capture) stays
-        intact.
+        Phase 2 (Spike 2.2) shape:
+          1. Signal ``started_event`` so ``start()`` unblocks.
+          2. Loop: pull requests from ``_request_queue`` with a short
+             timeout so cancel latency is bounded. Each request is
+             a ``_AgentRequest`` carrying a user prompt, config, and
+             a reply queue.
+          3. For each request: run ``synapse.cognitive.agent_loop.run_turn``
+             against the dispatcher + cancel event. Post the result
+             back on the request's reply queue.
+          4. Exit loop when ``cancel_event`` fires.
+
+        Cancel semantics:
+          - Between requests: cancel cuts the loop immediately.
+          - During a request: the agent_loop itself checks
+            ``cancel_event`` at every API yield and every tool
+            dispatch and returns STATUS_CANCELLED. The daemon still
+            posts that result back so callers aren't left waiting.
         """
         try:
-            logger.info("Daemon thread entering idle loop (Phase 1 stub)")
             self._started_event.set()
-            # Phase 2: agent loop goes here, checking cancel_event at
-            # every yield point.
-            self._cancel_event.wait()
-            logger.info("Daemon thread received cancel")
+            logger.info("Daemon thread entering request loop")
+            while not self._cancel_event.is_set():
+                try:
+                    request = self._request_queue.get(
+                        timeout=_REQUEST_POLL_INTERVAL_SECONDS,
+                    )
+                except queue.Empty:
+                    continue
+                self._process_request(request)
+            logger.info("Daemon thread received cancel — exiting loop")
         except BaseException as exc:  # noqa: BLE001 — capture everything
             self._thread_error = exc
             logger.exception("Daemon thread raised")
         finally:
             self._exit_event.set()
+
+    def _process_request(self, request: _AgentRequest) -> None:
+        """Run one agent turn against the configured client + dispatcher.
+
+        Never lets a turn failure take down the daemon thread. API
+        errors and unexpected exceptions come back on the reply queue
+        as ``AgentTurnResult`` values (with status STATUS_API_ERROR
+        when the loop caught it, or a synthesized result when the
+        failure escaped the loop itself).
+        """
+        assert self._dispatcher is not None
+        assert self._anthropic_client is not None
+        try:
+            result = run_turn(
+                self._anthropic_client,
+                self._dispatcher,
+                request.user_prompt,
+                cancel_event=self._cancel_event,
+                config=request.config,
+            )
+        except BaseException as exc:  # noqa: BLE001 — protect daemon thread
+            logger.exception("run_turn raised outside its own guard")
+            result = AgentTurnResult(
+                status=STATUS_API_ERROR,
+                error=f"{type(exc).__name__}: {exc}",
+            )
+        try:
+            request.result_queue.put_nowait(result)
+        except queue.Full:
+            # Caller abandoned the request (e.g. timed out and moved
+            # on). Nothing to do — the result is discarded.
+            logger.debug("Dropping turn result — caller queue full")
 
 
 def _default_executor(

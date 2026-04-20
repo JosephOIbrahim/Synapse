@@ -22,6 +22,9 @@ Registration is the caller's responsibility. Example:
 
 from __future__ import annotations
 
-from synapse.cognitive.tools.inspect_stage import inspect_stage
+from synapse.cognitive.tools.inspect_stage import (
+    INSPECT_STAGE_SCHEMA,
+    inspect_stage,
+)
 
-__all__ = ["inspect_stage"]
+__all__ = ["INSPECT_STAGE_SCHEMA", "inspect_stage"]

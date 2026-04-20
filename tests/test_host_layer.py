@@ -576,7 +576,10 @@ class TestDaemonExecutorComposition:
             return fn(**kwargs)
 
         d = SynapseDaemon(
-            api_key="test", boot_gate=False, main_thread_executor=_capture,
+            api_key="test",
+            boot_gate=False,
+            main_thread_executor=_capture,
+            anthropic_client_factory=lambda key: MagicMock(),
         )
         d.start()
         try:
@@ -587,5 +590,194 @@ class TestDaemonExecutorComposition:
             assert result == {"echo": {"value": 42}}
             assert len(seen) == 1
             assert seen[0][1] == {"value": 42}
+        finally:
+            d.stop(timeout=2)
+
+
+class TestDaemonSubmitTurn:
+    """Daemon.submit_turn queues a request, runs the agent loop on the
+    daemon thread, returns the AgentTurnResult. All tests inject a
+    mock Anthropic client — no real API calls."""
+
+    def _make_daemon(self, responses: list):
+        """Build a daemon whose agent loop will consume ``responses``
+        in FIFO order when submit_turn is called."""
+        from synapse.host.daemon import SynapseDaemon
+
+        # Reuse the agent-loop mock harness from test_agent_loop.
+        from test_agent_loop import _MockClient  # type: ignore
+
+        def _factory(_api_key):
+            return _MockClient(responses)
+
+        d = SynapseDaemon(
+            api_key="test",
+            boot_gate=False,
+            main_thread_executor=lambda fn, kwargs: fn(**kwargs),
+            anthropic_client_factory=_factory,
+        )
+        return d
+
+    def test_submit_turn_end_to_end(self):
+        from test_agent_loop import _MockResponse  # type: ignore
+        from synapse.host import STATUS_COMPLETE
+
+        d = self._make_daemon([
+            _MockResponse(
+                [{"type": "text", "text": "ok"}], stop_reason="end_turn"
+            )
+        ])
+        d.start()
+        try:
+            result = d.submit_turn("hi", wait_timeout=5)
+            assert result.status == STATUS_COMPLETE
+            assert result.iterations == 1
+        finally:
+            d.stop(timeout=2)
+
+    def test_submit_turn_raises_when_daemon_not_running(self):
+        from synapse.host.daemon import DaemonBootError, SynapseDaemon
+
+        d = SynapseDaemon(
+            api_key="test",
+            boot_gate=False,
+            anthropic_client_factory=lambda k: MagicMock(),
+        )
+        with pytest.raises(DaemonBootError, match="running daemon"):
+            d.submit_turn("hi", wait_timeout=1)
+
+    def test_submit_turn_timeout_raises_timeouterror(self):
+        """If the agent loop hangs (simulated via a blocking mock),
+        submit_turn must surface as TimeoutError, not silently wait."""
+        from synapse.host.daemon import SynapseDaemon
+
+        blocked = threading.Event()
+        release = threading.Event()
+
+        class _HangingClient:
+            def __init__(self, *a, **kw):
+                self.messages = self
+
+            def create(self, **kwargs):
+                blocked.set()
+                release.wait(timeout=2)
+                raise RuntimeError("should not reach")
+
+        d = SynapseDaemon(
+            api_key="test",
+            boot_gate=False,
+            main_thread_executor=lambda fn, kwargs: fn(**kwargs),
+            anthropic_client_factory=lambda k: _HangingClient(),
+        )
+        d.start()
+        try:
+            with pytest.raises(TimeoutError):
+                d.submit_turn("hi", wait_timeout=0.5)
+            # Ensure the daemon thread did pick up the request so we
+            # actually exercised the blocking path.
+            assert blocked.wait(timeout=1)
+        finally:
+            release.set()
+            d.cancel()
+            d.stop(timeout=2)
+
+    def test_cancel_cuts_in_flight_turn(self):
+        """Cancel the daemon while the agent loop is mid-yield."""
+        from test_agent_loop import _MockMessagesAPI, _MockResponse  # type: ignore
+        from synapse.host import STATUS_CANCELLED
+        from synapse.host.daemon import SynapseDaemon
+
+        released = threading.Event()
+
+        class _WaitingMessagesAPI(_MockMessagesAPI):
+            def create(self, **kwargs):
+                released.wait(timeout=2)
+                return super().create(**kwargs)
+
+        class _Client:
+            def __init__(self):
+                self.messages = _WaitingMessagesAPI([
+                    _MockResponse(
+                        [{"type": "text", "text": "ok"}],
+                        stop_reason="end_turn",
+                    )
+                ])
+
+        d = SynapseDaemon(
+            api_key="test",
+            boot_gate=False,
+            main_thread_executor=lambda fn, kwargs: fn(**kwargs),
+            anthropic_client_factory=lambda k: _Client(),
+        )
+        d.start()
+        try:
+            # Submit a turn from a helper thread so we can observe it cancel.
+            result_holder: list = []
+
+            def _runner():
+                result_holder.append(d.submit_turn("hi", wait_timeout=5))
+
+            t = threading.Thread(target=_runner, daemon=True)
+            t.start()
+            # Give the daemon thread a moment to start processing.
+            threading.Event().wait(0.1)
+            d.cancel()
+            released.set()  # let the mock create finally return
+            t.join(timeout=3)
+            assert result_holder, "submit_turn never returned"
+            assert result_holder[0].status == STATUS_CANCELLED
+        finally:
+            d.stop(timeout=2)
+
+    def test_stop_drains_unprocessed_requests(self):
+        """Restart cycle: a stale request in the queue from a prior
+        run must not fire into the new agent loop."""
+        from test_agent_loop import _MockResponse  # type: ignore
+        from synapse.host import STATUS_COMPLETE
+        from synapse.host.daemon import SynapseDaemon
+
+        class _Client:
+            def __init__(self):
+                self.messages = self
+
+            def create(self, **kwargs):
+                return _MockResponse(
+                    [{"type": "text", "text": "fresh"}], stop_reason="end_turn"
+                )
+
+        d = SynapseDaemon(
+            api_key="test",
+            boot_gate=False,
+            main_thread_executor=lambda fn, kwargs: fn(**kwargs),
+            anthropic_client_factory=lambda k: _Client(),
+        )
+        d.start()
+        try:
+            r1 = d.submit_turn("first", wait_timeout=5)
+            assert r1.status == STATUS_COMPLETE
+        finally:
+            d.stop(timeout=2)
+
+        # Enqueue a request AFTER stop(). Next start() must drain it.
+        # (Direct internal access — testing the drain path is the point.)
+        import queue as _q
+        from test_agent_loop import _MockResponse  # type: ignore
+        from synapse.cognitive.agent_loop import AgentTurnConfig
+        from synapse.host.daemon import _AgentRequest
+        reply_q: "_q.Queue[Any]" = _q.Queue(maxsize=1)
+        d._request_queue.put(_AgentRequest(
+            user_prompt="stale",
+            config=AgentTurnConfig(),
+            result_queue=reply_q,
+        ))
+
+        d.start()
+        try:
+            # The stale request must NOT have fired. Reply queue stays empty.
+            with pytest.raises(_q.Empty):
+                reply_q.get(timeout=0.5)
+            # Fresh turn still works.
+            r2 = d.submit_turn("second", wait_timeout=5)
+            assert r2.status == STATUS_COMPLETE
         finally:
             d.stop(timeout=2)

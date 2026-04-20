@@ -24,6 +24,15 @@ from synapse.host.daemon import (
     DaemonBootError,
     SynapseDaemon,
 )
+from synapse.cognitive.agent_loop import (
+    AgentTurnConfig,
+    AgentTurnResult,
+    STATUS_API_ERROR,
+    STATUS_CANCELLED,
+    STATUS_COMPLETE,
+    STATUS_MAX_ITERATIONS,
+    STATUS_UNKNOWN_STOP,
+)
 from synapse.host.dialog_suppression import (
     SUPPRESSED_METHODS,
     ModalDialogSuppressedError,
@@ -46,6 +55,14 @@ __all__ = [
     "DEFAULT_STOP_TIMEOUT_SECONDS",
     "DaemonBootError",
     "SynapseDaemon",
+    # Agent loop (re-exported for convenience)
+    "AgentTurnConfig",
+    "AgentTurnResult",
+    "STATUS_API_ERROR",
+    "STATUS_CANCELLED",
+    "STATUS_COMPLETE",
+    "STATUS_MAX_ITERATIONS",
+    "STATUS_UNKNOWN_STOP",
     # Dialog suppression
     "SUPPRESSED_METHODS",
     "ModalDialogSuppressedError",

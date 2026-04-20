@@ -33,6 +33,41 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 
+INSPECT_STAGE_SCHEMA: Dict[str, Any] = {
+    "description": (
+        "Extracts the AST of the Houdini Solaris /stage context. Returns "
+        "USD prim paths, topology, error states, and flags for every "
+        "node. Enables scene-aware responses across sessions."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "target_path": {
+                "type": "string",
+                "description": (
+                    "Houdini context path to inspect. Defaults to "
+                    "'/stage'. Must be absolute and match "
+                    "/[a-zA-Z0-9_/]+."
+                ),
+            },
+            "timeout": {
+                "type": "number",
+                "description": (
+                    "Per-call transport timeout in seconds (default 30)."
+                ),
+            },
+        },
+        "required": [],
+    },
+}
+"""Anthropic tool-use schema for ``synapse_inspect_stage``.
+
+Keep in sync with ``inspect_stage``'s signature. The MCP server
+(``mcp_server.py``) and the in-process daemon both register the same
+schema so the agent sees a consistent tool interface across transports.
+"""
+
+
 def inspect_stage(
     target_path: str = "/stage",
     *,

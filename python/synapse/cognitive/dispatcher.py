@@ -127,6 +127,7 @@ class Dispatcher:
         *,
         is_testing: bool = False,
         tools: Optional[Mapping[str, ToolFn]] = None,
+        schemas: Optional[Mapping[str, Dict[str, Any]]] = None,
         main_thread_executor: Optional[Callable[[ToolFn, Dict[str, Any]],
                                                 Dict[str, Any]]] = None,
     ) -> None:
@@ -139,6 +140,12 @@ class Dispatcher:
             tools: Optional initial tool registry. Maps tool name to
                 a callable accepting JSON-serializable kwargs and
                 returning a dict.
+            schemas: Optional initial schema registry. Maps tool name
+                to a dict with ``description`` and ``input_schema``
+                keys — used to assemble Anthropic's ``tools=[...]``
+                parameter at agent-turn time. Tools without schemas
+                are still dispatchable but invisible to the agent
+                loop (the LLM never hears about them).
             main_thread_executor: Optional callable of the shape
                 ``(fn, kwargs) -> dict`` that marshals ``fn(**kwargs)``
                 onto Houdini's main thread. Wired in Spike 1 via
@@ -149,19 +156,56 @@ class Dispatcher:
         """
         self.is_testing = is_testing
         self._tools: Dict[str, ToolFn] = dict(tools) if tools else {}
+        self._schemas: Dict[str, Dict[str, Any]] = dict(schemas) if schemas else {}
         self._main_thread_executor = main_thread_executor
 
     # -- Tool registry surface (minimal — full registration arrives in Spike 1) --
 
-    def register(self, tool_name: str, fn: ToolFn) -> None:
-        """Register a tool callable under ``tool_name``.
+    def register(
+        self,
+        tool_name: str,
+        fn: ToolFn,
+        *,
+        schema: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Register a tool callable (and optional schema) under ``tool_name``.
 
         Overwrites any previous registration under the same name.
+
+        Args:
+            tool_name: Name the agent will use when invoking the tool.
+            fn: Pure-Python callable accepting kwargs, returning dict.
+            schema: Optional schema dict with ``description`` and
+                ``input_schema`` keys. Required for the tool to be
+                discoverable by the Anthropic agent loop via
+                ``tool_schemas()``.
         """
         self._tools[tool_name] = fn
+        if schema is not None:
+            self._schemas[tool_name] = schema
 
     def is_registered(self, tool_name: str) -> bool:
         return tool_name in self._tools
+
+    def tool_schemas(self) -> list[Dict[str, Any]]:
+        """Return tool definitions in Anthropic's ``tools=[...]`` format.
+
+        Only tools with registered schemas appear. Tools without a
+        schema are dispatchable via ``execute()`` but invisible to
+        the agent loop. Output is a fresh list each call — safe for
+        the caller to mutate.
+        """
+        return [
+            {
+                "name": name,
+                "description": schema.get("description", ""),
+                "input_schema": schema.get(
+                    "input_schema",
+                    {"type": "object", "properties": {}, "required": []},
+                ),
+            }
+            for name, schema in self._schemas.items()
+        ]
 
     # -- Execute --
 
