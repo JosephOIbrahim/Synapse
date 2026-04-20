@@ -49,7 +49,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import queue
 import sys
 import threading
@@ -231,7 +230,6 @@ class SynapseDaemon:
         self._apply_event_loop_policy()
         self._warn_if_user_site_active()
         self._dispatcher = self._build_dispatcher()
-        self._boot_inspector_transport()
         self._anthropic_client = self._build_anthropic_client()
 
         # Reset signals for a fresh run. The request queue is drained
@@ -421,53 +419,6 @@ class SynapseDaemon:
                 self._request_queue.get_nowait()
         except queue.Empty:
             pass
-
-    def _boot_inspector_transport(self) -> None:
-        """Wire the Inspector's global transport to the in-process executor.
-
-        Sprint 2.3 bug fix: the ``inspect_stage`` cognitive tool calls
-        ``synapse.inspector.synapse_inspect_stage`` internally, which
-        dispatches through the Inspector's configured transport (a
-        ``TransportFn`` registered via
-        ``synapse.inspector.configure_transport``). Pre-2.3, the daemon
-        never registered one — the first tool call raised
-        ``TransportNotConfiguredError``. Baseline Crucible caught this.
-
-        Idempotent: ``is_transport_configured()`` checked first. If
-        something else already registered a transport (test fixture,
-        external bootstrap, prior daemon cycle), leave that intact —
-        the caller has a reason and we are not in the business of
-        second-guessing it.
-
-        Belt-and-suspenders: seeds the
-        ``SYNAPSE_INSPECTOR_LIVE_TRANSPORT_MODULE`` env var when unset.
-        That's the resolution path ``tests/test_inspect_live.py`` uses
-        to find a transport when ``configure_transport`` wasn't called
-        in the consumer process.
-        """
-        # Function-scope imports — cognitive layer is already loaded by
-        # the time we get here (dispatcher was built above), but keeping
-        # these local avoids polluting the module-level import graph.
-        from synapse.inspector import (
-            configure_transport,
-            is_transport_configured,
-        )
-        from synapse.host import transport as _host_transport
-
-        if is_transport_configured():
-            logger.debug(
-                "Inspector transport already configured — leaving intact"
-            )
-        else:
-            configure_transport(_host_transport.execute_python)
-            logger.info(
-                "Inspector transport wired: synapse.host.transport.execute_python"
-            )
-
-        env_var = "SYNAPSE_INSPECTOR_LIVE_TRANSPORT_MODULE"
-        if env_var not in os.environ:
-            os.environ[env_var] = "synapse.host.transport"
-            logger.debug("%s seeded to synapse.host.transport", env_var)
 
     # -- submit_turn -----------------------------------------------------
 

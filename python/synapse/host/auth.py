@@ -1,26 +1,23 @@
-"""API-key retrieval for the SYNAPSE agent daemon.
+"""API-key retrieval for the SYNAPSE agent daemon (Sprint 3 Spike 2 P1).
 
-Sources, checked in order:
+Two sources, checked in order:
 
-  1. ``hou.secure.password('synapse_anthropic')`` — **optional, forward-
-     compatible path.** Confirmed **not** present in Houdini 21.0.671
-     (baseline Spike 2.3 finding: only ``secureSelectionOption`` in
-     ``dir(hou)`` matches ``secure``). Retained so that when SideFX
-     ships a secure-credentials API in a future Houdini release, SYNAPSE
-     picks it up without code changes.
-  2. ``ANTHROPIC_API_KEY`` env var — **current production path.** Used
-     by ``spikes/spike_0.py`` and the Sprint 2+ daemon.
+  1. ``hou.secure.password('synapse_anthropic')`` — resolved against
+     Houdini's native secret store (Windows Credential Manager under the
+     hood). Production default. Zero external deps, OS-level encryption.
+  2. ``ANTHROPIC_API_KEY`` env var — dev and CI fallback. Also used by
+     ``spikes/spike_0.py`` so the same key works across modes.
 
 Returns ``None`` if neither source provides a usable key; caller decides
 whether to halt boot or continue in a degraded mode.
 
-One-shot INFO log at import time announces which path is live on this
-Houdini build so operators see the fallback decision in the logs
-without having to read the source.
+Label convention: ``synapse_anthropic`` is the canonical key name.
+Setting it from a Houdini Python shell::
 
-Label convention: ``synapse_anthropic`` is the canonical key name
-(shared with ``spikes/spike_0.py`` and the runbook). Rename only in
-lockstep across all three call sites and the deployment docs.
+    hou.secure.setPassword('synapse_anthropic', 'sk-ant-...')
+
+This label is shared with ``spike_0.py`` — do not rename without updating
+both call sites and the deployment docs.
 """
 
 from __future__ import annotations
@@ -41,48 +38,13 @@ ENV_VAR: str = "ANTHROPIC_API_KEY"
 """Fallback env var name. Matches the Anthropic SDK's default."""
 
 
-# ---------------------------------------------------------------------------
-# One-shot availability detection at import time (Spike 2.3).
-# ---------------------------------------------------------------------------
-# Confirmed empirically in Houdini 21.0.671: ``hou.secure`` is absent.
-# This block logs that observation ONCE at import so operators see
-# which credential path is live without spelunking through source.
-# The runtime ``_try_hou_secure`` still probes dynamically — that
-# preserves forward compatibility for future Houdini releases and
-# honours test-level mocks of ``hou.secure``.
-try:
-    import hou as _hou_probe  # type: ignore[import-not-found]
-except ImportError:
-    logger.debug("hou unavailable — auth module running outside Houdini")
-else:
-    _secure_attrs = [n for n in dir(_hou_probe) if "secure" in n.lower()]
-    if "secure" in _secure_attrs and hasattr(
-        getattr(_hou_probe, "secure"), "password"
-    ):
-        logger.debug(
-            "hou.secure.password available — credential store path live"
-        )
-    else:
-        logger.info(
-            "hou.secure not available in this Houdini build "
-            "(attrs matching 'secure': %s). Falling back to %s env var.",
-            _secure_attrs,
-            ENV_VAR,
-        )
-    del _hou_probe, _secure_attrs
-
-
 def _try_hou_secure() -> Optional[str]:
-    """Fetch the API key from ``hou.secure.password`` — if available.
+    """Fetch the API key from ``hou.secure.password``.
 
-    Forward-compatible probe. Returns ``None`` on any of:
-      - ``hou`` is unimportable (not running inside Houdini).
-      - ``hou.secure`` is absent (empirically true in 21.0.671).
-      - ``hou.secure.password`` is absent (older Houdini builds).
-      - ``hou.secure.password(CREDENTIAL_LABEL)`` raises (any exception).
-      - Returned value is empty / whitespace.
-
-    Never raises. Caller routes to the env-var path on ``None``.
+    Returns ``None`` if ``hou`` is unavailable (not running inside
+    Houdini), if ``hou.secure`` is missing (older Houdini builds), or
+    if no password is stored under ``CREDENTIAL_LABEL``. Any exception
+    is downgraded to a debug log — boot continues via the env var path.
     """
     try:
         import hou  # type: ignore[import-not-found]
@@ -91,11 +53,12 @@ def _try_hou_secure() -> Optional[str]:
 
     secure = getattr(hou, "secure", None)
     if secure is None:
-        # Logged once at module import — don't spam on every call.
+        logger.debug("hou.secure not present on this Houdini build")
         return None
 
     password_fn = getattr(secure, "password", None)
     if password_fn is None:
+        logger.debug("hou.secure has no password() method")
         return None
 
     try:
