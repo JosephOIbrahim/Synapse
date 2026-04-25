@@ -269,12 +269,18 @@ class SynapseDaemon:
         self._cancel_event.set()
 
     def stop(self, timeout: float = DEFAULT_STOP_TIMEOUT_SECONDS) -> None:
-        """Cancel and join the daemon thread.
+        """Cancel and join the daemon thread, then drain pending requests.
 
         Args:
             timeout: Join timeout in seconds. If the thread does not
                 exit within this budget, a warning is logged and the
                 method returns — Python cannot force-kill a thread.
+
+        The drain runs after the join so we don't race the daemon
+        thread's own consumption of the queue. Any request that was
+        queued but never popped has its handle cancelled, so callers
+        blocked in ``handle.result(...)`` see ``TurnCancelled`` rather
+        than hanging forever (design § 4.6).
         """
         self.cancel()
         if self._thread is not None and self._thread.is_alive():
@@ -285,6 +291,7 @@ class SynapseDaemon:
                     timeout,
                 )
         self._thread = None
+        self._drain_request_queue()
 
     # -- Boot chain steps ------------------------------------------------
 
