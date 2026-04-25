@@ -18,6 +18,30 @@ Setting it from a Houdini Python shell::
 
 This label is shared with ``spike_0.py`` — do not rename without updating
 both call sites and the deployment docs.
+
+Spike 2.4 — production path is the env var
+------------------------------------------
+**Production path: ``ANTHROPIC_API_KEY`` env var.** Houdini 21.0.671
+does not expose ``hou.secure``. The runtime ``_try_hou_secure`` probe
+is retained for forward compatibility: when SideFX ships a
+``hou.secure.password(label)`` API in a future release, this module
+picks it up without code changes. Until then, ``_try_hou_secure``
+returns ``None`` silently and the env var path is taken on every call.
+**No logging is emitted on fallback** — operators verify path liveness
+via boot-time ``daemon._resolved_api_key`` inspection, not log
+scraping.
+
+Setting the credential::
+
+    export ANTHROPIC_API_KEY=sk-ant-...
+
+Or, when ``hou.secure`` becomes available::
+
+    hou.secure.setPassword('synapse_anthropic', 'sk-ant-...')
+
+The label ``synapse_anthropic`` is shared with ``spikes/spike_0.py``.
+Rename only in lockstep across both call sites and the deployment
+docs.
 """
 
 from __future__ import annotations
