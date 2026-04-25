@@ -8,7 +8,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/cognitive/dispatcher.py"><img src="https://img.shields.io/badge/dispatcher-Strangler%20Fig-1e293b.svg" alt="Dispatcher"></a>
   <a href="python/synapse/host/daemon.py"><img src="https://img.shields.io/badge/daemon-in--process-f59e0b.svg" alt="Daemon"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-2700%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-2752%20passing-brightgreen.svg" alt="Tests"></a>
 </p>
 
 ---
@@ -173,6 +173,7 @@ daemon.stop()
 | Cognitive substrate (Dispatcher + `AgentToolError` + cognitive/host split) | Shipping. Zero-hou boundary enforced by lint. |
 | Agent SDK loop (Anthropic, cancel-event-aware, serializable tool errors) | Shipping. Mocked end-to-end tests green. |
 | Daemon lifecycle (boot gate, auth resolver, dialog suppression, bootstrap locks) | Shipping. Windows `WindowsSelectorEventLoopPolicy` + `PYTHONNOUSERSITE` + no-runtime-pip all baked. |
+| `TurnHandle` async result envelope (Spike 2.4) | Shipping. `submit_turn` returns a handle immediately; `submit_turn_blocking` for headless / non-main-thread callers. Deadlock-pinned by 31 unit tests + regression class. |
 | Vendored Anthropic SDK | Shipping. 15 MB at `python/synapse/_vendor/`, Python 3.11 / win\_amd64 ABI lock. |
 | **Tools ported through the Dispatcher** | **1** — `synapse_inspect_stage` (flat `/stage` AST). |
 | **Tools still on the Sprint 2 WebSocket path** | **~103** — working in production, awaiting port. |
@@ -183,29 +184,48 @@ The port pattern is mechanical and documented in `docs/crucible_protocol.md` + t
 2. A schema dict (description + JSON Schema) registered alongside the function.
 3. The WS adapter branch in `mcp_server.py` swapped from `synapse_inspect_stage`-style direct dispatch to `dispatcher.execute('<name>', kwargs)`.
 
-### Known architectural gap — Spike 2.4
+### Recently shipped — Spike 2.4 (deadlock closure)
 
-The live Crucible baseline surfaced a deadlock at the daemon ↔ main-thread boundary:
+The live Crucible baseline at end of Sprint 3 Day 1 surfaced a deadlock at the daemon ↔ main-thread boundary: synchronous `submit_turn` parked Houdini's main thread on a result queue while the daemon thread's `hdefereval` dispatch waited for that same main thread to pump Qt events. 30s `MainThreadTimeoutError` per tool call, every tool call. Latent pre-2.3 because `TransportNotConfiguredError` short-circuited the path before it crossed the boundary; 2.3 wired the transport and the deadlock surfaced on every dispatch.
 
+Spike 2.4 closes it by changing `submit_turn` to return immediately with a `TurnHandle` — a `threading.Event`-backed Future analog. The caller decides when (and on which thread) to wait for the result. Main thread stays free to pump Qt events; daemon thread keeps the agent loop; `hdefereval` lambdas execute because main is responsive.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569','actorBkg':'#1e293b','actorTextColor':'#f1f5f9','actorBorder':'#0f172a','signalColor':'#f59e0b','signalTextColor':'#f1f5f9','noteBkgColor':'#334155','noteTextColor':'#f1f5f9','sequenceNumberColor':'#f1f5f9','labelBoxBkgColor':'#1e293b','labelTextColor':'#f1f5f9','loopTextColor':'#f1f5f9'}}}%%
+sequenceDiagram
+    autonumber
+    actor Caller
+    participant Daemon as Daemon thread
+    participant Main as Main thread<br/>(Qt + hou.*)
+    participant H as TurnHandle
+
+    Caller->>Daemon: submit_turn(prompt)
+    Daemon-->>Caller: TurnHandle (immediate)
+    Note over Caller,Main: Main thread free —<br/>Qt pump runs throughout
+
+    Daemon->>Daemon: run_turn (agent loop)
+    loop tool calls
+        Daemon->>Main: hdefereval lambda
+        Main-->>Daemon: tool result
+    end
+    Daemon->>H: _set_result(AgentTurnResult)
+
+    Caller->>H: done() / wait() / result()
+    H-->>Caller: AgentTurnResult
 ```
-main thread:   submit_turn → result_queue.get() [BLOCKED on Python queue]
-daemon thread: Dispatcher → main_thread_exec
-               → hdefereval waits for main thread Qt pump
-               → main thread blocked on result_queue.get()
-result:        30s MainThreadTimeoutError per tool call
-```
 
-This was masked by `TransportNotConfiguredError` fast-failing in 80789fe; Spike 2.3 wired the transport and unmasked the real issue. Matches the "CI Event Loop Desync" hazard from the Gemini Deep Think Round 3 production audit. Three remediation options identified, scoped for Spike 2.4:
-
-1. **Non-blocking `submit_turn`** returning a `Future`; caller pumps Qt explicitly between polls.
-2. **Qt event pump during wait** — only viable if Houdini exposes an appropriate API (`hou.ui.processEvents()` is confirmed absent in 21.0.631).
-3. **Agent loop off the daemon thread** — run on main thread directly; main thread stays responsive because Anthropic SDK calls yield via `asyncio`.
-
-Each is 4–8 hours of work plus a real test surface. Not a one-line fix.
+Pinned by `tests/test_turn_handle.py` (31 unit tests across 8 classes) plus a deadlock-regression class in `tests/test_host_layer.py`. A `@pytest.mark.live` runbook test exercises the real scenario against graphical Houdini 21.0.671. Test floor is now **2752 passing**, +52 net from the Sprint 3 Day 1 baseline.
 
 ### Sprint 3 — commit tree
 
 ```
+6bf2f07  Docs         Spike 3.0 — PDG API audit infrastructure (in flight)
+582a8b1  Spike 2.4    fix stop() to drain pending handles per design §4.6
+cfdb731  Spike 2.4    CRUCIBLE verification suite (TurnHandle + deadlock regression)
+76ecb21  Docs         Spike 2.4 — ARCHITECT design contract committed
+8aaea0e  Spike 2.4    document hou.secure env-var fallback path
+b1d3163  Spike 2.4    close daemon↔main-thread deadlock via TurnHandle
+6e08dae  Spike 2.4    add TurnHandle (Future-shaped result envelope)
 cce7b34  Revert       revert spike(2.3) — deadlock unmasked by transport fix
 43ee77f  Spike 2.3    auto-wire transport (reverted, kept for 2.4 reference)
 dce8834  Spike 2.2    vendor Anthropic SDK for cross-version portability
@@ -217,7 +237,21 @@ b5a2ce3  Spike 1.0    Dispatcher test-mode bypass + cognitive boundary
 e6f79f9  Spike 0      SDK import gate green (hython + anthropic round-trip)
 ```
 
-Sprint 2 Week 1 (`5e6fc0c`) shipped the first tool (`synapse_inspect_stage`) end-to-end through the still-outside-in WebSocket path. Sprint 3 built the inside-out substrate alongside it, one spike at a time, with a human-in-the-loop Crucible protocol (`docs/crucible_protocol.md`) for the parts bash cannot drive.
+Sprint 2 Week 1 (`5e6fc0c`) shipped the first tool (`synapse_inspect_stage`) end-to-end through the still-outside-in WebSocket path. Sprint 3 built the inside-out substrate alongside it, one spike at a time, with a human-in-the-loop Crucible protocol (`docs/crucible_protocol.md`) for the parts bash cannot drive. Tagged at `v5.5.0` (`4faaa3a`).
+
+### Sprint 3 — what's next
+
+With the deadlock closed, Spike 3 opens the inside-out architecture's first **perception channel** — a `TopsEventBridge` that hooks PDG callbacks into the agent's event queue without any transport hop. The agent stops asking *"what cooked?"* and starts hearing the same events the scheduler emits, in the same heartbeat.
+
+```
+Spike 3.0    PDG API audit — live Houdini 21.0.671 dir() introspection      [in flight]
+Spike 3.1    TopsEventBridge scaffold + headless tests
+Spike 3.2    Auto-warm on scene load
+Spike 3.3    First TOPS event surface (workitem.complete → agent perception)
+Spike 3.4    Hostile TOPS Crucible (event flood, malformed events, cancel)
+```
+
+Spike 3.0's audit infrastructure (`docs/sprint3/spike_3_0_pdg_audit_script.py` + the receiving doc) is the gate for everything downstream. **No Spike 3.1 design opens until empirical PDG findings land** — hard API verification rule, anti-Gemini-assumption.
 
 ---
 
@@ -238,7 +272,7 @@ python/synapse/
 ├── _vendor/                # anthropic + deps, CP311 win_amd64
 └── ...                     # Sprint 2 Week 1 + prior subsystems
 
-tests/                      # 2700 passing, 5 pre-existing failures
+tests/                      # 2752 passing, 5 pre-existing failures
 docs/crucible_protocol.md   # manual Crucible runbook
 mcp_server.py               # Sprint 2 WebSocket adapter (still shipping)
 ```
