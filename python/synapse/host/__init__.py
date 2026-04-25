@@ -44,6 +44,11 @@ from synapse.host.main_thread_executor import (
     main_thread_exec,
 )
 from synapse.host.transport import execute_python
+from synapse.host.turn_handle import (
+    TurnCancelled,
+    TurnHandle,
+    TurnNotComplete,
+)
 
 __all__ = [
     # Auth
@@ -73,4 +78,8 @@ __all__ = [
     "main_thread_exec",
     # In-process transport
     "execute_python",
+    # Turn handle (Spike 2.4 — Future-shaped submit_turn return)
+    "TurnCancelled",
+    "TurnHandle",
+    "TurnNotComplete",
 ]
