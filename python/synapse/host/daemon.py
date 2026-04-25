@@ -70,6 +70,7 @@ from synapse.cognitive.tools.inspect_stage import (
 from synapse.host.auth import get_anthropic_api_key
 from synapse.host.dialog_suppression import suppress_modal_dialogs
 from synapse.host.main_thread_executor import main_thread_exec
+from synapse.host.turn_handle import TurnHandle, TurnNotComplete
 
 logger = logging.getLogger(__name__)
 
@@ -91,11 +92,16 @@ class _AgentRequest:
     """Internal envelope for a submit_turn request queued to the daemon.
 
     Kept private — callers use ``SynapseDaemon.submit_turn``.
+
+    Spike 2.4: ``handle`` replaces the old ``result_queue`` field. The
+    daemon thread posts the result via ``handle._set_result(...)``;
+    callers wait via ``handle.result(...)`` / ``handle.event.wait()``
+    instead of blocking on a per-request ``queue.Queue``.
     """
 
     user_prompt: str
     config: AgentTurnConfig
-    result_queue: "queue.Queue[AgentTurnResult]"
+    handle: TurnHandle
     submitted_at: float = field(default_factory=lambda: 0.0)
 
 
@@ -411,12 +417,19 @@ class SynapseDaemon:
         return Anthropic(api_key=self._resolved_api_key)
 
     def _drain_request_queue(self) -> None:
-        """Empty the request queue. Called on start() before the thread
-        takes over, so stale requests from a prior cycle don't fire
-        into the new agent loop."""
+        """Empty the request queue and cancel any drained handles.
+
+        Called on ``start()`` before the thread takes over, so stale
+        requests from a prior cycle don't fire into the new agent
+        loop, and on ``stop()`` so callers blocked in
+        ``handle.result(...)`` see ``TurnCancelled`` instead of
+        hanging forever (the Spike 2.4 revert path retained the
+        ``queue.Empty`` surface, which left handles dangling).
+        """
         try:
             while True:
-                self._request_queue.get_nowait()
+                stale = self._request_queue.get_nowait()
+                stale.handle.cancel()
         except queue.Empty:
             pass
 
@@ -430,14 +443,87 @@ class SynapseDaemon:
         model: Optional[str] = None,
         max_tokens: Optional[int] = None,
         max_iterations: Optional[int] = None,
+    ) -> TurnHandle:
+        """Submit a prompt to the agent loop and return a ``TurnHandle``
+        immediately. Does NOT block.
+
+        Spike 2.4: this is the non-blocking shape that closes the
+        daemon ↔ main-thread deadlock. The caller polls
+        ``handle.done()``, waits on ``handle.event``, or calls
+        ``handle.result(timeout=...)`` from a thread that is **not**
+        the Houdini main thread. Tool dispatches inside the turn
+        continue to flow through the Dispatcher (and thus through the
+        host-layer main-thread executor → ``hdefereval`` in GUI mode,
+        direct exec in headless).
+
+        The pre-2.4 ``wait_timeout`` parameter is removed — it
+        conflated request submission with result waiting and was the
+        direct vehicle for the deadlock. Callers that want a
+        synchronous shape use ``submit_turn_blocking`` from a
+        non-main thread, or layer their own poll on top of
+        ``handle.done()``.
+
+        Args:
+            user_prompt: The user message kicking off the turn.
+            system: Optional system prompt.
+            model: Override the default model for this turn.
+            max_tokens: Override per-response token ceiling.
+            max_iterations: Override the cap on API round-trips.
+
+        Returns:
+            A ``TurnHandle`` that completes when the daemon finishes
+            the turn. The handle's ``result()`` returns the
+            ``AgentTurnResult``.
+
+        Raises:
+            DaemonBootError: daemon is not running.
+        """
+        if not self.is_running:
+            raise DaemonBootError(
+                "submit_turn requires a running daemon — call start() first."
+            )
+
+        config = AgentTurnConfig(
+            model=model or AgentTurnConfig.model,
+            max_tokens=max_tokens if max_tokens is not None
+                       else AgentTurnConfig.max_tokens,
+            max_iterations=(max_iterations if max_iterations is not None
+                            else AgentTurnConfig.max_iterations),
+            system=system,
+        )
+        handle = TurnHandle()
+        request = _AgentRequest(
+            user_prompt=user_prompt,
+            config=config,
+            handle=handle,
+        )
+        self._request_queue.put(request)
+        return handle
+
+    def submit_turn_blocking(
+        self,
+        user_prompt: str,
+        *,
+        system: str = "",
+        model: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        max_iterations: Optional[int] = None,
         wait_timeout: Optional[float] = None,
     ) -> AgentTurnResult:
-        """Submit a prompt to the agent loop; block until it returns.
+        """Synchronous shape, retained for tests and headless callers.
 
-        Blocks the caller's thread while the daemon thread runs the
-        turn. Tool dispatches inside the turn go through the
-        Dispatcher (and thus through the host-layer main-thread
-        executor → hdefereval in GUI mode, direct exec in headless).
+        Equivalent to::
+
+            handle = self.submit_turn(...)
+            return handle.result(timeout=wait_timeout)
+
+        **DO NOT call from the Houdini main thread in GUI mode** —
+        that re-introduces the Spike 2.4 deadlock. When
+        ``hou.isUIAvailable()`` returns True AND the caller is on the
+        main thread, this method raises ``RuntimeError`` rather than
+        deadlock silently. The detection is best-effort (Python can't
+        always tell), but the explicit raise steers callers off the
+        cliff.
 
         Args:
             user_prompt: The user message kicking off the turn.
@@ -455,38 +541,68 @@ class SynapseDaemon:
 
         Raises:
             DaemonBootError: daemon is not running.
-            TimeoutError: ``wait_timeout`` elapsed without a result.
-                The request may still be pending or actively running
-                on the daemon thread; use ``cancel()`` + ``stop()``
-                to tear down if needed.
+            RuntimeError: called from the Houdini main thread in GUI
+                mode (would deadlock — see Spike 2.4 design).
+            TurnNotComplete: ``wait_timeout`` elapsed without a
+                result. Subclass of stdlib ``TimeoutError`` so
+                ``except TimeoutError`` paths still catch it.
+            TurnCancelled: handle was cancelled before completion
+                (e.g. ``daemon.stop()`` drained the request queue).
         """
-        if not self.is_running:
-            raise DaemonBootError(
-                "submit_turn requires a running daemon — call start() first."
-            )
+        self._guard_against_main_thread_blocking_call()
 
-        config = AgentTurnConfig(
-            model=model or AgentTurnConfig.model,
-            max_tokens=max_tokens if max_tokens is not None
-                       else AgentTurnConfig.max_tokens,
-            max_iterations=(max_iterations if max_iterations is not None
-                            else AgentTurnConfig.max_iterations),
+        handle = self.submit_turn(
+            user_prompt,
             system=system,
+            model=model,
+            max_tokens=max_tokens,
+            max_iterations=max_iterations,
         )
-        result_queue: "queue.Queue[AgentTurnResult]" = queue.Queue(maxsize=1)
-        request = _AgentRequest(
-            user_prompt=user_prompt,
-            config=config,
-            result_queue=result_queue,
-        )
-        self._request_queue.put(request)
-
         try:
-            return result_queue.get(timeout=wait_timeout)
-        except queue.Empty as exc:
-            raise TimeoutError(
-                f"submit_turn did not complete within {wait_timeout}s"
+            return handle.result(timeout=wait_timeout)
+        except TurnNotComplete as exc:
+            # Re-raise with a message that keeps the prior
+            # submit_turn timeout vocabulary so log scrapers don't
+            # need updating. TurnNotComplete IS a TimeoutError, so
+            # callers catching either still work.
+            raise TurnNotComplete(
+                f"submit_turn_blocking did not complete within {wait_timeout}s"
             ) from exc
+
+    @staticmethod
+    def _guard_against_main_thread_blocking_call() -> None:
+        """Raise ``RuntimeError`` if invoked from the Houdini main
+        thread in GUI mode.
+
+        Best-effort detection — both checks are required:
+
+        - ``hou.isUIAvailable()`` is True (we're in graphical Houdini,
+          not headless / stock-Python).
+        - ``threading.current_thread() is threading.main_thread()``.
+
+        Either being False short-circuits the guard (headless mode
+        has only one thread by design; non-main threads can block
+        safely because ``hdefereval`` can drain its queue).
+        """
+        try:
+            import hou  # type: ignore[import-not-found]
+        except ImportError:
+            return  # Stock Python — no main-thread coupling to Qt.
+
+        is_ui_available = getattr(hou, "isUIAvailable", None)
+        if is_ui_available is None or not is_ui_available():
+            return  # Headless mode — single-threaded, safe to block.
+
+        if threading.current_thread() is threading.main_thread():
+            raise RuntimeError(
+                "submit_turn_blocking was called from the Houdini main "
+                "thread in GUI mode. This would deadlock — the main "
+                "thread cannot block on a queue while the daemon "
+                "needs it to drain hdefereval's main-thread queue "
+                "(Spike 2.4). Use submit_turn(...) and poll the "
+                "returned TurnHandle from a callback, or call "
+                "submit_turn_blocking from a non-main thread."
+            )
 
     # -- Thread entry point ---------------------------------------------
 
@@ -533,10 +649,16 @@ class SynapseDaemon:
         """Run one agent turn against the configured client + dispatcher.
 
         Never lets a turn failure take down the daemon thread. API
-        errors and unexpected exceptions come back on the reply queue
-        as ``AgentTurnResult`` values (with status STATUS_API_ERROR
-        when the loop caught it, or a synthesized result when the
-        failure escaped the loop itself).
+        errors and unexpected exceptions come back via
+        ``request.handle._set_result`` as ``AgentTurnResult`` values
+        (with status ``STATUS_API_ERROR`` when the loop caught it, or
+        a synthesized result when the failure escaped the loop
+        itself).
+
+        Idempotency: if the handle is already cancelled (caller
+        invoked ``handle.cancel()`` while we were running), the
+        ``_set_result`` post is logged at debug and dropped. The
+        daemon does not raise.
         """
         assert self._dispatcher is not None
         assert self._anthropic_client is not None
@@ -554,12 +676,11 @@ class SynapseDaemon:
                 status=STATUS_API_ERROR,
                 error=f"{type(exc).__name__}: {exc}",
             )
-        try:
-            request.result_queue.put_nowait(result)
-        except queue.Full:
-            # Caller abandoned the request (e.g. timed out and moved
-            # on). Nothing to do — the result is discarded.
-            logger.debug("Dropping turn result — caller queue full")
+        # Set the handle result with the (possibly synthesized) failure
+        # so callers that polled .result() see the AgentTurnResult
+        # shape they expect. _set_exception is reserved for daemon-
+        # internal failures that don't fit AgentTurnResult.
+        request.handle._set_result(result)
 
 
 def _default_executor(
