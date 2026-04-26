@@ -157,7 +157,7 @@ P0 scope as captured pre-refactor (from 2/15 and 2/19 sessions):
 In the outside-in model, every TOPS event paid a WebSocket round-trip:
 
 ```
-hou.pdg.workItem.cookComplete  →  handler in Houdini
+pdg.WorkItem.cookComplete  →  handler in Houdini
                                →  serialize event
                                →  WebSocket
                                →  external agent
@@ -173,7 +173,7 @@ State synchronization between Houdini's PDG state and the agent's mental model r
 Agent runs IN Houdini's Python interpreter. Daemon already has `hou` in scope. PDG callbacks fire in the same process the agent runs in.
 
 ```
-hou.pdg.workItem.cookComplete  →  in-process Python callback
+pdg.WorkItem.cookComplete  →  in-process Python callback
                                →  publishes to agent's event queue
                                →  agent reacts on next loop iteration
 ```
@@ -224,7 +224,7 @@ class TopsEventBridge:
         self._dispatcher = dispatcher
         self._max_size = max_queue_size
         self._registered_topnets: dict[str, object] = {}
-        self._scene_callback_handle = None
+        self._scene_callback_fn = None
 
     def warm_on_scene_load(self) -> None:
         """Auto-discover TOP networks and register callbacks."""
@@ -234,10 +234,11 @@ class TopsEventBridge:
         for node in hou.node("/").allSubChildren():
             if node.type().category() == hou.topNodeTypeCategory():
                 self._register_topnet(node)
-        # Subscribe to future scene events
-        self._scene_callback_handle = hou.hipFile.addEventCallback(
-            self._on_hip_event
-        )
+        # Subscribe to future scene events.
+        # addEventCallback returns None — removal is by callback identity,
+        # so store the bound function reference for later removeEventCallback.
+        self._scene_callback_fn = self._on_hip_event
+        hou.hipFile.addEventCallback(self._scene_callback_fn)
 
     def _on_hip_event(self, event_type) -> None:
         """Re-warm on scene change."""
@@ -245,11 +246,16 @@ class TopsEventBridge:
             self.warm_on_scene_load()
 
     def _register_topnet(self, topnet) -> None:
-        """Register PDG event callbacks for a TOP network."""
-        # hou.pdg.scheduler / workItem callbacks
-        # Implementation depends on Spike 3.0 audit of hou.pdg API surface
-        # Remember: Houdini 21.0.671 has known divergences from prior versions
-        # Always introspect with dir() before assuming an API exists
+        """Register PDG event callbacks for a TOP network.
+
+        Per Spike 3.0 audit (docs/sprint3/spike_3_0_pdg_api_audit.md):
+          - Use standalone ``pdg`` module (``import pdg as _pdg``)
+          - Live GraphContext via ``topnet.getPDGGraphContext()`` —
+            pdg.GraphContext is the class, but live contexts are
+            acquired via the TOP node instance method, not class-instantiated.
+          - Subscribe with ``pdg.PyEventHandler`` + ``graph_context.addEventHandler(...)``
+          - Filter on ``pdg.EventType.CookComplete`` / ``CookError`` / ``WorkItemResult``
+        """
         ...
 
     def _on_workitem_complete(self, event) -> None:
@@ -273,8 +279,8 @@ class TopsEventBridge:
 
     def shutdown(self) -> None:
         """Clean teardown of all callbacks."""
-        if self._scene_callback_handle and HOU_AVAILABLE:
-            hou.hipFile.removeEventCallback(self._scene_callback_handle)
+        if self._scene_callback_fn and HOU_AVAILABLE:
+            hou.hipFile.removeEventCallback(self._scene_callback_fn)
         # Unregister all per-topnet callbacks
         ...
 ```
@@ -289,15 +295,16 @@ class TopsEventBridge:
 
 ### Hard API verification gate (carried from established constraints)
 
-Houdini 21.0.671 has known divergences from prior versions. Memory: `componentbuilder` doesn't exist natively, `hou.secure` absent, light nodes use `xn__` parameter prefix encoding. PDG/`hou.pdg` API has its own surface and Gemini/external reasoning frequently assumes APIs that don't exist.
+Houdini 21.0.671 has known divergences from prior versions. Memory: `componentbuilder` doesn't exist natively, `hou.secure` absent, light nodes use `xn__` parameter prefix encoding. PDG API lives at standalone `pdg` (not `hou.pdg`, which doesn't resolve in 21.0.671 — confirmed by Spike 3.0 audit) and Gemini/external reasoning frequently assumes APIs that don't exist.
 
 **Before any Spike 3.0 code lands:**
 
 ```python
 # Run inside graphical Houdini 21.0.671 Python Shell
 import hou
-print(dir(hou.pdg))
-print(dir(hou.pdg.scheduler))
+import pdg
+print(dir(pdg))
+print(dir(pdg.Scheduler))
 # Identify event subscription API surface concretely
 # Identify workItem callback registration concretely
 # Identify cook lifecycle event types concretely
