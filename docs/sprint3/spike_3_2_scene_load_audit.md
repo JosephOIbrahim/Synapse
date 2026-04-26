@@ -6,8 +6,8 @@
 > for its output. Spike 3.2's auto-warm scaffold cannot be designed
 > until § 3 (thread-context probe) is filled in.
 >
-> **Status:** PRE-STAGE — script drafted, audit not yet run. § 3 is
-> LOAD-BEARING and gates the Spike 3.2 design pass.
+> **Status:** AUDIT LANDED — § 3 thread-context resolved on
+> MainThread. Spike 3.2 design opens.
 >
 > **Sprint position:** Spike 3.1 (TopsEventBridge scaffold + hostile
 > suite) shipped at commits ``89da296`` (scaffold) and ``bb2713b``
@@ -17,19 +17,19 @@
 
 ---
 
-## 0. Header (operator fills after audit run)
+## 0. Header
 
 | Field | Value |
 |---|---|
-| Audit run | _<TIMESTAMP — printed by script header>_ |
-| Houdini build | 21.0.671 _(verify with ``hou.applicationVersionString()``)_ |
-| Python version | _<operator fills — printed by script header>_ |
+| Audit run | 2026-04-26T13:01:08 |
+| Houdini build | 21.0.671 |
+| Python version | 3.11.7 |
 | Operator | Joe Ibrahim |
 | Script run | ``docs/sprint3/spike_3_2_scene_load_audit_script.py`` |
-| Full report file | _<operator fills — script prints exact path>_ |
-| Audit summary | _<operator fills — N resolved · M missing · E errors>_ |
-| Probe finalization | _<operator fills — `event_captured` / `timeout` / `manual_abort`>_ |
-| Events captured | _<operator fills — count printed in second summary>_ |
+| Full report file | ``C:\Users\User\spike_3_2_scene_load_audit_20260426-130108.txt`` |
+| Audit summary | 6 surfaces resolved · 0 missing · 0 errors · 4 events captured |
+| Probe finalization | afterload_captured |
+| Events captured | 4 |
 
 ### Why this audit exists
 
@@ -85,7 +85,37 @@ before any code lands. Five questions, one of them load-bearing:
 > ``### 1.1 …`` and ``### 1.2 …`` blocks from the report file directly
 > below this line. Annotations belong in § 6 / § 7.
 
-_<paste § 1 here>_
+### 1.1 hou.hipFile.addEventCallback (function surface)
+
+**Resolved path:** ``hou.hipFile.addEventCallback``
+
+**STATUS:** RESOLVED
+**Type:** ``method``
+**Repr:** ``<bound method addEventCallback of <module 'hou.hipFile'>>``
+
+**Signature:** ``(callback)``
+
+**__doc__:**
+```
+<no doc>
+```
+
+**dir() — 1 attributes:**
+```
+  __call__(*args, **kwargs)  -> method-wrapper
+```
+
+### 1.2 Return-value probe (live call)
+
+Subscribe a noop callback, capture the return value, immediately unsubscribe. No event fires; pure API contract probe.
+
+```
+  return value (repr):  None
+  return value (type):  NoneType
+  remove result:        ok
+```
+
+**Implication for Spike 3.2:** if return value is ``None`` (expected, per Spike 3.0 § 3.1), the auto-warm scaffold MUST store the bound callback function reference itself (not a returned handle) and pass that same function reference to ``hou.hipFile.removeEventCallback`` at teardown.
 
 ---
 
@@ -94,7 +124,48 @@ _<paste § 1 here>_
 > Receiving vessel for the script's § 2 output. Paste the raw
 > ``### 2.1 …`` block from the report file directly below this line.
 
-_<paste § 2 here>_
+### 2.1 hou.hipFileEventType (full member dump with values)
+
+**Resolved path:** ``hou.hipFileEventType``
+
+**STATUS:** RESOLVED
+**Type:** ``type``
+
+**Members (public, value-bearing):**
+```
+  AfterClear = hipFileEventType.AfterClear
+  AfterLoad = hipFileEventType.AfterLoad
+  AfterMerge = hipFileEventType.AfterMerge
+  AfterSave = hipFileEventType.AfterSave
+  BeforeClear = hipFileEventType.BeforeClear
+  BeforeLoad = hipFileEventType.BeforeLoad
+  BeforeMerge = hipFileEventType.BeforeMerge
+  BeforeSave = hipFileEventType.BeforeSave
+  thisown = <property object at 0x000000007F82D0D0>
+```
+
+**__doc__:**
+```
+hou.hipFileEventType
+
+Enumeration of the hip file event types that can be handled by callback
+functions.
+
+See hou.hipFile.addEventCallback.
+
+VALUES
+
+
+    BeforeClear
+        This event is triggered immediately before the current .hip file
+        is cleared. For example, when selecting File -> New in the main
+        menu bar.
+
+    AfterClear
+        This event is triggered immediately after the current .hip file
+        is cleared. For example, when selecting File -> New in the main
+        men...[truncated]
+```
 
 ---
 
@@ -106,24 +177,95 @@ _<paste § 2 here>_
 > ``hdefereval`` marshaling — and that decision is structural, not
 > cosmetic.
 
-_<paste § 3 here>_
+**Finalization reason:** ``event_captured``
+**Events captured:** 4
+**Unsubscribe result:** ``ok``
+**Timeout fired:** ``False``
+**Timeout window:** ``300s``
 
-### 3.1 Implication summary (operator fills after paste)
+**Captured event sequence (4 events):**
+
+#### Event 1
+```
+  thread_name            : MainThread
+  thread_id              : 35700
+  is_main_thread         : True
+  event_type_repr        : hipFileEventType.BeforeLoad
+  event_type_str         : hipFileEventType.BeforeLoad
+  event_type_typename    : EnumValue
+  fired_at               : 2026-04-26T13:02:23
+```
+
+#### Event 2
+```
+  thread_name            : MainThread
+  thread_id              : 35700
+  is_main_thread         : True
+  event_type_repr        : hipFileEventType.BeforeClear
+  event_type_str         : hipFileEventType.BeforeClear
+  event_type_typename    : EnumValue
+  fired_at               : 2026-04-26T13:02:23
+```
+
+#### Event 3
+```
+  thread_name            : MainThread
+  thread_id              : 35700
+  is_main_thread         : True
+  event_type_repr        : hipFileEventType.AfterClear
+  event_type_str         : hipFileEventType.AfterClear
+  event_type_typename    : EnumValue
+  fired_at               : 2026-04-26T13:02:23
+```
+
+#### Event 4
+```
+  thread_name            : MainThread
+  thread_id              : 35700
+  is_main_thread         : True
+  event_type_repr        : hipFileEventType.AfterLoad
+  event_type_str         : hipFileEventType.AfterLoad
+  event_type_typename    : EnumValue
+  fired_at               : 2026-04-26T13:02:25
+```
+
+**Headline finding for Spike 3.2 scaffold:**
+
+- AfterLoad fired on thread ``MainThread`` (``is_main_thread=True``)
+- **Main thread confirmed.** Spike 3.2 auto-warm callback can call ``hou.*`` directly. No ``hdefereval`` marshaling required for the scene-load reaction path.
+
+### 3.1 Thread-context implication
+
+All four hipFile events fire on ``MainThread`` with
+``is_main_thread=True`` (thread_id 35700, consistent across all four
+captures). Phase B's auto-warm callback runs on the main thread by
+definition — **no ``hdefereval`` marshaling required** for ``hou.*``
+calls inside the scene-load handler. This is the **opposite** shape
+from PDG events (which fire on a cook-thread per the Sprint 3 hooks
+reference), and it collapses Phase B's design to a direct callback
+without the deferred-dispatch ceremony that ``shared/bridge.py``
+applies to PDG cook events.
 
 | Question | Answer | Evidence |
 |---|---|---|
-| Did AfterLoad fire? | _<yes / no / timeout>_ | _<event N from § 3 capture sequence>_ |
-| Thread name | _<MainThread / worker-N / …>_ | _<info from event>_ |
-| ``is_main_thread`` | _<True / False>_ | _<info from event>_ |
-| Other events captured before AfterLoad | _<list or "none">_ | _<§ 3 sequence>_ |
-| Unsubscribe result | _<ok / error>_ | _<§ 3 unsubscribe field>_ |
+| Did AfterLoad fire? | yes | event 4 of § 3 capture sequence (fired_at 2026-04-26T13:02:25) |
+| Thread name | MainThread | every event in § 3 |
+| ``is_main_thread`` | True | every event in § 3 |
+| Other events captured before AfterLoad | BeforeLoad → BeforeClear → AfterClear (events 1–3) | § 3 sequence |
+| Unsubscribe result | ok | § 3 unsubscribe field |
 
-### 3.2 Spike 3.2 scaffold decision
+### 3.2 Event-sequence implication
 
-_<operator fills — pick one and explain in one sentence:_
-_— "Main thread confirmed → scaffold calls hou.\* directly, no marshaling"_
-_— "Worker thread → scaffold marshals every hou.\* call through hdefereval"_
-_— "AfterLoad never fired → re-run audit before opening Spike 3.2 design">_
+A fresh File → Open emits **BeforeLoad → BeforeClear → AfterClear →
+AfterLoad** in sequence. Auto-warm must trigger on ``AfterLoad``
+specifically (not ``AfterClear``) to avoid warming against the
+transient empty-scene state mid-load: between ``AfterClear`` and
+``AfterLoad`` the stage holds no nodes, so any TOP-network walk
+would return zero topnets and warm nothing useful. Filter the event
+handler to ``hou.hipFileEventType.AfterLoad`` and ignore the other
+three. Note the timing gap in the capture: events 1–3 land at
+``13:02:23``, AfterLoad at ``13:02:25`` — the two-second window is
+where the load actually happens.
 
 ---
 
@@ -133,15 +275,45 @@ _— "AfterLoad never fired → re-run audit before opening Spike 3.2 design">_
 > ``Sequence of operations + outcomes`` block and the interpretation
 > key directly below this line.
 
-_<paste § 4 here>_
+Test: subscribe the same callback function reference twice, then attempt removal twice. The outcome reveals whether ``addEventCallback`` de-duplicates by identity (idempotent), treats each subscription as a distinct registration (FIFO removal), or rejects double-add outright.
 
-### 4.1 Spike 3.2 subscription pattern (operator fills)
+**Sequence of operations + outcomes:**
+```
+  first_add                 : ok
+  second_add_same_fn        : ok
+  first_remove              : ok
+  second_remove             : ok
+```
 
-_<operator fills — pick the one matching § 4 outcome and explain:_
-_— "Idempotent (de-duped) → safe to call addEventCallback repeatedly"_
-_— "Distinct registrations → guard with bool flag in_
-_TopsEventBridge.warm\_on\_scene\_load() before subscribing"_
-_— "Rejects double-add → check before subscribing">_
+**Interpretation key:**
+- If ``second_add_same_fn`` raised → API **rejects** double-add. Spike 3.2 must check before subscribing (e.g. ``if not self._registered: hou.hipFile.addEventCallback(...)``).
+- If ``second_add_same_fn`` ok AND ``second_remove`` raised → API **de-duplicates** by callback identity. Idempotent subscription is safe.
+- If ``second_add_same_fn`` ok AND ``second_remove`` ok → API treats double-add as **two distinct registrations** (FIFO-style removal). Spike 3.2 must guard against double-subscription with an explicit bool flag or single-registration discipline.
+
+### 4.1 Callback identity behavior
+
+Captured outcome:
+
+```
+  first_add                 : ok
+  second_add_same_fn        : ok
+  first_remove              : ok
+  second_remove             : ok
+```
+
+``second_add_same_fn`` ok AND ``second_remove`` ok → API treats
+double-add as **two distinct registrations** (FIFO-style removal).
+Spike 3.2 must guard against double-subscription with an explicit
+bool flag or single-registration discipline.
+
+**Phase B implication:** follow Spike 3.1's cleanup contract pattern —
+store the bound function reference on the bridge, pass that same
+reference to ``hou.hipFile.removeEventCallback`` at teardown. Removal
+is **identity-based, not handle-based** (consistent with Spike 3.0
+§ 3.1 and § 1.2 above, where ``addEventCallback`` returns ``None``).
+Add a ``_scene_load_subscribed: bool`` guard on the bridge so
+``warm_on_scene_load()`` is idempotent at the call site even though
+the underlying API would happily double-register.
 
 ---
 
@@ -151,7 +323,158 @@ _— "Rejects double-add → check before subscribing">_
 > ``### 5.1 …`` through ``### 5.4.1 …`` blocks from the report file
 > directly below this line.
 
-_<paste § 5 here>_
+### 5.1 hou.hipFile (module / namespace surface)
+
+**Resolved path:** ``hou.hipFile``
+
+**STATUS:** RESOLVED
+**Type:** ``hipFile``
+**Repr:** ``<module 'hou.hipFile'>``
+
+**__doc__:**
+```
+hou.hipFile
+
+Functions for working with the current scene (.hip) file.
+
+
+NOTE
+    Houdini inherits the current directory (sometimes called the current
+    working directory) from the environment where you run it. Some
+    functions return or accept paths relative to the current directory.
+    You can check Houdini's current directory by calling os.getcwd(),
+    and change it by calling os.chdir.
+```
+
+**dir() — 27 attributes:**
+```
+  addEventCallback(callback)  -> method
+  basename() -> 'std::string'  -> method
+  clear(suppress_save_prompt: 'bool' = False) -> 'bool'  -> method
+  clearEventCallbacks() -> 'void'  -> function
+  collisionNodesIfMerged(*args, **kwargs) -> 'std::vector< HOM_ElemPtr< HOM_Node >,std::allocator< HOM_ElemPtr< HOM_Node > > >'  -> method
+  eventCallbacks()  -> method
+  groupColorTable() -> 'std::map< std::string,HOM_Color,std::less< std::string >,std::allocator< std::pair< std::string const,HOM_Color > > >'  -> method
+  hasUnsavedChanges() -> 'bool'  -> method
+  importFBX(*args, **kwargs) -> 'std::pair< HOM_ElemPtr< HOM_Node >,std::string >'  -> method
+  isLoadingHipFile() -> 'bool'  -> method
+  isNewFile() -> 'bool'  -> method
+  isShuttingDown() -> 'bool'  -> method
+  load(file_name: 'char const *', suppress_save_prompt: 'bool' = False, ignore_load_warnings: 'bool' = False) -> 'void'  -> method
+  merge(*args, **kwargs) -> 'void'  -> method
+  name() -> 'std::string'  -> method
+  path() -> 'std::string'  -> method
+  removeEventCallback(callback)  -> method
+  save(file_name: 'char const *' = None, save_to_recent_files: 'bool' = True) -> 'void'  -> method
+  saveAndBackup() -> 'std::string'  -> method
+  saveAndIncrementFileName() -> 'void'  -> method
+  saveAsBackup() -> 'std::string'  -> method
+  saveMode() -> 'HOM_EnumValue &'  -> method
+  setGroupColorTable(color_table: 'std::map< std::string,HOM_Color,std::less< std::string >,std::allocator< std::pair< std::string const,HOM_Color > > > const &') -> 'void'  -> method
+  setName(file_name: 'char const *') -> 'void'  -> method
+  setSaveMode(savemode: 'EnumValue') -> 'void'  -> method
+  this = <Swig Object of type 'HOM_hipFile *' at 0x00000000E50DF240>  -> SwigPyObject
+  thisown = False  -> bool
+```
+
+### 5.2 hou.hipFile.path (current scene path probe)
+
+**Resolved path:** ``hou.hipFile.path``
+
+**STATUS:** RESOLVED
+**Type:** ``method``
+**Repr:** ``<bound method hipFile.path of <module 'hou.hipFile'>>``
+
+**Signature:** ``() -> 'std::string'``
+
+**__doc__:**
+```
+path() -> str
+
+    Return the absolute file path of the current scene file. Remember
+    that a file may not exist at this path if the current scene hasn't
+    been saved yet.
+```
+
+**dir() — 1 attributes:**
+```
+  __call__(*args, **kwargs)  -> method-wrapper
+```
+
+### 5.2.1 hou.hipFile.path() — live call result
+
+```
+  hou.hipFile.path() = 'C:/Users/User/untitled.hip'
+```
+
+### 5.3 hou.hipFile.removeEventCallback
+
+**Resolved path:** ``hou.hipFile.removeEventCallback``
+
+**STATUS:** RESOLVED
+**Type:** ``method``
+**Repr:** ``<bound method removeEventCallback of <module 'hou.hipFile'>>``
+
+**Signature:** ``(callback)``
+
+**__doc__:**
+```
+<no doc>
+```
+
+**dir() — 1 attributes:**
+```
+  __call__(*args, **kwargs)  -> method-wrapper
+```
+
+### 5.4 hou.applicationVersionString
+
+**Resolved path:** ``hou.applicationVersionString``
+
+**STATUS:** RESOLVED
+**Type:** ``builtin_function_or_method``
+**Repr:** ``<built-in function applicationVersionString>``
+
+**Signature:** ``<no signature: builtin_function_or_method>``
+
+**__doc__:**
+```
+hou.applicationVersionString
+
+Returns the application's version number as a string.
+
+USAGE
+  applicationVersionString() -> string
+
+The format of the string is 'major_version.minor_version.build_version'.
+If this method is executed in python, then it returns the hou module's
+version number.
+
+RELATED
+
+  * hou.applicationCompilationDate
+
+  * hou.applicationName
+
+  * hou.applicationVersion
+
+  * hou.applicationPlatformInfo
+
+  * hou.licenseCategory
+
+  * hou.isApprentice
+```
+
+**dir() — 1 attributes:**
+```
+  __call__(*args, **kwargs)  -> method-wrapper
+```
+
+### 5.4.1 hou.applicationVersionString() — live call result
+
+```
+  hou.applicationVersionString() = '21.0.671'
+```
 
 ---
 
@@ -163,7 +486,13 @@ _<paste § 5 here>_
 > value. If nothing surprised you, write "none — surfaces matched
 > watchlist exactly."
 
-_<operator fills>_
+None — surfaces matched watchlist exactly. All 6 surfaces resolved,
+0 missing, 0 errors during audit. The pre-audit hypothesis (anchored
+in the ``shared/bridge.py:600+`` PDG hooks pattern) that hipFile
+callbacks would need ``hdefereval`` marshaling is **empirically
+refuted** — events already fire on the main thread. PDG's
+cook-thread shape does not generalize to hipFile events; each event
+source must be probed independently.
 
 ---
 
@@ -175,33 +504,71 @@ _<operator fills>_
 
 ### 7.1 Threading model (LOAD-BEARING — from § 3)
 
-_<operator fills:_
-_— Which thread does AfterLoad fire on?_
-_— Does Spike 3.2 need ``hdefereval`` marshaling?_
-_— What in the bridge sketch needs to change?>_
+AfterLoad fires on ``MainThread`` with ``is_main_thread=True``
+(thread_id 35700). All four hipFile events fire on the same main
+thread. Phase B's auto-warm callback therefore needs **no
+``hdefereval`` marshaling** for ``hou.*`` calls inside the scene-load
+handler — node-tree walks, ``hou.LopNetwork`` discovery, and
+``TopsEventBridge.warm()`` invocations all run synchronously on the
+main thread by definition. This is the inverse of the PDG
+cook-thread pattern in ``shared/bridge.py``; the bridge sketch's
+hypothesis that hipFile callbacks would need the same deferred
+dispatch is empirically refuted (§ 6).
 
 ### 7.2 Callback registration shape (from § 1 + § 4)
 
-_<operator fills:_
-_— Return-value contract (None expected per Spike 3.0 § 3.1 — verify here)._
-_— Subscription idempotency: which guard pattern does Spike 3.2 need?_
-_— Storage shape: store the bound callback function reference (not a_
-_handle) so removeEventCallback can match by identity at teardown.>_
+- **Return-value contract:** ``hou.hipFile.addEventCallback`` returns
+  ``None`` (verified live in § 1.2). No removable handle exists; the
+  bound callback function reference itself is the identity used for
+  teardown.
+- **Subscription idempotency:** double-add registers twice (§ 4.1
+  outcome — both ``second_add_same_fn`` and ``second_remove`` ok).
+  Phase B guards with a ``_scene_load_subscribed: bool`` flag on the
+  ``TopsEventBridge`` instance before calling ``addEventCallback``.
+- **Cleanup contract:** store the bound callback function reference
+  on the bridge instance; at teardown, pass that exact reference to
+  ``hou.hipFile.removeEventCallback``. Identity-based, not
+  handle-based. This mirrors **Spike 3.1's cleanup contract pattern**
+  for PDG event handlers — same shape, same discipline, different
+  event source.
 
-### 7.3 Event filter constants (from § 2)
+### 7.3 Event filter — AfterLoad only (from § 2 + § 3.2)
 
-_<operator fills:_
-_— Which integer values to hard-code in the auto-warm scaffold,_
-_following the ``tops_bridge.py:78-90`` pattern (e.g._
-_``_EVT_AFTER_LOAD = N``)._
-_— Whether the BeforeLoad → AfterLoad sequence is interesting or only_
-_AfterLoad matters.>_
+Hard-code the filter against ``hou.hipFileEventType.AfterLoad``. The
+audit captured the full enum (``BeforeClear``, ``AfterClear``,
+``BeforeMerge``, ``AfterMerge``, ``BeforeSave``, ``AfterSave``,
+``BeforeLoad``, ``AfterLoad``) and the live File → Open sequence
+``BeforeLoad → BeforeClear → AfterClear → AfterLoad``. **AfterLoad
+is the trigger, not AfterClear.** Between ``AfterClear`` and
+``AfterLoad`` the stage is empty; warming on ``AfterClear`` would
+walk a node tree with zero topnets and accomplish nothing. The
+handler must inspect the event-type argument, branch on
+``AfterLoad``, and ignore the other three.
 
-### 7.4 Scaffold-blocking issues (if any)
+### 7.4 Auto-warm trigger contract
 
-_<operator fills:_
-_— Anything in § 1–§ 6 that prevents Spike 3.2 design from opening._
-_— "None" is a valid answer if all surfaces resolved cleanly.>_
+On ``AfterLoad`` (only), the scene-load handler walks for TOP
+networks from the root and invokes ``TopsEventBridge.warm()`` per
+topnet found. Pseudocode shape:
+
+```python
+def _on_hipfile_event(event_type):
+    if event_type != hou.hipFileEventType.AfterLoad:
+        return
+    for topnet in _find_top_networks(hou.node("/")):
+        self.warm(topnet)
+```
+
+No ``hdefereval`` (§ 7.1). No deferred dispatch. The single
+``_scene_load_subscribed`` bool flag (§ 7.2) is the only ceremony.
+Per-topnet ``warm()`` calls inherit Spike 3.1's already-verified
+contract.
+
+### 7.5 Scaffold-blocking issues
+
+None. All 6 surfaces resolved, all four anchors of the audit
+(return-value, enum members, thread context, identity behavior)
+returned clean data. **Spike 3.2 design opens.**
 
 ---
 
@@ -209,17 +576,20 @@ _— "None" is a valid answer if all surfaces resolved cleanly.>_
 
 Spike 3.2 audit closes when **all** of the following are true:
 
-- [ ] § 0 header table filled in (timestamp, build, summary,
+- [x] § 0 header table filled in (timestamp, build, summary,
       finalization reason, events captured)
-- [ ] § 1, § 2, § 4, § 5 contain real audit output (no
+- [x] § 1, § 2, § 4, § 5 contain real audit output (no
       ``_<paste here>_`` placeholders remain)
-- [ ] § 3 thread-context probe results pasted **AND** § 3.1
-      implication summary populated **AND** § 3.2 scaffold decision
-      stated explicitly
-- [ ] § 4.1 subscription pattern decision stated explicitly
-- [ ] § 6 anomalies recorded (or "none — surfaces matched watchlist
-      exactly" stated explicitly)
-- [ ] § 7 implications complete enough that Spike 3.2's ARCHITECT pass
-      can write a design against verified surfaces
+- [x] § 3 thread-context probe results pasted **AND** § 3.1
+      thread-context implication populated **AND** § 3.2
+      event-sequence implication stated explicitly
+- [x] § 4.1 callback identity behavior + Phase B subscription
+      pattern stated explicitly
+- [x] § 6 anomalies recorded ("none — surfaces matched watchlist
+      exactly", with PDG-hypothesis refutation noted)
+- [x] § 7 implications complete: threading model, callback
+      registration shape, AfterLoad-only filter, auto-warm trigger
+      contract — Spike 3.2 ARCHITECT pass can write a design against
+      verified surfaces
 
-When all six boxes checked: **Spike 3.2 design opens.**
+All six boxes checked: **Spike 3.2 design opens.**
