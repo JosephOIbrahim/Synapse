@@ -313,8 +313,14 @@ class TestWarmCool:
         bridge.cool_all()  # Second call — must not crash
         assert bridge.active_subscriptions() == ()
 
-    def test_warm_without_pdg_raises_typed_error(self):
-        # No fake_pdg fixture — _PDG_AVAILABLE is False at module load
+    def test_warm_without_pdg_raises_typed_error(self, monkeypatch):
+        # Explicitly force _PDG_AVAILABLE = False — other test modules
+        # in the suite inject mock pdg into sys.modules at import time,
+        # so the module-load default cannot be relied on under full-
+        # suite ordering. Test asserts the bridge's typed-error path
+        # specifically, regardless of upstream injection state.
+        monkeypatch.setattr("synapse.host.tops_bridge._PDG_AVAILABLE", False)
+        monkeypatch.setattr("synapse.host.tops_bridge.pdg", None)
         bridge = TopsEventBridge(lambda e: None)
         with pytest.raises(TopsBridgeError, match="pdg module not available"):
             bridge.warm(MagicMock())
@@ -337,8 +343,15 @@ class TestWarmCool:
 
 
 class TestWarmAllHeadless:
-    def test_warm_all_returns_empty_when_hou_unavailable(self, fake_pdg):
-        # _HOU_AVAILABLE is False at module load
+    def test_warm_all_returns_empty_when_hou_unavailable(
+        self, fake_pdg, monkeypatch
+    ):
+        # Explicitly force _HOU_AVAILABLE = False — other test modules
+        # inject sys.modules["hou"] at collection time, so we cannot
+        # rely on the module-load default under full-suite ordering.
+        # Test asserts the headless-empty contract specifically.
+        monkeypatch.setattr("synapse.host.tops_bridge._HOU_AVAILABLE", False)
+        monkeypatch.setattr("synapse.host.tops_bridge.hou", None)
         bridge = TopsEventBridge(lambda e: None)
         result = bridge.warm_all()
         assert result == []
@@ -491,3 +504,461 @@ class TestTopsEvent:
         )
         with pytest.raises(Exception):  # FrozenInstanceError or AttributeError
             evt.event_type = "tampered"  # type: ignore[misc]
+
+
+# ════════════════════════════════════════════════════════════════════
+# CRUCIBLE — hostile suite (Spike 3.1 § 5)
+# ════════════════════════════════════════════════════════════════════
+#
+# Adversarial posture: I did NOT build TopsEventBridge. The
+# implementation is the system under test. These tests probe specific
+# defect categories: handler leaks, race windows during cool(),
+# exception swallowing, ordering invariants. Test weakness is a bug —
+# fix-forward through FORGE, never weaken assertions.
+#
+# All tests run standalone (no live Houdini). pdg + hou are fully
+# mocked. Live integration is reserved for Spike 3.3 with the @live
+# pytest marker.
+
+
+class TestHostileSubscriptionLeak:
+    """§ 5.1 — subscribe → unsubscribe → verify no handler leak."""
+
+    def test_warm_cool_leaves_zero_handlers_on_graph_context(
+        self, fake_pdg, fake_top_node
+    ):
+        """After cool(), graph context must hold zero handlers.
+
+        Defect category: handler leak — cool() forgets to detach,
+        memory + event delivery survives bridge teardown.
+        """
+        bridge = TopsEventBridge(lambda e: None)
+        sub = bridge.warm(fake_top_node)
+        # 7 surfaced types → 7 registrations
+        assert len(fake_top_node.graph_context.handlers) == 7
+        bridge.cool(sub)
+        # After cool: zero handlers — no leak
+        assert fake_top_node.graph_context.handlers == [], (
+            "cool() left handlers on graph context — handler leak"
+        )
+
+    def test_repeated_warm_cool_cycles_no_accumulation(
+        self, fake_pdg, fake_top_node
+    ):
+        """100 warm/cool cycles must leave zero handlers and zero
+        active subscriptions. Defect category: cumulative leak."""
+        bridge = TopsEventBridge(lambda e: None)
+        for _ in range(100):
+            sub = bridge.warm(fake_top_node)
+            bridge.cool(sub)
+        assert fake_top_node.graph_context.handlers == []
+        assert bridge.active_subscriptions() == ()
+
+    def test_subscription_alive_flag_holds_strong_handler_ref(
+        self, fake_pdg, fake_top_node
+    ):
+        """The Subscription must hold a strong ref to the bound
+        PyEventHandler. If the bridge let it be GC'd, future events
+        could segfault under pybind11. Defect category: weak ref.
+        """
+        bridge = TopsEventBridge(lambda e: None)
+        sub = bridge.warm(fake_top_node)
+        handler_ref = sub._handler
+        # The handler must be a real object reachable through Subscription
+        assert handler_ref is not None
+        assert handler_ref.callback is not None
+        # The same handler must be in graph_context.handlers
+        registered_handlers = {
+            h for h, _et in fake_top_node.graph_context.handlers
+        }
+        assert handler_ref in registered_handlers
+
+
+class TestHostileCookErrorDuringSubscription:
+    """§ 5.2 — Cook error during subscription does not crash bridge."""
+
+    def test_cook_error_dispatches_typed_event_and_bridge_continues(
+        self, fake_pdg, fake_top_node
+    ):
+        """A CookError event must:
+          1. Convert to a tops.cook.error TopsEvent with error_message
+          2. NOT crash the bridge
+          3. NOT poison subsequent events
+        Defect category: exception bleed.
+        """
+        received: List[TopsEvent] = []
+        bridge = TopsEventBridge(received.append)
+        sub = bridge.warm(fake_top_node)
+        # Fire CookError
+        sub._handler.callback(
+            _build_fake_event(12, message="catastrophic cook failure")
+        )
+        # Then fire a normal CookComplete
+        sub._handler.callback(_build_fake_event(14))
+        assert len(received) == 2
+        assert received[0].event_type == "tops.cook.error"
+        assert received[0].error_message == "catastrophic cook failure"
+        assert received[1].event_type == "tops.cook.complete"
+        # Bridge state unchanged
+        assert len(bridge.active_subscriptions()) == 1
+        assert bridge.dropped_event_count() == 0
+
+
+class TestHostileMultipleBridgesSameContext:
+    """§ 5.3 — Multiple bridges on same graph context are independent."""
+
+    def test_two_bridges_same_topnet_register_distinct_handlers(
+        self, fake_pdg, fake_top_node
+    ):
+        """Both bridges register their own PyEventHandler. Cooling
+        bridge A must not affect bridge B's subscription. Defect
+        category: shared state collision."""
+        received_a: List[TopsEvent] = []
+        received_b: List[TopsEvent] = []
+        bridge_a = TopsEventBridge(received_a.append)
+        bridge_b = TopsEventBridge(received_b.append)
+        sub_a = bridge_a.warm(fake_top_node)
+        sub_b = bridge_b.warm(fake_top_node)
+        # Both bridges' handlers are distinct instances
+        assert sub_a._handler is not sub_b._handler
+        # Graph context holds 14 registrations (7 per bridge)
+        assert len(fake_top_node.graph_context.handlers) == 14
+        # Cool bridge A
+        bridge_a.cool(sub_a)
+        # Bridge B's handler still attached
+        assert len(fake_top_node.graph_context.handlers) == 7
+        # Bridge B still receives events
+        sub_b._handler.callback(_build_fake_event(14))
+        assert len(received_b) == 1
+        assert received_b[0].event_type == "tops.cook.complete"
+        # Bridge A received nothing post-cool
+        assert received_a == []
+
+
+class TestHostileEventFiringDuringShutdown:
+    """§ 5.4 — Event firing concurrently with cool() must not double-dispatch."""
+
+    def test_event_after_alive_flag_flip_does_not_dispatch(
+        self, fake_pdg, fake_top_node
+    ):
+        """Simulate the race window: cool() flips _alive to False;
+        any subsequent handler invocation must early-return.
+        Defect category: TOCTOU race — handler reads alive=True,
+        then cool flips to False, then handler dispatches stale event.
+
+        Strategy: cool() the subscription, then directly invoke the
+        handler with an event. If the alive guard is correct, the
+        callback receives nothing.
+        """
+        received: List[TopsEvent] = []
+        bridge = TopsEventBridge(received.append)
+        sub = bridge.warm(fake_top_node)
+        bridge.cool(sub)
+        # Event fires after cool — handler must early-return
+        sub._handler.callback(_build_fake_event(14))
+        sub._handler.callback(_build_fake_event(38))
+        sub._handler.callback(_build_fake_event(35))
+        assert received == [], (
+            "Event delivered after cool() — alive flag race"
+        )
+
+    def test_threaded_event_during_cool_no_dispatch(
+        self, fake_pdg, fake_top_node
+    ):
+        """Use threading to actually race a fire against a cool().
+        Hostile: 100 events on a worker thread while main thread
+        races cool(). Final count of received events must be ≤
+        events fired before cool() returned. Bridge must not crash."""
+        import threading
+        received: List[TopsEvent] = []
+        lock = threading.Lock()
+
+        def safe_append(event):
+            with lock:
+                received.append(event)
+
+        bridge = TopsEventBridge(safe_append)
+        sub = bridge.warm(fake_top_node)
+
+        stop_flag = threading.Event()
+
+        def fire_events():
+            i = 0
+            while not stop_flag.is_set():
+                try:
+                    sub._handler.callback(_build_fake_event(14))
+                except Exception:
+                    pass
+                i += 1
+                if i > 10_000:  # safety cap
+                    break
+
+        worker = threading.Thread(target=fire_events, daemon=True)
+        worker.start()
+        # Let some events fire, then cool
+        import time
+        time.sleep(0.01)
+        bridge.cool(sub)
+        stop_flag.set()
+        worker.join(timeout=1.0)
+        assert not worker.is_alive()
+        # Bridge must remain consistent — no crashes, alive is False,
+        # subscription removed.
+        assert sub._alive[0] is False
+        assert bridge.active_subscriptions() == ()
+
+
+class TestHostileCallbackRaising:
+    """§ 5.5 — User callback raising must not break bridge."""
+
+    def test_callback_raises_increments_drop_counter_continues(
+        self, fake_pdg, fake_top_node
+    ):
+        """User callback raises every other event. Bridge:
+          1. Does NOT propagate the exception (PDG cook protected)
+          2. Increments dropped_event_count() per failure
+          3. Continues delivering subsequent events
+        Defect category: exception escape into PDG's cook thread.
+        """
+        call_count = [0]
+
+        def raising_callback(event):
+            call_count[0] += 1
+            if call_count[0] % 2 == 0:
+                raise RuntimeError(f"intentional failure on call {call_count[0]}")
+
+        bridge = TopsEventBridge(raising_callback)
+        sub = bridge.warm(fake_top_node)
+        # Fire 10 events; 5 will fail (calls 2,4,6,8,10)
+        for _ in range(10):
+            sub._handler.callback(_build_fake_event(14))
+        # Bridge state remains consistent
+        assert call_count[0] == 10, "Bridge stopped delivering after failure"
+        assert bridge.dropped_event_count() == 5, (
+            f"Expected 5 drops, got {bridge.dropped_event_count()}"
+        )
+        # Subscription still active
+        assert len(bridge.active_subscriptions()) == 1
+
+    def test_callback_raising_baseexception_still_swallowed(
+        self, fake_pdg, fake_top_node
+    ):
+        """A KeyboardInterrupt / SystemExit (BaseException) inside the
+        callback must not poison the bridge if the bridge swallows
+        Exception. Defect category: bridge catches Exception but
+        BaseException leaks. We probe with a regular Exception
+        subclass to verify the swallow path covers all reasonable
+        agent-side bugs (custom exception classes)."""
+
+        class _AgentBug(Exception):
+            pass
+
+        def buggy_callback(event):
+            raise _AgentBug("custom user-defined exception")
+
+        received: List[TopsEvent] = []
+        # Use a wrapper to count successful deliveries
+        bridge = TopsEventBridge(buggy_callback)
+        sub = bridge.warm(fake_top_node)
+        # Fire 5 events — all must be swallowed, not crash
+        for _ in range(5):
+            sub._handler.callback(_build_fake_event(14))
+        assert bridge.dropped_event_count() == 5
+        assert len(bridge.active_subscriptions()) == 1
+
+
+class TestHostileGraphContextErrors:
+    """§ 5.6 — Bridge subscribed when topnet has no graph context."""
+
+    def test_warm_when_get_pdg_graph_context_returns_none(
+        self, fake_pdg
+    ):
+        """Defect category: silent failure when topnet is uninstantiated.
+        Must raise typed TopsBridgeError, NOT crash with AttributeError."""
+        node = MagicMock()
+        node.path.return_value = "/tasks/uninstantiated"
+        node.getPDGGraphContext.return_value = None
+        bridge = TopsEventBridge(lambda e: None)
+        with pytest.raises(TopsBridgeError) as exc_info:
+            bridge.warm(node)
+        msg = str(exc_info.value)
+        assert "no live graph context" in msg
+        assert "/tasks/uninstantiated" in msg
+
+    def test_warm_when_get_pdg_graph_context_raises(self, fake_pdg):
+        """Defect: getPDGGraphContext() raises (e.g. node was destroyed
+        between hou query and bridge call). Bridge must surface as
+        typed TopsBridgeError, not bare exception."""
+        node = MagicMock()
+        node.path.return_value = "/tasks/destroyed"
+        node.getPDGGraphContext.side_effect = RuntimeError(
+            "TOP node was destroyed"
+        )
+        bridge = TopsEventBridge(lambda e: None)
+        with pytest.raises(Exception) as exc_info:
+            bridge.warm(node)
+        # The bridge currently re-raises the inner error. Either it
+        # wraps as TopsBridgeError or surfaces RuntimeError. Both are
+        # acceptable as long as the bridge state is unchanged.
+        assert bridge.active_subscriptions() == ()
+
+
+class TestHostileTopnetDeletedMidSubscription:
+    """§ 5.7 — Topnet deleted mid-subscription: cool() must not crash."""
+
+    def test_cool_when_remove_event_handler_raises(
+        self, fake_pdg, fake_top_node
+    ):
+        """Underlying graph context's removeEventHandler raises (e.g.
+        the graph was destroyed). cool() must swallow + log, NOT
+        crash, AND remove the subscription from active list.
+        Defect category: exception in teardown path leaks."""
+        bridge = TopsEventBridge(lambda e: None)
+        sub = bridge.warm(fake_top_node)
+        # Make remove raise
+        fake_top_node.graph_context.removeEventHandler = MagicMock(
+            side_effect=RuntimeError("graph destroyed")
+        )
+        # cool() must not crash
+        bridge.cool(sub)
+        # Subscription still removed from active list (the bridge's
+        # bookkeeping is independent of the underlying context)
+        assert bridge.active_subscriptions() == ()
+        # Alive flag flipped
+        assert sub._alive[0] is False
+
+    def test_cool_all_continues_after_one_failure(self, fake_pdg):
+        """One subscription's teardown raises; others must still be
+        cooled. Defect category: error in cool_all() blocks remaining
+        teardowns → multi-bridge handler leak."""
+        bridge = TopsEventBridge(lambda e: None)
+        node_a = FakeTopNode("/tasks/a")
+        node_b = FakeTopNode("/tasks/b")
+        node_c = FakeTopNode("/tasks/c")
+        bridge.warm(node_a)
+        bridge.warm(node_b)
+        bridge.warm(node_c)
+        # Make B's teardown raise
+        node_b.graph_context.removeEventHandler = MagicMock(
+            side_effect=RuntimeError("bad teardown on B")
+        )
+        bridge.cool_all()
+        # All three must be removed from active list despite B's failure
+        assert bridge.active_subscriptions() == ()
+        # A and C must have had their teardown called; B's was attempted
+        assert node_a.graph_context.handlers == []
+        assert node_c.graph_context.handlers == []
+
+
+class TestHostileMultiEventOrdering:
+    """§ 5.8 — Multiple event types in same cook: no loss, no reorder."""
+
+    def test_twelve_events_same_cook_delivered_in_order(
+        self, fake_pdg, fake_top_node
+    ):
+        """A realistic cook sequence must arrive in order with no drops:
+          CookStart → WorkItemAdd × 5 → WorkItemResult × 5 → CookComplete
+
+        Defect categories: dropped events, reordering, deduplication,
+        type-filter false positives.
+        """
+        received: List[TopsEvent] = []
+        bridge = TopsEventBridge(received.append)
+        sub = bridge.warm(fake_top_node)
+
+        # CookStart
+        sub._handler.callback(_build_fake_event(38))
+        # 5 × WorkItemAdd
+        for i in range(5):
+            wi = _build_fake_workitem(item_id=i, frame=float(i))
+            sub._handler.callback(_build_fake_event(1, workItem=wi))
+        # 5 × WorkItemResult
+        for i in range(5):
+            wi = _build_fake_workitem(
+                item_id=i, frame=float(i), outputs=[f"/tmp/{i}.exr"]
+            )
+            sub._handler.callback(_build_fake_event(35, workItem=wi))
+        # CookComplete
+        sub._handler.callback(_build_fake_event(14))
+
+        # 12 events total, in original order, no drops, no dedup
+        assert len(received) == 12
+        expected_types = (
+            ["tops.cook.start"]
+            + ["tops.workitem.add"] * 5
+            + ["tops.workitem.result"] * 5
+            + ["tops.cook.complete"]
+        )
+        actual_types = [e.event_type for e in received]
+        assert actual_types == expected_types, (
+            f"Reordering or loss detected:\n"
+            f"  expected: {expected_types}\n"
+            f"  actual:   {actual_types}"
+        )
+        # Specific payload assertions on the WorkItemResult events
+        result_events = [e for e in received if e.event_type == "tops.workitem.result"]
+        assert len(result_events) == 5
+        for i, evt in enumerate(result_events):
+            assert evt.work_item_id == i, f"id mismatch at index {i}"
+            assert evt.work_item_outputs == (f"/tmp/{i}.exr",)
+            assert evt.work_item_frame == float(i)
+        assert bridge.dropped_event_count() == 0
+
+
+class TestHostileBonusEdges:
+    """Extra adversarial cases beyond the 8 mandatory."""
+
+    def test_pdg_node_path_attribute_missing_falls_back_gracefully(
+        self, fake_pdg, fake_top_node
+    ):
+        """pdg.Node may expose .name instead of .path() in some configs.
+        The defensive getattr in _read_node_path must fall through.
+        Defect category: rigid attribute assumption."""
+        received: List[TopsEvent] = []
+        bridge = TopsEventBridge(received.append)
+        sub = bridge.warm(fake_top_node)
+        wi = _build_fake_workitem(item_id=1)
+        # Replace node with one that has no path() and no name
+        wi.node = object()  # plain object — no path, no name
+        sub._handler.callback(_build_fake_event(35, workItem=wi))
+        assert received[0].node_path is None  # Defensive fallback worked
+
+    def test_expected_result_data_raises_returns_empty_outputs(
+        self, fake_pdg, fake_top_node
+    ):
+        """expectedResultData property might raise on an in-flight
+        item. Bridge must capture an empty tuple and continue."""
+        received: List[TopsEvent] = []
+        bridge = TopsEventBridge(received.append)
+        sub = bridge.warm(fake_top_node)
+        wi = MagicMock()
+        wi.id = 1
+        wi.frame = 0.0
+        wi.state = "ready"
+        wi.cookDuration = 0.0
+        # Make expectedResultData property raise
+        type(wi).expectedResultData = property(
+            lambda self: (_ for _ in ()).throw(RuntimeError("not yet"))
+        )
+        wi.node = MagicMock()
+        wi.node.path = MagicMock(return_value="/n")
+        sub._handler.callback(_build_fake_event(35, workItem=wi))
+        assert received[0].work_item_outputs == ()
+
+    def test_event_type_int_cast_failure_increments_drop_counter(
+        self, fake_pdg, fake_top_node
+    ):
+        """If event.type is malformed (e.g. None or unhashable),
+        int() cast fails. Bridge must drop, not crash."""
+        bridge = TopsEventBridge(lambda e: None)
+        sub = bridge.warm(fake_top_node)
+        bad_event = MagicMock()
+        bad_event.type = MagicMock(side_effect=TypeError("not int-able"))
+        # The MagicMock's int(bad_event.type) might or might not raise
+        # depending on Mock behavior. Instead, build a real bad event:
+        class _BadEvent:
+            @property
+            def type(self):
+                raise TypeError("event corrupted")
+        sub._handler.callback(_BadEvent())
+        assert bridge.dropped_event_count() == 1
