@@ -50,6 +50,10 @@ from synapse.host.tops_bridge import (
     TopsEvent,
     TopsEventBridge,
 )
+from synapse.host.scene_load_bridge import (
+    SceneLoadBridge,
+    SceneLoadBridgeError,
+)
 from synapse.host.turn_handle import (
     TurnCancelled,
     TurnHandle,
@@ -89,6 +93,9 @@ __all__ = [
     "TopsBridgeError",
     "TopsEvent",
     "TopsEventBridge",
+    # SceneLoadBridge (Spike 3.2 — auto-warm on hou.hipFile.AfterLoad)
+    "SceneLoadBridge",
+    "SceneLoadBridgeError",
     # Turn handle (Spike 2.4 — Future-shaped submit_turn return)
     "TurnCancelled",
     "TurnHandle",
