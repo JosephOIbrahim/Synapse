@@ -235,6 +235,21 @@ class SceneLoadBridge:
             logger.info(
                 "SceneLoadBridge AfterLoad warm_all swallowed: %r", exc
             )
+        # Reconciliation: if unsubscribe() fired mid-handler (e.g. a
+        # warm callback or daemon shutdown invoked it while warm_all
+        # was iterating), subscriptions added after the unsubscribe
+        # are stale. Total-ownership contract (§ 2.6) requires the
+        # embedded bridge be fully cooled when the SceneLoadBridge is
+        # not subscribed.
+        if not self._subscribed:
+            try:
+                self._tops_bridge.cool_all()
+            except Exception as exc:
+                logger.info(
+                    "SceneLoadBridge AfterLoad reconcile cool_all "
+                    "swallowed: %r",
+                    exc,
+                )
 
 
 __all__ = [
