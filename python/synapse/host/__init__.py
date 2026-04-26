@@ -44,6 +44,12 @@ from synapse.host.main_thread_executor import (
     main_thread_exec,
 )
 from synapse.host.transport import execute_python
+from synapse.host.tops_bridge import (
+    Subscription,
+    TopsBridgeError,
+    TopsEvent,
+    TopsEventBridge,
+)
 from synapse.host.turn_handle import (
     TurnCancelled,
     TurnHandle,
@@ -78,6 +84,11 @@ __all__ = [
     "main_thread_exec",
     # In-process transport
     "execute_python",
+    # TopsEventBridge (Spike 3.1 — in-process PDG perception channel)
+    "Subscription",
+    "TopsBridgeError",
+    "TopsEvent",
+    "TopsEventBridge",
     # Turn handle (Spike 2.4 — Future-shaped submit_turn return)
     "TurnCancelled",
     "TurnHandle",
