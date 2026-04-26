@@ -119,7 +119,7 @@ sequenceDiagram
 
     Artist->>Main: File → Open scene.hip
     Main->>SLB: hou.hipFile event:<br/>BeforeLoad → BeforeClear →<br/>AfterClear → AfterLoad
-    Note over SLB: Filter holds &mdash; only<br/>AfterLoad triggers warm
+    Note over SLB: Filter holds — only<br/>AfterLoad triggers warm
     SLB->>TEB: cool_all() (stale subs)
     SLB->>TEB: warm_all() (walk topnets)
     Note over SLB,TEB: per-topnet: register<br/>pdg.PyEventHandler against<br/>live GraphContext
@@ -276,7 +276,7 @@ sequenceDiagram
 
     Caller->>Daemon: submit_turn(prompt)
     Daemon-->>Caller: TurnHandle (immediate)
-    Note over Caller,Main: Main thread free &mdash;<br/>Qt pump runs throughout
+    Note over Caller,Main: Main thread free —<br/>Qt pump runs throughout
 
     Daemon->>Daemon: run_turn (agent loop)
     loop tool calls
