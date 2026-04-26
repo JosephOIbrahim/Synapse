@@ -152,27 +152,48 @@ class TestVendorPathActivation:
         assert synapse._vendor_path.startswith(package_dir)
         assert synapse._vendor_path.endswith("_vendor")
 
-    def test_activation_gated_by_python_311(self):
-        """Under Python 3.11, the vendor path is prepended to sys.path.
-        Under any other version, it is NOT on sys.path.
+    def test_activation_gated_by_python_311_and_windows(self):
+        """The vendor path is prepended on Python 3.11 + Windows only.
 
-        The 2684-test suite runs on Python 3.14; this test asserts
-        the passive-on-3.14 behaviour so the suite keeps resolving
-        pydantic from the user site.
+        Per ``python/synapse/__init__.py`` (post-c02202a): the vendor
+        tree carries a ``.cp311-win_amd64.pyd`` binary, so the gate
+        checks both Python version AND platform. On Python 3.11 +
+        Windows the prepend fires; on Python 3.11 + Linux/macOS the
+        gate skips (vendored native binary is unloadable, real
+        pydantic from pip resolves via site-packages instead); on
+        any other Python version the gate also skips.
+
+        The 2684-test suite runs on Python 3.14 stock; this test
+        asserts the passive-on-3.14 behaviour so the suite keeps
+        resolving pydantic from the user site. Linux CI runs on
+        Python 3.11 but the gate skips there too — this test pins
+        that branch explicitly.
         """
         on_path = synapse._vendor_path in sys.path
-        if sys.version_info[:2] == (3, 11):
+        is_311 = sys.version_info[:2] == (3, 11)
+        is_windows = sys.platform.startswith("win")
+
+        if is_311 and is_windows:
             assert on_path, (
-                "Python 3.11 detected but vendor path is not on "
-                "sys.path — import synapse should have prepended it"
+                "Python 3.11 + Windows detected but vendor path is "
+                "not on sys.path — import synapse should have "
+                "prepended it"
             )
         else:
+            reason = (
+                "non-Windows (vendored binary is win_amd64 only)"
+                if is_311
+                else (
+                    f"Python {sys.version_info.major}."
+                    f"{sys.version_info.minor} (vendored binaries "
+                    f"are CP311 ABI-specific)"
+                )
+            )
             assert not on_path, (
-                f"Python {sys.version_info.major}.{sys.version_info.minor} "
-                f"detected; vendor path should NOT be on sys.path "
-                f"(vendored binaries are CP311 ABI-specific). "
-                f"If this test fails, stock-Python tests will likely "
-                f"crash on pydantic_core import."
+                f"Vendor path should NOT be on sys.path on this "
+                f"platform — gate skipped due to: {reason}. "
+                f"If this test fails, stock-Python or non-Windows "
+                f"tests will likely crash on pydantic_core import."
             )
 
     def test_prepend_is_idempotent(self):
@@ -204,15 +225,21 @@ class TestVendorPathActivation:
 
 
 @pytest.mark.skipif(
-    sys.version_info[:2] != (3, 11),
-    reason="Vendored CP311 binaries require Python 3.11 interpreter",
+    sys.version_info[:2] != (3, 11) or not sys.platform.startswith("win"),
+    reason=(
+        "Vendored binaries require Python 3.11 + Windows ABI "
+        "(see python/synapse/__init__.py vendor gate). On Linux/macOS "
+        "the gate skips and pydantic / anthropic resolve from pip; "
+        "these resolution tests are Windows-only by design."
+    ),
 )
 class TestVendorResolution:
-    """On Python 3.11, imports must actually resolve into _vendor/.
+    """On Python 3.11 + Windows, imports must actually resolve into _vendor/.
 
-    These tests only run under Python 3.11 (hython). Under the
-    Python 3.14 test runner they skip cleanly — the vendor is
-    inactive and so is anything that would prove the resolution.
+    These tests only run under Python 3.11 + Windows (hython, plus
+    Windows local dev). Under the Python 3.14 test runner OR Linux
+    CI they skip cleanly — the vendor is inactive on those platforms
+    by design (see ``python/synapse/__init__.py`` gate).
     """
 
     def test_anthropic_resolves_to_vendor(self):
