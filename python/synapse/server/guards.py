@@ -16,7 +16,7 @@ from typing import Optional, Union
 
 # ─── Node Operations ─────────────────────────────────────────
 
-def ensure_node(parent_path: str, node_type: str, node_name: str) -> hou.Node:
+def ensure_node(parent_path: str, node_type: str, node_name: str) -> "hou.Node":
     """Create node only if it doesn't already exist. Returns the node."""
     full_path = f"{parent_path}/{node_name}"
     existing = hou.node(full_path)
