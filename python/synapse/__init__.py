@@ -35,9 +35,12 @@ Version: 5.8.0
 # ``.cp311-win_amd64.pyd`` binary. Prepending _vendor on a non-3.11
 # interpreter would break imports (stock Python 3.14 in particular — the
 # 2684-test suite runs there and resolves pydantic from the user site,
-# untouched by this vendoring). The version gate below keeps the vendor
-# active only for Python 3.11 consumers, which covers every current
-# Houdini point release.
+# untouched by this vendoring). The gate below keeps the vendor active
+# only for Python 3.11 *on Windows*, which covers every current Houdini
+# point release. On non-Windows platforms (Linux CI, macOS) the vendored
+# native binary is unloadable, so we fall through to whatever real
+# pydantic the consumer has installed (pyproject.toml lists it as a
+# hard dependency, so pip install -e installs it cleanly).
 import os as _synapse_os
 import sys as _synapse_sys
 
@@ -47,6 +50,7 @@ _vendor_path: str = _synapse_os.path.join(
 
 if (
     _synapse_sys.version_info[:2] == (3, 11)
+    and _synapse_sys.platform.startswith("win")
     and _synapse_os.path.isdir(_vendor_path)
     and _vendor_path not in _synapse_sys.path
 ):
