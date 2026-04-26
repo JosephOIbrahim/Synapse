@@ -75,116 +75,123 @@ def _report(num, total, ok, msg):
 
 TOTAL = 5
 
-# -- Test 1: Import handler ------------------------------------------------
 
-try:
-    from synapse.server.handlers import SynapseHandler
-    handler = SynapseHandler()
-    _report(1, TOTAL, True, "Handler import")
-except Exception as e:
-    _report(1, TOTAL, False, f"Handler import — {e}")
-    print("Cannot continue without handler. Aborting.")
-    sys.exit(1)
+# Module body is gated behind __main__ so pytest can import this file safely
+# during collection. Pytest 9 does not honor module-level pytest.importorskip
+# the same way pytest 8 did, and the body below contains hou.* calls and
+# sys.exit(1) that crash collection if executed outside Houdini.
+if __name__ == "__main__":
 
-# -- Test 2: Create a test scene -------------------------------------------
+    # -- Test 1: Import handler ------------------------------------------------
 
-_TEST_GEO = "/obj/_synapse_test_cap"
+    try:
+        from synapse.server.handlers import SynapseHandler
+        handler = SynapseHandler()
+        _report(1, TOTAL, True, "Handler import")
+    except Exception as e:
+        _report(1, TOTAL, False, f"Handler import — {e}")
+        print("Cannot continue without handler. Aborting.")
+        sys.exit(1)
 
-try:
-    # Clean up any previous failed run
-    existing = hou.node(_TEST_GEO)
-    if existing:
-        existing.destroy()
+    # -- Test 2: Create a test scene -------------------------------------------
 
-    obj = hou.node("/obj")
-    geo = obj.createNode("geo", "_synapse_test_cap")
-    box = geo.createNode("box", "box1")
+    _TEST_GEO = "/obj/_synapse_test_cap"
 
-    # Add color so the capture isn't just grey
-    color = geo.createNode("color", "orange")
-    color.setInput(0, box)
-    color.parm("colorr").set(1.0)
-    color.parm("colorg").set(0.5)
-    color.parm("colorb").set(0.0)
-    color.setDisplayFlag(True)
-    color.setRenderFlag(True)
-    geo.layoutChildren()
+    try:
+        # Clean up any previous failed run
+        existing = hou.node(_TEST_GEO)
+        if existing:
+            existing.destroy()
 
-    # Point the viewport at our test geo
-    desktop = hou.ui.curDesktop()
-    sv = desktop.paneTabOfType(hou.paneTabType.SceneViewer)
-    if sv is None:
-        raise RuntimeError("No SceneViewer — is a viewport visible?")
-    sv.setPwd(obj)
+        obj = hou.node("/obj")
+        geo = obj.createNode("geo", "_synapse_test_cap")
+        box = geo.createNode("box", "box1")
 
-    # Frame the object on the main thread (viewport ops need main thread)
-    def _frame():
-        sv.curViewport().frameAll()
-    hdefereval.executeInMainThreadWithResult(_frame)
+        # Add color so the capture isn't just grey
+        color = geo.createNode("color", "orange")
+        color.setInput(0, box)
+        color.parm("colorr").set(1.0)
+        color.parm("colorg").set(0.5)
+        color.parm("colorb").set(0.0)
+        color.setDisplayFlag(True)
+        color.setRenderFlag(True)
+        geo.layoutChildren()
 
-    _report(2, TOTAL, True, f"Scene setup (box at {color.path()})")
-except Exception as e:
-    _report(2, TOTAL, False, f"Scene setup — {e}")
+        # Point the viewport at our test geo
+        desktop = hou.ui.curDesktop()
+        sv = desktop.paneTabOfType(hou.paneTabType.SceneViewer)
+        if sv is None:
+            raise RuntimeError("No SceneViewer — is a viewport visible?")
+        sv.setPwd(obj)
 
-# -- Test 3: JPEG capture --------------------------------------------------
+        # Frame the object on the main thread (viewport ops need main thread)
+        def _frame():
+            sv.curViewport().frameAll()
+        hdefereval.executeInMainThreadWithResult(_frame)
 
-try:
-    t0 = time.perf_counter()
-    data = handler._handle_capture_viewport({"format": "jpeg", "width": 800, "height": 600})
-    elapsed_ms = (time.perf_counter() - t0) * 1000
+        _report(2, TOTAL, True, f"Scene setup (box at {color.path()})")
+    except Exception as e:
+        _report(2, TOTAL, False, f"Scene setup — {e}")
 
-    path = data["image_path"]
-    assert os.path.exists(path), f"File not found: {path}"
-    size_kb = os.path.getsize(path) / 1024
-    assert size_kb > 1, f"File too small ({size_kb:.0f}KB) — capture likely failed"
-    assert data["format"] == "jpeg"
+    # -- Test 3: JPEG capture --------------------------------------------------
 
-    _report(3, TOTAL, True,
-            f"Viewport capture — {data['width']}x{data['height']} jpeg, "
-            f"{size_kb:.0f}KB, {elapsed_ms:.0f}ms")
+    try:
+        t0 = time.perf_counter()
+        data = handler._handle_capture_viewport({"format": "jpeg", "width": 800, "height": 600})
+        elapsed_ms = (time.perf_counter() - t0) * 1000
 
-    # Clean up temp file
-    os.remove(path)
-except Exception as e:
-    _report(3, TOTAL, False, f"Viewport capture — {e}")
+        path = data["image_path"]
+        assert os.path.exists(path), f"File not found: {path}"
+        size_kb = os.path.getsize(path) / 1024
+        assert size_kb > 1, f"File too small ({size_kb:.0f}KB) — capture likely failed"
+        assert data["format"] == "jpeg"
 
-# -- Test 4: PNG capture ----------------------------------------------------
+        _report(3, TOTAL, True,
+                f"Viewport capture — {data['width']}x{data['height']} jpeg, "
+                f"{size_kb:.0f}KB, {elapsed_ms:.0f}ms")
 
-try:
-    t0 = time.perf_counter()
-    data = handler._handle_capture_viewport({"format": "png", "width": 800, "height": 600})
-    elapsed_ms = (time.perf_counter() - t0) * 1000
+        # Clean up temp file
+        os.remove(path)
+    except Exception as e:
+        _report(3, TOTAL, False, f"Viewport capture — {e}")
 
-    path = data["image_path"]
-    assert os.path.exists(path), f"File not found: {path}"
-    size_kb = os.path.getsize(path) / 1024
-    assert size_kb > 1, f"File too small ({size_kb:.0f}KB) — capture likely failed"
-    assert data["format"] == "png"
+    # -- Test 4: PNG capture ----------------------------------------------------
 
-    _report(4, TOTAL, True,
-            f"PNG capture — {data['width']}x{data['height']} png, "
-            f"{size_kb:.0f}KB, {elapsed_ms:.0f}ms")
+    try:
+        t0 = time.perf_counter()
+        data = handler._handle_capture_viewport({"format": "png", "width": 800, "height": 600})
+        elapsed_ms = (time.perf_counter() - t0) * 1000
 
-    # Clean up temp file
-    os.remove(path)
-except Exception as e:
-    _report(4, TOTAL, False, f"PNG capture — {e}")
+        path = data["image_path"]
+        assert os.path.exists(path), f"File not found: {path}"
+        size_kb = os.path.getsize(path) / 1024
+        assert size_kb > 1, f"File too small ({size_kb:.0f}KB) — capture likely failed"
+        assert data["format"] == "png"
 
-# -- Test 5: Cleanup -------------------------------------------------------
+        _report(4, TOTAL, True,
+                f"PNG capture — {data['width']}x{data['height']} png, "
+                f"{size_kb:.0f}KB, {elapsed_ms:.0f}ms")
 
-try:
-    test_node = hou.node(_TEST_GEO)
-    if test_node:
-        test_node.destroy()
-    assert hou.node(_TEST_GEO) is None, "Test node still exists after destroy"
-    _report(5, TOTAL, True, "Cleanup")
-except Exception as e:
-    _report(5, TOTAL, False, f"Cleanup — {e}")
+        # Clean up temp file
+        os.remove(path)
+    except Exception as e:
+        _report(4, TOTAL, False, f"PNG capture — {e}")
 
-# -- Summary ----------------------------------------------------------------
+    # -- Test 5: Cleanup -------------------------------------------------------
 
-print("=" * 40)
-if _failed == 0:
-    print(f"All {_passed} tests passed.")
-else:
-    print(f"{_passed} passed, {_failed} failed.")
+    try:
+        test_node = hou.node(_TEST_GEO)
+        if test_node:
+            test_node.destroy()
+        assert hou.node(_TEST_GEO) is None, "Test node still exists after destroy"
+        _report(5, TOTAL, True, "Cleanup")
+    except Exception as e:
+        _report(5, TOTAL, False, f"Cleanup — {e}")
+
+    # -- Summary ----------------------------------------------------------------
+
+    print("=" * 40)
+    if _failed == 0:
+        print(f"All {_passed} tests passed.")
+    else:
+        print(f"{_passed} passed, {_failed} failed.")
