@@ -262,6 +262,16 @@ class TestMaterialLibraryAutoPopulate:
         from synapse.server import main_thread
         main_thread._HOU_AVAILABLE = True
         main_thread._USE_DEFERRED = False
+
+        # Rebind the `hou` the node handler actually uses to THIS module's stub.
+        # handlers_node binds `hou` at import time from sys.modules["hou"]; in the
+        # full suite it can be imported against a different stub, so patching
+        # _mock_hou.node would never reach the handler -> hou.node() returns a
+        # default mock -> raw createNode chain. Forcing alignment makes the test
+        # order-independent (and is a no-op when they already match).
+        from synapse.server import handlers_node
+        handlers_node.hou = _mock_hou
+        handlers_node.HOU_AVAILABLE = True
         return _mock_hou
 
     def _make_parent_node(self):

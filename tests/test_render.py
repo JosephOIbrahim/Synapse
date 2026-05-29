@@ -202,7 +202,7 @@ class TestHandleRender:
              patch.object(_handlers_hou, "frame", return_value=frame, create=True), \
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
              patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)):
+             patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024, st_mode=0o040755)):
             return handler._handle_render(payload)
 
     def test_returns_image_path_and_engine(self, handler):
