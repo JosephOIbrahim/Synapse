@@ -94,3 +94,9 @@ claude/
 !python/synapse/_vendor/**
 python/synapse/_vendor/**/__pycache__/
 python/synapse/_vendor/**/*.pyc
+
+# SCOUT reconnaissance artifacts (read-only investigation output)
+.scout/
+
+# FORGE build-orchestration artifacts (run logs, specs)
+.forge/

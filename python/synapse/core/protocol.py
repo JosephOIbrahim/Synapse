@@ -64,6 +64,9 @@ class CommandType(Enum):
     GET_STAGE_INFO = "get_stage_info"
     SET_USD_ATTRIBUTE = "set_usd_attribute"
     GET_USD_ATTRIBUTE = "get_usd_attribute"
+    SET_PAYLOAD_LOADSTATE = "set_payload_loadstate"
+    CREATE_POINT_INSTANCER = "create_point_instancer"
+    SHOT_RENDER_READY = "shot_render_ready"
     QUERY_PRIMS = "query_prims"
     MANAGE_VARIANT_SET = "manage_variant_set"
     MANAGE_COLLECTION = "manage_collection"
@@ -101,6 +104,7 @@ class CommandType(Enum):
 
     # Copernicus (COPs) — Foundation
     COPS_CREATE_NETWORK = "cops_create_network"
+    COPS_CREATE_COPNET = "cops_create_copnet"
     COPS_CREATE_NODE = "cops_create_node"
     COPS_CONNECT = "cops_connect"
     COPS_SET_OPENCL = "cops_set_opencl"

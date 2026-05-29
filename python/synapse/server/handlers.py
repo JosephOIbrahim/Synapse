@@ -90,6 +90,9 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "modify_usd_prim": AuditCategory.PIPELINE,
     "set_usd_attribute": AuditCategory.PIPELINE,
     "reference_usd": AuditCategory.PIPELINE,
+    "set_payload_loadstate": AuditCategory.PIPELINE,
+    "create_point_instancer": AuditCategory.PIPELINE,
+    "shot_render_ready": AuditCategory.RENDER,
     "query_prims": AuditCategory.PIPELINE,
     "manage_variant_set": AuditCategory.PIPELINE,
     "manage_collection": AuditCategory.PIPELINE,
@@ -139,6 +142,7 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "hda_list": AuditCategory.PIPELINE,
     # Copernicus (COPs) — Foundation
     "cops_create_network": AuditCategory.PIPELINE,
+    "cops_create_copnet": AuditCategory.PIPELINE,
     "cops_create_node": AuditCategory.PIPELINE,
     "cops_connect": AuditCategory.PIPELINE,
     "cops_set_opencl": AuditCategory.PIPELINE,
@@ -419,6 +423,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
         # USD scene assembly (reference / sublayer / payload) + prim queries
         reg.register("reference_usd", self._handle_reference_usd)
+        reg.register("set_payload_loadstate", self._handle_set_payload_loadstate)
+        reg.register("create_point_instancer", self._handle_create_point_instancer)
+        reg.register("shot_render_ready", self._handle_shot_render_ready)
         reg.register("query_prims", self._handle_query_prims)
         reg.register("manage_variant_set", self._handle_manage_variant_set)
         reg.register("manage_collection", self._handle_manage_collection)
@@ -501,6 +508,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
         # Copernicus (COPs) — Foundation
         reg.register("cops_create_network", self._handle_cops_create_network)
+        reg.register("cops_create_copnet", self._handle_cops_create_copnet)
         reg.register("cops_create_node", self._handle_cops_create_node)
         reg.register("cops_connect", self._handle_cops_connect)
         reg.register("cops_set_opencl", self._handle_cops_set_opencl)
