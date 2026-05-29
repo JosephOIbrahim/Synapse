@@ -255,6 +255,7 @@ def execute_through_bridge(
         from synapse.core.protocol import SynapseResponse
         integrity_dict = result.integrity.to_dict() if result.integrity else {}
         return SynapseResponse(
+            id=command.id,
             success=False,
             error="Bridge: {}".format(result.error or "Unknown error"),
             data={"_integrity": integrity_dict},
