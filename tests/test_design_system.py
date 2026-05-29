@@ -20,7 +20,16 @@ import pytest
 
 # ── Setup ─────────────────────────────────────────────────
 
-_SYNAPSE_HOME = os.path.join(os.path.expanduser("~"), ".synapse")
+# Prefer the DEPLOYED copy (~/.synapse) so this also validates a real install;
+# fall back to the REPO source when nothing is deployed (CI runners, fresh dev
+# checkouts). The layout is identical either way: <base>/{design,houdini,install.py}.
+_DEPLOYED_HOME = os.path.join(os.path.expanduser("~"), ".synapse")
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SYNAPSE_HOME = (
+    _DEPLOYED_HOME
+    if os.path.isdir(os.path.join(_DEPLOYED_HOME, "design"))
+    else _REPO_ROOT
+)
 _DESIGN_DIR = os.path.join(_SYNAPSE_HOME, "design")
 _HOUDINI_DIR = os.path.join(_SYNAPSE_HOME, "houdini")
 _SVG_DIR = os.path.join(_DESIGN_DIR, "icons", "svg")

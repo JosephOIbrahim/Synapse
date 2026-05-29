@@ -139,7 +139,7 @@ def send_toast(title: str, body: str) -> bool:
             capture_output=True,
             text=True,
             timeout=10,
-            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+            creationflags=(getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0),
         )
         if result.returncode != 0:
             logger.debug("Toast PowerShell failed: %s", result.stderr[:200])
