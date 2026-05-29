@@ -200,6 +200,8 @@ setx ANTHROPIC_API_KEY "sk-ant-..."
 
 Launch a fresh Houdini after running `setx` — the new value only reaches processes started after.
 
+Or run the helper **`set_anthropic_key.bat`** at the repo root: it prompts for the key, persists it with `setx`, and reminds you to relaunch Houdini — so you don't have to remember the command or the system-vs-shell-scope gotcha.
+
 **Forward-compat — `hou.secure`.** When SideFX ships a secure-credentials API in a future Houdini release, SYNAPSE's auth resolver picks it up automatically. Confirmed **not present** in Houdini 21.0.671 (`dir(hou)` only exposes `secureSelectionOption`). No action needed today.
 
 **You're good if:** in Houdini's Python Shell, `import os; print(bool(os.environ.get('ANTHROPIC_API_KEY')))` prints `True`.
@@ -239,13 +241,48 @@ daemon.stop()
 | **Perception channel — `TopsEventBridge`** (Spike 3.1) | Scaffolded. 47 tests across basic + hostile. Standalone mode only. Live PDG cook lands at Mile 5. |
 | **Perception channel — `SceneLoadBridge`** (Spike 3.2) | Scaffolded. 24 tests across basic + hostile. Composes a `TopsEventBridge`; auto-warm on `hou.hipFile.AfterLoad`. Live integration at Mile 5. |
 | **Tools ported through the Dispatcher** | **1** — `synapse_inspect_stage` (flat `/stage` AST). |
-| **Tools still on the Sprint 2 WebSocket path** | **104** — registry tools working in production, awaiting port. (Plus 6 group-info knowledge tools that don't need porting — they serve local content without Houdini.) |
+| **Tools still on the Sprint 2 WebSocket path** | **108** — registry tools working in production, awaiting port (104 → 108 with the v5.9.0 SCOUT→FORGE additions below). (Plus 6 group-info knowledge tools that don't need porting — they serve local content without Houdini.) |
 
 The port pattern is mechanical and documented in `docs/crucible_protocol.md` + the `spike(1)` commit message. Every legacy tool gets:
 
 1. A pure-Python function under `synapse.cognitive.tools.<name>` (zero `hou` imports).
 2. A schema dict (description + JSON Schema) registered alongside the function.
 3. The WS adapter branch in `mcp_server.py` swapped from `synapse_inspect_stage`-style direct dispatch to `dispatcher.execute('<name>', kwargs)`.
+
+### v5.9.0 — SCOUT → FORGE: 7 verified capabilities
+
+A read-only **SCOUT** recon cross-referenced the Houdini 21.0.671 capability surface against the live tool registry, surfaced 7 opportunities, and **V1-verified every one against the exact target build** (21.0.671 `hython`) before any code was written. A **FORGE** MOE agent team then built and unit-tested them, with **CRUCIBLE** adversarial review gating the merge. Registry **104 → 108 tools**:
+
+- `houdini_set_payload_loadstate` — USD payload load/unload + activation
+- `houdini_create_point_instancer` — `UsdGeom.PointInstancer` authoring
+- `houdini_shot_render_ready` — shot-template composite orchestrator
+- `cops_create_copnet` — modern Copernicus `copnet` (distinct from the legacy `cop2net` the existing COPs tools build on)
+- `houdini_reference_usd` + `karma_visible`/`purpose`/`kind` — non-clobbering Karma-visibility metadata on import (completes the BL-008 advisory-only partial)
+- `houdini_modify_usd_prim` + `instanceable`
+- branch-aware, path-keyed upstream Karma-LOP discovery in the render walk
+
+Plus bridge/panel hardening: read-only tool failures surface as JSON-RPC errors instead of success-with-`isError`, and the panel resolves the Anthropic key through the canonical auth layer with an actionable "set it + relaunch" message.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart LR
+    S["SCOUT<br/>read-only recon<br/>RAG + codebase"] -->|7 opportunities<br/>V1-verified on 21.0.671| F["FORGE<br/>MOE agent team<br/>build + unit test"]
+    F -->|diff| R["CRUCIBLE<br/>adversarial review"]
+    R -->|fix-forward| F
+    R -->|108 tools, green| P["PR 4<br/>shipped"]
+    classDef scout fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
+    classDef forge fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef cruc fill:#1e293b,stroke:#ef4444,color:#f1f5f9
+    classDef gate fill:#334155,stroke:#22c55e,color:#f1f5f9
+    class S scout
+    class F forge
+    class R cruc
+    class P gate
+```
+
+Behavioral verification (Karma cook of `copnet`, EXR landing, USD editableStage round-trips) is deferred to a live 21.0.671 session.
+
+---
 
 ### Sprint 3 progress — Mile 4 of 6 closed
 
