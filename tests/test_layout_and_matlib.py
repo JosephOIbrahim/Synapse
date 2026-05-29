@@ -249,7 +249,7 @@ class TestMaterialLibraryAutoPopulate:
     """Test that create_node('materiallibrary') auto-scaffolds MaterialX."""
 
     @pytest.fixture
-    def mock_env(self):
+    def mock_env(self, monkeypatch):
         """Set up mock hou environment for handler testing."""
         # Stub hdefereval for synchronous execution
         if "hdefereval" not in sys.modules:
@@ -262,6 +262,16 @@ class TestMaterialLibraryAutoPopulate:
         from synapse.server import main_thread
         main_thread._HOU_AVAILABLE = True
         main_thread._USE_DEFERRED = False
+
+        # Rebind the `hou` the node handler actually uses to THIS module's stub,
+        # scoped via monkeypatch so it auto-restores after the test and never
+        # leaks to later suites. handlers_node binds `hou` at import time from
+        # sys.modules["hou"]; in the full suite it can be bound to a different
+        # stub, so patch.object(_mock_hou, "node", ...) would never reach the
+        # handler -> hou.node() returns a default mock -> raw createNode chain.
+        from synapse.server import handlers_node
+        monkeypatch.setattr(handlers_node, "hou", _mock_hou, raising=False)
+        monkeypatch.setattr(handlers_node, "HOU_AVAILABLE", True, raising=False)
         return _mock_hou
 
     def _make_parent_node(self):
