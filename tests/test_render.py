@@ -298,6 +298,7 @@ class TestHandleRender:
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
              patch("pathlib.Path.exists", _fake_exists), \
              patch("pathlib.Path.stat", return_value=MagicMock(st_size=2048)), \
+             patch("pathlib.Path.mkdir", return_value=None), \
              patch("time.sleep"):
             result = handler._handle_render({"node": "/stage/usdrender_rop1"})
 
@@ -322,6 +323,7 @@ class TestHandleRender:
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
              patch("pathlib.Path.exists", return_value=False), \
              patch("pathlib.Path.stat", return_value=MagicMock(st_size=0)), \
+             patch("pathlib.Path.mkdir", return_value=None), \
              patch("time.sleep"):
             with pytest.raises(RuntimeError, match="output wasn't created"):
                 handler._handle_render({"node": "/out/mantra1"})
