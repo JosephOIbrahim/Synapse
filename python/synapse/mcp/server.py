@@ -75,6 +75,14 @@ except ImportError:
 
 logger = logging.getLogger("synapse.mcp")
 
+
+def _isError_text(result: dict) -> str:
+    """Extract a human-readable error message from a dispatch_tool isError result."""
+    content = result.get("content", [])
+    if content and isinstance(content[0], dict):
+        return content[0].get("text", "Unknown error")
+    return "Unknown error"
+
 # SSE event types
 SSE_RENDER_PROGRESS = "synapse/render_progress"
 SSE_GATE_REQUEST = "synapse/gate_request"
@@ -423,7 +431,13 @@ class MCPServer:
                 )
             except ImportError:
                 result = dispatch_tool(handler, tool_name, arguments)
-            if self._circuit_breaker and not (isinstance(result, dict) and result.get("isError")):
+            # Propagate tool errors to the JSON-RPC layer here too — read-only
+            # tools skip resilience, but a handler failure must still surface as
+            # a JSON-RPC error rather than a success result with isError buried
+            # inside (matches the non-read-only path below).
+            if isinstance(result, dict) and result.get("isError"):
+                raise JsonRpcError(INTERNAL_ERROR, _isError_text(result))
+            if self._circuit_breaker:
                 self._circuit_breaker.record_success()
             return result
 
@@ -486,10 +500,7 @@ class MCPServer:
 
         # Propagate tool errors to JSON-RPC layer so MCP clients detect failures
         if isinstance(result, dict) and result.get("isError"):
-            error_text = "Unknown error"
-            content = result.get("content", [])
-            if content and isinstance(content[0], dict):
-                error_text = content[0].get("text", error_text)
+            error_text = _isError_text(result)
             # Only record infrastructure failures for circuit breaker
             # (not user errors like "node not found")
             if any(k in error_text.lower() for k in ("timeout", "main thread", "crashed", "unresponsive")):
