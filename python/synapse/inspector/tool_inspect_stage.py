@@ -198,6 +198,13 @@ def _synapse_extract_node(n):
 
 
 def _synapse_extract_flat_ast(target_path):
+    # The bridge execs this script with split globals/locals, so module-level
+    # imports are NOT visible inside functions (NameError -> swallowed as
+    # extraction_script_crash). Import locally so the function is self-sufficient.
+    # Verified live on 21.0.671: extraction succeeds with local imports; with
+    # module-level imports it raised "name 'json'/'hou' is not defined".
+    import hou
+    import json
     parent = hou.node(target_path)
     if parent is None:
         return json.dumps({
