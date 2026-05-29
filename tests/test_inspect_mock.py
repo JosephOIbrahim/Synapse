@@ -646,3 +646,91 @@ class TestModelValidation:
                 error_state="error",
                 error_message="x" * 501,
             )
+
+
+# -----------------------------------------------------------------------------
+# Split-scope exec — the extraction script must survive the bridge's
+# exec(code, globals, locals) with globals != locals (handlers.py _run_compiled
+# / api_adapter _run_in_namespace). Regression for the inspector crash where
+# _synapse_extract_node / SCHEMA_VERSION / _MAX_ERR_LEN were defined at the
+# script's top level (-> locals) but referenced from inside its functions
+# (-> resolved via globals), yielding extraction_script_crash on EVERY scene
+# (and a double-fault on errored nodes via _MAX_ERR_LEN in the except handler).
+# The transport-mocked tests above never exec the real script, so they missed it.
+# -----------------------------------------------------------------------------
+
+
+class TestExtractionScriptSplitScope:
+    @staticmethod
+    def _child(name, node_type="null", errs=(), warns=()):
+        from unittest.mock import MagicMock
+        c = MagicMock()
+        c.name.return_value = name
+        c.type.return_value.name.return_value = node_type
+        c.path.return_value = "/stage/" + name
+        c.errors.return_value = list(errs)
+        c.warnings.return_value = list(warns)
+        c.isDisplayFlagSet.return_value = False
+        c.isBypassed.return_value = False
+        c.lastModifiedPrims.return_value = []
+        c.inputs.return_value = []
+        c.outputs.return_value = []
+        return c
+
+    def _run_template(self, children):
+        """Exec the REAL extraction template the way the bridge does: split
+        globals/locals, with `hou` NOT injected into globals (the inspector
+        transport doesn't). Returns the parsed JSON the script prints."""
+        import io
+        import sys
+        import types
+        from contextlib import redirect_stdout
+
+        from synapse.inspector.tool_inspect_stage import _EXTRACTION_SCRIPT_TEMPLATE
+
+        parent = type("P", (), {})()
+        parent.children = lambda: list(children)
+        mock_hou = types.ModuleType("hou")
+        mock_hou.node = lambda p: parent if p == "/stage" else None
+
+        script = _EXTRACTION_SCRIPT_TEMPLATE % {
+            "schema_version": SCHEMA_VERSION,
+            "target_path_literal": repr("/stage"),
+        }
+        saved = sys.modules.get("hou")
+        sys.modules["hou"] = mock_hou
+        try:
+            g = {"__builtins__": __builtins__}  # split scope; hou NOT in globals
+            l = {}
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                exec(compile(script, "<inspect_split_scope>", "exec"), g, l)
+        finally:
+            if saved is not None:
+                sys.modules["hou"] = saved
+            else:
+                sys.modules.pop("hou", None)
+        return json.loads(buf.getvalue().strip())
+
+    def test_clean_scene_does_not_crash(self):
+        data = self._run_template([self._child("a"), self._child("b")])
+        assert data.get("synapse_error") != "extraction_script_crash", data
+        assert data["schema_version"] == SCHEMA_VERSION
+        assert len(data["nodes"]) == 2
+        assert all(n["error_state"] == "clean" for n in data["nodes"])
+
+    def test_errored_and_warned_nodes_survive_split_scope(self):
+        # The error/warning paths AND the per-node except handler reference
+        # _MAX_ERR_LEN -- a top-level constant invisible inside the function
+        # under split scope. Pre-fix this double-faulted into a script crash.
+        data = self._run_template([
+            self._child("clean"),
+            self._child("boom", errs=["kaboom detail"]),
+            self._child("warn", warns=["a warning"]),
+        ])
+        assert data.get("synapse_error") != "extraction_script_crash", data
+        by_name = {n["node_name"]: n for n in data["nodes"]}
+        assert by_name["boom"]["error_state"] == "error"
+        assert "kaboom detail" in (by_name["boom"]["error_message"] or "")
+        assert by_name["warn"]["error_state"] == "warning"
+        assert by_name["clean"]["error_state"] == "clean"

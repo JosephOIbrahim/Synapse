@@ -198,13 +198,9 @@ def _synapse_extract_node(n):
 
 
 def _synapse_extract_flat_ast(target_path):
-    # The bridge execs this script with split globals/locals, so module-level
-    # imports are NOT visible inside functions (NameError -> swallowed as
-    # extraction_script_crash). Import locally so the function is self-sufficient.
-    # Verified live on 21.0.671: extraction succeeds with local imports; with
-    # module-level imports it raised "name 'json'/'hou' is not defined".
-    import hou
-    import json
+    # hou / json / SCHEMA_VERSION / _synapse_extract_node all resolve via the
+    # globals() re-publish before the top-level try (split globals/locals exec
+    # would otherwise hide them inside this function). See that note for why.
     parent = hou.node(target_path)
     if parent is None:
         return json.dumps({
@@ -227,6 +223,27 @@ def _synapse_extract_flat_ast(target_path):
         "target_path": target_path,
         "nodes": nodes,
     }, sort_keys=True)
+
+
+# The bridge execs this script with split globals/locals -- exec(code, G, L)
+# where G != L (see handlers.py _run_compiled / api_adapter _run_in_namespace).
+# Top-level defs, imports and constants bind into L, but functions resolve
+# names via their __globals__ (= G), so from INSIDE the functions the other
+# top-level function (_synapse_extract_node), the module constants
+# (SCHEMA_VERSION, _MAX_ERR_LEN) and the imports are all invisible -> NameError,
+# swallowed as extraction_script_crash. `globals()` here (module level) IS G,
+# so re-publish the names the functions need into G. Without this, a clean
+# scene crashes at the _synapse_extract_node call and any errored/warned node
+# double-faults on _MAX_ERR_LEN inside its own except handler.
+globals().update({
+    "hou": hou,
+    "json": json,
+    "traceback": traceback,
+    "SCHEMA_VERSION": SCHEMA_VERSION,
+    "_MAX_ERR_LEN": _MAX_ERR_LEN,
+    "_synapse_extract_node": _synapse_extract_node,
+    "_synapse_extract_flat_ast": _synapse_extract_flat_ast,
+})
 
 
 try:
