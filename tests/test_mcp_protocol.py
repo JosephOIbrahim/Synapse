@@ -1032,6 +1032,34 @@ class TestP1ToolGroupModules:
 # Tests: Safe / Progressive Render MCP tools
 # =========================================================================
 
+@pytest.fixture
+def _auto_approve_bridge():
+    """Auto-approve consent for the NON-read-only dispatch tests below.
+
+    synapse_safe_render / synapse_render_progressively route through the
+    LosslessExecutionBridge. In CI ``synapse.core.gates`` is importable, so the
+    bridge singleton wires a real HumanGate; an unattended APPROVE-gated op then
+    times out to safe-default rejection. These tests verify DISPATCH, not
+    consent, so inject an auto-approving ``consent_callback`` (bridge Path 2).
+    Production gating is untouched -- this only swaps the process-local bridge
+    singleton for the duration of the test, then restores it.
+    """
+    import synapse.panel.bridge_adapter as ba
+    prev = ba._bridge
+    _b = ba.LosslessExecutionBridge(consent_callback=lambda op: True)
+    # In CI synapse.core.gates is importable, so __init__ auto-wires a real
+    # HumanGate, and _check_consent consults the gate (Path 1) BEFORE the
+    # callback (Path 2). Null the gate on this throwaway test bridge so the
+    # injected auto-approve callback is the one consulted. This does NOT touch
+    # production gating -- it only configures the process-local test singleton.
+    _b._gate = None
+    ba._bridge = _b
+    try:
+        yield
+    finally:
+        ba._bridge = prev
+
+
 class TestSafeRenderMCPTools:
     """Verify safe_render and render_progressively are properly registered in MCP."""
 
@@ -1068,7 +1096,7 @@ class TestSafeRenderMCPTools:
         assert "resolution" in props
         assert "samples" in props
 
-    def test_safe_render_dispatch(self):
+    def test_safe_render_dispatch(self, _auto_approve_bridge):
         response = MagicMock()
         response.success = True
         response.data = {"passed": True}
@@ -1078,7 +1106,7 @@ class TestSafeRenderMCPTools:
         assert "isError" not in result
         assert len(result["content"]) == 1
 
-    def test_render_progressively_dispatch(self):
+    def test_render_progressively_dispatch(self, _auto_approve_bridge):
         response = MagicMock()
         response.success = True
         response.data = {"success": True}
