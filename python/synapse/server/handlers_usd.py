@@ -82,6 +82,69 @@ def _usd_to_json(value):
     return str(value)
 
 
+def _coerce_bool(value, default: bool = True) -> bool:
+    """Coerce a value to bool, treating stringified false-tokens as False.
+
+    Real booleans pass straight through. The strings 'false', '0', 'no',
+    and 'off' (case-insensitive, whitespace-trimmed) -> False. Anything
+    else falls back to Python truthiness. ``None`` returns ``default``.
+    """
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        if value.strip().lower() in ("false", "0", "no", "off", ""):
+            return False
+        return True
+    return bool(value)
+
+
+def _karma_visibility_pythonscript(
+    prim_path: str,
+    purpose: str = "default",
+    kind: str = "component",
+) -> str:
+    """Return a pythonscript-LOP code string that authors purpose + kind.
+
+    The emitted script runs inside Houdini (the ``pxr`` import lives inside
+    the returned string, NOT at this call site, so this helper has no
+    Houdini/pxr dependency and is unit-testable standalone).
+
+    Behavior of the emitted script:
+    - Resolves the target prim on the editable stage. When ``prim_path`` is
+      "/" it falls back to ``stage.GetDefaultPrim()``.
+    - Authors ``purpose`` ONLY if the purpose attribute has no authored value
+      (non-clobbering — respects existing pipeline opinions).
+    - Authors ``kind`` ONLY if the prim has no kind already set.
+
+    Args:
+        prim_path: USD prim path to author on ("/" -> default prim).
+        purpose: USD purpose token (default "default").
+        kind: USD model kind (default "component").
+
+    Returns:
+        Python source string suitable for a pythonscript LOP "python" parm.
+    """
+    return "\n".join([
+        "from pxr import Usd, UsdGeom",
+        "stage = hou.pwd().editableStage()",
+        f"_prim_path = {repr(prim_path)}",
+        "if _prim_path == '/':",
+        "    prim = stage.GetDefaultPrim()",
+        "else:",
+        "    prim = stage.GetPrimAtPath(_prim_path)",
+        "if prim:",
+        "    imageable = UsdGeom.Imageable(prim)",
+        "    purpose_attr = imageable.GetPurposeAttr()",
+        "    if not purpose_attr.HasAuthoredValue():",
+        f"        purpose_attr.Set({repr(purpose)})",
+        "    model_api = Usd.ModelAPI(prim)",
+        "    if not model_api.GetKind():",
+        f"        model_api.SetKind({repr(kind)})",
+    ])
+
+
 class UsdHandlerMixin:
     """Mixin providing USD/Solaris stage handlers."""
 
@@ -382,6 +445,7 @@ class UsdHandlerMixin:
         kind = resolve_param(payload, "kind", required=False)
         purpose = resolve_param(payload, "purpose", required=False)
         active = resolve_param(payload, "active", required=False)
+        instanceable = resolve_param(payload, "instanceable", required=False)
 
         # Validate before touching hou.*
         mods = {}
@@ -391,10 +455,13 @@ class UsdHandlerMixin:
             mods["purpose"] = purpose
         if active is not None:
             mods["active"] = active
+        if instanceable is not None:
+            mods["instanceable"] = bool(instanceable)
 
         if not mods:
             raise ValueError(
-                "No changes specified -- pass at least one of: kind, purpose, or active"
+                "No changes specified -- pass at least one of: "
+                "kind, purpose, active, or instanceable"
             )
 
         from .main_thread import run_on_main
@@ -421,6 +488,8 @@ class UsdHandlerMixin:
                     lines.append(f"    UsdGeom.Imageable(prim).GetPurposeAttr().Set({repr(purpose)})")
                 if active is not None:
                     lines.append(f"    prim.SetActive({active})")
+                if instanceable is not None:
+                    lines.append(f"    prim.SetInstanceable({bool(instanceable)})")
 
                 code = "\n".join(lines)
                 py_lop.parm("python").set(code)
@@ -469,6 +538,14 @@ class UsdHandlerMixin:
         prim_path = resolve_param_with_default(payload, "prim_path", "/")
         mode = resolve_param_with_default(payload, "mode", "reference")
         parent = resolve_param_with_default(payload, "parent", "/stage")
+
+        # Karma visibility metadata (BL-008): for reference/payload modes,
+        # non-clobberingly author purpose + kind so the asset renders in Karma.
+        karma_visible = _coerce_bool(
+            resolve_param(payload, "karma_visible", required=False), default=True
+        )
+        purpose = resolve_param_with_default(payload, "purpose", "default")
+        kind = resolve_param_with_default(payload, "kind", "component")
 
         # Validate mode before touching hou.*
         if mode not in ("sublayer", "reference", "payload"):
@@ -520,14 +597,46 @@ class UsdHandlerMixin:
                     "prim_path": prim_path,
                 }
 
-                # Add Karma visibility advisory for non-sublayer modes
                 if mode in ("reference", "payload"):
-                    result["advisory"] = (
-                        "For Karma rendering, 'sublayer' is the most reliable import "
-                        "mode. If this asset isn't visible in renders, try switching "
-                        "to mode='sublayer' or ensure the imported prims have "
-                        "purpose='default' and kind='component' metadata."
-                    )
+                    if karma_visible:
+                        # BL-008: author purpose/kind non-clobberingly downstream
+                        # of the reference LOP so the asset renders in Karma.
+                        # NOTE: created on parent_node (=/stage), wired off the
+                        # just-created reference LOP -- NOT node.parent().
+                        kv_lop = parent_node.createNode(
+                            "pythonscript", "karma_visibility"
+                        )
+                        kv_lop.setInput(0, node)
+                        kv_lop.moveToGoodPosition()
+                        kv_lop.parm("python").set(
+                            _karma_visibility_pythonscript(prim_path, purpose, kind)
+                        )
+                        try:
+                            kv_lop.cook(force=True)
+                            result["karma_visibility"] = {
+                                "node": kv_lop.path(),
+                                "purpose": purpose,
+                                "kind": kind,
+                                "policy": "non-clobbering",
+                            }
+                        except hou.OperationFailed as e:
+                            # Soft failure -- the reference still imported.
+                            result["karma_visibility_error"] = (
+                                "The reference imported, but authoring Karma "
+                                f"visibility metadata hit a snag -- {e}. The "
+                                "pythonscript node is still in the network so you "
+                                "can inspect it. The asset may need purpose/kind "
+                                "set manually for Karma to render it."
+                            )
+                    else:
+                        # karma_visible disabled -- keep the legacy advisory.
+                        result["advisory"] = (
+                            "For Karma rendering, 'sublayer' is the most reliable "
+                            "import mode. If this asset isn't visible in renders, "
+                            "try switching to mode='sublayer' or ensure the imported "
+                            "prims have purpose='default' and kind='component' "
+                            "metadata."
+                        )
 
                 return result
 
@@ -1239,3 +1348,265 @@ class UsdHandlerMixin:
             }
 
         return run_on_main(_on_main)
+
+    def _handle_set_payload_loadstate(self, payload: Dict) -> Dict:
+        """Control USD payload load state and/or prim activation (BL-008).
+
+        Generates a pythonscript LOP that loads/unloads a payload by prim
+        path and/or toggles the prim's active flag. Use to defer-load or
+        release heavy referenced assets.
+
+        Payload:
+            prim_path (str, required): USD prim path carrying the payload.
+            action ("load" | "unload", optional): Load or unload the payload.
+            active (bool, optional): Set the prim active/inactive.
+            node (str, optional): LOP node to wire after.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        node_path_arg = resolve_param(payload, "node", required=False)
+        prim_path = resolve_param(payload, "prim_path")
+        action = resolve_param(payload, "action", required=False)
+        active = resolve_param(payload, "active", required=False)
+
+        if action is not None and action not in ("load", "unload"):
+            raise ValueError(
+                f"'{action}' isn't a recognized action -- use 'load' or 'unload'"
+            )
+        if action is None and active is None:
+            raise ValueError(
+                "No change specified -- pass 'action' (load/unload) and/or 'active'"
+            )
+
+        from .main_thread import run_on_main
+
+        def _on_main():
+            node = self._resolve_lop_node(node_path_arg)
+
+            with hou.undos.group("SYNAPSE: set_payload_loadstate"):
+                parent = node.parent()
+                safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
+                py_lop = parent.createNode("pythonscript", f"loadstate_{safe_name}")
+                py_lop.setInput(0, node)
+                py_lop.moveToGoodPosition()
+
+                lines = [
+                    "from pxr import Sdf",
+                    "stage = hou.pwd().editableStage()",
+                    f"_prim_path = Sdf.Path({repr(prim_path)})",
+                ]
+                if action == "load":
+                    lines.append("stage.Load(_prim_path)")
+                elif action == "unload":
+                    lines.append("stage.Unload(_prim_path)")
+                if active is not None:
+                    lines.append("prim = stage.GetPrimAtPath(_prim_path)")
+                    lines.append("if prim:")
+                    lines.append(f"    prim.SetActive({bool(active)})")
+
+                code = "\n".join(lines)
+                py_lop.parm("python").set(code)
+
+                try:
+                    py_lop.cook(force=True)
+                except hou.OperationFailed as e:
+                    error_msg = str(e)
+                    return {
+                        "created_node": py_lop.path(),
+                        "prim_path": prim_path,
+                        "cook_error": (
+                            f"The node was created but hit a snag when cooking -- {error_msg}. "
+                            "The pythonscript node is still in the network so you can inspect it. "
+                            "Check that the prim path exists and carries a payload."
+                        ),
+                    }
+
+                result = {
+                    "created_node": py_lop.path(),
+                    "prim_path": prim_path,
+                }
+                if action is not None:
+                    result["action"] = action
+                if active is not None:
+                    result["active"] = bool(active)
+                return result
+
+        return run_on_main(_on_main)
+
+    def _handle_create_point_instancer(self, payload: Dict) -> Dict:
+        """Author a minimal-but-valid UsdGeom.PointInstancer.
+
+        Defines a PointInstancer at prim_path, sets its prototypes
+        relationship, protoIndices (defaults to zeros, one per position),
+        and positions. Correctness over completeness -- this is a minimal
+        valid setup the artist can build on.
+
+        Payload:
+            prim_path (str, required): USD prim path for the PointInstancer.
+            prototypes (list[str], optional): Prototype prim paths to instance.
+            positions (list[[x,y,z]], optional): Instance positions.
+            node (str, optional): LOP node to wire after.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        node_path_arg = resolve_param(payload, "node", required=False)
+        prim_path = resolve_param(payload, "prim_path")
+        prototypes = resolve_param(payload, "prototypes", required=False) or []
+        positions = resolve_param(payload, "positions", required=False) or []
+
+        if not isinstance(prototypes, (list, tuple)):
+            raise ValueError("'prototypes' must be a list of prim path strings")
+        if not isinstance(positions, (list, tuple)):
+            raise ValueError("'positions' must be a list of [x, y, z] triples")
+        if positions and not prototypes:
+            raise ValueError(
+                "'positions' require at least one 'prototypes' entry -- "
+                "protoIndices would otherwise reference a non-existent prototype"
+            )
+
+        from .main_thread import run_on_main
+
+        def _on_main():
+            node = self._resolve_lop_node(node_path_arg)
+
+            with hou.undos.group("SYNAPSE: create_point_instancer"):
+                parent = node.parent()
+                safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "instancer"
+                py_lop = parent.createNode("pythonscript", f"instancer_{safe_name}")
+                py_lop.setInput(0, node)
+                py_lop.moveToGoodPosition()
+
+                proto_list = [str(p) for p in prototypes]
+                pos_list = [[float(c) for c in pos] for pos in positions]
+                # protoIndices: one per position, all referencing prototype 0.
+                proto_indices = [0] * len(pos_list)
+
+                lines = [
+                    "from pxr import UsdGeom, Sdf, Vt, Gf",
+                    "stage = hou.pwd().editableStage()",
+                    f"instancer = UsdGeom.PointInstancer.Define(stage, {repr(prim_path)})",
+                    f"_protos = {repr(proto_list)}",
+                    f"_positions = {repr(pos_list)}",
+                    # positions/protoIndices are only valid alongside prototypes;
+                    # with none, author an empty-but-valid instancer (no dangling
+                    # protoIndices pointing at a non-existent prototype 0).
+                    "if _protos:",
+                    "    instancer.CreatePrototypesRel().SetTargets("
+                    "[Sdf.Path(p) for p in _protos])",
+                    "    instancer.CreatePositionsAttr().Set("
+                    "Vt.Vec3fArray([Gf.Vec3f(*p) for p in _positions]))",
+                    f"    instancer.CreateProtoIndicesAttr().Set(Vt.IntArray({repr(proto_indices)}))",
+                ]
+
+                code = "\n".join(lines)
+                py_lop.parm("python").set(code)
+
+                try:
+                    py_lop.cook(force=True)
+                except hou.OperationFailed as e:
+                    error_msg = str(e)
+                    return {
+                        "created_node": py_lop.path(),
+                        "prim_path": prim_path,
+                        "cook_error": (
+                            f"The node was created but hit a snag when cooking -- {error_msg}. "
+                            "The pythonscript node is still in the network so you can inspect it. "
+                            "Check that the prototype paths resolve on the stage."
+                        ),
+                    }
+
+                return {
+                    "created_node": py_lop.path(),
+                    "prim_path": prim_path,
+                    "prototypes": proto_list,
+                    "instance_count": len(pos_list),
+                }
+
+        return run_on_main(_on_main)
+
+    def _handle_shot_render_ready(self, payload: Dict) -> Dict:
+        """Composite orchestrator: get a shot render-ready in one call.
+
+        Runs the existing primitives in sequence -- create_textured_material
+        -> solaris_assemble_chain -> safe_render -- threading outputs between
+        them, and returns a per-step summary. Each step is individually
+        try/excepted so a partial pipeline still returns a structured summary.
+
+        This orchestrates existing handlers only; it does not re-implement
+        their logic.
+
+        Payload:
+            diffuse_map (str, optional): Diffuse texture for the material step.
+            material_name (str, optional): Material name.
+            geo_pattern (str, optional): Geometry prim pattern to assign to.
+            parent (str, optional): LOP network path for assembly (default /stage).
+            rop_path (str, optional): Render ROP path (auto-discovers if omitted).
+            width / height (int, optional): Render resolution overrides.
+            skip_render (bool, optional): Assemble only, skip the render step.
+        """
+        steps: List[Dict] = []
+        passed = True
+
+        # --- Step 1: textured material -------------------------------------
+        material_usd_path = None
+        mat_payload = {
+            "name": resolve_param_with_default(
+                payload, "material_name", "shot_material"
+            ),
+        }
+        diffuse_map = resolve_param(payload, "diffuse_map", required=False)
+        if diffuse_map is not None:
+            mat_payload["diffuse_map"] = diffuse_map
+        for opt in ("roughness_map", "normal_map", "metalness_map",
+                    "displacement_map", "opacity_map", "geo_pattern"):
+            val = resolve_param(payload, opt, required=False)
+            if val is not None:
+                mat_payload[opt] = val
+        try:
+            mat_result = self._handle_create_textured_material(mat_payload)
+            material_usd_path = (mat_result or {}).get("material_usd_path")
+            steps.append({"step": "create_textured_material", "result": mat_result})
+        except Exception as e:  # noqa: BLE001 -- record, don't abort
+            passed = False
+            steps.append({"step": "create_textured_material", "error": str(e)})
+
+        # --- Step 2: assemble the Solaris chain ----------------------------
+        assemble_payload = {
+            "parent": resolve_param_with_default(payload, "parent", "/stage"),
+        }
+        try:
+            assemble_result = self._handle_solaris_assemble_chain(assemble_payload)
+            steps.append({"step": "solaris_assemble_chain", "result": assemble_result})
+        except Exception as e:  # noqa: BLE001
+            passed = False
+            steps.append({"step": "solaris_assemble_chain", "error": str(e)})
+
+        # --- Step 3: safe render -------------------------------------------
+        skip_render = _coerce_bool(
+            resolve_param(payload, "skip_render", required=False), default=False
+        )
+        if skip_render:
+            steps.append({"step": "safe_render", "result": {"skipped": True}})
+        else:
+            render_payload = {}
+            for opt in ("rop_path", "width", "height", "soho_foreground"):
+                val = resolve_param(payload, opt, required=False)
+                if val is not None:
+                    render_payload[opt] = val
+            try:
+                render_result = self._handle_safe_render(render_payload)
+                steps.append({"step": "safe_render", "result": render_result})
+                # safe_render returns {passed: bool, ...} -- thread it through.
+                if isinstance(render_result, dict) and render_result.get("passed") is False:
+                    passed = False
+            except Exception as e:  # noqa: BLE001
+                passed = False
+                steps.append({"step": "safe_render", "error": str(e)})
+
+        return {
+            "steps": steps,
+            "passed": passed,
+            "material_usd_path": material_usd_path,
+        }

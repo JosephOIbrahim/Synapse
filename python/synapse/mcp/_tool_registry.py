@@ -248,14 +248,15 @@ TOOL_DEFS: list[tuple] = [
      False, True, False),
 
     ("houdini_modify_usd_prim", "modify_usd_prim",
-     _filter_keys(("node", "prim_path", "kind", "purpose", "active")),
-     "Modify USD prim metadata: kind, purpose, or active state.",
+     _filter_keys(("node", "prim_path", "kind", "purpose", "active", "instanceable")),
+     "Modify USD prim metadata: kind, purpose, active state, or instanceable flag.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "LOP node to wire after (optional)"},
          "prim_path": {"type": "string", "description": "USD prim path"},
          "kind": {"type": "string", "description": "Model kind"},
          "purpose": {"type": "string", "description": "Prim purpose"},
          "active": {"type": "boolean", "description": "Whether the prim is active"},
+         "instanceable": {"type": "boolean", "description": "Set the prim's instanceable flag"},
      }, "required": ["prim_path"]},
      False, True, False),
 
@@ -522,7 +523,54 @@ TOOL_DEFS: list[tuple] = [
          "mode": {"type": "string", "enum": ["reference", "payload", "sublayer"],
                   "description": "Import mode: reference (default), payload (deferred load), or sublayer (most Karma-compatible)"},
          "parent": {"type": "string", "description": "Parent LOP network path"},
+         "karma_visible": {"type": "boolean", "description": "Author purpose/kind on the referenced prim for Karma visibility (default: true)"},
+         "purpose": {"type": "string", "description": "USD purpose to author non-clobberingly (default: default)"},
+         "kind": {"type": "string", "description": "USD model kind to author non-clobberingly (default: component)"},
      }, "required": ["file"]},
+     False, True, False),
+
+    ("houdini_set_payload_loadstate", "set_payload_loadstate", _identity,
+     "Control USD payload load state and prim activation. Load/unload a payload by "
+     "prim path and/or toggle the prim's active flag. Use to defer-load or release "
+     "heavy referenced assets.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "LOP node to wire after (optional)"},
+         "prim_path": {"type": "string", "description": "USD prim path carrying the payload"},
+         "action": {"type": "string", "enum": ["load", "unload"],
+                    "description": "Load or unload the payload (optional)"},
+         "active": {"type": "boolean", "description": "Set prim active/inactive (optional)"},
+     }, "required": ["prim_path"]},
+     False, True, False),
+
+    ("houdini_create_point_instancer", "create_point_instancer", _identity,
+     "Author a UsdGeom.PointInstancer: scatter prototype prims across positions. "
+     "Minimal valid setup -- defines the instancer, sets the prototypes relationship, "
+     "protoIndices (defaults to zeros), and positions.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "LOP node to wire after (optional)"},
+         "prim_path": {"type": "string", "description": "USD prim path for the PointInstancer"},
+         "prototypes": {"type": "array", "items": {"type": "string"},
+                        "description": "Prototype prim paths to instance"},
+         "positions": {"type": "array", "items": {"type": "array", "items": {"type": "number"}},
+                       "description": "Instance positions as [[x,y,z], ...]"},
+     }, "required": ["prim_path"]},
+     False, True, False),
+
+    ("houdini_shot_render_ready", "shot_render_ready", _identity,
+     "Composite orchestrator: get a shot render-ready in one call. Runs "
+     "create_textured_material -> solaris_assemble_chain -> safe_render in sequence, "
+     "threading outputs, and returns a per-step summary with any errors. Orchestrates "
+     "existing primitives -- does not re-implement them.",
+     {"type": "object", "properties": {
+         "diffuse_map": {"type": "string", "description": "Diffuse/albedo texture for the material step (optional)"},
+         "material_name": {"type": "string", "description": "Material name (optional)"},
+         "geo_pattern": {"type": "string", "description": "Geometry prim pattern to assign the material to (optional)"},
+         "parent": {"type": "string", "description": "LOP network path for assembly (default: /stage)"},
+         "rop_path": {"type": "string", "description": "Render ROP path (auto-discovers if omitted)"},
+         "width": {"type": "integer", "description": "Render width override"},
+         "height": {"type": "integer", "description": "Render height override"},
+         "skip_render": {"type": "boolean", "description": "Assemble only, skip the render step (default: false)"},
+     }, "required": []},
      False, True, False),
 
     ("houdini_query_prims", "query_prims", _identity,
@@ -1016,6 +1064,15 @@ TOOL_DEFS: list[tuple] = [
          "name": {"type": "string", "description": "Network name (default: cop2net)"},
          "initial_nodes": {"type": "array", "items": {"type": "string"},
                            "description": "COP node types to create inside"},
+     }, "required": []},
+     False, True, False),
+
+    ("cops_create_copnet", "cops_create_copnet", _identity,
+     "Create a modern Copernicus 'copnet' network (H21 Copernicus, distinct from legacy cop2net).",
+     {"type": "object", "properties": {
+         "parent": {"type": "string", "description": "Parent node path (default: /obj)"},
+         "name": {"type": "string", "description": "Network name (default: copnet)"},
+         "starter": {"type": "string", "description": "Optional COP node type to create inside the new copnet"},
      }, "required": []},
      False, True, False),
 

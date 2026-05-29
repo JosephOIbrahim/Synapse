@@ -224,21 +224,43 @@ class RenderHandlerMixin:
             # If ROP has no output path, check the upstream Karma LOP
             if not artist_output.strip() and lop_target_node is not None:
                 try:
-                    # Walk from the LOP target up to find a karma node with picture
-                    _walk = lop_target_node
-                    for _ in range(20):  # bounded walk
+                    # Branch-aware bounded breadth-first walk: a Karma LOP
+                    # feeding the ROP may be reachable only via a non-zero
+                    # input index (e.g. inputs()[1] of a merge/switch LOP),
+                    # so follow ALL inputs -- not just inputs()[0]. A visited
+                    # set + node budget keep diamond/cyclic graphs from
+                    # looping forever. First non-empty picture wins (BFS pops
+                    # shallowest first -> nearest Karma LOP).
+                    _queue = [lop_target_node]
+                    _visited = set()
+                    _budget = 20  # max nodes visited (matches prior 20-hop cap)
+                    while _queue and _budget > 0:
+                        _walk = _queue.pop(0)
+                        # Key on .path() (stable per node): hou.Node.inputs()
+                        # returns FRESH wrappers each call, so id() never dedups
+                        # real nodes -- matches the .path()/.sessionId() dedup
+                        # convention in guards.py / network_trace.py.
+                        try:
+                            _key = _walk.path()
+                        except Exception:
+                            _key = id(_walk)
+                        if _key in _visited:
+                            continue
+                        _visited.add(_key)
+                        _budget -= 1  # count distinct nodes visited, not revisits
                         kp = _walk.parm("picture")
                         if kp:
                             _val = kp.eval() or ""  # noqa: S307
                             if _val.strip():
                                 artist_output = _val
                                 break
-                        # Try parent's children (sibling karma nodes)
-                        inputs = _walk.inputs()
-                        if inputs:
-                            _walk = inputs[0]
-                        else:
-                            break
+                        # Enqueue every upstream input, not just index 0
+                        try:
+                            _queue.extend(
+                                _i for _i in _walk.inputs() if _i is not None
+                            )
+                        except Exception:
+                            pass
                 except Exception:
                     pass  # best-effort upstream discovery
 

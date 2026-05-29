@@ -28,6 +28,7 @@ GROUP_KNOWLEDGE = (
 TOOL_NAMES = [
     # Foundation
     "cops_create_network",
+    "cops_create_copnet",
     "cops_create_node",
     "cops_connect",
     "cops_set_opencl",
@@ -55,6 +56,7 @@ TOOL_NAMES = [
 # Dispatch entries for this group
 DISPATCH_KEYS = {
     "cops_create_network":      ("cops_create_network",      "identity"),
+    "cops_create_copnet":       ("cops_create_copnet",       "identity"),
     "cops_create_node":         ("cops_create_node",         "identity"),
     "cops_connect":             ("cops_connect",             "identity"),
     "cops_set_opencl":          ("cops_set_opencl",          "identity"),

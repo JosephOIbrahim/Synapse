@@ -87,6 +87,71 @@ class CopsHandlerMixin:
 
         return run_on_main(_on_main)
 
+    def _handle_cops_create_copnet(self, payload: Dict) -> Dict:
+        """Create a modern Copernicus 'copnet' network container.
+
+        Distinct from the legacy 'cop2net' built by _handle_cops_create_network:
+        H21 Copernicus uses the 'copnet' node type. This is the foundational
+        modern-Copernicus surface — all 20 existing cops_* tools build on the
+        legacy cop2net; this adds the modern container without rewriting them.
+
+        Payload:
+            parent (str): Parent node path (default: '/obj' — mirrors
+                _handle_cops_create_network, a container creator).
+            name (str): Network name (default: 'copnet').
+            starter (str): Optional single COP node type to create inside the
+                new copnet so the network is non-empty (mirrors the
+                initial_nodes pattern of create_network, single-node form).
+
+        Returns:
+            Dict with network path, type name, and optional starter node path.
+
+        Note:
+            Behavioral verification (does the copnet cook through Karma XPU)
+            is DEFERRED — the live bridge is down. This handler only builds
+            the network; it intentionally performs no cook() calls.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        parent_path = resolve_param_with_default(payload, "parent", "/obj")
+        name = resolve_param_with_default(payload, "name", "copnet")
+        starter = resolve_param_with_default(payload, "starter", None)
+
+        from .main_thread import run_on_main
+
+        def _on_main():
+            parent = hou.node(parent_path)
+            if parent is None:
+                raise ValueError(
+                    f"Couldn't find parent node '{parent_path}' -- "
+                    "check the path and try again"
+                )
+
+            with hou.undos.group("synapse_cops_create_copnet"):
+                network = parent.createNode("copnet", name)
+                if network is None:
+                    raise RuntimeError(
+                        "Couldn't create copnet -- "
+                        "make sure Copernicus is available in your Houdini build"
+                    )
+                network.moveToGoodPosition()
+
+                starter_path = None
+                if starter:
+                    child = network.createNode(str(starter))
+                    if child is not None:
+                        child.moveToGoodPosition()
+                        starter_path = child.path()
+
+            return {
+                "network_path": network.path(),
+                "type": network.type().name(),
+                "starter_node": starter_path,
+            }
+
+        return run_on_main(_on_main)
+
     def _handle_cops_create_node(self, payload: Dict) -> Dict:
         """Create a COP node inside a COP network.
 

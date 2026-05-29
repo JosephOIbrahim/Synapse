@@ -1,7 +1,7 @@
 """Tests for Copernicus (COPs) handlers.
 
-Tests all 20 COP handlers across 4 phases:
-  - Foundation: create_network, create_node, connect, set_opencl, read_layer_info
+Tests all 21 COP handlers across 4 phases:
+  - Foundation: create_network, create_copnet, create_node, connect, set_opencl, read_layer_info
   - Pipeline: to_materialx, composite_aovs, analyze_render, slap_comp
   - Procedural: create_solver, procedural_texture, growth_propagation,
                 reaction_diffusion, pixel_sort, stylize
@@ -795,9 +795,10 @@ class TestCopsBatchCook:
 
 class TestCopsRegistration:
     def test_all_cops_commands_registered(self, handler):
-        """Verify all 20 COPs handlers are registered."""
+        """Verify all 21 COPs handlers are registered."""
         cops_commands = [
-            "cops_create_network", "cops_create_node", "cops_connect",
+            "cops_create_network", "cops_create_copnet", "cops_create_node",
+            "cops_connect",
             "cops_set_opencl", "cops_read_layer_info",
             "cops_to_materialx", "cops_composite_aovs",
             "cops_analyze_render", "cops_slap_comp",
@@ -813,16 +814,16 @@ class TestCopsRegistration:
             assert cmd in registered, f"'{cmd}' not registered"
 
     def test_cops_count(self, handler):
-        """Verify exactly 20 COPs commands are registered."""
+        """Verify exactly 21 COPs commands are registered."""
         cops_cmds = [c for c in handler._registry.registered_types
                      if c.startswith("cops_")]
-        assert len(cops_cmds) == 20
+        assert len(cops_cmds) == 21
 
     def test_protocol_command_types(self):
         """Verify CommandType enum has all COPs entries."""
         ct = protocol_mod.CommandType
         cops_types = [m for m in ct.__members__ if m.startswith("COPS_")]
-        assert len(cops_types) == 20
+        assert len(cops_types) == 21
 
     def test_read_only_commands(self):
         """Verify read-only COPs commands are in _READ_ONLY_COMMANDS."""
@@ -876,7 +877,7 @@ class TestCopsRecipes:
 
 class TestCopsMcpTools:
     def test_mcp_tool_defs_exist(self):
-        """Verify all 20 COPs tools are in mcp/tools.py _TOOL_DEFS."""
+        """Verify all 21 COPs tools are in mcp/tools.py _TOOL_DEFS."""
         # Import the mcp tools module
         mcp_tools_path = _base / "mcp" / "tools.py"
         if "synapse.mcp" not in sys.modules:
@@ -896,7 +897,7 @@ class TestCopsMcpTools:
         tool_names = [t[0] for t in mcp_tools_mod.TOOL_DEFS]
 
         cops_tools = [n for n in tool_names if n.startswith("cops_")]
-        assert len(cops_tools) == 20
+        assert len(cops_tools) == 21
 
     def test_mcp_tool_group_module(self):
         """Verify mcp_tools_cops.py has correct tool count."""
@@ -906,6 +907,6 @@ class TestCopsMcpTools:
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
 
-        assert len(mod.TOOL_NAMES) == 20
-        assert len(mod.DISPATCH_KEYS) == 20
+        assert len(mod.TOOL_NAMES) == 21
+        assert len(mod.DISPATCH_KEYS) == 21
         assert "GROUP_KNOWLEDGE" in dir(mod)
