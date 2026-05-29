@@ -14,7 +14,6 @@ import copy
 import http.client
 import json
 import logging
-import os
 import ssl
 from typing import Optional
 
@@ -91,9 +90,21 @@ class ClaudeWorker(QThread):
     def run(self) -> None:
         """Entry point executed on the background thread."""
         try:
-            api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+            # Resolve via the canonical auth layer: hou.secure (where available)
+            # then the ANTHROPIC_API_KEY env var, whitespace-stripped, never
+            # raising. Avoids the old raw os.environ read that missed keys stored
+            # in hou.secure and surfaced a cryptic message.
+            from ..host.auth import get_anthropic_api_key
+            api_key = get_anthropic_api_key()
             if not api_key:
-                self.stream_error.emit("ANTHROPIC_API_KEY not set in environment")
+                self.stream_error.emit(
+                    "No Anthropic API key found. Set it at the SYSTEM level so "
+                    "Houdini inherits it, then relaunch Houdini:  "
+                    'setx ANTHROPIC_API_KEY "sk-ant-..."  '
+                    "(a terminal-scoped `set` won't carry into Houdini on Windows). "
+                    "On builds exposing hou.secure you can instead run, in Houdini's "
+                    "Python shell: hou.secure.setPassword('synapse_anthropic', 'sk-ant-...')."
+                )
                 return
 
             self._conversation_loop(api_key)
