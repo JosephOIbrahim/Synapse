@@ -175,3 +175,133 @@ def build_karma_xpu_shot(
         "department_files_weakest_first": dept_files,
         "composition_errors": errs,
     }
+
+
+# ---------------------------------------------------------------------------
+# Mile 3 -- matlib_bind (PRD 7.2 / GAP-2 / BL-008)
+# ---------------------------------------------------------------------------
+
+def ensure_mtlx_material(stage_node, name, prefix="/materials/", color=None,
+                         input_node=None, shader_type="mtlxstandard_surface"):
+    """Create a materiallibrary + a MaterialX standard-surface material.
+
+    Returns (material_prim_path, matlib_node). Recipe verified on 21.0.671:
+    matpathprefix -> material prim path = prefix + name; shader via
+    matlib.createNode(shader_type, name).
+    """
+    if not HOU_AVAILABLE:
+        raise sc.ComposeError("hou unavailable -- ensure_mtlx_material needs the live bridge")
+    matlib = sc.create_lop(stage_node, "materiallibrary", name + "_matlib")
+    if input_node is not None:
+        sc.wire(matlib, input_node)
+    if not prefix.endswith("/"):
+        prefix += "/"
+    _set(matlib, "matpathprefix", prefix)
+    sh = matlib.createNode(shader_type, name)
+    if color is not None:
+        for pn in ("base_color", "basecolor"):
+            pt = sh.parmTuple(pn)
+            if pt is not None:
+                try:
+                    pt.set(color)
+                    break
+                except Exception:
+                    pass
+    matlib.layoutChildren()
+    return prefix + name, matlib
+
+
+def _expand_targets(stage, pattern: str) -> List[str]:
+    """Resolve a primpattern to concrete composed prim paths. Supports an exact
+    path, a glob ('/geo/*'), or a USD-style type expression ('//Mesh')."""
+    import fnmatch
+    if pattern.startswith("//"):
+        type_name = pattern[2:]
+        return [str(p.GetPath()) for p in stage.Traverse() if p.GetTypeName() == type_name]
+    if "*" in pattern or "?" in pattern:
+        return [str(p.GetPath()) for p in stage.Traverse()
+                if fnmatch.fnmatch(str(p.GetPath()), pattern)]
+    prim = stage.GetPrimAtPath(pattern)
+    return [pattern] if (prim and prim.IsValid()) else []
+
+
+def bind_material(stage_node, material_path: str, targets, input_node=None,
+                  strength: Optional[str] = None) -> dict:
+    """Bind one material to a target prim set via an assignmaterial LOP (GAP-2).
+
+    targets: a primpattern or list of them -- exact path, glob ('/geo/*'), or
+    type expression ('//Mesh'). Binds on the COMPOSED prim path; the assignmaterial
+    LOP is downstream so it wins by LIVRPS over a referenced asset's own binding.
+
+    Verifies via ComputeBoundMaterial that EVERY resolved prim computes
+    `material_path`, and reports patterns that matched nothing and prims that
+    resolved to a different/no material (OBSERVABILITY -- never bind silently).
+    """
+    if not HOU_AVAILABLE:
+        raise sc.ComposeError("hou unavailable -- bind_material needs the live bridge")
+    from pxr import UsdShade
+    if isinstance(targets, str):
+        targets = [targets]
+    if input_node is None:
+        kids = stage_node.children()
+        input_node = stage_node.displayNode() or (kids[-1] if kids else None)
+
+    # The assignmaterial LOP groks exact paths + globs, but NOT '//Type'
+    # expressions (verified live), so expand those to concrete prim paths on the
+    # input (composed) stage before binding; pass globs/exact through unchanged.
+    in_stage = sc.read_stage(input_node) if input_node is not None else None
+    assign_pats, unmatched = [], []
+    for pat in targets:
+        if pat.startswith("//"):
+            exp = _expand_targets(in_stage, pat) if in_stage is not None else []
+            if not exp:
+                unmatched.append(pat)
+            assign_pats.extend(exp)
+        else:
+            assign_pats.append(pat)
+    assign_pats = list(dict.fromkeys(assign_pats))  # dedup, preserve order
+
+    assign = sc.create_lop(stage_node, "assignmaterial", "synapse_bind")
+    if input_node is not None:
+        sc.wire(assign, input_node)
+    _set(assign, "nummaterials", len(assign_pats))
+    for i, pp in enumerate(assign_pats, start=1):
+        _set(assign, "primpattern%d" % i, pp)
+        _set(assign, "matspecmethod%d" % i, "path")
+        _set(assign, "matspecpath%d" % i, material_path)
+        _set(assign, "bindmethod%d" % i, "direct")
+        if strength:
+            _set(assign, "strength%d" % i, strength)  # best-effort; LOP may not expose it
+
+    # Verify: expand the ORIGINAL targets on the RESULT stage + check binding.
+    rstage = sc.read_stage(assign)
+    verified = []
+    all_bound = (len(unmatched) == 0)
+    seen = set()
+    for pat in targets:
+        prims = _expand_targets(rstage, pat)
+        if not prims and not pat.startswith("//"):
+            unmatched.append(pat)
+            all_bound = False
+            continue
+        for pp in prims:
+            if pp in seen:
+                continue
+            seen.add(pp)
+            res = UsdShade.MaterialBindingAPI(rstage.GetPrimAtPath(pp)).ComputeBoundMaterial()
+            bm = res[0]
+            bound = str(bm.GetPath()) if (bm and bm.GetPrim().IsValid()) else None
+            ok = (bound == material_path)
+            all_bound = all_bound and ok
+            verified.append({"prim": pp, "bound": bound, "ok": ok})
+
+    return {
+        "status": "bound" if all_bound else "partial",
+        "assign_node": assign.path(),
+        "material": material_path,
+        "targets": targets,
+        "all_bound": all_bound,
+        "verified": verified,
+        "unmatched_patterns": unmatched,
+        "unbound": [v["prim"] for v in verified if not v["ok"]],
+    }

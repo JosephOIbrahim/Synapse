@@ -50,3 +50,63 @@ def test_set_helper_missing_parm():
     node = MagicMock()
     node.parm.return_value = None
     assert t._set(node, "no_such_parm", 1) is False
+
+
+# -- Mile 3: matlib_bind target expansion + guards --------------------------
+
+class _FakePrim:
+    def __init__(self, path, type_name="Mesh"):
+        self._path = path
+        self._type = type_name
+
+    def GetPath(self):
+        return self._path
+
+    def GetTypeName(self):
+        return self._type
+
+    def IsValid(self):
+        return True
+
+
+class _FakeStage:
+    def __init__(self, prims):
+        self._prims = {p._path: p for p in prims}
+
+    def Traverse(self):
+        return list(self._prims.values())
+
+    def GetPrimAtPath(self, p):
+        return self._prims.get(p)
+
+
+def test_expand_targets_exact():
+    st = _FakeStage([_FakePrim("/geo/a"), _FakePrim("/geo/b")])
+    assert t._expand_targets(st, "/geo/a") == ["/geo/a"]
+
+
+def test_expand_targets_missing_exact_returns_empty():
+    st = _FakeStage([_FakePrim("/geo/a")])
+    assert t._expand_targets(st, "/nope") == []
+
+
+def test_expand_targets_glob():
+    st = _FakeStage([_FakePrim("/geo/a"), _FakePrim("/geo/b"), _FakePrim("/other/c")])
+    assert sorted(t._expand_targets(st, "/geo/*")) == ["/geo/a", "/geo/b"]
+
+
+def test_expand_targets_type_expression():
+    st = _FakeStage([_FakePrim("/geo/a", "Mesh"), _FakePrim("/lights/l", "SphereLight")])
+    assert t._expand_targets(st, "//Mesh") == ["/geo/a"]
+
+
+def test_bind_material_requires_hou(monkeypatch):
+    monkeypatch.setattr(t, "HOU_AVAILABLE", False, raising=False)
+    with pytest.raises(sc.ComposeError):
+        t.bind_material(object(), "/materials/m", "/geo/x")
+
+
+def test_ensure_mtlx_material_requires_hou(monkeypatch):
+    monkeypatch.setattr(t, "HOU_AVAILABLE", False, raising=False)
+    with pytest.raises(sc.ComposeError):
+        t.ensure_mtlx_material(object(), "m")
