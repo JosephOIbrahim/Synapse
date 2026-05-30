@@ -77,7 +77,7 @@ The `cognitive/` vs `host/` code split is structural. `synapse.cognitive.*` is p
 
 Sprint 3 is wiring the agent's first **eyes**. The Dispatcher gives the agent hands; the Agent SDK gives it a brain; the perception channel lets it see what Houdini sees, in the same heartbeat as the scheduler. Two bridges compose to deliver that:
 
-- **`TopsEventBridge`** (Spike 3.1, Phase A) — registers `pdg.PyEventHandler` instances against each TOP network's live `pdg.GraphContext`, surfaces 7 cook + work-item events as typed `TopsEvent` payloads. The handler reads `pdg.*` properties only — no `hou.*` calls inside — because PDG events may fire on a non-main thread (cook thread, scheduler worker). That defensive shape means the bridge is thread-safe regardless of which thread fired the event.
+- **`TopsEventBridge`** (Spike 3.1, Phase A) — registers a `pdg` event handler against each TOP network's live `pdg.GraphContext`, surfaces 7 cook + work-item events as typed `TopsEvent` payloads. The handler reads `pdg.*` properties only — no `hou.*` calls inside — because PDG events **fire on a worker thread** (confirmed live by the Spike 3.3 prestage; the exact opposite of `hou.hipFile`, which fires on main). That shape isn't precautionary — it's load-bearing: a blocking or `hou.*`-touching handler off-main would reintroduce the Spike 2.4 deadlock.
 - **`SceneLoadBridge`** (Spike 3.2, Phase B) — subscribes to `hou.hipFile.AfterLoad` and orchestrates an injected `TopsEventBridge`'s `cool_all` / `warm_all` cycle on every scene load. Mile 4's empirical audit captured all four hipFile events firing on `MainThread` (`is_main_thread=True`), so the AfterLoad handler calls `hou.*` and `tops_bridge.*` directly — **no `hdefereval` marshaling**. Adding it would be cargo-cult dispatch from main thread back to itself.
 
 Composition, not inheritance: `SceneLoadBridge(tops_bridge=...)`. Each class keeps a single responsibility, and the relationship is testable end-to-end with mocks.
@@ -122,14 +122,17 @@ sequenceDiagram
     Note over SLB: Filter holds — only<br/>AfterLoad triggers warm
     SLB->>TEB: cool_all() (stale subs)
     SLB->>TEB: warm_all() (walk topnets)
-    Note over SLB,TEB: per-topnet: register<br/>pdg.PyEventHandler against<br/>live GraphContext
+    Note over SLB,TEB: per-topnet: register a pdg<br/>event handler (raw callable) against<br/>the live GraphContext
     Artist->>Main: cook TOP network
     Main->>Cook: dispatch graph cook
-    Cook->>TEB: pdg.Event(WorkItemResult)
-    TEB->>Agent: TopsEvent (typed payload)
+    Cook->>TEB: pdg.Event on a WORKER thread<br/>WorkItemStateChange
+    Note over Cook,TEB: handler = pdg.* reads only;<br/>derive complete: currentState == CookedSuccess
+    TEB->>Agent: TopsEvent via non-blocking enqueue
 ```
 
 **State today:** scaffolded and tested in standalone mode (no live Houdini). The two bridges have **71 tests passing** between them — 47 across `tests/test_tops_bridge.py` (Spike 3.1 basic + hostile) and 24 across `tests/test_scene_load_bridge.py` (Spike 3.2 basic + hostile). Live cook integration — the *first* real `pdg.Event` reaching the agent's perception layer in graphical Houdini — lands at Mile 5 (Spike 3.3).
+
+**Spike 3.3 prestage** (design-only — [`docs/sprint3/spike_3_3_recon.md`](docs/sprint3/spike_3_3_recon.md)): a `dir()`-over-docs recon plus one operator-authorized scratch cook **confirmed PDG events fire on a worker thread** and **caught four event-model bugs in the scaffolds before any live build** — `event.workItem` is phantom (payload silently empty); `workitem.complete` has no enum and must be derived from `WorkItemStateChange` + `currentState == CookedSuccess` (a *static* generator emits neither, so the gate demo needs a real processor); `pdg.Node` exposes `.name`, not `.path()`; and `pdg.PyEventHandler(callback)` has **no constructor**, so the scaffold's handler factory hard-crashes on the first `warm()` — the correct API registers a raw callable, and `addEventHandler` returns the wrapper. All four are documented-not-fixed; fixes land at Spike 3.3 M1.
 
 ### Portfolio thesis
 
