@@ -49,6 +49,20 @@ _p.CreateAttribute("synapse:reason", Sdf.ValueTypeNames.String).Set(%(reason)r)
 _p.CreateAttribute("synapse:layer_order", Sdf.ValueTypeNames.StringArray).Set(list(%(order)r))
 '''
 
+# karmarendersettings creates a RenderProduct but its productName PARM does NOT
+# author the prim's productName attr (verified live) -> shots would silently have
+# no output path (BL-007). Author it directly via the schema (guaranteed).
+_PRODUCT_NAME_CODE = '''
+from pxr import UsdRender
+_node = hou.pwd()
+_stage = _node.editableStage()
+_rps = [p for p in _stage.Traverse() if p.GetTypeName() == "RenderProduct"]
+if not _rps:
+    _rps = [_stage.DefinePrim("/Render/Products/renderproduct", "RenderProduct")]
+for _rp in _rps:
+    UsdRender.Product(_rp).CreateProductNameAttr().Set(%(exr)r)
+'''
+
 
 def _set(node, parm_name: str, value) -> bool:
     """Set a parm if present and unlocked. Returns True on success (used to
@@ -134,7 +148,13 @@ def build_karma_xpu_shot(
     _set(krs, "resolutionx", int(resolution[0]))
     _set(krs, "resolutiony", int(resolution[1]))
     exr = hou.expandString("$HIP") + "/render/" + shot + ".exr"
-    product_via = "productName" if _set(krs, "productName", exr) else ("picture" if _set(krs, "picture", exr) else None)
+    _set(krs, "productName", exr)  # best-effort parm (does NOT author the prim attr)
+    # Author productName onto the RenderProduct prim (the parm alone doesn't -> BL-007).
+    prodname = sc.make_pythonscript_lop(stage_node, shot + "_productname",
+                                        _PRODUCT_NAME_CODE % {"exr": exr})
+    created.append(prodname)
+    sc.wire(prodname, krs)
+    product_via = "pythonscript:RenderProduct.productName"
 
     # 4. Provenance (synapse:* on a persistent node).
     prov_code = _PROVENANCE_CODE % {
@@ -144,7 +164,7 @@ def build_karma_xpu_shot(
     }
     prov = sc.make_pythonscript_lop(stage_node, shot + "_provenance", prov_code)
     created.append(prov)
-    sc.wire(prov, krs)
+    sc.wire(prov, prodname)
 
     # 5. OUTPUT null (display flag = terminal of the chain).
     out = sc.create_lop(stage_node, "null", "OUTPUT")
