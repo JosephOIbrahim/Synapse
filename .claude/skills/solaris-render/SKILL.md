@@ -8,6 +8,17 @@ Progressive validation pipeline for creating and rendering Solaris scenes via th
 - List any missing prims before proceeding
 - Wire nodes in correct order: geometry -> merge -> materials -> camera -> render_settings -> karma
 
+### USD layering gotchas (verified 21.0.671, 2026-05-30)
+- **`sublayer` LOP ordering is the OPPOSITE of raw USD.** It composes `filepathN`
+  (highest index) as the STRONGEST layer — whereas raw `subLayerPaths` index 0 is
+  strongest. To make a `render` department layer win, fill **weakest-first**
+  (`filepath1=layout … filepath5=render`).
+- **`node.editableStage()` is `None` outside an active Python-LOP cook.** It is not a
+  general authoring surface. Author via LOP nodes + parms, read via `node.stage()`,
+  and write USD attrs via a **pythonscript-LOP** (where `editableStage()` IS valid
+  in-cook). A pythonscript `subLayerPaths` edit does NOT compose downstream — use a
+  real `sublayer` LOP + files instead.
+
 ## Stage 2: Material Assignment
 - Assign materials to geometry using exact USD prim paths (NOT wildcard patterns)
 - After assignment, validate by querying each prim's material binding
@@ -27,6 +38,20 @@ Progressive validation pipeline for creating and rendering Solaris scenes via th
 - Do NOT use `soho_foreground=1` for heavy scenes (blocks Houdini entirely)
 - If Houdini becomes unresponsive, report failure and STOP — do NOT attempt higher quality
 - Use `iconvert.exe` from `$HFS/bin/` for EXR-to-JPEG preview conversion
+
+### License gotcha — husk no-ops on Houdini Indie (verified 21.0.671, 2026-05-30)
+On a **Houdini Indie** license (`hou.licenseCategory() == licenseCategoryType.Indie`),
+the standalone USD render path — **husk**, driven by `usdrender_rop.render()` —
+**silently no-ops**: it returns with zero errors/warnings and writes no file.
+- Never trust a clean `render()` return as proof of output — **poll for the file**.
+- To verify a render on Indie, use **Karma interactive** (the viewport delegate) via a
+  flipbook; `handlers_render.py` already falls back to exactly this. See
+  `scripts/verify_compose_render.py` for the [REAL] check (a file lands at the
+  configured path **and** the bound material renders its true color, not default gray
+  — magenta reads as R≈B≫G).
+- The `productName` parm on `karmarendersettings` does **not** author the
+  `UsdRenderProduct.productName` attribute — author it via a pythonscript-LOP, then
+  confirm with `assess_render_ready` (its output_path clause catches a missing path).
 
 ## Stage 5: Full Render
 - Only if Stage 4 succeeds, increase to target resolution and quality
