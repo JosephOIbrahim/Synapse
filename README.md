@@ -241,7 +241,7 @@ daemon.stop()
 | **Perception channel — `TopsEventBridge`** (Spike 3.1) | Scaffolded. 47 tests across basic + hostile. Standalone mode only. Live PDG cook lands at Mile 5. |
 | **Perception channel — `SceneLoadBridge`** (Spike 3.2) | Scaffolded. 24 tests across basic + hostile. Composes a `TopsEventBridge`; auto-warm on `hou.hipFile.AfterLoad`. Live integration at Mile 5. |
 | **Tools ported through the Dispatcher** | **1** — `synapse_inspect_stage` (flat `/stage` AST). |
-| **Tools still on the Sprint 2 WebSocket path** | **108** — registry tools working in production, awaiting port (104 → 108 with the v5.9.0 SCOUT→FORGE additions below). (Plus 6 group-info knowledge tools that don't need porting — they serve local content without Houdini.) |
+| **Tools still on the Sprint 2 WebSocket path** | **111** — registry tools working in production, awaiting port (104 → 108 with the v5.9.0 SCOUT→FORGE additions, → 111 with the Solaris Compose Tier below). (Plus 6 group-info knowledge tools that don't need porting — they serve local content without Houdini.) |
 
 The port pattern is mechanical and documented in `docs/crucible_protocol.md` + the `spike(1)` commit message. Every legacy tool gets:
 
@@ -281,6 +281,16 @@ flowchart LR
 ```
 
 Behavioral verification (Karma cook of `copnet`, EXR landing, USD editableStage round-trips) is deferred to a live 21.0.671 session.
+
+### Solaris Compose Tier — 3 write/compose tools (PR #6)
+
+The write/compose counterpart to the read-side inspector. Three MCP tools, every operation routed through the `LosslessExecutionBridge`, all `dir()`-confirmed-live on 21.0.671. Registry **108 → 111**:
+
+- `synapse_solaris_shotsetup_karma_xpu` — builds a render-strongest department `sublayer` stack + camera + Karma `engine=xpu` render settings, with `synapse:*` provenance and an authored output path.
+- `synapse_matlib_bind` — binds a MaterialX material to a prim set via `assignmaterial`, then verifies each binding with `ComputeBoundMaterial` and reports unmatched/unbound prims.
+- `synapse_assess_render_ready` — read-only render-readiness report (rendersettings, camera, composition errors, materials bound, output path, AOVs, XPU compatibility), naming the offending prim per failed clause.
+
+Five real bugs the SCOUT→FORGE discipline caught (the `usdrender` phantom, `sublayer` strongest-first ordering, `editableStage()`-outside-cook, the `productName` parm not authoring the prim, and an MRO name collision), plus the **BL-007 / BL-008 [REAL] close** — an end-to-end render confirm surfaced that **husk silently no-ops on Houdini Indie**, so the gold-standard EXR is license-blocked and the bound emissive material was verified via a Karma-interactive flipbook (magenta, not gray) instead. 49 standalone tests; see `forge/backlog/human_review.json` (BL-012…BL-017) and `scripts/verify_compose_render.py`.
 
 ---
 
