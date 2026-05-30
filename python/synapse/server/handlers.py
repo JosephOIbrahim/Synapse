@@ -47,6 +47,7 @@ from .handlers_hda import HdaHandlerMixin
 from .handlers_cops import CopsHandlerMixin
 from .handlers_solaris_assemble import SolarisAssembleMixin
 from .handlers_solaris_graph import SolarisGraphMixin
+from .handlers_solaris_compose import SolarisComposeMixin
 
 
 
@@ -100,6 +101,8 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "solaris_validate_ordering": AuditCategory.PIPELINE,
     "solaris_assemble_chain": AuditCategory.PIPELINE,
     "solaris_build_graph": AuditCategory.PIPELINE,
+    "solaris_shotsetup_karma_xpu": AuditCategory.PIPELINE,
+    "matlib_bind": AuditCategory.MATERIAL,
     "create_material": AuditCategory.MATERIAL,
     "create_textured_material": AuditCategory.MATERIAL,
     "assign_material": AuditCategory.MATERIAL,
@@ -226,7 +229,7 @@ class CommandHandlerRegistry:
 # SYNAPSE HANDLER
 # =============================================================================
 
-class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin):
+class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin):
     """
     Main command handler for the Synapse server.
 
@@ -437,6 +440,11 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         # Solaris auto-assembly
         reg.register("solaris_assemble_chain", self._handle_solaris_assemble_chain)
         reg.register("solaris_build_graph", self._handle_solaris_build_graph)
+
+        # Solaris compose tier (PRD 7.1/7.2/7.3)
+        reg.register("solaris_shotsetup_karma_xpu", self._handle_solaris_shotsetup_karma_xpu)
+        reg.register("matlib_bind", self._handle_matlib_bind)
+        reg.register("shot_render_ready", self._handle_shot_render_ready)
 
         # Keyframe / Render Settings
         reg.register("set_keyframe", self._handle_set_keyframe)
