@@ -305,3 +305,156 @@ def bind_material(stage_node, material_path: str, targets, input_node=None,
         "unmatched_patterns": unmatched,
         "unbound": [v["prim"] for v in verified if not v["ok"]],
     }
+
+
+# ---------------------------------------------------------------------------
+# Mile 4 -- shot_render_ready (PRD 7.3 / GAP-3): the OBSERVABILITY tool
+# ---------------------------------------------------------------------------
+
+_GPRIM_TYPES = {
+    "Mesh", "Sphere", "Cube", "Cylinder", "Capsule", "Cone", "Points",
+    "BasisCurves", "NurbsCurves", "Volume", "PointInstancer",
+}
+
+
+def _assess_stage(stage, engine_hint=None, max_prims=5000) -> dict:
+    """Pure-pxr readiness assessment over E3. Returns {ready, engine, clauses,
+    details}. Separated from assess_render_ready so it is testable on an
+    in-memory Usd.Stage (no Houdini)."""
+    from pxr import UsdShade, UsdRender
+    import os
+    prims = list(stage.Traverse())
+    clauses, details = {}, {}
+
+    def setc(name, passed, info=None):
+        clauses[name] = "pass" if passed else "fail"
+        if info is not None:
+            details[name] = info
+
+    # 1. RenderSettings present + render camera resolves to a Camera prim.
+    rs_prims = [p for p in prims if p.GetTypeName() == "RenderSettings"]
+    if not rs_prims:
+        setc("rendersettings", False, "no RenderSettings prim")
+        setc("camera", False, "no RenderSettings -> no render camera")
+    else:
+        setc("rendersettings", True)
+        crel = UsdRender.Settings(rs_prims[0]).GetCameraRel()
+        tgts = list(crel.GetTargets()) if crel else []
+        cam_ok = False
+        if tgts:
+            cp = stage.GetPrimAtPath(tgts[0])
+            cam_ok = bool(cp and cp.IsValid() and cp.GetTypeName() == "Camera")
+        setc("camera", cam_ok, None if cam_ok else "render camera unresolved (targets=%s)" % [str(x) for x in tgts])
+
+    # 2. No composition errors.
+    errs = [str(e) for e in stage.GetCompositionErrors()]
+    setc("composition_errors", not errs, errs[:5] if errs else None)
+
+    # 3. Every LOADED render-purpose gprim resolves a material (payload-aware:
+    #    a prim behind an unloaded payload is flagged unloaded, not missing).
+    unbound, unloaded, checked = [], [], 0
+    for p in prims:
+        if checked >= max_prims:
+            break
+        if p.GetTypeName() in _GPRIM_TYPES:
+            checked += 1
+            if not p.IsLoaded():
+                unloaded.append(str(p.GetPath()))
+                continue
+            res = UsdShade.MaterialBindingAPI(p).ComputeBoundMaterial()
+            bm = res[0]
+            if not (bm and bm.GetPrim().IsValid()):
+                unbound.append(str(p.GetPath()))
+    setc("materials_bound", not unbound, {"unbound": unbound[:25]} if unbound else None)
+    if unloaded:
+        details["unloaded_payloads"] = unloaded[:25]
+
+    # 4. productName parent dir writable (RenderProduct prims and/or the
+    #    self-contained karmarendersettings RenderSettings.productName attr).
+    names = []
+    for p in prims:
+        if p.GetTypeName() == "RenderProduct":
+            a = UsdRender.Product(p).GetProductNameAttr()
+            if a and a.Get():
+                names.append(str(a.Get()))
+    for rsp in rs_prims:
+        a = rsp.GetAttribute("productName")
+        if a and a.IsValid() and a.Get():
+            names.append(str(a.Get()))
+    names = list(dict.fromkeys(names))
+    if not names:
+        setc("output_path", False, "no productName (no RenderProduct / RenderSettings.productName)")
+    else:
+        bad = []
+        for pn in names:
+            ex = hou.expandString(pn) if (HOU_AVAILABLE and hasattr(hou, "expandString")) else pn
+            d = os.path.dirname(ex) or "."
+            if os.path.isdir(d):
+                if not os.access(d, os.W_OK):
+                    bad.append("%s (dir not writable)" % ex)
+            else:
+                par = os.path.dirname(d) or "."
+                if not (os.path.isdir(par) and os.access(par, os.W_OK)):
+                    bad.append("%s (parent dir missing/not writable)" % ex)
+        setc("output_path", not bad, bad if bad else None)
+        details["product_paths"] = names
+
+    # 5. AOVs present as RenderVar prims.
+    rv = [str(p.GetPath()) for p in prims if p.GetTypeName() == "RenderVar"]
+    setc("aovs", bool(rv), {"rendervars": rv} if rv else "no RenderVar prims (no AOVs configured)")
+
+    # 6. No XPU-incompatible content under an XPU delegate. v1 detects the
+    #    tractable subset (OSL shaders + Volume prims); nested-dielectric/SSS
+    #    are NOT auto-detected (would need shader-graph analysis).
+    engine = engine_hint
+    if engine is None:
+        for rsp in rs_prims:
+            for an in ("karma:engine", "engine"):
+                a = rsp.GetAttribute(an)
+                if a and a.IsValid() and a.Get():
+                    engine = str(a.Get())
+                    break
+            if engine:
+                break
+    if engine and "xpu" in str(engine).lower():
+        issues = []
+        for p in prims:
+            if p.GetTypeName() == "Volume":
+                issues.append("%s (Volume -- deep volumes weak on XPU)" % p.GetPath())
+            sh = UsdShade.Shader(p)
+            if sh.GetPrim().IsValid():
+                ida = sh.GetIdAttr()
+                sid = str(ida.Get()) if (ida and ida.Get()) else ""
+                if "osl" in sid.lower():
+                    issues.append("%s (OSL shader '%s' -- unsupported on XPU)" % (p.GetPath(), sid))
+        setc("xpu_compatible", not issues, issues[:25] if issues else None)
+        details["xpu_detection_scope"] = "v1: OSL shaders + Volume prims; nested-dielectric/SSS not auto-detected"
+    else:
+        clauses["xpu_compatible"] = "n/a"
+
+    ready = all(v == "pass" for v in clauses.values() if v in ("pass", "fail"))
+    return {"ready": ready, "engine": engine, "clauses": clauses, "details": details}
+
+
+def _resolve_read_stage(node):
+    """Resolve a /stage LopNetwork (-> display node) or a LOP node to its
+    composed read-only Usd.Stage."""
+    if isinstance(node, hou.LopNetwork):
+        dn = node.displayNode()
+        if dn is None:
+            kids = node.children()
+            dn = kids[-1] if kids else None
+        if dn is None:
+            raise sc.StageUnavailableError("%s is empty" % node.path())
+        return sc.read_stage(dn)
+    return sc.read_stage(node)
+
+
+def assess_render_ready(stage_node, engine_hint=None, max_prims=5000) -> dict:
+    """Render-readiness report over E3 (PRD 7.3 / GAP-3). Read-only -- composes
+    nothing. Returns {ready, engine, clauses, details}; each false clause names
+    the offending prim/path. Turns BL-007/008 from silent into a pre-flight report.
+    """
+    if not HOU_AVAILABLE:
+        raise sc.ComposeError("hou unavailable -- assess_render_ready needs the live bridge")
+    return _assess_stage(_resolve_read_stage(stage_node), engine_hint=engine_hint, max_prims=max_prims)

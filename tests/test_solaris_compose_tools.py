@@ -110,3 +110,79 @@ def test_ensure_mtlx_material_requires_hou(monkeypatch):
     monkeypatch.setattr(t, "HOU_AVAILABLE", False, raising=False)
     with pytest.raises(sc.ComposeError):
         t.ensure_mtlx_material(object(), "m")
+
+
+# -- Mile 4: assess_render_ready clause logic (real in-memory USD; skips w/o pxr) --
+
+def _build_render_stage(tmp_path, *, with_rs=True, camera=True, bind_mesh=True,
+                        product=True, product_dir=None, aov=True, engine="xpu",
+                        osl=False, volume=False):
+    pytest.importorskip("pxr")
+    from pxr import Usd, UsdShade, UsdRender, Sdf
+    s = Usd.Stage.CreateInMemory()
+    s.DefinePrim("/cam", "Camera")
+    mesh = s.DefinePrim("/geo/m", "Mesh")
+    mat = UsdShade.Material.Define(s, "/mats/red")
+    if bind_mesh:
+        UsdShade.MaterialBindingAPI.Apply(mesh).Bind(mat)
+    if osl:
+        UsdShade.Shader.Define(s, "/mats/red/osl_surf").CreateIdAttr("osl_oslsurface")
+    if volume:
+        s.DefinePrim("/vol", "Volume")
+    if with_rs:
+        rs = s.DefinePrim("/Render/rs", "RenderSettings")
+        if camera:
+            UsdRender.Settings(rs).CreateCameraRel().SetTargets(["/cam"])
+        if engine:
+            rs.CreateAttribute("karma:engine", Sdf.ValueTypeNames.Token).Set(engine)
+        if product:
+            rp = s.DefinePrim("/Render/Products/beauty", "RenderProduct")
+            pdir = product_dir if product_dir is not None else str(tmp_path)
+            UsdRender.Product(rp).CreateProductNameAttr(pdir + "/out.exr")
+        if aov:
+            s.DefinePrim("/Render/rs/beauty", "RenderVar")
+    return s
+
+
+def test_render_ready_good(tmp_path):
+    rep = t._assess_stage(_build_render_stage(tmp_path))
+    assert rep["ready"] is True, rep
+    assert all(v in ("pass", "n/a") for v in rep["clauses"].values()), rep["clauses"]
+
+
+def test_render_ready_missing_rendersettings(tmp_path):
+    rep = t._assess_stage(_build_render_stage(tmp_path, with_rs=False))
+    assert rep["ready"] is False
+    assert rep["clauses"]["rendersettings"] == "fail"
+    assert rep["clauses"]["camera"] == "fail"
+
+
+def test_render_ready_unresolved_camera(tmp_path):
+    rep = t._assess_stage(_build_render_stage(tmp_path, camera=False))
+    assert rep["clauses"]["camera"] == "fail"
+
+
+def test_render_ready_unbound_mesh(tmp_path):
+    rep = t._assess_stage(_build_render_stage(tmp_path, bind_mesh=False))
+    assert rep["clauses"]["materials_bound"] == "fail"
+    assert "/geo/m" in rep["details"]["materials_bound"]["unbound"]
+
+
+def test_render_ready_bad_product_dir(tmp_path):
+    rep = t._assess_stage(_build_render_stage(tmp_path, product_dir="/no/such/synapse/dir"))
+    assert rep["clauses"]["output_path"] == "fail"
+
+
+def test_render_ready_no_aovs(tmp_path):
+    rep = t._assess_stage(_build_render_stage(tmp_path, aov=False))
+    assert rep["clauses"]["aovs"] == "fail"
+
+
+def test_render_ready_xpu_osl_incompatible(tmp_path):
+    rep = t._assess_stage(_build_render_stage(tmp_path, engine="xpu", osl=True))
+    assert rep["clauses"]["xpu_compatible"] == "fail"
+
+
+def test_render_ready_cpu_skips_xpu_check(tmp_path):
+    rep = t._assess_stage(_build_render_stage(tmp_path, engine="cpu", osl=True))
+    assert rep["clauses"]["xpu_compatible"] == "n/a"
