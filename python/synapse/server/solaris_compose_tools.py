@@ -59,8 +59,8 @@ _stage = _node.editableStage()
 _rps = [p for p in _stage.Traverse() if p.GetTypeName() == "RenderProduct"]
 if not _rps:
     _rps = [_stage.DefinePrim("/Render/Products/renderproduct", "RenderProduct")]
-for _rp in _rps:
-    UsdRender.Product(_rp).CreateProductNameAttr().Set(%(exr)r)
+# Author on the FIRST RenderProduct only -- do not clobber other products.
+UsdRender.Product(_rps[0]).CreateProductNameAttr().Set(%(exr)r)
 '''
 
 
@@ -68,12 +68,17 @@ def _set(node, parm_name: str, value) -> bool:
     """Set a parm if present and unlocked. Returns True on success (used to
     detect missing/locked parms so we can fall back -- e.g. productName->picture)."""
     p = node.parm(parm_name)
-    if p is None or p.isLocked():
+    if p is None:
+        _log.debug("parm %r absent on %s", parm_name, node.path())
+        return False
+    if p.isLocked():
+        _log.debug("parm %r locked on %s", parm_name, node.path())
         return False
     try:
         p.set(value)
         return True
-    except Exception:
+    except Exception as e:
+        _log.warning("parm %r set failed on %s: %s", parm_name, node.path(), e)
         return False
 
 
@@ -119,9 +124,7 @@ def build_karma_xpu_shot(
         dept_files.append(fp)
     dept = sc.create_lop(stage_node, "sublayer", shot + "_dept_stack")
     created.append(dept)
-    nf = dept.parm("num_files")
-    if nf is not None:
-        nf.set(len(dept_files))
+    _set(dept, "num_files", len(dept_files))  # guarded (locked/missing -> logged, not crash)
     for i, fp in enumerate(dept_files, start=1):
         _set(dept, "filepath%d" % i, fp)
 
@@ -231,15 +234,18 @@ def ensure_mtlx_material(stage_node, name, prefix="/materials/", color=None,
     return prefix + name, matlib
 
 
-def _expand_targets(stage, pattern: str) -> List[str]:
+def _expand_targets(stage, pattern: str, limit: int = 100000) -> List[str]:
     """Resolve a primpattern to concrete composed prim paths. Supports an exact
-    path, a glob ('/geo/*'), or a USD-style type expression ('//Mesh')."""
+    path, a glob ('/geo/*'), or a USD-style type expression ('//Mesh').
+    Traversal is bounded by `limit` (TERMINATION)."""
     import fnmatch
+    import itertools
     if pattern.startswith("//"):
         type_name = pattern[2:]
-        return [str(p.GetPath()) for p in stage.Traverse() if p.GetTypeName() == type_name]
+        return [str(p.GetPath()) for p in itertools.islice(stage.Traverse(), limit)
+                if p.GetTypeName() == type_name]
     if "*" in pattern or "?" in pattern:
-        return [str(p.GetPath()) for p in stage.Traverse()
+        return [str(p.GetPath()) for p in itertools.islice(stage.Traverse(), limit)
                 if fnmatch.fnmatch(str(p.GetPath()), pattern)]
     prim = stage.GetPrimAtPath(pattern)
     return [pattern] if (prim and prim.IsValid()) else []
@@ -438,7 +444,7 @@ def _assess_stage(stage, engine_hint=None, max_prims=5000) -> dict:
                 break
     if engine and "xpu" in str(engine).lower():
         issues = []
-        for p in prims:
+        for p in prims[:max_prims]:
             if p.GetTypeName() == "Volume":
                 issues.append("%s (Volume -- deep volumes weak on XPU)" % p.GetPath())
             sh = UsdShade.Shader(p)

@@ -2,7 +2,7 @@
 Synapse Solaris Compose Handler Mixin.
 
 Exposes the compose tier (PRD 7.1 / 7.2 / 7.3) as commands:
-  solaris_shotsetup_karma_xpu, matlib_bind, shot_render_ready.
+  solaris_shotsetup_karma_xpu, matlib_bind, assess_render_ready.
 
 Thin wrappers -- the logic lives in solaris_compose_tools, built on the
 solaris_compose primitive. Dispatched through the bridge (undo / integrity /
@@ -27,7 +27,7 @@ _log = logging.getLogger(__name__)
 
 
 class SolarisComposeMixin:
-    """Compose-tier handlers: shotsetup_karma_xpu, matlib_bind, shot_render_ready."""
+    """Compose-tier handlers: shotsetup_karma_xpu, matlib_bind, assess_render_ready."""
 
     def _handle_solaris_shotsetup_karma_xpu(self, payload: Dict) -> Dict:
         """Scaffold a render-ready Karma XPU shot (PRD 7.1 / GAP-1)."""
@@ -40,6 +40,7 @@ class SolarisComposeMixin:
             shot=resolve_param_with_default(payload, "shot", "shot"),
             resolution=(int(res[0]), int(res[1])),
             engine=resolve_param_with_default(payload, "engine", "xpu"),
+            layer_dir=payload.get("layer_dir"),
             reason=payload.get("reason"),
         )
 
@@ -61,8 +62,13 @@ class SolarisComposeMixin:
             input_node=input_node, strength=payload.get("strength"),
         )
 
-    def _handle_shot_render_ready(self, payload: Dict) -> Dict:
-        """Render-readiness report over E3 (PRD 7.3 / GAP-3). Read-only."""
+    def _handle_assess_render_ready(self, payload: Dict) -> Dict:
+        """Render-readiness report over E3 (PRD 7.3 / GAP-3). Read-only.
+
+        Named 'assess_render_ready' (NOT 'shot_render_ready') to avoid colliding
+        with the existing UsdHandlerMixin orchestrator of that name (which builds
+        + renders); this is the read-only assessment counterpart.
+        """
         if not HOU_AVAILABLE:
             raise HoudiniUnavailableError()
         stage = _sc.resolve_stage(resolve_param_with_default(payload, "stage", "/stage"))

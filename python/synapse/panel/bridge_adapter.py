@@ -146,7 +146,7 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     "synapse_solaris_build_graph": "build_from_manifest",
     "synapse_solaris_shotsetup_karma_xpu": "build_from_manifest",
     "synapse_matlib_bind": "build_from_manifest",
-    "synapse_shot_render_ready": "inspect_geometry",
+    "synapse_assess_render_ready": "inspect_geometry",
 }
 
 # ── Tool name → inferred AgentID ─────────────────────────────────

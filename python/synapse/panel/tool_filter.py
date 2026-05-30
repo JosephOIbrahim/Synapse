@@ -106,7 +106,7 @@ _AGENT_TOOL_MAP: dict[str, frozenset[str]] = {
         "synapse_validate_ordering", "synapse_solaris_assemble_chain",
         "synapse_solaris_build_graph",
         "synapse_solaris_shotsetup_karma_xpu", "synapse_matlib_bind",
-        "synapse_shot_render_ready",
+        "synapse_assess_render_ready",
         "houdini_render_settings", "houdini_render",
         "houdini_capture_viewport",
         "houdini_hda_create", "houdini_hda_promote_parm",
