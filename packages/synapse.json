@@ -1,0 +1,21 @@
+{
+    "name": "synapse",
+    "enable": true,
+    "comment": "SYNAPSE Houdini package. Portable: paths derive from $HOUDINI_PACKAGE_PATH (the dir of THIS file = <repo>/packages), so nothing is hard-coded per user. Install by adding <repo>/packages to HOUDINI_PACKAGE_DIR, or run scripts/install_synapse_package.py to deploy a resolved copy into your Houdini prefs. See README 'Install'.",
+    "env": [
+        {
+            "var": "SYNAPSE_ROOT",
+            "value": "$HOUDINI_PACKAGE_PATH/.."
+        },
+        {
+            "var": "PYTHONPATH",
+            "value": "$SYNAPSE_ROOT/python",
+            "method": "prepend"
+        },
+        {
+            "var": "MONETA_SRC",
+            "value": "$SYNAPSE_ROOT/../Moneta/src"
+        }
+    ],
+    "path": "$SYNAPSE_ROOT/houdini"
+}
