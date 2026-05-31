@@ -791,7 +791,7 @@ TOOL_DEFS: list[tuple] = [
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "Full node path"},
          "include_code": {"type": "boolean", "description": "Include VEX/Python code (default: true)"},
-         "include_geometry": {"type": "boolean", "description": "Include geometry attributes (default: true)"},
+         "include_geometry": {"type": "boolean", "description": "Include geometry attributes -- point/prim counts, bounds, attrs (default: false; opt in when you need geo)"},
          "include_expressions": {"type": "boolean", "description": "Include expressions (default: true)"},
      }, "required": ["node"]},
      True, False, True),
