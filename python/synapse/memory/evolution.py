@@ -3,6 +3,16 @@ Synapse Memory Evolution -- Flat -> Structured -> Composed
 
 Detects when markdown memory should evolve to USD. Handles the
 conversion process and maintains companion markdown.
+
+.. deprecated:: Moneta integration (Mile 8)
+    This hand-rolled charmander->charmeleon->charizard USD evolution is
+    SUPERSEDED by the Moneta backend, whose ``run_sleep_pass`` consolidation +
+    time-decay does this properly. Two USD memory models must not coexist, so
+    the Moneta-backed store does NOT trigger evolution (verified:
+    tests/test_moneta_crucible.py::test_moneta_backend_never_fires_evolution).
+    It remains live only for the legacy default ``jsonl`` backend and will be
+    removed when ``SYNAPSE_MEMORY_BACKEND`` defaults to ``moneta`` after the
+    live async-server (FC4) verification. Do not extend it.
 """
 
 import logging
