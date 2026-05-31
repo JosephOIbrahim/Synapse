@@ -208,6 +208,18 @@ TOOL_DEFS: list[tuple] = [
      }, "required": ["snippet"]},
      False, True, False),
 
+    ("synapse_write_report", "write_report", _identity,
+     "Write a UTF-8 report/file to the local reports directory ($SYNAPSE_REPORTS_DIR, "
+     "else <repo>/docs). Pure file I/O on the handler thread -- never marshaled to "
+     "Houdini's main thread, so it completes even while Houdini is mid-cook or showing "
+     "a modal dialog (unlike execute_python). Path is confined under the base dir.",
+     {"type": "object", "properties": {
+         "relative_path": {"type": "string", "description": "Destination under the reports base dir (no '..', no absolute)."},
+         "content": {"type": "string", "description": "UTF-8 text to write."},
+         "overwrite": {"type": "boolean", "description": "Overwrite if exists (default: true)."},
+     }, "required": ["relative_path", "content"]},
+     False, False, True),
+
     # -- USD/Solaris --
     ("houdini_stage_info", "get_stage_info", _stage_info_payload,
      "Get USD stage information: prim list and types.",

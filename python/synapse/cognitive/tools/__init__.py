@@ -26,5 +26,16 @@ from synapse.cognitive.tools.inspect_stage import (
     INSPECT_STAGE_SCHEMA,
     inspect_stage,
 )
+from synapse.cognitive.tools.write_report import (
+    WRITE_REPORT_SCHEMA,
+    ReportPathError,
+    write_report,
+)
 
-__all__ = ["INSPECT_STAGE_SCHEMA", "inspect_stage"]
+__all__ = [
+    "INSPECT_STAGE_SCHEMA",
+    "inspect_stage",
+    "WRITE_REPORT_SCHEMA",
+    "ReportPathError",
+    "write_report",
+]
