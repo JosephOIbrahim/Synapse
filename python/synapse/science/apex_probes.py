@@ -28,7 +28,9 @@ Provenance — every claim below is derived from existing code, not invented:
 
 These are seeds, not exhaustive coverage. ``kind`` distinguishes a plain
 attribute lookup (``"attr"``) from something we expect to be invoked
-(``"call"``) or a graph constructed (``"construct"``). ``expect`` records the
+(``"call"``), a graph constructed (``"construct"``), or a Houdini node type
+looked up by NAME in a catalog (``"nodetype"`` — required because type names
+contain "::" and are not getattr-resolvable). ``expect`` records the
 codebase's prior belief; the loop's job is to confirm or falsify it.
 """
 
@@ -37,13 +39,15 @@ from __future__ import annotations
 from .probe import ProbeSpec
 
 # NOTE on surface convention:
-#   For node-type assumptions the surface is the SOP/APEX type STRING the
-#   recipes feed to houdini_create_node. The probe namespace is expected to
-#   expose a node-type catalog (e.g. injected as namespace["nodetypes"], a dict
-#   keyed by type name) so a dotted lookup like "nodetypes.apex::rig::fkfull"
-#   resolves to a truthy entry when the type exists in this Houdini build.
-#   For pure Python APEX-module assumptions the surface is a dotted attribute
-#   path against namespace["apex"].
+#   For node-type assumptions (kind="nodetype") the surface is the SOP/APEX
+#   type STRING the recipes feed to houdini_create_node, carrying a
+#   "nodetypes." routing prefix. The probe namespace is expected to expose a
+#   node-type catalog as namespace["nodetypes"] — a dict (or any __contains__
+#   object) keyed by full type name. probe() strips the prefix and does a
+#   MEMBERSHIP test ("apex::rig::fkfull" in catalog), NOT getattr — because
+#   "::"-bearing names are not getattr-resolvable attributes.
+#   For pure Python APEX-module assumptions (kind="attr"/"call") the surface is
+#   a dotted attribute path against namespace["apex"].
 
 APEX_SEED: list[ProbeSpec] = [
     # --- Python-level APEX module surface (highest value: gates everything) ---
@@ -73,7 +77,7 @@ APEX_SEED: list[ProbeSpec] = [
     # --- Node-type catalog assumptions from apex_recipes.py ---
     ProbeSpec(
         surface="nodetypes.apex::rig::fkfull",
-        kind="attr",
+        kind="nodetype",
         expect="present",
         rationale=(
             "fk_chain / fk_ik_blend / control_shapes recipes all build "
@@ -83,7 +87,7 @@ APEX_SEED: list[ProbeSpec] = [
     ),
     ProbeSpec(
         surface="nodetypes.apex::rig::ikfull",
-        kind="attr",
+        kind="nodetype",
         expect="present",
         rationale=(
             "ik_chain / fk_ik_blend recipes build apex::rig::ikfull for the "
@@ -93,7 +97,7 @@ APEX_SEED: list[ProbeSpec] = [
     ),
     ProbeSpec(
         surface="nodetypes.apex::rig::blendtransform",
-        kind="attr",
+        kind="nodetype",
         expect="present",
         rationale=(
             "fk_ik_blend recipe blends FK/IK via apex::rig::blendtransform; "
@@ -103,7 +107,7 @@ APEX_SEED: list[ProbeSpec] = [
     ),
     ProbeSpec(
         surface="nodetypes.apex::autorig::build",
-        kind="attr",
+        kind="nodetype",
         expect="unknown",
         rationale=(
             "autorig_biped recipe assumes apex::autorig::build generates a "
@@ -114,7 +118,7 @@ APEX_SEED: list[ProbeSpec] = [
     ),
     ProbeSpec(
         surface="nodetypes.apex::sop::graphdefaults",
-        kind="attr",
+        kind="nodetype",
         expect="present",
         rationale=(
             "simple_deformer recipe + its tips explicitly prefer "
@@ -125,7 +129,7 @@ APEX_SEED: list[ProbeSpec] = [
     ),
     ProbeSpec(
         surface="nodetypes.apex::sop::fromkinefx",
-        kind="attr",
+        kind="nodetype",
         expect="present",
         rationale=(
             "kinefx_to_apex recipe + migration guide assume "
@@ -136,7 +140,7 @@ APEX_SEED: list[ProbeSpec] = [
     ),
     ProbeSpec(
         surface="nodetypes.apex::sop::invoke",
-        kind="attr",
+        kind="nodetype",
         expect="unknown",
         rationale=(
             "apex_explainer maps 'invoke' to both bare 'invoke' and "
@@ -148,7 +152,7 @@ APEX_SEED: list[ProbeSpec] = [
     ),
     ProbeSpec(
         surface="nodetypes.rig_doctor",
-        kind="attr",
+        kind="nodetype",
         expect="present",
         rationale=(
             "Multiple recipes (fk_chain, autorig_biped, kinefx_to_apex) and "
@@ -160,7 +164,7 @@ APEX_SEED: list[ProbeSpec] = [
     # --- Autorig building-block SOPs assumed by apex_explainer patterns ---
     ProbeSpec(
         surface="nodetypes.apex::sop::transformobject",
-        kind="attr",
+        kind="nodetype",
         expect="unknown",
         rationale=(
             "_APEX_TYPE_PATTERNS lists apex::sop::transformobject as an "
@@ -171,7 +175,7 @@ APEX_SEED: list[ProbeSpec] = [
     ),
     ProbeSpec(
         surface="nodetypes.apex::sop::apexedit",
-        kind="attr",
+        kind="nodetype",
         expect="unknown",
         rationale=(
             "apex_explainer classifies apex::sop::apexedit / apexedit as the "

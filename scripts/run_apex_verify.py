@@ -52,37 +52,21 @@ def _build_namespace() -> dict:
         namespace["apex"] = apex
 
     # Best-effort node-type catalog so "nodetypes.<typename>" surfaces resolve.
+    # A plain {name: node_type} dict — probe() does a MEMBERSHIP test on the
+    # full "namespace::name" string (not getattr), so no wrapper is needed.
     try:
         import hou  # type: ignore
 
-        catalog = {}
+        catalog: dict = {}
         for category in hou.nodeTypeCategories().values():
             for type_name, node_type in category.nodeTypes().items():
                 catalog[type_name] = node_type
         if catalog:
-            # Wrap in an object so dotted getattr works for names with "::".
-            namespace["nodetypes"] = _Catalog(catalog)
+            namespace["nodetypes"] = catalog
     except Exception:  # noqa: BLE001 — hou is a soft dependency
         pass
 
     return namespace
-
-
-class _Catalog:
-    """Attribute-access wrapper over a {type_name: node_type} dict.
-
-    ``probe`` resolves ``"nodetypes.apex::rig::fkfull"`` via getattr, so the
-    catalog must answer getattr for type names that contain ``::``.
-    """
-
-    def __init__(self, mapping: dict) -> None:
-        self._mapping = mapping
-
-    def __getattr__(self, name: str):
-        try:
-            return self._mapping[name]
-        except KeyError as exc:
-            raise AttributeError(name) from exc
 
 
 def main(argv: list[str]) -> int:
