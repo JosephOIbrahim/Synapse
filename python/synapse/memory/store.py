@@ -679,7 +679,7 @@ class SynapseMemory:
         """
         self.project_path = self._resolve_project_path(project_path)
         self.storage_dir = self._get_storage_dir()
-        self.store = MemoryStore(self.storage_dir)
+        self.store = self._make_store(self.storage_dir)
 
         # Callbacks
         self._on_memory_added: List[Callable[[Memory], None]] = []
@@ -687,6 +687,27 @@ class SynapseMemory:
 
         logger.info("Initialized for project: %s", self.project_path)
         logger.info("Storage: %s", self.storage_dir)
+
+    def _make_store(self, storage_dir):
+        """Select the memory backend via $SYNAPSE_MEMORY_BACKEND.
+
+        Default ``jsonl`` is the unchanged behavior. ``moneta`` routes through
+        the Moneta engine (Mile 4); it falls back to JSONL with a warning if
+        Moneta can't be imported, so setting the flag can never break startup.
+        """
+        backend = os.environ.get("SYNAPSE_MEMORY_BACKEND", "jsonl").strip().lower()
+        if backend == "moneta":
+            try:
+                from .moneta_store import MonetaBackedStore
+                store = MonetaBackedStore.from_storage_dir(storage_dir)
+                logger.info("Memory backend: moneta (%s)", store.embedder_id)
+                return store
+            except Exception as exc:
+                logger.warning(
+                    "SYNAPSE_MEMORY_BACKEND=moneta unavailable (%s); "
+                    "falling back to jsonl.", exc,
+                )
+        return MemoryStore(storage_dir)
 
     def _resolve_project_path(self, path: Optional[str]) -> Path:
         """Resolve the project path."""
