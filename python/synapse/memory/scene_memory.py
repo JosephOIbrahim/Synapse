@@ -81,6 +81,21 @@ def _get_file_lock(path: str) -> _ProcessFileLock:
 # DIRECTORY & FILE MANAGEMENT
 # =============================================================================
 
+def resolve_hip_dir(hip_path: str) -> str:
+    """Resolve the directory whose ``claude/`` holds this scene's memory.
+
+    For a SAVED hip (a real file on disk) that is the file's parent directory.
+    For an UNSAVED/untitled hip (``hou.hipFile.path()`` returns a path that is
+    not yet a real file) it is the hip path itself.
+
+    Single source of truth: readers (status, context, query, project_setup)
+    and the writer (ensure_scene_structure) MUST resolve this identically, or
+    they read and write different ``claude/`` dirs for unsaved scenes.
+    """
+    hip_path = os.path.normpath(hip_path)
+    return os.path.dirname(hip_path) if os.path.isfile(hip_path) else hip_path
+
+
 def ensure_scene_structure(hip_path: str, job_path: str) -> Dict[str, str]:
     """
     Create claude/ directories at $JOB and $HIP levels if they don't exist.
@@ -94,7 +109,7 @@ def ensure_scene_structure(hip_path: str, job_path: str) -> Dict[str, str]:
     hip_path = os.path.normpath(hip_path)
     job_path = os.path.normpath(job_path)
 
-    hip_dir = os.path.dirname(hip_path) if os.path.isfile(hip_path) else hip_path
+    hip_dir = resolve_hip_dir(hip_path)
     hip_name = os.path.basename(hip_path)
     job_name = os.path.basename(job_path)
 

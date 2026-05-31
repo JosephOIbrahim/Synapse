@@ -514,10 +514,12 @@ class SynapseBridge:
         # Living Memory: merge file-based memory
         file_context = {}
         try:
-            from ..memory.scene_memory import load_full_context
+            from ..memory.scene_memory import load_full_context, resolve_hip_dir
             if HOU_AVAILABLE:
                 hip_path = hou.hipFile.path()
-                hip_dir = os.path.dirname(hip_path)
+                # Match the writer's scene-dir resolution so unsaved scenes
+                # load from the same claude/ dir they were written to.
+                hip_dir = resolve_hip_dir(hip_path)
                 job_path = hou.getenv("JOB", hip_dir)
                 file_context = load_full_context(hip_dir, job_path)
         except Exception as e:
