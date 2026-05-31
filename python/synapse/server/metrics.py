@@ -24,6 +24,7 @@ def render_prometheus(
     command_counts: Optional[Dict[str, int]] = None,
     circuit_breaker_state: str = "closed",
     memory_entry_count: int = 0,
+    tool_durations: Optional[Dict[str, Any]] = None,
     live_snapshot: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Render metrics in Prometheus text exposition format.
@@ -33,6 +34,7 @@ def render_prometheus(
         command_counts: Dict mapping command type to call count
         circuit_breaker_state: Current circuit breaker state string
         memory_entry_count: Number of entries in memory store
+        tool_durations: Per-tool duration stats {tool: {count, sum_ms, buckets}}
         live_snapshot: Optional MetricSnapshot dict from MetricsAggregator
 
     Returns:
@@ -81,6 +83,26 @@ def render_prometheus(
     lines.append("# HELP synapse_memory_entries_total Total entries in memory store")
     lines.append("# TYPE synapse_memory_entries_total gauge")
     lines.append(f"synapse_memory_entries_total {memory_entry_count}")
+
+    # Per-tool call duration histogram (Mile 0 observability spine)
+    if tool_durations:
+        lines.append("")
+        lines.append("# HELP synapse_tool_duration_ms Per-tool call duration in milliseconds")
+        lines.append("# TYPE synapse_tool_duration_ms histogram")
+        for tool, rec in sorted(tool_durations.items()):
+            buckets = rec.get("buckets", {})
+            for le in sorted(buckets, key=float):
+                lines.append(
+                    f'synapse_tool_duration_ms_bucket{{tool="{tool}",le="{le}"}} {buckets[le]}'
+                )
+            count = rec.get("count", 0)
+            lines.append(
+                f'synapse_tool_duration_ms_bucket{{tool="{tool}",le="+Inf"}} {count}'
+            )
+            lines.append(
+                f'synapse_tool_duration_ms_sum{{tool="{tool}"}} {round_float(rec.get("sum_ms", 0.0))}'
+            )
+            lines.append(f'synapse_tool_duration_ms_count{{tool="{tool}"}} {count}')
 
     # Live metrics (Sprint E) — scene, session, uptime
     if live_snapshot:

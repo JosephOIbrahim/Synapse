@@ -8,11 +8,17 @@ Routes incoming commands to appropriate handler functions.
 import logging
 import math
 import os
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Any, Callable, Optional
 
 _log = logging.getLogger(__name__)
+
+# Prometheus histogram bucket boundaries (milliseconds) for per-tool call
+# duration. Cumulative "le" semantics: an observation counts toward every
+# boundary >= its duration. Mile 0 observability spine.
+_TOOL_DURATION_BUCKETS_MS = (5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000)
 
 try:
     import hou
@@ -244,7 +250,40 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         self._session_id: Optional[str] = None
         self._user_id: str = ""
         self._bridge = None
+        # Per-tool call-duration accumulator (Mile 0). Thread-safe: handle()
+        # may run under the FastMCP executor on worker threads.
+        self._tool_durations: Dict[str, Dict[str, Any]] = {}
+        self._tool_durations_lock = threading.Lock()
         self._register_handlers()
+
+    def _record_tool_duration(self, tool: str, duration_ms: float):
+        """Record one timed tool call into the cumulative histogram."""
+        with self._tool_durations_lock:
+            rec = self._tool_durations.get(tool)
+            if rec is None:
+                rec = {
+                    "count": 0,
+                    "sum_ms": 0.0,
+                    "buckets": {b: 0 for b in _TOOL_DURATION_BUCKETS_MS},
+                }
+                self._tool_durations[tool] = rec
+            rec["count"] += 1
+            rec["sum_ms"] += duration_ms
+            for b in _TOOL_DURATION_BUCKETS_MS:
+                if duration_ms <= b:
+                    rec["buckets"][b] += 1
+
+    def tool_duration_stats(self) -> Dict[str, Dict[str, Any]]:
+        """Return a snapshot copy of per-tool duration stats for export."""
+        with self._tool_durations_lock:
+            return {
+                tool: {
+                    "count": rec["count"],
+                    "sum_ms": rec["sum_ms"],
+                    "buckets": dict(rec["buckets"]),
+                }
+                for tool, rec in self._tool_durations.items()
+            }
 
     def set_session_id(self, session_id: str):
         """Set the current session ID for action logging."""
@@ -288,7 +327,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                     sequence=command.sequence,
                 )
 
+            _t0 = time.perf_counter()
             result = handler(command.payload)
+            self._record_tool_duration(cmd_type, (time.perf_counter() - _t0) * 1000.0)
 
             # Log action asynchronously — don't block the response path
             if cmd_type not in _READ_ONLY_COMMANDS:
@@ -1117,8 +1158,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         memory_count = 0
         try:
             bridge = self._get_bridge()
-            if hasattr(bridge, "_memory") and bridge._memory:
-                memory_count = len(bridge._memory.get_all())
+            synapse_mem = getattr(bridge, "_synapse", None)
+            if synapse_mem is not None:
+                memory_count = synapse_mem.store.count()
         except Exception as e:
             _log.debug("Bridge memory count fetch failed: %s", e)
 
@@ -1134,6 +1176,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             router_stats=router_stats,
             circuit_breaker_state=cb_state,
             memory_entry_count=memory_count,
+            tool_durations=self.tool_duration_stats(),
             live_snapshot=live_snapshot,
         )
         return {"format": "prometheus", "text": text}

@@ -166,7 +166,22 @@ class MemoryHandlerMixin:
         from ..memory.scene_memory import get_memory_status
 
         sp = self._scene_paths()
-        return get_memory_status(sp["hip_dir"], sp["job_path"])
+        status = get_memory_status(sp["hip_dir"], sp["job_path"])
+
+        # Single source of truth (Contract 1): the live entry store (Store A,
+        # the JSONL-backed SynapseMemory) is the authority for "how many
+        # entries", not the markdown file stats. Surface it here so status no
+        # longer contradicts synapse_context -- which read 176 from the live
+        # store while status reported 0 from a near-empty markdown file.
+        try:
+            bridge = self._get_bridge()  # type: ignore[attr-defined]
+            synapse_mem = getattr(bridge, "_synapse", None)
+            if synapse_mem is not None:
+                status["entries_total"] = synapse_mem.store.count()
+        except Exception:
+            pass
+
+        return status
 
     def _handle_evolve_memory(self, payload: Dict) -> Dict:
         """Manually trigger memory evolution."""
