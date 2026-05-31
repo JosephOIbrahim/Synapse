@@ -155,6 +155,105 @@ def test_probe_single_segment_present():
 
 
 # ===========================================================================
+# probe() — kind == "nodetype" (membership lookup, NOT getattr)
+#
+# Houdini node-type names contain "::" (e.g. "apex::sop::invoke") and are NOT
+# getattr-resolvable. The nodetype branch resolves them by NAME against a
+# catalog injected as namespace["nodetypes"]. These tests pin that mechanism
+# with zero Houdini / zero hou.
+# ===========================================================================
+
+def test_probe_nodetype_present_via_membership():
+    # A "::"-bearing name that getattr could never resolve — must resolve via
+    # membership in the injected catalog.
+    ns = {"nodetypes": {"apex::sop::invoke": object()}}
+    spec = ProbeSpec(surface="nodetypes.apex::sop::invoke", kind="nodetype")
+    res = probe(ns, spec)
+    assert res.present is True
+    # A node-type def is not a callable, and has no signature.
+    assert res.is_callable is False
+    assert res.signature is None
+    assert res.error is None
+    assert res.kind == "nodetype"
+    assert res.surface == "nodetypes.apex::sop::invoke"
+
+
+def test_probe_nodetype_cleanly_absent_no_error():
+    ns = {"nodetypes": {"apex::sop::invoke": object()}}
+    spec = ProbeSpec(surface="nodetypes.apex::missing", kind="nodetype")
+    res = probe(ns, spec)
+    assert res.present is False
+    # Cleanly absent — a true dead_end for that name, NOT an error condition.
+    assert res.error is None
+    assert res.is_callable is False
+
+
+def test_probe_nodetype_missing_catalog_is_error():
+    # No "nodetypes" catalog at all -> present False WITH an error.
+    spec = ProbeSpec(surface="nodetypes.apex::sop::invoke", kind="nodetype")
+    res = probe({}, spec)
+    assert res.present is False
+    assert res.error is not None
+    assert "nodetypes" in res.error
+
+
+def test_probe_nodetype_accepts_set_catalog():
+    # Catalog need only support membership (__contains__): a set works too.
+    ns = {"nodetypes": {"apex::rig::fkfull"}}
+    present = probe(ns, ProbeSpec(surface="nodetypes.apex::rig::fkfull", kind="nodetype"))
+    absent = probe(ns, ProbeSpec(surface="nodetypes.apex::rig::nope", kind="nodetype"))
+    assert present.present is True
+    assert absent.present is False
+    assert absent.error is None
+
+
+def test_probe_nodetype_bare_name_without_prefix():
+    # If the surface has no ".", the whole surface is the lookup name.
+    ns = {"nodetypes": {"rig_doctor": object()}}
+    res = probe(ns, ProbeSpec(surface="rig_doctor", kind="nodetype"))
+    assert res.present is True
+
+
+def test_probe_nodetype_hostile_catalog_never_raises():
+    # A catalog whose __contains__ explodes must be captured, not raised.
+    class _Hostile:
+        def __contains__(self, item):
+            raise RuntimeError("boom")
+
+    ns = {"nodetypes": _Hostile()}
+    res = probe(ns, ProbeSpec(surface="nodetypes.apex::sop::invoke", kind="nodetype"))
+    assert res.present is False
+    assert res.error is not None
+
+
+def test_probe_nodetype_does_not_use_getattr_path():
+    # REGRESSION GUARD: a catalog that ANSWERS getattr but has the name only as
+    # a dict key proves the nodetype branch uses membership, not getattr. (A
+    # dict's getattr would AttributeError on "apex::sop::invoke" anyway, but
+    # this also confirms a "::" name resolves at all.)
+    ns = {"nodetypes": {"apex::sop::invoke": object()}}
+    res = probe(ns, ProbeSpec(surface="nodetypes.apex::sop::invoke", kind="nodetype"))
+    assert res.present is True
+
+
+def test_probe_attr_path_unaffected_by_nodetype_branch(namespace):
+    # REGRESSION: existing getattr dotted-path behavior is unchanged for attr/call.
+    res = probe(namespace, ProbeSpec(surface="apex.Graph.addNode", kind="call"))
+    assert res.present is True
+    assert res.is_callable is True
+    assert res.signature is not None
+
+    res2 = probe(namespace, ProbeSpec(surface="apex.Graph", kind="attr"))
+    assert res2.present is True
+    assert res2.is_callable is True
+
+    # And a missing attr still errors via the getattr path (not the nodetype path).
+    res3 = probe(namespace, ProbeSpec(surface="apex.DoesNotExist", kind="attr"))
+    assert res3.present is False
+    assert res3.error is not None
+
+
+# ===========================================================================
 # Registry
 # ===========================================================================
 
@@ -390,9 +489,44 @@ def test_apex_seed_has_at_least_six_specs():
 def test_apex_seed_specs_are_well_formed():
     for s in APEX_SEED:
         assert s.surface
-        assert s.kind in {"attr", "call", "construct"}
+        assert s.kind in {"attr", "call", "construct", "nodetype"}
         assert s.expect in {"present", "absent", "unknown"}
         assert isinstance(s.rank, int)
+
+
+def test_apex_seed_nodetype_seeds_are_reclassified():
+    # Every seed whose surface starts "nodetypes." MUST be kind=="nodetype"
+    # (the probe-shape fix: "::" names are membership lookups, not getattr).
+    node_seeds = [s for s in APEX_SEED if s.surface.startswith("nodetypes.")]
+    assert node_seeds, "expected node-type seeds in APEX_SEED"
+    assert all(s.kind == "nodetype" for s in node_seeds), [
+        (s.surface, s.kind) for s in node_seeds if s.kind != "nodetype"
+    ]
+    # And there are the ~10 we expect (the apex::rig/sop/autorig + rig_doctor set).
+    assert len(node_seeds) >= 10
+
+
+def test_apex_seed_graph_champions_stay_attr_and_call():
+    # The real champions are pure Python-API surfaces — NOT node types.
+    by_surface = {s.surface: s for s in APEX_SEED}
+    assert by_surface["apex.Graph"].kind == "attr"
+    assert by_surface["apex.Graph.addNode"].kind == "call"
+    # Neither carries the nodetypes. prefix.
+    assert not by_surface["apex.Graph"].surface.startswith("nodetypes.")
+
+
+def test_apex_seed_nodetype_resolves_against_catalog_standalone():
+    # End-to-end standalone: inject a catalog containing one of the seed names
+    # and confirm the loop records it as a champion (no Houdini, no hou).
+    target = "apex::sop::invoke"
+    seed = next(
+        s for s in APEX_SEED if s.surface == f"nodetypes.{target}"
+    )
+    assert seed.kind == "nodetype"
+    ns = {"nodetypes": {target: object()}}
+    res = probe(ns, seed)
+    assert res.present is True
+    assert res.error is None
 
 
 def test_apex_seed_drives_run_search_standalone():
@@ -638,3 +772,236 @@ def test_crucible_persistence_dedup_is_keyed_on_surface_and_kind(tmp_path):
     assert reg2.known("apex.Graph", "attr").status == "champion"
     assert reg2.known("apex.Graph", "call").status == "dead_end"
     assert len(reg2.all()) == 2
+
+
+# ===========================================================================
+# CRUCIBLE — nodetype probe (membership branch) adversarial invariants
+#
+# The nodetype branch is a SEPARATE code path from getattr resolution. These
+# attack its boundaries head-on:
+#   * catalog shape polymorphism  — set / dict / arbitrary __contains__ object
+#   * dotted node-type NAMES       — split(".",1) must keep "foo.bar::baz" whole
+#   * missing vs None vs hostile catalog — present=False with error, NEVER raise
+#   * bare surface (no dot)        — whole surface is the lookup name, no crash
+#   * REGRESSION: attr/call/construct getattr path is byte-for-byte unchanged
+# ===========================================================================
+
+
+def test_crucible_nodetype_catalog_shape_set_dict_and_custom_contains():
+    """Membership must work for a set, a dict, AND a custom __contains__ object."""
+    target = "apex::sop::invoke"
+    miss = "apex::sop::absent"
+
+    # 1. set
+    set_ns = {"nodetypes": {target}}
+    assert probe(set_ns, ProbeSpec(surface=f"nodetypes.{target}", kind="nodetype")).present is True
+    set_absent = probe(set_ns, ProbeSpec(surface=f"nodetypes.{miss}", kind="nodetype"))
+    assert set_absent.present is False
+    assert set_absent.error is None  # cleanly absent, not an error
+
+    # 2. dict (keyed by name)
+    dict_ns = {"nodetypes": {target: object()}}
+    assert probe(dict_ns, ProbeSpec(surface=f"nodetypes.{target}", kind="nodetype")).present is True
+    assert probe(dict_ns, ProbeSpec(surface=f"nodetypes.{miss}", kind="nodetype")).present is False
+
+    # 3. custom object whose ONLY membership contract is __contains__ (no len,
+    #    no iter, not a builtin container) — the duck-typed catalog Houdini-side.
+    class _CustomCatalog:
+        def __init__(self, names):
+            self._names = set(names)
+
+        def __contains__(self, item):  # the ONLY protocol method
+            return item in self._names
+
+    custom_ns = {"nodetypes": _CustomCatalog({target})}
+    hit = probe(custom_ns, ProbeSpec(surface=f"nodetypes.{target}", kind="nodetype"))
+    miss_res = probe(custom_ns, ProbeSpec(surface=f"nodetypes.{miss}", kind="nodetype"))
+    assert hit.present is True
+    assert hit.is_callable is False  # a node-type def is never reported callable
+    assert hit.signature is None
+    assert hit.error is None
+    assert miss_res.present is False
+    assert miss_res.error is None
+
+
+def test_crucible_nodetype_falsy_but_valid_catalog_is_not_missing():
+    """An EMPTY catalog is a real (empty) catalog, NOT a missing one.
+
+    Guards against a future `if not catalog:` regression — emptiness must yield
+    a clean absent (present=False, error=None), never the missing-catalog error.
+    """
+    for empty in ({}, set()):
+        res = probe({"nodetypes": empty}, ProbeSpec(surface="nodetypes.anything", kind="nodetype"))
+        assert res.present is False
+        assert res.error is None  # empty != missing
+
+    # A custom catalog that is falsy (len 0) but answers membership True for a
+    # hit must still resolve present — truthiness must not gate the lookup.
+    class _FalsyCatalog:
+        def __len__(self):
+            return 0
+
+        def __contains__(self, item):
+            return item == "hit::me"
+
+    res = probe({"nodetypes": _FalsyCatalog()}, ProbeSpec(surface="nodetypes.hit::me", kind="nodetype"))
+    assert res.present is True
+    assert res.error is None
+
+
+def test_crucible_nodetype_dotted_name_kept_intact_by_split():
+    """A node-type name CONTAINING a dot must survive split(".",1) whole.
+
+    surface "nodetypes.foo.bar::baz" -> only the FIRST dot is the prefix
+    separator; the lookup name is "foo.bar::baz", dot and all.
+    """
+    name = "foo.bar::baz"
+    # The catalog is keyed by the FULL dotted name. If the probe split on every
+    # dot (or the last dot) the lookup would miss.
+    ns = {"nodetypes": {name: object()}}
+    res = probe(ns, ProbeSpec(surface=f"nodetypes.{name}", kind="nodetype"))
+    assert res.present is True
+    assert res.error is None
+
+    # And a near-miss: the catalog has only the prefix-stripped-too-far variant
+    # ("bar::baz"); the correct full name must NOT match it -> cleanly absent.
+    ns_wrong = {"nodetypes": {"bar::baz": object()}}
+    res_wrong = probe(ns_wrong, ProbeSpec(surface=f"nodetypes.{name}", kind="nodetype"))
+    assert res_wrong.present is False
+    assert res_wrong.error is None
+
+
+def test_crucible_nodetype_missing_catalog_never_raises_only_errors():
+    """No 'nodetypes' key at all -> present=False WITH error, NEVER an exception."""
+    # Several mis-shaped namespaces, none containing 'nodetypes'.
+    for ns in ({}, {"apex": object()}, {"NODETYPES": {"x"}}, {"nodetype": {"x"}}):
+        res = probe(ns, ProbeSpec(surface="nodetypes.apex::sop::invoke", kind="nodetype"))
+        assert res.present is False
+        assert res.error is not None
+        assert "nodetypes" in res.error  # names the missing routing key
+
+
+def test_crucible_nodetype_none_catalog_is_truthful_error_not_fabricated_keyerror():
+    """A present-but-None catalog must error WITHOUT lying about a missing key.
+
+    The 'nodetypes' key EXISTS (it's None), so a KeyError('nodetypes') would be
+    a fabrication. The branch reports a truthful TypeError and never raises.
+    """
+    res = probe({"nodetypes": None}, ProbeSpec(surface="nodetypes.x", kind="nodetype"))
+    assert res.present is False
+    assert res.error is not None
+    # It must NOT claim the key is missing.
+    assert "KeyError" not in res.error
+    assert "None" in res.error
+
+
+def test_crucible_nodetype_non_container_catalog_never_raises():
+    """A catalog with no membership protocol (int) is captured, not raised."""
+    for junk in (123, 4.5, True):
+        res = probe({"nodetypes": junk}, ProbeSpec(surface="nodetypes.x", kind="nodetype"))
+        assert res.present is False
+        assert res.error is not None  # TypeError captured into the result
+
+
+def test_crucible_nodetype_hostile_contains_is_captured():
+    """A catalog whose __contains__ raises is captured into error, never raised."""
+
+    class _Bomb:
+        def __contains__(self, item):
+            raise RuntimeError("kaboom")
+
+    res = probe({"nodetypes": _Bomb()}, ProbeSpec(surface="nodetypes.x::y", kind="nodetype"))
+    assert res.present is False
+    assert res.error is not None
+    assert "kaboom" in res.error or "RuntimeError" in res.error
+
+
+def test_crucible_nodetype_bare_surface_no_dot_uses_whole_surface_as_name():
+    """A 'nodetype' surface with NO dot ("nodetypes") -> name is the whole surface.
+
+    split(".",1) only strips a prefix when a dot exists; with no dot the entire
+    surface is the lookup name. Must not crash and must not strip anything.
+    """
+    # The catalog literally contains the bare string "nodetypes" as a type name.
+    ns = {"nodetypes": {"nodetypes": object()}}
+    res = probe(ns, ProbeSpec(surface="nodetypes", kind="nodetype"))
+    assert res.present is True
+    assert res.error is None
+
+    # A different dot-free name not in the catalog -> cleanly absent, no crash.
+    ns2 = {"nodetypes": {"rig_doctor"}}
+    present = probe(ns2, ProbeSpec(surface="rig_doctor", kind="nodetype"))
+    absent = probe(ns2, ProbeSpec(surface="not_there", kind="nodetype"))
+    assert present.present is True
+    assert absent.present is False
+    assert absent.error is None
+
+
+def test_crucible_nodetype_routing_is_by_kind_not_by_surface_prefix():
+    """REGRESSION GUARD: the membership branch is gated on kind, NOT on the
+    'nodetypes.' surface prefix.
+
+    A 'nodetypes.'-prefixed surface with kind='attr' MUST take the getattr path
+    (and error, since a dict has no such attribute) — proving the nodetype
+    branch cannot be reached by surface shape alone.
+    """
+    ns = {"nodetypes": {"apex::sop::invoke": object()}}
+    # kind='attr' on a 'nodetypes.'-prefixed surface -> getattr path, not membership.
+    res = probe(ns, ProbeSpec(surface="nodetypes.foo", kind="attr"))
+    assert res.present is False
+    assert res.error is not None
+    assert "AttributeError" in res.error  # getattr failed, NOT a membership miss
+
+
+def test_crucible_attr_call_construct_getattr_path_byte_for_byte_unchanged(namespace):
+    """REGRESSION GUARD: attr / call / construct behavior is the legacy getattr
+    path, fully unaffected by the nodetype branch. Prove it across all three.
+    """
+    # attr — present non-callable
+    a = probe(namespace, ProbeSpec(surface="apex.Graph.not_callable", kind="attr"))
+    assert a.present is True
+    assert a.is_callable is False
+    assert a.signature is None
+    assert a.error is None
+
+    # call — present callable WITH a signature (getattr + inspect.signature)
+    c = probe(namespace, ProbeSpec(surface="apex.Graph.addNode", kind="call"))
+    assert c.present is True
+    assert c.is_callable is True
+    assert c.signature is not None
+    assert "name" in c.signature
+    assert c.error is None
+
+    # construct — a class resolves via getattr; classes are callable.
+    k = probe(namespace, ProbeSpec(surface="apex.Graph", kind="construct"))
+    assert k.present is True
+    assert k.is_callable is True
+    assert k.error is None
+
+    # missing attr still errors via getattr (KeyError/AttributeError), NOT the
+    # nodetype membership path.
+    miss = probe(namespace, ProbeSpec(surface="apex.DoesNotExist", kind="attr"))
+    assert miss.present is False
+    assert miss.error is not None
+    assert "DoesNotExist" in miss.error or "attribute" in miss.error.lower()
+
+
+def test_crucible_no_double_colon_seed_left_as_attr():
+    """Every APEX_SEED surface containing '::' MUST be kind='nodetype'.
+
+    A '::' name is not getattr-resolvable; if any such seed were left as
+    kind='attr'/'call'/'construct' it would always falsely probe absent. This
+    is the seed-side guarantee that the reclassification is complete.
+    """
+    misrouted = [
+        (s.surface, s.kind) for s in APEX_SEED if "::" in s.surface and s.kind != "nodetype"
+    ]
+    assert misrouted == [], f"'::'-bearing seeds wrongly classified: {misrouted}"
+
+    # And the inverse: every kind='nodetype' seed actually targets the catalog
+    # (carries the 'nodetypes.' routing prefix OR is a bare dot-free SOP name).
+    for s in APEX_SEED:
+        if s.kind == "nodetype":
+            assert s.surface.startswith("nodetypes.") or "." not in s.surface, (
+                f"nodetype seed {s.surface!r} is neither prefixed nor a bare name"
+            )
