@@ -492,13 +492,28 @@ class TestExecutePythonEnhancements:
     @pytest.fixture(autouse=True)
     def handler(self):
         import synapse.server.handlers as handlers_mod
-        # Patch the hou reference that the handler module actually uses
-        # (may differ from sys.modules["hou"] if other tests replaced it)
-        self._handlers_hou = handlers_mod.hou
+        # Order-independent: handlers_mod may have no `hou` attribute at all
+        # (it only binds one when `import hou` succeeds), depending on which
+        # test files imported it first. Save/restore both hou and
+        # HOU_AVAILABLE so this fixture works regardless of collection order.
+        had_hou = hasattr(handlers_mod, "hou")
+        saved_hou = getattr(handlers_mod, "hou", None)
+        saved_avail = handlers_mod.HOU_AVAILABLE
+
+        hou_ref = saved_hou if saved_hou is not None else MagicMock()
         # Ensure undos mock exists on the actual hou reference
-        if not hasattr(self._handlers_hou, "undos") or not hasattr(self._handlers_hou.undos, "group"):
-            self._handlers_hou.undos = MagicMock()
+        if not hasattr(hou_ref, "undos") or not hasattr(hou_ref.undos, "group"):
+            hou_ref.undos = MagicMock()
+        handlers_mod.hou = hou_ref
+        handlers_mod.HOU_AVAILABLE = True
+        self._handlers_hou = hou_ref
         self.h = handlers_mod.SynapseHandler()
+        yield
+        handlers_mod.HOU_AVAILABLE = saved_avail
+        if had_hou:
+            handlers_mod.hou = saved_hou
+        elif hasattr(handlers_mod, "hou"):
+            del handlers_mod.hou
 
     def test_dry_run_valid_code(self):
         result = self.h._handle_execute_python({
