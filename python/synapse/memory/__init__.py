@@ -43,6 +43,11 @@ from .markdown import (
     parse_context_md,
 )
 
+from .embedding import (
+    Embedder,
+    HashEmbedder,
+)
+
 __all__ = [
     # Models
     'Memory',
@@ -77,4 +82,8 @@ __all__ = [
     'parse_decisions_md',
     'render_decisions_md',
     'parse_context_md',
+
+    # Embedding
+    'Embedder',
+    'HashEmbedder',
 ]
