@@ -1117,8 +1117,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         memory_count = 0
         try:
             bridge = self._get_bridge()
-            if hasattr(bridge, "_memory") and bridge._memory:
-                memory_count = len(bridge._memory.get_all())
+            synapse_mem = getattr(bridge, "_synapse", None)
+            if synapse_mem is not None:
+                memory_count = synapse_mem.store.count()
         except Exception as e:
             _log.debug("Bridge memory count fetch failed: %s", e)
 
