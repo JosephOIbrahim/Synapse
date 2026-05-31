@@ -216,6 +216,53 @@ class TestSessionWriteOps:
         assert "Render turntable" in content
         assert "---" in content  # separator
 
+    def test_scene_dir_read_write_agree_unsaved_hip(self, tmp_path):
+        """Readers and the writer must resolve the same claude/ dir.
+
+        Regression: _scene_paths/handle_memory_context used dirname(hip)
+        while ensure_scene_structure used the hip path itself for unsaved
+        scenes, so status/context read an empty dir while writes landed
+        elsewhere. resolve_hip_dir is now the single source of truth.
+        """
+        import os as _os
+        # Unsaved hip: a path that is NOT a real file on disk.
+        hip = str(tmp_path / "untitled.hip")
+        paths = sm.ensure_scene_structure(hip, hip)
+        reader_scene_dir = _os.path.join(sm.resolve_hip_dir(hip), "claude")
+        assert _os.path.normpath(reader_scene_dir) == _os.path.normpath(paths["scene_dir"])
+
+        # Saved hip: a real file -> both resolve to its parent dir.
+        saved = tmp_path / "shot.hip"
+        saved.write_text("bgeo", encoding="utf-8")
+        assert sm.resolve_hip_dir(str(saved)) == _os.path.normpath(str(tmp_path))
+
+    def test_write_session_end_skips_bare_stub(self, tmp_project):
+        """Bodyless session-end (timestamp only) must NOT write a stub.
+
+        Regression for C-2: ~200 empty '### Session End' blocks bloated
+        memory.md because the disconnect hook wrote a bare timestamp every
+        session. The writer now skips when there is no body.
+        """
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        before = _P(result["scene_md"]).read_text(encoding="utf-8")
+        sm.write_session_end(result["scene_dir"], {
+            "stopped_at": "2026-05-30T15:00:00Z",
+        })
+        after = _P(result["scene_md"]).read_text(encoding="utf-8")
+        assert after == before, "bare session-end must not append anything"
+        assert "### Session End" not in after
+
+    def test_write_session_end_writes_summary_text(self, tmp_project):
+        """A consolidated summary_text IS written (meaningful session)."""
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        sm.write_session_end(result["scene_dir"], {
+            "stopped_at": "2026-05-30T15:00:00Z",
+            "summary_text": "## Session Summary\n**Commands:** 12",
+        })
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
+        assert "### Session End" in content
+        assert "**Commands:** 12" in content
+
     def test_write_parameter_experiment(self, tmp_project):
         result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
         sm.write_parameter_experiment(result["scene_dir"], {

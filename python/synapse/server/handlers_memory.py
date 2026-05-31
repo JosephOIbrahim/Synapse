@@ -35,10 +35,14 @@ class MemoryHandlerMixin:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         from .main_thread import run_on_main
+        from ..memory.scene_memory import resolve_hip_dir
 
         def _on_main():
             hip_path = hou.hipFile.path()
-            hip_dir = os.path.dirname(hip_path)
+            # Must match the writer's scene-dir resolution (ensure_scene_structure)
+            # so reads land on the same claude/ dir writes use -- critical for
+            # unsaved/untitled scenes where dirname(hip) != the writer's dir.
+            hip_dir = resolve_hip_dir(hip_path)
             job_path = hou.getenv("JOB", hip_dir)
             return {"hip_path": hip_path, "hip_dir": hip_dir, "job_path": job_path}
 
