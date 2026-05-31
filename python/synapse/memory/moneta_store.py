@@ -133,18 +133,32 @@ class MonetaBackedStore:
         # detect entries that need re-embedding (handoff capsule PARKED note).
         self.embedder_id = getattr(embedder, "id", "unknown")
 
+    # Protected memories (decisions / show-tier / gate) are exactly the
+    # keep-forever set, so the per-handle protected quota is set high: Moneta's
+    # default 100 is a backstop that would silently demote the 101st pin to
+    # prunable (CRUCIBLE finding). We never want that for SYNAPSE.
+    _PROTECTED_QUOTA = 100_000
+
     @classmethod
     def from_storage_dir(
-        cls, storage_dir, embedder=None, *, protected_floor: float = _DEFAULT_PROTECTED_FLOOR
+        cls,
+        storage_dir,
+        embedder=None,
+        *,
+        protected_floor: float = _DEFAULT_PROTECTED_FLOOR,
+        protected_quota: int = _PROTECTED_QUOTA,
     ) -> "MonetaBackedStore":
         """Build a durable, project-scoped Moneta-backed store.
 
         Snapshot + WAL live under ``<storage_dir>/.moneta/``; the ``storage_uri``
         is stable per project dir so the URI lock and snapshot reload key are
         consistent across restarts. The background snapshot daemon is NOT
-        started here — under the async server that races the ECS single-writer
-        (FC4). Persistence is via :meth:`save` (synchronous snapshot); the
-        production auto-snapshot cadence is wired in Mile 6.
+        started here — under the async server it races the ECS single-writer
+        (FC4). Persistence is via :meth:`save` (synchronous snapshot).
+
+        A corrupt snapshot is quarantined (renamed, preserved) and the store
+        starts fresh, rather than crashing startup or silently abandoning the
+        file — Moneta's ``hydrate()`` does a bare ``json.load`` (CRUCIBLE finding).
         """
         from .embedding import HashEmbedder
         from . import moneta_runtime as mr
@@ -156,14 +170,55 @@ class MonetaBackedStore:
         embedder = embedder or HashEmbedder()
         base = Path(storage_dir) / ".moneta"
         base.mkdir(parents=True, exist_ok=True)
+        snapshot_path = base / "snapshot.json"
+        cls._quarantine_if_corrupt(snapshot_path)
         cfg = mr.MonetaConfig(
             storage_uri=f"moneta-file://{Path(storage_dir).resolve().as_posix()}",
             embedding_dim=embedder.dim,
-            snapshot_path=base / "snapshot.json",
+            quota_override=protected_quota,
+            snapshot_path=snapshot_path,
             wal_path=base / "wal.log",
         )
         handle = mr.Moneta(cfg)
         return cls(handle, embedder, protected_floor=protected_floor)
+
+    _SNAPSHOT_REQUIRED_KEYS = (
+        "entity_id", "payload", "semantic_vector", "utility",
+        "attended_count", "protected_floor", "last_evaluated", "state",
+    )
+
+    @classmethod
+    def _quarantine_if_corrupt(cls, snapshot_path: Path) -> None:
+        """Rename a corrupt snapshot aside so startup neither crashes nor
+        silently discards it. Best-effort; a valid/absent snapshot is untouched."""
+        if not snapshot_path.exists():
+            return
+        import json
+        import time as _time
+        try:
+            with open(snapshot_path, "r", encoding="utf-8") as fp:
+                data = json.load(fp)
+            if not isinstance(data, dict) or not isinstance(data.get("rows", []), list):
+                raise ValueError("snapshot missing a 'rows' list")
+            for row in data.get("rows", []):
+                if not all(k in row for k in cls._SNAPSHOT_REQUIRED_KEYS):
+                    raise ValueError("snapshot row missing required keys")
+        except Exception as exc:
+            bad = snapshot_path.with_name(f"{snapshot_path.name}.corrupt-{int(_time.time())}")
+            try:
+                snapshot_path.replace(bad)
+                logger.error(
+                    "Quarantined corrupt Moneta snapshot %s -> %s (%s); starting fresh",
+                    snapshot_path, bad, exc,
+                )
+            except Exception as move_err:  # last resort: remove so startup proceeds
+                logger.error(
+                    "Corrupt snapshot %s unrecoverable (%s); removing", snapshot_path, move_err
+                )
+                try:
+                    snapshot_path.unlink()
+                except OSError:
+                    pass
 
     # -- write --------------------------------------------------------------
 
