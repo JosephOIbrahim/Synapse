@@ -115,9 +115,20 @@ same-owner (`JosephOIbrahim/Moneta`).
      run: python -c "import sys; from synapse.memory import moneta_runtime as m; sys.exit(0 if m.moneta_available() else 1)"
    ```
 
-**Blocked on:** the `MONETA_DEPLOY_KEY` secret (Joe must create it — I cannot).
-Until then the tests run locally and skip on CI. Do **not** add the checkout
-step before the secret exists — it would fail CI.
+**Status: IMPLEMENTED (conditional).** `ci.yml` now wires the Moneta checkout +
+`pip install -e ./_moneta` + the no-silent-skip tripwire, each **gated on the
+secret being present** (`if: ${{ env.MONETA_DEPLOY_KEY != '' }}`, the secret
+mapped to a job env var since `secrets` isn't usable in `if:`). With no secret,
+those steps skip and CI stays green (Moneta tests skip as before). **The only
+remaining step is Joe creating the secret**, which activates everything:
+1. `ssh-keygen -t ed25519 -f moneta_ci -N ""` (no passphrase).
+2. Add `moneta_ci.pub` as a **read-only Deploy Key** on `JosephOIbrahim/Moneta`
+   (Settings → Deploy keys).
+3. Add the private key `moneta_ci` as secret **`MONETA_DEPLOY_KEY`** on
+   `JosephOIbrahim/Synapse` (Settings → Secrets → Actions). `gh secret set
+   MONETA_DEPLOY_KEY -R JosephOIbrahim/Synapse < moneta_ci`.
+4. Delete the local keypair. Next CI run installs Moneta and runs the ~70 tests;
+   the tripwire fails loudly if the checkout/install ever breaks.
 
 ---
 
@@ -126,4 +137,4 @@ step before the secret exists — it would fail CI.
 |---|---|---|---|
 | FU-1 Memory.id | Low | — | focused PR (invert tripwire) |
 | FU-2 AP6 gating | Low–mod | — (wire when a tool calls it) | PR when sleep_pass is exposed |
-| FU-3 CI Moneta | Low | `MONETA_DEPLOY_KEY` secret | PR after Joe adds the secret |
+| FU-3 CI Moneta | Low | `MONETA_DEPLOY_KEY` secret (workflow already wired conditionally) | DONE — activates on the secret |

@@ -11,11 +11,39 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11", "3.14"]
+    env:
+      # Mapped from the secret so steps can gate on its presence — the `secrets`
+      # context is not usable directly in `if:`. Empty string when the
+      # MONETA_DEPLOY_KEY secret is not configured, in which case the Moneta
+      # backend steps below skip and the ~70 Moneta-gated tests skip as before
+      # (CI stays green). Add the secret to activate them. See docs/MONETA_FOLLOWUPS.md (FU-3).
+      MONETA_DEPLOY_KEY: ${{ secrets.MONETA_DEPLOY_KEY }}
     steps:
       - uses: actions/checkout@v5
+
+      - name: Check out private Moneta backend (when key is configured)
+        if: ${{ env.MONETA_DEPLOY_KEY != '' }}
+        uses: actions/checkout@v5
+        with:
+          repository: JosephOIbrahim/Moneta
+          ref: main
+          ssh-key: ${{ secrets.MONETA_DEPLOY_KEY }}
+          path: _moneta
+
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
+
       - run: pip install -e ".[dev,websocket,mcp]"
+
+      - name: Install Moneta backend (zero-dep, pxr-free; when key is configured)
+        if: ${{ env.MONETA_DEPLOY_KEY != '' }}
+        run: pip install -e ./_moneta
+
+      - name: Assert Moneta backend is active (no silent skip)
+        if: ${{ env.MONETA_DEPLOY_KEY != '' }}
+        run: |
+          python -c "import sys; from synapse.memory import moneta_runtime as m; ok = m.moneta_available(); print('Moneta available:', ok, '| import_error:', m.import_error()); sys.exit(0 if ok else 1)"
+
       - run: python -m pytest tests/ -v --tb=short
