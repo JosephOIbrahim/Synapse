@@ -707,6 +707,19 @@ class SynapseMemory:
                     "SYNAPSE_MEMORY_BACKEND=moneta unavailable (%s); "
                     "falling back to jsonl.", exc,
                 )
+        elif backend == "shadow":
+            try:
+                from .moneta_store import MonetaBackedStore
+                from .shadow_store import ShadowMemoryStore
+                primary = MemoryStore(storage_dir)
+                shadow = MonetaBackedStore.from_storage_dir(storage_dir)
+                logger.info("Memory backend: shadow (jsonl primary + moneta shadow)")
+                return ShadowMemoryStore(primary, shadow)
+            except Exception as exc:
+                logger.warning(
+                    "SYNAPSE_MEMORY_BACKEND=shadow unavailable (%s); "
+                    "falling back to jsonl.", exc,
+                )
         return MemoryStore(storage_dir)
 
     def _resolve_project_path(self, path: Optional[str]) -> Path:
