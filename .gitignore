@@ -40,6 +40,7 @@ htmlcov/
 .tox/
 MagicMock/
 tests/fixtures/.synapse/
+/.synapse/
 
 # Distribution
 *.tar.gz
