@@ -10,7 +10,7 @@
   <a href="python/synapse/host/daemon.py"><img src="https://img.shields.io/badge/daemon-in--process-f59e0b.svg" alt="Daemon"></a>
   <a href="python/synapse/host/tops_bridge.py"><img src="https://img.shields.io/badge/perception-scaffolded-3b82f6.svg" alt="Perception"></a>
   <a href="python/synapse/memory/moneta_store.py"><img src="https://img.shields.io/badge/memory-Moneta%20backend-8b5cf6.svg" alt="Memory"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-3013%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-3021%20passing-brightgreen.svg" alt="Tests"></a>
 </p>
 
 ---
@@ -339,7 +339,11 @@ flowchart TB
     classDef eng fill:#334155,stroke:#f59e0b,color:#f1f5f9
 ```
 
-A four-agent **CRUCIBLE** fan-out attacked the backend and found two real defects — a protected-quota silent demotion and a corrupt-snapshot startup-killer — both fixed and pinned. The one item left live-gated is the async-server single-writer / deadlock check (FC4), so the production default-on flip is staged behind a live session; the flag stays `jsonl` until then. Full acceptance/falsifier status and the cutover procedure live in [`docs/MONETA_SYNAPSE_SHIP_REPORT.md`](docs/MONETA_SYNAPSE_SHIP_REPORT.md). The bespoke `evolution.py` USD memory-evolution is superseded by Moneta's consolidation and retired under the new backend.
+A four-agent **CRUCIBLE** fan-out attacked the backend and found two real defects — a protected-quota silent demotion and a corrupt-snapshot startup-killer — both fixed and pinned. A second ARCHITECT→FORGE→CRUCIBLE pass then closed the **FC4 single-writer gap by construction**: a serialization `RLock` makes the adapter thread-safe (the engine's swap-and-pop index can no longer be corrupted by concurrent deposit/iterate/prune), and because the adapter makes zero `hou.*` calls the lock is never held across the main-thread hop — so it can't deadlock the async server. Proven standalone by a concurrency stress suite; the destructive `run_sleep_pass` is now auditable (returns/logs exactly what it pruned). The production default-on flip is still staged (flag stays `jsonl`), but no longer blocked on live thread-safety verification. Full acceptance/falsifier status and the cutover procedure live in [`docs/MONETA_SYNAPSE_SHIP_REPORT.md`](docs/MONETA_SYNAPSE_SHIP_REPORT.md).
+
+The memory store's bespoke `python/synapse/memory/evolution.py` (the charmander→charizard USD evolution) is superseded by Moneta's consolidation — it stays **dormant** under the `moneta` backend (pinned by `test_moneta_backend_never_fires_evolution`) and still fires under the default `jsonl`; physical removal is deferred to the cutover. (Distinct from `shared/evolution.py`, the MOE-orchestrator subsystem, which is unchanged.)
+
+> **On the name "Moneta":** the vector-memory engine wired in here ([repo](https://github.com/JosephOIbrahim/Moneta)) is a Python library; it is a *distinct project* from the similarly-named "Moneta (Nuke)" entry in the Portfolio thesis below (a planned DCC host). They historically share a working name but are not the same codebase.
 
 ---
 
@@ -482,7 +486,8 @@ python/synapse/
 ├── _vendor/                    # anthropic + deps, CP311 win_amd64
 └── ...                         # Sprint 2 Week 1 + prior subsystems
 
-tests/                          # 3013 passing
+tests/                          # 3021 local; ~66 are Moneta-gated (skip on a
+                                # clean clone / CI without the moneta package)
 docs/sprint3/                   # audits + design contracts + continuation
 docs/crucible_protocol.md       # manual Crucible runbook
 mcp_server.py                   # Sprint 2 WebSocket adapter (still shipping)

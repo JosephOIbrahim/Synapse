@@ -23,8 +23,10 @@ a durable handle; tests inject an ephemeral one.
 from __future__ import annotations
 
 import logging
+import threading
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Iterator, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 from .models import Memory, MemoryQuery, MemorySearchResult, MemoryTier, MemoryType
 
@@ -32,6 +34,31 @@ logger = logging.getLogger(__name__)
 
 # Importance -> protected_floor. Pinned memories resist Moneta's decay.
 _DEFAULT_PROTECTED_FLOOR = 0.9
+
+
+@dataclass(frozen=True)
+class PruneAudit:
+    """What a sleep pass actually removed — the lossless prune record.
+
+    ``run_sleep_pass`` is the one destructive memory op (it permanently prunes
+    unprotected memories). Moneta's ``ConsolidationResult`` reports only counts;
+    this captures the ids + payloads + types of what was removed, so data loss
+    is never silent. Back-compatible: ``.pruned``/``.staged``/``.attention_updated``
+    mirror the old return shape.
+    """
+
+    pruned_ids: List[str] = field(default_factory=list)          # SYNAPSE Memory.id
+    pruned_entity_ids: List[str] = field(default_factory=list)   # Moneta UUID (str)
+    pruned_payloads: Dict[str, str] = field(default_factory=dict)
+    pruned_types: Dict[str, str] = field(default_factory=dict)
+    count_before: int = 0
+    count_after: int = 0
+    attention_updated: int = 0
+    staged: int = 0
+
+    @property
+    def pruned(self) -> int:
+        return len(self.pruned_entity_ids)
 
 
 def score_memories(
@@ -132,6 +159,14 @@ class MonetaBackedStore:
         # Stamp the embedder id onto the store so a future embedder swap can
         # detect entries that need re-embedding (handoff capsule PARKED note).
         self.embedder_id = getattr(embedder, "id", "unknown")
+        # FC4: serialize ALL engine access. Moneta's ECS is single-writer —
+        # concurrent deposit/iterate/prune corrupts its swap-and-pop index. This
+        # RLock makes the adapter thread-safe by construction. It guards ONLY
+        # in-process Python state and is never held across an hdefereval
+        # main-thread hop (this adapter makes zero hou.* calls — see the
+        # no-hou-import guard test), so it cannot deadlock the async server.
+        # RLock (not Lock) because close() -> save() is a guarded-calls-guarded edge.
+        self._lock = threading.RLock()
 
     # Protected memories (decisions / show-tier / gate) are exactly the
     # keep-forever set, so the per-handle protected quota is set high: Moneta's
@@ -234,30 +269,38 @@ class MonetaBackedStore:
         embedding = self._embedder.embed(text)
         payload = memory.to_json()
         floor = self._protected_floor if self._is_protected(memory) else 0.0
-        try:
-            self._handle.deposit(payload, embedding, protected_floor=floor)
-        except Exception as exc:  # ProtectedQuotaExceededError, etc.
-            if floor > 0.0:
-                # Never drop a memory because the protected quota is full.
-                logger.warning(
-                    "Protected deposit failed (%s); storing unprotected: %s",
-                    type(exc).__name__, exc,
-                )
-                self._handle.deposit(payload, embedding, protected_floor=0.0)
-            else:
-                raise
+        with self._lock:
+            try:
+                self._handle.deposit(payload, embedding, protected_floor=floor)
+            except Exception as exc:  # ProtectedQuotaExceededError, etc.
+                if floor > 0.0:
+                    # Never drop a memory because the protected quota is full.
+                    logger.warning(
+                        "Protected deposit failed (%s); storing unprotected: %s",
+                        type(exc).__name__, exc,
+                    )
+                    self._handle.deposit(payload, embedding, protected_floor=0.0)
+                else:
+                    raise
         return memory.id
 
     # -- enumerate (the one coupling to Moneta internals, centralized) ------
 
-    def _iter_memories(self) -> Iterator[Memory]:
-        for row in self._handle.ecs.iter_rows():
-            yield Memory.from_json(row.payload)
+    def _iter_memories(self) -> List[Memory]:
+        # Snapshot the engine under the lock and return a list — NOT a generator.
+        # A lazy generator would hold the lock across caller work (or until GC if
+        # abandoned). Materializing the rows under the lock gives every read an
+        # atomic point-in-time view; the expensive JSON deserialization runs
+        # lock-free. All read methods inherit safety from this single snapshot.
+        with self._lock:
+            rows = list(self._handle.ecs.iter_rows())
+        return [Memory.from_json(row.payload) for row in rows]
 
     # -- read ---------------------------------------------------------------
 
     def count(self) -> int:
-        return self._handle.ecs.n
+        with self._lock:
+            return self._handle.ecs.n
 
     def all(self) -> List[Memory]:
         return list(self._iter_memories())
@@ -277,6 +320,7 @@ class MonetaBackedStore:
         return [m for m in self._iter_memories() if m.memory_type == memory_type]
 
     def get_by_tag(self, tag: str) -> List[Memory]:
+        # Raw, case-sensitive — matches search() tag semantics across stores.
         return [m for m in self._iter_memories() if tag in m.tags]
 
     def get_linked(self, memory_id: str) -> List[Memory]:
@@ -294,22 +338,78 @@ class MonetaBackedStore:
 
     def save(self) -> None:
         """Durably snapshot the engine. No-op when durability is disabled (ephemeral)."""
-        dur = getattr(self._handle, "durability", None)
-        if dur is not None:
-            try:
-                dur.snapshot_ecs(self._handle.ecs)
-            except Exception as exc:
-                logger.warning("Moneta snapshot on save() failed: %s", exc)
+        with self._lock:
+            dur = getattr(self._handle, "durability", None)
+            if dur is not None:
+                try:
+                    dur.snapshot_ecs(self._handle.ecs)
+                except Exception as exc:
+                    logger.warning("Moneta snapshot on save() failed: %s", exc)
 
-    def run_sleep_pass(self):
-        """Trigger Moneta consolidation/decay explicitly (snapshots when durable)."""
-        return self._handle.run_sleep_pass()
+    def run_sleep_pass(self) -> PruneAudit:
+        """Trigger Moneta consolidation/decay — AUDITABLE and serialized.
+
+        This is the one destructive memory op: it permanently prunes unprotected
+        memories. We enumerate the live id-set + payloads BEFORE the pass, run it,
+        then diff the survivors to recover exactly which entities were pruned —
+        so data loss is logged, never silent. Held under the lock (the prune
+        mutates the ECS and must not interleave with deposit/iterate).
+        """
+        with self._lock:
+            ecs = self._handle.ecs
+            before_payload: Dict[str, str] = {}
+            before_mem: Dict[str, Optional[Memory]] = {}
+            for row in ecs.iter_rows():
+                eid = str(row.entity_id)
+                before_payload[eid] = row.payload
+                try:
+                    before_mem[eid] = Memory.from_json(row.payload)
+                except Exception:
+                    before_mem[eid] = None  # keep the raw payload for forensics
+            count_before = ecs.n
+
+            result = self._handle.run_sleep_pass()
+
+            survivors = {str(row.entity_id) for row in ecs.iter_rows()}
+            count_after = ecs.n
+
+        pruned_eids = [eid for eid in before_payload if eid not in survivors]
+        pruned_ids: List[str] = []
+        pruned_types: Dict[str, str] = {}
+        for eid in pruned_eids:
+            mem = before_mem.get(eid)
+            if mem is not None:
+                pruned_ids.append(mem.id)
+                pruned_types[mem.id] = getattr(mem.memory_type, "value", str(mem.memory_type))
+
+        audit = PruneAudit(
+            pruned_ids=pruned_ids,
+            pruned_entity_ids=pruned_eids,
+            pruned_payloads={eid: before_payload[eid] for eid in pruned_eids},
+            pruned_types=pruned_types,
+            count_before=count_before,
+            count_after=count_after,
+            attention_updated=getattr(result, "attention_updated", 0),
+            staged=getattr(result, "staged", 0),
+        )
+        if audit.pruned:
+            logger.warning(
+                "moneta.prune lossless-audit pruned=%d staged=%d before=%d after=%d ids=%s",
+                audit.pruned, audit.staged, count_before, count_after, pruned_ids,
+            )
+        else:
+            logger.info(
+                "moneta.sleep_pass pruned=0 staged=%d attended=%d n=%d",
+                audit.staged, audit.attention_updated, count_after,
+            )
+        return audit
 
     def close(self) -> None:
-        self.save()
-        close = getattr(self._handle, "close", None)
-        if callable(close):
-            close()
+        with self._lock:
+            self.save()
+            close = getattr(self._handle, "close", None)
+            if callable(close):
+                close()
 
     # -- unsupported (append/consolidate engine) ----------------------------
 
