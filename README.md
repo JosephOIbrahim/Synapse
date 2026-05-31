@@ -179,20 +179,25 @@ cd C:\Users\%USERNAME%\SYNAPSE
 
 ### 2. Register the package with Houdini
 
-Create `%USERPROFILE%\houdini21.0\packages\Synapse.json`:
+The Houdini package ships **in the repo** at [`packages/synapse.json`](packages/synapse.json) — so the SYNAPSE panel, shelves, and `synapse` Python package load on launch. Two ways to register it:
 
-```json
-{
-    "env": [
-        { "PYTHONPATH": "C:/Users/YOUR_USERNAME/SYNAPSE/python" }
-    ]
-}
+**Recommended — run the installer** (resolves absolute paths + a sibling `Moneta/` checkout, writes a `synapse.json` into your Houdini prefs):
+
+```powershell
+python scripts/install_synapse_package.py            # auto-detects your houdini21.0 prefs
+python scripts/install_synapse_package.py --dry-run  # preview without writing
 ```
 
-Replace `YOUR_USERNAME` with your actual Windows username (forward slashes in the path, not backslashes).
+**Portable alternative — no install.** Add the repo's `packages/` dir to Houdini's package search path (the shipped `packages/synapse.json` derives every path from `$HOUDINI_PACKAGE_PATH`, so nothing is hard-coded). In your `houdini.env`:
+
+```
+HOUDINI_PACKAGE_DIR = "$HOUDINI_PACKAGE_DIR;C:/path/to/Synapse/packages"
+```
+
+Either way, **restart Houdini** afterward — packages and env vars load at launch (and a running session caches Python modules until restart). The optional `MONETA_SRC` var (set automatically by the installer when a sibling `../Moneta` exists) enables the Moneta memory backend; without it SYNAPSE uses the default JSONL store.
 
 **You're good if:** launching Houdini and running `import synapse; print(synapse.__version__)` in the Python Shell prints a version string.
-**If you see** `ModuleNotFoundError: No module named 'synapse'`: double-check the `PYTHONPATH` value in the `.json` points at the `python/` directory, not the repo root.
+**If you see** `ModuleNotFoundError: No module named 'synapse'`: confirm the package's `PYTHONPATH` resolves to the repo's `python/` directory (the installer prints the resolved path), and that you restarted Houdini.
 
 ### 3. Set the API key
 
