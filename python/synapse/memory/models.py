@@ -126,10 +126,15 @@ class Memory:
     consolidated_into: Optional[str] = None     # ID of summary memory
 
     def __post_init__(self):
-        if not self.id:
-            self.id = self._generate_id()
+        # created_at MUST be defaulted before _generate_id(): the id hashes
+        # content+created_at+type, so generating the id first (when created_at
+        # is still "") made it time-independent — identical content+type then
+        # collided forever. Defaulting created_at first lets it participate, so
+        # the same content logged at different times gets distinct ids.
         if not self.created_at:
             self.created_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        if not self.id:
+            self.id = self._generate_id()
         if not self.updated_at:
             self.updated_at = self.created_at
         if not self.summary and self.content:

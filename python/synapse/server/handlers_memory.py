@@ -208,3 +208,29 @@ class MemoryHandlerMixin:
             return {"dry_run": False, "evolved": True, **result}
 
         return {"dry_run": False, "evolved": False, "reason": "No evolution needed"}
+
+    def _handle_sleep_pass(self, payload: Dict) -> Dict:
+        """Trigger Moneta consolidation/decay. DESTRUCTIVE — permanently prunes
+        unprotected memories, so this command is gated APPROVE via the bridge
+        (operation 'sleep_pass'; the gate fires in execute_through_bridge before
+        this handler runs). Returns the prune audit so any data loss is visible.
+
+        No-op (with a clear reason) when the active store isn't Moneta-backed,
+        so it is safe under the default jsonl backend.
+        """
+        bridge = self._get_bridge()  # type: ignore[attr-defined]
+        synapse_mem = getattr(bridge, "_synapse", None)
+        store = getattr(synapse_mem, "store", None) if synapse_mem is not None else None
+        if store is None or not hasattr(store, "run_sleep_pass"):
+            return {"ran": False, "reason": "active memory backend is not Moneta-backed"}
+        before = store.count()
+        audit = store.run_sleep_pass()
+        after = store.count()
+        return {
+            "ran": True,
+            "pruned": getattr(audit, "pruned", before - after),
+            "pruned_ids": list(getattr(audit, "pruned_ids", [])),
+            "staged": getattr(audit, "staged", 0),
+            "before": before,
+            "after": after,
+        }

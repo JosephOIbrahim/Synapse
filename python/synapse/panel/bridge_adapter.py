@@ -136,6 +136,7 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     "synapse_add_memory": "set_parameter",
     "synapse_memory_write": "set_parameter",
     "synapse_evolve_memory": "evolve_memory",
+    "synapse_sleep_pass": "sleep_pass",
     "synapse_project_setup": "set_parameter",
     # Undo/redo
     "houdini_undo": "set_parameter",
