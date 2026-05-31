@@ -1137,7 +1137,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         from .main_thread import run_on_main
         node_path = resolve_param(payload, "node")
         include_code = resolve_param_with_default(payload, "include_code", True)
-        include_geometry = resolve_param_with_default(payload, "include_geometry", True)
+        # Geometry is the expensive part of an inspect (full _geometry_summary).
+        # Default it OFF so the common "what are this node's parms/code" inspect
+        # stays cheap; callers opt in with include_geometry=true (Mile 3a).
+        include_geometry = resolve_param_with_default(payload, "include_geometry", False)
         include_expressions = resolve_param_with_default(payload, "include_expressions", True)
         return run_on_main(lambda: inspect_node_detail(
             node_path=node_path,
