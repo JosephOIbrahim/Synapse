@@ -10,7 +10,7 @@
   <a href="python/synapse/host/daemon.py"><img src="https://img.shields.io/badge/daemon-in--process-f59e0b.svg" alt="Daemon"></a>
   <a href="python/synapse/host/tops_bridge.py"><img src="https://img.shields.io/badge/perception-scaffolded-3b82f6.svg" alt="Perception"></a>
   <a href="python/synapse/memory/moneta_store.py"><img src="https://img.shields.io/badge/memory-Moneta%20backend-8b5cf6.svg" alt="Memory"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-3021%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-3042%20passing-brightgreen.svg" alt="Tests"></a>
 </p>
 
 ---
@@ -486,7 +486,7 @@ python/synapse/
 ├── _vendor/                    # anthropic + deps, CP311 win_amd64
 └── ...                         # Sprint 2 Week 1 + prior subsystems
 
-tests/                          # 3021 local; ~66 are Moneta-gated (skip on a
+tests/                          # 3042 local; ~70 are Moneta-gated (skip on a
                                 # clean clone / CI without the moneta package)
 docs/sprint3/                   # audits + design contracts + continuation
 docs/crucible_protocol.md       # manual Crucible runbook
