@@ -9,7 +9,8 @@
   <a href="python/synapse/cognitive/dispatcher.py"><img src="https://img.shields.io/badge/dispatcher-Strangler%20Fig-1e293b.svg" alt="Dispatcher"></a>
   <a href="python/synapse/host/daemon.py"><img src="https://img.shields.io/badge/daemon-in--process-f59e0b.svg" alt="Daemon"></a>
   <a href="python/synapse/host/tops_bridge.py"><img src="https://img.shields.io/badge/perception-scaffolded-3b82f6.svg" alt="Perception"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-2901%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="python/synapse/memory/moneta_store.py"><img src="https://img.shields.io/badge/memory-Moneta%20backend-8b5cf6.svg" alt="Memory"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-3013%20passing-brightgreen.svg" alt="Tests"></a>
 </p>
 
 ---
@@ -316,6 +317,32 @@ Five real bugs the SCOUT→FORGE discipline caught (the `usdrender` phantom, `su
 
 ---
 
+### Memory substrate — Moneta vector engine (PR #14)
+
+The inside-out thesis applied to memory. SYNAPSE's scene/decision memory carried two unreconciled stores (a JSONL entry store and a markdown scene-memory file), a metrics gauge wired to a dead accessor, and empty session stubs — a divergence *class*, not a bug list. **Moneta** — a vector-native memory engine (`deposit` / `query` / `signal_attention` / consolidation, with time-decay and durability) — is introduced behind the unchanged `MemoryStore` interface so that divergence becomes **structurally impossible**: there is one store, and `count()` reads the engine's live entity count.
+
+It ships **shadow-first and flag-gated, default-off** (`SYNAPSE_MEMORY_BACKEND` = `jsonl` | `moneta` | `shadow`). Each SYNAPSE `Memory` is serialized whole into a Moneta deposit payload (byte-for-byte round-trip); a deterministic, dependency-free `HashEmbedder` (PYTHONHASHSEED-independent, swappable for a semantic model later) embeds the content; decision / show-tier / gate-source memories map to a `protected_floor` so pinned memories resist decay. Keyword search is **bit-identical** to the JSONL store (parity-by-construction); the shadow path dual-writes and diffs reads into a `ParityReport`, so cutover is justified by evidence, not hope.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart TB
+    C["Callers &mdash; unchanged<br/>synapse_context / search / recall<br/>session tracker"] --> SM["SynapseMemory facade"]
+    SM --> SEL{"SYNAPSE_MEMORY_BACKEND"}
+    SEL -->|"jsonl &mdash; default"| JS["MemoryStore<br/>(JSONL, append-only)"]:::def
+    SEL -->|shadow| SH["ShadowMemoryStore<br/>dual-write + ParityReport"]:::alt
+    SEL -->|moneta| MB["MonetaBackedStore<br/>full Memory &rarr; payload"]:::alt
+    SH -->|"authoritative read"| JS
+    SH -.->|"mirror + diff"| MB
+    MB --> ENG[("Moneta engine<br/>HashEmbedder &rarr; deposit/query<br/>decay &middot; consolidation &middot; protected_floor")]:::eng
+    classDef def fill:#1e293b,stroke:#22c55e,color:#f1f5f9
+    classDef alt fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
+    classDef eng fill:#334155,stroke:#f59e0b,color:#f1f5f9
+```
+
+A four-agent **CRUCIBLE** fan-out attacked the backend and found two real defects — a protected-quota silent demotion and a corrupt-snapshot startup-killer — both fixed and pinned. The one item left live-gated is the async-server single-writer / deadlock check (FC4), so the production default-on flip is staged behind a live session; the flag stays `jsonl` until then. Full acceptance/falsifier status and the cutover procedure live in [`docs/MONETA_SYNAPSE_SHIP_REPORT.md`](docs/MONETA_SYNAPSE_SHIP_REPORT.md). The bespoke `evolution.py` USD memory-evolution is superseded by Moneta's consolidation and retired under the new backend.
+
+---
+
 ### Sprint 3 progress — Mile 4 of 6 closed (Mile 5 prestaged)
 
 ```mermaid
@@ -445,10 +472,17 @@ python/synapse/
 │   ├── turn_handle.py          # Spike 2.4 — Future-shaped submit_turn return
 │   ├── tops_bridge.py          # Spike 3.1 — PDG event bridge (Phase A)
 │   └── scene_load_bridge.py    # Spike 3.2 — auto-warm on AfterLoad (Phase B)
+├── memory/                     # PR #14 — Moneta-backed memory substrate
+│   ├── embedding.py            # deterministic HashEmbedder (Embedder protocol)
+│   ├── moneta_runtime.py       # import-guarded Moneta access (pxr-free ephemeral)
+│   ├── moneta_store.py         # MonetaBackedStore (MemoryStore-compatible)
+│   ├── shadow_store.py         # dual-write + parity diff harness
+│   ├── backfill.py             # one-time JSONL → Moneta backfill (backup-first)
+│   └── store.py                # SynapseMemory + SYNAPSE_MEMORY_BACKEND selector
 ├── _vendor/                    # anthropic + deps, CP311 win_amd64
 └── ...                         # Sprint 2 Week 1 + prior subsystems
 
-tests/                          # 2874 passing
+tests/                          # 3013 passing
 docs/sprint3/                   # audits + design contracts + continuation
 docs/crucible_protocol.md       # manual Crucible runbook
 mcp_server.py                   # Sprint 2 WebSocket adapter (still shipping)
