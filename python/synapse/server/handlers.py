@@ -424,6 +424,9 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("execute_python", self._handle_execute_python)
         reg.register("execute_vex", self._handle_execute_vex)
 
+        # Reports — pure off-main-thread file write (never blocked by the main thread)
+        reg.register("write_report", self._handle_write_report)
+
         # USD/Solaris
         reg.register("get_stage_info", self._handle_get_stage_info)
         reg.register("get_usd_attribute", self._handle_get_usd_attribute)
@@ -986,6 +989,33 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             }
 
         return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+
+    def _handle_write_report(self, payload: Dict) -> Dict:
+        """Write a report/file to a confined local dir — OFF the main thread.
+
+        Writing a file under the reports dir is pure Python I/O (no ``hou``), so
+        this handler runs the write directly on the handler thread and does NOT
+        marshal through ``run_on_main`` / ``hdefereval``. It therefore completes
+        even when Houdini's main thread is blocked by a modal dialog or an active
+        cook — the failure mode that hangs ``execute_python``-based report writes.
+
+        Base dir is resolved WITHOUT touching ``hou`` (so a blocked main thread
+        can't stall it): ``$SYNAPSE_REPORTS_DIR`` if set, else ``<repo root>/docs``.
+        The path is confined under that base (traversal rejected).
+        """
+        from synapse.cognitive.tools.write_report import write_report
+
+        relative_path = resolve_param(payload, "relative_path")
+        content = resolve_param(payload, "content")
+        overwrite = resolve_param_with_default(payload, "overwrite", True)
+
+        base_dir = os.environ.get("SYNAPSE_REPORTS_DIR")
+        if not base_dir:
+            here = os.path.dirname(os.path.abspath(__file__))
+            base_dir = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(here))), "docs"
+            )
+        return write_report(relative_path, content, overwrite=overwrite, base_dir=base_dir)
 
     def _handle_execute_vex(self, payload: Dict) -> Dict:
         """
