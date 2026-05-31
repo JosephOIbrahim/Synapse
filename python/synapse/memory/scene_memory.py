@@ -322,19 +322,33 @@ def write_blocker(scene_dir: str, blocker: Dict[str, Any]) -> None:
 
 def write_session_end(scene_dir: str, summary: Dict[str, Any]) -> None:
     """
-    Append session end block.
-    summary: {stopped_at, next_actions, accomplishments}
+    Append a session-end block -- but only when there is something to record.
+
+    A bare timestamp (no accomplishments, next actions, or summary text) is
+    NOT written. Those bodyless writes produced the ~200 empty
+    '### Session End' stubs that bloated memory.md and slowed session-start
+    parsing (Mile 1 / C-2). Skipping them here is what stops the spam from
+    regrowing after a one-time prune.
+
+    summary: {stopped_at, summary_text, next_actions, accomplishments}
     """
+    accomplishments = summary.get("accomplishments", [])
+    next_actions = summary.get("next_actions", [])
+    summary_text = (summary.get("summary_text") or "").strip()
+
+    if not accomplishments and not next_actions and not summary_text:
+        return  # no body -> don't write a bare stub
+
     entry = (
         f"### Session End\n"
         f"- **Stopped at:** {summary.get('stopped_at', _now())}\n"
     )
-    accomplishments = summary.get("accomplishments", [])
+    if summary_text:
+        entry += f"\n{summary_text}\n"
     if accomplishments:
         entry += "- **Accomplished:**\n"
         for a in accomplishments:
             entry += f"  - {a}\n"
-    next_actions = summary.get("next_actions", [])
     if next_actions:
         entry += "- **Next:**\n"
         for n in next_actions:

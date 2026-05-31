@@ -216,6 +216,33 @@ class TestSessionWriteOps:
         assert "Render turntable" in content
         assert "---" in content  # separator
 
+    def test_write_session_end_skips_bare_stub(self, tmp_project):
+        """Bodyless session-end (timestamp only) must NOT write a stub.
+
+        Regression for C-2: ~200 empty '### Session End' blocks bloated
+        memory.md because the disconnect hook wrote a bare timestamp every
+        session. The writer now skips when there is no body.
+        """
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        before = _P(result["scene_md"]).read_text(encoding="utf-8")
+        sm.write_session_end(result["scene_dir"], {
+            "stopped_at": "2026-05-30T15:00:00Z",
+        })
+        after = _P(result["scene_md"]).read_text(encoding="utf-8")
+        assert after == before, "bare session-end must not append anything"
+        assert "### Session End" not in after
+
+    def test_write_session_end_writes_summary_text(self, tmp_project):
+        """A consolidated summary_text IS written (meaningful session)."""
+        result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
+        sm.write_session_end(result["scene_dir"], {
+            "stopped_at": "2026-05-30T15:00:00Z",
+            "summary_text": "## Session Summary\n**Commands:** 12",
+        })
+        content = _P(result["scene_md"]).read_text(encoding="utf-8")
+        assert "### Session End" in content
+        assert "**Commands:** 12" in content
+
     def test_write_parameter_experiment(self, tmp_project):
         result = sm.ensure_scene_structure(tmp_project["hip"], tmp_project["job"])
         sm.write_parameter_experiment(result["scene_dir"], {

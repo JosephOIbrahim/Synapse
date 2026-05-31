@@ -450,11 +450,19 @@ class SynapseServer:
                 self._session_manager.remove_by_client(client_id)
 
             # End session
+            session_had_activity = False
+            session_summary_text = ""
             if session_id:
                 try:
                     bridge = get_bridge()
+                    ended = bridge.get_session(session_id)  # capture before pop
+                    if ended:
+                        session_had_activity = (
+                            ended.commands_executed > 0 or bool(ended.nodes_created)
+                        )
                     summary = bridge.end_session(session_id)
                     if summary:
+                        session_summary_text = summary
                         logger.info("Session summary:\n%s", summary)
                 except Exception as e:
                     logger.error("End session error: %s", e)
@@ -478,9 +486,12 @@ class SynapseServer:
                                 "summary_text": f"Session ended (client: {client_id})",
                             })
 
-                        # Write session end to memory.md
+                        # Write session end to memory.md -- only a consolidated
+                        # summary for sessions that actually did something. Empty
+                        # sessions write nothing (no '### Session End' stub).
                         write_session_end(paths["scene_dir"], {
                             "stopped_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                            "summary_text": session_summary_text if session_had_activity else "",
                         })
                 except Exception as e:
                     logger.warning("Living Memory disconnect hook error: %s", e)

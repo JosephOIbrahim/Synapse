@@ -214,7 +214,10 @@ class MCPSessionManager:
                     ),
                 })
 
-            # Write session end to memory.md
+            # Write session end to memory.md. Bodyless payload is intentional:
+            # write_session_end skips bare timestamps, so MCP session teardown
+            # leaves no '### Session End' stub (Mile 1 / C-2). Pass real
+            # accomplishments/next_actions/summary_text here to record one.
             write_session_end(paths["scene_dir"], {
                 "stopped_at": _time.strftime(
                     "%Y-%m-%dT%H:%M:%SZ", _time.gmtime(),
