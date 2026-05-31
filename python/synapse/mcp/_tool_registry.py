@@ -904,6 +904,13 @@ TOOL_DEFS: list[tuple] = [
      }, "required": []},
      False, False, False),
 
+    ("synapse_sleep_pass", "sleep_pass", _passthrough,
+     "Run Moneta consolidation/decay (the Moneta memory backend). DESTRUCTIVE: "
+     "permanently prunes unprotected memories; gated APPROVE. Returns a prune "
+     "audit (pruned ids + before/after counts). No-op under the default jsonl backend.",
+     {"type": "object", "properties": {}, "required": []},
+     False, True, False),
+
     # -- HDA (Houdini Digital Asset) --
     ("houdini_hda_create", "hda_create", _identity,
      "Convert a subnet into a Houdini Digital Asset (HDA). "

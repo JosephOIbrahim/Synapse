@@ -95,6 +95,7 @@ OPERATION_GATES: dict[str, str] = {
     "export_file": "approve",
     "cook_pdg_chain": "approve",
     "prune_memory": "approve",
+    "sleep_pass": "approve",
     "execute_python": "critical",
     "execute_vex": "critical",
 }
