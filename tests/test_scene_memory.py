@@ -287,6 +287,58 @@ class TestSessionWriteOps:
         assert "SSS artifacts" in content
 
 
+class TestCompactMemory:
+    """Tests for compact_memory -- the reusable Session-End stub sweeper."""
+
+    def test_compact_removes_bare_keeps_content(self, tmp_path):
+        cd = tmp_path / "claude"; cd.mkdir()
+        md = cd / "memory.md"
+        md.write_text(
+            "# Scene Memory\n\n---\n\n"
+            "### Note\nReal content here.\n\n---\n\n"
+            "### Session End\n- **Stopped at:** 2026-01-01T00:00:00Z\n\n---\n\n"
+            "### Session End\n- **Stopped at:** 2026-01-02T00:00:00Z\n\n---\n\n"
+            "### Session End\n- **Stopped at:** 2026-01-03T00:00:00Z\n"
+            "- **Accomplished:**\n  - Did a thing\n\n---\n",
+            encoding="utf-8",
+        )
+        rep = sm.compact_memory(str(cd), dry_run=False)
+        content = md.read_text(encoding="utf-8")
+        assert rep["removed"] == 2          # the two bodyless stubs
+        assert rep["stubs_after"] == 1       # the one WITH a body survives
+        assert "Real content here." in content
+        assert "Did a thing" in content
+        assert rep["backup_path"] and _P(rep["backup_path"]).exists()
+
+    def test_compact_dry_run_does_not_write(self, tmp_path):
+        cd = tmp_path / "claude"; cd.mkdir()
+        md = cd / "memory.md"
+        original = "### Session End\n- **Stopped at:** 2026-01-01T00:00:00Z\n\n---\n"
+        md.write_text(original, encoding="utf-8")
+        rep = sm.compact_memory(str(cd), dry_run=True)
+        assert rep["removed"] == 1
+        assert rep["changed"] is True
+        assert md.read_text(encoding="utf-8") == original   # untouched
+        assert rep["backup_path"] is None
+
+    def test_compact_idempotent(self, tmp_path):
+        cd = tmp_path / "claude"; cd.mkdir()
+        md = cd / "memory.md"
+        md.write_text(
+            "### Note\nx\n\n---\n\n### Session End\n- **Stopped at:** T\n\n---\n",
+            encoding="utf-8",
+        )
+        sm.compact_memory(str(cd), dry_run=False, backup=False)
+        rep2 = sm.compact_memory(str(cd), dry_run=False, backup=False)
+        assert rep2["removed"] == 0
+        assert rep2["changed"] is False
+
+    def test_compact_missing_file(self, tmp_path):
+        rep = sm.compact_memory(str(tmp_path / "claude"), dry_run=True)
+        assert rep["exists"] is False
+        assert rep["removed"] == 0
+
+
 class TestLoadMemory:
     """Tests for load_memory and load_full_context."""
 

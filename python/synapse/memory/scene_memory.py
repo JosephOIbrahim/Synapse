@@ -373,6 +373,93 @@ def write_session_end(scene_dir: str, summary: Dict[str, Any]) -> None:
     _append_to_md(os.path.join(scene_dir, "memory.md"), entry)
 
 
+def _is_bare_session_end(section_lines: List[str]) -> bool:
+    """True if a '### ' section is a bodyless Session End (timestamp only)."""
+    if not section_lines or section_lines[0].strip() != "### Session End":
+        return False
+    body = [l for l in section_lines[1:] if l.strip() and l.strip() != "---"]
+    return len(body) == 1 and body[0].strip().startswith("- **Stopped at:**")
+
+
+def compact_memory(scene_dir: str, dry_run: bool = True, backup: bool = True) -> Dict[str, Any]:
+    """Strip bodyless '### Session End' stubs from a scene memory.md.
+
+    Idempotent maintenance op. Preserves the preamble and every section that
+    carries real content (Notes, decisions, session-ends WITH a body). Backs
+    up before writing so the prune is reversible. This is the reusable form of
+    the one-time Mile 1 prune -- safe to sweep across many scenes.
+
+    Returns a report: {path, exists, stubs_before, stubs_after, removed,
+                       bytes_before, bytes_after, changed, dry_run, backup_path}.
+    """
+    path = os.path.join(scene_dir, "memory.md")
+    report: Dict[str, Any] = {
+        "path": path, "exists": False, "stubs_before": 0, "stubs_after": 0,
+        "removed": 0, "bytes_before": 0, "bytes_after": 0,
+        "changed": False, "dry_run": dry_run, "backup_path": None,
+    }
+    if not os.path.exists(path):
+        return report
+
+    content = _read_file(path)
+    report["exists"] = True
+    report["stubs_before"] = content.count("### Session End")
+    report["bytes_before"] = len(content.encode("utf-8"))
+
+    # Parse into a preamble (everything before the first '### ' header) plus
+    # one section per '### ' header. Separator '---' lines are normalised away
+    # and re-added on join, so dropping a stub never orphans a separator.
+    preamble: List[str] = []
+    sections: List[List[str]] = []
+    cur: Optional[List[str]] = None
+    for ln in content.splitlines():
+        if ln.startswith("### "):
+            if cur is not None:
+                sections.append(cur)
+            cur = [ln]
+        elif cur is None:
+            preamble.append(ln)
+        else:
+            cur.append(ln)
+    if cur is not None:
+        sections.append(cur)
+
+    kept: List[str] = []
+    removed = 0
+    for sec in sections:
+        if _is_bare_session_end(sec):
+            removed += 1
+            continue
+        text = "\n".join(l for l in sec if l.strip() != "---").strip()
+        if text:
+            kept.append(text)
+
+    report["removed"] = removed
+    if removed == 0:
+        report["stubs_after"] = report["stubs_before"]
+        report["bytes_after"] = report["bytes_before"]
+        return report
+
+    pre = "\n".join(l for l in preamble if l.strip() != "---").rstrip()
+    parts = ([pre] if pre else []) + kept
+    new_content = "\n\n---\n\n".join(parts).rstrip() + "\n"
+    report["stubs_after"] = new_content.count("### Session End")
+    report["bytes_after"] = len(new_content.encode("utf-8"))
+    report["changed"] = True
+
+    if not dry_run:
+        if backup:
+            import shutil
+            backup_path = path + ".compact.bak"
+            shutil.copy2(path, backup_path)
+            report["backup_path"] = backup_path
+        with _get_file_lock(path):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(new_content)
+
+    return report
+
+
 def write_memory_entry(scene_dir: str, entry: Dict[str, Any], entry_type: str) -> None:
     """
     Write a memory entry to the scene's memory file.
