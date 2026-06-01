@@ -28,11 +28,12 @@ for _m in sorted(k for k in sys.modules if k.startswith("synapse.")):
 sys.modules.pop("synapse", None)
 
 
-def createInterface():
-    """Houdini Python Panel entry point — return the panel widget."""
+def onCreateInterface():
+    """Houdini Python Panel entry point. Houdini calls onCreateInterface()
+    (confirmed against SideFX's own shipped example panels)."""
     try:
-        from synapse.panel.synapse_panel import createInterface as _ci
-        return _ci()
+        from synapse.panel.synapse_panel import onCreateInterface as _build
+        return _build()
     except Exception:
         # Never crash Houdini's panel system — surface the error in-panel.
         import traceback
@@ -44,6 +45,10 @@ def createInterface():
         view.setReadOnly(True)
         view.setPlainText("SYNAPSE panel failed to load:\n\n" + traceback.format_exc())
         return view
+
+
+# Some Houdini code paths / older docs use createInterface — alias for safety.
+createInterface = onCreateInterface
 ]]></script>
   </interface>
 </pythonPanelDocument>

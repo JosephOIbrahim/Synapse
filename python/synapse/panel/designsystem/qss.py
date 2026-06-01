@@ -14,14 +14,18 @@ def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
     s = lambda px: t.scaled(px, scale)  # noqa: E731
 
     return f"""
-/* ---- root ---------------------------------------------------- */
+/* ---- root + opaque sections ---------------------------------- */
+/* NO global `QWidget {{ background: transparent }}` — that rule was the
+   repaint-ghosting cause (transparent widgets never erase their backing store,
+   so Houdini composites stale pixels). Every container is opaque instead.
+   No font-family: inherit Houdini's app-level UI font (native). */
 QWidget#DsRoot {{
     background: {t.PANEL};
     color: {t.TEXT_PRIMARY};
-    font-family: {t.FONT_SANS_CSS};
     font-size: {s(t.SIZE_BODY)}px;
 }}
-QWidget {{ background: transparent; }}
+QWidget#DsSection {{ background: {t.PANEL}; }}
+QTextBrowser {{ background: {t.GROUND}; border: none; }}
 QToolTip {{
     background: {t.SURFACE}; color: {t.TEXT_PRIMARY};
     border: 1px solid {t.BORDER}; padding: {t.SPACE_XS}px {t.SPACE_SM}px;
@@ -32,7 +36,6 @@ QToolTip {{
 QPushButton#DsButton {{
     border-radius: {t.RADIUS_MD}px;
     padding: {t.SPACE_SM}px {t.SPACE_MD}px;
-    font-family: {t.FONT_SANS_CSS};
     font-size: {s(t.SIZE_UI)}px;
     font-weight: 600;
     border: 1px solid transparent;
@@ -57,16 +60,18 @@ QPushButton#DsButton[variant="danger"] {{
 QPushButton#DsButton[variant="danger"]:hover  {{ background: {t.STATE_TINTS["error"]}; }}
 QPushButton#DsButton:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: transparent; }}
 
-/* ---- pills (small context actions) --------------------------- */
+/* ---- context actions: native flat pane-toolbar idiom --------- */
+/* Houdini's own toolbuttons: flat, no border, hover = a translucent WHITE wash
+   (not a colored fill). Inherit the native font. */
 QPushButton#DsPill {{
-    background: {t.SURFACE}; color: {t.TEXT_SECONDARY};
-    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_PILL}px;
+    background: none; color: {t.TEXT_SECONDARY};
+    border: none; border-radius: {t.RADIUS_SM}px;
     padding: {t.SPACE_XS}px {t.SPACE_MD}px;
-    font-family: {t.FONT_MONO_CSS}; font-size: {s(t.SIZE_SMALL)}px; font-weight: 500;
+    font-size: {s(t.SIZE_UI)}px; font-weight: 500;
 }}
-QPushButton#DsPill:hover  {{ background: {t.RAISED}; color: {t.TEXT_ACCENT}; border-color: {t.SIGNAL}; }}
-QPushButton#DsPill:pressed {{ background: {t.PRESS_BG}; }}
-QPushButton#DsPill:disabled {{ color: {t.TEXT_DISABLED}; border-color: {t.BORDER}; }}
+QPushButton#DsPill:hover  {{ background: {t.HOVER_WASH}; color: {t.TEXT_ACCENT}; }}
+QPushButton#DsPill:pressed {{ background: {t.SIGNAL_TINT}; }}
+QPushButton#DsPill:disabled {{ color: {t.TEXT_DISABLED}; }}
 
 /* ---- cards & drawers ----------------------------------------- */
 QWidget#DsCard {{
@@ -90,9 +95,9 @@ QLabel#DsBadge[kind="signal"]{{ color: {t.SIGNAL};background: {t.STATE_TINTS["si
 
 /* ---- text inputs --------------------------------------------- */
 QTextEdit#DsInput, QLineEdit#DsField {{
-    background: {t.SURFACE}; color: {t.TEXT_PRIMARY};
+    background: {t.GROUND}; color: {t.TEXT_PRIMARY};
     border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_MD}px;
-    padding: {t.SPACE_SM}px; font-family: {t.FONT_SANS_CSS}; font-size: {s(t.SIZE_BODY)}px;
+    padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
     selection-background-color: {t.SIGNAL_TINT_STRONG};
 }}
 QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}

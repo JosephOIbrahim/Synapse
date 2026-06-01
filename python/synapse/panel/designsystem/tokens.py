@@ -38,17 +38,17 @@ HOU_DARK    = "#2B2B2B"
 HOU_WIRE    = "#6A9BC3"
 
 # ─────────────────────────────────────────────────────────────
-# 2. SURFACE ELEVATION — semantic roles (the missing layer)
-# A deliberate near-black branded surface that sits inside Houdini's grey UI
-# without being a pure-black "hole". Each step is one elevation up.
+# 2. SURFACE ELEVATION — semantic roles, tuned to Houdini 21's NATIVE greys
+# Verified against $HFS/houdini/config/UIDark.hcs so the panel sits IN Houdini's
+# UI instead of reading as a black "hole". Each step is one elevation up.
 # ─────────────────────────────────────────────────────────────
 
-GROUND   = VOID        # behind everything (#0A0A0A)
-PANEL    = NEAR_BLACK  # the panel body (#111111)
-SURFACE  = CARBON      # cards, input wells, drawers (#1A1A1A)
-RAISED   = GRAPHITE    # raised / hovered containers (#2A2A2A)
-BORDER   = "#33333A"   # hairline borders & dividers
-BORDER_STRONG = "#45454D"  # emphasized separators
+GROUND   = "#262626"   # input wells / deepest inset (Houdini PaneBorder, GREY .15)
+PANEL    = "#2E2E2E"   # the panel body — Houdini's pane grey (DRKBASE, GREY .179)
+SURFACE  = "#3A3A3A"   # cards, drawers, containers (Houdini BackColor, GREY .229)
+RAISED   = "#565656"   # raised / hover surface (Houdini ButtonGradHi, GREY .338)
+BORDER   = "#262626"   # hairline divider (Houdini PaneBorder)
+BORDER_STRONG = "#4C4C4C"  # separator (Houdini Separator, GREY .30)
 
 ELEVATION = {  # role -> bg color, for components to read by name
     "ground": GROUND, "panel": PANEL, "surface": SURFACE,
@@ -59,13 +59,13 @@ ELEVATION = {  # role -> bg color, for components to read by name
 # 3. TEXT roles
 # ─────────────────────────────────────────────────────────────
 
-TEXT_PRIMARY   = BONE     # body
-TEXT_SECONDARY = SILVER   # secondary
-TEXT_TERTIARY  = SLATE    # captions / hints
-TEXT_BRIGHT    = WHITE    # emphasis / headings
-TEXT_ACCENT    = SIGNAL   # links, accent labels (NOT body — see WCAG note)
-TEXT_DISABLED  = "#4A4A4A"
-TEXT_ON_ACCENT = VOID     # text drawn on a SIGNAL fill (dark on cyan = AA-safe)
+TEXT_PRIMARY   = "#CCCCCC"  # body (Houdini TEXT, GREY .8)
+TEXT_SECONDARY = "#808080"  # secondary (Houdini SecondaryText, GREY .5)
+TEXT_TERTIARY  = "#6E6E6E"  # captions / hints
+TEXT_BRIGHT    = "#E6E6E6"  # emphasis / headings (Houdini highlighted text)
+TEXT_ACCENT    = SIGNAL     # links, accent labels (NOT body — see WCAG note)
+TEXT_DISABLED  = "#6A6A6A"
+TEXT_ON_ACCENT = "#0A1014"  # text drawn on a SIGNAL fill (dark on cyan = AA-safe)
 
 # WCAG note: SIGNAL (#00D4FF) on PANEL passes AA for >=14px / bold, but FAILS
 # for small body text. Use TEXT_ACCENT for labels/links/icons only; never for
@@ -79,6 +79,7 @@ SIGNAL_HOVER = "#33DDFF"   # accent hover
 SIGNAL_PRESS = "#00AADD"   # accent press
 SIGNAL_TINT  = "rgba(0, 212, 255, 0.12)"   # subtle accent wash (focus/selection)
 SIGNAL_TINT_STRONG = "rgba(0, 212, 255, 0.22)"
+HOVER_WASH = "rgba(255, 255, 255, 0.09)"   # native Houdini flat-toolbar hover (white wash)
 
 HOVER_BG   = RAISED        # neutral hover surface
 PRESS_BG   = "#202022"     # neutral press surface

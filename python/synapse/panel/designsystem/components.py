@@ -32,10 +32,13 @@ def repolish(w):
 
 
 def apply_font_role(w, role="body", scale=1.0):
-    """Set a widget's font from a TYPE_ROLE (family/size/weight/tracking)."""
-    fam_css, size, weight, tracking = t.TYPE_ROLES.get(role, t.TYPE_ROLES["body"])
-    primary = fam_css.split(",")[0].strip().strip('"')
-    f = QtGui.QFont(primary)
+    """Apply size/weight/tracking from a TYPE_ROLE while INHERITING Houdini's
+    native app-level UI font — only the ``code`` role forces the mono family
+    (paths / data). This is what makes the panel read as native, not web."""
+    _fam, size, weight, tracking = t.TYPE_ROLES.get(role, t.TYPE_ROLES["body"])
+    f = QtGui.QFont(w.font())  # start from the inherited native UI font
+    if role == "code":
+        f.setFamily(t.FONT_MONO)
     f.setPixelSize(t.scaled(size, scale))
     f.setBold(weight >= 600)
     if tracking:

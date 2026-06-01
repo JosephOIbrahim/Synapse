@@ -112,6 +112,14 @@ class SynapsePanel(QtWidgets.QWidget):
         self._update_context()
 
     # ---------------------------------------------------------------- UI
+    def _section(self):
+        """An opaque section container. Opaque surfaces are what stop Houdini's
+        compositor from ghosting (the old global transparent rule was the bug)."""
+        w = QtWidgets.QWidget()
+        w.setObjectName("DsSection")
+        w.setAttribute(Qt.WA_StyledBackground, True)
+        return w
+
     def _build_ui(self):
         root = QtWidgets.QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -128,7 +136,7 @@ class SynapsePanel(QtWidgets.QWidget):
         root.addWidget(self._build_footer())
 
     def _build_header(self):
-        w = QtWidgets.QWidget()
+        w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
         lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
         lay.setSpacing(t.SPACE_SM)
@@ -146,7 +154,7 @@ class SynapsePanel(QtWidgets.QWidget):
         return w
 
     def _build_context_ribbon(self):
-        w = QtWidgets.QWidget()
+        w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
         lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
         self._ctx_label = c.label("no scene context", role="label")
@@ -168,7 +176,7 @@ class SynapsePanel(QtWidgets.QWidget):
         return self._chat
 
     def _build_trust(self):
-        self._trust = QtWidgets.QWidget()
+        self._trust = self._section()
         lay = QtWidgets.QVBoxLayout(self._trust)
         lay.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, 0)
         lay.setSpacing(t.SPACE_XS)
@@ -180,7 +188,7 @@ class SynapsePanel(QtWidgets.QWidget):
         return self._trust
 
     def _build_act(self):
-        w = QtWidgets.QWidget()
+        w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
         lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
         lay.setSpacing(t.SPACE_XS)
@@ -195,7 +203,7 @@ class SynapsePanel(QtWidgets.QWidget):
         return w
 
     def _build_input(self):
-        w = QtWidgets.QWidget()
+        w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
         lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_SM)
         lay.setSpacing(t.SPACE_SM)
@@ -209,7 +217,7 @@ class SynapsePanel(QtWidgets.QWidget):
         return w
 
     def _build_footer(self):
-        w = QtWidgets.QWidget()
+        w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
         lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
         self._foot_dot = c.StatusDot("disconnected")
@@ -379,9 +387,10 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
 
 
-def createInterface():
-    """Houdini Python Panel entry point."""
-    app = QtWidgets.QApplication.instance()
-    if app is not None:
-        app.setStyleSheet(app.styleSheet())  # no-op touch; panel owns its QSS
+def onCreateInterface():
+    """Houdini Python Panel entry point — Houdini calls onCreateInterface()."""
     return SynapsePanel()
+
+
+# Some code paths / older docs use createInterface — alias so either name works.
+createInterface = onCreateInterface
