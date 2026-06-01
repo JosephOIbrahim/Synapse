@@ -72,6 +72,7 @@ QPushButton#DsPill {{
 QPushButton#DsPill:hover  {{ background: {t.HOVER_WASH}; color: {t.TEXT_ACCENT}; }}
 QPushButton#DsPill:pressed {{ background: {t.SIGNAL_TINT}; }}
 QPushButton#DsPill:disabled {{ color: {t.TEXT_DISABLED}; }}
+QPushButton#DsPill[active="true"] {{ color: {t.TEXT_ACCENT}; background: {t.SIGNAL_TINT}; }}
 
 /* ---- cards & drawers ----------------------------------------- */
 QWidget#DsCard {{

@@ -130,6 +130,7 @@ class SynapsePanel(QtWidgets.QWidget):
         root.addWidget(self._build_header())
         root.addWidget(c.divider())
         root.addWidget(self._build_context_ribbon())
+        root.addWidget(self._build_mode_bar())
         root.addWidget(self._build_converse(), 1)   # dominant
         root.addWidget(self._build_trust())
         root.addWidget(self._build_act())
@@ -177,7 +178,79 @@ class SynapsePanel(QtWidgets.QWidget):
             )
         except Exception:
             pass
-        return self._chat
+        self._converse_stack = QtWidgets.QStackedWidget()
+        self._converse_stack.addWidget(self._chat)              # page 0: chat
+        self._converse_stack.addWidget(self._build_hda_form())  # page 1: Build HDA
+        return self._converse_stack
+
+    def _build_mode_bar(self):
+        w = self._section()
+        lay = QtWidgets.QHBoxLayout(w)
+        lay.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, 0)
+        lay.setSpacing(t.SPACE_XS)
+        self._chat_pill = c.Pill("Chat")
+        self._hda_pill = c.Pill("Build HDA")
+        self._chat_pill.clicked.connect(lambda: self._set_mode("chat"))
+        self._hda_pill.clicked.connect(lambda: self._set_mode("hda"))
+        lay.addWidget(self._chat_pill)
+        lay.addWidget(self._hda_pill)
+        lay.addStretch(1)
+        self._set_mode("chat")
+        return w
+
+    def _build_hda_form(self):
+        """Native-designsystem describe→build flow (the build runs through the
+        agent's houdini_hda_package tool, so it reuses the proven runtime)."""
+        page = self._section()
+        lay = QtWidgets.QVBoxLayout(page)
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_MD, t.SPACE_MD, t.SPACE_MD)
+        lay.setSpacing(t.SPACE_SM)
+        lay.addWidget(c.label("Describe the HDA you want", role="title"))
+        self._hda_prompt = QtWidgets.QTextEdit()
+        self._hda_prompt.setObjectName("DsInput")
+        self._hda_prompt.setAcceptRichText(False)
+        self._hda_prompt.setPlaceholderText(
+            "e.g. a scatter tool with density control · a 3-point light rig · "
+            "a Karma draft/preview/production setup"
+        )
+        self._hda_prompt.setMinimumHeight(110)
+        lay.addWidget(self._hda_prompt)
+        row = QtWidgets.QHBoxLayout()
+        row.setSpacing(t.SPACE_SM)
+        row.addWidget(c.label("Context", role="caption"))
+        self._hda_ctx = QtWidgets.QComboBox()
+        self._hda_ctx.addItems(["SOP", "LOP", "DOP", "COP", "TOP"])
+        row.addWidget(self._hda_ctx)
+        self._hda_help = QtWidgets.QCheckBox("Include help text")
+        self._hda_help.setChecked(True)
+        row.addWidget(self._hda_help)
+        row.addStretch(1)
+        lay.addLayout(row)
+        gen = c.Button("Generate HDA", variant="primary")
+        gen.clicked.connect(self._on_build_hda)
+        lay.addWidget(gen)
+        lay.addStretch(1)
+        return page
+
+    def _set_mode(self, mode):
+        if hasattr(self, "_converse_stack"):
+            self._converse_stack.setCurrentIndex(1 if mode == "hda" else 0)
+        for pill, m in ((self._chat_pill, "chat"), (self._hda_pill, "hda")):
+            pill.setProperty("active", mode == m)
+            c.repolish(pill)
+
+    def _on_build_hda(self):
+        prompt = self._hda_prompt.toPlainText().strip()
+        if not prompt:
+            return
+        ctx = self._hda_ctx.currentText()
+        helptxt = " Include help text." if self._hda_help.isChecked() else ""
+        self._hda_prompt.clear()
+        self._set_mode("chat")
+        self._send(
+            "Build a %s HDA: %s. Use the houdini_hda_package tool, then show me "
+            "the node path and the promoted parameters.%s" % (ctx, prompt, helptxt)
+        )
 
     def _build_trust(self):
         self._trust = self._section()
