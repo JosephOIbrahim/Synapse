@@ -70,7 +70,7 @@ class _GrowingInput(QtWidgets.QTextEdit):
         self.setAcceptRichText(False)
         self.setPlaceholderText("Ask SYNAPSE…")
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self._min_h, self._max_h = 40, 160
+        self._min_h, self._max_h = 72, 220
         self.setFixedHeight(self._min_h)
         self.textChanged.connect(self._autosize)
 

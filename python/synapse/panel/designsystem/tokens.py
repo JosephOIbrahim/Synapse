@@ -18,7 +18,7 @@ from typing import Dict, Tuple, Any
 # 1. COLOR — canonical palette (preserved verbatim for back-compat)
 # ─────────────────────────────────────────────────────────────
 
-SIGNAL      = "#00D4FF"   # primary accent — connectivity, intelligence
+SIGNAL      = "#8FB3D9"   # primary accent — muted light blue (SYNAPSE signature)
 VOID        = "#0A0A0A"   # deepest ground
 NEAR_BLACK  = "#111111"   # panel background
 CARBON      = "#1A1A1A"   # surface / container
@@ -65,7 +65,7 @@ TEXT_TERTIARY  = "#6E6E6E"  # captions / hints
 TEXT_BRIGHT    = "#E6E6E6"  # emphasis / headings (Houdini highlighted text)
 TEXT_ACCENT    = SIGNAL     # links, accent labels (NOT body — see WCAG note)
 TEXT_DISABLED  = "#6A6A6A"
-TEXT_ON_ACCENT = "#0A1014"  # text drawn on a SIGNAL fill (dark on cyan = AA-safe)
+TEXT_ON_ACCENT = "#13212C"  # text on a SIGNAL fill (dark navy on light blue = AA-safe)
 
 # WCAG note: SIGNAL (#00D4FF) on PANEL passes AA for >=14px / bold, but FAILS
 # for small body text. Use TEXT_ACCENT for labels/links/icons only; never for
@@ -75,10 +75,10 @@ TEXT_ON_ACCENT = "#0A1014"  # text drawn on a SIGNAL fill (dark on cyan = AA-saf
 # 4. INTERACTION-STATE ramp (formalized, not ad-hoc)
 # ─────────────────────────────────────────────────────────────
 
-SIGNAL_HOVER = "#33DDFF"   # accent hover
-SIGNAL_PRESS = "#00AADD"   # accent press
-SIGNAL_TINT  = "rgba(0, 212, 255, 0.12)"   # subtle accent wash (focus/selection)
-SIGNAL_TINT_STRONG = "rgba(0, 212, 255, 0.22)"
+SIGNAL_HOVER = "#A9C7E6"   # accent hover (lighter)
+SIGNAL_PRESS = "#7398BE"   # accent press (deeper)
+SIGNAL_TINT  = "rgba(143, 179, 217, 0.12)"   # subtle accent wash (focus/selection)
+SIGNAL_TINT_STRONG = "rgba(143, 179, 217, 0.22)"
 HOVER_WASH = "rgba(255, 255, 255, 0.09)"   # native Houdini flat-toolbar hover (white wash)
 
 HOVER_BG   = RAISED        # neutral hover surface
@@ -108,12 +108,12 @@ FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 
 # px scale (Qt). Calibrated to the panel's true rendering DPI (the canonical
 # 9-20 scale, NOT the bug-prone 22-44 fallback).
-SIZE_MICRO  = 9    # tiny labels / numbers
-SIZE_SMALL  = 10   # captions, metadata
-SIZE_UI     = 11   # button labels, menu items
-SIZE_BODY   = 12   # chat messages, descriptions
-SIZE_TITLE  = 14   # section headers
-SIZE_HERO   = 20   # panel title
+SIZE_MICRO  = 11   # tiny labels / numbers
+SIZE_SMALL  = 12   # captions, metadata
+SIZE_UI     = 14   # buttons, pills, menu items, labels — Houdini-UI sized
+SIZE_BODY   = 12   # chat body — KEEP ("Ready…" is the correct reference size)
+SIZE_TITLE  = 16   # section headers
+SIZE_HERO   = 24   # panel title
 
 # Back-compat alias (design/tokens.py name)
 SIZE_LABEL = SIZE_MICRO

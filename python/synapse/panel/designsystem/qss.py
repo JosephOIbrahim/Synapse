@@ -97,7 +97,7 @@ QLabel#DsBadge[kind="signal"]{{ color: {t.SIGNAL};background: {t.STATE_TINTS["si
 QTextEdit#DsInput, QLineEdit#DsField {{
     background: {t.GROUND}; color: {t.TEXT_PRIMARY};
     border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_MD}px;
-    padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_BODY)}px;
+    padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_UI)}px;
     selection-background-color: {t.SIGNAL_TINT_STRONG};
 }}
 QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}

@@ -18,7 +18,7 @@ from typing import Dict, Tuple, Any
 # ─────────────────────────────────────────────────────────────
 
 # Primary palette — monochromatic Pentagram with single accent
-SIGNAL      = "#00D4FF"   # Primary cyan — connectivity, intelligence
+SIGNAL      = "#8FB3D9"   # Primary muted light blue — connectivity, intelligence
 VOID        = "#0A0A0A"   # Deep black ground
 NEAR_BLACK  = "#111111"   # Panel background
 CARBON      = "#1A1A1A"   # Surface/container
