@@ -32,7 +32,7 @@ be run in this environment, the loop **cannot** be marked closed — say so.
 | Loop | Line | ROI | Notch | Persistence axis | Next gate |
 |---|---|---|---|---|---|
 | Render-farm learning | **R** | 1 | **L2 ✓ CLOSED** (+L3) | SUBSTRATE PRESENT — *confirmed*: rides SynapseMemory FEEDBACK (jsonl default) | L4 tier-integrity at STRESS; TOPS render path is a separate follow-up |
-| §16 observability | **O** | 2 | `dormant` | needs wiring — JSONL ring exists, zero non-test callers | `claim-OK`: confirm the lower half is dormant, not wired elsewhere |
+| §16 observability | **O** | 2 | **L2 ✓ CLOSED** (+L3) | WIRED — panel poll records → `~/.synapse/agent_health_history.jsonl` → reloads on restart | L4: escalation→tuning under STRESS (still artist-gated) |
 | Science registry | **S** | 3 | `dormant` | needs `deposit_fn` — registry on disk, `deposit_fn=None` | `claim-OK`: confirm `deposit_fn=None` at `run_apex_verify` |
 | Router fast-paths | **F** | 4 | `dormant` | **NONE** — in-memory only, dies with the process | `claim-OK`: confirm promotion is live + storage is in-memory |
 | FORGE engine | **E** | 5 | `dormant` | corpus seeded once (`created_cycle:0`), not per-cycle | `claim-OK`: confirm `:172-177` optimistic + `:214` hardcoded |
@@ -54,8 +54,8 @@ only after the first EXECUTE confirms the claim — INGEST does not advance it.
 ## Champion metric
 
 ```
-CLOSED (L2+):   1 / 6   (R)
-Hardened (L3):  1       (R)
+CLOSED (L2+):   2 / 6   (R, O)
+Hardened (L3):  2       (R, O)
 Hardened (L4):  0
 ```
 
@@ -70,6 +70,19 @@ Hardened (L4):  0
   `tests/rsi/eval_line_r_closure.py`: 2/2 fresh processes reloaded the persisted
   FEEDBACK record (L2, restart-aware); warmup pre-applies learned `128` vs `{}`
   cold (L3). **First loop closed. Champion 1/6.**
+- **2026-06-01 · O · dormant → claim-OK → wired** — confirmed
+  `RecommendationHistory` / `record` / `to_jsonl` / `from_jsonl` /
+  `analyze_history` had zero non-test callers: the panel computed recs fresh
+  each poll (`agent_health.py:129`, `advise_from_bridge`) and discarded them.
+  Wired a persistent, JSONL-backed history into
+  `agent_health.poll_agent_health()` driven by the panel's 4s Trust-zone poll;
+  surfaced via a painted observability infographic (gauge + per-agent bars +
+  activity sparkline + chronic banner). (FORUM: Area 4.)
+- **2026-06-01 · O · wired → L1 → L2 (CLOSED) → L3** — record→persist→reload
+  proven in-process (`tests/test_area4_observability.py`, 10 tests) AND across
+  two fresh processes: the cold process reloaded the persisted history and the
+  ≥5× meta-recursion escalation (`repeated_recommendation`) fired. **Second
+  loop closed. Champion 2/6.**
 
 ---
 

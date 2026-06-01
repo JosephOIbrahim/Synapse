@@ -61,6 +61,14 @@ Line C is the INTEGRATE gate.
   actually fires and shows in the panel vs. a cold (no-history) baseline.
 - **NOTE** — activates the entire dormant, already-tested lower half with one
   wiring change.
+- **STATUS (2026-06-01)** — ✅ **CLOSED at L2 (+L3).** Claim confirmed (the
+  symbols had zero non-test callers; the panel discarded recs each poll). Wired
+  `enrich_with_history()` / `poll_agent_health()` into a persistent JSONL ring
+  (`~/.synapse/agent_health_history.jsonl`, throttled 60s) on the panel's 4s
+  Trust-zone poll, surfaced via a painted infographic. L2/L3 proven both
+  in-process (`tests/test_area4_observability.py`, 10 tests) and across two
+  fresh processes (history reloaded cold; ≥5× escalation fired). Hardening
+  left: L4 escalation→tuning under STRESS (decisions stay artist-gated).
 
 ## LINE S — science registry → substrate — **ROI 3**
 
