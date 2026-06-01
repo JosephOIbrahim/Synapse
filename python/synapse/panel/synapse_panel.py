@@ -73,20 +73,67 @@ class _GrowingInput(QtWidgets.QTextEdit):
         self.setObjectName("DsInput")
         self.setAcceptRichText(False)
         self.setPlaceholderText("Ask SYNAPSE…")
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self._min_h, self._max_h = 72, 220
-        self.setFixedHeight(self._min_h)
+        self._user_h = 216          # default ~3x the previous 72px
+        self._floor, self._max_h = 80, 600
+        self.setFixedHeight(self._user_h)
         self.textChanged.connect(self._autosize)
 
     def _autosize(self):
-        h = int(self.document().size().height()) + 18
-        self.setFixedHeight(max(self._min_h, min(self._max_h, h)))
+        content = int(self.document().size().height()) + 18
+        self.setFixedHeight(max(self._user_h, min(self._max_h, content)))
+
+    def set_user_height(self, h):
+        """Set the artist's preferred input height (driven by the resize grip)."""
+        self._user_h = max(self._floor, min(self._max_h, int(h)))
+        self._autosize()
 
     def keyPressEvent(self, e):
         if e.key() in (Qt.Key_Return, Qt.Key_Enter) and not (e.modifiers() & Qt.ShiftModifier):
             self.submitted.emit()
             return
         super().keyPressEvent(e)
+
+
+class _InputResizeGrip(QtWidgets.QWidget):
+    """A thin drag handle above the input — drag up/down to set its height."""
+
+    def __init__(self, target, parent=None):
+        super().__init__(parent)
+        self._target = target
+        self.setObjectName("DsGrip")
+        self.setFixedHeight(10)
+        self.setCursor(Qt.SizeVerCursor)
+        self._drag_y = None
+        self._start_h = 0
+
+    def _gy(self, event):
+        try:
+            return event.globalPosition().y()   # PySide6
+        except Exception:
+            return event.globalY()               # PySide2
+
+    def mousePressEvent(self, event):
+        self._drag_y = self._gy(event)
+        self._start_h = self._target._user_h
+
+    def mouseMoveEvent(self, event):
+        if self._drag_y is not None:
+            delta = self._drag_y - self._gy(event)   # drag up → taller
+            self._target.set_user_height(self._start_h + delta)
+
+    def mouseReleaseEvent(self, _event):
+        self._drag_y = None
+
+    def paintEvent(self, _event):
+        p = QtGui.QPainter(self)
+        p.setRenderHint(QtGui.QPainter.Antialiasing)
+        p.setPen(Qt.NoPen)
+        p.setBrush(QtGui.QColor(t.BORDER_STRONG))
+        cx = self.width() / 2.0
+        cy = self.height() / 2.0
+        for dx in (-12, 0, 12):
+            p.drawEllipse(QtCore.QRectF(cx + dx - 1.5, cy - 1.5, 3, 3))
+        p.end()
 
 
 class SynapsePanel(QtWidgets.QWidget):
@@ -316,11 +363,14 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _build_input(self):
         w = self._section()
-        lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_SM)
-        lay.setSpacing(t.SPACE_SM)
+        col = QtWidgets.QVBoxLayout(w)
+        col.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, t.SPACE_SM)
+        col.setSpacing(t.SPACE_XS)
         self._input = _GrowingInput()
         self._input.submitted.connect(self._on_submit)
+        col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
+        row = QtWidgets.QHBoxLayout()
+        row.setSpacing(t.SPACE_SM)
         attach = c.Button("\U0001F4CE", variant="ghost")  # paperclip
         attach.setFixedWidth(32)
         attach.setToolTip("Attach image / file as context")
@@ -328,9 +378,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self._send_btn = c.Button("Send", variant="primary")
         self._send_btn.setFixedWidth(64)
         self._send_btn.clicked.connect(self._on_submit)
-        lay.addWidget(self._input, 1)
-        lay.addWidget(attach)
-        lay.addWidget(self._send_btn)
+        row.addWidget(self._input, 1)
+        row.addWidget(attach)
+        row.addWidget(self._send_btn)
+        col.addLayout(row)
         return w
 
     def _on_attach(self):
