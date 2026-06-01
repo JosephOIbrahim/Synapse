@@ -163,13 +163,38 @@ _TOOL_AGENT_MAP: dict[str, str] = {
 _bridge: Any = None
 
 
+def _panel_consent(operation) -> bool:
+    """Consent for ARTIST-INITIATED panel operations — allow, non-blocking.
+
+    The artist typed the request into the panel and is watching it run, so their
+    request IS the consent. Critically, this must NOT route through HumanGate's
+    blocking poll (``_wait_for_decision``): that poll ``time.sleep``s on whatever
+    thread calls it, which in the panel is the GUI/main thread — and the approval
+    card it waits for can only be drawn BY that same thread. Result: deadlock,
+    Houdini "(Not Responding)". Confirmed live: "make a box" -> execute_python
+    (CRITICAL) froze the GUI exactly here.
+
+    Every op is still undo-wrapped + integrity-verified by the bridge (fully
+    reversible), and HumanGate still governs AUTONOMOUS / MCP operations, which
+    use their own bridge instances — not this panel singleton.
+    """
+    return True
+
+
 def get_bridge():
-    """Get or create the singleton LosslessExecutionBridge."""
+    """Get or create the panel's singleton LosslessExecutionBridge.
+
+    Consent is resolved by the non-blocking ``_panel_consent`` (artist-initiated
+    = pre-consented), never the GUI-freezing HumanGate poll.
+    """
     global _bridge
     if not _BRIDGE_AVAILABLE:
         return None
     if _bridge is None:
-        _bridge = LosslessExecutionBridge()
+        _bridge = LosslessExecutionBridge(consent_callback=_panel_consent)
+        # Disable the default HumanGate on THIS panel bridge so consent uses our
+        # non-blocking callback (the bridge otherwise prefers _gate over it).
+        _bridge._gate = None
     return _bridge
 
 
