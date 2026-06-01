@@ -24,6 +24,10 @@ from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import qss
 from synapse.panel.designsystem import components as c
 from synapse.panel.designsystem import motion
+try:
+    from synapse.panel.designsystem.loader import BouncingToy
+except Exception:  # pragma: no cover
+    BouncingToy = None
 
 # Proven runtime + widgets — composed, not rewritten. All optional so the panel
 # always instantiates (graceful degradation is a runtime contract).
@@ -132,6 +136,7 @@ class SynapsePanel(QtWidgets.QWidget):
         root.addWidget(self._build_context_ribbon())
         root.addWidget(self._build_mode_bar())
         root.addWidget(self._build_converse(), 1)   # dominant
+        root.addWidget(self._build_activity_row())
         root.addWidget(self._build_trust())
         root.addWidget(self._build_act())
         root.addWidget(self._build_input())
@@ -251,6 +256,26 @@ class SynapsePanel(QtWidgets.QWidget):
             "Build a %s HDA: %s. Use the houdini_hda_package tool, then show me "
             "the node path and the promoted parameters.%s" % (ctx, prompt, helptxt)
         )
+
+    def _build_activity_row(self):
+        """A bouncing rubber-toy 'thinking' loader (hidden until working)."""
+        self._activity = self._section()
+        lay = QtWidgets.QHBoxLayout(self._activity)
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
+        lay.addStretch(1)
+        self._toy = BouncingToy() if BouncingToy is not None else None
+        if self._toy is not None:
+            lay.addWidget(self._toy)
+        lay.addWidget(c.label("thinking…", role="caption"))
+        lay.addStretch(1)
+        self._activity.setVisible(False)
+        return self._activity
+
+    def _set_thinking(self, on):
+        if hasattr(self, "_activity"):
+            self._activity.setVisible(on)
+        if getattr(self, "_toy", None) is not None:
+            self._toy.start() if on else self._toy.stop()
 
     def _build_trust(self):
         self._trust = self._section()
@@ -378,10 +403,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 pass
             return
         self._stream_buf = []
-        try:
-            self._chat.show_typing_indicator()
-        except Exception:
-            pass
+        self._set_thinking(True)
         self._set_busy(True)
         tools = get_anthropic_tools() if get_anthropic_tools else None
         self._worker = ClaudeWorker(self._messages, tools=tools, parent=self)
@@ -397,10 +419,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._stream_buf.append(tok)
 
     def _on_done(self):
-        try:
-            self._chat.hide_typing_indicator()
-        except Exception:
-            pass
+        self._set_thinking(False)
         text = "".join(self._stream_buf).strip()
         if text:
             try:
@@ -415,8 +434,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._set_busy(False)
 
     def _on_error(self, msg):
+        self._set_thinking(False)
         try:
-            self._chat.hide_typing_indicator()
             self._chat.append_system_message("We hit a snag: %s" % msg)
         except Exception:
             pass
@@ -429,6 +448,7 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_stop(self):
         if self._worker is not None:
             self._worker.abort()
+        self._set_thinking(False)
         self._set_busy(False)
 
     def _set_busy(self, busy):
