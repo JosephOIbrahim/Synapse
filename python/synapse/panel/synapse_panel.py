@@ -321,12 +321,39 @@ class SynapsePanel(QtWidgets.QWidget):
         lay.setSpacing(t.SPACE_SM)
         self._input = _GrowingInput()
         self._input.submitted.connect(self._on_submit)
+        attach = c.Button("\U0001F4CE", variant="ghost")  # paperclip
+        attach.setFixedWidth(32)
+        attach.setToolTip("Attach image / file as context")
+        attach.clicked.connect(self._on_attach)
         self._send_btn = c.Button("Send", variant="primary")
         self._send_btn.setFixedWidth(64)
         self._send_btn.clicked.connect(self._on_submit)
         lay.addWidget(self._input, 1)
+        lay.addWidget(attach)
         lay.addWidget(self._send_btn)
         return w
+
+    def _on_attach(self):
+        """Image-attach button — adds picked files to the next request's context
+        (same path as a file drag-drop)."""
+        try:
+            paths, _ = QtWidgets.QFileDialog.getOpenFileNames(
+                self, "Attach images / files", "",
+                "Images (*.png *.jpg *.jpeg *.exr *.tif *.tiff);;All files (*)"
+            )
+        except Exception:
+            paths = []
+        added = []
+        for p in paths or []:
+            if p and p not in self._pending_context:
+                self._pending_context.append(p)
+                added.append(p)
+        if added:
+            try:
+                self._chat.append_system_message("Attached: %s" % ", ".join(added))
+            except Exception:
+                pass
+            self._input.setFocus()
 
     def _build_footer(self):
         w = self._section()
@@ -424,6 +451,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 pass
             return
         self._stream_buf = []
+        self._streaming_started = False
         self._set_thinking(True)
         self._set_busy(True)
         tools = get_anthropic_tools() if get_anthropic_tools else None
@@ -437,16 +465,36 @@ class SynapsePanel(QtWidgets.QWidget):
         self._worker.start()
 
     def _on_token(self, tok):
-        self._stream_buf.append(tok)
-
-    def _on_done(self):
-        self._set_thinking(False)
-        text = "".join(self._stream_buf).strip()
-        if text:
+        if not getattr(self, "_streaming_started", False):
+            # first token: the toy hands off to live streaming text
+            self._streaming_started = True
+            self._set_thinking(False)
             try:
-                self._chat.append_synapse_message(text)
+                self._chat.begin_stream()
             except Exception:
                 pass
+        self._stream_buf.append(tok)
+        try:
+            self._chat.stream_chunk(tok)
+        except Exception:
+            pass
+
+    def _on_done(self):
+        text = "".join(self._stream_buf).strip()
+        if getattr(self, "_streaming_started", False):
+            # finalize the live stream → fully formatted (links, code blocks)
+            try:
+                self._chat.end_stream(text if text else None)
+            except Exception:
+                pass
+        else:
+            # no text tokens (e.g. a tool-only turn) → just stop + append
+            self._set_thinking(False)
+            if text:
+                try:
+                    self._chat.append_synapse_message(text)
+                except Exception:
+                    pass
         if self._worker is not None:
             try:
                 self._messages = self._worker.get_messages()
@@ -456,6 +504,11 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _on_error(self, msg):
         self._set_thinking(False)
+        if getattr(self, "_streaming_started", False):
+            try:
+                self._chat.end_stream("".join(self._stream_buf).strip() or None)
+            except Exception:
+                pass
         try:
             self._chat.append_system_message("We hit a snag: %s" % msg)
         except Exception:

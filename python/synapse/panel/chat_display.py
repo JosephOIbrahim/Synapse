@@ -210,6 +210,45 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.setTextCursor(cursor)
         self._scroll_to_bottom()
 
+    # -- Streaming (token-by-token) ------------------------------------------
+
+    def begin_stream(self):
+        """Open a streaming SYNAPSE reply. Tokens append as plain text; a single
+        end_stream() replaces them with the fully-formatted message. One removal
+        at the end (not per-tick) — no typing-indicator-style accumulation."""
+        self.hide_typing_indicator()
+        cursor = self.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        self._stream_anchor = cursor.position()
+        self._streaming = True
+
+    def stream_chunk(self, text):
+        """Append a streamed token as plain text (fast, no reformat)."""
+        if not getattr(self, "_streaming", False):
+            return
+        cursor = self.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.insertText(text)
+        self.setTextCursor(cursor)
+        self._scroll_to_bottom()
+
+    def end_stream(self, final_content=None):
+        """Close the stream: drop the streamed plain text and re-append the
+        message fully formatted (markdown, code blocks, clickable node links)."""
+        if not getattr(self, "_streaming", False):
+            return
+        self._streaming = False
+        cursor = self.textCursor()
+        cursor.setPosition(getattr(self, "_stream_anchor", cursor.position()))
+        cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.KeepAnchor)
+        cursor.removeSelectedText()
+        self.setTextCursor(cursor)
+        if final_content:
+            self.append_synapse_message(final_content)
+        else:
+            self._update_sender("synapse")
+            self._scroll_to_bottom()
+
     # -- Typing indicator (animated dots) ------------------------------------
 
     def show_typing_indicator(self):
