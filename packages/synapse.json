@@ -9,7 +9,8 @@
         },
         {
             "var": "PYTHONPATH",
-            "value": "$SYNAPSE_ROOT/python",
+            "comment": "BOTH the repo root (so `import shared` works — shared/ lives at the root, NOT under python/) AND python/ (the synapse package). Omitting the root made SynapseHandler fail to import and surfaced a misleading 'hou not responding' in the panel.",
+            "value": ["$SYNAPSE_ROOT/python", "$SYNAPSE_ROOT"],
             "method": "prepend"
         },
         {

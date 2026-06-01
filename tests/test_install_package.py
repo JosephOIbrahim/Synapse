@@ -32,7 +32,14 @@ def test_build_package_uses_absolute_repo_paths(tmp_path):
     assert pkg["enable"] is True
     env = {e["var"]: e for e in pkg["env"]}
     assert env["SYNAPSE_ROOT"]["value"] == repo.as_posix()
-    assert env["PYTHONPATH"]["value"] == (repo / "python").as_posix()
+    # PYTHONPATH must carry BOTH python/ (the `synapse` package) AND the repo
+    # ROOT (so `import shared` works — shared/ lives at the root, not under
+    # python/). Regression guard for the "panel processes but no nodes" bug:
+    # omitting the root made SynapseHandler fail to import.
+    pp = env["PYTHONPATH"]["value"]
+    assert isinstance(pp, list)
+    assert pp == [(repo / "python").as_posix(), repo.as_posix()]
+    assert repo.as_posix() in pp  # the root is the load-bearing addition
     assert env["PYTHONPATH"]["method"] == "prepend"
     assert pkg["path"] == (repo / "houdini").as_posix()
 

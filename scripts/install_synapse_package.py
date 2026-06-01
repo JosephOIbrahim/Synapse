@@ -41,7 +41,13 @@ def build_package(repo_root: Path) -> dict:
     """The resolved (absolute-path) package dict. Pure — easy to test."""
     env = [
         {"var": "SYNAPSE_ROOT", "value": repo_root.as_posix()},
-        {"var": "PYTHONPATH", "value": (repo_root / "python").as_posix(), "method": "prepend"},
+        # BOTH paths: python/ (the `synapse` package) AND the repo ROOT (so
+        # `import shared` works — shared/ lives at the root, NOT under python/).
+        # Omitting the root made SynapseHandler fail to import inside the panel
+        # and surfaced a misleading "hou not responding" to the artist.
+        {"var": "PYTHONPATH",
+         "value": [(repo_root / "python").as_posix(), repo_root.as_posix()],
+         "method": "prepend"},
     ]
     moneta = moneta_src_for(repo_root)
     if moneta:
