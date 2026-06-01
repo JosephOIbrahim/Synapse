@@ -51,6 +51,12 @@ try:
     from synapse.panel.tool_bridge import get_anthropic_tools
 except Exception:  # pragma: no cover
     get_anthropic_tools = None
+try:
+    from synapse.panel.health_infographic import HealthInfographic
+    from synapse.panel import agent_health
+except Exception:  # pragma: no cover
+    HealthInfographic = None
+    agent_health = None
 
 _VERSION = "7.0.0"
 
@@ -164,6 +170,14 @@ class SynapsePanel(QtWidgets.QWidget):
         self._ctx_timer.timeout.connect(self._update_context)
         self._ctx_timer.start()
         self._update_context()
+        # Recursive-observability surface (RSI Line O): a slower poll that
+        # records + persists the advisor's recommendations and runs the
+        # meta-recursion analyzer, then paints the infographic.
+        self._health_timer = QTimer(self)
+        self._health_timer.setInterval(4000)
+        self._health_timer.timeout.connect(self._update_health)
+        self._health_timer.start()
+        self._update_health()
 
     # ---------------------------------------------------------------- UI
     def _section(self):
@@ -334,11 +348,31 @@ class SynapsePanel(QtWidgets.QWidget):
         if getattr(self, "_toy", None) is not None:
             self._toy.start() if on else self._toy.stop()
 
+    def _update_health(self):
+        """Timer-driven: poll the bridge, persist recommendations + run the
+        meta-recursion analyzer, paint the infographic. Best-effort — a missing
+        bridge or shared/ just yields the 'awaiting telemetry' empty state."""
+        if getattr(self, "_health", None) is None or agent_health is None:
+            return
+        try:
+            data = agent_health.poll_agent_health()
+        except Exception:
+            data = None
+        self._health.set_data(data)
+
     def _build_trust(self):
         self._trust = self._section()
         lay = QtWidgets.QVBoxLayout(self._trust)
         lay.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, 0)
         lay.setSpacing(t.SPACE_XS)
+        # Observability infographic (ambient, persistent) above the gate card
+        # (transient, action). The infographic is the visible end of the
+        # recursive-observability loop — RSI Line O.
+        if HealthInfographic is not None:
+            self._health = HealthInfographic(parent=self._trust)
+            lay.addWidget(self._health)
+        else:
+            self._health = None
         if GateWidget is not None:
             self._gate = GateWidget(parent=self._trust)
             lay.addWidget(self._gate)
@@ -360,9 +394,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._font_btn.clicked.connect(self._cycle_font_scale)
         lay.addWidget(self._font_btn)
         lay.addStretch(1)
-        more = c.Pill("⌘K  more…")
-        more.clicked.connect(self._open_palette)
-        lay.addWidget(more)
+        self._more_btn = c.Pill("⌘K  more…")
+        self._more_btn.clicked.connect(self._open_palette)
+        lay.addWidget(self._more_btn)
         return w
 
     def _build_input(self):
@@ -468,11 +502,44 @@ class SynapsePanel(QtWidgets.QWidget):
             pal = ToolPalette(self)
             pal.command_selected.connect(self._on_tool_picked)
             self._palette = pal  # keep a ref
+            self._position_popup(pal, getattr(self, "_more_btn", None))
             pal.show()
             pal.raise_()
+            pal.activateWindow()
         except Exception:
             # Palette unavailable — fall back to focusing input.
             self._input.setFocus()
+
+    def _position_popup(self, popup, anchor):
+        """Place a Qt.Popup the SideFX way: anchored to the widget that opened
+        it, on that widget's screen, fully visible. The palette is tall and the
+        'more' button sits low in the panel, so prefer opening UPWARD from the
+        button — falling back to downward only when there's no room above."""
+        popup.adjustSize()
+        sz = popup.size()
+        if sz.width() < popup.minimumWidth() or sz.height() < popup.minimumHeight():
+            sz = popup.minimumSize()
+        ref = anchor if anchor is not None else self
+        try:
+            screen = ref.screen()
+        except Exception:
+            screen = None
+        if screen is None:
+            screen = QtWidgets.QApplication.primaryScreen()
+        avail = screen.availableGeometry()
+        if anchor is not None:
+            tl = anchor.mapToGlobal(QtCore.QPoint(0, 0))
+            x = tl.x()
+            y = tl.y() - sz.height() - 6            # open above the button
+            if y < avail.top():
+                y = tl.y() + anchor.height() + 6    # no room above → below
+        else:
+            cur = QtGui.QCursor.pos()
+            x, y = cur.x(), cur.y()
+        # clamp fully on-screen — SideFX popups never spill off the display
+        x = max(avail.left(), min(x, avail.right() - sz.width()))
+        y = max(avail.top(), min(y, avail.bottom() - sz.height()))
+        popup.move(int(x), int(y))
 
     def _on_tool_picked(self, prompt):
         """A palette pick is a ready-to-send prompt; route it through chat (and
@@ -497,6 +564,39 @@ class SynapsePanel(QtWidgets.QWidget):
         self._messages.append({"role": "user", "content": text})
         self._start_worker()
 
+    def _build_system_prompt(self):
+        """SYNAPSE's identity + the 'act via tools, don't narrate' steering.
+        The redesigned panel dropped this — with an empty system prompt the
+        model EXPLAINS build requests instead of executing them (the artist
+        sees 'processing… text, no nodes'). Reads live scene context on the
+        main thread (this runs from the send handler), all best-effort."""
+        try:
+            from synapse.panel.system_prompt import build_system_prompt
+        except Exception:
+            return ""
+        ctx = {}
+        try:
+            import hou
+            net = "/obj"
+            try:
+                pane = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
+                if pane is not None and pane.pwd() is not None:
+                    net = pane.pwd().path()
+            except Exception:
+                pass
+            ctx = {
+                "network": net,
+                "selection": [n.path() for n in hou.selectedNodes()],
+                "frame": int(hou.frame()),
+                "hip": hou.hipFile.basename(),
+            }
+        except Exception:
+            ctx = {}
+        try:
+            return build_system_prompt(ctx)
+        except Exception:
+            return ""
+
     def _start_worker(self):
         if ClaudeWorker is None:
             try:
@@ -511,7 +611,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._set_thinking(True)
         self._set_busy(True)
         tools = get_anthropic_tools() if get_anthropic_tools else None
-        self._worker = ClaudeWorker(self._messages, tools=tools, parent=self)
+        system = self._build_system_prompt()
+        self._worker = ClaudeWorker(self._messages, system_prompt=system,
+                                    tools=tools, parent=self)
         self._worker.token_received.connect(self._on_token)
         self._worker.stream_done.connect(self._on_done)
         self._worker.stream_error.connect(self._on_error)
