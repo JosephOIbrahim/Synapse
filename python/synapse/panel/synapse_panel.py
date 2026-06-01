@@ -99,7 +99,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._stream_buf = []        # accumulates streamed tokens
         self._worker = None
         self._tool_executor = ToolExecutor(parent=self) if ToolExecutor else None
+        self._pending_context = []  # paths dropped in; prepended to the next send
 
+        self.setAcceptDrops(True)
         self._build_ui()
         self._wire_gate()
         self._palette_shortcut = QShortcut(QKeySequence("Ctrl+K"), self)
@@ -167,6 +169,8 @@ class SynapsePanel(QtWidgets.QWidget):
             self._chat = ChatDisplay()
         else:  # graceful fallback
             self._chat = QtWidgets.QTextBrowser()
+        if hasattr(self._chat, "node_clicked"):
+            self._chat.node_clicked.connect(self._on_node_clicked)
         try:
             self._chat.append_system_message(
                 "Ready. What are we building?"
@@ -243,6 +247,8 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _show_overflow(self):
         menu = QtWidgets.QMenu(self)
+        menu.addAction("Copy conversation", self._copy_conversation)
+        menu.addSeparator()
         menu.addAction("Larger text", lambda: self._set_scale(1.15))
         menu.addAction("Default text", lambda: self._set_scale(1.0))
         menu.exec(QtGui.QCursor.pos()) if hasattr(menu, "exec") else menu.exec_(QtGui.QCursor.pos())
@@ -278,8 +284,12 @@ class SynapsePanel(QtWidgets.QWidget):
             self._send(text)
 
     def _send(self, text):
+        display = text
+        if self._pending_context:
+            text = "[Context: %s]\n%s" % (", ".join(self._pending_context), text)
+            self._pending_context = []
         try:
-            self._chat.append_user_message(text)
+            self._chat.append_user_message(display)
         except Exception:
             pass
         self._messages.append({"role": "user", "content": text})
@@ -383,6 +393,60 @@ class SynapsePanel(QtWidgets.QWidget):
             self._foot_label.setText("Houdini")
             if self._header_status.text() in ("Standing by", ""):
                 self._set_header("idle", "Ready")
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------ drag & drop
+    def dragEnterEvent(self, event):
+        try:
+            from synapse.panel import dnd
+            if dnd.mime_is_acceptable(event.mimeData()):
+                event.acceptProposedAction()
+        except Exception:
+            pass
+
+    def dragMoveEvent(self, event):
+        event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        """Node-in / SOP-USD-in / files-in → add to the next request's context."""
+        try:
+            from synapse.panel import dnd
+            mime = event.mimeData()
+            added = []
+            for p in dnd.extract_node_paths(mime) + dnd.extract_files(mime):
+                if p and p not in self._pending_context:
+                    self._pending_context.append(p)
+                    added.append(p)
+            if added:
+                try:
+                    self._chat.append_system_message(
+                        "Added to context: %s — ask away." % ", ".join(added)
+                    )
+                except Exception:
+                    pass
+                self._input.setFocus()
+            event.acceptProposedAction()
+        except Exception:
+            pass
+
+    def _on_node_clicked(self, node_path):
+        """Results-out / locate: a node link selects + frames the node in the
+        Network Editor (which is native C++ and can't be a Qt drop target)."""
+        try:
+            from synapse.panel import dnd
+            dnd.place_in_network(node_path)
+        except Exception:
+            pass
+
+    def _copy_conversation(self):
+        """Text-copy-out: copy the transcript as markdown for reports / LLMs."""
+        try:
+            from synapse.panel import dnd
+            QtWidgets.QApplication.clipboard().setText(
+                dnd.transcript_to_markdown(self._messages)
+            )
+            self._chat.append_system_message("Conversation copied as markdown.")
         except Exception:
             pass
 
