@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # ── sys.path bridging ────────────────────────────────────────────
 # shared/ lives at repo root, production code at python/synapse/.
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-_REPO_ROOT = os.path.normpath(os.path.join(_THIS_DIR, "..", "..", "..", ".."))
+_REPO_ROOT = os.path.normpath(os.path.join(_THIS_DIR, "..", "..", ".."))  # panel->synapse->python->repo root (was 4x '..' = one level too high)
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 

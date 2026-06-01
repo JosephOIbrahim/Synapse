@@ -233,6 +233,7 @@ class ToolExecutor(QtCore.QObject):
     def __init__(self, parent: Optional[QtCore.QObject] = None) -> None:
         super().__init__(parent)
         self._handler = None  # Lazy-loaded SynapseHandler
+        self._handler_error: Optional[str] = None  # real import/init failure
 
     # ------------------------------------------------------------------
     # Lazy handler initialisation
@@ -250,8 +251,14 @@ class ToolExecutor(QtCore.QObject):
         try:
             from synapse.server.handlers import SynapseHandler
             self._handler = SynapseHandler()
+            self._handler_error = None
             logger.debug("SynapseHandler initialised for ToolExecutor")
-        except Exception:
+        except Exception as exc:
+            # Capture the REAL failure. This is most often
+            # `ModuleNotFoundError: No module named 'shared'` — a packaging /
+            # sys.path problem, NOT a Houdini issue. The old generic message
+            # masked it and made the model report a phantom "hou not responding".
+            self._handler_error = "{}: {}".format(type(exc).__name__, exc)
             logger.exception("Failed to import/create SynapseHandler")
             # Leave self._handler as None so we retry next call
         return self._handler
@@ -297,9 +304,10 @@ class ToolExecutor(QtCore.QObject):
             # 4. Get handler (lazy init)
             handler = self._get_handler()
             if handler is None:
+                detail = getattr(self, "_handler_error", None) or "unknown import error"
                 request.error = (
-                    "SynapseHandler unavailable -- "
-                    "hou module may not be loaded yet"
+                    "SynapseHandler could not be loaded ({}). This is a panel "
+                    "import/setup error, not a Houdini connection problem.".format(detail)
                 )
                 return
 

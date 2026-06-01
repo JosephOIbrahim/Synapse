@@ -19,10 +19,28 @@ try:
 except ImportError:
     HOU_AVAILABLE = False
 
-from shared.constants import (
-    RENDER_VALIDATE_CHECKS as _VALIDATE_CHECKS,
-    RENDER_VALIDATE_DEFAULTS as _VALIDATE_DEFAULTS,
-)
+try:
+    from shared.constants import (
+        RENDER_VALIDATE_CHECKS as _VALIDATE_CHECKS,
+        RENDER_VALIDATE_DEFAULTS as _VALIDATE_DEFAULTS,
+    )
+except ImportError:
+    # Defense-in-depth: `shared/` lives at the repo root and may not be on
+    # sys.path in every embedding. This was the ONE unguarded repo-root import
+    # in the 11-mixin chain, so a missing `shared` killed the entire
+    # SynapseHandler import — and the artist saw a phantom "hou not responding".
+    # Mirror shared/constants.py so the render mixin degrades, never poisons.
+    _VALIDATE_CHECKS = (
+        "file_integrity", "black_frame", "nan_check",
+        "clipping", "underexposure", "saturation",
+    )
+    _VALIDATE_DEFAULTS = {
+        "black_frame_mean": 0.001,
+        "clipping_pct": 0.5,
+        "underexposure_mean": 0.05,
+        "saturation_pct": 0.1,
+        "saturation_multiplier": 10.0,
+    }
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.determinism import round_float, kahan_sum
 from .handler_helpers import _suggest_parms, _HOUDINI_UNAVAILABLE
