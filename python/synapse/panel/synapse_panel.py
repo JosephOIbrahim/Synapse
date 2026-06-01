@@ -193,10 +193,14 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _build_header(self):
         w = self._section()
+        w.setObjectName("DsHeader")          # subtle cool→warm gradient atmosphere
         lay = QtWidgets.QHBoxLayout(w)
         lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
         lay.setSpacing(t.SPACE_SM)
-        mark = c.label("◖ SYNAPSE", role="display")
+        glyph = c.label("◖", role="display")
+        glyph.setStyleSheet("color:%s;" % t.WARM)   # warm human accent (Cohere)
+        mark = c.label("SYNAPSE", role="display")
+        lay.addWidget(glyph)
         self._header_dot = c.StatusDot("idle")
         self._header_status = c.label("Standing by", role="caption")
         overflow = c.Button("⋯", variant="ghost")

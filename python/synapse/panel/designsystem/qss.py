@@ -26,6 +26,11 @@ QWidget#DsRoot {{
 }}
 QWidget#DsSection {{ background: {t.PANEL}; }}
 QTextBrowser {{ background: {t.GROUND}; border: none; }}
+/* Cohere 'gradient atmosphere' — a faint cool→warm wash across the header. */
+QWidget#DsHeader {{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #2B2E33, stop:0.5 {t.PANEL}, stop:1 #332E2C);
+}}
 QToolTip {{
     background: {t.SURFACE}; color: {t.TEXT_PRIMARY};
     border: 1px solid {t.BORDER}; padding: {t.SPACE_XS}px {t.SPACE_SM}px;

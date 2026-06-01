@@ -81,6 +81,15 @@ SIGNAL_TINT  = "rgba(143, 179, 217, 0.12)"   # subtle accent wash (focus/selecti
 SIGNAL_TINT_STRONG = "rgba(143, 179, 217, 0.22)"
 HOVER_WASH = "rgba(255, 255, 255, 0.09)"   # native Houdini flat-toolbar hover (white wash)
 
+# Warm "human" accent — Cohere's 'Bittersweet' coral. The dual-accent counterpart
+# to the cool SIGNAL: used for the agent's human/active moments (the thinking toy,
+# warm highlights), NOT for connectivity/links (those stay SIGNAL — distinct from
+# Houdini's own orange UI). Pentagram Cohere: warmth keeps the AI from reading clinical.
+WARM        = "#FF7759"
+WARM_HOVER  = "#FF8E72"
+WARM_PRESS  = "#E5634A"
+WARM_TINT   = "rgba(255, 119, 89, 0.14)"
+
 HOVER_BG   = RAISED        # neutral hover surface
 PRESS_BG   = "#202022"     # neutral press surface
 FOCUS_RING = SIGNAL        # focus outline color

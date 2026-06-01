@@ -75,8 +75,8 @@ class BouncingToy(QtWidgets.QWidget):
         p.setBrush(QtGui.QColor(0, 0, 0, int(70 * (0.35 + 0.65 * contact))))
         p.drawEllipse(QtCore.QRectF(cx - sh_w, ground_y + ry - 2, sh_w * 2, 4.5))
 
-        # the toy
-        p.setBrush(QtGui.QColor(t.SIGNAL))
+        # the toy — warm coral (Cohere's human accent), not the cool link-blue
+        p.setBrush(QtGui.QColor(t.WARM))
         p.drawEllipse(QtCore.QRectF(cx - rx, cy - ry, rx * 2, ry * 2))
         # soft highlight
         p.setBrush(QtGui.QColor(255, 255, 255, 70))
