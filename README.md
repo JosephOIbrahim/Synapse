@@ -10,7 +10,8 @@
   <a href="python/synapse/host/daemon.py"><img src="https://img.shields.io/badge/daemon-in--process-f59e0b.svg" alt="Daemon"></a>
   <a href="python/synapse/host/tops_bridge.py"><img src="https://img.shields.io/badge/perception-scaffolded-3b82f6.svg" alt="Perception"></a>
   <a href="python/synapse/memory/moneta_store.py"><img src="https://img.shields.io/badge/memory-Moneta%20backend-8b5cf6.svg" alt="Memory"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-3042%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-3168%20passing-brightgreen.svg" alt="Tests"></a>
 </p>
 
 ---
@@ -40,6 +41,30 @@ flowchart LR
 ```
 
 The flip changes more than transport. Tools become direct calls. Errors keep their stack trace. And — the part Sprint 3 is wiring now — **events flow the other way**. Houdini taps the agent on the shoulder when something cooks, instead of the agent polling to ask. See [Perception channel](#perception-channel--two-bridges-scaffolded) below.
+
+---
+
+## The artist surface — talk to Houdini, it builds
+
+The substrate exists to be *used*. The payoff is a docked **SYNAPSE panel**: the artist types a request in plain language and SYNAPSE builds it in the live scene — chat in, nodes out, in-process. **"make a box" → a real geo node, confirmed in graphical Houdini 21.0.671 (2026-06-01).**
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart LR
+    ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>docked, in-process"]:::panel
+    PANEL --> LOOP["Agent loop<br/>streams Claude + 110 tools"]:::panel
+    LOOP -->|"tool_use<br/>(e.g. execute_python)"| EXEC["Tool executor<br/>main thread"]:::panel
+    EXEC --> BR["LosslessExecutionBridge<br/>consent &middot; undo &middot; thread-safe &middot; integrity"]:::bridge
+    BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
+    BR -.->|telemetry| OBS["Trust zone<br/>per-agent health &middot; self-tuning loop"]:::obs
+    classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
+    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
+    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
+    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
+```
+
+The panel was rebuilt from first principles over a thin `.pypanel` loader: one vendored design system (native Houdini 21 greys, a cool/warm dual accent), a Ctrl+K command palette across all 110 registry tools, live token streaming, and a Trust zone. Every mutation the agent makes is routed through the **`LosslessExecutionBridge`** — undo-wrapped, thread-safe, integrity-verified — so the agent's hands stay structurally reversible. Consent is **non-blocking for artist-initiated work** (your chat request *is* the consent; autonomous / external-MCP operations still gate through `HumanGate`); the gate previously polled the GUI thread and dead-locked Houdini until that was root-caused live and fixed. The Trust zone also surfaces a **recursive-observability** readout — per-agent success rates plus a recommendation history that persists across restarts and escalates if the same issue recurs.
 
 ---
 
@@ -242,6 +267,7 @@ daemon.stop()
 
 | Layer | State |
 |---|---|
+| **Artist copilot panel** (chat → in-Houdini build, Ctrl+K palette over 110 tools, live observability) | Shipping. Every action through the `LosslessExecutionBridge`; "make a box" → node verified in graphical Houdini 21.0.671 (2026-06-01). |
 | Cognitive substrate (Dispatcher + `AgentToolError` + cognitive/host split) | Shipping. Zero-hou boundary enforced by lint. |
 | Agent SDK loop (Anthropic, cancel-event-aware, serializable tool errors) | Shipping. Mocked end-to-end tests green. |
 | Daemon lifecycle (boot gate, auth resolver, dialog suppression, bootstrap locks) | Shipping. Windows `WindowsSelectorEventLoopPolicy` + `PYTHONNOUSERSITE` + no-runtime-pip all baked. |
@@ -488,10 +514,18 @@ python/synapse/
 │   ├── shadow_store.py         # dual-write + parity diff harness
 │   ├── backfill.py             # one-time JSONL → Moneta backfill (backup-first)
 │   └── store.py                # SynapseMemory + SYNAPSE_MEMORY_BACKEND selector
+├── panel/                      # artist-facing copilot panel (Qt / PySide6)
+│   ├── synapse_panel.py        # the docked panel (Converse / Act / Trust zones)
+│   ├── claude_worker.py        # background QThread — streams Claude + tool loop
+│   ├── tool_executor.py        # main-thread tool dispatch (→ SynapseHandler)
+│   ├── bridge_adapter.py       # routes every mutation through LosslessExecutionBridge
+│   ├── tool_palette.py         # Ctrl+K command palette over the tool registry
+│   ├── health_infographic.py   # Trust-zone observability (per-agent health + self-tuning loop)
+│   └── designsystem/           # vendored tokens / qss / components (one source)
 ├── _vendor/                    # anthropic + deps, CP311 win_amd64
 └── ...                         # Sprint 2 Week 1 + prior subsystems
 
-tests/                          # 3042 local; ~70 are Moneta-gated (skip on a
+tests/                          # 3168 local; ~70 are Moneta-gated (skip on a
                                 # clean clone / CI without the moneta package)
 docs/sprint3/                   # audits + design contracts + continuation
 docs/crucible_protocol.md       # manual Crucible runbook
