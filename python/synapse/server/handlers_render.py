@@ -854,9 +854,16 @@ class RenderHandlerMixin:
             self._render_farm._auto_fix = bool(auto_fix)
             self._render_farm._report_dir = report_dir
 
-        # Inject memory if available
-        if hasattr(self, '_memory') and self._memory is not None:
-            self._render_farm._memory = self._memory
+        # Inject the shared memory store so render-fix outcomes compound across
+        # renders and sessions. The handler never sets self._memory (no mixin
+        # defines __init__), so resolve the store directly — mirroring
+        # _handle_autonomous_render. RenderFarmOrchestrator null-guards _memory
+        # at every use, so a None/failed store stays safe.
+        try:
+            from ..memory.store import get_synapse_memory
+            self._render_farm._memory = get_synapse_memory()
+        except Exception as e:
+            logger.debug("Render-farm memory init failed: %s", e)
 
         # Run the sequence (blocks until complete)
         report = self._render_farm.render_sequence(
