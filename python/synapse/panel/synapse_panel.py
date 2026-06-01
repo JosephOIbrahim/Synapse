@@ -13,9 +13,12 @@ Entry point: ``createInterface()`` (Houdini Python Panel convention). The
 try:
     from PySide6 import QtWidgets, QtCore, QtGui
     from PySide6.QtCore import Qt, QTimer, Signal
+    from PySide6.QtGui import QShortcut, QKeySequence
 except ImportError:  # pragma: no cover - Houdini ships PySide6
     from PySide2 import QtWidgets, QtCore, QtGui
     from PySide2.QtCore import Qt, QTimer, Signal
+    from PySide2.QtWidgets import QShortcut
+    from PySide2.QtGui import QKeySequence
 
 from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import qss
@@ -99,6 +102,14 @@ class SynapsePanel(QtWidgets.QWidget):
 
         self._build_ui()
         self._wire_gate()
+        self._palette_shortcut = QShortcut(QKeySequence("Ctrl+K"), self)
+        self._palette_shortcut.activated.connect(self._open_palette)
+        # Live context ribbon + connection (main-thread hou reads on a timer).
+        self._ctx_timer = QTimer(self)
+        self._ctx_timer.setInterval(2000)
+        self._ctx_timer.timeout.connect(self._update_context)
+        self._ctx_timer.start()
+        self._update_context()
 
     # ---------------------------------------------------------------- UI
     def _build_ui(self):
@@ -238,14 +249,19 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _open_palette(self):
         try:
-            from synapse.panel.command_palette import CommandPaletteWidget
-            pal = CommandPaletteWidget(self)
-            if hasattr(pal, "command_selected"):
-                pal.command_selected.connect(self._send)
+            from synapse.panel.tool_palette import ToolPalette
+            pal = ToolPalette(self)
+            pal.command_selected.connect(self._on_tool_picked)
+            self._palette = pal  # keep a ref
             pal.show()
+            pal.raise_()
         except Exception:
-            # Palette not available — fall back to focusing input.
+            # Palette unavailable — fall back to focusing input.
             self._input.setFocus()
+
+    def _on_tool_picked(self, tool_name):
+        """A palette pick routes through chat so it hits the gated bridge path."""
+        self._send("Use the `%s` tool." % tool_name)
 
     def _on_submit(self):
         text = self._input.toPlainText().strip()
@@ -333,6 +349,34 @@ class SynapsePanel(QtWidgets.QWidget):
     def _set_header(self, status, phrase):
         self._header_dot.set_status(status)
         self._header_status.setText(phrase)
+
+    def _update_context(self):
+        """Refresh the context ribbon + connection footer from live hou state."""
+        try:
+            import hou
+        except Exception:
+            self._ctx_label.setText("standalone — no Houdini")
+            return
+        try:
+            frame = int(hou.frame())
+            sel = hou.selectedNodes()
+            if sel:
+                parent = sel[0].parent()
+                where = parent.path() if parent else sel[0].path()
+                txt = "%s · %d selected · f%d" % (where, len(sel), frame)
+            else:
+                try:
+                    hip = hou.hipFile.basename()
+                except Exception:
+                    hip = "untitled.hip"
+                txt = "%s · f%d" % (hip, frame)
+            self._ctx_label.setText(txt)
+            self._foot_dot.set_status("connected")
+            self._foot_label.setText("Houdini")
+            if self._header_status.text() in ("Standing by", ""):
+                self._set_header("idle", "Ready")
+        except Exception:
+            pass
 
 
 def createInterface():
