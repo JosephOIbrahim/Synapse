@@ -59,12 +59,15 @@ ELEVATION = {  # role -> bg color, for components to read by name
 # 3. TEXT roles
 # ─────────────────────────────────────────────────────────────
 
-TEXT_PRIMARY   = "#CCCCCC"  # body (Houdini TEXT, GREY .8)
-TEXT_SECONDARY = "#808080"  # secondary (Houdini SecondaryText, GREY .5)
-TEXT_TERTIARY  = "#6E6E6E"  # captions / hints
-TEXT_BRIGHT    = "#E6E6E6"  # emphasis / headings (Houdini highlighted text)
+# Neutral text ramp dimmed to 85% brightness (artist request) — every grey
+# multiplied ×0.85: CC→AD, 80→6D, 6E→5E, E6→C4, 6A→5A. Brand/semantic accents
+# (SIGNAL/WARM/status) are left at full strength — "fonts" = the readable ramp.
+TEXT_PRIMARY   = "#ADADAD"  # body — 85% of CC (Houdini TEXT, GREY .8)
+TEXT_SECONDARY = "#6D6D6D"  # secondary — 85% of 80 (Houdini SecondaryText)
+TEXT_TERTIARY  = "#5E5E5E"  # captions / hints — 85% of 6E
+TEXT_BRIGHT    = "#C4C4C4"  # emphasis / headings — 85% of E6
 TEXT_ACCENT    = SIGNAL     # links, accent labels (NOT body — see WCAG note)
-TEXT_DISABLED  = "#6A6A6A"
+TEXT_DISABLED  = "#5A5A5A"  # 85% of 6A
 TEXT_ON_ACCENT = "#13212C"  # text on a SIGNAL fill (dark navy on light blue = AA-safe)
 
 # WCAG note: SIGNAL (#00D4FF) on PANEL passes AA for >=14px / bold, but FAILS
