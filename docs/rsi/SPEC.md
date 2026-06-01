@@ -108,12 +108,14 @@ word alone.
 ### Flagged at the gate (for ratification — see `RSI_DEADENDS.md` §Provenance)
 
 The protected-tier seed inherits **10 `nodetype` dead-ends** from
-`apex_registry.jsonl`. CRUCIBLE confirmed these are **post-fix corrected-probe**
-outputs (`kind: nodetype` is dispositive — the `getattr` false-negative belonged
-to the *earlier* `attr` probe, fixed by commit `1ac0b9e`). They faithfully
-confirm absence **as spelled** in the H21 catalog — but **not**
-capability-absence; the real APEX type names may differ (the registry's own
-`context` hedges the namespacing/casing). Seeded **CONFIRMED-ABSENT (as spelled)**
-with a `scope` caveat so they are never over-read. **FYI at ratification (not a
-blocker):** you may instead hold them PROVISIONAL pending a real-name discovery
-pass — itself a DELIBERATE item on Line S, not an INGEST move.
+`apex_registry.jsonl`. Their `kind: nodetype` field **strongly indicates** they
+are **post-fix corrected-probe** outputs (the `getattr` false-negative belonged
+to the *earlier* `attr` probe, fixed by commit `1ac0b9e`) — but a same-session
+note read the first run as getattr false-negatives, and the registry is
+gitignored local run-data, so the tie-break is a **Line S L0** check, not an
+INGEST call. On the corrected reading they confirm absence **as spelled** in the
+H21 catalog — **not** capability-absence; the real APEX type names may differ
+(the registry's own `context` hedges the namespacing/casing). Seeded
+**CONFIRMED-ABSENT (as spelled)** with a `scope` caveat so they are never
+over-read. **FYI at ratification (not a blocker):** you may instead hold them
+PROVISIONAL until the L0 reconcile lands.

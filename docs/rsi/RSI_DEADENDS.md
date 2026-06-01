@@ -42,15 +42,19 @@ name-resolving probe — see *Scope* below), `timestamp: 0`.
 Stated precisely so an immutable dead-end is never over-read. (This corrects a
 first-draft worry — see the FYI at the foot of this block.)
 
-- **The probe that produced these is the CORRECTED one.** All 10 records carry
-  `kind: nodetype`. The `getattr` false-negative belonged to the *earlier*
-  `attr` probe (`getattr` cannot see node types); commit `1ac0b9e`
+- **Most likely the CORRECTED probe — but confirm at L0 (two readings exist).**
+  All 10 records carry `kind: nodetype`. Per commit `1ac0b9e`
   ("feat(science): add nodetype probe kind — fix the node-type false-negative
-  (#19)") added the `nodetype` kind, which resolves by **name via catalog
-  membership** — not `getattr`. A `kind: nodetype` record can only come from the
-  post-fix probe, so the `kind` field (present in the registry) is dispositive:
-  these are **post-fix corrected-probe outputs**, not stale `getattr`-era
-  artifacts. The probe-shape worry does **not** apply to these records.
+  (#19)"), the `getattr` false-negative belonged to the *earlier* `attr` probe;
+  #19 added the `nodetype` kind, which resolves by **name via catalog
+  membership** — not `getattr`. A pre-#19 probe could not emit `kind: nodetype`,
+  so the registry's `kind` field **strongly indicates** these are post-fix
+  corrected-probe outputs, not stale `getattr`-era artifacts.
+  **Residual uncertainty INGEST cannot close:** a same-session note recorded the
+  *first* (getattr) run flagging these as false-negatives, and the registry is
+  gitignored **local run-data** — so whether it was actually re-run after #19 is
+  not provable from git. Reconciling the two readings (corrected-probe vs.
+  stale-first-run) is a **Line S L0** check, not an INGEST assertion.
 
 - **What they actually confirm:** the exact type string is **absent as spelled**
   in the H21 21.0.671 node catalog. They do **not** establish that the
@@ -68,13 +72,14 @@ first-draft worry — see the FYI at the foot of this block.)
   **appends** a new record (a different surface string) and cross-references via
   `superseded_by`. Immutability preserved; falsifiability preserved.
 
-> **FYI at the gate (not a blocker):** an earlier draft of this seed worried the
-> 10 might be `getattr` false-negatives. CRUCIBLE caught that `kind: nodetype`
-> already rules that out — the corrected reading above replaces it. If you prefer
-> maximum caution you may still hold them PROVISIONAL pending a real-name
-> discovery pass; the default is CONFIRMED-ABSENT-AS-SPELLED with the scope
-> caveat. Discovering the real names is itself live-code work (a DELIBERATE item
-> on Line S), not an INGEST move.
+> **FYI at the gate (not a blocker):** an earlier draft worried the 10 were
+> `getattr` false-negatives; CRUCIBLE noted `kind: nodetype` strongly indicates
+> otherwise (corrected probe). INGEST records BOTH readings and defers the
+> tie-break to Line S's L0 — it does not pick a winner on unverified ground.
+> Default seeding is CONFIRMED-ABSENT-AS-SPELLED with the scope caveat; you may
+> hold them PROVISIONAL until the L0 reconcile lands. Either way: never read
+> these as capability-absent. Discovering the real APEX type names is live-code
+> work (a Line S DELIBERATE item), not an INGEST move.
 
 ## Tier B — confirmed-PRESENT (champions) · immutable verdicts, not dead-ends
 
