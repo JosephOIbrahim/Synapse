@@ -1,6 +1,6 @@
 # SPEC — SYNAPSE RSI Loop-Closure
 
-> **Status:** DRAFT — **AWAITING RATIFICATION** (the INGEST gate).
+> **Status:** **RATIFIED** 2026-06-01 (the INGEST gate cleared; DELIBERATE open).
 > **Source:** drafted FROM `SYNAPSE_RSI_AUDIT.md`'s verdicts, per the harness
 > INGEST spec. The audit was read-only — it never stated the acceptance bar for
 > the *whole effort*, so this gate is real, not ceremonial.

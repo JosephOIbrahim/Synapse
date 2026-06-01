@@ -38,6 +38,12 @@ Line C is the INTEGRATE gate.
   persistence substrate already exists (rides the SynapseMemory FEEDBACK store) —
   if confirmed at L0, this is the only line seeded with persistence in place and
   its gap is *reachability* only.
+- **STATUS (2026-06-01)** — ✅ **CLOSED at L2 (+L3).** Claim confirmed (survived
+  7 CRUCIBLE attacks, zero drift); fix wired at `handlers_render.py`; 384 tests
+  pass; eval `tests/rsi/eval_line_r_closure.py` proved L1/L2/L3 across two fresh
+  processes. **Boundary:** `tops_render_sequence` (the PDG render path) is a
+  *separate* entry that does not pass through this guard — a candidate follow-up
+  line, not part of R's one-liner. Hardening left: L4 tier-integrity (STRESS).
 
 ## LINE O — §16 recursive observability — **ROI 2**
 
