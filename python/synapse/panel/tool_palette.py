@@ -1,13 +1,14 @@
-"""Registry-driven command palette — the 1:1 surface.
+"""Unified command palette — the 1:1 + discovery surface.
 
-Ctrl+K opens a fuzzy-searchable list of EVERY server tool (read from the
-canonical _tool_registry.TOOL_DEFS), grouped by domain, with destructive tools
-flagged off the registry's own ``destructive`` annotation. Selecting one hands a
-clear instruction to the agent, which invokes the tool through the gated bridge
-path — so the palette is deterministic discovery + the safety model is intact.
-
-This closes the audit's core finding: the panel surfaced a chat box + 5 pills
-over a 110-tool server. Now every tool is one keystroke away.
+Ctrl+K fuzzy-searches across EVERYTHING the artist can ask for:
+  * the 110 server tools (canonical _tool_registry.TOOL_DEFS), destructive ones
+    flagged off the registry's own annotation;
+  * the legacy knowledge base — slash-commands, network recipes, APEX rigs, VEX
+    functions (via command_palette.build_palette_entries);
+  * per-domain "galleries" — material presets and render-quality tiers.
+Every pick emits a ready-to-send prompt that routes through the agent (and thus
+the gated bridge path), so the palette is deterministic discovery with the
+safety model intact.
 """
 
 try:
@@ -22,9 +23,23 @@ except ImportError:  # pragma: no cover - Houdini ships PySide6
 from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import components as c
 
+_MATERIAL_PRESETS = [
+    "glass", "mirror", "rough_metal", "polished_metal", "skin",
+    "cloth", "plastic", "ceramic", "wax", "rubber",
+]
+_RENDER_TIERS = ["draft", "preview", "production"]
+_CATEGORY_DOMAIN = {
+    "command": "Commands", "recipe": "Recipes", "apex": "APEX Rigging", "vex": "VEX",
+}
+_CATEGORY_PREFIX = {
+    "recipe": "Build this network recipe — ",
+    "apex": "Build this APEX rig — ",
+    "vex": "Explain this VEX — ",
+}
+
 
 def _domain(name):
-    """Friendly domain for a tool name (drives grouping)."""
+    """Friendly domain for a registry tool name (drives grouping)."""
     if name.startswith("cops_"):
         return "COPs / Generative"
     if name.startswith("tops_"):
@@ -36,7 +51,8 @@ def _domain(name):
             return "Render"
         return "Orchestration & Knowledge"
     if name.startswith("houdini_"):
-        if any(k in name for k in ("usd", "prim", "stage", "solaris", "reference", "payload", "variant", "collection", "instancer", "light")):
+        if any(k in name for k in ("usd", "prim", "stage", "solaris", "reference",
+                                   "payload", "variant", "collection", "instancer", "light")):
             return "USD / Solaris"
         if any(k in name for k in ("material", "mtlx")):
             return "Materials"
@@ -48,33 +64,62 @@ def _domain(name):
     return "Other"
 
 
-def _load_tools():
-    """Read the registry → [(domain, name, title, description, destructive)]."""
+def _load_entries():
+    """All palette entries as dicts {domain, title, desc, send, destructive}."""
+    entries = []
+
+    # a) the 110 registry tools
     try:
         from synapse.mcp._tool_registry import TOOL_DEFS
+        for d in TOOL_DEFS:
+            name, desc, destr = d[0], d[3], bool(d[6])
+            title = name.replace("houdini_", "").replace("synapse_", "").replace("_", " ").title()
+            entries.append(dict(domain=_domain(name), title=title, desc=desc,
+                                send="Use the `%s` tool." % name, destructive=destr))
     except Exception:
-        return []
-    rows = []
-    for d in TOOL_DEFS:
-        name, _cmd, _b, desc, _schema, _ro, destr = d[0], d[1], d[2], d[3], d[4], d[5], d[6]
-        title = name.replace("houdini_", "").replace("synapse_", "").replace("_", " ").title()
-        rows.append((_domain(name), name, title, desc, bool(destr)))
-    rows.sort(key=lambda r: (r[0], r[2]))
-    return rows
+        pass
+
+    # b) legacy knowledge: slash-commands + recipes + APEX + VEX
+    try:
+        from synapse.panel.command_palette import build_palette_entries
+        for e in build_palette_entries():
+            send = (_CATEGORY_PREFIX.get(e.category, "") + (e.description or e.label)).strip()
+            entries.append(dict(domain=_CATEGORY_DOMAIN.get(e.category, "Commands"),
+                                title=e.label, desc=e.description or "", send=send,
+                                destructive=False))
+    except Exception:
+        pass
+
+    # c) galleries: material presets + render tiers
+    for m in _MATERIAL_PRESETS:
+        pretty = m.replace("_", " ").title()
+        entries.append(dict(domain="Materials", title="Material: %s" % pretty,
+                            desc="Create a %s material and assign it" % pretty.lower(),
+                            send="Create a %s material (houdini_create_material) and assign it "
+                                 "to the selected geometry." % m,
+                            destructive=False))
+    for tier in _RENDER_TIERS:
+        entries.append(dict(domain="Render", title="Render: %s" % tier.title(),
+                            desc="Render at %s quality" % tier,
+                            send="Render the current scene at %s quality (render_progressively)." % tier,
+                            destructive=False))
+
+    entries.sort(key=lambda e: (e["domain"], e["title"]))
+    return entries
 
 
 class ToolPalette(QtWidgets.QWidget):
-    """Frameless fuzzy palette over the full tool registry."""
+    """Frameless fuzzy palette over tools + recipes + commands + galleries."""
 
-    command_selected = Signal(str)  # emits the tool name
+    command_selected = Signal(str)  # emits a ready-to-send prompt
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsRoot")
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.setWindowFlags(Qt.Popup)
-        self.setMinimumSize(420, 460)
-        self._rows = _load_tools()
+        self.setMinimumSize(440, 480)
+        self._rows = _load_entries()
 
         lay = QtWidgets.QVBoxLayout(self)
         lay.setContentsMargins(t.SPACE_SM, t.SPACE_SM, t.SPACE_SM, t.SPACE_SM)
@@ -82,7 +127,7 @@ class ToolPalette(QtWidgets.QWidget):
 
         self._search = QtWidgets.QLineEdit()
         self._search.setObjectName("DsField")
-        self._search.setPlaceholderText("Search %d tools…" % len(self._rows))
+        self._search.setPlaceholderText("Search %d tools, recipes & commands…" % len(self._rows))
         self._search.textChanged.connect(self._refilter)
         self._search.installEventFilter(self)
         lay.addWidget(self._search)
@@ -93,7 +138,7 @@ class ToolPalette(QtWidgets.QWidget):
         self._list.itemClicked.connect(self._choose)
         lay.addWidget(self._list, 1)
 
-        hint = c.label("↑↓ navigate · Enter run · Esc close · destructive tools are gated",
+        hint = c.label("↑↓ navigate · Enter run · Esc close · destructive items are gated",
                        role="caption")
         lay.addWidget(hint)
 
@@ -104,27 +149,28 @@ class ToolPalette(QtWidgets.QWidget):
     def _populate(self, rows):
         self._list.clear()
         last_domain = None
-        for domain, name, title, desc, destr in rows:
-            if domain != last_domain:
-                head = QtWidgets.QListWidgetItem(domain.upper())
+        for e in rows:
+            if e["domain"] != last_domain:
+                head = QtWidgets.QListWidgetItem(e["domain"].upper())
                 head.setFlags(Qt.NoItemFlags)
                 try:
                     head.setForeground(QColor(t.TEXT_TERTIARY))
                 except Exception:
                     pass
                 self._list.addItem(head)
-                last_domain = domain
-            label = ("  ⚠ " if destr else "  ") + title
+                last_domain = e["domain"]
+            label = ("  ⚠ " if e["destructive"] else "  ") + e["title"]
             item = QtWidgets.QListWidgetItem(label)
-            item.setData(Qt.UserRole, name)
-            item.setToolTip("%s\n\n%s%s" % (name, desc, "\n\n(destructive — will ask before running)" if destr else ""))
-            if destr:
+            item.setData(Qt.UserRole, e["send"])
+            item.setToolTip("%s%s" % (
+                e["desc"],
+                "\n\n(destructive — will ask before running)" if e["destructive"] else ""))
+            if e["destructive"]:
                 try:
                     item.setForeground(QColor(t.WARN))
                 except Exception:
                     pass
             self._list.addItem(item)
-        # select first real (non-header) row
         for i in range(self._list.count()):
             if self._list.item(i).data(Qt.UserRole):
                 self._list.setCurrentRow(i)
@@ -135,14 +181,15 @@ class ToolPalette(QtWidgets.QWidget):
         if not q:
             self._populate(self._rows)
             return
-        filtered = [r for r in self._rows
-                    if q in r[1].lower() or q in r[2].lower() or q in r[3].lower()]
+        filtered = [e for e in self._rows
+                    if q in e["title"].lower() or q in e["desc"].lower()
+                    or q in e["send"].lower()]
         self._populate(filtered)
 
     def _choose(self, item):
-        name = item.data(Qt.UserRole)
-        if name:
-            self.command_selected.emit(name)
+        send = item.data(Qt.UserRole)
+        if send:
+            self.command_selected.emit(send)
             self.close()
 
     def eventFilter(self, obj, event):

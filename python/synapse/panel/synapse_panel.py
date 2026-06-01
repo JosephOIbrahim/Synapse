@@ -419,9 +419,10 @@ class SynapsePanel(QtWidgets.QWidget):
             # Palette unavailable — fall back to focusing input.
             self._input.setFocus()
 
-    def _on_tool_picked(self, tool_name):
-        """A palette pick routes through chat so it hits the gated bridge path."""
-        self._send("Use the `%s` tool." % tool_name)
+    def _on_tool_picked(self, prompt):
+        """A palette pick is a ready-to-send prompt; route it through chat (and
+        thus the gated bridge path)."""
+        self._send(prompt)
 
     def _on_submit(self):
         text = self._input.toPlainText().strip()
