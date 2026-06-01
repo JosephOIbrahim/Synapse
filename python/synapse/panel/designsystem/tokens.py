@@ -108,12 +108,12 @@ FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 
 # px scale (Qt). Calibrated to the panel's true rendering DPI (the canonical
 # 9-20 scale, NOT the bug-prone 22-44 fallback).
-SIZE_MICRO  = 11   # tiny labels / numbers
-SIZE_SMALL  = 12   # captions, metadata
-SIZE_UI     = 14   # buttons, pills, menu items, labels — Houdini-UI sized
+SIZE_MICRO  = 12   # tiny labels / numbers
+SIZE_SMALL  = 13   # captions, metadata
+SIZE_UI     = 16   # buttons, pills, menu items, labels — larger; user-scalable via Aa
 SIZE_BODY   = 12   # chat body — KEEP ("Ready…" is the correct reference size)
-SIZE_TITLE  = 16   # section headers
-SIZE_HERO   = 24   # panel title
+SIZE_TITLE  = 18   # section headers
+SIZE_HERO   = 26   # panel title
 
 # Back-compat alias (design/tokens.py name)
 SIZE_LABEL = SIZE_MICRO

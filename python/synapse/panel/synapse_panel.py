@@ -104,6 +104,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._worker = None
         self._tool_executor = ToolExecutor(parent=self) if ToolExecutor else None
         self._pending_context = []  # paths dropped in; prepended to the next send
+        self._font_scale = t.FONT_SCALE_DEFAULT
 
         self.setAcceptDrops(True)
         self._build_ui()
@@ -183,9 +184,14 @@ class SynapsePanel(QtWidgets.QWidget):
             )
         except Exception:
             pass
+        self._chat.setMinimumHeight(380)  # a tall, dominant chat window
         self._converse_stack = QtWidgets.QStackedWidget()
         self._converse_stack.addWidget(self._chat)              # page 0: chat
         self._converse_stack.addWidget(self._build_hda_form())  # page 1: Build HDA
+        self._converse_stack.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+        )
+        self._converse_stack.setMinimumHeight(380)
         return self._converse_stack
 
     def _build_mode_bar(self):
@@ -298,6 +304,10 @@ class SynapsePanel(QtWidgets.QWidget):
             pill = c.Pill(label_text)
             pill.clicked.connect(lambda _=False, p=prompt: self._send(p))
             lay.addWidget(pill)
+        self._font_btn = c.Pill("Aa")
+        self._font_btn.setToolTip("Font size — click to cycle")
+        self._font_btn.clicked.connect(self._cycle_font_scale)
+        lay.addWidget(self._font_btn)
         lay.addStretch(1)
         more = c.Pill("⌘K  more…")
         more.clicked.connect(self._open_palette)
@@ -352,12 +362,23 @@ class SynapsePanel(QtWidgets.QWidget):
         menu.exec(QtGui.QCursor.pos()) if hasattr(menu, "exec") else menu.exec_(QtGui.QCursor.pos())
 
     def _set_scale(self, scale):
+        self._font_scale = scale
         self.setStyleSheet(qss.stylesheet(scale))
         if hasattr(self._chat, "font_scale"):
             try:
                 self._chat.font_scale = scale
             except Exception:
                 pass
+
+    def _cycle_font_scale(self):
+        """The 'Aa' button — step through the font-scale presets live."""
+        steps = list(t.FONT_SCALE_STEPS)
+        cur = getattr(self, "_font_scale", t.FONT_SCALE_DEFAULT)
+        try:
+            nxt = steps[(steps.index(cur) + 1) % len(steps)]
+        except ValueError:
+            nxt = t.FONT_SCALE_DEFAULT
+        self._set_scale(nxt)
 
     def _open_palette(self):
         try:
