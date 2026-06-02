@@ -38,6 +38,19 @@ _SVG_DIR = os.path.join(_DESIGN_DIR, "icons", "svg")
 if _DESIGN_DIR not in sys.path:
     sys.path.insert(0, _DESIGN_DIR)
 
+# Force a bare ``import tokens`` to resolve to design/tokens.py (the design
+# system's single source of truth). A plain sys.path insert is not enough:
+# other tests put python/synapse/panel on the path, whose tokens.py fallback
+# carries a stale SIGNAL, so resolution was order-dependent (these tests passed
+# locally but failed in CI). Loading it explicitly by path pins the identity.
+import importlib.util as _ilu
+_tok_path = os.path.join(_DESIGN_DIR, "tokens.py")
+if os.path.isfile(_tok_path):
+    _spec = _ilu.spec_from_file_location("tokens", _tok_path)
+    _mod = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    sys.modules["tokens"] = _mod
+
 
 # ── Token Tests ───────────────────────────────────────────
 
@@ -52,7 +65,7 @@ class TestTokens:
 
     def test_signal_color(self):
         from tokens import SIGNAL
-        assert SIGNAL == "#00D4FF"
+        assert SIGNAL == "#8FB3D9"
 
     def test_palette_has_all_colors(self):
         from tokens import PALETTE
@@ -78,7 +91,7 @@ class TestTokens:
         assert "rgb_float" in c
         assert "rgba_float" in c
         assert "qt_rgba" in c
-        assert c["hex"] == "#00D4FF"
+        assert c["hex"] == "#8FB3D9"
         r, g, b = c["rgb_int"]
         assert 0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255
 
@@ -179,14 +192,15 @@ class TestSVGIcons:
                 assert w == h == 64, f"{os.path.basename(svg_path)} viewBox is {w}x{h}, expected 64x64"
 
     def test_signal_color_in_icons(self):
-        """At least some icons should use the SIGNAL color (#00D4FF)."""
+        """At least some icons should use the SIGNAL color."""
+        from tokens import SIGNAL
         signal_count = 0
         for svg_path in self._get_svgs():
             with open(svg_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            if "#00D4FF" in content or "#00d4ff" in content:
+            if SIGNAL.lower() in content.lower():
                 signal_count += 1
-        assert signal_count > 0, "No SVGs reference the SIGNAL color (#00D4FF)"
+        assert signal_count > 0, f"No SVGs reference the SIGNAL color ({SIGNAL})"
 
     def test_icon_names(self):
         """All 6 icon families should have 32px variants."""

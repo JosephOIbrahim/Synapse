@@ -1,4 +1,10 @@
 {
+  "pipeline_preferences": {
+    "description": "Studio pipeline defaults. Material binding: prefer the materiallinker LOP over assignmaterial in Solaris (collection-based binding). Karma CPU production preset for diffuse-dominant hero surfaces: bucket mode, 256 pixel / 512 path-traced samples, indirect guiding on, variance AA 0.005. AMD asset library path is pending capture.",
+    "keywords": ["materiallinker", "assignmaterial", "material binding", "preference", "pipeline", "karma cpu", "preset", "render settings", "production", "amd"],
+    "summary": "Pipeline preferences: materiallinker over assignmaterial; Karma CPU preset",
+    "reference_file": "pipeline_preferences"
+  },
   "camera_setup": {
     "description": "Camera LOP creates a camera prim at /cameras/node_name. Key parms: 'tx/ty/tz' (position), 'rx/ry/rz' (rotation), 'focalLength' (focal length in mm, default 50), 'fStop' (aperture for DOF), 'focusDistance' (focus distance), 'horizontalAperture' (sensor width in mm). For render, camera is referenced by USD prim path (e.g. '/cameras/render_cam'), not Houdini node path. Typical setup: camera at (4,3,6), rotation (-20,30,0) for 3/4 view.",
     "keywords": [
