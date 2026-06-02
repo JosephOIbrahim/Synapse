@@ -72,7 +72,7 @@ QPushButton#DsPill {{
     background: none; color: {t.TEXT_SECONDARY};
     border: none; border-radius: {t.RADIUS_SM}px;
     padding: {t.SPACE_XS}px {t.SPACE_MD}px;
-    font-size: {s(t.SIZE_UI)}px; font-weight: 500;
+    font-size: {s(t.SIZE_UI + 2)}px; font-weight: 500;
 }}
 QPushButton#DsPill:hover  {{ background: {t.HOVER_WASH}; color: {t.TEXT_ACCENT}; }}
 QPushButton#DsPill:pressed {{ background: {t.SIGNAL_TINT}; }}
