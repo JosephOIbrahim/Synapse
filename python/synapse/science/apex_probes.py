@@ -1,37 +1,47 @@
 """APEX seed probes for the SYNAPSE science loop.
 
 Each :class:`ProbeSpec` in :data:`APEX_SEED` encodes a *verifiable assumption*
-the SYNAPSE codebase ALREADY makes about Houdini 21.0.671's APEX surface.
-The science loop (``loop.run_search``) walks these against a live, injected
-namespace (the ``apex`` module + ``hou``) via ``probe.probe`` to confirm which
-assumptions are champions and which are dead ends — without re-walking
-anything the registry already knows.
+the SYNAPSE codebase makes about Houdini 21.0.671's APEX surface. The science
+loop (``loop.run_search``) walks these against a live, injected namespace (the
+``apex`` module + ``hou``) via ``probe.probe`` to confirm which assumptions are
+champions and which are dead ends — without re-walking what the registry knows.
 
-Provenance — every claim below is derived from existing code, not invented:
+RE-SEEDED 2026-06-02 — corrected against the live H21.0.671 catalog
+------------------------------------------------------------------
+The original seeds carried node-type strings the recipes *invented* — an
+``apex::rig::``/``apex::sop::``/``apex::autorig::`` namespacing that does **not
+exist**. A second-seed harness run + a read-only catalog dump (5811 types) +
+a 3-lens adversarial reconcile established the real surface:
 
-* ``python/synapse/panel/apex_recipes.py``
-    - Node types assumed buildable via ``houdini_create_node``:
-      ``apex::rig::fkfull``, ``apex::rig::ikfull``, ``apex::rig::blendtransform``,
-      ``apex::rig::controlshapes``, ``apex::rig::parentconstraint``,
-      ``apex::autorig::build``, ``apex::sop::graphdefaults``,
-      ``apex::sop::fromkinefx``, plus ``rig_doctor`` / ``invoke`` /
-      ``apex_editgraph`` SOPs.
-* ``python/synapse/panel/apex_explainer.py``
-    - ``_APEX_TYPE_PATTERNS`` assumes the autorig building-block SOPs
-      ``apex::sop::TransformObject``, ``apex::sop::FK``, ``apex::sop::IK``,
-      ``apex::sop::invoke``, ``apex::sop::apexedit``.
-    - The whole module assumes APEX graphs are inspectable geometry executed by
-      an Invoke SOP (graph-as-geometry mental model). At the Python-API level
-      that surfaces as the ``apex`` module exposing a graph type with node
-      mutation (``addNode``) and serialization — the natural API mirror of the
-      "build/edit graph then invoke" workflow the recipes describe.
+  * APEX node types are **flat** ``apex::<name>`` — there is NO ``::rig::`` /
+    ``::sop::`` / ``::autorig::`` middle segment.
+  * Several rig operators live under ``kinefx::``, not ``apex::``.
 
-These are seeds, not exhaustive coverage. ``kind`` distinguishes a plain
-attribute lookup (``"attr"``) from something we expect to be invoked
-(``"call"``), a graph constructed (``"construct"``), or a Houdini node type
-looked up by NAME in a catalog (``"nodetype"`` — required because type names
-contain "::" and are not getattr-resolvable). ``expect`` records the
-codebase's prior belief; the loop's job is to confirm or falsify it.
+These seeds now carry the **real** names (each confirmed present in the
+catalog). Supersession map (fictional -> real), see
+``docs/SCIENCE_apex_verify_run_2026-06-02.md``:
+
+    apex::rig::fkfull        -> apex::buildfkgraph
+    apex::rig::ikfull        -> kinefx::twoboneik   (+ solveik/fullbodyik)
+    apex::rig::blendtransform-> kinefx::blendtransforms
+    apex::autorig::build     -> apex::autorigbuilder (+ apex::autorigcomponent)
+    apex::sop::invoke        -> apex::invokegraph    (+ apex::sceneinvoke)
+    apex::sop::graphdefaults -> apex::graph          (the base graph itself)
+    apex::sop::apexedit      -> apex::configuregraph (edit via apex.Graph API)
+    apex::sop::transformobject-> apex::configurecontrols / controlextract
+    apex::sop::fromkinefx    -> apex::mapcharacter / packcharacter (diffuse)
+    rig_doctor               -> kinefx::rigdoctor
+
+NOTE — type-existence is confirmed; node SIGNATURES / role-fit are a separate
+verification (catalog membership != does-the-intended-job). The recipes that
+still reference the fictional names (``python/synapse/panel/apex_recipes.py``,
+``apex_explainer.py``) must be migrated to these real names before they build.
+
+``kind`` distinguishes a plain attribute lookup (``"attr"``) from something
+invoked (``"call"``), a graph constructed (``"construct"``), or a Houdini node
+type looked up by NAME in a catalog (``"nodetype"`` — required because type
+names contain "::" and are not getattr-resolvable). ``expect`` records the
+prior belief; the loop's job is to confirm or falsify it.
 """
 
 from __future__ import annotations
@@ -40,12 +50,10 @@ from .probe import ProbeSpec
 
 # NOTE on surface convention:
 #   For node-type assumptions (kind="nodetype") the surface is the SOP/APEX
-#   type STRING the recipes feed to houdini_create_node, carrying a
-#   "nodetypes." routing prefix. The probe namespace is expected to expose a
-#   node-type catalog as namespace["nodetypes"] — a dict (or any __contains__
-#   object) keyed by full type name. probe() strips the prefix and does a
-#   MEMBERSHIP test ("apex::rig::fkfull" in catalog), NOT getattr — because
-#   "::"-bearing names are not getattr-resolvable attributes.
+#   type STRING carrying a "nodetypes." routing prefix. The probe namespace is
+#   expected to expose a node-type catalog as namespace["nodetypes"] — a dict
+#   keyed by full type name. probe() strips the prefix and does a MEMBERSHIP
+#   test ("apex::invokegraph" in catalog), NOT getattr.
 #   For pure Python APEX-module assumptions (kind="attr"/"call") the surface is
 #   a dotted attribute path against namespace["apex"].
 
@@ -58,130 +66,171 @@ APEX_SEED: list[ProbeSpec] = [
         rationale=(
             "apex_explainer's graph-as-geometry model assumes a first-class "
             "APEX graph type at the Python layer; recipes build/edit graphs "
-            "before Invoke evaluates them."
+            "before Invoke evaluates them. CONFIRMED on two seeds."
         ),
         rank=100,
     ),
     ProbeSpec(
         surface="apex.Graph.addNode",
         kind="call",
-        expect="unknown",
+        expect="present",
         rationale=(
             "apex_editgraph / 'add nodes for your deformation logic' "
-            "(simple_deformer recipe) assumes the graph is mutable by adding "
-            "nodes; addNode is the canonical APEX Graph mutator. Exact "
-            "signature unverified on 21.0.671."
+            "(simple_deformer) assumes the graph is mutable via addNode — the "
+            "canonical APEX Graph mutator. CONFIRMED present on two seeds; "
+            "exact call signature still unverified."
         ),
         rank=90,
     ),
-    # --- Node-type catalog assumptions from apex_recipes.py ---
+    # --- Real APEX/KineFX node types (re-seeded 2026-06-02; all catalog-present) ---
     ProbeSpec(
-        surface="nodetypes.apex::rig::fkfull",
+        surface="nodetypes.apex::invokegraph",
         kind="nodetype",
         expect="present",
         rationale=(
-            "fk_chain / fk_ik_blend / control_shapes recipes all build "
-            "apex::rig::fkfull as the FK setup node."
+            "Run-program bridge: APEX graph -> SOP geometry. Supersedes the "
+            "fictional apex::sop::invoke. Variants: apex::sceneinvoke, "
+            "sopinvokegraph. Gates every recipe that evaluates a graph."
+        ),
+        rank=85,
+    ),
+    ProbeSpec(
+        surface="nodetypes.apex::autorigbuilder",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "Generates a full production rig from a named skeleton "
+            "(autorig_biped recipe). Supersedes fictional apex::autorig::build; "
+            "assembles apex::autorigcomponent parts."
         ),
         rank=80,
     ),
     ProbeSpec(
-        surface="nodetypes.apex::rig::ikfull",
+        surface="nodetypes.apex::buildfkgraph",
         kind="nodetype",
         expect="present",
         rationale=(
-            "ik_chain / fk_ik_blend recipes build apex::rig::ikfull for the "
-            "IK solver with end effector + pole vector."
+            "FK setup as an APEX graph build (fk_chain / fk_ik_blend / "
+            "control_shapes recipes). Supersedes fictional apex::rig::fkfull."
         ),
         rank=78,
     ),
     ProbeSpec(
-        surface="nodetypes.apex::rig::blendtransform",
+        surface="nodetypes.kinefx::twoboneik",
         kind="nodetype",
         expect="present",
         rationale=(
-            "fk_ik_blend recipe blends FK/IK via apex::rig::blendtransform; "
-            "KINEFX_MIGRATION_GUIDE maps Skeleton Blend -> this node."
+            "Limb IK solver with end effector + pole vector (ik_chain / "
+            "fk_ik_blend). Supersedes fictional apex::rig::ikfull — IK lives "
+            "under kinefx::, not apex:: (siblings: solveik/fullbodyik/ikchains)."
+        ),
+        rank=76,
+    ),
+    ProbeSpec(
+        surface="nodetypes.kinefx::blendtransforms",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "Blends FK/IK transform sets (fk_ik_blend). Supersedes fictional "
+            "apex::rig::blendtransform; kinefx::skeletonblend is the migration "
+            "guide's Skeleton-Blend alternate."
+        ),
+        rank=74,
+    ),
+    ProbeSpec(
+        surface="nodetypes.kinefx::rigdoctor",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "Mandatory pre-APEX skeleton validator (fk_chain, autorig_biped, "
+            "kinefx_to_apex). Supersedes the bare 'rig_doctor' string — the "
+            "validator is kinefx-namespaced. Strongest of the corrected names."
+        ),
+        rank=72,
+    ),
+    ProbeSpec(
+        surface="nodetypes.apex::graph",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "The base APEX graph node — seed a graph rather than build from "
+            "scratch (simple_deformer). Supersedes fictional "
+            "apex::sop::graphdefaults (no dedicated 'defaults' node exists)."
         ),
         rank=70,
     ),
     ProbeSpec(
-        surface="nodetypes.apex::autorig::build",
+        surface="nodetypes.apex::configuregraph",
         kind="nodetype",
-        expect="unknown",
+        expect="present",
         rationale=(
-            "autorig_biped recipe assumes apex::autorig::build generates a "
-            "full production rig from a named skeleton. Namespacing "
-            "(autorig vs rig) is the least certain of the recipe types."
+            "Configure/edit an APEX graph. Supersedes fictional "
+            "apex::sop::apexedit; the edit capability is the apex.Graph API "
+            "(champion) plus configuregraph/layoutgraph/mergegraph."
         ),
         rank=65,
     ),
     ProbeSpec(
-        surface="nodetypes.apex::sop::graphdefaults",
+        surface="nodetypes.apex::autorigcomponent",
         kind="nodetype",
         expect="present",
         rationale=(
-            "simple_deformer recipe + its tips explicitly prefer "
-            "apex::sop::graphdefaults to seed a base APEX graph rather than "
-            "building from scratch."
+            "Per-part autorig building blocks assembled by apex::autorigbuilder "
+            "(::2.0/::3.0 variants exist). Recipe-relevant for component rigs."
         ),
         rank=60,
     ),
     ProbeSpec(
-        surface="nodetypes.apex::sop::fromkinefx",
+        surface="nodetypes.apex::configurecontrols",
         kind="nodetype",
         expect="present",
         rationale=(
-            "kinefx_to_apex recipe + migration guide assume "
-            "apex::sop::fromkinefx converts KineFX skeleton data into APEX "
-            "format (skeleton only, not rig logic)."
+            "Authors APEX controls into a graph — the node side of "
+            "'creates a transform control'. Supersedes fictional "
+            "apex::sop::transformobject (control = apex.TransformControl)."
         ),
         rank=55,
     ),
     ProbeSpec(
-        surface="nodetypes.apex::sop::invoke",
+        surface="nodetypes.apex::controlextract",
         kind="nodetype",
-        expect="unknown",
+        expect="present",
         rationale=(
-            "apex_explainer maps 'invoke' to both bare 'invoke' and "
-            "'apex::sop::invoke'; the Invoke SOP is the 'run program' bridge "
-            "from APEX graph to SOP geometry. Which type string is canonical "
-            "on 21.0.671 is unverified."
+            "Extracts controls from a rig — companion to configurecontrols in "
+            "the transform-control authoring path."
         ),
         rank=50,
     ),
     ProbeSpec(
-        surface="nodetypes.rig_doctor",
+        surface="nodetypes.apex::mapcharacter",
         kind="nodetype",
         expect="present",
         rationale=(
-            "Multiple recipes (fk_chain, autorig_biped, kinefx_to_apex) and "
-            "their tips treat rig_doctor as the mandatory pre-APEX skeleton "
-            "validator."
+            "Ingests a (kinefx) character/skeleton into APEX. Supersedes "
+            "fictional apex::sop::fromkinefx — KineFX & APEX share the "
+            "point-skeleton, so 'convert' is diffuse via mapcharacter/"
+            "packcharacter + apex.findSkeletonJoints."
         ),
-        rank=45,
-    ),
-    # --- Autorig building-block SOPs assumed by apex_explainer patterns ---
-    ProbeSpec(
-        surface="nodetypes.apex::sop::transformobject",
-        kind="nodetype",
-        expect="unknown",
-        rationale=(
-            "_APEX_TYPE_PATTERNS lists apex::sop::transformobject as an "
-            "autorig building block ('creates a transform control'). Casing "
-            "and existence on 21.0.671 unverified."
-        ),
-        rank=40,
+        rank=48,
     ),
     ProbeSpec(
-        surface="nodetypes.apex::sop::apexedit",
+        surface="nodetypes.apex::packcharacter",
         kind="nodetype",
-        expect="unknown",
+        expect="present",
         rationale=(
-            "apex_explainer classifies apex::sop::apexedit / apexedit as the "
-            "APEX network editor; simple_deformer uses apex_editgraph for the "
-            "same 'edit the graph' role. Confirms which edit-graph type is real."
+            "Packs an APEX character — companion to mapcharacter in the "
+            "KineFX->APEX ingestion path."
         ),
-        rank=35,
+        rank=46,
+    ),
+    ProbeSpec(
+        surface="nodetypes.apex::sceneinvoke",
+        kind="nodetype",
+        expect="present",
+        rationale=(
+            "Scene-level invoke variant of apex::invokegraph (::2.0 exists). "
+            "Recipe-relevant for character-scene evaluation."
+        ),
+        rank=44,
     ),
 ]

@@ -72,12 +72,51 @@ point-based skeleton, so "convert skeleton" is largely a no-op mediated by
   parameter signature. Catalog membership ≠ behavioral fit. The 3-lens verdicts are role-
   *adjudication*, not behavioral verification.
 
-## Next iteration (the harness's clear next run)
+## Re-seed + re-run + signature verification (DONE — same session, 2026-06-02)
 
-Re-seed `python/synapse/science/apex_probes.py` with the corrected names (flat `apex::*` +
-`kinefx::*`) and re-run — the strong-rename six should promote to champions; then verify
-signatures/roles (node `.parmTemplateGroup()` / SideFX help) before any recipe build relies
-on them. This is a harness re-run + a build, not new architecture.
+`apex_probes.py` was re-seeded with the corrected real names (14 nodetype seeds, flat
+`apex::*` + `kinefx::*`, + the 2 Python champions) and re-run on a fresh registry
+(`.synapse/science/apex_corrected_20260602.jsonl`). Science tests stayed green (57 passed).
+
+**Result: 16/16 champions, 0 dead-ends.** Every corrected name is confirmed present in the
+H21.0.671 catalog. The reconciliation holds end-to-end.
+
+### Signature verification (read-only `nodeType.parmTemplateGroup()` — no instantiation)
+
+| Real name | category | inputs (min/max) | outputs | key parms |
+|---|---|---|---|---|
+| `apex::invokegraph` | **Sop** | 1 / 9999 | 1 | inputbindings, outputbindings, errorhandlingmode, asynccook |
+| `apex::autorigbuilder` | **Sop** | 0 / 2 | 2 | autoupdaterig, updaterig, resetall, … (19) |
+| `apex::buildfkgraph` | **Sop** | 2 / 2 | 1 | mode |
+| `kinefx::twoboneik` | **Vop** ⚠ | 0 / 10 | 3 | signature, selectdriven/drivers, stretch, blend |
+| `kinefx::blendtransforms` | **Vop** ⚠ | 0 / 4 | 1 | signature, components, bias |
+| `kinefx::rigdoctor` | **Sop** | 1 / 1 | 1 | pointnames, hierarchy, transformations, visualize |
+| `apex::graph` | **Sop** | 0 / 1 | 1 | editgraph, graphpath, riggingscripts |
+| `apex::configuregraph` | **Sop** | 0 / 1 | 1 | mode, name, constraintparameters |
+| `apex::autorigcomponent` | **Sop** | 0 / 2 | 2 | componentparameters, rigparameters, switcher |
+| `apex::configurecontrols` | **Sop** | 1 / 2 | 1 | rig, skincontrolshape, useguides, guidesource |
+| `apex::controlextract` | **Sop** | 1 / 1 | 2 | extractfromfolder, graphgeopath, group |
+| `apex::mapcharacter` | **Sop** | 0 / 1 | 1 | rigpath, skeletonpath, mapbyname, mappings |
+| `apex::packcharacter` | **Sop** | 0 / 4 | 1 | charname, shapepath, skelpath, rigpath |
+| `apex::sceneinvoke` | **Sop** | 1 / 3 | 2 | animationclip, setrigpath, channelprimdatapath |
+
+None deprecated. **Critical recipe finding:** `kinefx::twoboneik` (IK) and
+`kinefx::blendtransforms` (FK/IK blend) are **`Vop`** nodes, not SOPs — they are
+graph-internal compute nodes built *inside* an APEX graph (via `apex.Graph.addNode`), **not**
+creatable as standalone SOPs. A recipe calling `houdini_create_node('kinefx::twoboneik')` at
+SOP level would fail. This matches APEX's graph-as-VOP-network model: SOP-level nodes are the
+container/bridge (rigdoctor → graph/mapcharacter/autorigbuilder → invokegraph), while IK/blend
+logic lives as VOPs inside the graph.
+
+**`apex.Graph.addNode` signature resolved:** `addNode(self, str, str) -> int` — closes the
+"exact signature unverified" caveat. The graph mutator takes two strings, returns an int id.
+
+## The actual next step (handoff to recipe migration — a build, not science)
+
+`python/synapse/panel/apex_recipes.py` and `apex_explainer.py` still reference the fictional
+names. Migrate them to the real names above, **and** respect the SOP/VOP split: build IK/blend
+inside the APEX graph (`apex.Graph.addNode`), not as SOPs. Then a live build-and-cook of one
+recipe (e.g. fk_chain) is the behavioral confirmation that closes the loop.
 
 ---
 

@@ -518,7 +518,7 @@ def test_apex_seed_graph_champions_stay_attr_and_call():
 def test_apex_seed_nodetype_resolves_against_catalog_standalone():
     # End-to-end standalone: inject a catalog containing one of the seed names
     # and confirm the loop records it as a champion (no Houdini, no hou).
-    target = "apex::sop::invoke"
+    target = "apex::invokegraph"
     seed = next(
         s for s in APEX_SEED if s.surface == f"nodetypes.{target}"
     )
