@@ -18,7 +18,31 @@
 
 ---
 
-## The thesis: outside-in → inside-out
+## The artist surface — talk to Houdini, it builds
+
+SYNAPSE's whole point is to be *used*. The payoff is a docked **SYNAPSE panel**: the artist types a request in plain language and SYNAPSE builds it in the live scene — chat in, nodes out, in-process. **"make a box" → a real geo node, confirmed in graphical Houdini 21.0.671 (2026-06-01).**
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart LR
+    ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>docked, in-process"]:::panel
+    PANEL --> LOOP["Agent loop<br/>streams Claude + 110 tools"]:::panel
+    LOOP -->|"tool_use<br/>(e.g. execute_python)"| EXEC["Tool executor<br/>main thread"]:::panel
+    EXEC --> BR["LosslessExecutionBridge<br/>consent &middot; undo &middot; thread-safe &middot; integrity"]:::bridge
+    BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
+    BR -.->|telemetry| OBS["Trust zone<br/>per-agent health &middot; self-tuning loop"]:::obs
+    classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
+    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
+    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
+    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
+```
+
+The panel was rebuilt from first principles over a thin `.pypanel` loader: one vendored design system (native Houdini 21 greys, a cool/warm dual accent), a Ctrl+K command palette across all 110 registry tools, live token streaming, and a Trust zone. Every mutation the agent makes is routed through the **`LosslessExecutionBridge`** — undo-wrapped, thread-safe, integrity-verified — so the agent's hands stay structurally reversible. Consent is **non-blocking for artist-initiated work** (your chat request *is* the consent; autonomous / external-MCP operations still gate through `HumanGate`); the gate previously polled the GUI thread and dead-locked Houdini until that was root-caused live and fixed. The Trust zone also surfaces a **recursive-observability** readout — per-agent success rates plus a recommendation history that persists across restarts and escalates if the same issue recurs.
+
+---
+
+## How it works: outside-in → inside-out
 
 The standard pattern for AI-driven DCC work runs the agent in a separate process and reaches into the DCC through a bridge — WebSocket, RPC, stdio, a subprocess. The DCC is a service the agent calls. That shape has a ceiling: every interaction is a round-trip, every tool is a marshalling problem, and the agent never actually lives inside the creative environment.
 
@@ -43,30 +67,6 @@ flowchart LR
 ```
 
 The flip changes more than transport. Tools become direct calls. Errors keep their stack trace. And — the part Sprint 3 is wiring now — **events flow the other way**. Houdini taps the agent on the shoulder when something cooks, instead of the agent polling to ask. See [Perception channel](#perception-channel--two-bridges-scaffolded) below.
-
----
-
-## The artist surface — talk to Houdini, it builds
-
-The substrate exists to be *used*. The payoff is a docked **SYNAPSE panel**: the artist types a request in plain language and SYNAPSE builds it in the live scene — chat in, nodes out, in-process. **"make a box" → a real geo node, confirmed in graphical Houdini 21.0.671 (2026-06-01).**
-
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
-flowchart LR
-    ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>docked, in-process"]:::panel
-    PANEL --> LOOP["Agent loop<br/>streams Claude + 110 tools"]:::panel
-    LOOP -->|"tool_use<br/>(e.g. execute_python)"| EXEC["Tool executor<br/>main thread"]:::panel
-    EXEC --> BR["LosslessExecutionBridge<br/>consent &middot; undo &middot; thread-safe &middot; integrity"]:::bridge
-    BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
-    BR -.->|telemetry| OBS["Trust zone<br/>per-agent health &middot; self-tuning loop"]:::obs
-    classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
-    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-```
-
-The panel was rebuilt from first principles over a thin `.pypanel` loader: one vendored design system (native Houdini 21 greys, a cool/warm dual accent), a Ctrl+K command palette across all 110 registry tools, live token streaming, and a Trust zone. Every mutation the agent makes is routed through the **`LosslessExecutionBridge`** — undo-wrapped, thread-safe, integrity-verified — so the agent's hands stay structurally reversible. Consent is **non-blocking for artist-initiated work** (your chat request *is* the consent; autonomous / external-MCP operations still gate through `HumanGate`); the gate previously polled the GUI thread and dead-locked Houdini until that was root-caused live and fixed. The Trust zone also surfaces a **recursive-observability** readout — per-agent success rates plus a recommendation history that persists across restarts and escalates if the same issue recurs.
 
 ---
 
@@ -403,7 +403,7 @@ A four-agent **CRUCIBLE** fan-out attacked the backend and found two real defect
 
 The memory store's bespoke `python/synapse/memory/evolution.py` (the charmander→charizard USD evolution) is superseded by Moneta's consolidation — it stays **dormant** under the `moneta` backend (pinned by `test_moneta_backend_never_fires_evolution`) and still fires under the default `jsonl`; physical removal is deferred to the cutover. (Distinct from `shared/evolution.py`, the MOE-orchestrator subsystem, which is unchanged.)
 
-> **On the name "Moneta":** the vector-memory engine wired in here ([repo](https://github.com/JosephOIbrahim/Moneta)) is a Python library; it is a *distinct project* from the similarly-named "Moneta (Nuke)" entry in the Portfolio thesis below (a planned DCC host). They historically share a working name but are not the same codebase.
+> **On the name "Moneta":** the vector-memory engine wired in here ([repo](https://github.com/JosephOIbrahim/Moneta)) is a Python library; it is a *distinct project* from the similarly-named "Moneta (Nuke)" entry in the Portfolio thesis above (a planned DCC host). They historically share a working name but are not the same codebase.
 
 ---
 
