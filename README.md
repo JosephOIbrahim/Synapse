@@ -4,6 +4,8 @@
 
 <h3 align="center"><strong>Inside-out agent substrate for Houdini.</strong></h3>
 
+<p align="center"><em>Talk to Houdini in plain English — it builds in your live scene.</em></p>
+
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/cognitive/dispatcher.py"><img src="https://img.shields.io/badge/dispatcher-Strangler%20Fig-1e293b.svg" alt="Dispatcher"></a>
@@ -190,60 +192,85 @@ Each host ships its own `synapse.host.*` layer. The cognitive substrate — USD 
 
 ## Install
 
-Tested on **Windows 11 + Houdini 21.0.671**. Linux / macOS paths are the same shape, different separators.
+**Two paths, one repo.** *Artists* — the **5-minute setup** below gets you chatting with Houdini, no command line beyond a copy-paste or two. *Developers* who want the editable install + test suite: see [`docs/getting-started/installation.md`](docs/getting-started/installation.md).
 
-### 1. Clone into a known path
+Tested on **Windows 11 + Houdini 21.0.671**. macOS / Linux are the same steps, different path separators.
 
-```powershell
-git clone https://github.com/JosephOIbrahim/Synapse.git C:\Users\%USERNAME%\SYNAPSE
-cd C:\Users\%USERNAME%\SYNAPSE
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart LR
+    DL["1 &middot; Download<br/>the SYNAPSE folder"]:::step --> REG["2 &middot; Run the installer<br/>(once)"]:::step
+    REG --> KEY["3 &middot; Paste your API key<br/>(double-click the .bat)"]:::step
+    KEY --> OPEN["4 &middot; Restart Houdini,<br/>open the SYNAPSE panel"]:::step
+    OPEN --> CHAT["Type 'make a box'<br/>&rarr; it builds"]:::done
+    classDef step fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef done fill:#334155,stroke:#22c55e,color:#f1f5f9
 ```
 
-**You're good if:** `git log -1 --oneline` shows the latest commit on `master`.
-**If you see** `fatal: destination path already exists`: pick a different destination or remove the existing folder first.
+### 1 · Get the files
 
-### 2. Register the package with Houdini
+On GitHub, click the green **Code ▸ Download ZIP** and unzip it somewhere stable — e.g. `C:\Users\<you>\SYNAPSE`. *(Prefer git? `git clone https://github.com/JosephOIbrahim/Synapse.git C:\Users\%USERNAME%\SYNAPSE`.)*
 
-The Houdini package ships **in the repo** at [`packages/synapse.json`](packages/synapse.json) — so the SYNAPSE panel, shelves, and `synapse` Python package load on launch. Two ways to register it:
+### 2 · Tell Houdini about it (run once)
 
-**Recommended — run the installer** (resolves absolute paths + a sibling `Moneta/` checkout, writes a `synapse.json` into your Houdini prefs):
+From inside the SYNAPSE folder, run the installer — it writes one small file into your Houdini prefs so the panel shows up on launch:
 
 ```powershell
-python scripts/install_synapse_package.py            # auto-detects your houdini21.0 prefs
-python scripts/install_synapse_package.py --dry-run  # preview without writing
+python scripts/install_synapse_package.py
 ```
 
-**Portable alternative — no install.** Add the repo's `packages/` dir to Houdini's package search path (the shipped `packages/synapse.json` derives every path from `$HOUDINI_PACKAGE_PATH`, so nothing is hard-coded). In your `houdini.env`:
+No Python on your PATH? Use the copy that ships inside Houdini:
+
+```powershell
+& "C:\Program Files\Side Effects Software\Houdini 21.0.671\bin\hython.exe" scripts/install_synapse_package.py
+```
+
+*(Add `--dry-run` to preview without writing anything.)*
+
+### 3 · Paste your Anthropic API key
+
+SYNAPSE talks to Claude, so it needs a key — make one at **console.anthropic.com** (it starts with `sk-ant-`). Then just **double-click `set_anthropic_key.bat`** in the SYNAPSE folder, paste the key, and press Enter. It remembers it for you.
+
+### 4 · Restart Houdini and open the panel
+
+Fully quit and reopen Houdini. Then **New Pane Tab ▸ SYNAPSE** (the ➕ on any pane edge). Type **"make a box"** and watch it appear in your scene.
+
+That's the whole loop. Everything SYNAPSE does is an ordinary Houdini action — **Ctrl+Z undoes it** — and it asks first before anything destructive.
+
+<details>
+<summary><strong>If something's not working</strong></summary>
+
+- **SYNAPSE isn't in the Pane Tab menu** → Houdini loads packages only at launch; fully restart it, and confirm the installer reported success.
+- **"No API key" / the panel won't connect** → re-run `set_anthropic_key.bat`, then **relaunch Houdini from scratch** — on Windows a freshly-set key only reaches apps started *after* you set it. To check, run in Houdini's Python Shell: `import os; print(bool(os.environ.get('ANTHROPIC_API_KEY')))` — it should print `True`.
+- **`ModuleNotFoundError: No module named 'synapse'`** → the installer prints the path it wired; confirm it points at the repo's `python/` directory, and that you restarted Houdini.
+
+</details>
+
+<details>
+<summary><strong>Portable / no-install setup</strong></summary>
+
+Skip the installer — the shipped [`packages/synapse.json`](packages/synapse.json) derives every path from `$HOUDINI_PACKAGE_PATH`, so nothing is hard-coded. Add the repo's `packages/` dir to Houdini's package search path in your `houdini.env`:
 
 ```
 HOUDINI_PACKAGE_DIR = "$HOUDINI_PACKAGE_DIR;C:/path/to/Synapse/packages"
 ```
 
-Either way, **restart Houdini** afterward — packages and env vars load at launch (and a running session caches Python modules until restart). The optional `MONETA_SRC` var (set automatically by the installer when a sibling `../Moneta` exists) enables the Moneta memory backend; without it SYNAPSE uses the default JSONL store.
+Restart Houdini afterward. The optional `MONETA_SRC` var (auto-set by the installer when a sibling `../Moneta` exists) enables the Moneta memory backend; without it SYNAPSE uses the default JSONL store.
 
-**You're good if:** launching Houdini and running `import synapse; print(synapse.__version__)` in the Python Shell prints a version string.
-**If you see** `ModuleNotFoundError: No module named 'synapse'`: confirm the package's `PYTHONPATH` resolves to the repo's `python/` directory (the installer prints the resolved path), and that you restarted Houdini.
+</details>
 
-### 3. Set the API key
+<details>
+<summary><strong>For developers — API-key options + daemon verification</strong></summary>
 
-**Current primary — env var.** Set `ANTHROPIC_API_KEY` in your system environment (not just a terminal session — Houdini launches don't inherit shell-scoped vars on Windows):
+**Set the key as a system env var** instead of the `.bat`, if you prefer:
 
 ```powershell
 setx ANTHROPIC_API_KEY "sk-ant-..."
 ```
 
-Launch a fresh Houdini after running `setx` — the new value only reaches processes started after.
+Relaunch Houdini after `setx` — the value only reaches processes started after. When SideFX ships a secure-credentials API in a future Houdini release, SYNAPSE's auth resolver picks it up automatically; confirmed **not present** in 21.0.671 (`dir(hou)` exposes only `secureSelectionOption`).
 
-Or run the helper **`set_anthropic_key.bat`** at the repo root: it prompts for the key, persists it with `setx`, and reminds you to relaunch Houdini — so you don't have to remember the command or the system-vs-shell-scope gotcha.
-
-**Forward-compat — `hou.secure`.** When SideFX ships a secure-credentials API in a future Houdini release, SYNAPSE's auth resolver picks it up automatically. Confirmed **not present** in Houdini 21.0.671 (`dir(hou)` only exposes `secureSelectionOption`). No action needed today.
-
-**You're good if:** in Houdini's Python Shell, `import os; print(bool(os.environ.get('ANTHROPIC_API_KEY')))` prints `True`.
-**If you see** `False`: the variable didn't land in this Houdini's environment. Close Houdini, re-open from a fresh shell, try again.
-
-### 4. Verify the daemon boots
-
-In Houdini's Python Shell:
+**Boot the daemon directly** in Houdini's Python Shell:
 
 ```python
 from synapse.host.daemon import SynapseDaemon
@@ -254,10 +281,12 @@ print("running:", daemon.is_running)
 daemon.stop()
 ```
 
-**You're good if:** prints `running: True` and stops cleanly.
-**If you see** `DaemonBootError: hou.isUIAvailable() returned False`: you're in headless `hython`, not graphical Houdini. The daemon refuses to boot in PDG / render-farm contexts (Fork Bomb prevention). For tests, pass `boot_gate=False`.
-**If you see** `DaemonBootError: No Anthropic API key available`: step 3 didn't take. Re-launch Houdini from a fresh shell.
-**If you see** `DaemonBootError: anthropic SDK is not installed`: this shouldn't happen — the SDK is vendored at `python/synapse/_vendor/` and prepended to `sys.path` on `import synapse`. If it does, confirm the vendored tree is intact on disk (`ls python/synapse/_vendor/anthropic/`).
+Healthy → prints `running: True` and stops cleanly. Common errors:
+- **`DaemonBootError: hou.isUIAvailable() returned False`** → you're in headless `hython`, not graphical Houdini. The daemon refuses to boot in PDG / render-farm contexts (Fork-Bomb prevention). For tests, pass `boot_gate=False`.
+- **`DaemonBootError: No Anthropic API key available`** → the key didn't land; relaunch Houdini from a fresh shell.
+- **`DaemonBootError: anthropic SDK is not installed`** → shouldn't happen (vendored at `python/synapse/_vendor/`, prepended to `sys.path` on `import synapse`); confirm the vendored tree is intact (`ls python/synapse/_vendor/anthropic/`).
+
+</details>
 
 ---
 
