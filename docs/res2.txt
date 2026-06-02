@@ -1,0 +1,1 @@
+val=1152, raw=pythonexprf("__import__('loputils').computeResolutionParameter(True, False)")
