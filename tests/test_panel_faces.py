@@ -250,6 +250,34 @@ def test_done_edge_populates_review_verdict():
     assert "Dark_Glass" in p._review_face._verdict.text()
 
 
+def test_classify_tool_two_axes():
+    # Mile 6 — the verb × context taxonomy classifies tools sensibly.
+    from synapse.panel.tool_filter import classify_tool
+    assert classify_tool("houdini_render")[0] == "render"
+    assert classify_tool("houdini_create_usd_prim") == ("build", "USD")
+    assert classify_tool("cops_pixel_sort")[1] == "COP"
+    assert classify_tool("synapse_inspect_scene")[0] == "explain"
+    assert classify_tool("tops_diagnose")[0] == "fix"
+
+
+def test_tool_palette_two_axis_filter():
+    # The ⌘K palette opens with both axes navigable; each filters the rows.
+    from synapse.panel.tool_palette import ToolPalette
+    _make_panel()                       # ensure a QApplication exists
+    pal = ToolPalette()
+    assert None in pal._verb_chips and "render" in pal._verb_chips and len(pal._verb_chips) == 6
+    assert None in pal._ctx_chips and "COP" in pal._ctx_chips and len(pal._ctx_chips) == 6
+    base = len(pal._visible())
+    pal._set_axis("verb", "render")
+    assert pal._verb == "render"
+    assert all(e["verb"] == "render" for e in pal._visible())
+    assert len(pal._visible()) <= base
+    pal._set_axis("context", "Karma")   # combine both axes
+    assert all(e["verb"] == "render" and e["context"] == "Karma" for e in pal._visible())
+    pal._set_axis("verb", "render")     # toggling the same chip clears it
+    assert pal._verb is None
+
+
 def _run_all():
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
