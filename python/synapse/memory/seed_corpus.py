@@ -196,7 +196,9 @@ def main(argv: List[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     result = seed(args.dir, dry_run=args.dry_run, force=args.force)
-    print(json.dumps(result, indent=2))
+    # sys.stdout.write (not print) keeps this CLI within the repo's
+    # "no print() in source" rule (tests/test_v5_features.py).
+    sys.stdout.write(json.dumps(result, indent=2) + "\n")
     return 0
 
 
