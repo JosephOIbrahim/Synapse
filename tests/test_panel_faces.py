@@ -158,6 +158,44 @@ def test_scripted_conversation_renders():
     assert "node:/materials/AMD/Dark_Glass" in html_, "node ref must stay a chip anchor"
 
 
+def test_work_face_present():
+    # Mile 4 — the Work face is the real FaceWork, not a placeholder.
+    p = _make_panel()
+    assert p._work_face is not None
+    assert hasattr(p._work_face, "_cook")
+
+
+def test_work_face_pulses_while_thinking():
+    # The cook preview runs its indeterminate sweep while the agent thinks,
+    # and stops at rest — "the walk-away glance" reads alive.
+    p = _make_panel()
+    p._set_thinking(True)
+    assert p._work_face._cook._timer.isActive()
+    p._set_thinking(False)
+    assert not p._work_face._cook._timer.isActive()
+
+
+def test_tool_status_feeds_plan():
+    # Live tool events drive the plan-with-progress; a phase change updates the
+    # step in place (no duplicate), and normalizes done→ok.
+    p = _make_panel()
+    p._on_tool_status("houdini_render", "running", "")
+    assert "houdini_render" in [s[0] for s in p._work_face._steps]
+    p._on_tool_status("houdini_render", "done", "")
+    steps = p._work_face._steps
+    assert [s[0] for s in steps].count("houdini_render") == 1
+    assert steps[-1][1] == "ok"
+
+
+def test_cook_progress_is_determinate():
+    # Real cook counts switch the grid out of pulse into determinate progress.
+    p = _make_panel()
+    p._work_face.set_cook(14, 30)
+    assert p._work_face._cook._determinate
+    assert not p._work_face._cook._timer.isActive()
+    assert "14 / 30" in p._work_face._cook_lbl.text()
+
+
 def _run_all():
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

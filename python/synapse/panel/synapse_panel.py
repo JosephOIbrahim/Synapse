@@ -24,10 +24,6 @@ from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import qss
 from synapse.panel.designsystem import components as c
 from synapse.panel.designsystem import motion
-try:
-    from synapse.panel.designsystem.loader import BouncingToy
-except Exception:  # pragma: no cover
-    BouncingToy = None
 
 # Proven runtime + widgets — composed, not rewritten. All optional so the panel
 # always instantiates (graceful degradation is a runtime contract).
@@ -57,6 +53,10 @@ try:
 except Exception:  # pragma: no cover
     HealthInfographic = None
     agent_health = None
+try:
+    from synapse.panel.face_work import FaceWork
+except Exception:  # pragma: no cover
+    FaceWork = None
 
 _VERSION = "7.0.0"
 
@@ -347,23 +347,20 @@ class SynapsePanel(QtWidgets.QWidget):
         return page
 
     def _build_work_face(self):
-        """Work — the walk-away glance. Activity + observability live here; the
-        cook preview + plan-with-progress land in Mile 4."""
+        """Work — the walk-away glance. FaceWork (Mile 4) owns the cook preview,
+        plan-with-progress, live tool status, the thinking pulse, and the
+        embedded observability infographic. The panel delegates its working
+        signals to it (set_thinking / set_tool_status / set_health)."""
+        if FaceWork is not None:
+            self._work_face = FaceWork()
+            return self._work_face
+        # graceful fallback — the surface stays present even without FaceWork
+        self._work_face = None
         page = self._section()
-        col = QtWidgets.QVBoxLayout(page)
-        col.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
-        col.setSpacing(t.SPACE_SM)
-        col.addWidget(self._build_activity_row())
-        # Observability infographic — the visible end of the RSI loop (Line O).
-        if HealthInfographic is not None:
-            self._health = HealthInfographic(parent=page)
-            col.addWidget(self._health)
-        else:
-            self._health = None
-        hint = c.label("the cook lands here — mile 4", role="caption")
-        hint.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
-        col.addWidget(hint)
-        col.addStretch(1)
+        lay = QtWidgets.QVBoxLayout(page)
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        lay.addWidget(c.label("Work face unavailable in this build", role="caption"))
+        lay.addStretch(1)
         return page
 
     def _build_review_face(self):
@@ -476,37 +473,24 @@ class SynapsePanel(QtWidgets.QWidget):
             "the node path and the promoted parameters.%s" % (ctx, prompt, helptxt)
         )
 
-    def _build_activity_row(self):
-        """A bouncing rubber-toy 'thinking' loader (hidden until working)."""
-        self._activity = self._section()
-        lay = QtWidgets.QHBoxLayout(self._activity)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
-        lay.addStretch(1)
-        self._toy = BouncingToy() if BouncingToy is not None else None
-        if self._toy is not None:
-            lay.addWidget(self._toy)
-        lay.addWidget(c.label("thinking…", role="caption"))
-        lay.addStretch(1)
-        self._activity.setVisible(False)
-        return self._activity
-
     def _set_thinking(self, on):
-        if hasattr(self, "_activity"):
-            self._activity.setVisible(on)
-        if getattr(self, "_toy", None) is not None:
-            self._toy.start() if on else self._toy.stop()
+        """Delegate the thinking pulse to the Work face (Mile 4)."""
+        wf = getattr(self, "_work_face", None)
+        if wf is not None:
+            wf.set_thinking(on)
 
     def _update_health(self):
         """Timer-driven: poll the bridge, persist recommendations + run the
         meta-recursion analyzer, paint the infographic. Best-effort — a missing
         bridge or shared/ just yields the 'awaiting telemetry' empty state."""
-        if getattr(self, "_health", None) is None or agent_health is None:
+        wf = getattr(self, "_work_face", None)
+        if wf is None or agent_health is None:
             return
         try:
             data = agent_health.poll_agent_health()
         except Exception:
             data = None
-        self._health.set_data(data)
+        wf.set_health(data)
 
     def _verb(self, text, on_click, accent=False):
         """A type-set action — mono, letter-spaced, no pill chrome (Mile 3).
@@ -831,6 +815,9 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_tool_status(self, name, phase, _detail):
         verb = {"running": "running", "done": "ok", "error": "failed"}.get(phase, phase)
         self._set_header("working", "%s %s" % (name, verb))
+        wf = getattr(self, "_work_face", None)
+        if wf is not None:
+            wf.set_tool_status(name, verb, _detail)   # feed the plan-with-progress
         if phase == "running":
             self._request_face("work")   # a live tool → the walk-away glance
 
