@@ -15,7 +15,7 @@ The original artifact bound Phase 0 to a repo snapshot that the same session's w
 
 1. **Target snapshot.** Was "Protocol 4.0.0 / memory Charmander." Now **v5.10.0** with the **Moneta vector memory backend shipped** (PRs #13–#17). Consequence: the dead-end registry (§2) no longer needs a bespoke USD prim schema — it can persist into the Moneta backend or via the file path in correction #2.
 
-2. **Phase 0a (`synapse_write_file`) is ~built.** `synapse_write_report` + `cognitive/tools/write_report.py` are on `master` (PR #15). It is exactly the §5 spec: a handler-/server-thread write that **routes around `execute_python`** (no main-thread hop), path-confined, atomic (`tmp + fsync + replace`). **Residual gap:** binary support + a general (non-reports-dir) path policy. So 0a is ~80% done, not a multi-day build.
+2. **Phase 0a's *write path* is ~built; its *Floor hook* is not.** `synapse_write_report` + `cognitive/tools/write_report.py` are on `master` (PR #15): a handler-/server-thread write that **routes around `execute_python`** (no main-thread hop), path-confined, atomic (`tmp + fsync + replace`). That is **0a** (the write path): text-write done, **binary + multi-root path policy UNBUILT**. But the Phase 0a spec (`SCIENCE_HARNESS_PHASE0A_SPEC.md` §1, §8) split out **0a′ — the emit-time Floor hook** (a `CommandHandlerRegistry.invoke()` primitive wrapping every emit), which is **UNBUILT and the largest piece**. So 0a-the-write-path is ~80% done; 0a-the-regime is not — the hook dominates the remaining work.
 
 3. **Phase 0b's hypothesis space collapsed → it is now a BUILD.** A read-only investigation traced the hang: `_handle_execute_python` wraps the *entire* script in `run_on_main` → `hdefereval` (`server/main_thread.py:105`, 30s timeout); a blocked main thread (modal/cook) hangs it while `ping` (no main-thread hop) stays alive. That **confirms T1** (main-thread dispatch), **weakens T2** (socket/queue is fine — the handler reaches dispatch), and reduces **T3** (GIL/background cook) to a *contributor to "main blocked," not a separate never-releasing lock*. Three competing causes collapsed to one known mechanism. By **§3's own gate, "fix `execute_python`" moved SEARCH → BUILD.** The known fix: don't marshal pure-Python / no-`hou` scripts to the main thread; add dialog suppression + a timeout fallback on the WS handler path (the daemon path already has dialog suppression; the WS path does not).
 
@@ -60,7 +60,7 @@ Claude Code can't spawn nested processes, so these stay **sequential role identi
 
 ## §2 — Shared state and the dead-end registry
 
-The harness coordinates through SYNAPSE's persistence substrate, not a flat forum. Three persisted structures:
+The harness coordinates through SYNAPSE's persistence substrate, not a flat forum. Three persisted structures — collectively **the Ledger** (the name the Phase 0a spec, `SCIENCE_HARNESS_PHASE0A_SPEC.md`, uses for §2 as a whole):
 
 **Champion** — the current best answer to the open question (the working predictor / the confirmed root cause / the verified recipe).
 
@@ -102,7 +102,7 @@ Run the Scaffold Report through the gate and it sorts itself **(re-graded 2026-0
 
 | Scaffold item | Admit? | Why |
 |---|---|---|
-| `synapse_write_file` | **DONE** | Shipped as `synapse_write_report` (PR #15). Residual: binary + general paths = a small build. |
+| `synapse_write_file` (write path) | **text DONE; binary + multi-root UNBUILT** | Shipped as `synapse_write_report` (PR #15). Separately, **0a′ the emit-time Floor hook is UNBUILT — the largest piece** (spec §1/§8). |
 | Fix `execute_python` | **BUILD (was YES)** | Hypothesis space collapsed to one known mechanism (main-thread marshaling; see §5). No longer search-shaped — apply the known fix. |
 | APEX agent + recipes | **partial → the debut** | *Which H21 APIs exist* is a `dir()` search → admit the verify phase. Recipes are builds. **This is now the harness's first genuine search (§6).** |
 | Recipe confidence scoring | **weak** | "What function predicts recipe success?" is a small search. Admit if you want it; low stakes. |
@@ -121,10 +121,35 @@ The Harlo proposal gated experiments through its basal-ganglia motor spine and R
 - **Idempotent guards.** Check-before-mutate on every experiment so a re-run is safe.
 - **Transaction-wrapped with undo-group rollback.** A failed experiment rolls back clean.
 - **Verify the API before you spend on it.** No experiment may touch an API surface unconfirmed by runtime `dir()` introspection. (This is precisely the APEX-verify debut: the gate *is* the harness's first search.)
-- **USD provenance on every decision.** Each promotion, rejection, and dead-end is written with its reasoning. The audit trail *is* the cognitive-substrate thesis pointed at SYNAPSE's own evolution.
+- **Provenance on every decision.** Each promotion, rejection, and dead-end is written with its reasoning. The audit trail *is* the cognitive-substrate thesis pointed at SYNAPSE's own evolution. *(Originally "USD provenance"; correction #1's re-grounding retired the bespoke USD prim schema — the ratified substrate is JSON files via the write path, §4a.3.)*
 - **Halt-and-surface, not RED.** The harness halts and hands back on: merge conflict, unverified API, failed transaction, or noise-band ambiguity. Mirrors the constitutional dispatch's explicit halt triggers.
 
 **Promotion rule (noise-aware):** no new champion unless the measured gain clears the noise band, **confirmed on a second seed/context.** This is CRUCIBLE's never-weaken-the-test discipline as a promotion gate. The "second seed" form changes by target (§7): a fresh-session reproduction for a bug; a held-out query set for a learned scorer; a second independent `dir()` env for an API surface.
+
+### §4a — Tier 0 (the Floor) and Tier 1 (the gated search)
+
+*(Added 2026-06-02 to give the Phase 0a spec's vocabulary a home on disk. This formalizes a split that §3 and the invariants above already imply; it adds no new machinery — it names the two tiers and binds the spec.)*
+
+The §0 admission test (§3) does not only sort work in or out of the harness — it cuts the regime into two tiers, and the invariants above belong to different ones:
+
+- **Tier 0 — the Floor (unconditional).** The subset of §4 invariants that hold for **every emitted operation**, harness or not — *including straight builds that never pass the §3 gate*. The Floor is not opt-in and not the harness's alone; it is the substrate's standing guarantee. Its load-bearing member is **provenance on every decision** (§4a.3). Transaction-wrapped rollback and halt-and-surface are also Tier 0.
+- **Tier 1 — the gated search (conditional).** What the §3 gate *admits*: the proposal → critique → experiment loop plus the noise-aware promotion rule above. Tier 1 layers **API-verify-before-spend** and **one-mutation-per-experiment** on top of the Floor. A straight build runs on Tier 0 only; a search runs on Tier 0 **and** Tier 1.
+
+This is *why* the Floor must be enforced **below** the harness loop: a build that never enters Tier 1 still emits operations, and those still need provenance and rollback. Enforcement that lived inside the search loop would leave every straight build unprovenanced.
+
+#### §4a.1 — What is unconditional (the Floor's content)
+
+Of the invariants above, these hold for every emit regardless of tier: **transaction-wrapped undo rollback**, **provenance on every decision**, and **halt-and-surface on its rollback-class triggers** (merge conflict / failed transaction). By contrast, *API-verify-before-spend* and *one-mutation-per-experiment* are Tier 1 (they bind experiments, not every emit) — and so are halt-and-surface's *search-class* triggers, **unverified API** and **noise-band ambiguity**, which only exist inside the Tier 1 loop. So §4's halt-and-surface is itself split: rollback-class triggers are Tier 0, search-class triggers are Tier 1.
+
+#### §4a.2 — The emit-time hook (where the Floor is enforced)
+
+The Floor is enforced **structurally by the substrate, not by a role remembering to** — the principle CLAUDE.md gives Houdini mutations via the LosslessExecutionBridge ("agents are downstream"), applied to *every* emit, hou or not.
+
+**Resolved placement (Phase 0a spec §8, ratified 2026-06-02):** a server-side gate at a shared `CommandHandlerRegistry.invoke()` primitive, through which all three handler-invocation sites route — **not** `handle()` alone. Batch fan-out (`_handle_batch_commands`) and the autonomy adapter (`_HandlerAdapter`) dispatch via `registry.get()` directly and bypass `handle()`; a `handle()`-only hook would leave batch sub-ops and every autonomy op unprovenanced. Full call-site map and argument: `SCIENCE_HARNESS_PHASE0A_SPEC.md` §8.
+
+#### §4a.3 — Floor provenance
+
+Every non-read-only emit writes **one immutable provenance record** — `{op, payload-digest, result-digest, sha256, ts, session, outcome, parent, origin}` — via the **blocker-free write path**: Phase 0a's `synapse_write_file` (§5), **never** `execute_python` (whose main-thread marshaling can be blocked exactly when the system is under load). Tier 1 Ledger records (§2) use the *same* write path under a different root key. This is the §4 "provenance on every decision" invariant made structural and given a substrate. **Interlock:** the Floor's enforcement depends on the Floor's write path, so Phase 0a (the write path) strictly precedes 0a′ (the hook) — spec §8.4.
 
 ---
 
@@ -133,11 +158,14 @@ The Harlo proposal gated experiments through its basal-ganglia motor spine and R
 The original interlock — "the harness can't record findings because file I/O is blocked, unless its persistence routes around `execute_python`" — **has already resolved.** That persistence path was built this session.
 
 ```
-Phase 0a  — synapse_write_file              [≈ DONE · synapse_write_report, PR #15 · merged]
+Phase 0a  — synapse_write_file (write path)  [text DONE · synapse_write_report, PR #15 · merged]
               → handler/server-thread write, path-confined, atomic (tmp+fsync+replace)
               → routes around execute_python by construction (no main-thread hop)
-              → RESIDUAL build: binary payloads + a general (non-reports-dir) path policy
-              → the harness's registry substrate already exists
+              → UNBUILT: binary payloads + multi-root (non-reports-dir) path policy
+Phase 0a′ — emit-time Floor hook             [UNBUILT · the largest piece]
+              → CommandHandlerRegistry.invoke() wrapping every emit (3 sites + Dispatcher)
+              → Floor provenance via the 0a write path; enforces Tier 0 (spec §8, §4a)
+              → depends on 0a (the write path) — §8.4 interlock
 
 Phase 0b  — fix execute_python              [BUILD, not a search — hypothesis space collapsed]
               → root cause is known: _handle_execute_python marshals the whole script to
@@ -183,3 +211,5 @@ The harness is your MOE workflow with a named loop, a dead-end registry persiste
 ---
 
 *End of ARCHITECT artifact (re-grounded 2026-05-31 against v5.10.0). Next, if greenlit: the FORGE spec for the `execute_python` fix (build) and the APEX-verify probe harness (the harness's first real search).*
+
+*Addendum 2026-06-02: §2 named "the Ledger"; §4a (Tier 0/Tier 1 + the emit-time Floor hook + Floor provenance) added to bind the now-ratified Phase 0a spec (`SCIENCE_HARNESS_PHASE0A_SPEC.md`). Hook placement resolved there to a registry-invocation primitive, not `handle()`.*

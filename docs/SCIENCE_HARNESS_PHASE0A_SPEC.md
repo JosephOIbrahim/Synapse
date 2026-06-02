@@ -1,13 +1,18 @@
 # Phase 0a Spec — `synapse_write_file` + the Floor emit-time hook
 
-**Status:** `DRAFT — awaiting sign-off`. Not built, not verified. This is an ARCHITECT
-artifact on the Floor: an in-repo document with its provenance recorded. No claim here
-has been run; nothing is stamped "verified."
+**Status:** `DESIGN RATIFIED — 2026-06-02 (signed off by Joe on the §8 registry-invocation
+decision). UNBUILT, not verified.` FORGE is unblocked to build §9 in order (0a before the
+0a′ hook, §8.4 interlock). "Verified" is **not** claimed and is gated by the §11 acceptance
+pins — sign-off ratifies the *design*, not a working artifact.
 
-**Role:** ARCHITECT (spec only — no FORGE implementation this pass).
+**Role:** ARCHITECT (spec only — no FORGE implementation in this pass).
 **Date:** 2026-06-02.
 
 **Correction log (provenance):**
+- *2026-06-02, sign-off.* Joe ratified the §8 resolution (Floor hook at
+  `CommandHandlerRegistry.invoke()`, not `handle()`). Harness doc `SYNAPSE_SCIENCE_HARNESS.md`
+  amended in the same change: §2 named "the Ledger"; §4a (Tier 0/Tier 1 + emit-time hook +
+  §4a.3 Floor provenance) added so this spec's cross-references resolve on disk.
 - *2026-06-02, pre-commit adversarial pass.* The load-bearing §8 claim — "`handle()` is the
   single funnel, no other path from emit to run" — was **falsified by code**. There are
   **three** handler-invocation sites sharing `self._registry`: `handle():331` (external
@@ -18,8 +23,8 @@ has been run; nothing is stamped "verified."
   is unchanged and in fact strengthened; only its seat moved one layer down.
 - Citation fix: `science/registry.py` does **not** import `write_report`; it exposes a
   `deposit_fn` seam documented as "the Moneta / synapse_write_report injection point."
-**Binds to:** `docs/SYNAPSE_SCIENCE_HARNESS.md` §5 (Phase 0a), §2 (Ledger / dead-end
-registry), §4 (invariants), §7 (open question: hook placement).
+**Binds to:** `docs/SYNAPSE_SCIENCE_HARNESS.md` §5 (Phase 0a), §2 (the Ledger), §4
+(invariants), §4a (Tier 0/Tier 1 + the emit-time Floor hook, added 2026-06-02).
 **Grounded in (read, not assumed):**
 - `python/synapse/cognitive/tools/write_report.py` (the shipped write path)
 - `python/synapse/server/handlers.py:303` (`handle()` dispatch chokepoint), `:335`
@@ -35,24 +40,26 @@ registry), §4 (invariants), §7 (open question: hook placement).
 
 ---
 
-## 0 — Section-numbering drift (surfaced, not silently reconciled)
+## 0 — Section reconciliation (done 2026-06-02)
 
-The on-disk harness doc (`SYNAPSE_SCIENCE_HARNESS.md`, re-grounded 2026-05-31) frames the
-regime as a **§3 build-vs-search admission gate** plus **§4 hard invariants**. It does
-**not** literally contain the "Tier 0 (unconditional Floor) / Tier 1 (gated search)"
-split, a `§4a`, a `§4a.3`, or a "§4a emit-time check hook." The sign-off request introduces
-those. They map cleanly onto the doc's bones, and this spec adopts them — but the mapping
-is stated, not assumed, so we don't invent anchors the harness doc can't back:
+The harness doc (`SYNAPSE_SCIENCE_HARNESS.md`) originally framed the regime as a **§3
+build-vs-search admission gate** plus **§4 hard invariants**, with no literal "Tier 0 /
+Tier 1" split and no `§4a`. The sign-off request introduced that vocabulary. Rather than
+let this spec reference anchors the harness doc couldn't back, the harness doc was
+**amended in the same change** (2026-06-02). The mapping is now real on disk:
 
-| Sign-off term            | On-disk harness doc equivalent                                            |
-|--------------------------|---------------------------------------------------------------------------|
-| **Tier 0 / the Floor**   | §4 invariants applied **unconditionally to every emitted op** — including straight builds that never enter the harness. Provenance-on-every-decision is the load-bearing one. |
-| **Tier 1 / gated search**| §3-admitted search loop + §4 noise-aware promotion rule.                   |
-| **§4a / §4a.3 (Floor provenance)** | §4 "USD provenance on every decision," made structural and given a write path. |
-| **§4a emit-time hook**   | The §7 open question this spec resolves.                                   |
+| Spec term | Harness doc anchor (now present) |
+|---|---|
+| **Tier 0 / the Floor** | harness §4a (intro) + §4a.1 — §4 invariants applied unconditionally to every emit, incl. straight builds. |
+| **Tier 1 / gated search** | harness §4a (intro) — §3-admitted loop + §4 noise-aware promotion. |
+| **Floor provenance** | harness §4a.3. |
+| **the emit-time hook** | harness §4a.2 — placement resolved *here* (§8), recorded there. |
 
-**Recommendation at sign-off:** fold a "Tier 0 Floor / Tier 1 search" subsection into the
-harness doc §4 so the vocabulary has a home, then this spec's anchors are real.
+**Recommendation — DONE.** The "Tier 0 Floor / Tier 1 search" subsection now lives at
+harness §4a; this spec's cross-references resolve. One honest note: the "hook placement"
+was the *spec's* framing, **not** a literal open bullet in harness §7 (whose open questions
+are cadence / compute-yield / registry-surfacing / second-seed). §8 below resolves it and
+the resolution is recorded at harness §4a.2 — *not* §7.
 
 ---
 
@@ -111,8 +118,8 @@ key — never a free absolute path from the caller.
 # spec — not implementation
 ROOTS = {
     "reports":    <repo>/docs                        # back-compat: write_report's current base
-    "ledger":     $SYNAPSE_LEDGER_DIR  else <repo>/.synapse/ledger      # §2 dead-end registry
-    "provenance": $SYNAPSE_PROVENANCE_DIR else <repo>/.synapse/provenance # §4a.3 Floor
+    "ledger":     $SYNAPSE_LEDGER_DIR  else <repo>/.synapse/ledger      # harness §2 (the Ledger)
+    "provenance": $SYNAPSE_PROVENANCE_DIR else <repo>/.synapse/provenance # harness §4a.3 (Floor provenance)
 }
 ```
 
@@ -170,17 +177,19 @@ overwrite       : bool  (default True)
   sha256: "<hex of the exact bytes written>" }   ← new
 ```
 
-`sha256` is **required for the Floor**: provenance records (§4a.3) and the dead-end
-registry (§2) need a content hash to be replayable/auditable — it mirrors the bridge's
+`sha256` is **required for the Floor**: provenance records (harness §4a.3) and the dead-end
+registry (harness §2) need a content hash to be replayable/auditable — it mirrors the bridge's
 `IntegrityBlock.delta_hash`. Cheap to compute over bytes we already hold.
 
 ---
 
 ## 5 — Error contract (bound to the real dispatch mapping)
 
-`handle()` (`handlers.py:303`) maps exceptions thus:
-`SynapseUserError`/`ValueError` → failure response, **no circuit-breaker trip**;
-`SynapseServiceError`/bare `Exception` → failure response, **trips CB**.
+`handle()` (`handlers.py:303`) routes exceptions into two response branches — and the
+circuit breaker trips *downstream* of that split, off the response/exception type (the
+branch comments at `:346/:354/:362` mark the intent, "Don't trip CB" / "DO trip CB"):
+`SynapseUserError`/`ValueError` → failure response, **no-CB branch**;
+`SynapseServiceError`/bare `Exception` → failure response, **CB-tripping branch**.
 
 The write path must honor that split:
 
@@ -229,8 +238,9 @@ what separates them:
   record for **every non-read-only op**, unconditionally, to `root="provenance"`. One
   immutable file per op. This is the audit trail the cognitive-substrate thesis points at
   SYNAPSE's own evolution.
-- **Tier 1 — Ledger / dead-end registry (§2):** the harness writes `DeadEnd` / `Champion`
-  / `Forum` records to `root="ledger"`, one immutable file per record. Per harness §2,
+- **Tier 1 — Ledger / dead-end registry (harness §2):** the harness writes `DeadEnd` /
+  `Champion` / `Forum` records to `root="ledger"` — leaning one immutable file per record
+  (**pending the §10 append-model decision**). Per harness §2,
   **prefer Moneta** when the backend is enabled; **fall back to `synapse_write_file`** when
   Moneta is default-off (current state, v5.10.0). So this endpoint is *both* the always-on
   Floor substrate *and* the Ledger's degraded-mode substrate.
@@ -240,7 +250,7 @@ hashed write mechanism. That is exactly the "write-path for BOTH tiers" requirem
 
 ---
 
-## 8 — RESOLVED §7: where the emit-time Floor check lives
+## 8 — RESOLVED: where the emit-time Floor check lives (recorded at harness §4a.2)
 
 **Resolution: a server-side gate at the shared handler-invocation primitive of
 `CommandHandlerRegistry` (a new `registry.invoke(cmd_type, payload, ctx)`), through which
@@ -296,6 +306,19 @@ is downstream of dispatch and scoped to `hou` mutations — `write_file`, the Le
 autonomy decisions, and batch sub-ops that never touch `hou` all slip past it. The Floor
 must sit at the invocation primitive, *above* the hou/non-hou split. The bridge stays the
 Floor's *executor* for scene mutations; the registry is its *gate*.
+
+**Coverage caveat — a second registry exists (found in the consistency pass).**
+`synapse.cognitive.dispatcher.Dispatcher` (`dispatcher.py:101`) is a *separate* invocation
+surface: its own `self._tools` registry, its own `execute()` (`:212` → `fn(**kwargs)` /
+`_execute_via_main_thread`), the forward-looking in-process **Agent-SDK** path. It does
+**not** share `self._registry`, so the "exactly three sites" claim above (scoped to
+`CommandHandlerRegistry`) still holds — *but a Floor hook on `registry.invoke()` alone would
+not cover ops emitted through the Dispatcher.* Since the Dispatcher is the autonomy/SDK
+seam, that is the same hole one layer over (autonomy slipping the Floor, exactly as batch
+slips a `handle()`-only hook). The Floor must therefore wrap **both**
+`CommandHandlerRegistry.invoke()` **and** `Dispatcher.execute()` — or the two registries
+must converge (the Dispatcher is a Strangler-Fig *meant* to subsume the handler path;
+convergence is the clean long-term answer). Tracked in §10.
 
 ### 8.2 Why NOT the five alternatives
 
@@ -365,19 +388,24 @@ strictly after.
    primitive carrying the `FloorGate`; provenance via `write_file(root="provenance")`;
    subsume the line-335 audit bracket. **Route all three sites through it:** `handle():331`,
    `_handle_batch_commands:705`, `_HandlerAdapter.call:1387`. Make `registry.get()`
-   invocation-only. *This is the largest piece of 0a′ — three call-site changes plus the
-   primitive, not a single wrap.* Pins: §11.
+   invocation-only. **Also cover `Dispatcher.execute()`** (the Agent-SDK registry, §8
+   coverage caveat) — wrap it too, or converge the registries. *This is the largest piece of
+   0a′ — three+ call-site changes plus the primitive, not a single wrap.* Pins: §11.
 5. **`science/registry.py`** — wire `write_file(root="ledger")` as the `deposit_fn`
-   (one-file-per-record, §6 lean-(a)); keep Moneta-preferred. (Today `deposit_fn=None` at the
-   science entrypoint — this is the wiring that closes it.)
+   (one-file-per-record per §6 lean-(a) — **contingent on the §10 append-model decision**);
+   keep Moneta-preferred. (Today `deposit_fn=None` at the science entrypoint — this is the
+   wiring that closes it.)
 
 ---
 
 ## 10 — Open sub-questions for sign-off
 
-- **Ledger record format & append model** — JSON per the `DeadEnd` dataclass (§2)? And the
-  §6 tension: one-immutable-file-per-record (lean-(a)) vs `write_file` append-mode (b) vs
-  registry-owned JSONL (c). Pick one; it changes both `write_file`'s surface and step §9.5.
+- **Ledger record format & append model** — JSON per the `DeadEnd` dataclass (harness §2)?
+  And the §6 tension: one-immutable-file-per-record (lean-(a)) vs `write_file` append-mode
+  (b) vs registry-owned JSONL (c). Pick one; it changes both `write_file`'s surface and §9.5.
+- **Two-registry Floor coverage** — must the hook also wrap `Dispatcher.execute()` (the
+  Agent-SDK path, `dispatcher.py`), not just `CommandHandlerRegistry.invoke()`? Decide: wrap
+  both now, or converge the two registries (Strangler-Fig). See §8 coverage caveat.
 - **Provenance volume / rotation** — one file per non-read-only op could be high-volume.
   Retention/rotation policy for `root="provenance"`? (Out of 0a scope, but the hook's
   cadence forces the question.)
@@ -404,5 +432,8 @@ strictly after.
 
 ---
 
-**HALT — awaiting sign-off.** No FORGE implementation, no commit, no "verified" stamp.
-On sign-off: build §9 in order, 0a before the 0a′ hook (§8.4 interlock).
+**SIGNED OFF — 2026-06-02.** Design ratified; FORGE unblocked to build §9 in order, 0a
+before the 0a′ hook (§8.4 interlock). Still UNBUILT — no "verified" stamp until the §11
+acceptance pins pass (notably: a `batch_commands` of N mutating sub-ops yields N+1
+provenance records, and an autonomy op is provenanced). Open §10 decisions — chiefly the
+Ledger append model (§6) — should be settled before §9.5.
