@@ -1,14 +1,19 @@
 # Phase 0a Spec — `synapse_write_file` + the Floor emit-time hook
 
 **Status:** `DESIGN RATIFIED — 2026-06-02 (signed off by Joe on the §8 registry-invocation
-decision). UNBUILT, not verified.` FORGE is unblocked to build §9 in order (0a before the
-0a′ hook, §8.4 interlock). "Verified" is **not** claimed and is gated by the §11 acceptance
-pins — sign-off ratifies the *design*, not a working artifact.
+decision); §10(a)+(b) settled same day. UNBUILT, not verified.` FORGE is unblocked to build
+§9 in order (0a before the 0a′ hook, §8.4 interlock), with **no open decisions left blocking
+it**. "Verified" is **not** claimed and is gated by the §11 acceptance pins — sign-off
+ratifies the *design*, not a working artifact.
 
 **Role:** ARCHITECT (spec only — no FORGE implementation in this pass).
 **Date:** 2026-06-02.
 
 **Correction log (provenance):**
+- *2026-06-02, §10 settled.* The two open sub-questions are resolved: **(a)** Ledger append
+  model → one immutable file per record via `write_file` + registry-owned JSONL index, no
+  append mode (§6, §10); **(b)** two-registry coverage → a shared `FloorGate` wraps **both**
+  `CommandHandlerRegistry.invoke()` and `Dispatcher.execute()`, converge later (§8, §10).
 - *2026-06-02, sign-off.* Joe ratified the §8 resolution (Floor hook at
   `CommandHandlerRegistry.invoke()`, not `handle()`). Harness doc `SYNAPSE_SCIENCE_HARNESS.md`
   amended in the same change: §2 named "the Ledger"; §4a (Tier 0/Tier 1 + emit-time hook +
@@ -223,9 +228,17 @@ mapping is the one new wrapping the FORGE pass adds.
   (`dead_end_<ts>_<hash>.json`) via `write_file` — no shared file, no ordering problem, at
   the cost of many small files; **(b)** `write_file` gains an explicit `append` mode (gives
   up whole-file atomicity for that path); **(c)** the JSONL stays owned by the registry's own
-  append logic, and `write_file` is only the *provenance* + *Moneta-fallback* path. **Spec
-  leans (a)** — it preserves the atomic guarantee and is the natural fit for immutable
-  provenance — but it is a genuine open decision, not settled here.
+  append logic, and `write_file` is only the *provenance* + *Moneta-fallback* path.
+  **RESOLVED 2026-06-02 → (a) + (c), composed.** `write_file` gets **no append mode** —
+  option (b) rejected: it would surrender the atomic-replace guarantee on the one path that
+  must never fail, and reintroduce the lost-update race. The durable Ledger deposit writes
+  **one immutable file per record** via `write_file` (`<kind>_<ts>_<sha8>.json`,
+  root=`ledger`) = option (a). The registry's existing append-only JSONL stays as its
+  **local in-session dedup index** = option (c) for the registry's own store; the
+  `deposit_fn` forwards each record to the per-record file (and/or Moneta). Different layers,
+  not rivals: the JSONL is the fast local index the registry already rebuilds itself from;
+  the per-record files are the durable, hash-addressable artifacts. **Bonus:** identical file
+  model to Tier 0 Floor provenance (§8.3) — one mental model, one read tool across both tiers.
 
 ---
 
@@ -318,7 +331,13 @@ seam, that is the same hole one layer over (autonomy slipping the Floor, exactly
 slips a `handle()`-only hook). The Floor must therefore wrap **both**
 `CommandHandlerRegistry.invoke()` **and** `Dispatcher.execute()` — or the two registries
 must converge (the Dispatcher is a Strangler-Fig *meant* to subsume the handler path;
-convergence is the clean long-term answer). Tracked in §10.
+convergence is the clean long-term answer). **RESOLVED §10(b) (2026-06-02): wrap both now
+via a shared `FloorGate` primitive; converge later.** The Floor check is extracted as a
+standalone gate (owned by *neither* registry) and called from **both** `registry.invoke()`
+and `Dispatcher.execute()`. Convergence (Dispatcher routes through the handler registry) is
+deferred until the Agent-SDK Strangler-Fig matures (Spike 1+), so 0a′ doesn't block on an
+unfinished migration. Pinned by a "no un-gated invocation surface" test (§11); when
+convergence lands, the second wrap is removed.
 
 ### 8.2 Why NOT the five alternatives
 
@@ -388,24 +407,30 @@ strictly after.
    primitive carrying the `FloorGate`; provenance via `write_file(root="provenance")`;
    subsume the line-335 audit bracket. **Route all three sites through it:** `handle():331`,
    `_handle_batch_commands:705`, `_HandlerAdapter.call:1387`. Make `registry.get()`
-   invocation-only. **Also cover `Dispatcher.execute()`** (the Agent-SDK registry, §8
-   coverage caveat) — wrap it too, or converge the registries. *This is the largest piece of
-   0a′ — three+ call-site changes plus the primitive, not a single wrap.* Pins: §11.
-5. **`science/registry.py`** — wire `write_file(root="ledger")` as the `deposit_fn`
-   (one-file-per-record per §6 lean-(a) — **contingent on the §10 append-model decision**);
-   keep Moneta-preferred. (Today `deposit_fn=None` at the science entrypoint — this is the
-   wiring that closes it.)
+   invocation-only. **Also wrap `Dispatcher.execute()`** with the *same* shared `FloorGate`
+   (§10(b): wrap-both-now). Extract `FloorGate` as a standalone primitive owned by neither
+   registry. *This is the largest piece of 0a′ — three+ call-site changes plus the gate, not
+   a single wrap.* Pins: §11.
+5. **`science/registry.py`** — wire `write_file(root="ledger")` as the `deposit_fn`, writing
+   **one immutable file per record** (`<kind>_<ts>_<sha8>.json`, §10(a)); the registry's
+   JSONL stays its local index; `write_file` gets **no** append mode. Keep Moneta-preferred.
+   (Today `deposit_fn=None` at the science entrypoint — this is the wiring that closes it.)
 
 ---
 
 ## 10 — Open sub-questions for sign-off
 
-- **Ledger record format & append model** — JSON per the `DeadEnd` dataclass (harness §2)?
-  And the §6 tension: one-immutable-file-per-record (lean-(a)) vs `write_file` append-mode
-  (b) vs registry-owned JSONL (c). Pick one; it changes both `write_file`'s surface and §9.5.
-- **Two-registry Floor coverage** — must the hook also wrap `Dispatcher.execute()` (the
-  Agent-SDK path, `dispatcher.py`), not just `CommandHandlerRegistry.invoke()`? Decide: wrap
-  both now, or converge the two registries (Strangler-Fig). See §8 coverage caveat.
+**RESOLVED 2026-06-02:**
+- **Ledger append model → (a)+(c) composed** (§6). `DeadEnd`/`Champion`/`Forum` serialize as
+  JSON; the durable deposit is one immutable file per record via `write_file`
+  (`<kind>_<ts>_<sha8>.json`, root=`ledger`); the registry's append-only JSONL stays its local
+  index; `write_file` gets **no** append mode. Same file model as Tier 0 provenance.
+- **Two-registry Floor coverage → wrap both now, converge later** (§8). A standalone
+  `FloorGate` is called from **both** `CommandHandlerRegistry.invoke()` and
+  `Dispatcher.execute()`. Convergence (Dispatcher → handler registry) deferred to the
+  Agent-SDK migration (Spike 1+), so 0a′ ships independent of it. Pin: no un-gated surface.
+
+**Still open (deferred, not blocking §9):**
 - **Provenance volume / rotation** — one file per non-read-only op could be high-volume.
   Retention/rotation policy for `root="provenance"`? (Out of 0a scope, but the hook's
   cadence forces the question.)
@@ -428,6 +453,11 @@ strictly after.
   each `parent`-linked to the batch, plus the batch envelope) — the regression test that
   pins the §8 hole closed.
 - **An autonomy-driven op (via `_HandlerAdapter`) is provenanced** with `origin="autonomy"`.
+- **No un-gated invocation surface** — an op dispatched via `Dispatcher.execute()` passes the
+  *same* `FloorGate` as `registry.invoke()` (the §10(b) invariant). A new invocation surface
+  added without the gate fails this test.
+- **A Ledger deposit writes one immutable `<kind>_<ts>_<sha8>.json`** under root=`ledger`; no
+  shared-file rewrite, and `write_file` exposes no append mode (the §10(a) invariant).
 - A write issued while `is_main_thread_stalled()` is True still completes.
 
 ---
