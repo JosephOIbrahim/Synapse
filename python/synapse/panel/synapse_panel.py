@@ -57,6 +57,11 @@ try:
     from synapse.panel.face_work import FaceWork
 except Exception:  # pragma: no cover
     FaceWork = None
+try:
+    from synapse.panel.face_review import FaceReview, detect_render_flags
+except Exception:  # pragma: no cover
+    FaceReview = None
+    detect_render_flags = None
 
 _VERSION = "7.0.0"
 
@@ -364,22 +369,68 @@ class SynapsePanel(QtWidgets.QWidget):
         return page
 
     def _build_review_face(self):
-        """Review — the payoff. The render becomes the hero in Mile 5; for now
-        this surface carries the consent gate (reversibility / provenance)."""
+        """Review — the payoff (Mile 5). FaceReview owns the render-hero, verdict,
+        credit/provenance, quality flags (incl. BL-007/008), the graduated gate,
+        and accept/revert/commit. ``self._gate`` aliases the embedded gate so the
+        consent wiring (_wire_gate / _on_gate_raised) is unchanged."""
+        if FaceReview is not None:
+            self._review_face = FaceReview()
+            self._gate = self._review_face.gate
+            self._review_face.accepted.connect(self._on_accept)
+            self._review_face.reverted.connect(self._on_revert)
+            self._review_face.committed.connect(self._on_commit)
+            return self._review_face
+        # graceful fallback — keep the consent gate present without FaceReview
+        self._review_face = None
         page = self._section()
         col = QtWidgets.QVBoxLayout(page)
         col.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
-        col.setSpacing(t.SPACE_SM)
         if GateWidget is not None:
             self._gate = GateWidget(parent=page)
             col.addWidget(self._gate)
         else:
             self._gate = None
-        hint = c.label("render · verdict · credit land here — mile 5", role="caption")
-        hint.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
-        col.addWidget(hint)
         col.addStretch(1)
         return page
+
+    def _populate_review(self):
+        """On 'done', fill the Review face with what we can: a taut verdict from
+        the last reply + provenance from the routing_log (best-effort)."""
+        rf = getattr(self, "_review_face", None)
+        if rf is None:
+            return
+        text = "".join(getattr(self, "_stream_buf", []) or []).strip()
+        if text:
+            verdict = text.split("\n", 1)[0].strip()
+            if len(verdict) > 140:
+                verdict = verdict[:137] + "…"
+            rf.set_verdict(verdict)
+        rf.refresh_provenance()
+
+    def _on_accept(self):
+        try:
+            self._chat.append_system_message("Accepted — keeping the result.")
+        except Exception:
+            pass
+
+    def _on_revert(self):
+        # Reversibility: route an undo through the proven agent/bridge path
+        # rather than touching the substrate from the panel.
+        try:
+            self._chat.append_system_message("Reverting the last change…")
+        except Exception:
+            pass
+        self._send("Undo the last change using houdini_undo, then confirm what was reverted.")
+
+    def _on_commit(self):
+        # Commit is a consent moment — it routes through the gate; the panel
+        # never writes /stage itself (the substrate stays Gold's zone).
+        try:
+            self._chat.append_system_message(
+                "Commit to /stage requested — routing through the consent gate.")
+        except Exception:
+            pass
+        self._set_face("review")
 
     def _build_hda_form(self):
         """Native-designsystem describe→build flow (the build runs through the
@@ -818,6 +869,14 @@ class SynapsePanel(QtWidgets.QWidget):
         wf = getattr(self, "_work_face", None)
         if wf is not None:
             wf.set_tool_status(name, verb, _detail)   # feed the plan-with-progress
+        # a render finishing → refresh the Review face's quality flags (BL-007/008)
+        rf = getattr(self, "_review_face", None)
+        if (rf is not None and detect_render_flags is not None
+                and "render" in name.lower() and phase in ("done", "error")):
+            try:
+                rf.set_flags(detect_render_flags())
+            except Exception:
+                pass
         if phase == "running":
             self._request_face("work")   # a live tool → the walk-away glance
 
@@ -842,6 +901,7 @@ class SynapsePanel(QtWidgets.QWidget):
             self._manual_face = None
             self._request_face("work")
         elif not busy and self._was_busy:
+            self._populate_review()      # fill verdict + provenance for the payoff
             self._request_face("review")
         self._was_busy = busy
 

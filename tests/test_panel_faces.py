@@ -196,6 +196,60 @@ def test_cook_progress_is_determinate():
     assert "14 / 30" in p._work_face._cook_lbl.text()
 
 
+def test_review_face_present_with_gate():
+    # Mile 5 — the Review face is the real FaceReview, and self._gate aliases
+    # the embedded gate so the consent wiring stays intact.
+    p = _make_panel()
+    assert p._review_face is not None
+    assert p._gate is p._review_face.gate
+
+
+def test_review_show_result_populates_all_parts():
+    # Simulated 'done' → render + verdict + credit + flags + paths all render.
+    p = _make_panel()
+    rf = p._review_face
+    rf.show_result(
+        verdict="The crystal reads at the scene's IOR now — Dark_Glass landed.",
+        credit=[("DECISION", "Dark_Glass", "over Diamond, closer to scene IOR"),
+                ("VIA", "materiallinker → link_type_1", "")],
+        flags=[("ok", "render ok"), ("fail", "EXR not written — BL-007")],
+        paths=["/materials/AMD/link_type_1", "/Render/Products/render_settings"],
+        meta="karma_xpu · f1 · 1920×1080",
+    )
+    assert "Dark_Glass" in rf._verdict.text()
+    assert rf._credit_box.count() == 2
+    assert rf._flags_box.count() == 2
+    # offscreen: the window is never shown, so check explicit visibility state
+    assert not rf._paths.isHidden()
+    assert "link_type_1" in rf._paths.text()
+
+
+def test_bl007_flag_detects_missing_output():
+    # BL-007: no file on disk → the silent-no-output failure is flagged red.
+    from synapse.panel.face_review import bl007_flag
+    status, text = bl007_flag("")
+    assert status == "fail" and "BL-007" in text
+
+
+def test_review_actions_wired_to_panel():
+    # accept/commit signals reach the panel handlers without error; commit
+    # keeps the Review face forward (it routes through the gate, not /stage).
+    p = _make_panel()
+    p._review_face.accepted.emit()
+    p._review_face.committed.emit()
+    assert _idx(p) == 2
+
+
+def test_done_edge_populates_review_verdict():
+    # The done edge switches to Review and lifts the first line as the verdict.
+    p = _make_panel()
+    p._stream_buf = ["Dark_Glass landed; the crystal reads at the scene IOR now."]
+    p._was_busy = True
+    p._set_busy(False)
+    assert _idx(p) == 2
+    assert "Dark_Glass" in p._review_face._verdict.text()
+
+
 def _run_all():
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
