@@ -119,3 +119,13 @@ def test_empty_query_is_noop(real_ki):
     h = _Handler(real_ki, _FakeBridge())
     out = h._handle_memory_recall({"query": ""})
     assert "knowledge" not in out
+
+
+def test_pipeline_preference_reachable_via_recall(real_ki):
+    """The captured materiallinker>assignmaterial preference must surface
+    through the recall seam (it had no home before Mile 5)."""
+    h = _Handler(real_ki, _FakeBridge())
+    out = h._handle_memory_recall({"query": "materiallinker assignmaterial preference"})
+    assert out.get("knowledge_found") is True
+    k = out["knowledge"]
+    assert "pipeline_preferences" in (k["topic"] + (k["reference_file"] or ""))
