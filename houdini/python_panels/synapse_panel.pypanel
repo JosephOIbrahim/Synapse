@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <pythonPanelDocument>
-  <interface name="synapse_panel"
-             label="Synapse"
-             icon="MISC_python"
-             help_url="">
+  <!-- This file contains definitions of Python interfaces and the
+ interfaces menu.  It should not be hand-edited when it is being
+ used by the application.  Note, that two definitions of the
+ same interface or of the interfaces menu are not allowed
+ in a single file. -->
+  <interface name="synapse_panel" label="Synapse" icon="MISC_python" showNetworkNavigationBar="false" help_url="">
     <script><![CDATA[
 # Thin loader for the redesigned, modular SYNAPSE panel.
 # The panel itself lives in synapse.panel.synapse_panel (testable, design-system
@@ -22,7 +24,7 @@ if os.path.isdir(_py) and _py not in sys.path:
 # shared/ (the Lossless bridge, advisor, constants) lives at the REPO ROOT, not
 # under python/. SynapseHandler -> handlers_render imports `from shared...`, so
 # the repo root itself MUST be importable or the whole handler surface (and the
-# bridge + observability) silently fails to load — which surfaced to the artist
+# bridge + observability) silently fails to load  which surfaced to the artist
 # as a misleading "hou isn't responding". Root cause of the "processes but no
 # nodes" bug: only <root>/python was on the path, never <root>.
 if os.path.isdir(_root) and _root not in sys.path:
@@ -43,7 +45,7 @@ def onCreateInterface():
         from synapse.panel.synapse_panel import onCreateInterface as _build
         return _build()
     except Exception:
-        # Never crash Houdini's panel system — surface the error in-panel.
+        # Never crash Houdini's panel system  surface the error in-panel.
         import traceback
         try:
             from PySide6 import QtWidgets
@@ -55,8 +57,10 @@ def onCreateInterface():
         return view
 
 
-# Some Houdini code paths / older docs use createInterface — alias for safety.
+# Some Houdini code paths / older docs use createInterface  alias for safety.
 createInterface = onCreateInterface
 ]]></script>
+    <includeInToolbarMenu menu_position="0" create_separator="false"/>
+    <help><![CDATA[]]></help>
   </interface>
 </pythonPanelDocument>
