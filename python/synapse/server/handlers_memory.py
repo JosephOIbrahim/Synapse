@@ -53,10 +53,50 @@ class MemoryHandlerMixin:
         bridge = self._get_bridge()  # type: ignore[attr-defined]
         return bridge.handle_memory_context(payload)
 
+    def _augment_with_knowledge(self, query: str, result: Dict) -> Dict:
+        """Additively attach a RAG corpus hit to a memory result.
+
+        The recall/search handlers only see Moneta/project memory; the VEX
+        corpus and other reference docs live in the RAG ``KnowledgeIndex`` on a
+        separate retrieval path (``synapse_knowledge_lookup``). Mid-session VEX
+        recall therefore returned nothing. This bridges the seam: after the
+        memory lookup, consult the RAG and attach the top hit under a
+        ``knowledge`` key.
+
+        Purely additive -- existing result keys are never modified, so callers
+        that ignore ``knowledge`` see no behavior change. Best-effort: never
+        raises, and only attaches when the RAG actually found something.
+        """
+        if not query:
+            return result
+        try:
+            knowledge = self._get_knowledge_index()  # type: ignore[attr-defined]
+            if knowledge is None:
+                return result
+            hit = knowledge.lookup(query)
+            if hit.found:
+                result["knowledge_found"] = True
+                result["knowledge"] = {
+                    "answer": hit.answer,
+                    "confidence": hit.confidence,
+                    "topic": hit.topic,
+                    "sources": hit.sources,
+                    "reference_file": hit.reference_file,
+                    "summary": hit.summary,
+                }
+        except Exception:
+            pass
+        return result
+
     def _handle_memory_search(self, payload: Dict) -> Dict:
-        """Handle search/engram_search command."""
+        """Handle search/engram_search command.
+
+        Augmented to also reach the RAG corpus (VEX/reference docs) so the
+        memory-search path is no longer blind to the knowledge index.
+        """
         bridge = self._get_bridge()  # type: ignore[attr-defined]
-        return bridge.handle_memory_search(payload)
+        result = bridge.handle_memory_search(payload)
+        return self._augment_with_knowledge(payload.get("query", ""), result)
 
     def _handle_memory_add(self, payload: Dict) -> Dict:
         """Handle add_memory/engram_add command."""
@@ -69,9 +109,15 @@ class MemoryHandlerMixin:
         return bridge.handle_memory_decide(payload)
 
     def _handle_memory_recall(self, payload: Dict) -> Dict:
-        """Handle recall/engram_recall command."""
+        """Handle recall/engram_recall command.
+
+        The bridge recall only matches prior DECISION memories. We additively
+        bridge in the RAG corpus so a mid-session question like
+        "vex @attrib promote" surfaces the VEX reference, not just decisions.
+        """
         bridge = self._get_bridge()  # type: ignore[attr-defined]
-        return bridge.handle_memory_recall(payload)
+        result = bridge.handle_memory_recall(payload)
+        return self._augment_with_knowledge(payload.get("query", ""), result)
 
     def _handle_project_setup(self, payload: Dict) -> Dict:
         """Initialize or load SYNAPSE project structure for current scene."""

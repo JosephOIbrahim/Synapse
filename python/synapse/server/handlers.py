@@ -1296,6 +1296,39 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         from .live_metrics import snapshot_to_dict
         return snapshot_to_dict(snapshot)
 
+    def _get_knowledge_index(self):
+        """Lazy-init and return the shared RAG KnowledgeIndex (or None).
+
+        Shared by ``_handle_knowledge_lookup`` and the memory recall/search
+        handlers (see ``handlers_memory.py``) so the recall path can reach the
+        RAG corpus -- the VEX corpus and reference docs -- and not just Moneta.
+        Never raises: returns None if the index cannot be built, so callers can
+        degrade gracefully.
+        """
+        if not hasattr(self, "_knowledge"):
+            try:
+                from pathlib import Path as _Path
+                from ..routing.knowledge import KnowledgeIndex
+                import os
+                rag_root = os.environ.get(
+                    "SYNAPSE_RAG_ROOT",
+                    str(_Path(__file__).resolve().parent.parent.parent.parent / "rag"),
+                )
+                memory = None
+                try:
+                    from ..memory.store import get_synapse_memory
+                    memory = get_synapse_memory()
+                except Exception as e:
+                    _log.debug("KnowledgeIndex memory init failed: %s", e)
+                self._knowledge = KnowledgeIndex(
+                    rag_root=rag_root if _Path(rag_root).exists() else None,
+                    memory=memory,
+                )
+            except Exception as e:
+                _log.debug("KnowledgeIndex init failed: %s", e)
+                self._knowledge = None
+        return self._knowledge
+
     def _handle_knowledge_lookup(self, payload: Dict) -> Dict:
         """Look up Houdini knowledge from the RAG index.
 
@@ -1304,27 +1337,20 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         """
         query = resolve_param(payload, "query")
 
-        # Lazy-init the knowledge index
-        if not hasattr(self, "_knowledge"):
-            from pathlib import Path as _Path
-            from ..routing.knowledge import KnowledgeIndex
-            import os
-            rag_root = os.environ.get(
-                "SYNAPSE_RAG_ROOT",
-                str(_Path(__file__).resolve().parent.parent.parent.parent / "rag"),
-            )
-            memory = None
-            try:
-                from ..memory.store import get_synapse_memory
-                memory = get_synapse_memory()
-            except Exception as e:
-                _log.debug("KnowledgeIndex memory init failed: %s", e)
-            self._knowledge = KnowledgeIndex(
-                rag_root=rag_root if _Path(rag_root).exists() else None,
-                memory=memory,
-            )
+        knowledge = self._get_knowledge_index()
+        if knowledge is None:
+            return {
+                "found": False,
+                "answer": "",
+                "confidence": 0.0,
+                "topic": "",
+                "sources": [],
+                "agent_hint": "",
+                "summary": "",
+                "reference_file": "",
+            }
 
-        result = self._knowledge.lookup(query)
+        result = knowledge.lookup(query)
         return {
             "found": result.found,
             "answer": result.answer,
