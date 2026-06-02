@@ -1131,7 +1131,25 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
             return result
 
-        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+        result = run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+
+        # Mile 6: capture successful, non-trivial wrangles as recall-able
+        # session memory. Best-effort and off the Houdini main thread -- a
+        # capture failure never affects the VEX result.
+        if not result.get("errors"):
+            try:
+                from ..memory.vex_capture import capture_vex_pattern
+                bridge = self._get_bridge()  # type: ignore[attr-defined]
+                store = getattr(getattr(bridge, "_synapse", None), "store", None)
+                if store is not None:
+                    capture_vex_pattern(store, snippet, {
+                        "node": result.get("node"),
+                        "run_over": run_over,
+                    })
+            except Exception as e:
+                _log.debug("VEX session capture skipped: %s", e)
+
+        return result
     # =========================================================================
     # INTROSPECTION HANDLERS (Phase 1)
     # =========================================================================
