@@ -110,12 +110,18 @@ STATE_TINTS = {  # status-hue washes for cards/badges
 # 5. TYPOGRAPHY — families, sizes, and ROLES
 # ─────────────────────────────────────────────────────────────
 
-FONT_MONO = "JetBrains Mono"
-FONT_MONO_FALLBACKS = ("IBM Plex Mono", "Consolas", "monospace")
+# Production type decision (Mile 7): prefer the ship faces (Söhne · Diatype ·
+# GT America), fall through the comp faces (Space Grotesk · Space Mono), then to
+# ever-more-common system fonts. Graceful by construction — body text inherits
+# Houdini's native UI font (apply_font_role), so these chiefly drive the mono
+# surfaces (paths, verbs, chips); an absent face falls back silently, never
+# breaks. Same install-risk class as the prior JetBrains-Mono primary.
+FONT_MONO = "Diatype Mono"
+FONT_MONO_FALLBACKS = ("Space Mono", "JetBrains Mono", "IBM Plex Mono", "Consolas", "monospace")
 FONT_MONO_CSS = ", ".join(f'"{f}"' for f in (FONT_MONO,) + FONT_MONO_FALLBACKS)
 
-FONT_SANS = "DM Sans"
-FONT_SANS_FALLBACKS = ("Instrument Sans", "Segoe UI", "sans-serif")
+FONT_SANS = "Söhne"
+FONT_SANS_FALLBACKS = ("GT America", "Space Grotesk", "Inter", "DM Sans", "Segoe UI", "sans-serif")
 FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 
 # px scale (Qt). Calibrated to the panel's true rendering DPI (the canonical

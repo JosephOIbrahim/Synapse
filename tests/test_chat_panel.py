@@ -257,6 +257,33 @@ class TestSynapseMessageFormat:
         assert "#00D4FF" not in result
 
 
+class TestStylesDecyaned:
+    """Mile 7 — styles.py renders the signature blue (#8FB3D9), not legacy cyan."""
+
+    def _all_styles(self):
+        from synapse.panel import styles
+        return "".join([
+            styles.get_chat_display_stylesheet(),
+            styles.get_send_button_stylesheet(),
+            styles.get_growing_input_stylesheet(),
+            styles.get_quick_action_button_stylesheet(),
+            styles.get_connect_button_stylesheet(),
+            styles.get_ws_url_button_stylesheet(),
+            styles.get_context_bar_path_stylesheet(),
+            styles.get_quick_action_pill_stylesheet(),
+            styles.get_font_size_button_stylesheet(),
+            styles.get_hda_stylesheet(),
+        ])
+
+    def test_no_legacy_cyan(self):
+        out = self._all_styles().upper()
+        assert "00D4FF" not in out
+        assert "0, 212, 255" not in out and "0,212,255" not in out
+
+    def test_signature_blue_present(self):
+        assert "8FB3D9" in self._all_styles().upper()
+
+
 class TestSystemMessageFormat:
     """Test system message formatting."""
 

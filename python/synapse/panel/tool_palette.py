@@ -22,6 +22,7 @@ except ImportError:  # pragma: no cover - Houdini ships PySide6
 
 from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import components as c
+from synapse.panel.designsystem import qss
 
 try:
     from synapse.panel.tool_filter import (
@@ -149,6 +150,9 @@ class ToolPalette(QtWidgets.QWidget):
         self.setObjectName("DsRoot")
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.setWindowFlags(Qt.Popup)
+        # Popup is a separate top-level window — give it the canonical sheet so
+        # DsChip / DsList / DsField render from the design system, not defaults.
+        self.setStyleSheet(qss.stylesheet())
         self.setMinimumSize(440, 480)
         self._rows = _load_entries()
 
@@ -224,18 +228,9 @@ class ToolPalette(QtWidgets.QWidget):
             self._style_chip(btn, v == self._context)
 
     def _style_chip(self, btn, active):
-        if active:
-            btn.setStyleSheet(
-                "QPushButton#DsChip{background:%s; color:%s; border:none;"
-                " border-radius:3px; padding:3px 8px; font-family:%s;"
-                " font-size:10px; letter-spacing:1px;}"
-                % (t.SIGNAL_TINT, t.TEXT_ACCENT, t.FONT_MONO))
-        else:
-            btn.setStyleSheet(
-                "QPushButton#DsChip{background:transparent; color:%s; border:none;"
-                " padding:3px 8px; font-family:%s; font-size:10px; letter-spacing:1px;}"
-                "QPushButton#DsChip:hover{color:%s;}"
-                % (t.TEXT_TERTIARY, t.FONT_MONO, t.TEXT_SECONDARY))
+        # Styled by the canonical QPushButton#DsChip[active] QSS rule (Mile 7).
+        btn.setProperty("active", bool(active))
+        c.repolish(btn)
 
     # ------------------------------------------------------------------
     def _visible(self):

@@ -79,6 +79,35 @@ QPushButton#DsPill:pressed {{ background: {t.SIGNAL_TINT}; }}
 QPushButton#DsPill:disabled {{ color: {t.TEXT_DISABLED}; }}
 QPushButton#DsPill[active="true"] {{ color: {t.TEXT_ACCENT}; background: {t.SIGNAL_TINT}; }}
 
+/* ---- type-set verbs (Direct act bar + Review actions) — Mile 7 --- */
+/* Verbs read as type, not buttons: flat, mono, the chrome recedes. */
+QPushButton#DsVerb {{
+    background: transparent; border: none; padding: 2px 0;
+    color: {t.TEXT_SECONDARY}; font-family: {t.FONT_MONO_CSS};
+    font-size: {s(11)}px;
+}}
+QPushButton#DsVerb:hover {{ color: {t.TEXT_ACCENT}; }}
+QPushButton#DsVerb[tone="ok"]     {{ color: {t.GROW}; }}
+QPushButton#DsVerb[tone="hot"]    {{ color: {t.WARM}; }}
+QPushButton#DsVerb[tone="accent"] {{ color: {t.TEXT_ACCENT}; }}
+
+/* ---- two-axis palette chips (⌘K · DO × WHERE) ---------------- */
+QPushButton#DsChip {{
+    background: transparent; color: {t.TEXT_TERTIARY};
+    border: none; border-radius: {t.RADIUS_SM}px; padding: 3px 8px;
+    font-family: {t.FONT_MONO_CSS}; font-size: {s(10)}px;
+}}
+QPushButton#DsChip:hover {{ color: {t.TEXT_SECONDARY}; }}
+QPushButton#DsChip[active="true"] {{ background: {t.SIGNAL_TINT}; color: {t.TEXT_ACCENT}; }}
+
+/* ---- command-palette list ------------------------------------ */
+QListWidget#DsList {{
+    background: transparent; color: {t.TEXT_PRIMARY};
+    border: none; outline: none;
+}}
+QListWidget#DsList::item {{ padding: {t.SPACE_XS}px {t.SPACE_SM}px; border-radius: {t.RADIUS_SM}px; }}
+QListWidget#DsList::item:selected {{ background: {t.SIGNAL_TINT}; color: {t.TEXT_ACCENT}; }}
+
 /* ---- cards & drawers ----------------------------------------- */
 QWidget#DsCard {{
     background: {t.SURFACE}; border: 1px solid {t.BORDER};

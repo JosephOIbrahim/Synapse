@@ -84,20 +84,15 @@ def detect_render_flags(render_node="", output_path=""):
     return flags
 
 
-def _verb(text, on_click, color=None):
-    """Type-set action — mono, letter-spaced, no pill chrome (matches Direct's
-    act bar). Inline-styled so it doesn't depend on the Mile-7 QSS pass."""
+def _verb(text, on_click, tone=None):
+    """Type-set action — mono, no pill chrome (matches Direct's act bar). Styled
+    by the canonical QPushButton#DsVerb QSS rule; ``tone`` selects the color."""
     btn = QtWidgets.QPushButton(text)
     btn.setObjectName("DsVerb")
     btn.setCursor(Qt.PointingHandCursor)
     btn.setFlat(True)
-    rest = color or t.TEXT_SECONDARY
-    btn.setStyleSheet(
-        "QPushButton#DsVerb{background:transparent; border:none; padding:2px 0;"
-        " color:%s; font-family:%s; font-size:11px; letter-spacing:1.4px;}"
-        "QPushButton#DsVerb:hover{color:%s;}"
-        % (rest, t.FONT_MONO, t.TEXT_ACCENT)
-    )
+    if tone:
+        btn.setProperty("tone", tone)
     btn.clicked.connect(on_click)
     return btn
 
@@ -256,11 +251,11 @@ class FaceReview(QtWidgets.QWidget):
         # — the close: accept / revert / commit —
         acts = QtWidgets.QHBoxLayout()
         acts.setSpacing(t.SPACE_MD)
-        acts.addWidget(_verb("ACCEPT", lambda _=False: self.accepted.emit(), color=t.GROW))
+        acts.addWidget(_verb("ACCEPT", lambda _=False: self.accepted.emit(), tone="ok"))
         acts.addWidget(_verb("↶ REVERT", lambda _=False: self.reverted.emit()))
         acts.addStretch(1)
         acts.addWidget(_verb("COMMIT TO /STAGE", lambda _=False: self.committed.emit(),
-                             color=t.WARM))
+                             tone="hot"))
         col.addLayout(acts)
         col.addStretch(1)
 

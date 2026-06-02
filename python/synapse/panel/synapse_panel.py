@@ -543,22 +543,16 @@ class SynapsePanel(QtWidgets.QWidget):
             data = None
         wf.set_health(data)
 
-    def _verb(self, text, on_click, accent=False):
-        """A type-set action — mono, letter-spaced, no pill chrome (Mile 3).
-        Verbs read as type, not buttons; the work is the hero, not the controls.
-        Inline-styled so it overrides the DsPill look without touching qss.py
-        (the QSS design pass is Mile 7)."""
+    def _verb(self, text, on_click, tone=None):
+        """A type-set action — mono, no pill chrome (Mile 3). Styled by the
+        canonical QPushButton#DsVerb QSS rule (Mile 7 finalized it); ``tone`` ∈
+        {None, 'ok', 'hot', 'accent'} selects the semantic color via property."""
         btn = QtWidgets.QPushButton(text)
         btn.setObjectName("DsVerb")
         btn.setCursor(Qt.PointingHandCursor)
         btn.setFlat(True)
-        rest = t.TEXT_ACCENT if accent else t.TEXT_SECONDARY
-        btn.setStyleSheet(
-            "QPushButton#DsVerb{background:transparent; border:none; padding:2px 0;"
-            " color:%s; font-family:%s; font-size:11px; letter-spacing:1.4px;}"
-            "QPushButton#DsVerb:hover{color:%s;}"
-            % (rest, t.FONT_MONO, t.TEXT_ACCENT)
-        )
+        if tone:
+            btn.setProperty("tone", tone)
         btn.clicked.connect(on_click)
         return btn
 
@@ -579,7 +573,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._font_btn.setToolTip("Font size — click to cycle")
         lay.addWidget(self._font_btn)
         self._more_btn = self._verb(
-            "⌘K", lambda _=False: self._open_palette(), accent=True)
+            "⌘K", lambda _=False: self._open_palette(), tone="accent")
         self._more_btn.setToolTip("Command palette — every tool, two axes")
         lay.addWidget(self._more_btn)
         return w

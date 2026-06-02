@@ -5,6 +5,10 @@ for HDA mode views, ``animate_stack_transition()`` for smooth page switches.
 """
 
 from . import tokens as t
+# Mile 7 de-cyan: pull the brand SIGNAL family from the vendored design system
+# (#8FB3D9) so the gate + chat surfaces render the signature blue, not the
+# legacy panel.tokens cyan. Token sources stay untouched (local fix).
+from .designsystem import tokens as _ds
 
 
 def get_hda_stylesheet():
@@ -27,11 +31,11 @@ def get_hda_stylesheet():
         "  selection-background-color: {sel};"
         "}}".format(
             bg=t.HDA_INPUT_BG, fg=t.BONE, border=t.HDA_INPUT_BORDER,
-            font=t.FONT_SANS, sz=t.SIZE_BODY, sel=t.HDA_INPUT_FOCUS,
+            font=t.FONT_SANS, sz=t.SIZE_BODY, sel=(_ds.SIGNAL + "40"),
         )
         + " QTextEdit#HdaPromptInput:focus {{"
         "  border-color: {sig};"
-        "}}".format(sig=t.SIGNAL)
+        "}}".format(sig=_ds.SIGNAL)
 
         + " QComboBox#HdaContextSelector {{"
         "  background: {bg};"
@@ -57,15 +61,15 @@ def get_hda_stylesheet():
         "  font-weight: 700;"
         "  letter-spacing: 1px;"
         "}}".format(
-            bg=t.STATE_DESCRIBE, fg=t.VOID,
+            bg=_ds.SIGNAL, fg=t.VOID,
             font=t.FONT_MONO, sz=t.SIZE_LABEL,
         )
         + " QPushButton#HdaGenerateBtn:hover {{"
         "  background: {bg}CC;"
-        "}}".format(bg=t.STATE_DESCRIBE)
+        "}}".format(bg=_ds.SIGNAL)
         + " QPushButton#HdaGenerateBtn:pressed {{"
         "  background: {bg}99;"
-        "}}".format(bg=t.STATE_DESCRIBE)
+        "}}".format(bg=_ds.SIGNAL)
 
         # === Building View ===
         + " QWidget#BuildingView {{"
@@ -136,8 +140,8 @@ def get_hda_stylesheet():
         "  font-size: {sz}px;"
         "  font-weight: 700;"
         "}}".format(
-            bg=t.MODE_ACTIVE_BG, border=t.MODE_ACTIVE_BORDER,
-            fg=t.SIGNAL, font=t.FONT_MONO, sz=t.SIZE_LABEL,
+            bg=(_ds.SIGNAL + "26"), border=(_ds.SIGNAL + "66"),
+            fg=_ds.SIGNAL, font=t.FONT_MONO, sz=t.SIZE_LABEL,
         )
 
         + " QPushButton#ModeToggleInactive {{"
@@ -173,7 +177,7 @@ def get_hda_stylesheet():
         + " QPushButton#HdaActionBtn:hover {{"
         "  border-color: {border};"
         "  color: {fg};"
-        "}}".format(border=t.SIGNAL + "66", fg=t.BONE)
+        "}}".format(border=_ds.SIGNAL + "66", fg=t.BONE)
 
         + " QPushButton#CancelBtn {{"
         "  background: transparent;"
@@ -216,13 +220,13 @@ def get_quick_action_button_stylesheet():
         "  color: {white};"
         "}}"
         "QPushButton:pressed {{"
-        "  background: rgba(0, 212, 255, 0.15);"
+        "  background: rgba(143, 179, 217, 0.15);"
         "  border-color: {accent};"
         "  color: {accent};"
         "}}".format(
             bg=t.CARBON, fg=t.BONE, border=t.GRAPHITE,
             sz=t.SIZE_SMALL, pad=t.SPACE_SM, hover=t.HOVER,
-            accent=t.SIGNAL, white=t.WHITE, mono=t.FONT_MONO,
+            accent=_ds.SIGNAL, white=t.WHITE, mono=t.FONT_MONO,
         )
     )
 
@@ -243,7 +247,7 @@ def get_input_stylesheet():
         "  border: 1px solid {accent};"
         "}}".format(
             bg=t.VOID, fg=t.BONE, border=t.GRAPHITE,
-            sz=t.SIZE_UI, accent=t.SIGNAL, sans=t.FONT_SANS,
+            sz=t.SIZE_UI, accent=_ds.SIGNAL, sans=t.FONT_SANS,
         )
     )
 
@@ -268,8 +272,8 @@ def get_send_button_stylesheet():
         "QPushButton:pressed {{"
         "  background: {pressed};"
         "}}".format(
-            accent=t.SIGNAL, bg=t.VOID, sz=t.SIZE_UI,
-            hover=t.SIGNAL_HOVER, pressed=t.SIGNAL_PRESS,
+            accent=_ds.SIGNAL, bg=t.VOID, sz=t.SIZE_UI,
+            hover=_ds.SIGNAL_HOVER, pressed=_ds.SIGNAL_PRESS,
             mono=t.FONT_MONO,
         )
     )
@@ -289,12 +293,12 @@ def get_connect_button_stylesheet():
         "  min-width: 100px;"
         "}}"
         "QPushButton#connect_button:hover {{"
-        "  background: rgba(0, 212, 255, 0.1);"
+        "  background: rgba(143, 179, 217, 0.1);"
         "}}"
         "QPushButton#connect_button:pressed {{"
-        "  background: rgba(0, 212, 255, 0.2);"
+        "  background: rgba(143, 179, 217, 0.2);"
         "}}".format(
-            accent=t.SIGNAL, mono=t.FONT_MONO, sz=t.SIZE_SMALL,
+            accent=_ds.SIGNAL, mono=t.FONT_MONO, sz=t.SIZE_SMALL,
         )
     )
 
@@ -314,13 +318,13 @@ def get_ws_url_button_stylesheet():
         "QPushButton#ws_path_button:hover {{"
         "  color: {accent};"
         "  border-color: {accent};"
-        "  background: rgba(0, 212, 255, 0.1);"
+        "  background: rgba(143, 179, 217, 0.1);"
         "}}"
         "QPushButton#ws_path_button:pressed {{"
-        "  background: rgba(0, 212, 255, 0.2);"
+        "  background: rgba(143, 179, 217, 0.2);"
         "}}".format(
             slate=t.SLATE, border=t.GRAPHITE, mono=t.FONT_MONO,
-            sz=t.SIZE_LABEL, accent=t.SIGNAL,
+            sz=t.SIZE_LABEL, accent=_ds.SIGNAL,
         )
     )
 
@@ -359,7 +363,7 @@ def get_context_bar_path_stylesheet():
         "color: {c}; font-size: {s}px; font-family: '{mono}', "
         "'Consolas', monospace; letter-spacing: 0.5px;"
         " border: none;".format(
-            c=t.SIGNAL, s=t.SIZE_SMALL, mono=t.FONT_MONO
+            c=_ds.SIGNAL, s=t.SIZE_SMALL, mono=t.FONT_MONO
         )
     )
 
@@ -416,7 +420,7 @@ def get_section_label_stylesheet():
     """HDA Describe view section label: mono, SIGNAL cyan, letter-spaced."""
     return (
         "color: {sig}; font-size: 10px; "
-        "font-family: monospace; letter-spacing: 2px;".format(sig=t.SIGNAL)
+        "font-family: monospace; letter-spacing: 2px;".format(sig=_ds.SIGNAL)
     )
 
 
@@ -526,7 +530,7 @@ def get_chat_display_stylesheet():
         "  border: 1px solid {border};"
         "  border-radius: 4px;"
         "  padding: {pad}px;"
-        "  selection-background-color: rgba(0, 212, 255, 0.3);"
+        "  selection-background-color: rgba(143, 179, 217, 0.3);"
         "  selection-color: {white};"
         "}}"
         "QScrollBar:vertical {{"
@@ -573,14 +577,14 @@ def get_growing_input_stylesheet():
         "  border: 1px solid {accent};"
         "}}".format(
             bg=t.VOID, fg=t.BONE, border=t.GRAPHITE,
-            sz=t.SIZE_UI, accent=t.SIGNAL, sans=t.FONT_SANS,
+            sz=t.SIZE_UI, accent=_ds.SIGNAL, sans=t.FONT_SANS,
         )
     )
 
 
 def get_context_chip_stylesheet(accent=False):
     """Pill chip for context info above input."""
-    fg = t.SIGNAL if accent else t.TEXT_DIM
+    fg = _ds.SIGNAL if accent else t.TEXT_DIM
     return (
         "background: {bg}; border: 1px solid {border}; "
         "border-radius: 10px; padding: 2px 8px; "
@@ -610,13 +614,13 @@ def get_quick_action_pill_stylesheet():
         "  color: {white};"
         "}}"
         "QPushButton:pressed {{"
-        "  background: rgba(0, 212, 255, 0.15);"
+        "  background: rgba(143, 179, 217, 0.15);"
         "  border-color: {accent};"
         "  color: {accent};"
         "}}".format(
             bg=t.CARBON, fg=t.BONE, border=t.GRAPHITE,
             sz=t.SIZE_LABEL, hover=t.HOVER,
-            accent=t.SIGNAL, white=t.WHITE, mono=t.FONT_MONO,
+            accent=_ds.SIGNAL, white=t.WHITE, mono=t.FONT_MONO,
         )
     )
 
@@ -638,7 +642,7 @@ def get_font_size_button_stylesheet():
         "  color: {accent};"
         "  border-color: {accent};"
         "}}".format(
-            fg=t.TEXT_DIM, border=t.GRAPHITE, accent=t.SIGNAL,
+            fg=t.TEXT_DIM, border=t.GRAPHITE, accent=_ds.SIGNAL,
             sans=t.FONT_SANS, sz=t.SIZE_LABEL,
         )
     )
@@ -647,7 +651,7 @@ def get_font_size_button_stylesheet():
 def get_typing_indicator_stylesheet():
     """Styling for the animated typing dots area."""
     return (
-        "color: {sig}; font-style: italic;".format(sig=t.SIGNAL)
+        "color: {sig}; font-style: italic;".format(sig=_ds.SIGNAL)
     )
 
 
