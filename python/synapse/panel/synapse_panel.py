@@ -508,25 +508,44 @@ class SynapsePanel(QtWidgets.QWidget):
             data = None
         self._health.set_data(data)
 
+    def _verb(self, text, on_click, accent=False):
+        """A type-set action — mono, letter-spaced, no pill chrome (Mile 3).
+        Verbs read as type, not buttons; the work is the hero, not the controls.
+        Inline-styled so it overrides the DsPill look without touching qss.py
+        (the QSS design pass is Mile 7)."""
+        btn = QtWidgets.QPushButton(text)
+        btn.setObjectName("DsVerb")
+        btn.setCursor(Qt.PointingHandCursor)
+        btn.setFlat(True)
+        rest = t.TEXT_ACCENT if accent else t.TEXT_SECONDARY
+        btn.setStyleSheet(
+            "QPushButton#DsVerb{background:transparent; border:none; padding:2px 0;"
+            " color:%s; font-family:%s; font-size:11px; letter-spacing:1.4px;}"
+            "QPushButton#DsVerb:hover{color:%s;}"
+            % (rest, t.FONT_MONO, t.TEXT_ACCENT)
+        )
+        btn.clicked.connect(on_click)
+        return btn
+
     def _build_act(self):
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
-        lay.setSpacing(t.SPACE_XS)
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        lay.setSpacing(t.SPACE_MD)
         for label_text, prompt in _QUICK_ACTIONS:
-            pill = c.Pill(label_text)
-            pill.clicked.connect(lambda _=False, p=prompt: self._send(p))
-            lay.addWidget(pill)
-        hda_pill = c.Pill("Build HDA")   # demoted from a top-level face into Direct
-        hda_pill.clicked.connect(lambda: self._set_direct_view("hda"))
-        lay.addWidget(hda_pill)
-        self._font_btn = c.Pill("Aa")
-        self._font_btn.setToolTip("Font size — click to cycle")
-        self._font_btn.clicked.connect(self._cycle_font_scale)
-        lay.addWidget(self._font_btn)
+            lay.addWidget(self._verb(
+                label_text.upper(), lambda _=False, p=prompt: self._send(p)))
+        # Build HDA: demoted from a top-level face into a Direct verb (+ ⌘K).
+        lay.addWidget(self._verb(
+            "BUILD HDA", lambda _=False: self._set_direct_view("hda")))
         lay.addStretch(1)
-        self._more_btn = c.Pill("⌘K  more…")
-        self._more_btn.clicked.connect(self._open_palette)
+        self._font_btn = self._verb(
+            "Aa", lambda _=False: self._cycle_font_scale())
+        self._font_btn.setToolTip("Font size — click to cycle")
+        lay.addWidget(self._font_btn)
+        self._more_btn = self._verb(
+            "⌘K", lambda _=False: self._open_palette(), accent=True)
+        self._more_btn.setToolTip("Command palette — every tool, two axes")
         lay.addWidget(self._more_btn)
         return w
 

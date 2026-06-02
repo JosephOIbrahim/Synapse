@@ -141,6 +141,23 @@ def test_inform_gate_is_ignored():
     assert _idx(p) == 0, "noisy INFORM proposals must not steal the face"
 
 
+def test_scripted_conversation_renders():
+    # Mile 3 — a scripted Direct conversation must render through ChatDisplay
+    # without choking on the new HTML (table-based human rule, artifact chips),
+    # and node refs must keep their clickable node: anchor.
+    p = _make_panel()
+    chat = p._chat
+    chat.append_user_message("swap crystal_import to Dark_Glass and re-render")
+    chat.append_synapse_message(
+        "On it — rebinding at /materials/AMD/Dark_Glass, then a draft cook."
+    )
+    chat.append_system_message("Added to context: /obj/geo1")
+    plain = chat.toPlainText()
+    assert "Dark_Glass" in plain and "crystal_import" in plain
+    html_ = chat.toHtml()
+    assert "node:/materials/AMD/Dark_Glass" in html_, "node ref must stay a chip anchor"
+
+
 def _run_all():
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
