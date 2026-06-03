@@ -9,16 +9,16 @@ QFrame) — uses QWidget + WA_StyledBackground.
 """
 
 try:
-    from PySide6 import QtWidgets, QtGui
+    from PySide6 import QtWidgets, QtGui, QtCore
     from PySide6.QtCore import Qt
 except ImportError:  # pragma: no cover - Houdini ships PySide6
-    from PySide2 import QtWidgets, QtGui
+    from PySide2 import QtWidgets, QtGui, QtCore
     from PySide2.QtCore import Qt
 
 from . import tokens as t
 
 __all__ = [
-    "Button", "Pill", "Card", "Badge", "StatusDot", "ProgressBar",
+    "Button", "Pill", "Card", "Badge", "StatusDot", "MarkDot", "ProgressBar",
     "label", "divider", "apply_font_role", "repolish",
 ]
 
@@ -122,6 +122,74 @@ class StatusDot(QtWidgets.QWidget):
         p.setPen(Qt.NoPen)
         p.setBrush(QtGui.QColor(self._color))
         p.drawEllipse(1, 1, self._d, self._d)
+        p.end()
+
+
+class MarkDot(QtWidgets.QWidget):
+    """The SYNAPSE mark IS the status light.
+
+    A ring at rest, a sweeping half-disc while working, a full disc when done —
+    always in the one warm note (WARM). Identity and live state collapse into a
+    single element, and because it never borrows Houdini's own orange, SYNAPSE
+    keeps a distinct presence in the host. (Pentagram pass.)
+    """
+
+    _RESTING = {"idle", "ready", "connected", "disconnected", "warning", "error", ""}
+
+    def __init__(self, state="idle", diameter=16, parent=None):
+        super().__init__(parent)
+        self._d = diameter
+        self._state = state or "idle"
+        self._angle = 0
+        self._spin = QtCore.QTimer(self)
+        self._spin.setInterval(33)  # ~30 fps; only runs while working
+        self._spin.timeout.connect(self._tick)
+        self.setFixedSize(diameter + 4, diameter + 4)
+        self._sync_timer()
+
+    def set_state(self, state):
+        state = state or "idle"
+        if state == self._state:
+            return
+        self._state = state
+        self._sync_timer()
+        self.update()
+
+    def _sync_timer(self):
+        if self._state == "working":
+            if not self._spin.isActive():
+                self._spin.start()
+        elif self._spin.isActive():
+            self._spin.stop()
+
+    def _tick(self):
+        self._angle = (self._angle + 6) % 360
+        self.update()
+
+    def paintEvent(self, _event):
+        p = QtGui.QPainter(self)
+        p.setRenderHint(QtGui.QPainter.Antialiasing)
+        col = QtGui.QColor(t.WARM)
+        m = 2
+        rect = QtCore.QRectF(m, m, self._d, self._d)
+        if self._state == "working":
+            faint = QtGui.QColor(t.WARM)
+            faint.setAlphaF(0.22)
+            p.setPen(Qt.NoPen)
+            p.setBrush(faint)
+            p.drawEllipse(rect)                       # faint full ring behind
+            p.setBrush(col)
+            p.drawPie(rect, int(self._angle * 16), 180 * 16)  # sweeping half
+        elif self._state == "done":
+            p.setPen(Qt.NoPen)
+            p.setBrush(col)
+            p.drawEllipse(rect)                       # full disc
+        else:  # resting → ring
+            pen = QtGui.QPen(col)
+            pen.setWidthF(2.0)
+            p.setPen(pen)
+            p.setBrush(Qt.NoBrush)
+            p.drawEllipse(QtCore.QRectF(m + 1, m + 1, self._d - 2, self._d - 2))
         p.end()
 
 

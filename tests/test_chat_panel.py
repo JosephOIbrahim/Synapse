@@ -162,6 +162,12 @@ class TestMessageFormatterNodePath:
         result = format_response("ROP at /out/usdrender1")
         assert 'href="node:/out/usdrender1"' in result
 
+    def test_usd_prim_path_becomes_chip(self):
+        # Mile 3 — the comp's Direct artifact is a USD prim path, not a /obj
+        # node path. It must still resolve to a clickable node: chip.
+        result = format_response("rebound at /materials/AMD/Dark_Glass")
+        assert 'href="node:/materials/AMD/Dark_Glass"' in result
+
     def test_no_path_no_link(self):
         result = format_response("No paths here")
         assert "href" not in result
@@ -214,16 +220,19 @@ class TestMessageFormatterStatus:
 
 
 class TestUserMessageFormat:
-    """Test user message bubble formatting."""
+    """Mile 3 — the human voice: a signal hairline + brighter text, no bubble."""
 
-    def test_user_message_has_you_label(self):
+    def test_user_message_has_signal_rule(self):
+        # The single hairline rule on the human voice uses the canonical
+        # signal blue (#8FB3D9), not the legacy cyan, not a bubble.
         result = format_user_message("Hello")
-        assert "You" in result
+        assert "#8FB3D9" in result
 
-    def test_user_message_has_background(self):
+    def test_user_message_has_no_bubble(self):
+        # Bubbles are dead: no CARBON fill, no rounded container.
         result = format_user_message("Hello")
-        # User bubble uses CARBON (#333333) from design system
-        assert "#333333" in result
+        assert "#333333" not in result
+        assert "border-radius" not in result
 
     def test_user_message_escapes_html(self):
         result = format_user_message("<script>alert(1)</script>")
@@ -232,15 +241,47 @@ class TestUserMessageFormat:
 
 
 class TestSynapseMessageFormat:
-    """Test synapse message bubble formatting."""
+    """Mile 3 — the agent voice: plain body copy, no label, no bubble."""
 
-    def test_synapse_label(self):
+    def test_synapse_no_bubble(self):
         result = format_synapse_message("Hello")
-        assert "SYNAPSE" in result
+        assert "Hello" in result
+        assert "border-radius" not in result
+        assert "#333333" not in result
 
-    def test_synapse_accent_color(self):
-        result = format_synapse_message("Hello")
-        assert "#00D4FF" in result
+    def test_synapse_uses_canonical_signal(self):
+        # Node refs surface as artifact chips in the canonical signal blue
+        # (#8FB3D9) — the de-cyaned single chromatic event, not #00D4FF.
+        result = format_synapse_message("rebound at /obj/geo1/mat")
+        assert "#8FB3D9" in result
+        assert "#00D4FF" not in result
+
+
+class TestStylesDecyaned:
+    """Mile 7 — styles.py renders the signature blue (#8FB3D9), not legacy cyan."""
+
+    def _all_styles(self):
+        from synapse.panel import styles
+        return "".join([
+            styles.get_chat_display_stylesheet(),
+            styles.get_send_button_stylesheet(),
+            styles.get_growing_input_stylesheet(),
+            styles.get_quick_action_button_stylesheet(),
+            styles.get_connect_button_stylesheet(),
+            styles.get_ws_url_button_stylesheet(),
+            styles.get_context_bar_path_stylesheet(),
+            styles.get_quick_action_pill_stylesheet(),
+            styles.get_font_size_button_stylesheet(),
+            styles.get_hda_stylesheet(),
+        ])
+
+    def test_no_legacy_cyan(self):
+        out = self._all_styles().upper()
+        assert "00D4FF" not in out
+        assert "0, 212, 255" not in out and "0,212,255" not in out
+
+    def test_signature_blue_present(self):
+        assert "8FB3D9" in self._all_styles().upper()
 
 
 class TestSystemMessageFormat:

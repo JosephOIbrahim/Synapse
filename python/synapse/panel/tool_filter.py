@@ -49,6 +49,64 @@ def _get_router():
     return _router
 
 
+# ── Two-axis palette taxonomy (Mile 6) ───────────────────────────
+# The ⌘K palette lets the artist self-identify two ways: by what they want
+# DONE (verb) and by WHERE they are (context). Pure classification — no router,
+# no side effects — so both palettes can share one taxonomy.
+PALETTE_VERBS = ("build", "fix", "explain", "optimize", "render")
+PALETTE_CONTEXTS = ("SOP", "LOP", "COP", "Karma", "USD")
+
+# verb keyword sets, checked in priority order; "build" is the default.
+_VERB_KEYWORDS = {
+    "render":   ("render", "karma", "husk", "farm", "flipbook", "rendersettings"),
+    "fix":      ("fix", "repair", "diagnose", "doctor", "undo", "redo", "recover",
+                 "validate", "preflight", "cleanup", "migrate", "heal"),
+    "optimize": ("optim", "profile", "metric", "tune", "wedge", "batch",
+                 "scheduler", "performance"),
+    "explain":  ("explain", "inspect", "query", "network_explain", "trace",
+                 "analyze", "lookup", "search", "recall", "describe", "status",
+                 "summary", "scene_info", "stage_info", "get_", "info",
+                 "capture", "monitor", "stats", "help"),
+}
+_VERB_ORDER = ("render", "fix", "optimize", "explain")
+
+# context keyword sets, checked in priority order; no match → None ("Other").
+_CONTEXT_KEYWORDS = {
+    "COP":   ("cops_", "copernicus", "pixel_sort", "reaction_diffusion", "wetmap",
+              "slap_comp", "stylize", "growth_propagation", "composite_aov",
+              "temporal_analysis"),
+    "Karma": ("karma", "husk", "mtlx", "materialx", "material", "light", "render",
+              "farm", "flipbook", "aov", "frame"),
+    "USD":   ("usd", "prim", "stage", "sublayer", "payload", "variant",
+              "collection", "reference", "instancer"),
+    "LOP":   ("solaris", "lop"),
+    "SOP":   ("sop", "scatter", "vex", "wrangle", "deform"),
+}
+_CONTEXT_ORDER = ("COP", "Karma", "USD", "LOP", "SOP")
+
+
+def classify_tool(name, title="", desc=""):
+    """Classify a tool/command into ``(verb, context)`` for the two-axis palette.
+
+    verb    ∈ PALETTE_VERBS          — what the artist wants done (default 'build')
+    context ∈ PALETTE_CONTEXTS|None  — where they are (None = no clear context)
+
+    Pure and side-effect free; safe to call from any UI thread.
+    """
+    text = " ".join((str(name or ""), str(title or ""), str(desc or ""))).lower()
+    verb = "build"
+    for v in _VERB_ORDER:
+        if any(k in text for k in _VERB_KEYWORDS[v]):
+            verb = v
+            break
+    context = None
+    for ctx in _CONTEXT_ORDER:
+        if any(k in text for k in _CONTEXT_KEYWORDS[ctx]):
+            context = ctx
+            break
+    return verb, context
+
+
 # ── Base tools (always included regardless of routing) ───────────
 _BASE_TOOLS = frozenset({
     "synapse_ping",

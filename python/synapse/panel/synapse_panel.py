@@ -24,10 +24,6 @@ from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import qss
 from synapse.panel.designsystem import components as c
 from synapse.panel.designsystem import motion
-try:
-    from synapse.panel.designsystem.loader import BouncingToy
-except Exception:  # pragma: no cover
-    BouncingToy = None
 
 # Proven runtime + widgets — composed, not rewritten. All optional so the panel
 # always instantiates (graceful degradation is a runtime contract).
@@ -57,6 +53,15 @@ try:
 except Exception:  # pragma: no cover
     HealthInfographic = None
     agent_health = None
+try:
+    from synapse.panel.face_work import FaceWork
+except Exception:  # pragma: no cover
+    FaceWork = None
+try:
+    from synapse.panel.face_review import FaceReview, detect_render_flags
+except Exception:  # pragma: no cover
+    FaceReview = None
+    detect_render_flags = None
 
 _VERSION = "7.0.0"
 
@@ -73,6 +78,7 @@ class _GrowingInput(QtWidgets.QTextEdit):
     """Auto-growing chat input. Enter sends; Shift+Enter newlines."""
 
     submitted = Signal()
+    focus_lost = Signal()      # lets the face controller honor a deferred switch
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -98,6 +104,10 @@ class _GrowingInput(QtWidgets.QTextEdit):
             self.submitted.emit()
             return
         super().keyPressEvent(e)
+
+    def focusOutEvent(self, e):
+        super().focusOutEvent(e)
+        self.focus_lost.emit()
 
 
 class _InputResizeGrip(QtWidgets.QWidget):
@@ -159,6 +169,12 @@ class SynapsePanel(QtWidgets.QWidget):
         self._pending_context = []  # paths dropped in; prepended to the next send
         self._font_scale = t.FONT_SCALE_DEFAULT
 
+        # state→face controller (Pentagram pass, Mile 2)
+        self._current_face = "direct"
+        self._manual_face = None     # a pill pick; held until the next work edge
+        self._pending_face = None    # an auto switch deferred by the focus guard
+        self._was_busy = False
+
         self.setAcceptDrops(True)
         self._build_ui()
         self._wire_gate()
@@ -193,38 +209,70 @@ class SynapsePanel(QtWidgets.QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        root.addWidget(self._build_header())
+        # Persistent rail (Mile 1) → context ribbon → switcher → the three faces.
+        # Each face is a full content surface; the controller brings the right
+        # one forward as the agent's state changes. The work is the hero.
+        root.addWidget(self._build_rail())          # mark-as-status · state · Stop
         root.addWidget(c.divider())
         root.addWidget(self._build_context_ribbon())
-        root.addWidget(self._build_mode_bar())
-        root.addWidget(self._build_converse(), 1)   # dominant
-        root.addWidget(self._build_activity_row())
-        root.addWidget(self._build_trust())
-        root.addWidget(self._build_act())
-        root.addWidget(self._build_input())
-        root.addWidget(c.divider())
-        root.addWidget(self._build_footer())
+        root.addWidget(self._build_mode_bar())      # Direct · Work · Review pills
+        root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
+        self._set_face("direct")                    # idle resting face
 
-    def _build_header(self):
+    def _build_rail(self):
+        """The persistent rail (Pentagram pass, Mile 1).
+
+        One strip replacing the old header AND footer: the mark-as-status +
+        wordmark + state phrase on top; connection, an activity meter, and Stop
+        beneath. Termination and live state never scroll away.
+        """
         w = self._section()
-        w.setObjectName("DsHeader")          # subtle cool→warm gradient atmosphere
-        lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
-        lay.setSpacing(t.SPACE_SM)
-        glyph = c.label("◖", role="display")
-        glyph.setStyleSheet("color:%s;" % t.WARM)   # warm human accent (Cohere)
-        mark = c.label("SYNAPSE", role="display")
-        lay.addWidget(glyph)
-        self._header_dot = c.StatusDot("idle")
+        w.setObjectName("DsHeader")          # keep the subtle cool→warm gradient
+        col = QtWidgets.QVBoxLayout(w)
+        col.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        col.setSpacing(t.SPACE_XS)
+
+        # line 1 — identity + state. The mark fills with the agent's state.
+        top = QtWidgets.QHBoxLayout()
+        top.setSpacing(t.SPACE_SM)
+        self._mark = c.MarkDot("idle", diameter=16)
+        word = c.label("SYNAPSE", role="display")
+        word.setStyleSheet(
+            "color:%s; font-size:16px; letter-spacing:2px;" % t.TEXT_BRIGHT
+        )
         self._header_status = c.label("Standing by", role="caption")
+        self._header_status.setStyleSheet("color:%s;" % t.TEXT_SECONDARY)
         overflow = c.Button("⋯", variant="ghost")
         overflow.setFixedWidth(32)
         overflow.clicked.connect(self._show_overflow)
-        lay.addWidget(mark)
-        lay.addWidget(self._header_dot)
-        lay.addWidget(self._header_status)
-        lay.addStretch(1)
-        lay.addWidget(overflow)
+        top.addWidget(self._mark)
+        top.addWidget(word)
+        top.addStretch(1)
+        top.addWidget(self._header_status)
+        top.addWidget(overflow)
+        col.addLayout(top)
+
+        # line 2 — connection · activity meter · Stop. The meter lifts to WARM
+        # while the agent works, dim at rest (observability, always on).
+        bot = QtWidgets.QHBoxLayout()
+        bot.setSpacing(t.SPACE_SM)
+        self._foot_dot = c.StatusDot("disconnected")
+        self._foot_label = c.label("Not connected", role="caption")
+        self._foot_label.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+        self._observe = QtWidgets.QWidget()
+        self._observe.setObjectName("DsRailMeter")
+        self._observe.setAttribute(Qt.WA_StyledBackground, True)
+        self._observe.setFixedHeight(3)
+        self._observe.setStyleSheet("background:%s; border-radius:2px;" % t.SIGNAL_TINT)
+        self._stop_btn = c.Button("Stop", variant="danger")
+        self._stop_btn.setMinimumWidth(64)
+        self._stop_btn.clicked.connect(self._on_stop)
+        self._stop_btn.setEnabled(False)
+        bot.addWidget(self._foot_dot)
+        bot.addWidget(self._foot_label)
+        bot.addWidget(self._observe, 1)
+        bot.addWidget(self._stop_btn)
+        col.addLayout(bot)
         return w
 
     def _build_context_ribbon(self):
@@ -259,20 +307,130 @@ class SynapsePanel(QtWidgets.QWidget):
         self._converse_stack.setMinimumHeight(380)
         return self._converse_stack
 
+    # the three faces, in switcher order
+    _FACE_INDEX = {"direct": 0, "work": 1, "review": 2}
+
     def _build_mode_bar(self):
+        """The switcher: Direct · Work · Review. Pills are a manual override of
+        the state→face controller; the controller drives them otherwise."""
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
         lay.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, 0)
         lay.setSpacing(t.SPACE_XS)
-        self._chat_pill = c.Pill("Chat")
-        self._hda_pill = c.Pill("Build HDA")
-        self._chat_pill.clicked.connect(lambda: self._set_mode("chat"))
-        self._hda_pill.clicked.connect(lambda: self._set_mode("hda"))
-        lay.addWidget(self._chat_pill)
-        lay.addWidget(self._hda_pill)
+        self._face_pills = {}
+        for face, text in (("direct", "Direct"), ("work", "Work"), ("review", "Review")):
+            pill = c.Pill(text)
+            pill.clicked.connect(lambda _=False, f=face: self._set_face(f, manual=True))
+            lay.addWidget(pill)
+            self._face_pills[face] = pill
         lay.addStretch(1)
-        self._set_mode("chat")
         return w
+
+    def _build_faces(self):
+        """The three faces in one stack. Each is a full content surface; the
+        controller decides which is forward. Interiors are recomposed in later
+        miles (Direct=3, Work=4, Review=5) — here they hold the proven widgets."""
+        self._faces = QtWidgets.QStackedWidget()
+        self._faces.addWidget(self._build_direct_face())   # 0 · idle / converse
+        self._faces.addWidget(self._build_work_face())     # 1 · working / glance
+        self._faces.addWidget(self._build_review_face())   # 2 · done / the payoff
+        self._faces.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+        )
+        self._faces.setMinimumHeight(380)
+        return self._faces
+
+    def _build_direct_face(self):
+        """Direct — converse + quick actions + input. The artist's surface."""
+        page = self._section()
+        col = QtWidgets.QVBoxLayout(page)
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(0)
+        col.addWidget(self._build_converse(), 1)   # chat | Build-HDA inner stack
+        col.addWidget(self._build_act())
+        col.addWidget(self._build_input())
+        return page
+
+    def _build_work_face(self):
+        """Work — the walk-away glance. FaceWork (Mile 4) owns the cook preview,
+        plan-with-progress, live tool status, the thinking pulse, and the
+        embedded observability infographic. The panel delegates its working
+        signals to it (set_thinking / set_tool_status / set_health)."""
+        if FaceWork is not None:
+            self._work_face = FaceWork()
+            return self._work_face
+        # graceful fallback — the surface stays present even without FaceWork
+        self._work_face = None
+        page = self._section()
+        lay = QtWidgets.QVBoxLayout(page)
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        lay.addWidget(c.label("Work face unavailable in this build", role="caption"))
+        lay.addStretch(1)
+        return page
+
+    def _build_review_face(self):
+        """Review — the payoff (Mile 5). FaceReview owns the render-hero, verdict,
+        credit/provenance, quality flags (incl. BL-007/008), the graduated gate,
+        and accept/revert/commit. ``self._gate`` aliases the embedded gate so the
+        consent wiring (_wire_gate / _on_gate_raised) is unchanged."""
+        if FaceReview is not None:
+            self._review_face = FaceReview()
+            self._gate = self._review_face.gate
+            self._review_face.accepted.connect(self._on_accept)
+            self._review_face.reverted.connect(self._on_revert)
+            self._review_face.committed.connect(self._on_commit)
+            return self._review_face
+        # graceful fallback — keep the consent gate present without FaceReview
+        self._review_face = None
+        page = self._section()
+        col = QtWidgets.QVBoxLayout(page)
+        col.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        if GateWidget is not None:
+            self._gate = GateWidget(parent=page)
+            col.addWidget(self._gate)
+        else:
+            self._gate = None
+        col.addStretch(1)
+        return page
+
+    def _populate_review(self):
+        """On 'done', fill the Review face with what we can: a taut verdict from
+        the last reply + provenance from the routing_log (best-effort)."""
+        rf = getattr(self, "_review_face", None)
+        if rf is None:
+            return
+        text = "".join(getattr(self, "_stream_buf", []) or []).strip()
+        if text:
+            verdict = text.split("\n", 1)[0].strip()
+            if len(verdict) > 140:
+                verdict = verdict[:137] + "…"
+            rf.set_verdict(verdict)
+        rf.refresh_provenance()
+
+    def _on_accept(self):
+        try:
+            self._chat.append_system_message("Accepted — keeping the result.")
+        except Exception:
+            pass
+
+    def _on_revert(self):
+        # Reversibility: route an undo through the proven agent/bridge path
+        # rather than touching the substrate from the panel.
+        try:
+            self._chat.append_system_message("Reverting the last change…")
+        except Exception:
+            pass
+        self._send("Undo the last change using houdini_undo, then confirm what was reverted.")
+
+    def _on_commit(self):
+        # Commit is a consent moment — it routes through the gate; the panel
+        # never writes /stage itself (the substrate stays Gold's zone).
+        try:
+            self._chat.append_system_message(
+                "Commit to /stage requested — routing through the consent gate.")
+        except Exception:
+            pass
+        self._set_face("review")
 
     def _build_hda_form(self):
         """Native-designsystem describe→build flow (the build runs through the
@@ -308,12 +466,50 @@ class SynapsePanel(QtWidgets.QWidget):
         lay.addStretch(1)
         return page
 
-    def _set_mode(self, mode):
+    def _set_direct_view(self, view):
+        """Toggle Direct's inner surface: the chat (0) or the Build-HDA form (1).
+        Build HDA is no longer a top-level face — it lives inside Direct (⌘K too)."""
         if hasattr(self, "_converse_stack"):
-            self._converse_stack.setCurrentIndex(1 if mode == "hda" else 0)
-        for pill, m in ((self._chat_pill, "chat"), (self._hda_pill, "hda")):
-            pill.setProperty("active", mode == m)
+            self._converse_stack.setCurrentIndex(1 if view == "hda" else 0)
+        self._set_face("direct")   # the HDA form lives on the Direct surface
+
+    # ------------------------------------------------------- face controller
+    def _input_focused(self):
+        inp = getattr(self, "_input", None)
+        return inp is not None and inp.hasFocus()
+
+    def _set_face(self, face, manual=False):
+        """Bring a face forward. ``manual=True`` is a pill pick — it holds until
+        the next work cycle begins, so the controller won't fight the artist."""
+        if not hasattr(self, "_faces") or face not in self._FACE_INDEX:
+            return
+        if manual:
+            self._manual_face = face
+            self._pending_face = None
+        self._faces.setCurrentIndex(self._FACE_INDEX[face])
+        self._current_face = face
+        for f, pill in getattr(self, "_face_pills", {}).items():
+            pill.setProperty("active", f == face)
             c.repolish(pill)
+
+    def _request_face(self, face):
+        """The state controller wants ``face``. Honor two guards:
+        never yank away from Direct while the artist is typing, and don't
+        override a manual pill pick (a real gate clears the manual hold first)."""
+        if face != "direct" and self._input_focused():
+            self._pending_face = face     # defer; applied on input focus-out
+            return
+        if self._manual_face is not None and self._manual_face != face:
+            self._pending_face = face
+            return
+        self._set_face(face)
+
+    def _apply_pending_face(self):
+        """Input lost focus → honor any auto switch the focus guard deferred."""
+        if (self._pending_face and self._manual_face is None
+                and not self._input_focused()):
+            face, self._pending_face = self._pending_face, None
+            self._set_face(face)
 
     def _on_build_hda(self):
         prompt = self._hda_prompt.toPlainText().strip()
@@ -322,80 +518,63 @@ class SynapsePanel(QtWidgets.QWidget):
         ctx = self._hda_ctx.currentText()
         helptxt = " Include help text." if self._hda_help.isChecked() else ""
         self._hda_prompt.clear()
-        self._set_mode("chat")
+        self._set_direct_view("chat")
         self._send(
             "Build a %s HDA: %s. Use the houdini_hda_package tool, then show me "
             "the node path and the promoted parameters.%s" % (ctx, prompt, helptxt)
         )
 
-    def _build_activity_row(self):
-        """A bouncing rubber-toy 'thinking' loader (hidden until working)."""
-        self._activity = self._section()
-        lay = QtWidgets.QHBoxLayout(self._activity)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
-        lay.addStretch(1)
-        self._toy = BouncingToy() if BouncingToy is not None else None
-        if self._toy is not None:
-            lay.addWidget(self._toy)
-        lay.addWidget(c.label("thinking…", role="caption"))
-        lay.addStretch(1)
-        self._activity.setVisible(False)
-        return self._activity
-
     def _set_thinking(self, on):
-        if hasattr(self, "_activity"):
-            self._activity.setVisible(on)
-        if getattr(self, "_toy", None) is not None:
-            self._toy.start() if on else self._toy.stop()
+        """Delegate the thinking pulse to the Work face (Mile 4)."""
+        wf = getattr(self, "_work_face", None)
+        if wf is not None:
+            wf.set_thinking(on)
 
     def _update_health(self):
         """Timer-driven: poll the bridge, persist recommendations + run the
         meta-recursion analyzer, paint the infographic. Best-effort — a missing
         bridge or shared/ just yields the 'awaiting telemetry' empty state."""
-        if getattr(self, "_health", None) is None or agent_health is None:
+        wf = getattr(self, "_work_face", None)
+        if wf is None or agent_health is None:
             return
         try:
             data = agent_health.poll_agent_health()
         except Exception:
             data = None
-        self._health.set_data(data)
+        wf.set_health(data)
 
-    def _build_trust(self):
-        self._trust = self._section()
-        lay = QtWidgets.QVBoxLayout(self._trust)
-        lay.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, 0)
-        lay.setSpacing(t.SPACE_XS)
-        # Observability infographic (ambient, persistent) above the gate card
-        # (transient, action). The infographic is the visible end of the
-        # recursive-observability loop — RSI Line O.
-        if HealthInfographic is not None:
-            self._health = HealthInfographic(parent=self._trust)
-            lay.addWidget(self._health)
-        else:
-            self._health = None
-        if GateWidget is not None:
-            self._gate = GateWidget(parent=self._trust)
-            lay.addWidget(self._gate)
-        else:
-            self._gate = None
-        return self._trust
+    def _verb(self, text, on_click, tone=None):
+        """A type-set action — mono, no pill chrome (Mile 3). Styled by the
+        canonical QPushButton#DsVerb QSS rule (Mile 7 finalized it); ``tone`` ∈
+        {None, 'ok', 'hot', 'accent'} selects the semantic color via property."""
+        btn = QtWidgets.QPushButton(text)
+        btn.setObjectName("DsVerb")
+        btn.setCursor(Qt.PointingHandCursor)
+        btn.setFlat(True)
+        if tone:
+            btn.setProperty("tone", tone)
+        btn.clicked.connect(on_click)
+        return btn
 
     def _build_act(self):
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
-        lay.setSpacing(t.SPACE_XS)
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        lay.setSpacing(t.SPACE_MD)
         for label_text, prompt in _QUICK_ACTIONS:
-            pill = c.Pill(label_text)
-            pill.clicked.connect(lambda _=False, p=prompt: self._send(p))
-            lay.addWidget(pill)
-        self._font_btn = c.Pill("Aa")
-        self._font_btn.setToolTip("Font size — click to cycle")
-        self._font_btn.clicked.connect(self._cycle_font_scale)
-        lay.addWidget(self._font_btn)
+            lay.addWidget(self._verb(
+                label_text.upper(), lambda _=False, p=prompt: self._send(p)))
+        # Build HDA: demoted from a top-level face into a Direct verb (+ ⌘K).
+        lay.addWidget(self._verb(
+            "BUILD HDA", lambda _=False: self._set_direct_view("hda")))
         lay.addStretch(1)
-        self._more_btn = c.Pill("⌘K  more…")
-        self._more_btn.clicked.connect(self._open_palette)
+        self._font_btn = self._verb(
+            "Aa", lambda _=False: self._cycle_font_scale())
+        self._font_btn.setToolTip("Font size — click to cycle")
+        lay.addWidget(self._font_btn)
+        self._more_btn = self._verb(
+            "⌘K", lambda _=False: self._open_palette(), tone="accent")
+        self._more_btn.setToolTip("Command palette — every tool, two axes")
         lay.addWidget(self._more_btn)
         return w
 
@@ -406,6 +585,7 @@ class SynapsePanel(QtWidgets.QWidget):
         col.setSpacing(t.SPACE_XS)
         self._input = _GrowingInput()
         self._input.submitted.connect(self._on_submit)
+        self._input.focus_lost.connect(self._apply_pending_face)
         col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
         row = QtWidgets.QHBoxLayout()
         row.setSpacing(t.SPACE_SM)
@@ -414,7 +594,7 @@ class SynapsePanel(QtWidgets.QWidget):
         attach.setToolTip("Attach image / file as context")
         attach.clicked.connect(self._on_attach)
         self._send_btn = c.Button("Send", variant="primary")
-        self._send_btn.setFixedWidth(64)
+        self._send_btn.setMinimumWidth(72)
         self._send_btn.clicked.connect(self._on_submit)
         row.addWidget(self._input, 1)
         row.addWidget(attach)
@@ -444,30 +624,30 @@ class SynapsePanel(QtWidgets.QWidget):
                 pass
             self._input.setFocus()
 
-    def _build_footer(self):
-        w = self._section()
-        lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
-        self._foot_dot = c.StatusDot("disconnected")
-        self._foot_label = c.label("Not connected", role="caption")
-        self._stop_btn = c.Button("Stop", variant="danger")
-        self._stop_btn.setFixedWidth(64)
-        self._stop_btn.clicked.connect(self._on_stop)
-        self._stop_btn.setEnabled(False)
-        lay.addWidget(self._foot_dot)
-        lay.addWidget(self._foot_label)
-        lay.addStretch(1)
-        lay.addWidget(self._stop_btn)
-        return w
-
     # ------------------------------------------------------------ behavior
     def _wire_gate(self):
-        """GateWidget self-registers HumanGate callbacks; nothing else needed.
-
-        Wiring it into the tree is what closes the consent gap — the legacy
-        shipped panel never instantiated it.
+        """GateWidget self-registers HumanGate callbacks; wiring it into the
+        tree is what closes the consent gap (the legacy shipped panel never
+        instantiated it). Mile 2 also taps its proposal relay so a raised gate
+        brings the Review face forward — reversibility surfaces when it matters.
         """
-        return
+        gate = getattr(self, "_gate", None)
+        if gate is not None:
+            try:
+                gate._proposal_received.connect(self._on_gate_raised)
+            except Exception:
+                pass
+
+    def _on_gate_raised(self, proposal):
+        """A gate proposal arrived → bring Review forward (skip noisy INFORM).
+        A real gate supersedes a manual park, but still respects the focus guard."""
+        if isinstance(proposal, dict):
+            level = proposal.get("level", "")
+        else:
+            level = getattr(proposal, "level", "")
+        if level and level != "inform":
+            self._manual_face = None
+            self._request_face("review")
 
     def _show_overflow(self):
         menu = QtWidgets.QMenu(self)
@@ -553,6 +733,10 @@ class SynapsePanel(QtWidgets.QWidget):
             self._send(text)
 
     def _send(self, text):
+        # Submitting is the artist handing off — drop input focus so the
+        # controller's working→Work switch isn't held back by the focus guard.
+        if getattr(self, "_input", None) is not None:
+            self._input.clearFocus()
         display = text
         if self._pending_context:
             text = "[Context: %s]\n%s" % (", ".join(self._pending_context), text)
@@ -676,6 +860,19 @@ class SynapsePanel(QtWidgets.QWidget):
     def _on_tool_status(self, name, phase, _detail):
         verb = {"running": "running", "done": "ok", "error": "failed"}.get(phase, phase)
         self._set_header("working", "%s %s" % (name, verb))
+        wf = getattr(self, "_work_face", None)
+        if wf is not None:
+            wf.set_tool_status(name, verb, _detail)   # feed the plan-with-progress
+        # a render finishing → refresh the Review face's quality flags (BL-007/008)
+        rf = getattr(self, "_review_face", None)
+        if (rf is not None and detect_render_flags is not None
+                and "render" in name.lower() and phase in ("done", "error")):
+            try:
+                rf.set_flags(detect_render_flags())
+            except Exception:
+                pass
+        if phase == "running":
+            self._request_face("work")   # a live tool → the walk-away glance
 
     def _on_stop(self):
         if self._worker is not None:
@@ -686,11 +883,24 @@ class SynapsePanel(QtWidgets.QWidget):
     def _set_busy(self, busy):
         self._send_btn.setEnabled(not busy)
         self._stop_btn.setEnabled(busy)
+        self._observe.setStyleSheet(
+            "background:%s; border-radius:2px;" % (t.WARM if busy else t.SIGNAL_TINT)
+        )
         self._set_header("working" if busy else "idle",
                          "Working on it" if busy else "Standing by")
+        # state→face edges: a new work cycle clears any manual park and shows
+        # Work; work finishing shows Review (the payoff). idle→Direct is the
+        # resting default and is set explicitly when a fresh turn begins.
+        if busy and not self._was_busy:
+            self._manual_face = None
+            self._request_face("work")
+        elif not busy and self._was_busy:
+            self._populate_review()      # fill verdict + provenance for the payoff
+            self._request_face("review")
+        self._was_busy = busy
 
     def _set_header(self, status, phrase):
-        self._header_dot.set_status(status)
+        self._mark.set_state(status)
         self._header_status.setText(phrase)
 
     def _update_context(self):

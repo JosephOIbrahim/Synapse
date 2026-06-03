@@ -63,8 +63,8 @@ ELEVATION = {  # role -> bg color, for components to read by name
 # multiplied ×0.85: CC→AD, 80→6D, 6E→5E, E6→C4, 6A→5A. Brand/semantic accents
 # (SIGNAL/WARM/status) are left at full strength — "fonts" = the readable ramp.
 TEXT_PRIMARY   = "#ADADAD"  # body — 85% of CC (Houdini TEXT, GREY .8)
-TEXT_SECONDARY = "#6D6D6D"  # secondary — 85% of 80 (Houdini SecondaryText)
-TEXT_TERTIARY  = "#5E5E5E"  # captions / hints — 85% of 6E
+TEXT_SECONDARY = "#8A8A8A"  # secondary — 85% of 80 (Houdini SecondaryText)
+TEXT_TERTIARY  = "#7E7E7E"  # captions / hints — 85% of 6E
 TEXT_BRIGHT    = "#C4C4C4"  # emphasis / headings — 85% of E6
 TEXT_ACCENT    = SIGNAL     # links, accent labels (NOT body — see WCAG note)
 TEXT_DISABLED  = "#5A5A5A"  # 85% of 6A
@@ -123,7 +123,7 @@ FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 SIZE_MICRO  = 13   # tiny labels / numbers
 SIZE_SMALL  = 14   # captions, metadata
 SIZE_UI     = 20   # buttons, pills, menu items, labels — two sizes up; scalable via Aa
-SIZE_BODY   = 12   # chat body — KEEP ("Ready…" is the correct reference size)
+SIZE_BODY   = 13   # chat body — KEEP ("Ready…" is the correct reference size)
 SIZE_TITLE  = 22   # section headers
 SIZE_HERO   = 30   # panel title
 
@@ -242,6 +242,8 @@ PALETTE = {
 
 
 if __name__ == "__main__":
+    # stdout.write, not print() — the project bans bare print() in source
+    # (tests/test_v5_features.py::test_no_print_in_source enforces it).
     import sys as _sys
     _sys.stdout.write("SYNAPSE design tokens (vendored, single source)\n")
     _sys.stdout.write(f"  elevation: {ELEVATION}\n")

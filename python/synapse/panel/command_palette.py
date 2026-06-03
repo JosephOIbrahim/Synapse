@@ -69,6 +69,12 @@ except ImportError:
 # 1. PaletteEntry dataclass
 # ===================================================================
 
+try:
+    from synapse.panel.tool_filter import classify_tool
+except Exception:  # pragma: no cover
+    classify_tool = None
+
+
 @dataclass
 class PaletteEntry:
     """Single searchable entry in the command palette."""
@@ -78,6 +84,8 @@ class PaletteEntry:
     category: str        # "command", "recipe", "apex", "vex", "recent"
     description: str     # brief description
     score: float = 0.0   # fuzzy match score (higher = better match)
+    verb: str = "build"          # two-axis (Mile 6): what the artist wants done
+    context: Optional[str] = None  # two-axis (Mile 6): where they are
 
 
 # ===================================================================
@@ -185,6 +193,14 @@ def build_palette_entries(*, force_rebuild: bool = False) -> list[PaletteEntry]:
             ))
     except (ImportError, AttributeError):
         pass
+
+    # Tag every entry on the two axes (verb × context) for ⌘K navigation.
+    if classify_tool is not None:
+        for e in entries:
+            try:
+                e.verb, e.context = classify_tool(e.command, e.label, e.description)
+            except Exception:
+                pass
 
     _cached_entries = entries
     return entries
