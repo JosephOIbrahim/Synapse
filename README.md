@@ -25,12 +25,14 @@ SYNAPSE's whole point is to be *used*. The payoff is a docked **SYNAPSE panel**:
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
-    ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>docked, in-process"]:::panel
+    ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>rail + 3 faces, in-process"]:::panel
     PANEL --> LOOP["Agent loop<br/>streams Claude + 110 tools"]:::panel
     LOOP -->|"tool_use<br/>(e.g. execute_python)"| EXEC["Tool executor<br/>main thread"]:::panel
     EXEC --> BR["LosslessExecutionBridge<br/>consent &middot; undo &middot; thread-safe &middot; integrity"]:::bridge
     BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
-    BR -.->|telemetry| OBS["Trust zone<br/>per-agent health &middot; self-tuning loop"]:::obs
+    LOOP -.->|state| FACE["state&rarr;face controller<br/>idle&middot;Direct / working&middot;Work / done&middot;Review"]:::obs
+    BR -.->|telemetry &middot; provenance| FACE
+    FACE -.->|surfaces the right face| PANEL
     classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
     classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
     classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
@@ -38,7 +40,7 @@ flowchart LR
     classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
 ```
 
-The panel was rebuilt from first principles over a thin `.pypanel` loader: one vendored design system (native Houdini 21 greys, a cool/warm dual accent), a Ctrl+K command palette across all 110 registry tools, live token streaming, and a Trust zone. Every mutation the agent makes is routed through the **`LosslessExecutionBridge`** — undo-wrapped, thread-safe, integrity-verified — so the agent's hands stay structurally reversible. Consent is **non-blocking for artist-initiated work** (your chat request *is* the consent; autonomous / external-MCP operations still gate through `HumanGate`); the gate previously polled the GUI thread and dead-locked Houdini until that was root-caused live and fixed. The Trust zone also surfaces a **recursive-observability** readout — per-agent success rates plus a recommendation history that persists across restarts and escalates if the same issue recurs.
+The panel was rebuilt from first principles ("the Pentagram pass") over a thin `.pypanel` loader: one vendored design system (native Houdini 21 greys, a cool/warm dual accent, the signal blue `#8FB3D9` kept as the *one* chromatic event). A persistent **rail** keeps termination, live state, and bounded cost on screen; the surface itself is **three faces driven by a state→face controller** — **Direct** (speaker-by-type chat, agent results as artifact chips), **Work** (the walk-away glance: a cook preview, plan-with-progress, and per-agent health), and **Review** (the render is the hero — a taut verdict, credited provenance, quality flags, and a gated commit). A **Ctrl+K palette lets you self-identify two ways** — by verb (build / fix / explain / optimize / render) × context (SOP / LOP / COP / Karma / USD). Every mutation the agent makes is routed through the **`LosslessExecutionBridge`** — undo-wrapped, thread-safe, integrity-verified — so the agent's hands stay structurally reversible. Consent is **non-blocking for artist-initiated work** (your chat request *is* the consent; autonomous / external-MCP operations still gate through `HumanGate`); the gate previously polled the GUI thread and dead-locked Houdini until that was root-caused live and fixed. The Work and Review faces surface a **recursive-observability** readout — per-agent success rates plus a recommendation history that persists across restarts and escalates if the same issue recurs.
 
 ---
 
@@ -544,12 +546,14 @@ python/synapse/
 │   ├── backfill.py             # one-time JSONL → Moneta backfill (backup-first)
 │   └── store.py                # SynapseMemory + SYNAPSE_MEMORY_BACKEND selector
 ├── panel/                      # artist-facing copilot panel (Qt / PySide6)
-│   ├── synapse_panel.py        # the docked panel (Converse / Act / Trust zones)
+│   ├── synapse_panel.py        # the docked panel — rail + 3 faces, state→face controller
+│   ├── face_work.py            # Work face — cook-preview bucket grid + plan-with-progress + health
+│   ├── face_review.py          # Review face — render-hero + verdict + credit/provenance + flags + gated commit
 │   ├── claude_worker.py        # background QThread — streams Claude + tool loop
 │   ├── tool_executor.py        # main-thread tool dispatch (→ SynapseHandler)
 │   ├── bridge_adapter.py       # routes every mutation through LosslessExecutionBridge
-│   ├── tool_palette.py         # Ctrl+K command palette over the tool registry
-│   ├── health_infographic.py   # Trust-zone observability (per-agent health + self-tuning loop)
+│   ├── tool_palette.py         # Ctrl+K palette — two axes (verb × context) over the tool registry
+│   ├── health_infographic.py   # observability (per-agent health + self-tuning loop), embedded in the Work face
 │   └── designsystem/           # vendored tokens / qss / components (one source)
 ├── _vendor/                    # anthropic + deps, CP311 win_amd64
 └── ...                         # Sprint 2 Week 1 + prior subsystems
