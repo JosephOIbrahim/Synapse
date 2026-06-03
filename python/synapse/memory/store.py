@@ -806,7 +806,8 @@ class SynapseMemory:
         keywords: List[str] = None,
         source: str = "user",
         node_paths: List[str] = None,
-        links: List[Dict] = None
+        links: List[Dict] = None,
+        summary: str = ""
     ) -> Memory:
         """
         Add a new memory.
@@ -819,6 +820,10 @@ class SynapseMemory:
             source: Who created this ("user", "ai", "auto")
             node_paths: Related Houdini node paths
             links: Links to other memories [{"target_id": "...", "type": "...", "reason": "..."}]
+            summary: Explicit one-line summary. If empty (default), it is
+                auto-derived from the first content line — which produces
+                duplicate headings for templated content like session summaries
+                (H-4). Pass an explicit summary for such writes.
 
         Returns:
             The created Memory object
@@ -851,7 +856,8 @@ class SynapseMemory:
             hip_file=hip_file,
             hip_version=hip_version,
             frame=frame,
-            node_paths=node_paths or []
+            node_paths=node_paths or [],
+            summary=summary
         )
 
         # Add links

@@ -254,3 +254,52 @@ Once implemented, instrument these:
 - `memory_write_ms` (before/after async queue)
 - `circuit_breaker_trips` per hour
 - `watchdog_false_positives` per session (should be 0 after hwebserver)
+
+---
+
+## Finish Line + Reopen Gates  (the Mile-0 ruler decides)  ·  2026-06-02
+
+The latency refactor is **DONE-as-banked.** Mile 0 instrumentation proved no
+in-scope read hotspot; the big-ticket report items were refuted as non-problems
+(Mile 2 = 17µs; hwebserver = ~2s *slower*); and adversarial recon (2026-06-02)
+refuted the last proposed lever — **batch-tool "selection discipline" is NOT a
+latency win**: `claude_worker.py:147-157` already multiplexes the N tool calls
+from one assistant turn into a *single* LLM round-trip, so a batch tool only
+shaves serial 20-65ms localhost hops that sit *under* the ~2s Houdini
+main-event-loop mutation floor. The only critical-path costs left — the LLM
+stream per loop turn and that ~2s mutation floor — are not reachable by
+application code in this repo.
+
+**SHIPPED + pinned by tests:** Mile 0 (`synapse_metrics` + `synapse_tool_duration_ms`
+histogram + `synapse_memory_entries_total` gauge==`store.count()` — `tests/test_metrics_invariants.py`);
+Mile 1 (`write_session_end` skips bodyless stubs — `tests/test_scene_memory.py`);
+Mile 3a (`synapse_inspect_node` `include_geometry=False` default — `tests/test_inspect_node_default.py`);
+H-4 (session-summary de-dup — `tests/test_session_summary_dedup.py`). Mile 2 SKIPPED
+(non-problem); C-2 already covered by the Mile 1 guard.
+
+**FINISH-LINE CHECK** = `synapse_metrics` (`synapse_tool_duration_ms` per-tool p50/p95
+from the cumulative buckets 5..5000ms) cross-checked against
+`python _benchmark_latency.py` round-trip avg/med/p95 over a **real** session
+(≥50 measured calls, not synthetic).
+
+The three remaining items stay **parked behind numeric reopen-gates** — do not
+build one until its gate fires on real data:
+
+- **3b dirty-flag inspect cache** — build ONLY if `synapse_tool_duration_ms` p95
+  for `tool="inspect_node"` (and/or `inspect_scene`) exceeds **250 ms** over a real
+  session (`..._bucket{le="250"}/count` drops below 0.95) AND `inspect_node` is among
+  the top-3 highest-`sum_ms` tools that session. Below that, the shipped Mile-3a
+  `include_geometry=False` default already keeps the common path cheap.
+- **Mile 5 async render dispatch** — build ONLY if `synapse_tool_duration_ms` p95 for
+  render tools (`autonomous_render`/`safe_render`/`render`/`render_sequence`) exceeds
+  **2000 ms** over a real session, OR `_benchmark_latency.py` shows create_node/mutation
+  median above 2000 ms (the documented ~2s floor) on the hot path.
+- **hwebserver migration (Phase 3)** — build ONLY if `_benchmark_latency.py` p95 for the
+  read mix (ping, get_health, get_scene_info, get_selection, context) exceeds **5 ms**
+  over a real session AND a fresh hwebserver A/B re-measures its prior ~2070 ms ping
+  floor (2026-02-08 table) as below 5 ms. Until SideFX removes that ~2s dispatch floor,
+  websockets stays primary — DEFERRED-not-abandoned.
+
+Every gate number is anchored to an existing histogram bucket boundary or a
+documented floor, so it reads directly from `synapse_metrics` / `_benchmark_latency`
+with **no new instrumentation**.
