@@ -63,8 +63,8 @@ ELEVATION = {  # role -> bg color, for components to read by name
 # multiplied ×0.85: CC→AD, 80→6D, 6E→5E, E6→C4, 6A→5A. Brand/semantic accents
 # (SIGNAL/WARM/status) are left at full strength — "fonts" = the readable ramp.
 TEXT_PRIMARY   = "#ADADAD"  # body — 85% of CC (Houdini TEXT, GREY .8)
-TEXT_SECONDARY = "#6D6D6D"  # secondary — 85% of 80 (Houdini SecondaryText)
-TEXT_TERTIARY  = "#5E5E5E"  # captions / hints — 85% of 6E
+TEXT_SECONDARY = "#8A8A8A"  # secondary — 85% of 80 (Houdini SecondaryText)
+TEXT_TERTIARY  = "#7E7E7E"  # captions / hints — 85% of 6E
 TEXT_BRIGHT    = "#C4C4C4"  # emphasis / headings — 85% of E6
 TEXT_ACCENT    = SIGNAL     # links, accent labels (NOT body — see WCAG note)
 TEXT_DISABLED  = "#5A5A5A"  # 85% of 6A
@@ -110,18 +110,12 @@ STATE_TINTS = {  # status-hue washes for cards/badges
 # 5. TYPOGRAPHY — families, sizes, and ROLES
 # ─────────────────────────────────────────────────────────────
 
-# Production type decision (Mile 7): prefer the ship faces (Söhne · Diatype ·
-# GT America), fall through the comp faces (Space Grotesk · Space Mono), then to
-# ever-more-common system fonts. Graceful by construction — body text inherits
-# Houdini's native UI font (apply_font_role), so these chiefly drive the mono
-# surfaces (paths, verbs, chips); an absent face falls back silently, never
-# breaks. Same install-risk class as the prior JetBrains-Mono primary.
-FONT_MONO = "Diatype Mono"
-FONT_MONO_FALLBACKS = ("Space Mono", "JetBrains Mono", "IBM Plex Mono", "Consolas", "monospace")
+FONT_MONO = "JetBrains Mono"
+FONT_MONO_FALLBACKS = ("IBM Plex Mono", "Consolas", "monospace")
 FONT_MONO_CSS = ", ".join(f'"{f}"' for f in (FONT_MONO,) + FONT_MONO_FALLBACKS)
 
-FONT_SANS = "Söhne"
-FONT_SANS_FALLBACKS = ("GT America", "Space Grotesk", "Inter", "DM Sans", "Segoe UI", "sans-serif")
+FONT_SANS = "DM Sans"
+FONT_SANS_FALLBACKS = ("Instrument Sans", "Segoe UI", "sans-serif")
 FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 
 # px scale (Qt). Calibrated to the panel's true rendering DPI (the canonical
@@ -129,7 +123,7 @@ FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 SIZE_MICRO  = 13   # tiny labels / numbers
 SIZE_SMALL  = 14   # captions, metadata
 SIZE_UI     = 20   # buttons, pills, menu items, labels — two sizes up; scalable via Aa
-SIZE_BODY   = 12   # chat body — KEEP ("Ready…" is the correct reference size)
+SIZE_BODY   = 13   # chat body — KEEP ("Ready…" is the correct reference size)
 SIZE_TITLE  = 22   # section headers
 SIZE_HERO   = 30   # panel title
 
@@ -248,12 +242,9 @@ PALETTE = {
 
 
 if __name__ == "__main__":
-    import sys as _sys
-    _sys.stdout.write("SYNAPSE design tokens (vendored, single source)\n")
-    _sys.stdout.write(f"  elevation: {ELEVATION}\n")
-    _sys.stdout.write(f"  type roles: {list(TYPE_ROLES)}\n")
-    _sys.stdout.write(f"  status: {list(STATUS)}  gates: {list(GATE_LEVELS)}\n")
-    _sys.stdout.write(
-        f"  space: {SPACE_XS}/{SPACE_SM}/{SPACE_MD}/{SPACE_LG}/{SPACE_XL}"
-        f"  motion: {DUR_FAST}/{DUR_BASE}/{DUR_SLOW}ms {EASE}\n"
-    )
+    print("SYNAPSE design tokens (vendored, single source)")
+    print(f"  elevation: {ELEVATION}")
+    print(f"  type roles: {list(TYPE_ROLES)}")
+    print(f"  status: {list(STATUS)}  gates: {list(GATE_LEVELS)}")
+    print(f"  space: {SPACE_XS}/{SPACE_SM}/{SPACE_MD}/{SPACE_LG}/{SPACE_XL}"
+          f"  motion: {DUR_FAST}/{DUR_BASE}/{DUR_SLOW}ms {EASE}")
