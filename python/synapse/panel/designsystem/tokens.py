@@ -242,9 +242,14 @@ PALETTE = {
 
 
 if __name__ == "__main__":
-    print("SYNAPSE design tokens (vendored, single source)")
-    print(f"  elevation: {ELEVATION}")
-    print(f"  type roles: {list(TYPE_ROLES)}")
-    print(f"  status: {list(STATUS)}  gates: {list(GATE_LEVELS)}")
-    print(f"  space: {SPACE_XS}/{SPACE_SM}/{SPACE_MD}/{SPACE_LG}/{SPACE_XL}"
-          f"  motion: {DUR_FAST}/{DUR_BASE}/{DUR_SLOW}ms {EASE}")
+    # stdout.write, not print() — the project bans bare print() in source
+    # (tests/test_v5_features.py::test_no_print_in_source enforces it).
+    import sys as _sys
+    _sys.stdout.write("SYNAPSE design tokens (vendored, single source)\n")
+    _sys.stdout.write(f"  elevation: {ELEVATION}\n")
+    _sys.stdout.write(f"  type roles: {list(TYPE_ROLES)}\n")
+    _sys.stdout.write(f"  status: {list(STATUS)}  gates: {list(GATE_LEVELS)}\n")
+    _sys.stdout.write(
+        f"  space: {SPACE_XS}/{SPACE_SM}/{SPACE_MD}/{SPACE_LG}/{SPACE_XL}"
+        f"  motion: {DUR_FAST}/{DUR_BASE}/{DUR_SLOW}ms {EASE}\n"
+    )

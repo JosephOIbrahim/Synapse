@@ -50,6 +50,20 @@ except ImportError:
     except ImportError:
         _HAVE_QT = False
 
+# Real Qt only. Sibling tests evict real PySide and leave stubs in sys.modules
+# (test_chat_panel: a MagicMock; test_hda_panel: a types.ModuleType subclass with
+# QApplication=MagicMock) — neither can build a panel. Verify QtWidgets.QApplication
+# is a genuine PySide *type*; any stub fails that, so we skip (this suite is
+# hython-only). Without this, a leaked stub flips _HAVE_QT True and every test
+# fails on fake widgets (passes alone, fails under the full stock-CI suite).
+if _HAVE_QT:
+    try:
+        _qapp = getattr(QtWidgets, "QApplication", None)
+        if not (isinstance(_qapp, type) and "PySide" in getattr(_qapp, "__module__", "")):
+            _HAVE_QT = False
+    except Exception:
+        _HAVE_QT = False
+
 try:
     import pytest
     if not _HAVE_QT:
