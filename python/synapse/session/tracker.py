@@ -174,7 +174,13 @@ class SynapseBridge:
                 content=summary,
                 memory_type=MemoryType.SUMMARY,
                 tags=["session", "summary"],
-                source="auto"
+                source="auto",
+                # H-4: an explicit, session-distinguishing summary. Without it,
+                # Memory.__post_init__ auto-derives summary from the first content
+                # line — always the literal "## Session Summary" heading — so
+                # recent_activity shows N identical rows to the AI on every connect.
+                summary=f"Session summary — {session.commands_executed} cmds, "
+                        f"{len(getattr(session, 'nodes_created', []) or [])} nodes ({session_id})",
             )
 
         return summary
