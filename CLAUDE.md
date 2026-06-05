@@ -52,6 +52,8 @@ These are structural, not configurable. There is no code path that skips them.
 
 **Structural disk-write override (R4):** Any operation with `touches_disk=True` is automatically elevated to APPROVE. CRITICAL operations cannot be downgraded — R4 respects the higher gate.
 
+> **⚠ Live-path reality (Phase 0b · D1 · 2026-06-05, verified V1 on H21.0.631).** The gate levels above govern operations routed through `LosslessExecutionBridge`. The live `/synapse` WS transport calls the `handlers.py` command handlers **directly and does not route through the bridge** — so `execute_python`/`execute_vex` run **ungated**: full `__builtins__`, no consent, no import filter, no length cap. This is the deliberate posture for **single-user localhost** (auto-approve). A real handler-layer gate is a prerequisite for any multi-user/studio deployment (D1-a). Pinned by `tests/test_phase0b_consent_posture.py`; tracked as `DocConformance` in `docs/SCIENCE_HARNESS_LEDGER.md`.
+
 ### 1.2.1 Consent Wiring
 
 `_check_consent()` uses a three-tier fallback:
@@ -559,7 +561,7 @@ Track across the session:
 2. **Every mutation through the bridge** — `LosslessExecutionBridge` is the only code path to Houdini
 3. **All hou.* calls via hdefereval** — SUBSTRATE's async boundary, no direct access
 4. **Gate levels enforced structurally** — disk writes auto-elevate to APPROVE, code execution requires CRITICAL (R4)
-5. **Consent gates are real** — REVIEW/APPROVE/CRITICAL route through `synapse.core.gates.HumanGate` with timeout-to-rejection
+5. **Consent gates are real — on the bridge path only** — REVIEW/APPROVE/CRITICAL route through `synapse.core.gates.HumanGate` with timeout-to-rejection *when an operation goes through `LosslessExecutionBridge`*. The live `/synapse` handler path does **not** route through the bridge, so `execute_python`/`execute_vex` are **ungated** (single-user-localhost auto-approve — see §1.2 live-path note; D1). Pinned by `tests/test_phase0b_consent_posture.py`.
 6. **Fidelity = 1.0 or stop** — any degradation surfaces immediately, rollback via undo
 7. **Tests must pass before merge** — INTEGRATOR gates all deliverables
 8. **Handoffs carry provenance** — every cross-agent transfer is traceable and verifiable

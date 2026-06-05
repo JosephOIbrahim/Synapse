@@ -47,3 +47,32 @@
 - **kind:** Deferred · **verified_by:** V1 · **stakes:** high · **probed:** false
 - **area:** the panel creates `SynapseServer` but keeps no hard reference → it is garbage-collected → no listener binds 9999. This was the root cause of tonight's outage; the bridge came up only after a manual hard-ref start in the Houdini Python Shell (`builtins._synapse_manual_srv = srv`). Confirmed by `gc.get_objects()` finding no `SynapseServer` while `start_server`/`process_server_connections` threads were alive and three ephemeral 127.0.0.1 listeners (14725/48626/8912 — none on 9999) existed.
 - **why_it_matters:** the bridge silently dies on GC; every external client loses connectivity with no error surfaced. Belongs in the hardening PRD (panel must retain the server instance; also flag the IPv4-only `127.0.0.1` bind vs `localhost`→`::1` client resolution). Not fixed — Phase 0.0 scope only.
+
+---
+
+## Session 2026-06-05 — Phase 0b · CONSENT POSTURE (D1) · TRACK H
+
+**Operator ratification:** harness target re-pinned **671 → 21.0.631** (the build verified live in Phase 0.0). The Phase 0.0 build `DocConformance` now reads **holds=true** (target == running build).
+
+### Decision — D1: consent posture for execute_python / execute_vex
+- **kind:** Confirmation · **verified_by:** V1 · **against_build:** 21.0.631 · **ts:** 2026-06-05
+- **question:** close the doc/code gap (docs claim CRITICAL-gated; live path is ungated)?
+- **decision (operator, D1):** **delete the doc claim** — keep single-user-localhost auto-approve; do NOT add a handler-layer gate now. A real gate (D1-a) is a prerequisite for multi-user/studio.
+- **change_applied:** CLAUDE.md §1.2 — added a "Live-path reality" note (gate levels govern bridge-routed ops; the live `/synapse` handler path is ungated: full `__builtins__`, no consent/filter/cap). CLAUDE.md safety rule 5 — qualified "consent gates are real **on the bridge path only**". New pinning test `tests/test_phase0b_consent_posture.py`.
+- **measured_delta:** test green (2 passed) against live `inspect.getsource` of `_handle_execute_python` / `_handle_execute_vex` — no `HumanGate`/`_check_consent`/`.propose(`/`GateProposal`. Conformance pinners unbroken (50 passed incl. test_router_internals + test_pass7).
+- **artifact_path:** CLAUDE.md, tests/test_phase0b_consent_posture.py
+
+### DocConformance — execute_python/execute_vex consent claim
+- **kind:** DocConformance · **verified_by:** V1 · **ts:** 2026-06-05
+- **claim_text:** "execute_python/execute_vex are CRITICAL-gated / consent enforced"
+- **claim_locus:** CLAUDE.md §1.2 gate table + safety rule 5 (now corrected)
+- **code_locus:** `handlers.py::_handle_execute_python` / `_handle_execute_vex` (no consent gate; live `/synapse` bypasses the bridge)
+- **bound_by:** mechanism (`tests/test_phase0b_consent_posture.py`) · **holds:** **true** (doc now matches code; the test binds them — adding a gate forces a doc+test update together)
+
+### INT-1 — sequenced to Phase 0c
+- **kind:** Deferred · **verified_by:** V1 · **stakes:** medium · **probed:** false
+- **area:** make `bridge._wait_for_decision` consent wait async (`await asyncio.sleep`, no blocking `time.sleep`). Touches `bridge.py`, which holds the uncommitted S1 change — landing INT-1 **with** S1 in Phase 0c keeps one clean bridge.py batch (avoids partial-committing around S1). Confirmed CTO sequencing call.
+
+### Deferred — D1 residue / D2 (surfaced, not fixed)
+- **kind:** Deferred · **verified_by:** V1 · **stakes:** low/medium · **probed:** false
+- **area:** (1) README.md:30-31,366 diagrams still route `execute_python` → `LosslessExecutionBridge (consent…)` — same claim class; D1 follow-up (Mermaid edit deferred to stay surgical). (2) CLAUDE.md safety rule 2 "Every mutation through the bridge — the only code path to Houdini" is **false** on the live path (§0.8 master finding) — that is **D2/ARC-1**, not D1; left for the bridge-fate decision.
