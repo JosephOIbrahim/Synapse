@@ -254,7 +254,14 @@ class TestRealDataBackfill:
                          "Deferred", "SubstrateAssumption"):
             assert expected in kinds, f"missing kind {expected}: saw {kinds}"
 
-    def test_every_field_survives_round_trip(self, ledger_tmp, no_pxr):
+    def test_file_roundtrip_byte_identical(self, ledger_tmp, no_pxr):
+        """FILE-WRITE fidelity only: deposit→read-back == the parsed record.
+
+        NOTE: this compares the file to ``asdict(rec)`` of the SAME parsed record,
+        so it pins the deposit/read path — it canNOT catch PARSE loss (a parser
+        that dropped a field would drop it from both sides). Parse fidelity
+        against the source markdown is pinned by ``TestParseFidelityOracle``.
+        """
         recs = ledger.parse_ledger_markdown(LEDGER_MD)
         fields_lost = 0
         deposited = 0
@@ -278,3 +285,103 @@ class TestRealDataBackfill:
         assert len(jsons) == summary["files_written"]
         # Kinds dict covers the real kinds.
         assert "Confirmation" in summary["kinds"]
+
+
+# ═════════════════════════════════════════════════════════════════
+# 7. PARSE-FIDELITY ORACLE — the REAL losslessness pin (source-of-truth diff)
+# ═════════════════════════════════════════════════════════════════
+
+import re as _re
+
+
+def _norm(s):
+    """Normalize for substring comparison: drop markdown emphasis/backticks,
+    lowercase, collapse whitespace."""
+    s = str(s).lower().replace("`", "").replace("*", "")
+    return _re.sub(r"\s+", " ", s).strip()
+
+
+def _harvest_bullet_fields(md_text):
+    """Every ``**field:** value`` the parser is meant to capture — i.e. BULLET
+    lines (``- **k:** v``), including the inline-dotted ``· **k2:** v2`` form.
+
+    Scoped to bullet lines (what ``parse_ledger_markdown`` captures as fields) so
+    the oracle mirrors the parser's contract, not arbitrary bold prose."""
+    out = []
+    for line in md_text.splitlines():
+        s = line.strip()
+        if not _re.match(r"^[-*]\s+\*\*", s):
+            continue
+        for part in s.split(" · "):
+            m = _re.search(r"\*\*([^*]+?):\*\*\s*(.*)", part)
+            if m:
+                out.append((m.group(1).strip(), m.group(2).strip()))
+    return out
+
+
+def _parsed_corpus(records):
+    """One normalized blob of EVERY value the parser retained, across all
+    records (modeled fields + list items + extra + notes + session_meta)."""
+    parts = []
+    for r in records:
+        for v in asdict(r).values():
+            if isinstance(v, str):
+                parts.append(v)
+            elif isinstance(v, list):
+                parts.extend(str(x) for x in v)
+            elif isinstance(v, dict):
+                parts.extend(str(x) for x in v.values())
+    return _norm(" ␟ ".join(parts))
+
+
+class TestParseFidelityOracle:
+    """The REAL parse-loss pin (closes the self-comparison gap).
+
+    Unlike ``test_file_roundtrip_byte_identical`` (write fidelity only), this
+    diffs the parsed corpus against the SOURCE markdown: every bulleted
+    ``**field:**`` value must survive into some parsed field. A parser that
+    dropped the ``extra`` catch-all — the exact mechanism the RFC sells as
+    guaranteeing lossless backfill — makes the unmodeled-key values vanish from
+    the corpus and FAILS here (it does not fail the file round-trip)."""
+
+    def test_every_source_bullet_value_survives_parse(self):
+        with open(LEDGER_MD, encoding="utf-8") as fh:
+            md = fh.read()
+        records = ledger.parse_ledger_markdown(LEDGER_MD)
+        blob = _parsed_corpus(records)
+        harvested = _harvest_bullet_fields(md)
+        assert len(harvested) >= 40, "oracle harvested too few fields — vacuous"
+
+        missing = []
+        for key, val in harvested:
+            # List fields split on , / · ; check each significant token survives.
+            for tok in _re.split(r"[,·]", val):
+                ntok = _norm(tok)
+                if len(ntok) < 4:
+                    continue  # skip trivially-matchable short tokens
+                if ntok not in blob:
+                    missing.append((key, ntok[:60]))
+        assert not missing, (
+            f"parser dropped {len(missing)} source field token(s) "
+            f"(parse loss): {missing[:8]}"
+        )
+
+    def test_extra_channel_is_exercised(self):
+        """The D-2 catch-all must carry real unmodeled keys — otherwise the
+        oracle could pass vacuously and a dropped ``extra`` would be silent."""
+        records = ledger.parse_ledger_markdown(LEDGER_MD)
+        total_extra = sum(len(r.extra) for r in records)
+        assert total_extra >= 5, (
+            f"expected unmodeled keys captured in extra; got {total_extra}"
+        )
+
+    def test_session_preamble_provenance_captured(self):
+        """The previously-DROPPED session-preamble lines (between ``## Session``
+        and the first ``### entry``) now land in ``session_meta`` — lossless."""
+        records = ledger.parse_ledger_markdown(LEDGER_MD)
+        meta_keys = {_norm(k) for r in records for k in r.session_meta}
+        meta_vals = _norm(" ".join(
+            v for r in records for v in r.session_meta.values()
+        ))
+        assert "bridge" in meta_keys, f"session preamble dropped: {meta_keys}"
+        assert "9999" in meta_vals  # **Bridge:** ws://localhost:9999/synapse

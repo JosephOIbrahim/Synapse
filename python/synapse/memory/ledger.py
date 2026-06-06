@@ -94,6 +94,11 @@ class LedgerRecord:
     timestamp: str = ""
     title: str = ""                 # the entry header title (### <Kind> — <title>)
     session: str = ""               # the enclosing "## Session ..." header text
+    # Session-preamble provenance (bold ``**field:**`` lines between a ``## Session``
+    # header and its first ``### entry`` — e.g. **Running build:** / **Bridge:** /
+    # **Instrument:** / **Operator ratification:**). Stamped onto every record under
+    # that session so this session-level provenance is never dropped (lossless).
+    session_meta: Dict[str, str] = field(default_factory=dict)
 
     # ── DocConformance-only fields ──
     claim_text: str = ""
@@ -304,6 +309,8 @@ _SESSION_RE = re.compile(r"^##\s+(.*\S)\s*$")
 _ENTRY_RE = re.compile(r"^###\s+(.*\S)\s*$")
 # "- **field:** value"  (leading bullet + bold key)
 _BULLET_RE = re.compile(r"^[-*]\s+\*\*(?P<key>[^*]+?):\*\*\s*(?P<rest>.*)$")
+# "**field:** value"  (bold key with NO leading bullet — session-preamble lines)
+_BOLD_FIELD_RE = re.compile(r"^\*\*(?P<key>[^*]+?):\*\*\s*(?P<val>.*)$")
 # Inline dotted form pieces:  "**k:** v"
 _INLINE_KV_RE = re.compile(r"\*\*(?P<key>[^*]+?):\*\*\s*(?P<val>.*?)\s*$")
 
@@ -373,6 +380,7 @@ def parse_ledger_markdown(path: str) -> List[LedgerRecord]:
 
     records: List[LedgerRecord] = []
     current_session = ""
+    current_session_meta: Dict[str, str] = {}
     rec: Optional[LedgerRecord] = None
     pending_attr: Optional[str] = None  # the attr a continuation line appends to
 
@@ -386,11 +394,12 @@ def parse_ledger_markdown(path: str) -> List[LedgerRecord]:
     for line in lines:
         stripped = line.strip()
 
-        # Session header.
+        # Session header — resets the per-session preamble context.
         m_sess = _SESSION_RE.match(stripped)
         if m_sess:
             _finish()
             current_session = m_sess.group(1).strip()
+            current_session_meta = {}
             continue
 
         # Entry header (### ...).
@@ -398,12 +407,24 @@ def parse_ledger_markdown(path: str) -> List[LedgerRecord]:
         if m_entry:
             _finish()
             title = m_entry.group(1).strip()
-            rec = LedgerRecord(session=current_session, title=title)
+            rec = LedgerRecord(
+                session=current_session,
+                title=title,
+                session_meta=dict(current_session_meta),
+            )
             pending_attr = None
             continue
 
         if rec is None:
-            continue  # prose between entries / before the first entry
+            # Session preamble: bold ``**field:**`` provenance lines (no bullet)
+            # before the first entry. Capture them so they are not dropped; they
+            # are stamped onto each record under this session via session_meta.
+            m_meta = _BOLD_FIELD_RE.match(stripped)
+            if m_meta:
+                current_session_meta[m_meta.group("key").strip()] = (
+                    m_meta.group("val").strip()
+                )
+            continue  # other prose between entries / before the first entry
 
         # Bullet line "- **key:** value" (possibly inline-dotted).
         m_bullet = _BULLET_RE.match(stripped)
