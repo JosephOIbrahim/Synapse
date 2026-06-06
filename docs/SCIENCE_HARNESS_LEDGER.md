@@ -116,3 +116,10 @@
 - **measured_delta:** LIVE recon on 631 hython (`.scout/s2_lop_recon2.py`): flatten-export is **stable** (same stage → same hash, no false-positive) AND **attribute-value-sensitive** (sphere radius 1.0→3.5 changed the hash `eba71f4d`→`41e41471`; a path+type-only digest stayed SAME — too weak). Integration pinned by `tests/test_phase0c_s2_stage_hash.py`. 23 passed incl. bridge-internals (no regression).
 - **artifact_path:** `shared/bridge.py`, `tests/test_phase0c_s2_stage_hash.py` · **probe:** `.scout/s2_lop_recon2.py`
 - **caveat:** `stage.Flatten()` is O(stage size); on very heavy production stages a size-bounded digest may be preferable (future optimization). Recorded, not blocking.
+
+### Confirmation — S3: blast-radius follows wires (outputs()), not just param refs
+- **kind:** Confirmation · **verified_by:** V1 · **against_build:** 21.0.631 · **ts:** 2026-06-05
+- **question:** does `_infer_stage_touch` miss a wired SOP chain feeding a SOP-Import LOP?
+- **change_applied:** `shared/bridge.py::_infer_stage_touch._trace` — iterate `list(n.dependents()) + list(n.outputs())` instead of `dependents()` only. SOP→LOP data flow is BOTH param refs (a sopimport's `soppath` = dependents) AND wires (a SOP chain = outputs).
+- **measured_delta:** LIVE recon on 631 (`.scout/s3_sopimport_recon2.py`): topology `box→(wire)→blast→(soppath)→sopimport`. `box.dependents()==[]` (blast is wired, not a param-dep) → dependents-only trace returns **None (MISS)**; `box.outputs()==[blast]`, `blast.dependents()==[sopimport]` → outputs+dependents returns **`/stage/sopimport1` (CATCH)**. NOTE: the simple case (`box→sopimport` directly) was *already* caught by `dependents()` — S3 is specifically the wired-chain case. Integration pinned by `tests/test_phase0c_s3_outputs_trace.py`. 29 passed across 0b/0c pins + bridge-internals.
+- **artifact_path:** `shared/bridge.py`, `tests/test_phase0c_s3_outputs_trace.py` · **probe:** `.scout/s3_sopimport_recon2.py`

@@ -370,7 +370,13 @@ class LosslessExecutionBridge:
                 if depth > 3 or n.path() in visited:
                     return False
                 visited.add(n.path())
-                for dep in n.dependents():
+                # S3: SOP→LOP data flow is BOTH param refs (dependents() — e.g. a
+                # sopimport's soppath) AND wires (outputs() — a SOP chain feeding
+                # the SOP the LOP imports). dependents() alone misses
+                # box→(wire)→blast→(soppath)→sopimport. Verified live on H21.0.631:
+                # box.dependents()==[] but box.outputs()==[blast],
+                # blast.dependents()==[sopimport].
+                for dep in list(n.dependents()) + list(n.outputs()):
                     if isinstance(dep, hou.LopNode):
                         operation.touches_stage = True
                         operation.stage_path = dep.path()
