@@ -123,3 +123,13 @@
 - **change_applied:** `shared/bridge.py::_infer_stage_touch._trace` — iterate `list(n.dependents()) + list(n.outputs())` instead of `dependents()` only. SOP→LOP data flow is BOTH param refs (a sopimport's `soppath` = dependents) AND wires (a SOP chain = outputs).
 - **measured_delta:** LIVE recon on 631 (`.scout/s3_sopimport_recon2.py`): topology `box→(wire)→blast→(soppath)→sopimport`. `box.dependents()==[]` (blast is wired, not a param-dep) → dependents-only trace returns **None (MISS)**; `box.outputs()==[blast]`, `blast.dependents()==[sopimport]` → outputs+dependents returns **`/stage/sopimport1` (CATCH)**. NOTE: the simple case (`box→sopimport` directly) was *already* caught by `dependents()` — S3 is specifically the wired-chain case. Integration pinned by `tests/test_phase0c_s3_outputs_trace.py`. 29 passed across 0b/0c pins + bridge-internals.
 - **artifact_path:** `shared/bridge.py`, `tests/test_phase0c_s3_outputs_trace.py` · **probe:** `.scout/s3_sopimport_recon2.py`
+
+### DocConformance — DOC-1 (version slice): SYNAPSE version single-sourced + docs conform
+- **kind:** DocConformance · **verified_by:** V1 · **ts:** 2026-06-05
+- **claim_text:** "SYNAPSE version" as stated in the docs
+- **claim_locus:** `CLAUDE.md:3` banner; `python/synapse/__init__.py:17` docstring
+- **code_locus:** `pyproject.toml` `version=5.10.0` (canonical) == `__init__.__version__=5.10.0`
+- **bound_by:** value (`tests/test_phase0c_doc1_version_conformance.py`) · **holds:** **true**
+- **change_applied:** fixed the drift — CLAUDE.md `v5.8.0`→`v5.10.0` + build `21.0.596`→`21.0.631` (ratified); `__init__` docstring `Version: 5.8.0`→`5.10.0`. The test binds pyproject↔`__version__`↔docstring↔CLAUDE.md → future version drift fails loud (v4 §4a.4). 49 passed incl. existing conformance pinners (no regression).
+- **follow-up (Deferred):** the **tool-count** slice (CLAUDE.md "108" vs registry 110 vs stdio-advertised 117) needs the "which count is authoritative" decision the review flagged — not rushed. Line-count magnitudes + the mechanism claim (bridge-presence) are the rest of DOC-1's surface.
+- **artifact_path:** `CLAUDE.md`, `python/synapse/__init__.py`, `tests/test_phase0c_doc1_version_conformance.py`
