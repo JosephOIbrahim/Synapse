@@ -311,6 +311,24 @@ class LosslessExecutionBridge:
         except Exception:
             pass
 
+        # S2 (Solaris/LOP): hash the COMPOSED stage content, not just cookCount.
+        # node.geometry() is None for LOPs, so the geometry block above is skipped;
+        # without this the hash collapses to "did the node recook" and cannot detect
+        # that the composed stage CHANGED — blind on the headline Solaris path.
+        # Flatten-export verified stable + attribute-value-sensitive on H21.0.631.
+        try:
+            if hasattr(node, "stage"):
+                stage = node.stage()
+                if stage is not None:
+                    flat = stage.Flatten().ExportToString()
+                    hash_data.append(
+                        "stage:" + hashlib.sha256(
+                            flat.encode("utf-8")
+                        ).hexdigest()[:HASH_LENGTH]
+                    )
+        except Exception:
+            pass  # graceful — never let one missing API kill the hash
+
         if not hash_data:
             return hashlib.sha256(
                 datetime.now().isoformat().encode()

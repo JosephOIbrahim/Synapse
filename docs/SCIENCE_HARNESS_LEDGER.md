@@ -108,3 +108,11 @@
 - **change_applied:** `shared/bridge.py::_verify_composition` — the `except` block returned `True` (fail-OPEN: `composition_valid=True`/`fidelity=1.0` having validated nothing). Now returns `False` (fail-CLOSED, v4 §4a). The legitimate early returns (no hou / no node / no stage = nothing to validate) stay `True`.
 - **measured_delta:** pin (`tests/test_phase0c_int3_fail_closed.py`) — forces the production path + makes `hou.node` raise → returns `False` (was `True`); a second test confirms the no-hou early return stays `True`. 24 passed incl. `test_evolution_bridge_internals` (no regression — the standalone path never hits the changed except).
 - **artifact_path:** `shared/bridge.py`, `tests/test_phase0c_int3_fail_closed.py`
+
+### Confirmation — S2: scene hash incorporates the composed LOP stage
+- **kind:** Confirmation · **verified_by:** V1 · **against_build:** 21.0.631 · **ts:** 2026-06-05
+- **question:** does the integrity hash detect composed-stage changes on the Solaris path?
+- **change_applied:** `shared/bridge.py::_compute_scene_hash` — for LOP targets (`hasattr(node,'stage')`) hash the flattened composed stage (`stage.Flatten().ExportToString()`) into the digest. Previously `node.geometry()` was None for LOPs → the hash collapsed to children+cookCount, blind to composed-stage content. SOP hashing unchanged (block gated on `hasattr stage`).
+- **measured_delta:** LIVE recon on 631 hython (`.scout/s2_lop_recon2.py`): flatten-export is **stable** (same stage → same hash, no false-positive) AND **attribute-value-sensitive** (sphere radius 1.0→3.5 changed the hash `eba71f4d`→`41e41471`; a path+type-only digest stayed SAME — too weak). Integration pinned by `tests/test_phase0c_s2_stage_hash.py`. 23 passed incl. bridge-internals (no regression).
+- **artifact_path:** `shared/bridge.py`, `tests/test_phase0c_s2_stage_hash.py` · **probe:** `.scout/s2_lop_recon2.py`
+- **caveat:** `stage.Flatten()` is O(stage size); on very heavy production stages a size-bounded digest may be preferable (future optimization). Recorded, not blocking.
