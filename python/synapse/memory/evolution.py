@@ -106,7 +106,10 @@ def check_evolution(claude_dir: str, latest_entry: Dict = None) -> Dict[str, Any
     return {
         "should_evolve": len(triggers_met) > 0,
         "triggers_met": triggers_met,
-        "target": "structured" if triggers_met else None,
+        # Canonical Pokémon naming: charmander -> charmeleon is the next stage.
+        # The evolve handler gates on target == "charmeleon", and
+        # evolve_to_charmeleon is the evolver, so they now agree.
+        "target": "charmeleon" if triggers_met else None,
         "current": stage,
         "counts": counts,
     }
@@ -211,15 +214,18 @@ def parse_markdown_memory(md_path: str) -> Dict[str, List]:
     }
 
 
-def evolve_to_structured(md_path: str, usd_path: str) -> Dict[str, Any]:
+def evolve_to_charmeleon(md_path: str, usd_path: str) -> Dict[str, Any]:
     """
-    Convert markdown memory to USD. Lossless.
+    Charmander -> Charmeleon: convert markdown memory to USD. Lossless.
 
     1. Parse markdown
     2. Create USD stage
     3. Write typed prims
     4. Archive original as memory_pre_evolution.md
     5. Generate companion memory.md
+
+    Pokémon naming ('charmeleon') is the canonical convention; the evolution
+    tag written here is read back by scene_memory.get_evolution_stage.
     """
     try:
         from pxr import Usd, Sdf
@@ -262,7 +268,7 @@ def evolve_to_structured(md_path: str, usd_path: str) -> Dict[str, Any]:
     stage.GetRootLayer().customLayerData = {
         "synapse:version": "0.1.0",
         "synapse:type": "scene_memory",
-        "synapse:evolution": "structured",
+        "synapse:evolution": "charmeleon",
     }
     stage.GetRootLayer().Save()
 
@@ -282,6 +288,11 @@ def evolve_to_structured(md_path: str, usd_path: str) -> Dict[str, Any]:
         "parameters": len(parsed["parameters"]),
         "archive": archive_path,
     }
+
+
+# Backward-compat alias: legacy 'structured' name forwards to the canonical
+# Pokémon-named evolver.
+evolve_to_structured = evolve_to_charmeleon
 
 
 def generate_companion_md(usd_path: str, md_path: str) -> None:
@@ -384,10 +395,15 @@ def prune_memory(claude_dir: str, max_sessions_full: int = 5) -> Dict[str, Any]:
     return {"pruned_sessions": pruned_count, "new_size_kb": new_size}
 
 
-def evolve_to_composed(scene_usd_path: str, project_usd_path: str) -> Dict[str, Any]:
+def evolve_to_charizard(scene_usd_path: str, project_usd_path: str) -> Dict[str, Any]:
     """
-    Set up composition arcs so scene memory sublayers project memory.
-    Scene-level opinions are stronger (override project defaults).
+    Charmeleon -> Charizard: set up composition arcs so scene memory
+    sublayers project memory. Scene-level opinions are stronger (override
+    project defaults).
+
+    Pokémon naming ('charizard') is the canonical convention across CLAUDE.md
+    §6, scene_memory.get_evolution_stage, the panel, and the tests. The
+    evolution tag written here is read back by get_evolution_stage.
     """
     try:
         from pxr import Usd, Sdf
@@ -412,9 +428,15 @@ def evolve_to_composed(scene_usd_path: str, project_usd_path: str) -> Dict[str, 
 
     # Update evolution metadata
     data = dict(layer.customLayerData)
-    data["synapse:evolution"] = "composed"
+    data["synapse:evolution"] = "charizard"
     layer.customLayerData = data
 
     layer.Save()
 
     return {"success": True, "sublayer": project_rel}
+
+
+# Backward-compat alias: legacy 'composed' name forwards to the canonical
+# Pokémon-named evolver. No current caller uses it, kept to avoid surprising
+# any out-of-tree importer.
+evolve_to_composed = evolve_to_charizard
