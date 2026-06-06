@@ -76,3 +76,21 @@
 ### Deferred — D1 residue / D2 (surfaced, not fixed)
 - **kind:** Deferred · **verified_by:** V1 · **stakes:** low/medium · **probed:** false
 - **area:** (1) README.md:30-31,366 diagrams still route `execute_python` → `LosslessExecutionBridge (consent…)` — same claim class; D1 follow-up (Mermaid edit deferred to stay surgical). (2) CLAUDE.md safety rule 2 "Every mutation through the bridge — the only code path to Houdini" is **false** on the live path (§0.8 master finding) — that is **D2/ARC-1**, not D1; left for the bridge-fate decision.
+
+---
+
+## Session 2026-06-05 — Phase 0c · S1 / GIT-0 · TRACK H
+
+### Confirmation — S1: composition-failure rollback is single + clean (COMMITTED)
+- **kind:** Confirmation · **verified_by:** V1 · **against_build:** 21.0.631 · **ts:** 2026-06-05
+- **question:** does the bridge's composition-failure path roll back single + clean on the ratified build?
+- **change_applied:** `shared/bridge.py` — inner `hou.undos.performUndo()` deleted inside the open undo group at **both** S1 sites (`_execute_houdini` + `_sync_payload`); the outer `except` performs the single rollback. This entry **commits** that fix (GIT-0) after re-verifying on 631.
+- **measured_delta:** re-ran `.scout/s1_repro.py` on **631 hython** → `RESULT_ERROR='USD Composition violation on /obj'` (correct signal restored), synapse op rolled back, `ARTIST_ACTION` preserved, undo depth 1→1, `S1_VERDICT=SINGLE_UNDO_CLEAN`. Identical to the 671 result — build-stable.
+- **artifact_path:** `shared/bridge.py` · **probe:** `.scout/s1_repro.py`
+
+### SubstrateAssumption — undo-group rollback is single + clean (sync / _sync_payload paths)
+- **kind:** SubstrateAssumption · **verified_by:** V1 · **ts:** 2026-06-05
+- **mechanism:** "undo rollback is single + clean on the composition-failure path"
+- **probe:** `.scout/s1_repro.py`, live H21.0.631 hython
+- **holds:** **true** (for mutating ops) — flips from the open S1 `holds=false`. Unblocks the v4 §4b reversibility precondition for the `_execute_houdini`/`_sync_payload` paths.
+- **scope/caveat:** the empty-group over-undo edge remains (pre-existing, separate — Phase 0.0/crucible). INT-1 (async consent wait, same `bridge.py`) is the next 0c increment — now a clean change since `bridge.py` is committed.

@@ -448,7 +448,12 @@ class LosslessExecutionBridge:
                 # ── ANCHOR: Scene Integrity ─────────────────
                 if operation.touches_stage and operation.stage_path:
                     if not self._verify_composition(operation.stage_path):
-                        hou.undos.performUndo()
+                        # S1 fix (verified live H21.0.671): do NOT performUndo()
+                        # inside the still-open undo group — H21 raises "Cannot
+                        # undo within an undo group", which masks this error and
+                        # leaves the real reason invisible to the caller. Let the
+                        # raise close the group; the outer `except` performs the
+                        # single rollback.
                         raise RuntimeError(
                             f"USD Composition violation on {operation.stage_path}"
                         )
@@ -525,7 +530,10 @@ class LosslessExecutionBridge:
 
                     if operation.touches_stage and operation.stage_path:
                         if not self._verify_composition(operation.stage_path):
-                            hou.undos.performUndo()
+                            # S1 fix (parity with _execute_houdini, verified live
+                            # H21.0.671): no inner performUndo — it raises "Cannot
+                            # undo within an undo group" and masks this error. The
+                            # outer `except` performs the single rollback.
                             raise RuntimeError("USD Composition violation detected.")
 
                     return self._finalize(operation, integrity, result)
