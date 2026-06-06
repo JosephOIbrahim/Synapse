@@ -159,3 +159,37 @@
 - **measured_delta:** pins (`tests/test_phase0a_write_backup.py`) — backup rotation keeps N generations + drops the oldest beyond keep; binary round-trips 256 bytes; traversal rejected; no `.tmp` leftovers; atomicity preserved. `test_cognitive_boundary` (no-`hou`) green. Full suite: **17 pre-existing failures, ZERO new**; 3159 passed.
 - **DEFERRED (Phase 0a downstream):** wire the Ledger / provenance / `Deferred` register to USE this durable path (today the Ledger is this `.scout`/`docs` markdown); the canonical `agent.usd` Ledger needs the §2 schema + RFC (Michael Gold's zone). The **primitive is the prerequisite — now done**.
 - **artifact_path:** `python/synapse/cognitive/tools/write_report.py`, `python/synapse/server/handlers.py`, `tests/test_phase0a_write_backup.py`
+
+---
+
+## Session 2026-06-06 — CTO-FIX INTEGRATION · the 17-failure baseline cleared
+
+The 4 fixes were authored by the CTO agent-team harness (workflow `wist00lt2`, commit-to-branch contract), each adversarially reviewed by a per-branch crucible, then integrated this session onto master (`c54d592`→`4d619dc`) via cherry-pick + the load-bearing **full-suite gate**. The baseline carried **17 pre-existing failures** (agent_state / design_system / scene_memory clusters) across the whole of Phase 0 — these 4 fixes targeted exactly those clusters and cleared them.
+
+**GATE RESULT: `3180 passed, 56 skipped, 0 failed` — 17 → 0. Clean sweep, zero new failures.**
+
+### Confirmation — scene-memory (MEM-1): canonical Pokémon evolver names; `synapse_evolve_memory` revived
+- **kind:** Confirmation · **crucible:** CONFIRMED + safe · **ts:** 2026-06-06
+- **root cause:** the handler imported `evolve_to_charmeleon` (didn't exist — function was `evolve_to_structured`) and gated on `check_evolution` returning `target=="charmeleon"` (it returned `"structured"`). The Charizard tests assert the canonical name; production wrote `"composed"`. Naming drift from CLAUDE.md §6 (charmander→charmeleon→charizard) broke the live `synapse_evolve_memory` tool AND 3 tests.
+- **change_applied:** `python/synapse/memory/evolution.py` — `check_evolution` target `"structured"`→`"charmeleon"`; renamed `evolve_to_structured`→`evolve_to_charmeleon` and `evolve_to_composed`→`evolve_to_charizard` (both with **backward-compat aliases**); metadata tags `"structured"`→`"charmeleon"`, `"composed"`→`"charizard"`.
+- **measured_delta:** scene_memory + evolution-bridge-internals clusters green; full suite 0 failures. Real fix at source (not a test edit) — restores a live MCP tool.
+- **artifact_path:** `python/synapse/memory/evolution.py`
+
+### Confirmation — agent-state: force the pxr-absent path in no-pxr fallback tests
+- **kind:** Confirmation · **crucible:** CONFIRMED + safe · **ts:** 2026-06-06
+- **root cause:** `TestNoOpWithoutPxr` asserted the pxr-absent fallback, but the dev/CI env HAS `pxr` installed → the asserted branch never ran → the tests failed. Assertions were correct; the env didn't reach them.
+- **change_applied:** `tests/test_agent_state.py` — `no_pxr` fixture + autouse `_force_no_pxr` that `patch.object(agent_state, "PXR_AVAILABLE", False)`. **Assertions unchanged** (verified non-weakening: it forces the already-asserted code path, it does not relax any check).
+- **artifact_path:** `tests/test_agent_state.py`
+
+### Confirmation — design-system: cyan/blue 3-source token gremlin isolated (NOT unified)
+- **kind:** Confirmation · **crucible:** CONFIRMED + safe · **ts:** 2026-06-06
+- **root cause:** two legitimate token sources collide on `sys.modules["tokens"]` — repo `#8FB3D9` (muted light blue) vs panel `#00D4FF` (cyan) — import order decided which won, flaking `test_design_system` / `test_hda_panel`. The known TRAP: naively unifying them breaks `test_hda_panel`.
+- **change_applied:** `tests/test_design_system.py` + `tests/test_hda_panel.py` — staleness guard `_deployed_is_fresh()`, autouse `_pin_canonical_tokens` re-pinning `sys.modules["tokens"]` to the repo tokens, and `test_hda_panel` evicts the bare `tokens`. **Isolates** the two sources order-independently without unifying them (avoids the trap). **Assertions unchanged.**
+- **artifact_path:** `tests/test_design_system.py`, `tests/test_hda_panel.py`
+
+### Confirmation — panel-gc: durable ref to the fallback websocket SynapseServer (narrative corrected)
+- **kind:** Confirmation · **crucible:** PARTIAL + safe (additive; narrative overstated) · **ts:** 2026-06-06
+- **change_applied:** `python/synapse/server/start_hwebserver.py` — `_fallback_server` module-global + `get_running_server()` accessor + assignment after `server.start()`; `tests/test_start_hwebserver_durable_ref.py` (3 tests, stubs the adapter in `sys.modules` so import-time `main()` never binds a socket).
+- **Floor correction (this session):** the cherry-picked docstring overstated the GC risk ("Python is free to garbage-collect the server the moment main() returns"). The crucible **refuted** it: while `serve_forever()` runs on the daemon thread, the running bound method roots the server — a live serving server is NOT reaped mid-serve. Rewrote the comment to the honest value: **(1) recoverability** (a named handle vs scanning `gc.get_objects()` — the real pain that drove the `builtins._synapse_manual_srv` workaround) and **(2) the post-thread-exit window** (once the serve thread stops, a bare local becomes collectible with no handle for restart). Commit `4d619dc`.
+- **artifact_path:** `python/synapse/server/start_hwebserver.py`, `tests/test_start_hwebserver_durable_ref.py`
+- **FLAGGED follow-up (out of scope here):** `start_hwebserver.py:79-81` `else: main()` auto-runs `main()` at *import* (pre-existing; not introduced by panel-gc) — binds :9999 on bare import. Guard behind an explicit start call / `__name__` check. The durable-ref test self-protects via `sys.modules` stubbing; no other test imports the module bare, so the baseline was unaffected — but the auto-run is a latent CI footgun worth closing.
