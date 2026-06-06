@@ -162,6 +162,13 @@ for _key in list(sys.modules):
 for _key in ("synapse.panel.ws_bridge", "synapse.panel.hda_controller"):
     sys.modules.pop(_key, None)
 
+# Evict any leaked bare ``tokens`` so synapse.panel.tokens (imported below)
+# resolves its SIGNAL from the deployed/fallback source (#00D4FF), not from a
+# repo-tokens pin (#8FB3D9) that test_design_system may have left in
+# sys.modules. We pop only bare ``tokens`` (not synapse.panel.tokens itself) so
+# this file's captured panel-tokens module stays stable for the whole session.
+sys.modules.pop("tokens", None)
+
 sys.modules["PySide6"] = pyside6
 sys.modules["PySide6.QtCore"] = pyside6_core
 sys.modules["PySide6.QtWidgets"] = pyside6_widgets

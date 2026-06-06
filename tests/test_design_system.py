@@ -23,13 +23,45 @@ import pytest
 # Prefer the DEPLOYED copy (~/.synapse) so this also validates a real install;
 # fall back to the REPO source when nothing is deployed (CI runners, fresh dev
 # checkouts). The layout is identical either way: <base>/{design,houdini,install.py}.
+#
+# Staleness guard: the deployed tree is an out-of-band copy (made by the
+# `deploy` skill, not refreshed on every commit), so it can lag the repo across
+# a token redesign — and the lag is WHOLE-TREE (both tokens.py AND the SVGs
+# move together). Reading tokens from one tree and SVGs from the other yields a
+# self-inconsistent mix (e.g. tokens=#8FB3D9 but icons=#00D4FF). So only adopt
+# the deployed tree when its SIGNAL matches the repo's; otherwise fall back to
+# the repo tree wholesale, keeping every read on one consistent source.
 _DEPLOYED_HOME = os.path.join(os.path.expanduser("~"), ".synapse")
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_SYNAPSE_HOME = (
-    _DEPLOYED_HOME
-    if os.path.isdir(os.path.join(_DEPLOYED_HOME, "design"))
-    else _REPO_ROOT
-)
+
+
+def _signal_of(base):
+    """Best-effort read of SIGNAL's hex from <base>/design/tokens.py (None on
+    miss). Extracts the first quoted string on the SIGNAL assignment line, so
+    the '#' inside the hex value isn't mistaken for a trailing comment."""
+    import re as _re
+    path = os.path.join(base, "design", "tokens.py")
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            for line in fh:
+                stripped = line.strip()
+                if stripped.startswith("SIGNAL") and "=" in stripped:
+                    m = _re.search(r'["\']([^"\']*)["\']', stripped)
+                    return m.group(1) if m else None
+    except OSError:
+        return None
+    return None
+
+
+def _deployed_is_fresh():
+    if not os.path.isdir(os.path.join(_DEPLOYED_HOME, "design")):
+        return False
+    dep, repo = _signal_of(_DEPLOYED_HOME), _signal_of(_REPO_ROOT)
+    # If we can't read the repo SIGNAL, don't second-guess the deployment.
+    return repo is None or dep == repo
+
+
+_SYNAPSE_HOME = _DEPLOYED_HOME if _deployed_is_fresh() else _REPO_ROOT
 _DESIGN_DIR = os.path.join(_SYNAPSE_HOME, "design")
 _HOUDINI_DIR = os.path.join(_SYNAPSE_HOME, "houdini")
 _SVG_DIR = os.path.join(_DESIGN_DIR, "icons", "svg")
@@ -43,13 +75,42 @@ if _DESIGN_DIR not in sys.path:
 # other tests put python/synapse/panel on the path, whose tokens.py fallback
 # carries a stale SIGNAL, so resolution was order-dependent (these tests passed
 # locally but failed in CI). Loading it explicitly by path pins the identity.
+# _DESIGN_DIR already points at the consistent tree picked by the staleness
+# guard above, so tokens and SVGs always read from the same source.
 import importlib.util as _ilu
+_TOKENS_MOD = None
 _tok_path = os.path.join(_DESIGN_DIR, "tokens.py")
 if os.path.isfile(_tok_path):
     _spec = _ilu.spec_from_file_location("tokens", _tok_path)
     _mod = _ilu.module_from_spec(_spec)
     _spec.loader.exec_module(_mod)
+    _TOKENS_MOD = _mod
     sys.modules["tokens"] = _mod
+
+
+@pytest.fixture(autouse=True)
+def _pin_canonical_tokens():
+    """Re-pin sys.modules["tokens"] to the canonical (repo) tokens for every
+    test in this file. The bare ``tokens`` key is a shared global: a sibling
+    file (test_hda_panel) imports synapse.panel.tokens, whose bootstrap
+    ``from tokens import …`` re-binds sys.modules["tokens"] to the DEPLOYED
+    tokens (#00D4FF) during pytest's collection phase — clobbering our
+    import-time pin before our tests run. Restoring it here (run time) makes
+    these assertions order-independent without touching the panel's own module
+    object that sibling tests captured. We do NOT evict synapse.panel.tokens —
+    that module's SIGNAL attribute is the panel's own concern, left intact."""
+    if _TOKENS_MOD is not None:
+        _saved = sys.modules.get("tokens")
+        sys.modules["tokens"] = _TOKENS_MOD
+        try:
+            yield
+        finally:
+            if _saved is not None:
+                sys.modules["tokens"] = _saved
+            else:
+                sys.modules.pop("tokens", None)
+    else:
+        yield
 
 
 # ── Token Tests ───────────────────────────────────────────
