@@ -796,8 +796,12 @@ class SynapsePanel(QtWidgets.QWidget):
         self._set_busy(True)
         tools = get_anthropic_tools() if get_anthropic_tools else None
         system = self._build_system_prompt()
+        # Interactive panel = human-in-the-loop: the artist typed the request
+        # and is watching it run, so the worker allowlist gate (autonomous-only)
+        # is disabled here to preserve the existing artist-initiated path.
         self._worker = ClaudeWorker(self._messages, system_prompt=system,
-                                    tools=tools, parent=self)
+                                    tools=tools, parent=self,
+                                    enforce_worker_policy=False)
         self._worker.token_received.connect(self._on_token)
         self._worker.stream_done.connect(self._on_done)
         self._worker.stream_error.connect(self._on_error)

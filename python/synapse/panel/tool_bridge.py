@@ -88,6 +88,32 @@ def get_anthropic_tools() -> list[dict]:
     return list(_TOOLS_CACHE)
 
 
+# Filtered caches for the autonomous worker -- advertise only allowlisted
+# tools so the LLM never even SEES a denied tool. Keyed by resolved policy
+# mode so a SYNAPSE_WORKER_TOOL_MODE change (live config / tests) re-filters.
+_WORKER_TOOLS_CACHE: dict[str, tuple[dict, ...]] = {}
+
+
+def get_anthropic_tools_for_worker() -> list[dict]:
+    """Return only the tools the autonomous worker is permitted to use.
+
+    A subset of ``get_anthropic_tools()`` filtered through
+    ``worker_policy.is_tool_allowed_for_worker``. Does NOT mutate the full
+    ``_TOOLS_CACHE`` -- other callers (interactive panel, tool-count tests)
+    still see every tool. Cached per resolved policy mode.
+    """
+    from synapse.panel.worker_policy import is_tool_allowed_for_worker, resolve_mode
+    mode = resolve_mode()
+    cached = _WORKER_TOOLS_CACHE.get(mode)
+    if cached is None:
+        cached = tuple(
+            tool for tool in _TOOLS_CACHE
+            if is_tool_allowed_for_worker(tool["name"])[0]
+        )
+        _WORKER_TOOLS_CACHE[mode] = cached
+    return list(cached)
+
+
 def get_tool_dispatch(tool_name: str) -> tuple | None:
     """Return (command_type, payload_builder) for a tool, or None if not found."""
     return TOOL_DISPATCH.get(tool_name)

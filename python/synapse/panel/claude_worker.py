@@ -22,8 +22,9 @@ try:
 except ImportError:
     from PySide2.QtCore import QThread, Signal
 
-from .tool_bridge import get_anthropic_tools
+from .tool_bridge import get_anthropic_tools_for_worker
 from .tool_executor import ToolRequest, try_mcp_tool_call
+from .worker_policy import denial_tool_result, is_tool_allowed_for_worker
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +61,18 @@ class ClaudeWorker(QThread):
         system_prompt: str = "",
         parent=None,
         tools: list[dict] | None = None,
+        enforce_worker_policy: bool = True,
     ) -> None:
         super().__init__(parent)
         self._messages: list[dict] = copy.deepcopy(messages)
         self._system: str = system_prompt
-        self._tools: list[dict] = tools if tools is not None else get_anthropic_tools()
+        # Autonomous worker: advertise only the allowlisted tool subset so the
+        # LLM never sees a denied tool. enforce_worker_policy gates the
+        # dispatch-side check (the load-bearing security boundary).
+        self._enforce_worker_policy: bool = enforce_worker_policy
+        self._tools: list[dict] = (
+            tools if tools is not None else get_anthropic_tools_for_worker()
+        )
         self._abort: bool = False
 
     # ------------------------------------------------------------------
@@ -187,6 +195,17 @@ class ClaudeWorker(QThread):
         tool_use_id = block["id"]
         tool_name = block["name"]
         tool_input = block.get("input", {})
+
+        # --- Allowlist gate (load-bearing security check) ---
+        # The autonomous worker has no human in the loop. Deny anything outside
+        # the worker policy BEFORE dispatch. enforce_worker_policy=False
+        # preserves the interactive/human-in-the-loop path untouched.
+        if self._enforce_worker_policy:
+            allowed, reason = is_tool_allowed_for_worker(tool_name)
+            if not allowed:
+                summary = json.dumps(tool_input, default=str)[:120] if tool_input else ""
+                self.tool_status.emit(tool_name, "error", reason)
+                return denial_tool_result(tool_use_id, tool_name, reason)
 
         summary = json.dumps(tool_input, default=str)[:120] if tool_input else ""
         self.tool_status.emit(tool_name, "running", summary)
