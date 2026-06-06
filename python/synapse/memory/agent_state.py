@@ -99,6 +99,9 @@ def initialize_agent_usd(path: str) -> None:
     # ── /SYNAPSE/agent/verification_log ──
     stage.DefinePrim("/SYNAPSE/agent/verification_log", "Xform")
 
+    # ── /SYNAPSE/agent/ledger (durable provenance Ledger — RFC §3.3) ──
+    stage.DefinePrim("/SYNAPSE/agent/ledger", "Xform")
+
     # ── /SYNAPSE/memory (evolution target) ──
     stage.DefinePrim("/SYNAPSE/memory", "Xform")
     for sub in ("sessions", "decisions", "assets", "parameters", "wedges"):
@@ -143,6 +146,7 @@ def _write_usda_stub(path: str) -> None:
         '        def Xform "handoff_chain" {}\n'
         '        def Xform "session_history" {}\n'
         '        def Xform "verification_log" {}\n'
+        '        def Xform "ledger" {}\n'
         '    }\n\n'
         '    def Xform "memory"\n'
         '    {\n'
