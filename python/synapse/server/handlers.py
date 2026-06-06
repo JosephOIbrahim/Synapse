@@ -1434,6 +1434,96 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
     # AUTONOMOUS RENDER
     # =========================================================================
 
+    @staticmethod
+    def _resolve_agent_usd() -> Optional[str]:
+        """Resolve the live agent.usd path for the current scene, or None.
+
+        Mirrors the proven-live pattern at websocket.py:475-482 /
+        mcp/session.py:200-207. Best-effort: returns None (never raises)
+        when Houdini is unavailable, the scene structure can't be built,
+        or the file doesn't exist yet.
+        """
+        if not HOU_AVAILABLE:
+            return None
+        try:
+            from ..memory.scene_memory import ensure_scene_structure
+            hip_path = hou.hipFile.path()
+            job_path = hou.getenv("JOB", os.path.dirname(hip_path))
+            paths = ensure_scene_structure(hip_path, job_path)
+            agent_usd = paths.get("agent_usd", "")
+            if agent_usd and os.path.exists(agent_usd):
+                return agent_usd
+        except Exception as e:  # pragma: no cover - defensive
+            _log.debug("agent.usd resolution failed: %s", e)
+        return None
+
+    @staticmethod
+    def _record_autonomy_task(agent_usd: str, task_id: str, report) -> None:
+        """Record the completion + render-quality verification of an autonomy task.
+
+        Best-effort provenance writer for the live autonomous-render path. Closes
+        the lifecycle a prior ``create_task(...)`` opened: sets the task status to
+        ``completed``/``failed`` and writes a verification_log entry derived from the
+        unconditionally-populated report fields (``plan.validation_checks`` and
+        ``evaluation``).
+
+        Note: ``before_state``/``after_state`` here carry **render-quality**
+        semantics (pre-flight check summary -> sequence-evaluation score), NOT the
+        scene-hash semantics used elsewhere on the bridge path. ``report.verification``
+        is deliberately NOT consulted -- it is always None on the live handler path
+        (no predictor is constructed).
+
+        Every writer call is wrapped so a failure can never propagate into, abort,
+        or slow the render. The writers themselves already no-op without pxr.
+        """
+        try:
+            from ..memory.agent_state import update_task_status, write_verification
+
+            success = bool(getattr(report, "success", False))
+            status = "completed" if success else "failed"
+            result = "pass" if success else "fail"
+
+            try:
+                update_task_status(agent_usd, task_id, status)
+            except Exception as e:  # pragma: no cover - defensive
+                _log.debug("update_task_status failed for %s: %s", task_id, e)
+
+            # Verification entry from render-quality fields (always populated).
+            try:
+                plan = getattr(report, "plan", None)
+                checks_list = list(getattr(plan, "validation_checks", []) or [])
+                # CheckSeverity.HARD_FAIL.value == "hard_fail" (autonomy/models.py:38)
+                # is the live blocking-check value — match it exactly, not a guess.
+                hard_fail = sum(
+                    1 for c in checks_list
+                    if not getattr(c, "passed", False)
+                    and str(getattr(getattr(c, "severity", None), "value",
+                                    getattr(c, "severity", ""))).lower() == "hard_fail"
+                )
+                before_state = f"checks={len(checks_list)} hard_fail={hard_fail}"
+
+                evaluation = getattr(report, "evaluation", None)
+                if evaluation is not None:
+                    after_state = (
+                        f"score={getattr(evaluation, 'overall_score', 0.0):.2f} "
+                        f"passed={getattr(evaluation, 'passed', False)}"
+                    )
+                else:
+                    after_state = "no_evaluation"
+
+                checks = [
+                    f"{getattr(c, 'name', '?')}:{'pass' if getattr(c, 'passed', False) else 'fail'}"
+                    for c in checks_list
+                ]
+
+                write_verification(agent_usd, task_id, before_state, after_state, checks, result)
+            except Exception as e:  # pragma: no cover - defensive
+                _log.debug("write_verification failed for %s: %s", task_id, e)
+        except Exception as e:  # pragma: no cover - defensive
+            # Absolute backstop: provenance recording is best-effort and must
+            # never disturb the render result.
+            _log.debug("autonomy task recording failed for %s: %s", task_id, e)
+
     def _handle_autonomous_render(self, payload: Dict) -> Dict:
         """Run the autonomous render pipeline: Plan -> Validate -> Execute -> Evaluate -> Report.
 
@@ -1510,28 +1600,62 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             max_iterations=max_iterations,
         )
 
+        # Provenance: open a task lifecycle in agent.usd on dispatch.
+        # Best-effort -- a writer failure must never abort or slow the render.
+        # The pending task is the producer for the already-live
+        # suspend_all_tasks(agent_usd) consumer (websocket.py:483 /
+        # mcp/session.py:207), which until now had nothing to find.
+        import uuid as _uuid
+        task_id = f"autorender-{_uuid.uuid4().hex[:8]}"
+        agent_usd = self._resolve_agent_usd()
+        if agent_usd:
+            try:
+                from ..memory.agent_state import create_task
+                create_task(agent_usd, task_id, intent)
+            except Exception as e:
+                _log.debug("create_task failed for %s: %s", task_id, e)
+
         # The autonomy pipeline is async; run it from this sync handler context.
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
             loop = None
 
-        if loop and loop.is_running():
-            # Already inside an event loop (e.g. hwebserver) — schedule as a task.
-            import concurrent.futures
-            future: concurrent.futures.Future = concurrent.futures.Future()
+        try:
+            if loop and loop.is_running():
+                # Already inside an event loop (e.g. hwebserver) — schedule as a task.
+                import concurrent.futures
+                future: concurrent.futures.Future = concurrent.futures.Future()
 
-            async def _run():
+                async def _run():
+                    try:
+                        result = await driver.execute(intent)
+                        future.set_result(result)
+                    except Exception as exc:
+                        future.set_exception(exc)
+
+                loop.create_task(_run())
+                report = future.result(timeout=600)
+            else:
+                report = asyncio.run(driver.execute(intent))
+        except Exception:
+            # Render raised (driver error, timeout, ...) — close the task lifecycle
+            # to 'failed' (best-effort) so it doesn't leak as an orphan 'pending'
+            # that the disconnect consumer would later mislabel 'suspended'. Then
+            # propagate the original exception unchanged.
+            if agent_usd:
                 try:
-                    result = await driver.execute(intent)
-                    future.set_result(result)
-                except Exception as exc:
-                    future.set_exception(exc)
+                    from ..memory.agent_state import update_task_status
+                    update_task_status(agent_usd, task_id, "failed")
+                except Exception as e:  # pragma: no cover - defensive
+                    _log.debug("failed-task lifecycle close failed for %s: %s", task_id, e)
+            raise
 
-            loop.create_task(_run())
-            report = future.result(timeout=600)
-        else:
-            report = asyncio.run(driver.execute(intent))
+        # Provenance: close the task lifecycle + write render-quality verification.
+        # Helper is fully best-effort -- on ANY internal failure the render result
+        # below is returned unchanged.
+        if agent_usd:
+            self._record_autonomy_task(agent_usd, task_id, report)
 
         # Serialize the dataclass report to a plain dict
         def _serialize(obj):
