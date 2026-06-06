@@ -101,3 +101,10 @@
 - **change_applied:** `python/synapse/server/hwebserver_adapter.py` — added `import os` (line 24). `connect()` calls `os.environ.get(...)` at `:108` (before `validate_origin` at `:109`) while `os` was **never imported** anywhere in the file (grep: the sole `os` occurrence was the usage) → deterministic `NameError` on every upgrade.
 - **measured_delta:** BEFORE — `os` used, not imported (static-confirmed). AFTER — `import os` present; `py_compile` OK; pin test green (`tests/test_phase0c_sec0_hwebserver_os.py`, reads source by path → CI-safe). The DNS-rebinding origin check now actually runs on the hwebserver transport.
 - **artifact_path:** `python/synapse/server/hwebserver_adapter.py`, `tests/test_phase0c_sec0_hwebserver_os.py`
+
+### Confirmation — INT-3: _verify_composition fails CLOSED
+- **kind:** Confirmation · **verified_by:** V1 (deterministic pin, build-agnostic — no Houdini in the except path) · **ts:** 2026-06-05
+- **question:** does the Scene Integrity anchor fail OPEN on a validation exception?
+- **change_applied:** `shared/bridge.py::_verify_composition` — the `except` block returned `True` (fail-OPEN: `composition_valid=True`/`fidelity=1.0` having validated nothing). Now returns `False` (fail-CLOSED, v4 §4a). The legitimate early returns (no hou / no node / no stage = nothing to validate) stay `True`.
+- **measured_delta:** pin (`tests/test_phase0c_int3_fail_closed.py`) — forces the production path + makes `hou.node` raise → returns `False` (was `True`); a second test confirms the no-hou early return stays `True`. 24 passed incl. `test_evolution_bridge_internals` (no regression — the standalone path never hits the changed except).
+- **artifact_path:** `shared/bridge.py`, `tests/test_phase0c_int3_fail_closed.py`

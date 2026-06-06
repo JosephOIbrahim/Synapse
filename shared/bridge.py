@@ -831,10 +831,14 @@ class LosslessExecutionBridge:
         except Exception as exc:
             import logging
             logging.getLogger("synapse.bridge").warning(
-                "Composition validation fallback on %s: %s: %s",
+                "Composition validation FAILED-CLOSED on %s: %s: %s",
                 stage_path, type(exc).__name__, exc,
             )
-            return True  # Defensive — validation is best-effort
+            # INT-3 (v4 §4a fail-closed): a validation that could not COMPLETE must
+            # report failure, not success. Returning True here would mark the stage
+            # composition_valid (fidelity=1.0) having validated nothing. An
+            # un-verifiable composition is treated as invalid → rollback.
+            return False
 
     def _log_composition_failure(self, stage_path: str, prim_path, reason: str) -> None:
         import logging
