@@ -102,6 +102,22 @@ class TestCounterSuffix:
 
 
 # ═════════════════════════════════════════════════════════════════
+# No-pxr fallback fixture
+# ═════════════════════════════════════════════════════════════════
+
+@pytest.fixture
+def no_pxr():
+    """Force the no-pxr fallback path regardless of whether pxr is installed.
+
+    The CI/Houdini env ships pxr, so agent_state.PXR_AVAILABLE is True there.
+    These tests pin the standalone (pxr-absent) behavior, so we patch the
+    module flag down to False rather than depending on the import outcome.
+    """
+    with patch.object(agent_state, "PXR_AVAILABLE", False):
+        yield
+
+
+# ═════════════════════════════════════════════════════════════════
 # USDA Stub Tests (no pxr needed)
 # ═════════════════════════════════════════════════════════════════
 
@@ -146,7 +162,7 @@ class TestUsdaStub:
         for sub in ("sessions", "decisions", "assets", "parameters", "wedges"):
             assert f'def Xform "{sub}"' in content
 
-    def test_initialize_falls_back_to_stub(self, agent_usd_path):
+    def test_initialize_falls_back_to_stub(self, agent_usd_path, no_pxr):
         """Without pxr, initialize_agent_usd writes the stub."""
         assert not agent_state.PXR_AVAILABLE
         agent_state.initialize_agent_usd(agent_usd_path)
@@ -163,6 +179,16 @@ class TestUsdaStub:
 
 class TestNoOpWithoutPxr:
     """All pxr-dependent functions should return gracefully when pxr is unavailable."""
+
+    @pytest.fixture(autouse=True)
+    def _force_no_pxr(self, no_pxr):
+        """Pin the pxr-absent path for every test in this class.
+
+        Without this, an env that ships pxr (CI/Houdini) would take the real
+        Usd.Stage.Open branch and raise on the nonexistent agent.usd instead
+        of exercising the graceful no-op fallback these tests assert.
+        """
+        yield
 
     def test_create_task_noop(self, agent_usd_path):
         agent_state.create_task(agent_usd_path, "t1", "Test task")
