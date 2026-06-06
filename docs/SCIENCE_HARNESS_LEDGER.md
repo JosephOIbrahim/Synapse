@@ -133,3 +133,8 @@
 - **change_applied:** fixed the drift — CLAUDE.md `v5.8.0`→`v5.10.0` + build `21.0.596`→`21.0.631` (ratified); `__init__` docstring `Version: 5.8.0`→`5.10.0`. The test binds pyproject↔`__version__`↔docstring↔CLAUDE.md → future version drift fails loud (v4 §4a.4). 49 passed incl. existing conformance pinners (no regression).
 - **follow-up (Deferred):** the **tool-count** slice (CLAUDE.md "108" vs registry 110 vs stdio-advertised 117) needs the "which count is authoritative" decision the review flagged — not rushed. Line-count magnitudes + the mechanism claim (bridge-presence) are the rest of DOC-1's surface.
 - **artifact_path:** `CLAUDE.md`, `python/synapse/__init__.py`, `tests/test_phase0c_doc1_version_conformance.py`
+
+### CRUCIBLE — INT-3 test-regression caught by the full-suite gate, fixed forward
+- **kind:** Confirmation · **verified_by:** V1 · **ts:** 2026-06-05
+- **note:** the full `pytest tests/` gate (run after the 0c batch) caught ONE new failure — `test_composition_validation.py::test_stage_traverse_exception_returns_true` pinned the OLD fail-OPEN contract (assert `True` on exception), which INT-3 reversed. Fixed **forward** (not weakened): updated to assert `False` (the fail-closed contract) + renamed the misleading sibling `test_exception_returns_true`→`test_no_houdini_returns_true` (it exercises the no-Houdini early return, not the except). Full suite back to the **17 pre-existing** failures (agent_state/design_system/scene_memory) — **zero introduced this session**. Lesson recorded: INT-3's focused check ran bridge-internals but not the directly-relevant composition test; the full-suite gate is load-bearing.
+- **artifact_path:** `tests/test_composition_validation.py`

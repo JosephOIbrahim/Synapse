@@ -83,10 +83,10 @@ class TestCompositionWithMockedHou:
         if not _HOU_AVAILABLE:
             assert bridge._verify_composition("/obj/geo1") is True
 
-    def test_exception_returns_true(self):
-        """Any exception during validation should gracefully return True."""
+    def test_no_houdini_returns_true(self):
+        """Without a live Houdini, _verify_composition returns True (nothing to
+        validate). The exception PATH is fail-closed — see the patched test below."""
         bridge = LosslessExecutionBridge()
-        # The method has a broad try/except that returns True on error
         result = bridge._verify_composition("/stage/broken")
         assert result is True
 
@@ -136,8 +136,10 @@ class TestCompositionPatched:
             result = bridge._verify_composition("/stage/sopnode")
             assert result is True
 
-    def test_stage_traverse_exception_returns_true(self):
-        """Exception during stage traversal should return True (graceful)."""
+    def test_stage_traverse_exception_fails_closed(self):
+        """INT-3 (v4 §4a fail-closed): an exception during validation must FAIL
+        CLOSED (return False). A stage that could not be validated is treated as
+        invalid -> rollback, not silently reported composition_valid=True."""
         mock_hou = MagicMock()
         mock_node = MagicMock()
         mock_node.stage.side_effect = RuntimeError("Stage error")
@@ -147,7 +149,7 @@ class TestCompositionPatched:
              patch("shared.bridge.hou", mock_hou):
             bridge = LosslessExecutionBridge()
             result = bridge._verify_composition("/stage/broken")
-            assert result is True
+            assert result is False
 
     def test_valid_prims_return_true(self):
         """Stage with valid, active prims should pass."""
