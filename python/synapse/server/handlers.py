@@ -1009,6 +1009,8 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         relative_path = resolve_param(payload, "relative_path")
         content = resolve_param(payload, "content")
         overwrite = resolve_param_with_default(payload, "overwrite", True)
+        backups = resolve_param_with_default(payload, "backups", 0)
+        binary = resolve_param_with_default(payload, "binary", False)
 
         base_dir = os.environ.get("SYNAPSE_REPORTS_DIR")
         if not base_dir:
@@ -1016,7 +1018,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             base_dir = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.dirname(here))), "docs"
             )
-        return write_report(relative_path, content, overwrite=overwrite, base_dir=base_dir)
+        return write_report(
+            relative_path, content, overwrite=overwrite, base_dir=base_dir,
+            backups=backups, binary=binary,
+        )
 
     def _handle_execute_vex(self, payload: Dict) -> Dict:
         """

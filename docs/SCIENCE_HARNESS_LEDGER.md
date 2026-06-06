@@ -146,3 +146,16 @@
 - **measured_delta:** pin (`tests/test_phase0c_int1_async_consent.py`) — `_wait_for_decision_async` returns True on approval, times out → False, and **YIELDS the loop** (a concurrent ticker keeps progressing while the wait is pending — proving non-blocking; blocking `time.sleep` would starve it). INFORM short-circuits; gate→async-wait returns True on approval (fake proposal, no real 120s wait). Full suite: **17 pre-existing failures, ZERO new**; 3153 passed.
 - **caveat:** INT-1 only bites when consent is *actually* enforced on the bridge path; per D1/§0.8 the bridge isn't on the live transport and the panel neuters `_gate`, so this is correctness hygiene for when consent IS enabled (D1-a / a future studio mode).
 - **artifact_path:** `shared/bridge.py`, `tests/test_phase0c_int1_async_consent.py`
+
+---
+
+## Session 2026-06-06 — Phase 0a · DURABLE WRITE-PATH · TRACK H
+
+### Confirmation — Phase 0a: write_report is atomic + generationally backed up + binary
+- **kind:** Confirmation · **verified_by:** V1 (deterministic pin) · **ts:** 2026-06-06
+- **question:** does the harness have a durable (atomic + backed-up) write-path for Ledger/provenance, off Houdini's main thread?
+- **approach (Floor: don't duplicate):** the existing `write_report` (`cognitive/tools/write_report.py`) was ALREADY atomic (tmp+fsync+os.replace), confined (traversal-rejected), and off-main-thread (zero `hou`). Phase 0a **upgraded** it with the missing durability — **generational backup** (`<name>.bak.1..N` before overwrite = the DR recovery point) + **binary** (base64) — rather than building a duplicate `synapse_write_file`.
+- **change_applied:** `write_report.py` — added `_rotate_backups` + `backups`/`binary` params + schema; `handlers.py::_handle_write_report` exposes `backups`/`binary`.
+- **measured_delta:** pins (`tests/test_phase0a_write_backup.py`) — backup rotation keeps N generations + drops the oldest beyond keep; binary round-trips 256 bytes; traversal rejected; no `.tmp` leftovers; atomicity preserved. `test_cognitive_boundary` (no-`hou`) green. Full suite: **17 pre-existing failures, ZERO new**; 3159 passed.
+- **DEFERRED (Phase 0a downstream):** wire the Ledger / provenance / `Deferred` register to USE this durable path (today the Ledger is this `.scout`/`docs` markdown); the canonical `agent.usd` Ledger needs the §2 schema + RFC (Michael Gold's zone). The **primitive is the prerequisite — now done**.
+- **artifact_path:** `python/synapse/cognitive/tools/write_report.py`, `python/synapse/server/handlers.py`, `tests/test_phase0a_write_backup.py`
