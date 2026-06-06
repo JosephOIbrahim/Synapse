@@ -94,3 +94,10 @@
 - **probe:** `.scout/s1_repro.py`, live H21.0.631 hython
 - **holds:** **true** (for mutating ops) — flips from the open S1 `holds=false`. Unblocks the v4 §4b reversibility precondition for the `_execute_houdini`/`_sync_payload` paths.
 - **scope/caveat:** the empty-group over-undo edge remains (pre-existing, separate — Phase 0.0/crucible). INT-1 (async consent wait, same `bridge.py`) is the next 0c increment — now a clean change since `bridge.py` is committed.
+
+### Confirmation — SEC-0: hwebserver origin validation no longer NameErrors
+- **kind:** Confirmation · **verified_by:** V1 · **against_build:** 21.0.631 · **ts:** 2026-06-05
+- **question:** does the hwebserver `connect()` raise `NameError` before origin validation?
+- **change_applied:** `python/synapse/server/hwebserver_adapter.py` — added `import os` (line 24). `connect()` calls `os.environ.get(...)` at `:108` (before `validate_origin` at `:109`) while `os` was **never imported** anywhere in the file (grep: the sole `os` occurrence was the usage) → deterministic `NameError` on every upgrade.
+- **measured_delta:** BEFORE — `os` used, not imported (static-confirmed). AFTER — `import os` present; `py_compile` OK; pin test green (`tests/test_phase0c_sec0_hwebserver_os.py`, reads source by path → CI-safe). The DNS-rebinding origin check now actually runs on the hwebserver transport.
+- **artifact_path:** `python/synapse/server/hwebserver_adapter.py`, `tests/test_phase0c_sec0_hwebserver_os.py`
