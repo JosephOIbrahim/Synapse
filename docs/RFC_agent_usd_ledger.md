@@ -163,29 +163,47 @@ record, named `<kind>_<ts>_<sha8>` (mirroring the durable filename in §5):
 /SYNAPSE/agent/ledger/
   <kind>_<ts>_<sha8>  (Xform) →
     # ── universal fields (every Ledger kind) ──
-    synapse:kind            String   # Confirmation | DeadEnd | DocConformance | Deferred | Decision
+    synapse:kind            String   # Confirmation | DeadEnd | DocConformance | Deferred | SubstrateAssumption | CRUCIBLE
     synapse:verified_by     String   # MANDATORY — e.g. "V1". Empty → record is INVALID (see §11).
     synapse:against_build   String   # e.g. "21.0.631"   (LEDGER.md:16)
     synapse:change_applied  String   # what the finding drove   (LEDGER.md:61, :87, :101)
     synapse:measured_delta  String   # before/after evidence    (LEDGER.md:19, :62, :88)
-    synapse:artifact_path   StringArray  # files/probes touched  (LEDGER.md:63, :89, :103)
-    synapse:question        String   # the probe question
+    synapse:artifact_path   StringArray  # files touched   (LEDGER.md:63, :89, :103)
+    synapse:probe           StringArray  # probe scripts/commands behind the evidence (recurs ~4×)
+    synapse:question        String   # the probe question / claim under test
+    synapse:direction       String   # the call / guidance the entry sets (recurs ~3×, any kind)
+    synapse:crucible        String   # adversarial-review verdict, when one was run (recurs ~4×)
+    synapse:notes           String   # free-form channel: note / caveat / why_it_matters / rejection_reason / mechanism
     synapse:timestamp       String   # ts (ISO)
     # ── DocConformance-only fields (LEDGER.md:38-44) ──
+    synapse:claim_text      String   # the doc claim, verbatim
     synapse:claim_locus     String   # where the doc claim lives (e.g. "CLAUDE.md:812")
     synapse:code_locus      String   # where the ground truth lives
     synapse:bound_by        String   # "value" | "presence" | ...
     synapse:holds           Bool     # does the claim hold against code?
     # ── Deferred-only fields (LEDGER.md:46-49) ──
+    synapse:area            String   # subsystem/area the deferral belongs to (recurs ~3×)
     synapse:stakes          String   # "high" | "medium" | "low"
     synapse:probed          Bool     # has it been investigated?
 ```
 
 Field provenance is the markdown Ledger itself: universal fields appear on every entry; the
-`DocConformance` block (`claim_locus / code_locus / bound_by / holds`) is verified at
-`docs/SCIENCE_HARNESS_LEDGER.md:38-44`; the `Deferred` block (`stakes / probed`) at
+`DocConformance` block (`claim_text / claim_locus / code_locus / bound_by / holds`) is verified at
+`docs/SCIENCE_HARNESS_LEDGER.md:38-44`; the `Deferred` block (`area / stakes / probed`) at
 `docs/SCIENCE_HARNESS_LEDGER.md:46-49`. `verified_by` mandatory is the LEDGER header rule
 (`:3-5`).
+
+> **Kind enumeration is verified against the live Ledger, not invented.** The kinds above are
+> exactly those `docs/SCIENCE_HARNESS_LEDGER.md` actually carries — `Confirmation`, `DeadEnd`,
+> `DocConformance`, `Deferred`, `SubstrateAssumption` (1×), and `CRUCIBLE`. An earlier draft listed
+> a `Decision` kind: there is **no** record with `kind: Decision` — the `### Decision —` headers
+> carry `**kind:** Confirmation`, so `Decision` is a *title*, not a kind. `kind` is an **open
+> string** (USD attrs are optional, the deposit does not reject an unknown value), so a future kind
+> is additive; the enumeration is guidance + the round-trip pin's coverage set (§11), not a closed
+> set. The field set above is likewise the *superset the live Ledger uses* — the §11.1
+> byte-identical round-trip pin runs against real records of every kind, so a dropped field
+> (`claim_text`, `direction`, `probe`, `crucible`, `area`, the `notes` channel) fails the pin
+> rather than silently vanishing — which is the exact data-loss this RFC exists to prevent.
 
 **Rationale for a new subtree (not overloading an existing one):** `routing_log` is keyed by
 routing fingerprint, `verification_log` by task; neither has slots for `verified_by`,
@@ -363,8 +381,9 @@ A new test module (suggested `tests/test_agent_usd_ledger.py`) pins the contract
 hold headlessly with **no `hou` import** (the ledger path is non-Houdini), and must also pass in
 the no-`pxr` fallback mode.
 
-1. **Round-trip fidelity = 1.0 per kind.** For each Ledger kind
-   (`Confirmation`, `DeadEnd`, `DocConformance`, `Deferred`, `Decision`): build a record → author
+1. **Round-trip fidelity = 1.0 per kind.** For each Ledger kind actually present
+   (`Confirmation`, `DeadEnd`, `DocConformance`, `Deferred`, `SubstrateAssumption`, `CRUCIBLE` —
+   NOT `Decision`, which is a title not a kind): build a record → author
    the `/SYNAPSE/agent/ledger/<...>` prim → read it back → assert **byte-identical** field values
    (string attributes compared verbatim, including embedded slashes/quotes/newlines, which native
    USD typing preserves).

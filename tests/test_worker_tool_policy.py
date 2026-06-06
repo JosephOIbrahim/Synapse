@@ -14,6 +14,7 @@ Two layers, both pure-Python (no live QThread, no hou):
      method directly on an instance.
 """
 
+import importlib
 import os
 import sys
 import types
@@ -228,16 +229,25 @@ def claude_worker_module():
     ]
     saved = {k: sys.modules.get(k) for k in touched}
 
-    real_qt = False
-    try:
-        import PySide6.QtCore  # noqa: F401
-        real_qt = True
-    except ImportError:
+    def _is_genuine_qt(modname):
+        """True only if ``modname`` exposes a REAL ``QThread`` *class*.
+
+        Trusting a bare ``import ... ; real_qt=True`` is the documented trap: a
+        sibling panel test (test_chat_panel) installs a MagicMock ``PySide6``
+        into ``sys.modules`` and never restores it. That mock imports fine, but
+        its ``QThread`` is a MagicMock *instance*, not a class — subclassing it
+        makes ``_execute_tool_block`` return a MagicMock and the dispatch
+        assertions silently rot (order-fragile: green alone, red after
+        test_chat_panel). Requiring ``isinstance(QThread, type)`` rejects the
+        mock so we fall through to our own functional stub instead.
+        """
         try:
-            import PySide2.QtCore  # noqa: F401
-            real_qt = True
-        except ImportError:
-            real_qt = False
+            mod = importlib.import_module(modname)
+        except Exception:
+            return False
+        return isinstance(getattr(mod, "QThread", None), type)
+
+    real_qt = _is_genuine_qt("PySide6.QtCore") or _is_genuine_qt("PySide2.QtCore")
 
     if not real_qt:
         # Minimal but sufficient PySide6.QtCore stub. QThread/QObject must be

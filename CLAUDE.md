@@ -392,6 +392,13 @@ CHARIZARD:  memory.usd    — + composition arcs. Cross-scene references.
 
 Evolution uses `pxr.Usd.Stage.CreateInMemory()` — no string templates:
 
+> **⚠ Idiom-vs-code divergence (verified 2026-06-06).** The `Tf.MakeValidIdentifier` line below is
+> the *intended* idiom, not the live code. `evolution.py` imports only `from pxr import Usd, Sdf`
+> (no `Tf`) and `agent_state.py` hand-rolls `_safe_prim_name(...)`. Neither memory module calls
+> `Tf.MakeValidIdentifier` today. Reconciling on ONE sanitizer is RFC decision **D-3**
+> (`docs/RFC_agent_usd_ledger.md`). The §12 import guard, §12 production list, and R3 manifest row
+> carry the same aspirational `Tf` claim — treat them as the target, not as verified-live code.
+
 ```python
 stage = Usd.Stage.CreateInMemory()
 root_prim = stage.DefinePrim("/SYNAPSE", "Xform")
@@ -520,7 +527,8 @@ After agents complete:
 ### Phase 4: agent.usd Schema Upgrade
 
 **Owner:** HANDS (primary), CONDUCTOR (advisory)
-**Files:** `src/memory/agent_state.py`, `src/memory/agent_schema.usda`
+**Files:** `python/synapse/memory/agent_state.py` (USDA generated inline — there is **no** `agent_schema.usda` file)
+**Status:** Schema BUILT + test-pinned (`tests/test_agent_state.py`). Remaining work is **wiring** — the provenance writers (`log_routing_decision`/`log_handoff`/`log_integrity`/`write_verification`/`create_task`) have no live callers yet. See `docs/RFC_agent_usd_ledger.md`.
 **Exit gate:** agent.usd round-trips with zero data loss.
 
 ### Phase 5: Lossless Router Integration
@@ -809,6 +817,6 @@ pins specific identifiers from this section so future doc drift fails loud.
 | Blast Radius Inference | ✅ Verified H21 | `shared/bridge.py` | (in bridge) |
 | PDG Async Cook Bridge | ✅ Verified H21 | `shared/bridge.py` | (in bridge) |
 | Viewport Sync | ✅ Verified H21 | `shared/evolution.py` | (in evolution) |
-| agent.usd Schema | 🔶 Phase 4 | — | — |
+| agent.usd Schema | ✅ Built (SCHEMA_VERSION 2.0.0) · ⚠ provenance writers dormant | `python/synapse/memory/agent_state.py` | ~688 |
 | Routing Log Persistence | 🔶 Phase 5 | — | — |
 | E2E Pipeline Orchestrator | 🔶 Phase 6 | — | — |

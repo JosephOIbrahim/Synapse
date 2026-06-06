@@ -22,6 +22,7 @@ Design constraints (CTO decisions, baked in):
 
 from __future__ import annotations
 
+import contextvars
 import hashlib
 import json
 import os
@@ -29,6 +30,16 @@ import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional
+
+# The op-id of the operation currently executing on this thread/context. Set by
+# ``FloorGate.wrap`` around ``fn()`` so a nested op can discover its parent. Read
+# explicitly (``current_op_id``) by ``_handle_batch_commands`` BEFORE it marshals
+# sub-ops to the main thread — a contextvar does not survive that thread hop, so
+# the batch threads its parent explicitly; the contextvar covers same-thread
+# nesting (the general case).
+_current_op: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "synapse_floor_current_op", default=None
+)
 
 
 @dataclass(frozen=True)
@@ -105,6 +116,18 @@ class FloorGate:
         return f"op-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')}-{seq:06d}"
 
     @staticmethod
+    def current_op_id() -> Optional[str]:
+        """The op-id of the op currently executing on this thread, or None.
+
+        ``wrap`` sets this around ``fn()``, so a handler running *inside* a
+        wrapped op (e.g. ``_handle_batch_commands`` inside the 'batch_commands'
+        envelope's wrap) reads its own envelope's REAL op-id here and threads it
+        to its sub-ops — making the nesting linkage reference an actual record
+        rather than a freshly-minted phantom.
+        """
+        return _current_op.get()
+
+    @staticmethod
     def _is_read_only(cmd_type: str) -> bool:
         """Reuse the handler-layer taxonomy — do NOT duplicate it.
 
@@ -136,20 +159,31 @@ class FloorGate:
         read_only = self._is_read_only(cmd_type)
         op_id = None if read_only else self.new_op_id()
 
+        # Parent linkage: an explicit ``ctx.parent`` wins (the batch envelope
+        # threads its real op-id to sub-ops, surviving the run_on_main thread
+        # hop); otherwise nest under the enclosing op on this thread's stack.
+        explicit_parent = ctx.parent if (ctx and ctx.parent) else None
+        parent = explicit_parent if explicit_parent is not None else _current_op.get()
+
+        token = _current_op.set(op_id) if op_id is not None else None
         try:
             result = fn(payload)
         except Exception as exc:
             if not read_only:
                 self._record(
                     op_id, cmd_type, payload, result=None,
-                    outcome="error", ctx=ctx, error_type=type(exc).__name__,
+                    outcome="error", ctx=ctx, parent=parent,
+                    error_type=type(exc).__name__,
                 )
             raise
+        finally:
+            if token is not None:
+                _current_op.reset(token)
 
         if not read_only:
             self._record(
                 op_id, cmd_type, payload, result=result,
-                outcome="ok", ctx=ctx, error_type=None,
+                outcome="ok", ctx=ctx, parent=parent, error_type=None,
             )
         return result
 
@@ -162,12 +196,16 @@ class FloorGate:
         result: Any,
         outcome: str,
         ctx: Optional[FloorContext],
+        parent: Optional[str],
         error_type: Optional[str],
     ) -> None:
         """Write a single provenance record through the durable write-path.
 
         Best-effort: a failure to record never masks the operation's own result
         or exception (recording is observability, not the operation).
+
+        ``parent`` is the resolved linkage (explicit ctx.parent, else the
+        enclosing op), computed by :meth:`wrap` — NOT re-read from ``ctx`` here.
         """
         record: Dict[str, Any] = {
             "op_id": op_id,
@@ -178,7 +216,7 @@ class FloorGate:
             "result_digest": _canonical_digest(result),
             "outcome": outcome,
             "origin": ctx.origin if ctx else None,
-            "parent": ctx.parent if ctx else None,
+            "parent": parent,
         }
         if error_type is not None:
             record["error_type"] = error_type

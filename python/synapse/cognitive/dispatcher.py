@@ -247,8 +247,15 @@ class Dispatcher:
         try:
             if self.is_testing:
                 if self._floor_gate is not None:
-                    # Route through the SAME FloorGate the server registry uses,
-                    # so dispatcher-driven mutating ops emit provenance too.
+                    # Route the is_testing/SDK tool path through the SAME
+                    # FloorGate the server registry uses, so these mutating ops
+                    # emit Tier-0 provenance. NOTE: the production
+                    # _execute_via_main_thread branch below is NOT yet routed
+                    # through the gate (and is itself unwired today —
+                    # main_thread_executor=None raises). Live autonomy provenance
+                    # is covered via the server registry adapter
+                    # (handlers.py _HandlerAdapter.call -> registry.invoke), not
+                    # this dispatcher path; wiring the prod branch is a follow-up.
                     result = self._floor_gate.wrap(
                         tool_name,
                         effective_kwargs,

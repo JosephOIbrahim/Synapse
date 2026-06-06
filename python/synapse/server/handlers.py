@@ -708,10 +708,14 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         atomic = payload.get("atomic", True)
         stop_on_error = payload.get("stop_on_error", False)
 
-        # Mint a parent op-id for this batch envelope so each sub-op's provenance
-        # record nests under it (parent=batch_op_id). The envelope itself is the
-        # +1 record emitted by the outer handle()->invoke() for 'batch_commands'.
-        batch_op_id = self._registry._floor_gate.new_op_id()
+        # The batch envelope's provenance record is the +1 emitted by the outer
+        # handle()->invoke('batch_commands') wrap. Read THAT wrap's real op-id
+        # (set on this thread's FloorGate context while _handle_batch_commands
+        # runs as its handler) so each sub-op nests under the ACTUAL envelope
+        # record — not a freshly-minted phantom id that references nothing.
+        # Read here, on the handler thread, BEFORE run_on_main marshals the
+        # sub-ops away (a contextvar would not survive that thread hop).
+        batch_op_id = self._registry._floor_gate.current_op_id()
         batch_ctx = FloorContext(
             session=self._session_id, origin="batch", parent=batch_op_id,
         )

@@ -174,28 +174,38 @@ def test_read_only_raising_op_records_nothing(prov_dir):
 # ---------------------------------------------------------------------------
 
 def test_batch_yields_n_plus_one_records_with_parent(prov_dir):
-    """The batch envelope (+1) plus N sub-ops, each nesting under the envelope.
+    """N sub-ops + 1 envelope, each sub-op nesting under the REAL envelope id.
 
-    Drives the real handler-batch site: the outer 'batch_commands' op is one
-    record; each routed sub-op carries parent=<batch envelope id>.
+    Drives the actual ``SynapseHandler.handle()`` batch path end to end (not a
+    synthetic envelope): the 'batch_commands' op is the +1 record; each routed
+    sub-op must carry parent == the envelope record's real ``op_id``. A dangling
+    parent (the linkage referencing a phantom id that is no real record) fails
+    this test — which is exactly what a freshly-minted batch parent produced.
     """
-    reg = CommandHandlerRegistry()
-    reg.register("set_parm", lambda p: {"ok": True})
-    reg.register("create_node", lambda p: {"ok": True})
+    from synapse.core.protocol import SynapseCommand
+    from synapse.server.handlers import SynapseHandler
 
-    # Mint the batch envelope id (mirrors _handle_batch_commands) and record the
-    # envelope itself via invoke('batch_commands', ...).
-    batch_id = reg._floor_gate.new_op_id()
-    batch_ctx = FloorContext(origin="batch", parent=batch_id)
+    h = SynapseHandler()
+    # Replace the real (hou-backed) sub-handlers with mutating stubs so the
+    # batch runs headless. 'set_parm'/'create_node' are not read-only.
+    h._registry.register("set_parm", lambda p: {"ok": True})
+    h._registry.register("create_node", lambda p: {"ok": True})
 
-    def _envelope(_payload):
-        reg.invoke("set_parm", {"i": 0}, ctx=batch_ctx)
-        reg.invoke("create_node", {"i": 1}, ctx=batch_ctx)
-        reg.invoke("set_parm", {"i": 2}, ctx=batch_ctx)
-        return {"results": 3}
-
-    reg.register("batch_commands", _envelope)
-    reg.invoke("batch_commands", {"commands": [1, 2, 3]})
+    cmd = SynapseCommand(
+        type="batch_commands",
+        id="batch-001",
+        payload={
+            "commands": [
+                {"type": "set_parm", "payload": {"i": 0}},
+                {"type": "create_node", "payload": {"i": 1}},
+                {"type": "set_parm", "payload": {"i": 2}},
+            ],
+            "atomic": False,  # no hou.undos group needed headless
+        },
+        sequence=0,
+    )
+    resp = h.handle(cmd)
+    assert resp.success is True
 
     recs = _records(prov_dir)
     # N (=3) sub-ops + 1 envelope.
@@ -205,9 +215,15 @@ def test_batch_yields_n_plus_one_records_with_parent(prov_dir):
     sub_ops = [r for r in recs if r["op"] != "batch_commands"]
     assert len(envelope) == 1
     assert len(sub_ops) == 3
-    # Every sub-op nests under the batch envelope id, origin='batch'.
+
+    envelope_id = envelope[0]["op_id"]
+    assert envelope_id, "the batch envelope must have a real op_id"
+    # The REAL linkage: every sub-op nests under the ACTUAL envelope record id.
     for r in sub_ops:
-        assert r["parent"] == batch_id
+        assert r["parent"] == envelope_id, (
+            "sub-op parent must reference the real batch envelope record id, "
+            "not a phantom"
+        )
         assert r["origin"] == "batch"
 
 
