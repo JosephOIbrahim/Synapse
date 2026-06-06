@@ -28,7 +28,7 @@ flowchart LR
     ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>rail + 3 faces, in-process"]:::panel
     PANEL --> LOOP["Agent loop<br/>streams Claude + 110 tools"]:::panel
     LOOP -->|"tool_use<br/>(e.g. execute_python)"| EXEC["Tool executor<br/>main thread"]:::panel
-    EXEC --> BR["LosslessExecutionBridge<br/>consent &middot; undo &middot; thread-safe &middot; integrity"]:::bridge
+    EXEC --> BR["SynapseHandler<br/>undo-wrapped &middot; main-thread &middot; integrity"]:::bridge
     BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
     LOOP -.->|state| FACE["state&rarr;face controller<br/>idle&middot;Direct / working&middot;Work / done&middot;Review"]:::obs
     BR -.->|telemetry &middot; provenance| FACE
@@ -40,7 +40,7 @@ flowchart LR
     classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
 ```
 
-The panel was rebuilt from first principles ("the Pentagram pass") over a thin `.pypanel` loader: one vendored design system (native Houdini 21 greys, a cool/warm dual accent, the signal blue `#8FB3D9` kept as the *one* chromatic event). A persistent **rail** keeps termination, live state, and bounded cost on screen; the surface itself is **three faces driven by a state→face controller** — **Direct** (speaker-by-type chat, agent results as artifact chips), **Work** (the walk-away glance: a cook preview, plan-with-progress, and per-agent health), and **Review** (the render is the hero — a taut verdict, credited provenance, quality flags, and a gated commit). A **Ctrl+K palette lets you self-identify two ways** — by verb (build / fix / explain / optimize / render) × context (SOP / LOP / COP / Karma / USD). Every mutation the agent makes is routed through the **`LosslessExecutionBridge`** — undo-wrapped, thread-safe, integrity-verified — so the agent's hands stay structurally reversible. Consent is **non-blocking for artist-initiated work** (your chat request *is* the consent; autonomous / external-MCP operations still gate through `HumanGate`); the gate previously polled the GUI thread and dead-locked Houdini until that was root-caused live and fixed. The Work and Review faces surface a **recursive-observability** readout — per-agent success rates plus a recommendation history that persists across restarts and escalates if the same issue recurs.
+The panel was rebuilt from first principles ("the Pentagram pass") over a thin `.pypanel` loader: one vendored design system (native Houdini 21 greys, a cool/warm dual accent, the signal blue `#8FB3D9` kept as the *one* chromatic event). A persistent **rail** keeps termination, live state, and bounded cost on screen; the surface itself is **three faces driven by a state→face controller** — **Direct** (speaker-by-type chat, agent results as artifact chips), **Work** (the walk-away glance: a cook preview, plan-with-progress, and per-agent health), and **Review** (the render is the hero — a taut verdict, credited provenance, quality flags, and a gated commit). A **Ctrl+K palette lets you self-identify two ways** — by verb (build / fix / explain / optimize / render) × context (SOP / LOP / COP / Karma / USD). Every mutation the agent makes is **undo-wrapped, thread-safe, and integrity-verified** — inline in the handlers on the live in-process path (the `LosslessExecutionBridge` is the integrity/audit layer, on the external-MCP path) — so the agent's hands stay structurally reversible. Consent is **non-blocking for artist-initiated work** (your chat request *is* the consent; autonomous / external-MCP operations still gate through `HumanGate`); the gate previously polled the GUI thread and dead-locked Houdini until that was root-caused live and fixed. The Work and Review faces surface a **recursive-observability** readout — per-agent success rates plus a recommendation history that persists across restarts and escalates if the same issue recurs.
 
 ---
 
@@ -298,7 +298,7 @@ Healthy → prints `running: True` and stops cleanly. Common errors:
 
 | Layer | State |
 |---|---|
-| **Artist copilot panel** (chat → in-Houdini build, Ctrl+K palette over 110 tools, live observability) | Shipping. Every action through the `LosslessExecutionBridge`; "make a box" → node verified in graphical Houdini 21.0.671 (2026-06-01). |
+| **Artist copilot panel** (chat → in-Houdini build, Ctrl+K palette over 110 tools, live observability) | Shipping. Every mutation undo-wrapped + main-thread-safe (inline in the handlers); "make a box" → node verified in graphical Houdini 21.0.671 (2026-06-01). |
 | Cognitive substrate (Dispatcher + `AgentToolError` + cognitive/host split) | Shipping. Zero-hou boundary enforced by lint. |
 | Agent SDK loop (Anthropic, cancel-event-aware, serializable tool errors) | Shipping. Mocked end-to-end tests green. |
 | Daemon lifecycle (boot gate, auth resolver, dialog suppression, bootstrap locks) | Shipping. Windows `WindowsSelectorEventLoopPolicy` + `PYTHONNOUSERSITE` + no-runtime-pip all baked. |
@@ -350,7 +350,7 @@ Behavioral verification (Karma cook of `copnet`, EXR landing, USD editableStage 
 
 ### Solaris Compose Tier — 3 write/compose tools (PR #6)
 
-The write/compose counterpart to the read-side inspector. Three MCP tools, every operation routed through the `LosslessExecutionBridge`, all `dir()`-confirmed-live on 21.0.671. Registry **108 → 111**:
+The write/compose counterpart to the read-side inspector. Three MCP tools, every operation undo-wrapped + main-thread-safe, all `dir()`-confirmed-live on 21.0.671. Registry **108 → 111**:
 
 - `synapse_solaris_shotsetup_karma_xpu` — builds a render-strongest department `sublayer` stack + camera + Karma `engine=xpu` render settings, with `synapse:*` provenance and an authored output path.
 - `synapse_matlib_bind` — binds a MaterialX material to a prim set via `assignmaterial`, then verifies each binding with `ComputeBoundMaterial` and reports unmatched/unbound prims.
@@ -363,7 +363,7 @@ flowchart LR
     MB["matlib_bind<br/>MaterialX to prim set<br/>verify ComputeBoundMaterial"]:::tool
     AR["assess_render_ready<br/>read-only readiness report<br/>names the offending prim"]:::tool
     RENDER["render<br/>husk no-ops on Indie<br/>Karma flipbook verifies magenta"]:::gate
-    BRIDGE["LosslessExecutionBridge<br/>undo + thread-safe + consent gates"]:::bridge
+    BRIDGE["SynapseHandler<br/>undo + thread-safe + integrity"]:::bridge
     SS --> MB
     MB --> AR
     AR -->|greenlit| RENDER
@@ -551,7 +551,7 @@ python/synapse/
 │   ├── face_review.py          # Review face — render-hero + verdict + credit/provenance + flags + gated commit
 │   ├── claude_worker.py        # background QThread — streams Claude + tool loop
 │   ├── tool_executor.py        # main-thread tool dispatch (→ SynapseHandler)
-│   ├── bridge_adapter.py       # routes every mutation through LosslessExecutionBridge
+│   ├── bridge_adapter.py       # routes external-MCP mutations through LosslessExecutionBridge
 │   ├── tool_palette.py         # Ctrl+K palette — two axes (verb × context) over the tool registry
 │   ├── health_infographic.py   # observability (per-agent health + self-tuning loop), embedded in the Work face
 │   └── designsystem/           # vendored tokens / qss / components (one source)

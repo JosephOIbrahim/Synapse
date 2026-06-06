@@ -75,7 +75,7 @@
 
 ### Deferred — D1 residue / D2 (surfaced, not fixed)
 - **kind:** Deferred · **verified_by:** V1 · **stakes:** low/medium · **probed:** false
-- **area:** (1) README.md:30-31,366 diagrams still route `execute_python` → `LosslessExecutionBridge (consent…)` — same claim class; D1 follow-up (Mermaid edit deferred to stay surgical). (2) CLAUDE.md safety rule 2 "Every mutation through the bridge — the only code path to Houdini" is **false** on the live path (§0.8 master finding) — that is **D2/ARC-1**, not D1; left for the bridge-fate decision.
+- **area:** (1) README.md diagrams + the "consent-gated" package description — **RESOLVED 2026-06-06**: relabeled the diagram nodes (lines 31, 366) to the real live mechanism (`SynapseHandler`: undo / main-thread / integrity), fixed the three "routed through the bridge" prose claims, dropped "consent-gated" from `pyproject` description + refreshed keywords. (2) CLAUDE.md safety rule 2 "Every mutation through the bridge — the only code path to Houdini" is **false** on the live path (§0.8 master finding) — that is **D2/ARC-1**, not D1; left for the bridge-fate decision.
 
 ---
 
