@@ -295,16 +295,28 @@ Two layers need wiring: (i) the **dormant USD writers** to live emit points, and
 
 ### 7.1 Dormant writers → live emit points
 
-| Writer (dormant) | Natural live emit point |
-|---|---|
-| `log_routing_decision` (`agent_state.py:399`) | After `MOERouter.route()` resolves a fingerprint (the panel/`RoutingLog` layer already exists per CLAUDE.md §2.3; route its output here). |
-| `log_handoff` (`agent_state.py:456`) | On every `AgentHandoff.verify()` success (CLAUDE.md §5 handoff protocol). |
-| `log_integrity` (`agent_state.py:325`) | In Stage-5 VERIFY, once per `IntegrityBlock` (CLAUDE.md §3 pipeline). |
-| `write_verification` (`agent_state.py:585`) | Same VERIFY stage, per task verification. |
-| `create_task` (`agent_state.py:231`) | On task dispatch (Stage-3 PLAN / dispatch). |
+> **⚠ LIVENESS VERIFIED 2026-06-06 (5-agent recon `wfeqrgk7h`) — the proposed points are mostly
+> aspirational. Only 2 of 5 have a genuinely-live emit point.** The original column conflated
+> "the class exists" with "it executes in a real session." The recon traced each emit point's
+> callers to a live entry (the `/synapse` handler or `/mcp` server) or proved there is none.
+> **Wiring a dormant writer to a dormant emit point is activation theater, not activation**
+> ([[rsi-harness-updating-vs-benefit]]). Verdicts:
+
+| Writer (dormant) | Proposed point | **Liveness verdict (verified)** |
+|---|---|---|
+| `log_routing_decision` | `MOERouter.route()` | **DEFER — theater.** `MOERouter.route` fires only in tests + the dead `panel/tool_filter.filter_tools` (no caller). The LIVE router is a *different* one — `TieredRouter` (`handlers.py:1329`) — whose decision has no fingerprint / agent-pair / MOE-method. No live producer of the writer's data; re-shaping `TieredRouter` output would fabricate it. |
+| `log_handoff` | `AgentHandoff.verify()` | **DEFER — theater.** `AgentHandoff` (`shared/bridge.py`) has **zero** callers under `python/synapse/` — only tests. `run_team.py` (the orchestrator that would drive handoffs) **does not exist** in the repo. Real sessions perform no handoffs. |
+| `log_integrity` | Stage-5 `IntegrityBlock` | **DEFER — fiction-risk.** The one live `IntegrityBlock` (the `/mcp` bridge path) carries **self-asserted** anchors (`undo_group_active=True` set as a literal, never measured). Persisting its `fidelity`/`anchors_hold` would launder a fiction into durable provenance. The genuinely-live `FloorGate` (0a′) carries a *different, weaker* signal (op outcome, no fidelity/hashes). |
+| `write_verification` | Stage-5 VERIFY | ✅ **LIVE (alt) — WIRED.** `_handle_autonomous_render` (`handlers.py:1437`, registered live at `:584`) returns a `RenderReport` whose `plan.validation_checks` + `evaluation` are unconditionally populated. (Render-quality verification, **not** scene-hash — a documented semantic substitution. `report.verification` is always `None` live — no predictor — so it is avoided.) |
+| `create_task` | Task dispatch | ✅ **LIVE — WIRED.** Same handler runs a real Plan→dispatch loop. Crucially, the **consumer is already live**: `suspend_all_tasks` (`websocket.py:483`, `mcp/session.py:207`) iterates `/SYNAPSE/agent/tasks/` — always empty until now because nothing produced tasks. Paired with `update_task_status` for the lifecycle. |
 
 Already live (do not re-wire): `log_session` + `suspend_all_tasks` at `mcp/session.py:198,207,208`;
 `initialize_agent_usd` at `scene_memory.py:136-137,963-964`.
+
+**The 3 DEFER rows stay dormant by design** until a genuinely-live producer exists (e.g. if
+`filter_tools` gains a caller → `MOERouter.route` goes live; if `run_team.py` is built → handoffs
+become real; if the bridge anchors are actually *measured* → `log_integrity` carries truth).
+Re-run the liveness recon before wiring any of them — do not wire on the strength of a doc claim.
 
 ### 7.2 Durable deposit via the registry seam (cross-ref 0a-prime)
 
