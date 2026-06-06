@@ -22,6 +22,7 @@ Design constraints (CTO decisions, baked in):
 
 from __future__ import annotations
 
+import collections
 import contextvars
 import hashlib
 import json
@@ -29,7 +30,7 @@ import os
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Deque, Dict, Optional
 
 # The op-id of the operation currently executing on this thread/context. Set by
 # ``FloorGate.wrap`` around ``fn()`` so a nested op can discover its parent. Read
@@ -89,6 +90,26 @@ def resolve_provenance_dir() -> str:
     return os.path.join(repo_root, ".synapse", "provenance")
 
 
+# Default FIFO cap on provenance files retained in the provenance dir.
+DEFAULT_PROVENANCE_MAX_RECORDS = 5000
+
+
+def resolve_provenance_max_records() -> int:
+    """Resolve the FIFO retention cap from ``$SYNAPSE_PROVENANCE_MAX_RECORDS``.
+
+    Returns the configured int, else :data:`DEFAULT_PROVENANCE_MAX_RECORDS`. A
+    value ``<= 0`` (or unparseable) DISABLES rotation (unbounded — an explicit
+    opt-out), signalled by returning the raw value (``<= 0``).
+    """
+    raw = os.environ.get("SYNAPSE_PROVENANCE_MAX_RECORDS")
+    if raw is None:
+        return DEFAULT_PROVENANCE_MAX_RECORDS
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return 0  # unparseable => rotation disabled
+
+
 class FloorGate:
     """Records one provenance file per mutating op, around ``fn(payload)``.
 
@@ -101,12 +122,26 @@ class FloorGate:
         self._provenance_dir = provenance_dir
         self._seq = 0
         self._lock = threading.Lock()
+        # FIFO rotation state (all guarded by ``self._lock``):
+        #   _max_records   — cap, resolved lazily at first use (None = unread)
+        #   _record_paths  — known record file paths, oldest-first
+        #   _reconciled    — has the one-time on-disk startup sweep run yet?
+        self._max_records: Optional[int] = None
+        self._record_paths: Deque[str] = collections.deque()
+        self._reconciled = False
 
     @property
     def provenance_dir(self) -> str:
         if self._provenance_dir is None:
             self._provenance_dir = resolve_provenance_dir()
         return self._provenance_dir
+
+    @property
+    def max_records(self) -> int:
+        """FIFO retention cap, resolved lazily from the environment once."""
+        if self._max_records is None:
+            self._max_records = resolve_provenance_max_records()
+        return self._max_records
 
     def new_op_id(self) -> str:
         """Mint a unique op-id (used to thread a batch parent down to sub-ops)."""
@@ -231,4 +266,69 @@ class FloorGate:
             )
         except Exception:
             # Never let a provenance write failure break the live op.
+            return
+
+        # Housekeeping AFTER the record is durably on disk. Wrapped so a rotation
+        # failure can never propagate — provenance + its trimming are
+        # observability, not the operation.
+        try:
+            self._rotate(os.path.join(self.provenance_dir, f"{op_id}.json"))
+        except Exception:
+            pass
+
+    def _rotate(self, record_path: str) -> None:
+        """FIFO-trim the provenance dir to :attr:`max_records` after a write.
+
+        Appends the just-written ``record_path`` to the in-memory deque, then,
+        while the deque exceeds the cap, ``popleft`` the OLDEST path and unlink
+        it. A cap ``<= 0`` disables rotation entirely (unbounded). The first call
+        also performs a one-time on-disk reconcile sweep so the cap survives
+        process restarts. All deque/cap state is guarded by ``self._lock``;
+        unlinks happen outside the lock and tolerate a concurrently-removed file.
+        """
+        cap = self.max_records
+        if cap <= 0:
+            return  # rotation disabled — unbounded retention
+
+        to_unlink = []
+        with self._lock:
+            if not self._reconciled:
+                self._reconcile_locked(skip=record_path)
+                self._reconciled = True
+            self._record_paths.append(record_path)
+            while len(self._record_paths) > cap:
+                to_unlink.append(self._record_paths.popleft())
+
+        for path in to_unlink:
+            self._unlink_quiet(path)
+
+    def _reconcile_locked(self, *, skip: str) -> None:
+        """One-time startup sweep: seed the deque from the on-disk provenance dir.
+
+        Lists existing ``*.json`` records, sorts by name (op-ids are
+        UTC-microsecond timestamped, so name order == chronological order) and
+        seeds the deque oldest-first. ``skip`` is the just-written record path —
+        it is excluded here because the caller appends it immediately after, so
+        it is never double-counted. Trimming to ``cap`` is left to the single
+        loop in :meth:`_rotate`. Best-effort: if the dir can't be listed
+        (missing/permission), seed nothing. Caller holds ``self._lock``.
+        """
+        try:
+            existing = sorted(
+                name for name in os.listdir(self.provenance_dir)
+                if name.endswith(".json")
+                and os.path.join(self.provenance_dir, name) != skip
+            )
+        except OSError:
+            return
+        self._record_paths.extend(
+            os.path.join(self.provenance_dir, name) for name in existing
+        )
+
+    @staticmethod
+    def _unlink_quiet(path: str) -> None:
+        """Unlink ``path``, ignoring a concurrently-removed/locked file."""
+        try:
+            os.unlink(path)
+        except (FileNotFoundError, OSError):
             pass
