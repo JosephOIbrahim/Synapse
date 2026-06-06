@@ -512,7 +512,7 @@ class LosslessExecutionBridge:
             timestamp=datetime.now().isoformat(),
         )
 
-        consent_ok = self._check_consent(operation)
+        consent_ok = await self._check_consent_async(operation)
         integrity.consent_verified = consent_ok
         if not consent_ok:
             return self._fail_with_integrity(
@@ -764,9 +764,10 @@ class LosslessExecutionBridge:
         # Path 3: Standalone/test -- auto-approve (preserves existing behavior)
         return True
 
-    def _check_consent_gate(self, operation: Operation) -> bool:
-        """Route consent through synapse.core.gates.HumanGate."""
-        proposal = self._gate.propose(
+    def _propose_gate(self, operation: Operation):
+        """Create the HumanGate proposal for an operation (shared by the sync and
+        async consent paths)."""
+        return self._gate.propose(
             operation=operation.operation_type,
             description=operation.summary,
             sequence_id=self._session_id,
@@ -776,6 +777,10 @@ class LosslessExecutionBridge:
             agent_id=operation.agent_id.value if operation.agent_id else "",
             reasoning=f"Bridge gate: {operation.operation_type}",
         )
+
+    def _check_consent_gate(self, operation: Operation) -> bool:
+        """Route consent through HumanGate (SYNC path, used by execute())."""
+        proposal = self._propose_gate(operation)
 
         # REVIEW: proposal logged to batch, allow execution to continue
         if operation.gate_level == GateLevel.REVIEW:
@@ -791,6 +796,36 @@ class LosslessExecutionBridge:
 
         return True
 
+    # ── INT-1: async consent path — the FastMCP event loop must not block ──
+    async def _check_consent_async(self, operation: Operation) -> bool:
+        """Async consent check for execute_async. Same policy as _check_consent,
+        but APPROVE/CRITICAL waits use `await asyncio.sleep` so a pending decision
+        never stalls the FastMCP event loop (INT-1; the sync path's blocking
+        time.sleep was the S4 defect). INFORM / callback / standalone are already
+        non-blocking and reuse the same outcomes."""
+        gate = operation.gate_level
+        if gate == GateLevel.INFORM:
+            return True
+        if self._gate is not None:
+            return await self._check_consent_gate_async(operation)
+        if self._consent_callback is not None:
+            return self._consent_callback(operation)
+        return True
+
+    async def _check_consent_gate_async(self, operation: Operation) -> bool:
+        """Async mirror of _check_consent_gate — non-blocking APPROVE/CRITICAL wait."""
+        proposal = self._propose_gate(operation)
+
+        if operation.gate_level == GateLevel.REVIEW:
+            return proposal.decision != GateDecision.REJECTED
+        if operation.gate_level == GateLevel.APPROVE:
+            return await self._wait_for_decision_async(
+                proposal, timeout=GATE_TIMEOUT_APPROVE)
+        if operation.gate_level == GateLevel.CRITICAL:
+            return await self._wait_for_decision_async(
+                proposal, timeout=GATE_TIMEOUT_CRITICAL)
+        return True
+
     def _wait_for_decision(self, proposal, timeout: float = GATE_TIMEOUT_APPROVE) -> bool:
         """Poll for artist decision on APPROVE/CRITICAL-level proposals."""
         import time as _time
@@ -802,6 +837,23 @@ class LosslessExecutionBridge:
                     GateDecision.MODIFIED,
                 )
             _time.sleep(GATE_POLL_INTERVAL)
+        # Timeout -- treat as rejection (safe default)
+        return False
+
+    async def _wait_for_decision_async(self, proposal, timeout: float = GATE_TIMEOUT_APPROVE) -> bool:
+        """INT-1: async mirror of _wait_for_decision. Polls with `await asyncio.sleep`
+        so a pending APPROVE/CRITICAL decision does not stall the FastMCP event loop
+        (the sync version's blocking time.sleep was the S4 defect). Mirrors the PDG
+        path's await-based poll cadence."""
+        import time as _time
+        deadline = _time.monotonic() + timeout
+        while _time.monotonic() < deadline:
+            if proposal.decision != GateDecision.PENDING:
+                return proposal.decision in (
+                    GateDecision.APPROVED,
+                    GateDecision.MODIFIED,
+                )
+            await asyncio.sleep(GATE_POLL_INTERVAL)
         # Timeout -- treat as rejection (safe default)
         return False
 
