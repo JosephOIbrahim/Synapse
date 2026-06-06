@@ -130,6 +130,7 @@ class Dispatcher:
         schemas: Optional[Mapping[str, Dict[str, Any]]] = None,
         main_thread_executor: Optional[Callable[[ToolFn, Dict[str, Any]],
                                                 Dict[str, Any]]] = None,
+        floor_gate: Optional[Any] = None,
     ) -> None:
         """Construct a Dispatcher.
 
@@ -153,11 +154,17 @@ class Dispatcher:
                 bypass path. When left unset and ``is_testing=False``,
                 ``execute`` returns a NotImplementedError as an
                 ``AgentToolError`` rather than raising.
+            floor_gate: Optional ``synapse.core.floor_gate.FloorGate``. When
+                provided, tool calls route through it so mutating ops emit a
+                Tier-0 provenance record. Defaults to None = NO-OP (the bare
+                ``Dispatcher(is_testing=True, tools={...})`` construction used
+                across the suite keeps working unchanged).
         """
         self.is_testing = is_testing
         self._tools: Dict[str, ToolFn] = dict(tools) if tools else {}
         self._schemas: Dict[str, Dict[str, Any]] = dict(schemas) if schemas else {}
         self._main_thread_executor = main_thread_executor
+        self._floor_gate = floor_gate
 
     # -- Tool registry surface (minimal — full registration arrives in Spike 1) --
 
@@ -239,7 +246,16 @@ class Dispatcher:
 
         try:
             if self.is_testing:
-                result = fn(**effective_kwargs)
+                if self._floor_gate is not None:
+                    # Route through the SAME FloorGate the server registry uses,
+                    # so dispatcher-driven mutating ops emit provenance too.
+                    result = self._floor_gate.wrap(
+                        tool_name,
+                        effective_kwargs,
+                        lambda p: fn(**p),
+                    )
+                else:
+                    result = fn(**effective_kwargs)
             else:
                 result = self._execute_via_main_thread(fn, effective_kwargs)
         except Exception as exc:

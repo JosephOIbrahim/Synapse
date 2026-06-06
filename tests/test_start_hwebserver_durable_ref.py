@@ -138,3 +138,52 @@ def test_get_running_server_accessor_exists(fresh_module):
     scanning gc.get_objects() for a zombie. Pin the public surface."""
     assert hasattr(fresh_module, "get_running_server")
     assert callable(fresh_module.get_running_server)
+
+
+# ---------------------------------------------------------------------------
+# Import-time autostart footgun: bare import must NOT bind :9999.
+# ---------------------------------------------------------------------------
+
+def _counting_adapter():
+    """A stubbed adapter whose ``start_hwebserver`` increments a call counter.
+
+    ``main()`` going down the hwebserver branch calls ``start_hwebserver`` — so
+    the counter is the observable proof of whether import-time ``main()`` ran.
+    No real socket is ever bound.
+    """
+    mod = types.ModuleType("synapse.server.hwebserver_adapter")
+    mod.calls = []  # type: ignore[attr-defined]
+    mod.start_hwebserver = lambda *a, **k: mod.calls.append((a, k))  # type: ignore[attr-defined]
+    mod.HWEBSERVER_AVAILABLE = True  # type: ignore[attr-defined]
+    return mod
+
+
+def _import_fresh(monkeypatch, adapter):
+    monkeypatch.setitem(sys.modules, "synapse.server.hwebserver_adapter", adapter)
+    monkeypatch.delitem(
+        sys.modules, "synapse.server.start_hwebserver", raising=False
+    )
+    return importlib.import_module("synapse.server.start_hwebserver")
+
+
+def test_bare_import_does_not_call_main(monkeypatch):
+    """Importing the module with no SYNAPSE_AUTOSTART_HWEBSERVER env must NOT
+    run main() — the import-time :9999 bind footgun is closed."""
+    monkeypatch.delenv("SYNAPSE_AUTOSTART_HWEBSERVER", raising=False)
+    adapter = _counting_adapter()
+    mod = _import_fresh(monkeypatch, adapter)
+
+    assert adapter.calls == [], "bare import ran main() — autostart footgun regressed"
+    assert mod.get_running_server() is None
+
+
+def test_autostart_env_triggers_main_on_import(monkeypatch):
+    """With SYNAPSE_AUTOSTART_HWEBSERVER=1 set, importing the module DOES run
+    main() (down the stubbed adapter branch — no real socket)."""
+    monkeypatch.setenv("SYNAPSE_AUTOSTART_HWEBSERVER", "1")
+    adapter = _counting_adapter()
+    _import_fresh(monkeypatch, adapter)
+
+    assert len(adapter.calls) == 1, (
+        "SYNAPSE_AUTOSTART_HWEBSERVER=1 did not run main() at import"
+    )

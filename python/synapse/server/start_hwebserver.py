@@ -76,6 +76,9 @@ def main():
 
 if __name__ == "__main__":
     main()
-else:
-    # When imported as module, auto-start
+elif os.environ.get("SYNAPSE_AUTOSTART_HWEBSERVER") == "1":
+    # Opt-in auto-start on import. Bare `import synapse.server.start_hwebserver`
+    # no longer binds :9999 as a side effect — it used to run main() at import,
+    # which silently started a server (and hung tests / clashed with the live
+    # bridge). Set SYNAPSE_AUTOSTART_HWEBSERVER=1 to restore import-time start.
     main()

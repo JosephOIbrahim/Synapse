@@ -36,6 +36,7 @@ from ..core.protocol import (
 )
 from ..core.aliases import resolve_param, resolve_param_with_default, USD_PARM_ALIASES
 from ..core.audit import audit_log, AuditLevel, AuditCategory
+from ..core.floor_gate import FloorGate, FloorContext
 from ..core.errors import (
     SynapseUserError,
     SynapseServiceError,
@@ -215,6 +216,9 @@ class CommandHandlerRegistry:
 
     def __init__(self):
         self._handlers: Dict[str, Callable] = {}
+        # One shared FloorGate per registry: the Tier-0 provenance hook. Routing
+        # a call through invoke() records one provenance file per mutating op.
+        self._floor_gate = FloorGate()
 
     def register(self, command_type: str, handler: Callable):
         """Register a handler for a command type."""
@@ -227,6 +231,25 @@ class CommandHandlerRegistry:
     def has(self, command_type: str) -> bool:
         """Check if a handler exists for a command type."""
         return self.get(command_type) is not None
+
+    def invoke(
+        self,
+        command_type: str,
+        payload: Any,
+        ctx: Optional[FloorContext] = None,
+    ) -> Any:
+        """Look up the handler for ``command_type`` and run it through the
+        FloorGate (additive Tier-0 provenance), returning its result.
+
+        Parity with ``get(cmd)(payload)`` for the happy path; additionally emits
+        one provenance record for each mutating op (none for read-only). Raises
+        ``KeyError`` if no handler is registered — callers that need the
+        not-found-as-data behavior should check ``get()`` first.
+        """
+        handler = self.get(command_type)
+        if handler is None:
+            raise KeyError(f"No handler registered for {command_type!r}")
+        return self._floor_gate.wrap(command_type, payload, handler, ctx=ctx)
 
     @property
     def registered_types(self):
@@ -328,7 +351,13 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 )
 
             _t0 = time.perf_counter()
-            result = handler(command.payload)
+            # Route through invoke() so the FloorGate records Tier-0 provenance
+            # for mutating ops (additive — does not replace _submit_logs below).
+            result = self._registry.invoke(
+                cmd_type,
+                command.payload,
+                ctx=FloorContext(session=self._session_id, origin="handler"),
+            )
             self._record_tool_duration(cmd_type, (time.perf_counter() - _t0) * 1000.0)
 
             # Log action asynchronously — don't block the response path
@@ -679,6 +708,14 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         atomic = payload.get("atomic", True)
         stop_on_error = payload.get("stop_on_error", False)
 
+        # Mint a parent op-id for this batch envelope so each sub-op's provenance
+        # record nests under it (parent=batch_op_id). The envelope itself is the
+        # +1 record emitted by the outer handle()->invoke() for 'batch_commands'.
+        batch_op_id = self._registry._floor_gate.new_op_id()
+        batch_ctx = FloorContext(
+            session=self._session_id, origin="batch", parent=batch_op_id,
+        )
+
         from .main_thread import run_on_main, _SLOW_TIMEOUT
 
         def _on_main():
@@ -702,7 +739,11 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                         continue
 
                     try:
-                        result = handler(cmd_payload)
+                        # Route through invoke() so each sub-op emits its own
+                        # provenance record nested under the batch envelope.
+                        result = self._registry.invoke(
+                            cmd_type, cmd_payload, ctx=batch_ctx,
+                        )
                         results.append(result)
                         statuses.append("ok")
                         errors.append(None)
@@ -1433,7 +1474,11 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 handler = self._registry.get(tool_name)
                 if handler is None:
                     raise ValueError(f"Couldn't find handler: {tool_name}")
-                result = handler(params)
+                # Route through invoke() so autonomy-driven ops emit provenance
+                # records (origin='autonomy'). Coroutine results still awaited.
+                result = self._registry.invoke(
+                    tool_name, params, ctx=FloorContext(origin="autonomy"),
+                )
                 if asyncio.iscoroutine(result):
                     return await result
                 return result
