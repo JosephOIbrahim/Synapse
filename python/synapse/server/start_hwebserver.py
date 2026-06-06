@@ -25,13 +25,17 @@ logger = logging.getLogger("synapse.hwebserver")
 # Durable, module-level hard reference to the fallback websocket server.
 #
 # The websocket SynapseServer runs ``serve_forever()`` on a ``daemon=True``
-# background thread. If the only reference to the server is the local in
-# ``main()``, Python is free to garbage-collect the server object the moment
-# main() returns — the daemon thread alone is not a guaranteed-durable owner,
-# and once the server object is reaped the bridge on :9999 dies silently.
-# This bit us repeatedly (hand-worked-around with
-# ``builtins._synapse_manual_srv = srv``). Pinning the server here gives GC a
-# hard root it can never reap for the process lifetime.
+# background thread. While that thread is actively serving, the running bound
+# method roots the server — so a live, serving server is NOT reaped mid-serve.
+# Two real gaps this hard ref closes:
+#   1. Recoverability — without a named handle, the host/panel layer has no
+#      way to reach the running server except scanning ``gc.get_objects()``.
+#      This is what bit us repeatedly (hand-worked-around in the Houdini
+#      Python Shell with ``builtins._synapse_manual_srv = srv``).
+#   2. Post-exit window — the instant the serve thread stops (bind failure,
+#      shutdown, exception), a bare-local reference becomes collectible with
+#      no handle left for diagnosis or restart.
+# Pinning the server here gives a stable, named root for the process lifetime.
 _fallback_server = None
 
 
