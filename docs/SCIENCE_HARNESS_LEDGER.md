@@ -240,3 +240,26 @@ CTO unlocked agent teams + dynamic workflows. A **recon workflow** (`wiqu7nm7m`,
 - **crucible follow-up (fixed forward, `76c48d2`):** (1) the round-trip test was a **self-comparison** (deposited file vs `asdict` of the SAME parsed record) — blind to PARSE loss (dropping `extra` stayed green). Added `TestParseFidelityOracle` (harvest every bulleted `**field:**` from the source markdown → assert each survives the parse); **mutation-proven to have teeth: healthy=0 missing, extra-dropped=33 missing→fails.** (2) session-preamble provenance (`**Running build/Bridge/Instrument/Operator ratification:**` between `## Session` and the first entry) was silently dropped → now captured into `LedgerRecord.session_meta`, lossless.
 - **DEFERRED:** wiring the 5 dormant non-ledger writers (`log_routing_decision`/`log_handoff`/`log_integrity`/`write_verification`/`create_task`) to live pipeline emit points (§7.1); RUNNING the backfill for real (`.synapse/ledger/` is gitignored run-data — operator's call); the §3.3 note-channel fold (latent, no current collision); the Moneta deposit branch (default-off).
 - **artifact_path:** `python/synapse/memory/ledger.py`, `python/synapse/memory/agent_state.py`, `tests/test_agent_usd_ledger.py`, `docs/RFC_agent_usd_ledger.md`
+
+---
+
+## Session 2026-06-06 — DORMANT-WRITER WIRING: liveness-gated (2 wired, 3 deferred) + backfill run
+
+### Confirmation — real backfill materialized the Ledger end-to-end
+- **kind:** Confirmation · **verified_by:** V0 · **ts:** 2026-06-06
+- **change_applied:** ran `ledger.backfill('docs/SCIENCE_HARNESS_LEDGER.md', agent_usd_path=…)` into gitignored `.synapse/ledger/`. **29 parsed → 25 per-record `.json` (source of truth) + a 32 KB `agent.usd` with 25 `/SYNAPSE/agent/ledger/` prims**; 4 skipped (no `verified_by`). Independent re-verify: 25/25 files byte-identical to the re-parsed records, **0 mismatches**. The D-1 model is now real on disk (immutable files authoritative; USD is the composed projection).
+- **artifact_path:** `.synapse/ledger/` (run-data, not committed)
+
+### DeadEnd — 3 of 5 dormant writers have NO live emit point (wiring = theater)
+- **kind:** DeadEnd · **verified_by:** V1 (5-agent liveness recon `wfeqrgk7h`, call-chain traced) · **ts:** 2026-06-06
+- **probe:** trace each RFC §7.1 emit point's callers to a live entry (`/synapse` handler / `/mcp` server) or prove none.
+- **measured_delta:** `log_routing_decision` — DORMANT: `MOERouter.route` fires only in tests + the dead `panel/tool_filter.filter_tools`; the LIVE router is `TieredRouter` (`handlers.py:1329`), no fingerprint/agent-pair. `log_handoff` — ASPIRATIONAL: `AgentHandoff` has zero callers under `python/synapse/`; `run_team.py` doesn't exist. `log_integrity` — FICTION-RISK: the one live `IntegrityBlock` (`/mcp` bridge) self-asserts its anchors (`undo_group_active=True` literal, never measured) — persisting it would launder a fiction; the live `FloorGate` carries a different/weaker signal. **All 3 left UNWIRED by design.** Recorded in RFC §7.1 (`c676999`) — the guardrail against future theater-wiring. ([[rsi-harness-updating-vs-benefit]])
+- **artifact_path:** `docs/RFC_agent_usd_ledger.md` (§7.1)
+
+### Confirmation — the 2 LIVE writers wired into autonomous-render (loop closed)
+- **kind:** Confirmation · **verified_by:** V0 · **crucible:** partial → fixed (`w33gpbsww`) · **ts:** 2026-06-06
+- **change_applied:** `_handle_autonomous_render` (handlers.py, registered live `:584`) now: `create_task` on dispatch (uuid id) → feeds the ALREADY-LIVE `suspend_all_tasks` consumer (which iterated an always-empty tasks group); `_record_autonomy_task` helper after `driver.execute` calls `update_task_status` (completed/failed) + `write_verification` (render-quality checks/score from the unconditionally-populated `RenderReport` — `report.verification` is None live, correctly avoided). Triple-guarded best-effort — proven it never breaks the render. Render-quality (NOT scene-hash) semantics documented.
+- **measured_delta:** `tests/test_autonomy_task_provenance.py` (9 tests). The loop-closure test proves the live `suspend_all_tasks` consumer NOW finds a task it never could before. Crucible confirmed genuine-activation=true, breaks-render=false.
+- **crucible follow-up (fixed forward, `f964865`):** dead `hard_fail` counter (matched `'hard'`; live value is `'hard_fail'`) → fixed + de-masked the test fixture vocabulary; render-raises path now marks `'failed'` (not orphan `'pending'`); added a handler-level activation test. **Test-isolation fix:** deferred the `handlers` import (`_SH` lazy helper) — importing it at collection made this module the first importer before any handler test installed its fake `hou`, leaving `handlers.hou` undefined and breaking `test_mcp_roundtrip`. Full suite: **3257 passed, 0 failed** (+9).
+- **DEFERRED:** the autonomy *render-driver* internal step lifecycle (per-step `update_task_status` via a driver callback); the 3 theater writers (above) until a live producer exists.
+- **artifact_path:** `python/synapse/server/handlers.py`, `tests/test_autonomy_task_provenance.py`
