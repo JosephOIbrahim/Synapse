@@ -56,6 +56,7 @@ from .auth import get_auth_key, authenticate, validate_origin, AUTH_COMMAND_TYPE
 from .handlers import SynapseHandler
 from .resilience import RateLimiter, BackpressureController
 from ..session.tracker import get_bridge
+from .bridge_endpoint import publish_endpoint, clear_endpoint
 
 
 # =============================================================================
@@ -286,6 +287,17 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
 
     _running = True
     _port = port
+
+    # Publish the real bound port to the discoverable sidecar so clients can
+    # find us. hwebserver binds the requested port (no failover), so _port is
+    # the real port once run() returns without raising. Best-effort.
+    try:
+        publish_endpoint(
+            "localhost", _port, pid=os.getpid(), protocol=PROTOCOL_VERSION,
+        )
+    except Exception:
+        pass
+
     logger.info("Running on ws://localhost:%s/synapse", port)
     logger.info("Native C++ server -- no watchdog, no circuit breaker")
 
@@ -299,6 +311,12 @@ def stop_hwebserver():
 
     try:
         hwebserver.requestShutdown()
+    except Exception:
+        pass
+
+    # Remove our discoverable endpoint sidecar (only if it's ours).
+    try:
+        clear_endpoint(os.getpid())
     except Exception:
         pass
 

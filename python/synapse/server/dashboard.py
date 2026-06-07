@@ -145,8 +145,10 @@ body{background:#1a1a1a;color:#e0e0e0;font-family:'Segoe UI',system-ui,-apple-sy
   function connect(){
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const port = location.port || (location.protocol === 'https:' ? '443' : '80');
-    // Default to 9999 if served from a different port (e.g. hwebserver on 8080)
-    const wsPort = 9999;
+    // Resolved server-side from the published endpoint (sidecar). Falls back
+    // to 9999 when no sidecar / substitution. __SYNAPSE_WS_PORT__ is replaced
+    // by register_dashboard_route() before the HTML is served.
+    const wsPort = '__SYNAPSE_WS_PORT__';
     const url = proto + '//localhost:' + wsPort + '/synapse';
 
     try { ws = new WebSocket(url); } catch(e){ setStatus('err', 'connect failed'); return; }
@@ -309,11 +311,24 @@ def register_dashboard_route(port: int = 9999) -> bool:
         logger.info("Dashboard route skipped -- hwebserver not available")
         return False
 
+    # Resolve the real bound port (published to the sidecar) so the dashboard
+    # JS connects to the live server even after a :9999 failover. The browser
+    # can't read the sidecar itself, so we inject the port server-side here.
+    # Best-effort — falls back to the passed-in `port`.
+    ws_port = port
+    try:
+        from .bridge_endpoint import resolve_endpoint
+        _host, ws_port = resolve_endpoint(default_port=port)
+    except Exception:
+        ws_port = port
+
+    dashboard_html = DASHBOARD_HTML.replace("__SYNAPSE_WS_PORT__", str(ws_port))
+
     try:
         def _serve_dashboard(request):
             """Serve the monitoring dashboard HTML."""
             return hou.ui.WebServerResponse(
-                body=DASHBOARD_HTML.encode("utf-8"),
+                body=dashboard_html.encode("utf-8"),
                 content_type="text/html; charset=utf-8",
                 status_code=200,
             )

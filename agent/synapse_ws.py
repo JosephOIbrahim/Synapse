@@ -34,6 +34,38 @@ SYNAPSE_PORT = 9999
 SYNAPSE_PATH = "/synapse"
 SYNAPSE_URI = f"ws://{SYNAPSE_HOST}:{SYNAPSE_PORT}{SYNAPSE_PATH}"
 PROTOCOL_VERSION = "4.0.0"
+
+# Self-healing port discovery (best-effort). The server publishes its real
+# bound port to a sidecar; resolve it so we connect to the live server even
+# after a :9999 failover. Falls back to 9999 when no sidecar exists.
+try:
+    import os as _os
+    import sys as _sys
+    _pkg_dir = _os.path.join(
+        _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "python"
+    )
+    if _pkg_dir not in _sys.path:
+        _sys.path.insert(0, _pkg_dir)
+    from synapse.server.bridge_endpoint import resolve_endpoint as _resolve_endpoint
+except Exception:  # pragma: no cover - resolution is best-effort
+    _resolve_endpoint = None
+
+
+def _candidate_uris(uri: str) -> list:
+    """Ordered, de-duplicated WS URIs to try: resolved endpoint first, then
+    the configured ``uri`` (which defaults to :9999). When a non-default uri
+    is passed explicitly, it is honored as the only resolved-first candidate.
+    """
+    uris = []
+    if uri == SYNAPSE_URI and _resolve_endpoint is not None:
+        try:
+            host, port = _resolve_endpoint(default_port=SYNAPSE_PORT)
+            uris.append(f"ws://{host}:{port}{SYNAPSE_PATH}")
+        except Exception:
+            pass
+    if uri not in uris:
+        uris.append(uri)
+    return uris
 CONNECT_TIMEOUT = 10.0
 CALL_TIMEOUT = 30.0
 RENDER_TIMEOUT = 120.0
@@ -83,29 +115,44 @@ class SynapseClient:
         self._lock = asyncio.Lock()
 
     async def connect(self) -> bool:
-        """Establish WebSocket connection to Synapse."""
-        try:
-            self._ws = await asyncio.wait_for(
-                websockets.connect(
-                    self.uri,
-                    open_timeout=3.0,
-                    close_timeout=1.0,
-                    ping_interval=None,
-                    compression=None,
-                ),
-                timeout=CONNECT_TIMEOUT,
-            )
-            self._connected = True
-            logger.info("Connected to Synapse at %s", self.uri)
-            return True
-        except asyncio.TimeoutError:
+        """Establish WebSocket connection to Synapse.
+
+        Tries the resolved endpoint (from the sidecar) first, then falls back
+        to the configured uri (:9999). A stale sidecar that points at a dead
+        port just fails the handshake and we fall through to the next.
+        """
+        candidates = _candidate_uris(self.uri)
+        last_error: Exception | None = None
+        for candidate in candidates:
+            try:
+                self._ws = await asyncio.wait_for(
+                    websockets.connect(
+                        candidate,
+                        open_timeout=3.0,
+                        close_timeout=1.0,
+                        ping_interval=None,
+                        compression=None,
+                    ),
+                    timeout=CONNECT_TIMEOUT,
+                )
+                self._connected = True
+                self.uri = candidate  # remember what actually worked
+                logger.info("Connected to Synapse at %s", candidate)
+                return True
+            except asyncio.TimeoutError as e:
+                last_error = e
+            except Exception as e:
+                last_error = e
+
+        if isinstance(last_error, asyncio.TimeoutError):
             raise SynapseConnectionError(
-                f"Couldn't reach Synapse at {self.uri} — is Houdini running with the Synapse server active?"
+                f"Couldn't reach Synapse (tried {', '.join(candidates)}) — "
+                "is Houdini running with the Synapse server active?"
             )
-        except Exception as e:
-            raise SynapseConnectionError(
-                f"Connection to Synapse failed: {e}. Check that Houdini is running and Synapse is loaded."
-            )
+        raise SynapseConnectionError(
+            f"Connection to Synapse failed: {last_error}. "
+            "Check that Houdini is running and Synapse is loaded."
+        )
 
     async def disconnect(self):
         """Close the WebSocket connection."""

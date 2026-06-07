@@ -145,6 +145,40 @@ def _cmd_id(cmd_type: str, payload: dict | None) -> str:
 SYNAPSE_PORT = int(os.environ.get("SYNAPSE_PORT", "9999"))
 SYNAPSE_PATH = os.environ.get("SYNAPSE_PATH", "/synapse")
 SYNAPSE_URL = f"ws://localhost:{SYNAPSE_PORT}{SYNAPSE_PATH}"
+
+# Self-healing port discovery: the server may fail over off :9999 when a stale
+# Houdini holds the port. It publishes its real bound port to a sidecar; we
+# resolve it here and try the resolved port FIRST, then fall back to
+# SYNAPSE_URL (9999 / $SYNAPSE_PORT). resolve_endpoint() is best-effort and
+# returns the 9999 fallback when no sidecar exists — so with no sidecar the
+# behavior is exactly as before.
+try:
+    _sys_pre = __import__("sys")
+    _pkg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python")
+    if _pkg_dir not in _sys_pre.path:
+        _sys_pre.path.insert(0, _pkg_dir)
+    from synapse.server.bridge_endpoint import resolve_endpoint as _resolve_endpoint
+except Exception:  # pragma: no cover - resolution is best-effort
+    _resolve_endpoint = None
+
+
+def _candidate_urls() -> list:
+    """Ordered, de-duplicated list of WS URLs to try.
+
+    Resolved endpoint (from the sidecar) first, then the static SYNAPSE_URL
+    fallback. A stale sidecar that points at a dead port simply fails the
+    handshake and we fall through to SYNAPSE_URL.
+    """
+    urls = []
+    if _resolve_endpoint is not None:
+        try:
+            host, port = _resolve_endpoint(default_port=SYNAPSE_PORT)
+            urls.append(f"ws://{host}:{port}{SYNAPSE_PATH}")
+        except Exception:
+            pass
+    if SYNAPSE_URL not in urls:
+        urls.append(SYNAPSE_URL)
+    return urls
 PROTOCOL_VERSION = "5.4.0"
 MAX_RETRIES = 2
 RETRY_DELAY = 0.05
@@ -287,27 +321,31 @@ async def _get_connection():
         _signal_all_pending(ConnectionError("Connection recycled"))
 
         last_error = None
-        for attempt in range(MAX_RETRIES):
-            try:
-                _ws_connection = await websockets.connect(
-                    SYNAPSE_URL,
-                    open_timeout=3.0,
-                    close_timeout=5.0,
-                    ping_interval=None,
-                    compression=None,
-                    max_size=None,  # Skip frame size validation on localhost
-                )
-                await _auth_handshake(_ws_connection)
-                _start_recv_loop()
-                logger.info("Connected to Synapse at %s", SYNAPSE_URL)
-                return _ws_connection
-            except Exception as e:
-                last_error = e
-                if attempt < MAX_RETRIES - 1:
-                    await asyncio.sleep(RETRY_DELAY * (attempt + 1))
+        # Try the resolved endpoint (from the sidecar) FIRST, then fall back
+        # to SYNAPSE_URL (9999). A stale sidecar that names a dead port just
+        # fails the handshake here and we fall through to the next candidate.
+        for url in _candidate_urls():
+            for attempt in range(MAX_RETRIES):
+                try:
+                    _ws_connection = await websockets.connect(
+                        url,
+                        open_timeout=3.0,
+                        close_timeout=5.0,
+                        ping_interval=None,
+                        compression=None,
+                        max_size=None,  # Skip frame size validation on localhost
+                    )
+                    await _auth_handshake(_ws_connection)
+                    _start_recv_loop()
+                    logger.info("Connected to Synapse at %s", url)
+                    return _ws_connection
+                except Exception as e:
+                    last_error = e
+                    if attempt < MAX_RETRIES - 1:
+                        await asyncio.sleep(RETRY_DELAY * (attempt + 1))
 
         raise ConnectionError(
-            f"Couldn't connect to Synapse at {SYNAPSE_URL} after {MAX_RETRIES} attempts: {last_error}\n\n"
+            f"Couldn't connect to Synapse (tried {', '.join(_candidate_urls())}): {last_error}\n\n"
             "Houdini might not be running, or the Synapse server hasn't started yet. "
             "Launch Houdini and start the Synapse server from the Python Panel."
         )

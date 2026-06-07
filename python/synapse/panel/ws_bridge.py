@@ -25,10 +25,23 @@ _RECONNECT_INTERVAL_MS = 3000
 
 
 def _get_ws_url():
-    """Build the WebSocket URL from environment or defaults."""
-    port = os.environ.get("SYNAPSE_PORT", str(_DEFAULT_PORT))
+    """Build the WebSocket URL, preferring the resolved (published) endpoint.
+
+    Self-healing port discovery: the server publishes its real bound port to a
+    sidecar after a :9999 failover. We resolve it here so the panel connects to
+    the live server, not a stale zombie on :9999. Falls back to
+    SYNAPSE_PORT / 9999 when no sidecar exists (exactly the prior behavior).
+    """
     path = os.environ.get("SYNAPSE_PATH", _DEFAULT_PATH)
-    return "ws://localhost:{port}{path}".format(port=port, path=path)
+    default_port = int(os.environ.get("SYNAPSE_PORT", str(_DEFAULT_PORT)))
+    host = "localhost"
+    port = default_port
+    try:
+        from ..server.bridge_endpoint import resolve_endpoint
+        host, port = resolve_endpoint(default_port=default_port)
+    except Exception:
+        host, port = "localhost", default_port
+    return "ws://{host}:{port}{path}".format(host=host, port=port, path=path)
 
 
 def _gather_context_on_main_thread():

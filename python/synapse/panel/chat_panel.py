@@ -555,7 +555,16 @@ class SynapseChatPanel:
 
         _port = int(os.environ.get("SYNAPSE_PORT", "9999"))
         _path = os.environ.get("SYNAPSE_PATH", "/synapse")
-        self._ws_url = "ws://localhost:{}{}".format(_port, _path)
+        # Show the same endpoint the bridge actually connects to (resolved
+        # from the published sidecar, falling back to 9999). Display-only —
+        # the live connection goes through SynapseWSBridge._get_ws_url().
+        _host = "localhost"
+        try:
+            from synapse.server.bridge_endpoint import resolve_endpoint
+            _host, _port = resolve_endpoint(default_port=_port)
+        except Exception:
+            _host, _port = "localhost", _port
+        self._ws_url = "ws://{}:{}{}".format(_host, _port, _path)
 
         frame = QtWidgets.QWidget(self._root)
         frame.setObjectName("connection_frame")

@@ -62,6 +62,7 @@ from .resilience import (
     is_service_error,
 )
 from ..session.tracker import get_bridge
+from .bridge_endpoint import publish_endpoint, clear_endpoint
 
 logger = logging.getLogger("synapse.server")
 
@@ -242,6 +243,13 @@ class SynapseServer:
 
         self._running = False
 
+        # Remove our discoverable endpoint sidecar (only if it's ours).
+        # Best-effort — never let a clear failure break shutdown.
+        try:
+            clear_endpoint(os.getpid())
+        except Exception:
+            pass
+
         # Stop watchdog
         if self._watchdog:
             self._watchdog.stop()
@@ -280,6 +288,19 @@ class SynapseServer:
 
                     if self._port_manager:
                         self._port_manager.mark_active(port_to_try)
+
+                    # Publish the real bound port to the discoverable sidecar
+                    # so clients can find us even after a :9999 failover.
+                    # Best-effort — never let a publish failure break startup.
+                    try:
+                        publish_endpoint(
+                            self.host,
+                            self._actual_port,
+                            pid=os.getpid(),
+                            protocol=PROTOCOL_VERSION,
+                        )
+                    except Exception:
+                        pass
 
                     logger.info("Running on ws://%s:%s", self.host, port_to_try)
                     break
