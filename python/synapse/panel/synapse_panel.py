@@ -858,10 +858,11 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _on_done(self):
         text = "".join(self._stream_buf).strip()
+        signed = self._author_token()   # display-only authorship note on results
         if getattr(self, "_streaming_started", False):
             # finalize the live stream → fully formatted (links, code blocks)
             try:
-                self._chat.end_stream(text if text else None)
+                self._chat.end_stream(text if text else None, signed=signed)
             except Exception:
                 pass
         else:
@@ -869,7 +870,7 @@ class SynapsePanel(QtWidgets.QWidget):
             self._set_thinking(False)
             if text:
                 try:
-                    self._chat.append_synapse_message(text)
+                    self._chat.append_synapse_message(text, signed=signed)
                 except Exception:
                     pass
         if self._worker is not None:

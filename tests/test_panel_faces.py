@@ -191,6 +191,23 @@ def test_scripted_conversation_renders():
     assert "node:/materials/AMD/Dark_Glass" in html_, "node ref must stay a chip anchor"
 
 
+def test_direct_input_is_roomy_multiline():
+    # Spike 4 — the Direct composer is a roomy multi-line prompt (not a one-line
+    # field), with Send present; conversation is told apart by type, no bubbles.
+    p = _make_panel()
+    assert p._input.height() >= 120, "the prompt must be roomy multi-line"
+    assert p._send_btn is not None
+
+
+def test_synapse_reply_carries_signed_author():
+    # Spike 4 — a SYNAPSE result in the Direct conversation carries a
+    # display-only signed-author note (once per group) via ChatDisplay.
+    p = _make_panel()
+    p._chat.append_synapse_message(
+        "Rebound the material and cooked a draft.", signed="sonnet-4.6")
+    assert "sonnet-4.6" in p._chat.toHtml()
+
+
 def test_work_face_present():
     # Mile 4 — the Work face is the real FaceWork, not a placeholder.
     p = _make_panel()

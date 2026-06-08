@@ -160,7 +160,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self._update_sender("user")
         self._scroll_to_bottom()
 
-    def append_synapse_message(self, content):
+    def append_synapse_message(self, content, signed=None):
         """Append a SYNAPSE response message to the chat history.
 
         Automatically hides the typing indicator if visible.
@@ -169,6 +169,9 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         ----------
         content : dict or str
             Response payload from the server.
+        signed : str, optional
+            Display-only authorship note (the model that produced the result),
+            shown once at the head of a SYNAPSE group.
         """
         self.hide_typing_indicator()
 
@@ -181,7 +184,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         cursor.insertHtml(
             format_synapse_message(
                 content, grouped=grouped, timestamp=ts,
-                font_scale=self._font_scale,
+                font_scale=self._font_scale, signed=signed,
             )
         )
         cursor.insertBlock()
@@ -232,9 +235,10 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.setTextCursor(cursor)
         self._scroll_to_bottom()
 
-    def end_stream(self, final_content=None):
+    def end_stream(self, final_content=None, signed=None):
         """Close the stream: drop the streamed plain text and re-append the
-        message fully formatted (markdown, code blocks, clickable node links)."""
+        message fully formatted (markdown, code blocks, clickable node links).
+        ``signed`` adds the display-only authorship note to the finalized reply."""
         if not getattr(self, "_streaming", False):
             return
         self._streaming = False
@@ -244,7 +248,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         cursor.removeSelectedText()
         self.setTextCursor(cursor)
         if final_content:
-            self.append_synapse_message(final_content)
+            self.append_synapse_message(final_content, signed=signed)
         else:
             self._update_sender("synapse")
             self._scroll_to_bottom()

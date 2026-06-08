@@ -217,12 +217,25 @@ def format_user_message(text, grouped=False, timestamp=None, font_scale=1.0):
     ).format(my=my, sig=_SIGNAL, fg=_TEXT_BRIGHT, sz=body_sz, body=escaped)
 
 
-def format_synapse_message(content, grouped=False, timestamp=None, font_scale=1.0):
+def format_synapse_message(content, grouped=False, timestamp=None, font_scale=1.0,
+                           signed=None):
     """The agent voice: plain, dimmer body copy — no rule, no bubble, no label.
-    Results inside it surface as artifact chips via the rich-text pipeline."""
+    Results inside it surface as artifact chips via the rich-text pipeline.
+
+    ``signed`` adds a quiet, display-only authorship note (the model that
+    produced the result) once at the head of a SYNAPSE group — never per
+    message. It is a label, not a substrate write."""
     body = format_response(content, font_scale)
     my = _MSG_MARGIN_Y if grouped else _GROUP_MARGIN_Y
-    return '<div style="margin:{my}px 0;">{body}</div>'.format(my=my, body=body)
+    note = ""
+    if signed and not grouped:
+        note = (
+            '<div style="color:{dim}; font-size:{sz}px; letter-spacing:1px; '
+            'margin-top:2px;">signed {who}</div>'
+        ).format(dim=_TEXT_DIM, sz=_scale(_SMALL_PX, font_scale),
+                 who=html.escape(str(signed)))
+    return '<div style="margin:{my}px 0;">{body}{note}</div>'.format(
+        my=my, body=body, note=note)
 
 
 def format_system_message(text, font_scale=1.0):
