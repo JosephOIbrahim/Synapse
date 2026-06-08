@@ -581,6 +581,7 @@ Track across the session:
 12. **Never trust LLM boundary flags** — blast radius inferred from dependency graph (R7)
 13. **PDG cooks don't block FastMCP** — `pdg.PyEventHandler` bridge keeps server responsive (R8)
 14. **Evolved memory syncs viewport** — LOP nodes referencing USD force-cooked via LopNetwork walk (R10)
+15. **Verify before you write an unfamiliar API** — before emitting any `hou.*` / `pdg.*` / `pxr.*` call or VEX function you are not certain exists in H21.0.671, call the `synapse_scout` tool first. It returns real reference snippets AND, per dotted symbol in the query, whether it exists verbatim in the canonical corpus (`found_in_corpus=false` ⇒ phantom — do **not** emit it). This is the runtime form of the "`dir()` is a hard gate" rule and the front-line defense against SYNAPSE's #1 failure class (phantom APIs: `hou.pdg.*`, `hou.secure`, `hou.lopNetworks()`, `hou.updateGraphTick()`). Scout reads the repo `rag/` corpus (materialized lazily on first call), not the thin `G:\` store. Pure-Python, zero-`hou`; wired in `mcp_server.py` via the cognitive Dispatcher. CRUCIBLE still verifies after the fact — scout shrinks how often it has to.
 
 ---
 

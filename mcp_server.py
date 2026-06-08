@@ -663,6 +663,86 @@ async def _inspector_call_tool(arguments: dict) -> list:
     return [TextContent(type="text", text=_dumps_str(result))]
 
 
+# ---------------------------------------------------------------------------
+# Scout tool -- federated H21 docs-RAG + VEX retrieval, pure-Python, zero-hou.
+#
+# Like the Inspector (above) this routes through the cognitive Dispatcher, but
+# it needs NO Houdini round-trip: scout reads a LOCAL corpus and grounds dotted
+# API symbols against it. On first use we materialize that corpus from the
+# CANONICAL repo rag/ tree (build-if-absent) and bind scout to it, so the live
+# tool never serves an empty store nor the thin G:\ SideFXLabs-only one.
+# ---------------------------------------------------------------------------
+from pathlib import Path as _Path
+from synapse.cognitive.tools.scout import (
+    synapse_scout as _scout_tool,
+    SYNAPSE_SCOUT_SCHEMA as _SCOUT_SCHEMA,
+)
+from synapse.cognitive.tools import scout as _scout_module
+from synapse.cognitive.tools import scout_ingest as _scout_ingest
+
+_SCOUT_TOOL_NAME = _SCOUT_SCHEMA["name"]            # "synapse_scout"
+_SCOUT_TOOL_DESC = _SCOUT_SCHEMA["description"]
+_SCOUT_TOOL_SCHEMA = _SCOUT_SCHEMA["input_schema"]
+
+_scout_dispatcher: _Dispatcher | None = None
+
+
+def _get_scout_dispatcher() -> _Dispatcher:
+    """Build the scout Dispatcher once. On first build, materialize the scout
+    corpus from the canonical repo rag/ (build-if-absent) and point scout at
+    that store so it never goes live empty and never reads the thin G:\\ one."""
+    global _scout_dispatcher
+    if _scout_dispatcher is not None:
+        return _scout_dispatcher
+    try:
+        info = _scout_ingest.ensure_corpus()
+        store_root = _Path(info["store_root"])
+        _scout_module.RAG_ROOT = store_root
+        _scout_module.VEX_ROOT = store_root
+        # Drop caches keyed on any previous root (defensive; usually fresh proc).
+        for _cache in (_scout_module._CORPUS, _scout_module._FTS,
+                       _scout_module._DENSE, _scout_module._SYMS):
+            _cache.clear()
+    except Exception:
+        logger.exception(
+            "scout corpus materialization failed; synapse_scout will surface "
+            "a ScoutError on call rather than serving an empty store"
+        )
+    _scout_dispatcher = _Dispatcher(
+        is_testing=True,
+        tools={_SCOUT_TOOL_NAME: _scout_tool},
+        schemas={_SCOUT_TOOL_NAME: _SCOUT_SCHEMA},
+    )
+    return _scout_dispatcher
+
+
+async def _scout_call_tool(arguments: dict) -> list:
+    """Handle synapse_scout via the cognitive Dispatcher. Pure-Python, so it
+    runs off the event loop via asyncio.to_thread; the Dispatcher wraps any
+    ScoutError into the AgentToolError envelope (never raises)."""
+    kwargs: dict = {"query": arguments.get("query", "")}
+    for opt in ("domain", "k", "max_chars", "where"):
+        if arguments.get(opt) is not None:
+            kwargs[opt] = arguments[opt]
+    try:
+        dispatcher = _get_scout_dispatcher()
+        result = await asyncio.to_thread(
+            dispatcher.execute, _SCOUT_TOOL_NAME, kwargs,
+        )
+    except Exception as e:
+        logger.exception("Unexpected error dispatching synapse_scout")
+        return [TextContent(type="text", text=_dumps_str({
+            "error": type(e).__name__, "message": str(e),
+        }))]
+
+    if isinstance(result, _AgentToolError):
+        return [TextContent(type="text", text=_dumps_str({
+            "error": result.error_type, "message": result.error_message,
+        }))]
+
+    return [TextContent(type="text", text=_dumps_str(result))]
+
+
 @server.list_tools()
 async def list_tools():
     """Register all Synapse MCP tools.
@@ -697,6 +777,15 @@ async def list_tools():
         inputSchema=_INSPECTOR_TOOL_SCHEMA,
     ))
 
+    # Scout tool -- local federated docs-RAG + VEX retrieval with phantom-API
+    # grounding. Dispatched via a dedicated branch in call_tool() (pure-Python,
+    # no Houdini round-trip).
+    tools.append(Tool(
+        name=_SCOUT_TOOL_NAME,
+        description=_SCOUT_TOOL_DESC,
+        inputSchema=_SCOUT_TOOL_SCHEMA,
+    ))
+
     return tools
 
 
@@ -722,6 +811,10 @@ async def call_tool(name: str, arguments: dict):
     # execute_python round-trip, StageAST parse, JSON serialization).
     if name == _INSPECTOR_TOOL_NAME:
         return await _inspector_call_tool(arguments)
+
+    # Scout tool -- pure-Python federated retrieval + phantom-API grounding.
+    if name == _SCOUT_TOOL_NAME:
+        return await _scout_call_tool(arguments)
 
     if name not in TOOL_DISPATCH:
         return [TextContent(type="text", text=f"I don't recognize the tool '{name}' \u2014 check the available tools list")]
