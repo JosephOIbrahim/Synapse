@@ -323,6 +323,37 @@ def test_done_edge_populates_review_verdict():
     assert "Dark_Glass" in p._review_face._verdict.text()
 
 
+def test_rail_author_token_shows():
+    # Spike 5 — the rail carries the author signature (display-only); the label
+    # tracks _author_token() regardless of whether the worker model imports.
+    p = _make_panel()
+    assert p._author_lbl is not None
+    assert p._author_lbl.text() == p._author_token()
+
+
+def test_stop_gated_to_working_state():
+    # Spike 5 — Stop is visible ONLY while working (mark sweeping), wired to the
+    # existing stop handler; hidden at rest.
+    p = _make_panel()
+    assert p._stop_btn.isHidden(), "Stop hidden at rest"
+    p._set_busy(True)
+    assert not p._stop_btn.isHidden() and p._stop_btn.isEnabled()
+    assert p._mark._state == "working"
+    p._set_busy(False)
+    assert p._stop_btn.isHidden(), "Stop hidden when not working"
+
+
+def test_context_line_reflects_frame_and_selection():
+    # Spike 5 — the selection-context line is built from the confirmed
+    # hou.selectedNodes / hou.frame API; the selection callback funnels to the
+    # same updater (V0-guarded — no phantom call when hou.ui is absent).
+    p = _make_panel()
+    p._update_context()
+    assert "f1" in p._ctx_label.text()
+    p._on_selection_changed()
+    assert "f1" in p._ctx_label.text()
+
+
 def test_classify_tool_two_axes():
     # Mile 6 — the verb × context taxonomy classifies tools sensibly.
     from synapse.panel.tool_filter import classify_tool

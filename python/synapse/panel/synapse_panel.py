@@ -196,6 +196,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._health_timer.timeout.connect(self._update_health)
         self._health_timer.start()
         self._update_health()
+        # Selection-change callback (V0-guarded) → instant context updates; the
+        # 2s timer above remains the proven fallback.
+        self._register_selection_cb()
 
     # ---------------------------------------------------------------- UI
     def _section(self):
@@ -258,6 +261,11 @@ class SynapsePanel(QtWidgets.QWidget):
         # while the agent works, dim at rest (observability, always on).
         bot = QtWidgets.QHBoxLayout()
         bot.setSpacing(t.SPACE_SM)
+        # author signature — DISPLAY ONLY — leads the telemetry cluster it
+        # answers for (the model that produces results in this panel).
+        self._author_lbl = c.label("", role="caption")
+        self._author_lbl.setStyleSheet("color:%s; letter-spacing:1px;" % t.TEXT_TERTIARY)
+        self._author_lbl.setText(self._author_token())
         self._foot_dot = c.StatusDot("disconnected")
         self._foot_label = c.label("Not connected", role="caption")
         self._foot_label.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
@@ -270,6 +278,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._stop_btn.setMinimumWidth(64)
         self._stop_btn.clicked.connect(self._on_stop)
         self._stop_btn.setEnabled(False)
+        self._stop_btn.setVisible(False)   # state-gated: shown only while working
+        bot.addWidget(self._author_lbl)
         bot.addWidget(self._foot_dot)
         bot.addWidget(self._foot_label)
         bot.addWidget(self._observe, 1)
@@ -919,6 +929,7 @@ class SynapsePanel(QtWidgets.QWidget):
     def _set_busy(self, busy):
         self._send_btn.setEnabled(not busy)
         self._stop_btn.setEnabled(busy)
+        self._stop_btn.setVisible(busy)   # Stop is state-gated to working only
         self._observe.setStyleSheet(
             "background:%s; border-radius:2px;" % (t.WARM if busy else t.SIGNAL_TINT)
         )
@@ -971,6 +982,43 @@ class SynapsePanel(QtWidgets.QWidget):
                 self._set_header("idle", "Ready")
         except Exception:
             pass
+
+    def _register_selection_cb(self):
+        """Update the context line on selection change. hou.ui is graphical-only
+        and its callback API can't be probed headlessly, so we feature-detect at
+        the call site (V0 at the call site) and fall back to the 2s timer (which
+        uses the V1-confirmed hou.selectedNodes / hou.frame). No phantom call is
+        ever made; the callback simply self-detects when running live."""
+        self._sel_cb = None
+        try:
+            import hou
+            ui = getattr(hou, "ui", None)
+            if ui is not None and hasattr(ui, "addSelectionCallback"):
+                self._sel_cb = lambda *_a, **_k: self._on_selection_changed()
+                ui.addSelectionCallback(self._sel_cb)
+        except Exception:
+            self._sel_cb = None
+
+    def _on_selection_changed(self):
+        """Selection changed → refresh the context line. Guarded so a callback
+        firing into a torn-down panel can never crash."""
+        try:
+            self._update_context()
+        except Exception:
+            pass
+
+    def closeEvent(self, event):
+        # Remove the global selection callback so it never fires into a deleted
+        # panel (dangling-ref safety).
+        cb = getattr(self, "_sel_cb", None)
+        if cb is not None:
+            try:
+                import hou
+                hou.ui.removeSelectionCallback(cb)
+            except Exception:
+                pass
+            self._sel_cb = None
+        super().closeEvent(event)
 
     # ------------------------------------------------------------ drag & drop
     def dragEnterEvent(self, event):
