@@ -134,6 +134,29 @@ class TestMandatoryVerifiedBy:
             ledger.deposit(rec)
 
 
+class TestMandatoryAgainstBuild:
+    """v5 build-pinning policy (Task B.1): against_build is mandatory + fail-closed —
+    every VerifiedClaim names the build it was verified against."""
+
+    def test_empty_against_build_raises(self, ledger_tmp, no_pxr):
+        rec = _record_of_kind("Confirmation", against_build="")
+        with pytest.raises(ValueError):
+            ledger.deposit(rec)
+        # No file written (fail-closed, like verified_by).
+        assert glob.glob(os.path.join(ledger_tmp, "*.json")) == []
+
+    def test_whitespace_against_build_raises(self, ledger_tmp, no_pxr):
+        rec = _record_of_kind("Confirmation", against_build="   ")
+        with pytest.raises(ValueError):
+            ledger.deposit(rec)
+
+    def test_backfill_stamps_cutover_build_on_legacy(self, ledger_tmp, no_pxr):
+        """Legacy entries lacking against_build deposit cleanly under the cutover
+        (stamped to the CI/logic tier), never rejected."""
+        summary = ledger.backfill(LEDGER_MD)
+        assert summary["files_written"] >= 15  # legacy build-less entries landed
+
+
 # ═════════════════════════════════════════════════════════════════
 # 3. One-file-per-record idempotence
 # ═════════════════════════════════════════════════════════════════
@@ -268,6 +291,8 @@ class TestRealDataBackfill:
         for rec in recs:
             if not rec.verified_by.strip():
                 continue  # genuinely lacks verified_by → cannot deposit
+            if not rec.against_build.strip():
+                rec.against_build = ledger.CUTOVER_BUILD  # build-pinning cutover (B.2)
             res = ledger.deposit(rec)
             loaded = _read_back(res["path"])
             if loaded != asdict(rec):

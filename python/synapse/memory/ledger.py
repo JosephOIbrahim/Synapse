@@ -53,6 +53,14 @@ LEDGER_SUBTREE = "/SYNAPSE/agent/ledger"
 # The default per-record file backup count (DR recovery point; D-6).
 DEFAULT_BACKUPS = 1
 
+# Build-pinning cutover (v5 runbook Task B / decision #1). Every VerifiedClaim
+# names the build it was verified against: live/interactive/render/flipbook-pixel
+# rungs → 671; headless/CI/logic rungs → 631. Legacy markdown entries predate the
+# policy (they carry verified_by but no against_build); the reader treats them as
+# the conservative CI/logic tier. ``backfill`` stamps this build onto such records
+# (the derived per-record file only — the source markdown is never mutated).
+CUTOVER_BUILD = "21.0.631"
+
 # Kinds the live Ledger actually carries (RFC §3.3). ``kind`` is an OPEN string —
 # the deposit does not reject an unknown value; this set is guidance + the
 # round-trip pin's coverage, not a closed enum.
@@ -75,8 +83,11 @@ class LedgerRecord:
     """One Ledger finding. The §3.3 universal field-set + kind-specific blocks +
     a generic ``extra`` catch-all so no markdown ``**field:**`` is ever dropped.
 
-    ``verified_by`` is MANDATORY (RFC §11.2 / the LEDGER header rule). A record
-    with empty ``verified_by`` is rejected at :func:`deposit`.
+    ``verified_by`` AND ``against_build`` are MANDATORY (RFC §11.2 / the LEDGER
+    header rule + the v5 build-pinning policy). A record with EITHER empty is
+    rejected at :func:`deposit` (fail-closed). ``against_build`` names the build
+    the claim was verified against (671 = live/interactive/render · 631 =
+    headless/CI/logic); :data:`CUTOVER_BUILD` is the legacy/backfill default.
     """
 
     # ── universal fields (every Ledger kind) ──
@@ -268,6 +279,13 @@ def deposit(rec: "LedgerRecord", *, agent_usd_path: Optional[str] = None) -> Dic
         raise ValueError(
             "LedgerRecord.verified_by is mandatory (empty/missing) — "
             "the Ledger header rule rejects unverified entries."
+        )
+    if not (rec.against_build or "").strip():
+        raise ValueError(
+            "LedgerRecord.against_build is mandatory (empty/missing) — the v5 "
+            "build-pinning policy: every VerifiedClaim names the build it was "
+            "verified against (671 live/interactive · 631 headless/CI/logic). "
+            "Fail-closed. Backfill of legacy entries stamps CUTOVER_BUILD."
         )
 
     stem = record_stem(rec)
@@ -484,6 +502,12 @@ def backfill(markdown_path: str, *, agent_usd_path: Optional[str] = None) -> Dic
         if not (rec.verified_by or "").strip():
             skipped += 1
             continue
+        # Build-pinning cutover (Task B.2): legacy entries predate the
+        # against_build policy → read as the conservative CI/logic tier (631).
+        # The source markdown is NOT mutated; this stamps the derived per-record
+        # file only ("the reader treats pre-cutover entries as 631-scoped").
+        if not (rec.against_build or "").strip():
+            rec.against_build = CUTOVER_BUILD
         deposit(rec, agent_usd_path=agent_usd_path)
         files_written += 1
     return {
