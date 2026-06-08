@@ -45,3 +45,66 @@ def test_doc_tool_count_matches_registry():
         "A tool was added/removed without updating the banner -- update CLAUDE.md "
         "to the registry count (or this test if the registry is the thing that moved)."
     )
+
+
+# ── DOC-1 tool-count, transport relationship (v5 runbook Task A) ──────────────
+# CTO decision #2: the registry (synapse.mcp._tool_registry.TOOL_DEFS) is the
+# CANONICAL core (110); CLAUDE.md derives from it (pinned above); transports may
+# legitimately differ. They surface the core differently, and the difference is a
+# fixed, named set -- pinned here so a tool silently moving between layers (or an
+# accidental duplicate registration) fails loud:
+#   · HTTP  /mcp  (synapse.mcp.server -> synapse.mcp.tools.get_tools): registry core
+#   · stdio       (mcp_server.py -> list_tools): registry core + 7 NAMED local tools
+#     served WITHOUT a Houdini connection -- 6 group-knowledge preambles + the
+#     Inspector. These are NOT dispatch handlers (absent from the registry), so
+#     they are stdio-only and never double-counted. stdio == 110 + 7 == 117.
+
+_STDIO_LOCAL_TOOLS = [
+    "synapse_group_scene", "synapse_group_render", "synapse_group_usd",
+    "synapse_group_tops", "synapse_group_memory", "synapse_group_cops",
+    "synapse_inspect_stage",
+]
+
+
+def _registry_names():
+    from synapse.mcp._tool_registry import TOOL_DEFS
+    return {t[0] for t in TOOL_DEFS}
+
+
+def test_stdio_equals_registry_core_plus_named_local_tools():
+    """stdio surface == registry core + the 7 NAMED local tools (the value/mechanism
+    binding the CTO review asked for, not bare identifier presence). The locals are
+    wired into mcp_server.py's list_tools assembly (_GROUP_INFO_TOOLS keys +
+    _INSPECTOR_TOOL_NAME), and NONE of them are in the dispatch registry -- so the
+    +7 are legitimate transport tools, never accidental duplicate registrations.
+    Source-scanned so it needs no mcp/websockets import (CI-safe)."""
+    src = (_ROOT / "mcp_server.py").read_text(encoding="utf-8")
+    for token in ("_REGISTRY_TOOL_DEFS", "_GROUP_INFO_TOOLS", "_INSPECTOR_TOOL_NAME"):
+        assert token in src, (
+            f"stdio list_tools no longer composes {token} -- the documented "
+            "stdio == registry + 6 group + inspector relationship moved."
+        )
+    missing = [n for n in _STDIO_LOCAL_TOOLS if n not in src]
+    assert not missing, f"stdio local tools not wired in mcp_server.py: {missing}"
+    overlap = sorted(_registry_names() & set(_STDIO_LOCAL_TOOLS))
+    assert not overlap, (
+        f"local tools double-registered in the dispatch registry: {overlap} -- a "
+        "transport tool became a handler (or vice versa); reconcile the count "
+        "before pinning it (DOC-1 A.3: do not pin a buggy count)."
+    )
+
+
+def test_http_lists_registry_core_only():
+    """TEST-2 (stdio-vs-HTTP relationship): the HTTP /mcp transport
+    (synapse.mcp.tools.get_tools) lists EXACTLY the registry core; the 7 stdio-local
+    tools are stdio-only. Transports may legitimately differ (decision #2) -- this
+    pins the documented relationship (stdio = HTTP core + the 7 named locals) so the
+    difference can't drift silently into a real divergence."""
+    from synapse.mcp.tools import get_tools
+    http_names = {t["name"] for t in get_tools()}
+    assert http_names == _registry_names(), (
+        "HTTP /mcp tool surface drifted from the registry core "
+        f"(symmetric diff: {sorted(http_names ^ _registry_names())})."
+    )
+    leaked = sorted(http_names & set(_STDIO_LOCAL_TOOLS))
+    assert not leaked, f"stdio-local tools leaked into the HTTP surface: {leaked}"
