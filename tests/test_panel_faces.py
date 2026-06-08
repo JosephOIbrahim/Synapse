@@ -1,8 +1,10 @@
-"""Mile 2 — three faces + state→face controller. Behavioral pins.
+"""Panel tabs + Work cook/done sub-state — behavioral pins (v9 re-layout).
 
-Adversarial G1 check: instantiation isn't enough — the gate is "switches
-manually + auto on simulated state changes." These exercise the controller
-directly (no live worker, no Houdini) so the contract can't silently regress.
+Adversarial G1 check: instantiation isn't enough — the gate is "tabs switch
+ONLY on a user pill click; agent state drives the Work face's cook/done
+sub-state + the rail mark, never the visible tab (the same-pane law)." These
+exercise the controller directly (no live worker, no Houdini) so the contract
+can't silently regress.
 
 Run offscreen via Houdini's Python (stock CPython lacks PySide):
     hython tests/test_panel_faces.py        # exits 0 / 1
@@ -93,66 +95,83 @@ def test_initial_face_is_direct():
     assert _idx(p) == 0
 
 
-def test_manual_pill_switches_and_holds():
+def test_manual_pill_switches():
+    # v9: a pill click is the ONLY thing that moves the visible tab. It switches
+    # and stays — agent state never overrides it (the same-pane law).
     p = _make_panel()
-    p._set_face("review", manual=True)
-    assert _idx(p) == 2 and p._current_face == "review"
-    assert p._manual_face == "review"
-    # auto request is deferred while a manual pick holds
-    p._request_face("work")
-    assert _idx(p) == 2, "manual park must not be overridden by an auto request"
-    assert p._pending_face == "work"
-
-
-def test_busy_rising_edge_clears_manual_and_shows_work():
-    p = _make_panel()
-    p._set_face("review", manual=True)
-    p._set_busy(True)
-    assert p._manual_face is None, "a new work cycle clears the manual park"
+    p._set_face("work")
     assert _idx(p) == 1 and p._current_face == "work"
+    p._set_face("direct")
+    assert _idx(p) == 0 and p._current_face == "direct"
 
 
-def test_busy_falling_edge_shows_review():
+def test_busy_sets_cook_substate_no_tab_switch():
+    # A new work cycle shows the Work face's COOK sub-state and lifts the rail
+    # mark — but it must NOT switch the visible tab (the same-pane law).
     p = _make_panel()
+    p._set_face("direct")
+    p._set_busy(True)
+    assert _idx(p) == 0, "busy must not auto-switch the tab"
+    assert p._work_substate == "cook"
+    assert p._work_stack.currentIndex() == 0
+    assert p._mark._state == "working"
+
+
+def test_busy_falling_sets_done_substate_no_switch():
+    # Work finishing fills the done sub-state (the payoff) and marks done —
+    # still no tab switch; the rail mark is the signal.
+    p = _make_panel()
+    p._set_face("direct")
     p._set_busy(True)
     p._set_busy(False)
-    assert _idx(p) == 2 and p._current_face == "review"
+    assert _idx(p) == 0, "finishing must not auto-switch the tab"
+    assert p._work_substate == "done"
+    assert p._work_stack.currentIndex() == 1
+    assert p._mark._state == "done"
 
 
-def test_tool_running_shows_work():
+def test_tool_running_does_not_switch_tab():
+    # A live tool feeds the Work plan + rail mark but never steals the tab.
     p = _make_panel()
     p._set_face("direct")
     p._on_tool_status("houdini_render", "running", "")
-    assert _idx(p) == 1 and p._current_face == "work"
+    assert _idx(p) == 0, "a running tool must not auto-switch the tab"
+    assert "houdini_render" in [s[0] for s in p._work_face._steps]
 
 
-def test_focus_guard_defers_then_applies_on_focus_out():
+def test_state_persists_across_tab_switch():
+    # The same-pane law: switching tabs is a QStackedWidget index change, so each
+    # face keeps its state. Drive Work to the done sub-state, visit Direct,
+    # return — the sub-state and its content survive.
+    p = _make_panel()
+    p._set_busy(True)
+    p._set_busy(False)                       # Work → done sub-state
+    assert p._work_substate == "done"
+    p._set_face("direct")
+    assert _idx(p) == 0
+    p._set_face("work")
+    assert _idx(p) == 1
+    assert p._work_substate == "done", "Work sub-state must persist across a tab switch"
+    assert p._work_stack.currentIndex() == 1
+
+
+def test_gate_raised_sets_done_substate_no_switch():
+    # A real gate proposal surfaces in Work's done sub-state and marks a ready
+    # result — but never auto-switches the visible tab (the same-pane law).
     p = _make_panel()
     p._set_face("direct")
-    orig = p._input_focused
-    p._input_focused = lambda: True          # artist is typing
-    try:
-        p._request_face("work")
-        assert _idx(p) == 0, "must never yank away from Direct while typing"
-        assert p._pending_face == "work"
-    finally:
-        p._input_focused = orig
-    p._apply_pending_face()                  # input lost focus
-    assert _idx(p) == 1 and p._current_face == "work"
-
-
-def test_gate_raised_shows_review_and_supersedes_manual():
-    p = _make_panel()
-    p._set_face("direct", manual=True)
     p._on_gate_raised({"level": "approve"})
-    assert _idx(p) == 2 and p._current_face == "review"
+    assert _idx(p) == 0, "a gate must not auto-switch the tab"
+    assert p._work_substate == "done"
+    assert p._mark._state == "done"
 
 
 def test_inform_gate_is_ignored():
     p = _make_panel()
     p._set_face("direct")
     p._on_gate_raised({"level": "inform"})
-    assert _idx(p) == 0, "noisy INFORM proposals must not steal the face"
+    assert _idx(p) == 0, "noisy INFORM proposals must not steal the tab"
+    assert p._work_substate == "cook", "INFORM must not flip the Work sub-state"
 
 
 def test_scripted_conversation_renders():
@@ -246,21 +265,23 @@ def test_bl007_flag_detects_missing_output():
 
 
 def test_review_actions_wired_to_panel():
-    # accept/commit signals reach the panel handlers without error; commit
-    # keeps the Review face forward (it routes through the gate, not /stage).
+    # accept/commit signals reach the panel handlers without error; commit keeps
+    # the done sub-state forward (it routes through the gate, not /stage) and
+    # never switches the tab.
     p = _make_panel()
     p._review_face.accepted.emit()
     p._review_face.committed.emit()
-    assert _idx(p) == 2
+    assert p._work_substate == "done"
 
 
 def test_done_edge_populates_review_verdict():
-    # The done edge switches to Review and lifts the first line as the verdict.
+    # The done edge fills the Work done sub-state and lifts the first line as the
+    # verdict (no tab switch — the same-pane law).
     p = _make_panel()
     p._stream_buf = ["Dark_Glass landed; the crystal reads at the scene IOR now."]
     p._was_busy = True
     p._set_busy(False)
-    assert _idx(p) == 2
+    assert p._work_substate == "done"
     assert "Dark_Glass" in p._review_face._verdict.text()
 
 

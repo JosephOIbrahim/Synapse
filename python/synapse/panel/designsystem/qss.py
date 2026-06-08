@@ -65,19 +65,21 @@ QPushButton#DsButton[variant="danger"] {{
 QPushButton#DsButton[variant="danger"]:hover  {{ background: {t.STATE_TINTS["error"]}; }}
 QPushButton#DsButton:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; border-color: transparent; }}
 
-/* ---- context actions: native flat pane-toolbar idiom --------- */
-/* Houdini's own toolbuttons: flat, no border, hover = a translucent WHITE wash
-   (not a colored fill). Inherit the native font. */
+/* ---- tabs: underline on a baseline track (v9 call 1) --------- */
+/* Retires the filled-pill active state: tabs read as text on a shared 2px
+   baseline; the active tab lights its rule + text. Flat, native font; the
+   active accent is the only chrome. */
 QPushButton#DsPill {{
     background: none; color: {t.TEXT_SECONDARY};
-    border: none; border-radius: {t.RADIUS_SM}px;
+    border: none; border-bottom: 2px solid transparent; border-radius: 0;
     padding: {t.SPACE_XS}px {t.SPACE_MD}px;
     font-size: {s(t.SIZE_UI + 2)}px; font-weight: 500;
 }}
-QPushButton#DsPill:hover  {{ background: {t.HOVER_WASH}; color: {t.TEXT_ACCENT}; }}
-QPushButton#DsPill:pressed {{ background: {t.SIGNAL_TINT}; }}
+QPushButton#DsPill:hover  {{ color: {t.TEXT_ACCENT}; }}
 QPushButton#DsPill:disabled {{ color: {t.TEXT_DISABLED}; }}
-QPushButton#DsPill[active="true"] {{ color: {t.TEXT_ACCENT}; background: {t.SIGNAL_TINT}; }}
+QPushButton#DsPill[active="true"] {{
+    color: {t.TEXT_ACCENT}; border-bottom: 2px solid {t.SIGNAL};
+}}
 
 /* ---- type-set verbs (Direct act bar + Review actions) — Mile 7 --- */
 /* Verbs read as type, not buttons: flat, mono, the chrome recedes. */

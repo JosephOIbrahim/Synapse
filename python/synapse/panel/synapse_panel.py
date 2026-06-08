@@ -169,10 +169,12 @@ class SynapsePanel(QtWidgets.QWidget):
         self._pending_context = []  # paths dropped in; prepended to the next send
         self._font_scale = t.FONT_SCALE_DEFAULT
 
-        # state→face controller (Pentagram pass, Mile 2)
+        # tab controller (v9 re-layout) — two tabs, NO auto-switch (the
+        # same-pane law). Tabs move only on a user pill click; agent state
+        # drives the Work face's internal cook/done sub-state and the rail
+        # mark, never the visible tab.
         self._current_face = "direct"
-        self._manual_face = None     # a pill pick; held until the next work edge
-        self._pending_face = None    # an auto switch deferred by the focus guard
+        self._work_substate = "cook"
         self._was_busy = False
 
         self.setAcceptDrops(True)
@@ -307,33 +309,33 @@ class SynapsePanel(QtWidgets.QWidget):
         self._converse_stack.setMinimumHeight(380)
         return self._converse_stack
 
-    # the three faces, in switcher order
-    _FACE_INDEX = {"direct": 0, "work": 1, "review": 2}
+    # the two tabs, in switcher order (v9: Review folded into Work's done state)
+    _FACE_INDEX = {"direct": 0, "work": 1}
 
     def _build_mode_bar(self):
-        """The switcher: Direct · Work · Review. Pills are a manual override of
-        the state→face controller; the controller drives them otherwise."""
+        """The switcher: Direct · Work. Underline tabs (v9 call 1). A pill click
+        is the *only* thing that moves the visible tab — agent state never does
+        (the same-pane law)."""
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
         lay.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, 0)
         lay.setSpacing(t.SPACE_XS)
         self._face_pills = {}
-        for face, text in (("direct", "Direct"), ("work", "Work"), ("review", "Review")):
+        for face, text in (("direct", "Direct"), ("work", "Work")):
             pill = c.Pill(text)
-            pill.clicked.connect(lambda _=False, f=face: self._set_face(f, manual=True))
+            pill.clicked.connect(lambda _=False, f=face: self._set_face(f))
             lay.addWidget(pill)
             self._face_pills[face] = pill
         lay.addStretch(1)
         return w
 
     def _build_faces(self):
-        """The three faces in one stack. Each is a full content surface; the
-        controller decides which is forward. Interiors are recomposed in later
-        miles (Direct=3, Work=4, Review=5) — here they hold the proven widgets."""
+        """The two tabs in one stack. Direct is the artist's surface; Work is the
+        working glance AND the payoff (its done sub-state folds in the old
+        Review). The controller never auto-switches between them."""
         self._faces = QtWidgets.QStackedWidget()
         self._faces.addWidget(self._build_direct_face())   # 0 · idle / converse
-        self._faces.addWidget(self._build_work_face())     # 1 · working / glance
-        self._faces.addWidget(self._build_review_face())   # 2 · done / the payoff
+        self._faces.addWidget(self._build_work_face())     # 1 · glance → done payoff
         self._faces.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
         )
@@ -352,27 +354,50 @@ class SynapsePanel(QtWidgets.QWidget):
         return page
 
     def _build_work_face(self):
-        """Work — the walk-away glance. FaceWork (Mile 4) owns the cook preview,
-        plan-with-progress, live tool status, the thinking pulse, and the
-        embedded observability infographic. The panel delegates its working
-        signals to it (set_thinking / set_tool_status / set_health)."""
+        """Work — the walk-away glance AND the payoff, on one surface (v9 fold).
+
+        A sub-``QStackedWidget`` holds two sub-states: ``cook`` (FaceWork — cook
+        preview, plan-with-progress, live tool status, the thinking pulse, the
+        embedded observability infographic) and ``done`` (FaceReview — verdict,
+        credit, quality flags, the graduated gate, accept/revert/commit). The
+        panel delegates its working signals to FaceWork (set_thinking /
+        set_tool_status / set_health). Cook→done is a content update *within this
+        tab*, never a tab switch; the rail mark carries working→done. Review is
+        no longer a top-level tab — it folded here."""
+        page = self._section()
+        col = QtWidgets.QVBoxLayout(page)
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(0)
+        self._work_stack = QtWidgets.QStackedWidget()
+
+        # sub-state 0 · COOKING — FaceWork owns the glance
         if FaceWork is not None:
             self._work_face = FaceWork()
-            return self._work_face
-        # graceful fallback — the surface stays present even without FaceWork
-        self._work_face = None
-        page = self._section()
-        lay = QtWidgets.QVBoxLayout(page)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
-        lay.addWidget(c.label("Work face unavailable in this build", role="caption"))
-        lay.addStretch(1)
+            cook = self._work_face
+        else:  # graceful fallback — the surface stays present without FaceWork
+            self._work_face = None
+            cook = self._section()
+            _l = QtWidgets.QVBoxLayout(cook)
+            _l.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+            _l.addWidget(c.label("Work face unavailable in this build", role="caption"))
+            _l.addStretch(1)
+        self._work_stack.addWidget(cook)
+
+        # sub-state 1 · DONE — FaceReview folds in as the synthesis / payoff
+        self._work_stack.addWidget(self._build_done_substate())
+
+        self._work_stack.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        col.addWidget(self._work_stack, 1)
+        self._work_stack.setCurrentIndex(0)   # cook is the resting Work sub-state
         return page
 
-    def _build_review_face(self):
-        """Review — the payoff (Mile 5). FaceReview owns the render-hero, verdict,
-        credit/provenance, quality flags (incl. BL-007/008), the graduated gate,
-        and accept/revert/commit. ``self._gate`` aliases the embedded gate so the
-        consent wiring (_wire_gate / _on_gate_raised) is unchanged."""
+    def _build_done_substate(self):
+        """The Work face's *done* sub-state — the payoff (v9 fold of old Review).
+        FaceReview owns the render-hero, verdict, credit/provenance, quality
+        flags (incl. BL-007/008), the graduated gate, and accept/revert/commit.
+        ``self._gate`` aliases the embedded gate so the consent wiring
+        (_wire_gate / _on_gate_raised) is unchanged."""
         if FaceReview is not None:
             self._review_face = FaceReview()
             self._gate = self._review_face.gate
@@ -392,6 +417,16 @@ class SynapsePanel(QtWidgets.QWidget):
             self._gate = None
         col.addStretch(1)
         return page
+
+    def _set_work_substate(self, state):
+        """Swap the Work face between 'cook' and 'done'. A content update WITHIN
+        the Work tab — never a top-level tab switch (the same-pane law). The rail
+        mark, not a tab change, is what signals a ready result."""
+        stack = getattr(self, "_work_stack", None)
+        if stack is None:
+            return
+        stack.setCurrentIndex(1 if state == "done" else 0)
+        self._work_substate = state
 
     def _populate_review(self):
         """On 'done', fill the Review face with what we can: a taut verdict from
@@ -430,7 +465,9 @@ class SynapsePanel(QtWidgets.QWidget):
                 "Commit to /stage requested — routing through the consent gate.")
         except Exception:
             pass
-        self._set_face("review")
+        # The gate lives in Work's done sub-state; the artist is already there
+        # (they clicked Commit). Keep it forward — never spawn or switch tabs.
+        self._set_work_substate("done")
 
     def _build_hda_form(self):
         """Native-designsystem describe→build flow (the build runs through the
@@ -473,43 +510,19 @@ class SynapsePanel(QtWidgets.QWidget):
             self._converse_stack.setCurrentIndex(1 if view == "hda" else 0)
         self._set_face("direct")   # the HDA form lives on the Direct surface
 
-    # ------------------------------------------------------- face controller
-    def _input_focused(self):
-        inp = getattr(self, "_input", None)
-        return inp is not None and inp.hasFocus()
-
-    def _set_face(self, face, manual=False):
-        """Bring a face forward. ``manual=True`` is a pill pick — it holds until
-        the next work cycle begins, so the controller won't fight the artist."""
+    # ------------------------------------------------------- tab controller
+    def _set_face(self, face, manual=True):
+        """Bring a tab forward. The *only* caller is a user pill click (and the
+        explicit idle default); agent state never calls this — it drives the
+        Work sub-state + the rail mark instead (the same-pane law). ``manual``
+        is accepted for call-site compatibility and otherwise unused."""
         if not hasattr(self, "_faces") or face not in self._FACE_INDEX:
             return
-        if manual:
-            self._manual_face = face
-            self._pending_face = None
         self._faces.setCurrentIndex(self._FACE_INDEX[face])
         self._current_face = face
         for f, pill in getattr(self, "_face_pills", {}).items():
             pill.setProperty("active", f == face)
             c.repolish(pill)
-
-    def _request_face(self, face):
-        """The state controller wants ``face``. Honor two guards:
-        never yank away from Direct while the artist is typing, and don't
-        override a manual pill pick (a real gate clears the manual hold first)."""
-        if face != "direct" and self._input_focused():
-            self._pending_face = face     # defer; applied on input focus-out
-            return
-        if self._manual_face is not None and self._manual_face != face:
-            self._pending_face = face
-            return
-        self._set_face(face)
-
-    def _apply_pending_face(self):
-        """Input lost focus → honor any auto switch the focus guard deferred."""
-        if (self._pending_face and self._manual_face is None
-                and not self._input_focused()):
-            face, self._pending_face = self._pending_face, None
-            self._set_face(face)
 
     def _on_build_hda(self):
         prompt = self._hda_prompt.toPlainText().strip()
@@ -585,7 +598,6 @@ class SynapsePanel(QtWidgets.QWidget):
         col.setSpacing(t.SPACE_XS)
         self._input = _GrowingInput()
         self._input.submitted.connect(self._on_submit)
-        self._input.focus_lost.connect(self._apply_pending_face)
         col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
         row = QtWidgets.QHBoxLayout()
         row.setSpacing(t.SPACE_SM)
@@ -639,15 +651,18 @@ class SynapsePanel(QtWidgets.QWidget):
                 pass
 
     def _on_gate_raised(self, proposal):
-        """A gate proposal arrived → bring Review forward (skip noisy INFORM).
-        A real gate supersedes a manual park, but still respects the focus guard."""
+        """A gate proposal arrived → surface it in Work's done sub-state and let
+        the rail mark signal a ready result (skip noisy INFORM). Same-pane law:
+        we never auto-switch the visible tab — the artist moves to Work when they
+        choose; the mark is the call to attention."""
         if isinstance(proposal, dict):
             level = proposal.get("level", "")
         else:
             level = getattr(proposal, "level", "")
         if level and level != "inform":
-            self._manual_face = None
-            self._request_face("review")
+            self._populate_review()
+            self._set_work_substate("done")
+            self._set_header("done", "Result ready")
 
     def _show_overflow(self):
         menu = QtWidgets.QMenu(self)
@@ -733,8 +748,7 @@ class SynapsePanel(QtWidgets.QWidget):
             self._send(text)
 
     def _send(self, text):
-        # Submitting is the artist handing off — drop input focus so the
-        # controller's working→Work switch isn't held back by the focus guard.
+        # Submitting is the artist handing off — drop input focus.
         if getattr(self, "_input", None) is not None:
             self._input.clearFocus()
         display = text
@@ -875,8 +889,8 @@ class SynapsePanel(QtWidgets.QWidget):
                 rf.set_flags(detect_render_flags())
             except Exception:
                 pass
-        if phase == "running":
-            self._request_face("work")   # a live tool → the walk-away glance
+        # No auto-switch (same-pane law): a live tool feeds the Work face's plan
+        # + the rail mark; the artist switches to Work to watch when they choose.
 
     def _on_stop(self):
         if self._worker is not None:
@@ -890,17 +904,22 @@ class SynapsePanel(QtWidgets.QWidget):
         self._observe.setStyleSheet(
             "background:%s; border-radius:2px;" % (t.WARM if busy else t.SIGNAL_TINT)
         )
-        self._set_header("working" if busy else "idle",
-                         "Working on it" if busy else "Standing by")
-        # state→face edges: a new work cycle clears any manual park and shows
-        # Work; work finishing shows Review (the payoff). idle→Direct is the
-        # resting default and is set explicitly when a fresh turn begins.
+        # state→Work-sub-state edges (NO tab switch — the same-pane law). A new
+        # work cycle shows the cook sub-state; finishing fills + shows the done
+        # payoff. Because the tab never auto-switches, the RAIL MARK is the only
+        # ready-result signal — so the falling edge lifts it to 'done'; the
+        # artist moves to the Work tab when they choose.
         if busy and not self._was_busy:
-            self._manual_face = None
-            self._request_face("work")
+            self._set_header("working", "Working on it")
+            self._set_work_substate("cook")
         elif not busy and self._was_busy:
             self._populate_review()      # fill verdict + provenance for the payoff
-            self._request_face("review")
+            self._set_work_substate("done")
+            self._set_header("done", "Result ready")
+        elif busy:
+            self._set_header("working", "Working on it")
+        else:
+            self._set_header("idle", "Standing by")
         self._was_busy = busy
 
     def _set_header(self, status, phrase):

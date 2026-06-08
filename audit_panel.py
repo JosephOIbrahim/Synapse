@@ -123,8 +123,14 @@ try:
           f"{len(under)} under {TARGET_FLOOR}px  " + tag(not under, warnable=True))
 
     texts = [b.text() for b in btns if b.text()]
-    faces = [f for f in ("Direct", "Work", "Review") if f in texts]
-    print(f"   faces present       : {faces}  " + tag(len(faces) == 3))
+    faces = [f for f in ("Direct", "Work") if f in texts]
+    print(f"   tabs present        : {faces}  " + tag(len(faces) == 2))
+    # v9: Review folded into Work's done sub-state. Assert its synthesis (the
+    # consent gate) still lives in-tree, so the fold didn't silently drop the
+    # gate — a stronger check than the old 3-tab name match.
+    from synapse.panel.gate_widget import GateWidget as _GW
+    has_gate = bool(panel.findChildren(_GW))
+    print(f"   review fold (gate)  : {has_gate}  " + tag(has_gate))
 
     labels = panel.findChildren(QtWidgets.QLabel)
     print(f"   labels rendered     : {len(labels):>3}")
