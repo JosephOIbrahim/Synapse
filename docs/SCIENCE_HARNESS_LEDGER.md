@@ -278,3 +278,63 @@ CTO unlocked agent teams + dynamic workflows. A **recon workflow** (`wiqu7nm7m`,
 - **bounded weaknesses (accepted, noted):** (1) cosmetic — `mcp_server._warmup` log mislabels the endpoint (the authoritative log line prints the real URL); (2) `resolve` pid-checks but doesn't port-probe, so a *respawned live* zombie re-publishing 9999 AFTER the real server could clobber freshest-wins — exotic, and the crucible rates the whole change "strictly better than the status quo."
 - **DEFERRED / operator action:** this activates on the **next Houdini restart** (which also clears the zombie). The currently-running session stays on 48626 until then. The pre-existing eager-handlers-import in `synapse.server.__init__` (the latent ordering fragility) could be made lazy as a future robustness pass — out of scope here.
 - **artifact_path:** `python/synapse/server/bridge_endpoint.py`, `python/synapse/server/websocket.py`, `python/synapse/server/hwebserver_adapter.py`, `python/synapse/server/dashboard.py`, `python/synapse/panel/ws_bridge.py`, `python/synapse/panel/chat_panel.py`, `mcp_server.py`, `agent/synapse_ws.py`, `tests/test_bridge_endpoint.py`
+
+---
+
+## Session 2026-06-08 — v5 runbook continuation: DOC-1 tail + build-pinning + provenance · TRACK H
+
+**Running build (tier policy):** headless/CI/logic = **21.0.631** · live/interactive/render = 21.0.671.
+**Bridge:** out of scope this run (panel-v9-layer fix); everything below is **bridgeless** (CI/logic tier).
+**Operator (CTO):** five decisions settled (recorded below); v5 is the committed source of truth (`53eceff`).
+
+### Decisions — operator-settled (recorded, not re-litigated)
+- **kind:** Confirmation · **verified_by:** V0 · **against_build:** 21.0.631 · **ts:** 2026-06-08
+- **D-build-pinning (#1):** per environment — live/interactive/render/flipbook-pixel → 671; headless/CI/logic → 631. `against_build` MANDATORY on every VerifiedClaim, fail-closed if absent.
+- **D-tool-count (#2):** the registry is canonical (110). CLAUDE.md derives from it. Transports may legitimately differ.
+- **D-bridge (#3):** out of scope here — a panel-v9-layer fix; this run is bridgeless.
+- **D-track-c (#4):** Track C stays CLOSED. The Allocation/Exposure schema RFC may be DRAFTED (a precondition to opening the gate, proposal only) — no schema implementation, no §2/§3/§8 FORGE specs, no Track-C code.
+- **D-provenance (#5):** v4 and v3 move into `docs/`, tracked; supersession chain v3 → v4 → v5.
+
+### DocConformance — DOC-1 (tool-count slice): stdio/HTTP transport relationship pinned (Task A)
+- **kind:** DocConformance · **verified_by:** V0 · **against_build:** 21.0.631 · **ts:** 2026-06-08
+- **claim_text:** "110 MCP tools registered" + the stdio/HTTP tool-count relationship
+- **claim_locus:** `CLAUDE.md:3` banner; the stdio (`mcp_server.py`) vs HTTP (`synapse/mcp/server.py`) surfaces
+- **code_locus:** `synapse.mcp._tool_registry.TOOL_DEFS` (110, canonical, zero dups)
+- **bound_by:** value+mechanism (`tests/test_phase0c_doc1_toolcount.py`) · **holds:** **true**
+- **measured_delta:** enumerated live — registry=110; HTTP `/mcp` (`get_tools`) lists EXACTLY the 110 core; stdio adds 7 NAMED local/transport tools (6 `synapse_group_*` knowledge preambles + `synapse_inspect_stage`, served without a Houdini connection) → 117. The +7 are legitimate transport tools, **not** duplicate registrations (A.3 HALT not triggered — `registry ∩ locals = ∅`). Two new pins: stdio == registry_core + the 7 named locals (mechanism: the assembly in `list_tools`); HTTP == registry core, locals are stdio-only (TEST-2). 3 passed.
+- **artifact_path:** `tests/test_phase0c_doc1_toolcount.py`
+
+### Confirmation — build-pinning policy: against_build required + fail-closed (Task B)
+- **kind:** Confirmation · **verified_by:** V0 · **against_build:** 21.0.631 · **ts:** 2026-06-08
+- **question:** is `against_build` enforced on VerifiedClaim emission (decision #1)?
+- **change_applied:** no `VerifiedClaim` code struct exists (spec-only) → the emission path is `ledger.deposit()`. `deposit()` now rejects empty/whitespace `against_build` (fail-closed, same posture as `verified_by`). New `CUTOVER_BUILD="21.0.631"`. `LedgerRecord` docstring updated.
+- **measured_delta:** `TestMandatoryAgainstBuild` (empty/whitespace raise; backfill stamps legacy). 25 passed. Commit `a4726af`.
+- **artifact_path:** `python/synapse/memory/ledger.py`, `tests/test_agent_usd_ledger.py`
+
+### Confirmation — POLICY CUTOVER (build-pinning) — append-only, no history mutated (Task B.2)
+- **kind:** Confirmation · **verified_by:** V0 · **against_build:** 21.0.631 · **ts:** 2026-06-08
+- **measured_delta:** **all Ledger Confirmations PRIOR to commit `a4726af` are `against_build=631` (CI/logic tier); 671 is the live/interactive tier henceforth.** The reader treats pre-cutover entries as 631-scoped. Existing entries are NOT mutated (append-only, D-1); `backfill()` stamps `CUTOVER_BUILD` onto legacy entries' DERIVED per-record files only — the source markdown is untouched.
+- **artifact_path:** `python/synapse/memory/ledger.py` (`CUTOVER_BUILD`, `backfill` cutover)
+
+### Deferred — 671 interactive re-probe of Phase 0.0, owed on bridge restore (Task B.3)
+- **kind:** Deferred · **verified_by:** V0 · **against_build:** 21.0.631 · **stakes:** medium · **probed:** false
+- **area:** Phase 0.0 (execute_python round-trip / consent posture / S4 poll) was V1-confirmed on **631**. A `671` interactive re-probe is OWED once the bridge is stable on the live build — the live/interactive tier per decision #1. Bridgeless this run, so deferred not skipped (fail-closed: the 671 rung is unclaimed until re-probed).
+- **why_it_matters:** the posture findings are codebase-determined (build-invariant) so they transfer, but the live-tier `against_build=671` claim is not yet earned.
+
+### Confirmation — provenance hygiene: v3/v4 tracked in docs/, supersession chain recorded (Task C)
+- **kind:** Confirmation · **verified_by:** V0 · **against_build:** 21.0.631 · **ts:** 2026-06-08
+- **change_applied:** moved `SYNAPSE_SCIENCE_HARNESS_v3.md` + `_v4.md` from the repo root into `docs/` (tracked); v5 already committed at `docs/SYNAPSE_SCIENCE_HARNESS_v5.md` (`53eceff`).
+- **measured_delta:** **Canonical supersession chain: v3 → v4 → v5 (v5 current).** v4's spine remains load-bearing (the v5 diff keeps §0/§4b/§4c/§5/§7); v3 is twice-superseded, retained for lineage. All three now tracked under `docs/`.
+- **artifact_path:** `docs/SYNAPSE_SCIENCE_HARNESS_v3.md`, `docs/SYNAPSE_SCIENCE_HARNESS_v4.md`, `docs/SYNAPSE_SCIENCE_HARNESS_v5.md`
+
+### Confirmation — full-suite gate green post-v9 (Task D)
+- **kind:** Confirmation · **verified_by:** V0 · **against_build:** 21.0.631 · **ts:** 2026-06-08
+- **question:** did this session's panel-v9 work (or Tasks A/B) regress the suite?
+- **measured_delta:** `python -m pytest tests/` → **3289 passed, 67 skipped, 0 failed** (54.6s). Was 3284/0 before the v9 work; +5 passed = A's 2 + B's 3 new tests (v9's panel tests are hython-only → skip in CI). **ZERO new failures**; the pre-existing test_design_system→test_hda_panel ordering flake did not manifest. Track H A–D done over a GREEN suite (not a red one).
+- **artifact_path:** (full suite)
+
+### Deferred — Allocation/Exposure schema RFC DRAFTED, awaiting Gold (Task E · Track-C precondition)
+- **kind:** Deferred · **verified_by:** V0 · **against_build:** 21.0.631 · **stakes:** high · **probed:** false
+- **area:** `docs/RFC_allocation_exposure_schema.md` — ARCHITECT proposal for Michael Gold: the five-rung `verified_by` migration (legacy read shim, conservative, never auto-promoted), the `Allocation` Ledger kind, the derived `Exposure` projection (recommend compute-on-read, never stored), and THE core typed-USD-schema-vs-customData question (3 placement options; recommend Option C = the as-built `/ledger/` namespaced-string-attr pattern, fully D-1..D-6-consistent). **Design-only; no schema authored.**
+- **why_it_matters:** Track-C gate condition (c). Blocked until Gold ratifies: the §2/§3/§8 FORGE specs and all Track-C code. The other two gate conditions are also unmet (no "begin Track C"; not ratified).
+- **artifact_path:** `docs/RFC_allocation_exposure_schema.md`
