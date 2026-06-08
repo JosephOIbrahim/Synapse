@@ -64,7 +64,7 @@ except Exception:  # pragma: no cover
     FaceReview = None
     detect_render_flags = None
 
-_VERSION = "7.0.0"
+_VERSION = "9.0.0"  # v9 re-layout: 2 tabs (Review folded into Work), bundled type
 
 # Context-aware quick actions (prompt macros). Network-agnostic defaults; the
 # context ribbon refines them per network type at runtime.
