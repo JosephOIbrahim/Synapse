@@ -238,7 +238,9 @@ def test_review_face_present_with_gate():
 
 
 def test_review_show_result_populates_all_parts():
-    # Simulated 'done' → render + verdict + credit + flags + paths all render.
+    # Simulated 'done' → render + verdict + SIGNED + credit + flags + detail.
+    # v9 synthesis: DECISION leads the headline; VIA + paths fold into the
+    # collapsed detail; SIGNED is a display-only authorship line.
     p = _make_panel()
     rf = p._review_face
     rf.show_result(
@@ -248,13 +250,32 @@ def test_review_show_result_populates_all_parts():
         flags=[("ok", "render ok"), ("fail", "EXR not written — BL-007")],
         paths=["/materials/AMD/link_type_1", "/Render/Products/render_settings"],
         meta="karma_xpu · f1 · 1920×1080",
+        signed="sonnet-4.6",
     )
     assert "Dark_Glass" in rf._verdict.text()
-    assert rf._credit_box.count() == 2
+    # DECISION leads the headline; VIA folds into the (collapsed) detail
+    assert rf._credit_box.count() == 1
+    assert rf._via_box.count() == 1
     assert rf._flags_box.count() == 2
-    # offscreen: the window is never shown, so check explicit visibility state
-    assert not rf._paths.isHidden()
+    # SIGNED line is display-only and shown
+    assert "sonnet-4.6" in rf._signed.text() and not rf._signed.isHidden()
+    # detail (VIA + paths) starts collapsed, expands on toggle
+    assert rf._detail.isHidden()
+    rf._toggle_detail()
+    assert not rf._detail.isHidden()
     assert "link_type_1" in rf._paths.text()
+
+
+def test_signed_line_is_display_only():
+    # Spike 3 — SIGNED is a display-only label; setting it shows the text and
+    # clearing it hides it. FaceReview has no hou/USD access by construction, so
+    # the SIGNED line can never author customData (invariant 3).
+    p = _make_panel()
+    rf = p._review_face
+    rf.set_signed("sonnet-4.6")
+    assert "sonnet-4.6" in rf._signed.text() and not rf._signed.isHidden()
+    rf.set_signed("")
+    assert rf._signed.isHidden()
 
 
 def test_bl007_flag_detects_missing_output():

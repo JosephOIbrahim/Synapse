@@ -428,9 +428,25 @@ class SynapsePanel(QtWidgets.QWidget):
         stack.setCurrentIndex(1 if state == "done" else 0)
         self._work_substate = state
 
+    def _author_token(self):
+        """Best-effort display signature of the model that produced the result
+        (the panel worker's model), e.g. ``claude-sonnet-4-6`` → ``sonnet-4.6``.
+        DISPLAY ONLY — it is never authored to USD."""
+        try:
+            from synapse.panel.claude_worker import _MODEL
+            m = _MODEL.replace("claude-", "")
+        except Exception:
+            return ""
+        for fam in ("opus", "sonnet", "haiku"):
+            if m.startswith(fam):
+                rest = m[len(fam):].lstrip("-").replace("-", ".")
+                return ("%s-%s" % (fam, rest)) if rest else fam
+        return m
+
     def _populate_review(self):
-        """On 'done', fill the Review face with what we can: a taut verdict from
-        the last reply + provenance from the routing_log (best-effort)."""
+        """On 'done', fill the Work done sub-state with what we can: a taut
+        verdict from the last reply, the SIGNED authorship line, and provenance
+        from the routing_log (best-effort). All display-only."""
         rf = getattr(self, "_review_face", None)
         if rf is None:
             return
@@ -440,6 +456,7 @@ class SynapsePanel(QtWidgets.QWidget):
             if len(verdict) > 140:
                 verdict = verdict[:137] + "…"
             rf.set_verdict(verdict)
+        rf.set_signed(self._author_token())
         rf.refresh_provenance()
 
     def _on_accept(self):

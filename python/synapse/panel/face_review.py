@@ -224,22 +224,44 @@ class FaceReview(QtWidgets.QWidget):
         self._verdict.setStyleSheet("color:%s; font-size:15px;" % t.TEXT_BRIGHT)
         col.addWidget(self._verdict)
 
-        # — credit / provenance (named authorship) —
+        # — SIGNED authorship line — DISPLAY ONLY. It reports who produced the
+        # result (the panel's model); it NEVER authors USD / customData. —
+        self._signed = c.label("", role="code")
+        self._signed.setStyleSheet(
+            "color:%s; font-size:10px; letter-spacing:1px;" % t.TEXT_TERTIARY)
+        self._signed.setVisible(False)
+        col.addWidget(self._signed)
+
+        # — credit headline (the DECISION leads; provenance folds into detail) —
         self._credit_box = QtWidgets.QVBoxLayout()
         self._credit_box.setSpacing(1)
         col.addLayout(self._credit_box)
 
-        # — quality flags (preflight + BL-007 / BL-008) —
+        # — quality flags / status dots (preflight + BL-007 / BL-008) —
         self._flags_box = QtWidgets.QVBoxLayout()
         self._flags_box.setSpacing(1)
         col.addLayout(self._flags_box)
 
-        # — touched paths —
+        # — expandable detail: VIA provenance + touched paths, collapsed by
+        # default (simplified synthesis keeps the headline taut) —
+        self._detail_btn = _verb("▸ detail", lambda _=False: self._toggle_detail())
+        col.addWidget(self._detail_btn, 0, Qt.AlignLeft)
+        self._detail = QtWidgets.QWidget()
+        self._detail.setObjectName("DsSection")
+        self._detail.setAttribute(Qt.WA_StyledBackground, True)
+        dcol = QtWidgets.QVBoxLayout(self._detail)
+        dcol.setContentsMargins(0, 0, 0, 0)
+        dcol.setSpacing(1)
+        self._via_box = QtWidgets.QVBoxLayout()
+        self._via_box.setSpacing(1)
+        dcol.addLayout(self._via_box)
         self._paths = c.label("", role="code")
         self._paths.setWordWrap(True)
         self._paths.setStyleSheet("color:%s; font-size:10px;" % t.TEXT_TERTIARY)
-        self._paths.setVisible(False)
-        col.addWidget(self._paths)
+        dcol.addWidget(self._paths)
+        self._detail.setVisible(False)
+        self._detail_expanded = False
+        col.addWidget(self._detail)
 
         # — consent gate (graduated GATE_LEVELS, embedded here) —
         if GateWidget is not None:
@@ -270,23 +292,45 @@ class FaceReview(QtWidgets.QWidget):
     def set_verdict(self, text):
         self._verdict.setText(text or "")
 
-    def set_credit(self, items):
-        """items: list of (label, value, note)."""
-        self._clear(self._credit_box)
-        for label, value, note in items or []:
-            row = QtWidgets.QLabel()
-            row.setTextFormat(Qt.RichText)
-            row.setWordWrap(True)
-            row.setText(
-                '<span style="color:%s; font-family:%s; letter-spacing:1px;">%s </span>'
-                '<span style="color:%s;">%s</span>'
-                '<span style="color:%s;">%s</span>' % (
-                    t.TEXT_TERTIARY, t.FONT_MONO, label,
-                    t.SIGNAL, value,
-                    t.TEXT_SECONDARY, ("  — " + note) if note else "",
-                )
+    def set_signed(self, author):
+        """The SIGNED authorship line — DISPLAY ONLY. Reports who produced the
+        result (the panel's model). It NEVER authors USD / customData."""
+        if author:
+            self._signed.setText("SIGNED  %s" % author)
+            self._signed.setVisible(True)
+        else:
+            self._signed.setText("")
+            self._signed.setVisible(False)
+
+    def _credit_row(self, label, value, note):
+        row = QtWidgets.QLabel()
+        row.setTextFormat(Qt.RichText)
+        row.setWordWrap(True)
+        row.setText(
+            '<span style="color:%s; font-family:%s; letter-spacing:1px;">%s </span>'
+            '<span style="color:%s;">%s</span>'
+            '<span style="color:%s;">%s</span>' % (
+                t.TEXT_TERTIARY, t.FONT_MONO, label,
+                t.SIGNAL, value,
+                t.TEXT_SECONDARY, ("  — " + note) if note else "",
             )
-            self._credit_box.addWidget(row)
+        )
+        return row
+
+    def set_credit(self, items):
+        """items: list of (label, value, note). DECISION leads the headline;
+        VIA / ROUTED / other provenance fold into the expandable detail
+        (the simplified synthesis keeps the headline taut)."""
+        self._clear(self._credit_box)
+        self._clear(self._via_box)
+        for label, value, note in items or []:
+            box = self._credit_box if str(label).upper() == "DECISION" else self._via_box
+            box.addWidget(self._credit_row(label, value, note))
+
+    def _toggle_detail(self):
+        self._detail_expanded = not self._detail_expanded
+        self._detail.setVisible(self._detail_expanded)
+        self._detail_btn.setText("▾ detail" if self._detail_expanded else "▸ detail")
 
     def set_flags(self, flags):
         """flags: list of (status, text). status in ok/pass/warn/fail/no."""
@@ -310,12 +354,14 @@ class FaceReview(QtWidgets.QWidget):
             self._paths.setVisible(False)
 
     def show_result(self, verdict=None, credit=None, flags=None, paths=None,
-                    render=None, meta=None):
+                    render=None, meta=None, signed=None):
         """Populate the whole surface for a landed result (one call)."""
         if render is not None or meta is not None:
             self.set_render(render, meta)
         if verdict is not None:
             self.set_verdict(verdict)
+        if signed is not None:
+            self.set_signed(signed)
         if credit is not None:
             self.set_credit(credit)
         if flags is not None:
