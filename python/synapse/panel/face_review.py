@@ -23,6 +23,7 @@ except ImportError:  # pragma: no cover - Houdini ships PySide6
 
 from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import components as c
+from synapse.panel.designsystem import fontload
 
 try:
     from synapse.panel.gate_widget import GateWidget
@@ -221,7 +222,8 @@ class FaceReview(QtWidgets.QWidget):
         # — taut benefit verdict —
         self._verdict = c.label("", role="title")
         self._verdict.setWordWrap(True)
-        self._verdict.setStyleSheet("color:%s; font-size:15px;" % t.TEXT_BRIGHT)
+        self._verdict.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
+        self._verdict.setFont(fontload.tracked_font("DISPLAY", 15))  # tight display
         col.addWidget(self._verdict)
 
         # — SIGNED authorship line — DISPLAY ONLY. It reports who produced the

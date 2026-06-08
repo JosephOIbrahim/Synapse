@@ -130,9 +130,9 @@ QLabel#DsBadge[kind="warn"]  {{ color: {t.WARN};  background: {t.STATE_TINTS["wa
 QLabel#DsBadge[kind="error"] {{ color: {t.ERROR}; background: {t.STATE_TINTS["error"]}; }}
 QLabel#DsBadge[kind="signal"]{{ color: {t.SIGNAL};background: {t.STATE_TINTS["signal"]}; }}
 
-/* ---- text inputs --------------------------------------------- */
+/* ---- text inputs (v9 call 2: darker field-inset grey) -------- */
 QTextEdit#DsInput, QLineEdit#DsField {{
-    background: {t.GROUND}; color: {t.TEXT_PRIMARY};
+    background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
     border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_MD}px;
     padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_UI)}px;
     selection-background-color: {t.SIGNAL_TINT_STRONG};

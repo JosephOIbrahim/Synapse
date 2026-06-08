@@ -163,6 +163,11 @@ class TestTokens:
         assert "0.5" in c["qt_rgba"]
 
     def test_typography(self):
+        # NOTE: this pins design/tokens.py (the upstream design source of truth),
+        # which is a SEPARATE artifact from the panel's vendored
+        # designsystem/tokens.py. The v9 type pass swapped the PANEL's families to
+        # the bundled Space Grotesk / Space Mono (pinned in test_panel_faces);
+        # design/tokens.py is out of that scope and keeps its families.
         from tokens import FONT_MONO, FONT_SANS, FONT_MONO_CSS, FONT_SANS_CSS
         assert FONT_MONO == "JetBrains Mono"
         assert FONT_SANS == "DM Sans"

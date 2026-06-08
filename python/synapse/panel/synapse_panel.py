@@ -24,6 +24,7 @@ from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import qss
 from synapse.panel.designsystem import components as c
 from synapse.panel.designsystem import motion
+from synapse.panel.designsystem import fontload
 
 # Proven runtime + widgets — composed, not rewritten. All optional so the panel
 # always instantiates (graceful degradation is a runtime contract).
@@ -160,6 +161,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self.setObjectName("DsRoot")
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.setMinimumWidth(t.PANEL_MIN_WIDTH)
+        # Load the bundled families BEFORE the stylesheet references them; a
+        # missing family raises the build-mismatch flag (logged) and falls back.
+        self._font_status = fontload.load_application_fonts()
+        self._font_build_mismatch = self._font_status.get("build_mismatch", False)
         self.setStyleSheet(qss.stylesheet(t.FONT_SCALE_DEFAULT))
 
         self._messages = []          # Anthropic-format conversation
@@ -242,9 +247,11 @@ class SynapsePanel(QtWidgets.QWidget):
         top.setSpacing(t.SPACE_SM)
         self._mark = c.MarkDot("idle", diameter=16)
         word = c.label("SYNAPSE", role="display")
-        word.setStyleSheet(
-            "color:%s; font-size:16px; letter-spacing:2px;" % t.TEXT_BRIGHT
-        )
+        # BRAND tracking lives on the QFont (Qt QSS has no letter-spacing); the
+        # stylesheet carries colour only.
+        word.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
+        word.setFont(fontload.tracked_font("BRAND", 16))
+        self._wordmark = word
         self._header_status = c.label("Standing by", role="caption")
         self._header_status.setStyleSheet("color:%s;" % t.TEXT_SECONDARY)
         overflow = c.Button("⋯", variant="ghost")
@@ -264,7 +271,8 @@ class SynapsePanel(QtWidgets.QWidget):
         # author signature — DISPLAY ONLY — leads the telemetry cluster it
         # answers for (the model that produces results in this panel).
         self._author_lbl = c.label("", role="caption")
-        self._author_lbl.setStyleSheet("color:%s; letter-spacing:1px;" % t.TEXT_TERTIARY)
+        self._author_lbl.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+        self._author_lbl.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL))
         self._author_lbl.setText(self._author_token())
         self._foot_dot = c.StatusDot("disconnected")
         self._foot_label = c.label("Not connected", role="caption")
@@ -333,6 +341,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._face_pills = {}
         for face, text in (("direct", "Direct"), ("work", "Work")):
             pill = c.Pill(text)
+            pill.setFont(fontload.tracked_font("LABEL", t.SIZE_UI + 2))  # tab tracking
             pill.clicked.connect(lambda _=False, f=face: self._set_face(f))
             lay.addWidget(pill)
             self._face_pills[face] = pill

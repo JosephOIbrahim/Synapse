@@ -44,6 +44,10 @@ HOU_WIRE    = "#6A9BC3"
 # ─────────────────────────────────────────────────────────────
 
 GROUND   = "#262626"   # input wells / deepest inset (Houdini PaneBorder, GREY .15)
+FIELD_INSET = "#1E1E1E" # darker editable-field grey for inputs (v9 call 2) —
+                        # Houdini's text-field well; deeper than GROUND so the
+                        # composer reads as an inset. CRUCIBLE cross-checks vs
+                        # hou.qt.color() live; the hex stays source of truth.
 PANEL    = "#2E2E2E"   # the panel body — Houdini's pane grey (DRKBASE, GREY .179)
 SURFACE  = "#3A3A3A"   # cards, drawers, containers (Houdini BackColor, GREY .229)
 RAISED   = "#565656"   # raised / hover surface (Houdini ButtonGradHi, GREY .338)
@@ -110,12 +114,15 @@ STATE_TINTS = {  # status-hue washes for cards/badges
 # 5. TYPOGRAPHY — families, sizes, and ROLES
 # ─────────────────────────────────────────────────────────────
 
-FONT_MONO = "JetBrains Mono"
-FONT_MONO_FALLBACKS = ("IBM Plex Mono", "Consolas", "monospace")
+# v9 type pass: the bundled families (designsystem/fonts/, loaded at panel init
+# via QFontDatabase — see fontload.py). Fallbacks keep the panel legible if the
+# bundle ever fails to register (the build-mismatch flag is raised then).
+FONT_MONO = "Space Mono"
+FONT_MONO_FALLBACKS = ("JetBrains Mono", "Consolas", "monospace")
 FONT_MONO_CSS = ", ".join(f'"{f}"' for f in (FONT_MONO,) + FONT_MONO_FALLBACKS)
 
-FONT_SANS = "DM Sans"
-FONT_SANS_FALLBACKS = ("Instrument Sans", "Segoe UI", "sans-serif")
+FONT_SANS = "Space Grotesk"
+FONT_SANS_FALLBACKS = ("DM Sans", "Segoe UI", "sans-serif")
 FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 
 # px scale (Qt). Calibrated to the panel's true rendering DPI (the canonical
@@ -140,6 +147,27 @@ TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
     "caption": (FONT_SANS_CSS, SIZE_SMALL, 400, 0.0),
     "status":  (FONT_MONO_CSS, SIZE_SMALL, 500, 0.5),
 }
+
+# v9 tracking map — em per role. Tracking lives on QFont (AbsoluteSpacing =
+# em × px), NEVER in QSS (Qt QSS has no letter-spacing). fontload.tracked_font()
+# reads this. Roles → where they apply:
+#   BRAND    +0.16  wordmark
+#   LABEL    +0.15  tabs, section + action labels
+#   LABEL_SM +0.12  credit keys, tiny labels
+#   DATA     +0.03  author, meter, paths, cookline, chip, mini
+#   DISPLAY  -0.015 verdict
+#   BODY      0     conversation, prompt
+TRACKING_EM: Dict[str, float] = {
+    "BRAND": 0.16, "LABEL": 0.15, "LABEL_SM": 0.12,
+    "DATA": 0.03, "DISPLAY": -0.015, "BODY": 0.0,
+}
+
+
+def tracking_px(role: str, px: float) -> float:
+    """AbsoluteSpacing pixels for a role at a given px size (em × px). Pure —
+    the QFont application lives in fontload.tracked_font()."""
+    return TRACKING_EM.get(role, 0.0) * px
+
 
 # One user font-scale drives BOTH chrome QSS and chat HTML (today only chat).
 FONT_SCALE_STEPS = (0.85, 1.0, 1.15, 1.3)

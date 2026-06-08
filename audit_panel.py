@@ -132,6 +132,15 @@ try:
     has_gate = bool(panel.findChildren(_GW))
     print(f"   review fold (gate)  : {has_gate}  " + tag(has_gate))
 
+    # v9 type pass — bundled families register, OR the build-mismatch flag is
+    # raised (the locked call permits the flagged-fallback state). Warnable.
+    from synapse.panel.designsystem import fontload
+    fst = fontload.font_status() or {}
+    fam_present = [f for f in ("Space Grotesk", "Space Mono") if f in fst.get("families", [])]
+    flagged = bool(fst.get("build_mismatch"))
+    print(f"   bundled fonts       : {fam_present}{' FLAGGED' if flagged else ''}  "
+          + tag(len(fam_present) == 2 or flagged, warnable=True))
+
     labels = panel.findChildren(QtWidgets.QLabel)
     print(f"   labels rendered     : {len(labels):>3}")
 except Exception as e:

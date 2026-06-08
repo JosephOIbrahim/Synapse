@@ -323,6 +323,42 @@ def test_done_edge_populates_review_verdict():
     assert "Dark_Glass" in p._review_face._verdict.text()
 
 
+def test_fonts_bundled_and_registered():
+    # Spike 6 — both bundled families register in QFontDatabase (or the
+    # build-mismatch flag is raised, per locked call #3 — never a hard fail).
+    p = _make_panel()
+    st = p._font_status
+    assert st["ok"] or st["build_mismatch"]
+    if st["ok"]:
+        assert "Space Grotesk" in st["families"] and "Space Mono" in st["families"]
+
+
+def test_tracking_applied_per_role():
+    # Spike 6 — the factory sets AbsoluteSpacing = em × px per role; BODY is
+    # untracked (default PercentageSpacing).
+    from synapse.panel.designsystem import fontload
+    from synapse.panel.designsystem import tokens as t
+    f = fontload.tracked_font("BRAND", 16)
+    AbsoluteSpacing = type(f).AbsoluteSpacing
+    assert f.letterSpacingType() == AbsoluteSpacing
+    # Qt stores AbsoluteSpacing in 26.6 fixed-point (1/64 px), so allow a
+    # quantization tolerance rather than exact float equality.
+    assert abs(f.letterSpacing() - t.TRACKING_EM["BRAND"] * 16) < 0.05
+    # negative tracking for the display role (tighter verdict)
+    fd = fontload.tracked_font("DISPLAY", 15)
+    assert fd.letterSpacing() < 0
+    # BODY: no absolute tracking applied
+    fb = fontload.tracked_font("BODY", 13)
+    assert fb.letterSpacingType() == type(fb).PercentageSpacing
+
+
+def test_wordmark_carries_brand_tracking():
+    # Spike 6 — the wordmark QFont carries BRAND AbsoluteSpacing (QSS can't).
+    p = _make_panel()
+    f = p._wordmark.font()
+    assert f.letterSpacingType() == type(f).AbsoluteSpacing
+
+
 def test_rail_author_token_shows():
     # Spike 5 — the rail carries the author signature (display-only); the label
     # tracks _author_token() regardless of whether the worker model imports.
