@@ -543,17 +543,19 @@ def register(register_fn: Callable[..., Any]) -> None:
 if __name__ == "__main__":             # pragma: no cover
     import sys
     q = sys.argv[1] if len(sys.argv) > 1 else "create a pyro burst with sparse pyro"
+    # sys.stdout.write, not print() — the project bans bare print() in synapse/
+    # source (tests/test_v5_features.py::test_no_print_in_source).
     try:
         out = synapse_scout(q, domain="both", k=5)
     except ScoutError as e:
-        print(f"SCOUT ERROR: {e}")
+        sys.stdout.write(f"SCOUT ERROR: {e}\n")
         sys.exit(1)
-    print(f"mode={out['mode']}  hits={len(out['hits'])}  warnings={out['warnings']}")
+    sys.stdout.write(f"mode={out['mode']}  hits={len(out['hits'])}  warnings={out['warnings']}\n")
     for h in out["hits"]:
-        print(f"  [{h['domain']}/{h['type']}] {h['source']}  ({h['score']})")
-        print(f"    {h['snippet'][:120]}...")
+        sys.stdout.write(f"  [{h['domain']}/{h['type']}] {h['source']}  ({h['score']})\n")
+        sys.stdout.write(f"    {h['snippet'][:120]}...\n")
     if out["symbols"]:
-        print("symbol grounding:")
+        sys.stdout.write("symbol grounding:\n")
         for s in out["symbols"]:
             flag = "OK " if s["found_in_corpus"] else "PHANTOM?"
-            print(f"  {flag} {s['symbol']}")
+            sys.stdout.write(f"  {flag} {s['symbol']}\n")
