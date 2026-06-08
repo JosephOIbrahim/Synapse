@@ -338,3 +338,30 @@ CTO unlocked agent teams + dynamic workflows. A **recon workflow** (`wiqu7nm7m`,
 - **area:** `docs/RFC_allocation_exposure_schema.md` — ARCHITECT proposal for Michael Gold: the five-rung `verified_by` migration (legacy read shim, conservative, never auto-promoted), the `Allocation` Ledger kind, the derived `Exposure` projection (recommend compute-on-read, never stored), and THE core typed-USD-schema-vs-customData question (3 placement options; recommend Option C = the as-built `/ledger/` namespaced-string-attr pattern, fully D-1..D-6-consistent). **Design-only; no schema authored.**
 - **why_it_matters:** Track-C gate condition (c). Blocked until Gold ratifies: the §2/§3/§8 FORGE specs and all Track-C code. The other two gate conditions are also unmet (no "begin Track C"; not ratified).
 - **artifact_path:** `docs/RFC_allocation_exposure_schema.md`
+
+---
+
+## Session 2026-06-08 — Track C Phase 1: the rung-scale migration · TRACK C
+
+**Gate opened:** all three Track-C conditions met — Track H green, operator "begin Track C", and the Allocation/Exposure schema RFC RATIFIED by the operator-as-substrate-authority (Option C: ledger namespaced string attrs; Exposure compute-on-read). Bridgeless run (CI/logic tier = 631).
+
+### Confirmation — Phase 1: five-rung scale single-sourced + legacy shim + Floor VerifiedClaim hook
+- **kind:** Confirmation · **verified_by:** V0_membership · **against_build:** 21.0.631 · **ts:** 2026-06-08
+- **change_applied:** new `python/synapse/science/rungs.py` (the five rungs {doc_only, V0_membership, V1_cook, V1_output, V1-degraded} single-sourced; `migrate_verified_by` legacy read shim — conservative: V1→V1_cook, NEVER V1_output; annotated-token recovery so `"V1 (deterministic pin)"` doesn't drop). New `python/synapse/science/verified_claim.py` (`VerifiedClaim` + `assert_verified_claim` — only V1_cook/V1_output/V1-degraded may back "verified"; doc_only/V0_membership rejected; layer ∈ {L0,L1,L2}; against_build mandatory; in-repo artifact required). `ledger.deposit` validates the five-token set FAIL-CLOSED (empty AND unknown); `backfill` migrates legacy→v5 before deposit and preserves the raw annotation in `extra.verified_by_raw` (D-2 lossless).
+- **measured_delta:** logic/CI pins green (`tests/test_phase1_rungs.py` + updated `tests/test_agent_usd_ledger.py`). Full suite **3301 passed, 68 skipped, 0 failed**.
+- **artifact_path:** `python/synapse/science/rungs.py`, `python/synapse/science/verified_claim.py`, `python/synapse/memory/ledger.py`, `tests/test_phase1_rungs.py`
+
+### CRUCIBLE — Phase 1 adversarial review (dynamic workflow, 3 lenses) — 2 blockers fixed forward
+- **kind:** CRUCIBLE · **verified_by:** V0_membership · **against_build:** 21.0.631 · **ts:** 2026-06-08
+- **measured_delta:** the Phase-1 crucible workflow (Floor / regression / spec lenses + synthesis) confirmed fail-closed on auto-promotion/fail-open/unmigrated-token axes and NO weakened tests, and caught two real blockers — both fixed forward: **BLOCKER-2 (Floor violation, fail-open):** the in-repo `artifact_path` guard split only on `/`, so on win32 `..\..\..\etc\passwd` was accepted → replaced with an `os.path.normpath` + both-separator predicate (`_is_outside_vc`), pinned with win32/POSIX traversal + drive-absolute cases. **BLOCKER-1 (D-2 loss):** `migrate_verified_by` exact-matched, silently dropping 6 verified legacy records with annotated tokens → leading-token recovery + a `test_backfill_skips_only_genuinely_empty` pin (skipped == non-migratable count) so the loss can never go silent.
+- **artifact_path:** `python/synapse/science/rungs.py`, `python/synapse/science/verified_claim.py`, `tests/test_phase1_rungs.py`, `tests/test_agent_usd_ledger.py`
+
+### DocConformance — deposit validation: runbook (closed) supersedes RFC §1.1 (open string)
+- **kind:** DocConformance · **verified_by:** V0_membership · **against_build:** 21.0.631 · **ts:** 2026-06-08
+- **claim_text:** "ledger.deposit accepts verified_by as an open string" (RFC §1.1) vs "validates the five-token set, fail-closed" (runbook Phase 1)
+- **claim_locus:** `docs/RFC_allocation_exposure_schema.md` §1.1 · **code_locus:** `ledger.deposit` (rejects any non-RUNGS token)
+- **bound_by:** mechanism · **holds:** **true (resolved)** — the runbook's CLOSED/fail-closed validation WON (it is the Floor-correct reading and supersedes the unratified RFC suggestion). Recorded so a future reader does not "fix" deposit back to open-string and reopen a fail-open hole.
+
+### Deferred — live rung-ASSIGNMENT owed on bridge restore (671 tier)
+- **kind:** Deferred · **verified_by:** V0_membership · **against_build:** 21.0.631 · **stakes:** medium · **probed:** false
+- **area:** the live rung-assignment driver (probe membership → V0_membership; createNode + cook(force=True) + no errors → V1_cook; flipbook pixel sample / reproduced-then-resolved bug → V1_output) is bridge-gated. Behind `SYNAPSE_INTEGRATION`, honestly skipped this bridgeless run (the skipped test body raises — cannot masquerade as a pass). Owed on bridge restore (671 live/interactive tier).

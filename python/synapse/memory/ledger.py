@@ -37,6 +37,7 @@ from typing import Dict, List, Optional
 
 from synapse.cognitive.tools.write_report import write_report
 from synapse.memory.agent_state import _safe_prim_name
+from synapse.science.rungs import RUNGS, migrate_verified_by
 
 # OpenUSD API — best-effort projection only. The per-record file is the source
 # of truth (D-1); USD is a derived read-projection that degrades to a no-op
@@ -123,6 +124,13 @@ class LedgerRecord:
     stakes: str = ""
     probed: str = ""
 
+    # ── Allocation-only fields (v5 §2 / RFC §2, kind="Allocation") ──
+    target: str = ""
+    verdict: str = ""               # admit | downstream | defer
+    thesis_locus: str = ""          # authoring | composition | proof | adjacent | downstream | out-of-scope
+    rationale: str = ""
+    decided_by: str = ""            # gate | operator-override
+
     # ── generic catch-all — anything not explicitly modeled (D-2) ──
     extra: Dict[str, str] = field(default_factory=dict)
 
@@ -154,6 +162,11 @@ _FIELD_ALIASES: Dict[str, str] = {
     "area": "area",
     "stakes": "stakes",
     "probed": "probed",
+    "target": "target",
+    "verdict": "verdict",
+    "thesis_locus": "thesis_locus",
+    "rationale": "rationale",
+    "decided_by": "decided_by",
 }
 
 # The set of attrs that are real modeled dataclass fields (for serialization).
@@ -275,10 +288,17 @@ def deposit(rec: "LedgerRecord", *, agent_usd_path: Optional[str] = None) -> Dic
 
     Idempotent: the same record maps to the same ``<kind>_<ts>_<sha8>.json`` file,
     so re-depositing overwrites that single file (no duplicate)."""
-    if not (rec.verified_by or "").strip():
+    vb = (rec.verified_by or "").strip()
+    if not vb:
         raise ValueError(
             "LedgerRecord.verified_by is mandatory (empty/missing) — "
             "the Ledger header rule rejects unverified entries."
+        )
+    if vb not in RUNGS:
+        raise ValueError(
+            f"LedgerRecord.verified_by={vb!r} is not a v5 rung {RUNGS} (fail-closed: "
+            "empty AND unknown rejected). Legacy tokens (V0/V1) must be migrated via "
+            "science.rungs.migrate_verified_by before deposit; backfill does this."
         )
     if not (rec.against_build or "").strip():
         raise ValueError(
@@ -499,13 +519,21 @@ def backfill(markdown_path: str, *, agent_usd_path: Optional[str] = None) -> Dic
     skipped = 0
     for rec in parsed:
         kinds[rec.kind or "(none)"] = kinds.get(rec.kind or "(none)", 0) + 1
-        if not (rec.verified_by or "").strip():
+        # Rung migration (v5 §2 read shim): legacy verified_by (V0/V1/V1-degraded,
+        # incl. annotated forms) → conservative v5 rung BEFORE the strict deposit.
+        # Empty/truly-unknown → skip (cannot deposit; fail-closed). The source
+        # markdown is NOT mutated — only the derived per-record file carries the
+        # migrated rung, with the raw annotation preserved in `extra` (D-2 lossless).
+        original_vb = (rec.verified_by or "").strip()
+        migrated = migrate_verified_by(rec.verified_by)
+        if not migrated:
             skipped += 1
             continue
+        if original_vb and original_vb != migrated:
+            rec.extra.setdefault("verified_by_raw", original_vb)
+        rec.verified_by = migrated
         # Build-pinning cutover (Task B.2): legacy entries predate the
         # against_build policy → read as the conservative CI/logic tier (631).
-        # The source markdown is NOT mutated; this stamps the derived per-record
-        # file only ("the reader treats pre-cutover entries as 631-scoped").
         if not (rec.against_build or "").strip():
             rec.against_build = CUTOVER_BUILD
         deposit(rec, agent_usd_path=agent_usd_path)

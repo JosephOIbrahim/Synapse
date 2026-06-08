@@ -65,7 +65,7 @@ def _record_of_kind(kind, **overrides):
     """Build a fully-populated LedgerRecord of a given kind (all fields set)."""
     base = dict(
         kind=kind,
-        verified_by="V1",
+        verified_by="V1_cook",   # v5 rung (was legacy "V1")
         against_build="21.0.631",
         change_applied="wired the ledger subtree",
         measured_delta="before=0 after=1 / quote\"slash\\newline\nsurvives",
@@ -245,7 +245,7 @@ class TestUsdProjection:
         prim = stage.GetPrimAtPath(f"/SYNAPSE/agent/ledger/{res['stem']}")
         assert prim.IsValid()
         assert prim.GetAttribute("synapse:kind").Get() == "DocConformance"
-        assert prim.GetAttribute("synapse:verified_by").Get() == "V1"
+        assert prim.GetAttribute("synapse:verified_by").Get() == "V1_cook"
         assert prim.GetAttribute("synapse:claim_text").Get() == "the doc claim, verbatim"
         # list field joined; extras namespaced.
         assert "shared/bridge.py" in prim.GetAttribute("synapse:artifact_path").Get()
@@ -289,8 +289,13 @@ class TestRealDataBackfill:
         fields_lost = 0
         deposited = 0
         for rec in recs:
-            if not rec.verified_by.strip():
+            original_vb = (rec.verified_by or "").strip()
+            migrated = ledger.migrate_verified_by(rec.verified_by)
+            if not migrated:
                 continue  # genuinely lacks verified_by → cannot deposit
+            if original_vb and original_vb != migrated:
+                rec.extra.setdefault("verified_by_raw", original_vb)  # D-2 lossless
+            rec.verified_by = migrated  # v5 rung migration (read shim)
             if not rec.against_build.strip():
                 rec.against_build = ledger.CUTOVER_BUILD  # build-pinning cutover (B.2)
             res = ledger.deposit(rec)
@@ -310,6 +315,21 @@ class TestRealDataBackfill:
         assert len(jsons) == summary["files_written"]
         # Kinds dict covers the real kinds.
         assert "Confirmation" in summary["kinds"]
+
+    def test_backfill_skips_only_genuinely_empty(self, ledger_tmp, no_pxr):
+        """BLOCKER-1a: D-2 lossless — backfill skips ONLY records that genuinely
+        lack verified_by. Annotated legacy tokens ('V1 (deterministic pin)') must
+        migrate, not silently drop. Pins the loss so a regression is loud."""
+        recs = ledger.parse_ledger_markdown(LEDGER_MD)
+        genuinely_empty = sum(
+            1 for r in recs if not ledger.migrate_verified_by(r.verified_by)
+        )
+        summary = ledger.backfill(LEDGER_MD)
+        assert summary["skipped"] == genuinely_empty, (
+            f"backfill skipped {summary['skipped']} but only {genuinely_empty} are "
+            "non-migratable — annotated legacy tokens are being dropped (D-2 loss)."
+        )
+        assert summary["files_written"] == summary["records"] - summary["skipped"]
 
 
 # ═════════════════════════════════════════════════════════════════
