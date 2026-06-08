@@ -701,8 +701,17 @@ def _get_scout_dispatcher() -> _Dispatcher:
         _scout_module.VEX_ROOT = store_root
         # Drop caches keyed on any previous root (defensive; usually fresh proc).
         for _cache in (_scout_module._CORPUS, _scout_module._FTS,
-                       _scout_module._DENSE, _scout_module._SYMS):
+                       _scout_module._DENSE, _scout_module._SYMS,
+                       _scout_module._TABLE_CACHE):
             _cache.clear()
+        # Host-layer version validation (Spike 2.5): stamp the running Houdini
+        # version so a symbol table built for a different build reads STALE.
+        # Boundary preserved — the hou read is here (host), not in scout.
+        try:
+            import hou  # type: ignore
+            _scout_module.EXPECTED_HOUDINI_VERSION = hou.applicationVersionString()
+        except Exception:
+            pass        # server outside Houdini: table integrity still checked, no version pin
     except Exception:
         logger.exception(
             "scout corpus materialization failed; synapse_scout will surface "

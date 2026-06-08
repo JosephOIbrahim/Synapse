@@ -36,7 +36,7 @@ def corpus(tmp_path, monkeypatch):
     (tmp_path / "semantic_index").mkdir()   # no manifest.json → lexical_only
     monkeypatch.setattr(scout, "RAG_ROOT", tmp_path)
     monkeypatch.setattr(scout, "VEX_ROOT", tmp_path)
-    for cache in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS):
+    for cache in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS, scout._TABLE_CACHE):
         cache.clear()
     return tmp_path
 
@@ -90,10 +90,16 @@ def test_where_type_filter(corpus):
 # ── symbol grounding (the phantom-API check) ─────────────────────────────────
 
 def test_symbol_grounding_flags_phantom(corpus):
+    # Membership comes from the introspected table (package fallback here), NOT
+    # the corpus — that demotion is the Spike 2.5 fix.
     out = scout.synapse_scout("how do I use hou.LopNode and hou.lopNetworks together")
-    syms = {s["symbol"]: s["found_in_corpus"] for s in out["symbols"]}
-    assert syms.get("hou.LopNode") is True       # real — present in d1
-    assert syms.get("hou.lopNetworks") is False  # phantom — absent from corpus
+    syms = {s["symbol"]: s["exists_in_runtime"] for s in out["symbols"]}
+    assert syms.get("hou.LopNode") is True       # real in H21.0.671
+    assert syms.get("hou.lopNetworks") is False  # phantom — absent from runtime
+    # 'documented' is the secondary corpus hint: hou.LopNode is in d1's text, the phantom is not.
+    docd = {s["symbol"]: s["documented"] for s in out["symbols"]}
+    assert docd.get("hou.LopNode") is True
+    assert docd.get("hou.lopNetworks") is False
 
 
 def test_no_symbols_when_query_has_none(corpus):
@@ -116,7 +122,7 @@ def test_bad_domain_raises(corpus):
 def test_missing_corpus_dir_raises(tmp_path, monkeypatch):
     monkeypatch.setattr(scout, "RAG_ROOT", tmp_path)      # no corpus/ subdir
     monkeypatch.setattr(scout, "VEX_ROOT", tmp_path)
-    for cache in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS):
+    for cache in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS, scout._TABLE_CACHE):
         cache.clear()
     with pytest.raises(scout.ScoutError):
         scout.synapse_scout("anything")
@@ -164,7 +170,7 @@ def _wire(monkeypatch, store, policy="warn"):
     monkeypatch.setattr(scout, "RAG_ROOT", store)
     monkeypatch.setattr(scout, "VEX_ROOT", store)
     monkeypatch.setattr(scout, "DRIFT_POLICY", policy)
-    for c in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS):
+    for c in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS, scout._TABLE_CACHE):
         c.clear()
 
 
@@ -217,3 +223,110 @@ def test_refuse_policy_passes_when_fresh(tmp_path, monkeypatch):
     _wire(monkeypatch, store, policy="refuse")
     out = scout.synapse_scout("hou.LopNode usd stage", k=3)   # fresh → no raise
     assert out["stale"] is False
+
+
+# ── Spike 2.5: introspected symbol table = membership authority ──────────────
+
+import hashlib
+
+
+def _write_table(path, symbols, version="21.0.671", corrupt=False):
+    syms = sorted(symbols)
+    digest = hashlib.blake2b("\n".join(syms).encode("utf-8"), digest_size=16).hexdigest()
+    if corrupt:
+        digest = "deadbeef" * 4          # wrong checksum → reads corrupt
+    path.write_text(json.dumps({
+        "schema": "scout_symbol_table/v1", "houdini_version": version,
+        "blake2b": digest, "symbol_count": len(syms), "symbols": syms,
+    }), encoding="utf-8")
+
+
+def _table_store(tmp_path, monkeypatch, entries, *, table_symbols=None,
+                 table_version="21.0.671", corrupt=False, expected_version=None,
+                 policy="warn"):
+    """A store wired into scout with the package table NEUTRALIZED, so membership
+    comes ONLY from the store table (or its absence) — hermetic and deterministic."""
+    cdir = tmp_path / "corpus"; cdir.mkdir()
+    (cdir / "entries.jsonl").write_text(
+        "\n".join(json.dumps(e) for e in entries), encoding="utf-8")
+    (tmp_path / "semantic_index").mkdir()
+    if table_symbols is not None:
+        _write_table(tmp_path / scout.SYMBOL_TABLE_NAME, table_symbols, table_version, corrupt)
+    monkeypatch.setattr(scout, "RAG_ROOT", tmp_path)
+    monkeypatch.setattr(scout, "VEX_ROOT", tmp_path)
+    monkeypatch.setattr(scout, "DRIFT_POLICY", policy)
+    monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", expected_version)
+    monkeypatch.setattr(scout, "_PKG_SYMBOL_TABLE", tmp_path / "no_pkg_table.json")  # neutralize fallback
+    for c in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS, scout._TABLE_CACHE):
+        c.clear()
+
+
+def test_real_but_undocumented_resolves_true(tmp_path, monkeypatch):
+    # THE case that was broken: real API, absent from corpus prose. Table says real.
+    _table_store(tmp_path, monkeypatch,
+                 entries=[{"id": "d", "type": "ref", "source": "d.md",
+                           "searchable_text": "general solaris notes, no class tokens here"}],
+                 table_symbols={"hou.LopNode"})
+    out = scout.synapse_scout("can I use hou.LopNode", k=3)
+    s = {x["symbol"]: x for x in out["symbols"]}["hou.LopNode"]
+    assert s["exists_in_runtime"] is True        # membership authority = the table
+    assert s["documented"] is False              # corpus never mentions it (the old false phantom)
+
+
+def test_documented_but_fake_flags_absent(tmp_path, monkeypatch):
+    # Adversarial: a fake token written into corpus prose must NOT resurrect it.
+    _table_store(tmp_path, monkeypatch,
+                 entries=[{"id": "d", "type": "ref", "source": "d.md",
+                           "searchable_text": "a blog wrongly mentions hou.lopNetworks here"}],
+                 table_symbols={"hou.LopNode"})   # table excludes the fake
+    out = scout.synapse_scout("use hou.lopNetworks", k=3)
+    s = {x["symbol"]: x for x in out["symbols"]}["hou.lopNetworks"]
+    assert s["exists_in_runtime"] is False       # table is authority, corpus is not
+    assert s["documented"] is True               # it IS in the prose — and still flagged absent
+
+
+def test_missing_table_membership_unknown_not_silent(tmp_path, monkeypatch):
+    _table_store(tmp_path, monkeypatch,
+                 entries=[{"id": "d", "type": "ref", "source": "d.md", "searchable_text": "x"}],
+                 table_symbols=None)              # no store table + package neutralized
+    out = scout.synapse_scout("use hou.LopNode", k=3)
+    assert out["table"]["loaded"] is False and out["table"]["stale"] is True
+    s = {x["symbol"]: x for x in out["symbols"]}["hou.LopNode"]
+    assert s["exists_in_runtime"] is None         # unknown, never a silent verdict
+    assert any("symbol table" in w.lower() for w in out["warnings"])
+
+
+def test_corrupt_table_reads_stale(tmp_path, monkeypatch):
+    _table_store(tmp_path, monkeypatch,
+                 entries=[{"id": "d", "type": "ref", "source": "d.md", "searchable_text": "x"}],
+                 table_symbols={"hou.LopNode"}, corrupt=True)
+    out = scout.synapse_scout("use hou.LopNode", k=3)
+    assert out["table"]["loaded"] is False and out["table"]["stale"] is True
+    assert {x["symbol"]: x for x in out["symbols"]}["hou.LopNode"]["exists_in_runtime"] is None
+
+
+def test_version_mismatch_reads_stale(tmp_path, monkeypatch):
+    _table_store(tmp_path, monkeypatch,
+                 entries=[{"id": "d", "type": "ref", "source": "d.md", "searchable_text": "x"}],
+                 table_symbols={"hou.LopNode"}, table_version="21.0.512",
+                 expected_version="21.0.671")
+    out = scout.synapse_scout("use hou.LopNode", k=3)
+    assert out["table"]["loaded"] is False and out["table"]["stale"] is True
+    assert "21.0.512" in out["table"]["reason"] and "21.0.671" in out["table"]["reason"]
+
+
+def test_version_match_trusts_table(tmp_path, monkeypatch):
+    _table_store(tmp_path, monkeypatch,
+                 entries=[{"id": "d", "type": "ref", "source": "d.md", "searchable_text": "x"}],
+                 table_symbols={"hou.LopNode"}, table_version="21.0.671",
+                 expected_version="21.0.671")
+    out = scout.synapse_scout("use hou.LopNode", k=3)
+    assert out["table"]["loaded"] is True and out["table"]["stale"] is False
+
+
+def test_refuse_policy_raises_on_missing_table(tmp_path, monkeypatch):
+    _table_store(tmp_path, monkeypatch,
+                 entries=[{"id": "d", "type": "ref", "source": "d.md", "searchable_text": "x"}],
+                 table_symbols=None, policy="refuse")
+    with pytest.raises(scout.ScoutError):
+        scout.synapse_scout("use hou.LopNode", k=3)

@@ -106,6 +106,18 @@ VEX_ROOT = Path(os.environ.get("SYNAPSE_VEX_ROOT", str(RAG_ROOT)))
 DRIFT_POLICY = os.environ.get("SYNAPSE_SCOUT_DRIFT_POLICY", "warn").lower().strip()
 CORPUS_MANIFEST_NAME = "manifest.json"   # store-root manifest (NOT semantic_index/manifest.json)
 
+# Symbol-table membership authority (Spike 2.5). EXISTENCE is a `dir()` question
+# against the live H21.0.671 runtime — NOT a substring-in-prose question. The
+# introspected table (host/introspect_runtime.py) is the SOLE membership verdict;
+# corpus presence is demoted to a `documented` retrieval hint.
+SYMBOL_TABLE_NAME = "symbol_table.json"  # optional store-root override
+# Committed package authority — travels to CI / headless / hython 631 where `hou`
+# and the gitignored .synapse store are both absent.
+_PKG_SYMBOL_TABLE = Path(__file__).resolve().parent / "data" / "h21_symbol_table.json"
+# Host-injected running Houdini version (mcp_server sets it when hou is importable).
+# When set, a table whose stamp != this version reads STALE (never silent-valid).
+EXPECTED_HOUDINI_VERSION: Optional[str] = None
+
 TEXT_FIELD = "searchable_text"          # per corpus entry schema: id, type, source, searchable_text
 RRF_K = 60                              # standard RRF damping constant
 DEFAULT_K = 6
@@ -199,6 +211,7 @@ _CORPUS: dict[str, tuple[list[dict], dict[str, dict]]] = {}
 _FTS: dict[str, sqlite3.Connection] = {}
 _DENSE: dict[str, tuple[Any, list[str], Embedder]] = {}
 _SYMS: dict[str, set[str]] = {}
+_TABLE_CACHE: dict[str, dict] = {}       # path -> read-once {symbols|None, meta, stale, reason}
 _WARN: list[str] = []                    # per-call warnings; reset at entry
 
 
@@ -387,9 +400,63 @@ def _corpus_symbols(store: Store) -> set[str]:
     return syms
 
 
-def _ground_symbols(query: str, stores: list[Store]) -> list[dict]:
-    """For each dotted API symbol in the query, report whether it appears
-    verbatim anywhere in the corpus. found_in_corpus=False => likely phantom."""
+def _symbol_table_path() -> Path:
+    """Store-root override (spec: 'in the canonical store, alongside the corpus')
+    wins; else the committed package authority."""
+    override = RAG_ROOT / SYMBOL_TABLE_NAME
+    return override if override.is_file() else _PKG_SYMBOL_TABLE
+
+
+def _read_symbol_table(path: Path) -> dict:
+    """Read + integrity-check the table file. Missing/corrupt reads STALE with
+    symbols=None — never a silent-valid empty table (invariant: 'fails loud')."""
+    if not path.is_file():
+        return {"symbols": None, "meta": {}, "stale": True,
+                "reason": f"no symbol table at {path}"}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        symbols = raw["symbols"]
+        recorded = raw["blake2b"]
+    except (json.JSONDecodeError, OSError, KeyError, TypeError) as e:
+        return {"symbols": None, "meta": {}, "stale": True,
+                "reason": f"symbol table unreadable/malformed: {e}"}
+    digest = hashlib.blake2b("\n".join(sorted(symbols)).encode("utf-8"),
+                             digest_size=16).hexdigest()
+    if digest != recorded:
+        return {"symbols": None, "meta": raw, "stale": True,
+                "reason": "symbol table checksum mismatch (corrupt)"}
+    return {"symbols": set(symbols), "meta": raw, "stale": False, "reason": None}
+
+
+def _load_symbol_table() -> tuple[Optional[set[str]], dict]:
+    """Return (symbols | None, status). The file read is cached; the host version
+    match is recomputed each call (EXPECTED_HOUDINI_VERSION is live host state).
+    A version-mismatched table is NOT trusted as authority (symbols -> None)."""
+    path = _symbol_table_path()
+    key = str(path)
+    if key not in _TABLE_CACHE:
+        _TABLE_CACHE[key] = _read_symbol_table(path)
+    rec = _TABLE_CACHE[key]
+    syms, meta = rec["symbols"], rec["meta"]
+    status = {"loaded": syms is not None, "path": key,
+              "houdini_version": meta.get("houdini_version"),
+              "stale": rec["stale"], "reason": rec["reason"]}
+    if syms is not None and EXPECTED_HOUDINI_VERSION and \
+            meta.get("houdini_version") != EXPECTED_HOUDINI_VERSION:
+        status.update(stale=True, loaded=False,
+                      reason=(f"table stamp {meta.get('houdini_version')} != running "
+                              f"{EXPECTED_HOUDINI_VERSION}"))
+        return None, status
+    return syms, status
+
+
+def _ground_symbols(query: str, stores: list[Store],
+                    table_syms: Optional[set[str]]) -> list[dict]:
+    """For each dotted API symbol in the query report:
+      exists_in_runtime — the MEMBERSHIP VERDICT from the introspected table
+                          (True/False; None when no trustworthy table is loaded).
+      documented        — secondary hint: does it appear verbatim in the corpus?
+    Existence is the table's call, not the corpus's — that demotion IS the fix."""
     wanted = sorted(set(_DOTTED_RE.findall(query)))
     if not wanted:
         return []
@@ -398,10 +465,12 @@ def _ground_symbols(query: str, stores: list[Store]) -> list[dict]:
         try:
             universe |= _corpus_symbols(s)
         except ScoutError:
-            # A missing/empty store can't ground symbols; skip it rather than
-            # fail the whole scout (the hits path already surfaced the problem).
+            # A missing/empty store can't supply the documented hint; skip it
+            # rather than fail the whole scout (the hits path surfaced it).
             continue
-    return [{"symbol": sym, "found_in_corpus": sym in universe} for sym in wanted]
+    return [{"symbol": sym,
+             "exists_in_runtime": (sym in table_syms) if table_syms is not None else None,
+             "documented": sym in universe} for sym in wanted]
 
 
 # --------------------------------------------------------------------------- #
@@ -484,8 +553,9 @@ def synapse_scout(
         {
           "query", "mode" ("hybrid" | "semantic_only" | "lexical_only"),
           "domain", "stale" (corpus drifted from its rag/ source — Spike 1),
+          "table": {loaded, houdini_version, stale, reason},  # membership authority
           "hits": [{id, domain, type, source, score, snippet}],
-          "symbols": [{symbol, found_in_corpus}],   # phantom-API check
+          "symbols": [{symbol, exists_in_runtime, documented}],   # membership + doc hint
           "warnings": [...]
         }
     """
@@ -497,7 +567,17 @@ def synapse_scout(
         raise ScoutError("[scout] query is empty.")
 
     stores = _stores()
-    stale = _check_freshness(stores)     # Floor: surface drift before grounding on it
+    stale = _check_freshness(stores)     # Floor: surface corpus drift before grounding (Spike 1)
+
+    # Membership authority (Spike 2.5): load the introspected symbol table. A
+    # missing/corrupt/version-mismatched table fails loud — never silent-valid.
+    table_syms, table_status = _load_symbol_table()
+    if table_status["stale"]:
+        msg = f"[scout] symbol table unavailable: {table_status['reason']} — membership unverified"
+        if DRIFT_POLICY == "refuse":
+            raise ScoutError(msg + " — SYNAPSE_SCOUT_DRIFT_POLICY=refuse")
+        _WARN.append(msg)
+
     fanout = max(k * 4, 20)              # retrieve wide, fuse, then trim to k
     per_retriever: list[list[str]] = []
     id_meta: dict[str, tuple[Store, dict]] = {}
@@ -554,8 +634,9 @@ def synapse_scout(
         "mode": mode,
         "domain": domain,
         "stale": stale,                  # Spike 1: corpus drifted from its rag/ source
+        "table": table_status,           # Spike 2.5: symbol-table membership authority status
         "hits": hits,
-        "symbols": _ground_symbols(query, stores),
+        "symbols": _ground_symbols(query, stores, table_syms),
         "warnings": list(_WARN),
     }
 
@@ -577,8 +658,11 @@ SYNAPSE_SCOUT_SCHEMA: dict = {
         "Scout the Houdini 21.0.671 documentation RAG and the VEX corpus for real "
         "reference material. CALL THIS BEFORE writing any unfamiliar hou.* / pdg.* / "
         "pxr.* call or VEX function — it returns grounding snippets AND, for each API "
-        "symbol in your query, whether it exists verbatim in the corpus. A symbol with "
-        "found_in_corpus=false does NOT exist in H21.0.671 and must not be used. "
+        "symbol in your query, whether it exists in the live H21.0.671 runtime "
+        "(checked against an introspected dir() symbol table, the membership authority). "
+        "A symbol with exists_in_runtime=false does NOT exist in H21.0.671 and must not "
+        "be used; exists_in_runtime=true is real even if undocumented. The 'documented' "
+        "flag is a secondary hint (does the corpus mention it). "
         "Prefer the returned snippets over your own recall of the Houdini API."
     ),
     "input_schema": {
@@ -626,5 +710,6 @@ if __name__ == "__main__":             # pragma: no cover
     if out["symbols"]:
         sys.stdout.write("symbol grounding:\n")
         for s in out["symbols"]:
-            flag = "OK " if s["found_in_corpus"] else "PHANTOM?"
-            sys.stdout.write(f"  {flag} {s['symbol']}\n")
+            flag = "OK " if s["exists_in_runtime"] else "PHANTOM?"
+            doc = "doc" if s["documented"] else "undoc"
+            sys.stdout.write(f"  {flag} [{doc}] {s['symbol']}\n")

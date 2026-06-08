@@ -126,11 +126,14 @@ class Scorecard:
                 "Proceed to the human embedder gate.")
 
 
-def _found_in_corpus(out: dict, symbol: str) -> Optional[bool]:
+def _exists_in_runtime(out: dict, symbol: str) -> Optional[bool]:
+    """The membership verdict from scout's introspected symbol table (Spike 2.5).
+    None = scout did not ground the symbol, or no trustworthy table was loaded."""
     for s in out.get("symbols", []):
         if s.get("symbol") == symbol:
-            return bool(s.get("found_in_corpus"))
-    return None        # scout did not ground the symbol at all (regex miss / no corpus)
+            v = s.get("exists_in_runtime")
+            return None if v is None else bool(v)
+    return None
 
 
 def run_eval(
@@ -148,13 +151,13 @@ def run_eval(
     real_missing: list[str] = []
     for sym in ground_truth.real:
         out = scout_fn(sym, k=1)
-        if _found_in_corpus(out, sym) is not True:
+        if _exists_in_runtime(out, sym) is not True:
             real_missing.append(sym)
 
     phantom_leaked: list[str] = []
     for sym in ground_truth.phantom:
         out = scout_fn(sym, k=1)
-        if _found_in_corpus(out, sym) is True:
+        if _exists_in_runtime(out, sym) is True:
             phantom_leaked.append(sym)
 
     # (c): conceptual top-k retrieval.
@@ -192,7 +195,7 @@ if __name__ == "__main__":             # pragma: no cover
     from synapse.cognitive.tools import scout as _scout, scout_ingest as _ingest
     info = _ingest.ensure_corpus()
     _scout.RAG_ROOT = Path(info["store_root"]); _scout.VEX_ROOT = Path(info["store_root"])
-    for _c in (_scout._CORPUS, _scout._FTS, _scout._DENSE, _scout._SYMS):
+    for _c in (_scout._CORPUS, _scout._FTS, _scout._DENSE, _scout._SYMS, _scout._TABLE_CACHE):
         _c.clear()
     card = run_eval()
     d = card.to_dict()

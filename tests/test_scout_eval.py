@@ -8,6 +8,7 @@ The eval must be HONEST and UN-GAMEABLE:
   * true-phantom recall < 1.0 the instant a fake token leaks into the corpus.
 """
 
+import hashlib
 import json
 
 import pytest
@@ -16,16 +17,29 @@ from synapse.cognitive.tools import scout, scout_eval
 from synapse.cognitive.tools.scout_eval import GroundTruth, run_eval
 
 
-def _wire_corpus(tmp_path, monkeypatch, entries):
-    """Hand-build a controlled store and point scout at it (caches cleared)."""
+def _wire_corpus(tmp_path, monkeypatch, entries, table_symbols=None):
+    """Hand-build a controlled store and point scout at it (caches cleared).
+
+    Membership is table-based (Spike 2.5). When ``table_symbols`` is given, a
+    controlled symbol table is written to the store and the package table is
+    neutralized — so the test drives membership deterministically. When None,
+    the committed package table is used (correct real/phantom answers)."""
     cdir = tmp_path / "corpus"; cdir.mkdir()
     (cdir / "entries.jsonl").write_text(
         "\n".join(json.dumps(e) for e in entries), encoding="utf-8")
     (tmp_path / "semantic_index").mkdir()
     monkeypatch.setattr(scout, "RAG_ROOT", tmp_path)
     monkeypatch.setattr(scout, "VEX_ROOT", tmp_path)
-    monkeypatch.setattr(scout, "DRIFT_POLICY", "warn")   # stale is irrelevant to the eval
-    for c in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS):
+    monkeypatch.setattr(scout, "DRIFT_POLICY", "warn")   # corpus-stale is irrelevant to the eval
+    if table_symbols is not None:
+        syms = sorted(table_symbols)
+        digest = hashlib.blake2b("\n".join(syms).encode("utf-8"), digest_size=16).hexdigest()
+        (tmp_path / scout.SYMBOL_TABLE_NAME).write_text(json.dumps({
+            "schema": "scout_symbol_table/v1", "houdini_version": "21.0.671",
+            "blake2b": digest, "symbol_count": len(syms), "symbols": syms,
+        }), encoding="utf-8")
+        monkeypatch.setattr(scout, "_PKG_SYMBOL_TABLE", tmp_path / "no_pkg_table.json")
+    for c in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS, scout._TABLE_CACHE):
         c.clear()
 
 
@@ -62,7 +76,7 @@ def test_clean_corpus_scores_perfect(tmp_path, monkeypatch):
          "searchable_text": "use hou.LopNode and pdg.EventType in the callback"},
         {"id": "karma_aov", "type": "ref", "source": "karma_aov.md",
          "searchable_text": "karma render passes aov beauty depth"},
-    ])
+    ], table_symbols={"hou.LopNode", "pdg.EventType"})   # reals present, phantoms absent
     card = run_eval(ground_truth=gt)
     assert card.false_phantom_rate == 0.0
     assert card.true_phantom_recall == 1.0
@@ -73,24 +87,24 @@ def test_clean_corpus_scores_perfect(tmp_path, monkeypatch):
 
 def test_missing_real_is_false_phantom_and_blocks(tmp_path, monkeypatch):
     gt = GroundTruth(real=("hou.LopNode", "hou.SopNode"), phantom=("hou.secure",), conceptual=())
+    # Table omits hou.SopNode → a real API the table fails to resolve = a coverage gap.
     _wire_corpus(tmp_path, monkeypatch, [
-        {"id": "lop", "type": "ref", "source": "lop.md",
-         "searchable_text": "only hou.LopNode appears here, not the other class"},
-    ])
+        {"id": "lop", "type": "ref", "source": "lop.md", "searchable_text": "notes"},
+    ], table_symbols={"hou.LopNode"})
     card = run_eval(ground_truth=gt)
-    assert card.false_phantom_rate == 0.5           # 1 of 2 real symbols missing
+    assert card.false_phantom_rate == 0.5           # 1 of 2 real symbols unresolved
     assert "hou.SopNode" in card.real_missing
     assert card.release_blocking is True            # a real API flagged fake = Sev-1
     assert "COVERAGE-GAP HALT" in card.verdict()
 
 
 def test_phantom_leak_detected(tmp_path, monkeypatch):
-    # A doc that literally writes a quarantined phantom must drop true-phantom recall.
+    # A fake token wrongly present IN THE TABLE must drop true-phantom recall
+    # (membership is the table's call now — a corpus mention alone can't leak it).
     gt = GroundTruth(real=("hou.LopNode",), phantom=("hou.lopNetworks", "hou.secure"), conceptual=())
     _wire_corpus(tmp_path, monkeypatch, [
-        {"id": "bad", "type": "ref", "source": "bad.md",
-         "searchable_text": "hou.LopNode and a bogus hou.lopNetworks reference slipped in"},
-    ])
+        {"id": "d", "type": "ref", "source": "d.md", "searchable_text": "notes"},
+    ], table_symbols={"hou.LopNode", "hou.lopNetworks"})   # phantom wrongly in the table
     card = run_eval(ground_truth=gt)
     assert card.true_phantom_recall == 0.5
     assert "hou.lopNetworks" in card.phantom_leaked
@@ -115,26 +129,28 @@ def test_conceptual_miss_counted(tmp_path, monkeypatch):
 def test_release_blocking_tracks_metric(tmp_path, monkeypatch):
     gt = GroundTruth(real=("hou.LopNode", "hou.SopNode"), phantom=(), conceptual=())
     _wire_corpus(tmp_path, monkeypatch, [
-        {"id": "lop", "type": "ref", "source": "lop.md",
-         "searchable_text": "hou.LopNode hou.SopNode both present"},
-    ])
+        {"id": "d", "type": "ref", "source": "d.md", "searchable_text": "notes"},
+    ], table_symbols={"hou.LopNode", "hou.SopNode"})
     card = run_eval(ground_truth=gt)
     # release_blocking is DEFINED as false_phantom_rate > 0 — un-loosenable.
     assert card.release_blocking == (card.false_phantom_rate > 0.0)
     assert card.false_phantom_rate == 0.0 and card.release_blocking is False
 
 
-# ── standing live-corpus safety pin (the phantom-catch invariant) ────────────
+# ── GATE 6: the standing live verdict pin (Spike 2.5 closed the Sev-1) ───────
 
-def test_quarantined_stay_flagged_on_live_corpus(monkeypatch):
-    """The four quarantined phantoms MUST flag not-found on the REAL canonical
-    corpus, through every change (harness invariant). This is release-blocking
-    in the other direction: a phantom leaking into the grounding corpus is a
-    Sev-1. Stable — those tokens will never be added to rag/.
+def test_gate6_false_phantom_zero_on_live_runtime_table(monkeypatch):
+    """GATE 6 — the verdict. Against the committed introspected H21.0.671 table
+    (the membership authority), EVERY eval bucket-(a) real API resolves and ALL
+    six phantoms (incl. the four quarantined) flag absent.
 
-    NOTE: this pins true-phantom recall, NOT the false-phantom rate. As of the
-    Spike 2 run the false-phantom rate is 0.667 (a known COVERAGE GAP, surfaced
-    via the capsule HALT) — that is open follow-up work, not pinned green here.
+    This is the HARD GREEN PIN that replaces the Spike-2 known coverage gap
+    (false_phantom_rate was 0.667 under corpus-substring membership). It is
+    release-blocking in BOTH directions now:
+      * false_phantom_rate must stay 0   (no real API told it's fake), and
+      * true_phantom_recall must stay 1  (no phantom resurrected).
+    conceptual_topk_hitrate is a sanity check — the membership fix doesn't touch
+    retrieval, so it must NOT have moved off its 0.333 baseline.
     """
     from pathlib import Path
     from synapse.cognitive.tools import scout_ingest
@@ -142,13 +158,19 @@ def test_quarantined_stay_flagged_on_live_corpus(monkeypatch):
         info = scout_ingest.ensure_corpus()
     except Exception:
         pytest.skip("canonical rag/ corpus unavailable in this environment")
+    if not scout._PKG_SYMBOL_TABLE.is_file():
+        pytest.skip("committed symbol table absent in this environment")
     monkeypatch.setattr(scout, "RAG_ROOT", Path(info["store_root"]))
     monkeypatch.setattr(scout, "VEX_ROOT", Path(info["store_root"]))
-    for c in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS):
+    for c in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS, scout._TABLE_CACHE):
         c.clear()
     card = run_eval()
-    assert card.true_phantom_recall == 1.0          # nothing fake leaked in
+    assert card.false_phantom_rate == 0.0, f"real APIs unresolved: {card.real_missing}"
+    assert card.true_phantom_recall == 1.0          # nothing fake resurrected
     assert card.phantom_leaked == ()
+    assert card.release_blocking is False
+    # retrieval untouched by the membership fix — conceptual recall unchanged.
+    assert card.conceptual_topk_hitrate == round(2 / 6, 4)
 
 
 def test_scorecard_to_dict_schema(tmp_path, monkeypatch):

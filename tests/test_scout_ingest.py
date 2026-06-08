@@ -114,11 +114,12 @@ def test_ensure_idempotent_and_scout_reads(tmp_path, monkeypatch):
 
     monkeypatch.setattr(scout, "RAG_ROOT", store)
     monkeypatch.setattr(scout, "VEX_ROOT", store)
-    for c in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS):
+    for c in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS, scout._TABLE_CACHE):
         c.clear()
     out = scout.synapse_scout("karma render usd stage hou.LopNode", k=3)
     assert out["mode"] == "lexical_only" and out["hits"]   # non-zero hits off the store
-    syms = {s["symbol"]: s["found_in_corpus"] for s in out["symbols"]}
+    # Membership now comes from the introspected table (package fallback), not the corpus.
+    syms = {s["symbol"]: s["exists_in_runtime"] for s in out["symbols"]}
     assert syms.get("hou.LopNode") is True
 
 
