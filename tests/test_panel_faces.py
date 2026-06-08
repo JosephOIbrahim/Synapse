@@ -390,6 +390,33 @@ def test_context_line_reflects_frame_and_selection():
     assert "f1" in p._ctx_label.text()
 
 
+def test_reduced_motion_stops_animations():
+    # Spike 7 — reduced-motion honored: the thinking pulse stops the mark spin
+    # AND the cook-preview pulse (no continuous repaints).
+    from synapse.panel.designsystem import tokens as t
+    t.set_reduced_motion(True)
+    try:
+        p = _make_panel()
+        p._set_thinking(True)
+        assert not p._mark._spin.isActive(), "mark must not spin under reduced-motion"
+        assert not p._work_face._cook._timer.isActive(), "cook must not pulse"
+    finally:
+        t.set_reduced_motion(None)
+
+
+def test_motion_default_still_animates():
+    # Guard the inverse: with motion on (default), the thinking pulse runs — so
+    # the reduced-motion test isn't trivially passing on a dead animation.
+    from synapse.panel.designsystem import tokens as t
+    t.set_reduced_motion(False)
+    try:
+        p = _make_panel()
+        p._set_thinking(True)
+        assert p._work_face._cook._timer.isActive()
+    finally:
+        t.set_reduced_motion(None)
+
+
 def test_classify_tool_two_axes():
     # Mile 6 — the verb × context taxonomy classifies tools sensibly.
     from synapse.panel.tool_filter import classify_tool

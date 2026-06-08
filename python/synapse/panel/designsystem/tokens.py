@@ -12,6 +12,7 @@ being used interchangeably), a complete INTERACTION-STATE ramp
 ROLES (not just sizes), MOTION tokens, and one STATUS grammar.
 """
 
+import os
 from typing import Dict, Tuple, Any
 
 # ─────────────────────────────────────────────────────────────
@@ -196,6 +197,25 @@ DUR_FAST = 120   # ms — hover/press
 DUR_BASE = 200   # ms — page fades
 DUR_SLOW = 320   # ms — drawer open, gate flash
 EASE = "OutCubic"  # resolved to QEasingCurve.Type.OutCubic by motion.py
+
+# Reduced-motion (v9 Spike 7). When on, continuous animations (the mark spin,
+# the cook-preview pulse, the thinking toy) don't run and fades jump to their
+# end. Explicit override wins; otherwise the SYNAPSE_REDUCED_MOTION env var.
+_REDUCED_MOTION = None  # None → consult env; True/False → explicit override
+
+
+def set_reduced_motion(on) -> None:
+    """Force reduced-motion on/off, or pass None to defer to the env var."""
+    global _REDUCED_MOTION
+    _REDUCED_MOTION = None if on is None else bool(on)
+
+
+def reduced_motion() -> bool:
+    """True when motion should be minimized (accessibility / low-power)."""
+    if _REDUCED_MOTION is not None:
+        return _REDUCED_MOTION
+    return os.environ.get("SYNAPSE_REDUCED_MOTION", "").strip().lower() in (
+        "1", "true", "yes", "on")
 
 # ─────────────────────────────────────────────────────────────
 # 8. STATUS grammar — ONE vocabulary (replaces Connected/Ready/Fidelity 1.0)

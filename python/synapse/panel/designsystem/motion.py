@@ -25,6 +25,8 @@ def _ease():
 
 def fade_in(widget, duration=t.DUR_BASE):
     """Fade a widget from transparent to opaque. Returns the animation."""
+    if t.reduced_motion():
+        duration = 0   # honor reduced-motion — jump straight to opaque
     eff = QtWidgets.QGraphicsOpacityEffect(widget)
     widget.setGraphicsEffect(eff)
     anim = QPropertyAnimation(eff, b"opacity", widget)
@@ -39,6 +41,8 @@ def fade_in(widget, duration=t.DUR_BASE):
 
 def fade_out(widget, duration=t.DUR_FAST, on_done=None):
     """Fade a widget to transparent; optionally call on_done() when finished."""
+    if t.reduced_motion():
+        duration = 0   # honor reduced-motion — jump straight to transparent
     eff = QtWidgets.QGraphicsOpacityEffect(widget)
     widget.setGraphicsEffect(eff)
     anim = QPropertyAnimation(eff, b"opacity", widget)
@@ -55,6 +59,8 @@ def fade_out(widget, duration=t.DUR_FAST, on_done=None):
 
 def flash(widget, prop=b"maximumHeight", to=None, duration=t.DUR_SLOW):
     """Generic eased property tween (e.g. height for a drawer reveal)."""
+    if t.reduced_motion():
+        duration = 0   # honor reduced-motion — jump straight to the end value
     anim = QPropertyAnimation(widget, prop, widget)
     anim.setDuration(duration)
     anim.setEndValue(to)

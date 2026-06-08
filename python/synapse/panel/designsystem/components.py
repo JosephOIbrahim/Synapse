@@ -156,7 +156,8 @@ class MarkDot(QtWidgets.QWidget):
         self.update()
 
     def _sync_timer(self):
-        if self._state == "working":
+        # Reduced-motion: a working mark stays a static disc (no sweep).
+        if self._state == "working" and not t.reduced_motion():
             if not self._spin.isActive():
                 self._spin.start()
         elif self._spin.isActive():

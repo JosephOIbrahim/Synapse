@@ -34,6 +34,8 @@ class BouncingToy(QtWidgets.QWidget):
         self._anim.setEasingCurve(QEasingCurve.Linear)  # the parabola does the bounce
 
     def start(self):
+        if t.reduced_motion():   # honor reduced-motion — no bounce loop
+            return
         if self._anim.state() != QPropertyAnimation.Running:
             self._anim.start()
 

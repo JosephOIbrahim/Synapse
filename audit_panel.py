@@ -107,6 +107,7 @@ print(f"   hierarchy: {distinct} distinct steps  " + tag(distinct >= 4, warnable
 
 # ---------- B · live build ----------
 print("\n-- USABILITY · live offscreen build " + "-" * 31)
+panel = None
 try:
     import run_panel  # registers hou stub + path
     try:
@@ -147,6 +148,81 @@ except Exception as e:
     WARNS.append(1)
     print(f"   [skip] live build unavailable here: {type(e).__name__}: {e}")
     print("          (run this one inside hython for the real G3 — fonts differ)")
+
+# ---------- B2 · v9 behavioral invariants (the finish-line gate) ----------
+print("\n-- v9 INVARIANTS · same-pane law + state-as-status " + "-" * 17)
+if panel is None:
+    WARNS.append(1)
+    print("   [skip] no panel built — invariants need the offscreen build")
+else:
+    try:
+        import glob as _glob, re as _re
+
+        # 1 · no pane-spawn (static scan) — no handler creates/moves a pane
+        pkg = os.path.join(PYDIR, "synapse", "panel")
+        SPAWN = _re.compile(r"createFloatingPanel|\.createTab\(|setCurrentTab\(|\.floatPanel\(")
+        offenders = []
+        for f in _glob.glob(os.path.join(pkg, "*.py")):
+            try:
+                src = open(f, encoding="utf-8").read()
+            except Exception:
+                continue
+            if SPAWN.search(src):
+                offenders.append(os.path.basename(f))
+        print(f"   no pane spawn (scan) : {offenders or 'clean'}  " + tag(not offenders))
+
+        # 2 · no auto-switch — state events must NOT move the visible tab
+        idx0 = panel._faces.currentIndex()
+        panel._set_busy(True)
+        panel._on_tool_status("houdini_render", "running", "")
+        panel._on_gate_raised({"level": "approve"})
+        print(f"   no auto-switch       : idx {idx0}->{panel._faces.currentIndex()}  "
+              + tag(panel._faces.currentIndex() == idx0))
+
+        # 3 · mark-as-status — the rail mark tracks agent state
+        panel._set_busy(False)
+        panel._set_busy(True)
+        work_mark = panel._mark._state
+        panel._set_busy(False)
+        done_mark = panel._mark._state
+        print(f"   mark-as-status       : work={work_mark} done={done_mark}  "
+              + tag(work_mark == "working" and done_mark == "done"))
+
+        # 4 · state-persistence across a manual tab switch
+        panel._set_face("direct")
+        panel._set_face("work")
+        print(f"   state persistence    : work_substate={panel._work_substate}  "
+              + tag(panel._work_substate == "done" and panel._work_stack.currentIndex() == 1))
+
+        # 5 · reduced-motion honored — continuous timers go quiet.
+        # NB: run_panel.build_panel() flushed + re-imported synapse.*, so the
+        # top-level `t` is stale; bind the LIVE tokens module the widgets use.
+        from synapse.panel.designsystem import tokens as _tl
+        _tl.set_reduced_motion(True)
+        try:
+            panel._set_thinking(True)
+            rm_ok = (not panel._mark._spin.isActive()
+                     and not panel._work_face._cook._timer.isActive())
+        finally:
+            panel._set_thinking(False)
+            _tl.set_reduced_motion(None)
+        print(f"   reduced-motion       : timers quiet={rm_ok}  " + tag(rm_ok))
+
+        # 6 · adversarial cook->done sweep — the transition is content-only,
+        #     never a tab switch (20 cycles)
+        base = panel._faces.currentIndex()
+        sweep_ok = True
+        for _ in range(20):
+            panel._set_busy(True)
+            if panel._faces.currentIndex() != base or panel._work_stack.currentIndex() != 0:
+                sweep_ok = False; break
+            panel._set_busy(False)
+            if panel._faces.currentIndex() != base or panel._work_stack.currentIndex() != 1:
+                sweep_ok = False; break
+        print(f"   cook->done sweep     : content-only x20  " + tag(sweep_ok))
+    except Exception as e:
+        FAILS.append(1)
+        print(f"   [FAIL] v9 invariants: {type(e).__name__}: {e}")
 
 # ---------- verdict ----------
 print("\n" + "=" * 70)

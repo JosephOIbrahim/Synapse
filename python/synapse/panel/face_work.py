@@ -88,8 +88,12 @@ class BucketGrid(QtWidgets.QWidget):
         self.update()
 
     def start_pulse(self):
-        """Indeterminate 'busy' sweep (no counted progress available)."""
+        """Indeterminate 'busy' sweep (no counted progress available). Honors
+        reduced-motion: shows a static grid instead of the scanline sweep."""
         self._determinate = False
+        if t.reduced_motion():
+            self.update()
+            return
         if not self._timer.isActive():
             self._timer.start()
 
