@@ -120,3 +120,47 @@ def test_ensure_idempotent_and_scout_reads(tmp_path, monkeypatch):
     assert out["mode"] == "lexical_only" and out["hits"]   # non-zero hits off the store
     syms = {s["symbol"]: s["found_in_corpus"] for s in out["symbols"]}
     assert syms.get("hou.LopNode") is True
+
+
+# ── Spike 1: freshness digest + manifest ─────────────────────────────────────
+
+def test_build_writes_freshness_manifest(tmp_path):
+    rag = _make_rag(tmp_path / "rag", {"a.md": "hou.Node x", "b.md": "hou.Geometry y"})
+    store = tmp_path / "store"
+    scout_ingest.build_corpus(rag_root=str(rag), out_root=str(store))
+    mfp = store / scout_ingest.CORPUS_MANIFEST_NAME
+    assert mfp.is_file()
+    m = json.loads(mfp.read_text(encoding="utf-8"))
+    assert m["schema"] == scout_ingest.MANIFEST_SCHEMA
+    assert m["source_root"] == str(rag)
+    assert m["source_digest"] == scout_ingest.source_digest(rag)   # matches a fresh recompute
+    assert m["source_file_count"] == 3                              # 2 .md + semantic_index.json (_make_rag writes it)
+
+
+def test_source_digest_stable_and_sensitive(tmp_path):
+    rag = _make_rag(tmp_path / "rag", {"a.md": "hou.Node x"})
+    d1 = scout_ingest.source_digest(rag)
+    assert d1 == scout_ingest.source_digest(rag)                    # stable: same inputs → same digest
+    # Mutating a source file (size changes) drifts the digest.
+    (rag / "skills" / "houdini21-reference" / "a.md").write_text("hou.Node x EXTENDED", encoding="utf-8")
+    assert scout_ingest.source_digest(rag) != d1
+
+
+def test_source_digest_ignores_unrelated_files(tmp_path):
+    rag = _make_rag(tmp_path / "rag", {"a.md": "hou.Node x"})
+    d1 = scout_ingest.source_digest(rag)
+    # A file outside the ingested source set must NOT raise a false-stale.
+    (rag / "skills" / "houdini21-reference" / "notes.txt").write_text("scratch", encoding="utf-8")
+    (rag / "README.md").write_text("repo readme", encoding="utf-8")
+    assert scout_ingest.source_digest(rag) == d1
+
+
+def test_ensure_rebuilds_manifestless_corpus(tmp_path):
+    """A pre-Spike-1 store (entries but no manifest) self-heals on ensure_corpus."""
+    rag = _make_rag(tmp_path / "rag", {"a.md": "hou.Node x"})
+    store = tmp_path / "store"
+    scout_ingest.build_corpus(rag_root=str(rag), out_root=str(store))
+    (store / scout_ingest.CORPUS_MANIFEST_NAME).unlink()            # simulate old store
+    r = scout_ingest.ensure_corpus(rag_root=str(rag), out_root=str(store))
+    assert r.get("cached") is not True                              # rebuilt, not served stale
+    assert (store / scout_ingest.CORPUS_MANIFEST_NAME).is_file()    # manifest restored

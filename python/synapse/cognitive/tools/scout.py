@@ -96,6 +96,16 @@ class ScoutError(RuntimeError):
 RAG_ROOT = Path(os.environ.get("SYNAPSE_RAG_ROOT", r"G:\HOUDINI21_RAG_SYSTEM"))
 VEX_ROOT = Path(os.environ.get("SYNAPSE_VEX_ROOT", str(RAG_ROOT)))
 
+# Drift policy (Spike 1): a corpus is a CACHE derived from rag/ — caches drift,
+# and a drifted grounding corpus produces FALSE phantoms (flags a now-real API as
+# fake), which is worse than no gate. At load scout recomputes the rag/ digest and
+# compares it to the corpus manifest.
+#   "warn"   (default) — surface stale:true + a warning line; still return hits.
+#   "refuse"           — raise ScoutError on drift (hard gate for studio use).
+# A missing/corrupt manifest reads as STALE, never silently fresh (invariant 1).
+DRIFT_POLICY = os.environ.get("SYNAPSE_SCOUT_DRIFT_POLICY", "warn").lower().strip()
+CORPUS_MANIFEST_NAME = "manifest.json"   # store-root manifest (NOT semantic_index/manifest.json)
+
 TEXT_FIELD = "searchable_text"          # per corpus entry schema: id, type, source, searchable_text
 RRF_K = 60                              # standard RRF damping constant
 DEFAULT_K = 6
@@ -395,6 +405,62 @@ def _ground_symbols(query: str, stores: list[Store]) -> list[dict]:
 
 
 # --------------------------------------------------------------------------- #
+#  Corpus freshness  (Spike 1 — the Floor: the map must match the building)    #
+# --------------------------------------------------------------------------- #
+def _freshness_for(store_root: Path) -> Optional[dict]:
+    """Verify the corpus at ``store_root`` still matches its rag/ source.
+
+    Returns None when no corpus is present at this root (nothing to verify here).
+    Otherwise ``{"stale": bool, "reason": str|None}``. A missing/corrupt manifest,
+    or a source that can no longer be digested, reads as STALE — never silently
+    fresh (invariant 1). Recomputed every call (never cached) so a mid-process
+    mutation of rag/ is caught live.
+    """
+    corpus_fp = store_root / "corpus" / "entries.jsonl"
+    if not corpus_fp.is_file():
+        return None                       # no corpus here — the hits path will surface that
+
+    manifest_fp = store_root / CORPUS_MANIFEST_NAME
+    if not manifest_fp.is_file():
+        return {"stale": True, "reason": f"no corpus manifest at {manifest_fp} "
+                                         "(unverifiable provenance)"}
+    try:
+        manifest = json.loads(manifest_fp.read_text(encoding="utf-8"))
+        recorded = manifest["source_digest"]
+        source_root = Path(manifest["source_root"])
+    except (json.JSONDecodeError, OSError, KeyError, TypeError) as e:
+        return {"stale": True, "reason": f"corpus manifest unreadable/malformed: {e}"}
+
+    if not source_root.exists():
+        return {"stale": True, "reason": f"rag/ source {source_root} is gone "
+                                         "(cannot confirm freshness)"}
+
+    from synapse.cognitive.tools import scout_ingest   # lazy: avoid import cycle
+    current = scout_ingest.source_digest(source_root)
+    if current != recorded:
+        return {"stale": True, "reason": f"rag/ source changed since ingest "
+                                         f"(manifest {recorded[:12]}… != live {current[:12]}…)"}
+    return {"stale": False, "reason": None}
+
+
+def _check_freshness(stores: list[Store]) -> bool:
+    """Check every unique store root; surface staleness per DRIFT_POLICY.
+    Returns True if ANY checked store is stale. In 'refuse' mode, raises on the
+    first stale store instead of returning."""
+    stale = False
+    for root in sorted({s.corpus_dir.parent for s in stores}):
+        verdict = _freshness_for(root)
+        if verdict is None or not verdict["stale"]:
+            continue
+        stale = True
+        msg = f"[scout] corpus STALE: {verdict['reason']}"
+        if DRIFT_POLICY == "refuse":
+            raise ScoutError(msg + " — SYNAPSE_SCOUT_DRIFT_POLICY=refuse")
+        _WARN.append(msg)
+    return stale
+
+
+# --------------------------------------------------------------------------- #
 #  The tool                                                                    #
 # --------------------------------------------------------------------------- #
 def synapse_scout(
@@ -417,7 +483,8 @@ def synapse_scout(
     Returns a JSON-serializable dict:
         {
           "query", "mode" ("hybrid" | "semantic_only" | "lexical_only"),
-          "domain", "hits": [{id, domain, type, source, score, snippet}],
+          "domain", "stale" (corpus drifted from its rag/ source — Spike 1),
+          "hits": [{id, domain, type, source, score, snippet}],
           "symbols": [{symbol, found_in_corpus}],   # phantom-API check
           "warnings": [...]
         }
@@ -430,6 +497,7 @@ def synapse_scout(
         raise ScoutError("[scout] query is empty.")
 
     stores = _stores()
+    stale = _check_freshness(stores)     # Floor: surface drift before grounding on it
     fanout = max(k * 4, 20)              # retrieve wide, fuse, then trim to k
     per_retriever: list[list[str]] = []
     id_meta: dict[str, tuple[Store, dict]] = {}
@@ -485,6 +553,7 @@ def synapse_scout(
         "query": query,
         "mode": mode,
         "domain": domain,
+        "stale": stale,                  # Spike 1: corpus drifted from its rag/ source
         "hits": hits,
         "symbols": _ground_symbols(query, stores),
         "warnings": list(_WARN),

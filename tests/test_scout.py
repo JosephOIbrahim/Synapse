@@ -141,3 +141,79 @@ def test_register_into_real_dispatcher():
     d = Dispatcher(is_testing=True)
     scout.register(d.register)
     assert d.is_registered("synapse_scout")
+
+
+# ── Spike 1: corpus freshness / drift gate ───────────────────────────────────
+
+from synapse.cognitive.tools import scout_ingest
+
+
+def _build_store(tmp_path):
+    """A real rag/ fixture + a build_corpus store (with freshness manifest)."""
+    rag = tmp_path / "rag"
+    ref = rag / "skills" / "houdini21-reference"; ref.mkdir(parents=True)
+    (ref / "lop.md").write_text("hou.LopNode editableStage usd karma render stage", encoding="utf-8")
+    meta = rag / "documentation" / "_metadata"; meta.mkdir(parents=True)
+    (meta / "semantic_index.json").write_text("{}", encoding="utf-8")
+    store = tmp_path / "store"
+    scout_ingest.build_corpus(rag_root=str(rag), out_root=str(store))
+    return rag, store
+
+
+def _wire(monkeypatch, store, policy="warn"):
+    monkeypatch.setattr(scout, "RAG_ROOT", store)
+    monkeypatch.setattr(scout, "VEX_ROOT", store)
+    monkeypatch.setattr(scout, "DRIFT_POLICY", policy)
+    for c in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS):
+        c.clear()
+
+
+def test_fresh_corpus_not_stale(tmp_path, monkeypatch):
+    _, store = _build_store(tmp_path)
+    _wire(monkeypatch, store)
+    out = scout.synapse_scout("hou.LopNode usd stage", k=3)
+    assert out["stale"] is False
+    assert not any("stale" in w.lower() for w in out["warnings"])
+
+
+def test_mutated_rag_flags_stale_loud(tmp_path, monkeypatch):
+    rag, store = _build_store(tmp_path)
+    _wire(monkeypatch, store)
+    # Mutate the rag/ source AFTER ingest → digest diverges from the manifest.
+    (rag / "skills" / "houdini21-reference" / "lop.md").write_text(
+        "hou.LopNode editableStage usd karma render stage MUTATED", encoding="utf-8")
+    out = scout.synapse_scout("hou.LopNode usd stage", k=3)
+    assert out["stale"] is True
+    assert any("stale" in w.lower() for w in out["warnings"])
+    assert out["hits"]                       # warn-mode still serves hits
+
+
+def test_missing_manifest_reads_stale_not_fresh(tmp_path, monkeypatch):
+    _, store = _build_store(tmp_path)
+    (store / scout_ingest.CORPUS_MANIFEST_NAME).unlink()    # corpus present, manifest gone
+    _wire(monkeypatch, store)
+    out = scout.synapse_scout("hou.LopNode usd stage", k=3)
+    assert out["stale"] is True              # NOT silently fresh (invariant 1)
+
+
+def test_corrupt_manifest_reads_stale(tmp_path, monkeypatch):
+    _, store = _build_store(tmp_path)
+    (store / scout_ingest.CORPUS_MANIFEST_NAME).write_text("{ not json", encoding="utf-8")
+    _wire(monkeypatch, store)
+    out = scout.synapse_scout("hou.LopNode usd stage", k=3)
+    assert out["stale"] is True
+
+
+def test_refuse_policy_raises_on_drift(tmp_path, monkeypatch):
+    rag, store = _build_store(tmp_path)
+    _wire(monkeypatch, store, policy="refuse")
+    (rag / "skills" / "houdini21-reference" / "lop.md").write_text("MUTATED", encoding="utf-8")
+    with pytest.raises(scout.ScoutError):
+        scout.synapse_scout("hou.LopNode usd stage", k=3)
+
+
+def test_refuse_policy_passes_when_fresh(tmp_path, monkeypatch):
+    _, store = _build_store(tmp_path)
+    _wire(monkeypatch, store, policy="refuse")
+    out = scout.synapse_scout("hou.LopNode usd stage", k=3)   # fresh → no raise
+    assert out["stale"] is False

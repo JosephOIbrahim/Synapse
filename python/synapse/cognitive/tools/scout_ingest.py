@@ -23,9 +23,17 @@ Contract: pure Python, ZERO ``hou`` (passes tests/test_cognitive_boundary.py).
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Optional
+
+# Store-root corpus manifest — records the BLAKE2b digest of the rag/ source the
+# corpus was built from, so scout can detect drift at load (Spike 1). This is a
+# DIFFERENT file from semantic_index/manifest.json (which declares the embedder,
+# Spike 3); they never collide because they live in different dirs.
+CORPUS_MANIFEST_NAME = "manifest.json"
+MANIFEST_SCHEMA = "scout_corpus_manifest/v1"
 
 
 def _repo_root() -> Path:
@@ -43,6 +51,38 @@ def corpus_root() -> Path:
     """Fresh, gitignored store (sibling of .synapse/ledger) — never overwrites G:'s
     corpus/ nor the rag/ source markdown."""
     return _repo_root() / ".synapse" / "scout_corpus"
+
+
+def source_files(rag_root: Path) -> list[Path]:
+    """Exactly the rag/ inputs that determine corpus content — what
+    ``_entries_from_knowledge`` consumes: the reference .md tree plus the
+    semantic_index enrichment metadata. Digesting these *and only these* means
+    mutating a real source file drifts the corpus, while touching an unrelated
+    file under rag/ never raises a false-stale."""
+    files: list[Path] = []
+    ref_dir = rag_root / "skills" / "houdini21-reference"
+    if ref_dir.is_dir():
+        files.extend(sorted(ref_dir.glob("*.md")))
+    sem = rag_root / "documentation" / "_metadata" / "semantic_index.json"
+    if sem.is_file():
+        files.append(sem)
+    return files
+
+
+def source_digest(rag_root: Path) -> str:
+    """BLAKE2b over (relative-path | size | mtime) of every source file —
+    stable across process restarts (unlike PYTHONHASHSEED-salted ``hash()``).
+    Relative paths keep it stable across checkout locations. A vanished file
+    folds its absence into the digest, so deleting a source drifts too."""
+    h = hashlib.blake2b(digest_size=16)
+    for p in source_files(rag_root):
+        try:
+            st = p.stat()
+            rel = p.relative_to(rag_root).as_posix()
+            h.update(f"{rel}|{st.st_size}|{int(st.st_mtime)}".encode("utf-8"))
+        except OSError:
+            h.update(f"{p}|missing".encode("utf-8"))
+    return h.hexdigest()
 
 
 def _entries_from_knowledge(rag_root: Path) -> list[dict]:
@@ -102,6 +142,19 @@ def build_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None)
         "\n".join(json.dumps(e, ensure_ascii=False) for e in entries),
         encoding="utf-8",
     )
+
+    # Freshness manifest (Spike 1): the BLAKE2b digest of the rag/ source this
+    # corpus was built from. scout recomputes + compares at load to catch drift.
+    manifest = {
+        "schema": MANIFEST_SCHEMA,
+        "source_root": str(src),
+        "source_digest": source_digest(src),
+        "source_file_count": len(source_files(src)),
+        "entries": len(entries),
+    }
+    (out / CORPUS_MANIFEST_NAME).write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return {"entries": len(entries), "path": str(out_fp), "store_root": str(out)}
 
 
@@ -110,7 +163,11 @@ def ensure_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None
     this before dispatch so scout never goes live empty."""
     out = Path(out_root) if out_root else corpus_root()
     fp = out / "corpus" / "entries.jsonl"
-    if fp.is_file() and fp.stat().st_size > 0:
+    # Rebuild if the corpus is absent/empty OR predates the freshness manifest
+    # (a manifest-less corpus has unverifiable provenance — scout would flag it
+    # stale forever; rebuilding self-heals a pre-Spike-1 store on first use).
+    manifest_fp = out / CORPUS_MANIFEST_NAME
+    if fp.is_file() and fp.stat().st_size > 0 and manifest_fp.is_file():
         return {"entries": -1, "path": str(fp), "store_root": str(out), "cached": True}
     return build_corpus(rag_root, out_root)
 
