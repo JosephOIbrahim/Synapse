@@ -1294,11 +1294,20 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 from .live_metrics import snapshot_to_dict
                 live_snapshot = snapshot_to_dict(snap)
 
+        # C6: the dispatch-wait histogram (enqueue→start wake latency) rides the
+        # same metrics surface so the floor can be attributed from a live session.
+        try:
+            from .main_thread import dispatch_wait_stats
+            dispatch_waits = dispatch_wait_stats()
+        except Exception:
+            dispatch_waits = None
+
         text = render_prometheus(
             router_stats=router_stats,
             circuit_breaker_state=cb_state,
             memory_entry_count=memory_count,
             tool_durations=self.tool_duration_stats(),
+            dispatch_waits=dispatch_waits,
             live_snapshot=live_snapshot,
         )
         return {"format": "prometheus", "text": text}

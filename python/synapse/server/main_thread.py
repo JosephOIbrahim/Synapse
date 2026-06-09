@@ -12,6 +12,7 @@ or rendering, which in turn blocks all subsequent WebSocket messages
 """
 
 import threading
+import time
 import logging
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,53 @@ _MAIN_THREAD_ID = threading.main_thread().ident
 _stall_lock = threading.Lock()
 _consecutive_timeouts = 0
 _STALL_THRESHOLD = 2
+
+# C6 (Mile 3.1) — dispatch-wait instrumentation. The load-bearing "~2s mutation
+# floor" was never attributed: the per-tool histogram times the WHOLE handler, so
+# enqueue→callback-start wait (the executeDeferred wake latency — hypothesis T1)
+# is indistinguishable from hou work. This histogram measures exactly that gap.
+# Buckets straddle the 2000 ms suspect so T1's signature (mass at/near 2000) is
+# unmistakable against T2/T3 (small or cook-correlated waits).
+_DISPATCH_WAIT_BUCKETS_MS = (1, 5, 10, 50, 100, 250, 500, 1000, 2000, 4000)
+_dispatch_lock = threading.Lock()
+_dispatch_wait = {
+    "count": 0,
+    "sum_ms": 0.0,
+    "max_ms": 0.0,
+    "buckets": {b: 0 for b in _DISPATCH_WAIT_BUCKETS_MS},
+}
+
+
+def _record_dispatch_wait(ms):
+    with _dispatch_lock:
+        _dispatch_wait["count"] += 1
+        _dispatch_wait["sum_ms"] += ms
+        if ms > _dispatch_wait["max_ms"]:
+            _dispatch_wait["max_ms"] = ms
+        for b in _DISPATCH_WAIT_BUCKETS_MS:
+            if ms <= b:
+                _dispatch_wait["buckets"][b] += 1
+
+
+def dispatch_wait_stats():
+    """Snapshot of the enqueue→start wait histogram (copy — safe to serialize)."""
+    with _dispatch_lock:
+        return {
+            "count": _dispatch_wait["count"],
+            "sum_ms": _dispatch_wait["sum_ms"],
+            "max_ms": _dispatch_wait["max_ms"],
+            "buckets": dict(_dispatch_wait["buckets"]),
+        }
+
+
+def reset_dispatch_wait_stats():
+    """Test/diagnostic helper — zero the histogram."""
+    with _dispatch_lock:
+        _dispatch_wait["count"] = 0
+        _dispatch_wait["sum_ms"] = 0.0
+        _dispatch_wait["max_ms"] = 0.0
+        for b in _DISPATCH_WAIT_BUCKETS_MS:
+            _dispatch_wait["buckets"][b] = 0
 
 
 def is_main_thread_stalled():
@@ -99,8 +147,12 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT):
     # residual race — the lock only serializes the check-vs-set, not fn() itself.)
     state_lock = threading.Lock()
     abandoned = [False]
+    t_enqueue = time.perf_counter()
 
     def _on_main():
+        # C6: every wake is a dispatch-wait sample — including abandoned ones
+        # (the queue-sit time is the datum, regardless of whether fn() runs).
+        _record_dispatch_wait((time.perf_counter() - t_enqueue) * 1000.0)
         with state_lock:
             if abandoned[0]:
                 return  # caller already timed out — do not mutate the scene

@@ -25,6 +25,7 @@ def render_prometheus(
     circuit_breaker_state: str = "closed",
     memory_entry_count: int = 0,
     tool_durations: Optional[Dict[str, Any]] = None,
+    dispatch_waits: Optional[Dict[str, Any]] = None,
     live_snapshot: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Render metrics in Prometheus text exposition format.
@@ -35,6 +36,8 @@ def render_prometheus(
         circuit_breaker_state: Current circuit breaker state string
         memory_entry_count: Number of entries in memory store
         tool_durations: Per-tool duration stats {tool: {count, sum_ms, buckets}}
+        dispatch_waits: run_on_main enqueue→start wait histogram
+            {count, sum_ms, max_ms, buckets} (C6 — attributes the dispatch floor)
         live_snapshot: Optional MetricSnapshot dict from MetricsAggregator
 
     Returns:
@@ -103,6 +106,23 @@ def render_prometheus(
                 f'synapse_tool_duration_ms_sum{{tool="{tool}"}} {round_float(rec.get("sum_ms", 0.0))}'
             )
             lines.append(f'synapse_tool_duration_ms_count{{tool="{tool}"}} {count}')
+
+    # run_on_main dispatch-wait histogram (C6 — the floor-attribution instrument).
+    # Separates enqueue→callback-start wake latency from handler/hou work so the
+    # "~2s mutation floor" can finally be attributed (T1 wake / T2 contention / T3
+    # transport) instead of asserted.
+    if dispatch_waits and dispatch_waits.get("count", 0) > 0:
+        lines.append("")
+        lines.append("# HELP synapse_dispatch_wait_ms run_on_main enqueue-to-start wait in milliseconds")
+        lines.append("# TYPE synapse_dispatch_wait_ms histogram")
+        buckets = dispatch_waits.get("buckets", {})
+        for le in sorted(buckets, key=float):
+            lines.append(f'synapse_dispatch_wait_ms_bucket{{le="{le}"}} {buckets[le]}')
+        count = dispatch_waits.get("count", 0)
+        lines.append(f'synapse_dispatch_wait_ms_bucket{{le="+Inf"}} {count}')
+        lines.append(f'synapse_dispatch_wait_ms_sum {round_float(dispatch_waits.get("sum_ms", 0.0))}')
+        lines.append(f'synapse_dispatch_wait_ms_count {count}')
+        lines.append(f'synapse_dispatch_wait_ms_max {round_float(dispatch_waits.get("max_ms", 0.0))}')
 
     # Live metrics (Sprint E) — scene, session, uptime
     if live_snapshot:
