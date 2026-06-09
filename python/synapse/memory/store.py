@@ -278,6 +278,28 @@ class MemoryStore:
         """Create storage directory if it doesn't exist."""
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
+    @property
+    def _keyfp_file(self) -> Path:
+        return self.storage_dir / "key.fingerprint"
+
+    def _key_fingerprint_mismatch(self, crypto) -> Optional[str]:
+        """C3: compare the active key's fingerprint to the plaintext sidecar written on
+        the last save. Mismatch ⇒ the key changed ⇒ refuse rewrite (prevents a mixed-key
+        file). No sidecar / no crypto / empty sidecar ⇒ no opinion (fail-safe)."""
+        if not crypto or not self._keyfp_file.exists():
+            return None
+        try:
+            stored = self._keyfp_file.read_text(encoding="utf-8").strip()
+        except OSError:
+            return None
+        try:
+            active = crypto.fingerprint()
+        except Exception:
+            return None
+        if stored and active and stored != active:
+            return f"encryption-key fingerprint changed ({stored} -> {active})"
+        return None
+
     def _quarantine_store(self, reason: str = "degraded") -> Optional[Path]:
         """COPY the on-disk store aside as a timestamped recovery point. We copy,
         never move/delete — the unreadable ciphertext is exactly the recoverable
@@ -355,18 +377,25 @@ class MemoryStore:
                 except Exception as e:
                     logger.warning("Failed to load index: %s", e)
 
-        # C1 — degraded-load guard: encrypted lines we could not read means the key
-        # is wrong / 'cryptography' is missing / the file is corrupt. Saving now would
-        # rewrite the store from the (incomplete) in-memory set and DESTROY the still-
-        # recoverable ciphertext. Refuse save() and copy the store aside for recovery.
+        # C1/C3 — degraded-load guard. Two signals that the key is wrong / changed /
+        # 'cryptography' is missing: (1) encrypted lines that won't decrypt, and
+        # (2) a key-fingerprint sidecar that no longer matches the active key (catches
+        # the empty / all-plaintext store where no line happens to fail). Either means
+        # a rewrite would destroy recoverable ciphertext or mix keys — refuse save().
+        degraded_reason = None
         if encrypted_skipped > 0:
+            degraded_reason = (
+                f"{encrypted_skipped} encrypted line(s) failed to decrypt "
+                "(wrong SYNAPSE_ENCRYPTION_KEY, missing 'cryptography', or corruption)"
+            )
+        else:
+            degraded_reason = self._key_fingerprint_mismatch(crypto)
+        if degraded_reason:
             self._degraded_load = True
             logger.error(
-                "DEGRADED LOAD: %d encrypted line(s) in %s failed to decrypt "
-                "(wrong SYNAPSE_ENCRYPTION_KEY, missing 'cryptography', or corruption). "
-                "Refusing to rewrite the store — fix the key / install cryptography, "
-                "then restart. The ciphertext is preserved.",
-                encrypted_skipped, self.memory_file,
+                "DEGRADED LOAD: %s in %s. Refusing to rewrite the store — fix the key "
+                "/ install cryptography, then restart. The ciphertext is preserved.",
+                degraded_reason, self.memory_file,
             )
             self._quarantine_store(reason="degraded-load")
 
@@ -454,6 +483,16 @@ class MemoryStore:
                          base_dir=str(self.storage_dir), backups=1)
             write_report(self.index_file.name, index_content,
                          base_dir=str(self.storage_dir), backups=1)
+
+            # C3: stamp the active key's (non-secret) fingerprint so the next load can
+            # detect a key change before rewriting. Plaintext on purpose — it must be
+            # readable even when the key is wrong. Best-effort; a torn sidecar is empty
+            # → no opinion (fail-safe).
+            if crypto:
+                try:
+                    self._keyfp_file.write_text(crypto.fingerprint(), encoding="utf-8")
+                except OSError:
+                    pass
 
             self._dirty = False
 

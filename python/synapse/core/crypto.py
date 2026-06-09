@@ -18,14 +18,24 @@ Backward compatibility:
 - Encrypted data always starts with SYNAPSE_ENC_V1: followed by the Fernet token
 """
 
+import hashlib
+import logging
 import os
 import stat
 import threading
 from pathlib import Path
 from typing import Optional
 
+logger = logging.getLogger("synapse.crypto")
+
 # Magic prefix to detect encrypted content
 MAGIC_PREFIX = "SYNAPSE_ENC_V1:"
+
+
+def key_fingerprint(key: bytes) -> str:
+    """Short, non-secret fingerprint of a key (sha256 hex, first 8). Used to detect
+    a changed/wrong key WITHOUT exposing the key — safe to store in plaintext."""
+    return hashlib.sha256(key).hexdigest()[:8]
 
 # Optional dependency — follows existing pattern (SERVER_AVAILABLE, UI_AVAILABLE)
 try:
@@ -93,13 +103,34 @@ class CryptoEngine:
         key_dir.mkdir(parents=True, exist_ok=True)
         key_file.write_bytes(key)
 
-        # Best-effort owner-only permissions (works on Unix, best-effort on Windows)
+        # Escrow: write a side copy so a single deleted/lost key file isn't a total,
+        # unrecoverable loss of every encrypted store. Best-effort; never fatal.
+        bak_file = key_dir / "encryption.key.bak"
         try:
-            key_file.chmod(stat.S_IRUSR | stat.S_IWUSR)  # 0o600
+            bak_file.write_bytes(key)
         except OSError:
-            pass
+            bak_file = None
+        logger.warning(
+            "Generated a new SYNAPSE encryption key at %s (fingerprint %s). "
+            "BACK THIS FILE UP — losing it makes ALL encrypted memory unrecoverable. "
+            "A side copy is at %s.",
+            key_file, key_fingerprint(key), bak_file or "(copy failed)",
+        )
+
+        # Best-effort owner-only permissions (works on Unix, best-effort on Windows)
+        for f in (key_file, bak_file):
+            if f is None:
+                continue
+            try:
+                f.chmod(stat.S_IRUSR | stat.S_IWUSR)  # 0o600
+            except OSError:
+                pass
 
         return key
+
+    def fingerprint(self) -> str:
+        """Short non-secret fingerprint of the ACTIVE key (for key-drift detection)."""
+        return key_fingerprint(self._key)
 
     # ------------------------------------------------------------------
     # Line encryption (for JSONL append-only files)
