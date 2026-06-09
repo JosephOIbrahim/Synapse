@@ -170,6 +170,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._messages = []          # Anthropic-format conversation
         self._stream_buf = []        # accumulates streamed tokens
         self._worker = None
+        self._last_tool = None       # C8: name of the in-flight tool, for an honest Stop
         self._tool_executor = ToolExecutor(parent=self) if ToolExecutor else None
         self._pending_context = []  # paths dropped in; prepended to the next send
         self._font_scale = t.FONT_SCALE_DEFAULT
@@ -842,6 +843,7 @@ class SynapsePanel(QtWidgets.QWidget):
             return
         self._stream_buf = []
         self._streaming_started = False
+        self._last_tool = None       # C8: fresh run — no stale in-flight tool name
         self._set_thinking(True)
         self._set_busy(True)
         tools = get_anthropic_tools() if get_anthropic_tools else None
@@ -913,6 +915,8 @@ class SynapsePanel(QtWidgets.QWidget):
         self._set_busy(False)
 
     def _on_tool_status(self, name, phase, _detail):
+        if phase == "running":
+            self._last_tool = name          # C8: remember what's in flight for Stop
         verb = {"running": "running", "done": "ok", "error": "failed"}.get(phase, phase)
         self._set_header("working", "%s %s" % (name, verb))
         wf = getattr(self, "_work_face", None)
@@ -930,10 +934,17 @@ class SynapsePanel(QtWidgets.QWidget):
         # + the rail mark; the artist switches to Work to watch when they choose.
 
     def _on_stop(self):
+        # Honest Stop: abort the loop, but DO NOT claim idle — Houdini may still be
+        # finishing the in-flight tool (abort is cooperative; it takes effect at the
+        # next tool/iteration boundary). Stay busy and say "Stopping…"; the worker
+        # emits stream_done / stream_error when it actually stops, which resets to
+        # idle via _on_done / _on_error. (Cancelling the in-flight tool itself —
+        # tops_cancel_cook / render cancel — must run off the UI thread against a live
+        # bridge; deferred to the bridge-live pass, see Ledger.)
         if self._worker is not None:
             self._worker.abort()
-        self._set_thinking(False)
-        self._set_busy(False)
+        self._stop_btn.setEnabled(False)    # the press registered — avoid a confusing re-press
+        self._set_header("working", "Stopping — waiting on %s…" % (self._last_tool or "the current tool"))
 
     def _set_busy(self, busy):
         self._send_btn.setEnabled(not busy)
