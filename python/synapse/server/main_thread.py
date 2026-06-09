@@ -91,8 +91,19 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT):
     result_holder = [None]
     error_holder = [None]
     done = threading.Event()
+    # C4 — zombie kill. On timeout the caller is told the op failed and to retry; if
+    # the deferred payload later runs fn() anyway, that mutation is a "zombie" applied
+    # after the failure report (and a retry then double-applies). The abandoned flag,
+    # checked under a lock before fn() runs, makes _on_main a no-op once the caller has
+    # given up. (A payload already inside fn() when the timeout fires is the accepted
+    # residual race — the lock only serializes the check-vs-set, not fn() itself.)
+    state_lock = threading.Lock()
+    abandoned = [False]
 
     def _on_main():
+        with state_lock:
+            if abandoned[0]:
+                return  # caller already timed out — do not mutate the scene
         _tls.on_main = True
         try:
             result_holder[0] = fn()
@@ -105,6 +116,8 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT):
     hdefereval.executeDeferred(_on_main)
 
     if not done.wait(timeout=timeout):
+        with state_lock:
+            abandoned[0] = True
         _record_timeout(timeout)
         raise RuntimeError(
             "Houdini's main thread didn't respond in time -- "

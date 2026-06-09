@@ -427,3 +427,13 @@ CTO unlocked agent teams + dynamic workflows. A **recon workflow** (`wiqu7nm7m`,
 ### MILE 1 EXIT — memory-loss chain closed (C1+C2+C3)
 - **kind:** Confirmation · **verified_by:** V1_cook (in-process second-session repro; live-Houdini-restart repro owed on bridge restore) · **against_build:** stock-py 3.14 · **ts:** 2026-06-09
 - **measured_delta:** the original wipe path is dead: a wrong/changed-key load now (a) loads degraded, (b) **refuses save()** so nothing truncates the recoverable ciphertext, (c) quarantines a recovery copy, and even a clean save is now atomic (tmp+fsync+os.replace) with one `.bak` and an escrowed key. SubstrateAssumption flips, holds false→true: *"a bad load can wipe the store"*, *"memory save is non-atomic/unbacked"*, *"a single lost key file is unrecoverable-by-design"*. Residual owed: the LIVE second-fresh-session proof via a real Houdini restart (bridge-gated — see Mile 0 transport entry); the message-carries-command-id refinement (handler-layer, folds into C7).
+
+---
+
+## Session 2026-06-09 — CTO REMEDIATION HARNESS v1 · MILE 2 (mutation correctness + lifecycle honesty) · HEAD 19d65b3
+
+### Confirmation — C4 zombie-mutation kill in run_on_main
+- **kind:** Confirmation · **verified_by:** V1_cook (fake-hdefereval repro: timed-out payload never runs fn()) · **against_build:** stock-py 3.14 (server util, zero-`hou` via injected fake) · **ts:** 2026-06-09
+- **change_applied:** `server/main_thread.py::run_on_main` — added a per-call `abandoned` flag under a `state_lock`. `_on_main` checks it (under the lock) before running `fn()`; the timeout path sets it (under the lock) before raising. A deferred payload that the main thread runs AFTER the caller timed out is now a no-op, so a timed-out mutating command can't apply late (and a retry can't double-apply). The check-vs-set is serialized; a payload already inside `fn()` at timeout is the accepted residual race.
+- **measured_delta:** `tests/test_main_thread_zombie.py` (2): payload fired 0.4 s after a 0.1 s timeout → `fn()` never runs; a fast (non-timed-out) payload still runs and returns. `test_main_thread.py` (10) unaffected. Full suite **3387 passed / 68 skipped / 0 failed** (+2). SubstrateAssumption "a timed-out mutation still applies later" false→true.
+- **artifact_path:** `python/synapse/server/main_thread.py`, `tests/test_main_thread_zombie.py`
