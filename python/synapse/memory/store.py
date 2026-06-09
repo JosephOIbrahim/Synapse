@@ -421,17 +421,22 @@ class MemoryStore:
                 "Fix SYNAPSE_ENCRYPTION_KEY / install 'cryptography', then restart."
             )
         crypto = _get_crypto()
+        # C2: atomic, backed-up writes. Lazy import keeps store.py's import order
+        # unchanged (this module loads very early; write_report is zero-`hou`, and
+        # ledger.py already depends on it, so the memory→cognitive.tools edge is safe).
+        from ..cognitive.tools.write_report import write_report
 
         with self._lock.write_lock():
-            # Write memories (append-only format, but we rewrite for consistency)
-            with open(self.memory_file, 'w', encoding='utf-8') as f:
-                for memory in self._memories.values():
-                    line = memory.to_json()
-                    if crypto:
-                        line = crypto.encrypt_line(line)
-                    f.write(line + "\n")
+            # Build memory.jsonl content (per-line encrypted when crypto is present).
+            mem_lines = []
+            for memory in self._memories.values():
+                line = memory.to_json()
+                if crypto:
+                    line = crypto.encrypt_line(line)
+                mem_lines.append(line)
+            mem_content = "".join(line + "\n" for line in mem_lines)
 
-            # Write index — convert sets to sorted lists for JSON serialization
+            # Build index content — sets → sorted lists for JSON serialization.
             serializable_index = dict(self._index)
             for section in ("by_type", "by_tag", "by_keyword"):
                 serializable_index[section] = {
@@ -442,8 +447,13 @@ class MemoryStore:
             index_content = json.dumps(serializable_index, indent=2, sort_keys=True)
             if crypto:
                 index_content = crypto.encrypt_file_content(index_content)
-            with open(self.index_file, 'w', encoding='utf-8') as f:
-                f.write(index_content)
+
+            # Atomic (tmp + fsync + os.replace) with one generational .bak — a crash
+            # mid-save leaves the prior file intact instead of truncated.
+            write_report(self.memory_file.name, mem_content,
+                         base_dir=str(self.storage_dir), backups=1)
+            write_report(self.index_file.name, index_content,
+                         base_dir=str(self.storage_dir), backups=1)
 
             self._dirty = False
 
