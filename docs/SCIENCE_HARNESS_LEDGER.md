@@ -365,3 +365,34 @@ CTO unlocked agent teams + dynamic workflows. A **recon workflow** (`wiqu7nm7m`,
 ### Deferred — live rung-ASSIGNMENT owed on bridge restore (671 tier)
 - **kind:** Deferred · **verified_by:** V0_membership · **against_build:** 21.0.631 · **stakes:** medium · **probed:** false
 - **area:** the live rung-assignment driver (probe membership → V0_membership; createNode + cook(force=True) + no errors → V1_cook; flipbook pixel sample / reproduced-then-resolved bug → V1_output) is bridge-gated. Behind `SYNAPSE_INTEGRATION`, honestly skipped this bridgeless run (the skipped test body raises — cannot masquerade as a pass). Owed on bridge restore (671 live/interactive tier).
+
+---
+
+## Session 2026-06-09 — CTO REMEDIATION HARNESS v1 · MILE 0 (re-ground) · HEAD 83f098b · TRACK H Leg 2
+
+**Running build:** source confirmations @ HEAD `83f098b`; live tier = graphical 21.0.671 (PID 31428). **Bridge:** UNREACHABLE this session (see SubstrateAssumption below). **Operator gate:** HUMAN GATE 1 pending (Miles 1–3 not authorized). **Scope:** convert in-scope V0-leads C9/C10/C11 → V1/DeadEnd; capture live telemetry (0.2); HALT at capsule. Suite floor 3,377 (no code touched this mile).
+
+### Confirmation — C9 (tops_cook_node error path NameError) V0-lead → V1
+- **kind:** Confirmation · **verified_by:** V1 (source-confirmed, open-file @ 83f098b — not live-cook) · **against_build:** source @ 83f098b · **ts:** 2026-06-09
+- **evidence:** `python/synapse/server/handlers_tops/cook.py` imports `time`, `typing`, `hou`, `..core.aliases`, `..core.determinism`, `..handler_helpers`, `._common` (lines 6-19) — **no `logging`, no `logger`**. The sole `logger` token in the whole module is the *use* at `cook.py:69` (`logger.error("PDG cook failed for %s: %s", node_path, e)`) inside the `node.cook()` failure branch. Resolution local→module→builtins finds nothing ⇒ `NameError` masks the structured error dict at :70-75. Deterministic source fact.
+- **measured_delta:** promoted V0→V1. Live-cook reproduction (force `node.cook` to raise; assert NameError today / structured dict post-fix) **owed at Mile 2.4** as the regression pin. Suite unchanged (3,377; no code touched).
+
+### Confirmation — C10 (freeze-safety chain dead on the v9 stack) V0-lead → V1
+- **kind:** Confirmation · **verified_by:** V1 (source-confirmed, open-file @ 83f098b) · **against_build:** source @ 83f098b · **ts:** 2026-06-09
+- **evidence:** `grep heartbeat python/synapse/panel/` (the LIVE v9 package the `.pypanel` loads) = **zero**. Only the LEGACY panel (`ui/panel.py`, `ui/tabs/connection.py`) calls `.heartbeat()`. `resilience.py:543-552` `Watchdog.start()` only sets `_running` and defers the monitor thread ("monitoring begins on first heartbeat()"); `heartbeat()` (`:577-586`) is the SOLE caller of `_ensure_started()` (`:564-575`) which launches the thread. No heartbeat source on the live stack ⇒ Watchdog never monitors ⇒ freeze-detection / backpressure / `_on_freeze` inert. Confirms review C10. **D3 (§6) is a real Mile-4 owner decision, not a phantom.**
+- **measured_delta:** promoted V0→V1. No build this mile (decision-gated).
+
+### Confirmation — C11 (render blocking IO on Houdini main thread) V0-lead → V1
+- **kind:** Confirmation · **verified_by:** V1 (source-confirmed, code-read @ 83f098b — render NOT run, per 0.3) · **against_build:** source @ 83f098b · **ts:** 2026-06-09
+- **evidence:** `handlers_render.py:342` `node.render(...)`, then inside the SAME `hou`-main-thread closure (`hou.text.expandString("$HFS")` at :363 proves it is the main-thread payload): the output-file poll `for _ in range(60): … time.sleep(0.25)` (:351-355, up to ~15 s) and `subprocess.run([iconvert,…], timeout=15)` (:369-373) both run before the closure returns ⇒ on the main thread. Read-only confirmation; no render issued.
+- **measured_delta:** promoted V0→V1. Fix (split: `hou.*` on main, poll+iconvert on the WS handler thread) is **Mile 3.5**.
+
+### DeadEnd — (carry-in, CTO review §4) worker MCP-first "undo/integrity off hot path"
+- **kind:** DeadEnd · **verified_by:** V1 (refuted in review, re-affirmed) · **against_build:** source @ 83f098b · **ts:** 2026-06-09
+- **claim_text:** "Worker dispatches MCP-first ⇒ undo/integrity + allowlist off the hot path." **Refuted:** the `/mcp` server runs in the SAME Houdini process (hwebserver), so undo-wrapping/IntegrityBlock are NOT bypassed. Carried in so it is never re-litigated.
+
+### SubstrateAssumption — live WS transport UNREACHABLE for telemetry (0.2 result, negative)
+- **kind:** SubstrateAssumption · **verified_by:** V1 (live probe, graphical 21.0.671 PID 31428) · **against_build:** 21.0.671 graphical (live) · **ts:** 2026-06-09
+- **assumption:** "panel-reports-connected ⇒ MCP bridge reachable" — **holds = false** (re-reproduced; the known trap; corroborates review C22 and the 2026-06-07 self-healing-port session).
+- **measured_delta:** 5 probe rounds, `ws://localhost:<p>/synapse`, no-auth localhost. **8765** (operator-stated): ConnectionRefused — nothing listening. **9999** (MCP `synapse_*` tools hardwired here; stale sidecar `~/.synapse/bridge.json` = `{port:9999, pid:55268, ts:2026-06-08}`): ConnectionRefused. **8912** (the ONLY Synapse listener = Houdini PID 31428's bound port per netstat): TCP connect succeeds but the **WebSocket handshake times out** at 12 s and 20 s × 4 attempts — main-thread-busy / unresponsive-upgrade signature. **0.2 telemetry: NOT CAPTURED.** Does not gate Mile 0 (C9/C10/C11 are source-confirmed, transport-independent). Owed when the 8912 handshake responds. **C6** stays V0 → "instrumented at Mile 3" (needs `dispatch_wait_ms` on a responsive live path — now also transport-blocked).
+- **artifact_path:** (probe-only; no repo change)
