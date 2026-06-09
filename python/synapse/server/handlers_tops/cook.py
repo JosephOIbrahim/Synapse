@@ -16,7 +16,7 @@ except ImportError:
 from ...core.aliases import resolve_param, resolve_param_with_default
 from ...core.determinism import round_float, kahan_sum, deterministic_uuid
 from ..handler_helpers import _HOUDINI_UNAVAILABLE
-from ._common import _run_in_main_thread_pdg, _ensure_tops_warm_standby, _MAX_MONITOR_EVENTS
+from ._common import logger, _run_in_main_thread_pdg, _ensure_tops_warm_standby, _MAX_MONITOR_EVENTS
 
 
 class TopsCookMixin:
