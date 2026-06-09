@@ -32,9 +32,10 @@ except ImportError:
     HOU_AVAILABLE = False
 
 try:
-    from ..core.crypto import CryptoEngine, ENCRYPTION_AVAILABLE
+    from ..core.crypto import CryptoEngine, ENCRYPTION_AVAILABLE, MAGIC_PREFIX
 except ImportError:
     ENCRYPTION_AVAILABLE = False
+    MAGIC_PREFIX = "SYNAPSE_ENC_V1:"
 
 logger = logging.getLogger("synapse.memory")
 
@@ -182,6 +183,10 @@ class MemoryStore:
         self._lock = ReadWriteLock()
         self._dirty = False
         self._needs_rewrite = False  # Set by update/delete to trigger full save
+        # C1: set true if encrypted lines failed to decrypt on load (wrong key /
+        # missing 'cryptography' / corruption). A degraded store REFUSES save() so a
+        # truncating rewrite can't destroy recoverable ciphertext.
+        self._degraded_load = False
         self._loaded = threading.Event()
 
         # Write buffer — defers disk I/O to background thread (saves 1-5ms per add)
@@ -273,6 +278,23 @@ class MemoryStore:
         """Create storage directory if it doesn't exist."""
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
+    def _quarantine_store(self, reason: str = "degraded") -> Optional[Path]:
+        """COPY the on-disk store aside as a timestamped recovery point. We copy,
+        never move/delete — the unreadable ciphertext is exactly the recoverable
+        asset. Best-effort; never raises (a failed copy still leaves the original)."""
+        if not self.memory_file.exists():
+            return None
+        aside = self.memory_file.with_name(
+            f"{self.memory_file.name}.{reason}-{int(time.time())}"
+        )
+        try:
+            shutil.copy2(str(self.memory_file), str(aside))
+            logger.error("Quarantined a copy of the store for recovery: %s", aside)
+            return aside
+        except OSError as e:
+            logger.error("Could not quarantine the store (%s); original untouched", e)
+            return None
+
     def _load(self):
         """Load memories from disk."""
         if not self.memory_file.exists():
@@ -280,6 +302,7 @@ class MemoryStore:
             return
 
         crypto = _get_crypto()
+        encrypted_skipped = 0  # C1: encrypted lines we could not decrypt/parse
 
         with self._lock.write_lock():
             with open(self.memory_file, 'r', encoding='utf-8') as f:
@@ -287,6 +310,11 @@ class MemoryStore:
                     line = line.strip()
                     if not line:
                         continue
+                    # Check the RAW line BEFORE decrypt: a line that is ciphertext
+                    # (MAGIC_PREFIX) but then fails is an unreadable-encrypted line —
+                    # wrong key, or crypto unavailable so it never decrypts — NOT a
+                    # merely-garbled plaintext line.
+                    is_encrypted = line.startswith(MAGIC_PREFIX)
                     try:
                         if crypto:
                             line = crypto.decrypt_line(line)
@@ -295,8 +323,12 @@ class MemoryStore:
                         self._memories[memory.id] = memory
                         self._index_memory(memory)
                     except json.JSONDecodeError as e:
+                        if is_encrypted:
+                            encrypted_skipped += 1
                         logger.warning("Invalid JSON on line %d: %s", line_num, e)
                     except Exception as e:
+                        if is_encrypted:
+                            encrypted_skipped += 1
                         logger.warning("Failed to load memory on line %d: %s", line_num, e)
 
             # Load index if exists
@@ -322,6 +354,21 @@ class MemoryStore:
                     )
                 except Exception as e:
                     logger.warning("Failed to load index: %s", e)
+
+        # C1 — degraded-load guard: encrypted lines we could not read means the key
+        # is wrong / 'cryptography' is missing / the file is corrupt. Saving now would
+        # rewrite the store from the (incomplete) in-memory set and DESTROY the still-
+        # recoverable ciphertext. Refuse save() and copy the store aside for recovery.
+        if encrypted_skipped > 0:
+            self._degraded_load = True
+            logger.error(
+                "DEGRADED LOAD: %d encrypted line(s) in %s failed to decrypt "
+                "(wrong SYNAPSE_ENCRYPTION_KEY, missing 'cryptography', or corruption). "
+                "Refusing to rewrite the store — fix the key / install cryptography, "
+                "then restart. The ciphertext is preserved.",
+                encrypted_skipped, self.memory_file,
+            )
+            self._quarantine_store(reason="degraded-load")
 
         logger.info("Loaded %d memories from %s", len(self._memories), self.storage_dir)
         self._loaded.set()
@@ -365,6 +412,14 @@ class MemoryStore:
 
     def save(self):
         """Persist all memories to disk."""
+        # C1 guard FIRST — before any file is opened/truncated. A degraded load
+        # (unreadable ciphertext) must never be rewritten over the recoverable file.
+        if self._degraded_load:
+            raise RuntimeError(
+                "Refusing to save: the store loaded in DEGRADED mode (encrypted lines "
+                "failed to decrypt). A rewrite would destroy recoverable ciphertext. "
+                "Fix SYNAPSE_ENCRYPTION_KEY / install 'cryptography', then restart."
+            )
         crypto = _get_crypto()
 
         with self._lock.write_lock():

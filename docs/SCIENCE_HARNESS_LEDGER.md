@@ -396,3 +396,18 @@ CTO unlocked agent teams + dynamic workflows. A **recon workflow** (`wiqu7nm7m`,
 - **assumption:** "panel-reports-connected ⇒ MCP bridge reachable" — **holds = false** (re-reproduced; the known trap; corroborates review C22 and the 2026-06-07 self-healing-port session).
 - **measured_delta:** 5 probe rounds, `ws://localhost:<p>/synapse`, no-auth localhost. **8765** (operator-stated): ConnectionRefused — nothing listening. **9999** (MCP `synapse_*` tools hardwired here; stale sidecar `~/.synapse/bridge.json` = `{port:9999, pid:55268, ts:2026-06-08}`): ConnectionRefused. **8912** (the ONLY Synapse listener = Houdini PID 31428's bound port per netstat): TCP connect succeeds but the **WebSocket handshake times out** at 12 s and 20 s × 4 attempts — main-thread-busy / unresponsive-upgrade signature. **0.2 telemetry: NOT CAPTURED.** Does not gate Mile 0 (C9/C10/C11 are source-confirmed, transport-independent). Owed when the 8912 handshake responds. **C6** stays V0 → "instrumented at Mile 3" (needs `dispatch_wait_ms` on a responsive live path — now also transport-blocked).
 - **artifact_path:** (probe-only; no repo change)
+
+---
+
+## Session 2026-06-09 — CTO REMEDIATION HARNESS v1 · MILE 1 (memory-loss chain) · HEAD b5a4d4b
+
+### Confirmation — invariant Q satisfied (quarantine-before-touch, Mile 1 gate)
+- **kind:** Confirmation · **verified_by:** V1 (md5-identical copies on disk) · **against_build:** n/a (filesystem) · **ts:** 2026-06-09
+- **change_applied:** before any Mile-1 code that can write the store, copied the memory artifacts to an outside-repo / outside-`$HOUDINI_TEMP` vault `C:\Users\User\synapse_quarantine_2026-06-09\`: `LIVE_untitled.hip_memory.jsonl` (977,253 B — md5-identical to the live store), `REPO_untitled.hip_memory.jsonl` (31,478 B sibling), `HOME_memory.jsonl` (0 B sibling) + `HOME_index.json`, and `encryption.key` (44 B). The live store had no sibling `index.json`.
+- **measured_delta:** Q gate green — Mile 1 authorized to mutate the persistence path.
+
+### Confirmation — C1 degraded-load guard (memory-loss chain, link 1/3)
+- **kind:** Confirmation · **verified_by:** V1_cook (pure-Python repro: wrong-key load → degraded → save refused → ciphertext byte-identical) · **against_build:** stock-py 3.14 (memory layer is zero-`hou`) · **ts:** 2026-06-09
+- **change_applied:** `memory/store.py` — `_load` counts encrypted lines (raw `MAGIC_PREFIX`) that fail decrypt/parse; `>0` ⇒ `self._degraded_load=True`, loud `logger.error`, `_quarantine_store()` (COPY aside, never move). `save()` raises at the TOP when `_degraded_load` (before any `open('w')`), so the truncating rewrite can never run on a wrong-key / missing-crypto load.
+- **measured_delta:** `tests/test_store_degraded_load.py` (3): wrong-key→degraded+refuse+ciphertext-preserved+quarantine-copy; right-key→clean load+save; plaintext-garble→NOT degraded (C32's concern). Full suite **3380 passed / 68 skipped / 0 failed** (+3).
+- **artifact_path:** `python/synapse/memory/store.py`, `tests/test_store_degraded_load.py`
