@@ -5,6 +5,7 @@ Registry-based command handler system for the Synapse WebSocket server.
 Routes incoming commands to appropriate handler functions.
 """
 
+import contextlib
 import logging
 import math
 import os
@@ -202,6 +203,18 @@ _READ_ONLY_COMMANDS = frozenset({
 })
 
 
+# C5 — cross-client mutation serialization. Two clients can drive one Houdini
+# concurrently (the panel ToolExecutor + a stdio MCP client), and nothing
+# serializes their command SEQUENCES — so create→connect→set_parm recipes from
+# two agents interleave on the shared scene + undo stack. One process-wide lock,
+# held only around a MUTATING command's invoke(), restores sequence coherence.
+# Skipped on the main thread: main-thread dispatch is already event-loop-
+# serialized, and blocking there would deadlock against run_on_main (which needs
+# the main thread to make progress). Deliberately NOT a queue/scheduler — call
+# batching was refuted for latency (PR #28); this is correctness, not throughput.
+_MUTATION_LOCK = threading.Lock()
+
+
 # =============================================================================
 # COMMAND HANDLER REGISTRY
 # =============================================================================
@@ -351,13 +364,20 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 )
 
             _t0 = time.perf_counter()
+            # C5: serialize mutating commands across clients (skip on the main
+            # thread — already serialized there, and locking would deadlock
+            # run_on_main). Read-only commands never contend.
+            _serialize = (cmd_type not in _READ_ONLY_COMMANDS
+                          and threading.current_thread() is not threading.main_thread())
+            _lock_cm = _MUTATION_LOCK if _serialize else contextlib.nullcontext()
             # Route through invoke() so the FloorGate records Tier-0 provenance
             # for mutating ops (additive — does not replace _submit_logs below).
-            result = self._registry.invoke(
-                cmd_type,
-                command.payload,
-                ctx=FloorContext(session=self._session_id, origin="handler"),
-            )
+            with _lock_cm:
+                result = self._registry.invoke(
+                    cmd_type,
+                    command.payload,
+                    ctx=FloorContext(session=self._session_id, origin="handler"),
+                )
             self._record_tool_duration(cmd_type, (time.perf_counter() - _t0) * 1000.0)
 
             # Log action asynchronously — don't block the response path
