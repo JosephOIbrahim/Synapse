@@ -344,47 +344,65 @@ class RenderHandlerMixin:
                 verbose=False,
             )
 
-            # Karma XPU has a delayed file flush -- poll up to ~15s
-            used_flipbook = False
-            render_ok = False
-            out_path = render_path_resolved
-            for _ in range(60):
-                if Path(out_path).exists() and Path(out_path).stat().st_size > 0:
-                    render_ok = True
-                    break
-                time.sleep(0.25)
+            # C11: ONLY hou.* work stays on the main thread. The output-file
+            # poll (up to ~15s of sleep) and the iconvert subprocess used to run
+            # right here, freezing the UI and the whole run_on_main pipeline for
+            # the flush window — they now run on the WS handler thread below.
+            # $HFS resolves here (the one hou call the iconvert leg needs).
+            hfs = hou.text.expandString("$HFS")
+            return node.path(), node_type, engine, cur, render_path_resolved, preview_path, hfs
 
-            # If render wrote to artist's EXR/non-JPEG, convert to JPEG for preview
-            artist_file_written = False
-            if render_ok and out_path != preview_path:
-                artist_file_written = True
-                # Try to convert to JPEG preview using iconvert or PIL
-                try:
-                    hfs = hou.text.expandString("$HFS")
-                    iconvert = Path(hfs) / "bin" / "iconvert.exe"
-                    if not iconvert.exists():
-                        iconvert = Path(hfs) / "bin" / "iconvert"
-                    if iconvert.exists():
-                        import subprocess
-                        subprocess.run(
-                            [str(iconvert), out_path, preview_path],
-                            timeout=15,
-                            capture_output=True,
-                        )
-                except Exception:
-                    pass  # Preview conversion is best-effort
-                # If iconvert worked, use preview; otherwise serve the render file
-                if Path(preview_path).exists() and Path(preview_path).stat().st_size > 0:
-                    out_path = preview_path
-                # else: out_path stays as the artist's render file
+        import hdefereval
+        used_rop, used_type, engine, cur, render_path_resolved, preview_path, hfs = (
+            hdefereval.executeInMainThreadWithResult(_render_on_main)
+        )
 
-            # -- Flipbook fallback for usdrender ROPs (husk may fail on Indie) --
-            if not render_ok and node_type in ("usdrender", "usdrender_rop"):
-                logger.warning(
-                    "Render output not found after node.render() -- "
-                    "attempting viewport flipbook fallback (husk may not "
-                    "support this license type)"
-                )
+        # -- Off-main from here (pure file IO / subprocess, zero hou) ---------
+        # Karma XPU has a delayed file flush -- poll up to ~15s
+        used_flipbook = False
+        render_ok = False
+        out_path = render_path_resolved
+        for _ in range(60):
+            if Path(out_path).exists() and Path(out_path).stat().st_size > 0:
+                render_ok = True
+                break
+            time.sleep(0.25)
+
+        # If render wrote to artist's EXR/non-JPEG, convert to JPEG for preview
+        artist_file_written = False
+        if render_ok and out_path != preview_path:
+            artist_file_written = True
+            # Try to convert to JPEG preview using iconvert or PIL
+            try:
+                iconvert = Path(hfs) / "bin" / "iconvert.exe"
+                if not iconvert.exists():
+                    iconvert = Path(hfs) / "bin" / "iconvert"
+                if iconvert.exists():
+                    import subprocess
+                    subprocess.run(
+                        [str(iconvert), out_path, preview_path],
+                        timeout=15,
+                        capture_output=True,
+                    )
+            except Exception:
+                pass  # Preview conversion is best-effort
+            # If iconvert worked, use preview; otherwise serve the render file
+            if Path(preview_path).exists() and Path(preview_path).stat().st_size > 0:
+                out_path = preview_path
+            # else: out_path stays as the artist's render file
+
+        # -- Flipbook fallback for usdrender ROPs (husk may fail on Indie) --
+        # All hou.* — a SECOND, conditional main-thread hop, entered only when
+        # the off-main poll found nothing (C11: the common success path never
+        # re-blocks the main thread).
+        if not render_ok and used_type in ("usdrender", "usdrender_rop"):
+            logger.warning(
+                "Render output not found after node.render() -- "
+                "attempting viewport flipbook fallback (husk may not "
+                "support this license type)"
+            )
+
+            def _flipbook_on_main(out_path=out_path, cur=cur):
                 try:
                     desktop = hou.ui.curDesktop()
                     sv = desktop.paneTabOfType(hou.paneTabType.SceneViewer)
@@ -414,25 +432,26 @@ class RenderHandlerMixin:
                             Path(fb_actual).exists()
                             and Path(fb_actual).stat().st_size > 0
                         ):
-                            used_flipbook = True
-                            out_path = fb_actual
-                            render_ok = True
+                            return True, fb_actual
                 except Exception as fb_err:
                     logger.warning(
                         "Flipbook fallback also failed: %s", fb_err
                     )
+                return False, None
 
-            if not render_ok:
-                raise RuntimeError(
-                    f"The render finished but the output wasn't created at {out_path} -- "
-                    "check if the output directory is writable and the renderer didn't error"
-                )
-            return out_path, node.path(), node_type, engine, used_flipbook, artist_file_written, render_path_resolved
+            fb_ok, fb_path = hdefereval.executeInMainThreadWithResult(_flipbook_on_main)
+            if fb_ok:
+                used_flipbook = True
+                out_path = fb_path
+                render_ok = True
 
-        import hdefereval
-        result_path, used_rop, used_type, engine, used_flipbook, artist_file_written, render_file = (
-            hdefereval.executeInMainThreadWithResult(_render_on_main)
-        )
+        if not render_ok:
+            raise RuntimeError(
+                f"The render finished but the output wasn't created at {out_path} -- "
+                "check if the output directory is writable and the renderer didn't error"
+            )
+        result_path = out_path
+        render_file = render_path_resolved
         result = {
             "image_path": result_path,
             "rop": used_rop,
