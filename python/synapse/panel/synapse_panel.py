@@ -205,6 +205,16 @@ class SynapsePanel(QtWidgets.QWidget):
         # Selection-change callback (V0-guarded) → instant context updates; the
         # 2s timer above remains the proven fallback.
         self._register_selection_cb()
+        # D3 — freeze-safety heartbeat. The panel runs on Houdini's main thread,
+        # so this 1s beat IS the main-thread liveness signal: it arms the
+        # process-wide Watchdog (freeze_chain), whose sustained-freeze escalation
+        # opens the live breaker + triggers the emergency halt. The panel rebuild
+        # had removed the only heartbeat source — this restores it.
+        self._freeze_timer = QTimer(self)
+        self._freeze_timer.setInterval(1000)
+        self._freeze_timer.timeout.connect(self._beat_freeze_chain)
+        self._freeze_timer.start()
+        self._beat_freeze_chain()
 
     # ---------------------------------------------------------------- UI
     def _section(self):
@@ -579,6 +589,15 @@ class SynapsePanel(QtWidgets.QWidget):
         wf = getattr(self, "_work_face", None)
         if wf is not None:
             wf.set_thinking(on)
+
+    def _beat_freeze_chain(self):
+        """1s main-thread liveness beat → process-wide freeze chain (D3).
+        Best-effort: a missing/old server package must never break the panel."""
+        try:
+            from synapse.server.freeze_chain import beat
+            beat()
+        except Exception:
+            pass
 
     def _update_health(self):
         """Timer-driven: poll the bridge, persist recommendations + run the
