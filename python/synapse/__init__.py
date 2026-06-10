@@ -14,7 +14,7 @@ Features:
 Storage: $HIP/.synapse/
 
 Author: Joe Ibrahim
-Version: 5.11.0
+Version: 5.12.0
 """
 
 # ---------------------------------------------------------------------------
@@ -58,7 +58,7 @@ if (
 
 
 __title__ = "Synapse"
-__version__ = "5.11.0"
+__version__ = "5.12.0"
 __author__ = "Joe Ibrahim"
 __license__ = "MIT"
 __product__ = "Synapse - AI-Houdini Bridge"

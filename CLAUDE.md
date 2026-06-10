@@ -1,6 +1,6 @@
 # SYNAPSE Agent Team — Lossless MOE Orchestrator
 
-> **Target:** Houdini 21.0.631 · SYNAPSE v5.11.0 · Python 3.14 · 110 MCP tools registered
+> **Target:** Houdini 21.0.631 · SYNAPSE v5.12.0 · Python 3.14 · 110 MCP tools registered
 > **All revisions verified live** — zero hallucinated APIs remaining.
 
 ## Identity

@@ -13,7 +13,7 @@
   <a href="python/synapse/host/tops_bridge.py"><img src="https://img.shields.io/badge/perception-scaffolded-3b82f6.svg" alt="Perception"></a>
   <a href="python/synapse/memory/moneta_store.py"><img src="https://img.shields.io/badge/memory-Moneta%20backend-8b5cf6.svg" alt="Memory"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-3168%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-3415%20passing-brightgreen.svg" alt="Tests"></a>
 </p>
 
 ---
@@ -25,14 +25,15 @@ SYNAPSE's whole point is to be *used*. The payoff is a docked **SYNAPSE panel**:
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
-    ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>rail + 3 faces, in-process"]:::panel
+    ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>rail + 2 tabs, in-process"]:::panel
     PANEL --> LOOP["Agent loop<br/>streams Claude + 110 tools"]:::panel
     LOOP -->|"tool_use<br/>(e.g. execute_python)"| EXEC["Tool executor<br/>main thread"]:::panel
     EXEC --> BR["SynapseHandler<br/>undo-wrapped &middot; main-thread &middot; integrity"]:::bridge
     BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
-    LOOP -.->|state| FACE["state&rarr;face controller<br/>idle&middot;Direct / working&middot;Work / done&middot;Review"]:::obs
+    LOOP -.->|state| FACE["rail mark + Work sub-states<br/>(same-pane law &mdash; no tab hijack)"]:::obs
     BR -.->|telemetry &middot; provenance| FACE
-    FACE -.->|surfaces the right face| PANEL
+    FACE -.->|signals &mdash; never switches tabs| PANEL
+    PANEL -.->|"1s heartbeat"| WDOG["freeze chain<br/>5s detect &rarr; 30s escalate"]:::obs
     classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
     classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
     classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
@@ -40,7 +41,7 @@ flowchart LR
     classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
 ```
 
-The panel was rebuilt from first principles ("the Pentagram pass") over a thin `.pypanel` loader: one vendored design system (native Houdini 21 greys, a cool/warm dual accent, the signal blue `#8FB3D9` kept as the *one* chromatic event). A persistent **rail** keeps termination, live state, and bounded cost on screen; the surface itself is **three faces driven by a state→face controller** — **Direct** (speaker-by-type chat, agent results as artifact chips), **Work** (the walk-away glance: a cook preview, plan-with-progress, and per-agent health), and **Review** (the render is the hero — a taut verdict, credited provenance, quality flags, and a gated commit). A **Ctrl+K palette lets you self-identify two ways** — by verb (build / fix / explain / optimize / render) × context (SOP / LOP / COP / Karma / USD). Every mutation the agent makes is **undo-wrapped, thread-safe, and integrity-verified** — inline in the handlers on the live in-process path (the `LosslessExecutionBridge` is the integrity/audit layer, on the external-MCP path) — so the agent's hands stay structurally reversible. Consent is **non-blocking for artist-initiated work** (your chat request *is* the consent; autonomous / external-MCP operations still gate through `HumanGate`); the gate previously polled the GUI thread and dead-locked Houdini until that was root-caused live and fixed. The Work and Review faces surface a **recursive-observability** readout — per-agent success rates plus a recommendation history that persists across restarts and escalates if the same issue recurs.
+The panel was rebuilt from first principles ("the Pentagram pass", refined in v9) over a thin `.pypanel` loader: one vendored design system (native Houdini 21 greys, a cool/warm dual accent, the signal blue `#8FB3D9` kept as the *one* chromatic event). A persistent **rail** keeps termination, live state, and bounded cost on screen; the surface is **two tabs under a same-pane law — agent state signals, it never hijacks your tab**: **Direct** (speaker-by-type chat, agent results as artifact chips, signed results) and **Work** (the walk-away glance: a cook preview, plan-with-progress, per-agent health, with review folded into its cook→done sub-states). **Stop is honest** — it aborts the agent loop, says *"Stopping — waiting on \<tool\>…"*, and only reports idle when the work has actually stopped. A **Ctrl+K palette lets you self-identify two ways** — by verb (build / fix / explain / optimize / render) × context (SOP / LOP / COP / Karma / USD). Every mutation the agent makes is **undo-wrapped, thread-safe, and integrity-verified** — inline in the handlers on the live in-process path (the `LosslessExecutionBridge` is the integrity/audit layer, on the external-MCP path) — so the agent's hands stay structurally reversible. Consent is **non-blocking for artist-initiated work** (your chat request *is* the consent; autonomous / external-MCP operations still gate through `HumanGate`); the gate previously polled the GUI thread and dead-locked Houdini until that was root-caused live and fixed. The panel's 1 s heartbeat also arms the **process-wide freeze-safety chain** (v5.12.0): a frozen main thread is detected in 5 s and, if it sustains 30 s, the circuit breaker opens and the emergency halt fires through any active bridge. The Work tab surfaces a **recursive-observability** readout — per-agent success rates plus a recommendation history that persists across restarts and escalates if the same issue recurs.
 
 ---
 
@@ -237,7 +238,7 @@ SYNAPSE talks to Claude, so it needs a key — make one at **console.anthropic.c
 
 Fully quit and reopen Houdini. Then **New Pane Tab ▸ SYNAPSE** (the ➕ on any pane edge). Type **"make a box"** and watch it appear in your scene.
 
-That's the whole loop. Everything SYNAPSE does is an ordinary Houdini action — **Ctrl+Z undoes it** — and it asks first before anything destructive.
+That's the whole loop. Everything SYNAPSE does is an ordinary Houdini action — **Ctrl+Z undoes it** — and every mutation leaves a durable provenance record. On the single-user localhost posture your chat request *is* the consent (interactive ops are not re-prompted); autonomous and external-MCP operations gate through `HumanGate`, and the background worker runs under a fail-closed tool allowlist.
 
 <details>
 <summary><strong>If something's not working</strong></summary>
@@ -311,13 +312,46 @@ Healthy → prints `running: True` and stops cleanly. Common errors:
 | **Provenance & audit** — Tier-0 Floor hook + agent.usd Ledger | Shipping (v5.11.0). Every *mutating* op on the live `/synapse` handler path leaves a durable provenance record (`FloorGate` via `registry.invoke` across all 3 handler sites; bounded FIFO rotation). The **agent.usd Ledger** gives curated verdicts a canonical home — per-record JSON files (source of truth) + a composed `agent.usd` read-projection; the markdown Ledger backfills **lossless** (29 parsed, 0 fields dropped, mutation-pinned by a source-vs-parse oracle). |
 | **Autonomous-worker tool allowlist** (security) | Shipping (v5.11.0). The panel worker is filtered by policy — read-only + `inform`-gated tools allowed; `execute_python` / `execute_vex` / `delete_node` / render **denied** by default (fail-closed); `SYNAPSE_WORKER_TOOL_MODE=unrestricted` opt-out. Closes the unfiltered-tool-access gap a CTO review flagged. |
 | **Autonomy task provenance** | Shipping (v5.11.0). `create_task` + verification wired into `autonomous_render`, closing the loop to the already-live `suspend_all_tasks` consumer (which iterated an always-empty tasks group). A liveness recon proved only 2 of 5 dormant `agent.usd` writers had a real emit point — the other 3 stay deferred rather than fake their activation. |
-| **Self-healing bridge** (resilience) | Shipping (v5.11.0). The WS server publishes its real bound port to `~/.synapse/bridge.json`; every client resolves *that* (freshest-wins, `9999` fallback) so a stale-port collision can never strand the bridge. **Verified live end-to-end** — `ping`→`pong`, panel loads (all 3 faces, v5.11.0), and a box created *through* the bridge cooked to 8 points / 6 faces while the Floor hook recorded the mutation (`origin=handler, ok`). |
+| **Self-healing bridge** (resilience) | Shipping (v5.11.0). The WS server publishes its real bound port to `~/.synapse/bridge.json`; every client resolves *that* (freshest-wins, `9999` fallback) so a stale-port collision can never strand the bridge. **Verified live end-to-end** — `ping`→`pong`, the panel loads, and a box created *through* the bridge cooked to 8 points / 6 faces while the Floor hook recorded the mutation (`origin=handler, ok`). |
+| **Memory durability** (crash-safety) | Shipping (v5.12.0). The memory-loss chain is dead: a wrong/changed encryption key loads *degraded* and **refuses to save** (the old path silently wiped months of ciphertext on the next write), saves are crash-atomic (`tmp+fsync+os.replace`, one `.bak` generation), and the key is escrowed (`encryption.key.bak` + a fingerprint sidecar that catches key drift on an empty store). |
+| **Freeze-safety chain** (resilience) | Shipping (v5.12.0). The panel's 1 s heartbeat arms one process-wide watchdog: a frozen main thread is detected in 5 s; sustained ≥30 s, the circuit breaker force-opens and `EmergencyProtocol.trigger_emergency_halt` fires through any *active* bridge. Timed-out mutations are **abandoned, not zombied** — a payload the caller gave up on never executes late. |
+| **Per-tool timeout discipline** (correctness) | Shipping (v5.12.0). One canonical budget table (`synapse/core/timeouts.py`) for every client — the panel no longer cuts off 120–600 s renders at 35 s, and a client-side timeout reports *"still running — do not retry"* instead of silently **re-dispatching the same mutation**. Cross-client mutations serialize through one lock; renders no longer block the main thread polling output files. |
 
 The port pattern is mechanical and documented in `docs/crucible_protocol.md` + the `spike(1)` commit message. Every legacy tool gets:
 
 1. A pure-Python function under `synapse.cognitive.tools.<name>` (zero `hou` imports).
 2. A schema dict (description + JSON Schema) registered alongside the function.
 3. The WS adapter branch in `mcp_server.py` swapped from `synapse_inspect_stage`-style direct dispatch to `dispatcher.execute('<name>', kwargs)`.
+
+### v5.12.0 — CTO remediation: durability, lifecycle honesty, freeze safety
+
+A two-day adversarial CTO review (8 reviewers → per-finding verification → `docs/SYNAPSE_CTO_REVIEW_2026-06-09.md`) fed a remediation harness that landed **9 prioritized fixes + the freeze-chain wiring** under reproduce→fix→reproduce-clean discipline — suite 3,377 → 3,415, green at every commit, every verdict in the Ledger.
+
+The headline was **memory durability**: the live store is Fernet-encrypted under one key file, loaded with skip-on-failure, and was rewritten by a truncating save — so one stale key env-var would silently and permanently destroy months of accreted memory on the next write. That chain is dead (degraded-load guard → atomic backed-up saves → key escrow + fingerprint). The rest of the slice: zombie mutations (timed-out main-thread payloads executing *after* the client was told to retry) are abandoned; two concurrent clients can no longer interleave mutation sequences on the shared undo stack; PDG cook failures report real errors instead of a `NameError`; the panel's Stop and timeout messages stopped lying; and the `~2 s` dispatch floor finally has a measurement instrument (`synapse_dispatch_wait_ms`) instead of folklore.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart LR
+    subgraph FREEZE["Freeze-safety chain — v5.12.0 (D3: wired, transport-independent)"]
+        BEAT["panel QTimer<br/>1s main-thread beat"]:::panel --> WD["process-wide Watchdog<br/>freeze_chain.py"]:::obs
+        WD -->|"no beat > 5s"| WARN["detect: warn +<br/>arm cancellable timer"]:::obs
+        WARN -->|"still frozen at 30s"| ACT["ESCALATE"]:::hot
+        WARN -->|"recovers"| RESET["cancel + reset breaker"]:::ok
+        ACT --> CB["force_open()<br/>live server breaker"]:::hot
+        ACT --> EH["EmergencyProtocol<br/>halt via ACTIVE bridge only"]:::hot
+    end
+    subgraph MEM["Memory durability — the wipe path is dead"]
+        LOAD["load: wrong/changed key?"]:::obs -->|"degraded"| REFUSE["refuse save()<br/>quarantine a copy"]:::ok
+        LOAD -->|clean| SAVE["atomic save<br/>tmp+fsync+replace + .bak"]:::ok
+        KEY["key escrow<br/>.bak + fingerprint sidecar"]:::ok -.-> LOAD
+    end
+    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
+    classDef hot fill:#334155,stroke:#ef4444,color:#f1f5f9
+    classDef ok fill:#1e293b,stroke:#22c55e,color:#f1f5f9
+```
+
+The wiring is **topology-true, not theater**: the live transport (hwebserver) has no resilience layer and the fallback WS server is built with resilience off — so a literal "panel calls `server.heartbeat()`" would have armed nothing. The chain owns its own process-wide watchdog, opens the breaker *when a resilient server exists* (and says so honestly when one doesn't), and the halt only ever fires through an **already-active** bridge — escalation never constructs one.
 
 ### v5.11.0 — Two-tier provenance: the Floor hook + the agent.usd Ledger
 
@@ -600,19 +634,24 @@ python/synapse/
 │   ├── backfill.py             # one-time JSONL → Moneta backfill (backup-first)
 │   └── store.py                # SynapseMemory + SYNAPSE_MEMORY_BACKEND selector
 ├── panel/                      # artist-facing copilot panel (Qt / PySide6)
-│   ├── synapse_panel.py        # the docked panel — rail + 3 faces, state→face controller
-│   ├── face_work.py            # Work face — cook-preview bucket grid + plan-with-progress + health
-│   ├── face_review.py          # Review face — render-hero + verdict + credit/provenance + flags + gated commit
-│   ├── claude_worker.py        # background QThread — streams Claude + tool loop
-│   ├── tool_executor.py        # main-thread tool dispatch (→ SynapseHandler)
+│   ├── synapse_panel.py        # the docked panel — rail + 2 tabs (same-pane law), honest Stop, freeze-chain heartbeat
+│   ├── face_work.py            # Work tab — cook-preview bucket grid + plan-with-progress + health (review folds into cook→done)
+│   ├── claude_worker.py        # background QThread — streams Claude + tool loop, per-tool wait budgets
+│   ├── tool_executor.py        # main-thread tool dispatch (→ SynapseHandler), per-tool MCP timeouts
 │   ├── bridge_adapter.py       # routes external-MCP mutations through LosslessExecutionBridge
 │   ├── tool_palette.py         # Ctrl+K palette — two axes (verb × context) over the tool registry
-│   ├── health_infographic.py   # observability (per-agent health + self-tuning loop), embedded in the Work face
+│   ├── health_infographic.py   # observability (per-agent health + self-tuning loop), embedded in the Work tab
 │   └── designsystem/           # vendored tokens / qss / components (one source)
+├── server/                     # live transport + safety wiring
+│   ├── freeze_chain.py         # v5.12.0 — process-wide watchdog: 5s detect → 30s escalate → breaker + halt
+│   ├── main_thread.py          # deferred main-thread dispatch — zombie-abandon + dispatch_wait_ms histogram
+│   └── handlers*.py            # command handlers — inline undo, cross-client mutation lock
+├── core/
+│   └── timeouts.py             # v5.12.0 — THE canonical per-tool timeout table (all clients budget from it)
 ├── _vendor/                    # anthropic + deps, CP311 win_amd64
 └── ...                         # Sprint 2 Week 1 + prior subsystems
 
-tests/                          # 3168 local; ~70 are Moneta-gated (skip on a
+tests/                          # 3415 local; ~70 are Moneta-gated (skip on a
                                 # clean clone / CI without the moneta package)
 docs/sprint3/                   # audits + design contracts + continuation
 docs/crucible_protocol.md       # manual Crucible runbook

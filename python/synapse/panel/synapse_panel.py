@@ -64,7 +64,7 @@ except Exception:  # pragma: no cover
     FaceReview = None
     detect_render_flags = None
 
-_VERSION = "9.0.0"  # v9 re-layout: 2 tabs (Review folded into Work), bundled type
+_VERSION = "9.1.0"  # v9 re-layout: 2 tabs (Review folded into Work), bundled type; 9.1: honest Stop + freeze-chain heartbeat (v5.12.0)
 
 # Context-aware quick actions (prompt macros). Network-agnostic defaults; the
 # context ribbon refines them per network type at runtime.
