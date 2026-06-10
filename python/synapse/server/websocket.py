@@ -67,6 +67,29 @@ from .bridge_endpoint import publish_endpoint, clear_endpoint
 logger = logging.getLogger("synapse.server")
 
 
+# D3 — process-wide live-server registry. start() registers, stop() deregisters.
+# Lets the freeze chain / host layer reach the RUNNING server (its breaker, its
+# handler) without scanning gc or hard-coding who constructed it.
+_live_server = None
+_live_server_lock = threading.Lock()
+
+
+def _register_live_server(server, only_if=None):
+    """Set (or clear) the live-server handle. ``only_if`` guards stop() so an
+    old instance can't deregister a newer one."""
+    global _live_server
+    with _live_server_lock:
+        if only_if is not None and _live_server is not only_if:
+            return
+        _live_server = server
+
+
+def get_live_server():
+    """The currently-running SynapseServer instance, or None."""
+    with _live_server_lock:
+        return _live_server
+
+
 class SynapseServer:
     """
     WebSocket server for AI-Houdini communication.
@@ -214,6 +237,12 @@ class SynapseServer:
 
         self._running = True
 
+        # D3: register as the process's live server so the freeze chain (and any
+        # host-layer code) can reach the running instance without gc-scanning —
+        # the recoverability gap start_hwebserver.py works around with a module
+        # hard-ref. Cleared in stop().
+        _register_live_server(self)
+
         # Register signal handlers for graceful shutdown (standalone only)
         if not HOU_AVAILABLE:
             signal.signal(signal.SIGTERM, lambda s, f: self.stop())
@@ -242,6 +271,7 @@ class SynapseServer:
             return
 
         self._running = False
+        _register_live_server(None, only_if=self)  # D3: deregister (own instance only)
 
         # Remove our discoverable endpoint sidecar (only if it's ours).
         # Best-effort — never let a clear failure break shutdown.
