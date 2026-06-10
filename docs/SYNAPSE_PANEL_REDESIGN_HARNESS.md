@@ -19,12 +19,23 @@ This is a **re-layout**, not a rewrite. Every widget already exists — `ChatDis
 1. **Compose, don't rewrite.** Reuse the proven runtime. The legacy 3032-line monolith is dead; do not resurrect inline widgets that already exist as modules.
 2. **PySide6, PySide2 fallback.** Every widget import stays optional and wrapped — *graceful degradation is a runtime contract.* The panel must instantiate even when a dependency is absent.
 3. **The six properties stay visible.** termination · observability · bounded cost (the **rail**) · durability · provenance · reversibility (the **faces**). A spike that hides one fails its gate.
-4. **Two verification gates, both required before a spike is "done":**
-   - **G1 — harness:** `python harness/run_panel.py --smoke` exits 0, and the face renders correctly in the window.
-   - **G2 — Houdini 21.0.671:** the panel loads via the `.pypanel` hot-reload and renders in the real host. *Live verification supersedes "looks right in Qt."*
+4. **Three verification gates, all required before a spike is "done":**
+   - **G1 — boots (functionality):** `python run_panel.py --smoke` exits 0, the face renders in the window.
+   - **G2 — Houdini 21.0.671 (functionality, live):** loads via the `.pypanel` hot-reload, renders in the real host. *Live verification supersedes "looks right in Qt."*
+   - **G3 — readable + usable:** `python audit_panel.py --strict` exits 0 — no essential text under 3:1 contrast, no body under 13px, interactive targets ≥ 26px, the mile's faces/states present. *Run it in hython for the real check: the panel inherits Houdini's font, so size + contrast must be verified in-host, not just in Qt.*
 5. **Design fidelity gate.** Each face is checked side-by-side against `synapse_panel_pentagram_v3.html`. Drift is a defect.
 6. **Atomic commits, one per spike.** Marathon-marker messages (`mile N/7 — <what landed>`). Race-safe push: fetch + rebase, max 3 attempts, **halt on merge conflict.**
 7. **No phantom APIs.** If a Qt/`hou` call isn't confirmed present on the build, probe it (`dir()`/`hasattr`) before relying on it. Confirmed-absent → quarantine, don't re-litigate.
+
+### The three dimensions (what each gate proves)
+
+| Dimension | Gate | The question | Floor |
+|---|---|---|---|
+| **Functionality** | G1 + G2 | Does it build, boot, and run in the host? | smoke exits 0 · loads in 21.0.671 |
+| **Usability** | G3 | Can you operate it — targets reachable, every state legible, primary action obvious, faces switch? | targets ≥ 26px · empty/loading/error all styled (no raw JSON dumped to chat) |
+| **Readability** | G3 | Can you *read* it the way the comp reads? | essential text ≥ 3:1 (body ≥ 4.5:1) · body ≥ 13px · a real type hierarchy |
+
+Smoke proves *boots*. G3 proves *readable + usable*. A mile is not done until all three are green. `audit_panel.py` is the G3 tool — it reads your real `tokens.py`, so it audits the **system**, not a screenshot.
 
 ---
 
@@ -39,8 +50,8 @@ This is a **re-layout**, not a rewrite. Every widget already exists — `ChatDis
 ## 3 · The runner (Spike 0 — DONE, verified)
 
 ```
-python harness/run_panel.py            # open the panel in a window
-python harness/run_panel.py --smoke    # offscreen build + verify, exits 0/1
+python run_panel.py            # open the panel in a window  (runner lives at REPO ROOT)
+python run_panel.py --smoke    # offscreen build + verify, exits 0/1
 ```
 
 - Edit any `synapse.panel.*` module → **press F5** in the window → hot-reload. No Houdini restart.
@@ -54,13 +65,13 @@ python harness/run_panel.py --smoke    # offscreen build + verify, exits 0/1
 
 > Each spike: **goal · files · gate · commit.** Continuous flow — only stop at a gate or a halt trigger.
 
-**Mile 1 — The rail.** *You are here after Spike 0.*
+**Mile 1 — The rail.** ✅ **DONE — verified live in Houdini 21.0.671.** Rail + mark-as-status; Send/Stop size to text; action pills +2pt.
 - **Goal:** collapse header + footer + observability into one persistent top strip. Move `Stop` up into it. Condense `HealthInfographic` to a quiet meter + mono numerics + cost.
 - **Files:** `synapse_panel.py` (`_build_header`/`_build_footer` → `_build_rail`), `designsystem/components.py` (new **MarkDot** — the ◖ that fills by state), `tokens.py` (mark + muted-semantic stops).
 - **Gate:** G1 — rail renders, mark animates on `working`, `Stop` reachable. G2 — same in Houdini.
 - **Commit:** `mile 1/7 — persistent rail + mark-as-status`
 
-**Mile 2 — Faces + switcher.**
+**Mile 2 — Faces + switcher.** ◀ **YOU ARE HERE.**
 - **Goal:** extend the existing `Pill` + `QStackedWidget` (today `[Chat][Build HDA]`) to `[Direct][Work][Review]`. Add the **state→face controller**: idle→Direct, working→Work, gate-raised/done→Review. Pills are manual override. **Never yank away from Direct while the input has focus.** Build HDA demotes into Direct / ⌘K.
 - **Files:** `synapse_panel.py` (`_build_mode_bar`, `_set_mode` → `_set_face`, wire to `_set_busy`/`_on_tool_status`/gate signals).
 - **Gate:** G1 — switches manually + auto on simulated state changes. G2.
@@ -111,7 +122,7 @@ python harness/run_panel.py --smoke    # offscreen build + verify, exits 0/1
 
 ## 6 · Definition of done
 
-Per spike: **G1 green · G2 green · matches comp · six properties intact · tests added or green.**
+Per spike: **G1 green · G2 green · G3 green (`audit_panel.py --strict`) · matches comp · six properties intact · tests added or green.**
 Overall: the three faces live in Houdini 21.0.671, the rail never leaves the screen, and a walk-away → come-back cycle reads as trustworthy without you touching the transcript.
 
 ---
@@ -120,10 +131,10 @@ Overall: the three faces live in Houdini 21.0.671, the rail never leaves the scr
 
 ```
 +== PANEL REDESIGN — BUILD ==============================+
-| WHERE WE ARE:        Spike 0 done — runner verified    |
+| WHERE WE ARE:        Mile 1 done — rail LIVE in Houdini |
 | MILE MARKER:         0 of 7 (start line crossed)       |
 | WHAT I WAS THINKING: v3 design locked; re-layout only  |
-| NEXT ACTION:         Mile 1 — rail + mark-as-status    |
+| NEXT ACTION:         Mile 2 — faces + state→face switch |
 | BLOCKERS:            none                              |
 | ENERGY REQUIRED:     coding (3) — momentum from design |
 | IDEAS PARKED:        production type (Söhne/Diatype/GT) |

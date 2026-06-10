@@ -1,6 +1,0 @@
-OK: resolution1 = 2048
-OK: camera = /cameras/phantom_anamorphic_cam1
-OK: disableDepthOfField = 0
-OK: disableMotionBlur = 0
-OK: res_mode = specific
-ERROR: resolution2: Failed to modify node or parameter because of a permission error.  Possible caus
