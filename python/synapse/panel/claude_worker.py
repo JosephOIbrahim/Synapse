@@ -29,7 +29,18 @@ from .worker_policy import denial_tool_result, is_tool_allowed_for_worker
 logger = logging.getLogger(__name__)
 
 _MAX_TOOL_ITERATIONS = 25
-_TOOL_WAIT_TIMEOUT = 30.0
+_TOOL_WAIT_TIMEOUT = 30.0   # floor; C7 raises per-tool via _wait_budget()
+
+
+def _wait_budget(tool_name):
+    """Qt-fallback wait budget for a tool (C7): at least _TOOL_WAIT_TIMEOUT,
+    raised to the shared per-tool table (+5s margin) for slow tools — a render
+    (120s) or sequence (600s) must not be reported dead at 30s."""
+    try:
+        from synapse.core.timeouts import timeout_for
+        return max(_TOOL_WAIT_TIMEOUT, timeout_for(tool_name) + 5.0)
+    except Exception:
+        return _TOOL_WAIT_TIMEOUT
 _HTTP_TIMEOUT = 60
 _API_HOST = "api.anthropic.com"
 _API_PATH = "/v1/messages"
@@ -252,10 +263,15 @@ class ClaudeWorker(QThread):
 
         self.tool_requested.emit(request)
 
-        # Block until executor completes (or timeout)
-        completed = request.done.wait(timeout=_TOOL_WAIT_TIMEOUT)
+        # Block until executor completes (or per-tool timeout — C7)
+        budget = _wait_budget(tool_name)
+        completed = request.done.wait(timeout=budget)
         if not completed:
-            request.error = f"Tool {tool_name!r} timed out after {_TOOL_WAIT_TIMEOUT}s"
+            request.error = (
+                f"Tool {tool_name!r} did not finish within {budget:.0f}s — it may "
+                "STILL be running inside Houdini. Do not retry; check the scene/"
+                "cook state first."
+            )
 
         # Determine status
         if request.error:

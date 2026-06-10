@@ -563,11 +563,21 @@ class TestConciseDescriptions:
         assert '"batch_commands"' in content
 
     def test_batch_in_slow_commands(self):
-        """batch_commands has a 60s timeout in _SLOW_COMMANDS."""
-        mcp_path = Path(__file__).resolve().parent.parent / "mcp_server.py"
-        with open(mcp_path, encoding="utf-8") as f:
+        """batch_commands has a 60s timeout in the canonical timeout table.
+
+        C7 single-sourced the table into synapse.core.timeouts; the value pin
+        moves there, and mcp_server.py is pinned to IMPORT the shared table
+        (so the stdio client can never drift back to a private copy)."""
+        timeouts_path = (Path(__file__).resolve().parent.parent
+                         / "python" / "synapse" / "core" / "timeouts.py")
+        with open(timeouts_path, encoding="utf-8") as f:
             content = f.read()
         assert '"batch_commands": 60.0' in content
+
+        mcp_path = Path(__file__).resolve().parent.parent / "mcp_server.py"
+        with open(mcp_path, encoding="utf-8") as f:
+            mcp_content = f.read()
+        assert "from synapse.core.timeouts import" in mcp_content
 
     def test_descriptions_have_coaching(self):
         """Tool descriptions use coaching tone (no jargon, user-friendly)."""

@@ -182,47 +182,9 @@ def _candidate_urls() -> list:
 PROTOCOL_VERSION = "5.4.0"
 MAX_RETRIES = 2
 RETRY_DELAY = 0.05
-COMMAND_TIMEOUT = 10.0
-_SLOW_COMMANDS = {
-    "execute_python": 30.0, "execute_vex": 30.0, "capture_viewport": 30.0,
-    "render": 120.0, "wedge": 120.0, "validate_frame": 30.0,
-    "render_sequence": 600.0,
-    "inspect_selection": 30.0, "inspect_scene": 30.0, "inspect_node": 30.0,
-    "network_explain": 30.0,
-    "batch_commands": 60.0,
-    # TOPS/PDG commands -- PDG graph context initialization (getPDGGraphContext,
-    # getPDGNode) can block Houdini's main thread for 5-15s on first access.
-    # All tops_ commands need at least 60s to survive this cold-start stall.
-    "tops_get_work_items": 60.0,
-    "tops_get_dependency_graph": 60.0,
-    "tops_get_cook_stats": 60.0,
-    "tops_cook_node": 120.0,
-    "tops_generate_items": 60.0,
-    "tops_configure_scheduler": 30.0,
-    "tops_cancel_cook": 30.0,
-    "tops_dirty_node": 60.0,
-    "tops_batch_cook": 300.0,
-    "tops_setup_wedge": 30.0,
-    "tops_query_items": 60.0,
-    "tops_cook_and_validate": 600.0,
-    "tops_diagnose": 60.0,
-    "tops_pipeline_status": 60.0,
-    "tops_monitor_stream": 30.0,
-    "tops_render_sequence": 600.0,
-    "tops_multi_shot": 600.0,
-    "autonomous_render": 600.0,
-    "safe_render": 120.0,
-    "render_progressively": 120.0,
-    "hda_package": 120.0,
-    # Copernicus (COPs) -- solvers and batch need longer timeouts
-    "cops_reaction_diffusion": 60.0,
-    "cops_growth_propagation": 60.0,
-    "cops_temporal_analysis": 60.0,
-    "cops_batch_cook": 120.0,
-    "cops_composite_aovs": 60.0,
-    "cops_bake_textures": 60.0,
-    "cops_wetmap": 60.0,
-}
+# C7: COMMAND_TIMEOUT/_SLOW_COMMANDS are single-sourced in synapse.core.timeouts
+# and imported below, AFTER the sys.path insert that makes `synapse` importable
+# (their only pre-import use, in send_command, resolves at call time).
 
 logger = logging.getLogger("synapse-mcp")
 
@@ -485,6 +447,10 @@ from synapse.mcp._tool_registry import (
     TOOL_DEFS as _REGISTRY_TOOL_DEFS,
     TOOL_DISPATCH,
 )
+# C7: the per-command timeout table, single-sourced so the panel client budgets
+# the SAME numbers (it used to hardcode 30/35s against 120-600s tools and
+# re-dispatch on timeout).
+from synapse.core.timeouts import COMMAND_TIMEOUT, SLOW_COMMANDS as _SLOW_COMMANDS
 
 # ---------------------------------------------------------------------------
 # Inspector tool wiring (Sprint 2 Week 1 / Sprint 3 Spike 1 — tool #44)

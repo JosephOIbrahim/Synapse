@@ -322,10 +322,17 @@ class TestVEXHandler:
         assert "houdini_execute_vex" in content
 
     def test_slow_command_timeout(self):
-        """execute_vex should have 30s timeout."""
-        mcp_path = _PROJECT_ROOT / "mcp_server.py"
-        content = mcp_path.read_text(encoding="utf-8", errors="replace")
+        """execute_vex should have 30s timeout (C7: the table is single-sourced
+        in synapse.core.timeouts; the value pin follows it, and mcp_server is
+        pinned to import the shared table so it can't drift back to a copy)."""
+        timeouts_path = (_PROJECT_ROOT / "python" / "synapse" / "core"
+                         / "timeouts.py")
+        content = timeouts_path.read_text(encoding="utf-8", errors="replace")
         assert '"execute_vex": 30.0' in content
+
+        mcp_content = (_PROJECT_ROOT / "mcp_server.py").read_text(
+            encoding="utf-8", errors="replace")
+        assert "from synapse.core.timeouts import" in mcp_content
 
 
 # ==========================================================================

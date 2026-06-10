@@ -103,8 +103,12 @@ class _MCPLocalClient:
             self._port = self._detect_port()
         return self._port is not None
 
-    def _post(self, body: dict, headers: Optional[dict] = None) -> dict:
-        """POST JSON-RPC to localhost MCP endpoint. Returns parsed response."""
+    def _post(self, body: dict, headers: Optional[dict] = None,
+              timeout: float = 35.0) -> dict:
+        """POST JSON-RPC to localhost MCP endpoint. Returns parsed response.
+
+        ``timeout`` is per-call (C7): slow tools (render 120s, sequences 600s)
+        must not be cut off by a one-size socket budget."""
         if self._port is None:
             raise ConnectionError("hwebserver port unknown")
 
@@ -117,7 +121,7 @@ class _MCPLocalClient:
 
         payload = json.dumps(body, sort_keys=True).encode("utf-8")
 
-        conn = http.client.HTTPConnection("localhost", self._port, timeout=35)
+        conn = http.client.HTTPConnection("localhost", self._port, timeout=timeout)
         try:
             conn.request("POST", "/mcp", body=payload, headers=all_headers)
             resp = conn.getresponse()
@@ -169,6 +173,9 @@ class _MCPLocalClient:
         """
         session_id = self._ensure_session()
 
+        # C7: budget from the shared per-tool table (+5s margin for the HTTP
+        # round trip) instead of a fixed 35s that render/sequence tools blow.
+        from synapse.core.timeouts import timeout_for
         result = self._post(
             {
                 "jsonrpc": "2.0",
@@ -180,6 +187,7 @@ class _MCPLocalClient:
                 },
             },
             headers={"Mcp-Session-Id": session_id},
+            timeout=timeout_for(tool_name) + 5.0,
         )
 
         if "error" in result:
@@ -358,11 +366,21 @@ def try_mcp_tool_call(
         Result dict on success, None if MCP is unavailable.
 
     Raises:
-        RuntimeError: If MCP returned a JSON-RPC error (tool-level failure).
+        RuntimeError: If MCP returned a JSON-RPC error (tool-level failure), OR
+            if the call TIMED OUT (C7) — a timeout means the tool may still be
+            executing inside Houdini, so the caller must NOT fall through and
+            re-dispatch the same (possibly mutating) tool a second time.
     """
     if not _mcp_client.available:
         return None
     try:
         return _mcp_client.call_tool(tool_name, arguments)
+    except TimeoutError as exc:
+        # socket.timeout — MUST precede the OSError catch (it's a subclass).
+        raise RuntimeError(
+            "Tool {!r} timed out client-side but may STILL be running inside "
+            "Houdini — do not retry; check the scene/cook state first. ({})".format(
+                tool_name, exc or "socket timeout")
+        ) from exc
     except (ConnectionError, OSError):
-        return None
+        return None  # genuinely unreachable — caller may fall back to the Qt path
