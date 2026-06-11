@@ -11,7 +11,22 @@
 | 2 | Implement M1 — four P0s + truth contract + sharp ones + registry test | DONE — 8 implementers (disjoint file sets) + orchestrator-reserved `handlers.py`/`_tool_registry.py`/`mcp_tools_cops.py` edits |
 | 3 | Full suite green + commits | DONE — **3,467 passed / 68 skipped / exit 0 (~51 s)**, incl. `test_m1_truth_contract.py` |
 | 4 | Verify all M2 findings (10 WPs, read-only fleet) | FAILED — `wf_0c2a040b-843`: all 10 agents killed by the account's monthly spend limit (0/10 verdicts, ~1.08M tokens of partial work lost). Pivot: solo sequential verify→implement per WP (sharpest P1s first), commit per group. |
-| 5 | Implement M2 — display/rewire policy, cook-verify, `_safe_node_name`, path/token policy, OCIO previews, recipe rollback, show-config | RUNNING (solo) — order: M2-B cook-verify → M2-F flipbook path → M2-C safe-node-name → rest as budget allows |
+| 5 | Implement M2 — display/rewire policy, cook-verify, `_safe_node_name`, path/token policy, OCIO previews, recipe rollback, show-config | RUNNING (solo) — see M2 WP table below |
+
+## M2 work packages (solo verify→implement; fleet died on spend limit)
+
+| WP | Finding | Status |
+|---|---|---|
+| M2-B | §3#8 residue — cook+readback in `manage_collection`/`configure_light_linking` | ✅ `00fa6ee` — confirmed (embedded `if prim:` silently skips, cook alone proves nothing → stage readback added); SHAPE_FICTION_DEBT retired |
+| M2-F | §3#11 — flipbook GL grab at the beauty path | ✅ `d83360b` — confirmed WORSE (.jpg replace no-ops on EXR → grab lands AT beauty path verbatim; fallback also claimed `output_file` for a never-written file) → `_glpreview` sidecar + honest keys |
+| M2-C | §4.3 — `_safe_node_name()` | ✅ `a029afb` — 11 derived-name sites (10 usd + 1 material) had half-sanitizers missing hyphens/brackets; one helper now owns the rule. Front doors (create_node/cops_create_node) intentionally passthrough — explicit-name raising is feedback, not a derived crash |
+| M2-H | §4.2 — recipe/plan rollback | ✅ `2f9d92d` — `_try_recipe` stopped continue-on-failure; `_try_plan` was pre-M1 fiction intact (unconditional success=True) → full truth contract. **Flagged follow-on:** per-recipe server-side undo group (router can't safely auto-undo: read-only steps create no undo entries; `_READ_ONLY_COMMANDS` unimportable router-side without circular) |
+| M2-A | §3#7 — dangling LOP display/rewire policy | pending |
+| M2-D | §4.3 — path policy core (baked absolutes, `$HIP` pre-expansion, resolver-URI gates) | pending |
+| M2-E | §4.3 — frame-token expander | pending |
+| M2-G | §4.3 — OIIO+`$OCIO` color-managed previews | pending |
+| M2-I | item 7b — show-config lookup | pending |
+| M2-J | §4.1 rider — render_farm `initial_settings` never re-applied | pending |
 | 6–7 | M3 — UPGRADE.md, env conformance, logs/bundle, telemetry flush, keys/egress, autonomy bounds | pending |
 | — | M3 item 11 (SEC-1/RBAC) | SKIPPED — gate, not work (per report §5) |
 

@@ -117,6 +117,8 @@ class RenderFarmOrchestrator:
         self._scene_tags: List[str] = []
         self._running = False
         self._cancelled = False
+        # M2-J: parms mutated by warmup/auto-fix this batch (for restore)
+        self._changed_parms: set = set()
 
     def cancel(self):
         """Request cancellation of the current render sequence."""
@@ -326,6 +328,7 @@ class RenderFarmOrchestrator:
                     "settings": {remedy.parm_name: new_val},
                 })
                 settings_snapshot[remedy.parm_name] = new_val
+                self._changed_parms.add(remedy.parm_name)
                 result.fixes_applied.append(
                     f"{remedy.parm_name}={new_val} ({remedy.description})"
                 )
@@ -465,6 +468,12 @@ class RenderFarmOrchestrator:
         except Exception:
             logger.debug("Could not read initial render settings")
 
+        # M2-J: the ARTIST's values, captured before any mutation -- the
+        # warmup update below folds suggested values into initial_settings,
+        # which previously destroyed the only record of the baseline.
+        artist_baseline = dict(initial_settings)
+        self._changed_parms = set()
+
         # Apply memory-suggested settings if available
         suggested = self._warmup_from_memory(rop)
         if suggested:
@@ -475,6 +484,7 @@ class RenderFarmOrchestrator:
                     "settings": suggested,
                 })
                 initial_settings.update(suggested)
+                self._changed_parms.update(suggested)
             except Exception:
                 logger.debug("Failed to apply memory-suggested settings")
 
@@ -597,6 +607,32 @@ class RenderFarmOrchestrator:
         # Phase 2: Finalize
         report.total_wall_time = round_float(time.time() - wall_start)
         self._running = False
+
+        # M2-J: restore the artist's render settings on every terminal state
+        # (complete, failed, cancelled) -- warmup/auto-fix mutations must not
+        # silently persist past the batch (approved-dailies drift). The values
+        # that worked are recorded in settings_used / fixes_applied.
+        if self._changed_parms:
+            report.settings_changed = sorted(self._changed_parms)
+            restore = {
+                p: artist_baseline[p]
+                for p in self._changed_parms
+                if p in artist_baseline
+            }
+            unrestorable = sorted(self._changed_parms - set(restore))
+            try:
+                if restore:
+                    self._cb.set_render_settings({
+                        "node": rop,
+                        "settings": restore,
+                    })
+                report.settings_restored = sorted(restore)
+                if unrestorable:
+                    report.settings_restore_error = (
+                        "no captured baseline for: " + ", ".join(unrestorable)
+                    )
+            except Exception as e:
+                report.settings_restore_error = str(e)
 
         # Write report and send notifications
         report_dir = self._report_dir

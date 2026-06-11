@@ -57,6 +57,10 @@ class BatchReport:
     scene_tags: List[str] = field(default_factory=list)
     frame_results: List[FrameResult] = field(default_factory=list)
     settings_used: Dict = field(default_factory=dict)
+    # M2-J: per-parm provenance of warmup/auto-fix mutations + the restore
+    settings_changed: List[str] = field(default_factory=list)
+    settings_restored: List[str] = field(default_factory=list)
+    settings_restore_error: str = ""
 
     @property
     def success_rate(self) -> float:
@@ -77,6 +81,9 @@ class BatchReport:
             "rop_path": self.rop_path,
             "scene_tags": self.scene_tags,
             "settings_used": self.settings_used,
+            "settings_changed": self.settings_changed,
+            "settings_restored": self.settings_restored,
+            "settings_restore_error": self.settings_restore_error,
             "frame_results": [
                 {
                     "frame": fr.frame,

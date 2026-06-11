@@ -525,3 +525,83 @@ class TestGpuCpuOverlap:
         # No exceptions should have leaked — the report is well-formed
         assert report.total_frames == 100
         assert report.total_wall_time >= 0
+
+
+# ---------------------------------------------------------------------------
+# M2-J (report 4.1): settings restore on terminal state
+# ---------------------------------------------------------------------------
+
+class TestSettingsRestore:
+    """Warmup/auto-fix render-settings mutations are restored to the artist's
+    baseline when the batch ends, with per-parm provenance in the report.
+    Previously initial_settings was captured, mutated in place (the warmup
+    .update destroyed the baseline record), and never re-applied -- the
+    approved-dailies look silently drifted."""
+
+    @patch("synapse.server.render_farm.notify_batch_complete")
+    def test_warmup_mutation_restored_on_completion(self, mock_notify, tmp_path):
+        mock_notify.return_value = {}
+        cb = _make_callbacks(settings_resp={"settings": {"pathtracedsamples": 64}})
+        farm = RenderFarmOrchestrator(callbacks=cb, report_dir=str(tmp_path))
+        farm._warmup_from_memory = MagicMock(
+            return_value={"pathtracedsamples": 128}
+        )
+
+        report = farm.render_sequence("/stage/karma1", (1, 2))
+
+        assert report.settings_changed == ["pathtracedsamples"]
+        assert report.settings_restored == ["pathtracedsamples"]
+        assert report.settings_restore_error == ""
+        # The LAST set_render_settings call is the restore to the baseline.
+        last = cb.set_render_settings.call_args_list[-1][0][0]
+        assert last == {
+            "node": "/stage/karma1",
+            "settings": {"pathtracedsamples": 64},
+        }
+        # Provenance keys survive serialization (autonomy driver consumes this).
+        d = report.to_dict()
+        assert d["settings_changed"] == ["pathtracedsamples"]
+        assert d["settings_restored"] == ["pathtracedsamples"]
+
+    @patch("synapse.server.render_farm.notify_batch_complete")
+    def test_no_mutation_no_restore(self, mock_notify, tmp_path):
+        mock_notify.return_value = {}
+        cb = _make_callbacks()
+        farm = RenderFarmOrchestrator(callbacks=cb, report_dir=str(tmp_path))
+        farm._warmup_from_memory = MagicMock(return_value={})
+
+        report = farm.render_sequence("/stage/karma1", (1, 1))
+
+        assert report.settings_changed == []
+        assert report.settings_restored == []
+        cb.set_render_settings.assert_not_called()
+
+    @patch("synapse.server.render_farm.notify_batch_complete")
+    def test_restore_failure_recorded(self, mock_notify, tmp_path):
+        mock_notify.return_value = {}
+        cb = _make_callbacks(settings_resp={"settings": {"samples": 4}})
+        farm = RenderFarmOrchestrator(callbacks=cb, report_dir=str(tmp_path))
+        farm._warmup_from_memory = MagicMock(return_value={"samples": 16})
+        # Warmup set succeeds; the restore set raises.
+        cb.set_render_settings.side_effect = [{}, RuntimeError("disconnected")]
+
+        report = farm.render_sequence("/stage/karma1", (1, 1))
+
+        assert report.settings_changed == ["samples"]
+        assert report.settings_restored == []
+        assert "disconnected" in report.settings_restore_error
+
+    @patch("synapse.server.render_farm.notify_batch_complete")
+    def test_unrestorable_parm_flagged(self, mock_notify, tmp_path):
+        mock_notify.return_value = {}
+        # Baseline read returned no record of this parm -- restore is
+        # impossible and the report must say so, not pretend.
+        cb = _make_callbacks(settings_resp={"settings": {}})
+        farm = RenderFarmOrchestrator(callbacks=cb, report_dir=str(tmp_path))
+        farm._warmup_from_memory = MagicMock(return_value={"samples": 16})
+
+        report = farm.render_sequence("/stage/karma1", (1, 1))
+
+        assert report.settings_changed == ["samples"]
+        assert report.settings_restored == []
+        assert "no captured baseline" in report.settings_restore_error
