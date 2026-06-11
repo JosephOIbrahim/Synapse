@@ -45,6 +45,25 @@ def _safe_node_name(name, fallback="node"):
     return safe
 
 
+_FRAME_TOKEN_RE = re.compile(r"\$F(\d*)")
+
+
+def _expand_frame_tokens(path, frame):
+    """Resolve $F / $Fn Houdini frame tokens to a concrete frame number.
+
+    str.replace('$F4', ...) only handled that one spelling -- artist paths
+    using $F, $F2, $F5 etc. polled a literal token path and produced false
+    "output wasn't created" failures (hardening report 4.3).
+    """
+    f = int(frame)
+
+    def _sub(m):
+        pad = m.group(1)
+        return str(f).zfill(int(pad)) if pad else str(f)
+
+    return _FRAME_TOKEN_RE.sub(_sub, str(path))
+
+
 def _suggest_parms(node, invalid_name: str, limit: int = 8) -> str:
     """Find similar parameter names on a node for error enrichment."""
     try:

@@ -414,7 +414,15 @@ class TestRenderEXRPersistence:
         else:
             exists_fn = exists_pattern
 
-        with patch.object(_handlers_hou, "node", return_value=fake_node, create=True), \
+        # Path-aware: only the requested ROP resolves. A blanket
+        # return_value=fake_node also answered hou.node("/stage") in the
+        # loppath auto-find, conjuring a phantom Karma LOP from auto-mock
+        # children — and the old assertions passed VACUOUSLY because
+        # MagicMock.endswith() is truthy.
+        def _node_lookup(p):
+            return fake_node if p == payload.get("node") else None
+
+        with patch.object(_handlers_hou, "node", side_effect=_node_lookup, create=True), \
              patch.object(_handlers_hou, "frame", return_value=frame, create=True), \
              patch.object(_handlers_hou, "text", MagicMock(expandString=MagicMock(return_value="/tmp/houdini_temp")), create=True), \
              patch("pathlib.Path.exists", exists_fn), \

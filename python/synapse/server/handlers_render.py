@@ -43,7 +43,7 @@ except ImportError:
     }
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.determinism import round_float, kahan_sum
-from .handler_helpers import _suggest_parms, _HOUDINI_UNAVAILABLE
+from .handler_helpers import _suggest_parms, _HOUDINI_UNAVAILABLE, _expand_frame_tokens
 
 
 def _find_render_rop():
@@ -155,8 +155,8 @@ class RenderHandlerMixin:
             settings.resolution((int(width), int(height)))
             sv.flipbook(viewport=vp, settings=settings, open_dialog=False)
 
-            # Resolve the actual output filename (replaces $F4 with frame number)
-            actual = out_pattern.replace("$F4", f"{cur:04d}")
+            # Resolve the actual output filename (frame tokens -> frame number)
+            actual = _expand_frame_tokens(out_pattern, cur)
             return actual
 
         import hdefereval
@@ -331,8 +331,8 @@ class RenderHandlerMixin:
 
                     cur = int(hou.frame()) if frame is None else int(frame)
 
-                    # Resolve $F4 frame token in render path for file polling
-                    render_path_resolved = render_path.replace("$F4", f"{cur:04d}")
+                    # Resolve frame tokens ($F/$Fn, any padding) for file polling
+                    render_path_resolved = _expand_frame_tokens(render_path, cur)
 
                     # Resolution override -- res= is a scale factor, so set parms directly
                     if width and height:
@@ -472,9 +472,7 @@ class RenderHandlerMixin:
                                 settings=fb_settings,
                                 open_dialog=False,
                             )
-                            fb_actual = fb_pattern.replace(
-                                "$F4", f"{cur:04d}"
-                            )
+                            fb_actual = _expand_frame_tokens(fb_pattern, cur)
                             if (
                                 Path(fb_actual).exists()
                                 and Path(fb_actual).stat().st_size > 0

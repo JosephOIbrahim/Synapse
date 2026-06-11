@@ -27,9 +27,14 @@ if "hou" not in sys.modules:
 # (first planter wins) -- enrich it with what sibling handler tests rely on,
 # never plant a skeleton (test_autonomy_live_contract.py pattern).
 _h = sys.modules["hou"]
-for _attr in ("undos", "node", "text", "ui"):
+for _attr in ("undos", "node", "ui"):
     if not hasattr(_h, _attr):
         setattr(_h, _attr, MagicMock())
+if not hasattr(_h, "text"):
+    # Sibling convention: expandString returns a real str (later files'
+    # handlers run Path() over it when this file is the first planter).
+    _h.text = MagicMock()
+    _h.text.expandString = MagicMock(return_value="/tmp/houdini_temp")
 if not hasattr(_h, "frame"):
     _h.frame = MagicMock(return_value=1)
 if "hdefereval" not in sys.modules:

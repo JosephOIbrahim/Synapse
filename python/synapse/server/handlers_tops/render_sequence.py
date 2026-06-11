@@ -6,6 +6,7 @@ Auto-extracted from the monolith handlers_tops.py.
 
 import logging
 import os
+import re
 import time
 from typing import Any, Dict, List, Optional
 
@@ -45,20 +46,33 @@ def _validate_rendered_frames(
         except Exception:
             pass
 
+    # M2-E (report 4.3): padding-agnostic -- accept ANY zero-padding of the
+    # frame number. The old zfill(4) hardcode made 3- or 5-digit shows
+    # report every frame missing -> pointless farm resubmits.
+    exts = ("exr", "png", "jpg", "tif", "tiff", "rat")
+    seq_re = re.compile(
+        rf"^{re.escape(prefix)}\.(\d+)\.({'|'.join(exts)})$"
+    )
+    found_by_frame: Dict[int, str] = {}
+    try:
+        names = sorted(os.listdir(resolved_dir))
+    except OSError:
+        names = []
+    for nm in names:
+        m = seq_re.match(nm)
+        if m:
+            found_by_frame.setdefault(
+                int(m.group(1)), os.path.join(resolved_dir, nm)
+            )
+
     for frame in expected_frames:
-        padded = str(frame).zfill(4)
-        found = False
-        for ext in ("exr", "png", "jpg", "tif", "tiff", "rat"):
-            candidate = os.path.join(resolved_dir, f"{prefix}.{padded}.{ext}")
-            if os.path.isfile(candidate):
-                found = True
-                if os.path.getsize(candidate) == 0:
-                    zero_size_frames.append(frame)
-                break
-        if found:
-            found_count += 1
-        else:
+        candidate = found_by_frame.get(frame)
+        if candidate is None:
             missing_frames.append(frame)
+        else:
+            found_count += 1
+            if os.path.getsize(candidate) == 0:
+                zero_size_frames.append(frame)
 
     return {
         "expected_frames": expected_count,
