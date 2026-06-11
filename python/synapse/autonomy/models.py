@@ -167,3 +167,6 @@ class RenderReport:
     iterations: int = 0
     total_time_seconds: float = 0.0
     success: bool = False
+    # M3-E: why the loop ended -- "" (passed), "max_iterations", "cancelled",
+    # "wall_clock_exceeded", "gate_rejected", "validation_failed"
+    stop_reason: str = ""

@@ -9,6 +9,7 @@ automatic re-planning on evaluation failure (up to max_iterations).
 import asyncio
 import json
 import logging
+import threading
 import time
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Protocol
@@ -25,12 +26,41 @@ from .models import (
     StepStatus,
     VerificationResult,
 )
+from ..core.timeouts import timeout_for
 from .planner import RenderPlanner
 from .validator import PreFlightValidator
 from .evaluator import RenderEvaluator
 from .predictor import RenderPredictor
 
 logger = logging.getLogger("synapse.autonomy.driver")
+
+# M3-E: payload-controlled max_iterations is clamped here (the constructor is
+# the chokepoint for every entry: handlers.py, agent capabilities, tests).
+# Default is 3 everywhere; 10 = ~3x headroom -- iteration count can't fix what
+# 10 replans didn't.
+MAX_ITERATIONS_HARD_CAP = 10
+
+# M3-E: process-wide live-driver registry (mirrors websocket.py's D3 idiom).
+# Lets the render_farm_cancel kill switch reach the RUNNING driver without
+# scanning gc or hard-coding who constructed it. Single-seat: last wins.
+_live_driver = None
+_live_driver_lock = threading.Lock()
+
+
+def _register_live_driver(driver, only_if=None):
+    """Set (or clear) the live-driver handle. ``only_if`` guards clearing so
+    an old instance can't deregister a newer one."""
+    global _live_driver
+    with _live_driver_lock:
+        if only_if is not None and _live_driver is not only_if:
+            return
+        _live_driver = driver
+
+
+def get_live_driver():
+    """The currently-executing AutonomousDriver instance, or None."""
+    with _live_driver_lock:
+        return _live_driver
 
 
 class HandlerInterface(Protocol):
@@ -79,6 +109,7 @@ class AutonomousDriver:
         memory_system: Optional[MemorySystem] = None,
         predictor: Optional[RenderPredictor] = None,
         max_iterations: int = 3,
+        max_wall_clock_seconds: Optional[float] = None,
     ) -> None:
         self._planner = planner
         self._validator = validator
@@ -86,7 +117,13 @@ class AutonomousDriver:
         self._handler = handler_interface
         self._memory = memory_system
         self._predictor = predictor
-        self._max_iterations = max_iterations
+        # M3-E: clamp the payload-controlled iteration count; bound the run's
+        # wall clock at the canonical client budget unless explicitly raised.
+        self._max_iterations = max(1, min(int(max_iterations), MAX_ITERATIONS_HARD_CAP))
+        self._max_wall_clock = (
+            float(max_wall_clock_seconds) if max_wall_clock_seconds
+            else timeout_for("autonomous_render")
+        )
 
         self._decisions: List[Decision] = []
         self._checkpoints: Dict[str, Dict[str, Any]] = {}
@@ -108,7 +145,18 @@ class AutonomousDriver:
         Returns:
             RenderReport with plan, evaluation, decisions, and success flag.
         """
+        # M3-E: self-register so the render_farm_cancel kill switch can reach
+        # this run; deregister on every exit (only_if guards a newer run).
+        _register_live_driver(self)
+        try:
+            return await self._execute_inner(intent)
+        finally:
+            _register_live_driver(None, only_if=self)
+
+    async def _execute_inner(self, intent: str) -> RenderReport:
         start_time = time.monotonic()
+        deadline = start_time + self._max_wall_clock
+        stop_reason = ""
         self._cancelled = False
         self._decisions = []
         iteration = 0
@@ -143,6 +191,7 @@ class AutonomousDriver:
                     iterations=0,
                     total_time_seconds=time.monotonic() - start_time,
                     success=False,
+                    stop_reason="gate_rejected",
                 )
 
         while iteration < self._max_iterations:
@@ -153,6 +202,19 @@ class AutonomousDriver:
                     reasoning="emergency_stop() was called during execution",
                     gate=GateLevel.INFORM,
                 )
+                stop_reason = "cancelled"
+                break
+
+            if time.monotonic() >= deadline:
+                self._log_decision(
+                    context="wall_clock_exceeded",
+                    decision=f"Stopping: wall-clock budget ({self._max_wall_clock:.0f}s) "
+                             f"exceeded after {iteration} iteration(s)",
+                    reasoning="Per-run wall-clock bound -- partial progress is "
+                              "reported honestly, not erased",
+                    gate=GateLevel.INFORM,
+                )
+                stop_reason = "wall_clock_exceeded"
                 break
 
             iteration += 1
@@ -179,6 +241,7 @@ class AutonomousDriver:
                     iterations=iteration,
                     total_time_seconds=time.monotonic() - start_time,
                     success=False,
+                    stop_reason="validation_failed",
                 )
 
             if soft_warns:
@@ -227,6 +290,7 @@ class AutonomousDriver:
                         evaluation = SequenceEvaluation(passed=False)
                     plan = self._planner.replan(plan, evaluation)
                     continue
+                stop_reason = "max_iterations"
                 break
 
             # Step 5: Collect render results and evaluate
@@ -293,6 +357,7 @@ class AutonomousDriver:
                     reasoning="Max iteration limit reached without passing quality checks",
                     gate=GateLevel.INFORM,
                 )
+                stop_reason = "max_iterations"
 
         total_time = time.monotonic() - start_time
 
@@ -306,6 +371,7 @@ class AutonomousDriver:
             iterations=iteration,
             total_time_seconds=total_time,
             success=evaluation.passed if evaluation else False,
+            stop_reason=stop_reason,
         )
 
         # Persist to memory
@@ -324,10 +390,10 @@ class AutonomousDriver:
         return report
 
     def emergency_stop(self) -> None:
-        """Cancel the current render loop at the next checkpoint.
+        """Cancel the current render loop at the next iteration boundary.
 
-        Also attempts to cancel any active TOPS work items via the
-        handler interface.
+        Sets the cancel flag only -- the in-flight step finishes before the
+        loop stops (no TOPS work-item cancellation is attempted here).
         """
         self._cancelled = True
         self._log_decision(

@@ -200,6 +200,13 @@ _READ_ONLY_COMMANDS = frozenset({
     "route_chat",
     "cops_read_layer_info",
     "cops_analyze_render",
+    # render_farm_cancel is the control-plane kill switch: it mutates NO scene
+    # state (sets two Python flags, no undo entry) and MUST bypass the C5
+    # mutation lock -- a running render holds that lock for the whole sequence,
+    # so a mutating-classified cancel would block behind the render it cancels
+    # -- and the WS resilience layer (read-only fast path). Audit is written
+    # in-handler (handlers_render._handle_render_farm_cancel).
+    "render_farm_cancel",
     # cops_temporal_analysis is NOT read-only: it moves the global playhead
     # (hou.setFrame loop) and force-cooks — it must take the C5 mutation lock
     # and leave audit + Floor provenance records.
@@ -564,6 +571,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         # Render farm
         reg.register("render_sequence", self._handle_render_sequence)
         reg.register("render_farm_status", self._handle_render_farm_status)
+        reg.register("render_farm_cancel", self._handle_render_farm_cancel)
 
         # Safe / progressive render
         reg.register("safe_render", self._handle_safe_render)
@@ -1571,7 +1579,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
         Payload:
             intent (str, required): Natural-language render intent (e.g. 'render frames 1-48').
-            max_iterations (int, optional): Max re-render attempts (default: 3).
+            max_iterations (int, optional): Max re-render attempts (default: 3, clamped to 10).
+            max_wall_clock_seconds (float, optional): Per-run wall-clock bound
+                (default: the canonical 600s client budget; past it the run stops
+                honestly with stop_reason='wall_clock_exceeded').
             quality_threshold (float, optional): Minimum quality score 0.0-1.0 (default: 0.85).
 
         Returns:
@@ -1640,6 +1651,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             handler_interface=adapter,
             memory_system=memory,
             max_iterations=max_iterations,
+            max_wall_clock_seconds=payload.get("max_wall_clock_seconds"),
         )
 
         # Provenance: open a task lifecycle in agent.usd on dispatch.
@@ -1677,7 +1689,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                         future.set_exception(exc)
 
                 loop.create_task(_run())
-                report = future.result(timeout=600)
+                report = future.result(timeout=driver._max_wall_clock + 60.0)
             else:
                 report = asyncio.run(driver.execute(intent))
         except Exception:

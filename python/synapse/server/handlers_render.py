@@ -1097,6 +1097,55 @@ class RenderHandlerMixin:
             return self._render_farm.get_status()
         return {"running": False, "cancelled": False, "scene_tags": []}
 
+    def _handle_render_farm_cancel(self, payload: Dict) -> Dict:
+        """Kill switch: cancel the running farm sequence and/or autonomous driver.
+
+        Classified read-only so it bypasses the C5 mutation lock (a running
+        render holds that lock for its entire sequence) -- so audit is written
+        here explicitly. Signal semantics: the in-flight frame finishes first.
+        """
+        from ..core.audit import audit_log, AuditLevel, AuditCategory
+
+        farm = getattr(self, "_render_farm", None)
+        farm_was_running = bool(farm is not None and farm.is_running)
+        farm_cancel_requested = False
+        if farm is not None:
+            farm.cancel()
+            farm_cancel_requested = True
+
+        driver_cancel_requested = False
+        try:
+            # Late import keeps autonomy optional (handlers.py idiom)
+            from ..autonomy.driver import get_live_driver
+            driver = get_live_driver()
+            if driver is not None:
+                driver.emergency_stop()
+                driver_cancel_requested = True
+        except ImportError:
+            pass
+
+        result = {
+            "farm_cancel_requested": farm_cancel_requested,
+            "farm_was_running": farm_was_running,
+            "driver_cancel_requested": driver_cancel_requested,
+            "note": (
+                "Cancel signal sent -- the in-flight frame finishes before the "
+                "loop stops; poll render_farm_status to confirm."
+            ),
+        }
+        try:
+            audit_log().log(
+                operation="render_farm_cancel",
+                message="Kill switch: farm/driver cancellation requested",
+                level=AuditLevel.AGENT_ACTION,
+                category=AuditCategory.RENDER,
+                input_data=payload,
+                output_data=result,
+            )
+        except Exception:
+            logger.debug("render_farm_cancel audit write failed (non-blocking)")
+        return result
+
     def _handle_configure_render_passes(self, payload: Dict) -> Dict:
         """Configure render passes (AOVs) for Karma via Python LOP.
 

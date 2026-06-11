@@ -1047,6 +1047,11 @@ TOOL_DEFS: list[tuple] = [
     ("synapse_render_farm_status", "render_farm_status", _passthrough,
      "Check progress of a running render farm job: running state, scene tags, current frame.",
      _EMPTY_SCHEMA, True, False, True),
+    ("synapse_render_farm_cancel", "render_farm_cancel", _passthrough,
+     "Request cancellation of the running render-farm sequence and/or autonomous render loop. "
+     "Signal semantics: the in-flight frame finishes before the loop stops -- poll "
+     "synapse_render_farm_status to confirm. Does not undo scene changes or delete partial frames.",
+     _EMPTY_SCHEMA, False, True, True),
 
     # -- Autonomous Render --
     ("synapse_autonomous_render", "autonomous_render", _identity,
@@ -1054,7 +1059,8 @@ TOOL_DEFS: list[tuple] = [
      "execute via TOPS, evaluate quality, and re-render if needed. Returns a full report.",
      {"type": "object", "properties": {
          "intent": {"type": "string", "description": "What to render (e.g., 'render frames 1-48', 'render turntable with ARRI Alexa 35 at 50mm')"},
-         "max_iterations": {"type": "integer", "default": 3, "description": "Max re-render attempts if quality check fails"},
+         "max_iterations": {"type": "integer", "default": 3, "description": "Max re-render attempts if quality check fails (server-clamped to 10)"},
+         "max_wall_clock_seconds": {"type": "number", "default": 600, "description": "Per-run wall-clock bound in seconds; past it the loop stops at the next iteration boundary and reports stop_reason='wall_clock_exceeded'"},
          "quality_threshold": {"type": "number", "default": 0.85, "description": "Minimum quality score (0.0-1.0) for frames to pass"},
      }, "required": ["intent"]},
      False, True, False),

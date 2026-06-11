@@ -206,3 +206,45 @@ For studios with proprietary scenes, consider:
 - Using `studio-lan` mode (data stays on LAN, only tool results go to API)
 - Reviewing which tools are available to each role
 - Using the `viewer` role for team members who only need to inspect
+
+## Autonomy & Cost Bounds
+
+### Single-seat cost posture
+
+The panel worker loop is bounded at **25 tool-use iterations per turn**
+(`synapse/panel/claude_worker.py::_MAX_TOOL_ITERATIONS`). There is **no
+token/dollar budget** and the worker does not measure token usage. Per the
+2026-06-09 hardening report this is accepted for **single-seat use only** —
+a per-run monetary budget is a prerequisite for any unattended or
+multi-seat use.
+
+### Autonomous render bounds
+
+- `max_iterations` is **clamped server-side to 10**
+  (`synapse/autonomy/driver.py::MAX_ITERATIONS_HARD_CAP`); the schema
+  default is 3.
+- Every run carries a **wall-clock bound** defaulting to the canonical
+  600 s client budget (`synapse/core/timeouts.py::timeout_for("autonomous_render")`).
+  A run past the bound stops at the next iteration boundary and returns an
+  honest partial report: `success=false`, `stop_reason="wall_clock_exceeded"`,
+  with the iterations and evaluation completed so far.
+- Raising `max_wall_clock_seconds` in the payload requires raising the
+  **client** timeout in step, or the client abandons a run the server will
+  still finish.
+- Worst-case render work = `max_iterations × frames × (1 + per-frame
+  retries)`; the per-frame retry default is 3.
+
+### Kill switches
+
+- `synapse_render_farm_cancel` reaches **both** the running farm sequence
+  and a running autonomous driver. Signal semantics: the in-flight frame
+  finishes first — confirm via `synapse_render_farm_status`. The command
+  deliberately bypasses the mutation lock and rate limiting so it cannot
+  queue behind the very render it cancels.
+- The panel worker's stop is `ClaudeWorker.abort()` (the panel Stop button).
+- TOPS cooks cancel via `tops_cancel_cook`.
+
+### What cancel does NOT do
+
+No scene rollback (undo is separate), no deletion of partial frames on
+disk, no interruption of an API call already in flight.
