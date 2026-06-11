@@ -54,6 +54,12 @@ class _Parm:
     def eval(self):
         return self._raw.replace("$JOB", self._job).replace("$F4", "0001")
 
+    def evalAsStringAtFrame(self, frame):
+        # M2-D enrichment: expand-at-given-frame semantics mirroring eval().
+        return self._raw.replace("$JOB", self._job).replace(
+            "$F4", str(int(frame)).zfill(4)
+        )
+
     def set(self, v):
         self._raw = v
 

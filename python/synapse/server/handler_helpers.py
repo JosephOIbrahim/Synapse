@@ -105,6 +105,33 @@ def _wire_display(new_tip, wired_from=None, set_display=True):
     return keys
 
 
+_URI_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]+:")
+
+
+def _is_resolver_uri(path):
+    """True for ArResolver-style URIs (asset:/shot:/file:/op:/opdef:...).
+
+    The scheme needs 2+ chars before the colon, so a Windows drive letter
+    ('C:') is ONE char and intentionally never matches (M2-D).
+    """
+    return bool(_URI_SCHEME_RE.match(str(path or "")))
+
+
+def _path_warnings(path, context="path"):
+    """Path-policy advisory (M2-D): a baked absolute path breaks on any
+    project move -- prefer $HIP/$JOB tokens. Token paths, resolver URIs,
+    relative paths, and empty values warn nothing."""
+    p = str(path or "")
+    if not p or "$" in p or _is_resolver_uri(p):
+        return []
+    if os.path.isabs(p):
+        return [
+            f"absolute path baked into {context} -- prefer $HIP/$JOB tokens "
+            "so the scene survives a project move (path policy advisory)"
+        ]
+    return []
+
+
 def _suggest_parms(node, invalid_name: str, limit: int = 8) -> str:
     """Find similar parameter names on a node for error enrichment."""
     try:

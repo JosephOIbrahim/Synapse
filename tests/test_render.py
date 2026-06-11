@@ -397,6 +397,8 @@ class TestRenderEXRPersistence:
 
         out_parm = MagicMock()
         out_parm.eval.return_value = artist_output
+        # M2-D enrichment: the handler reads output parms frame-targeted.
+        out_parm.evalAsStringAtFrame.return_value = artist_output
         loppath_parm = MagicMock()
         loppath_parm.eval.return_value = ""
 
@@ -469,6 +471,7 @@ class TestRenderEXRPersistence:
 
         out_parm = MagicMock()
         out_parm.eval.return_value = ""
+        out_parm.evalAsStringAtFrame.return_value = ""  # M2-D enrichment
         # No loppath parm on Karma LOP nodes in /stage
         def _parm(n):
             if n in ("outputimage", "picture"):
@@ -503,6 +506,7 @@ class TestRenderEXRPersistence:
         # ROP has empty outputimage
         out_parm = MagicMock()
         out_parm.eval.return_value = ""
+        out_parm.evalAsStringAtFrame.return_value = ""  # M2-D enrichment
 
         # loppath points to a Karma LOP that has a picture parm
         loppath_parm = MagicMock()
@@ -511,6 +515,9 @@ class TestRenderEXRPersistence:
         karma_lop = MagicMock()
         karma_picture = MagicMock()
         karma_picture.eval.return_value = "/renders/shot_beauty.$F4.exr"
+        karma_picture.evalAsStringAtFrame.return_value = (
+            "/renders/shot_beauty.$F4.exr"  # M2-D enrichment
+        )
         karma_lop.parm.side_effect = lambda n: karma_picture if n == "picture" else None
         karma_lop.inputs.return_value = []
 

@@ -28,6 +28,7 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from synapse.server import solaris_compose as sc
+from synapse.server.handler_helpers import _is_resolver_uri, _path_warnings
 
 _log = logging.getLogger(__name__)
 
@@ -53,6 +54,10 @@ _p.CreateAttribute("synapse:layer_order", Sdf.ValueTypeNames.StringArray).Set(li
 # karmarendersettings creates a RenderProduct but its productName PARM does NOT
 # author the prim's productName attr (verified live) -> shots would silently have
 # no output path (BL-007). Author it directly via the schema (guaranteed).
+# M2-D: the literal carries $HIP/$F4 tokens and is expanded AT COOK TIME via
+# hou.text.expandString -- the ROP sets the frame before each LOP cook, so every
+# rendered frame's stage carries that frame's filename (a pre-expanded literal
+# sent every farm frame to ONE file). FLAT statements only (split-globals).
 _PRODUCT_NAME_CODE = '''
 from pxr import UsdRender
 _node = hou.pwd()
@@ -61,7 +66,8 @@ _rps = [p for p in _stage.Traverse() if p.GetTypeName() == "RenderProduct"]
 if not _rps:
     _rps = [_stage.DefinePrim("/Render/Products/renderproduct", "RenderProduct")]
 # Author on the FIRST RenderProduct only -- do not clobber other products.
-UsdRender.Product(_rps[0]).CreateProductNameAttr().Set(%(exr)r)
+_pn = hou.text.expandString(%(exr)r)
+UsdRender.Product(_rps[0]).CreateProductNameAttr().Set(_pn)
 '''
 
 
@@ -115,11 +121,20 @@ def build_karma_xpu_shot(
     # VERIFIED on 21.0.671: the sublayer LOP composes filepathN as STRONGEST
     # (last wins) -- the OPPOSITE of raw USD subLayerPaths. So fill the filepaths
     # WEAKEST-FIRST: filepath1=layout ... filepath5=render (render strongest).
-    base = layer_dir or (hou.expandString("$HIP") + "/" + shot + "_layers")
+    # M2-D: the compose tier creates real files on disk -- a resolver URI has
+    # no filesystem dirname to makedirs into. Fail loud, never half-build.
+    if layer_dir and _is_resolver_uri(layer_dir):
+        raise sc.ComposeError(
+            "layer_dir can't be a resolver URI -- the compose tier creates "
+            "real layer files on disk; pass a filesystem path or a $-token path"
+        )
+    base_raw = layer_dir or ("$HIP/" + shot + "_layers")
+    base = hou.expandString(base_raw)  # disk ops keep the expanded form
     if not os.path.isdir(base):
         os.makedirs(base)
     weakest_first = list(reversed(depts))             # [layout, animation, lighting, fx, render]
     dept_files = []
+    dept_files_raw = []
     disk_writes = []  # files THIS call created (outside the undo system)
     for d in weakest_first:
         fp = base + "/" + d + ".usd"
@@ -127,11 +142,14 @@ def build_karma_xpu_shot(
             Sdf.Layer.CreateNew(fp).Save()
             disk_writes.append(fp)
         dept_files.append(fp)
+        dept_files_raw.append(base_raw + "/" + d + ".usd")
     dept = sc.create_lop(stage_node, "sublayer", shot + "_dept_stack")
     created.append(dept)
     _set(dept, "num_files", len(dept_files))  # guarded (locked/missing -> logged, not crash)
-    for i, fp in enumerate(dept_files, start=1):
-        _set(dept, "filepath%d" % i, fp)
+    # M2-D: PARMS keep the unexpanded tokens (the sublayer LOP expands $HIP
+    # natively at cook) -- a pre-expanded absolute broke on any $HIP move.
+    for i, fp_raw in enumerate(dept_files_raw, start=1):
+        _set(dept, "filepath%d" % i, fp_raw)
 
     # 2. Camera (render camera).
     cam = sc.create_lop(stage_node, "camera", shot + "_cam")
@@ -155,11 +173,13 @@ def build_karma_xpu_shot(
     _set(krs, "camera", cam_prim)
     _set(krs, "resolutionx", int(resolution[0]))
     _set(krs, "resolutiony", int(resolution[1]))
-    exr = hou.expandString("$HIP") + "/render/" + shot + ".exr"
-    _set(krs, "productName", exr)  # best-effort parm (does NOT author the prim attr)
+    # M2-D: keep $HIP unexpanded + add $F4 -- a pre-expanded token-free
+    # productName wrote EVERY sequence frame to one file, overwriting itself.
+    exr_raw = "$HIP/render/" + shot + ".$F4.exr"
+    _set(krs, "productName", exr_raw)  # best-effort parm (does NOT author the prim attr)
     # Author productName onto the RenderProduct prim (the parm alone doesn't -> BL-007).
     prodname = sc.make_pythonscript_lop(stage_node, shot + "_productname",
-                                        _PRODUCT_NAME_CODE % {"exr": exr})
+                                        _PRODUCT_NAME_CODE % {"exr": exr_raw})
     created.append(prodname)
     sc.wire(prodname, krs)
     product_via = "pythonscript:RenderProduct.productName"
@@ -189,7 +209,7 @@ def build_karma_xpu_shot(
     rstage = sc.read_stage(out)
     errs = sc.composition_errors(rstage)
 
-    return {
+    result = {
         "status": "created",
         "nodes": [n.path() for n in created],
         "output": out.path(),
@@ -197,14 +217,20 @@ def build_karma_xpu_shot(
         "engine_set": engine_set,
         "camera_prim": cam_prim,
         "rendersettings_prim": rs_prim,
-        "product_path": exr,
+        "product_path": exr_raw,
+        "product_name_resolution": "cook-time (per-frame via hou.text.expandString)",
         "product_via": product_via,
         "layer_order_strongest_first": depts,
         "department_files_weakest_first": dept_files,
+        "department_parm_paths": dept_files_raw,
         "disk_writes": disk_writes,
         "disk_writes_undoable": False,
         "composition_errors": errs,
     }
+    pw = _path_warnings(layer_dir or "", context="layer_dir")
+    if pw:
+        result["path_warnings"] = pw
+    return result
 
 
 # ---------------------------------------------------------------------------

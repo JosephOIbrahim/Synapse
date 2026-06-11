@@ -15,7 +15,10 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.aliases import resolve_param, resolve_param_with_default, USD_PARM_ALIASES
-from .handler_helpers import _HOUDINI_UNAVAILABLE, _safe_node_name, _wire_display
+from .handler_helpers import (
+    _HOUDINI_UNAVAILABLE, _safe_node_name, _wire_display, _is_resolver_uri,
+    _path_warnings,
+)
 
 
 def _usd_to_json(value):
@@ -579,9 +582,14 @@ class UsdHandlerMixin:
                     "verify this path exists (default is /stage)"
                 )
 
-            # Validate file path exists (catch missing assets early)
+            # Validate file path exists (catch missing assets early). M2-D:
+            # resolver URIs (asset:/shot:...) pass through -- os.path.isfile
+            # can't see through ArResolver, so rejecting them walled out
+            # resolver-based studios.
             import os as _os
-            if not file_path.startswith(("$", "op:")) and not _os.path.isfile(file_path):
+            if (not file_path.startswith(("$", "op:"))
+                    and not _is_resolver_uri(file_path)
+                    and not _os.path.isfile(file_path)):
                 raise ValueError(
                     f"Couldn't find the file at '{file_path}' -- "
                     "double-check the path exists. If you're using a Houdini "
@@ -628,6 +636,16 @@ class UsdHandlerMixin:
                     "mode": mode,
                     "prim_path": prim_path,
                 }
+                # M2-D truth contract: a passthrough is never a claimed
+                # verification -- say so when the existence gate was skipped.
+                if _is_resolver_uri(file_path):
+                    result["path_policy"] = (
+                        "resolver URI passed through unverified -- existence "
+                        "not checked (no ArResolver probe on this path)"
+                    )
+                pw = _path_warnings(file_path, context="reference/sublayer filepath1")
+                if pw:
+                    result["path_warnings"] = pw
 
                 if mode in ("reference", "payload"):
                     if karma_visible:

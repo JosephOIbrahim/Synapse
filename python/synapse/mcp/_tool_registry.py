@@ -285,7 +285,8 @@ TOOL_DEFS: list[tuple] = [
      True, False, True),
 
     ("houdini_render", "render", _identity,
-     "Render a frame using Karma XPU, Karma CPU, Mantra, or any ROP node.",
+     "Render a frame using Karma XPU, Karma CPU, Mantra, or any ROP node. "
+     "An explicit frame renders AND polls at that frame, not the playhead.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "ROP node path (auto-discovers if omitted)"},
          "frame": {"type": "number", "description": "Frame to render"},
@@ -531,6 +532,7 @@ TOOL_DEFS: list[tuple] = [
     ("houdini_reference_usd", "reference_usd", _identity,
      "Import a USD file into the stage via reference, payload, or sublayer. "
      "Payload mode uses deferred loading for heavy assets. "
+     "Resolver URIs like asset:/shot: pass through unverified. "
      "For Karma rendering, sublayer is the most reliable import mode.",
      {"type": "object", "properties": {
          "file": {"type": "string", "description": "Path to USD file"},

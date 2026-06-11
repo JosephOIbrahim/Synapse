@@ -44,7 +44,9 @@ except ImportError:
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.determinism import round_float, kahan_sum
 from ..core.show_config import get_show_config, resolve_show_dirs, next_version_dir
-from .handler_helpers import _suggest_parms, _HOUDINI_UNAVAILABLE, _expand_frame_tokens
+from .handler_helpers import (
+    _suggest_parms, _HOUDINI_UNAVAILABLE, _expand_frame_tokens, _path_warnings,
+)
 
 
 def _find_render_rop():
@@ -75,6 +77,23 @@ def _parm_raw(parm):
         return parm.unexpandedString()
     except Exception:
         return parm.eval()  # noqa: S307 -- hou.Parm.eval, not Python eval
+
+
+def _parm_eval_at(parm, frame):
+    """Frame-targeted read of a string output parm (M2-D): eval() expands $F
+    at the PLAYHEAD, so an explicit frame=N payload baked frame N's render
+    into the playhead frame's filename. evalAsStringAtFrame keeps full
+    node-context expansion ($OS etc.) with guaranteed string semantics (both
+    it and evalAtFrame are in the introspected H21 symbol table). eval()
+    fallback mirrors _parm_raw for parm fakes without the typed accessor
+    (real hou.Parm always returns str, so production never falls back)."""
+    try:
+        val = parm.evalAsStringAtFrame(frame)
+        if isinstance(val, str):
+            return val
+    except Exception:
+        pass
+    return parm.eval()  # noqa: S307 -- hou.Parm.eval, not Python eval
 
 
 def _detect_karma_engine(node, node_type: str) -> str:
@@ -265,14 +284,21 @@ class RenderHandlerMixin:
                     timestamp = int(time.time() * 1000)
                     preview_path = str(temp_dir / f"synapse_render_{timestamp}.jpg")
 
+                    # M2-D: the target frame is needed BEFORE the output-parm
+                    # reads below -- they must expand $F at the RENDER frame,
+                    # not the playhead.
+                    cur = int(hou.frame()) if frame is None else int(frame)
+
                     # Read the artist's original output path — check ROP first, then
                     # walk upstream to find Karma LOP's picture parm (BL-007 fix)
                     artist_output = ""
+                    artist_output_raw = ""
                     output_parm = None
                     for parm_name in ("outputimage", "picture"):
                         p = node.parm(parm_name)
                         if p:
-                            artist_output = p.eval() or ""  # noqa: S307
+                            artist_output = _parm_eval_at(p, cur) or ""
+                            artist_output_raw = str(_parm_raw(p) or "")
                             output_parm = p
                             if artist_output.strip():
                                 break
@@ -306,7 +332,7 @@ class RenderHandlerMixin:
                                 _budget -= 1  # count distinct nodes visited, not revisits
                                 kp = _walk.parm("picture")
                                 if kp:
-                                    _val = kp.eval() or ""  # noqa: S307
+                                    _val = _parm_eval_at(kp, cur) or ""
                                     if _val.strip():
                                         artist_output = _val
                                         break
@@ -375,9 +401,8 @@ class RenderHandlerMixin:
                                 "on the render node's 'picture' or 'outputimage' parameter."
                             ) from e
 
-                    cur = int(hou.frame()) if frame is None else int(frame)
-
                     # Resolve frame tokens ($F/$Fn, any padding) for file polling
+                    # (cur hoisted above the output-parm reads -- M2-D)
                     render_path_resolved = _expand_frame_tokens(render_path, cur)
 
                     # Resolution override -- res= is a scale factor, so set parms directly
@@ -398,22 +423,29 @@ class RenderHandlerMixin:
                             _restore.append((ov, _parm_raw(ov)))
                             ov.set("specific")
 
-                    # Set output path on the ROP parm (output_file kwarg doesn't
-                    # work reliably for usdrender/karma ROPs)
-                    if output_parm:
-                        # Capture the PARM's raw string (tokens intact), NOT the
-                        # already-expanded artist_output read above -- restoring
-                        # the expanded string is exactly the bug this fixes.
-                        _restore.append((output_parm, _parm_raw(output_parm)))
-                        output_parm.set(render_path)
-                    elif node.parm("outputimage"):
-                        _op = node.parm("outputimage")
-                        _restore.append((_op, _parm_raw(_op)))
-                        _op.set(render_path)
-                    elif node.parm("picture"):
-                        _op = node.parm("picture")
-                        _restore.append((_op, _parm_raw(_op)))
-                        _op.set(render_path)
+                    # M2-D: when the artist has an output path the parm KEEPS
+                    # its token string -- the ROP expands it at the render
+                    # frame itself. Re-setting the playhead-expanded literal
+                    # was the bake bug (frame N's pixels written to the
+                    # playhead frame's filename). Only the synthesized default
+                    # path is set (transient -- restored in the finally, WP4).
+                    if not (artist_output and artist_output.strip()):
+                        # Set output path on the ROP parm (output_file kwarg
+                        # doesn't work reliably for usdrender/karma ROPs)
+                        if output_parm:
+                            # Capture the PARM's raw string (tokens intact), NOT
+                            # an already-expanded read -- restoring an expanded
+                            # string is exactly the bug WP4 fixed.
+                            _restore.append((output_parm, _parm_raw(output_parm)))
+                            output_parm.set(render_path)
+                        elif node.parm("outputimage"):
+                            _op = node.parm("outputimage")
+                            _restore.append((_op, _parm_raw(_op)))
+                            _op.set(render_path)
+                        elif node.parm("picture"):
+                            _op = node.parm("picture")
+                            _restore.append((_op, _parm_raw(_op)))
+                            _op.set(render_path)
 
                     node.render(
                         frame_range=(cur, cur),
@@ -437,11 +469,11 @@ class RenderHandlerMixin:
             # $HFS resolves here (the one hou call the iconvert leg needs).
             hfs = hou.text.expandString("$HFS")
             return (node.path(), node_type, engine, cur, render_path_resolved,
-                    preview_path, hfs, show_cfg_advisory)
+                    preview_path, hfs, show_cfg_advisory, artist_output_raw)
 
         import hdefereval
         (used_rop, used_type, engine, cur, render_path_resolved, preview_path,
-         hfs, show_cfg_advisory) = (
+         hfs, show_cfg_advisory, artist_output_raw) = (
             hdefereval.executeInMainThreadWithResult(_render_on_main)
         )
 
@@ -556,6 +588,11 @@ class RenderHandlerMixin:
             "height": int(height) if height else None,
             "format": "jpeg",
         }
+        # M2-D: advisory when the artist's parm carries a baked absolute path
+        # (token/URI/relative/empty raws warn nothing).
+        pw = _path_warnings(artist_output_raw, context="ROP output parm")
+        if pw:
+            result["path_warnings"] = pw
         # M2-I: attached ONLY when the default-output branch actually ran --
         # artist-set output paths never consult show-config (truth contract).
         if show_cfg_advisory:
