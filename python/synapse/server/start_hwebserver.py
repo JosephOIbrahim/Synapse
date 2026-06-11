@@ -51,6 +51,14 @@ def get_running_server():
 def main():
     global _fallback_server
 
+    # M3-C: durable log + telemetry flush — covers the websocket-fallback
+    # branch too (the adapter's bootstrap never runs when its import fails).
+    # Idempotent; never raises.
+    from synapse.core.logfile import ensure_file_logging
+    from synapse.server.telemetry_dump import start_periodic_flush
+    ensure_file_logging()
+    start_periodic_flush()
+
     port = int(os.environ.get("SYNAPSE_PORT", "9999"))
     enable_rate_limiter = os.environ.get("SYNAPSE_RATE_LIMITER", "1") == "1"
 

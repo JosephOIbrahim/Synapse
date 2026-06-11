@@ -798,6 +798,8 @@ class SynapseMemory:
         Default ``jsonl`` is the unchanged behavior. ``moneta`` routes through
         the Moneta engine (Mile 4); it falls back to JSONL with a warning if
         Moneta can't be imported, so setting the flag can never break startup.
+        Any other value (including ``sqlite``, which is NOT wired to this
+        selector) falls back to JSONL with a warning.
         """
         backend = os.environ.get("SYNAPSE_MEMORY_BACKEND", "jsonl").strip().lower()
         if backend == "moneta":
@@ -824,6 +826,11 @@ class SynapseMemory:
                     "SYNAPSE_MEMORY_BACKEND=shadow unavailable (%s); "
                     "falling back to jsonl.", exc,
                 )
+        if backend not in ("jsonl", "moneta", "shadow", ""):
+            logger.warning(
+                "SYNAPSE_MEMORY_BACKEND=%s is not a live backend "
+                "(valid: jsonl | moneta | shadow); using jsonl.", backend,
+            )
         return MemoryStore(storage_dir)
 
     def _resolve_project_path(self, path: Optional[str]) -> Path:

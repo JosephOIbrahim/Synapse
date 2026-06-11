@@ -2,7 +2,10 @@
 
 SQLite-backed memory store -- drop-in replacement for MemoryStore.
 
-Select via `SYNAPSE_MEMORY_BACKEND=sqlite` environment variable.
+NOT wired to the live selector: `SynapseMemory._make_store` recognizes only
+`jsonl | moneta | shadow` and warns on anything else. The `sqlite` value is
+honored only by the `create_memory_store` factory below, which has no
+production callers (tests/dev only).
 
 ::: synapse.memory.sqlite_store.SQLiteMemoryStore
 

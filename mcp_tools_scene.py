@@ -21,6 +21,7 @@ GROUP_KNOWLEDGE = (
 TOOL_NAMES = [
     "synapse_ping",
     "synapse_health",
+    "synapse_doctor",
     "houdini_scene_info",
     "houdini_get_selection",
     "houdini_create_node",
@@ -46,6 +47,7 @@ TOOL_NAMES = [
 DISPATCH_KEYS = {
     "synapse_ping":          ("ping",            "passthrough"),
     "synapse_health":        ("get_health",      "passthrough"),
+    "synapse_doctor":        ("doctor",          "filter_keys:bundle"),
     "houdini_scene_info":    ("get_scene_info",  "passthrough"),
     "houdini_get_selection": ("get_selection",    "passthrough"),
     "houdini_create_node":   ("create_node",     "identity"),

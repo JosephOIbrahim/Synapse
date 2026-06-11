@@ -129,6 +129,14 @@ TOOL_DEFS: list[tuple] = [
     ("synapse_health", "get_health", _passthrough,
      "Get system health status including resilience layer.",
      _EMPTY_SCHEMA, True, False, True),
+    ("synapse_doctor", "doctor", _filter_keys(("bundle",)),
+     "Run SYNAPSE install/ops diagnostics: log file, telemetry freshness, "
+     "encryption-key fingerprint, symbol-table build stamp, bridge endpoint. "
+     "bundle:true also writes a diagnostic zip to ~/.synapse/diagnostics "
+     "(secrets are never collected). Reports only checks it actually ran. "
+     "Distinct from the panel Scene Doctor.",
+     {"type": "object", "properties": {"bundle": {"type": "boolean", "description": "Also write a diagnostic zip bundle (default: false)"}}, "required": []},
+     False, False, False),
 
     # -- Scene --
     ("houdini_scene_info", "get_scene_info", _passthrough,

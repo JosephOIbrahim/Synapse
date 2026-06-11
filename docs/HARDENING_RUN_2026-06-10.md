@@ -29,7 +29,8 @@
 | M2-G | §4.3 — OIIO+`$OCIO` color-managed previews | ✅ wave 3 — `_convert_preview` (hoiiotool `--ociodisplay` w/ env-injected OCIO → `--tocolorspace "sRGB - Display"` → iconvert `-g auto`); `color_managed=True` ONLY on the verified OCIO leg; `color_transform`/`preview_tool`/`preview_error` result keys; format honesty (unconverted EXR ships labeled `exr`); flipbook leg marked `viewport_display (unverified)`. **Deferred:** capture_viewport static color keys (blocked by test_capture exact-shape pin); evaluator pixel-verdicts don't inherit the transform (separate finding) |
 
 **Fleet/wave machinery:** verification fleet `wf_d42b78b1-7d6` (4 verdicts: 2 confirmed, 2 adjusted) → wave 1 `wf_39f6e6d5-ff0` (I+A parallel, disjoint) → wave 2 (D solo) → wave 3 (G solo). Orchestrator-reserved registry edits applied between waves. **Registry follow-up:** the 9 `_identity`-mapped display-policy tools still lack the `set_display` schema property (functional already; docs-honesty pass pending).
-| 6–7 | M3 — UPGRADE.md, env conformance, logs/bundle, telemetry flush, keys/egress, autonomy bounds | pending |
+| 6 | Verify M3 findings (5 WPs: A upgrade-surface · B env-conformance · C logs/doctor/telemetry · D multiseat/egress · E bounded-autonomy) | RUNNING — fleet `wf_d5b0f370-ccc` |
+| 7 | Implement M3 | pending — waves from the ownership matrix |
 | — | M3 item 11 (SEC-1/RBAC) | SKIPPED — gate, not work (per report §5) |
 
 ## M1 work packages

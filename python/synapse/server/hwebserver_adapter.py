@@ -260,6 +260,12 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
         port: Port to listen on (default: 9999)
         enable_rate_limiter: Enable request rate limiting
     """
+    # M3-C: durable log + telemetry flush. Idempotent; never raises.
+    from ..core.logfile import ensure_file_logging
+    from .telemetry_dump import start_periodic_flush
+    ensure_file_logging()
+    start_periodic_flush()
+
     if not HWEBSERVER_AVAILABLE:
         raise ImportError("hwebserver not available — must run inside Houdini")
 

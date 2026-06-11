@@ -130,6 +130,19 @@ class FreezeChain:
                 "is active)", self._escalate_after,
             )
 
+            # M3-C: durable evidence FIRST — a sustained freeze is exactly the
+            # state the post-mortem needs captured before any action mutates
+            # it. Bounded and safe on this timer thread: in-memory peeks +
+            # one small local write, zero hou, zero main-thread marshalling.
+            # The outer try/except is the second net.
+            try:
+                from .telemetry_dump import flush_telemetry
+                dump_path = flush_telemetry(reason="sustained_freeze")
+                if dump_path:
+                    logger.error("Freeze evidence dumped: %s", dump_path)
+            except Exception:
+                logger.exception("Freeze telemetry dump failed (best-effort)")
+
             srv = _peek_live_server()
             breaker = getattr(srv, "_circuit_breaker", None) if srv else None
             if breaker is not None:

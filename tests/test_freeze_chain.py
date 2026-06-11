@@ -22,6 +22,14 @@ from synapse.server import freeze_chain as fc
 from synapse.server import websocket as ws
 
 
+@pytest.fixture(autouse=True)
+def _redirect_freeze_dumps(monkeypatch, tmp_path):
+    """M3-C's _escalate now dumps telemetry to $SYNAPSE_LOG_DIR — keep test
+    escalations out of the real ~/.synapse/logs (dev == production seat;
+    test dumps would evict real freeze evidence via the newest-5 pruning)."""
+    monkeypatch.setenv("SYNAPSE_LOG_DIR", str(tmp_path))
+
+
 # Tiny-threshold chain: detection ~0.06s, escalation deadline 0.2s.
 def _chain():
     return fc.FreezeChain(escalate_after=0.2, heartbeat_interval=0.02,

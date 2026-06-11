@@ -210,6 +210,16 @@ class SynapsePanel(QtWidgets.QWidget):
         # process-wide Watchdog (freeze_chain), whose sustained-freeze escalation
         # opens the live breaker + triggers the emergency halt. The panel rebuild
         # had removed the only heartbeat source — this restores it.
+        # M3-C: the panel is the beat source, so its forensic trail must be
+        # durable even when no server was started. Idempotent; guarded so a
+        # packaging gap can never break panel construction.
+        try:
+            from synapse.core.logfile import ensure_file_logging
+            from synapse.server.telemetry_dump import start_periodic_flush
+            ensure_file_logging()
+            start_periodic_flush()
+        except ImportError:
+            pass
         self._freeze_timer = QTimer(self)
         self._freeze_timer.setInterval(1000)
         self._freeze_timer.timeout.connect(self._beat_freeze_chain)

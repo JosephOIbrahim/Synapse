@@ -9,7 +9,7 @@
 
 ---
 
-## Scene / Node / Parameters (18 tools)
+## Scene / Node / Parameters (19 tools)
 
 Core scene manipulation. Always inspect before mutating. One mutation per tool call.
 
@@ -17,22 +17,23 @@ Core scene manipulation. Always inspect before mutating. One mutation per tool c
 |---|------|--------|-------------|
 | 1 | `synapse_ping` | RO IDEM | Check if Houdini/Synapse is connected and responding. |
 | 2 | `synapse_health` | RO IDEM | Get system health status including resilience layer. |
-| 3 | `houdini_scene_info` | RO IDEM | Get current Houdini scene info: HIP file path, current frame, FPS, and frame range. |
-| 4 | `houdini_get_selection` | RO IDEM | Get the currently selected nodes in Houdini. |
-| 5 | `houdini_create_node` | MUT | Create a new node in Houdini. Returns the path of the created node. |
-| 6 | `houdini_delete_node` | MUT | Delete a node in Houdini by its path. |
-| 7 | `houdini_connect_nodes` | MUT | Connect the output of one node to the input of another. |
-| 8 | `houdini_get_parm` | RO IDEM | Read a parameter value from a Houdini node. |
-| 9 | `houdini_set_parm` | MUT IDEM | Set a parameter value on a Houdini node. **USD note:** parameter names are encoded (e.g. `xn__inputsintensity_i0a` not `intensity`). Use `houdini_inspect_node` first. |
-| 10 | `houdini_execute_python` | MUT | Execute Python code in Houdini's runtime. ONE mutation per call. Wrapped in undo group -- automatic rollback on failure. |
-| 11 | `houdini_execute_vex` | MUT | Execute VEX code by creating an Attribute Wrangle node. |
-| 12 | `synapse_inspect_selection` | RO IDEM | Inspect selected nodes: parameters, connections, geometry stats, input graph. |
-| 13 | `synapse_inspect_scene` | RO IDEM | Bird's-eye scene overview: node tree, context breakdown, warnings, sticky notes. |
-| 14 | `synapse_inspect_node` | RO IDEM | Deep-dive into a single node: all parameters, expressions, code, geometry, HDA info. |
-| 15 | `houdini_network_explain` | RO IDEM | Walk a Houdini node network and produce a structured explanation: data flow order, detected workflow patterns, non-default parameter values. |
-| 16 | `houdini_undo` | MUT | Undo the last Houdini operation. |
-| 17 | `houdini_redo` | MUT | Redo the last undone Houdini operation. |
-| 18 | `synapse_batch` | MUT | Execute multiple Synapse commands in a single round-trip. |
+| 3 | `synapse_doctor` | MUT | Run SYNAPSE install/ops diagnostics: log file, telemetry freshness, encryption-key fingerprint, symbol-table build stamp, bridge endpoint. `bundle:true` also writes a diagnostic zip to `~/.synapse/diagnostics` (secrets are never collected). Reports only checks it actually ran. Distinct from the panel Scene Doctor. |
+| 4 | `houdini_scene_info` | RO IDEM | Get current Houdini scene info: HIP file path, current frame, FPS, and frame range. |
+| 5 | `houdini_get_selection` | RO IDEM | Get the currently selected nodes in Houdini. |
+| 6 | `houdini_create_node` | MUT | Create a new node in Houdini. Returns the path of the created node. |
+| 7 | `houdini_delete_node` | MUT | Delete a node in Houdini by its path. |
+| 8 | `houdini_connect_nodes` | MUT | Connect the output of one node to the input of another. |
+| 9 | `houdini_get_parm` | RO IDEM | Read a parameter value from a Houdini node. |
+| 10 | `houdini_set_parm` | MUT IDEM | Set a parameter value on a Houdini node. **USD note:** parameter names are encoded (e.g. `xn__inputsintensity_i0a` not `intensity`). Use `houdini_inspect_node` first. |
+| 11 | `houdini_execute_python` | MUT | Execute Python code in Houdini's runtime. ONE mutation per call. Wrapped in undo group -- automatic rollback on failure. |
+| 12 | `houdini_execute_vex` | MUT | Execute VEX code by creating an Attribute Wrangle node. |
+| 13 | `synapse_inspect_selection` | RO IDEM | Inspect selected nodes: parameters, connections, geometry stats, input graph. |
+| 14 | `synapse_inspect_scene` | RO IDEM | Bird's-eye scene overview: node tree, context breakdown, warnings, sticky notes. |
+| 15 | `synapse_inspect_node` | RO IDEM | Deep-dive into a single node: all parameters, expressions, code, geometry, HDA info. |
+| 16 | `houdini_network_explain` | RO IDEM | Walk a Houdini node network and produce a structured explanation: data flow order, detected workflow patterns, non-default parameter values. |
+| 17 | `houdini_undo` | MUT | Undo the last Houdini operation. |
+| 18 | `houdini_redo` | MUT | Redo the last undone Houdini operation. |
+| 19 | `synapse_batch` | MUT | Execute multiple Synapse commands in a single round-trip. |
 
 <details>
 <summary>Parameter details</summary>
@@ -42,6 +43,11 @@ No parameters.
 
 ### synapse_health
 No parameters.
+
+### synapse_doctor
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `bundle` | boolean | no | Also write a diagnostic zip bundle (default: false) |
 
 ### houdini_scene_info
 No parameters.

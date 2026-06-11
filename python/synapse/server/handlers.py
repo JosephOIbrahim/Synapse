@@ -456,6 +456,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         # Utility
         reg.register("ping", self._handle_ping)
         reg.register("get_health", self._handle_get_health)
+        reg.register("doctor", self._handle_doctor)
         reg.register("get_help", self._handle_get_help)
 
         # Node operations
@@ -685,6 +686,11 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             "commands": self._registry.registered_types,
             "description": "Synapse AI-Houdini Bridge v" + PROTOCOL_VERSION,
         }
+
+    def _handle_doctor(self, payload: Dict) -> Dict:
+        """Install/ops diagnostics + optional bundle (M3-C). Logic in doctor.py."""
+        from .doctor import run_doctor
+        return run_doctor(payload, handler=self)
 
     # =========================================================================
     # UNDO / REDO HANDLERS
