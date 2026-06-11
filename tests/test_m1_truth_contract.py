@@ -119,14 +119,12 @@ PENDING_FICTIONS = {
 }
 
 # The string-less fictions a vocabulary scan cannot see: the result SHAPE
-# implies an outcome the handler never observed. Pinned as explicit debt;
-# the M2 cook-and-verify work (report §5 item 4) retires both entries.
+# implies an outcome the handler never observed. Pinned as explicit debt.
 # (cops_bake_textures / reaction_diffusion / pixel_sort exited this ledger
-# when the M1 wave added scaffolded/honest markers to their results.)
-SHAPE_FICTION_DEBT = {
-    "manage_collection": "report §3 #8 -- generated LOP never cooked",
-    "configure_light_linking": "report §3 #8 -- generated LOP never cooked",
-}
+# when the M1 wave added scaffolded/honest markers to their results;
+# manage_collection / configure_light_linking exited when M2-B added
+# cook + stage readback, 2026-06-11.)
+SHAPE_FICTION_DEBT = {}
 
 # ---------------------------------------------------------------------------
 # Enumeration + claim extraction

@@ -909,6 +909,48 @@ class UsdHandlerMixin:
 
         return run_on_main(_on_main)
 
+    @staticmethod
+    def _verify_collection_cooked(py_lop, prim_path, collection_name,
+                                  rel="includes", expect_present=None,
+                                  expect_absent=None):
+        """Read the cooked stage back; return an error string, or None if verified.
+
+        The result may not claim a collection the cook never authored (truth
+        contract) -- the embedded pythonscript silently skips missing prims, so
+        a clean cook alone proves nothing. Standalone mode (no pxr, testing
+        only) skips gracefully per the import-guard posture.
+        """
+        try:
+            from pxr import Usd
+        except ImportError:
+            return None  # standalone/test mode -- nothing to read back
+
+        stage = py_lop.stage()
+        if stage is None:
+            return "the node cooked but exposes no stage to read back"
+        prim = stage.GetPrimAtPath(prim_path)
+        if not prim or not prim.IsValid():
+            return (
+                f"no prim exists at {prim_path} on the cooked stage -- "
+                "the edit was silently skipped"
+            )
+        coll = Usd.CollectionAPI.Get(prim, collection_name)
+        relationship = None
+        if coll:
+            relationship = (
+                coll.GetIncludesRel() if rel == "includes" else coll.GetExcludesRel()
+            )
+        if not relationship:
+            return f"collection '{collection_name}' wasn't found on {prim_path}"
+        targets = {str(t) for t in relationship.GetTargets()}
+        missing = [p for p in (expect_present or []) if p not in targets]
+        if missing:
+            return f"{rel} targets missing after cook: {missing}"
+        lingering = [p for p in (expect_absent or []) if p in targets]
+        if lingering:
+            return f"{rel} targets still present after cook: {lingering}"
+        return None
+
     def _handle_manage_collection(self, payload: Dict) -> Dict:
         """Manage USD collections: create, list, or modify.
 
@@ -1012,12 +1054,41 @@ class UsdHandlerMixin:
                     code = "\n".join(lines)
                     py_lop.parm("python").set(code)
 
+                    # Cook and verify -- catch errors now instead of silent
+                    # cook-time failure (idiom: set_usd_attribute above)
+                    try:
+                        py_lop.cook(force=True)
+                    except hou.OperationFailed as e:
+                        return {
+                            "node": py_lop.path(),
+                            "prim_path": prim_path,
+                            "collection_name": collection_name,
+                            "cook_error": (
+                                f"The node was created but hit a snag when cooking -- {e}. "
+                                "The pythonscript node is still in the network so you can "
+                                "inspect it. Check that the prim path exists on the stage."
+                            ),
+                        }
+                    verify_error = self._verify_collection_cooked(
+                        py_lop, prim_path, collection_name, expect_present=paths
+                    )
+                    if verify_error:
+                        return {
+                            "node": py_lop.path(),
+                            "prim_path": prim_path,
+                            "collection_name": collection_name,
+                            "verify_error": (
+                                f"The node cooked but readback failed -- {verify_error}"
+                            ),
+                        }
+
                     result = {
                         "node": py_lop.path(),
                         "prim_path": prim_path,
                         "collection_name": collection_name,
                         "includes": paths,
                         "expansion_rule": expansion_rule,
+                        "verified": True,
                     }
                     if exclude_paths:
                         result["excludes"] = exclude_paths
@@ -1053,12 +1124,42 @@ class UsdHandlerMixin:
                     code = "\n".join(lines)
                     py_lop.parm("python").set(code)
 
+                    # Cook and verify (truth contract -- see create branch)
+                    try:
+                        py_lop.cook(force=True)
+                    except hou.OperationFailed as e:
+                        return {
+                            "node": py_lop.path(),
+                            "prim_path": prim_path,
+                            "collection_name": collection_name,
+                            "cook_error": (
+                                f"The node was created but hit a snag when cooking -- {e}. "
+                                "The pythonscript node is still in the network so you can "
+                                "inspect it. Check that the collection exists on the prim."
+                            ),
+                        }
+                    verify_error = self._verify_collection_cooked(
+                        py_lop, prim_path, collection_name,
+                        expect_present=paths if action == "add" else None,
+                        expect_absent=paths if action == "remove" else None,
+                    )
+                    if verify_error:
+                        return {
+                            "node": py_lop.path(),
+                            "prim_path": prim_path,
+                            "collection_name": collection_name,
+                            "verify_error": (
+                                f"The node cooked but readback failed -- {verify_error}"
+                            ),
+                        }
+
                     return {
                         "node": py_lop.path(),
                         "prim_path": prim_path,
                         "collection_name": collection_name,
                         "action": action,
                         "paths": paths,
+                        "verified": True,
                     }
 
         return run_on_main(_on_main)
@@ -1173,10 +1274,41 @@ class UsdHandlerMixin:
                 code = "\n".join(lines)
                 py_lop.parm("python").set(code)
 
+                # Cook and verify (truth contract -- see manage_collection)
+                try:
+                    py_lop.cook(force=True)
+                except hou.OperationFailed as e:
+                    return {
+                        "node": py_lop.path(),
+                        "light_path": light_path,
+                        "action": action,
+                        "cook_error": (
+                            f"The node was created but hit a snag when cooking -- {e}. "
+                            "The pythonscript node is still in the network so you can "
+                            "inspect it. Check that the light path exists on the stage."
+                        ),
+                    }
+                coll_name = "shadowLink" if action.startswith("shadow") else "lightLink"
+                rel = "excludes" if action.endswith("exclude") else "includes"
+                expect = ["/"] if action == "reset" else geo_paths
+                verify_error = self._verify_collection_cooked(
+                    py_lop, light_path, coll_name, rel=rel, expect_present=expect
+                )
+                if verify_error:
+                    return {
+                        "node": py_lop.path(),
+                        "light_path": light_path,
+                        "action": action,
+                        "verify_error": (
+                            f"The node cooked but readback failed -- {verify_error}"
+                        ),
+                    }
+
                 result = {
                     "node": py_lop.path(),
                     "light_path": light_path,
                     "action": action,
+                    "verified": True,
                 }
                 if geo_paths:
                     result["geo_paths"] = geo_paths

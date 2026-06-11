@@ -300,6 +300,17 @@ class TestManageVariantSet:
 class TestManageCollection:
     """Tests for _handle_manage_collection."""
 
+    @pytest.fixture(autouse=True)
+    def _skip_readback(self, monkeypatch):
+        """M2-B added cook + stage readback; these shape pins use MagicMock
+        stages the real pxr readback can't parse. Readback behavior is pinned
+        in tests/test_m2_cook_verify.py."""
+        monkeypatch.setattr(
+            handlers_mod.SynapseHandler,
+            "_verify_collection_cooked",
+            staticmethod(lambda *a, **k: None),
+        )
+
     def _setup_lop(self, handler):
         lop_node = MagicMock()
         lop_node.path.return_value = "/stage/render_settings"
@@ -440,6 +451,15 @@ class TestManageCollection:
 
 class TestConfigureLightLinking:
     """Tests for _handle_configure_light_linking."""
+
+    @pytest.fixture(autouse=True)
+    def _skip_readback(self, monkeypatch):
+        """See TestManageCollection._skip_readback (M2-B)."""
+        monkeypatch.setattr(
+            handlers_mod.SynapseHandler,
+            "_verify_collection_cooked",
+            staticmethod(lambda *a, **k: None),
+        )
 
     def _setup_lop(self, handler):
         lop_node = MagicMock()

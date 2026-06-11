@@ -10,7 +10,8 @@
 | 1 | Verify all M1 findings (10 WPs, read-only fleet) | DONE — 7 confirmed, 3 adjusted, 0 refuted (`wf_15f3454d-a92`) |
 | 2 | Implement M1 — four P0s + truth contract + sharp ones + registry test | DONE — 8 implementers (disjoint file sets) + orchestrator-reserved `handlers.py`/`_tool_registry.py`/`mcp_tools_cops.py` edits |
 | 3 | Full suite green + commits | DONE — **3,467 passed / 68 skipped / exit 0 (~51 s)**, incl. `test_m1_truth_contract.py` |
-| 4–5 | M2 — USD display/cook-verify, path policy, OCIO previews, recipe rollback | pending |
+| 4 | Verify all M2 findings (10 WPs, read-only fleet) | FAILED — `wf_0c2a040b-843`: all 10 agents killed by the account's monthly spend limit (0/10 verdicts, ~1.08M tokens of partial work lost). Pivot: solo sequential verify→implement per WP (sharpest P1s first), commit per group. |
+| 5 | Implement M2 — display/rewire policy, cook-verify, `_safe_node_name`, path/token policy, OCIO previews, recipe rollback, show-config | RUNNING (solo) — order: M2-B cook-verify → M2-F flipbook path → M2-C safe-node-name → rest as budget allows |
 | 6–7 | M3 — UPGRADE.md, env conformance, logs/bundle, telemetry flush, keys/egress, autonomy bounds | pending |
 | — | M3 item 11 (SEC-1/RBAC) | SKIPPED — gate, not work (per report §5) |
 
