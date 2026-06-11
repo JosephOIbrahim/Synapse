@@ -15,7 +15,7 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.aliases import resolve_param, resolve_param_with_default, USD_PARM_ALIASES
-from .handler_helpers import _HOUDINI_UNAVAILABLE
+from .handler_helpers import _HOUDINI_UNAVAILABLE, _safe_node_name
 
 
 def _usd_to_json(value):
@@ -342,7 +342,7 @@ class UsdHandlerMixin:
 
             with hou.undos.group("SYNAPSE: set_usd_attribute"):
                 parent = node.parent()
-                safe_name = f"set_{attr_name.replace(':', '_').replace('.', '_')}"
+                safe_name = f"set_{_safe_node_name(attr_name, fallback='attr')}"
                 py_lop = parent.createNode("pythonscript", safe_name)
                 py_lop.setInput(0, node)
                 py_lop.moveToGoodPosition()
@@ -402,7 +402,7 @@ class UsdHandlerMixin:
 
             with hou.undos.group("SYNAPSE: create_usd_prim"):
                 parent = node.parent()
-                safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
+                safe_name = _safe_node_name(prim_path.rstrip("/").rsplit("/", 1)[-1], fallback="prim")
                 py_lop = parent.createNode("pythonscript", f"create_{safe_name}")
                 py_lop.setInput(0, node)
                 py_lop.moveToGoodPosition()
@@ -471,7 +471,7 @@ class UsdHandlerMixin:
 
             with hou.undos.group("SYNAPSE: modify_usd_prim"):
                 parent = node.parent()
-                safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
+                safe_name = _safe_node_name(prim_path.rstrip("/").rsplit("/", 1)[-1], fallback="prim")
                 py_lop = parent.createNode("pythonscript", f"modify_{safe_name}")
                 py_lop.setInput(0, node)
                 py_lop.moveToGoodPosition()
@@ -834,7 +834,7 @@ class UsdHandlerMixin:
                     )
                 with hou.undos.group("SYNAPSE: manage_variant_set"):
                     parent = node.parent()
-                    safe_name = variant_set_name.replace(" ", "_").replace("/", "_")
+                    safe_name = _safe_node_name(variant_set_name, fallback="vset")
                     py_lop = parent.createNode("pythonscript", f"vset_{safe_name}")
                     py_lop.setInput(0, node)
                     py_lop.moveToGoodPosition()
@@ -885,7 +885,7 @@ class UsdHandlerMixin:
                         "to select (e.g. 'red')"
                     )
                 parent = node.parent()
-                safe_name = variant_set_name.replace(" ", "_").replace("/", "_")
+                safe_name = _safe_node_name(variant_set_name, fallback="vset")
                 py_lop = parent.createNode("pythonscript", f"vsel_{safe_name}")
                 py_lop.setInput(0, node)
                 py_lop.moveToGoodPosition()
@@ -1027,7 +1027,7 @@ class UsdHandlerMixin:
                     )
                 with hou.undos.group("SYNAPSE: manage_collection"):
                     parent = node.parent()
-                    safe_name = collection_name.replace(" ", "_").replace("/", "_")
+                    safe_name = _safe_node_name(collection_name, fallback="coll")
                     py_lop = parent.createNode("pythonscript", f"coll_{safe_name}")
                     py_lop.setInput(0, node)
                     py_lop.moveToGoodPosition()
@@ -1102,7 +1102,7 @@ class UsdHandlerMixin:
                     )
                 with hou.undos.group("SYNAPSE: manage_collection"):
                     parent = node.parent()
-                    safe_name = collection_name.replace(" ", "_").replace("/", "_")
+                    safe_name = _safe_node_name(collection_name, fallback="coll")
                     verb = "add" if action == "add" else "rm"
                     py_lop = parent.createNode("pythonscript", f"coll_{verb}_{safe_name}")
                     py_lop.setInput(0, node)
@@ -1207,7 +1207,7 @@ class UsdHandlerMixin:
             with hou.undos.group("SYNAPSE: configure_light_linking"):
                 parent = node.parent()
 
-                safe_light = light_path.rstrip("/").rsplit("/", 1)[-1] or "light"
+                safe_light = _safe_node_name(light_path.rstrip("/").rsplit("/", 1)[-1], fallback="light")
                 py_lop = parent.createNode("pythonscript", f"lightlink_{safe_light}")
                 py_lop.setInput(0, node)
                 py_lop.moveToGoodPosition()
@@ -1518,7 +1518,7 @@ class UsdHandlerMixin:
 
             with hou.undos.group("SYNAPSE: set_payload_loadstate"):
                 parent = node.parent()
-                safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "prim"
+                safe_name = _safe_node_name(prim_path.rstrip("/").rsplit("/", 1)[-1], fallback="prim")
                 py_lop = parent.createNode("pythonscript", f"loadstate_{safe_name}")
                 py_lop.setInput(0, node)
                 py_lop.moveToGoodPosition()
@@ -1605,7 +1605,7 @@ class UsdHandlerMixin:
 
             with hou.undos.group("SYNAPSE: create_point_instancer"):
                 parent = node.parent()
-                safe_name = prim_path.rstrip("/").rsplit("/", 1)[-1] or "instancer"
+                safe_name = _safe_node_name(prim_path.rstrip("/").rsplit("/", 1)[-1], fallback="instancer")
                 py_lop = parent.createNode("pythonscript", f"instancer_{safe_name}")
                 py_lop.setInput(0, node)
                 py_lop.moveToGoodPosition()

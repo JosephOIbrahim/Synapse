@@ -6,6 +6,7 @@ Extracted to avoid circular imports between handler modules.
 """
 
 import os
+import re
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
@@ -23,6 +24,25 @@ _HOUDINI_UNAVAILABLE = (
     "Houdini isn't reachable right now \u2014 make sure it's running "
     "and Synapse is started from the Python Panel"
 )
+
+_NODE_NAME_ILLEGAL = re.compile(r"[^A-Za-z0-9_]+")
+
+
+def _safe_node_name(name, fallback="node"):
+    """Houdini-legal node name from arbitrary (artist/LLM) input.
+
+    Node names allow only [A-Za-z0-9_] and may not start with a digit --
+    anything else (hyphens, brackets, spaces in asset names) makes
+    createNode()/setName() raise mid-undo-group (hardening report 4.3).
+    Node-name rules ONLY: USD prim-name sanitization is the D-3 RFC's lane
+    (docs/RFC_agent_usd_ledger.md).
+    """
+    safe = _NODE_NAME_ILLEGAL.sub("_", str(name)).strip("_")
+    if not safe:
+        return fallback
+    if safe[0].isdigit():
+        safe = "_" + safe
+    return safe
 
 
 def _suggest_parms(node, invalid_name: str, limit: int = 8) -> str:

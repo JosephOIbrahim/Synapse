@@ -16,7 +16,7 @@ except ImportError:
 
 from ..core.aliases import resolve_param, resolve_param_with_default
 from .handlers_usd import _usd_to_json
-from .handler_helpers import _HOUDINI_UNAVAILABLE, _suggest_prim_paths
+from .handler_helpers import _HOUDINI_UNAVAILABLE, _safe_node_name, _suggest_prim_paths
 
 _log = logging.getLogger(__name__)
 
@@ -292,7 +292,7 @@ class MaterialHandlerMixin:
 
             with hou.undos.group("SYNAPSE: assign_material"):
                 # Safe node name from the material path
-                safe_name = material_path.rstrip("/").rsplit("/", 1)[-1] or "mat"
+                safe_name = _safe_node_name(material_path.rstrip("/").rsplit("/", 1)[-1], fallback="mat")
                 assign_node = parent.createNode("assignmaterial", f"assign_{safe_name}")
                 assign_node.setInput(0, node)
                 assign_node.moveToGoodPosition()
