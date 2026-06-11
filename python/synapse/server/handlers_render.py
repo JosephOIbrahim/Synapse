@@ -453,9 +453,13 @@ class RenderHandlerMixin:
                         try:
                             vp = sv.curViewport()
                             fb_settings = sv.flipbookSettings()
-                            ext = "jpg"
-                            fb_pattern = out_path.replace(
-                                f".{ext}", f".$F4.{ext}"
+                            # M2-F: the GL grab must NEVER land at the artist's
+                            # beauty path -- on disk it's indistinguishable from
+                            # a real render (the old .jpg replace was a no-op for
+                            # EXR outputs and wrote AT the resolved path).
+                            _p = Path(out_path)
+                            fb_pattern = str(
+                                _p.with_name(f"{_p.stem}_glpreview.$F4.jpg")
                             )
                             fb_settings.frameRange((cur, cur))
                             fb_settings.output(fb_pattern)
@@ -508,8 +512,15 @@ class RenderHandlerMixin:
         }
         if used_flipbook:
             result["flipbook_fallback"] = True
-        # Always report the disk-written file path (EXR or artist format)
-        if artist_file_written or render_file != result_path:
+            # Truth contract: the render output was never created -- don't
+            # report output_file for a file that doesn't exist.
+            result["render_output_path"] = render_file
+            result["note"] = (
+                "The renderer wrote nothing at the output path -- image_path "
+                "is a GL viewport flipbook preview, not a render."
+            )
+        elif artist_file_written or render_file != result_path:
+            # Always report the disk-written file path (EXR or artist format)
             result["output_file"] = render_file
         return result
 
