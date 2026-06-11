@@ -13,7 +13,7 @@
   <a href="python/synapse/host/tops_bridge.py"><img src="https://img.shields.io/badge/perception-scaffolded-3b82f6.svg" alt="Perception"></a>
   <a href="python/synapse/memory/moneta_store.py"><img src="https://img.shields.io/badge/memory-Moneta%20backend-8b5cf6.svg" alt="Memory"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-3567%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-3612%20passing-brightgreen.svg" alt="Tests"></a>
 </p>
 
 ---
@@ -26,7 +26,7 @@ SYNAPSE's whole point is to be *used*. The payoff is a docked **SYNAPSE panel**:
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
     ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>rail + 2 tabs, in-process"]:::panel
-    PANEL --> LOOP["Agent loop<br/>streams Claude + 110 tools"]:::panel
+    PANEL --> LOOP["Agent loop<br/>streams Claude + 112 tools"]:::panel
     LOOP -->|"tool_use<br/>(e.g. execute_python)"| EXEC["Tool executor<br/>main thread"]:::panel
     EXEC --> BR["SynapseHandler<br/>undo-wrapped &middot; main-thread &middot; integrity"]:::bridge
     BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
@@ -301,7 +301,7 @@ Healthy → prints `running: True` and stops cleanly. Common errors:
 
 | Layer | State |
 |---|---|
-| **Artist copilot panel** (chat → in-Houdini build, Ctrl+K palette over 110 tools, live observability) | Shipping. Every mutation undo-wrapped + main-thread-safe (inline in the handlers); "make a box" → node verified in graphical Houdini 21.0.671 (2026-06-01). |
+| **Artist copilot panel** (chat → in-Houdini build, Ctrl+K palette over 112 tools, live observability) | Shipping. Every mutation undo-wrapped + main-thread-safe (inline in the handlers); "make a box" → node verified in graphical Houdini 21.0.671 (2026-06-01). |
 | Cognitive substrate (Dispatcher + `AgentToolError` + cognitive/host split) | Shipping. Zero-hou boundary enforced by lint. |
 | Agent SDK loop (Anthropic, cancel-event-aware, serializable tool errors) | Shipping. Mocked end-to-end tests green. |
 | Daemon lifecycle (boot gate, auth resolver, dialog suppression, bootstrap locks) | Shipping. Windows `WindowsSelectorEventLoopPolicy` + `PYTHONNOUSERSITE` + no-runtime-pip all baked. |
@@ -321,12 +321,45 @@ Healthy → prints `running: True` and stops cleanly. Common errors:
 | **Truth contract** (result honesty) | Shipping (v5.13.0). *A tool result may not claim an outcome the handler did not observe* — enforced registry-wide by an AST conformance pin over all 117 handlers (`tests/test_m1_truth_contract.py`; exact-pin ledgers fail loud in **both** directions: a new fiction must be fixed, a landed fix must retire its ledger entry). Recipes/plans propose-or-execute and **stop on first failure** with honest step accounting; the autonomy evaluator scores unverifiable frames as failures (a black sequence can no longer "pass at 1.0"); scaffolds say `scaffolded`. |
 | **Pipeline citizenship** (paths · frames · color) | Shipping (v5.13.0). Tokens stay unexpanded in parms; an explicit `frame=N` render reads, polls, **and writes** at *that* frame (the playhead-overwrite is dead); resolver URIs (`asset:`/`shot:`) pass through marked *unverified* instead of being isfile-rejected; RenderProduct names expand **per-frame at cook** (a farm sequence no longer overwrites one file); previews are color-managed (`hoiiotool` + `$OCIO` → sRGB → `-g auto`, the transform recorded in every result — `color_managed` is never claimed on a fallback). |
 | **Show config + display policy** | Shipping (v5.13.0). Per-show conventions in `show.json` (resolution, output roots, frame padding, naming/versioning, color) resolved env > `$HIP` > `$JOB` > built-in defaults — zero behavior change unconfigured; `naming.versioning: increment` gives comparable `vNNN` reruns. USD edits land *visibly*: a new LOP tip takes the display flag when it extends the display chain, or the result says `needs_rewire` honestly — `reference_usd` no longer creates disconnected islands. |
+| **Operability** (logs · doctor · telemetry) | Shipping (v5.14.0). Rotating `~/.synapse/logs/synapse.log`; telemetry flushed periodically **and** inside the freeze chain's escalation — a frozen session finally leaves evidence (`freeze_dump_*.json`). `synapse_doctor` runs 7 honest checks (version stamp, log file, telemetry freshness, memory-key fingerprint vs store sidecar, symbol-table build stamp, bridge endpoint, Houdini) and `bundle:true` zips the scattered artifacts with a hard secrets denylist. Reports only checks it actually ran. |
+| **Config & docs conformance** (CI-pinned truth) | Shipping (v5.14.0). Every `SYNAPSE_*` env var is documented in DEPLOYMENT.md's 26-row reference — a new undocumented read **fails CI** with its file:line (and a stale row fails the reverse direction). EGRESS.md answers what-leaves-the-building (one endpoint, three lanes, the plaintext-recall caveat) and a new remote-egress call site fails CI until it's documented. UPGRADE.md is the per-build runbook — a stale symbol table now makes scout verdicts say **why** they're unverified and turns the panel footer loud. |
+| **Bounded autonomy** (kill switch) | Shipping (v5.14.0). `max_iterations` clamps at 10; every run carries a wall-clock bound (default = the canonical 600 s client budget) and reports `stop_reason` honestly with partial progress. `synapse_render_farm_cancel` reaches **both** the running farm and the live autonomous driver — on the read-only fast path, because a mutating-classified cancel would deadlock behind the very render it cancels (the C5 lock is held for the whole sequence). |
 
 The port pattern is mechanical and documented in `docs/crucible_protocol.md` + the `spike(1)` commit message. Every legacy tool gets:
 
 1. A pure-Python function under `synapse.cognitive.tools.<name>` (zero `hou` imports).
 2. A schema dict (description + JSON Schema) registered alongside the function.
 3. The WS adapter branch in `mcp_server.py` swapped from `synapse_inspect_stage`-style direct dispatch to `dispatcher.execute('<name>', kwargs)`.
+
+### v5.14.0 — Studio-operable: the N-seats milestone
+
+M3 closes the hardening report: the engine was already honest (M1) and pipeline-fluent (M2) — this milestone makes it **operable by people who didn't build it**. The recurring theme is evidence: a frozen session dumps its telemetry before dying, a stale phantom-API gate says so in the panel footer instead of one console line, a doctor reports only checks it actually ran, and the docs that answer a studio's first three questions (what leaves the building? whose key? what breaks on upgrade?) are **CI-pinned against drift** — a new env var, egress site, or renamed artifact fails the suite until the doc catches up.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart LR
+    subgraph EVID["Evidence survives the crash"]
+        BEAT["freeze chain<br/>escalation"]:::hot -->|"best-effort dump<br/>BEFORE breaker/halt"| DUMP[("~/.synapse/logs/<br/>freeze_dump_*.json")]:::ok
+        LOG["rotating synapse.log<br/>+ 60s telemetry flush"]:::obs --> DUMP
+        DOC["synapse_doctor<br/>7 checks &middot; bundle"]:::obs -->|"reads"| DUMP
+    end
+    subgraph BOUND["Autonomy is bounded + killable"]
+        RUN["autonomous render"]:::panel -->|"clamp 10 &middot; 600s wall clock"| STOP["honest stop_reason<br/>partial report"]:::ok
+        KILL["synapse_render_farm_cancel<br/>read-only fast path<br/>(never queues behind its target)"]:::hot -.-> RUN
+    end
+    subgraph PIN["Docs pinned to code"]
+        ENV["DEPLOYMENT.md env table"]:::obs <-->|"two-way CI pin"| SRC["every SYNAPSE_* read"]:::panel
+        EGR["EGRESS.md"]:::obs <-->|"frozen egress sites"| API["api.anthropic.com<br/>(the only endpoint)"]:::panel
+    end
+    EVID ~~~ BOUND
+    BOUND ~~~ PIN
+    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
+    classDef hot fill:#334155,stroke:#ef4444,color:#f1f5f9
+    classDef ok fill:#1e293b,stroke:#22c55e,color:#f1f5f9
+```
+
+Two findings came back sharper than the report wrote them: the kill-switch gap wasn't just missing retention — a naively-registered cancel would have **deadlocked behind the C5 mutation lock** the running render holds for its entire sequence (the cancel rides the read-only fast path for exactly that reason); and seat B on shared storage doesn't see an error — it sees **silent amnesia** (empty recalls, refused saves), which is why the doctor's key-fingerprint check and the show-scoped `SYNAPSE_ENCRYPTION_KEY` provisioning docs exist. The full hardening run: **suite 3,415 → 3,612**, every wave full-suite-gated, ledger in `docs/HARDENING_RUN_2026-06-10.md`. (SEC-1/RBAC remains the explicit gate before any non-local deploy mode — a decision recorded, not work skipped.)
 
 ### v5.13.0 — Production hardening: the truth contract + pipeline citizenship
 
@@ -683,14 +716,17 @@ python/synapse/
 │   ├── main_thread.py          # deferred main-thread dispatch — zombie-abandon + dispatch_wait_ms histogram
 │   ├── handler_helpers.py      # v5.13.0 — shared truth-contract helpers: _safe_node_name,
 │   │                           #   _expand_frame_tokens, _wire_display, _path_warnings, _convert_preview
+│   ├── doctor.py               # v5.14.0 — synapse_doctor: 7 honest checks + secrets-denylisted bundle
+│   ├── telemetry_dump.py       # v5.14.0 — periodic + freeze-escalation telemetry flush
 │   └── handlers*.py            # command handlers — inline undo, cross-client mutation lock
 ├── core/
 │   ├── show_config.py          # v5.13.0 — per-show conventions: env > $HIP > $JOB > defaults (show.json)
+│   ├── logfile.py              # v5.14.0 — rotating ~/.synapse/logs/synapse.log (idempotent, never blocks boot)
 │   └── timeouts.py             # v5.12.0 — THE canonical per-tool timeout table (all clients budget from it)
 ├── _vendor/                    # anthropic + deps, CP311 win_amd64
 └── ...                         # Sprint 2 Week 1 + prior subsystems
 
-tests/                          # 3567 local; ~70 are Moneta-gated (skip on a
+tests/                          # 3612 local; ~70 are Moneta-gated (skip on a
                                 # clean clone / CI without the moneta package)
 docs/sprint3/                   # audits + design contracts + continuation
 docs/crucible_protocol.md       # manual Crucible runbook
