@@ -1246,8 +1246,13 @@ class TestRecipeExecutionHonesty:
         assert "failed at step 3/6" in result.answer
         assert "boom" in result.answer
         assert result.metadata["executed"] is True
-        # WP1 deliberately does NOT stop early — that's M2 item 7
-        assert len(result.responses) == 6
+        # M2-H: stop on first failure — steps 4-6 are never dispatched
+        assert len(result.responses) == 3
+        assert mock_fn.call_count == 3
+        assert result.metadata["failed_step"] == 3
+        assert result.metadata["steps_skipped"] == 3
+        assert "2 step(s) applied" in result.answer
+        assert "houdini_undo" in result.answer
 
     def test_recipe_step_exception_fails_result(self):
         mock_fn = Mock(side_effect=RuntimeError("Houdini not connected"))
@@ -1265,6 +1270,63 @@ class TestRecipeExecutionHonesty:
         assert result.success
         assert "Executed recipe" in result.answer
         assert result.metadata["executed"] is True
+
+
+class TestPlanExecutionHonesty:
+    """M2-H: _try_plan gets the same truth contract as _try_recipe — success
+    tracks real step outcomes, stop on first failure, honest accounting.
+    (Pre-M2 it claimed success=True unconditionally with no failure check.)"""
+
+    def setup_method(self):
+        self.config = RoutingConfig(
+            enable_tier2=False,
+            enable_tier3=False,
+        )
+
+    def _plan(self, n_steps=3):
+        from types import SimpleNamespace
+        return SimpleNamespace(
+            name="wf",
+            description="does things",
+            steps=[Mock(id=f"s{i}") for i in range(n_steps)],
+            metadata={},
+        )
+
+    def test_plan_without_command_fn_is_proposed(self):
+        from types import SimpleNamespace
+        router = TieredRouter(config=self.config)
+        router._planner = SimpleNamespace(plan=lambda t: self._plan(1))
+        result = router._try_plan("anything", "ctx", time.monotonic())
+        assert result.success is True
+        assert result.metadata["executed"] is False
+        assert "not executed" in result.answer
+
+    def test_plan_step_failure_fails_result_and_stops(self):
+        from types import SimpleNamespace
+        ok = SynapseResponse(id="t", success=True, data={})
+        bad = SynapseResponse(id="t", success=False, error="kaput")
+        mock_fn = Mock(side_effect=[ok, bad, ok])
+        router = TieredRouter(command_fn=mock_fn, config=self.config)
+        router._planner = SimpleNamespace(plan=lambda t: self._plan(3))
+        result = router._try_plan("anything", "ctx", time.monotonic())
+        assert result.success is False
+        assert "failed at step 2/3" in result.answer
+        assert "kaput" in result.answer
+        assert "1 step(s) applied" in result.answer
+        assert mock_fn.call_count == 2  # step 3 never dispatched
+        assert result.metadata["failed_step"] == 2
+        assert result.metadata["steps_skipped"] == 1
+
+    def test_plan_success_keeps_description(self):
+        from types import SimpleNamespace
+        mock_fn = Mock(return_value=SynapseResponse(id="t", success=True, data={}))
+        router = TieredRouter(command_fn=mock_fn, config=self.config)
+        router._planner = SimpleNamespace(plan=lambda t: self._plan(2))
+        result = router._try_plan("anything", "ctx", time.monotonic())
+        assert result.success is True
+        assert result.answer == "does things"
+        assert result.metadata["executed"] is True
+        assert result.metadata["failed_step"] is None
 
 
 # =============================================================================

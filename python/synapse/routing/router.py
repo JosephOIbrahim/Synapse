@@ -394,11 +394,13 @@ class TieredRouter:
             for cmd in commands:
                 try:
                     resp = self._command_fn(cmd)
-                    responses.append(resp)
                 except Exception as e:
-                    responses.append(SynapseResponse(
-                        id=cmd.id, success=False, error=str(e),
-                    ))
+                    resp = SynapseResponse(id=cmd.id, success=False, error=str(e))
+                responses.append(resp)
+                if not resp.success:
+                    # M2-H: stop on first failure — later steps must not run
+                    # against a broken precondition (half-build containment).
+                    break
 
         if not executed:
             success = True
@@ -406,16 +408,21 @@ class TieredRouter:
                 f"Proposed recipe '{recipe.name}' ({len(commands)} steps) — "
                 f"not executed (no command channel wired); steps returned as commands"
             )
+            failed_step = None
         else:
             failed = [(i, r) for i, r in enumerate(responses) if not r.success]
             success = not failed
             if success:
                 answer = f"Executed recipe '{recipe.name}' ({len(commands)} steps)"
+                failed_step = None
             else:
                 i, r = failed[0]
+                failed_step = i + 1
                 answer = (
                     f"Recipe '{recipe.name}' failed at step {i + 1}/{len(commands)}: "
-                    f"{r.error or 'step returned failure'}"
+                    f"{r.error or 'step returned failure'} — "
+                    f"{i} step(s) applied, {len(commands) - i - 1} not run; "
+                    "use houdini_undo to roll back the applied steps"
                 )
 
         result = RoutingResult(
@@ -426,7 +433,13 @@ class TieredRouter:
             responses=responses,
             confidence=0.95,
             latency_ms=(time.monotonic() - start) * 1000,
-            metadata={"recipe": recipe.name, "params": params, "executed": executed},
+            metadata={
+                "recipe": recipe.name,
+                "params": params,
+                "executed": executed,
+                "failed_step": failed_step,
+                "steps_skipped": (len(commands) - len(responses)) if executed else 0,
+            },
         )
 
         self._cache_result("recipe", text, context_hash, result)
@@ -443,22 +456,45 @@ class TieredRouter:
         if plan is None:
             return None
 
-        # Execute plan steps if command_fn available
+        # Execute plan steps if command_fn available — otherwise PROPOSAL only.
+        # M2-H: same truth contract as _try_recipe — success tracks real step
+        # outcomes, stop on first failure, honest step accounting.
         responses = []
+        executed = self._command_fn is not None
         if self._command_fn:
             for cmd in plan.steps:
                 try:
                     resp = self._command_fn(cmd)
-                    responses.append(resp)
                 except Exception as e:
-                    responses.append(SynapseResponse(
-                        id=cmd.id, success=False, error=str(e),
-                    ))
+                    resp = SynapseResponse(id=cmd.id, success=False, error=str(e))
+                responses.append(resp)
+                if not resp.success:
+                    break
+
+        failed = [(i, r) for i, r in enumerate(responses) if not r.success]
+        success = not failed
+        failed_step = None
+        if not executed:
+            answer = (
+                f"Planned workflow '{plan.name}' ({len(plan.steps)} steps) — "
+                f"not executed (no command channel wired); steps returned as commands"
+            )
+        elif success:
+            answer = plan.description
+        else:
+            i, r = failed[0]
+            failed_step = i + 1
+            answer = (
+                f"Workflow '{plan.name}' failed at step {i + 1}/{len(plan.steps)}: "
+                f"{r.error or 'step returned failure'} — "
+                f"{i} step(s) applied, {len(plan.steps) - i - 1} not run; "
+                "use houdini_undo to roll back the applied steps"
+            )
 
         result = RoutingResult(
-            success=True,
+            success=success,
             tier=RoutingTier.RECIPE,  # Plans run at recipe speed
-            answer=plan.description,
+            answer=answer,
             commands=plan.steps,
             responses=responses,
             confidence=0.9,
@@ -466,6 +502,9 @@ class TieredRouter:
             metadata={
                 "planned": True,
                 "workflow": plan.name,
+                "executed": executed,
+                "failed_step": failed_step,
+                "steps_skipped": (len(plan.steps) - len(responses)) if executed else 0,
                 **plan.metadata,
             },
         )
