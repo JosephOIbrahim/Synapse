@@ -46,6 +46,7 @@ from ..core.determinism import round_float, kahan_sum
 from ..core.show_config import get_show_config, resolve_show_dirs, next_version_dir
 from .handler_helpers import (
     _suggest_parms, _HOUDINI_UNAVAILABLE, _expand_frame_tokens, _path_warnings,
+    _convert_preview,
 )
 
 
@@ -468,12 +469,24 @@ class RenderHandlerMixin:
             # the flush window — they now run on the WS handler thread below.
             # $HFS resolves here (the one hou call the iconvert leg needs).
             hfs = hou.text.expandString("$HFS")
+            # M2-G: color.* show-config keys resolve HERE -- get_show_config
+            # inherits resolve_show_dirs' main-thread contract, and threading
+            # the values out keeps the off-main conversion from needing a
+            # second main-thread hop (C11). "" = unset -> the converter
+            # falls back to the $OCIO env var / built-in defaults.
+            _ccfg = get_show_config()
+            color_cfg = {
+                "ocio": str(_ccfg.get("color.ocio") or ""),
+                "display": str(_ccfg.get("color.display") or ""),
+                "view": str(_ccfg.get("color.view") or ""),
+            }
             return (node.path(), node_type, engine, cur, render_path_resolved,
-                    preview_path, hfs, show_cfg_advisory, artist_output_raw)
+                    preview_path, hfs, show_cfg_advisory, artist_output_raw,
+                    color_cfg)
 
         import hdefereval
         (used_rop, used_type, engine, cur, render_path_resolved, preview_path,
-         hfs, show_cfg_advisory, artist_output_raw) = (
+         hfs, show_cfg_advisory, artist_output_raw, color_cfg) = (
             hdefereval.executeInMainThreadWithResult(_render_on_main)
         )
 
@@ -490,23 +503,25 @@ class RenderHandlerMixin:
 
         # If render wrote to artist's EXR/non-JPEG, convert to JPEG for preview
         artist_file_written = False
+        conv = {
+            "converted": False,
+            "tool": None,
+            "color_transform": "none (unconverted)",
+            "color_managed": False,
+            "error": None,
+        }
         if render_ok and out_path != preview_path:
             artist_file_written = True
-            # Try to convert to JPEG preview using iconvert or PIL
-            try:
-                iconvert = Path(hfs) / "bin" / "iconvert.exe"
-                if not iconvert.exists():
-                    iconvert = Path(hfs) / "bin" / "iconvert"
-                if iconvert.exists():
-                    import subprocess
-                    subprocess.run(
-                        [str(iconvert), out_path, preview_path],
-                        timeout=15,
-                        capture_output=True,
-                    )
-            except Exception:
-                pass  # Preview conversion is best-effort
-            # If iconvert worked, use preview; otherwise serve the render file
+            # M2-G: color-managed conversion (hoiiotool OCIO display/view
+            # leg first, iconvert -g auto second) -- best-effort, never
+            # raises; conv records the transform that was actually applied.
+            conv = _convert_preview(
+                out_path, preview_path, hfs,
+                ocio=color_cfg.get("ocio") or None,
+                display=color_cfg.get("display") or None,
+                view=color_cfg.get("view") or None,
+            )
+            # If conversion worked, use preview; otherwise serve the render file
             if Path(preview_path).exists() and Path(preview_path).stat().st_size > 0:
                 out_path = preview_path
             # else: out_path stays as the artist's render file
@@ -579,6 +594,9 @@ class RenderHandlerMixin:
             )
         result_path = out_path
         render_file = render_path_resolved
+        # M2-G: format reflects what image_path actually IS -- the EXR used
+        # to ship labeled 'jpeg' whenever conversion failed. jpg == jpeg.
+        _ext = Path(result_path).suffix.lstrip(".").lower()
         result = {
             "image_path": result_path,
             "rop": used_rop,
@@ -586,7 +604,7 @@ class RenderHandlerMixin:
             "engine": engine,
             "width": int(width) if width else None,
             "height": int(height) if height else None,
-            "format": "jpeg",
+            "format": "jpeg" if _ext in ("jpg", "jpeg") else (_ext or "jpeg"),
         }
         # M2-D: advisory when the artist's parm carries a baked absolute path
         # (token/URI/relative/empty raws warn nothing).
@@ -606,9 +624,22 @@ class RenderHandlerMixin:
                 "The renderer wrote nothing at the output path -- image_path "
                 "is a GL viewport flipbook preview, not a render."
             )
+            # M2-G: the GL grab bakes whatever display transform the artist's
+            # viewport applied -- recorded honestly as unverified.
+            result["color_transform"] = "viewport_display (GL flipbook, unverified)"
+            result["color_managed"] = False
         elif artist_file_written or render_file != result_path:
             # Always report the disk-written file path (EXR or artist format)
             result["output_file"] = render_file
+            # M2-G truth contract: record the transform the preview actually
+            # got; color_managed=True ONLY on the verified OCIO leg. A
+            # recorded error survives even when a later leg succeeded (a
+            # broken $OCIO that silently fell back stays visible).
+            result["color_transform"] = conv["color_transform"]
+            result["color_managed"] = conv["color_managed"]
+            result["preview_tool"] = conv["tool"]
+            if conv["error"]:
+                result["preview_error"] = conv["error"]
         return result
 
     def _handle_set_keyframe(self, payload: Dict) -> Dict:

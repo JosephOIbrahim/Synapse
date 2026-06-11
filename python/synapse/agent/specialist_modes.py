@@ -188,7 +188,9 @@ RENDER_SPECIALIST = SpecialistMode(
         "Follow progressive validation: test at 256x256 low samples first, "
         "then scale up. Set picture on Karma LOP AND outputimage on ROP. "
         "Never use soho_foreground=1 for heavy scenes — it blocks Houdini. "
-        "Use iconvert.exe from $HFS/bin/ for EXR-to-JPEG preview conversion."
+        "Preview conversion is color-managed server-side (hoiiotool + $OCIO "
+        "when set; sRGB fallback) -- check color_managed/color_transform in "
+        "render results before exposure or color judgments."
     ),
     parameter_vocabulary={
         "resolution": "res",

@@ -7,7 +7,9 @@ Extracted to avoid circular imports between handler modules.
 
 import os
 import re
+import subprocess
 from collections import defaultdict
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ..core.aliases import USD_PARM_ALIASES
@@ -130,6 +132,109 @@ def _path_warnings(path, context="path"):
             "so the scene survives a project move (path policy advisory)"
         ]
     return []
+
+
+def _convert_preview(src, dst, hfs, ocio=None, source_colorspace=None,
+                     display=None, view=None, timeout=15):
+    """Color-managed preview conversion, EXR -> displayable (M2-G).
+
+    The bare-iconvert preview applied whatever transform
+    HOUDINI_AUTOCONVERT_IMAGE_FILES implied and recorded nothing -- on
+    OCIO/ACES shows the LLM judged exposure/color through the wrong
+    transform (hardening report 4.3). Legs, strongest first:
+
+      1. hoiiotool --ociodisplay (when $OCIO or an explicit ocio= config is
+         set, injected via the subprocess env -- the live-verified
+         mechanism on H21.0.671). The ONLY leg that claims
+         color_managed=True.
+      2. hoiiotool --tocolorspace 'sRGB - Display' (OIIO built-in config,
+         no $OCIO): honest sRGB fallback, color_managed=False.
+      3. iconvert -g auto: pins today's verified default against
+         HOUDINI_AUTOCONVERT_IMAGE_FILES drift ('-g 2.2' is a phantom
+         flag value on this binary). color_managed=False.
+
+    Best-effort contract: returns a dict, never raises. ``error`` keeps
+    the LAST failure's stderr snippet even when a later leg succeeds, so
+    a broken $OCIO that silently fell back stays visible.
+    """
+    result = {
+        "converted": False,
+        "tool": None,
+        "color_transform": "none (unconverted)",
+        "color_managed": False,
+        "error": None,
+    }
+
+    def _bin(name):
+        exe = Path(hfs) / "bin" / f"{name}.exe"
+        if not exe.exists():
+            exe = Path(hfs) / "bin" / name
+        return exe if exe.exists() else None
+
+    def _run(argv, env=None):
+        try:
+            proc = subprocess.run(
+                argv, timeout=timeout, capture_output=True, env=env
+            )
+        except Exception as e:
+            result["error"] = str(e)
+            return False
+        if proc.returncode != 0:
+            stderr = proc.stderr or b""
+            snippet = stderr[-300:].decode("utf-8", "replace").strip()
+            result["error"] = snippet or f"exit {proc.returncode}"
+            return False
+        try:
+            return Path(dst).exists() and Path(dst).stat().st_size > 0
+        except OSError:
+            return False
+
+    ocio = ocio or os.environ.get("OCIO")
+
+    hoiiotool = _bin("hoiiotool")
+    if hoiiotool is not None:
+        if ocio:
+            ociodisplay = "--ociodisplay"
+            if source_colorspace:
+                ociodisplay = f"--ociodisplay:from={source_colorspace}"
+            argv = [str(hoiiotool), "-i", str(src), ociodisplay,
+                    display or "default", view or "default", "-o", str(dst)]
+            if _run(argv, env={**os.environ, "OCIO": str(ocio)}):
+                result.update(
+                    converted=True,
+                    tool="hoiiotool",
+                    color_managed=True,
+                    color_transform=(
+                        f"ociodisplay:{display or 'default'}/"
+                        f"{view or 'default'} via {ocio}"
+                    ),
+                )
+                return result
+        else:
+            argv = [str(hoiiotool), "-i", str(src), "--tocolorspace",
+                    "sRGB - Display", "-o", str(dst)]
+            if _run(argv):
+                result.update(
+                    converted=True,
+                    tool="hoiiotool",
+                    color_managed=False,
+                    color_transform="srgb (OIIO built-in config, no $OCIO)",
+                )
+                return result
+
+    iconvert = _bin("iconvert")
+    if iconvert is not None:
+        argv = [str(iconvert), "-g", "auto", str(src), str(dst)]
+        if _run(argv):
+            result.update(
+                converted=True,
+                tool="iconvert",
+                color_managed=False,
+                color_transform="gamma_auto (iconvert)",
+            )
+            return result
+
+    return result
 
 
 def _suggest_parms(node, invalid_name: str, limit: int = 8) -> str:
