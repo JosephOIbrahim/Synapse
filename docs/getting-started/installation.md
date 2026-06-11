@@ -41,3 +41,5 @@ python -m pytest tests/ -q
 
 Most of the suite (~3,000 tests) runs with **no Houdini required**. ~70 Moneta-gated tests
 skip automatically on a clean clone / CI without the optional `moneta` package.
+
+> **Upgrading Houdini?** Follow `docs/studio/UPGRADE.md` — symbol-table regen, vendor ABI check, installer re-run, gate confirmation.

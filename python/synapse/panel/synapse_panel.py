@@ -25,6 +25,7 @@ from synapse.panel.designsystem import qss
 from synapse.panel.designsystem import components as c
 from synapse.panel.designsystem import motion
 from synapse.panel.designsystem import fontload
+from synapse.panel.gate_stamp import phantom_gate_status
 
 # Proven runtime + widgets — composed, not rewritten. All optional so the panel
 # always instantiates (graceful degradation is a runtime contract).
@@ -165,6 +166,8 @@ class SynapsePanel(QtWidgets.QWidget):
         # missing family raises the build-mismatch flag (logged) and falls back.
         self._font_status = fontload.load_application_fonts()
         self._font_build_mismatch = self._font_status.get("build_mismatch", False)
+        # M3-A: one-time check -- the symbol table cannot change mid-session
+        self._gate_stale_reason = phantom_gate_status()
         self.setStyleSheet(qss.stylesheet(t.FONT_SCALE_DEFAULT))
 
         self._messages = []          # Anthropic-format conversation
@@ -1025,8 +1028,16 @@ class SynapsePanel(QtWidgets.QWidget):
                     hip = "untitled.hip"
                 txt = "%s · f%d" % (hip, frame)
             self._ctx_label.setText(txt)
-            self._foot_dot.set_status("connected")
-            self._foot_label.setText("Houdini")
+            if self._gate_stale_reason:
+                # M3-A: a disarmed phantom-API gate must be LOUD, not a
+                # one-line console warning the week API drift peaks.
+                self._foot_dot.set_status("warning")
+                self._foot_label.setText(
+                    "Houdini · API gate stale — see docs/studio/UPGRADE.md"
+                )
+            else:
+                self._foot_dot.set_status("connected")
+                self._foot_label.setText("Houdini")
             if self._header_status.text() in ("Standing by", ""):
                 self._set_header("idle", "Ready")
         except Exception:

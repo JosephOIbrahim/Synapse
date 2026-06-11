@@ -29,8 +29,18 @@
 | M2-G | §4.3 — OIIO+`$OCIO` color-managed previews | ✅ wave 3 — `_convert_preview` (hoiiotool `--ociodisplay` w/ env-injected OCIO → `--tocolorspace "sRGB - Display"` → iconvert `-g auto`); `color_managed=True` ONLY on the verified OCIO leg; `color_transform`/`preview_tool`/`preview_error` result keys; format honesty (unconverted EXR ships labeled `exr`); flipbook leg marked `viewport_display (unverified)`. **Deferred:** capture_viewport static color keys (blocked by test_capture exact-shape pin); evaluator pixel-verdicts don't inherit the transform (separate finding) |
 
 **Fleet/wave machinery:** verification fleet `wf_d42b78b1-7d6` (4 verdicts: 2 confirmed, 2 adjusted) → wave 1 `wf_39f6e6d5-ff0` (I+A parallel, disjoint) → wave 2 (D solo) → wave 3 (G solo). Orchestrator-reserved registry edits applied between waves. **Registry follow-up:** the 9 `_identity`-mapped display-policy tools still lack the `set_display` schema property (functional already; docs-honesty pass pending).
-| 6 | Verify M3 findings (5 WPs: A upgrade-surface · B env-conformance · C logs/doctor/telemetry · D multiseat/egress · E bounded-autonomy) | RUNNING — fleet `wf_d5b0f370-ccc` |
-| 7 | Implement M3 | pending — waves from the ownership matrix |
+| 6 | Verify M3 findings (5 WPs) | DONE — fleet `wf_d5b0f370-ccc`: 3 confirmed, 2 adjusted (E: the report UNDER-stated the kill-switch trap — a registered cancel would deadlock behind the C5 lock; D: seat-B failure is silent amnesia, not a loud error) |
+| 7 | Implement M3 | **DONE — suite 3,612 green.** Wave 1 (B+C parallel, `939771d`) → E solo (`b614f80`) → D+A solo (fleet died on spend limit mid-wave-2; zero tree damage). Item 11 (SEC-1/RBAC) SKIPPED per report — gate, not work |
+
+## M3 work packages
+
+| WP | Finding | Status |
+|---|---|---|
+| M3-B | §4.6 P1 env conformance | ✅ `939771d` — 26-var reference table + two-way conformance tripwire (live: it forced M3-C's 3 new vars to be documented at the gate); `SYNAPSE_MEMORY_BACKEND` unknown values warn; RAG_ROOT dual-meaning documented |
+| M3-C | §4.6 P2 logs/doctor/telemetry | ✅ `939771d` — rotating `~/.synapse/logs/synapse.log`; periodic + freeze-escalation telemetry dumps (frozen sessions leave evidence); `synapse_doctor` (7 honest checks + secrets-denylisted bundle; tool 111); DIAGNOSTICS.md maps all 18 artifact locations |
+| M3-E | §4.4 P1 bounded autonomy | ✅ `b614f80` — clamp (cap 10), wall-clock bound (= canonical 600s client budget, honest `stop_reason` partial reports), `synapse_render_farm_cancel` (tool 112) reaching farm + live driver on the read-only fast path (the C5-deadlock trap); cost posture documented single-seat-only |
+| M3-D | §4.5 P1+P2 multiseat/egress | ✅ this commit — DEPLOYMENT.md key-provisioning section (show-scoped `SYNAPSE_ENCRYPTION_KEY`, single-seat auto-gen warning, rotation truth: NO re-encryption tool); EGRESS.md (single endpoint api.anthropic.com, 3 lanes, plaintext-recall caveat, frozen-egress-sites conformance pin) |
+| M3-A | §4.6 P1 upgrade surface | ✅ this commit — scout null verdicts carry `unverified_reason` + `gate_armed` (3-state, never "PHANTOM?" for a non-verdict); panel footer goes loud on a stale gate (`gate_stamp.py` mirrors scout's logic); installer writes `~/.synapse/install_stamp.json`; docs/studio/UPGRADE.md runbook (doc-conformance pinned) |
 | — | M3 item 11 (SEC-1/RBAC) | SKIPPED — gate, not work (per report §5) |
 
 ## M1 work packages

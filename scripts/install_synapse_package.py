@@ -23,7 +23,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 
@@ -92,6 +94,41 @@ def deploy(pref_dir: Path, package: dict, dry_run: bool) -> Path:
     return target
 
 
+STAMP_NAME = "install_stamp.json"
+
+
+def stamp_path() -> Path:
+    """~/.synapse is SYNAPSE's per-seat state home (encryption.key,
+    deploy.json) -- NOT <pref>/packages/, where Houdini parses every
+    *.json as a package."""
+    return Path.home() / ".synapse" / STAMP_NAME
+
+
+def synapse_version(repo_root: Path) -> str:
+    """Regex, not import -- the installer must run on any stock python."""
+    try:
+        text = (repo_root / "python" / "synapse" / "__init__.py").read_text(encoding="utf-8")
+        m = re.search(r'__version__\s*=\s*"([^"]+)"', text)
+        return m.group(1) if m else "unknown"
+    except Exception:
+        return "unknown"
+
+
+def write_stamp(repo_root: Path, targets: list) -> Path:
+    """M3-A: the install stamp synapse_doctor reads/compares (version drift,
+    missing re-run after a Houdini upgrade)."""
+    sp = stamp_path()
+    sp.parent.mkdir(parents=True, exist_ok=True)
+    sp.write_text(json.dumps({
+        "schema": "synapse_install_stamp/v1",
+        "synapse_version": synapse_version(repo_root),
+        "repo_root": repo_root.as_posix(),
+        "installed_at": datetime.now().isoformat(timespec="seconds"),
+        "targets": [t.as_posix() for t in targets],
+    }, indent=2) + "\n", encoding="utf-8")
+    return sp
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Install the SYNAPSE Houdini package.")
     ap.add_argument("--pref-dir", help="Houdini user pref dir (e.g. .../houdini21.0). Default: auto-detect.")
@@ -109,9 +146,13 @@ def main(argv=None) -> int:
 
     print(f"SYNAPSE repo : {repo_root.as_posix()}")
     print(f"package      : {json.dumps(package)}")
+    targets = []
     for pref in prefs:
         target = deploy(pref, package, args.dry_run)
+        targets.append(target)
         print(f"  {'would write' if args.dry_run else 'wrote'}: {target.as_posix()}")
+    if not args.dry_run:
+        print(f"stamp        : {write_stamp(repo_root, targets).as_posix()}")
     if args.dry_run:
         print("(dry run -- re-run without --dry-run to install)")
     else:

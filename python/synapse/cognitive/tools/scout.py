@@ -451,7 +451,8 @@ def _load_symbol_table() -> tuple[Optional[set[str]], dict]:
 
 
 def _ground_symbols(query: str, stores: list[Store],
-                    table_syms: Optional[set[str]]) -> list[dict]:
+                    table_syms: Optional[set[str]],
+                    table_reason: Optional[str] = None) -> list[dict]:
     """For each dotted API symbol in the query report:
       exists_in_runtime — the MEMBERSHIP VERDICT from the introspected table
                           (True/False; None when no trustworthy table is loaded).
@@ -468,9 +469,16 @@ def _ground_symbols(query: str, stores: list[Store],
             # A missing/empty store can't supply the documented hint; skip it
             # rather than fail the whole scout (the hits path surfaced it).
             continue
-    return [{"symbol": sym,
-             "exists_in_runtime": (sym in table_syms) if table_syms is not None else None,
-             "documented": sym in universe} for sym in wanted]
+    out = []
+    for sym in wanted:
+        entry = {"symbol": sym,
+                 "exists_in_runtime": (sym in table_syms) if table_syms is not None else None,
+                 "documented": sym in universe}
+        if table_syms is None:
+            # A None verdict must say WHY at point of use (truth contract)
+            entry["unverified_reason"] = table_reason or "no trustworthy symbol table loaded"
+        out.append(entry)
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -634,9 +642,10 @@ def synapse_scout(
         "mode": mode,
         "domain": domain,
         "stale": stale,                  # Spike 1: corpus drifted from its rag/ source
+        "gate_armed": table_syms is not None,  # Spike 2.5 membership authority loaded+trusted (NOT the corpus 'stale' axis)
         "table": table_status,           # Spike 2.5: symbol-table membership authority status
         "hits": hits,
-        "symbols": _ground_symbols(query, stores, table_syms),
+        "symbols": _ground_symbols(query, stores, table_syms, table_status.get("reason")),
         "warnings": list(_WARN),
     }
 
@@ -663,7 +672,12 @@ SYNAPSE_SCOUT_SCHEMA: dict = {
         "A symbol with exists_in_runtime=false does NOT exist in H21.0.671 and must not "
         "be used; exists_in_runtime=true is real even if undocumented. The 'documented' "
         "flag is a secondary hint (does the corpus mention it). "
-        "Prefer the returned snippets over your own recall of the Houdini API."
+        "Prefer the returned snippets over your own recall of the Houdini API. "
+        "If exists_in_runtime is null the gate is DOWN (missing/corrupt/build-"
+        "mismatched symbol table -- result.table.reason and each symbol's "
+        "unverified_reason say why, gate_armed=false): treat the symbol as "
+        "UNVERIFIED, do not emit it on memory alone, and regenerate the table "
+        "per docs/studio/UPGRADE.md."
     ),
     "input_schema": {
         "type": "object",
@@ -710,6 +724,7 @@ if __name__ == "__main__":             # pragma: no cover
     if out["symbols"]:
         sys.stdout.write("symbol grounding:\n")
         for s in out["symbols"]:
-            flag = "OK " if s["exists_in_runtime"] else "PHANTOM?"
+            _v = s["exists_in_runtime"]
+            flag = "OK " if _v else ("UNVERIFIED" if _v is None else "PHANTOM?")
             doc = "doc" if s["documented"] else "undoc"
             sys.stdout.write(f"  {flag} [{doc}] {s['symbol']}\n")

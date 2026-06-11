@@ -196,11 +196,63 @@ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -node
 
 Clients connect via `wss://` instead of `ws://` when TLS is enabled.
 
+## Scene-Memory Encryption Keys
+
+### How the key is resolved
+
+1. `SYNAPSE_ENCRYPTION_KEY` env var (priority 1; a base64 Fernet key).
+2. `~/.synapse/encryption.key` keyfile.
+3. Auto-generate — writes `encryption.key` + an escrow copy
+   `encryption.key.bak` with a one-time loud backup warning (owner-only
+   permissions, best-effort).
+
+### Single-seat warning
+
+The memory store lives at `<hip_dir>/.synapse/` — on whatever storage
+holds the hip. The auto-generated key lives **per-user** in `~/.synapse/`.
+On shared storage, seat B opening the shot loads **degraded**:
+recall/search return empty (**amnesia, not an error dialog**), every
+`save()` is refused with `RuntimeError`, and timestamped quarantine copies
+(`memory.jsonl.degraded-*`) accumulate. **Per-user auto-generation is
+single-seat-only.**
+
+### Show-scoped provisioning (the fix)
+
+Generate **one key per show**:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Store it in the studio secret store; the studio launcher/wrapper injects
+`SYNAPSE_ENCRYPTION_KEY` into every seat's Houdini environment. Because
+the env var beats the keyfile, no per-seat `~/.synapse` cleanup is needed.
+Windows caveat: the variable must be set at a level Houdini inherits
+(launcher or SYSTEM scope) — not a terminal-scoped `set`.
+
+### Rotation and escrow — what actually exists
+
+There is **no re-encryption tool**. Changing the key mid-show orphans
+existing stores (loud, refused saves) until the old key is restored. The
+`.bak` escrow is written **only** for auto-generated keys — an
+env-provisioned show key gets no `.bak`; escrowing the show key is the
+secret store's job. The `key.fingerprint` sidecar (8-hex sha256 prefix,
+plaintext, non-secret) is stamped on every save so the next load detects
+a changed key **before** any rewrite.
+
+### Verifying a seat
+
+Run `synapse_doctor` — its `memory_key_fingerprint` check compares the
+active key's fingerprint against the store sidecar and reports
+match/mismatch with remediation (see docs/studio/DIAGNOSTICS.md).
+
 ## Data Flow Security
 
 When using Claude Code or Claude Desktop as the MCP client, be aware that
 tool call results (including scene data like node names, attribute values,
 and viewport captures) transit through Anthropic's API infrastructure.
+
+See docs/studio/EGRESS.md for the complete what-leaves-the-building inventory.
 
 For studios with proprietary scenes, consider:
 - Using `studio-lan` mode (data stays on LAN, only tool results go to API)

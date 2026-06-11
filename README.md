@@ -222,6 +222,8 @@ From inside the SYNAPSE folder, run the installer — it writes one small file i
 python scripts/install_synapse_package.py
 ```
 
+Upgrading Houdini? Follow `docs/studio/UPGRADE.md` — a build change disarms the phantom-API gate until the symbol table is regenerated.
+
 No Python on your PATH? Use the copy that ships inside Houdini:
 
 ```powershell
