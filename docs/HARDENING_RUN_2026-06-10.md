@@ -21,12 +21,12 @@
 | M2-F | §3#11 — flipbook GL grab at the beauty path | ✅ `d83360b` — confirmed WORSE (.jpg replace no-ops on EXR → grab lands AT beauty path verbatim; fallback also claimed `output_file` for a never-written file) → `_glpreview` sidecar + honest keys |
 | M2-C | §4.3 — `_safe_node_name()` | ✅ `a029afb` — 11 derived-name sites (10 usd + 1 material) had half-sanitizers missing hyphens/brackets; one helper now owns the rule. Front doors (create_node/cops_create_node) intentionally passthrough — explicit-name raising is feedback, not a derived crash |
 | M2-H | §4.2 — recipe/plan rollback | ✅ `2f9d92d` — `_try_recipe` stopped continue-on-failure; `_try_plan` was pre-M1 fiction intact (unconditional success=True) → full truth contract. **Flagged follow-on:** per-recipe server-side undo group (router can't safely auto-undo: read-only steps create no undo entries; `_READ_ONLY_COMMANDS` unimportable router-side without circular) |
-| M2-A | §3#7 — dangling LOP display/rewire policy | pending |
-| M2-D | §4.3 — path policy core (baked absolutes, `$HIP` pre-expansion, resolver-URI gates) | pending |
-| M2-E | §4.3 — frame-token expander | pending |
-| M2-G | §4.3 — OIIO+`$OCIO` color-managed previews | pending |
-| M2-I | item 7b — show-config lookup | pending |
-| M2-J | §4.1 rider — render_farm `initial_settings` never re-applied | pending |
+| M2-J | §4.1 rider — render_farm `initial_settings` never re-applied | ✅ `294efd9` — confirmed WORSE (warmup's `initial_settings.update()` destroyed the only baseline record). `artist_baseline` snapshot + `_changed_parms` tracking + restore on every terminal state; BatchReport gains settings_changed/restored/restore_error |
+| M2-E | §4.3 — frame-token expander | ✅ `8d87b33` — `_expand_frame_tokens` ($F/$Fn) at 3 render sites; TOPS validator padding-agnostic (zfill(4) hardcode made 3/5-digit shows all-missing). Collateral: test_render `_setup_render` hou.node blanket mock made 3 pins pass VACUOUSLY (MagicMock.endswith truthy) — harness now path-aware |
+| M2-A | §3#7 — dangling LOP display/rewire policy | pending — design-heavy (per-handler wire/display matrix over ~10 LOP creators); best done fresh-context or by fleet when spend limit lifts |
+| M2-D | §4.3 — path policy core (baked absolutes, `$HIP` pre-expansion, resolver-URI gates) | pending — **+new leg from M2-E:** `artist_output = p.eval()` reads at the PLAYHEAD; explicit `frame=N` payload ≠ playhead polls the wrong filename (tokens-stay-unexpanded fix owns this). Couples into M2-I config |
+| M2-G | §4.3 — OIIO+`$OCIO` color-managed previews | pending — needs tooling inventory (oiiotool/OpenImageIO availability in H21 bin); couples into M2-I config |
+| M2-I | item 7b — show-config lookup | pending — design first: M2-D (token convention) and M2-G (OCIO) read from it; do before or with those |
 | 6–7 | M3 — UPGRADE.md, env conformance, logs/bundle, telemetry flush, keys/egress, autonomy bounds | pending |
 | — | M3 item 11 (SEC-1/RBAC) | SKIPPED — gate, not work (per report §5) |
 
