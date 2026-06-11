@@ -15,6 +15,7 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.aliases import resolve_param, resolve_param_with_default
+from ..core.show_config import get_show_config, reload_show_config
 from .handler_helpers import _HOUDINI_UNAVAILABLE
 
 
@@ -129,6 +130,13 @@ class MemoryHandlerMixin:
         paths = ensure_scene_structure(hip_path, job_path)
         ctx = load_full_context(sp["hip_dir"], job_path)
 
+        # M2-I: session start is the explicit show-config reload touchpoint
+        # (mcp/server.py instructs project_setup at every session start).
+        # Dirs were already resolved on the main thread by _scene_paths --
+        # no new hou surface here. Result keys are purely additive.
+        reload_show_config()
+        cfg = get_show_config(hip_dir=sp["hip_dir"], job_dir=job_path)
+
         return {
             "paths": paths,
             "project_memory": ctx["project"].get("content", "")[:2000],
@@ -136,6 +144,8 @@ class MemoryHandlerMixin:
             "agent_state": ctx["agent"],
             "evolution_stage": ctx["scene"].get("evolution", "none"),
             "suspended_tasks": [],
+            "show_config": cfg.as_dict(),
+            "show_config_sources": cfg.source_files,
         }
 
     def _handle_memory_write(self, payload: Dict) -> Dict:

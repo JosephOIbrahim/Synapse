@@ -22,6 +22,7 @@ except ImportError:
 
 from ..core.aliases import resolve_param_with_default
 from ..core.errors import HoudiniUnavailableError, SynapseUserError
+from ..core.show_config import get_show_config
 from . import solaris_compose as _sc
 from . import solaris_compose_tools as _tools
 
@@ -38,8 +39,11 @@ class SolarisComposeMixin:
         # Parse the payload HERE, on the handler thread, BEFORE run_on_main
         # marshals the work away (the batch_commands idiom).
         stage_path = resolve_param_with_default(payload, "stage", "/stage")
-        res = payload.get("resolution", [1920, 1080])
-        resolution = (int(res[0]), int(res[1]))
+        # M2-I: a provided resolution is coerced HERE (handler thread); the
+        # show-config default is consulted inside _on_main (the $HIP/$JOB
+        # read must happen on the main thread).
+        res = payload.get("resolution")
+        resolution = (int(res[0]), int(res[1])) if res is not None else None
         shot = resolve_param_with_default(payload, "shot", "shot")
         engine = resolve_param_with_default(payload, "engine", "xpu")
         layer_dir = payload.get("layer_dir")
@@ -48,17 +52,31 @@ class SolarisComposeMixin:
         from .main_thread import run_on_main, _SLOW_TIMEOUT
 
         def _on_main():
+            res_used = resolution
+            advisory = None
+            if res_used is None:
+                cfg = get_show_config()
+                _r, _src = cfg.lookup("resolution.render")
+                res_used = (int(_r[0]), int(_r[1]))
+                advisory = {
+                    "default_used": (
+                        ["resolution.render"] if _src == "default" else []
+                    ),
+                }
             stage = _sc.resolve_stage(stage_path)
             try:
                 with hou.undos.group("SYNAPSE: solaris_shotsetup_karma_xpu"):
-                    return _tools.build_karma_xpu_shot(
+                    result = _tools.build_karma_xpu_shot(
                         stage,
                         shot=shot,
-                        resolution=resolution,
+                        resolution=res_used,
                         engine=engine,
                         layer_dir=layer_dir,
                         reason=reason,
                     )
+                    if advisory is not None:
+                        result.setdefault("show_config", advisory)
+                    return result
             except Exception:
                 # Safe undo fallback -- the C++ undo layer for LOP nodes can
                 # throw during __exit__; explicitly undo to prevent undo

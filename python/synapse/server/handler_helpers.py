@@ -64,6 +64,47 @@ def _expand_frame_tokens(path, frame):
     return _FRAME_TOKEN_RE.sub(_sub, str(path))
 
 
+def _wire_display(new_tip, wired_from=None, set_display=True):
+    """Move the LOP display flag to new_tip when it extends the display chain.
+
+    wired_from = the PRE-EXISTING node the new chain was wired from (not
+    intermediates created in the same call). Returns result keys (truth
+    contract -- display:'set' only after isDisplayFlagSet() readback).
+    """
+    keys = {}
+    current = None
+    try:
+        parent = new_tip.parent()
+        if parent is not None and hasattr(parent, "displayNode"):
+            current = parent.displayNode()
+    except Exception:
+        current = None
+    extends = current is None or (
+        wired_from is not None
+        and hasattr(wired_from, "isDisplayFlagSet")
+        and wired_from.isDisplayFlagSet()
+    )
+    if set_display and extends and hasattr(new_tip, "setDisplayFlag"):
+        try:
+            new_tip.setDisplayFlag(True)
+            if new_tip.isDisplayFlagSet():
+                keys["display"] = "set"
+                keys["display_node"] = new_tip.path()
+                return keys
+        except Exception:
+            pass
+    keys["display"] = "not_set"
+    if current is not None:
+        keys["display_node"] = current.path()
+        keys["needs_rewire"] = (
+            "The edit lives on a side branch -- the display flag is on "
+            + current.path() + ", so the viewport, Karma, and USD export "
+            "won't see this change until the display flag moves to "
+            + new_tip.path() + " or the branch is wired back into the chain."
+        )
+    return keys
+
+
 def _suggest_parms(node, invalid_name: str, limit: int = 8) -> str:
     """Find similar parameter names on a node for error enrichment."""
     try:

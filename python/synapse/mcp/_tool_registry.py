@@ -239,28 +239,30 @@ TOOL_DEFS: list[tuple] = [
      True, False, True),
 
     ("houdini_set_usd_attribute", "set_usd_attribute",
-     _filter_keys(("node", "prim_path", "attribute_name", "value")),
+     _filter_keys(("node", "prim_path", "attribute_name", "value", "set_display")),
      "Set a USD attribute on a prim.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "LOP node to wire after (optional)"},
          "prim_path": {"type": "string", "description": "USD prim path"},
          "attribute_name": {"type": "string", "description": "USD attribute name"},
          "value": {"description": "Value to set"},
+         "set_display": {"type": "boolean", "description": "Move the LOP display flag to the new node when it extends the display chain (default true); on a side-branch fork the result returns display:not_set + needs_rewire instead"},
      }, "required": ["prim_path", "attribute_name", "value"]},
      False, True, False),
 
     ("houdini_create_usd_prim", "create_usd_prim",
-     _filter_keys(("node", "prim_path", "prim_type")),
+     _filter_keys(("node", "prim_path", "prim_type", "set_display")),
      "Create a USD prim on the stage.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "LOP node to wire after (optional)"},
          "prim_path": {"type": "string", "description": "USD prim path to create"},
          "prim_type": {"type": "string", "description": "USD prim type (default: Xform)"},
+         "set_display": {"type": "boolean", "description": "Move the LOP display flag to the new node when it extends the display chain (default true); on a side-branch fork the result returns display:not_set + needs_rewire instead"},
      }, "required": ["prim_path"]},
      False, True, False),
 
     ("houdini_modify_usd_prim", "modify_usd_prim",
-     _filter_keys(("node", "prim_path", "kind", "purpose", "active", "instanceable")),
+     _filter_keys(("node", "prim_path", "kind", "purpose", "active", "instanceable", "set_display")),
      "Modify USD prim metadata: kind, purpose, active state, or instanceable flag.",
      {"type": "object", "properties": {
          "node": {"type": "string", "description": "LOP node to wire after (optional)"},

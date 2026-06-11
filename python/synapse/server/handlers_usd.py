@@ -15,7 +15,7 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.aliases import resolve_param, resolve_param_with_default, USD_PARM_ALIASES
-from .handler_helpers import _HOUDINI_UNAVAILABLE, _safe_node_name
+from .handler_helpers import _HOUDINI_UNAVAILABLE, _safe_node_name, _wire_display
 
 
 def _usd_to_json(value):
@@ -334,6 +334,9 @@ class UsdHandlerMixin:
         prim_path = resolve_param(payload, "prim_path")
         attr_name = resolve_param(payload, "usd_attribute")
         value = resolve_param(payload, "value")
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         from .main_thread import run_on_main
 
@@ -379,6 +382,7 @@ class UsdHandlerMixin:
                     "attribute": attr_name,
                     "value": value,
                 }
+                result.update(_wire_display(py_lop, node, set_display))
                 if isinstance(value, (list, tuple)):
                     result["advisory"] = (
                         f"The value is a {type(value).__name__} with {len(value)} elements. "
@@ -394,6 +398,9 @@ class UsdHandlerMixin:
         node_path_arg = resolve_param(payload, "node", required=False)
         prim_path = resolve_param(payload, "prim_path")
         prim_type = resolve_param_with_default(payload, "prim_type", "Xform")
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         from .main_thread import run_on_main
 
@@ -432,6 +439,7 @@ class UsdHandlerMixin:
                     "created_node": py_lop.path(),
                     "prim_path": prim_path,
                     "prim_type": prim_type,
+                    **_wire_display(py_lop, node, set_display),
                 }
 
         return run_on_main(_on_main)
@@ -446,6 +454,9 @@ class UsdHandlerMixin:
         purpose = resolve_param(payload, "purpose", required=False)
         active = resolve_param(payload, "active", required=False)
         instanceable = resolve_param(payload, "instanceable", required=False)
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         # Validate before touching hou.*
         mods = {}
@@ -513,6 +524,7 @@ class UsdHandlerMixin:
                     "created_node": py_lop.path(),
                     "prim_path": prim_path,
                     "modifications": mods,
+                    **_wire_display(py_lop, node, set_display),
                 }
 
         return run_on_main(_on_main)
@@ -546,6 +558,9 @@ class UsdHandlerMixin:
         )
         purpose = resolve_param_with_default(payload, "purpose", "default")
         kind = resolve_param_with_default(payload, "kind", "component")
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         # Validate mode before touching hou.*
         if mode not in ("sublayer", "reference", "payload"):
@@ -574,6 +589,16 @@ class UsdHandlerMixin:
                 )
 
             with hou.undos.group("SYNAPSE: reference_usd"):
+                # Resolve the chain anchor BEFORE createNode so kids[-1] can
+                # never be the new node itself (solaris_compose_tools idiom).
+                _kids = parent_node.children()
+                chain_anchor = (
+                    parent_node.displayNode()
+                    if hasattr(parent_node, "displayNode") else None
+                )
+                if chain_anchor is None and _kids:
+                    chain_anchor = _kids[-1]
+
                 if mode == "sublayer":
                     node = parent_node.createNode("sublayer", "sublayer_import")
                     node.parm("filepath1").set(file_path)
@@ -589,6 +614,13 @@ class UsdHandlerMixin:
                         reftype_parm = node.parm("reftype")
                         if reftype_parm is not None:
                             reftype_parm.set("payload")
+
+                # Join the existing chain -- an unwired import is an island
+                # the viewport/Karma/export never see (M2-A).
+                if chain_anchor is not None:
+                    node.setInput(0, chain_anchor)
+                    node.moveToGoodPosition()
+                _tip = node
 
                 result = {
                     "node": node.path(),
@@ -619,6 +651,7 @@ class UsdHandlerMixin:
                                 "kind": kind,
                                 "policy": "non-clobbering",
                             }
+                            _tip = kv_lop
                         except hou.OperationFailed as e:
                             # Soft failure -- the reference still imported.
                             result["karma_visibility_error"] = (
@@ -638,6 +671,7 @@ class UsdHandlerMixin:
                             "metadata."
                         )
 
+                result.update(_wire_display(_tip, chain_anchor, set_display))
                 return result
 
         return run_on_main(_on_main)
@@ -791,6 +825,9 @@ class UsdHandlerMixin:
         variant_set_name = resolve_param(payload, "variant_set", required=(action != "list"))
         variants = resolve_param(payload, "variants", required=False)
         variant = resolve_param(payload, "variant", required=False)
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         from .main_thread import run_on_main
 
@@ -876,6 +913,7 @@ class UsdHandlerMixin:
                         "variant_set": variant_set_name,
                         "variants": variants,
                         "default_selection": variants[0] if variants else None,
+                        **_wire_display(py_lop, node, set_display),
                     }
 
             else:  # select
@@ -905,6 +943,7 @@ class UsdHandlerMixin:
                     "prim_path": prim_path,
                     "variant_set": variant_set_name,
                     "variant": variant,
+                    **_wire_display(py_lop, node, set_display),
                 }
 
         return run_on_main(_on_main)
@@ -980,6 +1019,9 @@ class UsdHandlerMixin:
         paths = resolve_param(payload, "paths", required=False)
         exclude_paths = resolve_param(payload, "exclude_paths", required=False)
         expansion_rule = resolve_param_with_default(payload, "expansion_rule", "expandPrims")
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         from .main_thread import run_on_main
 
@@ -1090,6 +1132,7 @@ class UsdHandlerMixin:
                         "expansion_rule": expansion_rule,
                         "verified": True,
                     }
+                    result.update(_wire_display(py_lop, node, set_display))
                     if exclude_paths:
                         result["excludes"] = exclude_paths
                     return result
@@ -1160,6 +1203,7 @@ class UsdHandlerMixin:
                         "action": action,
                         "paths": paths,
                         "verified": True,
+                        **_wire_display(py_lop, node, set_display),
                     }
 
         return run_on_main(_on_main)
@@ -1185,6 +1229,9 @@ class UsdHandlerMixin:
         light_path = resolve_param(payload, "light_path")
         action = resolve_param_with_default(payload, "action", "include")
         geo_paths = resolve_param(payload, "geo_paths", required=False)
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         valid_actions = ("include", "exclude", "shadow_include", "shadow_exclude", "reset")
         if action not in valid_actions:
@@ -1310,6 +1357,7 @@ class UsdHandlerMixin:
                     "action": action,
                     "verified": True,
                 }
+                result.update(_wire_display(py_lop, node, set_display))
                 if geo_paths:
                     result["geo_paths"] = geo_paths
                 return result
@@ -1510,6 +1558,9 @@ class UsdHandlerMixin:
             raise ValueError(
                 "No change specified -- pass 'action' (load/unload) and/or 'active'"
             )
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         from .main_thread import run_on_main
 
@@ -1562,6 +1613,7 @@ class UsdHandlerMixin:
                     result["action"] = action
                 if active is not None:
                     result["active"] = bool(active)
+                result.update(_wire_display(py_lop, node, set_display))
                 return result
 
         return run_on_main(_on_main)
@@ -1587,6 +1639,9 @@ class UsdHandlerMixin:
         prim_path = resolve_param(payload, "prim_path")
         prototypes = resolve_param(payload, "prototypes", required=False) or []
         positions = resolve_param(payload, "positions", required=False) or []
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         if not isinstance(prototypes, (list, tuple)):
             raise ValueError("'prototypes' must be a list of prim path strings")
@@ -1654,6 +1709,7 @@ class UsdHandlerMixin:
                     "prim_path": prim_path,
                     "prototypes": proto_list,
                     "instance_count": len(pos_list),
+                    **_wire_display(py_lop, node, set_display),
                 }
 
         return run_on_main(_on_main)

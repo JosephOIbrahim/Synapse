@@ -15,8 +15,13 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.aliases import resolve_param, resolve_param_with_default
-from .handlers_usd import _usd_to_json
-from .handler_helpers import _HOUDINI_UNAVAILABLE, _safe_node_name, _suggest_prim_paths
+from .handlers_usd import _usd_to_json, _coerce_bool
+from .handler_helpers import (
+    _HOUDINI_UNAVAILABLE,
+    _safe_node_name,
+    _suggest_prim_paths,
+    _wire_display,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -168,6 +173,9 @@ class MaterialHandlerMixin:
         shader_type = resolve_param_with_default(
             payload, "shader_type", "mtlxstandard_surface"
         )
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         # Resolve preset defaults — explicit params override preset values
         preset_vals = {}
@@ -266,6 +274,7 @@ class MaterialHandlerMixin:
                     "shader_type": shader_type,
                     "name": name,
                 }
+                result.update(_wire_display(matlib, node, set_display))
                 if category:
                     result["category"] = category
                 if preset_name:
@@ -282,6 +291,9 @@ class MaterialHandlerMixin:
         node_path_arg = resolve_param(payload, "node", required=False)
         prim_pattern = resolve_param(payload, "prim_pattern")
         material_path = resolve_param(payload, "material_path")
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         from .main_thread import run_on_main
 
@@ -301,11 +313,15 @@ class MaterialHandlerMixin:
                 assign_node.parm("primpattern1").set(prim_pattern)
                 assign_node.parm("matspecpath1").set(material_path)
 
+                # Display mutation stays undo-wrapped.
+                display_keys = _wire_display(assign_node, node, set_display)
+
             result = {
                 "node_path": assign_node.path(),
                 "prim_pattern": prim_pattern,
                 "material_path": material_path,
             }
+            result.update(display_keys)
 
             upstream_stage = node.stage()
             is_valid, message = _validate_prim_pattern(upstream_stage, prim_pattern)
@@ -468,6 +484,9 @@ class MaterialHandlerMixin:
 
         # Geo assignment pattern (optional — assign material to prims matching this)
         geo_pattern = resolve_param(payload, "geo_pattern", required=False)
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
 
         from .main_thread import run_on_main
 
@@ -588,6 +607,7 @@ class MaterialHandlerMixin:
 
                 # Layout nodes cleanly
                 matlib.layoutChildren()
+                _tip = matlib
 
                 material_usd_path = _query_material_usd_path(matlib, name)
 
@@ -610,6 +630,7 @@ class MaterialHandlerMixin:
                     assign_node.parm("matspecpath1").set(material_usd_path)
                     result["assign_node"] = assign_node.path()
                     result["geo_pattern"] = geo_pattern
+                    _tip = assign_node
 
                     matlib_stage = matlib.stage()
                     is_valid, message = _validate_prim_pattern(matlib_stage, geo_pattern)
@@ -628,6 +649,7 @@ class MaterialHandlerMixin:
                                 "use set_usd_attribute to configure displacement on the geometry prim",
                     })
 
+                result.update(_wire_display(_tip, node, set_display))
                 return result
 
         return run_on_main(_on_main)

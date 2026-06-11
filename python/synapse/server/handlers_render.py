@@ -43,6 +43,7 @@ except ImportError:
     }
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.determinism import round_float, kahan_sum
+from ..core.show_config import get_show_config, resolve_show_dirs, next_version_dir
 from .handler_helpers import _suggest_parms, _HOUDINI_UNAVAILABLE, _expand_frame_tokens
 
 
@@ -121,14 +122,31 @@ class RenderHandlerMixin:
         from pathlib import Path
 
         fmt = resolve_param_with_default(payload, "format", "jpeg")
-        width = resolve_param_with_default(payload, "width", 800)
-        height = resolve_param_with_default(payload, "height", 600)
+        width = resolve_param_with_default(payload, "width", None)
+        height = resolve_param_with_default(payload, "height", None)
 
         ext = "jpg" if fmt == "jpeg" else "png"
         timestamp = int(time.time() * 1000)
 
+        _show_advisory = {}
+
         def _flipbook_on_main_thread():
             """Runs on Houdini's main thread."""
+            nonlocal width, height
+            # M2-I: capture resolution default comes from show-config (built-in
+            # default is today's 800x600). Consulted on the main thread only.
+            # The advisory attaches ONLY when a config file overrode the
+            # default -- the no-config result shape is pinned (test_capture.py).
+            if width is None or height is None:
+                cfg = get_show_config()
+                _cap, _src = cfg.lookup("resolution.capture")
+                width = int(_cap[0]) if width is None else width
+                height = int(_cap[1]) if height is None else height
+                if _src != "default":
+                    _show_advisory["show_config"] = {
+                        "default_used": [],
+                        "source_files": dict(cfg.source_files),
+                    }
             # hou.text.expandString must run on main thread (thread safety)
             temp_dir = Path(hou.text.expandString("$HOUDINI_TEMP_DIR"))
             out_pattern = str(temp_dir / f"synapse_cap_{timestamp}.$F4.{ext}")
@@ -170,12 +188,14 @@ class RenderHandlerMixin:
                 "this can happen if the viewport is minimized or occluded"
             )
 
-        return {
+        result = {
             "image_path": actual_path,
             "width": int(width),
             "height": int(height),
             "format": fmt,
         }
+        result.update(_show_advisory)
+        return result
 
     def _handle_render(self, payload: Dict) -> Dict:
         """Render a frame via Karma, Mantra, or any ROP node.
@@ -301,19 +321,45 @@ class RenderHandlerMixin:
                             pass  # best-effort upstream discovery
 
                     # Determine render output: use artist path if set, else default EXR
+                    show_cfg_advisory = None
                     if artist_output and artist_output.strip():
                         render_path = artist_output
                     else:
-                        # Default to EXR in $HIP/.synapse/renders/ so renders persist
+                        # M2-I: default output conventions come from show-config;
+                        # the built-in defaults are today's exact hardcodes
+                        # ($HIP/.synapse/renders, 'render', $F4, timestamp) so
+                        # renders persist and no-config behavior is unchanged.
+                        cfg = get_show_config()
+                        _defaults_used = []
+
+                        def _cfg_val(key):
+                            val, src = cfg.lookup(key)
+                            if src == "default":
+                                _defaults_used.append(key)
+                            return val
+
+                        root = _cfg_val("output.render_root")
                         try:
-                            hip = hou.text.expandString("$HIP")
-                            if hip and hip != "$HIP":
-                                render_dir = Path(hip) / ".synapse" / "renders"
+                            _expanded = hou.text.expandString(root)
+                            if _expanded and "$" not in _expanded:
+                                render_dir = Path(_expanded)
                             else:
                                 render_dir = temp_dir / "synapse_renders"
                         except Exception:
                             render_dir = temp_dir / "synapse_renders"
-                        render_path = str(render_dir / f"render_{timestamp}.$F4.exr")
+                        pad = int(_cfg_val("frames.padding"))
+                        base = _cfg_val("naming.render_basename")
+                        if _cfg_val("naming.versioning") == "increment":
+                            render_dir = Path(next_version_dir(str(render_dir)))
+                            render_path = str(render_dir / f"{base}.$F{pad}.exr")
+                        else:
+                            render_path = str(
+                                render_dir / f"{base}_{timestamp}.$F{pad}.exr"
+                            )
+                        show_cfg_advisory = {
+                            "default_used": _defaults_used,
+                            "source_files": dict(cfg.source_files),
+                        }
 
                     # Pre-render validation: ensure output directory exists
                     render_dir_path = Path(render_path).parent
@@ -390,10 +436,12 @@ class RenderHandlerMixin:
             # the flush window — they now run on the WS handler thread below.
             # $HFS resolves here (the one hou call the iconvert leg needs).
             hfs = hou.text.expandString("$HFS")
-            return node.path(), node_type, engine, cur, render_path_resolved, preview_path, hfs
+            return (node.path(), node_type, engine, cur, render_path_resolved,
+                    preview_path, hfs, show_cfg_advisory)
 
         import hdefereval
-        used_rop, used_type, engine, cur, render_path_resolved, preview_path, hfs = (
+        (used_rop, used_type, engine, cur, render_path_resolved, preview_path,
+         hfs, show_cfg_advisory) = (
             hdefereval.executeInMainThreadWithResult(_render_on_main)
         )
 
@@ -508,6 +556,10 @@ class RenderHandlerMixin:
             "height": int(height) if height else None,
             "format": "jpeg",
         }
+        # M2-I: attached ONLY when the default-output branch actually ran --
+        # artist-set output paths never consult show-config (truth contract).
+        if show_cfg_advisory:
+            result["show_config"] = show_cfg_advisory
         if used_flipbook:
             result["flipbook_fallback"] = True
             # Truth contract: the render output was never created -- don't
@@ -1374,13 +1426,29 @@ class RenderHandlerMixin:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
 
         rop_path = resolve_param_with_default(payload, "rop_path", None)
-        prod_resolution = resolve_param_with_default(payload, "resolution", [1920, 1080])
+
+        # M2-I: production/preview resolution defaults come from show-config
+        # (built-ins are today's 1920x1080 / 1280x720). Off-main handler
+        # thread -- marshal the $HIP/$JOB read to the main thread.
+        from .main_thread import run_on_main
+        cfg = get_show_config(*run_on_main(resolve_show_dirs))
+        _defaults_used = []
+        render_res, _render_src = cfg.lookup("resolution.render")
+        preview_res, _preview_src = cfg.lookup("resolution.preview")
+        if _preview_src == "default":
+            _defaults_used.append("resolution.preview")
+
+        prod_resolution = resolve_param_with_default(payload, "resolution", None)
         prod_samples = int(resolve_param_with_default(payload, "samples", 64))
 
         if isinstance(prod_resolution, list) and len(prod_resolution) == 2:
             prod_w, prod_h = int(prod_resolution[0]), int(prod_resolution[1])
         else:
-            prod_w, prod_h = 1920, 1080
+            # Truth contract: flag resolution.render only when it actually
+            # flowed into the production pass (payload absent/malformed).
+            prod_w, prod_h = int(render_res[0]), int(render_res[1])
+            if _render_src == "default":
+                _defaults_used.append("resolution.render")
 
         # Define the 3 passes
         pass_configs = [
@@ -1393,8 +1461,8 @@ class RenderHandlerMixin:
             },
             {
                 "name": "preview",
-                "width": 1280,
-                "height": 720,
+                "width": int(preview_res[0]),
+                "height": int(preview_res[1]),
                 "samples": 16,
                 "soho_foreground": 0,
             },
@@ -1507,6 +1575,7 @@ class RenderHandlerMixin:
             "completed_passes": len(passes),
             "total_passes": len(pass_configs),
             "success": final_image is not None and len(passes) == len(pass_configs),
+            "show_config": {"default_used": _defaults_used},
         }
 
     # =========================================================================
