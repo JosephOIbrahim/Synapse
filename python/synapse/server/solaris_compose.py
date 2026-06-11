@@ -6,11 +6,11 @@ shot_render_ready). Resolves /stage, creates+wires LOP nodes (phantom-guarded),
 reads the composed stage, and exposes the composition-strength + composition-
 error introspection the [REAL] verifiers need.
 
-Execution model: every node mutation here is meant to run INSIDE a handler that
-is dispatched through ``panel.bridge_adapter.execute_through_bridge`` ->
-``LosslessExecutionBridge``, which supplies the undo group, integrity anchors
-and consent gate. This module therefore does NOT wrap undo itself -- double-
-wrapping is wrong; the bridge owns reversibility.
+Execution model: every node mutation here is meant to run INSIDE a handler
+closure that the handler itself marshals to Houdini's main thread
+(``server.main_thread.run_on_main``) and wraps in ``hou.undos.group``. This
+module therefore does NOT wrap undo itself -- double-wrapping is wrong; the
+HANDLER owns reversibility. The panel bridge adds audit (integrity) on top.
 
 Verified live on Houdini 21.0.671 (2026-05-30 dir() recon + mechanism probe):
   - ``subLayerPaths`` is STRONGEST-FIRST; ``Usd.Attribute.GetPropertyStack``

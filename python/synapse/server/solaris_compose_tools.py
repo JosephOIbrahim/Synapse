@@ -3,8 +3,9 @@ SYNAPSE Solaris Compose Tools (PRD sections 7.1 / 7.2 / 7.3).
 
 Tool LOGIC built on the ``solaris_compose`` primitive. Each function takes the
 ``/stage`` LOP network node + params and returns a result dict. The thin
-handler wrappers (handlers_solaris_compose.py) parse the command payload and
-dispatch these through the bridge, which owns undo/integrity/consent.
+handler wrappers (handlers_solaris_compose.py) parse the command payload,
+marshal to Houdini's main thread, and own the undo group; the panel bridge
+adds audit (integrity) on top.
 
 Recipe verified live on Houdini 21.0.671 (Mile 2 mechanism probe, 2026-05-30):
   - ``karmarendersettings`` is self-contained: engine (cpu->xpu), camera,
@@ -98,7 +99,9 @@ def build_karma_xpu_shot(
     + productName; synapse:* provenance; a display OUTPUT. Returns a result dict.
 
     All node ops go through the solaris_compose primitive (phantom-guarded). The
-    caller routes this through the bridge for undo/integrity/consent.
+    handler owns the undo group + main-thread marshal. Department .usd files
+    created on disk are reported in ``disk_writes`` and are NOT undoable --
+    rollback never deletes artist files.
     """
     if not HOU_AVAILABLE:
         raise sc.ComposeError("hou unavailable -- build_karma_xpu_shot needs the live bridge")
@@ -117,10 +120,12 @@ def build_karma_xpu_shot(
         os.makedirs(base)
     weakest_first = list(reversed(depts))             # [layout, animation, lighting, fx, render]
     dept_files = []
+    disk_writes = []  # files THIS call created (outside the undo system)
     for d in weakest_first:
         fp = base + "/" + d + ".usd"
         if not os.path.exists(fp):
             Sdf.Layer.CreateNew(fp).Save()
+            disk_writes.append(fp)
         dept_files.append(fp)
     dept = sc.create_lop(stage_node, "sublayer", shot + "_dept_stack")
     created.append(dept)
@@ -196,6 +201,8 @@ def build_karma_xpu_shot(
         "product_via": product_via,
         "layer_order_strongest_first": depts,
         "department_files_weakest_first": dept_files,
+        "disk_writes": disk_writes,
+        "disk_writes_undoable": False,
         "composition_errors": errs,
     }
 

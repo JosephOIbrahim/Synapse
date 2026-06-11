@@ -488,19 +488,23 @@ def _build_render_pipeline(
     if "add_aovs" in modifiers:
         cmds.append(_cmd("execute_python", {
             "code": (
-                "import hou\n"
-                "rop = hou.node('/stage/karma_render')\n"
-                "# AOV setup would go through karmarenderproperties\n"
-                "result = {'aov_status': 'AOVs configured via render properties'}\n"
+                "# Scaffolded step: this plan does NOT configure AOVs.\n"
+                "# Real RenderVar authoring needs a render-settings LOP wired upstream\n"
+                "# of /stage/karma_render -- use the configure_render_passes tool.\n"
+                "result = {'aov_status': 'scaffolded', 'configured': False,\n"
+                "          'next_step': 'configure_render_passes'}\n"
             ),
         }))
 
     if "add_denoise" in modifiers:
         cmds.append(_cmd("execute_python", {
             "code": (
-                "import hou\n"
-                "# Enable denoiser on render properties\n"
-                "result = {'denoise': 'OIDN denoiser enabled'}\n"
+                "# Scaffolded step: this plan does NOT enable the denoiser.\n"
+                "# Denoiser parms live on a karmarenderproperties node, not the\n"
+                "# usdrender_rop -- use the render_settings tool with\n"
+                "# advanced_karma={'enable_denoiser': True}.\n"
+                "result = {'denoise': 'scaffolded', 'configured': False,\n"
+                "          'next_step': 'render_settings'}\n"
             ),
         }))
 

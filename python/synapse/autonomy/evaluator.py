@@ -71,6 +71,7 @@ class RenderEvaluator:
         clipping_ratio: Fraction of clipped pixels to flag.
         flicker_threshold: Luminance delta threshold for flickering.
         continuity_threshold: Frame-to-frame difference threshold.
+        pass_threshold: Minimum overall score for a sequence to pass.
     """
 
     def __init__(
@@ -81,6 +82,7 @@ class RenderEvaluator:
         clipping_ratio: float = 0.05,
         flicker_threshold: float = 0.15,
         continuity_threshold: float = 0.5,
+        pass_threshold: float = 0.7,
     ) -> None:
         self._black_threshold = black_threshold
         self._black_ratio = black_ratio
@@ -88,6 +90,7 @@ class RenderEvaluator:
         self._clipping_ratio = clipping_ratio
         self._flicker_threshold = flicker_threshold
         self._continuity_threshold = continuity_threshold
+        self._pass_threshold = pass_threshold
 
     # ------------------------------------------------------------------
     # Image loading
@@ -206,22 +209,26 @@ class RenderEvaluator:
         if resolved_pixels is None:
             resolved_pixels = self._load_frame(output_path)
             if resolved_pixels is None:
-                # Couldn't load — check if file exists at all
-                if not os.path.exists(output_path):
+                # Couldn't load — check if the file exists at all
+                # (isfile so a directory path counts as a missing frame)
+                if not os.path.isfile(output_path):
                     return FrameEvaluation(
                         frame=frame,
                         output_path=output_path,
                         passed=False,
                         issues=[f"Couldn't find rendered output at {output_path}"],
-                        metrics={},
+                        metrics={"quality_score": 0.0},
                     )
-                # File exists but couldn't load pixels — skip quality checks
+                # File exists but couldn't load pixels — quality is UNKNOWN.
+                # An unanalyzed frame must never report as passed.
                 return FrameEvaluation(
                     frame=frame,
                     output_path=output_path,
-                    passed=True,
-                    issues=["Couldn't load frame for pixel analysis — skipping quality checks"],
-                    metrics={"quality_score": 1.0},
+                    passed=False,
+                    verified=False,
+                    issues=["Couldn't load frame for pixel analysis — quality unverified "
+                            "(install OpenImageIO, pyexr, or Pillow)"],
+                    metrics={"unverified": 1.0},
                 )
 
         if resolved_pixels is not None and NUMPY_AVAILABLE:
@@ -249,8 +256,18 @@ class RenderEvaluator:
 
         elif resolved_pixels is not None and not NUMPY_AVAILABLE:
             logger.warning(
-                "numpy not available — skipping pixel-level quality checks for frame %d",
+                "numpy not available — can't run pixel-level quality checks for frame %d",
                 frame,
+            )
+            # Pixels were handed to us but can't be analyzed — quality is UNKNOWN.
+            return FrameEvaluation(
+                frame=frame,
+                output_path=output_path,
+                passed=False,
+                verified=False,
+                issues=["Couldn't analyze frame pixels — quality unverified "
+                        "(install numpy)"],
+                metrics={"unverified": 1.0},
             )
 
         # Score: 1.0 minus 0.25 per issue, floored at 0.0
@@ -306,10 +323,12 @@ class RenderEvaluator:
             if continuity:
                 temporal_issues.append(continuity)
 
-        # Overall score
-        if frame_evals:
+        # Overall score — only verified frames can vouch for quality
+        verified_evals = [fe for fe in frame_evals if fe.verified]
+        unverified_count = len(frame_evals) - len(verified_evals)
+        if verified_evals:
             frame_scores = [
-                fe.metrics.get("quality_score", 1.0) for fe in frame_evals
+                fe.metrics.get("quality_score", 0.0) for fe in verified_evals
             ]
             mean_score = sum(frame_scores) / len(frame_scores)
         else:
@@ -318,9 +337,13 @@ class RenderEvaluator:
         temporal_factor = max(0.5, 1.0 - 0.1 * len(temporal_issues))
         overall_score = mean_score * temporal_factor
 
-        passed = overall_score >= 0.7 and not any(
-            not fe.passed for fe in frame_evals
-            if any("black frame" in i.lower() or "nan" in i.lower() for i in fe.issues)
+        passed = (
+            unverified_count == 0
+            and overall_score >= self._pass_threshold
+            and not any(
+                not fe.passed for fe in frame_evals
+                if any("black frame" in i.lower() or "nan" in i.lower() for i in fe.issues)
+            )
         )
 
         return SequenceEvaluation(
@@ -328,6 +351,8 @@ class RenderEvaluator:
             temporal_issues=temporal_issues,
             overall_score=overall_score,
             passed=passed,
+            unverified_count=unverified_count,
+            pass_threshold=self._pass_threshold,
         )
 
     def evaluate_sequence_from_disk(

@@ -174,6 +174,7 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     # Copernicus (COPs) — Advanced
     "cops_wetmap": AuditCategory.PIPELINE,
     "cops_bake_textures": AuditCategory.PIPELINE,
+    "cops_temporal_analysis": AuditCategory.RENDER,
     "cops_stamp_scatter": AuditCategory.PIPELINE,
     "cops_batch_cook": AuditCategory.PIPELINE,
 }
@@ -199,7 +200,9 @@ _READ_ONLY_COMMANDS = frozenset({
     "route_chat",
     "cops_read_layer_info",
     "cops_analyze_render",
-    "cops_temporal_analysis",
+    # cops_temporal_analysis is NOT read-only: it moves the global playhead
+    # (hou.setFrame loop) and force-cooks — it must take the C5 mutation lock
+    # and leave audit + Floor provenance records.
 })
 
 
@@ -1360,6 +1363,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         return {
             "response": result.answer,
             "tier": result.tier.value,
+            # Truth contract: surface routing success + whether commands were
+            # actually executed (None for non-recipe tiers, False = proposal).
+            "success": result.success,
+            "executed": result.metadata.get("executed"),
             "commands": [
                 {"type": cmd.type, "id": cmd.id, "payload": cmd.payload}
                 for cmd in result.commands
@@ -1575,7 +1582,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             )
 
         max_iterations = int(payload.get("max_iterations", 3))
-        quality_threshold = float(payload.get("quality_threshold", 0.85))
+        quality_threshold = min(1.0, max(0.0, float(payload.get("quality_threshold", 0.85))))
 
         # Late import to keep autonomy optional (no import at module level)
         from ..autonomy import (
@@ -1618,7 +1625,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
         planner = RenderPlanner()
         validator = PreFlightValidator(adapter)
-        evaluator = RenderEvaluator()
+        evaluator = RenderEvaluator(pass_threshold=quality_threshold)
 
         driver = AutonomousDriver(
             planner=planner,

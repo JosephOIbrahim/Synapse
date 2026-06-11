@@ -24,11 +24,22 @@ sys.modules["hou"] = _mock_hou
 sys.modules["hdefereval"] = _mock_hdefereval
 
 from synapse.server.handlers import SynapseHandler  # noqa: E402
+from synapse.server import handlers_render as _hr  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def _wire_handler_module(monkeypatch):
+    """Point the handler module at THIS file's fakes. In a full-suite run the
+    resident sys.modules['hou'] is whichever test file planted first (and its
+    skeleton may lack .ui/.paneTabType), so residency alone is order-fragile."""
+    monkeypatch.setattr(_hr, "hou", _mock_hou)
+    monkeypatch.setattr(_hr, "HOU_AVAILABLE", True)
+    monkeypatch.setitem(sys.modules, "hdefereval", _mock_hdefereval)
+
 
 @pytest.fixture()
 def handler():

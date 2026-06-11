@@ -147,6 +147,15 @@ class TopsCookMixin:
         max_concurrent = resolve_param(payload, "max_concurrent", required=False)
         working_dir = resolve_param(payload, "working_dir", required=False)
 
+        # PDG integration is localscheduler-only -- fail loudly on anything else
+        # rather than echoing back an unconfigured scheduler type (truth contract).
+        if str(scheduler_type).strip().lower() not in ("local", "localscheduler"):
+            raise ValueError(
+                f"Scheduler type '{scheduler_type}' isn't supported -- SYNAPSE's PDG "
+                "integration is localscheduler-only (Deadline/Tractor/HQueue farm "
+                "submission isn't wired up). Use scheduler_type='local' or omit it."
+            )
+
         def _run():
             node = hou.node(topnet_path)
             if node is None:

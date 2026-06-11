@@ -150,6 +150,13 @@ _TOOL_TO_OPERATION: dict[str, str] = {
     "synapse_assess_render_ready": "inspect_geometry",
 }
 
+# ── Tools that write files to disk ───────────────────────────────
+# R4 (shared/bridge.py Operation.gate_level): touches_disk elevates the
+# gate to APPROVE. These writes happen outside the undo system.
+_DISK_WRITING_TOOLS = frozenset({
+    "synapse_solaris_shotsetup_karma_xpu",  # department .usd layer files
+})
+
 # ── Tool name → inferred AgentID ─────────────────────────────────
 _TOOL_AGENT_MAP: dict[str, str] = {
     "houdini_execute_python": "BRAINSTEM",
@@ -255,13 +262,18 @@ def execute_through_bridge(
     def _dispatch(*_args, **_kwargs):
         return handler.handle(command)
 
+    op_kwargs = {"node_path": node_path} if node_path else {}
+    # R4: disk-writing tools carry touches_disk so the gate elevates to APPROVE.
+    if tool_name in _DISK_WRITING_TOOLS:
+        op_kwargs["touches_disk"] = True
+
     op = Operation(
         agent_id=agent_id,
         operation_type=op_type,
         summary="{}: {}".format(tool_name, str(payload)[:80]),
         fn=_dispatch,
         args=(),
-        kwargs={"node_path": node_path} if node_path else {},
+        kwargs=op_kwargs,
     )
 
     result = bridge.execute(op)

@@ -866,6 +866,9 @@ TOPS_MCP_TOOLS_PLANNED = [
         "annotations": {"readOnlyHint": True}
     },
     {
+        # PARKED DESIGN -- the shipped implementation is localscheduler-only:
+        # non-local scheduler_type values fail loudly with a ValueError.
+        # HQueue/Deadline below is the design to revive, not current behavior.
         "name": "tops_configure_scheduler",
         "description": "Configure PDG scheduler (local, HQueue, Deadline)",
         "annotations": {"destructiveHint": True}

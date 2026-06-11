@@ -81,6 +81,7 @@ class FrameEvaluation:
     passed: bool
     issues: List[str] = field(default_factory=list)
     metrics: Dict[str, float] = field(default_factory=dict)
+    verified: bool = True  # False = pixels never analyzed; quality is unknown
 
 
 @dataclass
@@ -90,6 +91,8 @@ class SequenceEvaluation:
     temporal_issues: List[str] = field(default_factory=list)
     overall_score: float = 0.0
     passed: bool = False
+    unverified_count: int = 0
+    pass_threshold: float = 0.7
 
 
 @dataclass

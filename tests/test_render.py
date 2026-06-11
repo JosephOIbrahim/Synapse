@@ -254,8 +254,9 @@ class TestHandleRender:
             handler, {"node": "/stage/karma1", "width": 1920, "height": 1080}, fake_node
         )
 
-        resx_parm.set.assert_called_once_with(1920)
-        resy_parm.set.assert_called_once_with(1080)
+        # First set is the override; a second set restores the artist's value.
+        assert resx_parm.set.call_args_list[0][0][0] == 1920
+        assert resy_parm.set.call_args_list[0][0][0] == 1080
 
     def test_flipbook_fallback_on_usdrender_no_output(self, handler):
         """When usdrender ROP produces no output, fall back to flipbook."""
@@ -425,9 +426,10 @@ class TestRenderEXRPersistence:
              patch("pathlib.Path.mkdir", return_value=None):
             handler._handle_render({"node": "/stage/karma1"})
 
-        # The output parm should have been set to an EXR path
+        # The output parm should have been set to an EXR path (first call —
+        # the final call is the token-preserving restore of the artist value).
         out_parm.set.assert_called()
-        set_path = out_parm.set.call_args[0][0]
+        set_path = out_parm.set.call_args_list[0][0][0]
         assert ".exr" in set_path
 
     def test_upstream_karma_lop_picture_discovered(self, handler):

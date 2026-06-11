@@ -409,7 +409,7 @@ Pipeline orchestration for batch processing, wedging, and distributed rendering.
 | 4 | `tops_get_cook_stats` | RO IDEM | Get cook statistics: work item counts by state and cook times. |
 | 5 | `tops_cook_node` | MUT | Cook a TOP node. Supports blocking/non-blocking and generate-only modes. |
 | 6 | `tops_generate_items` | MUT | Generate work items for a TOP node without cooking. Preview what a node will produce. |
-| 7 | `tops_configure_scheduler` | MUT IDEM | Configure the scheduler: type, max concurrent, working directory. |
+| 7 | `tops_configure_scheduler` | MUT IDEM | Configure the local scheduler for a TOP network: max concurrent, working directory. Localscheduler-only -- non-local scheduler_type values are rejected. |
 | 8 | `tops_cancel_cook` | MUT | Cancel an active cook on a TOP node or network. |
 | 9 | `tops_dirty_node` | MUT IDEM | Dirty a TOP node to clear cached results. |
 | 10 | `tops_setup_wedge` | MUT | Set up a Wedge TOP node for parameter variation exploration. |
@@ -468,7 +468,7 @@ Pipeline orchestration for batch processing, wedging, and distributed rendering.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `topnet_path` | string | **yes** | TOP network path |
-| `scheduler_type` | string | no | Scheduler type (default: local) |
+| `scheduler_type` | string | no | Scheduler type -- only 'local' is supported (Deadline/Tractor/HQueue are rejected) |
 | `max_concurrent` | integer | no | Max concurrent processes |
 | `working_dir` | string | no | PDG working directory |
 

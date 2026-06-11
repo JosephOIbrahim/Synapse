@@ -5,8 +5,10 @@ Exposes the compose tier (PRD 7.1 / 7.2 / 7.3) as commands:
   solaris_shotsetup_karma_xpu, matlib_bind, assess_render_ready.
 
 Thin wrappers -- the logic lives in solaris_compose_tools, built on the
-solaris_compose primitive. Dispatched through the bridge (undo / integrity /
-consent / blast-radius) via panel.bridge_adapter.execute_through_bridge.
+solaris_compose primitive. Live truth: each handler marshals its hou work to
+Houdini's main thread itself (run_on_main) and each MUTATING handler owns its
+undo group (hou.undos.group + performUndo rollback -- the build_graph idiom).
+The panel bridge adds audit (integrity) on top; it is not the safety mechanism.
 """
 
 from typing import Dict
@@ -33,22 +35,49 @@ class SolarisComposeMixin:
         """Scaffold a render-ready Karma XPU shot (PRD 7.1 / GAP-1)."""
         if not HOU_AVAILABLE:
             raise HoudiniUnavailableError()
-        stage = _sc.resolve_stage(resolve_param_with_default(payload, "stage", "/stage"))
+        # Parse the payload HERE, on the handler thread, BEFORE run_on_main
+        # marshals the work away (the batch_commands idiom).
+        stage_path = resolve_param_with_default(payload, "stage", "/stage")
         res = payload.get("resolution", [1920, 1080])
-        return _tools.build_karma_xpu_shot(
-            stage,
-            shot=resolve_param_with_default(payload, "shot", "shot"),
-            resolution=(int(res[0]), int(res[1])),
-            engine=resolve_param_with_default(payload, "engine", "xpu"),
-            layer_dir=payload.get("layer_dir"),
-            reason=payload.get("reason"),
-        )
+        resolution = (int(res[0]), int(res[1]))
+        shot = resolve_param_with_default(payload, "shot", "shot")
+        engine = resolve_param_with_default(payload, "engine", "xpu")
+        layer_dir = payload.get("layer_dir")
+        reason = payload.get("reason")
+
+        from .main_thread import run_on_main, _SLOW_TIMEOUT
+
+        def _on_main():
+            stage = _sc.resolve_stage(stage_path)
+            try:
+                with hou.undos.group("SYNAPSE: solaris_shotsetup_karma_xpu"):
+                    return _tools.build_karma_xpu_shot(
+                        stage,
+                        shot=shot,
+                        resolution=resolution,
+                        engine=engine,
+                        layer_dir=layer_dir,
+                        reason=reason,
+                    )
+            except Exception:
+                # Safe undo fallback -- the C++ undo layer for LOP nodes can
+                # throw during __exit__; explicitly undo to prevent undo
+                # stack corruption (build_graph idiom).
+                try:
+                    hou.undos.performUndo()
+                except Exception as undo_exc:
+                    _log.warning(
+                        "solaris_shotsetup_karma_xpu: undo rollback also failed: %s",
+                        undo_exc,
+                    )
+                raise
+
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
 
     def _handle_matlib_bind(self, payload: Dict) -> Dict:
         """Bind a material to a prim set (PRD 7.2 / GAP-2 / BL-008)."""
         if not HOU_AVAILABLE:
             raise HoudiniUnavailableError()
-        stage = _sc.resolve_stage(resolve_param_with_default(payload, "stage", "/stage"))
         material = payload.get("material")
         targets = payload.get("targets", payload.get("pattern"))
         if not material or not targets:
@@ -56,11 +85,31 @@ class SolarisComposeMixin:
                 "matlib_bind needs 'material' (prim path) and 'targets' (pattern or list)",
                 suggestion="e.g. material='/materials/red', targets='//Mesh'",
             )
-        input_node = hou.node(payload["input_node"]) if payload.get("input_node") else None
-        return _tools.bind_material(
-            stage, material, targets,
-            input_node=input_node, strength=payload.get("strength"),
-        )
+        stage_path = resolve_param_with_default(payload, "stage", "/stage")
+        input_path = payload.get("input_node")
+        strength = payload.get("strength")
+
+        from .main_thread import run_on_main, _SLOW_TIMEOUT
+
+        def _on_main():
+            stage = _sc.resolve_stage(stage_path)
+            input_node = hou.node(input_path) if input_path else None
+            try:
+                with hou.undos.group("SYNAPSE: matlib_bind"):
+                    return _tools.bind_material(
+                        stage, material, targets,
+                        input_node=input_node, strength=strength,
+                    )
+            except Exception:
+                try:
+                    hou.undos.performUndo()
+                except Exception as undo_exc:
+                    _log.warning(
+                        "matlib_bind: undo rollback also failed: %s", undo_exc,
+                    )
+                raise
+
+        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
 
     def _handle_assess_render_ready(self, payload: Dict) -> Dict:
         """Render-readiness report over E3 (PRD 7.3 / GAP-3). Read-only.
@@ -71,5 +120,15 @@ class SolarisComposeMixin:
         """
         if not HOU_AVAILABLE:
             raise HoudiniUnavailableError()
-        stage = _sc.resolve_stage(resolve_param_with_default(payload, "stage", "/stage"))
-        return _tools.assess_render_ready(stage, engine_hint=payload.get("engine"))
+        stage_path = resolve_param_with_default(payload, "stage", "/stage")
+        engine = payload.get("engine")
+
+        from .main_thread import run_on_main
+
+        # Read-only -- no undo group, but resolve_stage/read_stage cook LOPs,
+        # which must happen on the main thread. Default timeout.
+        return run_on_main(
+            lambda: _tools.assess_render_ready(
+                _sc.resolve_stage(stage_path), engine_hint=engine,
+            )
+        )

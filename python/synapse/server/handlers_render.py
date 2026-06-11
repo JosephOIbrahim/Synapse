@@ -67,6 +67,15 @@ def _find_render_rop():
     )
 
 
+def _parm_raw(parm):
+    """Token-preserving read: unexpandedString() keeps $JOB/$HIPNAME/$F4 intact
+    on string parms; eval() fallback for numeric/menu parms."""
+    try:
+        return parm.unexpandedString()
+    except Exception:
+        return parm.eval()  # noqa: S307 -- hou.Parm.eval, not Python eval
+
+
 def _detect_karma_engine(node, node_type: str) -> str:
     """Detect Karma XPU vs CPU vs Mantra vs other renderer.
 
@@ -202,147 +211,178 @@ class RenderHandlerMixin:
             node_type = node.type().name()
             engine = _detect_karma_engine(node, node_type)
 
-            # For usdrender ROPs in /out, ensure loppath is set
-            lop_target_node = None
-            lp = node.parm("loppath")
-            # hou.Parm.eval() reads parameter value -- not Python eval()
-            if lp and not lp.eval():  # noqa: S307
-                # Auto-find a LOP node with a stage
-                for lop_path in ["/stage"]:
-                    lop = hou.node(lop_path)
-                    if lop and lop.children():
-                        # Find last display node or last child
-                        display = [c for c in lop.children() if hasattr(c, 'isDisplayFlagSet') and c.isDisplayFlagSet()]
-                        target = display[0] if display else lop.children()[-1]
-                        lp.set(target.path())
-                        lop_target_node = target
-                        break
-            elif lp:
-                lop_target_path = lp.eval()  # noqa: S307
-                if lop_target_path:
-                    lop_target_node = hou.node(lop_target_path)
+            # WP4: every parm set below appends (parm, _parm_raw(parm)) FIRST,
+            # then is restored in reverse in the finally -- the ROP is
+            # byte-identical (tokens intact) after houdini_render. The render
+            # still works because render() already consumed the values.
+            _restore = []
 
-            # Preserve artist's configured output path for EXR persistence
-            temp_dir = Path(hou.text.expandString("$HOUDINI_TEMP_DIR"))
-            timestamp = int(time.time() * 1000)
-            preview_path = str(temp_dir / f"synapse_render_{timestamp}.jpg")
-
-            # Read the artist's original output path — check ROP first, then
-            # walk upstream to find Karma LOP's picture parm (BL-007 fix)
-            artist_output = ""
-            output_parm = None
-            for parm_name in ("outputimage", "picture"):
-                p = node.parm(parm_name)
-                if p:
-                    artist_output = p.eval() or ""  # noqa: S307
-                    output_parm = p
-                    if artist_output.strip():
-                        break
-
-            # If ROP has no output path, check the upstream Karma LOP
-            if not artist_output.strip() and lop_target_node is not None:
+            with hou.undos.group("SYNAPSE: render"):
                 try:
-                    # Branch-aware bounded breadth-first walk: a Karma LOP
-                    # feeding the ROP may be reachable only via a non-zero
-                    # input index (e.g. inputs()[1] of a merge/switch LOP),
-                    # so follow ALL inputs -- not just inputs()[0]. A visited
-                    # set + node budget keep diamond/cyclic graphs from
-                    # looping forever. First non-empty picture wins (BFS pops
-                    # shallowest first -> nearest Karma LOP).
-                    _queue = [lop_target_node]
-                    _visited = set()
-                    _budget = 20  # max nodes visited (matches prior 20-hop cap)
-                    while _queue and _budget > 0:
-                        _walk = _queue.pop(0)
-                        # Key on .path() (stable per node): hou.Node.inputs()
-                        # returns FRESH wrappers each call, so id() never dedups
-                        # real nodes -- matches the .path()/.sessionId() dedup
-                        # convention in guards.py / network_trace.py.
-                        try:
-                            _key = _walk.path()
-                        except Exception:
-                            _key = id(_walk)
-                        if _key in _visited:
-                            continue
-                        _visited.add(_key)
-                        _budget -= 1  # count distinct nodes visited, not revisits
-                        kp = _walk.parm("picture")
-                        if kp:
-                            _val = kp.eval() or ""  # noqa: S307
-                            if _val.strip():
-                                artist_output = _val
+                    # For usdrender ROPs in /out, ensure loppath is set
+                    lop_target_node = None
+                    lp = node.parm("loppath")
+                    # hou.Parm.eval() reads parameter value -- not Python eval()
+                    if lp and not lp.eval():  # noqa: S307
+                        # Auto-find a LOP node with a stage
+                        for lop_path in ["/stage"]:
+                            lop = hou.node(lop_path)
+                            if lop and lop.children():
+                                # Find last display node or last child
+                                display = [c for c in lop.children() if hasattr(c, 'isDisplayFlagSet') and c.isDisplayFlagSet()]
+                                target = display[0] if display else lop.children()[-1]
+                                _restore.append((lp, _parm_raw(lp)))
+                                lp.set(target.path())
+                                lop_target_node = target
                                 break
-                        # Enqueue every upstream input, not just index 0
+                    elif lp:
+                        lop_target_path = lp.eval()  # noqa: S307
+                        if lop_target_path:
+                            lop_target_node = hou.node(lop_target_path)
+
+                    # Preserve artist's configured output path for EXR persistence
+                    temp_dir = Path(hou.text.expandString("$HOUDINI_TEMP_DIR"))
+                    timestamp = int(time.time() * 1000)
+                    preview_path = str(temp_dir / f"synapse_render_{timestamp}.jpg")
+
+                    # Read the artist's original output path — check ROP first, then
+                    # walk upstream to find Karma LOP's picture parm (BL-007 fix)
+                    artist_output = ""
+                    output_parm = None
+                    for parm_name in ("outputimage", "picture"):
+                        p = node.parm(parm_name)
+                        if p:
+                            artist_output = p.eval() or ""  # noqa: S307
+                            output_parm = p
+                            if artist_output.strip():
+                                break
+
+                    # If ROP has no output path, check the upstream Karma LOP
+                    if not artist_output.strip() and lop_target_node is not None:
                         try:
-                            _queue.extend(
-                                _i for _i in _walk.inputs() if _i is not None
-                            )
+                            # Branch-aware bounded breadth-first walk: a Karma LOP
+                            # feeding the ROP may be reachable only via a non-zero
+                            # input index (e.g. inputs()[1] of a merge/switch LOP),
+                            # so follow ALL inputs -- not just inputs()[0]. A visited
+                            # set + node budget keep diamond/cyclic graphs from
+                            # looping forever. First non-empty picture wins (BFS pops
+                            # shallowest first -> nearest Karma LOP).
+                            _queue = [lop_target_node]
+                            _visited = set()
+                            _budget = 20  # max nodes visited (matches prior 20-hop cap)
+                            while _queue and _budget > 0:
+                                _walk = _queue.pop(0)
+                                # Key on .path() (stable per node): hou.Node.inputs()
+                                # returns FRESH wrappers each call, so id() never dedups
+                                # real nodes -- matches the .path()/.sessionId() dedup
+                                # convention in guards.py / network_trace.py.
+                                try:
+                                    _key = _walk.path()
+                                except Exception:
+                                    _key = id(_walk)
+                                if _key in _visited:
+                                    continue
+                                _visited.add(_key)
+                                _budget -= 1  # count distinct nodes visited, not revisits
+                                kp = _walk.parm("picture")
+                                if kp:
+                                    _val = kp.eval() or ""  # noqa: S307
+                                    if _val.strip():
+                                        artist_output = _val
+                                        break
+                                # Enqueue every upstream input, not just index 0
+                                try:
+                                    _queue.extend(
+                                        _i for _i in _walk.inputs() if _i is not None
+                                    )
+                                except Exception:
+                                    pass
                         except Exception:
-                            pass
-                except Exception:
-                    pass  # best-effort upstream discovery
+                            pass  # best-effort upstream discovery
 
-            # Determine render output: use artist path if set, else default EXR
-            if artist_output and artist_output.strip():
-                render_path = artist_output
-            else:
-                # Default to EXR in $HIP/.synapse/renders/ so renders persist
-                try:
-                    hip = hou.text.expandString("$HIP")
-                    if hip and hip != "$HIP":
-                        render_dir = Path(hip) / ".synapse" / "renders"
+                    # Determine render output: use artist path if set, else default EXR
+                    if artist_output and artist_output.strip():
+                        render_path = artist_output
                     else:
-                        render_dir = temp_dir / "synapse_renders"
-                except Exception:
-                    render_dir = temp_dir / "synapse_renders"
-                render_path = str(render_dir / f"render_{timestamp}.$F4.exr")
+                        # Default to EXR in $HIP/.synapse/renders/ so renders persist
+                        try:
+                            hip = hou.text.expandString("$HIP")
+                            if hip and hip != "$HIP":
+                                render_dir = Path(hip) / ".synapse" / "renders"
+                            else:
+                                render_dir = temp_dir / "synapse_renders"
+                        except Exception:
+                            render_dir = temp_dir / "synapse_renders"
+                        render_path = str(render_dir / f"render_{timestamp}.$F4.exr")
 
-            # Pre-render validation: ensure output directory exists
-            render_dir_path = Path(render_path).parent
-            # Expand $F4 frame tokens for directory check
-            dir_str = str(render_dir_path)
-            if "$" not in dir_str:
-                try:
-                    render_dir_path.mkdir(parents=True, exist_ok=True)
-                except OSError as e:
-                    raise RuntimeError(
-                        f"Couldn't create output directory {render_dir_path} -- {e}. "
-                        "Check the path is writable or set a different output path "
-                        "on the render node's 'picture' or 'outputimage' parameter."
-                    ) from e
+                    # Pre-render validation: ensure output directory exists
+                    render_dir_path = Path(render_path).parent
+                    # Expand $F4 frame tokens for directory check
+                    dir_str = str(render_dir_path)
+                    if "$" not in dir_str:
+                        try:
+                            render_dir_path.mkdir(parents=True, exist_ok=True)
+                        except OSError as e:
+                            raise RuntimeError(
+                                f"Couldn't create output directory {render_dir_path} -- {e}. "
+                                "Check the path is writable or set a different output path "
+                                "on the render node's 'picture' or 'outputimage' parameter."
+                            ) from e
 
-            cur = int(hou.frame()) if frame is None else int(frame)
+                    cur = int(hou.frame()) if frame is None else int(frame)
 
-            # Resolve $F4 frame token in render path for file polling
-            render_path_resolved = render_path.replace("$F4", f"{cur:04d}")
+                    # Resolve $F4 frame token in render path for file polling
+                    render_path_resolved = render_path.replace("$F4", f"{cur:04d}")
 
-            # Resolution override -- res= is a scale factor, so set parms directly
-            if width and height:
-                w, h = int(width), int(height)
-                for rx, ry in [("resolutionx", "resolutiony"), ("res_user1", "res_user2")]:
-                    if node.parm(rx):
-                        node.parm(rx).set(w)
-                        node.parm(ry).set(h)
-                        break
-                # Enable override if available (usdrender string menu)
-                ov = node.parm("override_res")
-                # hou.Parm.eval() reads parameter value -- not Python eval()
-                if ov and ov.eval() != "specific":  # noqa: S307
-                    ov.set("specific")
+                    # Resolution override -- res= is a scale factor, so set parms directly
+                    if width and height:
+                        w, h = int(width), int(height)
+                        for rx, ry in [("resolutionx", "resolutiony"), ("res_user1", "res_user2")]:
+                            if node.parm(rx):
+                                _rx, _ry = node.parm(rx), node.parm(ry)
+                                _restore.append((_rx, _parm_raw(_rx)))
+                                _restore.append((_ry, _parm_raw(_ry)))
+                                _rx.set(w)
+                                _ry.set(h)
+                                break
+                        # Enable override if available (usdrender string menu)
+                        ov = node.parm("override_res")
+                        # hou.Parm.eval() reads parameter value -- not Python eval()
+                        if ov and ov.eval() != "specific":  # noqa: S307
+                            _restore.append((ov, _parm_raw(ov)))
+                            ov.set("specific")
 
-            # Set output path on the ROP parm (output_file kwarg doesn't
-            # work reliably for usdrender/karma ROPs)
-            if output_parm:
-                output_parm.set(render_path)
-            elif node.parm("outputimage"):
-                node.parm("outputimage").set(render_path)
-            elif node.parm("picture"):
-                node.parm("picture").set(render_path)
+                    # Set output path on the ROP parm (output_file kwarg doesn't
+                    # work reliably for usdrender/karma ROPs)
+                    if output_parm:
+                        # Capture the PARM's raw string (tokens intact), NOT the
+                        # already-expanded artist_output read above -- restoring
+                        # the expanded string is exactly the bug this fixes.
+                        _restore.append((output_parm, _parm_raw(output_parm)))
+                        output_parm.set(render_path)
+                    elif node.parm("outputimage"):
+                        _op = node.parm("outputimage")
+                        _restore.append((_op, _parm_raw(_op)))
+                        _op.set(render_path)
+                    elif node.parm("picture"):
+                        _op = node.parm("picture")
+                        _restore.append((_op, _parm_raw(_op)))
+                        _op.set(render_path)
 
-            node.render(
-                frame_range=(cur, cur),
-                verbose=False,
-            )
+                    node.render(
+                        frame_range=(cur, cur),
+                        verbose=False,
+                    )
+                finally:
+                    # Restore-in-finally is safe: everything downstream consumes
+                    # the captured strings, never re-reads the parms.
+                    for _p, _raw in reversed(_restore):
+                        try:
+                            _p.set(_raw)
+                        except Exception:
+                            logger.warning(
+                                "SYNAPSE render: couldn't restore parm after render"
+                            )
 
             # C11: ONLY hou.* work stays on the main thread. The output-file
             # poll (up to ~15s of sleep) and the iconvert subprocess used to run
@@ -407,32 +447,37 @@ class RenderHandlerMixin:
                     desktop = hou.ui.curDesktop()
                     sv = desktop.paneTabOfType(hou.paneTabType.SceneViewer)
                     if sv is not None:
+                        # WP4: put the playhead back where the artist left it
+                        _prev = hou.frame()
                         hou.setFrame(cur)
-                        vp = sv.curViewport()
-                        fb_settings = sv.flipbookSettings()
-                        ext = "jpg"
-                        fb_pattern = out_path.replace(
-                            f".{ext}", f".$F4.{ext}"
-                        )
-                        fb_settings.frameRange((cur, cur))
-                        fb_settings.output(fb_pattern)
-                        fb_settings.useResolution(True)
-                        w_fb = int(width) if width else 640
-                        h_fb = int(height) if height else 480
-                        fb_settings.resolution((w_fb, h_fb))
-                        sv.flipbook(
-                            viewport=vp,
-                            settings=fb_settings,
-                            open_dialog=False,
-                        )
-                        fb_actual = fb_pattern.replace(
-                            "$F4", f"{cur:04d}"
-                        )
-                        if (
-                            Path(fb_actual).exists()
-                            and Path(fb_actual).stat().st_size > 0
-                        ):
-                            return True, fb_actual
+                        try:
+                            vp = sv.curViewport()
+                            fb_settings = sv.flipbookSettings()
+                            ext = "jpg"
+                            fb_pattern = out_path.replace(
+                                f".{ext}", f".$F4.{ext}"
+                            )
+                            fb_settings.frameRange((cur, cur))
+                            fb_settings.output(fb_pattern)
+                            fb_settings.useResolution(True)
+                            w_fb = int(width) if width else 640
+                            h_fb = int(height) if height else 480
+                            fb_settings.resolution((w_fb, h_fb))
+                            sv.flipbook(
+                                viewport=vp,
+                                settings=fb_settings,
+                                open_dialog=False,
+                            )
+                            fb_actual = fb_pattern.replace(
+                                "$F4", f"{cur:04d}"
+                            )
+                            if (
+                                Path(fb_actual).exists()
+                                and Path(fb_actual).stat().st_size > 0
+                            ):
+                                return True, fb_actual
+                        finally:
+                            hou.setFrame(_prev)
                 except Exception as fb_err:
                     logger.warning(
                         "Flipbook fallback also failed: %s", fb_err
@@ -517,19 +562,25 @@ class RenderHandlerMixin:
         """Read and optionally modify render settings on a ROP or Karma node."""
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
-        node_path = resolve_param(payload, "node")
+        node_path = resolve_param(payload, "node", required=False)
         overrides = resolve_param_with_default(payload, "settings", {})
         advanced_karma = resolve_param_with_default(payload, "advanced_karma", None)
 
         from .main_thread import run_on_main
 
         def _on_main():
-            node = hou.node(node_path)
-            if node is None:
-                raise ValueError(
-                    f"Couldn't find a node at {node_path} -- "
-                    "double-check the path to your render settings node"
-                )
+            if node_path:
+                node = hou.node(node_path)
+                if node is None:
+                    raise ValueError(
+                        f"Couldn't find a node at {node_path} -- "
+                        "double-check the path to your render settings node"
+                    )
+            else:
+                # WP2: the autonomy replan path sends node:"" -- fall back to
+                # the same ROP discovery _handle_render uses. _find_render_rop
+                # raises a loud ValueError when no ROP exists anywhere.
+                node = _find_render_rop()
 
             settings = {}
             # Read current render settings
@@ -563,7 +614,7 @@ class RenderHandlerMixin:
             engine = _detect_karma_engine(node, node_type)
 
             return {
-                "node": node_path,
+                "node": node_path or node.path(),
                 "render_engine": engine,
                 "settings": settings,
             }

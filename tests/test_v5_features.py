@@ -1016,6 +1016,43 @@ class TestWorkflowPlanner:
         assert "add_aovs" in plan.metadata["modifiers"]
         assert "add_denoise" in plan.metadata["modifiers"]
 
+    def test_render_pipeline_stub_steps_are_marked_scaffolded(self):
+        """The aov/denoise steps do no work — they must say so, not claim success."""
+        plan = self.planner.plan("set up render pipeline with aovs and denoise")
+        assert plan is not None
+        bodies = [
+            s.payload["code"] for s in plan.steps if s.type == "execute_python"
+        ]
+        assert len(bodies) == 2
+        for body in bodies:
+            assert "AOVs configured" not in body
+            assert "OIDN denoiser enabled" not in body
+            assert "'scaffolded'" in body
+            assert "'configured': False" in body
+
+    def test_planner_execute_python_steps_do_work_or_say_scaffolded(self):
+        """Every execute_python step either creates nodes or admits it's a stub."""
+        prompts = [
+            "set up cloth simulation with collision and wind and drape and cache",
+            "set up destruction sequence with debris and dust",
+            "set up lighting rig for dramatic with dome and rim",
+            "set up render pipeline with aovs and denoise",
+            "set up ocean with whitewater and flip",
+            "set up pyro fire sim",
+            "set up a solaris scene with sphere and material and camera "
+            "and lighting and karma render",
+        ]
+        for prompt in prompts:
+            plan = self.planner.plan(prompt)
+            assert plan is not None, f"No plan for: {prompt}"
+            for step in plan.steps:
+                if step.type != "execute_python":
+                    continue
+                body = step.payload["code"]
+                assert ("createNode(" in body) or ("'scaffolded'" in body), (
+                    f"No-op step claiming outcome in {plan.name}: {body!r}"
+                )
+
     def test_pyro_pipeline(self):
         plan = self.planner.plan("set up pyro fire sim")
         assert plan is not None

@@ -164,7 +164,7 @@ class TestEvaluateFrameAutoLoad:
         assert len(ev.issues) == 0
 
     def test_evaluate_frame_no_image_library(self, evaluator, tmp_dir):
-        """When no library can load the file, skip pixel checks gracefully."""
+        """When no library can load the file, the frame is honestly unverified."""
         # Create a file with an extension that no library handles
         path = os.path.join(tmp_dir, "frame.dat")
         with open(path, "wb") as f:
@@ -172,9 +172,12 @@ class TestEvaluateFrameAutoLoad:
 
         ev = evaluator.evaluate_frame(frame=1, output_path=path)
         assert isinstance(ev, FrameEvaluation)
-        # File exists but can't be loaded -- should pass with skip note
-        assert ev.passed is True
-        assert any("skipping quality checks" in issue.lower() for issue in ev.issues)
+        # File exists but can't be loaded -- unanalyzed quality must NOT pass
+        assert ev.passed is False
+        assert ev.verified is False
+        assert "quality_score" not in ev.metrics
+        assert ev.metrics["unverified"] == 1.0
+        assert any("unverified" in issue.lower() for issue in ev.issues)
 
     def test_evaluate_frame_missing_file_no_pixels(self, evaluator):
         """Missing file with no pixels should fail."""

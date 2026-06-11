@@ -387,10 +387,11 @@ TOOL_DEFS: list[tuple] = [
 
     # -- TOPS / PDG (Phase 2: Scheduler & Control) --
     ("tops_configure_scheduler", "tops_configure_scheduler", _identity,
-     "Configure the scheduler for a TOP network: type, max concurrent, working directory.",
+     "Configure the local scheduler for a TOP network: max concurrent, working directory. "
+     "Localscheduler-only -- non-local scheduler_type values are rejected.",
      {"type": "object", "properties": {
          "topnet_path": {"type": "string", "description": "TOP network path"},
-         "scheduler_type": {"type": "string", "description": "Scheduler type (default: local)"},
+         "scheduler_type": {"type": "string", "description": "Scheduler type -- only 'local' is supported (Deadline/Tractor/HQueue are rejected)"},
          "max_concurrent": {"type": "integer", "description": "Max concurrent processes"},
          "working_dir": {"type": "string", "description": "PDG working directory"},
      }, "required": ["topnet_path"]},
@@ -1208,7 +1209,7 @@ TOOL_DEFS: list[tuple] = [
      False, True, False),
 
     ("cops_reaction_diffusion", "cops_reaction_diffusion", _identity,
-     "Gray-Scott reaction-diffusion solver via OpenCL for organic patterns.",
+     "Gray-Scott reaction-diffusion solver SCAFFOLD (placeholder #define-only kernel; node not cooked).",
      {"type": "object", "properties": {
          "parent": {"type": "string", "description": "COP network path"},
          "feed_rate": {"type": "number", "description": "Feed rate F (default: 0.055)"},
@@ -1222,7 +1223,7 @@ TOOL_DEFS: list[tuple] = [
      False, True, False),
 
     ("cops_pixel_sort", "cops_pixel_sort", _identity,
-     "Pixel sorting effect by luminance/hue with threshold and direction.",
+     "Pixel-sort scaffold by luminance/hue (placeholder kernel; node not cooked).",
      {"type": "object", "properties": {
          "parent": {"type": "string", "description": "COP network path"},
          "input_node": {"type": "string", "description": "Input COP node"},
@@ -1260,7 +1261,7 @@ TOOL_DEFS: list[tuple] = [
      False, True, False),
 
     ("cops_bake_textures", "cops_bake_textures", _identity,
-     "UV texture baking setup: normal, AO, curvature, position maps.",
+     "UV texture baking SCAFFOLD: creates placeholder map nodes; does NOT bake or write files.",
      {"type": "object", "properties": {
          "parent": {"type": "string", "description": "COP network path"},
          "high_res": {"type": "string", "description": "High-res SOP path"},

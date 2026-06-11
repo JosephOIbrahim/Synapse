@@ -387,8 +387,9 @@ class TieredRouter:
         recipe, params = match
         commands = recipe.instantiate(params)
 
-        # Execute if command_fn available
+        # Execute if command_fn available — otherwise this is a PROPOSAL only
         responses = []
+        executed = self._command_fn is not None
         if self._command_fn:
             for cmd in commands:
                 try:
@@ -399,15 +400,33 @@ class TieredRouter:
                         id=cmd.id, success=False, error=str(e),
                     ))
 
+        if not executed:
+            success = True
+            answer = (
+                f"Proposed recipe '{recipe.name}' ({len(commands)} steps) — "
+                f"not executed (no command channel wired); steps returned as commands"
+            )
+        else:
+            failed = [(i, r) for i, r in enumerate(responses) if not r.success]
+            success = not failed
+            if success:
+                answer = f"Executed recipe '{recipe.name}' ({len(commands)} steps)"
+            else:
+                i, r = failed[0]
+                answer = (
+                    f"Recipe '{recipe.name}' failed at step {i + 1}/{len(commands)}: "
+                    f"{r.error or 'step returned failure'}"
+                )
+
         result = RoutingResult(
-            success=True,
+            success=success,
             tier=RoutingTier.RECIPE,
-            answer=f"Executed recipe '{recipe.name}' ({len(commands)} steps)",
+            answer=answer,
             commands=commands,
             responses=responses,
             confidence=0.95,
             latency_ms=(time.monotonic() - start) * 1000,
-            metadata={"recipe": recipe.name, "params": params},
+            metadata={"recipe": recipe.name, "params": params, "executed": executed},
         )
 
         self._cache_result("recipe", text, context_hash, result)

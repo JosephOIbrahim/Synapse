@@ -332,31 +332,26 @@ class RenderPlanner:
         """Build the default render handler sequence.
 
         Default pipeline:
-            1. validate_frame (pre-check)
-            2. render_settings (apply quality)
-            3. render_sequence (actual render)
+            1. render_settings (apply quality, only when adjustments exist)
+            2. render_sequence (actual render)
+
+        Pre-render validation is PreFlightValidator.validate(plan);
+        post-render per-frame validation happens inside render_sequence
+        (validate_frame needs an image_path, which only exists post-render).
         """
         adj = adjustments or {}
         steps: List[RenderStep] = []
 
-        # Step 1: Validate the stage before rendering
-        steps.append(RenderStep(
-            handler="validate_frame",
-            params={"frame": parsed["start"]},
-            description="Pre-render frame validation",
-            gate=GateLevel.INFORM,
-        ))
-
-        # Step 2: Apply render settings if adjustments needed
+        # Step 1: Apply render settings if adjustments needed
         if adj:
             steps.append(RenderStep(
                 handler="render_settings",
-                params=adj,
+                params={"node": "", "settings": adj},
                 description="Apply adjusted render settings",
                 gate=GateLevel.INFORM,
             ))
 
-        # Step 3: Render
+        # Step 2: Render
         render_params: Dict[str, Any] = {
             "start_frame": parsed["start"],
             "end_frame": parsed["end"],

@@ -293,6 +293,10 @@ TOPS handlers follow the exact same pattern as every other SYNAPSE handler:
     }
 },
 {
+    # PARKED DESIGN -- the shipped handler is localscheduler-only: non-local
+    # scheduler_type values fail loudly with a ValueError. The HQueue/Deadline
+    # support described below (and the enum) is the design to revive, not
+    # current behavior.
     "name": "tops_configure_scheduler",
     "description": (
         "Configure the scheduler for a TOP network. Supports Local, HQueue, "
@@ -459,7 +463,8 @@ def _handle_tops_get_work_items(self, payload: dict) -> dict:
 
 - **`tops_configure_scheduler`** with HQueue/Deadline talks to external services. This is
   an `openWorldHint: True` scenario if the scheduler submits to a remote farm.
-  Update annotations accordingly.
+  Update annotations accordingly. *(Parked design — the shipped implementation is
+  localscheduler-only; non-local `scheduler_type` values fail loudly with a ValueError.)*
 
 - **Work item cancellation** is not always instant — PDG may finish the currently cooking
   item before the cancel takes effect. The handler should note this in the response.

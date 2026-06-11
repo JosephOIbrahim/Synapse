@@ -113,6 +113,8 @@ class AutonomousDriver:
         self._decisions = []
         iteration = 0
         evaluation: Optional[SequenceEvaluation] = None
+        prediction: Optional[RenderPrediction] = None
+        verification: Optional[VerificationResult] = None
 
         # Step 1: Plan
         plan = self._planner.plan(intent)
@@ -236,7 +238,8 @@ class AutonomousDriver:
                 decision=f"Sequence score: {evaluation.overall_score:.2f}, "
                          f"passed: {evaluation.passed}",
                 reasoning=f"{len(evaluation.frame_evaluations)} frame(s) evaluated, "
-                          f"{len(evaluation.temporal_issues)} temporal issue(s)",
+                          f"{len(evaluation.temporal_issues)} temporal issue(s)"
+                          f", {evaluation.unverified_count} unverified",
                 gate=GateLevel.INFORM,
             )
 
@@ -261,7 +264,8 @@ class AutonomousDriver:
                 self._log_decision(
                     context="render_success",
                     decision="Render sequence passed quality checks",
-                    reasoning=f"Overall score {evaluation.overall_score:.2f} >= 0.7 threshold",
+                    reasoning=f"Overall score {evaluation.overall_score:.2f} "
+                              f">= {evaluation.pass_threshold:.2f} threshold",
                     gate=GateLevel.INFORM,
                 )
                 break
@@ -393,35 +397,29 @@ class AutonomousDriver:
         if render_step is None or render_step.result is None:
             return results
 
-        # Extract output info from render result
-        output_frames = render_step.result.get("frames", [])
-        if isinstance(output_frames, list):
-            for frame_info in output_frames:
-                if isinstance(frame_info, dict):
-                    results.append({
-                        "frame": frame_info.get("frame", 0),
-                        "output_path": frame_info.get("output_path", ""),
-                        "image_data": frame_info.get("image_data"),
-                    })
-                elif isinstance(frame_info, (int, float)):
-                    results.append({
-                        "frame": int(frame_info),
-                        "output_path": render_step.result.get("output_dir", ""),
-                        "image_data": None,
-                    })
-
-        # If no structured frame data, build from step params
-        if not results and render_step.result:
-            start = render_step.params.get("start_frame", 1)
-            end = render_step.params.get("end_frame", start)
-            output_dir = render_step.result.get("output_dir", "")
-            for f in range(start, end + 1):
+        # Extract output info from the published BatchReport.to_dict() shape
+        # (render_farm.py): frame_results entries carry frame + image_path.
+        for fr in render_step.result.get("frame_results", []):
+            if isinstance(fr, dict):
                 results.append({
-                    "frame": f,
-                    "output_path": output_dir,
+                    "frame": fr.get("frame", 0),
+                    "output_path": fr.get("image_path", ""),
                     "image_data": None,
                 })
 
+        # Single-frame handlers return a bare image_path instead
+        if not results and render_step.result.get("image_path"):
+            frame = render_step.params.get(
+                "frame", render_step.params.get("start_frame", 1)
+            )
+            results.append({
+                "frame": int(frame),
+                "output_path": render_step.result["image_path"],
+                "image_data": None,
+            })
+
+        # Unparseable result -> [] -> evaluate_sequence([]) -> honest failure.
+        # Never fabricate frame entries from step params.
         return results
 
     # ------------------------------------------------------------------

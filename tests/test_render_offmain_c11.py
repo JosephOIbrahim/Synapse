@@ -11,6 +11,7 @@ The pin: drive _handle_render with an instrumented fake hdefereval and assert
 NO time.sleep happens while a main-thread closure is executing.
 """
 
+import contextlib
 import sys
 import time
 from pathlib import Path
@@ -63,6 +64,7 @@ def test_no_sleep_inside_main_thread_closure(tmp_path, monkeypatch):
         ui=MagicMock(),
         paneTabType=SimpleNamespace(SceneViewer="SceneViewer"),
         setFrame=lambda f: None,
+        undos=SimpleNamespace(group=lambda label: contextlib.nullcontext()),
     )
 
     # Instrumented fake hdefereval: flags while a main-thread closure runs.

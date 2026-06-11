@@ -62,12 +62,12 @@ APEX_RECIPES = {
                 "parms": {"length": 5, "bones": 5},
             },
             {
-                "type": "rig_doctor",
+                "type": "kinefx::rigdoctor",
                 "name": "rig_doctor1",
                 "parms": {},
             },
             {
-                "type": "apex::rig::fkfull",
+                "type": "apex::buildfkgraph",
                 "name": "fk_full1",
                 "parms": {},
             },
@@ -78,25 +78,25 @@ APEX_RECIPES = {
         ],
         "key_parms": ["length", "bones"],
         "explanation": (
-            "Creates a skeleton using bonegenerator, validates it with rig_doctor "
+            "Creates a skeleton using bonegenerator, validates it with kinefx::rigdoctor "
             "to ensure joint hierarchy and naming are correct, then applies a full "
-            "FK setup via apex::rig::fkfull. The FK node generates rotation controls "
+            "FK setup via apex::buildfkgraph. The FK node generates rotation controls "
             "for each joint in the chain, allowing direct rotational animation. "
             "This is the simplest APEX rig setup and the foundation for more "
             "complex configurations."
         ),
         "workflow": [
             "Create the network and set bone count/length on bonegenerator",
-            "Check rig_doctor output for warnings about skeleton issues",
+            "Check kinefx::rigdoctor output for warnings about skeleton issues",
             "Enter the APEX rig viewer to see FK controls",
             "Rotate individual joint controls to pose the chain",
             "Add an Invoke SOP downstream to apply the rig to geometry",
         ],
         "tips": [
-            "Use rig_doctor before any APEX rig node -- it catches naming and hierarchy issues early",
+            "Use kinefx::rigdoctor before any APEX rig node -- it catches naming and hierarchy issues early",
             "FK is best for tails, tentacles, hair chains, and mechanical linkages",
             "For character spines, FK gives direct control but IK may be more intuitive",
-            "You can adjust control shapes after the fact with apex::rig::controlshapes",
+            "You can adjust control shapes after the fact with apex::configurecontrols",
         ],
     },
 
@@ -116,7 +116,7 @@ APEX_RECIPES = {
                 "parms": {},
             },
             {
-                "type": "apex::rig::ikfull",
+                "type": "kinefx::twoboneik",
                 "name": "ik_full1",
                 "parms": {},
             },
@@ -130,9 +130,16 @@ APEX_RECIPES = {
             ["skeleton1", "ik_full1", 0],
         ],
         "key_parms": ["rootjoint", "tipjoint", "twist"],
+        "caveat": (
+            "kinefx::twoboneik / kinefx::blendtransforms are Vop nodes that "
+            "live INSIDE the APEX graph (apex.Graph.addNode) -- not "
+            "SOP-creatable; this SOP chain is catalog-verified but "
+            "behavior-UNVERIFIED"
+        ),
         "explanation": (
-            "Builds an IK chain from a skeleton input. The apex::rig::ikfull node "
-            "creates an IK solver with an end effector (goal) and a pole vector "
+            "Builds an IK chain from a skeleton input. The kinefx::twoboneik node "
+            "(a graph-internal Vop) creates an IK solver with an end effector "
+            "(goal) and a pole vector "
             "control that determines the plane of the IK solve. The null node "
             "serves as a reference for pole vector placement. IK is essential for "
             "limbs -- the animator moves the hand/foot and the elbow/knee follows "
@@ -170,17 +177,17 @@ APEX_RECIPES = {
                 "parms": {},
             },
             {
-                "type": "apex::rig::fkfull",
+                "type": "apex::buildfkgraph",
                 "name": "fk_full1",
                 "parms": {},
             },
             {
-                "type": "apex::rig::ikfull",
+                "type": "kinefx::twoboneik",
                 "name": "ik_full1",
                 "parms": {},
             },
             {
-                "type": "apex::rig::blendtransform",
+                "type": "kinefx::blendtransforms",
                 "name": "blend1",
                 "parms": {"blend": 0.0},
             },
@@ -192,9 +199,15 @@ APEX_RECIPES = {
             ["ik_full1", "blend1", 1],
         ],
         "key_parms": ["blend", "rootjoint", "tipjoint"],
+        "caveat": (
+            "kinefx::twoboneik / kinefx::blendtransforms are Vop nodes that "
+            "live INSIDE the APEX graph (apex.Graph.addNode) -- not "
+            "SOP-creatable; this SOP chain is catalog-verified but "
+            "behavior-UNVERIFIED"
+        ),
         "explanation": (
             "Creates both FK and IK rigs from the same skeleton, then blends "
-            "between them using apex::rig::blendtransform. A blend value of 0.0 "
+            "between them using kinefx::blendtransforms. A blend value of 0.0 "
             "uses pure FK, 1.0 uses pure IK, and values in between interpolate "
             "smoothly. This is the standard setup for character limbs in "
             "production -- animators switch between FK for arcs and follow-through, "
@@ -235,12 +248,12 @@ APEX_RECIPES = {
                 "parms": {},
             },
             {
-                "type": "rig_doctor",
+                "type": "kinefx::rigdoctor",
                 "name": "rig_doctor1",
                 "parms": {},
             },
             {
-                "type": "apex::autorig::build",
+                "type": "apex::autorigbuilder",
                 "name": "autorig1",
                 "parms": {},
             },
@@ -254,21 +267,21 @@ APEX_RECIPES = {
             "The APEX autorig analyzes a skeleton's joint hierarchy and naming "
             "conventions to automatically generate a full production rig. It "
             "creates FK/IK limbs, spine controls, head/neck, fingers, and a "
-            "root/COG control. The rig_doctor step is critical -- it validates "
+            "root/COG control. The kinefx::rigdoctor step is critical -- it validates "
             "that joint names follow the expected conventions and that the "
             "hierarchy is clean. The autorig handles symmetry automatically "
             "when left/right naming is detected."
         ),
         "workflow": [
             "Create or import a biped skeleton with standard naming",
-            "Run rig_doctor and fix any reported naming or hierarchy issues",
-            "Apply autorig::build and check the generated rig in the viewer",
+            "Run kinefx::rigdoctor and fix any reported naming or hierarchy issues",
+            "Apply apex::autorigbuilder and check the generated rig in the viewer",
             "Customize FK/IK defaults per limb if needed",
             "Add custom control shapes or constraints on top of the autorig",
         ],
         "tips": [
             "Joint naming must follow conventions: spine_01, L_shoulder, R_hip, etc.",
-            "Run rig_doctor FIRST -- autorig failures are almost always naming issues",
+            "Run kinefx::rigdoctor FIRST -- autorig failures are almost always naming issues",
             "The autorig is a starting point -- production rigs usually add custom layers on top",
             "Use the symmetry option to ensure left/right limbs match exactly",
             "For quadrupeds or non-standard skeletons, use individual FK/IK recipes instead",
@@ -286,17 +299,17 @@ APEX_RECIPES = {
         "prereqs": "Input geometry to deform. Familiarity with APEX graph concepts.",
         "nodes": [
             {
-                "type": "apex::sop::graphdefaults",
+                "type": "apex::graph",
                 "name": "graph_defaults1",
                 "parms": {},
             },
             {
-                "type": "apex_editgraph",
+                "type": "apex::configuregraph",
                 "name": "edit_graph1",
                 "parms": {},
             },
             {
-                "type": "invoke",
+                "type": "apex::invokegraph",
                 "name": "invoke1",
                 "parms": {},
             },
@@ -308,7 +321,7 @@ APEX_RECIPES = {
         "key_parms": ["graphname", "entry_point"],
         "explanation": (
             "APEX graphs are geometry -- they live in SOPs as packed data. "
-            "The graphdefaults node creates a base APEX graph with standard "
+            "The apex::graph node creates a base APEX graph with standard "
             "inputs and outputs. The edit_graph node lets you add custom "
             "operations to the graph (math, transforms, blending). The "
             "invoke node executes the APEX graph on input geometry. This "
@@ -326,7 +339,7 @@ APEX_RECIPES = {
             "APEX graphs are geometry -- you can inspect them with a geometry spreadsheet",
             "Start simple: a single transform operation before building complex logic",
             "The invoke SOP is the bridge between the APEX graph and regular SOP geometry",
-            "Use apex::sop::graphdefaults rather than building graphs from scratch",
+            "Use apex::graph rather than building graphs from scratch",
             "Custom deformers can be saved as digital assets for reuse",
         ],
     },
@@ -347,12 +360,12 @@ APEX_RECIPES = {
                 "parms": {},
             },
             {
-                "type": "apex::rig::controlshapes",
+                "type": "apex::configurecontrols",
                 "name": "control_shapes1",
                 "parms": {"shape": "circle"},
             },
             {
-                "type": "apex::rig::fkfull",
+                "type": "apex::buildfkgraph",
                 "name": "fk_full1",
                 "parms": {},
             },
@@ -362,9 +375,13 @@ APEX_RECIPES = {
             ["control_shapes1", "fk_full1", 0],
         ],
         "key_parms": ["shape", "scale", "color"],
+        "caveat": (
+            "apex::configurecontrols is catalog-verified; role-fit for shape "
+            "assignment UNVERIFIED"
+        ),
         "explanation": (
             "Control shapes are the visual handles animators interact with in "
-            "the viewport. The controlshapes node assigns shape primitives "
+            "the viewport. The configurecontrols node assigns shape primitives "
             "(circles, squares, diamonds, cubes) to joints, making them "
             "selectable and visible. Shape, scale, and color can be set per "
             "joint or globally. Place this node before the rig solver (FK/IK) "
@@ -372,7 +389,7 @@ APEX_RECIPES = {
         ),
         "workflow": [
             "Create or import your skeleton",
-            "Add controlshapes and choose a default shape (circle is standard)",
+            "Add configurecontrols and choose a default shape (circle is standard)",
             "Adjust scale so controls are visible but not occluding the character",
             "Set different colors for left (blue), right (red), and center (yellow) controls",
             "Wire into the FK or IK rig node downstream",
@@ -382,7 +399,7 @@ APEX_RECIPES = {
             "Scale controls relative to the joint they represent -- spine controls larger than fingers",
             "Circle shapes work for most joints; use squares for root/COG",
             "Control shapes do not affect the rig solve -- they are purely visual",
-            "You can add controlshapes after an existing rig to customize the look",
+            "You can add configurecontrols after an existing rig to customize the look",
         ],
     },
 
@@ -401,16 +418,14 @@ APEX_RECIPES = {
                 "name": "skeleton1",
                 "parms": {},
             },
-            {
-                "type": "apex::rig::parentconstraint",
-                "name": "parent_constraint1",
-                "parms": {},
-            },
         ],
-        "connections": [
-            ["skeleton1", "parent_constraint1", 0],
-        ],
+        "connections": [],
         "key_parms": ["driver", "driven", "maintain_offset", "weight"],
+        "caveat": (
+            "UNVERIFIED -- no standalone constraint node confirmed in the "
+            "H21.0.671 catalog; constraints live in the "
+            "apex.Constraint/ConstraintManager Python API"
+        ),
         "explanation": (
             "Constraints link one joint's transform to another. A parent "
             "constraint makes the driven joint follow the driver in both "
@@ -455,17 +470,17 @@ APEX_RECIPES = {
                 "parms": {},
             },
             {
-                "type": "apex::sop::fromkinefx",
+                "type": "apex::mapcharacter",
                 "name": "from_kinefx1",
                 "parms": {},
             },
             {
-                "type": "rig_doctor",
+                "type": "kinefx::rigdoctor",
                 "name": "rig_doctor1",
                 "parms": {},
             },
             {
-                "type": "apex::rig::fkfull",
+                "type": "apex::buildfkgraph",
                 "name": "fk_full1",
                 "parms": {},
             },
@@ -476,10 +491,14 @@ APEX_RECIPES = {
             ["rig_doctor1", "fk_full1", 0],
         ],
         "key_parms": ["conversion_mode"],
+        "caveat": (
+            "no dedicated KineFX->APEX converter exists; apex::mapcharacter "
+            "is the closest verified ingest node"
+        ),
         "explanation": (
-            "Migrates an existing KineFX rig to APEX. The fromkinefx node "
+            "Migrates an existing KineFX rig to APEX. The mapcharacter node "
             "converts KineFX skeleton data and attributes into the APEX "
-            "format. After conversion, rig_doctor validates the result and "
+            "format. After conversion, kinefx::rigdoctor validates the result and "
             "you can apply APEX rig components (FK, IK, autorig) on top. "
             "The skeleton representation (points with transform attributes) "
             "stays the same -- what changes is how the rig logic is expressed "
@@ -487,9 +506,9 @@ APEX_RECIPES = {
         ),
         "workflow": [
             "Identify the KineFX skeleton source (skeleton SOP or imported FBX)",
-            "Add the fromkinefx conversion node",
-            "Run rig_doctor to validate the converted skeleton",
-            "Replace KineFX rig pose nodes with APEX equivalents (fkfull, ikfull)",
+            "Add the mapcharacter conversion node",
+            "Run kinefx::rigdoctor to validate the converted skeleton",
+            "Replace KineFX rig pose nodes with APEX equivalents (buildfkgraph; IK is graph-internal)",
             "Replace configure_joints with APEX character definition if needed",
             "Test the new APEX rig matches the old KineFX behavior",
         ],
@@ -537,13 +556,14 @@ Common KineFX Patterns and Their APEX Equivalents
 
 1. Rig Pose (KineFX) -> FK/IK Full (APEX)
    - KineFX: rigpose SOP allows interactive posing of joints
-   - APEX: apex::rig::fkfull creates FK controls; apex::rig::ikfull creates IK
+   - APEX: apex::buildfkgraph creates FK controls; kinefx::twoboneik creates IK
    - The APEX versions generate proper rig controls with solve evaluation,
      whereas KineFX rig pose was more of a direct manipulation tool.
 
 2. Full Body IK (KineFX) -> APEX FBIK
    - KineFX: fullbodyik SOP with targets and pins
-   - APEX: apex::rig::fbik provides the same solver in graph form
+   - APEX: kinefx::fullbodyik (catalog-listed sibling; unprobed) provides the
+     same solver in graph form
    - Targets and pins are wired as graph inputs rather than SOP connections.
 
 3. Configure Joints (KineFX) -> Character Definition (APEX)
@@ -561,12 +581,13 @@ Common KineFX Patterns and Their APEX Equivalents
 
 5. Skeleton Blend (KineFX) -> Blend Transform (APEX)
    - KineFX: skeletonblend SOP mixes two skeleton poses
-   - APEX: apex::rig::blendtransform blends in graph context
+   - APEX: kinefx::blendtransforms blends in graph context
    - The blend parameter (0-1) works the same way in both systems.
 
 6. Rig Wrangle / VEX (KineFX) -> APEX Graph Nodes
    - KineFX: attribwrangle with VEX on skeleton points
-   - APEX: Custom nodes inside the APEX graph, or apex_editgraph
+   - APEX: Custom nodes inside the APEX graph, or apex::configuregraph or
+     the apex.Graph API
    - Simple VEX operations (set transform, read attribute) map to standard
      APEX graph nodes. Complex custom VEX may need a dedicated APEX subgraph.
 
@@ -588,11 +609,11 @@ Gotchas and Common Mistakes
 1. Do not try to mix KineFX rig pose and APEX rig nodes in the same chain.
    Convert fully to one system or the other.
 
-2. The apex::sop::fromkinefx node handles skeleton conversion, but it does
+2. The apex::mapcharacter node handles skeleton conversion, but it does
    NOT convert rig logic. You must rebuild FK/IK/constraints in APEX.
 
 3. Joint naming matters more in APEX. The autorig and many rig components
-   expect standard naming conventions. Run rig_doctor after conversion.
+   expect standard naming conventions. Run kinefx::rigdoctor after conversion.
 
 4. APEX graphs are geometry. If you merge or blast them incorrectly, you
    destroy the rig. Treat APEX graph prims with the same care as any other
@@ -600,7 +621,8 @@ Gotchas and Common Mistakes
 
 5. KineFX wrangles that modify point positions directly may not translate
    to APEX cleanly. APEX prefers graph-level operations over point-level
-   VEX. Consider using apex_editgraph to replicate wrangle logic.
+   VEX. Consider using apex::configuregraph or the apex.Graph API to
+   replicate wrangle logic.
 
 6. Performance: APEX rigs are generally faster than equivalent KineFX setups
    due to graph compilation and parallel evaluation. However, the initial
@@ -617,7 +639,7 @@ Migration Checklist
 [ ] Note which are skeleton sources vs. rig logic vs. deformation
 [ ] Convert skeleton source (usually keeps the same skeleton SOP)
 [ ] Replace rig logic nodes with APEX equivalents (see mapping above)
-[ ] Run rig_doctor on the converted skeleton
+[ ] Run kinefx::rigdoctor on the converted skeleton
 [ ] Verify skin weights transfer correctly (boneCapture attribute)
 [ ] Test rig controls match the old KineFX behavior
 [ ] Check animation clips still evaluate correctly
@@ -818,6 +840,12 @@ def format_apex_recipe_detail_html(name):
     lines.append(f'<b style="color: {_SIGNAL};">How It Works</b><br>')
     lines.append(f'{html.escape(recipe["explanation"])}<br><br>')
 
+    # Caveat (truth contract: catalog-verified vs behavior-unverified)
+    caveat = recipe.get("caveat", "")
+    if caveat:
+        lines.append(f'<b style="color: {_WARNING};">Caveat</b><br>')
+        lines.append(f'{html.escape(caveat)}<br><br>')
+
     # Workflow
     if recipe.get("workflow"):
         lines.append(f'<b style="color: {_SIGNAL};">Workflow</b><br>')
@@ -896,10 +924,16 @@ def build_apex_recipe_messages(name, context):
         f"Use houdini_create_node, houdini_set_parm, and houdini_connect_nodes tools. "
         f"Set the display flag on the last node.\n\n"
         f"Key parameters to set: {key_parms_str}\n\n"
-        f"Note: APEX node types may vary by Houdini version. If a node type "
-        f"is not found, check for similar types with 'apex' in the name. "
-        f"The houdini_create_node tool handles type resolution."
+        f"Note: the node types above were verified present in the live H21.0.671 "
+        f"catalog (science run 2026-06-02 -- synapse/science/apex_probes.py). "
+        f"If creation still fails, do NOT guess similar names: call the "
+        f"synapse_scout tool with the exact node-type string to check what exists "
+        f"in the runtime, and report the failure as a failure."
     )
+
+    caveat = recipe.get("caveat")
+    if caveat:
+        instruction += f"\n\nCaveat: {caveat}"
 
     return [
         {

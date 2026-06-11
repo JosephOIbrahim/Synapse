@@ -14,7 +14,7 @@ import importlib.util
 import sys
 import types
 from pathlib import Path
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, call, patch, PropertyMock
 
 import pytest
 
@@ -570,6 +570,30 @@ class TestCopsReactionDiffusion:
         assert result.success
         assert result.data["feed_rate"] == 0.04
 
+    def test_reaction_diffusion_reports_scaffolded(self, handler):
+        """Honest scaffold: placeholder kernel only, no cook -- the result
+        must say so and no created node may have been cooked."""
+        net = _make_network_node("/obj/cop2net1")
+        created = []
+
+        def _create_and_track(node_type, name=None):
+            child = _make_cop_node(f"/obj/cop2net1/{name or node_type}", node_type)
+            created.append(child)
+            return child
+
+        net.createNode = MagicMock(side_effect=_create_and_track)
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_reaction_diffusion",
+                id="test-47",
+                payload={"parent": "/obj/cop2net1"},
+            ))
+        assert result.success
+        assert result.data["scaffolded"] is True
+        assert result.data["cooked"] is False
+        for n in created:
+            n.cook.assert_not_called()
+
 
 class TestCopsPixelSort:
     def test_pixel_sort_basic(self, handler):
@@ -598,6 +622,30 @@ class TestCopsPixelSort:
             ))
         assert result.success
         assert result.data["sort_by"] == "hue"
+
+    def test_pixel_sort_reports_scaffolded(self, handler):
+        """Honest scaffold: placeholder kernel only, no cook -- the result
+        must say so and no created node may have been cooked."""
+        net = _make_network_node("/obj/cop2net1")
+        created = []
+
+        def _create_and_track(node_type, name=None):
+            child = _make_cop_node(f"/obj/cop2net1/{name or node_type}", node_type)
+            created.append(child)
+            return child
+
+        net.createNode = MagicMock(side_effect=_create_and_track)
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_pixel_sort",
+                id="test-48",
+                payload={"parent": "/obj/cop2net1"},
+            ))
+        assert result.success
+        assert result.data["scaffolded"] is True
+        assert result.data["cooked"] is False
+        for n in created:
+            n.cook.assert_not_called()
 
 
 class TestCopsStylize:
@@ -702,6 +750,28 @@ class TestCopsBakeTextures:
         assert result.success
         assert len(result.data["bake_nodes"]) == 3
 
+    def test_bake_textures_reports_scaffolded(self, handler):
+        """Honest scaffold: the result must say nothing was baked, and
+        high_res/low_res must be echoed back as unused inputs."""
+        net = _make_network_node("/obj/cop2net1")
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_bake_textures",
+                id="test-46",
+                payload={
+                    "parent": "/obj/cop2net1",
+                    "high_res": "/obj/high_geo",
+                    "low_res": "/obj/low_geo",
+                },
+            ))
+        assert result.success
+        assert result.data["scaffolded"] is True
+        assert result.data["baked"] is False
+        assert result.data["unused_inputs"] == {
+            "high_res": "/obj/high_geo",
+            "low_res": "/obj/low_geo",
+        }
+
 
 class TestCopsTemporalAnalysis:
     def test_temporal_basic(self, handler):
@@ -731,6 +801,44 @@ class TestCopsTemporalAnalysis:
                 ))
         assert result.success
         assert result.data["frame_range"] == [1, 10]
+
+    def test_temporal_analysis_restores_playhead(self, handler):
+        """The handler moves the playhead to cook each frame -- it must
+        restore the artist's original frame afterwards."""
+        node = _make_cop_node("/obj/cop2net1/file1", "file")
+        with patch.object(_handlers_hou, "node", return_value=node):
+            with patch.object(_handlers_hou, "frame", return_value=50.0, create=True):
+                with patch.object(_handlers_hou, "setFrame", create=True) as set_frame:
+                    result = handler.handle(handlers_mod.SynapseCommand(
+                        type="cops_temporal_analysis",
+                        id="test-49",
+                        payload={
+                            "node": "/obj/cop2net1/file1",
+                            "frame_range": [10, 12],
+                        },
+                    ))
+        assert result.success
+        assert set_frame.call_args_list == [
+            call(10), call(11), call(12), call(50.0),
+        ]
+
+    def test_temporal_analysis_restores_playhead_on_cook_error(self, handler):
+        """Even when every cook raises, the playhead restore still runs."""
+        node = _make_cop_node("/obj/cop2net1/file1", "file")
+        node.cook.side_effect = Exception("cook failed")
+        with patch.object(_handlers_hou, "node", return_value=node):
+            with patch.object(_handlers_hou, "frame", return_value=50.0, create=True):
+                with patch.object(_handlers_hou, "setFrame", create=True) as set_frame:
+                    result = handler.handle(handlers_mod.SynapseCommand(
+                        type="cops_temporal_analysis",
+                        id="test-50",
+                        payload={
+                            "node": "/obj/cop2net1/file1",
+                            "frame_range": [10, 12],
+                        },
+                    ))
+        assert result.success
+        assert set_frame.call_args_list[-1] == call(50.0)
 
 
 class TestCopsStampScatter:
@@ -790,6 +898,45 @@ class TestCopsBatchCook:
 
 
 # ---------------------------------------------------------------------------
+# Transactional Builder Tests
+# ---------------------------------------------------------------------------
+
+class TestCopsTransactionalBuilders:
+    def test_builder_rolls_back_on_partial_failure(self, handler):
+        """create_solver: block_begin succeeds, block_end raises -- the
+        stranded block_begin must be rolled back via performUndo (once)."""
+        net = _make_network_node("/obj/cop2net1")
+        block_begin = _make_cop_node("/obj/cop2net1/solver_begin", "block_begin")
+        net.createNode = MagicMock(side_effect=[block_begin, RuntimeError("boom")])
+        fresh_undos = MagicMock()
+        with patch.object(_handlers_hou, "node", return_value=net):
+            with patch.object(_handlers_hou, "undos", fresh_undos):
+                result = handler.handle(handlers_mod.SynapseCommand(
+                    type="cops_create_solver",
+                    id="test-51",
+                    payload={"parent": "/obj/cop2net1"},
+                ))
+        assert not result.success
+        assert fresh_undos.performUndo.call_count == 1
+
+    def test_builder_no_rollback_when_nothing_created(self, handler):
+        """create_solver: the FIRST createNode raises -- nothing was
+        created, so performUndo must NOT fire (pins the created_any guard)."""
+        net = _make_network_node("/obj/cop2net1")
+        net.createNode = MagicMock(side_effect=RuntimeError("boom"))
+        fresh_undos = MagicMock()
+        with patch.object(_handlers_hou, "node", return_value=net):
+            with patch.object(_handlers_hou, "undos", fresh_undos):
+                result = handler.handle(handlers_mod.SynapseCommand(
+                    type="cops_create_solver",
+                    id="test-52",
+                    payload={"parent": "/obj/cop2net1"},
+                ))
+        assert not result.success
+        fresh_undos.performUndo.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
 # Registration Tests
 # ---------------------------------------------------------------------------
 
@@ -830,10 +977,14 @@ class TestCopsRegistration:
         ro = handlers_mod._READ_ONLY_COMMANDS
         assert "cops_read_layer_info" in ro
         assert "cops_analyze_render" in ro
-        assert "cops_temporal_analysis" in ro
         # Mutations should NOT be in read-only
         assert "cops_create_network" not in ro
         assert "cops_create_node" not in ro
+
+    def test_temporal_analysis_is_not_read_only(self):
+        """cops_temporal_analysis moves the playhead to cook each frame --
+        it mutates session state and must NOT be classified read-only."""
+        assert "cops_temporal_analysis" not in handlers_mod._READ_ONLY_COMMANDS
 
 
 # ---------------------------------------------------------------------------

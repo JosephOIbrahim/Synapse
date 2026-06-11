@@ -205,9 +205,10 @@ class TestReplan:
         replan = planner.replan(original, seq_eval)
         assert isinstance(replan, RenderPlan)
         # Should have a render_settings step with increased samples
+        # (adjustments ride in the handler's settings sub-dict contract)
         settings_steps = [s for s in replan.steps if s.handler == "render_settings"]
         assert len(settings_steps) >= 1
-        assert settings_steps[0].params.get("pixel_samples", 0) >= 64
+        assert settings_steps[0].params.get("settings", {}).get("pixel_samples", 0) >= 64
 
     def test_replan_all_passed_returns_original(self, planner):
         """If all frames passed, replan returns the original plan."""

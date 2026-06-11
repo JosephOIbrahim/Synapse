@@ -60,25 +60,36 @@ class CopsHandlerMixin:
                     "check the path and try again"
                 )
 
-            with hou.undos.group("synapse_cops_create_network"):
-                network = parent.createNode("cop2net", name)
-                if network is None:
-                    raise RuntimeError(
-                        "Couldn't create COP2 network -- "
-                        "make sure Copernicus is available in your Houdini build"
-                    )
-                network.moveToGoodPosition()
+            created_any = False
+            try:
+                with hou.undos.group("synapse_cops_create_network"):
+                    network = parent.createNode("cop2net", name)
+                    created_any = True
+                    if network is None:
+                        raise RuntimeError(
+                            "Couldn't create COP2 network -- "
+                            "make sure Copernicus is available in your Houdini build"
+                        )
+                    network.moveToGoodPosition()
 
-                created_nodes = []
-                if initial_nodes and isinstance(initial_nodes, list):
-                    for i, node_type in enumerate(initial_nodes):
-                        child = network.createNode(str(node_type))
-                        if child is not None:
-                            child.moveToGoodPosition()
-                            created_nodes.append({
-                                "path": child.path(),
-                                "type": child.type().name(),
-                            })
+                    created_nodes = []
+                    if initial_nodes and isinstance(initial_nodes, list):
+                        for i, node_type in enumerate(initial_nodes):
+                            child = network.createNode(str(node_type))
+                            created_any = True
+                            if child is not None:
+                                child.moveToGoodPosition()
+                                created_nodes.append({
+                                    "path": child.path(),
+                                    "type": child.type().name(),
+                                })
+            except Exception:
+                if created_any:
+                    try:
+                        hou.undos.performUndo()
+                    except Exception:
+                        pass
+                raise
 
             return {
                 "network_path": network.path(),
@@ -128,21 +139,32 @@ class CopsHandlerMixin:
                     "check the path and try again"
                 )
 
-            with hou.undos.group("synapse_cops_create_copnet"):
-                network = parent.createNode("copnet", name)
-                if network is None:
-                    raise RuntimeError(
-                        "Couldn't create copnet -- "
-                        "make sure Copernicus is available in your Houdini build"
-                    )
-                network.moveToGoodPosition()
+            created_any = False
+            try:
+                with hou.undos.group("synapse_cops_create_copnet"):
+                    network = parent.createNode("copnet", name)
+                    created_any = True
+                    if network is None:
+                        raise RuntimeError(
+                            "Couldn't create copnet -- "
+                            "make sure Copernicus is available in your Houdini build"
+                        )
+                    network.moveToGoodPosition()
 
-                starter_path = None
-                if starter:
-                    child = network.createNode(str(starter))
-                    if child is not None:
-                        child.moveToGoodPosition()
-                        starter_path = child.path()
+                    starter_path = None
+                    if starter:
+                        child = network.createNode(str(starter))
+                        created_any = True
+                        if child is not None:
+                            child.moveToGoodPosition()
+                            starter_path = child.path()
+            except Exception:
+                if created_any:
+                    try:
+                        hou.undos.performUndo()
+                    except Exception:
+                        pass
+                raise
 
             return {
                 "network_path": network.path(),
@@ -466,52 +488,64 @@ class CopsHandlerMixin:
             if parent is None:
                 raise ValueError(f"Couldn't find parent node '{parent_path}'")
 
-            with hou.undos.group("synapse_cops_composite_aovs"):
-                network = parent.createNode("cop2net", name)
-                network.moveToGoodPosition()
+            created_any = False
+            try:
+                with hou.undos.group("synapse_cops_composite_aovs"):
+                    network = parent.createNode("cop2net", name)
+                    created_any = True
+                    network.moveToGoodPosition()
 
-                layer_nodes = []
-                prev_node = None
+                    layer_nodes = []
+                    prev_node = None
 
-                for aov_name in aov_list:
-                    # Create file node for each AOV
-                    file_node = network.createNode("file", f"load_{aov_name}")
-                    file_parm = file_node.parm("filename1") or file_node.parm("file")
-                    if file_parm is not None:
-                        file_parm.set(exr_path)
+                    for aov_name in aov_list:
+                        # Create file node for each AOV
+                        file_node = network.createNode("file", f"load_{aov_name}")
+                        created_any = True
+                        file_parm = file_node.parm("filename1") or file_node.parm("file")
+                        if file_parm is not None:
+                            file_parm.set(exr_path)
 
-                    # Set channel/plane selection if available
-                    plane_parm = file_node.parm("channel") or file_node.parm("plane")
-                    if plane_parm is not None:
-                        plane_parm.set(aov_name)
+                        # Set channel/plane selection if available
+                        plane_parm = file_node.parm("channel") or file_node.parm("plane")
+                        if plane_parm is not None:
+                            plane_parm.set(aov_name)
 
-                    file_node.moveToGoodPosition()
-                    layer_nodes.append({
-                        "path": file_node.path(),
-                        "aov": aov_name,
-                    })
-                    prev_node = file_node
+                        file_node.moveToGoodPosition()
+                        layer_nodes.append({
+                            "path": file_node.path(),
+                            "aov": aov_name,
+                        })
+                        prev_node = file_node
 
-                # Create composite/merge node if multiple layers
-                merge_node = None
-                if len(layer_nodes) > 1:
-                    merge_node = network.createNode("composite", "merge_aovs")
-                    if merge_node is None:
-                        merge_node = network.createNode("over", "merge_aovs")
-                    if merge_node is not None:
-                        for i, ln in enumerate(layer_nodes):
-                            src = hou.node(ln["path"])
-                            if src is not None and i < merge_node.type().maxNumInputs():
-                                merge_node.setInput(i, src)
-                        merge_node.moveToGoodPosition()
+                    # Create composite/merge node if multiple layers
+                    merge_node = None
+                    if len(layer_nodes) > 1:
+                        merge_node = network.createNode("composite", "merge_aovs")
+                        created_any = True
+                        if merge_node is None:
+                            merge_node = network.createNode("over", "merge_aovs")
+                        if merge_node is not None:
+                            for i, ln in enumerate(layer_nodes):
+                                src = hou.node(ln["path"])
+                                if src is not None and i < merge_node.type().maxNumInputs():
+                                    merge_node.setInput(i, src)
+                            merge_node.moveToGoodPosition()
 
-                # Set display flag on final node
-                final = merge_node if merge_node else prev_node
-                if final is not None:
+                    # Set display flag on final node
+                    final = merge_node if merge_node else prev_node
+                    if final is not None:
+                        try:
+                            final.setDisplayFlag(True)
+                        except Exception:
+                            pass
+            except Exception:
+                if created_any:
                     try:
-                        final.setDisplayFlag(True)
+                        hou.undos.performUndo()
                     except Exception:
                         pass
+                raise
 
             return {
                 "network_path": network.path(),
@@ -696,47 +730,58 @@ class CopsHandlerMixin:
             if parent is None:
                 raise ValueError(f"Couldn't find COP network '{parent_path}'")
 
-            with hou.undos.group("synapse_cops_create_solver"):
-                # Create Block Begin
-                block_begin = parent.createNode("block_begin", f"{name}_begin")
-                if block_begin is None:
-                    raise RuntimeError(
-                        "Couldn't create block_begin node -- "
-                        "make sure you're in a COP2 network context"
-                    )
+            created_any = False
+            try:
+                with hou.undos.group("synapse_cops_create_solver"):
+                    # Create Block Begin
+                    block_begin = parent.createNode("block_begin", f"{name}_begin")
+                    created_any = True
+                    if block_begin is None:
+                        raise RuntimeError(
+                            "Couldn't create block_begin node -- "
+                            "make sure you're in a COP2 network context"
+                        )
 
-                # Create Block End
-                block_end = parent.createNode("block_end", f"{name}_end")
-                if block_end is None:
-                    raise RuntimeError("Couldn't create block_end node")
+                    # Create Block End
+                    block_end = parent.createNode("block_end", f"{name}_end")
+                    created_any = True
+                    if block_end is None:
+                        raise RuntimeError("Couldn't create block_end node")
 
-                # Wire Block End's feedback to Block Begin
-                block_end.setInput(0, block_begin)
+                    # Wire Block End's feedback to Block Begin
+                    block_end.setInput(0, block_begin)
 
-                # Configure iterations
-                iter_parm = block_end.parm("iterations") or block_end.parm("numiterations")
-                if iter_parm is not None:
-                    iter_parm.set(iterations)
+                    # Configure iterations
+                    iter_parm = block_end.parm("iterations") or block_end.parm("numiterations")
+                    if iter_parm is not None:
+                        iter_parm.set(iterations)
 
-                # Configure method
-                method_parm = block_end.parm("method") or block_end.parm("blocktype")
-                if method_parm is not None:
-                    method_map = {"singlepass": 0, "simulate": 1}
-                    method_parm.set(method_map.get(method, 0))
+                    # Configure method
+                    method_parm = block_end.parm("method") or block_end.parm("blocktype")
+                    if method_parm is not None:
+                        method_map = {"singlepass": 0, "simulate": 1}
+                        method_parm.set(method_map.get(method, 0))
 
-                # Point block_end to block_begin
-                path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
-                if path_parm is not None:
-                    path_parm.set(block_begin.path())
+                    # Point block_end to block_begin
+                    path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
+                    if path_parm is not None:
+                        path_parm.set(block_begin.path())
 
-                block_begin.moveToGoodPosition()
-                block_end.moveToGoodPosition()
+                    block_begin.moveToGoodPosition()
+                    block_end.moveToGoodPosition()
 
-                # Set display on block_end
-                try:
-                    block_end.setDisplayFlag(True)
-                except Exception:
-                    pass
+                    # Set display on block_end
+                    try:
+                        block_end.setDisplayFlag(True)
+                    except Exception:
+                        pass
+            except Exception:
+                if created_any:
+                    try:
+                        hou.undos.performUndo()
+                    except Exception:
+                        pass
+                raise
 
             return {
                 "block_begin": block_begin.path(),
@@ -868,66 +913,80 @@ class CopsHandlerMixin:
             if parent is None:
                 raise ValueError(f"Couldn't find COP network '{parent_path}'")
 
-            with hou.undos.group("synapse_cops_growth_propagation"):
-                # Create solver block
-                block_begin = parent.createNode("block_begin", f"{name}_begin")
-                block_end = parent.createNode("block_end", f"{name}_end")
+            created_any = False
+            try:
+                with hou.undos.group("synapse_cops_growth_propagation"):
+                    # Create solver block
+                    block_begin = parent.createNode("block_begin", f"{name}_begin")
+                    created_any = True
+                    block_end = parent.createNode("block_end", f"{name}_end")
+                    created_any = True
 
-                if block_begin is None or block_end is None:
-                    raise RuntimeError("Couldn't create solver blocks")
+                    if block_begin is None or block_end is None:
+                        raise RuntimeError("Couldn't create solver blocks")
 
-                # Configure iterations
-                iter_parm = block_end.parm("iterations") or block_end.parm("numiterations")
-                if iter_parm is not None:
-                    iter_parm.set(iterations)
+                    # Configure iterations
+                    iter_parm = block_end.parm("iterations") or block_end.parm("numiterations")
+                    if iter_parm is not None:
+                        iter_parm.set(iterations)
 
-                path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
-                if path_parm is not None:
-                    path_parm.set(block_begin.path())
+                    path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
+                    if path_parm is not None:
+                        path_parm.set(block_begin.path())
 
-                # Create processing chain inside solver: dilate -> blur -> threshold
-                dilate = parent.createNode("dilate_erode", f"{name}_dilate")
-                blur = parent.createNode("blur", f"{name}_blur")
-                thresh = parent.createNode("limit", f"{name}_threshold")
+                    # Create processing chain inside solver: dilate -> blur -> threshold
+                    dilate = parent.createNode("dilate_erode", f"{name}_dilate")
+                    created_any = True
+                    blur = parent.createNode("blur", f"{name}_blur")
+                    created_any = True
+                    thresh = parent.createNode("limit", f"{name}_threshold")
+                    created_any = True
 
-                # Wire: block_begin -> dilate -> blur -> threshold -> block_end
-                if dilate is not None:
-                    dilate.setInput(0, block_begin)
-                    # Set growth rate via dilate amount
-                    dp = dilate.parm("size") or dilate.parm("radius")
-                    if dp is not None:
-                        dp.set(growth_rate)
+                    # Wire: block_begin -> dilate -> blur -> threshold -> block_end
+                    if dilate is not None:
+                        dilate.setInput(0, block_begin)
+                        # Set growth rate via dilate amount
+                        dp = dilate.parm("size") or dilate.parm("radius")
+                        if dp is not None:
+                            dp.set(growth_rate)
 
-                if blur is not None:
-                    blur.setInput(0, dilate if dilate else block_begin)
-                    bp = blur.parm("blursize") or blur.parm("size")
-                    if bp is not None:
-                        bp.set(blur_amount)
+                    if blur is not None:
+                        blur.setInput(0, dilate if dilate else block_begin)
+                        bp = blur.parm("blursize") or blur.parm("size")
+                        if bp is not None:
+                            bp.set(blur_amount)
 
-                if thresh is not None:
-                    thresh.setInput(0, blur if blur else block_begin)
-                    tp = thresh.parm("max") or thresh.parm("high")
-                    if tp is not None:
-                        tp.set(threshold_val)
+                    if thresh is not None:
+                        thresh.setInput(0, blur if blur else block_begin)
+                        tp = thresh.parm("max") or thresh.parm("high")
+                        if tp is not None:
+                            tp.set(threshold_val)
 
-                # Wire final processing to block_end
-                last_proc = thresh or blur or dilate or block_begin
-                block_end.setInput(0, last_proc)
+                    # Wire final processing to block_end
+                    last_proc = thresh or blur or dilate or block_begin
+                    block_end.setInput(0, last_proc)
 
-                # Seed mask connection
-                if seed_mask:
-                    seed_node = hou.node(seed_mask)
-                    if seed_node is not None:
-                        block_begin.setInput(0, seed_node)
+                    # Seed mask connection
+                    if seed_mask:
+                        seed_node = hou.node(seed_mask)
+                        if seed_node is not None:
+                            block_begin.setInput(0, seed_node)
 
-                for n in [block_begin, dilate, blur, thresh, block_end]:
-                    if n is not None:
-                        n.moveToGoodPosition()
+                    for n in [block_begin, dilate, blur, thresh, block_end]:
+                        if n is not None:
+                            n.moveToGoodPosition()
 
-                try:
-                    block_end.setDisplayFlag(True)
-                except Exception:
-                    pass
+                    try:
+                        block_end.setDisplayFlag(True)
+                    except Exception:
+                        pass
+            except Exception:
+                if created_any:
+                    try:
+                        hou.undos.performUndo()
+                    except Exception:
+                        pass
+                raise
 
             return {
                 "block_begin": block_begin.path(),
@@ -979,57 +1038,70 @@ class CopsHandlerMixin:
             if parent is None:
                 raise ValueError(f"Couldn't find COP network '{parent_path}'")
 
-            with hou.undos.group("synapse_cops_reaction_diffusion"):
-                # Create solver
-                block_begin = parent.createNode("block_begin", f"{name}_begin")
-                block_end = parent.createNode("block_end", f"{name}_end")
+            created_any = False
+            try:
+                with hou.undos.group("synapse_cops_reaction_diffusion"):
+                    # Create solver
+                    block_begin = parent.createNode("block_begin", f"{name}_begin")
+                    created_any = True
+                    block_end = parent.createNode("block_end", f"{name}_end")
+                    created_any = True
 
-                if block_begin is None or block_end is None:
-                    raise RuntimeError("Couldn't create solver blocks")
+                    if block_begin is None or block_end is None:
+                        raise RuntimeError("Couldn't create solver blocks")
 
-                iter_parm = block_end.parm("iterations") or block_end.parm("numiterations")
-                if iter_parm is not None:
-                    iter_parm.set(iterations)
+                    iter_parm = block_end.parm("iterations") or block_end.parm("numiterations")
+                    if iter_parm is not None:
+                        iter_parm.set(iterations)
 
-                path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
-                if path_parm is not None:
-                    path_parm.set(block_begin.path())
+                    path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
+                    if path_parm is not None:
+                        path_parm.set(block_begin.path())
 
-                # Create OpenCL node for the R-D kernel
-                opencl_node = parent.createNode("opencl", f"{name}_kernel")
-                if opencl_node is None:
-                    # Fallback: try vopcop2gen
-                    opencl_node = parent.createNode("vopcop2gen", f"{name}_kernel")
+                    # Create OpenCL node for the R-D kernel
+                    opencl_node = parent.createNode("opencl", f"{name}_kernel")
+                    created_any = True
+                    if opencl_node is None:
+                        # Fallback: try vopcop2gen
+                        opencl_node = parent.createNode("vopcop2gen", f"{name}_kernel")
 
-                if opencl_node is not None:
-                    opencl_node.setInput(0, block_begin)
+                    if opencl_node is not None:
+                        opencl_node.setInput(0, block_begin)
 
-                    # Set kernel code (Gray-Scott R-D)
-                    kernel_parm = opencl_node.parm("kernelcode") or opencl_node.parm("code")
-                    if kernel_parm is not None:
-                        kernel_code = (
-                            f"// Gray-Scott Reaction-Diffusion\n"
-                            f"// F={feed_rate}, k={kill_rate}, "
-                            f"Da={diffusion_a}, Db={diffusion_b}\n"
-                            f"#define F {feed_rate}f\n"
-                            f"#define K {kill_rate}f\n"
-                            f"#define DA {diffusion_a}f\n"
-                            f"#define DB {diffusion_b}f\n"
-                        )
-                        kernel_parm.set(kernel_code)
+                        # Set kernel code (Gray-Scott R-D)
+                        kernel_parm = opencl_node.parm("kernelcode") or opencl_node.parm("code")
+                        if kernel_parm is not None:
+                            kernel_code = (
+                                f"// Gray-Scott Reaction-Diffusion\n"
+                                f"// F={feed_rate}, k={kill_rate}, "
+                                f"Da={diffusion_a}, Db={diffusion_b}\n"
+                                f"#define F {feed_rate}f\n"
+                                f"#define K {kill_rate}f\n"
+                                f"#define DA {diffusion_a}f\n"
+                                f"#define DB {diffusion_b}f\n"
+                                f"// PLACEHOLDER — no kernel body; parameters only, node will not simulate\n"
+                            )
+                            kernel_parm.set(kernel_code)
 
-                # Wire: opencl -> block_end
-                last_node = opencl_node if opencl_node else block_begin
-                block_end.setInput(0, last_node)
+                    # Wire: opencl -> block_end
+                    last_node = opencl_node if opencl_node else block_begin
+                    block_end.setInput(0, last_node)
 
-                for n in [block_begin, opencl_node, block_end]:
-                    if n is not None:
-                        n.moveToGoodPosition()
+                    for n in [block_begin, opencl_node, block_end]:
+                        if n is not None:
+                            n.moveToGoodPosition()
 
-                try:
-                    block_end.setDisplayFlag(True)
-                except Exception:
-                    pass
+                    try:
+                        block_end.setDisplayFlag(True)
+                    except Exception:
+                        pass
+            except Exception:
+                if created_any:
+                    try:
+                        hou.undos.performUndo()
+                    except Exception:
+                        pass
+                raise
 
             return {
                 "block_begin": block_begin.path(),
@@ -1041,6 +1113,14 @@ class CopsHandlerMixin:
                 "diffusion_b": diffusion_b,
                 "iterations": iterations,
                 "resolution": resolution,
+                "scaffolded": True,
+                "cooked": False,
+                "note": (
+                    "Solver graph scaffolded with a placeholder #define-only "
+                    "kernel — no kernel body authored and the node was not "
+                    "cooked; it produces no reaction-diffusion output until "
+                    "a real kernel is written."
+                ),
             }
 
         return run_on_main(_on_main)
@@ -1105,6 +1185,7 @@ class CopsHandlerMixin:
                         f"#define DIRECTION_{direction.upper()} 1\n"
                         f"#define THRESHOLD_LOW {threshold_low}f\n"
                         f"#define THRESHOLD_HIGH {threshold_high}f\n"
+                        f"// PLACEHOLDER — no kernel body; parameters only, node will not sort\n"
                     )
                     kernel_parm.set(kernel_code)
 
@@ -1120,6 +1201,14 @@ class CopsHandlerMixin:
                 "direction": direction,
                 "threshold_low": threshold_low,
                 "threshold_high": threshold_high,
+                "scaffolded": True,
+                "cooked": False,
+                "note": (
+                    "Sort node scaffolded with a placeholder #define-only "
+                    "kernel — no kernel body authored and the node was not "
+                    "cooked; it produces no pixel-sort output until a real "
+                    "kernel is written."
+                ),
             }
 
         return run_on_main(_on_main)
@@ -1159,72 +1248,86 @@ class CopsHandlerMixin:
             if parent is None:
                 raise ValueError(f"Couldn't find COP network '{parent_path}'")
 
-            with hou.undos.group("synapse_cops_stylize"):
-                nodes_created = []
+            created_any = False
+            try:
+                with hou.undos.group("synapse_cops_stylize"):
+                    nodes_created = []
 
-                if style_type == "edge_detect":
-                    node = parent.createNode("edge", name)
-                    if node is None:
-                        node = parent.createNode("edgedetect", name)
-                    if node is not None:
-                        ep = node.parm("size") or node.parm("width")
-                        if ep is not None:
-                            ep.set(edge_width)
-                elif style_type in ("toon", "posterize"):
-                    node = parent.createNode("quantize", name)
-                    if node is None:
-                        node = parent.createNode("limit", name)
-                    if node is not None:
-                        lp = node.parm("levels") or node.parm("steps")
-                        if lp is not None:
-                            lp.set(levels)
-                elif style_type == "risograph":
-                    # Risograph: quantize + halftone chain
-                    quant = parent.createNode("quantize", f"{name}_quant")
-                    halftone = parent.createNode("halftone", f"{name}_halftone")
-                    if halftone is None:
-                        halftone = parent.createNode("vopcop2gen", f"{name}_halftone")
+                    if style_type == "edge_detect":
+                        node = parent.createNode("edge", name)
+                        created_any = True
+                        if node is None:
+                            node = parent.createNode("edgedetect", name)
+                        if node is not None:
+                            ep = node.parm("size") or node.parm("width")
+                            if ep is not None:
+                                ep.set(edge_width)
+                    elif style_type in ("toon", "posterize"):
+                        node = parent.createNode("quantize", name)
+                        created_any = True
+                        if node is None:
+                            node = parent.createNode("limit", name)
+                        if node is not None:
+                            lp = node.parm("levels") or node.parm("steps")
+                            if lp is not None:
+                                lp.set(levels)
+                    elif style_type == "risograph":
+                        # Risograph: quantize + halftone chain
+                        quant = parent.createNode("quantize", f"{name}_quant")
+                        created_any = True
+                        halftone = parent.createNode("halftone", f"{name}_halftone")
+                        created_any = True
+                        if halftone is None:
+                            halftone = parent.createNode("vopcop2gen", f"{name}_halftone")
 
-                    if quant is not None:
-                        lp = quant.parm("levels") or quant.parm("steps")
-                        if lp is not None:
-                            lp.set(levels)
-                        nodes_created.append(quant)
-
-                    if halftone is not None:
                         if quant is not None:
-                            halftone.setInput(0, quant)
-                        nodes_created.append(halftone)
+                            lp = quant.parm("levels") or quant.parm("steps")
+                            if lp is not None:
+                                lp.set(levels)
+                            nodes_created.append(quant)
 
-                    node = halftone or quant
-                else:
-                    node = parent.createNode("vopcop2gen", name)
+                        if halftone is not None:
+                            if quant is not None:
+                                halftone.setInput(0, quant)
+                            nodes_created.append(halftone)
 
-                if node is None and not nodes_created:
-                    raise RuntimeError(
-                        f"Couldn't create stylize node for '{style_type}' -- "
-                        "check that the effect type is supported"
-                    )
+                        node = halftone or quant
+                    else:
+                        node = parent.createNode("vopcop2gen", name)
+                        created_any = True
 
-                # Wire input
-                first_node = nodes_created[0] if nodes_created else node
-                if input_node_path and first_node is not None:
-                    input_n = hou.node(input_node_path)
-                    if input_n is not None:
-                        first_node.setInput(0, input_n)
+                    if node is None and not nodes_created:
+                        raise RuntimeError(
+                            f"Couldn't create stylize node for '{style_type}' -- "
+                            "check that the effect type is supported"
+                        )
 
-                # Position and display
-                all_nodes = nodes_created if nodes_created else [node]
-                for n in all_nodes:
-                    if n is not None:
-                        n.moveToGoodPosition()
+                    # Wire input
+                    first_node = nodes_created[0] if nodes_created else node
+                    if input_node_path and first_node is not None:
+                        input_n = hou.node(input_node_path)
+                        if input_n is not None:
+                            first_node.setInput(0, input_n)
 
-                last = all_nodes[-1] if all_nodes else node
-                if last is not None:
+                    # Position and display
+                    all_nodes = nodes_created if nodes_created else [node]
+                    for n in all_nodes:
+                        if n is not None:
+                            n.moveToGoodPosition()
+
+                    last = all_nodes[-1] if all_nodes else node
+                    if last is not None:
+                        try:
+                            last.setDisplayFlag(True)
+                        except Exception:
+                            pass
+            except Exception:
+                if created_any:
                     try:
-                        last.setDisplayFlag(True)
+                        hou.undos.performUndo()
                     except Exception:
                         pass
+                raise
 
             return {
                 "path": last.path() if last else None,
@@ -1274,53 +1377,66 @@ class CopsHandlerMixin:
             if parent is None:
                 raise ValueError(f"Couldn't find COP network '{parent_path}'")
 
-            with hou.undos.group("synapse_cops_wetmap"):
-                # Create solver for temporal decay
-                block_begin = parent.createNode("block_begin", f"{name}_begin")
-                block_end = parent.createNode("block_end", f"{name}_end")
+            created_any = False
+            try:
+                with hou.undos.group("synapse_cops_wetmap"):
+                    # Create solver for temporal decay
+                    block_begin = parent.createNode("block_begin", f"{name}_begin")
+                    created_any = True
+                    block_end = parent.createNode("block_end", f"{name}_end")
+                    created_any = True
 
-                if block_begin is None or block_end is None:
-                    raise RuntimeError("Couldn't create solver blocks for wetmap")
+                    if block_begin is None or block_end is None:
+                        raise RuntimeError("Couldn't create solver blocks for wetmap")
 
-                # Set to simulate mode for frame-by-frame processing
-                method_parm = block_end.parm("method") or block_end.parm("blocktype")
-                if method_parm is not None:
-                    method_parm.set(1)  # simulate
+                    # Set to simulate mode for frame-by-frame processing
+                    method_parm = block_end.parm("method") or block_end.parm("blocktype")
+                    if method_parm is not None:
+                        method_parm.set(1)  # simulate
 
-                path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
-                if path_parm is not None:
-                    path_parm.set(block_begin.path())
+                    path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
+                    if path_parm is not None:
+                        path_parm.set(block_begin.path())
 
-                # Create blur for spreading
-                blur_node = parent.createNode("blur", f"{name}_spread")
-                if blur_node is not None:
-                    blur_node.setInput(0, block_begin)
-                    bp = blur_node.parm("blursize") or blur_node.parm("size")
-                    if bp is not None:
-                        bp.set(blur_amount)
+                    # Create blur for spreading
+                    blur_node = parent.createNode("blur", f"{name}_spread")
+                    created_any = True
+                    if blur_node is not None:
+                        blur_node.setInput(0, block_begin)
+                        bp = blur_node.parm("blursize") or blur_node.parm("size")
+                        if bp is not None:
+                            bp.set(blur_amount)
 
-                # Create multiply for decay
-                decay_node = parent.createNode("bright", f"{name}_decay")
-                if decay_node is None:
-                    decay_node = parent.createNode("colorcorrect", f"{name}_decay")
-                if decay_node is not None:
-                    dp = decay_node.parm("bright") or decay_node.parm("gain")
-                    if dp is not None:
-                        dp.set(decay)
-                    prev = blur_node if blur_node else block_begin
-                    decay_node.setInput(0, prev)
+                    # Create multiply for decay
+                    decay_node = parent.createNode("bright", f"{name}_decay")
+                    created_any = True
+                    if decay_node is None:
+                        decay_node = parent.createNode("colorcorrect", f"{name}_decay")
+                    if decay_node is not None:
+                        dp = decay_node.parm("bright") or decay_node.parm("gain")
+                        if dp is not None:
+                            dp.set(decay)
+                        prev = blur_node if blur_node else block_begin
+                        decay_node.setInput(0, prev)
 
-                last = decay_node or blur_node or block_begin
-                block_end.setInput(0, last)
+                    last = decay_node or blur_node or block_begin
+                    block_end.setInput(0, last)
 
-                for n in [block_begin, blur_node, decay_node, block_end]:
-                    if n is not None:
-                        n.moveToGoodPosition()
+                    for n in [block_begin, blur_node, decay_node, block_end]:
+                        if n is not None:
+                            n.moveToGoodPosition()
 
-                try:
-                    block_end.setDisplayFlag(True)
-                except Exception:
-                    pass
+                    try:
+                        block_end.setDisplayFlag(True)
+                    except Exception:
+                        pass
+            except Exception:
+                if created_any:
+                    try:
+                        hou.undos.performUndo()
+                    except Exception:
+                        pass
+                raise
 
             return {
                 "block_begin": block_begin.path(),
@@ -1335,7 +1451,8 @@ class CopsHandlerMixin:
         return run_on_main(_on_main)
 
     def _handle_cops_bake_textures(self, payload: Dict) -> Dict:
-        """Set up UV-space texture baking from high to low poly mesh.
+        """Scaffold a UV-space texture-baking node setup (placeholder nodes
+        only — performs no bake, writes no files).
 
         Configures a COP network for baking normal maps, AO, curvature,
         and other maps from a high-res mesh to a low-res UV layout.
@@ -1359,6 +1476,8 @@ class CopsHandlerMixin:
         map_types = resolve_param_with_default(payload, "map_types", ["normal"])
         resolution = resolve_param_with_default(payload, "resolution", [2048, 2048])
         name = resolve_param_with_default(payload, "name", "bake")
+        high_res = resolve_param_with_default(payload, "high_res", None)
+        low_res = resolve_param_with_default(payload, "low_res", None)
 
         from .main_thread import run_on_main
 
@@ -1367,46 +1486,64 @@ class CopsHandlerMixin:
             if parent is None:
                 raise ValueError(f"Couldn't find COP network '{parent_path}'")
 
-            with hou.undos.group("synapse_cops_bake_textures"):
-                bake_nodes = []
+            created_any = False
+            try:
+                with hou.undos.group("synapse_cops_bake_textures"):
+                    bake_nodes = []
 
-                for map_type in map_types:
-                    node = parent.createNode("vopcop2gen", f"{name}_{map_type}")
-                    if node is None:
-                        continue
+                    for map_type in map_types:
+                        node = parent.createNode("vopcop2gen", f"{name}_{map_type}")
+                        created_any = True
+                        if node is None:
+                            continue
 
-                    # Set resolution
-                    if isinstance(resolution, (list, tuple)) and len(resolution) >= 2:
-                        for pname, val in [("resx", resolution[0]), ("resy", resolution[1])]:
-                            p = node.parm(pname)
-                            if p is not None:
-                                p.set(int(val))
+                        # Set resolution
+                        if isinstance(resolution, (list, tuple)) and len(resolution) >= 2:
+                            for pname, val in [("resx", resolution[0]), ("resy", resolution[1])]:
+                                p = node.parm(pname)
+                                if p is not None:
+                                    p.set(int(val))
 
-                    node.moveToGoodPosition()
-                    bake_nodes.append({
-                        "path": node.path(),
-                        "map_type": map_type,
-                    })
+                        node.moveToGoodPosition()
+                        bake_nodes.append({
+                            "path": node.path(),
+                            "map_type": map_type,
+                        })
 
-                # Set display on last node
-                if bake_nodes:
-                    last = hou.node(bake_nodes[-1]["path"])
-                    if last is not None:
-                        try:
-                            last.setDisplayFlag(True)
-                        except Exception:
-                            pass
+                    # Set display on last node
+                    if bake_nodes:
+                        last = hou.node(bake_nodes[-1]["path"])
+                        if last is not None:
+                            try:
+                                last.setDisplayFlag(True)
+                            except Exception:
+                                pass
+            except Exception:
+                if created_any:
+                    try:
+                        hou.undos.performUndo()
+                    except Exception:
+                        pass
+                raise
 
             return {
                 "bake_nodes": bake_nodes,
                 "map_types": map_types,
                 "resolution": resolution,
+                "scaffolded": True,
+                "baked": False,
+                "unused_inputs": {"high_res": high_res, "low_res": low_res},
+                "note": (
+                    "Scaffold only: placeholder COP nodes created — nothing "
+                    "was baked, no files written; high_res/low_res are not "
+                    "wired into the scaffold yet."
+                ),
             }
 
         return run_on_main(_on_main)
 
     def _handle_cops_temporal_analysis(self, payload: Dict) -> Dict:
-        """Analyze temporal coherence across frames (read-only).
+        """Analyze temporal coherence across frames.
 
         Checks for flicker, temporal noise, and frame-to-frame consistency
         by comparing pixel data across a frame range.
@@ -1451,16 +1588,21 @@ class CopsHandlerMixin:
                 "analysis": {},
             }
 
-            # Check cook status at each frame
+            # Check cook status at each frame -- save the playhead first
+            # and restore it afterwards (this handler moves the frame).
             frame_errors = 0
-            for f in range(start, end + 1):
-                try:
-                    hou.setFrame(f)
-                    node.cook(force=True)
-                    if node.errors():
+            restore_frame = hou.frame()
+            try:
+                for f in range(start, end + 1):
+                    try:
+                        hou.setFrame(f)
+                        node.cook(force=True)
+                        if node.errors():
+                            frame_errors += 1
+                    except Exception:
                         frame_errors += 1
-                except Exception:
-                    frame_errors += 1
+            finally:
+                hou.setFrame(restore_frame)
 
             result["analysis"]["frame_errors"] = frame_errors
             result["analysis"]["error_rate"] = (

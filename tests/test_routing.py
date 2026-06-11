@@ -1215,6 +1215,58 @@ class TestTieredRouter:
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
+class TestRecipeExecutionHonesty:
+    """M1 truth contract: a recipe result may not claim 'Executed' unless
+    the steps actually ran AND succeeded. No command_fn → proposal only."""
+
+    def setup_method(self):
+        self.config = RoutingConfig(
+            enable_tier2=False,
+            enable_tier3=False,
+        )
+
+    def test_recipe_without_command_fn_is_proposed(self):
+        router = TieredRouter(config=self.config)
+        result = router.route("set up three-point lighting at /obj")
+        assert result.tier == RoutingTier.RECIPE
+        assert "Executed" not in result.answer
+        assert "proposed" in result.answer.lower()
+        assert result.metadata["executed"] is False
+        assert result.responses == []
+        assert len(result.commands) == 6
+        assert result.success is True  # Proposal itself succeeded
+
+    def test_recipe_step_failure_fails_result(self):
+        ok = SynapseResponse(id="test", success=True, data={})
+        bad = SynapseResponse(id="test", success=False, error="boom")
+        mock_fn = Mock(side_effect=[ok, ok, bad, ok, ok, ok])
+        router = TieredRouter(command_fn=mock_fn, config=self.config)
+        result = router.route("set up three-point lighting at /obj")
+        assert result.success is False
+        assert "failed at step 3/6" in result.answer
+        assert "boom" in result.answer
+        assert result.metadata["executed"] is True
+        # WP1 deliberately does NOT stop early — that's M2 item 7
+        assert len(result.responses) == 6
+
+    def test_recipe_step_exception_fails_result(self):
+        mock_fn = Mock(side_effect=RuntimeError("Houdini not connected"))
+        router = TieredRouter(command_fn=mock_fn, config=self.config)
+        result = router.route("set up three-point lighting at /obj")
+        assert result.success is False
+        assert "failed at step 1/6" in result.answer
+
+    def test_recipe_all_success_still_says_executed(self):
+        mock_fn = Mock(return_value=SynapseResponse(
+            id="test", success=True, data={}
+        ))
+        router = TieredRouter(command_fn=mock_fn, config=self.config)
+        result = router.route("set up three-point lighting at /obj")
+        assert result.success
+        assert "Executed recipe" in result.answer
+        assert result.metadata["executed"] is True
+
+
 # =============================================================================
 # ROUTING ACCURACY BENCHMARK
 # =============================================================================

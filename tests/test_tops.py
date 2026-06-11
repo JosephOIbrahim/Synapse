@@ -651,6 +651,45 @@ class TestConfigureScheduler:
             with pytest.raises(ValueError, match="not a TOP network"):
                 handler._handle_tops_configure_scheduler({"topnet_path": "/obj/geo1"})
 
+    @pytest.mark.parametrize("sched_type", ["deadline", "hqueue", "tractor", "Deadline"])
+    def test_non_local_scheduler_type_rejected(self, handler, sched_type):
+        scheduler = MagicMock()
+        scheduler.path.return_value = "/obj/topnet1/localscheduler"
+        scheduler.type.return_value = _MockNodeType("localscheduler", "Top")
+
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet",
+                                children=[scheduler])
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            with pytest.raises(ValueError, match="localscheduler-only"):
+                handler._handle_tops_configure_scheduler({
+                    "topnet_path": "/obj/topnet1",
+                    "scheduler_type": sched_type,
+                    "max_concurrent": 8,
+                })
+
+        # Guard fires before the main-thread closure runs -- no parm touched
+        scheduler.parm.assert_not_called()
+
+    @pytest.mark.parametrize("sched_type", ["local", "localscheduler"])
+    def test_local_scheduler_type_accepted(self, handler, sched_type):
+        scheduler = MagicMock()
+        scheduler.path.return_value = "/obj/topnet1/localscheduler"
+        scheduler.type.return_value = _MockNodeType("localscheduler", "Top")
+        scheduler.parm.return_value = MagicMock()
+
+        topnet = _make_top_node("/obj/topnet1", None, "TopNet", "topnet",
+                                children=[scheduler])
+
+        with patch.object(_handlers_hou, "node", return_value=topnet):
+            result = handler._handle_tops_configure_scheduler({
+                "topnet_path": "/obj/topnet1",
+                "scheduler_type": sched_type,
+            })
+
+        assert result["status"] == "configured"
+        assert result["scheduler_type"] == sched_type
+
 
 # ===========================================================================
 # TestCancelCook (Phase 2)
