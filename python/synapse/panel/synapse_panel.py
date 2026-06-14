@@ -191,6 +191,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._wire_gate()
         self._palette_shortcut = QShortcut(QKeySequence("Ctrl+K"), self)
         self._palette_shortcut.activated.connect(self._open_palette)
+        # platform-correct ⌘K / Ctrl+K rail hint, derived from the ACTUAL bound
+        # key sequence so it can never lie about the binding.
+        try:
+            self._palette_hint.setText(
+                self._palette_shortcut.key().toString(QKeySequence.NativeText) or "Ctrl+K")
+        except Exception:
+            pass
         # Live context ribbon + connection (main-thread hou reads on a timer).
         self._ctx_timer = QTimer(self)
         self._ctx_timer.setInterval(2000)
@@ -278,6 +285,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._wordmark = word
         self._header_status = c.label("Standing by", role="caption")
         self._header_status.setStyleSheet("color:%s;" % t.TEXT_SECONDARY)
+        # quiet ⌘K affordance — the palette is already bound (QShortcut); this
+        # only makes it discoverable. Its text is set from the ACTUAL bound
+        # QKeySequence after the shortcut is created (platform-correct, never
+        # lies about the key). It rides line 1, never the meter row.
+        self._palette_hint = c.label("", role="caption")
+        self._palette_hint.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_MICRO))
+        self._palette_hint.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
         overflow = c.Button("⋯", variant="ghost")
         overflow.setFixedWidth(32)
         overflow.clicked.connect(self._show_overflow)
@@ -285,6 +299,7 @@ class SynapsePanel(QtWidgets.QWidget):
         top.addWidget(word)
         top.addStretch(1)
         top.addWidget(self._header_status)
+        top.addWidget(self._palette_hint)
         top.addWidget(overflow)
         col.addLayout(top)
 
