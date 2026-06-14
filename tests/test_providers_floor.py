@@ -100,3 +100,24 @@ def test_worker_default_provider_is_claude_floor():
     prov = build_provider()
     assert prov.id == "claude"
     assert prov.model_identity == ANTHROPIC_MODEL
+
+
+def test_anthropic_strips_gemini_internal_keys():
+    """A Gemini-sourced tool_use block carries _gemini_thought_signature; the
+    Claude body must never see it (Anthropic 400s on unknown fields). The strip
+    is non-mutating — the worker reuses the history for the next Gemini turn."""
+    from synapse.panel.providers.anthropic_provider import _strip_internal_keys
+    messages = [
+        {"role": "assistant", "content": [
+            {"type": "tool_use", "id": "x", "name": "t", "input": {},
+             "_gemini_thought_signature": "SIG"},
+        ]},
+        {"role": "user", "content": "hi"},
+    ]
+    out = _strip_internal_keys(messages)
+    block = out[0]["content"][0]
+    assert "_gemini_thought_signature" not in block
+    assert block["type"] == "tool_use" and block["name"] == "t"
+    assert out[1]["content"] == "hi"                       # str content untouched
+    # non-mutating: the caller's history still carries the signature
+    assert "_gemini_thought_signature" in messages[0]["content"][0]

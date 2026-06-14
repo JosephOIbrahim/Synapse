@@ -121,6 +121,7 @@ class GeminiProvider(StreamProvider):
     def _parse_sse_stream(self, response, emit_token, should_abort, schema_by_name):
         text_acc = []
         tool_blocks = []
+        text_sig = None
         call_idx = 0
 
         for raw_line in self._iter_lines(response, should_abort):
@@ -141,28 +142,41 @@ class GeminiProvider(StreamProvider):
             for cand in data.get("candidates", []) or []:
                 content = cand.get("content", {}) or {}
                 for part in content.get("parts", []) or []:
+                    # thoughtSignature is a SIBLING of functionCall/text on the
+                    # part. Gemini-3 thinking models REQUIRE it echoed back when
+                    # the model's prior turn is replayed in history (the turn-2+
+                    # 400). Capture it verbatim — it is an opaque handle.
+                    sig = part.get("thoughtSignature")
                     text = part.get("text")
                     if text:
                         emit_token(text)
                         text_acc.append(text)
+                        if sig:
+                            text_sig = sig
                     fc = part.get("functionCall")
                     if fc:
                         name = fc.get("name", "")
                         args = fc.get("args", {}) or {}
                         fixed = gt.reconstruct_args(args, schema_by_name.get(name, {}))
-                        tool_blocks.append({
+                        block = {
                             "type": "tool_use",
-                            # Gemini emits no call id — synthesize a stable one so
-                            # the tool_result round-trips on the next turn.
+                            # Gemini emits no stable call id we rely on — synthesize
+                            # one so the tool_result round-trips on the next turn.
                             "id": "gemini-%s-%d" % (name, call_idx),
                             "name": name,
                             "input": fixed if isinstance(fixed, dict) else {},
-                        })
+                        }
+                        if sig:
+                            block["_gemini_thought_signature"] = sig
+                        tool_blocks.append(block)
                         call_idx += 1
 
         blocks = []
         if text_acc:
-            blocks.append({"type": "text", "text": "".join(text_acc)})
+            tblock = {"type": "text", "text": "".join(text_acc)}
+            if text_sig:
+                tblock["_gemini_thought_signature"] = text_sig
+            blocks.append(tblock)
         blocks.extend(tool_blocks)
         # Gemini sets finishReason STOP even when returning calls; the presence of
         # tool calls is the signal the worker's loop needs.

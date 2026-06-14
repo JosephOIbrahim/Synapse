@@ -122,3 +122,25 @@ def test_translate_messages_tool_use_and_result():
     fr = contents[2]["parts"][0]["functionResponse"]
     assert fr["name"] == "houdini_create_node"        # name recovered from id map
     assert fr["response"] == {"path": "/obj/geo1"}     # JSON content parsed to struct
+
+
+def test_translate_messages_echoes_thought_signature():
+    # Gemini-3 thinking models 400 on turn 2+ unless the model's prior functionCall
+    # is echoed WITH its thoughtSignature (sibling of functionCall on the part).
+    messages = [
+        {"role": "assistant", "content": [
+            {"type": "tool_use", "id": "gemini-x-0", "name": "synapse_project_setup",
+             "input": {"name": "aurora"}, "_gemini_thought_signature": "SIGabc=="},
+        ]},
+    ]
+    part = gt.translate_messages(messages)[0]["parts"][0]
+    assert part["functionCall"]["name"] == "synapse_project_setup"
+    assert part["thoughtSignature"] == "SIGabc=="          # echoed as a sibling
+    assert "thoughtSignature" not in part["functionCall"]   # NOT nested inside
+
+
+def test_translate_messages_no_signature_when_absent():
+    messages = [{"role": "assistant", "content": [
+        {"type": "tool_use", "id": "toolu_1", "name": "t", "input": {}}]}]
+    part = gt.translate_messages(messages)[0]["parts"][0]
+    assert "thoughtSignature" not in part                   # Claude turns stay clean

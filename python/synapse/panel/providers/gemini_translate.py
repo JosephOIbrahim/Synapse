@@ -139,16 +139,25 @@ def translate_messages(messages: List[dict]) -> List[dict]:
         else:
             for block in content or []:
                 bt = block.get("type")
+                sig = block.get("_gemini_thought_signature")
                 if bt == "text":
                     if block.get("text"):
-                        parts.append({"text": block["text"]})
+                        t_part = {"text": block["text"]}
+                        if sig:                       # echo the model's thought sig
+                            t_part["thoughtSignature"] = sig
+                        parts.append(t_part)
                 elif bt == "tool_use":
                     name = block.get("name", "")
                     bid = block.get("id", "")
                     if bid:
                         id_to_name[bid] = name
-                    parts.append({"functionCall": {
-                        "name": name, "args": block.get("input", {}) or {}}})
+                    fc_part = {"functionCall": {
+                        "name": name, "args": block.get("input", {}) or {}}}
+                    if sig:
+                        # Gemini-3 REQUIRES the thoughtSignature echoed back as a
+                        # sibling of functionCall, or turn 2+ 400s.
+                        fc_part["thoughtSignature"] = sig
+                    parts.append(fc_part)
                 elif bt == "tool_result":
                     tuid = block.get("tool_use_id", "")
                     name = id_to_name.get(tuid, tuid)

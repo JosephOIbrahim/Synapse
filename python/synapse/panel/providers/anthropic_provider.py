@@ -28,6 +28,27 @@ _API_VERSION = "2023-06-01"
 _HTTP_TIMEOUT = 60
 
 
+def _strip_internal_keys(messages):
+    """Return a copy of the history with provider-internal keys (e.g. a Gemini
+    ``_gemini_thought_signature`` stashed on a tool_use block) removed from
+    content blocks, so the Anthropic API never sees an unrecognized field.
+    Non-mutating: the worker reuses the same history for the next (possibly
+    Gemini) turn, which still needs the signature. A no-op data copy when no such
+    keys exist — preserving the Claude path's zero-behaviour-change guarantee."""
+    out = []
+    for msg in messages:
+        content = msg.get("content")
+        if isinstance(content, list):
+            new_content = []
+            for block in content:
+                if isinstance(block, dict) and any(str(k).startswith("_gemini") for k in block):
+                    block = {k: v for k, v in block.items() if not str(k).startswith("_gemini")}
+                new_content.append(block)
+            msg = {**msg, "content": new_content}
+        out.append(msg)
+    return out
+
+
 class AnthropicProvider(StreamProvider):
     """Streams Anthropic Messages API responses (native ``input_schema`` tools)."""
 
@@ -67,7 +88,7 @@ class AnthropicProvider(StreamProvider):
             "model": self._model,
             "max_tokens": self._max_tokens,
             "stream": True,
-            "messages": messages,
+            "messages": _strip_internal_keys(messages),
             "tools": tools,
         }
         if system:
