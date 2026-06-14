@@ -5,23 +5,26 @@ Runs on a background QThread. Streams text tokens to the panel via signals.
 When Claude requests tool calls, emits ToolRequest objects for main-thread
 execution via ToolExecutor, then feeds results back into the conversation.
 
-No hou.* imports. No Houdini dependency. Uses only stdlib for HTTP.
+No hou.* imports. No Houdini dependency. Per-engine transport is delegated
+to a StreamProvider (providers/) — the conversation loop is engine-neutral.
 """
 
 from __future__ import annotations
 
 import copy
-import http.client
 import json
 import logging
-import ssl
-from typing import Optional
 
 try:
     from PySide6.QtCore import QThread, Signal
 except ImportError:
     from PySide2.QtCore import QThread, Signal
 
+from .providers.registry import (
+    ANTHROPIC_MODEL as _MODEL,
+    ANTHROPIC_MAX_TOKENS as _MAX_TOKENS,
+    build_provider as _build_provider,
+)
 from .tool_bridge import get_anthropic_tools_for_worker
 from .tool_executor import ToolRequest, try_mcp_tool_call
 from .worker_policy import denial_tool_result, is_tool_allowed_for_worker
@@ -41,12 +44,6 @@ def _wait_budget(tool_name):
         return max(_TOOL_WAIT_TIMEOUT, timeout_for(tool_name) + 5.0)
     except Exception:
         return _TOOL_WAIT_TIMEOUT
-_HTTP_TIMEOUT = 60
-_API_HOST = "api.anthropic.com"
-_API_PATH = "/v1/messages"
-_API_VERSION = "2023-06-01"
-_MODEL = "claude-sonnet-4-6"
-_MAX_TOKENS = 4096
 
 
 class ClaudeWorker(QThread):
@@ -73,6 +70,7 @@ class ClaudeWorker(QThread):
         parent=None,
         tools: list[dict] | None = None,
         enforce_worker_policy: bool = True,
+        provider=None,
     ) -> None:
         super().__init__(parent)
         self._messages: list[dict] = copy.deepcopy(messages)
@@ -85,6 +83,11 @@ class ClaudeWorker(QThread):
             tools if tools is not None else get_anthropic_tools_for_worker()
         )
         self._abort: bool = False
+        # The engine for this turn. Defaults to the Claude floor; the panel
+        # passes a selected provider for the multi-provider switch. Transport +
+        # request/response translation live in the provider — the loop below is
+        # engine-neutral (it consumes normalized Anthropic-shaped blocks).
+        self._provider = provider if provider is not None else _build_provider()
 
     # ------------------------------------------------------------------
     # Public API
@@ -109,21 +112,12 @@ class ClaudeWorker(QThread):
     def run(self) -> None:
         """Entry point executed on the background thread."""
         try:
-            # Resolve via the canonical auth layer: hou.secure (where available)
-            # then the ANTHROPIC_API_KEY env var, whitespace-stripped, never
-            # raising. Avoids the old raw os.environ read that missed keys stored
-            # in hou.secure and surfaced a cryptic message.
-            from ..host.auth import get_anthropic_api_key
-            api_key = get_anthropic_api_key()
+            # Key resolution is the provider's concern (Anthropic → hou.secure /
+            # ANTHROPIC_API_KEY; Gemini → GEMINI_API_KEY). On a missing key the
+            # provider supplies the human-facing message — surfaced, never silent.
+            api_key = self._provider.resolve_key()
             if not api_key:
-                self.stream_error.emit(
-                    "No Anthropic API key found. Set it at the SYSTEM level so "
-                    "Houdini inherits it, then relaunch Houdini:  "
-                    'setx ANTHROPIC_API_KEY "sk-ant-..."  '
-                    "(a terminal-scoped `set` won't carry into Houdini on Windows). "
-                    "On builds exposing hou.secure you can instead run, in Houdini's "
-                    "Python shell: hou.secure.setPassword('synapse_anthropic', 'sk-ant-...')."
-                )
+                self.stream_error.emit(self._provider.key_error_message())
                 return
 
             self._conversation_loop(api_key)
@@ -151,7 +145,14 @@ class ClaudeWorker(QThread):
             if self._abort:
                 return
 
-            stop_reason, content_blocks = self._stream_request(api_key)
+            stop_reason, content_blocks = self._provider.stream(
+                messages=self._messages,
+                tools=self._tools,
+                system=self._system,
+                api_key=api_key,
+                emit_token=self.token_received.emit,
+                should_abort=lambda: self._abort,
+            )
 
             if self._abort:
                 return
@@ -333,189 +334,3 @@ class ClaudeWorker(QThread):
                     )
         except Exception:
             pass  # Never break tool dispatch for integrity tracking
-
-    # ------------------------------------------------------------------
-    # Streaming API request
-    # ------------------------------------------------------------------
-
-    def _stream_request(self, api_key: str) -> tuple[Optional[str], list[dict]]:
-        """Make one streaming API call, return (stop_reason, content_blocks).
-
-        Parses the SSE stream, emitting token_received for each text delta.
-        Accumulates tool_use input JSON across multiple delta events.
-        """
-        # Build request body
-        body: dict = {
-            "model": _MODEL,
-            "max_tokens": _MAX_TOKENS,
-            "stream": True,
-            "messages": self._messages,
-            "tools": self._tools,
-        }
-        if self._system:
-            body["system"] = self._system
-
-        payload = json.dumps(body).encode("utf-8")
-
-        # HTTPS connection
-        ctx = ssl.create_default_context()
-        conn = http.client.HTTPSConnection(
-            _API_HOST, timeout=_HTTP_TIMEOUT, context=ctx
-        )
-
-        try:
-            conn.request(
-                "POST",
-                _API_PATH,
-                body=payload,
-                headers={
-                    "Content-Type": "application/json",
-                    "x-api-key": api_key,
-                    "anthropic-version": _API_VERSION,
-                },
-            )
-
-            response = conn.getresponse()
-            if response.status != 200:
-                error_body = response.read().decode("utf-8", errors="replace")
-                raise RuntimeError(
-                    f"Anthropic API error {response.status}: {error_body}"
-                )
-
-            return self._parse_sse_stream(response)
-
-        finally:
-            conn.close()
-
-    # ------------------------------------------------------------------
-    # SSE parser
-    # ------------------------------------------------------------------
-
-    def _iter_lines(self, response: http.client.HTTPResponse):
-        """Yield lines from the HTTP response, handling chunked encoding."""
-        buf = ""
-        while True:
-            if self._abort:
-                return
-            chunk = response.read(4096)
-            if not chunk:
-                if buf:
-                    yield buf
-                return
-            buf += chunk.decode("utf-8", errors="replace")
-            while "\n" in buf:
-                line, buf = buf.split("\n", 1)
-                yield line
-
-    def _parse_sse_stream(
-        self, response: http.client.HTTPResponse
-    ) -> tuple[Optional[str], list[dict]]:
-        """Parse SSE events from the HTTP response.
-
-        Returns (stop_reason, content_blocks).
-
-        State is tracked via a mutable dict so the event handler can
-        update current_block and text accumulator in place.
-        """
-        state = {
-            "content_blocks": [],
-            "current_block": None,
-            "current_text": "",
-            "stop_reason": None,
-        }
-
-        event_type: Optional[str] = None
-
-        for raw_line in self._iter_lines(response):
-            if self._abort:
-                break
-
-            line = raw_line.strip()
-
-            if line.startswith("event:"):
-                event_type = line[6:].strip()
-                continue
-
-            if line.startswith("data:"):
-                data_str = line[5:].strip()
-                if event_type and data_str and data_str != "[DONE]":
-                    try:
-                        data = json.loads(data_str)
-                        self._handle_sse_event(event_type, data, state)
-                    except json.JSONDecodeError:
-                        logger.debug("Skipping non-JSON SSE data: %s", data_str[:80])
-                continue
-
-            if line == "":
-                event_type = None
-                continue
-
-        return state["stop_reason"], state["content_blocks"]
-
-    def _handle_sse_event(
-        self, event_type: str, data: dict, state: dict
-    ) -> None:
-        """Process a single SSE event, updating state in place."""
-
-        if event_type == "content_block_start":
-            block = data.get("content_block", {})
-            block_type = block.get("type", "text")
-
-            if block_type == "tool_use":
-                state["current_block"] = {
-                    "type": "tool_use",
-                    "id": block.get("id", ""),
-                    "name": block.get("name", ""),
-                    "input": {},
-                }
-            else:
-                state["current_block"] = {
-                    "type": "text",
-                    "text": "",
-                }
-            state["current_text"] = ""
-
-        elif event_type == "content_block_delta":
-            delta = data.get("delta", {})
-            delta_type = delta.get("type", "")
-
-            if delta_type == "text_delta":
-                text = delta.get("text", "")
-                if text:
-                    self.token_received.emit(text)
-                    if state["current_block"] and state["current_block"]["type"] == "text":
-                        state["current_block"]["text"] += text
-
-            elif delta_type == "input_json_delta":
-                partial = delta.get("partial_json", "")
-                state["current_text"] += partial
-
-        elif event_type == "content_block_stop":
-            block = state["current_block"]
-            if block is not None:
-                if block["type"] == "tool_use" and state["current_text"]:
-                    try:
-                        block["input"] = json.loads(state["current_text"])
-                    except json.JSONDecodeError:
-                        logger.error(
-                            "Failed to parse tool input JSON: %s",
-                            state["current_text"][:200],
-                        )
-                        block["input"] = {}
-
-                state["content_blocks"].append(block)
-                state["current_block"] = None
-                state["current_text"] = ""
-
-        elif event_type == "message_delta":
-            delta = data.get("delta", {})
-            reason = delta.get("stop_reason")
-            if reason:
-                state["stop_reason"] = reason
-
-        elif event_type == "message_stop":
-            pass  # End of message, stop_reason already captured
-
-        elif event_type == "error":
-            error_msg = data.get("error", {}).get("message", str(data))
-            raise RuntimeError(f"Anthropic stream error: {error_msg}")

@@ -28,9 +28,9 @@ def _read(rel):
 
 def test_egress_doc_exists_and_names_the_endpoint():
     doc = _read("docs/studio/EGRESS.md")
-    worker_src = _read("python/synapse/panel/claude_worker.py")
-    m = re.search(r'_API_HOST\s*=\s*"([^"]+)"', worker_src)
-    assert m, "claude_worker.py no longer defines _API_HOST — update this pin"
+    provider_src = _read("python/synapse/panel/providers/anthropic_provider.py")
+    m = re.search(r'_API_HOST\s*=\s*"([^"]+)"', provider_src)
+    assert m, "anthropic_provider.py no longer defines _API_HOST — update this pin"
     host = m.group(1)
     assert host == "api.anthropic.com"
     assert host in doc
@@ -49,8 +49,8 @@ def test_remote_egress_sites_are_frozen():
             https_sites.add(rel)
         if re.search(r"\bAnthropic\(", text):
             anthropic_sites.add(rel)
-    assert https_sites == {"panel/claude_worker.py"}, (
-        f"New raw-HTTPS egress site(s): {https_sites - {'panel/claude_worker.py'}} "
+    assert https_sites == {"panel/providers/anthropic_provider.py"}, (
+        f"New raw-HTTPS egress site(s): {https_sites - {'panel/providers/anthropic_provider.py'}} "
         "— document in docs/studio/EGRESS.md, then extend this pin."
     )
     allowed = {"host/daemon.py", "routing/router.py"}

@@ -14,7 +14,7 @@ host in first-party code**. Three call sites:
 
 | Lane | Code | Transport |
 |---|---|---|
-| Panel worker | `python/synapse/panel/claude_worker.py` | stdlib `http.client.HTTPSConnection`, streaming |
+| Panel worker | `python/synapse/panel/claude_worker.py` → `panel/providers/anthropic_provider.py` | stdlib `http.client.HTTPSConnection`, streaming |
 | Host daemon agent loop | `host/daemon.py` → `cognitive/agent_loop.py` | vendored `anthropic` SDK |
 | Routing tiers 2/3 | `routing/router.py` | `anthropic` SDK |
 
