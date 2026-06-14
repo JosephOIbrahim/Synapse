@@ -447,6 +447,7 @@ class SynapsePanel(QtWidgets.QWidget):
             self._review_face.accepted.connect(self._on_accept)
             self._review_face.reverted.connect(self._on_revert)
             self._review_face.committed.connect(self._on_commit)
+            self._review_face.open_render_requested.connect(self._on_open_render)
             return self._review_face
         # graceful fallback — keep the consent gate present without FaceReview
         self._review_face = None
@@ -528,6 +529,22 @@ class SynapsePanel(QtWidgets.QWidget):
         # The gate lives in Work's done sub-state; the artist is already there
         # (they clicked Commit). Keep it forward — never spawn or switch tabs.
         self._set_work_substate("done")
+
+    def _on_open_render(self):
+        # D1 (panel finishing harness) — render-view surface is an OPEN ITEM.
+        # Surfacing Houdini's existing Render View needs the hou.ui pane chain
+        # (hou.ui.curDesktop().paneTabOfType(hou.paneTabType.IPRViewer)
+        # .setIsCurrentTab()). hou.ui is absent from the headless H21.0.671
+        # symbol table (unconfirmable) and the live bridge was unavailable, so
+        # per phantom-API discipline this stays a clean, feature-detected no-op
+        # rather than guess the hou.ui chain. Same-pane law holds trivially: it
+        # never switches a face and never spawns a pane.
+        try:
+            import hou  # noqa: F401 — headless → ImportError → silent no-op
+        except Exception:
+            return
+        # Confirmed-API render-view surface intentionally NOT written (D1 halt).
+        return
 
     def _build_hda_form(self):
         """Native-designsystem describe→build flow (the build runs through the

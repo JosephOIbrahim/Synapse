@@ -38,10 +38,6 @@ try:
 except Exception:  # pragma: no cover
     run_preflight = None
 
-# render-hero placeholder palette — the abstract "work" when no real frame is
-# in hand yet. Cool dark ground + the brand's two accents. Mile-7-tunable.
-_HERO_BG0, _HERO_BG1, _HERO_BG2 = "#2D3742", "#1A1F26", "#101317"
-
 # quality-flag status → dot color
 _FLAG_COLOR = {
     "ok": t.GROW, "pass": t.GROW,
@@ -101,9 +97,9 @@ def _verb(text, on_click, tone=None):
 class RenderHero(QtWidgets.QWidget):
     """The render, made the hero — the one chromatic event on the surface.
 
-    Shows the actual frame (a QPixmap) if a path is given; otherwise paints the
-    abstract gradient + shards placeholder from the v3 comp so the surface still
-    reads 'a result landed here'."""
+    Shows the actual frame (a QPixmap) when a real on-disk frame is in hand; with
+    no frame it paints nothing and the parent hides it in favour of the compact
+    render-view locator (the render is Houdini's job)."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -130,57 +126,29 @@ class RenderHero(QtWidgets.QWidget):
             pix = None
         self._pix = pix
         self.update()
+        return pix is not None
 
     def set_meta(self, text):
         self._meta = text or ""
         self.update()
 
     def paintEvent(self, _event):
+        # Real-frame-only: with no on-disk frame, paint nothing (the parent hides
+        # this widget and shows the locator). No decorative placeholder.
+        if self._pix is None:
+            return
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.Antialiasing)
         r = QtCore.QRectF(self.rect())
-        if self._pix is not None:
-            scaled = self._pix.scaled(
-                self.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
-            x = (scaled.width() - self.width()) / 2.0
-            y = (scaled.height() - self.height()) / 2.0
-            p.drawPixmap(QtCore.QPointF(-x, -y), scaled)
-        else:
-            self._paint_placeholder(p, r)
+        scaled = self._pix.scaled(
+            self.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+        x = (scaled.width() - self.width()) / 2.0
+        y = (scaled.height() - self.height()) / 2.0
+        p.drawPixmap(QtCore.QPointF(-x, -y), scaled)
         self._paint_vignette(p, r)
         if self._meta:
             self._paint_meta(p, r)
         p.end()
-
-    def _paint_placeholder(self, p, r):
-        bg = QtGui.QRadialGradient(r.width() * 0.32, r.height() * 0.22,
-                                   max(r.width(), r.height()) * 1.1)
-        bg.setColorAt(0.0, QtGui.QColor(_HERO_BG0))
-        bg.setColorAt(0.55, QtGui.QColor(_HERO_BG1))
-        bg.setColorAt(1.0, QtGui.QColor(_HERO_BG2))
-        p.fillRect(r, QtGui.QBrush(bg))
-        # three angled shards, lit by the brand's two accents
-        self._shard(p, r, 0.24, 0.14, 0.34, 0.74, t.SIGNAL, t.WARM, 0.42)
-        self._shard(p, r, 0.48, 0.30, 0.30, 0.60, t.WARM, t.SIGNAL, 0.30)
-        self._shard(p, r, 0.14, 0.42, 0.22, 0.46, t.SIGNAL, t.SIGNAL, 0.24)
-
-    def _shard(self, p, r, fx, fy, fw, fh, c0, c1, a):
-        x, y = r.width() * fx, r.height() * fy
-        w, h = r.width() * fw, r.height() * fh
-        path = QtGui.QPainterPath()
-        path.moveTo(x + w * 0.38, y)
-        path.lineTo(x + w, y + h * 0.24)
-        path.lineTo(x + w * 0.72, y + h)
-        path.lineTo(x, y + h * 0.70)
-        path.closeSubpath()
-        grad = QtGui.QLinearGradient(x, y, x + w, y + h)
-        col0 = QtGui.QColor(c0); col0.setAlphaF(a)
-        col1 = QtGui.QColor(c1); col1.setAlphaF(a * 0.35)
-        grad.setColorAt(0.0, col0)
-        grad.setColorAt(1.0, col1)
-        p.setPen(Qt.NoPen)
-        p.setBrush(QtGui.QBrush(grad))
-        p.drawPath(path)
 
     def _paint_vignette(self, p, r):
         vig = QtGui.QRadialGradient(r.center(), max(r.width(), r.height()) * 0.62)
@@ -205,6 +173,7 @@ class FaceReview(QtWidgets.QWidget):
     accepted = Signal()
     reverted = Signal()
     committed = Signal()
+    open_render_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -225,6 +194,25 @@ class FaceReview(QtWidgets.QWidget):
         self._verdict.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
         self._verdict.setFont(fontload.tracked_font("DISPLAY", 15))  # tight display
         col.addWidget(self._verdict)
+
+        # — no-frame locator — when no real frame is on disk, the render stays
+        # Houdini's job: show the frame/AOV/path meta + a verb that surfaces the
+        # existing render view (display-only, never spawns a pane). Hidden when a
+        # real thumbnail is in hand (set_render drives the swap). —
+        self._locator = QtWidgets.QWidget()
+        self._locator.setObjectName("DsSection")
+        self._locator.setAttribute(Qt.WA_StyledBackground, True)
+        loc = QtWidgets.QHBoxLayout(self._locator)
+        loc.setContentsMargins(0, 0, 0, 0)
+        loc.setSpacing(t.SPACE_SM)
+        self._locator_meta = c.label("", role="code")
+        self._locator_meta.setWordWrap(True)
+        self._locator_meta.setStyleSheet("color:%s; font-size:10px;" % t.TEXT_TERTIARY)
+        loc.addWidget(self._locator_meta, 1)
+        loc.addWidget(_verb("⤢ open in render view",
+                            lambda _=False: self.open_render_requested.emit()))
+        self._locator.setVisible(False)
+        col.addWidget(self._locator)
 
         # — SIGNED authorship line — DISPLAY ONLY. It reports who produced the
         # result (the panel's model); it NEVER authors USD / customData. —
@@ -284,12 +272,20 @@ class FaceReview(QtWidgets.QWidget):
         col.addStretch(1)
 
         self._verdict.setText("Standing by for the next result.")
+        # rest state has no real frame → hide the hero, show the compact locator
+        self._hero.setVisible(False)
+        self._locator.setVisible(True)
 
     # -- setters ---------------------------------------------------------
     def set_render(self, path=None, meta=None):
-        self._hero.set_image(path)
+        has_frame = self._hero.set_image(path)
         if meta is not None:
             self._hero.set_meta(meta)
+            self._locator_meta.setText(meta)
+        # real frame → thumbnail visible, locator hidden; no frame → hero hidden,
+        # the locator surfaces the render-view verb + meta (no 168px of décor).
+        self._hero.setVisible(has_frame)
+        self._locator.setVisible(not has_frame)
 
     def set_verdict(self, text):
         self._verdict.setText(text or "")
