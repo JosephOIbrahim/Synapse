@@ -10,15 +10,18 @@ from __future__ import annotations
 # -- model ids + token caps as data (the single source of truth) -----------
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 ANTHROPIC_MAX_TOKENS = 4096
+GEMINI_MODEL = "gemini-3.5-flash"          # GA, agentic-tuned (confirmed live)
+GEMINI_MAX_TOKENS = 4096
 
 DEFAULT_PROVIDER = "claude"
 
-# Provider ids selectable in the panel. (Gemini lands in the next commit.)
-PROVIDER_IDS = ("claude",)
+# Provider ids selectable in the panel.
+PROVIDER_IDS = ("claude", "gemini")
 
 # Display labels for the rail provider toggle.
 PROVIDER_LABELS = {
     "claude": "Claude",
+    "gemini": "Gemini",
 }
 
 
@@ -29,6 +32,8 @@ def build_provider(provider_id: str = DEFAULT_PROVIDER):
     stale selection.
     """
     pid = (provider_id or DEFAULT_PROVIDER).lower()
-    # (Gemini branch added in the next commit; only Claude exists today.)
+    if pid == "gemini":
+        from .gemini_provider import GeminiProvider
+        return GeminiProvider(model=GEMINI_MODEL, max_tokens=GEMINI_MAX_TOKENS)
     from .anthropic_provider import AnthropicProvider
     return AnthropicProvider(model=ANTHROPIC_MODEL, max_tokens=ANTHROPIC_MAX_TOKENS)

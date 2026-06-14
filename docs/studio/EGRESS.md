@@ -7,14 +7,21 @@ SYNAPSE does not control). Conformance-pinned by
 `tests/test_m3_egress_docs.py` — a new remote-egress call site fails CI
 until this document is updated.
 
-## The single remote endpoint
+## Remote endpoints
 
-`api.anthropic.com:443` (TLS, `POST /v1/messages`) is the **only remote
-host in first-party code**. Three call sites:
+Two remote hosts exist in first-party code:
+
+- `api.anthropic.com:443` (TLS, `POST /v1/messages`) — the Claude lanes.
+- `generativelanguage.googleapis.com:443` (TLS, `POST …:streamGenerateContent`)
+  — the **optional** Gemini panel provider, dormant unless the artist switches
+  the panel to Gemini.
+
+Call sites:
 
 | Lane | Code | Transport |
 |---|---|---|
-| Panel worker | `python/synapse/panel/claude_worker.py` → `panel/providers/anthropic_provider.py` | stdlib `http.client.HTTPSConnection`, streaming |
+| Panel worker (Claude) | `python/synapse/panel/claude_worker.py` → `panel/providers/anthropic_provider.py` | stdlib `http.client.HTTPSConnection`, streaming |
+| Panel worker (Gemini) | `claude_worker.py` → `panel/providers/gemini_provider.py` | stdlib `http.client.HTTPSConnection`, streaming SSE |
 | Host daemon agent loop | `host/daemon.py` → `cognitive/agent_loop.py` | vendored `anthropic` SDK |
 | Routing tiers 2/3 | `routing/router.py` | `anthropic` SDK |
 
@@ -35,6 +42,9 @@ anywhere in the codebase.
   8-hex `key.fingerprint` is ever written, and only locally.
 - The **ANTHROPIC_API_KEY** — leaves only as the `x-api-key` auth header
   to `api.anthropic.com` itself, never inside payloads.
+- The **GEMINI_API_KEY** (Gemini provider only) — leaves only as the
+  `x-goog-api-key` auth header to `generativelanguage.googleapis.com`, never
+  inside payloads.
 - The **memory store ciphertext** — at-rest only.
 - **Viewport/render pixels** — `capture_viewport` and render tools return
   *path strings*, not image bytes.
