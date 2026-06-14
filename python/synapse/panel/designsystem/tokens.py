@@ -75,7 +75,7 @@ TEXT_ACCENT    = SIGNAL     # links, accent labels (NOT body — see WCAG note)
 TEXT_DISABLED  = "#5A5A5A"  # 85% of 6A
 TEXT_ON_ACCENT = "#13212C"  # text on a SIGNAL fill (dark navy on light blue = AA-safe)
 
-# WCAG note: SIGNAL (#00D4FF) on PANEL passes AA for >=14px / bold, but FAILS
+# WCAG note: SIGNAL (#8FB3D9) on PANEL passes AA for >=14px / bold, but FAILS
 # for small body text. Use TEXT_ACCENT for labels/links/icons only; never for
 # running body copy. Body uses TEXT_PRIMARY.
 
