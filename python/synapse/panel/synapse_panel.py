@@ -185,6 +185,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._current_face = "direct"
         self._work_substate = "cook"
         self._was_busy = False
+        self._provider_id = "claude"   # active chat engine (provider switch)
 
         self.setAcceptDrops(True)
         self._build_ui()
@@ -487,20 +488,61 @@ class SynapsePanel(QtWidgets.QWidget):
         stack.setCurrentIndex(1 if state == "done" else 0)
         self._work_substate = state
 
-    def _author_token(self):
-        """Best-effort display signature of the model that produced the result
-        (the panel worker's model), e.g. ``claude-sonnet-4-6`` → ``sonnet-4.6``.
-        DISPLAY ONLY — it is never authored to USD."""
+    def _active_model(self):
+        """Model id of the active engine, from registry data (no network)."""
         try:
-            from synapse.panel.claude_worker import _MODEL
-            m = _MODEL.replace("claude-", "")
+            from synapse.panel.providers import registry as reg
+            pid = getattr(self, "_provider_id", "claude")
+            return reg.GEMINI_MODEL if pid == "gemini" else reg.ANTHROPIC_MODEL
         except Exception:
+            try:
+                from synapse.panel.claude_worker import _MODEL
+                return _MODEL
+            except Exception:
+                return ""
+
+    def _author_token(self):
+        """Best-effort display signature of the active engine's model, e.g.
+        ``claude-sonnet-4-6`` → ``sonnet-4.6``; ``gemini-3.5-flash`` shown as-is.
+        DISPLAY ONLY — it is never authored to USD."""
+        m = self._active_model()
+        if not m:
             return ""
-        for fam in ("opus", "sonnet", "haiku"):
-            if m.startswith(fam):
-                rest = m[len(fam):].lstrip("-").replace("-", ".")
-                return ("%s-%s" % (fam, rest)) if rest else fam
+        if m.startswith("claude-"):
+            m = m[len("claude-"):]
+            for fam in ("opus", "sonnet", "haiku"):
+                if m.startswith(fam):
+                    rest = m[len(fam):].lstrip("-").replace("-", ".")
+                    return ("%s-%s" % (fam, rest)) if rest else fam
+            return m
         return m
+
+    def _set_provider(self, provider_id):
+        """Switch the active chat engine. Takes effect on the NEXT message; the
+        rail author token updates immediately. Display/telemetry only — never
+        touches USD/customData."""
+        self._provider_id = provider_id
+        lbl = getattr(self, "_author_lbl", None)
+        if lbl is not None:
+            try:
+                lbl.setText(self._author_token())
+            except Exception:
+                pass
+        try:
+            from synapse.panel.providers.registry import PROVIDER_LABELS
+            self._chat.append_system_message(
+                "Switched engine to %s." % PROVIDER_LABELS.get(provider_id, provider_id))
+        except Exception:
+            pass
+
+    def _make_provider(self):
+        """Build the StreamProvider for the active engine. ``None`` ⇒ the worker
+        falls back to its own Claude default (graceful degradation)."""
+        try:
+            from synapse.panel.providers.registry import build_provider
+            return build_provider(getattr(self, "_provider_id", "claude"))
+        except Exception:
+            return None
 
     def _populate_review(self):
         """On 'done', fill the Work done sub-state with what we can: a taut
@@ -769,6 +811,20 @@ class SynapsePanel(QtWidgets.QWidget):
         menu = QtWidgets.QMenu(self)
         menu.addAction("Copy conversation", self._copy_conversation)
         menu.addSeparator()
+        # — engine switch (multi-provider). Display/telemetry only; the worker
+        # for the NEXT message is built with the selected provider. —
+        try:
+            from synapse.panel.providers.registry import PROVIDER_IDS, PROVIDER_LABELS
+            cur = getattr(self, "_provider_id", "claude")
+            eng = menu.addMenu("Engine")
+            for pid in PROVIDER_IDS:
+                act = eng.addAction(PROVIDER_LABELS.get(pid, pid))
+                act.setCheckable(True)
+                act.setChecked(pid == cur)
+                act.triggered.connect(lambda _=False, p=pid: self._set_provider(p))
+            menu.addSeparator()
+        except Exception:
+            pass
         menu.addAction("Larger text", lambda: self._set_scale(1.15))
         menu.addAction("Default text", lambda: self._set_scale(1.0))
         menu.exec(QtGui.QCursor.pos()) if hasattr(menu, "exec") else menu.exec_(QtGui.QCursor.pos())
@@ -917,7 +973,8 @@ class SynapsePanel(QtWidgets.QWidget):
         # is disabled here to preserve the existing artist-initiated path.
         self._worker = ClaudeWorker(self._messages, system_prompt=system,
                                     tools=tools, parent=self,
-                                    enforce_worker_policy=False)
+                                    enforce_worker_policy=False,
+                                    provider=self._make_provider())
         self._worker.token_received.connect(self._on_token)
         self._worker.stream_done.connect(self._on_done)
         self._worker.stream_error.connect(self._on_error)
