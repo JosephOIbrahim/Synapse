@@ -72,6 +72,9 @@ site/
 backup/
 
 # Secrets and media
+.env
+.env.*
+!.env.example
 *.key
 *.jpg
 *.png

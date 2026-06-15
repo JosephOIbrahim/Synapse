@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,53 @@ Spike 0 bootstrap script and any deployment / onboarding docs."""
 
 ENV_VAR: str = "ANTHROPIC_API_KEY"
 """Fallback env var name. Matches the Anthropic SDK's default."""
+
+ENV_FILE_NAME: str = ".env"
+"""Project-local dotenv file, resolved at the repo root (see ``_repo_root``)."""
+
+
+def _repo_root() -> Path:
+    """Absolute path to the SYNAPSE repo root, independent of CWD.
+
+    Houdini launches from an unrelated working directory, so the ``.env``
+    location must be resolved relative to *this file*, never ``os.getcwd()``.
+    ``auth.py`` lives at ``<root>/python/synapse/host/auth.py`` → ``parents[3]``.
+    """
+    return Path(__file__).resolve().parents[3]
+
+
+def _load_dotenv() -> None:
+    """Populate ``os.environ`` from ``<repo_root>/.env`` (best-effort).
+
+    Minimal, dependency-free parser — ``python-dotenv`` is not vendored in
+    Houdini's embedded Python. An already-set environment variable is never
+    overwritten (``setdefault``): an explicitly-exported shell var wins over
+    the file, matching python-dotenv's default ``override=False``. Any error
+    is swallowed — a missing or malformed ``.env`` must never block boot.
+    """
+    try:
+        env_path = _repo_root() / ENV_FILE_NAME
+        if not env_path.is_file():
+            return
+        for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            name, _, value = line.partition("=")
+            name = name.strip()
+            if name.startswith("export "):
+                name = name[len("export ") :].strip()
+            value = value.strip().strip('"').strip("'")
+            if name:
+                os.environ.setdefault(name, value)
+    except Exception as exc:  # noqa: BLE001 — never let .env loading break boot
+        logger.debug("dotenv load skipped: %s", exc)
+
+
+# Load the project .env at import time so every os.environ reader in the
+# process (auth, daemon, handlers, panel providers) sees the key. Runs once;
+# idempotent. Resolved by package-absolute path, never the working directory.
+_load_dotenv()
 
 
 def _try_hou_secure() -> Optional[str]:
