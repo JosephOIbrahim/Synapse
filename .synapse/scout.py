@@ -62,7 +62,7 @@ def _glob_count(pattern):
 
 
 _PY_TEST = re.compile(r"(tests?/[\w/]+\.py)")
-_VERIFY_PATH = re.compile(r"verify\.py\s+\S+\s+(\S+)")
+_VERIFY_PATH = re.compile(r"verify\.py\s+(\S+)\s+(\S+)")
 
 
 def _verify_targets(feature_verify):
@@ -73,8 +73,14 @@ def _verify_targets(feature_verify):
     for m in _PY_TEST.finditer(feature_verify):
         targets.append(m.group(1).split("::")[0])
     m = _VERIFY_PATH.search(feature_verify)
-    if m and not m.group(1).startswith("-"):
-        targets.append(m.group(1))
+    if m and not m.group(2).startswith("-"):
+        check, arg = m.group(1), m.group(2)
+        # The `importable` check takes a dotted MODULE name, not a filesystem
+        # path — it's validated by importing, never by os.path.exists. A dotted
+        # name never exists as a literal path, which falsely flagged
+        # `synapse.panel.designsystem` as a missing goalpost.
+        if check != "importable":
+            targets.append(arg)
     return targets
 
 

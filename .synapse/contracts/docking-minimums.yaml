@@ -7,7 +7,7 @@ owns:
   - "python/synapse/panel/synapse_panel.py"
   - "python/synapse/panel/face_work.py"
   - "python/synapse/panel/face_review.py"
-  - "python/synapse/panel/components.py"
+  - "python/synapse/panel/designsystem/components.py"
 do_not_touch:
   - "python/synapse/panel/claude_worker.py"     # §1 FLOOR
   - "python/synapse/cognitive/**"
