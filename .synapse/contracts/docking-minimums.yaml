@@ -1,0 +1,24 @@
+# S2 — Blueprint §3. AMBER — 'collapse gracefully' has a visual tail; held at branch.
+id: docking-minimums
+goal: "Halve stacked min-heights so the panel is usable at its declared PANEL_MIN_HEIGHT=400; faces collapse gracefully"
+model: opusplan
+autonomy: amber
+owns:
+  - "python/synapse/panel/synapse_panel.py"
+  - "python/synapse/panel/face_work.py"
+  - "python/synapse/panel/face_review.py"
+  - "python/synapse/panel/components.py"
+do_not_touch:
+  - "python/synapse/panel/claude_worker.py"     # §1 FLOOR
+  - "python/synapse/cognitive/**"
+features:
+  - description: "Panel lays out without overflow at 400px tall"
+    verify: "pytest -q tests/panel/test_docking.py::test_usable_at_min_height"
+    passing: false
+  - description: "No child sets a hard minimum height above 200px"
+    verify: "python .synapse/verify.py max-min-height python/synapse/panel 200"
+    passing: false
+  - description: "Suite still green"
+    verify: "pytest -q"
+    passing: false
+stop_when: "all features passing OR sessions exhausted OR budget reached"

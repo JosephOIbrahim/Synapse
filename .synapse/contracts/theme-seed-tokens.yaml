@@ -1,0 +1,29 @@
+# C1 — Blueprint §2 (convergent #1). AMBER — reskin carries visual judgment; held at branch.
+id: theme-seed-tokens
+goal: "Invert token source-of-truth: seed from hou.qt.color() at construction, hardcoded hex as headless fallback; collapse to one token system"
+model: opusplan
+autonomy: amber
+owns:
+  - "python/synapse/panel/designsystem/**"
+  - "python/synapse/panel/chat_display.py"
+  - "python/synapse/panel/gate_widget.py"
+do_not_touch:
+  - "python/synapse/panel/claude_worker.py"     # §1 FLOOR
+  - "python/synapse/cognitive/**"
+features:
+  - description: "Tokens follow the host scheme (mock hou.qt.color() light -> tokens resolve light)"
+    verify: "pytest -q tests/panel/test_token_seeding.py::test_follows_host_scheme"
+    passing: false
+  - description: "Headless fallback intact (hou absent -> hardcoded hex)"
+    verify: "pytest -q tests/panel/test_token_seeding.py::test_headless_fallback"
+    passing: false
+  - description: "panel/tokens.py and panel/styles.py retired (no importers)"
+    verify: "python .synapse/verify.py no-importers python/synapse/panel/tokens.py python/synapse/panel"
+    passing: false
+  - description: "No phantom host calls introduced (hou.qt.color must be verified)"
+    verify: "python .synapse/verify.py symbols-in-runtime python/synapse/panel/designsystem/tokens.py"
+    passing: false
+  - description: "Suite still green"
+    verify: "pytest -q"
+    passing: false
+stop_when: "all features passing OR sessions exhausted OR budget reached"

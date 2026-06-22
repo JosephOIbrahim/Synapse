@@ -1,0 +1,24 @@
+# S1 — Blueprint §3. GREEN, mechanical. The 'decruft' analog. Run FIRST (legibility keystone).
+id: quarantine-dead-tree
+goal: "Move the orphaned feature-panel layer out of the live import graph into legacy/ and _attic/, preserving the surviving knowledge tables"
+model: haiku
+autonomy: green
+owns:
+  - "python/synapse/panel/**"
+do_not_touch:
+  - "python/synapse/panel/claude_worker.py"     # §1 FLOOR — worker isolation, never regress
+  - "python/synapse/cognitive/**"
+features:
+  - description: "Suite still green after quarantine"
+    verify: "pytest -q"
+    passing: false
+  - description: "chat_panel subtree no longer imported by the live panel"
+    verify: "python .synapse/verify.py no-importers python/synapse/panel/chat_panel.py python/synapse/panel"
+    passing: false
+  - description: "Representative orphan (scene_doctor) relocated out of the live tree"
+    verify: "python .synapse/verify.py absent-file python/synapse/panel/scene_doctor.py"
+    passing: false
+  - description: "Surviving knowledge tables still resolve (designsystem importable headless)"
+    verify: "python .synapse/verify.py importable synapse.panel.designsystem"
+    passing: false
+stop_when: "all features passing OR sessions exhausted OR budget reached"
