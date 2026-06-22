@@ -1,0 +1,119 @@
+{
+  "method_per_provider": {
+    "anthropic": "anthropic SDK 0.96.0 (bare site-packages) under PY631 = 'C:\\Program Files\\Side Effects Software\\Houdini 21.0.631\\python311\\python.exe'; client.messages.create with tools=[{name,description,input_schema}] and tool_choice={type:any}, temperature=0.0; resolved model attempted = claude-3-5-haiku-latest (sonnet/opus also 401 with this key). RESULT: AuthenticationError 401 invalid x-api-key on BOTH a tools call AND a bare no-tools call -> the ANTHROPIC_API_KEY in this env (108-char sk-ant-api03-...) is the Claude Code CLI credential, not a raw API key valid for direct SDK calls. daemon.py resolves via synapse.host.auth.get_anthropic_api_key() which reads the SAME ANTHROPIC_API_KEY env var (auth.py:101), so there is no alternate key. Leg auth-blocked PRE-tool-serialization.",
+    "gemini": "REST POST https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=$GEMINI_API_KEY ; body {contents,tools:[{function_declarations:[...]}],tool_config:{function_calling_config:{mode:ANY}}}; resolved model = gemini-flash-latest (also avail: gemini-2.5-flash, gemini-3.5-flash). Anthropic input_schema TRANSLATED to functionDeclaration.parameters (uppercased OpenAPI types, untyped props dropped, enum kept only on STRING). Subset(10) call HTTP200 routed; full-112 HTTP400 INVALID_ARGUMENT. Free-tier quota exhausted mid-probe (429) so remaining offenders characterized STATICALLY.",
+    "ollama_local": "REST POST http://localhost:11434/api/chat (server live) {model:'nemotron-3-nano:latest', messages, tools:[{type:function,function:{name,description,parameters}}], stream:false, options:{temperature:0}}. nemotron-3-nano:latest = local 31.6B Q4_K_M, caps completion/tools/thinking, ctx 1048576. Anthropic input_schema -> OpenAI-tools (JSON Schema passed through verbatim).",
+    "ollama_cloud": "REST POST http://localhost:11434/api/chat (local server proxies to https://ollama.com:443) {model:'nemotron-3-ultra:cloud', ...same OpenAI-tools shape}. nemotron-3-ultra:cloud = remote 550b, caps completion/tools/thinking, ctx 262144. Same translation as local."
+  },
+  "providers": [
+    {
+      "provider": "anthropic",
+      "model": "claude-3-5-haiku-latest (attempted; 401)",
+      "prompt": "solaris_build_graph forcing prompt (template=lighting_rig enum + 2 nodes each with nested parms{intensity 2.5 / exposure 1.0} + 1 connection object)",
+      "expected_tool": "synapse_solaris_build_graph",
+      "expected_args": "{template:lighting_rig, nodes:[{id,type,parms:{...}}x2], connections:[{from,to}]}",
+      "tool_name_returned": null,
+      "tool_name_correct": null,
+      "tool_id_present": null,
+      "args_returned": "null",
+      "args_type_faithful": null,
+      "h3_notes": "AUTH-BLOCKED pre-tool-eval; no fidelity measurement possible with this credential",
+      "latency_ms": 217,
+      "raw": "AuthenticationError: Error code: 401 - {'type':'error','error':{'type':'authentication_error','message':'invalid x-api-key'},'request_id':'req_011Cc3nMhSN2P7VJb1jmCDcB'}"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-flash-latest",
+      "prompt": "solaris_build_graph forcing prompt",
+      "expected_tool": "synapse_solaris_build_graph",
+      "expected_args": "{template:lighting_rig, nodes:[{id,type,parms:{intensity:2.5}},{...parms:{exposure:1.0}}], connections:[{from:dome1,to:rect1}]}",
+      "tool_name_returned": "synapse_solaris_build_graph",
+      "tool_name_correct": true,
+      "tool_id_present": false,
+      "args_returned": "{\"nodes\":[{\"type\":\"domelight\",\"parms\":{},\"id\":\"dome1\"},{\"parms\":{},\"type\":\"rectlight\",\"id\":\"rect1\"}],\"template\":\"lighting_rig\",\"connections\":[{\"from\":\"dome1\",\"to\":\"rect1\"}]}",
+      "args_type_faithful": false,
+      "h3_notes": "LOSSY (dropped optional/nested): name correct + enum 'lighting_rig' kept + connections nested object kept, BUT both nodes[].parms came back EMPTY {} -- the intensity:2.5 and exposure:1.0 values were DROPPED. Root cause: parms is a free-form type:object with no inner schema; translator sanitizes it to a nested OBJECT with empty properties{} and Gemini will not populate (and at full-112 will not even accept) a property-less nested OBJECT. (Auto-scorer flagged faithful=true checking only that parms was a dict; manual review = NOT faithful, values lost.) Gemini carries NO functionCall id (tool_id_present=false).",
+      "latency_ms": 3265,
+      "raw": "ok-but-lossy"
+    },
+    {
+      "provider": "ollama_local",
+      "model": "nemotron-3-nano:latest",
+      "prompt": "solaris_build_graph forcing prompt",
+      "expected_tool": "synapse_solaris_build_graph",
+      "expected_args": "{template:lighting_rig, nodes:[{...parms:{intensity:2.5}},{...parms:{exposure:1.0}}], connections:[{from,to}]}",
+      "tool_name_returned": "synapse_solaris_build_graph",
+      "tool_name_correct": true,
+      "tool_id_present": true,
+      "args_returned": "{\"nodes\":[{\"id\":\"dome1\",\"parms\":{\"intensity\":2.5},\"type\":\"domelight\"},{\"id\":\"rect1\",\"parms\":{\"exposure\":1},\"type\":\"rectlight\"}],\"connections\":[{\"from\":\"dome1\",\"to\":\"rect1\"}],\"template\":\"lighting_rig\"}",
+      "args_type_faithful": true,
+      "h3_notes": "FAITHFUL: name correct, tool_id present, enum kept as enum, nested parms kept nested WITH values, connections nested, intensity stayed 2.5 (float). Only nit: exposure 1.0 -> 1 (JSON int/float collapse, semantically identical, not coercion-to-string). slow: 93.4s for nano local.",
+      "latency_ms": 93404,
+      "raw": "ok"
+    },
+    {
+      "provider": "ollama_cloud",
+      "model": "nemotron-3-ultra:cloud",
+      "prompt": "solaris_build_graph forcing prompt",
+      "expected_tool": "synapse_solaris_build_graph",
+      "expected_args": "{template:lighting_rig, nodes:[{...parms:{intensity:2.5}},{...parms:{exposure:1.0}}], connections:[{from,to}]}",
+      "tool_name_returned": "synapse_solaris_build_graph",
+      "tool_name_correct": true,
+      "tool_id_present": true,
+      "args_returned": "{\"template\":\"lighting_rig\",\"nodes\":[{\"id\":\"dome1\",\"parms\":{\"intensity\":2.5},\"type\":\"domelight\"},{\"id\":\"rect1\",\"parms\":{\"exposure\":1},\"type\":\"rectlight\"}],\"connections\":[{\"from\":\"dome1\",\"to\":\"rect1\"}]}",
+      "args_type_faithful": true,
+      "h3_notes": "FAITHFUL: identical structural fidelity to local nano -- name correct, tool_id present, enum kept, nested parms with values, connections nested, intensity 2.5 float. exposure 1.0->1 int/float collapse only. 46.9s (550b cloud).",
+      "latency_ms": 46860,
+      "raw": "ok"
+    }
+  ],
+  "full_112_results": [
+    {
+      "provider": "anthropic",
+      "outcome": "UNKNOWN (auth-blocked)",
+      "accepted": false,
+      "num_tools": 112,
+      "latency_ms": 184,
+      "raw_error": "AuthenticationError 401 invalid x-api-key (req_011Cc3nMiCkepapt6YDDEfDG) -- fails at credential layer before payload is evaluated; says NOTHING about whether Anthropic would accept the 112-tool/~63KB payload. Anthropic's documented tool limit is far above 112 tools, so size is not expected to be a problem; UNVERIFIED here."
+    },
+    {
+      "provider": "gemini",
+      "outcome": "SCHEMA-REJECTED (translation, NOT size)",
+      "accepted": false,
+      "num_tools": 112,
+      "payload_bytes": 63238,
+      "latency_ms": 531,
+      "raw_error": "First attempt (enum-on-string-only NOT yet applied): HTTP400 with explicit field path -> tools[0].function_declarations[88].parameters.properties[1].value.enum[0] (TYPE_STRING),0 / enum[1],1. function_declarations[88] = synapse_safe_render, property soho_foreground is an INTEGER enum [0,1]; Gemini OpenAPI subset allows enum only on STRING. After fixing translator to drop enum on non-STRING types: still HTTP400 but now generic 'Request contains an invalid argument' (INVALID_ARGUMENT, no field). Static scan of the 112 sanitized decls found the next-layer cause: 12 tools carry a property-less nested OBJECT (free-form type:object slot, no inner schema) -- e.g. synapse_solaris_build_graph.nodes[].parms & .template_params, houdini_render_settings.settings, synapse_memory_write.content, tops_multi_shot.shots[].overrides -- which Gemini rejects as nested OBJECT without properties; AND 3 tools (houdini_set_parm.value, houdini_set_usd_attribute.value, tops_query_items.filter_value) have an UNTYPED 'any' slot the translator must DROP (Gemini requires a type on every property). NET: full-112 fails for Gemini due to translation incompatibility, NOT payload size (63KB well within limits). Quota note: per-tool isolation loop hit free-tier 429 after ~8 calls, so the 104/112 'rejections' in that loop are 429 quota NOT schema -- disregard."
+    },
+    {
+      "provider": "ollama_local",
+      "outcome": "ACCEPTED",
+      "accepted": true,
+      "num_tools": 112,
+      "latency_ms": 11176,
+      "raw_error": null,
+      "tool_name_returned_on_simple_prompt": "synapse_ping",
+      "note": "Full 112-tool / OpenAI-tools payload accepted cleanly; on the trivial ping prompt it correctly selected synapse_ping. No size/schema rejection."
+    },
+    {
+      "provider": "ollama_cloud",
+      "outcome": "ACCEPTED",
+      "accepted": true,
+      "num_tools": 112,
+      "latency_ms": 5685,
+      "raw_error": null,
+      "tool_name_returned_on_simple_prompt": "synapse_ping",
+      "note": "Full 112-tool payload accepted; correctly selected synapse_ping on the ping prompt."
+    }
+  ],
+  "hypothesis_verdict": "PER PROVIDER (verdict from THIS measured data):\n\nANTHROPIC -> INCONCLUSIVE (credential-blocked), defaults to H1 by design. Both subset and full-112 calls returned 401 invalid x-api-key on a credential that is the Claude Code CLI token, not a raw API key (confirmed: bare no-tools call also 401). No tool-fidelity could be measured. The registry wire shape ({name,description,input_schema}, built in tool_bridge.py:56-60 by renaming inputSchema->input_schema and dropping annotations) is NATIVE to Anthropic, and Anthropic's documented tool ceiling is well above 112 tools / 63KB, so H1 (full schema clean) is the EXPECTED outcome -- but UNVERIFIED here. Not H2, not H3 on available evidence.\n\nGEMINI -> H3 CONFIRMED (translation lossy), with a full-payload rejection that is ALSO translation-rooted, not size-rooted. Evidence: (1) Subset call routed the correct tool NAME but DROPPED the nested parms object values (returned parms:{} instead of {intensity:2.5}/{exposure:1.0}) -- strict round-trip validation FAILS. (2) Full-112 rejected HTTP400 first on an integer-enum (synapse_safe_render.soho_foreground enum[0,1] -- Gemini allows enum only on STRING), then after that fix on property-less nested OBJECTs (12 tools) and dropped untyped 'any' slots (3 tools incl. houdini_set_parm.value). The 63KB/112-tool payload is within Gemini limits, so NOT H2 (size) -- it is H3 (lossy Anthropic->Gemini translation) escalated to a hard rejection at full scale.\n\nOLLAMA LOCAL (nemotron-3-nano) -> H1. Subset call: correct name, tool_id present, enum preserved as enum, nested parms preserved WITH values, connections nested, numerics intact (only 1.0->1 int/float collapse). Full-112 accepted, correct trivial selection. No degradation past N. Strict round-trip PASSES.\n\nOLLAMA CLOUD (nemotron-3-ultra:cloud) -> H1. Identical structural fidelity to local; full-112 accepted; correct trivial selection. H1.\n\nCROSS-CUTTING: H2 (degrades past N tools -> router) is REFUTED for the two providers fully exercised (both Ollama accepted all 112). H2 UNTESTED for Anthropic (auth) and does not apply to Gemini (Gemini's full-112 failure is H3-translation, not N-count degradation -- the SAME constructs fail at N=1).",
+  "router_required": true,
+  "per_provider_native_vs_compat": {
+    "anthropic": "NATIVE (by construction, unverified live). The registry already serializes to Anthropic's exact {name,description,input_schema} shape via tool_bridge.py:56-60 -- this IS the native path, needs no translation. No OpenAI-compat layer applies. Live fidelity unverified only because this environment lacks a valid raw API key (env ANTHROPIC_API_KEY is the CLI credential, 401). Recommendation: native; a real API key is the only blocker to confirming H1.",
+    "gemini": "NEITHER pure-native NOR clean-OpenAI-compat suffices -- requires a DEDICATED, LOSS-AWARE TRANSLATION + REPAIR layer, OR avoid Gemini for tool-calling against this registry. Measured: naive input_schema->functionDeclaration translation is LOSSY (drops untyped 'value' slots, empties free-form object slots like parms/content/settings) and the full registry is OUTRIGHT REJECTED (integer enums, property-less nested objects). To use Gemini you must (a) stringify-or-drop non-STRING enums, (b) synthesize a minimal {type:STRING} or a real inner schema for every free-form type:object slot so it is never a property-less OBJECT, (c) give untyped 'any' slots a concrete type (e.g. STRING) instead of dropping them. Until then Gemini cannot losslessly drive houdini_set_parm/houdini_set_usd_attribute/tops_query_items (value dropped) nor any tool with an opaque object slot (value silently empty). Gemini's native functionDeclaration format is the right target, but the registry JSON-Schema must be REPAIRED for the OpenAPI subset, not just renamed.",
+    "ollama_local": "OpenAI-tools COMPAT, verbatim pass-through. The registry JSON-Schema inputSchema embeds directly as function.parameters with ZERO repair and was fully faithful (nested objects, enums, numerics, all 112 accepted). No native Ollama format needed; the OpenAI /api/chat tools shape is sufficient and lossless. Use OpenAI-compat.",
+    "ollama_cloud": "OpenAI-tools COMPAT, verbatim pass-through (server proxies to ollama.com). Same as local: zero-repair JSON-Schema pass-through, fully faithful, all 112 accepted. Use OpenAI-compat."
+  },
+  "raw_probe_json": "{\"meta\":{\"subset\":[\"synapse_ping\",\"houdini_set_parm\",\"houdini_reference_usd\",\"synapse_memory_write\",\"houdini_hda_create\",\"synapse_solaris_build_graph\",\"houdini_create_material\",\"tops_render_sequence\",\"houdini_create_node\",\"houdini_render_settings\"],\"expected_tool\":\"synapse_solaris_build_graph\",\"expected_args\":{\"template\":\"lighting_rig\",\"nodes\":[{\"id\":\"dome1\",\"type\":\"domelight\",\"parms\":{\"intensity\":2.5}},{\"id\":\"rect1\",\"type\":\"rectlight\",\"parms\":{\"exposure\":1.0}}],\"connections\":[{\"from\":\"dome1\",\"to\":\"rect1\"}]},\"num_registry_tools\":112,\"anthropic_model\":\"claude-3-5-haiku-latest\",\"gemini_model\":\"gemini-flash-latest\",\"ollama_local_model\":\"nemotron-3-nano:latest\",\"ollama_cloud_model\":\"nemotron-3-ultra:cloud\"},\"detail\":{\"anthropic\":{\"provider\":\"anthropic\",\"model\":\"claude-3-5-haiku-latest\",\"A\":{\"error\":\"AuthenticationError: Error code: 401 - {'type':'error','error':{'type':'authentication_error','message':'invalid x-api-key'},'request_id':'req_011Cc3nMhSN2P7VJb1jmCDcB'}\",\"latency_ms\":217},\"B\":{\"accepted\":false,\"num_tools\":112,\"raw_error\":\"AuthenticationError: Error code: 401 - {'type':'error','error':{'type':'authentication_error','message':'invalid x-api-key'},'request_id':'req_011Cc3nMiCkepapt6YDDEfDG'}\",\"latency_ms\":184}},\"gemini\":{\"provider\":\"gemini\",\"model\":\"gemini-flash-latest\",\"A\":{\"tool_name_returned\":\"synapse_solaris_build_graph\",\"tool_name_correct\":true,\"tool_id_present\":false,\"args_returned\":{\"nodes\":[{\"type\":\"domelight\",\"parms\":{},\"id\":\"dome1\"},{\"parms\":{},\"type\":\"rectlight\",\"id\":\"rect1\"}],\"template\":\"lighting_rig\",\"connections\":[{\"from\":\"dome1\",\"to\":\"rect1\"}]},\"args_type_faithful_autoscorer\":true,\"args_type_faithful_manual\":false,\"h3_notes\":[\"nested parms{} returned EMPTY -- intensity:2.5/exposure:1.0 DROPPED\",\"no functionCall id\"],\"latency_ms\":3265},\"B\":{\"accepted\":false,\"num_tools\":112,\"http\":400,\"raw_error\":\"{ error: { code:400, message: Invalid value at 'tools[0].function_declarations[88].parameters.properties[1].value.enum[0]' (TYPE_STRING),0 / enum[1],1, status:INVALID_ARGUMENT, fieldViolations:[function_declarations[88]=synapse_safe_render.soho_foreground integer enum [0,1]] } }\",\"latency_ms\":155},\"B_after_enum_fix\":{\"accepted\":false,\"num_tools\":112,\"payload_bytes\":63238,\"http\":400,\"raw_error\":\"{ error:{ code:400, message:Request contains an invalid argument., status:INVALID_ARGUMENT } }\",\"latency_ms\":531},\"static_scan_remaining_violations\":{\"empty_nested_object_12\":[\"synapse_validate_frame.thresholds\",\"houdini_render_settings.settings\",\"tops_setup_wedge.attributes[]\",\"tops_multi_shot.shots[].overrides\",\"synapse_solaris_build_graph.nodes[].parms\",\"synapse_solaris_build_graph.template_params\",\"synapse_memory_write.content\",\"houdini_hda_promote_parm.conditions\",\"houdini_hda_set_help.parameters_help\",\"houdini_hda_package.promoted_parms[]\",\"houdini_hda_package.nodes[].parms\",\"synapse_batch.commands[]\"],\"untyped_props_dropped_3\":[\"houdini_set_parm.value\",\"houdini_set_usd_attribute.value\",\"tops_query_items.filter_value\"],\"nonstring_enum_after_fix\":0},\"quota_note\":\"per-tool isolation loop returned 429 quota-exhausted for 104/112 (free-tier limit hit after ~8 calls) -- those are NOT schema rejections; disregard.\"},\"ollama_local\":{\"provider\":\"ollama_local\",\"model\":\"nemotron-3-nano:latest\",\"A\":{\"tool_name_returned\":\"synapse_solaris_build_graph\",\"tool_name_correct\":true,\"tool_id_present\":true,\"args_returned\":{\"nodes\":[{\"id\":\"dome1\",\"parms\":{\"intensity\":2.5},\"type\":\"domelight\"},{\"id\":\"rect1\",\"parms\":{\"exposure\":1},\"type\":\"rectlight\"}],\"connections\":[{\"from\":\"dome1\",\"to\":\"rect1\"}],\"template\":\"lighting_rig\"},\"args_type_faithful\":true,\"h3_notes\":[\"exposure 1.0->1 int/float collapse only\"],\"latency_ms\":93404},\"B\":{\"accepted\":true,\"num_tools\":112,\"latency_ms\":11176,\"tool_name_returned\":\"synapse_ping\"}},\"ollama_cloud\":{\"provider\":\"ollama_cloud\",\"model\":\"nemotron-3-ultra:cloud\",\"A\":{\"tool_name_returned\":\"synapse_solaris_build_graph\",\"tool_name_correct\":true,\"tool_id_present\":true,\"args_returned\":{\"template\":\"lighting_rig\",\"nodes\":[{\"id\":\"dome1\",\"parms\":{\"intensity\":2.5},\"type\":\"domelight\"},{\"id\":\"rect1\",\"parms\":{\"exposure\":1},\"type\":\"rectlight\"}],\"connections\":[{\"from\":\"dome1\",\"to\":\"rect1\"}]},\"args_type_faithful\":true,\"h3_notes\":[\"exposure 1.0->1 int/float collapse only\"],\"latency_ms\":46860},\"B\":{\"accepted\":true,\"num_tools\":112,\"latency_ms\":5685,\"tool_name_returned\":\"synapse_ping\"}}},\"redaction\":\"all API keys redacted; env names present: ANTHROPIC_API_KEY(401/CLI-cred), GEMINI_API_KEY, GOOGLE_API_KEY\"}",
+  "notes": "METHOD INTEGRITY: Used the REAL 112-tool registry under PY631 (synapse.mcp._tool_registry.TOOL_JSON, 112 entries confirmed), not synthesized schemas. Subset = the 10 distinct baton tool names; forcing target = synapse_solaris_build_graph (the deep array+nested-object+enum case). Probe script written OUTSIDE the repo at C:\\\\Users\\\\User\\\\probe_tmp\\\\synapse_fidelity_probe.py (the harness-specified %TEMP% under AppData is write-blocked by the file tool, so a sibling non-repo dir was used; full payload 63238 bytes ~= baton's ~65.7KB). NO source files edited.\n\nKEY CAVEAT ON GEMINI auto-scorer: score_args() marked Gemini faithful=true because it only checked parms was a dict; manual inspection shows parms came back EMPTY ({}), so nested values were DROPPED. Corrected verdict = faithful=FALSE for Gemini. The Ollama legs were genuinely faithful (values present). Surfacing this rather than trusting the auto-flag.\n\nANTHROPIC BLOCKER: the only ANTHROPIC_API_KEY available (108-char sk-ant-api03-...) returns 401 invalid x-api-key on every call including a bare no-tools call -- it is the Claude Code CLI credential, not a raw API key. daemon resolves the same env var (auth.py:101) so there is no alternate. To verify Anthropic H1 live, a real Anthropic API key must be exported.\n\nROUTER_REQUIRED=true RATIONALE: a router/translation-repair layer IS required, but provider-specifically. NOT needed for Anthropic (native shape) or Ollama local/cloud (OpenAI-compat JSON-Schema pass-through was lossless and accepted all 112). IS required for Gemini, which (a) drops untyped 'value' slots and empties free-form object slots in translation (lossy at N=1) and (b) outright rejects the full 112-tool payload (integer enums + property-less nested objects). So router_required=true is driven entirely by the Gemini leg. If Gemini is dropped from the provider set, router_required would be FALSE on the measured evidence.\n\nLATENCY (ms, subset arg-fidelity call): anthropic 217 (401 fast-fail), gemini 3265, ollama_local 93404 (nano local, slow), ollama_cloud 46860 (550b). Full-112 trivial call: anthropic 184 (401), gemini 531 (400), ollama_local 11176, ollama_cloud 5685.\n\nMODEL STRINGS RESOLVED LIVE: gemini-flash-latest (also gemini-2.5-flash, gemini-3.5-flash); nemotron-3-nano:latest local + nemotron-3-ultra:cloud (550b, ctx 262144), both tools-capable per /api/tags. DEFAULT_MODEL seed divergence (sonnet-4-5 vs -4-6) not load-bearing here, not chased.\n\nARTIFACTS: probe script preserved at C:\\\\Users\\\\User\\\\probe_tmp\\\\synapse_fidelity_probe.py (outside repo). Transient Gemini retest/bisect/static-scan scripts removed after use."
+}
