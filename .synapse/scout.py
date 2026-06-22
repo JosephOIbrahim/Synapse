@@ -75,11 +75,13 @@ def _verify_targets(feature_verify):
     m = _VERIFY_PATH.search(feature_verify)
     if m and not m.group(2).startswith("-"):
         check, arg = m.group(1), m.group(2)
-        # The `importable` check takes a dotted MODULE name, not a filesystem
-        # path — it's validated by importing, never by os.path.exists. A dotted
-        # name never exists as a literal path, which falsely flagged
-        # `synapse.panel.designsystem` as a missing goalpost.
-        if check != "importable":
+        # Some verify.py checks don't take a must-exist path, so os.path.exists
+        # on their argument gives a false 'missing goalpost':
+        #   importable  -> a dotted MODULE name (validated by import, not a path;
+        #                  e.g. synapse.panel.designsystem)
+        #   absent-file -> a path that SHOULD NOT exist (absence is the goal,
+        #                  e.g. scene_doctor.py after quarantine)
+        if check not in ("importable", "absent-file"):
             targets.append(arg)
     return targets
 
