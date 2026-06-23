@@ -21,6 +21,16 @@ new subdir.
 
 ## ⚠ The one thing you must know first: 3 of 5 goalposts can't give a real signal under the harness's gate
 
+> **UPDATE — RESOLVED (2026-06-23).** The `failure-trail` and `docking-minimums`
+> contracts now route their Qt-bound verifies through `.synapse/hytest.py`, a shim
+> that runs the selector under a discovered hython (PySide present), so the harness
+> gets a real pass/fail and no longer counts a skip as a pass. Verified end-to-end:
+> all three report `rc=1, skipped=0 → not-passing` through `memory._run`. The
+> analysis below is kept as the rationale; of the two "not applied" fixes at the
+> end of this section, the hython-runner one WAS applied (as the shim — the durable
+> form, version-proof rather than a pinned path). The token goalposts still run on
+> stock pytest, which is correct.
+
 The harness evaluates a feature by running its `verify` command and checking
 `returncode == 0` (`.synapse/memory.py::_run`). The gate is **stock
 `pytest -q`** (`config.yaml` / `harness.py::load_config`).
@@ -212,14 +222,15 @@ Per the task's rule ("if you cannot make it fail cleanly as an assertion, STOP
 and report"):
 
 - **`test_runtime_paths_log`, `test_dead_verb_hidden`, `test_usable_at_min_height`
-  cannot resolve to a clean PASS/FAIL on this machine's stock gate.** Their
-  owning modules hard-import PySide, which is absent from `python` here, so the
-  only collectable outcome under stock `pytest` is SKIP → exit 0 → counted as
-  PASSING (false green). They ARE real, correct goalposts — verified to FAIL
-  today under hython with the right reasons — but the harness must run them under
-  hython (or with PySide installed) for the signal to be real. There is no
-  honest middle option on a PySide-less interpreter: skip→false-green, or
-  hard-fail→unsatisfiable. This is flagged rather than papered over.
+  could not resolve to a clean PASS/FAIL under *stock* `pytest`** — RESOLVED
+  (2026-06-23) by routing those contract verifies through `.synapse/hytest.py`
+  (hython). Their owning modules hard-import PySide, absent from `python` here,
+  so under stock `pytest` the only collectable outcome was SKIP → exit 0 →
+  counted as PASSING (false green). They ARE real, correct goalposts — verified
+  to FAIL today under hython with the right reasons — so the fix was to make the
+  harness run them under hython (the shim), not to weaken the tests. There was no
+  honest middle option on a PySide-less *stock* interpreter (skip→false-green, or
+  hard-fail→unsatisfiable); the shim removes that dilemma by changing interpreter.
 - The two **token** goalposts have no such issue — they are clean on every
   interpreter and are the dependable signal for `theme-seed-tokens`.
 - Residual coupling worth knowing (not a blocker): `test_follows_host_scheme`

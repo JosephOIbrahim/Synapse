@@ -12,8 +12,12 @@ do_not_touch:
   - "python/synapse/panel/claude_worker.py"     # §1 FLOOR
   - "python/synapse/cognitive/**"
 features:
+  # PySide-bound goalpost runs under hython via .synapse/hytest.py: stock
+  # `pytest -q` SKIPs it (no PySide) and a skip exits 0, which the harness reads
+  # as PASSING -- a false green. The shim finds a hython with pytest+PySide (or
+  # honours $SYNAPSE_HYTHON), so it survives Houdini upgrades.
   - description: "Panel lays out without overflow at 400px tall"
-    verify: "pytest -q tests/panel/test_docking.py::test_usable_at_min_height"
+    verify: "python .synapse/hytest.py tests/panel/test_docking.py::test_usable_at_min_height"
     passing: false
   - description: "No child sets a hard minimum height above 200px"
     verify: "python .synapse/verify.py max-min-height python/synapse/panel 200"

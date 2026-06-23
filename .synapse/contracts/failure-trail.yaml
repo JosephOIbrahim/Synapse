@@ -10,11 +10,15 @@ do_not_touch:
   - "python/synapse/panel/claude_worker.py"     # §1 FLOOR
   - "python/synapse/cognitive/**"
 features:
+  # PySide-bound goalposts run under hython via .synapse/hytest.py: stock
+  # `pytest -q` SKIPs them (no PySide) and a skip exits 0, which the harness
+  # reads as PASSING -- a false green. The shim finds a hython with pytest+PySide
+  # (or honours $SYNAPSE_HYTHON), so it survives Houdini upgrades.
   - description: "A forced failure on a guarded runtime path leaves a logger.debug trail"
-    verify: "pytest -q tests/panel/test_failure_trail.py::test_runtime_paths_log"
+    verify: "python .synapse/hytest.py tests/panel/test_failure_trail.py::test_runtime_paths_log"
     passing: false
   - description: "'open in render view' verb is hidden when the render bridge is absent"
-    verify: "pytest -q tests/panel/test_failure_trail.py::test_dead_verb_hidden"
+    verify: "python .synapse/hytest.py tests/panel/test_failure_trail.py::test_dead_verb_hidden"
     passing: false
   - description: "No phantom host calls introduced on the touched files"
     verify: "python .synapse/verify.py symbols-in-runtime python/synapse/panel/face_review.py"
