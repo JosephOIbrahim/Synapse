@@ -90,10 +90,16 @@ function runAgent(systemPrompt: string, userMsg: string, cwd: string): string {
   // (Node DEP0190), which strips backslashes from a Windows path → "settings file not found"
   // → silent fallback to the global env-block key. Forward slashes survive; claude accepts them.
   const AGENT_SETTINGS = join(REPO, "harness/agent-settings.json").replace(/\\/g, "/");
+  // shell:true concatenates args WITHOUT escaping (DEP0190): multi-line prompts and spaced
+  // paths get shredded. Pass the system prompt via a FILE and the user message via STDIN; -p
+  // goes last (no arg) so it reads the message from stdin. Forward-slash every path arg.
+  const spFile = join(cwd, ".claude", "harness_sysprompt.md");
+  mkdirSync(join(cwd, ".claude"), { recursive: true });
+  writeFileSync(spFile, systemPrompt);
   const r = spawnSync(
     CLAUDE_BIN,
-    ["--settings", AGENT_SETTINGS, "-p", userMsg, "--append-system-prompt", systemPrompt /* , "--output-format", "text" */],
-    { cwd, encoding: "utf8", shell: process.platform === "win32", maxBuffer: 64 * 1024 * 1024 }
+    ["--settings", AGENT_SETTINGS, "--append-system-prompt-file", spFile.replace(/\\/g, "/"), "-p" /* , "--output-format", "text" */],
+    { cwd, input: userMsg, encoding: "utf8", shell: process.platform === "win32", maxBuffer: 64 * 1024 * 1024 }
   );
   if (r.status !== 0) log(`${c.warn}  agent exited ${r.status}: ${(r.stderr || "").slice(0, 400)}${c.off}`);
   return r.stdout ?? "";
@@ -101,9 +107,12 @@ function runAgent(systemPrompt: string, userMsg: string, cwd: string): string {
 
 function runChecks(task: any, cwd: string): any {
   if (DRY) return { _dry: true, verdict: "SKIPPED" };
+  // Quote + forward-slash the path args: shell:true won't (DEP0190), so a spaced HYTHON
+  // ("C:/Program Files/...") would shatter and break checks.py's argparse.
+  const qp = (p: string) => `"${String(p).replace(/\\/g, "/")}"`;
   const r = spawnSync(
     PYTHON,
-    ["harness/verify/checks.py", "--task", task.id, "--worktree", cwd, "--hython", HYTHON, "--mode", MODE],
+    ["harness/verify/checks.py", "--task", task.id, "--worktree", qp(cwd), "--hython", qp(HYTHON), "--mode", MODE],
     { cwd: REPO, encoding: "utf8", shell: process.platform === "win32", maxBuffer: 32 * 1024 * 1024 }
   );
   try { return JSON.parse(r.stdout); }
