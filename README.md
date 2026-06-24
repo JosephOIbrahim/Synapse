@@ -331,6 +331,35 @@ The port pattern is mechanical and documented in `docs/crucible_protocol.md` + t
 2. A schema dict (description + JSON Schema) registered alongside the function.
 3. The WS adapter branch in `mcp_server.py` swapped from `synapse_inspect_stage`-style direct dispatch to `dispatcher.execute('<name>', kwargs)`.
 
+### H22 readiness — the autonomous self-verifying harness
+
+`harness/` is a long-running loop that grinds the Houdini-22 preparedness checklist so drop day is **verification, not surgery**. Per task: a fresh Generator (WIP=1, hard context reset) implements one item in an isolated git worktree; `checks.py` runs deterministic facts (hython cooks, `synapse_doctor`, the APEX probe — never an LLM's say-so); an adversarial Evaluator returns a parseable JSON verdict. PASS banks the worktree for **your** merge; FAIL writes a repair ticket and loops, capped at `MAX_ROUNDS` before the task is flagged for a human. It commits in worktrees only — **never merges to main** — and runs headless on the **Claude Max subscription** (zero API credits). Proven end-to-end on H21: task `0.3` ran Generator → `checks.py` → Evaluator → atomic worktree commit, master untouched.
+
+Two modes, one switch. **Mode A** (now, on H21) grinds Phase 0 (`0.1`–`0.7`); **Mode B** arms the post-drop `1.x/2.x/3.x` pipeline the instant a human writes `harness/state/drop.json` with H22's three numbers (Python · USD · PySide). Three human gates are never auto-crossed: the **sidecar-vs-abi3** survival architecture (decision brief in `harness/notes/`), the **drop trigger**, and the **merge to main**.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart LR
+    DROP{"harness/state/<br/>drop.json?"}:::hot -->|"absent"| AM["Mode A &middot; Phase 0<br/>0.1–0.7 on H21"]:::obs
+    DROP -->|"present (3 numbers)"| BM["Mode B &middot; 1.x/2.x/3.x<br/>armed on H22"]:::obs
+    AM --> GEN
+    BM --> GEN
+    subgraph LOOP["self-verifying loop &middot; WIP=1 &middot; per task"]
+        GEN["fresh Generator<br/>(hard context reset)"]:::panel -->|"one atomic commit<br/>in an isolated worktree"| CHK["checks.py<br/>deterministic facts<br/>hython &middot; doctor &middot; probe"]:::obs
+        CHK --> EVAL["adversarial Evaluator<br/>Houdini TD &middot; JSON verdict"]:::hot
+        EVAL -->|"FAIL → repair ticket"| GEN
+        EVAL -->|"PASS"| WT[("worktree<br/>awaiting YOUR merge")]:::ok
+        EVAL -->|"MAX_ROUNDS"| HUM["flagged for a human"]:::hot
+    end
+    LOOP ~~~ GATES["3 human gates — never auto-crossed:<br/>0.1 sidecar vs abi3 &middot; drop trigger &middot; merge to main"]:::hot
+    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
+    classDef hot fill:#334155,stroke:#ef4444,color:#f1f5f9
+    classDef ok fill:#1e293b,stroke:#22c55e,color:#f1f5f9
+```
+
+Standing it up surfaced + fixed real product hygiene under full-suite gating: hardcoded `C:\Users\User\SYNAPSE` fallbacks in the panel bootstraps (plus an off-by-one repo-root derivation the hardcode was masking), a single-sourced `VERSION`, and a staged demo scaffold. The `ui/` → `panel/` consolidation is fully mapped and deferred — the live UI source of truth is already `panel/`.
+
 ### v5.14.0 — Studio-operable: the N-seats milestone
 
 M3 closes the hardening report: the engine was already honest (M1) and pipeline-fluent (M2) — this milestone makes it **operable by people who didn't build it**. The recurring theme is evidence: a frozen session dumps its telemetry before dying, a stale phantom-API gate says so in the panel footer instead of one console line, a doctor reports only checks it actually ran, and the docs that answer a studio's first three questions (what leaves the building? whose key? what breaks on upgrade?) are **CI-pinned against drift** — a new env var, egress site, or renamed artifact fails the suite until the doc catches up.
@@ -731,6 +760,12 @@ tests/                          # 3612 local; ~70 are Moneta-gated (skip on a
 docs/sprint3/                   # audits + design contracts + continuation
 docs/crucible_protocol.md       # manual Crucible runbook
 mcp_server.py                   # Sprint 2 WebSocket adapter (still shipping)
+harness/                        # H22 readiness — self-verifying loop
+├── run.ts                      #   orchestrator (bun/node) — gate loop, worktree routing, Mode A/B
+├── verify/checks.py            #   deterministic checks (the Playwright analog)
+├── prompts/                    #   generator.md (WIP=1 builder) + evaluator.md (adversarial TD)
+├── notes/                      #   gate-0.1 sidecar-vs-abi3 decision brief
+└── state/                      #   tasks.json · claude-progress.md · drop.json (Mode-B trigger)
 ```
 
 ---
