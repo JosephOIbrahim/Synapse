@@ -44,3 +44,8 @@ H21, so drop day is **verification, not surgery**.
 - 2026-06-24 18:26 · 0.3 BLOCKED after 1 rounds — needs a human — Single-source the version
 - 2026-06-24 18:37 · 0.3 BLOCKED after 1 rounds — needs a human — Single-source the version
 - 2026-06-24 18:54 · 0.3 PASS — Single-source the version
+- 2026-06-24 · POST-STEP-5 (user asked to advance the real work; product edits authorized):
+- 2026-06-24 · GATE 0.1 brief written → `harness/notes/gate-0.1-sidecar-vs-abi3.md`. Key: only 2 vendored deps ABI-locked (pydantic_core, jiter; cp311 wheels, NOT abi3) → abi3 needs a fork = off the table. Real choice = sidecar vs in-process+re-vendor-on-drop. Recommendation surfaced; decision still the human's.
+- 2026-06-24 · 0.7/0.4 clean_install GREEN: dropped hardcoded `C:\Users\User\SYNAPSE` from synapse_panel.pypanel + synapse_chat.pypanel (rely on SYNAPSE_ROOT/PYTHONPATH) and system_prompt.py (fixed an off-by-one repo-root derivation the hardcode masked). checks.py check_clean_install now scans only the shipped product surface (houdini/, packages/, python/synapse). Verified PASS + test_agent_loop 18-passed.
+- 2026-06-24 · 0.5 GREEN (with OCIO set): created `demo/synapse_demo.hip` (minimal /stage scene) → hip_opens green; shot_login green once OCIO is set (artist pipeline prereq, documented in demo/README.md; the check only verifies OCIO is configured).
+- 2026-06-24 · 0.4 ui→panel fold NOT done (deliberate): live UI truth is ALREADY `panel/synapse_panel` (the .pypanel loads it, not ui/). Legacy `ui/` is dead-but-test-pinned — `test_v5_features.py:54-82` asserts ui/ modules exist; panel/ has no `create_panel`. Full removal = a real refactor needing test_v5_features edits + full-suite verification. Flagged, not rushed.
