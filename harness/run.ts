@@ -86,10 +86,13 @@ function runAgent(systemPrompt: string, userMsg: string, cwd: string): string {
   // agents authenticate on the Max-plan claude.ai login — the global ~/.claude/settings.json
   // env-block key is credit-starved and would otherwise hijack every agent. The tool
   // allowlist is still inherited from the worktree's .claude/settings.json.
-  const AGENT_SETTINGS = join(REPO, "harness/agent-settings.json");
+  // Forward-slash path + --settings first: shell:true concatenates args WITHOUT escaping
+  // (Node DEP0190), which strips backslashes from a Windows path → "settings file not found"
+  // → silent fallback to the global env-block key. Forward slashes survive; claude accepts them.
+  const AGENT_SETTINGS = join(REPO, "harness/agent-settings.json").replace(/\\/g, "/");
   const r = spawnSync(
     CLAUDE_BIN,
-    ["-p", userMsg, "--append-system-prompt", systemPrompt, "--settings", AGENT_SETTINGS /* , "--output-format", "text" */],
+    ["--settings", AGENT_SETTINGS, "-p", userMsg, "--append-system-prompt", systemPrompt /* , "--output-format", "text" */],
     { cwd, encoding: "utf8", shell: process.platform === "win32", maxBuffer: 64 * 1024 * 1024 }
   );
   if (r.status !== 0) log(`${c.warn}  agent exited ${r.status}: ${(r.stderr || "").slice(0, 400)}${c.off}`);
