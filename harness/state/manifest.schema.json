@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SYNAPSE harness — Evaluator verdict",
+  "description": "Emitted by the Evaluator agent, parsed by run.ts. On FAIL the remediation_manifest is injected verbatim into the next Generator's repair ticket.",
+  "type": "object",
+  "required": ["scores", "gate_status", "remediation_manifest"],
+  "properties": {
+    "scores": {
+      "type": "object",
+      "description": "Each vector 0–10. Pass floor is 7. Any vector < 7 forces gate_status FAIL.",
+      "required": ["functionality", "provenance", "api_correctness", "craft"],
+      "properties": {
+        "functionality":   { "type": "integer", "minimum": 0, "maximum": 10 },
+        "provenance":      { "type": "integer", "minimum": 0, "maximum": 10 },
+        "api_correctness": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "craft":           { "type": "integer", "minimum": 0, "maximum": 10 }
+      }
+    },
+    "gate_status": { "type": "string", "enum": ["PASS", "FAIL"] },
+    "remediation_manifest": {
+      "type": "array",
+      "description": "Empty on PASS. On FAIL, one precise repair ticket per item.",
+      "items": {
+        "type": "object",
+        "required": ["target_file", "issue", "evidence"],
+        "properties": {
+          "target_file": { "type": "string", "description": "Repo-relative path to fix." },
+          "issue":       { "type": "string", "description": "What is wrong, specifically." },
+          "evidence":    { "type": "string", "description": "The check fact / cook log line proving it." },
+          "vector":      { "type": "string", "enum": ["functionality", "provenance", "api_correctness", "craft"] }
+        }
+      }
+    }
+  }
+}
