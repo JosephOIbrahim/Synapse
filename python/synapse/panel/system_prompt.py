@@ -21,13 +21,13 @@ def _load_tone() -> str | None:
         return _tone_cache
 
     # Derive repo root from this file's location:
-    # python/synapse/panel/system_prompt.py -> 4 levels up
+    # python/synapse/panel/system_prompt.py -> 3 levels up (panel -> synapse -> python -> repo)
     _this_dir = os.path.dirname(os.path.abspath(__file__))
-    repo_root = os.path.normpath(os.path.join(_this_dir, "..", "..", "..", ".."))
+    repo_root = os.path.normpath(os.path.join(_this_dir, "..", "..", ".."))
 
     search_paths = [
         os.path.join(repo_root, "TONE.md"),
-        "C:/Users/User/SYNAPSE/TONE.md",
+        os.path.join(os.environ.get("SYNAPSE_ROOT", repo_root), "TONE.md"),
         os.path.expanduser("~/.synapse/TONE.md"),
     ]
 

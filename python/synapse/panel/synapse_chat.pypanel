@@ -11,10 +11,14 @@ import os
 # Ensure synapse package is importable.
 # Houdini runs pypanel scripts via exec() so __file__ is not defined.
 # Use SYNAPSE_ROOT env var or well-known location to find the package.
-_synapse_root = os.environ.get("SYNAPSE_ROOT", r"C:\Users\User\SYNAPSE")
-_synapse_py = os.path.join(_synapse_root, "python")
-if os.path.isdir(_synapse_py) and _synapse_py not in sys.path:
-    sys.path.insert(0, _synapse_py)
+# SYNAPSE_ROOT is set portably by the synapse Houdini package (packages/synapse.json).
+# No hardcoded user path: if unset, rely on the package's PYTHONPATH; a failed import below
+# surfaces clearly rather than pointing at a wrong directory.
+_synapse_root = os.environ.get("SYNAPSE_ROOT", "")
+if _synapse_root:
+    _synapse_py = os.path.join(_synapse_root, "python")
+    if os.path.isdir(_synapse_py) and _synapse_py not in sys.path:
+        sys.path.insert(0, _synapse_py)
 
 # Also ensure design system is importable for tokens
 _design_dir = os.path.join(os.path.expanduser("~"), ".synapse", "design")

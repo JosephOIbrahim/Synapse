@@ -152,22 +152,35 @@ def check_runsheet_present(ctx):
     return {"ok": beats >= 6, "detail": f"{beats} beat headings (expect ≥6)"}
 
 def check_clean_install(ctx):
-    # The 'your tool vs a studio's tool' check: install via package only, no hardcoded fallback.
-    # ADAPT: run install.py against a TEMP HOUDINI_USER_PREF_DIR so it's a real clean env.
-    bad = "C:\\Users\\User\\SYNAPSE"
-    src = ""
-    for root, _, files in os.walk(ctx["wt"]):
-        if ".git" in root or "worktrees" in root:
+    # The 'your tool vs a studio's tool' check: the SHIPPED product surface must not bake in a
+    # per-user path. Scan ONLY what reaches a clean machine (houdini/, packages/, the synapse
+    # package) — NOT the harness, tests, dev scripts, docs, or vendored third-party code (and so
+    # not this file's own search literal). Reports the offending files. ADAPT: also assert
+    # install.py registers into a TEMP HOUDINI_USER_PREF_DIR for a true clean-env test.
+    wt = Path(ctx["wt"])
+    needles = ("c:\\users\\user\\synapse", "c:/users/user/synapse")
+    product_roots = ("houdini", "packages", "python/synapse")
+    skip_parts = ("_vendor", "__pycache__", ".git")
+    offenders = []
+    for rel in product_roots:
+        base = wt / rel
+        if not base.exists():
             continue
-        for fn in files:
-            if fn.endswith((".py", ".json", ".pypanel")):
-                try:
-                    src += (Path(root) / fn).read_text(errors="ignore")
-                except Exception:
-                    pass
-    hardcoded = bad.lower() in src.lower()
-    return {"ok": not hardcoded, "detail": "hardcoded user-path fallback FOUND" if hardcoded
-            else "no hardcoded fallback detected (ADAPT: also assert install.py registers nodes in a temp pref dir)"}
+        for p in base.rglob("*"):
+            if not p.is_file() or p.suffix not in (".py", ".json", ".pypanel"):
+                continue
+            if any(s in p.parts for s in skip_parts):
+                continue
+            try:
+                text = p.read_text(errors="ignore").lower()
+            except Exception:
+                continue
+            if any(n in text for n in needles):
+                offenders.append(str(p.relative_to(wt)).replace("\\", "/"))
+    return {"ok": not offenders,
+            "detail": (f"hardcoded user-path in: {', '.join(offenders[:8])}" if offenders
+                       else "no hardcoded user-path in the shipped product surface "
+                            "(ADAPT: also assert install.py into a temp pref dir)")}
 
 def check_nodes_appear(ctx):
     # ADAPT: after install, confirm the panel's tools/nodes register — kills the 'processes but no nodes' class.

@@ -17,18 +17,18 @@ import os
 # Make the synapse package importable. The Houdini package already prepends
 # <repo>/python to PYTHONPATH; this is belt-and-suspenders for exec() context
 # (pypanel scripts run via exec, so __file__ is undefined).
-_root = os.environ.get("SYNAPSE_ROOT", r"C:\Users\User\SYNAPSE")
-_py = os.path.join(_root, "python")
-if os.path.isdir(_py) and _py not in sys.path:
-    sys.path.insert(0, _py)
-# shared/ (the Lossless bridge, advisor, constants) lives at the REPO ROOT, not
-# under python/. SynapseHandler -> handlers_render imports `from shared...`, so
-# the repo root itself MUST be importable or the whole handler surface (and the
-# bridge + observability) silently fails to load  which surfaced to the artist
-# as a misleading "hou isn't responding". Root cause of the "processes but no
-# nodes" bug: only <root>/python was on the path, never <root>.
-if os.path.isdir(_root) and _root not in sys.path:
-    sys.path.insert(0, _root)
+# SYNAPSE_ROOT is set by the synapse Houdini package (packages/synapse.json, which derives
+# it portably from $HOUDINI_PACKAGE_PATH). Add BOTH <root>/python (the synapse package) AND
+# <root> itself — shared/ (Lossless bridge, advisor) lives at the repo root, not under python/,
+# and SynapseHandler -> handlers_render does `from shared...`; omitting the root silently breaks
+# the handler surface (the old "processes but no nodes" bug). NO hardcoded user path: if
+# SYNAPSE_ROOT is unset we rely on the package's PYTHONPATH; if synapse is still unimportable,
+# onCreateInterface() below surfaces a clear in-panel error instead of pointing at a wrong path.
+_root = os.environ.get("SYNAPSE_ROOT", "")
+if _root:
+    for _p in (os.path.join(_root, "python"), _root):
+        if os.path.isdir(_p) and _p not in sys.path:
+            sys.path.insert(0, _p)
 
 # Hot-reload: flush cached synapse modules so reopening the panel picks up code
 # edits without a Houdini restart. The design system is vendored under
