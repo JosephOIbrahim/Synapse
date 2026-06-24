@@ -1,0 +1,6 @@
+{
+  "_comment": "Loaded by harness/run.ts runAgent() via `claude --settings <this file>` (command-line precedence = highest). Sole purpose: blank ANTHROPIC_API_KEY so spawned headless agents fall back to the Max-plan claude.ai login instead of the global ~/.claude/settings.json env-block key (which is credit-starved). Tool permissions are NOT here — they live in .claude/settings.json (inherited by each worktree). Verified: `claude --settings '{\"env\":{\"ANTHROPIC_API_KEY\":\"\"}}' -p ...` returns AUTHOK on the subscription.",
+  "env": {
+    "ANTHROPIC_API_KEY": ""
+  }
+}

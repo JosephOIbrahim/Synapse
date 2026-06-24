@@ -82,9 +82,14 @@ function ensureWorktree(id: string): string {
  */
 function runAgent(systemPrompt: string, userMsg: string, cwd: string): string {
   if (DRY) return "";
+  // WIRED (Step 4): --settings (highest precedence) blanks ANTHROPIC_API_KEY so spawned
+  // agents authenticate on the Max-plan claude.ai login — the global ~/.claude/settings.json
+  // env-block key is credit-starved and would otherwise hijack every agent. The tool
+  // allowlist is still inherited from the worktree's .claude/settings.json.
+  const AGENT_SETTINGS = join(REPO, "harness/agent-settings.json");
   const r = spawnSync(
     CLAUDE_BIN,
-    ["-p", userMsg, "--append-system-prompt", systemPrompt /* , "--output-format", "text" */],
+    ["-p", userMsg, "--append-system-prompt", systemPrompt, "--settings", AGENT_SETTINGS /* , "--output-format", "text" */],
     { cwd, encoding: "utf8", shell: process.platform === "win32", maxBuffer: 64 * 1024 * 1024 }
   );
   if (r.status !== 0) log(`${c.warn}  agent exited ${r.status}: ${(r.stderr || "").slice(0, 400)}${c.off}`);
