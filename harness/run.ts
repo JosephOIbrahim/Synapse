@@ -82,10 +82,10 @@ function ensureWorktree(id: string): string {
  */
 function runAgent(systemPrompt: string, userMsg: string, cwd: string): string {
   if (DRY) return "";
-  // WIRED (Step 4): --settings (highest precedence) blanks ANTHROPIC_API_KEY so spawned
-  // agents authenticate on the Max-plan claude.ai login — the global ~/.claude/settings.json
-  // env-block key is credit-starved and would otherwise hijack every agent. The tool
-  // allowlist is still inherited from the worktree's .claude/settings.json.
+  // WIRED (Step 4): --settings (highest precedence) loads harness/agent-settings.json, which
+  // (a) blanks ANTHROPIC_API_KEY so spawned agents auth on the Max-plan login (the global
+  // ~/.claude env-block key is credit-starved), and (b) carries the tool allowlist + the
+  // never-push/merge denies — so the agent safety binds the AGENTS, not the human's session.
   // Forward-slash path + --settings first: shell:true concatenates args WITHOUT escaping
   // (Node DEP0190), which strips backslashes from a Windows path → "settings file not found"
   // → silent fallback to the global env-block key. Forward slashes survive; claude accepts them.
