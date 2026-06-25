@@ -148,6 +148,16 @@ def test_aa_cycle_steps_above_a_host_base_scale():
     assert p._font_scale in t.FONT_SCALE_STEPS
 
 
+def test_connect_button_exists_and_is_graceful_headless():
+    # The rail Connect button force-starts the bridge server. Headless there is
+    # no hwebserver, so clicking must degrade gracefully — announce, never raise.
+    p = _panel()
+    assert getattr(p, "_connect_btn", None) is not None
+    assert p._connect_btn.text() == "Connect"
+    p._on_connect()                       # must not raise without hwebserver
+    assert p._connect_btn.text() in ("Connect", "Bridge ✓")
+
+
 def test_tracked_font_mono_branch_builds():
     _app()
     from synapse.panel.designsystem import fontload

@@ -350,6 +350,17 @@ class SynapsePanel(QtWidgets.QWidget):
         self._foot_dot = c.StatusDot("disconnected")
         self._foot_label = c.label("Not connected", role="caption", scale=self._chrome_scale)
         self._foot_label.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+        # Force-connect the bridge server (the hwebserver serving /synapse for
+        # external MCP clients + the /mcp endpoint the tool executor uses). The
+        # panel's chat runs in-process, but tools + external tools need this up,
+        # and it does NOT auto-start — this button is the one-click way to force
+        # it without dropping into Houdini's Python Shell.
+        self._connect_btn = c.Button("Connect", variant="ghost")
+        self._connect_btn.setToolTip(
+            "Start the Synapse bridge server (port 9999) so external / MCP tools "
+            "can reach Houdini. Safe to click anytime — idempotent."
+        )
+        self._connect_btn.clicked.connect(self._on_connect)
         self._observe = QtWidgets.QWidget()
         self._observe.setObjectName("DsRailMeter")
         self._observe.setAttribute(Qt.WA_StyledBackground, True)
@@ -363,10 +374,63 @@ class SynapsePanel(QtWidgets.QWidget):
         bot.addWidget(self._author_lbl)
         bot.addWidget(self._foot_dot)
         bot.addWidget(self._foot_label)
+        bot.addWidget(self._connect_btn)
         bot.addWidget(self._observe, 1)
         bot.addWidget(self._stop_btn)
         col.addLayout(bot)
         return w
+
+    def _on_connect(self):
+        """Force-start the Synapse bridge server — the hwebserver that serves the
+        /synapse WS for external MCP clients and the /mcp endpoint the panel's
+        tool executor talks to. Idempotent (a no-op if already running), runs the
+        native server in the background (non-blocking), and reports the outcome in
+        the chat. Degrades gracefully outside Houdini (no hwebserver)."""
+        try:
+            from synapse.server.hwebserver_adapter import start_hwebserver, get_health
+        except Exception as exc:
+            self._announce_bridge("Bridge unavailable — it needs to run inside "
+                                  "Houdini (%s)." % exc)
+            return
+        try:
+            start_hwebserver(port=9999)
+            health = get_health()
+            if health.get("running"):
+                self._announce_bridge("Bridge running on :%s — external / MCP tools "
+                                      "can now reach Houdini." % health.get("port", 9999))
+            else:
+                self._announce_bridge("Bridge did not report running — check the "
+                                      "Houdini console for details.")
+        except Exception as exc:
+            self._announce_bridge("Couldn't start the bridge: %s" % exc)
+        self._refresh_bridge_state()
+
+    def _announce_bridge(self, msg):
+        """Surface a bridge status line in the chat; never raise."""
+        try:
+            self._chat.append_system_message(msg)
+        except Exception:
+            pass
+
+    def _refresh_bridge_state(self):
+        """Reflect the live bridge state on the Connect button — once the server
+        is up the button reads 'Bridge ✓' (still clickable to re-confirm). Best
+        effort: any failure leaves the default 'Connect'."""
+        running = False
+        try:
+            from synapse.server.hwebserver_adapter import is_running
+            running = bool(is_running())
+        except Exception:
+            running = False
+        btn = getattr(self, "_connect_btn", None)
+        if btn is not None:
+            btn.setText("Bridge ✓" if running else "Connect")
+            btn.setToolTip(
+                "Synapse bridge is running on :9999. Click to re-confirm."
+                if running else
+                "Start the Synapse bridge server (port 9999) so external / MCP "
+                "tools can reach Houdini. Safe to click anytime — idempotent."
+            )
 
     def _build_model_bar(self):
         """Model selection, made APPARENT (Image #6). A segmented Claude·Gemini
