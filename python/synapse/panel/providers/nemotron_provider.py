@@ -201,6 +201,14 @@ class NemotronProvider(StreamProvider):
         return self._model
 
     def resolve_key(self):
+        # Ensure the project .env is loaded into os.environ. host.auth does this
+        # at import (_load_dotenv), but a Nemotron-first session may never touch
+        # the Anthropic path — so a key placed ONLY in <repo>/.env would be
+        # missed without this. Import for its side-effect; never raise.
+        try:
+            import synapse.host.auth  # noqa: F401 — side-effect: loads <repo>/.env
+        except Exception:
+            pass
         v = os.environ.get("NVIDIA_API_KEY")
         if v and v.strip():
             return v.strip()

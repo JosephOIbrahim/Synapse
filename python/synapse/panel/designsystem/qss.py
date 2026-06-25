@@ -94,6 +94,13 @@ QPushButton#DsSeg[active="true"] {{
     background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT}; border-color: {t.SIGNAL};
 }}
 
+/* ---- model picker chip — small label + ▾, NOT the dominant element ---- */
+QPushButton#DsModelChip {{
+    background: transparent; border: none; padding: 0 {t.SPACE_XS}px;
+    color: {t.TEXT_BRIGHT}; font-size: {s(t.SIZE_SMALL)}px; font-weight: 600;
+}}
+QPushButton#DsModelChip:hover {{ color: {t.TEXT_ACCENT}; }}
+
 /* ---- type-set verbs (Direct act bar + Review actions) — Mile 7 --- */
 /* Verbs read as type, not buttons: flat, mono, the chrome recedes. */
 QPushButton#DsVerb {{

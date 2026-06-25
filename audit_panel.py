@@ -257,6 +257,29 @@ try:
     else:
         FAILS.append(1)
         print("   [FAIL] input not clipped: Send button missing/hidden on Direct face")
+
+    # --- readability: body must MATCH the host UI size (>= Houdini default) ---
+    try:
+        from PySide6.QtGui import QFontInfo
+    except ImportError:
+        from PySide2.QtGui import QFontInfo
+    host_px = QFontInfo(app.font()).pixelSize()
+    body_px = round(t.SIZE_BODY * getattr(panel, "_font_scale", t.FONT_SCALE_DEFAULT))
+    print(f"   body matches host   : body {body_px}px vs host {host_px}px  "
+          + tag(body_px >= host_px - 1))
+
+    # --- model chip shows a SHORT label, not the long raw model id ---
+    chip_short = chip is not None and "/" not in chip.text() and chip.text() == panel._model_chip_text()
+    _chip_txt = repr(chip.text()) if chip is not None else None
+    print(f"   chip short-label    : {_chip_txt}  " + tag(chip_short))
+
+    # --- ⌘K folded into the input ("/" opens palette; no bar glyph button) ---
+    inp = getattr(panel, "_input", None)
+    slash_ok = (inp is not None and "/" in inp.placeholderText()
+                and hasattr(inp, "slash") and not hasattr(panel, "_more_btn")
+                and hasattr(panel, "_open_palette"))
+    _ph = repr(inp.placeholderText()) if inp is not None else None
+    print(f"   ⌘K folded into input: placeholder={_ph}  " + tag(slash_ok))
 except Exception as e:
     WARNS.append(1)
     print(f"   [skip] live build unavailable here: {type(e).__name__}: {e}")

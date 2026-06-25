@@ -81,12 +81,13 @@ class _GrowingInput(QtWidgets.QTextEdit):
 
     submitted = Signal()
     focus_lost = Signal()      # lets the face controller honor a deferred switch
+    slash = Signal()           # "/" on an empty prompt → open the command palette
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsInput")
         self.setAcceptRichText(False)
-        self.setPlaceholderText("Ask SYNAPSE…")
+        self.setPlaceholderText("Ask SYNAPSE…    ·    / for commands")
         # Default a comfortable multi-line height — but small enough that the
         # input + Send row are never pushed off the bottom at the min pane
         # height (the old 216px default was the crop culprit). The artist can
@@ -106,6 +107,11 @@ class _GrowingInput(QtWidgets.QTextEdit):
         self._autosize()
 
     def keyPressEvent(self, e):
+        # "/" on an empty prompt opens the command palette (⌘K folded into the
+        # input — no separate bar button). Ctrl+K still works as the shortcut.
+        if e.text() == "/" and not self.toPlainText():
+            self.slash.emit()
+            return
         if e.key() in (Qt.Key_Return, Qt.Key_Enter) and not (e.modifiers() & Qt.ShiftModifier):
             self.submitted.emit()
             return
@@ -172,7 +178,11 @@ class SynapsePanel(QtWidgets.QWidget):
         self._font_build_mismatch = self._font_status.get("build_mismatch", False)
         # M3-A: one-time check -- the symbol table cannot change mid-session
         self._gate_stale_reason = phantom_gate_status()
-        self.setStyleSheet(qss.stylesheet(t.FONT_SCALE_DEFAULT))
+        # Match Houdini's default text size: derive the base scale from the live
+        # host UI font so SYNAPSE body == the host body on ANY display/DPI (no
+        # hardcoded px guess). Falls back to the token default when headless.
+        self._font_scale = self._host_font_scale()
+        self.setStyleSheet(qss.stylesheet(self._font_scale))
 
         self._messages = []          # Anthropic-format conversation
         self._stream_buf = []        # accumulates streamed tokens
@@ -180,7 +190,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._last_tool = None       # C8: name of the in-flight tool, for an honest Stop
         self._tool_executor = ToolExecutor(parent=self) if ToolExecutor else None
         self._pending_context = []  # paths dropped in; prepended to the next send
-        self._font_scale = t.FONT_SCALE_DEFAULT
+        # (_font_scale was set above from the host font)
 
         # tab controller (v9 re-layout) — two tabs, NO auto-switch (the
         # same-pane law). Tabs move only on a user pill click; agent state
@@ -378,17 +388,15 @@ class SynapsePanel(QtWidgets.QWidget):
         # prominent model-id readout (e.g. 'sonnet-4.6') — the chip Image #6 asks
         # for; cost is intentionally omitted (the worker doesn't surface usage yet,
         # so a cost figure would be fabricated).
-        # Clickable model picker — the model id + a ▾ affordance; opens a menu of
-        # the active engine's models (Opus/Sonnet/Haiku/Fable for Claude). Was a
-        # static label; switching Anthropic models is now apparent.
-        self._model_chip = QtWidgets.QPushButton(self._author_token() + "  ▾")
+        # Clickable model picker — a SHORT model label + a ▾ affordance; opens a
+        # menu of the active engine's models (Opus/Sonnet/Haiku/Fable for Claude).
+        # Styled by the QSS #DsModelChip rule (caption-size, so the long NVIDIA
+        # ids no longer dominate the panel).
+        self._model_chip = QtWidgets.QPushButton(self._model_chip_text())
         self._model_chip.setObjectName("DsModelChip")
         self._model_chip.setCursor(Qt.PointingHandCursor)
         self._model_chip.setFlat(True)
         self._model_chip.setToolTip("Switch model")
-        self._model_chip.setStyleSheet(
-            "color:%s; background:transparent; border:none; font-weight:600;"
-            % t.TEXT_BRIGHT)
         self._model_chip.clicked.connect(self._open_model_menu)
         lay.addWidget(self._model_chip)
         self._refresh_engine_selector()
@@ -404,7 +412,7 @@ class SynapsePanel(QtWidgets.QWidget):
         chip = getattr(self, "_model_chip", None)
         if chip is not None:
             try:
-                chip.setText(self._author_token() + "  ▾")
+                chip.setText(self._model_chip_text())
             except Exception:
                 pass
 
@@ -424,6 +432,12 @@ class SynapsePanel(QtWidgets.QWidget):
             self._chat = QtWidgets.QTextBrowser()
         if hasattr(self._chat, "node_clicked"):
             self._chat.node_clicked.connect(self._on_node_clicked)
+        # Apply the host-matched scale BEFORE the greeting renders, so even the
+        # first line is at Houdini's body size.
+        try:
+            self._chat.font_scale = self._font_scale
+        except Exception:
+            pass
         try:
             self._chat.append_system_message(
                 "Ready. What are we building?"
@@ -566,6 +580,33 @@ class SynapsePanel(QtWidgets.QWidget):
             return
         stack.setCurrentIndex(1 if state == "done" else 0)
         self._work_substate = state
+
+    def _host_font_scale(self):
+        """Base font-scale that makes SYNAPSE body == the host UI font size, so
+        the panel matches Houdini's default text size on any display/DPI.
+        ``QFontInfo`` resolves the actual pixel size whether the host set it in
+        points or pixels. Floored at the token default so a tiny host font never
+        makes the panel unreadable; falls back to the default when headless."""
+        try:
+            app = QtWidgets.QApplication.instance()
+            if app is not None:
+                host_px = QtGui.QFontInfo(app.font()).pixelSize()
+                if host_px and host_px > 0:
+                    return max(t.FONT_SCALE_DEFAULT, host_px / float(t.SIZE_BODY))
+        except Exception:
+            pass
+        return t.FONT_SCALE_DEFAULT
+
+    def _model_chip_text(self):
+        """Short, readable chip label for the active model (e.g. 'Sonnet 4.6'),
+        NOT the raw model id (which is long enough to dominate the panel)."""
+        try:
+            from synapse.panel.providers.registry import model_label
+            pid = getattr(self, "_provider_id", "claude")
+            lbl = model_label(pid, self._active_model())
+        except Exception:
+            lbl = self._author_token()
+        return (lbl or "model") + "  ▾"
 
     def _active_model(self):
         """Model id of the active engine — the picked model for this provider,
@@ -856,10 +897,8 @@ class SynapsePanel(QtWidgets.QWidget):
             "Aa", lambda _=False: self._cycle_font_scale())
         self._font_btn.setToolTip("Font size — click to cycle")
         lay.addWidget(self._font_btn)
-        self._more_btn = self._verb(
-            "⌘K", lambda _=False: self._open_palette(), tone="accent")
-        self._more_btn.setToolTip("Command palette — every tool, two axes")
-        lay.addWidget(self._more_btn)
+        # ⌘K is folded into the input ("/" opens it; Ctrl+K still works) — no
+        # separate, unintuitive glyph button in the bar.
         return w
 
     def _build_input(self):
@@ -869,6 +908,7 @@ class SynapsePanel(QtWidgets.QWidget):
         col.setSpacing(t.SPACE_XS)
         self._input = _GrowingInput()
         self._input.submitted.connect(self._on_submit)
+        self._input.slash.connect(self._open_palette)   # "/" → command palette
         col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
         row = QtWidgets.QHBoxLayout()
         row.setSpacing(t.SPACE_SM)
@@ -982,7 +1022,9 @@ class SynapsePanel(QtWidgets.QWidget):
             pal = ToolPalette(self)
             pal.command_selected.connect(self._on_tool_picked)
             self._palette = pal  # keep a ref
-            self._position_popup(pal, getattr(self, "_more_btn", None))
+            # anchor to the input (the ⌘K button is gone — "/" in the input and
+            # Ctrl+K are the triggers now)
+            self._position_popup(pal, getattr(self, "_input", None))
             pal.show()
             pal.raise_()
             pal.activateWindow()
