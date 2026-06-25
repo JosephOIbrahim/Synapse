@@ -121,6 +121,22 @@ def test_review_and_approve_tools_denied(tool):
     assert allowed is False
 
 
+@pytest.mark.parametrize("tool", ["synapse_solaris_build_graph", "synapse_solaris_assemble_chain"])
+def test_solaris_builders_allowed_for_worker(tool):
+    # L4 (signed off 2026-06-25): 'review'-gated by derivation (build_from_manifest)
+    # but explicitly allowlisted -- composites of inform-level, undo-wrapped
+    # primitives, so the autonomous worker can collapse a multi-node build into
+    # one declarative call instead of a 25-turn imperative loop.
+    allowed, _ = is_tool_allowed_for_worker(tool)
+    assert allowed is True
+
+
+def test_destructive_tools_still_denied_after_builder_allowlist():
+    # The builder allowlist must NOT leak to genuinely gated ops.
+    for tool in ("houdini_delete_node", "houdini_render", "houdini_execute_python"):
+        assert is_tool_allowed_for_worker(tool)[0] is False
+
+
 def test_unknown_tool_denied_fail_closed():
     allowed, reason = is_tool_allowed_for_worker("totally_made_up_tool_xyz")
     assert allowed is False

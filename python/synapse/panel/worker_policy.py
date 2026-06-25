@@ -55,6 +55,21 @@ _GROUP_PREFIX = "synapse_group_"
 # Gate levels that DENY under 'standard' mode (anything riskier than 'inform').
 _DENIED_GATES = frozenset({"review", "approve", "critical"})
 
+# Composite Solaris BUILDERS the autonomous worker may emit despite their
+# derived 'review' gate (build_from_manifest). Rationale (L4, signed off
+# 2026-06-25): each is ONE undo-wrapped call composed entirely of inform-level
+# primitives (create_node, connect_nodes, set_parameter) -- the same ops the
+# worker is already permitted to do one at a time. Allowing the composite
+# collapses a 25-turn imperative build (which hit the iteration cap without
+# finishing) into ONE turn + ONE cook, granting NO capability the worker did
+# not already have. Deliberately EXCLUDES execute_python/vex, delete, render,
+# and export -- those stay gated. Scoped to standard mode (strict stays
+# read-only-only). Does NOT touch the bridge /mcp consent gate (OPERATION_GATES).
+_WORKER_BUILDER_ALLOWLIST = frozenset({
+    "synapse_solaris_build_graph",
+    "synapse_solaris_assemble_chain",
+})
+
 
 def resolve_mode() -> str:
     """Resolve the active worker tool mode from the environment.
@@ -127,6 +142,14 @@ def is_tool_allowed_for_worker(tool_name: str) -> tuple[bool, str]:
     # strict mode: nothing beyond read-only / knowledge.
     if mode == _MODE_STRICT:
         return False, "strict mode: only read-only tools permitted"
+
+    # standard mode: explicit allowlist for the composite Solaris builders (L4).
+    # 'review'-gated by derivation, but composites of inform-level, undo-wrapped
+    # primitives -- see _WORKER_BUILDER_ALLOWLIST. Reached only for known
+    # (registry) tools (the info-None fail-closed above already returned).
+    if tool_name in _WORKER_BUILDER_ALLOWLIST:
+        return True, ("composite Solaris builder (inform-level primitives, "
+                      "undo-wrapped): permitted")
 
     # standard mode: gate-based.
     gate = info["gate"]
