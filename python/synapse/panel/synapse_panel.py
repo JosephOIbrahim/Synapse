@@ -87,8 +87,12 @@ class _GrowingInput(QtWidgets.QTextEdit):
         self.setObjectName("DsInput")
         self.setAcceptRichText(False)
         self.setPlaceholderText("Ask SYNAPSE…")
-        self._user_h = 216          # default ~3x the previous 72px
-        self._floor, self._max_h = 80, 600
+        # Default a comfortable multi-line height — but small enough that the
+        # input + Send row are never pushed off the bottom at the min pane
+        # height (the old 216px default was the crop culprit). The artist can
+        # still drag it taller via the resize grip; it also auto-grows to fit.
+        self._user_h = 96
+        self._floor, self._max_h = 64, 600
         self.setFixedHeight(self._user_h)
         self.textChanged.connect(self._autosize)
 
@@ -256,6 +260,8 @@ class SynapsePanel(QtWidgets.QWidget):
         # one forward as the agent's state changes. The work is the hero.
         root.addWidget(self._build_rail())          # mark-as-status · state · Stop
         root.addWidget(c.divider())
+        root.addWidget(self._build_model_bar())     # engine selection — apparent
+        root.addWidget(c.divider())
         root.addWidget(self._build_context_ribbon())
         root.addWidget(self._build_mode_bar())      # Direct · Work · Review pills
         root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
@@ -335,6 +341,58 @@ class SynapsePanel(QtWidgets.QWidget):
         col.addLayout(bot)
         return w
 
+    def _build_model_bar(self):
+        """Model selection, made APPARENT (Image #6). A segmented Claude·Gemini
+        control whose active engine reads as a filled SIGNAL pill, plus a
+        prominent model-id chip — the switch used to be buried two levels deep
+        in the ⋯ menu. Display/telemetry only; the pick takes effect on the NEXT
+        message (same contract as the old menu switch)."""
+        w = self._section()
+        lay = QtWidgets.QHBoxLayout(w)
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
+        lay.setSpacing(t.SPACE_SM)
+        lbl = c.label("ENGINE", role="caption")
+        lbl.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_MICRO))
+        lay.addWidget(lbl)
+        self._engine_pills = {}
+        try:
+            from synapse.panel.providers.registry import PROVIDER_IDS, PROVIDER_LABELS
+            ids, labels = PROVIDER_IDS, PROVIDER_LABELS
+        except Exception:
+            ids, labels = ("claude",), {"claude": "Claude"}
+        for pid in ids:
+            seg = QtWidgets.QPushButton(labels.get(pid, pid))
+            seg.setObjectName("DsSeg")
+            seg.setCursor(Qt.PointingHandCursor)
+            seg.clicked.connect(lambda _=False, p=pid: self._set_provider(p))
+            lay.addWidget(seg)
+            self._engine_pills[pid] = seg
+        lay.addStretch(1)
+        # prominent model-id readout (e.g. 'sonnet-4.6') — the chip Image #6 asks
+        # for; cost is intentionally omitted (the worker doesn't surface usage yet,
+        # so a cost figure would be fabricated).
+        self._model_chip = QtWidgets.QLabel(self._author_token())
+        self._model_chip.setObjectName("DsModelChip")
+        self._model_chip.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL))
+        self._model_chip.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
+        lay.addWidget(self._model_chip)
+        self._refresh_engine_selector()
+        return w
+
+    def _refresh_engine_selector(self):
+        """Paint the active engine (filled pill) + the model chip from the live
+        provider id. Idempotent; safe before the bar is built."""
+        cur = getattr(self, "_provider_id", "claude")
+        for pid, seg in getattr(self, "_engine_pills", {}).items():
+            seg.setProperty("active", pid == cur)
+            c.repolish(seg)
+        chip = getattr(self, "_model_chip", None)
+        if chip is not None:
+            try:
+                chip.setText(self._author_token())
+            except Exception:
+                pass
+
     def _build_context_ribbon(self):
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
@@ -357,14 +415,17 @@ class SynapsePanel(QtWidgets.QWidget):
             )
         except Exception:
             pass
-        self._chat.setMinimumHeight(380)  # a tall, dominant chat window
+        # The chat is the dominant surface via stretch (it expands to fill), so
+        # its MINIMUM is kept low — a high min here was what summed past the pane
+        # height and clipped the input/Send row at short pane sizes.
+        self._chat.setMinimumHeight(80)
         self._converse_stack = QtWidgets.QStackedWidget()
         self._converse_stack.addWidget(self._chat)              # page 0: chat
         self._converse_stack.addWidget(self._build_hda_form())  # page 1: Build HDA
         self._converse_stack.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
         )
-        self._converse_stack.setMinimumHeight(380)
+        self._converse_stack.setMinimumHeight(80)
         return self._converse_stack
 
     # the two tabs, in switcher order (v9: Review folded into Work's done state)
@@ -398,7 +459,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self._faces.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
         )
-        self._faces.setMinimumHeight(380)
+        # Low floor so the faces stack (Direct = chat + act + input) never forces
+        # the panel taller than a short pane and clips the Send row. The chat's
+        # stretch keeps it dominant at normal heights.
+        self._faces.setMinimumHeight(160)
         return self._faces
 
     def _build_direct_face(self):
@@ -528,6 +592,7 @@ class SynapsePanel(QtWidgets.QWidget):
                 lbl.setText(self._author_token())
             except Exception:
                 pass
+        self._refresh_engine_selector()   # filled pill + chip track the pick
         try:
             from synapse.panel.providers.registry import PROVIDER_LABELS
             self._chat.append_system_message(

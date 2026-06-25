@@ -54,7 +54,10 @@ def contrast(fg, bg):
 AA_BODY    = 4.5    # WCAG AA, normal text
 AA_LARGE   = 3.0    # WCAG AA, large/bold text
 PRAGMATIC  = 3.0    # dark-DCC line we will not cross for ANY essential text
-BODY_FLOOR = 13     # px @ scale 1.0  (the v3 comp sets chat body to 13.5)
+BODY_FLOOR = 12     # px @ scale 1.0 — Houdini-native (9pt≈12px); the ratified
+                    # SIZE_BODY pinned by tests/panel/test_type_scale_native.py.
+                    # Readability is carried by CONTRAST (A1/A3), not by oversizing
+                    # past the host's own body size.
 TARGET_FLOOR = 26   # px, comfortable click/tap height for pills + buttons
 
 FAILS, WARNS = [], []
@@ -105,6 +108,41 @@ for n, s in sizes:
 distinct = len({s for _, s in sizes})
 print(f"   hierarchy: {distinct} distinct steps  " + tag(distinct >= 4, warnable=True))
 
+# ---------- A3 · seeded-contrast sweep (Image #6 · the seed-blind gap) ----------
+# The live panel RE-SEEDS its surfaces from the host pane grey (hou.qt.color),
+# but the A1 matrix above only audits the headless FALLBACK tokens — so a host
+# whose grey runs lighter than the fallback can drop body text below AA while
+# this gate still reads green. Close that: derive the palette across a sweep of
+# realistic host greys and assert body/secondary contrast holds at EVERY seed.
+print("\n-- READABILITY · seeded-contrast sweep (host-grey range) " + "-" * 12)
+HOST_GREYS = [  # Houdini dark pane greys … a light scheme, as (r,g,b)
+    (28, 28, 28), (38, 38, 38), (46, 46, 46), (58, 58, 58), (70, 70, 70),
+    (200, 200, 200),
+]
+_derive = getattr(t, "_derive_palette", None)
+if _derive is None:
+    FAILS.append(1)
+    print("   [FAIL] tokens._derive_palette missing — seed math isn't a pure, "
+          "auditable function yet (contrast-aware seed not wired)")
+else:
+    worst_body = (99.0, None)
+    worst_sec = (99.0, None)
+    for rgb in HOST_GREYS:
+        surf, txt = _derive(*rgb)
+        # body text lands on every surface role; gate the WORST (lowest) contrast
+        for sname in ("ground", "panel", "surface"):
+            cb = contrast(txt["primary"], surf[sname])
+            cs = contrast(txt["secondary"], surf[sname])
+            if cb < worst_body[0]:
+                worst_body = (cb, (rgb, sname))
+            if cs < worst_sec[0]:
+                worst_sec = (cs, (rgb, sname))
+    print(f"   body  worst : {worst_body[0]:4.1f}:1 @ {worst_body[1]}  "
+          + tag(worst_body[0] >= AA_BODY))
+    print(f"   2ndary worst: {worst_sec[0]:4.1f}:1 @ {worst_sec[1]}  "
+          + tag(worst_sec[0] >= PRAGMATIC))
+    print(f"   floors:  body >= {AA_BODY}:1   secondary >= {PRAGMATIC}:1  (at every host seed)")
+
 # ---------- B · live build ----------
 print("\n-- USABILITY · live offscreen build " + "-" * 31)
 panel = None
@@ -116,6 +154,7 @@ try:
         from PySide2 import QtWidgets
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     panel = run_panel.build_panel()
+    panel.show()   # offscreen: sets the visibility flags so geometry/visible work
     app.processEvents()
 
     btns = panel.findChildren(QtWidgets.QAbstractButton)
@@ -144,6 +183,43 @@ try:
 
     labels = panel.findChildren(QtWidgets.QLabel)
     print(f"   labels rendered     : {len(labels):>3}")
+
+    # --- Image #6 · model selection must be APPARENT (not buried in a menu) ---
+    from synapse.panel.providers.registry import PROVIDER_LABELS, DEFAULT_PROVIDER
+    label_set = set(PROVIDER_LABELS.values())
+    engine_btns = [b for b in btns if b.text() in label_set and not b.isHidden()]
+    print(f"   model selector      : {[b.text() for b in engine_btns]}  "
+          + tag(len(engine_btns) >= len(PROVIDER_LABELS)))
+    # the active engine must be visibly marked (active property), and match state
+    active = [b for b in engine_btns if b.property("active") in (True, "true")]
+    want = PROVIDER_LABELS.get(getattr(panel, "_provider_id", DEFAULT_PROVIDER))
+    sel_ok = len(active) == 1 and active[0].text() == want
+    print(f"   active engine mark  : {[b.text() for b in active]} (want {want!r})  "
+          + tag(sel_ok))
+    # prominent model chip (the readout) is present + non-empty
+    chip = getattr(panel, "_model_chip", None)
+    chip_ok = chip is not None and bool(chip.text()) and not chip.isHidden()
+    chip_txt = repr(chip.text()) if chip is not None else None
+    print(f"   model readout chip  : {chip_txt}  " + tag(chip_ok))
+
+    # --- Image #5 bug 3 · the prompt box must not crop at the min pane height ---
+    try:
+        from PySide6.QtCore import QPoint
+    except ImportError:
+        from PySide2.QtCore import QPoint
+    panel._set_face("direct")
+    panel.resize(t.PANEL_MIN_WIDTH, t.PANEL_MIN_HEIGHT)
+    app.processEvents()
+    send = getattr(panel, "_send_btn", None)
+    if send is not None and not send.isHidden():
+        # bottom edge of Send, mapped into panel-local coords
+        by = send.mapTo(panel, QPoint(0, send.height())).y()
+        not_clipped = by <= panel.height()
+        print(f"   input not clipped   : send bottom {by}px / panel {panel.height()}px  "
+              + tag(not_clipped))
+    else:
+        FAILS.append(1)
+        print("   [FAIL] input not clipped: Send button missing/hidden on Direct face")
 except Exception as e:
     WARNS.append(1)
     print(f"   [skip] live build unavailable here: {type(e).__name__}: {e}")

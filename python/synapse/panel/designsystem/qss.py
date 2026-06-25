@@ -81,6 +81,19 @@ QPushButton#DsPill[active="true"] {{
     color: {t.TEXT_ACCENT}; border-bottom: 2px solid {t.SIGNAL};
 }}
 
+/* ---- engine selector: a segmented control (model selection must be
+   APPARENT, not buried in the ⋯ menu) — the active engine is a SIGNAL fill --- */
+QPushButton#DsSeg {{
+    background: {t.SURFACE}; color: {t.TEXT_SECONDARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_PILL}px;
+    padding: 3px {t.SPACE_MD}px; font-family: {t.FONT_MONO_CSS};
+    font-size: {s(t.SIZE_SMALL)}px; font-weight: 600;
+}}
+QPushButton#DsSeg:hover {{ color: {t.TEXT_PRIMARY}; border-color: {t.BORDER_STRONG}; }}
+QPushButton#DsSeg[active="true"] {{
+    background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT}; border-color: {t.SIGNAL};
+}}
+
 /* ---- type-set verbs (Direct act bar + Review actions) — Mile 7 --- */
 /* Verbs read as type, not buttons: flat, mono, the chrome recedes. */
 QPushButton#DsVerb {{
