@@ -299,8 +299,8 @@ try:
     _ph = repr(inp.placeholderText()) if inp is not None else None
     print(f"   ⌘K folded into input: placeholder={_ph}  " + tag(slash_ok))
 
-    # --- non-tautological proof the host-scale TRACKS a larger host font (the
-    #     body-matches-host check alone is floored at 1.25 offscreen) ---
+    # --- non-tautological proof the host-scale base EQUALS the host font size
+    #     (no readability floor any more — startup = the host UI size exactly) ---
     try:
         from PySide6 import QtGui as _QtGui
     except ImportError:
@@ -311,8 +311,56 @@ try:
     app.setFont(_big)
     tracked = panel._host_font_scale()
     app.setFont(_saved_font)
-    print(f"   host-scale tracks    : 20px host -> {tracked:.2f}  "
+    print(f"   host-scale = host px : 20px host -> {tracked:.2f}  "
           + tag(abs(tracked - 20 / float(t.SIZE_BODY)) < 0.05))
+
+    # --- FONT-SCALE SCOPE: the Aa control scales CONTENT only (the dialogue +
+    #     the prompt). Chrome (header, labels, pills) is FROZEN at the host UI
+    #     size — it must NOT move when the artist changes reading size, or the
+    #     panel jitters and eats vertical space. Assert chrome pixel sizes are
+    #     identical across a 1.0 -> 1.6 content change, while the prompt + chat
+    #     grow. Pixel size is the only honest signal offscreen (the family
+    #     resolves to a substituted face, never the requested one). ---
+    import re as _re
+
+    def _hdr_px(name):
+        w = getattr(panel, name, None)
+        return QFontInfo(w.font()).pixelSize() if w is not None else None
+
+    def _input_px():
+        # the prompt size lives in a widget-level stylesheet (it overrides the
+        # root QSS for this widget only); parse it back — QFontInfo(font()) does
+        # not reflect a stylesheet font-size.
+        m = _re.search(r"font-size:\s*(\d+)px", panel._input.styleSheet() or "")
+        return int(m.group(1)) if m else None
+
+    _saved_scale = panel._font_scale
+    try:
+        chrome = ("_wordmark", "_header_status", "_palette_hint", "_author_lbl",
+                  "_foot_label", "_ctx_label", "_engine_lbl")
+        panel._set_scale(1.0)
+        chrome_a = {n: _hdr_px(n) for n in chrome}
+        in_a, chat_a = _input_px(), getattr(panel._chat, "font_scale", None)
+        panel._set_scale(1.6)
+        chrome_b = {n: _hdr_px(n) for n in chrome}
+        in_b, chat_b = _input_px(), getattr(panel._chat, "font_scale", None)
+    finally:
+        panel._set_scale(_saved_scale)
+
+    READABLE_FLOOR = 11  # px — chrome must clear this
+    wm = chrome_a.get("_wordmark")
+    wm_heading = wm is not None and wm >= round(t.SIZE_TITLE)
+    print(f"   wordmark is heading  : {wm}px >= title {round(t.SIZE_TITLE)}px  "
+          + tag(wm_heading))
+    chrome_floor_ok = all(v is not None and v >= READABLE_FLOOR
+                          for n, v in chrome_a.items() if n != "_wordmark")
+    print(f"   chrome floor (>=11)  : {chrome_a}  " + tag(chrome_floor_ok))
+    chrome_frozen = all(chrome_a.get(n) == chrome_b.get(n) for n in chrome)
+    print(f"   chrome FROZEN on Aa  : {chrome_b}  " + tag(chrome_frozen))
+    content_scales = (in_a is not None and in_b is not None and in_b > in_a
+                      and chat_a is not None and chat_b is not None and chat_b > chat_a)
+    print(f"   content scales on Aa : prompt {in_a}->{in_b}px · chat {chat_a}->{chat_b}  "
+          + tag(content_scales))
 
     # --- the chip stays SHORT for the slash-bearing provider (Nemotron) — the
     #     real test the long raw id isn't shown (claude alone never has a slash) ---

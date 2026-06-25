@@ -181,8 +181,14 @@ class SynapsePanel(QtWidgets.QWidget):
         # Track Houdini's default text size: derive the base scale from the live
         # host UI font so SYNAPSE body is AT LEAST the host body on any display/DPI
         # (>= host, never smaller — a 1.25x readability floor). Headless → token default.
-        self._font_scale = self._host_font_scale()
-        self.setStyleSheet(qss.stylesheet(self._font_scale))
+        # CHROME vs CONTENT (first principles): chrome — the header, labels,
+        # pills, buttons, palette — is recognised, not read, so it is FROZEN at
+        # the host UI size and never moves when the artist changes reading size.
+        # Content — the dialogue + the prompt — is read and written, so it (and
+        # only it) is what the Aa button scales. Both start at the host UI size.
+        self._chrome_scale = self._host_font_scale()
+        self._font_scale = self._chrome_scale      # content scale (Aa-driven)
+        self.setStyleSheet(qss.stylesheet(self._chrome_scale))
 
         self._messages = []          # Anthropic-format conversation
         self._stream_buf = []        # accumulates streamed tokens
@@ -294,8 +300,10 @@ class SynapsePanel(QtWidgets.QWidget):
         w = self._section()
         w.setObjectName("DsHeader")          # keep the subtle cool→warm gradient
         col = QtWidgets.QVBoxLayout(w)
-        col.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
-        col.setSpacing(t.SPACE_XS)
+        # Generous, confident header padding (Pentagram): a wider left margin and
+        # real vertical air so the brand isn't crammed against the pane edge.
+        col.setContentsMargins(t.SPACE_LG, t.SPACE_MD, t.SPACE_MD, t.SPACE_MD)
+        col.setSpacing(t.SPACE_SM)
 
         # line 1 — identity + state. The mark fills with the agent's state.
         top = QtWidgets.QHBoxLayout()
@@ -305,22 +313,24 @@ class SynapsePanel(QtWidgets.QWidget):
         # BRAND tracking lives on the QFont (Qt QSS has no letter-spacing); the
         # stylesheet carries colour only.
         word.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
-        word.setFont(fontload.tracked_font("BRAND", 16))
+        word.setFont(fontload.tracked_font("BRAND", t.SIZE_HERO, scale=self._chrome_scale))
         self._wordmark = word
-        self._header_status = c.label("Standing by", role="caption")
+        self._header_status = c.label("Standing by", role="caption", scale=self._chrome_scale)
         self._header_status.setStyleSheet("color:%s;" % t.TEXT_SECONDARY)
         # quiet ⌘K affordance — the palette is already bound (QShortcut); this
         # only makes it discoverable. Its text is set from the ACTUAL bound
         # QKeySequence after the shortcut is created (platform-correct, never
         # lies about the key). It rides line 1, never the meter row.
         self._palette_hint = c.label("", role="caption")
-        self._palette_hint.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_MICRO))
+        self._palette_hint.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_SMALL, scale=self._chrome_scale))
         self._palette_hint.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
         overflow = c.Button("⋯", variant="ghost")
         overflow.setFixedWidth(32)
         overflow.clicked.connect(self._show_overflow)
         top.addWidget(self._mark)
+        top.addSpacing(t.SPACE_XS)        # a beat between the mark and the wordmark
         top.addWidget(word)
+        top.addSpacing(t.SPACE_SM)        # let the brand breathe before the stretch
         top.addStretch(1)
         top.addWidget(self._header_status)
         top.addWidget(self._palette_hint)
@@ -335,10 +345,10 @@ class SynapsePanel(QtWidgets.QWidget):
         # answers for (the model that produces results in this panel).
         self._author_lbl = c.label("", role="caption")
         self._author_lbl.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
-        self._author_lbl.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL))
+        self._author_lbl.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, scale=self._chrome_scale))
         self._author_lbl.setText(self._author_token())
         self._foot_dot = c.StatusDot("disconnected")
-        self._foot_label = c.label("Not connected", role="caption")
+        self._foot_label = c.label("Not connected", role="caption", scale=self._chrome_scale)
         self._foot_label.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
         self._observe = QtWidgets.QWidget()
         self._observe.setObjectName("DsRailMeter")
@@ -366,10 +376,11 @@ class SynapsePanel(QtWidgets.QWidget):
         message (same contract as the old menu switch)."""
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
         lay.setSpacing(t.SPACE_SM)
         lbl = c.label("ENGINE", role="caption")
-        lbl.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_MICRO))
+        lbl.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_SMALL, scale=self._chrome_scale))
+        self._engine_lbl = lbl
         lay.addWidget(lbl)
         self._engine_pills = {}
         try:
@@ -427,8 +438,8 @@ class SynapsePanel(QtWidgets.QWidget):
     def _build_context_ribbon(self):
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
-        self._ctx_label = c.label("no scene context", role="label")
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        self._ctx_label = c.label("no scene context", role="label", scale=self._chrome_scale)
         lay.addWidget(self._ctx_label)
         lay.addStretch(1)
         return w
@@ -474,8 +485,8 @@ class SynapsePanel(QtWidgets.QWidget):
         (the same-pane law)."""
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, 0)
-        lay.setSpacing(t.SPACE_XS)
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_XS)
+        lay.setSpacing(t.SPACE_SM)
         self._face_pills = {}
         for face, text in (("direct", "Direct"), ("work", "Work")):
             pill = c.Pill(text)
@@ -590,11 +601,11 @@ class SynapsePanel(QtWidgets.QWidget):
         self._work_substate = state
 
     def _host_font_scale(self):
-        """Base font-scale so SYNAPSE body is AT LEAST the host UI font size — it
-        tracks Houdini's default text size upward (a larger host font scales the
-        panel up to match) but is FLOORED at the token default (1.25x), so on a
-        small host font the panel reads slightly larger rather than tiny. Not an
-        exact equality on small hosts — that floor is deliberate. ``QFontInfo``
+        """Base font-scale = the host UI font size, EXACTLY. The panel starts at
+        Houdini's own default text size on any display/DPI (a larger host font
+        starts the content larger, a smaller one smaller) — "default Houdini UI
+        font size to start". No readability floor: the Aa control lifts it from
+        there, but startup never reads larger than the host. ``QFontInfo``
         resolves the actual pixel size whether set in points or pixels; headless
         (no QApplication) falls back to the token default."""
         try:
@@ -602,7 +613,7 @@ class SynapsePanel(QtWidgets.QWidget):
             if app is not None:
                 host_px = QtGui.QFontInfo(app.font()).pixelSize()
                 if host_px and host_px > 0:
-                    return max(t.FONT_SCALE_DEFAULT, host_px / float(t.SIZE_BODY))
+                    return host_px / float(t.SIZE_BODY)
         except Exception:
             pass
         return t.FONT_SCALE_DEFAULT
@@ -819,6 +830,12 @@ class SynapsePanel(QtWidgets.QWidget):
         gen = c.Button("Generate HDA", variant="primary")
         gen.clicked.connect(self._on_build_hda)
         lay.addWidget(gen)
+        # Back to the conversation — Build HDA is an inner view of Direct, and
+        # without an explicit way out it reads as a dead-end (artist feedback).
+        back = c.Button("Main menu", variant="secondary")
+        back.setToolTip("Back to the conversation")
+        back.clicked.connect(lambda: self._set_direct_view("chat"))
+        lay.addWidget(back)
         lay.addStretch(1)
         return page
 
@@ -923,6 +940,10 @@ class SynapsePanel(QtWidgets.QWidget):
         col.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, t.SPACE_SM)
         col.setSpacing(t.SPACE_XS)
         self._input = _GrowingInput()
+        # The prompt scales with the Aa content scale via a widget-level sheet
+        # (overrides the root QSS font-size for this widget only); chrome stays put.
+        self._input.setStyleSheet("QTextEdit#DsInput { font-size: %dpx; }"
+                                  % t.scaled(t.SIZE_UI, self._font_scale))
         self._input.submitted.connect(self._on_submit)
         self._input.slash.connect(self._open_palette)   # "/" → command palette
         col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
@@ -1010,15 +1031,35 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
         menu.addAction("Larger text", lambda: self._set_scale(1.15))
-        menu.addAction("Default text", lambda: self._set_scale(1.0))
+        menu.addAction("Default text", lambda: self._set_scale(self._chrome_scale))
         menu.exec(QtGui.QCursor.pos()) if hasattr(menu, "exec") else menu.exec_(QtGui.QCursor.pos())
 
     def _set_scale(self, scale):
+        """The Aa control scales CONTENT only — the dialogue and the prompt.
+        Chrome (header, labels, pills, buttons, palette) was built once at the
+        host UI size and is deliberately NOT rebuilt here, so the panel never
+        jumps or reflows when the artist changes reading size."""
         self._font_scale = scale
-        self.setStyleSheet(qss.stylesheet(scale))
-        if hasattr(self._chat, "font_scale"):
+        self._apply_content_scale()
+
+    def _apply_content_scale(self):
+        """Push the content font-scale to the two surfaces the artist reads and
+        writes: the chat document default (dialogue + streamed tokens) and the
+        prompt input. The prompt uses a widget-level stylesheet — a widget's own
+        sheet overrides the inherited root QSS font-size for that widget only, so
+        the chrome around it stays put. Defensive: safe before either is built."""
+        sc = self._font_scale
+        chat = getattr(self, "_chat", None)
+        if chat is not None and hasattr(chat, "font_scale"):
             try:
-                self._chat.font_scale = scale
+                chat.font_scale = sc
+            except Exception:
+                pass
+        inp = getattr(self, "_input", None)
+        if inp is not None:
+            try:
+                inp.setStyleSheet("QTextEdit#DsInput { font-size: %dpx; }"
+                                  % t.scaled(t.SIZE_UI, sc))
             except Exception:
                 pass
 
@@ -1039,7 +1080,7 @@ class SynapsePanel(QtWidgets.QWidget):
     def _open_palette(self):
         try:
             from synapse.panel.tool_palette import ToolPalette
-            pal = ToolPalette(self)
+            pal = ToolPalette(self, scale=getattr(self, "_chrome_scale", t.FONT_SCALE_DEFAULT))
             pal.command_selected.connect(self._on_tool_picked)
             self._palette = pal  # keep a ref
             # anchor to the input (the ⌘K button is gone — "/" in the input and
@@ -1069,6 +1110,14 @@ class SynapsePanel(QtWidgets.QWidget):
         if screen is None:
             screen = QtWidgets.QApplication.primaryScreen()
         avail = screen.availableGeometry()
+        # never let the popup exceed the screen, or the on-screen clamp below
+        # would invert (top > bottom) and push a too-tall popup partly off the
+        # display. The minimum size is already screen-clamped at construction;
+        # this caps the adjustSize() result too.
+        if sz.width() > avail.width() or sz.height() > avail.height():
+            sz = QtCore.QSize(min(sz.width(), avail.width()),
+                              min(sz.height(), avail.height()))
+            popup.resize(sz)
         if anchor is not None:
             tl = anchor.mapToGlobal(QtCore.QPoint(0, 0))
             x = tl.x()

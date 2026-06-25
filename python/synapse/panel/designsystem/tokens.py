@@ -310,11 +310,13 @@ def tracking_px(role: str, px: float) -> float:
     return TRACKING_EM.get(role, 0.0) * px
 
 
-# One user font-scale drives BOTH chrome QSS and chat HTML (today only chat).
-# Startup default bumped to 1.25 — at native Houdini 12px the panel read too
-# small to be comfortable; 1.25 lifts body to ~15px (Aa cycles the rest).
+# The user font-scale drives CONTENT ONLY — the chat dialogue + the prompt
+# input. Chrome (header, labels, pills, palette) is frozen at the host UI size.
+# Startup default is 1.0 = the host UI size ("default Houdini UI font size to
+# start"); the live panel seeds an exact host-matched base, and the Aa control
+# cycles the steps from there.
 FONT_SCALE_STEPS = (1.0, 1.15, 1.25, 1.4, 1.6)
-FONT_SCALE_DEFAULT = 1.25
+FONT_SCALE_DEFAULT = 1.0
 
 # ─────────────────────────────────────────────────────────────
 # 6. SPACING / RADIUS — load-bearing scale
