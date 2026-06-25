@@ -18,7 +18,7 @@ except ImportError:
     from PySide2 import QtWidgets, QtCore, QtGui
     from PySide2.QtCore import Signal, Slot, QTimer
 
-from synapse.panel import tokens as t
+from synapse.panel.designsystem import tokens as t
 from synapse.panel.styles import (
     get_gate_widget_stylesheet,
     get_gate_card_stylesheet,
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 # Gate level -> color mapping
 _LEVEL_COLORS = {
-    "inform": t.SIGNAL,     # cyan
+    "inform": t.SIGNAL,     # blue accent
     "review": t.WARN,       # amber
     "approve": t.FIRE,      # orange
     "critical": t.ERROR,    # red
@@ -182,11 +182,11 @@ class _ProposalCard(QtWidgets.QWidget):
     def _apply_card_style(self, level_color):
         """Apply card stylesheet. Uses property-only (no type selector) to
         avoid cascading to child widgets like QPushButtons."""
-        from synapse.panel import tokens as t
+        from synapse.panel.designsystem import tokens as t
         self.setStyleSheet(
             "background: {bg}; border: none; border-left: 3px solid {lc}; "
             "border-radius: 4px; margin: 2px 0;".format(
-                bg=t.CARBON, lc=level_color,
+                bg=t.SURFACE, lc=level_color,
             )
         )
 

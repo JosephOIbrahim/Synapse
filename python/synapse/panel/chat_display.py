@@ -21,11 +21,15 @@ from synapse.panel.message_formatter import (
     format_timestamp_divider,
 )
 from synapse.panel.styles import get_chat_display_stylesheet
-from synapse.panel import tokens as t
+from synapse.panel.designsystem import tokens as t
 
 # Grouping window: messages from the same sender within this many seconds
 # are grouped together (no repeated label, tight margin).
 _GROUP_WINDOW_S = 60
+
+# Chat-local layout (was tokens.CHAT_BUBBLE_MARGIN_Y; inlined so chat_display
+# sources nothing from the ~/.synapse/design bridge — see designsystem.tokens).
+_BUBBLE_MARGIN_Y = 2  # px between grouped messages
 
 
 def _format_time(epoch):
@@ -294,10 +298,10 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             '</span></div>'
         ).format(
             sig=t.SIGNAL,
-            dim=t.TEXT_DIM,
+            dim=t.TEXT_SECONDARY,
             sz=int(t.SIZE_SMALL * self._font_scale),
             dots=dots,
-            my=t.CHAT_BUBBLE_MARGIN_Y,
+            my=_BUBBLE_MARGIN_Y,
         )
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
