@@ -202,14 +202,18 @@ FONT_SANS = "Space Grotesk"
 FONT_SANS_FALLBACKS = ("DM Sans", "Segoe UI", "sans-serif")
 FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 
-# px scale (Qt). Calibrated to the panel's true rendering DPI (the canonical
-# 9-20 scale, NOT the bug-prone 22-44 fallback).
-SIZE_MICRO  = 13   # tiny labels / numbers
-SIZE_SMALL  = 14   # captions, metadata
-SIZE_UI     = 20   # buttons, pills, menu items, labels — two sizes up; scalable via Aa
-SIZE_BODY   = 13   # chat body — KEEP ("Ready…" is the correct reference size)
-SIZE_TITLE  = 22   # section headers
-SIZE_HERO   = 30   # panel title
+# px scale (Qt) — matched to Houdini's native UI font (QApplication default
+# 9pt ≈ 12px, verified on H21.0.671/.729) so the panel sits IN Houdini's UI
+# instead of over it, and its text stops cropping the buttons/labels. The
+# Pentagram character is preserved by TYPE_ROLES + TRACKING_EM below (families,
+# tracking, hierarchy); only the absolute sizes shrink. The Aa control
+# (FONT_SCALE_STEPS) scales the whole set up for the artist.
+SIZE_MICRO  = 10   # tiny labels / numbers
+SIZE_SMALL  = 11   # captions, metadata
+SIZE_UI     = 12   # buttons, pills, menu items, labels — Houdini-native; scalable via Aa
+SIZE_BODY   = 12   # chat body — Houdini-native default (9pt ≈ 12px)
+SIZE_TITLE  = 15   # section headers — gentle step above native
+SIZE_HERO   = 19   # panel title — present, not shouting
 
 # Back-compat alias (design/tokens.py name)
 SIZE_LABEL = SIZE_MICRO
