@@ -91,14 +91,24 @@ def font_status():
 
 
 def tracked_font(role, px, scale=1.0, mono=False, bold=False):
-    """Build a QFont for a tracking role: family from tokens, size in PIXELS, and
-    AbsoluteSpacing = ``tokens.TRACKING_EM[role] × px`` (the only way to track in
-    Qt). ``role`` ∈ BRAND/LABEL/LABEL_SM/DATA/DISPLAY/BODY. ``mono`` selects the
-    Space Mono family; otherwise Space Grotesk. Falls back gracefully via the
-    family fallbacks when the bundle didn't register."""
-    fam = t.FONT_MONO if mono else t.FONT_SANS
+    """Build a QFont for a tracking role: size in PIXELS + AbsoluteSpacing =
+    ``tokens.TRACKING_EM[role] × px`` (the only way to track in Qt). ``role`` ∈
+    BRAND/LABEL/LABEL_SM/DATA/DISPLAY/BODY.
+
+    The family INHERITS Houdini's native app UI font (so the panel matches the
+    host chrome) — it no longer forces the bundled Space Grotesk. ``mono`` opts
+    a label into the host's fixed-pitch family for genuine tabular/data text."""
     spx = t.scaled(px, scale)
-    f = QtGui.QFont(fam)
+    try:
+        f = QtGui.QFont(QtWidgets.QApplication.font())   # the native app UI font
+    except Exception:
+        f = QtGui.QFont()
+    if mono:
+        try:
+            f.setFamily(
+                QtGui.QFontDatabase.systemFont(QtGui.QFontDatabase.FixedFont).family())
+        except Exception:
+            f.setFamily("monospace")
     f.setPixelSize(spx)
     if bold:
         f.setBold(True)

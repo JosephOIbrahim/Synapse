@@ -523,10 +523,11 @@ def get_chat_display_stylesheet():
     """Chat display QTextBrowser: spacious padding for conversational feel."""
     t = _ds  # off the ~/.synapse/design bridge — render from the vendored design system
     return (
+        # No font-family — the chat body INHERITS Houdini's native UI font so the
+        # conversation reads as a built-in panel, not a web app (was Space Grotesk).
         "QTextBrowser {{"
         "  background: {bg};"
         "  color: {fg};"
-        "  font-family: '{sans}', 'Segoe UI', sans-serif;"
         "  font-size: {sz}px;"
         "  border: 1px solid {border};"
         "  border-radius: 4px;"

@@ -54,8 +54,10 @@ except Exception:  # pragma: no cover - exercised only without the package path
     _MSG_MARGIN_Y = 4
     _TIMESTAMP_SZ = 13
 
-# Monospace font stack
-_MONO = "'{mono}', 'Consolas', 'Courier New', monospace".format(mono=_FONT_MONO)
+# Monospace font stack for genuine code/paths — a NEUTRAL host monospace
+# (Consolas/Courier on Windows), not the designed Space Mono, so code reads as
+# native Houdini rather than web-app type. Body/prose carry no family (inherit).
+_MONO = "'Consolas', 'Courier New', monospace"
 
 # Regex patterns
 _CODE_BLOCK_RE = re.compile(r"```(\w*)\n(.*?)```", re.DOTALL)

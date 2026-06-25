@@ -285,9 +285,13 @@ TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
 #   DATA     +0.03  author, meter, paths, cookline, chip, mini
 #   DISPLAY  -0.015 verdict
 #   BODY      0     conversation, prompt
+# Dialed near-flat to match Houdini's native UI (which doesn't letter-space its
+# labels). BRAND keeps a hair of tracking (the wordmark's only remaining flourish
+# — and tracked_font needs it non-zero to apply AbsoluteSpacing); DISPLAY stays
+# slightly tight. Everything else is flat.
 TRACKING_EM: Dict[str, float] = {
-    "BRAND": 0.16, "LABEL": 0.15, "LABEL_SM": 0.12,
-    "DATA": 0.03, "DISPLAY": -0.015, "BODY": 0.0,
+    "BRAND": 0.02, "LABEL": 0.0, "LABEL_SM": 0.0,
+    "DATA": 0.0, "DISPLAY": -0.01, "BODY": 0.0,
 }
 
 

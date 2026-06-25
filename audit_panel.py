@@ -202,6 +202,31 @@ try:
     chip_txt = repr(chip.text()) if chip is not None else None
     print(f"   model readout chip  : {chip_txt}  " + tag(chip_ok))
 
+    # --- match Houdini: the panel must inherit the host's native UI font, not
+    #     override it with the bundled designed families (Space Grotesk/Mono).
+    #     Mono stays legal only for genuine code/paths inside the chat HTML. ---
+    BUNDLED = {"space grotesk", "space mono"}
+    verbs = [b for b in btns if b.objectName() == "DsVerb"]
+    samples = {
+        "wordmark":  getattr(panel, "_wordmark", None),
+        "tab":       (getattr(panel, "_face_pills", {}) or {}).get("direct"),
+        "verb":      verbs[0] if verbs else None,
+        "model chip": getattr(panel, "_model_chip", None),
+        "engine seg": (getattr(panel, "_engine_pills", {}) or {}).get("claude"),
+        "chat":      getattr(panel, "_chat", None),
+    }
+    fams, bad = {}, []
+    for nm, wdg in samples.items():
+        if wdg is None:
+            continue
+        fam = wdg.font().family()
+        fams[nm] = fam
+        if fam.strip().lower() in BUNDLED:
+            bad.append("%s=%s" % (nm, fam))
+    print(f"   native chrome font  : host={app.font().family()!r}  " + tag(not bad))
+    if bad:
+        print("      overrides host font: " + ", ".join(bad))
+
     # --- Image #5 bug 3 · the prompt box must not crop at the min pane height ---
     try:
         from PySide6.QtCore import QPoint
