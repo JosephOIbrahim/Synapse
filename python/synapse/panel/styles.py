@@ -519,8 +519,13 @@ def get_mode_toolbar_stylesheet():
     )
 
 
-def get_chat_display_stylesheet():
-    """Chat display QTextBrowser: spacious padding for conversational feel."""
+def get_chat_display_stylesheet(scale=1.0):
+    """Chat display QTextBrowser: spacious padding for conversational feel.
+
+    ``scale`` drives the QTextBrowser BASE font-size (the document default), so
+    streamed plain-text tokens — which carry no inline size — render at the
+    scaled body size instead of a fixed 11px. ChatDisplay re-applies this on a
+    font-scale change."""
     t = _ds  # off the ~/.synapse/design bridge — render from the vendored design system
     return (
         # No font-family — the chat body INHERITS Houdini's native UI font so the
@@ -553,7 +558,7 @@ def get_chat_display_stylesheet():
         "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{"
         "  background: transparent;"
         "}}".format(
-            bg=t.GROUND, fg=t.SILVER, sz=t.SIZE_SMALL, sans=t.FONT_SANS,
+            bg=t.GROUND, fg=t.SILVER, sz=t.scaled(t.SIZE_BODY, scale),
             border=t.GRAPHITE, pad=t.SPACE_MD, white=t.WHITE,
             scrollbar=t.GRAPHITE, scrollhover=t.SLATE,
         )

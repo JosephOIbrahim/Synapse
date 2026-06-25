@@ -49,15 +49,21 @@ def _emit_reasoning() -> bool:
 
 
 def _endpoint():
-    """(host, request_path) for the chat-completions call, honouring
-    ``NVIDIA_BASE_URL`` (default NVIDIA NIM cloud)."""
+    """(scheme, host, request_path) for the chat-completions call, honouring
+    ``NVIDIA_BASE_URL`` (default NVIDIA NIM cloud). The scheme is preserved so a
+    plaintext self-hosted endpoint (``http://localhost:8000``) connects over HTTP,
+    not TLS. An all-slash path (``https://host/``) collapses to the ``/v1``
+    default instead of dropping it."""
     base = os.environ.get("NVIDIA_BASE_URL", "").strip()
     if not base:
-        return _DEFAULT_HOST, _DEFAULT_BASE_PATH + "/chat/completions"
+        return "https", _DEFAULT_HOST, _DEFAULT_BASE_PATH + "/chat/completions"
     parts = urlsplit(base if "//" in base else "https://" + base)
+    scheme = parts.scheme or "https"
     host = parts.netloc or _DEFAULT_HOST
-    path = (parts.path or _DEFAULT_BASE_PATH).rstrip("/")
-    return host, path + "/chat/completions"
+    # rstrip FIRST so '/' collapses to '' → falls back to /v1 (a host-only base
+    # with a trailing slash must not lose the version prefix).
+    path = parts.path.rstrip("/") or _DEFAULT_BASE_PATH
+    return scheme, host, path + "/chat/completions"
 
 
 class _ThinkFilter:
@@ -102,6 +108,18 @@ class _ThinkFilter:
             if tag.startswith(s[-k:]):
                 return k
         return 0
+
+    def flush(self):
+        """At stream end: surface any buffered remainder that is NOT inside a
+        think span (e.g. a held-back partial-tag tail like a literal '<thi' that
+        never became '<think>'). If a ``<think>`` was left unclosed (the model was
+        truncated mid-reasoning), the buffer is reasoning — dropped, and the
+        caller is told via the returned ``unclosed`` flag. Idempotent."""
+        unclosed = self._in_think
+        out = "" if unclosed else self._buf
+        self._buf = ""
+        self._in_think = False
+        return out, unclosed
 
 
 def _to_openai_tools(tools):
@@ -214,7 +232,7 @@ class NemotronProvider(StreamProvider):
             return v.strip()
         # A self-hosted endpoint may need no key — only treat as unconfigured
         # when the default cloud host is in play.
-        host, _ = _endpoint()
+        _scheme, host, _path = _endpoint()
         if host != _DEFAULT_HOST:
             return "not-needed"
         return None
@@ -244,10 +262,13 @@ class NemotronProvider(StreamProvider):
             body["tools"] = otools
 
         payload = json.dumps(body).encode("utf-8")
-        host, path = _endpoint()
+        scheme, host, path = _endpoint()
 
-        ctx = ssl.create_default_context()
-        conn = http.client.HTTPSConnection(host, timeout=_HTTP_TIMEOUT, context=ctx)
+        if scheme == "http":   # plaintext self-hosted (vLLM/Ollama default posture)
+            conn = http.client.HTTPConnection(host, timeout=_HTTP_TIMEOUT)
+        else:
+            ctx = ssl.create_default_context()
+            conn = http.client.HTTPSConnection(host, timeout=_HTTP_TIMEOUT, context=ctx)
         try:
             headers = {"Content-Type": "application/json", "Accept": "text/event-stream"}
             if api_key and api_key != "not-needed":
@@ -321,6 +342,17 @@ class NemotronProvider(StreamProvider):
                         slot["arguments"] += fn["arguments"]
                 if choice.get("finish_reason"):
                     finish = choice["finish_reason"]
+
+        # Flush the filter: surface any held-back partial-tag tail; warn (don't
+        # silently swallow) if the model left a <think> unclosed (truncation).
+        tail, unclosed = tfilter.flush()
+        if tail:
+            emit_token(tail)
+            text_acc.append(tail)
+        if unclosed:
+            logger.warning(
+                "NVIDIA stream ended inside an unclosed <think> — reasoning was "
+                "dropped and no visible answer followed (likely max_tokens truncation).")
 
         blocks = []
         text = "".join(text_acc)

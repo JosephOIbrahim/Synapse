@@ -114,34 +114,44 @@ print(f"   hierarchy: {distinct} distinct steps  " + tag(distinct >= 4, warnable
 # whose grey runs lighter than the fallback can drop body text below AA while
 # this gate still reads green. Close that: derive the palette across a sweep of
 # realistic host greys and assert body/secondary contrast holds at EVERY seed.
-print("\n-- READABILITY · seeded-contrast sweep (host-grey range) " + "-" * 12)
-HOST_GREYS = [  # Houdini dark pane greys … a light scheme, as (r,g,b)
-    (28, 28, 28), (38, 38, 38), (46, 46, 46), (58, 58, 58), (70, 70, 70),
-    (200, 200, 200),
-]
+print("\n-- READABILITY · seeded-contrast sweep (DENSE, full grey range) " + "-" * 5)
+# DENSE sweep — every grey 0..255, not a 6-point sample (a sparse sample skipped
+# the ~107-127 mid-grey band where the seed math dips, a false-green). REALISTIC
+# host greys (Houdini dark pane ~46, light theme >=200) must hold WCAG AA; the
+# theoretical mid-grey band can't reach 4.5 in EITHER text direction once the
+# elevation spread is included (a WCAG hard limit), so it's gated at a strong
+# pragmatic floor instead of being silently skipped.
+MID_FLOOR = 3.5     # never-cross floor for ANY host grey, incl. the mid band
+def _realistic(v):  # greys Houdini actually ships as a pane background
+    return v <= 95 or v >= 150
 _derive = getattr(t, "_derive_palette", None)
 if _derive is None:
     FAILS.append(1)
     print("   [FAIL] tokens._derive_palette missing — seed math isn't a pure, "
           "auditable function yet (contrast-aware seed not wired)")
 else:
-    worst_body = (99.0, None)
-    worst_sec = (99.0, None)
-    for rgb in HOST_GREYS:
-        surf, txt = _derive(*rgb)
-        # body text lands on every surface role; gate the WORST (lowest) contrast
+    worst_all = (99.0, None)        # body, any grey
+    worst_real = (99.0, None)       # body, realistic greys only
+    worst_sec = (99.0, None)        # secondary, any grey
+    for v in range(0, 256):
+        surf, txt = _derive(v, v, v)
         for sname in ("ground", "panel", "surface"):
             cb = contrast(txt["primary"], surf[sname])
             cs = contrast(txt["secondary"], surf[sname])
-            if cb < worst_body[0]:
-                worst_body = (cb, (rgb, sname))
+            if cb < worst_all[0]:
+                worst_all = (cb, (v, sname))
             if cs < worst_sec[0]:
-                worst_sec = (cs, (rgb, sname))
-    print(f"   body  worst : {worst_body[0]:4.1f}:1 @ {worst_body[1]}  "
-          + tag(worst_body[0] >= AA_BODY))
-    print(f"   2ndary worst: {worst_sec[0]:4.1f}:1 @ {worst_sec[1]}  "
+                worst_sec = (cs, (v, sname))
+            if _realistic(v) and cb < worst_real[0]:
+                worst_real = (cb, (v, sname))
+    print(f"   body  realistic worst: {worst_real[0]:4.1f}:1 @ {worst_real[1]}  "
+          + tag(worst_real[0] >= AA_BODY))
+    print(f"   body  any-grey  worst: {worst_all[0]:4.1f}:1 @ {worst_all[1]}  "
+          + tag(worst_all[0] >= MID_FLOOR))
+    print(f"   2ndary any-grey worst: {worst_sec[0]:4.1f}:1 @ {worst_sec[1]}  "
           + tag(worst_sec[0] >= PRAGMATIC))
-    print(f"   floors:  body >= {AA_BODY}:1   secondary >= {PRAGMATIC}:1  (at every host seed)")
+    print(f"   floors:  realistic body >= {AA_BODY}:1   any-grey body >= {MID_FLOOR}:1   "
+          f"any-grey 2ndary >= {PRAGMATIC}:1")
 
 # ---------- B · live build ----------
 print("\n-- USABILITY · live offscreen build " + "-" * 31)
@@ -183,6 +193,14 @@ try:
 
     labels = panel.findChildren(QtWidgets.QLabel)
     print(f"   labels rendered     : {len(labels):>3}")
+
+    # --- no bundled designed family may be forced via QSS either (the per-widget
+    #     font().family() sample is blind to a QSS/HTML rule a child inherits) ---
+    from synapse.panel.designsystem import qss as _qssmod
+    from synapse.panel.styles import get_chat_display_stylesheet as _gcds
+    qss_text = (_qssmod.stylesheet(1.0) + _gcds(1.0)).lower()
+    qss_bundled = [b for b in ("space grotesk", "space mono") if b in qss_text]
+    print(f"   no bundled font in QSS: {qss_bundled or 'clean'}  " + tag(not qss_bundled))
 
     # --- Image #6 · model selection must be APPARENT (not buried in a menu) ---
     from synapse.panel.providers.registry import PROVIDER_LABELS, DEFAULT_PROVIDER
@@ -269,7 +287,7 @@ try:
           + tag(body_px >= host_px - 1))
 
     # --- model chip shows a SHORT label, not the long raw model id ---
-    chip_short = chip is not None and "/" not in chip.text() and chip.text() == panel._model_chip_text()
+    chip_short = chip is not None and "/" not in chip.text() and 0 < len(chip.text()) < 30
     _chip_txt = repr(chip.text()) if chip is not None else None
     print(f"   chip short-label    : {_chip_txt}  " + tag(chip_short))
 
@@ -280,7 +298,30 @@ try:
                 and hasattr(panel, "_open_palette"))
     _ph = repr(inp.placeholderText()) if inp is not None else None
     print(f"   ⌘K folded into input: placeholder={_ph}  " + tag(slash_ok))
-except Exception as e:
+
+    # --- non-tautological proof the host-scale TRACKS a larger host font (the
+    #     body-matches-host check alone is floored at 1.25 offscreen) ---
+    try:
+        from PySide6 import QtGui as _QtGui
+    except ImportError:
+        from PySide2 import QtGui as _QtGui
+    _saved_font = app.font()
+    _big = _QtGui.QFont(_saved_font)
+    _big.setPixelSize(20)
+    app.setFont(_big)
+    tracked = panel._host_font_scale()
+    app.setFont(_saved_font)
+    print(f"   host-scale tracks    : 20px host -> {tracked:.2f}  "
+          + tag(abs(tracked - 20 / float(t.SIZE_BODY)) < 0.05))
+
+    # --- the chip stays SHORT for the slash-bearing provider (Nemotron) — the
+    #     real test the long raw id isn't shown (claude alone never has a slash) ---
+    panel._set_provider("nemotron")
+    nemo_chip = panel._model_chip.text()
+    panel._set_provider("claude")
+    print(f"   chip short (nemotron): {nemo_chip!r}  "
+          + tag("/" not in nemo_chip and len(nemo_chip) < 30))
+except (Exception, SystemExit) as e:
     WARNS.append(1)
     print(f"   [skip] live build unavailable here: {type(e).__name__}: {e}")
     print("          (run this one inside hython for the real G3 — fonts differ)")

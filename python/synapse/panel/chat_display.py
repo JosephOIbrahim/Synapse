@@ -75,7 +75,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.setOpenExternalLinks(False)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setStyleSheet(get_chat_display_stylesheet())
+        self.setStyleSheet(get_chat_display_stylesheet(self._font_scale))
 
         # Connect anchor clicks
         self.anchorClicked.connect(self._on_anchor_clicked)
@@ -92,6 +92,13 @@ class ChatDisplay(QtWidgets.QTextBrowser):
     @font_scale.setter
     def font_scale(self, value):
         self._font_scale = value
+        # Re-apply the base stylesheet so the QTextBrowser document default (and
+        # thus streamed plain-text tokens) tracks the new scale. Already-rendered
+        # messages keep their baked inline sizes — new messages use the new scale.
+        try:
+            self.setStyleSheet(get_chat_display_stylesheet(value))
+        except Exception:
+            pass
 
     # -- Grouping helpers ----------------------------------------------------
 

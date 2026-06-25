@@ -29,7 +29,6 @@ try:
     _ERROR       = _t.ERROR
     _WARNING     = _t.WARN
     _SUCCESS     = _t.GROW
-    _FONT_MONO   = _t.FONT_MONO
     _BODY_PX     = _t.SIZE_BODY
     _SMALL_PX    = _t.SIZE_SMALL
     _LABEL_PX    = _t.SIZE_LABEL
@@ -46,7 +45,6 @@ except Exception:  # pragma: no cover - exercised only without the package path
     _ERROR = "#FF3D71"
     _WARNING = "#FFAB00"
     _SUCCESS = "#00E676"
-    _FONT_MONO = "JetBrains Mono"
     _BODY_PX = 12
     _SMALL_PX = 14
     _LABEL_PX = 13

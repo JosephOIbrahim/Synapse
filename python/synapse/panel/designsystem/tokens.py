@@ -74,6 +74,10 @@ def _wcag_lum(hex_str):
             + 0.7152 * _srgb_lin(int(h[2:4], 16))
             + 0.0722 * _srgb_lin(int(h[4:6], 16)))
 
+def _contrast(fg_hex, bg_hex):
+    a, b = _wcag_lum(fg_hex), _wcag_lum(bg_hex)
+    return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+
 def _lin_to_ch(L):
     """Inverse sRGB: a target relative luminance L (grey) → an 8-bit channel."""
     L = 0.0 if L < 0 else (1.0 if L > 1 else L)
@@ -139,16 +143,21 @@ def _derive_palette(r, g, b):
         "surface": step(12), "raised": step(40), "border": step(-8),
         "border_strong": step(30),
     }
-    # Text lands on ground / panel / surface; gate the worst case. Dark host →
-    # lighter text, worst (lowest) contrast on the LIGHTEST of those (surface);
-    # light host → darker text, worst on the DARKEST (ground).
-    lands_on = ("ground", "panel", "surface")
-    light_host = _rgb_lum(r, g, b) > 0.5
-    if light_host:
-        anchor = min((surface[k] for k in lands_on), key=_wcag_lum)
-    else:
-        anchor = max((surface[k] for k in lands_on), key=_wcag_lum)
-    text = {role: _grey_for_contrast(anchor, ratio, lighter=not light_host)
+    # Text lands on ground / panel / surface. Choose the text DIRECTION (light
+    # vs dark) that MAXIMIZES the achievable contrast on those surfaces — not a
+    # fixed lum>0.5 rule. The old rule chose light text on a mid-grey host where
+    # dark text has far more contrast, dropping body below AA in the ~107-127
+    # band; picking by max-min-contrast fixes that and is correct for dark AND
+    # light hosts. (A true mid-grey background can't reach AA 4.5 in EITHER
+    # direction once the elevation spread is included — a WCAG hard limit, not a
+    # bug; the audit gates the realistic host range at AA and the pragmatic floor
+    # everywhere.)
+    lands = [surface[k] for k in ("ground", "panel", "surface")]
+    lightest = max(lands, key=_wcag_lum)
+    darkest = min(lands, key=_wcag_lum)
+    lighter = min(_contrast("#FFFFFF", s) for s in lands) >= min(_contrast("#000000", s) for s in lands)
+    anchor = lightest if lighter else darkest
+    text = {role: _grey_for_contrast(anchor, ratio, lighter=lighter)
             for role, ratio in _TEXT_CONTRAST.items()}
     return surface, text
 

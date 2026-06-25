@@ -178,9 +178,9 @@ class SynapsePanel(QtWidgets.QWidget):
         self._font_build_mismatch = self._font_status.get("build_mismatch", False)
         # M3-A: one-time check -- the symbol table cannot change mid-session
         self._gate_stale_reason = phantom_gate_status()
-        # Match Houdini's default text size: derive the base scale from the live
-        # host UI font so SYNAPSE body == the host body on ANY display/DPI (no
-        # hardcoded px guess). Falls back to the token default when headless.
+        # Track Houdini's default text size: derive the base scale from the live
+        # host UI font so SYNAPSE body is AT LEAST the host body on any display/DPI
+        # (>= host, never smaller — a 1.25x readability floor). Headless → token default.
         self._font_scale = self._host_font_scale()
         self.setStyleSheet(qss.stylesheet(self._font_scale))
 
@@ -415,6 +415,14 @@ class SynapsePanel(QtWidgets.QWidget):
                 chip.setText(self._model_chip_text())
             except Exception:
                 pass
+        # keep the rail author signature in sync too — a MODEL switch (not just a
+        # provider switch) must update it (its docstring promises this).
+        lbl = getattr(self, "_author_lbl", None)
+        if lbl is not None:
+            try:
+                lbl.setText(self._author_token())
+            except Exception:
+                pass
 
     def _build_context_ribbon(self):
         w = self._section()
@@ -582,11 +590,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._work_substate = state
 
     def _host_font_scale(self):
-        """Base font-scale that makes SYNAPSE body == the host UI font size, so
-        the panel matches Houdini's default text size on any display/DPI.
-        ``QFontInfo`` resolves the actual pixel size whether the host set it in
-        points or pixels. Floored at the token default so a tiny host font never
-        makes the panel unreadable; falls back to the default when headless."""
+        """Base font-scale so SYNAPSE body is AT LEAST the host UI font size — it
+        tracks Houdini's default text size upward (a larger host font scales the
+        panel up to match) but is FLOORED at the token default (1.25x), so on a
+        small host font the panel reads slightly larger rather than tiny. Not an
+        exact equality on small hosts — that floor is deliberate. ``QFontInfo``
+        resolves the actual pixel size whether set in points or pixels; headless
+        (no QApplication) falls back to the token default."""
         try:
             app = QtWidgets.QApplication.instance()
             if app is not None:
@@ -674,6 +684,17 @@ class SynapsePanel(QtWidgets.QWidget):
         m = self._active_model()
         if not m:
             return ""
+        # Prefer the registry's curated short label — it handles Haiku's dated id
+        # (claude-haiku-4-5-20251001 → 'Haiku 4.5', not 'haiku-4.5.20251001') and
+        # the long slash-bearing NVIDIA ids cleanly. Fall back to the claude-
+        # string surgery only for an unknown (non-registry) model id.
+        try:
+            from synapse.panel.providers.registry import model_label, models_for
+            pid = getattr(self, "_provider_id", "claude")
+            if m in {mid for mid, _ in models_for(pid)}:
+                return model_label(pid, m)
+        except Exception:
+            pass
         if m.startswith("claude-"):
             m = m[len("claude-"):]
             for fam in ("opus", "sonnet", "haiku"):
@@ -688,13 +709,8 @@ class SynapsePanel(QtWidgets.QWidget):
         rail author token updates immediately. Display/telemetry only — never
         touches USD/customData."""
         self._provider_id = provider_id
-        lbl = getattr(self, "_author_lbl", None)
-        if lbl is not None:
-            try:
-                lbl.setText(self._author_token())
-            except Exception:
-                pass
-        self._refresh_engine_selector()   # filled pill + chip track the pick
+        # _refresh_engine_selector repaints the pills + chip AND the rail author.
+        self._refresh_engine_selector()
         try:
             from synapse.panel.providers.registry import PROVIDER_LABELS
             self._chat.append_system_message(
@@ -1013,7 +1029,11 @@ class SynapsePanel(QtWidgets.QWidget):
         try:
             nxt = steps[(steps.index(cur) + 1) % len(steps)]
         except ValueError:
-            nxt = t.FONT_SCALE_DEFAULT
+            # cur is the host-derived base (not on the ladder) — step to the next
+            # size ABOVE it so the first Aa press never SHRINKS below the
+            # host-matched body; wrap to the smallest if already at/above the top.
+            above = [s for s in steps if s > cur + 1e-6]
+            nxt = above[0] if above else steps[0]
         self._set_scale(nxt)
 
     def _open_palette(self):
@@ -1035,8 +1055,8 @@ class SynapsePanel(QtWidgets.QWidget):
     def _position_popup(self, popup, anchor):
         """Place a Qt.Popup the SideFX way: anchored to the widget that opened
         it, on that widget's screen, fully visible. The palette is tall and the
-        'more' button sits low in the panel, so prefer opening UPWARD from the
-        button — falling back to downward only when there's no room above."""
+        input row sits low in the panel, so prefer opening UPWARD from the anchor
+        — falling back to downward only when there's no room above."""
         popup.adjustSize()
         sz = popup.size()
         if sz.width() < popup.minimumWidth() or sz.height() < popup.minimumHeight():

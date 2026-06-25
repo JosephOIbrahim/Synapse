@@ -140,7 +140,8 @@ def test_tool_translation_to_openai_function():
 
 
 def test_default_endpoint_is_nvidia_nim():
-    host, path = _endpoint()
+    scheme, host, path = _endpoint()
+    assert scheme == "https"
     assert host == "integrate.api.nvidia.com"
     assert path == "/v1/chat/completions"
 
@@ -150,3 +151,91 @@ def test_registry_builds_nemotron():
     prov = build_provider("nemotron")
     assert prov.id == "nemotron"
     assert prov.model_identity == NVIDIA_MODEL
+
+
+# -- endpoint / scheme robustness (NVIDIA_BASE_URL overrides) ----------------
+
+def test_endpoint_variants(monkeypatch):
+    cases = {
+        "https://host/":           ("https", "host", "/v1/chat/completions"),
+        "https://host/v1/":        ("https", "host", "/v1/chat/completions"),
+        "http://localhost:8000":   ("http", "localhost:8000", "/v1/chat/completions"),
+        "host/openai/v1":          ("https", "host", "/openai/v1/chat/completions"),
+        "https://openrouter.ai/api/v1": ("https", "openrouter.ai", "/api/v1/chat/completions"),
+    }
+    for base, exp in cases.items():
+        monkeypatch.setenv("NVIDIA_BASE_URL", base)
+        assert _endpoint() == exp, "base %r" % base
+
+
+def test_trailing_slash_keeps_v1_prefix(monkeypatch):
+    # the regression: a host-only base with a trailing slash must NOT drop /v1
+    monkeypatch.setenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/")
+    scheme, host, path = _endpoint()
+    assert path == "/v1/chat/completions"
+
+
+# -- think-filter edge cases ------------------------------------------------
+
+def test_unclosed_think_drops_reasoning_no_crash():
+    tokens = []
+    stream = _sse([
+        {"delta": {"content": "<think>reasoning that never closes"}, "finish_reason": "length"},
+    ])
+    stop, blocks = _prov()._parse_sse_stream(
+        _FakeResponse(stream), emit_token=tokens.append, should_abort=lambda: False)
+    assert "".join(tokens) == ""        # reasoning never reaches the user
+    assert blocks == []                  # no visible text block emitted
+    assert stop == "length"             # finish_reason passed through
+
+
+def test_think_filter_flush_returns_partial_tail():
+    f = _ThinkFilter()
+    # a literal '<thi' at stream end (never completed to '<think>') is real content
+    assert f.feed("answer<thi") == "answer"
+    tail, unclosed = f.flush()
+    assert tail == "<thi" and unclosed is False
+
+
+# -- parallel tool calls + scheme ------------------------------------------
+
+def test_two_parallel_tool_calls():
+    tokens = []
+    stream = _sse([
+        {"delta": {"tool_calls": [
+            {"index": 0, "id": "c0", "function": {"name": "a", "arguments": '{"x":1}'}}]},
+         "finish_reason": None},
+        {"delta": {"tool_calls": [
+            {"index": 1, "id": "c1", "function": {"name": "b", "arguments": '{"y":2}'}}]},
+         "finish_reason": "tool_calls"},
+    ])
+    stop, blocks = _prov()._parse_sse_stream(
+        _FakeResponse(stream), emit_token=tokens.append, should_abort=lambda: False)
+    assert stop == "tool_use"
+    tus = [b for b in blocks if b["type"] == "tool_use"]
+    assert len(tus) == 2
+    assert tus[0]["name"] == "a" and tus[0]["input"] == {"x": 1}
+    assert tus[1]["name"] == "b" and tus[1]["input"] == {"y": 2}
+
+
+# -- resolve_key (.env side-effect) -----------------------------------------
+
+def test_resolve_key_reads_env(monkeypatch):
+    import synapse.host.auth  # ensure _load_dotenv already ran (idempotent)
+    monkeypatch.delenv("NVIDIA_BASE_URL", raising=False)
+    monkeypatch.setenv("NVIDIA_API_KEY", "  nvapi-xyz  ")
+    assert _prov().resolve_key() == "nvapi-xyz"
+
+
+def test_resolve_key_none_on_default_host_without_key(monkeypatch):
+    import synapse.host.auth  # noqa: F401
+    monkeypatch.delenv("NVIDIA_BASE_URL", raising=False)
+    monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
+    assert _prov().resolve_key() is None
+
+
+def test_resolve_key_self_host_needs_no_key(monkeypatch):
+    import synapse.host.auth  # noqa: F401
+    monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
+    monkeypatch.setenv("NVIDIA_BASE_URL", "http://localhost:8000")
+    assert _prov().resolve_key() == "not-needed"
