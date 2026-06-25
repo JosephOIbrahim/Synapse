@@ -26,7 +26,7 @@ SYNAPSE's whole point is to be *used*. The payoff is a docked **SYNAPSE panel**:
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
     ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>rail + 2 tabs, in-process"]:::panel
-    PANEL --> LOOP["Agent loop<br/>streams Claude + 112 tools"]:::panel
+    PANEL -->|"engine pills<br/>Claude &middot; Gemini &middot; Nemotron"| LOOP["Agent loop<br/>StreamProvider streams the chosen engine + 112 tools"]:::panel
     LOOP -->|"tool_use<br/>(e.g. execute_python)"| EXEC["Tool executor<br/>main thread"]:::panel
     EXEC --> BR["SynapseHandler<br/>undo-wrapped &middot; main-thread &middot; integrity"]:::bridge
     BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
@@ -41,7 +41,7 @@ flowchart LR
     classDef obs fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
 ```
 
-The panel was rebuilt from first principles ("the Pentagram pass", refined in v9) over a thin `.pypanel` loader: one vendored design system (native Houdini 21 greys, a cool/warm dual accent, the signal blue `#8FB3D9` kept as the *one* chromatic event). A persistent **rail** keeps termination, live state, and bounded cost on screen; the surface is **two tabs under a same-pane law — agent state signals, it never hijacks your tab**: **Direct** (speaker-by-type chat, agent results as artifact chips, signed results) and **Work** (the walk-away glance: a cook preview, plan-with-progress, per-agent health, with review folded into its cook→done sub-states). **Stop is honest** — it aborts the agent loop, says *"Stopping — waiting on \<tool\>…"*, and only reports idle when the work has actually stopped. A **Ctrl+K palette lets you self-identify two ways** — by verb (build / fix / explain / optimize / render) × context (SOP / LOP / COP / Karma / USD). Every mutation the agent makes is **undo-wrapped, thread-safe, and integrity-verified** — inline in the handlers on the live in-process path (the `LosslessExecutionBridge` is the integrity/audit layer, on the external-MCP path) — so the agent's hands stay structurally reversible. Consent is **non-blocking for artist-initiated work** (your chat request *is* the consent; autonomous / external-MCP operations still gate through `HumanGate`); the gate previously polled the GUI thread and dead-locked Houdini until that was root-caused live and fixed. The panel's 1 s heartbeat also arms the **process-wide freeze-safety chain** (v5.12.0): a frozen main thread is detected in 5 s and, if it sustains 30 s, the circuit breaker opens and the emergency halt fires through any active bridge. The Work tab surfaces a **recursive-observability** readout — per-agent success rates plus a recommendation history that persists across restarts and escalates if the same issue recurs.
+The panel was rebuilt from first principles ("the Pentagram pass", refined in v9) over a thin `.pypanel` loader: one vendored design system (native Houdini 21 greys, a cool/warm dual accent, the signal blue `#8FB3D9` kept as the *one* chromatic event) — typography inherits the **host UI font and size** (mono reserved for code/paths) and the surface tokens are **contrast-solved (WCAG AA) against the live host grey at construction**, gated by a dense audit sweep so a lighter host can't drop body text below AA. A persistent **rail** keeps termination, live state, and bounded cost on screen; the surface is **two tabs under a same-pane law — agent state signals, it never hijacks your tab**: **Direct** (speaker-by-type chat, agent results as artifact chips, signed results) and **Work** (the walk-away glance: a cook preview, plan-with-progress, per-agent health, with review folded into its cook→done sub-states). **Stop is honest** — it aborts the agent loop, says *"Stopping — waiting on \<tool\>…"*, and only reports idle when the work has actually stopped. Typing **`/`** in the input opens a command palette (the old ⌘K is folded in — Ctrl+K still works, no bar button) that **lets you self-identify two ways** — by verb (build / fix / explain / optimize / render) × context (SOP / LOP / COP / Karma / USD). The chat engine is **multi-provider** — a visible **Claude · Gemini · Nemotron** selector plus a clickable model picker (Opus 4.8 / Sonnet 4.6 / Haiku 4.5 / Fable 5 on Claude); providers are raw-stdlib HTTP adapters under `panel/providers/`, so switching engines never touches the worker or tool loop. Every mutation the agent makes is **undo-wrapped, thread-safe, and integrity-verified** — inline in the handlers on the live in-process path (the `LosslessExecutionBridge` is the integrity/audit layer, on the external-MCP path) — so the agent's hands stay structurally reversible. Consent is **non-blocking for artist-initiated work** (your chat request *is* the consent; autonomous / external-MCP operations still gate through `HumanGate`); the gate previously polled the GUI thread and dead-locked Houdini until that was root-caused live and fixed. The panel's 1 s heartbeat also arms the **process-wide freeze-safety chain** (v5.12.0): a frozen main thread is detected in 5 s and, if it sustains 30 s, the circuit breaker opens and the emergency halt fires through any active bridge. The Work tab surfaces a **recursive-observability** readout — per-agent success rates plus a recommendation history that persists across restarts and escalates if the same issue recurs.
 
 ---
 
@@ -232,9 +232,19 @@ No Python on your PATH? Use the copy that ships inside Houdini:
 
 *(Add `--dry-run` to preview without writing anything.)*
 
-### 3 · Paste your Anthropic API key
+### 3 · Paste your API key(s)
 
-SYNAPSE talks to Claude, so it needs a key — make one at **console.anthropic.com** (it starts with `sk-ant-`). Then just **double-click `set_anthropic_key.bat`** in the SYNAPSE folder, paste the key, and press Enter. It remembers it for you.
+SYNAPSE talks to Claude out of the box, so it needs an Anthropic key — make one at **console.anthropic.com** (it starts with `sk-ant-`). Then just **double-click `set_anthropic_key.bat`** in the SYNAPSE folder, paste the key, and press Enter. It remembers it for you.
+
+Want the other engines too? The panel can also stream **Gemini** and **NVIDIA Nemotron**. Drop their keys in a `.env` file at the SYNAPSE folder root (gitignored, loaded automatically on boot) — one `KEY=value` per line:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=AIza...
+NVIDIA_API_KEY=nvapi-...
+```
+
+Claude is the default; pick another from the **⋯ → Engine** selector in the panel. Any key you skip just disables that engine — Claude alone is enough to start.
 
 ### 4 · Restart Houdini and open the panel
 
@@ -246,7 +256,7 @@ That's the whole loop. Everything SYNAPSE does is an ordinary Houdini action —
 <summary><strong>If something's not working</strong></summary>
 
 - **SYNAPSE isn't in the Pane Tab menu** → Houdini loads packages only at launch; fully restart it, and confirm the installer reported success.
-- **"No API key" / the panel won't connect** → re-run `set_anthropic_key.bat`, then **relaunch Houdini from scratch** — on Windows a freshly-set key only reaches apps started *after* you set it. To check, run in Houdini's Python Shell: `import os; print(bool(os.environ.get('ANTHROPIC_API_KEY')))` — it should print `True`.
+- **"No API key" / the panel won't connect** → re-run `set_anthropic_key.bat` (or, for Gemini / Nemotron, confirm the `GEMINI_API_KEY` / `NVIDIA_API_KEY` line in your `.env`), then **relaunch Houdini from scratch** — on Windows a freshly-set key only reaches apps started *after* you set it. To check, run in Houdini's Python Shell: `import os; print(bool(os.environ.get('ANTHROPIC_API_KEY')))` — it should print `True`.
 - **`ModuleNotFoundError: No module named 'synapse'`** → the installer prints the path it wired; confirm it points at the repo's `python/` directory, and that you restarted Houdini.
 
 </details>
@@ -301,7 +311,8 @@ Healthy → prints `running: True` and stops cleanly. Common errors:
 
 | Layer | State |
 |---|---|
-| **Artist copilot panel** (chat → in-Houdini build, Ctrl+K palette over 112 tools, live observability) | Shipping. Every mutation undo-wrapped + main-thread-safe (inline in the handlers); "make a box" → node verified in graphical Houdini 21.0.671 (2026-06-01). |
+| **Artist copilot panel** (chat → in-Houdini build, multi-provider engine selector — Claude · Gemini · Nemotron — `/` command palette over 112 tools, live observability) | Shipping. Every mutation undo-wrapped + main-thread-safe (inline in the handlers); "make a box" → node verified in graphical Houdini 21.0.671 (2026-06-01). |
+| **Multi-provider chat engine** (`panel/providers/`) | Shipping. Three stream providers — Anthropic, Gemini (REST + faithful nested-arg repair), NVIDIA Nemotron (OpenAI-compatible NIM, reasoning-off `<think>` filter) — all raw stdlib `http.client`, **no SDK** added to Houdini's Python; selected via `registry.build_provider(provider_id, model=…)`. Keys resolve from the gitignored repo-root `.env` (`host.auth._load_dotenv`) or system env. |
 | Cognitive substrate (Dispatcher + `AgentToolError` + cognitive/host split) | Shipping. Zero-hou boundary enforced by lint. |
 | Agent SDK loop (Anthropic, cancel-event-aware, serializable tool errors) | Shipping. Mocked end-to-end tests green. |
 | Daemon lifecycle (boot gate, auth resolver, dialog suppression, bootstrap locks) | Shipping. Windows `WindowsSelectorEventLoopPolicy` + `PYTHONNOUSERSITE` + no-runtime-pip all baked. |
@@ -752,7 +763,8 @@ python/synapse/
 │   ├── backfill.py             # one-time JSONL → Moneta backfill (backup-first)
 │   └── store.py                # SynapseMemory + SYNAPSE_MEMORY_BACKEND selector
 ├── panel/                      # artist-facing copilot panel (Qt / PySide6)
-│   ├── synapse_panel.py        # the docked panel — rail + 2 tabs (same-pane law), honest Stop, freeze-chain heartbeat
+│   ├── providers/              # multi-provider chat engines — anthropic / gemini / nemotron (raw http.client, no SDK); registry.build_provider()
+│   ├── synapse_panel.py        # the docked panel — rail + 2 tabs (same-pane law), engine selector + model picker, "/" palette, honest Stop, freeze-chain heartbeat
 │   ├── face_work.py            # Work tab — cook-preview bucket grid + plan-with-progress + health (review folds into cook→done)
 │   ├── claude_worker.py        # background QThread — streams Claude + tool loop, per-tool wait budgets
 │   ├── tool_executor.py        # main-thread tool dispatch (→ SynapseHandler), per-tool MCP timeouts
