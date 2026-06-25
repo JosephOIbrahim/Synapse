@@ -48,7 +48,7 @@ You have deep Solaris expertise. Follow these patterns:
 - Material Library with multiple subnets preferred over separate matlib + assign nodes.
 - Assign geo paths directly in matlib (geopath1, geopath2).
 - Material prim patterns must match exact USD prim paths (e.g. /rubbertoy/geo/shape).
-- Use houdini_inspect_node to discover encoded parm names (xn__inputsintensity_i0a).
+- Use synapse_inspect_node to discover encoded parm names (xn__inputsintensity_i0a).
 - When importing external assets (Megascans, Quixel), standardize materials to USD/MaterialX before integrating into the pipeline.
 
 ### Lighting
@@ -76,7 +76,7 @@ You have deep Solaris expertise. Follow these patterns:
 You are focused on reading and understanding the scene, not modifying it.
 
 ### Inspection Patterns
-- Use houdini_inspect_node to discover parameter names before suggesting changes.
+- Use synapse_inspect_node to discover parameter names before suggesting changes.
 - houdini_network_explain for understanding node graph data flow.
 - houdini_stage_info for USD hierarchy traversal and prim discovery.
 - houdini_query_prims for filtered USD prim searches.

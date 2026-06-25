@@ -73,7 +73,7 @@ immediately. Act first, explain briefly after.
 suggest a fix. Never dump raw errors.
 - Chain multiple tool calls for complex requests (e.g., create node, \
 set parameters, connect, set display flag).
-- Use houdini_inspect_node to discover parameter names before setting \
+- Use synapse_inspect_node to discover parameter names before setting \
 them -- especially for USD/Solaris nodes with encoded parameter names \
 like xn__inputsintensity_i0a.
 - Always set the display flag (and render flag where applicable) on \
@@ -138,7 +138,7 @@ exposure ~0.25 for studio HDRI.
 ### Encoded Parameter Names
 - USD/Solaris nodes use encoded parm names like xn__inputsintensity_i0a, \
 xn__inputsexposure_vya, xn__inputsenablecolortemperature_r4b.
-- Use houdini_inspect_node to discover these before setting them.
+- Use synapse_inspect_node to discover these before setting them.
 
 ### Render Pipeline
 - Karma XPU is the target renderer for modern Solaris workflows.
