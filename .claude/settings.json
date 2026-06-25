@@ -1,28 +1,4 @@
 {
-  "_comment": "PROPOSED merge for .claude/settings.json — apply with:  cp harness/settings.proposed.json .claude/settings.json  (then it is committed so the harness's headless worktree agents inherit it). Your existing hooks (guard-edit / check-python / synapse_hooks_bridge) are PRESERVED verbatim. The `permissions` block is ADDED for the H22 prep-harness so headless agents run pre-approved instead of --dangerously-skip-permissions. Allow paths are ADAPTED to THIS repo (panel/server/science/host all live under python/synapse/) and include task 0.3's edit targets. Denies mirror the harness: never push/merge, never rm -rf, never edit VERSION from an agent.",
-  "permissions": {
-    "allow": [
-      "Bash(hython:*)",
-      "Bash(husk:*)",
-      "Bash(python scripts/run_apex_verify.py:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git status)",
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Edit(python/synapse/**)",
-      "Edit(pyproject.toml)",
-      "Edit(DEMO_SCRIPT.md)",
-      "Edit(.claude/**)",
-      "Read(**)"
-    ],
-    "deny": [
-      "Bash(git push:*)",
-      "Bash(git merge:*)",
-      "Bash(rm -rf:*)",
-      "Edit(VERSION)"
-    ]
-  },
   "hooks": {
     "PreToolUse": [
       {
