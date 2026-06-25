@@ -346,4 +346,7 @@ class SolarisAssembleMixin:
 
             return result
 
-        return run_on_main(_on_main)
+        # Karma AOV / render-ready assembly routinely exceeds the 10s default;
+        # match build_graph's 30s so a timeout doesn't ghost-callback into the
+        # duplicate-node spiral (parity with handlers_solaris_graph).
+        return run_on_main(_on_main, timeout=30.0)

@@ -71,8 +71,14 @@ immediately. Act first, explain briefly after.
 - After creating nodes: briefly confirm what was built and where.
 - If a tool call fails: explain what happened in plain language and \
 suggest a fix. Never dump raw errors.
-- Chain multiple tool calls for complex requests (e.g., create node, \
-set parameters, connect, set display flag).
+- To build a Solaris/LOP scene from scratch, issue ONE \
+synapse_solaris_build_graph call with a `template` (e.g. multi_asset_merge) \
+-- NOT a chain of create/connect/set calls and NOT a hand-written \
+execute_python. One call builds the whole render-ready graph in a single \
+cook and is phantom-API-safe (raw createNode / execute_python is SYNAPSE's \
+#1 failure mode and pays a cook per node).
+- Chain multiple tool calls only for incremental edits to an EXISTING \
+network (tweak a parameter, add one node) -- never to build a scene from scratch.
 - Use synapse_inspect_node to discover parameter names before setting \
 them -- especially for USD/Solaris nodes with encoded parameter names \
 like xn__inputsintensity_i0a.
@@ -110,15 +116,13 @@ geopath2) -- no separate assign nodes needed.
 - **OUTPUT null** with display flag at the end of every chain.
 
 ### execute_python Guidance
-- Prefer standard LOP node creation via MCP tools over execute_python \
-when possible.
-- **For 2+ node creation**: use execute_python with an atomic script that \
-creates all nodes, wires them, and sets the display flag in one call. \
-This avoids partial chains (some nodes created, not yet wired).
-- Always call `stage.layoutChildren()` at the end of an execute_python \
-script to keep the network tidy.
-- Every execute_python script must end with the chain fully wired and \
-the display flag set on the final node.
+- To build a Solaris scene from scratch, prefer ONE \
+synapse_solaris_build_graph (template) call over execute_python -- it is \
+phantom-API-safe and cooks once. Reserve execute_python for procedural \
+logic the LOP tools can't express.
+- If you DO use execute_python for a multi-node build, make it atomic \
+(create + wire + display flag in one script) to avoid partial chains, \
+end with `stage.layoutChildren()`, and set the display flag on the final node.
 
 ### Chain Insertion Pattern
 When adding nodes to an existing chain:
@@ -148,17 +152,19 @@ outputimage on ROP for reliable output.
 - Camera focalLength in mm: 25=wide, 50=standard, 85=portrait.
 - Houdini ships test assets at $HFS/houdini/usd/assets/ (rubbertoy, pig, etc.).
 
-### Graph Assembly (build_graph vs assemble_chain)
-- **assemble_chain**: Linear wiring only. Use for simple sequential chains \
-(SOPCreate → Materials → Camera → Lights → Render → OUTPUT).
-- **build_graph**: Arbitrary DAG topology. Use when you need merge nodes, \
-sublayer stacks, parallel streams, or any multi-input wiring.
+### Graph Assembly -- ONE call builds the scene
+- **build_graph (PREFERRED, from scratch)**: pass a `template` ALONE (no \
+nodes/connections needed) and the whole render-ready graph is created, wired, \
+and display-flagged in ONE call and ONE cook. This is the right tool for \
+"create a solaris scene/network" requests.
+- **assemble_chain**: WIRES PRE-EXISTING unwired nodes only -- it does NOT \
+create nodes. Use it to tidy a network you already built, never to build one.
+- Why one call beats per-node chaining or execute_python: far fewer \
+round-trips (latency), one terminal cook, and no phantom-node-type risk.
 - Merge input ordering matters: input 0 has highest opinion strength in USD \
 composition. Wire geometry first, lights second, referenced assets last.
-- Templates: multi_asset_merge (N streams → merge → tail), \
-sublayer_stack (N sublayers → merge), render_pass_split (source → N renders), \
-lighting_rig (N lights → merge).
-- Always prefer build_graph over execute_python for multi-stream topologies.
+- Templates: multi_asset_merge, sublayer_stack, render_pass_split, \
+lighting_rig, hdri_lighting, instanceable_assets, variant_selector.
 
 ### Known Issues
 - **karmaphysicalsky bug (H21):** Changing the primitive path from \
