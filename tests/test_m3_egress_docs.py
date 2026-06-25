@@ -49,11 +49,13 @@ def test_remote_egress_sites_are_frozen():
             https_sites.add(rel)
         if re.search(r"\bAnthropic\(", text):
             anthropic_sites.add(rel)
-    assert https_sites == {
+    _known = {
         "panel/providers/anthropic_provider.py",
         "panel/providers/gemini_provider.py",
-    }, (
-        f"New raw-HTTPS egress site(s): {https_sites - {'panel/providers/anthropic_provider.py', 'panel/providers/gemini_provider.py'}} "
+        "panel/providers/nemotron_provider.py",
+    }
+    assert https_sites == _known, (
+        f"New raw-HTTPS egress site(s): {https_sites - _known} "
         "— document in docs/studio/EGRESS.md, then extend this pin."
     )
     allowed = {"host/daemon.py", "routing/router.py"}

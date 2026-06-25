@@ -202,6 +202,18 @@ try:
     chip_txt = repr(chip.text()) if chip is not None else None
     print(f"   model readout chip  : {chip_txt}  " + tag(chip_ok))
 
+    # --- the model switcher must expose the registry's models + mark the active
+    #     one (switching Anthropic models must be apparent, not hidden) ---
+    from synapse.panel.providers import registry as _reg
+    items = panel._model_menu_items() if hasattr(panel, "_model_menu_items") else []
+    want_ids = [m for m, _ in _reg.models_for(getattr(panel, "_provider_id", "claude"))]
+    got_ids = [m for m, _, _ in items]
+    actives = [m for m, _, a in items if a]
+    picker_ok = (got_ids == want_ids and len(got_ids) >= 2 and len(actives) == 1
+                 and isinstance(chip, QtWidgets.QAbstractButton))
+    print(f"   model picker        : {len(got_ids)} models, active={actives}  "
+          + tag(picker_ok))
+
     # --- match Houdini: the panel must inherit the host's native UI font, not
     #     override it with the bundled designed families (Space Grotesk/Mono).
     #     Mono stays legal only for genuine code/paths inside the chat HTML. ---

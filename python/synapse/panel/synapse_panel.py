@@ -190,6 +190,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._work_substate = "cook"
         self._was_busy = False
         self._provider_id = "claude"   # active chat engine (provider switch)
+        # Per-provider picked model (the model switcher) — each engine remembers
+        # its own selection; defaults come from the registry.
+        try:
+            from synapse.panel.providers import registry as _reg
+            self._model_by_provider = dict(_reg.PROVIDER_DEFAULT_MODEL)
+        except Exception:
+            self._model_by_provider = {}
 
         self.setAcceptDrops(True)
         self._build_ui()
@@ -371,10 +378,18 @@ class SynapsePanel(QtWidgets.QWidget):
         # prominent model-id readout (e.g. 'sonnet-4.6') — the chip Image #6 asks
         # for; cost is intentionally omitted (the worker doesn't surface usage yet,
         # so a cost figure would be fabricated).
-        self._model_chip = QtWidgets.QLabel(self._author_token())
+        # Clickable model picker — the model id + a ▾ affordance; opens a menu of
+        # the active engine's models (Opus/Sonnet/Haiku/Fable for Claude). Was a
+        # static label; switching Anthropic models is now apparent.
+        self._model_chip = QtWidgets.QPushButton(self._author_token() + "  ▾")
         self._model_chip.setObjectName("DsModelChip")
-        self._model_chip.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL))
-        self._model_chip.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
+        self._model_chip.setCursor(Qt.PointingHandCursor)
+        self._model_chip.setFlat(True)
+        self._model_chip.setToolTip("Switch model")
+        self._model_chip.setStyleSheet(
+            "color:%s; background:transparent; border:none; font-weight:600;"
+            % t.TEXT_BRIGHT)
+        self._model_chip.clicked.connect(self._open_model_menu)
         lay.addWidget(self._model_chip)
         self._refresh_engine_selector()
         return w
@@ -389,7 +404,7 @@ class SynapsePanel(QtWidgets.QWidget):
         chip = getattr(self, "_model_chip", None)
         if chip is not None:
             try:
-                chip.setText(self._author_token())
+                chip.setText(self._author_token() + "  ▾")
             except Exception:
                 pass
 
@@ -553,17 +568,63 @@ class SynapsePanel(QtWidgets.QWidget):
         self._work_substate = state
 
     def _active_model(self):
-        """Model id of the active engine, from registry data (no network)."""
+        """Model id of the active engine — the picked model for this provider,
+        else the registry default (no network)."""
+        pid = getattr(self, "_provider_id", "claude")
+        picked = getattr(self, "_model_by_provider", {}).get(pid)
+        if picked:
+            return picked
         try:
             from synapse.panel.providers import registry as reg
-            pid = getattr(self, "_provider_id", "claude")
-            return reg.GEMINI_MODEL if pid == "gemini" else reg.ANTHROPIC_MODEL
+            return reg.default_model(pid)
         except Exception:
             try:
                 from synapse.panel.claude_worker import _MODEL
                 return _MODEL
             except Exception:
                 return ""
+
+    def _model_menu_items(self):
+        """``(model_id, label, active)`` rows for the active provider's picker —
+        the exact data the model menu renders; exposed for the readability
+        audit so the picker is gate-checkable offscreen."""
+        try:
+            from synapse.panel.providers import registry as reg
+        except Exception:
+            return []
+        pid = getattr(self, "_provider_id", "claude")
+        cur = self._active_model()
+        return [(mid, lbl, mid == cur) for mid, lbl in reg.models_for(pid)]
+
+    def _open_model_menu(self):
+        """Drop the model picker for the active engine — switching Anthropic
+        models (Opus/Sonnet/Haiku/Fable) is now apparent, not hidden."""
+        items = self._model_menu_items()
+        if not items:
+            return
+        menu = QtWidgets.QMenu(self)
+        for mid, lbl, active in items:
+            act = menu.addAction("%s   %s" % (lbl, mid))
+            act.setCheckable(True)
+            act.setChecked(active)
+            act.triggered.connect(lambda _=False, m=mid: self._set_model(m))
+        chip = getattr(self, "_model_chip", None)
+        anchor = chip if chip is not None else self
+        pos = anchor.mapToGlobal(QtCore.QPoint(0, anchor.height()))
+        menu.exec(pos) if hasattr(menu, "exec") else menu.exec_(pos)
+
+    def _set_model(self, model_id):
+        """Pick a model for the active engine. Takes effect on the NEXT message;
+        the chip + author token update now. Display/telemetry only."""
+        pid = getattr(self, "_provider_id", "claude")
+        self._model_by_provider[pid] = model_id
+        self._refresh_engine_selector()
+        try:
+            from synapse.panel.providers.registry import model_label
+            self._chat.append_system_message(
+                "Model set to %s." % model_label(pid, model_id))
+        except Exception:
+            pass
 
     def _author_token(self):
         """Best-effort display signature of the active engine's model, e.g.
@@ -605,7 +666,9 @@ class SynapsePanel(QtWidgets.QWidget):
         falls back to its own Claude default (graceful degradation)."""
         try:
             from synapse.panel.providers.registry import build_provider
-            return build_provider(getattr(self, "_provider_id", "claude"))
+            pid = getattr(self, "_provider_id", "claude")
+            model = getattr(self, "_model_by_provider", {}).get(pid)
+            return build_provider(pid, model=model)
         except Exception:
             return None
 
