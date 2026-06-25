@@ -104,3 +104,8 @@ python/synapse/_vendor/**/*.pyc
 
 # FORGE build-orchestration artifacts (run logs, specs)
 .forge/
+
+CLAUDE-FABLE-5.md
+
+# H22 harness delivery zip — source is tracked in harness/, the zip is not
+H22_prep_harness.zip
