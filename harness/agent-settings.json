@@ -1,0 +1,29 @@
+{
+  "_comment": "Self-contained config for the harness's HEADLESS WORKTREE AGENTS, loaded by harness/run.ts runAgent() via `claude --settings <this file>` (command-line precedence = highest). It carries everything the autonomous agents need: (1) blanks ANTHROPIC_API_KEY so they authenticate on the Max-plan claude.ai login (the global ~/.claude env-block key is credit-starved); (2) the tool allowlist (adapted to this repo: panel/server/science/host live under python/synapse/); (3) the never-push / never-merge / no-rm-rf / no-edit-VERSION denies. These DENIES live HERE — not in .claude/settings.json — so the 'promotion is human' safety binds the autonomous agents WITHOUT restricting the human's interactive session. Worktrees still inherit hooks from the committed .claude/settings.json.",
+  "permissions": {
+    "allow": [
+      "Bash(hython:*)",
+      "Bash(husk:*)",
+      "Bash(python scripts/run_apex_verify.py:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git status)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Edit(python/synapse/**)",
+      "Edit(pyproject.toml)",
+      "Edit(DEMO_SCRIPT.md)",
+      "Edit(.claude/**)",
+      "Read(**)"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git merge:*)",
+      "Bash(rm -rf:*)",
+      "Edit(VERSION)"
+    ]
+  },
+  "env": {
+    "ANTHROPIC_API_KEY": ""
+  }
+}

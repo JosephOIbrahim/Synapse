@@ -1,0 +1,20 @@
+# C2 — Blueprint §2 (convergent #2) + remediation C10/C12. RED — the harness REFUSES this.
+# Safety wiring + live verification: pytest is insufficient; the freeze chain must be
+# confirmed firing daemon-side with the panel tab CLOSED in a live H22 session.
+id: heartbeat-relocation
+goal: "Move freeze-chain liveness off the panel onto the daemon (server-side timer / hdefereval idle); panel becomes one optional contributor, never the source"
+model: opus
+autonomy: red
+verify: e2e-houdini
+allow_test_edits: false
+owns:
+  - "python/synapse/daemon/**"            # NOTE: inferred path — confirm against repo
+  - "python/synapse/host/freeze_chain*"   # NOTE: inferred path — confirm against repo
+do_not_touch:
+  - "python/synapse/panel/claude_worker.py"     # §1 FLOOR
+  - "python/synapse/cognitive/**"
+done_when:
+  - "freeze chain fires from the daemon with the SYNAPSE panel tab closed (human-verified, live H22)"
+  - "panel contributes a beat when present but is never the sole heartbeat source"
+  - "remediation C10/C12 regression suite green against the relocated chain"
+stop_when: "human sign-off"

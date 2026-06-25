@@ -1,0 +1,38 @@
+# SYNAPSE harness — global config (ANVIL-pattern)
+gate_cmd: "pytest -q"                          # the 2,874-test reward signal, every session + inner loop
+smoke_cmd: "python smoke_live_houdini.py"      # END-TO-END, needs live H21/H22 + GUI — red tier / --smoke only
+max_attempts: 3                                # Stop-hook gate: re-tries before escalating
+
+# ---- cost control (stay inside the plan) ----
+billing_mode: "subscription"                   # headless claude -p draws Agent SDK credit / metered API (NOT free interactive)
+budget_usd: 12.0                               # HARD $ stop per `run`; 0 = unlimited (not advised)
+max_turns: 25                                  # per-session ceiling
+max_sessions: 6                                # fresh context windows one task may span
+stuck_timeout_sec: 1800
+
+# ---- memory backend (the cross-session bridge) ----
+# "flat" runs out of the box (zero-dep). Switch to "usd" once you `pip install usd-core`
+# to use the cognitive-twin stage (on-thesis; lossless revert_session). Factory falls back
+# to flat automatically if usd-core is absent, so flipping this is safe.
+memory_backend: "flat"
+
+branch_prefix: "synapse/"
+work_dir: ".synapse/work"
+
+claude_bin: "claude"
+permission_mode: "acceptEdits"                 # the fence 'deny' holds even under bypass
+allowed_tools: "Edit Write MultiEdit Read Grep Glob Bash"
+
+models:
+  planner: "opus"
+  worker: "sonnet"
+
+# ---- scout (the leadoff leg) + dynamic planning ----
+scout_model: "opus"                            # synthesis pass model (read-only)
+hython_bin: "hython"                            # for the live dir(hou)/dir(pdg) audit; full path on Windows if not on PATH
+scout_max_age_min: 120                          # warn if scout_report.json is older than this
+review_docs:                                    # fed to `scout --synthesize` and `plan`
+  - "docs/SYNAPSE_PANEL_DESIGN_REVIEW_H22_LENS.md"
+  - "docs/SYNAPSE_PANEL_CODEBASE_REVIEW_H22_LENS.md"
+# Model tiers per contract: haiku (mechanical/green), sonnet (default), opusplan (amber —
+# Opus plans, Sonnet executes, realized as ARCHITECT->FORGE), opus (hardest reasoning).

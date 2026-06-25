@@ -1,0 +1,26 @@
+# SYNAPSE harness IP fence — the hard invariant. Enforced by .synapse/hooks/fence.py
+# (PreToolUse) and by the orchestrator before a task starts. Violations target = 0.
+# Concept-level work is fine; these MECHANISM / claim-core paths are off-limits to
+# autonomous work and require the human + counsel gate.
+forbidden_paths:
+  - "python/synapse/cognitive/**"          # the cognitive substrate
+  - "**/*memory_ladder*"
+  - "**/*injection*"
+  - "**/*gain*"
+  - "usd_bridge/**"
+
+# No autonomous public disclosure. Ever.
+forbidden_command_patterns:
+  - "git push"
+  - "git tag"
+  - "gh release"
+  - "twine upload"
+  - "npm publish"
+
+# Test integrity: the reward signal must not be editable by the worker (anti reward-gaming).
+# Denied UNLESS the active contract sets allow_test_edits: true (a conscious per-task decision).
+protected_test_globs:
+  - "tests/**"
+  - "**/tests/**"
+  - "**/test_*.py"
+  - "**/*_test.py"

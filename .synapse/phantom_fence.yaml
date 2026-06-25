@@ -1,0 +1,17 @@
+# SYNAPSE phantom-API fence — the addition ANVIL doesn't have.
+# A Houdini harness's #1 failure class is hallucinated host APIs, not IP leakage.
+# This denies edits that INTRODUCE an unverified hou.* / pdg.* call.
+runtime_manifest: ".synapse/runtime_symbols.H21_0_671.json"   # swap to .H22 once the dir() audit produces it
+deny_unverified_prefixes:
+  - "hou."
+  - "pdg."
+# "denylist" (default, safe): deny only confirmed phantoms — won't false-block legit work.
+# "allowlist" (post-audit): deny anything not in the manifest's allowed_symbols — use ONLY
+# once runtime_symbols.<build>.json is COMPLETE (regenerated from dir() against a live build).
+mode: "denylist"
+# Confirmed phantoms in H21.0.671 (also carried in the manifest; either source denies them).
+known_phantoms:
+  - "hou.pdg"
+  - "hou.secure"
+  - "hou.lopNetworks"
+  - "hou.updateGraphTick"

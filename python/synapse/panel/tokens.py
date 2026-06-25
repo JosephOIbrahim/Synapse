@@ -67,6 +67,22 @@ except ImportError:
     PANEL_MIN_HEIGHT = 400
 
 
+# ── Typography: ONE native source (contract typography-consolidate) ─────────
+# Override the SIZE_* re-export above with the vendored designsystem's NATIVE
+# scale, so the chat transcript + consent-gate cards render at Houdini-native
+# sizes regardless of the ~/.synapse/design side-channel (BODY=26 → ~2x native,
+# which cropped the buttons/labels). Colors INTENTIONALLY stay as re-exported
+# above (panel cyan ≠ designsystem accent — pinned by test_hda_panel); only the
+# type scale consolidates here. Package import → independent of sys.path/home dir.
+try:
+    from synapse.panel.designsystem.tokens import (  # noqa: E402,F811  — native wins
+        SIZE_LABEL, SIZE_SMALL, SIZE_UI, SIZE_BODY, SIZE_TITLE, SIZE_HERO,
+    )
+except ImportError:  # vendored module unavailable — pin native literals anyway
+    SIZE_LABEL, SIZE_SMALL, SIZE_UI = 10, 11, 12
+    SIZE_BODY, SIZE_TITLE, SIZE_HERO = 12, 15, 19
+
+
 # ── Panel-specific aliases (not in canonical tokens) ────────────────────
 TEXT = "#E0E0E0"          # Primary text on dark (between BONE and WHITE)
 TEXT_DIM = "#999999"      # Dimmed text (between SLATE and SILVER)

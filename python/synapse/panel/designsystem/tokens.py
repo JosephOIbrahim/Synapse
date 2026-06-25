@@ -39,21 +39,95 @@ HOU_DARK    = "#2B2B2B"
 HOU_WIRE    = "#6A9BC3"
 
 # ─────────────────────────────────────────────────────────────
+# HOST-THEME SEEDING (contract C1: theme-seed-tokens)
+# Surface roles are SEEDED from the live Houdini color scheme at construction so
+# the panel tracks the artist's light/dark theme; the hardcoded hexes are the
+# HEADLESS fallback (not the source of truth — that inversion was the bug). Pure
+# stdlib; any failure degrades cleanly to the fallback, so the dark scheme stays
+# byte-identical in tests/CI/headless and only a live LIGHT host flips the panel.
+# ─────────────────────────────────────────────────────────────
+
+def _clamp8(v):
+    return 0 if v < 0 else (255 if v > 255 else int(round(v)))
+
+def _hexrgb(r, g, b):
+    return "#%02X%02X%02X" % (_clamp8(r), _clamp8(g), _clamp8(b))
+
+def _rgb_lum(r, g, b):
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0
+
+def _host_surface_rgb():
+    """The host pane-background as (r, g, b), or None when headless/unavailable.
+    ADAPT: 'PaneEmptyApp' is a placeholder color-scheme role — tune it to the
+    exact .hcs entry that reads your build's pane grey (CRUCIBLE can cross-check
+    hou.qt.color() live). Any failure -> None -> the hardcoded fallback below."""
+    try:
+        import hou
+        c = hou.qt.color("PaneEmptyApp")
+    except Exception:
+        return None
+    if c is None:
+        return None
+    try:
+        return (int(c.red()), int(c.green()), int(c.blue()))
+    except Exception:
+        try:
+            r, g, b = c.getRgb()[:3]
+            return (int(r), int(g), int(b))
+        except Exception:
+            return None
+
+_FALLBACK_SURFACE = {  # Houdini-native dark greys, verified vs UIDark.hcs
+    "ground": "#262626", "field_inset": "#1E1E1E", "panel": "#2E2E2E",
+    "surface": "#3A3A3A", "raised": "#565656", "border": "#262626",
+    "border_strong": "#4C4C4C",
+}
+_FALLBACK_TEXT = {
+    "primary": "#ADADAD", "secondary": "#8A8A8A", "tertiary": "#7E7E7E",
+    "bright": "#C4C4C4", "disabled": "#5A5A5A",
+}
+
+def _seed_palette():
+    """(surface, text) derived from the host pane color, or the dark fallbacks
+    when headless. Elevation steps are offset from the base so the scale holds
+    for a light OR dark host; the text ramp flips to keep contrast on a light
+    surface (a naive surface-only seed would give dark-on-light = unreadable)."""
+    rgb = _host_surface_rgb()
+    if rgb is None:
+        return dict(_FALLBACK_SURFACE), dict(_FALLBACK_TEXT)
+    r, g, b = rgb
+    def step(d):
+        return _hexrgb(r + d, g + d, b + d)
+    surface = {
+        "ground": step(-8), "field_inset": step(-16), "panel": _hexrgb(r, g, b),
+        "surface": step(12), "raised": step(40), "border": step(-8),
+        "border_strong": step(30),
+    }
+    if _rgb_lum(r, g, b) > 0.5:   # light host -> dark, readable text
+        text = {"primary": "#2A2A2A", "secondary": "#4A4A4A", "tertiary": "#5E5E5E",
+                "bright": "#141414", "disabled": "#9A9A9A"}
+    else:                          # dark host -> the bright ramp (as the fallback)
+        text = dict(_FALLBACK_TEXT)
+    return surface, text
+
+_SURF, _TXT = _seed_palette()
+
+# ─────────────────────────────────────────────────────────────
 # 2. SURFACE ELEVATION — semantic roles, tuned to Houdini 21's NATIVE greys
 # Verified against $HFS/houdini/config/UIDark.hcs so the panel sits IN Houdini's
 # UI instead of reading as a black "hole". Each step is one elevation up.
 # ─────────────────────────────────────────────────────────────
 
-GROUND   = "#262626"   # input wells / deepest inset (Houdini PaneBorder, GREY .15)
-FIELD_INSET = "#1E1E1E" # darker editable-field grey for inputs (v9 call 2) —
-                        # Houdini's text-field well; deeper than GROUND so the
-                        # composer reads as an inset. CRUCIBLE cross-checks vs
-                        # hou.qt.color() live; the hex stays source of truth.
-PANEL    = "#2E2E2E"   # the panel body — Houdini's pane grey (DRKBASE, GREY .179)
-SURFACE  = "#3A3A3A"   # cards, drawers, containers (Houdini BackColor, GREY .229)
-RAISED   = "#565656"   # raised / hover surface (Houdini ButtonGradHi, GREY .338)
-BORDER   = "#262626"   # hairline divider (Houdini PaneBorder)
-BORDER_STRONG = "#4C4C4C"  # separator (Houdini Separator, GREY .30)
+# Seeded from the host pane grey (see HOST-THEME SEEDING above); these resolve
+# to the hardcoded Houdini-native greys headless, or to host-derived greys when
+# a live scheme is read — so the panel sits IN Houdini's UI on dark OR light.
+GROUND        = _SURF["ground"]         # input wells / deepest inset
+FIELD_INSET   = _SURF["field_inset"]    # darker editable-field well for inputs
+PANEL         = _SURF["panel"]          # the panel body — host pane grey
+SURFACE       = _SURF["surface"]        # cards, drawers, containers
+RAISED        = _SURF["raised"]         # raised / hover surface
+BORDER        = _SURF["border"]         # hairline divider
+BORDER_STRONG = _SURF["border_strong"]  # separator
 
 ELEVATION = {  # role -> bg color, for components to read by name
     "ground": GROUND, "panel": PANEL, "surface": SURFACE,
@@ -67,12 +141,14 @@ ELEVATION = {  # role -> bg color, for components to read by name
 # Neutral text ramp dimmed to 85% brightness (artist request) — every grey
 # multiplied ×0.85: CC→AD, 80→6D, 6E→5E, E6→C4, 6A→5A. Brand/semantic accents
 # (SIGNAL/WARM/status) are left at full strength — "fonts" = the readable ramp.
-TEXT_PRIMARY   = "#ADADAD"  # body — 85% of CC (Houdini TEXT, GREY .8)
-TEXT_SECONDARY = "#8A8A8A"  # secondary — 85% of 80 (Houdini SecondaryText)
-TEXT_TERTIARY  = "#7E7E7E"  # captions / hints — 85% of 6E
-TEXT_BRIGHT    = "#C4C4C4"  # emphasis / headings — 85% of E6
+# Seeded ramp: the 85%-dimmed greys headless, or a contrast-flipped DARK ramp
+# when the host surface is light (a surface-only seed would be dark-on-light).
+TEXT_PRIMARY   = _TXT["primary"]    # body
+TEXT_SECONDARY = _TXT["secondary"]  # secondary
+TEXT_TERTIARY  = _TXT["tertiary"]   # captions / hints
+TEXT_BRIGHT    = _TXT["bright"]     # emphasis / headings
 TEXT_ACCENT    = SIGNAL     # links, accent labels (NOT body — see WCAG note)
-TEXT_DISABLED  = "#5A5A5A"  # 85% of 6A
+TEXT_DISABLED  = _TXT["disabled"]
 TEXT_ON_ACCENT = "#13212C"  # text on a SIGNAL fill (dark navy on light blue = AA-safe)
 
 # WCAG note: SIGNAL (#8FB3D9) on PANEL passes AA for >=14px / bold, but FAILS
@@ -126,14 +202,18 @@ FONT_SANS = "Space Grotesk"
 FONT_SANS_FALLBACKS = ("DM Sans", "Segoe UI", "sans-serif")
 FONT_SANS_CSS = ", ".join(f'"{f}"' for f in (FONT_SANS,) + FONT_SANS_FALLBACKS)
 
-# px scale (Qt). Calibrated to the panel's true rendering DPI (the canonical
-# 9-20 scale, NOT the bug-prone 22-44 fallback).
-SIZE_MICRO  = 13   # tiny labels / numbers
-SIZE_SMALL  = 14   # captions, metadata
-SIZE_UI     = 20   # buttons, pills, menu items, labels — two sizes up; scalable via Aa
-SIZE_BODY   = 13   # chat body — KEEP ("Ready…" is the correct reference size)
-SIZE_TITLE  = 22   # section headers
-SIZE_HERO   = 30   # panel title
+# px scale (Qt) — matched to Houdini's native UI font (QApplication default
+# 9pt ≈ 12px, verified on H21.0.671/.729) so the panel sits IN Houdini's UI
+# instead of over it, and its text stops cropping the buttons/labels. The
+# Pentagram character is preserved by TYPE_ROLES + TRACKING_EM below (families,
+# tracking, hierarchy); only the absolute sizes shrink. The Aa control
+# (FONT_SCALE_STEPS) scales the whole set up for the artist.
+SIZE_MICRO  = 10   # tiny labels / numbers
+SIZE_SMALL  = 11   # captions, metadata
+SIZE_UI     = 12   # buttons, pills, menu items, labels — Houdini-native; scalable via Aa
+SIZE_BODY   = 12   # chat body — Houdini-native default (9pt ≈ 12px)
+SIZE_TITLE  = 15   # section headers — gentle step above native
+SIZE_HERO   = 19   # panel title — present, not shouting
 
 # Back-compat alias (design/tokens.py name)
 SIZE_LABEL = SIZE_MICRO

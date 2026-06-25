@@ -88,7 +88,11 @@ def test_is_resolver_uri_truth_table():
 
 
 def test_path_warnings_shapes():
-    w = _path_warnings("C:/abs/out.exr", context="ROP output parm")
+    # os.path.isabs is platform-defined: "C:/x" is absolute on Windows but
+    # RELATIVE on Linux (so CI on Linux saw 0 warnings). Use a path that is
+    # absolute on the running platform.
+    abs_path = "C:/abs/out.exr" if sys.platform == "win32" else "/abs/out.exr"
+    w = _path_warnings(abs_path, context="ROP output parm")
     assert len(w) == 1
     assert "ROP output parm" in w[0]
     assert "$HIP" in w[0]

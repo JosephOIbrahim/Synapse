@@ -1,0 +1,89 @@
+{
+  "_comment": "Machine source of truth for the harness. Human-readable prose lives in the SYNAPSE→H22 checklist HTML; this file is what run.ts executes. Keep the two in sync (that sync IS task 0.3). 'verify' lists the deterministic checks from harness/verify/checks.py that gate the task. 'human_gate' marks a decision the harness must NOT make. 'mode' A runs now on H21; mode B is staged until harness/state/drop.json exists.",
+  "checks_vocabulary": [
+    "import_panel", "brain_answers", "probe_runs", "probe_clean",
+    "version_single_source", "doctor", "cook_existing", "cook_node",
+    "hip_opens", "shot_login", "runsheet_present", "clean_install",
+    "nodes_appear", "ledger", "revert_clean", "render", "theme_ok"
+  ],
+  "tasks": [
+    {
+      "id": "0.1", "phase": "prep", "mode": "A", "crit": true, "layer": "survival",
+      "title": "Split the cp311 vendored seam (sidecar vs abi3)",
+      "refs": ["python/synapse/__init__.py", "host/daemon.py"],
+      "human_gate": { "decision": "sidecar | abi3", "recommended": "sidecar",
+        "why": "Architecture choice, not a cook. Harness prepares + verifies the bridge; you commit the direction." },
+      "verify": ["import_panel", "brain_answers"]
+    },
+    {
+      "id": "0.2", "phase": "prep", "mode": "A", "crit": true, "layer": "survival",
+      "title": "Build the H22 probe harness",
+      "refs": ["science/apex_probes.py", "server/solaris_compose.py"],
+      "verify": ["probe_runs"],
+      "note": "On H21 the delta vs the H21-pinned constants should be ~empty — that empty diff is the proof the probe works before the drop makes the diff real."
+    },
+    {
+      "id": "0.3", "phase": "prep", "mode": "A", "crit": false, "layer": "hygiene",
+      "title": "Single-source the version",
+      "refs": ["VERSION", "pyproject.toml", "DEMO_SCRIPT.md"],
+      "verify": ["version_single_source"]
+    },
+    {
+      "id": "0.4", "phase": "prep", "mode": "A", "crit": false, "layer": "survival",
+      "title": "Fold the duplicate ui/ tree into panel/",
+      "refs": ["python/synapse/ui/", "panel/"],
+      "verify": ["import_panel", "doctor", "cook_existing"]
+    },
+    {
+      "id": "0.5", "phase": "prep", "mode": "A", "crit": false, "layer": "prove",
+      "title": "Pre-stage the demo scaffold (.hip, shot, OCIO)",
+      "refs": ["panel/shot_login.py", "demo/synapse_demo.hip"],
+      "verify": ["hip_opens", "shot_login"]
+    },
+    {
+      "id": "0.6", "phase": "prep", "mode": "A", "crit": false, "layer": "prove",
+      "title": "Lock the demo runsheet",
+      "refs": ["DEMO_SCRIPT.md"],
+      "verify": ["runsheet_present"],
+      "note": "Content + rehearsal. Harness confirms presence/beat-count; the rehearsal is yours."
+    },
+    {
+      "id": "0.7", "phase": "prep", "mode": "A", "crit": true, "layer": "survival",
+      "title": "Rehearse the clean-machine install on H21",
+      "refs": ["install.py", "synapse_panel.pypanel"],
+      "verify": ["clean_install", "nodes_appear"]
+    },
+
+    { "id": "1.1", "mode": "B", "blocked_on": "drop", "crit": true,
+      "title": "Install H22 clean + Synapse via package", "human_gate": { "decision": "manual install", "why": "Can't install software that doesn't exist yet." }, "verify": ["clean_install", "nodes_appear"] },
+    { "id": "1.2", "mode": "B", "blocked_on": "drop", "crit": true,
+      "title": "Capture the three numbers: Python · USD · PySide", "human_gate": { "decision": "write harness/state/drop.json", "why": "A human reads these first. Writing drop.json is the Mode-B trigger." }, "verify": [] },
+    { "id": "1.3", "mode": "B", "blocked_on": "drop", "crit": true,
+      "title": "Verify the cp311 fix holds on H22's Python", "verify": ["import_panel", "brain_answers"] },
+    { "id": "1.4", "mode": "B", "blocked_on": "drop", "crit": true,
+      "title": "Fire the probe → API delta report", "verify": ["probe_runs"] },
+    { "id": "1.5", "mode": "B", "blocked_on": "drop", "crit": false,
+      "title": "synapse_doctor green on H22", "verify": ["doctor"] },
+    { "id": "1.6", "mode": "B", "blocked_on": "drop", "crit": false,
+      "title": "Panel reads correctly in H22's new theme", "verify": ["theme_ok"] },
+
+    { "id": "2.1", "mode": "B", "blocked_on": "drop", "crit": true,
+      "title": "Patch the probe deltas (promote probe truth over pinned constants)", "verify": ["probe_clean", "cook_existing", "doctor"] },
+    { "id": "2.2", "mode": "B", "blocked_on": "drop", "crit": true,
+      "title": "COPs — Ocean Spectrum / texture-synth from a prompt", "verify": ["cook_node", "ledger"], "target_node": "ADAPT: /obj/cop_net/cops_ocean_spectrum" },
+    { "id": "2.3", "mode": "B", "blocked_on": "drop", "crit": true,
+      "title": "Solaris — scatter / set-dressing from a prompt", "verify": ["cook_node", "ledger"], "target_node": "ADAPT: /stage/synapse_scatter" },
+    { "id": "2.4", "mode": "B", "blocked_on": "drop", "crit": false,
+      "title": "Wire both into the command palette (verb × context)", "verify": ["import_panel"] },
+    { "id": "2.5", "mode": "B", "blocked_on": "drop", "crit": true,
+      "title": "Provenance proof: both land in agent.usd", "verify": ["ledger", "revert_clean"] },
+    { "id": "2.6", "mode": "B", "blocked_on": "drop", "crit": false,
+      "title": "Karma XPU render the result on H22", "verify": ["render"] },
+
+    { "id": "3.1", "mode": "B", "blocked_on": "drop", "crit": true,
+      "title": "Dry-run the full runsheet, timed", "human_gate": { "decision": "timed rehearsal", "why": "Human-timed; harness can't judge dead air." }, "verify": ["runsheet_present"] },
+    { "id": "3.2", "mode": "B", "blocked_on": "drop", "crit": false, "title": "Record the demo", "human_gate": { "decision": "manual capture" }, "verify": [] },
+    { "id": "3.3", "mode": "B", "blocked_on": "drop", "crit": false, "title": "Stretch — Synapse consuming H22's native APEX MCP", "verify": ["import_panel"] },
+    { "id": "3.4", "mode": "B", "blocked_on": "drop", "crit": false, "title": "Capsule the ship state", "human_gate": { "decision": "manual" }, "verify": [] }
+  ]
+}
