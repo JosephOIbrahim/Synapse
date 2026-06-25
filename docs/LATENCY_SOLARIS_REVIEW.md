@@ -9,12 +9,13 @@
 - **Prompt reconciliation** — one coherent "build from scratch = ONE build_graph(template) call" directive replacing 4 contradictory rules; assemble_chain correctly described as wire-pre-existing-only.
 - **False-failure fix** — `solaris_build_graph`/`assemble_chain` added to SLOW_COMMANDS (30s); assemble_chain run_on_main raised to 30s.
 - **Turn-count metric** — sequential turns + tool-call count logged at both loop exits (the before/after that proves the thesis).
+- **L4 (worker-policy allowlist)** — operator-approved 2026-06-25 (commit `59d6abd`): the autonomous worker may now emit `synapse_solaris_build_graph`/`assemble_chain` (a narrow allowlist; execute_python/delete/render stay gated; bridge `/mcp` consent gate untouched). The 25→1 collapse is now possible on the autonomous path too.
 
 ## Deferred (need live Houdini / scout / your sign-off) — exact refs in the report below
 - **U1/U2/U3** template parm depth (engine=xpu, camera bind, resolution, AOVs): templates use `karmarenderproperties`; the verified XPU parms (`engine`/`camera`/`resolutionx/y`) are on `karmarendersettings` (`solaris_compose_tools.py:166-179`). Needs `synapse_scout` on the host build before authoring (Safety Rule 15).
-- **B/E** fix the broken incumbent `houdini_shot_render_ready` (no-ops on empty stage → empty render → blocking main-thread render). Highest-value but touches disk writes + the render freeze.
+- **B/E** fix the broken incumbent `houdini_shot_render_ready` (no-ops on empty stage → empty render → blocking main-thread render). Highest-value; touches disk writes + the render freeze. **← explicit NEXT-SESSION task (operator deferred 2026-06-25).**
 - **L1** register `build_karma_xpu_shot` et al. in TOOL_DEFS + tool_executor dispatch (must verify it dispatches live, or it becomes a new phantom).
-- **L4** reclassify Solaris builders to `inform` in worker_policy — **loosens a consent gate; needs your explicit call** (defensible: composite of inform-level ops, all undo-wrapped).
+- ~~**L4** reclassify Solaris builders~~ — **SHIPPED** (see above).
 - **L7/L8** route `/mcp` + render through `run_on_main` (main-thread freeze + dispatch metrics) — live Houdini.
 - **U7/L10** broaden Tier-0 patterns + wire the router cascade ahead of the panel worker — medium blast.
 
