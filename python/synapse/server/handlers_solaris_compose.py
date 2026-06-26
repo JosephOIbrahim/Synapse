@@ -48,6 +48,9 @@ class SolarisComposeMixin:
         engine = resolve_param_with_default(payload, "engine", "xpu")
         layer_dir = payload.get("layer_dir")
         reason = payload.get("reason")
+        # verify=False skips the cold-cook stage readback (L8 §4) — used by the
+        # shot_render_ready scaffold build so it can't freeze the GUI.
+        verify = payload.get("verify", True)
 
         from .main_thread import run_on_main, _SLOW_TIMEOUT
 
@@ -73,6 +76,7 @@ class SolarisComposeMixin:
                         engine=engine,
                         layer_dir=layer_dir,
                         reason=reason,
+                        verify=verify,
                     )
                     if advisory is not None:
                         result.setdefault("show_config", advisory)

@@ -172,6 +172,28 @@ def ensure_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None
     return build_corpus(rag_root, out_root)
 
 
+def activate(rag_root: Optional[str] = None, out_root: Optional[str] = None) -> dict:
+    """Materialize the canonical repo ``rag/`` corpus (build-if-absent) and point
+    the live ``scout`` module at it — the SAME sequence the MCP server runs at
+    init (ensure_corpus → set roots → clear caches), factored here so the panel's
+    "Corpus" button shares it verbatim and the two can't drift. Pure Python, zero
+    ``hou``. Returns ``{loaded, store_root, entries, cached}``.
+
+    NB: activates the canonical repo ``rag/`` (which carries the H21 Solaris docs
+    in scout's ``searchable_text`` schema), NOT raw ``G:\\HOUDINI21_RAG_SYSTEM`` —
+    G:'s ``corpus/`` has no ``searchable_text`` and would load hollow."""
+    from synapse.cognitive.tools import scout as _scout
+    info = ensure_corpus(rag_root, out_root)
+    store_root = info["store_root"]
+    _scout.RAG_ROOT = Path(store_root)
+    _scout.VEX_ROOT = Path(store_root)
+    for cache in (_scout._CORPUS, _scout._FTS, _scout._DENSE,
+                  _scout._SYMS, _scout._TABLE_CACHE):
+        cache.clear()
+    return {"loaded": True, "store_root": store_root,
+            "entries": info.get("entries", -1), "cached": info.get("cached", False)}
+
+
 if __name__ == "__main__":             # pragma: no cover
     import sys
     res = build_corpus()

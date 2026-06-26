@@ -165,6 +165,15 @@ round-trips (latency), one terminal cook, and no phantom-node-type risk.
 composition. Wire geometry first, lights second, referenced assets last.
 - Templates: multi_asset_merge, sublayer_stack, render_pass_split, \
 lighting_rig, hdri_lighting, instanceable_assets, variant_selector.
+- **Ground before you build (Safety Rule 15):** before issuing \
+synapse_solaris_build_graph with any NON-template `nodes`, call \
+**synapse_scout** to confirm each LOP node `type` and its key parm names exist \
+in Houdini 21.0.671 -- e.g. \
+`synapse_scout(query="karmarendersettings engine xpu camera resolution")`. \
+Treat any symbol whose `exists_in_runtime` is false as a PHANTOM and do NOT \
+author it; if scout returns no hits for a node type, prefer a template or \
+inspect a live node. The H21 docs corpus is the authority -- don't invent parm \
+names. (Templates are already verified, so a template-only call needs no scout.)
 
 ### Known Issues
 - **karmaphysicalsky bug (H21):** Changing the primitive path from \

@@ -361,6 +361,16 @@ class SynapsePanel(QtWidgets.QWidget):
             "can reach Houdini. Safe to click anytime — idempotent."
         )
         self._connect_btn.clicked.connect(self._on_connect)
+        # Activate the H21 documentation corpus so Solaris assembly grounds in
+        # real Houdini-21 docs (verified node types / parm names) instead of
+        # phantom APIs. Mirrors the Connect button; idempotent.
+        self._corpus_btn = c.Button("Corpus", variant="ghost")
+        self._corpus_btn.setToolTip(
+            "Connect the Houdini-21 documentation corpus so Solaris assembly "
+            "grounds in real H21 docs (not phantom parms). Safe to click anytime "
+            "— idempotent."
+        )
+        self._corpus_btn.clicked.connect(self._on_corpus)
         self._observe = QtWidgets.QWidget()
         self._observe.setObjectName("DsRailMeter")
         self._observe.setAttribute(Qt.WA_StyledBackground, True)
@@ -375,6 +385,7 @@ class SynapsePanel(QtWidgets.QWidget):
         bot.addWidget(self._foot_dot)
         bot.addWidget(self._foot_label)
         bot.addWidget(self._connect_btn)
+        bot.addWidget(self._corpus_btn)
         bot.addWidget(self._observe, 1)
         bot.addWidget(self._stop_btn)
         col.addLayout(bot)
@@ -431,6 +442,56 @@ class SynapsePanel(QtWidgets.QWidget):
                 "Start the Synapse bridge server (port 9999) so external / MCP "
                 "tools can reach Houdini. Safe to click anytime — idempotent."
             )
+
+    def _on_corpus(self):
+        """Activate the H21 documentation corpus so Solaris assembly grounds in
+        real docs (verified node types / parm names), not phantom APIs. Builds
+        the canonical repo rag/ corpus if absent and points scout at it (the same
+        sequence the MCP server runs at init). Idempotent; reports in chat;
+        degrades gracefully headless."""
+        try:
+            from synapse.cognitive.tools import scout_ingest
+        except Exception as exc:
+            self._announce_bridge("Corpus unavailable — %s." % exc)
+            return
+        try:
+            info = scout_ingest.activate()
+            hits = []
+            try:
+                from synapse.cognitive.tools.scout import synapse_scout
+                hits = synapse_scout("karmarendersettings xpu engine", k=3).get("hits", [])
+            except Exception:
+                pass   # the probe is a confidence check, not a gate
+            n = info.get("entries", -1)
+            cnt = "%d entries" % n if isinstance(n, int) and n >= 0 else "cached"
+            if hits:
+                self._announce_bridge(
+                    "Corpus active (%s, probe hit %d docs incl. %s) — Solaris "
+                    "builds will ground in real H21 docs."
+                    % (cnt, len(hits), hits[0].get("source", "?")))
+            else:
+                self._announce_bridge(
+                    "Corpus loaded (%s) but a known probe returned no hits — the "
+                    "rag/ tree may be incomplete." % cnt)
+        except Exception as exc:
+            self._announce_bridge("Couldn't load the corpus: %s" % exc)
+        self._refresh_corpus_state()
+
+    def _refresh_corpus_state(self):
+        """Reflect live corpus state on the Corpus button — 'Corpus ✓' once the
+        store's entries.jsonl is built. Best effort."""
+        loaded = False
+        try:
+            from synapse.cognitive.tools import scout as _scout
+            root = _scout.RAG_ROOT                  # a pathlib.Path
+            if root is not None:
+                fp = root / "corpus" / "entries.jsonl"
+                loaded = fp.is_file() and fp.stat().st_size > 0
+        except Exception:
+            loaded = False
+        btn = getattr(self, "_corpus_btn", None)
+        if btn is not None:
+            btn.setText("Corpus ✓" if loaded else "Corpus")
 
     def _build_model_bar(self):
         """Model selection, made APPARENT (Image #6). A segmented Claude·Gemini

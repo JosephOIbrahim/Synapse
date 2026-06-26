@@ -1778,13 +1778,34 @@ class UsdHandlerMixin:
             passed = False
             steps.append({"step": "create_textured_material", "error": str(e)})
 
-        # --- Step 2: assemble the Solaris chain ----------------------------
+        # --- Step 2: assemble the chain, or BUILD from scratch on an empty stage.
+        # assemble_chain only WIRES pre-existing unwired LOP nodes -- on an empty
+        # stage it returns chain==[] (it wires nothing), which previously left this
+        # tool rendering an EMPTY frame. When nothing was wired, build a render-ready
+        # Karma-XPU shot from scratch via the verified builder (engine=xpu, camera,
+        # resolution, productName on karmarendersettings -- parms verified live
+        # 21.0.671). NB: build_karma_xpu_shot writes department .usd files to
+        # $HIP/<shot>_layers/ (reported in disk_writes; not undoable).
         assemble_payload = {
             "parent": resolve_param_with_default(payload, "parent", "/stage"),
         }
         try:
             assemble_result = self._handle_solaris_assemble_chain(assemble_payload)
-            steps.append({"step": "solaris_assemble_chain", "result": assemble_result})
+            if not assemble_result.get("chain"):
+                build_payload = {"stage": assemble_payload["parent"]}
+                for key in ("shot", "engine", "layer_dir"):
+                    v = resolve_param(payload, key, required=False)
+                    if v is not None:
+                        build_payload[key] = v
+                w = resolve_param(payload, "width", required=False)
+                h = resolve_param(payload, "height", required=False)
+                if w is not None and h is not None:
+                    build_payload["resolution"] = [int(w), int(h)]
+                build_payload["verify"] = False   # L8 §4: skip the cold-cook readback
+                build_result = self._handle_solaris_shotsetup_karma_xpu(build_payload)
+                steps.append({"step": "solaris_build_from_scratch", "result": build_result})
+            else:
+                steps.append({"step": "solaris_assemble_chain", "result": assemble_result})
         except Exception as e:  # noqa: BLE001
             passed = False
             steps.append({"step": "solaris_assemble_chain", "error": str(e)})
