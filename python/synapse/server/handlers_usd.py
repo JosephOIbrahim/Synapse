@@ -1801,6 +1801,7 @@ class UsdHandlerMixin:
                 h = resolve_param(payload, "height", required=False)
                 if w is not None and h is not None:
                     build_payload["resolution"] = [int(w), int(h)]
+                build_payload["verify"] = False   # L8 §4: skip the cold-cook readback
                 build_result = self._handle_solaris_shotsetup_karma_xpu(build_payload)
                 steps.append({"step": "solaris_build_from_scratch", "result": build_result})
             else:

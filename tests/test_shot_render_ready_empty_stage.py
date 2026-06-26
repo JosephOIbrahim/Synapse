@@ -68,3 +68,5 @@ def test_build_payload_threads_params():
     assert p["shot"] == "hero"
     assert p["engine"] == "cpu"
     assert p["resolution"] == [1280, 720]
+    # L8 §4: the scaffold build must skip the cold-cook readback so it can't freeze.
+    assert p["verify"] is False

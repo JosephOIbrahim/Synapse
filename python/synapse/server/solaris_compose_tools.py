@@ -96,6 +96,7 @@ def build_karma_xpu_shot(
     engine: str = "xpu",
     layer_dir: Optional[str] = None,
     reason: Optional[str] = None,
+    verify: bool = True,
 ) -> dict:
     """Scaffold a render-ready Karma XPU shot (PRD 7.1 / GAP-1).
 
@@ -205,9 +206,17 @@ def build_karma_xpu_shot(
 
     stage_node.layoutChildren()
 
-    # Read back the composed stage (the [REAL] verifier reads through this).
-    rstage = sc.read_stage(out)
-    errs = sc.composition_errors(rstage)
+    # Read back the composed stage (the [REAL] verifier reads through this) --
+    # but read_stage(out) COOKS the LOP chain, and a cold-XPU first cook is heavy
+    # enough to FREEZE the GUI (L8 §4; this crashed Houdini 2026-06-26). When the
+    # caller only wants the scaffold built (verify=False), skip the synchronous
+    # readback: the Display flag (set above) still drives a LAZY cook on the next
+    # viewport redraw, during idle, off the build's critical path.
+    if verify:
+        rstage = sc.read_stage(out)
+        errs = sc.composition_errors(rstage)
+    else:
+        errs = None
 
     result = {
         "status": "created",
