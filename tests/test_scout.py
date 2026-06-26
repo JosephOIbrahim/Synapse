@@ -36,6 +36,9 @@ def corpus(tmp_path, monkeypatch):
     (tmp_path / "semantic_index").mkdir()   # no manifest.json → lexical_only
     monkeypatch.setattr(scout, "RAG_ROOT", tmp_path)
     monkeypatch.setattr(scout, "VEX_ROOT", tmp_path)
+    # This manifest-less fixture is intentionally STALE; pin warn so it exercises
+    # graceful degradation (the module default is now fail-closed "refuse").
+    monkeypatch.setattr(scout, "DRIFT_POLICY", "warn")
     for cache in (scout._CORPUS, scout._FTS, scout._DENSE, scout._SYMS, scout._TABLE_CACHE):
         cache.clear()
     return tmp_path
@@ -223,6 +226,17 @@ def test_refuse_policy_passes_when_fresh(tmp_path, monkeypatch):
     _wire(monkeypatch, store, policy="refuse")
     out = scout.synapse_scout("hou.LopNode usd stage", k=3)   # fresh → no raise
     assert out["stale"] is False
+
+
+def test_default_drift_policy_is_refuse(monkeypatch):
+    """Env var unset → the phantom-API gate is fail-closed by default (H22 hardening)."""
+    import importlib
+    monkeypatch.delenv("SYNAPSE_SCOUT_DRIFT_POLICY", raising=False)
+    try:
+        reloaded = importlib.reload(scout)
+        assert reloaded.DRIFT_POLICY == "refuse"
+    finally:
+        importlib.reload(scout)   # restore module to ambient-env state
 
 
 # ── Spike 2.5: introspected symbol table = membership authority ──────────────
