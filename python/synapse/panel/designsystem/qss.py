@@ -94,6 +94,21 @@ QPushButton#DsSeg[active="true"] {{
     background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT}; border-color: {t.SIGNAL};
 }}
 
+/* ---- connection pills (Bridge · Corpus) — same segmented-pill shape as the
+   engine selector, but a DEEPER blue fill when connected so they read as a
+   persistent connection state distinct from the lighter engine SIGNAL fill --- */
+QPushButton#DsConnPill {{
+    background: {t.SURFACE}; color: {t.TEXT_SECONDARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_PILL}px;
+    padding: 3px {t.SPACE_MD}px;
+    font-size: {s(t.SIZE_SMALL)}px; font-weight: 600;
+}}
+QPushButton#DsConnPill:hover {{ color: {t.TEXT_PRIMARY}; border-color: {t.BORDER_STRONG}; }}
+QPushButton#DsConnPill[connected="true"] {{
+    background: {t.SIGNAL_DEEP}; color: {t.WHITE}; border-color: {t.SIGNAL_DEEP};
+}}
+QPushButton#DsConnPill[connected="true"]:hover {{ background: {t.SIGNAL_PRESS}; }}
+
 /* ---- model picker chip — small label + ▾, NOT the dominant element ---- */
 QPushButton#DsModelChip {{
     background: transparent; border: none; padding: 0 {t.SPACE_XS}px;

@@ -217,6 +217,9 @@ TEXT_ON_ACCENT = "#13212C"  # text on a SIGNAL fill (dark navy on light blue = A
 
 SIGNAL_HOVER = "#A9C7E6"   # accent hover (lighter)
 SIGNAL_PRESS = "#7398BE"   # accent press (deeper)
+SIGNAL_DEEP  = "#4E6E94"   # the SAME blue, a few stops darker — the persistent
+                           # connection-pill fill (Bridge/Corpus), so they read
+                           # as a deeper state than the engine selector's SIGNAL.
 SIGNAL_TINT  = "rgba(143, 179, 217, 0.12)"   # subtle accent wash (focus/selection)
 SIGNAL_TINT_STRONG = "rgba(143, 179, 217, 0.22)"
 HOVER_WASH = "rgba(255, 255, 255, 0.09)"   # native Houdini flat-toolbar hover (white wash)

@@ -355,7 +355,12 @@ class SynapsePanel(QtWidgets.QWidget):
         # panel's chat runs in-process, but tools + external tools need this up,
         # and it does NOT auto-start — this button is the one-click way to force
         # it without dropping into Houdini's Python Shell.
-        self._connect_btn = c.Button("Connect", variant="ghost")
+        # Bridge + Corpus are segmented-pill toggles (same shape as the ENGINE
+        # selector) — a DEEPER blue fill when connected (#DsConnPill), so the
+        # connection state reads at a glance, distinct from the engine pills.
+        self._connect_btn = QtWidgets.QPushButton("Connect")
+        self._connect_btn.setObjectName("DsConnPill")
+        self._connect_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._connect_btn.setToolTip(
             "Start the Synapse bridge server (port 9999) so external / MCP tools "
             "can reach Houdini. Safe to click anytime — idempotent."
@@ -364,7 +369,9 @@ class SynapsePanel(QtWidgets.QWidget):
         # Activate the H21 documentation corpus so Solaris assembly grounds in
         # real Houdini-21 docs (verified node types / parm names) instead of
         # phantom APIs. Mirrors the Connect button; idempotent.
-        self._corpus_btn = c.Button("Corpus", variant="ghost")
+        self._corpus_btn = QtWidgets.QPushButton("Corpus")
+        self._corpus_btn.setObjectName("DsConnPill")
+        self._corpus_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._corpus_btn.setToolTip(
             "Connect the Houdini-21 documentation corpus so Solaris assembly "
             "grounds in real H21 docs (not phantom parms). Safe to click anytime "
@@ -396,7 +403,14 @@ class SynapsePanel(QtWidgets.QWidget):
         /synapse WS for external MCP clients and the /mcp endpoint the panel's
         tool executor talks to. Idempotent (a no-op if already running), runs the
         native server in the background (non-blocking), and reports the outcome in
-        the chat. Degrades gracefully outside Houdini (no hwebserver)."""
+        the chat. Degrades gracefully outside Houdini (no hwebserver).
+
+        Confirms the RAG corpus directory the connection will ground in BEFORE
+        bringing the bridge up, so the artist knows which docs back the
+        grounding (the panel's #1 phantom-API defense)."""
+        if not self._confirm_rag_dir():
+            self._announce_bridge("Bridge connect cancelled — RAG directory not confirmed.")
+            return
         try:
             from synapse.server.hwebserver_adapter import start_hwebserver, get_health
         except Exception as exc:
@@ -423,6 +437,42 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
 
+    def _rag_dir(self):
+        """The RAG corpus directory the grounding/scout layer references, as a
+        string — or None if it can't be resolved. This is the repo ``rag/`` tree
+        scout reads (materialized lazily), not the thin G:\\ store."""
+        try:
+            from synapse.cognitive.tools import scout as _scout
+            root = getattr(_scout, "RAG_ROOT", None)
+            return str(root) if root is not None else None
+        except Exception:
+            return None
+
+    def _confirm_rag_dir(self):
+        """Show the RAG corpus directory this connection will reference and ask
+        the artist to confirm it. Returns True to proceed. Best-effort: if the
+        path can't be resolved or no UI is available, it announces the path and
+        proceeds — it never blocks the connection."""
+        path = self._rag_dir()
+        if not path:
+            return True  # nothing to confirm; don't block the connect
+        try:
+            box = QtWidgets.QMessageBox(self)
+            box.setWindowTitle("Confirm RAG corpus directory")
+            box.setIcon(QtWidgets.QMessageBox.Icon.Question)
+            box.setText("SYNAPSE will ground Solaris/scout in the RAG corpus at:")
+            box.setInformativeText(path)
+            box.setStandardButtons(
+                QtWidgets.QMessageBox.StandardButton.Ok
+                | QtWidgets.QMessageBox.StandardButton.Cancel
+            )
+            box.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Ok)
+            return box.exec() == QtWidgets.QMessageBox.StandardButton.Ok
+        except Exception:
+            # headless / no modal available — surface the path and proceed
+            self._announce_bridge("RAG corpus directory: %s" % path)
+            return True
+
     def _refresh_bridge_state(self):
         """Reflect the live bridge state on the Connect button — once the server
         is up the button reads 'Bridge ✓' (still clickable to re-confirm). Best
@@ -436,6 +486,8 @@ class SynapsePanel(QtWidgets.QWidget):
         btn = getattr(self, "_connect_btn", None)
         if btn is not None:
             btn.setText("Bridge ✓" if running else "Connect")
+            btn.setProperty("connected", bool(running))
+            c.repolish(btn)
             btn.setToolTip(
                 "Synapse bridge is running on :9999. Click to re-confirm."
                 if running else
@@ -492,6 +544,8 @@ class SynapsePanel(QtWidgets.QWidget):
         btn = getattr(self, "_corpus_btn", None)
         if btn is not None:
             btn.setText("Corpus ✓" if loaded else "Corpus")
+            btn.setProperty("connected", bool(loaded))
+            c.repolish(btn)
 
     def _build_model_bar(self):
         """Model selection, made APPARENT (Image #6). A segmented Claude·Gemini
