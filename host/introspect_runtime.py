@@ -80,6 +80,13 @@ def build_table() -> dict:
 
     import hou
     out.add("hou")
+    # Lazy hou submodules (hou.qt, hou.secure) are dir()-empty until explicitly imported.
+    import importlib
+    for _lazy in ("hou.qt", "hou.secure"):
+        try:
+            importlib.import_module(_lazy)
+        except Exception:
+            pass
     _walk(hou, "hou", 0, DEPTH_HOU_PDG, visited, out)
 
     try:
