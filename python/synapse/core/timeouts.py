@@ -46,6 +46,12 @@ SLOW_COMMANDS = {
     "safe_render": 120.0,
     "render_progressively": 120.0,
     "hda_package": 120.0,
+    # Solaris graph builds -- a Karma render-ready build_graph/assemble_chain
+    # routinely exceeds the 10s default (the handlers themselves marshal at 30s);
+    # the client must match or it false-fails a SUCCESSFUL one-shot build and the
+    # model reverts to the slow 25-turn imperative path (the convergence lever).
+    "solaris_build_graph": 30.0,
+    "solaris_assemble_chain": 30.0,
     # Copernicus (COPs) -- solvers and batch need longer timeouts
     "cops_reaction_diffusion": 60.0,
     "cops_growth_propagation": 60.0,

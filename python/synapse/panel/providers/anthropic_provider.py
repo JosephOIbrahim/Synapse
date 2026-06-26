@@ -49,6 +49,28 @@ def _strip_internal_keys(messages):
     return out
 
 
+def _with_prompt_cache(tools, system):
+    """Mark the large, STATIC prefix — the ~18k-token tool block + the system
+    prompt — with ephemeral cache breakpoints so it is cache-READ rather than
+    re-prefilled on every turn. A multi-turn build otherwise re-sends ~18k tool
+    tokens per turn (25 turns ~= 475k redundant prefill tokens); caching turns
+    all but the first into reads. Prompt caching is GA (no beta header needed).
+    Non-mutating — returns (tools, system) shaped for the request body. If the
+    cached span is under the model's minimum it is simply not cached (still
+    valid), so this never breaks the Claude path."""
+    cached_tools = tools
+    if tools:
+        cached_tools = [dict(t) for t in tools]
+        cached_tools[-1] = {**cached_tools[-1], "cache_control": {"type": "ephemeral"}}
+    cached_system = system
+    if isinstance(system, str) and system:
+        cached_system = [{
+            "type": "text", "text": system,
+            "cache_control": {"type": "ephemeral"},
+        }]
+    return cached_tools, cached_system
+
+
 class AnthropicProvider(StreamProvider):
     """Streams Anthropic Messages API responses (native ``input_schema`` tools)."""
 
@@ -84,15 +106,16 @@ class AnthropicProvider(StreamProvider):
 
     def stream(self, *, messages, tools, system, api_key, emit_token, should_abort):
         """Make one streaming API call, return ``(stop_reason, content_blocks)``."""
+        cached_tools, cached_system = _with_prompt_cache(tools, system)
         body: dict = {
             "model": self._model,
             "max_tokens": self._max_tokens,
             "stream": True,
             "messages": _strip_internal_keys(messages),
-            "tools": tools,
+            "tools": cached_tools,
         }
-        if system:
-            body["system"] = system
+        if cached_system:
+            body["system"] = cached_system
 
         payload = json.dumps(body).encode("utf-8")
 

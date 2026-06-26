@@ -141,6 +141,7 @@ class ClaudeWorker(QThread):
              main thread, append results, and loop.
           3. If stop_reason is "end_turn" or "max_tokens", return.
         """
+        tool_calls_total = 0   # L9: tool calls across the whole turn-loop
         for iteration in range(_MAX_TOOL_ITERATIONS):
             if self._abort:
                 return
@@ -175,6 +176,7 @@ class ClaudeWorker(QThread):
 
                     result_msg = self._execute_tool_block(block)
                     tool_results.append(result_msg)
+                    tool_calls_total += 1
 
                 # Append all tool results in a single user message
                 if tool_results:
@@ -184,11 +186,21 @@ class ClaudeWorker(QThread):
                     })
 
             else:
-                # end_turn, max_tokens, or anything else -- we're done
+                # end_turn, max_tokens, or anything else -- we're done.
+                # L9: record the sequential-turn count (the dominant latency
+                # term) so an imperative build (many turns) vs a one-shot
+                # declarative call (1 turn) is measurable on disk.
+                logger.info(
+                    "Conversation complete: %d turns, %d tool calls",
+                    iteration + 1, tool_calls_total,
+                )
                 return
 
         logger.warning(
-            "Hit max tool-use iterations (%d), stopping", _MAX_TOOL_ITERATIONS
+            "Hit max tool-use iterations (%d) with %d tool calls, stopping -- "
+            "likely an imperative build that should have been one declarative "
+            "synapse_solaris_build_graph call",
+            _MAX_TOOL_ITERATIONS, tool_calls_total,
         )
 
     # ------------------------------------------------------------------
