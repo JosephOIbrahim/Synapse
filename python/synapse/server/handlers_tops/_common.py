@@ -73,7 +73,13 @@ def _run_in_main_thread_pdg(func, timeout=None):
     # here is log timing to help diagnose stalls.
     t0 = time.monotonic()
     try:
-        result = hdefereval.executeInMainThreadWithResult(func)
+        # L7: route through run_on_main so a stalled PDG graph-context cook
+        # fast-fails at effective_timeout instead of blocking the transport
+        # forever — executeInMainThreadWithResult only LOGGED a >5s stall, it
+        # never ENFORCED the timeout (the docstring admits this). One edit covers
+        # all 28 TOPS call sites. (GUI still cooks; the transport is freed.)
+        from ..main_thread import run_on_main
+        result = run_on_main(func, timeout=effective_timeout)
     except Exception:
         elapsed = time.monotonic() - t0
         if elapsed > 5.0:
