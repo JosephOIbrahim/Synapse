@@ -105,8 +105,8 @@ class _InputEventFilter(QtCore.QObject):
         mods = event.modifiers()
 
         # Enter/Return sends message (without Shift)
-        if key in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
-            if mods & QtCore.Qt.ShiftModifier:
+        if key in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter):
+            if mods & QtCore.Qt.KeyboardModifier.ShiftModifier:
                 # Shift+Enter: insert newline (default QTextEdit behavior)
                 return False
             # Plain Enter: send
@@ -114,7 +114,7 @@ class _InputEventFilter(QtCore.QObject):
             return True
 
         # Up arrow recalls last message when input is empty
-        if key == QtCore.Qt.Key_Up:
+        if key == QtCore.Qt.Key.Key_Up:
             text = self._panel._input.toPlainText()
             if not text and self._panel._last_sent_message:
                 self._panel._input.setPlainText(self._panel._last_sent_message)
@@ -248,7 +248,7 @@ class SynapseChatPanel:
         self._install_shortcuts()
 
         # -- Right-click context menu on chat display --------------------
-        self._chat.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self._chat.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._chat.customContextMenuRequested.connect(self._show_context_menu)
 
         # -- Welcome message ---------------------------------------------
@@ -412,8 +412,8 @@ class SynapseChatPanel:
         self._input.setMinimumHeight(t.CHAT_INPUT_MIN_H)
         self._input.setMaximumHeight(t.CHAT_INPUT_MAX_H)
         self._input.setAcceptRichText(False)
-        self._input.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        self._input.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self._input.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self._input.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._input.textChanged.connect(self._adjust_input_height)
         input_row.addWidget(self._input, stretch=1)
 
@@ -424,17 +424,17 @@ class SynapseChatPanel:
         # Font size control "Aa" button
         self._font_btn = QtWidgets.QPushButton("Aa", container)
         self._font_btn.setFixedSize(28, 22)
-        self._font_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self._font_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
         self._font_btn.setToolTip(
             "Font size: {:.0f}%".format(self._font_scale * 100)
         )
         self._font_btn.setStyleSheet(get_font_size_button_stylesheet())
         self._font_btn.clicked.connect(self._cycle_font_size)
-        controls_layout.addWidget(self._font_btn, alignment=QtCore.Qt.AlignRight)
+        controls_layout.addWidget(self._font_btn, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
 
         # Send button
         self._send_btn = QtWidgets.QPushButton("Send", container)
-        self._send_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self._send_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
         self._send_btn.setStyleSheet(get_send_button_stylesheet())
         self._send_btn.clicked.connect(self._send_message)
         controls_layout.addWidget(self._send_btn)
@@ -590,7 +590,7 @@ class SynapseChatPanel:
         # Emergency halt button (next to disconnect for quick access)
         self._halt_btn = QtWidgets.QPushButton("HALT")
         self._halt_btn.setStyleSheet(get_halt_button_stylesheet())
-        self._halt_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self._halt_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
         self._halt_btn.setToolTip("Emergency halt -- cancel all agent operations")
         self._halt_btn.clicked.connect(self._on_emergency_halt)
         layout.addWidget(self._halt_btn)
@@ -598,7 +598,7 @@ class SynapseChatPanel:
         # Connect/Disconnect button
         self._conn_btn = QtWidgets.QPushButton("Connect")
         self._conn_btn.setObjectName("connect_button")
-        self._conn_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self._conn_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
         self._conn_btn.setStyleSheet(get_connect_button_stylesheet())
         self._conn_btn.clicked.connect(self._on_connect_toggle)
         layout.addWidget(self._conn_btn)
@@ -606,7 +606,7 @@ class SynapseChatPanel:
         # WS URL button
         ws_btn = QtWidgets.QPushButton(self._ws_url)
         ws_btn.setObjectName("ws_path_button")
-        ws_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        ws_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
         ws_btn.setStyleSheet(get_ws_url_button_stylesheet())
         ws_btn.setToolTip("Copy WebSocket URL to clipboard")
         ws_btn.clicked.connect(self._on_copy_ws_url)
@@ -677,7 +677,7 @@ class SynapseChatPanel:
         self._mode_chat_btn = QtWidgets.QPushButton("Chat")
         self._mode_chat_btn.setObjectName("ModeToggleActive")
         self._mode_chat_btn.setCursor(
-            QtGui.QCursor(QtCore.Qt.PointingHandCursor)
+            QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         )
         self._mode_chat_btn.clicked.connect(
             lambda: self._set_mode("chat")
@@ -687,7 +687,7 @@ class SynapseChatPanel:
         self._mode_hda_btn = QtWidgets.QPushButton("Create HDA")
         self._mode_hda_btn.setObjectName("ModeToggleInactive")
         self._mode_hda_btn.setCursor(
-            QtGui.QCursor(QtCore.Qt.PointingHandCursor)
+            QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         )
         self._mode_hda_btn.clicked.connect(
             lambda: self._set_mode("hda")

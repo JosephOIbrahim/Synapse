@@ -86,7 +86,7 @@ def _verb(text, on_click, tone=None):
     by the canonical QPushButton#DsVerb QSS rule; ``tone`` selects the color."""
     btn = QtWidgets.QPushButton(text)
     btn.setObjectName("DsVerb")
-    btn.setCursor(Qt.PointingHandCursor)
+    btn.setCursor(Qt.CursorShape.PointingHandCursor)
     btn.setFlat(True)
     if tone:
         btn.setProperty("tone", tone)
@@ -104,7 +104,7 @@ class RenderHero(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsSection")
-        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._pix = None
         self._meta = ""
         self.setMinimumHeight(168)
@@ -141,7 +141,7 @@ class RenderHero(QtWidgets.QWidget):
         p.setRenderHint(QtGui.QPainter.Antialiasing)
         r = QtCore.QRectF(self.rect())
         scaled = self._pix.scaled(
-            self.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+            self.size(), Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
         x = (scaled.width() - self.width()) / 2.0
         y = (scaled.height() - self.height()) / 2.0
         p.drawPixmap(QtCore.QPointF(-x, -y), scaled)
@@ -163,7 +163,7 @@ class RenderHero(QtWidgets.QWidget):
         p.setFont(f)
         p.setPen(QtGui.QColor("#97A3AD"))
         p.drawText(QtCore.QRectF(r.left() + 10, r.bottom() - 20, r.width() - 20, 16),
-                   int(Qt.AlignLeft | Qt.AlignVCenter), self._meta)
+                   int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter), self._meta)
 
 
 class FaceReview(QtWidgets.QWidget):
@@ -178,7 +178,7 @@ class FaceReview(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsSection")
-        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         col = QtWidgets.QVBoxLayout(self)
         col.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_MD)
@@ -201,7 +201,7 @@ class FaceReview(QtWidgets.QWidget):
         # real thumbnail is in hand (set_render drives the swap). —
         self._locator = QtWidgets.QWidget()
         self._locator.setObjectName("DsSection")
-        self._locator.setAttribute(Qt.WA_StyledBackground, True)
+        self._locator.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         loc = QtWidgets.QHBoxLayout(self._locator)
         loc.setContentsMargins(0, 0, 0, 0)
         loc.setSpacing(t.SPACE_SM)
@@ -235,10 +235,10 @@ class FaceReview(QtWidgets.QWidget):
         # — expandable detail: VIA provenance + touched paths, collapsed by
         # default (simplified synthesis keeps the headline taut) —
         self._detail_btn = _verb("▸ detail", lambda _=False: self._toggle_detail())
-        col.addWidget(self._detail_btn, 0, Qt.AlignLeft)
+        col.addWidget(self._detail_btn, 0, Qt.AlignmentFlag.AlignLeft)
         self._detail = QtWidgets.QWidget()
         self._detail.setObjectName("DsSection")
-        self._detail.setAttribute(Qt.WA_StyledBackground, True)
+        self._detail.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         dcol = QtWidgets.QVBoxLayout(self._detail)
         dcol.setContentsMargins(0, 0, 0, 0)
         dcol.setSpacing(1)
@@ -302,7 +302,7 @@ class FaceReview(QtWidgets.QWidget):
 
     def _credit_row(self, label, value, note):
         row = QtWidgets.QLabel()
-        row.setTextFormat(Qt.RichText)
+        row.setTextFormat(Qt.TextFormat.RichText)
         row.setWordWrap(True)
         row.setText(
             '<span style="color:%s; font-family:%s; letter-spacing:1px;">%s </span>'
@@ -336,7 +336,7 @@ class FaceReview(QtWidgets.QWidget):
         for status, text in flags or []:
             color = _FLAG_COLOR.get(status, t.TEXT_SECONDARY)
             row = QtWidgets.QLabel()
-            row.setTextFormat(Qt.RichText)
+            row.setTextFormat(Qt.TextFormat.RichText)
             row.setWordWrap(True)
             row.setText(
                 '<span style="color:%s;">&#9679;</span> '

@@ -73,14 +73,14 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.setReadOnly(True)
         self.setAcceptRichText(True)
         self.setOpenExternalLinks(False)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setStyleSheet(get_chat_display_stylesheet(self._font_scale))
 
         # Connect anchor clicks
         self.anchorClicked.connect(self._on_anchor_clicked)
         self.setTextInteractionFlags(
-            QtCore.Qt.TextBrowserInteraction | QtCore.Qt.TextSelectableByMouse
+            QtCore.Qt.TextInteractionFlag.TextBrowserInteraction | QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
         )
 
     # -- Font scaling --------------------------------------------------------

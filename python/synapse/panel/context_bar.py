@@ -484,7 +484,7 @@ if _QT_AVAILABLE:
                 "ctx_action_" + label.lower().replace(" ", "_")
             )
             btn.setStyleSheet(btn_style)
-            btn.setCursor(QtCore.Qt.PointingHandCursor)
+            btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
             actions_layout.addWidget(btn)
 
         row2.addWidget(actions_container)
@@ -578,7 +578,7 @@ if _QT_AVAILABLE:
                         "ctx_action_" + label.lower().replace(" ", "_")
                     )
                     btn.setStyleSheet(btn_style)
-                    btn.setCursor(QtCore.Qt.PointingHandCursor)
+                    btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
                     layout.addWidget(btn)
 
     # ==================================================================

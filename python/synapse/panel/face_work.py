@@ -59,7 +59,7 @@ class BucketGrid(QtWidgets.QWidget):
     def __init__(self, cols=8, rows=5, parent=None):
         super().__init__(parent)
         self.setObjectName("DsSection")
-        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._cols, self._rows = cols, rows
         self._n = cols * rows
         self._done = 0
@@ -124,7 +124,7 @@ class BucketGrid(QtWidgets.QWidget):
         done = QtGui.QColor(t.SIGNAL); done.setAlpha(70)
         live = QtGui.QColor(t.GROW); live.setAlpha(175)
         trail = 6
-        p.setPen(Qt.NoPen)
+        p.setPen(Qt.PenStyle.NoPen)
         for i in range(self._n):
             r, col = divmod(i, self._cols)
             x = gap + col * (w + gap)
@@ -155,7 +155,7 @@ class FaceWork(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsSection")
-        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._steps = []   # ordered [name, phase] — the live plan-with-progress
 
         col = QtWidgets.QVBoxLayout(self)

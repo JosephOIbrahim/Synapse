@@ -64,7 +64,7 @@ class HealthInfographic(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsSection")
-        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._data = None
         self.setMinimumHeight(28)
         self._recompute_height()
@@ -111,7 +111,7 @@ class HealthInfographic(QtWidgets.QWidget):
         if not self._data:
             self._text(p, x0, 0, self.width() - 2 * self._PAD, self.height(),
                        "Awaiting telemetry…", t.TEXT_TERTIARY, 11,
-                       Qt.AlignLeft | Qt.AlignVCenter)
+                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
             p.end()
             return
 
@@ -122,10 +122,10 @@ class HealthInfographic(QtWidgets.QWidget):
 
         # ── header: label + ops/rate summary ──────────────────────
         self._text(p, x0, y, x1 - x0, self._HEAD_H, "OBSERVABILITY",
-                   t.TEXT_TERTIARY, 11, Qt.AlignLeft | Qt.AlignVCenter, spacing=1.5)
+                   t.TEXT_TERTIARY, 11, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, spacing=1.5)
         self._text(p, x0, y, x1 - x0, self._HEAD_H,
                    "%d ops · %.0f%%" % (total, rate * 100),
-                   t.TEXT_SECONDARY, 11, Qt.AlignRight | Qt.AlignVCenter)
+                   t.TEXT_SECONDARY, 11, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         y += self._HEAD_H + self._GAP
 
         # ── bridge success gauge (the hero metric) ────────────────
@@ -136,7 +136,7 @@ class HealthInfographic(QtWidgets.QWidget):
         agents = self._agents_sorted()
         if not agents:
             self._text(p, x0, y, x1 - x0, self._ROW_H, "no agent activity yet",
-                       t.TEXT_TERTIARY, 10, Qt.AlignLeft | Qt.AlignVCenter)
+                       t.TEXT_TERTIARY, 10, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
             y += self._ROW_H
         else:
             for key, d in agents:
@@ -161,7 +161,7 @@ class HealthInfographic(QtWidgets.QWidget):
     def _gauge(self, p, x, y, w, rate):
         track_h = 8
         ty = y + (self._GAUGE_H - track_h) / 2.0
-        p.setPen(Qt.NoPen)
+        p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QtGui.QColor(t.SURFACE))
         p.drawRoundedRect(QtCore.QRectF(x, ty, w, track_h), 4, 4)
         fill_w = max(2.0, w * max(0.0, min(1.0, rate)))
@@ -180,8 +180,8 @@ class HealthInfographic(QtWidgets.QWidget):
         track_h = 7
         by = y + (self._ROW_H - track_h) / 2.0
         self._text(p, x, y, lab_w, self._ROW_H, label, t.TEXT_SECONDARY, 10,
-                   Qt.AlignLeft | Qt.AlignVCenter, mono=True)
-        p.setPen(Qt.NoPen)
+                   Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, mono=True)
+        p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QtGui.QColor(t.SURFACE))
         p.drawRoundedRect(QtCore.QRectF(bar_x, by, bar_w, track_h), 3, 3)
         fill_w = max(2.0, bar_w * max(0.0, min(1.0, rate)))
@@ -189,11 +189,11 @@ class HealthInfographic(QtWidgets.QWidget):
         p.drawRoundedRect(QtCore.QRectF(bar_x, by, fill_w, track_h), 3, 3)
         self._text(p, x + w - val_w, y, val_w, self._ROW_H,
                    "%.0f%% (%d)" % (rate * 100, count), t.TEXT_TERTIARY, 10,
-                   Qt.AlignRight | Qt.AlignVCenter, mono=True)
+                   Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, mono=True)
 
     def _sparkline(self, p, x, y, w, values):
         self._text(p, x, y, w, 10, "RECOMMENDATION ACTIVITY", t.TEXT_TERTIARY, 9,
-                   Qt.AlignLeft | Qt.AlignVCenter, spacing=1.2)
+                   Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, spacing=1.2)
         gy = y + 11
         gh = self._SPARK_H - 11
         n = len(values)
@@ -202,7 +202,7 @@ class HealthInfographic(QtWidgets.QWidget):
         peak = max(values) or 1
         slot = w / float(n)
         bw = max(2.0, slot * 0.6)
-        p.setPen(Qt.NoPen)
+        p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QtGui.QColor(t.SIGNAL))
         for i, v in enumerate(values):
             bh = max(2.0, gh * (v / float(peak)))
@@ -219,11 +219,11 @@ class HealthInfographic(QtWidgets.QWidget):
             tgt = getattr(meta[0], "target", "")
             col, msg = t.WARN, "⟳  %d chronic: %s" % (len(meta), tgt)
         rgb = t._hex_to_rgb_int(col)
-        p.setPen(Qt.NoPen)
+        p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QtGui.QColor(rgb[0], rgb[1], rgb[2], 36))
         p.drawRoundedRect(QtCore.QRectF(x, y, w, self._BANNER_H), 4, 4)
         self._text(p, x + t.SPACE_SM, y, w - 2 * t.SPACE_SM, self._BANNER_H,
-                   msg, col, 10, Qt.AlignLeft | Qt.AlignVCenter)
+                   msg, col, 10, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
     # ---------------------------------------------------------------- text
     def _text(self, p, x, y, w, h, s, color, px, align, mono=False, spacing=0.0):

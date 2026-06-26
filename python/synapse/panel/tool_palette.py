@@ -148,8 +148,8 @@ class ToolPalette(QtWidgets.QWidget):
     def __init__(self, parent=None, scale=None):
         super().__init__(parent)
         self.setObjectName("DsRoot")
-        self.setAttribute(Qt.WA_StyledBackground, True)
-        self.setWindowFlags(Qt.Popup)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setWindowFlags(Qt.WindowType.Popup)
         # The popup is a SEPARATE top-level window — it does NOT inherit the
         # panel's stylesheet, so it must be styled at the SAME font-scale the
         # panel runs at, or its rows / search / chips render tiny next to a
@@ -233,7 +233,7 @@ class ToolPalette(QtWidgets.QWidget):
             text = "All" if v is None else (v.title() if kind == "verb" else v)
             btn = QtWidgets.QPushButton(text)
             btn.setObjectName("DsChip")
-            btn.setCursor(Qt.PointingHandCursor)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setFlat(True)
             btn.clicked.connect(lambda _=False, k=kind, val=v: self._set_axis(k, val))
             chips[v] = btn
@@ -278,7 +278,7 @@ class ToolPalette(QtWidgets.QWidget):
             group = _ctx_label(e.get("context"))
             if group != last_domain:
                 head = QtWidgets.QListWidgetItem(group.upper())
-                head.setFlags(Qt.NoItemFlags)
+                head.setFlags(Qt.ItemFlag.NoItemFlags)
                 try:
                     head.setForeground(QColor(t.TEXT_TERTIARY))
                 except Exception:
@@ -287,7 +287,7 @@ class ToolPalette(QtWidgets.QWidget):
                 last_domain = group
             label = ("  ⚠ " if e["destructive"] else "  ") + e["title"]
             item = QtWidgets.QListWidgetItem(label)
-            item.setData(Qt.UserRole, e["send"])
+            item.setData(Qt.ItemDataRole.UserRole, e["send"])
             item.setToolTip("%s%s" % (
                 e["desc"],
                 "\n\n(destructive — will ask before running)" if e["destructive"] else ""))
@@ -298,7 +298,7 @@ class ToolPalette(QtWidgets.QWidget):
                     pass
             self._list.addItem(item)
         for i in range(self._list.count()):
-            if self._list.item(i).data(Qt.UserRole):
+            if self._list.item(i).data(Qt.ItemDataRole.UserRole):
                 self._list.setCurrentRow(i)
                 break
 
@@ -312,7 +312,7 @@ class ToolPalette(QtWidgets.QWidget):
         self._populate(rows)
 
     def _choose(self, item):
-        send = item.data(Qt.UserRole)
+        send = item.data(Qt.ItemDataRole.UserRole)
         if send:
             self.command_selected.emit(send)
             self.close()
@@ -320,15 +320,15 @@ class ToolPalette(QtWidgets.QWidget):
     def eventFilter(self, obj, event):
         if obj is self._search and event.type() == QtCore.QEvent.KeyPress:
             key = event.key()
-            if key in (Qt.Key_Down, Qt.Key_Up):
-                self._move(1 if key == Qt.Key_Down else -1)
+            if key in (Qt.Key.Key_Down, Qt.Key.Key_Up):
+                self._move(1 if key == Qt.Key.Key_Down else -1)
                 return True
-            if key in (Qt.Key_Return, Qt.Key_Enter):
+            if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
                 it = self._list.currentItem()
                 if it:
                     self._choose(it)
                 return True
-            if key == Qt.Key_Escape:
+            if key == Qt.Key.Key_Escape:
                 self.close()
                 return True
         return super().eventFilter(obj, event)
@@ -340,6 +340,6 @@ class ToolPalette(QtWidgets.QWidget):
         row = self._list.currentRow()
         for _ in range(n):
             row = (row + delta) % n
-            if self._list.item(row).data(Qt.UserRole):
+            if self._list.item(row).data(Qt.ItemDataRole.UserRole):
                 self._list.setCurrentRow(row)
                 return

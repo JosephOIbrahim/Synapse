@@ -112,7 +112,7 @@ class _GrowingInput(QtWidgets.QTextEdit):
         if e.text() == "/" and not self.toPlainText():
             self.slash.emit()
             return
-        if e.key() in (Qt.Key_Return, Qt.Key_Enter) and not (e.modifiers() & Qt.ShiftModifier):
+        if e.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter) and not (e.modifiers() & Qt.KeyboardModifier.ShiftModifier):
             self.submitted.emit()
             return
         super().keyPressEvent(e)
@@ -130,7 +130,7 @@ class _InputResizeGrip(QtWidgets.QWidget):
         self._target = target
         self.setObjectName("DsGrip")
         self.setFixedHeight(10)
-        self.setCursor(Qt.SizeVerCursor)
+        self.setCursor(Qt.CursorShape.SizeVerCursor)
         self._drag_y = None
         self._start_h = 0
 
@@ -155,7 +155,7 @@ class _InputResizeGrip(QtWidgets.QWidget):
     def paintEvent(self, _event):
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.Antialiasing)
-        p.setPen(Qt.NoPen)
+        p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QtGui.QColor(t.BORDER_STRONG))
         cx = self.width() / 2.0
         cy = self.height() / 2.0
@@ -170,7 +170,7 @@ class SynapsePanel(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsRoot")
-        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setMinimumWidth(t.PANEL_MIN_WIDTH)
         # Load the bundled families BEFORE the stylesheet references them; a
         # missing family raises the build-mismatch flag (logged) and falls back.
@@ -270,7 +270,7 @@ class SynapsePanel(QtWidgets.QWidget):
         compositor from ghosting (the old global transparent rule was the bug)."""
         w = QtWidgets.QWidget()
         w.setObjectName("DsSection")
-        w.setAttribute(Qt.WA_StyledBackground, True)
+        w.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         return w
 
     def _build_ui(self):
@@ -373,7 +373,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._corpus_btn.clicked.connect(self._on_corpus)
         self._observe = QtWidgets.QWidget()
         self._observe.setObjectName("DsRailMeter")
-        self._observe.setAttribute(Qt.WA_StyledBackground, True)
+        self._observe.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._observe.setFixedHeight(3)
         self._observe.setStyleSheet("background:%s; border-radius:2px;" % t.SIGNAL_TINT)
         self._stop_btn = c.Button("Stop", variant="danger")
@@ -516,7 +516,7 @@ class SynapsePanel(QtWidgets.QWidget):
         for pid in ids:
             seg = QtWidgets.QPushButton(labels.get(pid, pid))
             seg.setObjectName("DsSeg")
-            seg.setCursor(Qt.PointingHandCursor)
+            seg.setCursor(Qt.CursorShape.PointingHandCursor)
             seg.clicked.connect(lambda _=False, p=pid: self._set_provider(p))
             lay.addWidget(seg)
             self._engine_pills[pid] = seg
@@ -530,7 +530,7 @@ class SynapsePanel(QtWidgets.QWidget):
         # ids no longer dominate the panel).
         self._model_chip = QtWidgets.QPushButton(self._model_chip_text())
         self._model_chip.setObjectName("DsModelChip")
-        self._model_chip.setCursor(Qt.PointingHandCursor)
+        self._model_chip.setCursor(Qt.CursorShape.PointingHandCursor)
         self._model_chip.setFlat(True)
         self._model_chip.setToolTip("Switch model")
         self._model_chip.clicked.connect(self._open_model_menu)
@@ -596,7 +596,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._converse_stack.addWidget(self._chat)              # page 0: chat
         self._converse_stack.addWidget(self._build_hda_form())  # page 1: Build HDA
         self._converse_stack.setSizePolicy(
-            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding
         )
         self._converse_stack.setMinimumHeight(80)
         return self._converse_stack
@@ -630,7 +630,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._faces.addWidget(self._build_direct_face())   # 0 · idle / converse
         self._faces.addWidget(self._build_work_face())     # 1 · glance → done payoff
         self._faces.setSizePolicy(
-            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding
         )
         # Low floor so the faces stack (Direct = chat + act + input) never forces
         # the panel taller than a short pane and clips the Send row. The chat's
@@ -683,7 +683,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._work_stack.addWidget(self._build_done_substate())
 
         self._work_stack.setSizePolicy(
-            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
         col.addWidget(self._work_stack, 1)
         self._work_stack.setCurrentIndex(0)   # cook is the resting Work sub-state
         return page
@@ -1032,7 +1032,7 @@ class SynapsePanel(QtWidgets.QWidget):
         {None, 'ok', 'hot', 'accent'} selects the semantic color via property."""
         btn = QtWidgets.QPushButton(text)
         btn.setObjectName("DsVerb")
-        btn.setCursor(Qt.PointingHandCursor)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
         btn.setFlat(True)
         if tone:
             btn.setProperty("tone", tone)
