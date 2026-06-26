@@ -485,9 +485,19 @@ class MCPServer:
         t0 = time.monotonic()
 
         try:
-            import hdefereval
-            result = hdefereval.executeInMainThreadWithResult(
-                dispatch_tool, handler, tool_name, arguments
+            # Route through run_on_main so a heavy cook/render holding the busy
+            # main thread fast-fails THIS dispatch at the per-tool budget instead
+            # of hanging the transport forever (L7). The MCP path previously called
+            # executeInMainThreadWithResult directly — bypassing run_on_main — so
+            # the C6 dispatch_wait metric was blind and the stall detector was
+            # consulted but never fed. NB: this bounds the TRANSPORT, not the GUI —
+            # the cook still holds the main thread for its duration; only an
+            # out-of-process render (husk) keeps the GUI responsive.
+            from ..server.main_thread import run_on_main
+            from ..core.timeouts import timeout_for
+            result = run_on_main(
+                lambda: dispatch_tool(handler, tool_name, arguments),
+                timeout=timeout_for(tool_name),
             )
         except ImportError:
             result = dispatch_tool(handler, tool_name, arguments)
