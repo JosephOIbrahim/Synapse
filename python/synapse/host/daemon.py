@@ -19,11 +19,13 @@ Boot chain (in order)
 2. **Auth** — ``synapse.host.auth.get_anthropic_api_key()``
    (hou.secure → env var). If neither source has a key, boot halts
    with an explicit error.
-3. **Event loop policy (Windows only)** —
-   ``asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())``.
-   Confirmed necessary in Spike 0: without it, httpx/anyio collides
+3. **Event loop selection (Windows only)** —
+   ``asyncio.set_event_loop(asyncio.SelectorEventLoop())``. Confirmed
+   necessary in Spike 0: without a selector loop, httpx/anyio collides
    with the default ProactorEventLoop and raises
-   ``APIConnectionError`` + ``NameError('closing_agens')``.
+   ``APIConnectionError`` + ``NameError('closing_agens')``. Selecting
+   the loop explicitly avoids the ``set_event_loop_policy`` /
+   ``WindowsSelectorEventLoopPolicy`` APIs deprecated on Python 3.12+.
 4. **User-site advisory** — ``sys.flags.no_user_site`` checked; warns
    if interpreter was started without ``-s`` / ``PYTHONNOUSERSITE=1``.
    The Spike 0 CP314/CP311 mismatch is unrecoverable from inside a
@@ -353,18 +355,25 @@ class SynapseDaemon:
         return resolved
 
     def _apply_event_loop_policy(self) -> None:
-        """Spike 0 bootstrap lock: selector policy on Windows.
+        """Spike 0 bootstrap lock: force a SelectorEventLoop on Windows.
 
         Without it, httpx/anyio raises APIConnectionError + NameError
         ('closing_agens') during async shutdown on Python 3.11 Windows
         because the default ProactorEventLoop mishandles stream cleanup.
+
+        The loop type is selected explicitly via
+        ``asyncio.SelectorEventLoop`` + ``asyncio.set_event_loop``
+        rather than the global ``set_event_loop_policy`` /
+        ``WindowsSelectorEventLoopPolicy`` pair, which are
+        deprecation-warned on Python 3.12+ and slated for removal in
+        3.16. ``asyncio.SelectorEventLoop`` resolves to the Windows
+        selector loop on every supported version, so the resulting loop
+        type is unchanged from the policy-based form.
         """
         if sys.platform == "win32":
-            policy = asyncio.WindowsSelectorEventLoopPolicy()
-            asyncio.set_event_loop_policy(policy)
-            logger.info(
-                "Event loop policy set to WindowsSelectorEventLoopPolicy"
-            )
+            loop = asyncio.SelectorEventLoop()
+            asyncio.set_event_loop(loop)
+            logger.info("Event loop set to SelectorEventLoop (Windows)")
 
     def _warn_if_user_site_active(self) -> None:
         """Spike 0 bootstrap lock (advisory): user site should be disabled.
