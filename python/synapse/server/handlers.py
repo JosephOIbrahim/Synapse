@@ -829,17 +829,23 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             if node is None:
                 raise NodeNotFoundError(node_path)
 
+            usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
+
             parm = node.parm(parm_name)
             # USD alias fallback -- resolve human-readable name to encoded parm
+            if parm is None and usd_encoded:
+                parm = node.parm(usd_encoded)
+                if parm is not None:
+                    parm_name = usd_encoded  # use resolved name in response
             if parm is None:
-                usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
-                if usd_encoded:
-                    parm = node.parm(usd_encoded)
-                    if parm is not None:
-                        parm_name = usd_encoded  # use resolved name in response
-            if parm is None:
-                # Try as parm tuple
+                # Try as parm tuple. USD color3f/vector attrs (e.g. inputs:color)
+                # surface as a parmTuple under the ENCODED name, not a scalar parm
+                # -- so try the encoded alias here too, not just the raw name.
                 parm_tuple = node.parmTuple(parm_name)
+                if parm_tuple is None and usd_encoded:
+                    parm_tuple = node.parmTuple(usd_encoded)
+                    if parm_tuple is not None:
+                        parm_name = usd_encoded
                 if parm_tuple is not None:
                     return {
                         "node": node_path,
@@ -893,14 +899,14 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             if node is None:
                 raise NodeNotFoundError(node_path)
 
+            usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
+
             parm = node.parm(parm_name)
             # USD alias fallback -- resolve human-readable name to encoded parm
-            if parm is None:
-                usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
-                if usd_encoded:
-                    parm = node.parm(usd_encoded)
-                    if parm is not None:
-                        parm_name = usd_encoded
+            if parm is None and usd_encoded:
+                parm = node.parm(usd_encoded)
+                if parm is not None:
+                    parm_name = usd_encoded
             if parm is not None:
                 # If value is a list/tuple but we found a scalar parm, try the
                 # tuple parm instead — this lets callers set color (R,G,B) in one
@@ -925,8 +931,14 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                         _log.debug("Lighting Law check skipped: %s", e)
                 return result
 
-            # Try as parm tuple
+            # Try as parm tuple. USD color3f/vector attrs (e.g. inputs:color)
+            # surface as a parmTuple under the ENCODED name -- try the encoded
+            # alias too, not just the raw name.
             parm_tuple = node.parmTuple(parm_name)
+            if parm_tuple is None and usd_encoded:
+                parm_tuple = node.parmTuple(usd_encoded)
+                if parm_tuple is not None:
+                    parm_name = usd_encoded
             if parm_tuple is not None:
                 if isinstance(value, (list, tuple)):
                     parm_tuple.set(value)

@@ -89,19 +89,22 @@ LIGHTING_SPECIALIST = SpecialistMode(
         "natural warmth on key lights. Dome exposure ~0.25 for studio HDRIs."
     ),
     parameter_vocabulary={
-        "intensity": "xn__inputsintensity_i0a",
-        "intensity_control": "xn__inputsintensity_control_r0b",
-        "exposure": "xn__inputsexposure_vya",
-        "exposure_control": "xn__inputsexposure_control_wcb",
-        # Single-sourced from usd_punycode (canonical 'kya'/'r0b') — these were
-        # mistakenly copy-pasted from exposure's 'vya' encoding (a latent bug).
+        # Single-sourced from synapse.core.usd_punycode — every value live-probed
+        # off a real domelight on 21.0.671. Do NOT paste xn__ literals here: the
+        # prior literals were ~all phantom (intensity_control '_r0b',
+        # color_temperature '_ica', texture_file '_i1a', normalize '_01a' — none
+        # resolve on a live light). Re-probe, don't hand-edit.
+        "intensity": PUNYCODE_PARMS["intensity"],
+        "intensity_control": PUNYCODE_PARMS["intensity_control"],
+        "exposure": PUNYCODE_PARMS["exposure"],
+        "exposure_control": PUNYCODE_PARMS["exposure_control"],
         "color": PUNYCODE_PARMS["color"],
         "color_control": PUNYCODE_PARMS["color_control"],
-        "color_temperature": "xn__inputscolortemperature_ica",
-        "color_temperature_control": "xn__inputscolortemperature_control_jdb",
-        "texture_file": "xn__inputstexturefile_i1a",
-        "texture_file_control": "xn__inputstexturefile_control_j2b",
-        "normalize": "xn__inputsnormalize_01a",
+        "color_temperature": PUNYCODE_PARMS["color_temperature"],
+        "color_temperature_control": PUNYCODE_PARMS["color_temperature_control"],
+        "texture_file": PUNYCODE_PARMS["texture_file"],
+        "texture_file_control": PUNYCODE_PARMS["texture_file_control"],
+        "normalize": PUNYCODE_PARMS["normalize"],
     },
     quality_signals=(
         QualitySignal(

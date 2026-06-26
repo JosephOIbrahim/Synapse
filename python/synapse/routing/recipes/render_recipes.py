@@ -968,7 +968,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": "xn__inputsenableColorTemperature_znb",
+                    "attribute_name": "xn__inputsenableColorTemperature_omb",
                     "value": True,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -977,7 +977,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": "xn__inputscolorTemperature_r8a",
+                    "attribute_name": "xn__inputscolorTemperature_wcb",
                     "value": 6500,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1045,7 +1045,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": "xn__inputsenableColorTemperature_znb",
+                    "attribute_name": "xn__inputsenableColorTemperature_omb",
                     "value": True,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1054,7 +1054,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": "xn__inputscolorTemperature_r8a",
+                    "attribute_name": "xn__inputscolorTemperature_wcb",
                     "value": 5500,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1134,7 +1134,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/area_panel",
-                    "attribute_name": "xn__inputsnormalize_01a",
+                    "attribute_name": "xn__inputsnormalize_i0a",
                     "value": True,
                 },
                 gate_level=GateLevel.REVIEW,

@@ -1,10 +1,11 @@
 """Pin the single-sourced USD punycode parm map.
 
-These encodings (``inputs:color`` -> ``xn__inputscolor_kya`` etc.) used to be
+These encodings (``inputs:color`` -> ``xn__inputscolor_zta`` etc.) used to be
 copy-pasted across core/aliases.py, mcp/server.py and agent/specialist_modes.py,
-and the copies *disagreed* on color (a latent bug: 'vya' was a copy-paste from
-exposure). They now live in one place — ``synapse.core.usd_punycode`` — and the
-grep-guard below fails loud if the wrong literal ever reappears.
+and the copies *disagreed* on color (latent bugs: 'vya' was a copy-paste from
+exposure; 'kya' was also phantom). They now live in one place —
+``synapse.core.usd_punycode`` — live-probed off a real domelight on 21.0.671,
+and the grep-guard below fails loud if either wrong literal ever reappears.
 """
 
 import os
@@ -19,10 +20,13 @@ from synapse.core.usd_punycode import PUNYCODE_PARMS, encoded
 from synapse.core.aliases import USD_PARM_ALIASES, resolve_usd_parm
 
 
-# The wrong, divergent color encoding (copy-pasted from exposure_vya).
-_WRONG_COLOR = "xn__inputscolor_vya"
-# The canonical encoding, single-sourced from usd_punycode.
-_CANONICAL_COLOR = "xn__inputscolor_kya"
+# The wrong, divergent color encodings. Both are phantom on 21.0.671:
+# '_vya' was a copy-paste from exposure; '_kya' was the prior hand-maintained
+# guess. Neither resolves on a live light. The grep-guard forbids both.
+_WRONG_COLORS = ("xn__inputscolor_vya", "xn__inputscolor_kya")
+# The canonical encoding, single-sourced from usd_punycode: the live-probed
+# color3f parmTuple BASE name (components _ztar/_ztag/_ztab).
+_CANONICAL_COLOR = "xn__inputscolor_zta"
 
 _SYNAPSE_DIR = os.path.join(python_dir, "synapse")
 _USD_PUNYCODE_FILE = os.path.join(_SYNAPSE_DIR, "core", "usd_punycode.py")
@@ -62,10 +66,10 @@ def test_encoded_helper_matches_dict():
     assert encoded("not_a_real_alias") is None
 
 
-def test_color_resolves_to_kya_no_drift():
-    """aliases.py must resolve color to the canonical 'kya' encoding."""
+def test_color_resolves_to_verified_tuple_base_no_drift():
+    """aliases.py must resolve color to the live-probed tuple-base encoding."""
     assert PUNYCODE_PARMS["color"] == _CANONICAL_COLOR
-    assert PUNYCODE_PARMS["color"] != _WRONG_COLOR
+    assert PUNYCODE_PARMS["color"] not in _WRONG_COLORS
     # aliases.py is single-sourced, so it must agree.
     assert USD_PARM_ALIASES["color"] == _CANONICAL_COLOR
     assert USD_PARM_ALIASES["light_color"] == _CANONICAL_COLOR
@@ -83,11 +87,11 @@ def test_aliases_single_sourced_from_usd_punycode():
             )
 
 
-def test_wrong_color_literal_absent_everywhere_but_usd_punycode():
-    """grep-guard: the divergent 'vya' color literal must not reappear.
+def test_wrong_color_literals_absent_everywhere_but_usd_punycode():
+    """grep-guard: neither phantom color literal ('vya'/'kya') may reappear.
 
-    usd_punycode.py is the ONE file allowed to mention it — in a VERIFY-LIVE
-    comment documenting that the divergence was resolved.
+    usd_punycode.py is the ONE file allowed to mention them — in the docstring
+    documenting which encodings were phantom and why.
     """
     offenders = []
     for dirpath, _dirnames, filenames in os.walk(_SYNAPSE_DIR):
@@ -98,9 +102,13 @@ def test_wrong_color_literal_absent_everywhere_but_usd_punycode():
             if os.path.abspath(fpath) == os.path.abspath(_USD_PUNYCODE_FILE):
                 continue
             with open(fpath, "r", encoding="utf-8") as fh:
-                if _WRONG_COLOR in fh.read():
-                    offenders.append(os.path.relpath(fpath, _SYNAPSE_DIR))
+                text = fh.read()
+            for wrong in _WRONG_COLORS:
+                if wrong in text:
+                    offenders.append(
+                        f"{os.path.relpath(fpath, _SYNAPSE_DIR)} ({wrong})"
+                    )
     assert not offenders, (
-        f"Divergent color literal {_WRONG_COLOR!r} found in: {offenders}. "
+        f"Phantom color literal(s) found in: {offenders}. "
         f"Use synapse.core.usd_punycode.PUNYCODE_PARMS['color'] instead."
     )
