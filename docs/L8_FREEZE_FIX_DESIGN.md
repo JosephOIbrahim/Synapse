@@ -1,6 +1,8 @@
 # L8 — Heavy cook/render freezes the GUI: design + status
 
 > From the L8 design workflow. **Shipped (min mitigation, headless-gated):** MCP + PDG dispatch routed through `run_on_main` (PR — branch `feat/l8-mainthread-mitigation`) + the `shot_render_ready` `verify=False` readback skip (PR #32). **Owed (real GUI fix, needs live Houdini):** the husk-subprocess render in §3, and the items in 'must NOT author blind'.
+>
+> **⚠ LIVE-VERIFIED 2026-06-26 — the host is INDIE, which guts §3 for this user.** Probe: `hou.licenseCategory() == hou.licenseCategoryType.Indie` (and `hou.isIndieMode` does NOT exist — the §3 detection-API guess was wrong; use `licenseCategory`). **husk no-ops on Indie**, so the out-of-process husk render (§3) — the only thing that keeps the GUI heartbeat alive during a render — is **INERT on Indie** and falls back to the in-process GL flipbook. §3 therefore benefits **Commercial/Education only**; it cannot be render-verified on this host. **On Indie the GUI-freeze levers are cook-avoidance:** the `verify=False` readback skip (PR #32) is the build-cook fix; the render scene-cook freeze is largely inherent. husk binary confirmed at `$HFS/bin/husk.exe`; karmarendersettings `engine` menu = `cpu`/`xpu`.
 
 ---
 
