@@ -122,7 +122,7 @@ try:
             # Chevron toggle
             self._chevron = QtWidgets.QPushButton(self)
             self._chevron.setFixedSize(20, 20)
-            self._chevron.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+            self._chevron.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
             self._chevron.setToolTip("Toggle quick actions")
             self._chevron.clicked.connect(self._toggle)
             self._update_chevron()
@@ -144,7 +144,7 @@ try:
             for action in QUICK_ACTIONS:
                 pill = QtWidgets.QPushButton(action["label"], self._pills_container)
                 pill.setToolTip(action.get("tooltip", ""))
-                pill.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+                pill.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
                 pill.setStyleSheet(self._pill_stylesheet())
                 pill.clicked.connect(
                     lambda checked=False, a=action: self.action_triggered.emit(a)

@@ -55,11 +55,11 @@ def prepare_image_block(image_path):
     if longest > MAX_DIMENSION:
         if pixmap.width() >= pixmap.height():
             pixmap = pixmap.scaledToWidth(
-                MAX_DIMENSION, QtCore.Qt.SmoothTransformation
+                MAX_DIMENSION, QtCore.Qt.TransformationMode.SmoothTransformation
             )
         else:
             pixmap = pixmap.scaledToHeight(
-                MAX_DIMENSION, QtCore.Qt.SmoothTransformation
+                MAX_DIMENSION, QtCore.Qt.TransformationMode.SmoothTransformation
             )
         resized = True
 

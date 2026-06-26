@@ -25,7 +25,7 @@ class BouncingToy(QtWidgets.QWidget):
         super().__init__(parent)
         self._phase = 0.0
         self.setFixedSize(56, 38)
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._anim = QPropertyAnimation(self, b"phase", self)
         self._anim.setStartValue(0.0)
         self._anim.setEndValue(1.0)
@@ -72,7 +72,7 @@ class BouncingToy(QtWidgets.QWidget):
         ry = r * (1.0 - squash)
 
         # contact shadow — wider + darker the closer to the ground
-        p.setPen(Qt.NoPen)
+        p.setPen(Qt.PenStyle.NoPen)
         sh_w = rx * (0.7 + 0.9 * contact)
         p.setBrush(QtGui.QColor(0, 0, 0, int(70 * (0.35 + 0.65 * contact))))
         p.drawEllipse(QtCore.QRectF(cx - sh_w, ground_y + ry - 2, sh_w * 2, 4.5))
