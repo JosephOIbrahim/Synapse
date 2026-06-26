@@ -379,7 +379,7 @@ class MCPServer:
                 "SAFETY: All mutations go through atomic scripts, idempotent guards, "
                 "and undo-group transactions. execute_python wraps in undo group.\n\n"
                 "CRITICAL USD CONVENTION: Houdini 21 USD light parameters use encoded names: "
-                "xn__inputsintensity_i0a (not 'intensity'), xn__inputscolor_vya (not 'color'), "
+                "xn__inputsintensity_i0a (not 'intensity'), xn__inputscolor_kya (not 'color'), "
                 "xn__inputsexposure_vya (not 'exposure'). Always inspect a node first "
                 "to get exact parameter names.\n\n"
                 "LIGHTING LAW: Intensity is ALWAYS 1.0. Brightness controlled by exposure (stops). "
