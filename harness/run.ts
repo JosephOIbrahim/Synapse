@@ -10,8 +10,13 @@
  *   MODE A (now, on H21):  grinds Phase 0. Trigger: just run it.
  *   MODE B (mid-July):     fires when harness/state/drop.json exists (the three numbers).
  *
+ * v2 (boundary graft): the cross-cutting non-goal GUARDRAILS from checks.py are enforced
+ * DETERMINISTICALLY here. Any guardrail ok:false fails the sprint and writes a repair ticket
+ * BEFORE the Evaluator is even called — the boundary's moat is not left to LLM discretion.
+ * A guardrail reporting ok:null ("not wired yet") only warns.
+ *
  * Run:  bun run harness/run.ts
- *       bun run harness/run.ts --task 0.3        # single task
+ *       bun run harness/run.ts --task 0.8        # single task
  *       bun run harness/run.ts --dry             # plan only, no agents spawned
  *
  * Env (all optional, sensible defaults):
@@ -24,7 +29,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "node:fs";
 import { resolve, join } from "node:path";
 
 // ---------- config ----------
@@ -70,53 +75,75 @@ function ensureWorktree(id: string): string {
 }
 
 /**
- * Spawn a fresh, headless Claude in the worktree. It inherits that tree's
- * .claude/settings.json (pre-approved tools) and CLAUDE.md automatically.
+ * Spawn a fresh, headless Claude in the worktree.
  *
- * ADAPT ⚠ — verify these flags against your installed `claude --help`. The CLI
- * evolves; do not trust a flag just because it's written here. Conceptually we want:
- *   • headless / print mode (no interactive TTY)
- *   • a role system prompt (Generator or Evaluator)
- *   • tool use gated by the worktree's settings.json allowlist
- *   • cwd = the worktree, so all edits land in the isolated branch
+ * IMPORTANT (Windows): the Generator/Evaluator system prompt and the user message are large,
+ * multi-line, and full of markdown specials (backticks, quotes, $, |, #). Passing those on the
+ * command line routes them through cmd.exe (shell:true is required to launch claude.cmd), which
+ * mangles the line breaks and can break the invocation entirely. So we keep the command line
+ * tiny: the system prompt goes to a temp FILE (--append-system-prompt-file), and the user
+ * message goes in via STDIN. Only small flags ever touch the command line.
+ *
+ * Verified on Claude Code 2.x: -p, --permission-mode acceptEdits, and --append-system-prompt-file
+ * are all valid. acceptEdits lets the headless agent apply edits in the throwaway worktree; your
+ * deny rules still hold (no push, no merge, VERSION + harness untouched).
  */
 function runAgent(systemPrompt: string, userMsg: string, cwd: string): string {
   if (DRY) return "";
-  // WIRED (Step 4): --settings (highest precedence) loads harness/agent-settings.json, which
-  // (a) blanks ANTHROPIC_API_KEY so spawned agents auth on the Max-plan login (the global
-  // ~/.claude env-block key is credit-starved), and (b) carries the tool allowlist + the
-  // never-push/merge denies — so the agent safety binds the AGENTS, not the human's session.
-  // Forward-slash path + --settings first: shell:true concatenates args WITHOUT escaping
-  // (Node DEP0190), which strips backslashes from a Windows path → "settings file not found"
-  // → silent fallback to the global env-block key. Forward slashes survive; claude accepts them.
-  const AGENT_SETTINGS = join(REPO, "harness/agent-settings.json").replace(/\\/g, "/");
-  // shell:true concatenates args WITHOUT escaping (DEP0190): multi-line prompts and spaced
-  // paths get shredded. Pass the system prompt via a FILE and the user message via STDIN; -p
-  // goes last (no arg) so it reads the message from stdin. Forward-slash every path arg.
-  const spFile = join(cwd, ".claude", "harness_sysprompt.md");
   mkdirSync(join(cwd, ".claude"), { recursive: true });
-  writeFileSync(spFile, systemPrompt);
-  const r = spawnSync(
-    CLAUDE_BIN,
-    ["--settings", AGENT_SETTINGS, "--append-system-prompt-file", spFile.replace(/\\/g, "/"), "-p" /* , "--output-format", "text" */],
-    { cwd, input: userMsg, encoding: "utf8", shell: process.platform === "win32", maxBuffer: 64 * 1024 * 1024 }
-  );
-  if (r.status !== 0) log(`${c.warn}  agent exited ${r.status}: ${(r.stderr || "").slice(0, 400)}${c.off}`);
-  return r.stdout ?? "";
+  const sysFile = join(cwd, ".claude", `sysprompt-${Date.now()}-${Math.floor(Math.random() * 1e6)}.md`);
+  writeFileSync(sysFile, systemPrompt);
+  // --settings (highest CLI precedence) loads harness/agent-settings.json, which blanks
+  // ANTHROPIC_API_KEY so spawned agents auth on the Max-plan login. Without it, each child
+  // inherits the credit-starved .env key → 400 credit-too-low AND the "claude.ai connectors
+  // disabled" banner on every spawn. Forward-slash both paths: shell:true joins args WITHOUT
+  // escaping (Node DEP0190), so a backslashed Windows path is mangled → "settings file not
+  // found" → silent fallback to the credit-starved key. --settings goes first.
+  const AGENT_SETTINGS = join(REPO, "harness/agent-settings.json").replace(/\\/g, "/");
+  try {
+    const r = spawnSync(
+      CLAUDE_BIN,
+      ["--settings", AGENT_SETTINGS, "-p", "--permission-mode", "acceptEdits", "--append-system-prompt-file", sysFile.replace(/\\/g, "/")],
+      {
+        cwd,
+        encoding: "utf8",
+        shell: process.platform === "win32",
+        input: userMsg,                 // prompt via stdin — keeps it off the command line
+        maxBuffer: 64 * 1024 * 1024,
+      }
+    );
+    if (r.status !== 0) log(`${c.warn}  agent exited ${r.status}: ${(r.stderr || "").slice(0, 400)}${c.off}`);
+    return r.stdout ?? "";
+  } finally {
+    try { unlinkSync(sysFile); } catch {}
+  }
 }
+
 
 function runChecks(task: any, cwd: string): any {
   if (DRY) return { _dry: true, verdict: "SKIPPED" };
-  // Quote + forward-slash the path args: shell:true won't (DEP0190), so a spaced HYTHON
-  // ("C:/Program Files/...") would shatter and break checks.py's argparse.
-  const qp = (p: string) => `"${String(p).replace(/\\/g, "/")}"`;
   const r = spawnSync(
     PYTHON,
-    ["harness/verify/checks.py", "--task", task.id, "--worktree", qp(cwd), "--hython", qp(HYTHON), "--mode", MODE],
+    ["harness/verify/checks.py", "--task", task.id, "--worktree", cwd, "--hython", HYTHON, "--mode", MODE],
     { cwd: REPO, encoding: "utf8", shell: process.platform === "win32", maxBuffer: 32 * 1024 * 1024 }
   );
-  try { return JSON.parse(r.stdout); }
-  catch { return { verdict: "ERROR", detail: (r.stdout || r.stderr || "checks.py produced no JSON").slice(0, 600) }; }
+  const out = r.stdout ?? "";
+  // checks.py prints one JSON object, but hython/Houdini can emit a startup banner or warnings
+  // onto stdout when spawned. Extract the JSON object rather than parsing the whole stream.
+  const m = out.match(/\{[\s\S]*"verdict"[\s\S]*\}/);
+  if (m) { try { return JSON.parse(m[0]); } catch {} }
+  try { return JSON.parse(out); } catch {}
+  // Could not read JSON. The check PASSES when run by hand, so something differs when the
+  // harness spawns it. Dump the raw streams so we can see exactly what it received.
+  try {
+    mkdirSync(join(REPO, ".claude"), { recursive: true });
+    writeFileSync(
+      join(REPO, ".claude", `checks_debug_${task.id}.txt`),
+      `=== exit code: ${r.status} ===\n\n=== STDOUT (what run.ts tried to parse) ===\n${out}\n\n=== STDERR ===\n${r.stderr ?? ""}\n`
+    );
+    log(`  ${c.dim}(raw check output written to .claude/checks_debug_${task.id}.txt)${c.off}`);
+  } catch {}
+  return { verdict: "ERROR", detail: (out || r.stderr || "checks.py produced no JSON").slice(0, 600) };
 }
 
 /** Pull the first {...} block containing gate_status out of the evaluator's reply. */
@@ -136,6 +163,17 @@ function writeTicket(cwd: string, manifest: any[]) {
     `## Ticket ${i + 1}\n- **file:** \`${m.target_file}\`\n- **issue:** ${m.issue}\n- **evidence:** ${m.evidence}\n`);
   writeFileSync(join(dir, "remediation_ticket.md"),
     `# REPAIR MODE — fix only what is below. Do not refactor unrelated files.\n\n${lines.join("\n")}`);
+}
+
+/** Turn deterministic guardrail violations into repair tickets — these are boundary non-goals. */
+function ticketsFromGuardrails(facts: any): any[] {
+  const g = facts.guardrails ?? {};
+  return (facts.guardrail_violations ?? []).map((name: string) => ({
+    target_file: `(guardrail) ${name}`,
+    issue: `SYNAPSE_H22_BOUNDARY.md non-goal violated: ${name}.`,
+    evidence: `checks.py guardrail ${name} → ok:false — ${g[name]?.detail ?? "no detail"}`,
+    vector: "boundary",
+  }));
 }
 
 function appendProgress(line: string) {
@@ -167,8 +205,20 @@ function runTask(task: any): "PASS" | "BLOCKED" | "GATED" {
     runAgent(GEN_PROMPT, ticketHint, wt);
 
     const facts = runChecks(task, wt);
-    if (DRY) { log(`  ${c.dim}(dry: would check ${(task.verify ?? []).join(", ") || "—"})${c.off}`); return "PASS"; }
+    if (DRY) { log(`  ${c.dim}(dry: would check ${(task.verify ?? []).join(", ") || "—"} + guardrails)${c.off}`); return "PASS"; }
     log(`  checks → ${facts.verdict === "PASS" ? c.ok : c.warn}${facts.verdict}${c.off}`);
+
+    // unwired guardrails: surface, do not block
+    const gw = facts.guardrail_unwired ?? [];
+    if (gw.length) log(`  ${c.warn}guardrails unwired (warn, not blocking): ${gw.join(", ")}${c.off}`);
+
+    // DETERMINISTIC guardrail enforcement — boundary non-goals fail the gate before the Evaluator
+    const gv = facts.guardrail_violations ?? [];
+    if (gv.length) {
+      log(`  ${c.bad}GUARDRAIL FAIL${c.off} ${c.dim}${gv.join(", ")}${c.off}`);
+      writeTicket(wt, ticketsFromGuardrails(facts));
+      continue; // regenerate against the boundary ticket; no Evaluator round spent
+    }
 
     const verdict = parseVerdict(runAgent(
       EVAL_PROMPT,
