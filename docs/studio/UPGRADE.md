@@ -1,11 +1,14 @@
 # Houdini Upgrade Runbook
 
-**A Houdini build change silently disarms the phantom-API gate.** The
-symbol table is build-stamped; under the default `warn` policy, every
-`synapse_scout` membership verdict degrades to `null` (`gate_armed: false`)
-the moment `hou.applicationVersionString()` differs from the table stamp —
-precisely the week API drift peaks. This is the per-upgrade checklist.
-Conformance-pinned by `tests/test_m3_upgrade_surface.py`.
+**A Houdini build change can disarm the phantom-API gate.** The symbol
+table is build-stamped; the moment `hou.applicationVersionString()` differs
+from the table stamp the corpus/table reads stale — precisely the week API
+drift peaks. The default `refuse` policy is **fail-closed**: `synapse_scout`
+raises rather than serve unverified verdicts. (Opt into graceful degradation
+with `SYNAPSE_SCOUT_DRIFT_POLICY=warn`, under which every membership verdict
+degrades to `null` / `gate_armed: false` and a warning instead.) This is the
+per-upgrade checklist. Conformance-pinned by
+`tests/test_m3_upgrade_surface.py`.
 
 ## When to run this
 
@@ -13,8 +16,10 @@ Any Houdini build change — **point releases included** (the stamp is the
 full version string: `21.0.631` ≠ `21.0.671`). Three things break
 otherwise:
 
-1. **Null scout verdicts** — the panel footer shows *"API gate stale"*,
-   every `exists_in_runtime` is `null` with an `unverified_reason`.
+1. **Scout refuses** — by default (`SYNAPSE_SCOUT_DRIFT_POLICY=refuse`)
+   `synapse_scout` raises on the stale table; under `warn` it instead
+   degrades — the panel footer shows *"API gate stale"* and every
+   `exists_in_runtime` is `null` with an `unverified_reason`.
 2. **Panel absent** in the new build's pref dir (the package was never
    installed there).
 3. **Vendor ABI cliff** if the new build changed Houdini's Python version.
@@ -34,8 +39,10 @@ the committed authority
 it** (expect a full-file ~1.1 MB diff per build; that is normal).
 Regeneration is **per-build mandatory**.
 
-Hard-gate option: `SYNAPSE_SCOUT_DRIFT_POLICY=refuse` makes scout raise on
-a mismatch instead of degrading to null verdicts.
+Drift policy: the default is `SYNAPSE_SCOUT_DRIFT_POLICY=refuse` (fail-closed)
+— scout raises on a stale corpus/table instead of degrading to null verdicts.
+Set `SYNAPSE_SCOUT_DRIFT_POLICY=warn` to opt into graceful degradation (serve
+hits + null verdicts with a warning) during a controlled upgrade.
 
 ## Step 2 — Verify the vendored-dependency ABI
 
