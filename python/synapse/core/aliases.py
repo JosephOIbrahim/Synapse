@@ -8,6 +8,8 @@ Allows clients to use different naming conventions (camelCase, snake_case, etc.)
 import threading
 from typing import Dict, List, Any, Optional
 
+from .usd_punycode import PUNYCODE_PARMS
+
 
 # =============================================================================
 # PARAMETER ALIASES
@@ -161,36 +163,39 @@ for _canonical, _aliases in PARAM_ALIASES.items():
 # USD PARAMETER ALIASES
 # =============================================================================
 
+# xn__ values are single-sourced from synapse.core.usd_punycode (PUNYCODE_PARMS)
+# so the encodings can never diverge between files. Non-punycode names
+# (xformOp:*, visibility, purpose) stay as literals — usd_punycode doesn't own them.
 USD_PARM_ALIASES: Dict[str, str] = {
     # Lights — intensity
-    "intensity": "xn__inputsintensity_i0a",
-    "light_intensity": "xn__inputsintensity_i0a",
+    "intensity": PUNYCODE_PARMS["intensity"],
+    "light_intensity": PUNYCODE_PARMS["intensity"],
     # Lights — exposure
-    "exposure": "xn__inputsexposure_vya",
-    "light_exposure": "xn__inputsexposure_vya",
-    "exposure_control": "xn__inputsexposure_control_wcb",
+    "exposure": PUNYCODE_PARMS["exposure"],
+    "light_exposure": PUNYCODE_PARMS["exposure"],
+    "exposure_control": PUNYCODE_PARMS["exposure_control"],
     # Lights — color
-    "color": "xn__inputscolor_kya",
-    "light_color": "xn__inputscolor_kya",
-    "color_control": "xn__inputscolor_control_r0b",
+    "color": PUNYCODE_PARMS["color"],
+    "light_color": PUNYCODE_PARMS["color"],
+    "color_control": PUNYCODE_PARMS["color_control"],
     # Lights — temperature
-    "color_temperature": "xn__inputscolortemperature_job",
-    "temperature": "xn__inputscolortemperature_job",
-    "enable_temperature": "xn__inputsenablecolortemperature_yxb",
+    "color_temperature": PUNYCODE_PARMS["color_temperature"],
+    "temperature": PUNYCODE_PARMS["color_temperature"],
+    "enable_temperature": PUNYCODE_PARMS["enable_temperature"],
     # Lights — shape
-    "normalize": "xn__inputsnormalize_01a",
-    "diffuse": "xn__inputsdiffuse_vya",
-    "specular": "xn__inputsspecular_i0a",
+    "normalize": PUNYCODE_PARMS["normalize"],
+    "diffuse": PUNYCODE_PARMS["diffuse"],
+    "specular": PUNYCODE_PARMS["specular"],
     # DomeLight
-    "texture_file": "xn__inputstexturefile_c5b",
-    "texture_format": "xn__inputstextureformat_d8b",
+    "texture_file": PUNYCODE_PARMS["texture_file"],
+    "texture_format": PUNYCODE_PARMS["texture_format"],
     # Camera
-    "focal_length": "xn__inputsfocallength_e4b",
-    "focus_distance": "xn__inputsfocusdistance_f7b",
-    "fstop": "xn__inputsfstop_vya",
-    "horizontal_aperture": "xn__inputshorizontalaperture_ohb",
-    "vertical_aperture": "xn__inputsverticalaperture_gfb",
-    "clipping_range": "xn__inputsclippingrange_e4b",
+    "focal_length": PUNYCODE_PARMS["focal_length"],
+    "focus_distance": PUNYCODE_PARMS["focus_distance"],
+    "fstop": PUNYCODE_PARMS["fstop"],
+    "horizontal_aperture": PUNYCODE_PARMS["horizontal_aperture"],
+    "vertical_aperture": PUNYCODE_PARMS["vertical_aperture"],
+    "clipping_range": PUNYCODE_PARMS["clipping_range"],
     # Xform
     "translate": "xformOp:translate",
     "rotate": "xformOp:rotateXYZ",

@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Sequence
 
+from ..core.usd_punycode import PUNYCODE_PARMS
+
 
 # =============================================================================
 # SPECIALIST MODE
@@ -91,8 +93,10 @@ LIGHTING_SPECIALIST = SpecialistMode(
         "intensity_control": "xn__inputsintensity_control_r0b",
         "exposure": "xn__inputsexposure_vya",
         "exposure_control": "xn__inputsexposure_control_wcb",
-        "color": "xn__inputscolor_vya",
-        "color_control": "xn__inputscolor_control_wcb",
+        # Single-sourced from usd_punycode (canonical 'kya'/'r0b') — these were
+        # mistakenly copy-pasted from exposure's 'vya' encoding (a latent bug).
+        "color": PUNYCODE_PARMS["color"],
+        "color_control": PUNYCODE_PARMS["color_control"],
         "color_temperature": "xn__inputscolortemperature_ica",
         "color_temperature_control": "xn__inputscolortemperature_control_jdb",
         "texture_file": "xn__inputstexturefile_i1a",
