@@ -145,15 +145,44 @@ class ToolPalette(QtWidgets.QWidget):
 
     command_selected = Signal(str)  # emits a ready-to-send prompt
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, scale=None):
         super().__init__(parent)
         self.setObjectName("DsRoot")
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.setWindowFlags(Qt.Popup)
-        # Popup is a separate top-level window — give it the canonical sheet so
-        # DsChip / DsList / DsField render from the design system, not defaults.
-        self.setStyleSheet(qss.stylesheet())
-        self.setMinimumSize(440, 480)
+        # The popup is a SEPARATE top-level window — it does NOT inherit the
+        # panel's stylesheet, so it must be styled at the SAME font-scale the
+        # panel runs at, or its rows / search / chips render tiny next to a
+        # host-scaled panel body (the "small, hardly readable" popup bug).
+        # Default to the opener panel's live _font_scale; fall back to the token
+        # default headless / when no scale is resolvable.
+        if scale is None:
+            scale = getattr(parent, "_font_scale", t.FONT_SCALE_DEFAULT)
+        try:
+            scale = float(scale)
+        except (TypeError, ValueError):
+            scale = t.FONT_SCALE_DEFAULT
+        self._scale = scale
+        self.setStyleSheet(qss.stylesheet(scale))
+        # The base 440x480 box is sized for FONT_SCALE_DEFAULT; grow it by the
+        # ratio of the active scale to the default so a host-scaled palette has
+        # room for its larger rows. _min_unclamped is the size INTENT before the
+        # screen clamp — the readability invariant asserts on it, so the gate
+        # never goes false-red on a small (offscreen) virtual display where the
+        # applied minimum is pinned to the screen.
+        k = scale / t.FONT_SCALE_DEFAULT
+        self._min_unclamped = (round(440 * k), round(480 * k))
+        min_w, min_h = self._min_unclamped
+        try:
+            screen = QtWidgets.QApplication.primaryScreen()
+            if parent is not None and parent.screen() is not None:
+                screen = parent.screen()
+            avail = screen.availableGeometry()
+            min_w = min(min_w, avail.width())
+            min_h = min(min_h, avail.height())
+        except Exception:
+            pass
+        self.setMinimumSize(min_w, min_h)
         self._rows = _load_entries()
 
         lay = QtWidgets.QVBoxLayout(self)

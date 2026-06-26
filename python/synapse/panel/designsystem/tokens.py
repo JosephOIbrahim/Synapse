@@ -56,6 +56,43 @@ def _hexrgb(r, g, b):
 def _rgb_lum(r, g, b):
     return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0
 
+# --- WCAG-correct luminance + a contrast-solving grey picker -----------------
+# The 85%-dim ramp passed the headless contrast floor but the panel RESEEDS its
+# surfaces from the host pane grey at construction; a lighter host then dropped
+# body text below AA while the static audit (which reads the fallback) stayed
+# green. So the text ramp is no longer a fixed table — it is SOLVED from the
+# seeded surface to hit a target contrast on ANY host, light or dark. Gated by
+# audit_panel.py's seeded-contrast sweep (A3).
+
+def _srgb_lin(c8):
+    c = c8 / 255.0
+    return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+def _wcag_lum(hex_str):
+    h = hex_str.lstrip("#")
+    return (0.2126 * _srgb_lin(int(h[0:2], 16))
+            + 0.7152 * _srgb_lin(int(h[2:4], 16))
+            + 0.0722 * _srgb_lin(int(h[4:6], 16)))
+
+def _contrast(fg_hex, bg_hex):
+    a, b = _wcag_lum(fg_hex), _wcag_lum(bg_hex)
+    return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+
+def _lin_to_ch(L):
+    """Inverse sRGB: a target relative luminance L (grey) → an 8-bit channel."""
+    L = 0.0 if L < 0 else (1.0 if L > 1 else L)
+    c = 12.92 * L if L <= 0.0031308 else 1.055 * (L ** (1 / 2.4)) - 0.055
+    return _clamp8(c * 255)
+
+def _grey_for_contrast(bg_hex, ratio, lighter):
+    """The neutral grey hex that yields ``ratio`` WCAG contrast against
+    ``bg_hex`` — ``lighter`` picks the text-lighter-than-bg solution (dark host)
+    vs the darker solution (light host). Clamps into gamut."""
+    lb = _wcag_lum(bg_hex)
+    lt = ratio * (lb + 0.05) - 0.05 if lighter else (lb + 0.05) / ratio - 0.05
+    v = _lin_to_ch(lt)
+    return "#%02X%02X%02X" % (v, v, v)
+
 def _host_surface_rgb():
     """The host pane-background as (r, g, b), or None when headless/unavailable.
     ADAPT: 'PaneEmptyApp' is a placeholder color-scheme role — tune it to the
@@ -77,25 +114,28 @@ def _host_surface_rgb():
         except Exception:
             return None
 
-_FALLBACK_SURFACE = {  # Houdini-native dark greys, verified vs UIDark.hcs
-    "ground": "#262626", "field_inset": "#1E1E1E", "panel": "#2E2E2E",
-    "surface": "#3A3A3A", "raised": "#565656", "border": "#262626",
-    "border_strong": "#4C4C4C",
-}
-_FALLBACK_TEXT = {
-    "primary": "#ADADAD", "secondary": "#8A8A8A", "tertiary": "#7E7E7E",
-    "bright": "#C4C4C4", "disabled": "#5A5A5A",
+# Houdini-native dark pane grey (verified vs UIDark.hcs) — the HEADLESS surface
+# anchor. The text ramp is no longer a fixed table; it is solved from these by
+# _derive_palette so headless and live use the identical contrast-aware path.
+_FALLBACK_RGB = (46, 46, 46)   # #2E2E2E — the host pane grey when no scheme reads
+
+# Contrast targets for the solved text ramp. body=primary is held a hair above
+# AA (4.5); bright is AAA-crisp; tertiary stays above the dark-DCC pragmatic
+# line; disabled is intentionally low (it reads as inactive, not as body).
+_TEXT_CONTRAST = {
+    "primary": 7.0, "secondary": 4.6, "tertiary": 3.3, "bright": 9.0,
+    "disabled": 2.0,
 }
 
-def _seed_palette():
-    """(surface, text) derived from the host pane color, or the dark fallbacks
-    when headless. Elevation steps are offset from the base so the scale holds
-    for a light OR dark host; the text ramp flips to keep contrast on a light
-    surface (a naive surface-only seed would give dark-on-light = unreadable)."""
-    rgb = _host_surface_rgb()
-    if rgb is None:
-        return dict(_FALLBACK_SURFACE), dict(_FALLBACK_TEXT)
-    r, g, b = rgb
+def _derive_palette(r, g, b):
+    """Pure (surface, text) from a host pane (r, g, b) — no `hou`, no globals.
+
+    Surfaces are elevation offsets from the base (holds for a light OR dark
+    host). The text ramp is SOLVED so each role hits its target contrast against
+    the surface it can land on: light text on a dark host, dark text on a light
+    host. Because contrast is guaranteed against the *worst-case* surface the
+    text sits on, AA holds at every host grey — that's the seed-blind gap the
+    A3 sweep gates. Exposed (underscore) so the audit can sweep it directly."""
     def step(d):
         return _hexrgb(r + d, g + d, b + d)
     surface = {
@@ -103,12 +143,28 @@ def _seed_palette():
         "surface": step(12), "raised": step(40), "border": step(-8),
         "border_strong": step(30),
     }
-    if _rgb_lum(r, g, b) > 0.5:   # light host -> dark, readable text
-        text = {"primary": "#2A2A2A", "secondary": "#4A4A4A", "tertiary": "#5E5E5E",
-                "bright": "#141414", "disabled": "#9A9A9A"}
-    else:                          # dark host -> the bright ramp (as the fallback)
-        text = dict(_FALLBACK_TEXT)
+    # Text lands on ground / panel / surface. Choose the text DIRECTION (light
+    # vs dark) that MAXIMIZES the achievable contrast on those surfaces — not a
+    # fixed lum>0.5 rule. The old rule chose light text on a mid-grey host where
+    # dark text has far more contrast, dropping body below AA in the ~107-127
+    # band; picking by max-min-contrast fixes that and is correct for dark AND
+    # light hosts. (A true mid-grey background can't reach AA 4.5 in EITHER
+    # direction once the elevation spread is included — a WCAG hard limit, not a
+    # bug; the audit gates the realistic host range at AA and the pragmatic floor
+    # everywhere.)
+    lands = [surface[k] for k in ("ground", "panel", "surface")]
+    lightest = max(lands, key=_wcag_lum)
+    darkest = min(lands, key=_wcag_lum)
+    lighter = min(_contrast("#FFFFFF", s) for s in lands) >= min(_contrast("#000000", s) for s in lands)
+    anchor = lightest if lighter else darkest
+    text = {role: _grey_for_contrast(anchor, ratio, lighter=lighter)
+            for role, ratio in _TEXT_CONTRAST.items()}
     return surface, text
+
+def _seed_palette():
+    """(surface, text) from the live host pane color, or the headless fallback —
+    both routed through the one contrast-aware _derive_palette path."""
+    return _derive_palette(*(_host_surface_rgb() or _FALLBACK_RGB))
 
 _SURF, _TXT = _seed_palette()
 
@@ -238,9 +294,13 @@ TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
 #   DATA     +0.03  author, meter, paths, cookline, chip, mini
 #   DISPLAY  -0.015 verdict
 #   BODY      0     conversation, prompt
+# Dialed near-flat to match Houdini's native UI (which doesn't letter-space its
+# labels). BRAND keeps a hair of tracking (the wordmark's only remaining flourish
+# — and tracked_font needs it non-zero to apply AbsoluteSpacing); DISPLAY stays
+# slightly tight. Everything else is flat.
 TRACKING_EM: Dict[str, float] = {
-    "BRAND": 0.16, "LABEL": 0.15, "LABEL_SM": 0.12,
-    "DATA": 0.03, "DISPLAY": -0.015, "BODY": 0.0,
+    "BRAND": 0.02, "LABEL": 0.0, "LABEL_SM": 0.0,
+    "DATA": 0.0, "DISPLAY": -0.01, "BODY": 0.0,
 }
 
 
@@ -250,8 +310,12 @@ def tracking_px(role: str, px: float) -> float:
     return TRACKING_EM.get(role, 0.0) * px
 
 
-# One user font-scale drives BOTH chrome QSS and chat HTML (today only chat).
-FONT_SCALE_STEPS = (0.85, 1.0, 1.15, 1.3)
+# The user font-scale drives CONTENT ONLY — the chat dialogue + the prompt
+# input. Chrome (header, labels, pills, palette) is frozen at the host UI size.
+# Startup default is 1.0 = the host UI size ("default Houdini UI font size to
+# start"); the live panel seeds an exact host-matched base, and the Aa control
+# cycles the steps from there.
+FONT_SCALE_STEPS = (1.0, 1.15, 1.25, 1.4, 1.6)
 FONT_SCALE_DEFAULT = 1.0
 
 # ─────────────────────────────────────────────────────────────

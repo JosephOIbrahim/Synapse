@@ -81,14 +81,19 @@ class _GrowingInput(QtWidgets.QTextEdit):
 
     submitted = Signal()
     focus_lost = Signal()      # lets the face controller honor a deferred switch
+    slash = Signal()           # "/" on an empty prompt → open the command palette
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("DsInput")
         self.setAcceptRichText(False)
-        self.setPlaceholderText("Ask SYNAPSE…")
-        self._user_h = 216          # default ~3x the previous 72px
-        self._floor, self._max_h = 80, 600
+        self.setPlaceholderText("Ask SYNAPSE…    ·    / for commands")
+        # Default a comfortable multi-line height — but small enough that the
+        # input + Send row are never pushed off the bottom at the min pane
+        # height (the old 216px default was the crop culprit). The artist can
+        # still drag it taller via the resize grip; it also auto-grows to fit.
+        self._user_h = 96
+        self._floor, self._max_h = 64, 600
         self.setFixedHeight(self._user_h)
         self.textChanged.connect(self._autosize)
 
@@ -102,6 +107,11 @@ class _GrowingInput(QtWidgets.QTextEdit):
         self._autosize()
 
     def keyPressEvent(self, e):
+        # "/" on an empty prompt opens the command palette (⌘K folded into the
+        # input — no separate bar button). Ctrl+K still works as the shortcut.
+        if e.text() == "/" and not self.toPlainText():
+            self.slash.emit()
+            return
         if e.key() in (Qt.Key_Return, Qt.Key_Enter) and not (e.modifiers() & Qt.ShiftModifier):
             self.submitted.emit()
             return
@@ -168,7 +178,17 @@ class SynapsePanel(QtWidgets.QWidget):
         self._font_build_mismatch = self._font_status.get("build_mismatch", False)
         # M3-A: one-time check -- the symbol table cannot change mid-session
         self._gate_stale_reason = phantom_gate_status()
-        self.setStyleSheet(qss.stylesheet(t.FONT_SCALE_DEFAULT))
+        # Track Houdini's default text size: derive the base scale from the live
+        # host UI font so SYNAPSE body is AT LEAST the host body on any display/DPI
+        # (>= host, never smaller — a 1.25x readability floor). Headless → token default.
+        # CHROME vs CONTENT (first principles): chrome — the header, labels,
+        # pills, buttons, palette — is recognised, not read, so it is FROZEN at
+        # the host UI size and never moves when the artist changes reading size.
+        # Content — the dialogue + the prompt — is read and written, so it (and
+        # only it) is what the Aa button scales. Both start at the host UI size.
+        self._chrome_scale = self._host_font_scale()
+        self._font_scale = self._chrome_scale      # content scale (Aa-driven)
+        self.setStyleSheet(qss.stylesheet(self._chrome_scale))
 
         self._messages = []          # Anthropic-format conversation
         self._stream_buf = []        # accumulates streamed tokens
@@ -176,7 +196,7 @@ class SynapsePanel(QtWidgets.QWidget):
         self._last_tool = None       # C8: name of the in-flight tool, for an honest Stop
         self._tool_executor = ToolExecutor(parent=self) if ToolExecutor else None
         self._pending_context = []  # paths dropped in; prepended to the next send
-        self._font_scale = t.FONT_SCALE_DEFAULT
+        # (_font_scale was set above from the host font)
 
         # tab controller (v9 re-layout) — two tabs, NO auto-switch (the
         # same-pane law). Tabs move only on a user pill click; agent state
@@ -186,6 +206,13 @@ class SynapsePanel(QtWidgets.QWidget):
         self._work_substate = "cook"
         self._was_busy = False
         self._provider_id = "claude"   # active chat engine (provider switch)
+        # Per-provider picked model (the model switcher) — each engine remembers
+        # its own selection; defaults come from the registry.
+        try:
+            from synapse.panel.providers import registry as _reg
+            self._model_by_provider = dict(_reg.PROVIDER_DEFAULT_MODEL)
+        except Exception:
+            self._model_by_provider = {}
 
         self.setAcceptDrops(True)
         self._build_ui()
@@ -256,6 +283,8 @@ class SynapsePanel(QtWidgets.QWidget):
         # one forward as the agent's state changes. The work is the hero.
         root.addWidget(self._build_rail())          # mark-as-status · state · Stop
         root.addWidget(c.divider())
+        root.addWidget(self._build_model_bar())     # engine selection — apparent
+        root.addWidget(c.divider())
         root.addWidget(self._build_context_ribbon())
         root.addWidget(self._build_mode_bar())      # Direct · Work · Review pills
         root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
@@ -271,8 +300,10 @@ class SynapsePanel(QtWidgets.QWidget):
         w = self._section()
         w.setObjectName("DsHeader")          # keep the subtle cool→warm gradient
         col = QtWidgets.QVBoxLayout(w)
-        col.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
-        col.setSpacing(t.SPACE_XS)
+        # Generous, confident header padding (Pentagram): a wider left margin and
+        # real vertical air so the brand isn't crammed against the pane edge.
+        col.setContentsMargins(t.SPACE_LG, t.SPACE_MD, t.SPACE_MD, t.SPACE_MD)
+        col.setSpacing(t.SPACE_SM)
 
         # line 1 — identity + state. The mark fills with the agent's state.
         top = QtWidgets.QHBoxLayout()
@@ -282,22 +313,24 @@ class SynapsePanel(QtWidgets.QWidget):
         # BRAND tracking lives on the QFont (Qt QSS has no letter-spacing); the
         # stylesheet carries colour only.
         word.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
-        word.setFont(fontload.tracked_font("BRAND", 16))
+        word.setFont(fontload.tracked_font("BRAND", t.SIZE_HERO, scale=self._chrome_scale))
         self._wordmark = word
-        self._header_status = c.label("Standing by", role="caption")
+        self._header_status = c.label("Standing by", role="caption", scale=self._chrome_scale)
         self._header_status.setStyleSheet("color:%s;" % t.TEXT_SECONDARY)
         # quiet ⌘K affordance — the palette is already bound (QShortcut); this
         # only makes it discoverable. Its text is set from the ACTUAL bound
         # QKeySequence after the shortcut is created (platform-correct, never
         # lies about the key). It rides line 1, never the meter row.
         self._palette_hint = c.label("", role="caption")
-        self._palette_hint.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_MICRO))
+        self._palette_hint.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_SMALL, scale=self._chrome_scale))
         self._palette_hint.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
         overflow = c.Button("⋯", variant="ghost")
         overflow.setFixedWidth(32)
         overflow.clicked.connect(self._show_overflow)
         top.addWidget(self._mark)
+        top.addSpacing(t.SPACE_XS)        # a beat between the mark and the wordmark
         top.addWidget(word)
+        top.addSpacing(t.SPACE_SM)        # let the brand breathe before the stretch
         top.addStretch(1)
         top.addWidget(self._header_status)
         top.addWidget(self._palette_hint)
@@ -312,11 +345,22 @@ class SynapsePanel(QtWidgets.QWidget):
         # answers for (the model that produces results in this panel).
         self._author_lbl = c.label("", role="caption")
         self._author_lbl.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
-        self._author_lbl.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL))
+        self._author_lbl.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, scale=self._chrome_scale))
         self._author_lbl.setText(self._author_token())
         self._foot_dot = c.StatusDot("disconnected")
-        self._foot_label = c.label("Not connected", role="caption")
+        self._foot_label = c.label("Not connected", role="caption", scale=self._chrome_scale)
         self._foot_label.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+        # Force-connect the bridge server (the hwebserver serving /synapse for
+        # external MCP clients + the /mcp endpoint the tool executor uses). The
+        # panel's chat runs in-process, but tools + external tools need this up,
+        # and it does NOT auto-start — this button is the one-click way to force
+        # it without dropping into Houdini's Python Shell.
+        self._connect_btn = c.Button("Connect", variant="ghost")
+        self._connect_btn.setToolTip(
+            "Start the Synapse bridge server (port 9999) so external / MCP tools "
+            "can reach Houdini. Safe to click anytime — idempotent."
+        )
+        self._connect_btn.clicked.connect(self._on_connect)
         self._observe = QtWidgets.QWidget()
         self._observe.setObjectName("DsRailMeter")
         self._observe.setAttribute(Qt.WA_StyledBackground, True)
@@ -330,16 +374,136 @@ class SynapsePanel(QtWidgets.QWidget):
         bot.addWidget(self._author_lbl)
         bot.addWidget(self._foot_dot)
         bot.addWidget(self._foot_label)
+        bot.addWidget(self._connect_btn)
         bot.addWidget(self._observe, 1)
         bot.addWidget(self._stop_btn)
         col.addLayout(bot)
         return w
 
+    def _on_connect(self):
+        """Force-start the Synapse bridge server — the hwebserver that serves the
+        /synapse WS for external MCP clients and the /mcp endpoint the panel's
+        tool executor talks to. Idempotent (a no-op if already running), runs the
+        native server in the background (non-blocking), and reports the outcome in
+        the chat. Degrades gracefully outside Houdini (no hwebserver)."""
+        try:
+            from synapse.server.hwebserver_adapter import start_hwebserver, get_health
+        except Exception as exc:
+            self._announce_bridge("Bridge unavailable — it needs to run inside "
+                                  "Houdini (%s)." % exc)
+            return
+        try:
+            start_hwebserver(port=9999)
+            health = get_health()
+            if health.get("running"):
+                self._announce_bridge("Bridge running on :%s — external / MCP tools "
+                                      "can now reach Houdini." % health.get("port", 9999))
+            else:
+                self._announce_bridge("Bridge did not report running — check the "
+                                      "Houdini console for details.")
+        except Exception as exc:
+            self._announce_bridge("Couldn't start the bridge: %s" % exc)
+        self._refresh_bridge_state()
+
+    def _announce_bridge(self, msg):
+        """Surface a bridge status line in the chat; never raise."""
+        try:
+            self._chat.append_system_message(msg)
+        except Exception:
+            pass
+
+    def _refresh_bridge_state(self):
+        """Reflect the live bridge state on the Connect button — once the server
+        is up the button reads 'Bridge ✓' (still clickable to re-confirm). Best
+        effort: any failure leaves the default 'Connect'."""
+        running = False
+        try:
+            from synapse.server.hwebserver_adapter import is_running
+            running = bool(is_running())
+        except Exception:
+            running = False
+        btn = getattr(self, "_connect_btn", None)
+        if btn is not None:
+            btn.setText("Bridge ✓" if running else "Connect")
+            btn.setToolTip(
+                "Synapse bridge is running on :9999. Click to re-confirm."
+                if running else
+                "Start the Synapse bridge server (port 9999) so external / MCP "
+                "tools can reach Houdini. Safe to click anytime — idempotent."
+            )
+
+    def _build_model_bar(self):
+        """Model selection, made APPARENT (Image #6). A segmented Claude·Gemini
+        control whose active engine reads as a filled SIGNAL pill, plus a
+        prominent model-id chip — the switch used to be buried two levels deep
+        in the ⋯ menu. Display/telemetry only; the pick takes effect on the NEXT
+        message (same contract as the old menu switch)."""
+        w = self._section()
+        lay = QtWidgets.QHBoxLayout(w)
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        lay.setSpacing(t.SPACE_SM)
+        lbl = c.label("ENGINE", role="caption")
+        lbl.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_SMALL, scale=self._chrome_scale))
+        self._engine_lbl = lbl
+        lay.addWidget(lbl)
+        self._engine_pills = {}
+        try:
+            from synapse.panel.providers.registry import PROVIDER_IDS, PROVIDER_LABELS
+            ids, labels = PROVIDER_IDS, PROVIDER_LABELS
+        except Exception:
+            ids, labels = ("claude",), {"claude": "Claude"}
+        for pid in ids:
+            seg = QtWidgets.QPushButton(labels.get(pid, pid))
+            seg.setObjectName("DsSeg")
+            seg.setCursor(Qt.PointingHandCursor)
+            seg.clicked.connect(lambda _=False, p=pid: self._set_provider(p))
+            lay.addWidget(seg)
+            self._engine_pills[pid] = seg
+        lay.addStretch(1)
+        # prominent model-id readout (e.g. 'sonnet-4.6') — the chip Image #6 asks
+        # for; cost is intentionally omitted (the worker doesn't surface usage yet,
+        # so a cost figure would be fabricated).
+        # Clickable model picker — a SHORT model label + a ▾ affordance; opens a
+        # menu of the active engine's models (Opus/Sonnet/Haiku/Fable for Claude).
+        # Styled by the QSS #DsModelChip rule (caption-size, so the long NVIDIA
+        # ids no longer dominate the panel).
+        self._model_chip = QtWidgets.QPushButton(self._model_chip_text())
+        self._model_chip.setObjectName("DsModelChip")
+        self._model_chip.setCursor(Qt.PointingHandCursor)
+        self._model_chip.setFlat(True)
+        self._model_chip.setToolTip("Switch model")
+        self._model_chip.clicked.connect(self._open_model_menu)
+        lay.addWidget(self._model_chip)
+        self._refresh_engine_selector()
+        return w
+
+    def _refresh_engine_selector(self):
+        """Paint the active engine (filled pill) + the model chip from the live
+        provider id. Idempotent; safe before the bar is built."""
+        cur = getattr(self, "_provider_id", "claude")
+        for pid, seg in getattr(self, "_engine_pills", {}).items():
+            seg.setProperty("active", pid == cur)
+            c.repolish(seg)
+        chip = getattr(self, "_model_chip", None)
+        if chip is not None:
+            try:
+                chip.setText(self._model_chip_text())
+            except Exception:
+                pass
+        # keep the rail author signature in sync too — a MODEL switch (not just a
+        # provider switch) must update it (its docstring promises this).
+        lbl = getattr(self, "_author_lbl", None)
+        if lbl is not None:
+            try:
+                lbl.setText(self._author_token())
+            except Exception:
+                pass
+
     def _build_context_ribbon(self):
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_XS, t.SPACE_MD, t.SPACE_XS)
-        self._ctx_label = c.label("no scene context", role="label")
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        self._ctx_label = c.label("no scene context", role="label", scale=self._chrome_scale)
         lay.addWidget(self._ctx_label)
         lay.addStretch(1)
         return w
@@ -351,20 +515,29 @@ class SynapsePanel(QtWidgets.QWidget):
             self._chat = QtWidgets.QTextBrowser()
         if hasattr(self._chat, "node_clicked"):
             self._chat.node_clicked.connect(self._on_node_clicked)
+        # Apply the host-matched scale BEFORE the greeting renders, so even the
+        # first line is at Houdini's body size.
+        try:
+            self._chat.font_scale = self._font_scale
+        except Exception:
+            pass
         try:
             self._chat.append_system_message(
                 "Ready. What are we building?"
             )
         except Exception:
             pass
-        self._chat.setMinimumHeight(380)  # a tall, dominant chat window
+        # The chat is the dominant surface via stretch (it expands to fill), so
+        # its MINIMUM is kept low — a high min here was what summed past the pane
+        # height and clipped the input/Send row at short pane sizes.
+        self._chat.setMinimumHeight(80)
         self._converse_stack = QtWidgets.QStackedWidget()
         self._converse_stack.addWidget(self._chat)              # page 0: chat
         self._converse_stack.addWidget(self._build_hda_form())  # page 1: Build HDA
         self._converse_stack.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
         )
-        self._converse_stack.setMinimumHeight(380)
+        self._converse_stack.setMinimumHeight(80)
         return self._converse_stack
 
     # the two tabs, in switcher order (v9: Review folded into Work's done state)
@@ -376,8 +549,8 @@ class SynapsePanel(QtWidgets.QWidget):
         (the same-pane law)."""
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, 0)
-        lay.setSpacing(t.SPACE_XS)
+        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_XS)
+        lay.setSpacing(t.SPACE_SM)
         self._face_pills = {}
         for face, text in (("direct", "Direct"), ("work", "Work")):
             pill = c.Pill(text)
@@ -398,7 +571,10 @@ class SynapsePanel(QtWidgets.QWidget):
         self._faces.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
         )
-        self._faces.setMinimumHeight(380)
+        # Low floor so the faces stack (Direct = chat + act + input) never forces
+        # the panel taller than a short pane and clips the Send row. The chat's
+        # stretch keeps it dominant at normal heights.
+        self._faces.setMinimumHeight(160)
         return self._faces
 
     def _build_direct_face(self):
@@ -488,18 +664,93 @@ class SynapsePanel(QtWidgets.QWidget):
         stack.setCurrentIndex(1 if state == "done" else 0)
         self._work_substate = state
 
+    def _host_font_scale(self):
+        """Base font-scale = the host UI font size, EXACTLY. The panel starts at
+        Houdini's own default text size on any display/DPI (a larger host font
+        starts the content larger, a smaller one smaller) — "default Houdini UI
+        font size to start". No readability floor: the Aa control lifts it from
+        there, but startup never reads larger than the host. ``QFontInfo``
+        resolves the actual pixel size whether set in points or pixels; headless
+        (no QApplication) falls back to the token default."""
+        try:
+            app = QtWidgets.QApplication.instance()
+            if app is not None:
+                host_px = QtGui.QFontInfo(app.font()).pixelSize()
+                if host_px and host_px > 0:
+                    return host_px / float(t.SIZE_BODY)
+        except Exception:
+            pass
+        return t.FONT_SCALE_DEFAULT
+
+    def _model_chip_text(self):
+        """Short, readable chip label for the active model (e.g. 'Sonnet 4.6'),
+        NOT the raw model id (which is long enough to dominate the panel)."""
+        try:
+            from synapse.panel.providers.registry import model_label
+            pid = getattr(self, "_provider_id", "claude")
+            lbl = model_label(pid, self._active_model())
+        except Exception:
+            lbl = self._author_token()
+        return (lbl or "model") + "  ▾"
+
     def _active_model(self):
-        """Model id of the active engine, from registry data (no network)."""
+        """Model id of the active engine — the picked model for this provider,
+        else the registry default (no network)."""
+        pid = getattr(self, "_provider_id", "claude")
+        picked = getattr(self, "_model_by_provider", {}).get(pid)
+        if picked:
+            return picked
         try:
             from synapse.panel.providers import registry as reg
-            pid = getattr(self, "_provider_id", "claude")
-            return reg.GEMINI_MODEL if pid == "gemini" else reg.ANTHROPIC_MODEL
+            return reg.default_model(pid)
         except Exception:
             try:
                 from synapse.panel.claude_worker import _MODEL
                 return _MODEL
             except Exception:
                 return ""
+
+    def _model_menu_items(self):
+        """``(model_id, label, active)`` rows for the active provider's picker —
+        the exact data the model menu renders; exposed for the readability
+        audit so the picker is gate-checkable offscreen."""
+        try:
+            from synapse.panel.providers import registry as reg
+        except Exception:
+            return []
+        pid = getattr(self, "_provider_id", "claude")
+        cur = self._active_model()
+        return [(mid, lbl, mid == cur) for mid, lbl in reg.models_for(pid)]
+
+    def _open_model_menu(self):
+        """Drop the model picker for the active engine — switching Anthropic
+        models (Opus/Sonnet/Haiku/Fable) is now apparent, not hidden."""
+        items = self._model_menu_items()
+        if not items:
+            return
+        menu = QtWidgets.QMenu(self)
+        for mid, lbl, active in items:
+            act = menu.addAction("%s   %s" % (lbl, mid))
+            act.setCheckable(True)
+            act.setChecked(active)
+            act.triggered.connect(lambda _=False, m=mid: self._set_model(m))
+        chip = getattr(self, "_model_chip", None)
+        anchor = chip if chip is not None else self
+        pos = anchor.mapToGlobal(QtCore.QPoint(0, anchor.height()))
+        menu.exec(pos) if hasattr(menu, "exec") else menu.exec_(pos)
+
+    def _set_model(self, model_id):
+        """Pick a model for the active engine. Takes effect on the NEXT message;
+        the chip + author token update now. Display/telemetry only."""
+        pid = getattr(self, "_provider_id", "claude")
+        self._model_by_provider[pid] = model_id
+        self._refresh_engine_selector()
+        try:
+            from synapse.panel.providers.registry import model_label
+            self._chat.append_system_message(
+                "Model set to %s." % model_label(pid, model_id))
+        except Exception:
+            pass
 
     def _author_token(self):
         """Best-effort display signature of the active engine's model, e.g.
@@ -508,6 +759,17 @@ class SynapsePanel(QtWidgets.QWidget):
         m = self._active_model()
         if not m:
             return ""
+        # Prefer the registry's curated short label — it handles Haiku's dated id
+        # (claude-haiku-4-5-20251001 → 'Haiku 4.5', not 'haiku-4.5.20251001') and
+        # the long slash-bearing NVIDIA ids cleanly. Fall back to the claude-
+        # string surgery only for an unknown (non-registry) model id.
+        try:
+            from synapse.panel.providers.registry import model_label, models_for
+            pid = getattr(self, "_provider_id", "claude")
+            if m in {mid for mid, _ in models_for(pid)}:
+                return model_label(pid, m)
+        except Exception:
+            pass
         if m.startswith("claude-"):
             m = m[len("claude-"):]
             for fam in ("opus", "sonnet", "haiku"):
@@ -522,12 +784,8 @@ class SynapsePanel(QtWidgets.QWidget):
         rail author token updates immediately. Display/telemetry only — never
         touches USD/customData."""
         self._provider_id = provider_id
-        lbl = getattr(self, "_author_lbl", None)
-        if lbl is not None:
-            try:
-                lbl.setText(self._author_token())
-            except Exception:
-                pass
+        # _refresh_engine_selector repaints the pills + chip AND the rail author.
+        self._refresh_engine_selector()
         try:
             from synapse.panel.providers.registry import PROVIDER_LABELS
             self._chat.append_system_message(
@@ -540,7 +798,9 @@ class SynapsePanel(QtWidgets.QWidget):
         falls back to its own Claude default (graceful degradation)."""
         try:
             from synapse.panel.providers.registry import build_provider
-            return build_provider(getattr(self, "_provider_id", "claude"))
+            pid = getattr(self, "_provider_id", "claude")
+            model = getattr(self, "_model_by_provider", {}).get(pid)
+            return build_provider(pid, model=model)
         except Exception:
             return None
 
@@ -634,6 +894,12 @@ class SynapsePanel(QtWidgets.QWidget):
         gen = c.Button("Generate HDA", variant="primary")
         gen.clicked.connect(self._on_build_hda)
         lay.addWidget(gen)
+        # Back to the conversation — Build HDA is an inner view of Direct, and
+        # without an explicit way out it reads as a dead-end (artist feedback).
+        back = c.Button("Main menu", variant="secondary")
+        back.setToolTip("Back to the conversation")
+        back.clicked.connect(lambda: self._set_direct_view("chat"))
+        lay.addWidget(back)
         lay.addStretch(1)
         return page
 
@@ -728,10 +994,8 @@ class SynapsePanel(QtWidgets.QWidget):
             "Aa", lambda _=False: self._cycle_font_scale())
         self._font_btn.setToolTip("Font size — click to cycle")
         lay.addWidget(self._font_btn)
-        self._more_btn = self._verb(
-            "⌘K", lambda _=False: self._open_palette(), tone="accent")
-        self._more_btn.setToolTip("Command palette — every tool, two axes")
-        lay.addWidget(self._more_btn)
+        # ⌘K is folded into the input ("/" opens it; Ctrl+K still works) — no
+        # separate, unintuitive glyph button in the bar.
         return w
 
     def _build_input(self):
@@ -740,7 +1004,12 @@ class SynapsePanel(QtWidgets.QWidget):
         col.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, t.SPACE_SM)
         col.setSpacing(t.SPACE_XS)
         self._input = _GrowingInput()
+        # The prompt scales with the Aa content scale via a widget-level sheet
+        # (overrides the root QSS font-size for this widget only); chrome stays put.
+        self._input.setStyleSheet("QTextEdit#DsInput { font-size: %dpx; }"
+                                  % t.scaled(t.SIZE_UI, self._font_scale))
         self._input.submitted.connect(self._on_submit)
+        self._input.slash.connect(self._open_palette)   # "/" → command palette
         col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
         row = QtWidgets.QHBoxLayout()
         row.setSpacing(t.SPACE_SM)
@@ -826,15 +1095,35 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
         menu.addAction("Larger text", lambda: self._set_scale(1.15))
-        menu.addAction("Default text", lambda: self._set_scale(1.0))
+        menu.addAction("Default text", lambda: self._set_scale(self._chrome_scale))
         menu.exec(QtGui.QCursor.pos()) if hasattr(menu, "exec") else menu.exec_(QtGui.QCursor.pos())
 
     def _set_scale(self, scale):
+        """The Aa control scales CONTENT only — the dialogue and the prompt.
+        Chrome (header, labels, pills, buttons, palette) was built once at the
+        host UI size and is deliberately NOT rebuilt here, so the panel never
+        jumps or reflows when the artist changes reading size."""
         self._font_scale = scale
-        self.setStyleSheet(qss.stylesheet(scale))
-        if hasattr(self._chat, "font_scale"):
+        self._apply_content_scale()
+
+    def _apply_content_scale(self):
+        """Push the content font-scale to the two surfaces the artist reads and
+        writes: the chat document default (dialogue + streamed tokens) and the
+        prompt input. The prompt uses a widget-level stylesheet — a widget's own
+        sheet overrides the inherited root QSS font-size for that widget only, so
+        the chrome around it stays put. Defensive: safe before either is built."""
+        sc = self._font_scale
+        chat = getattr(self, "_chat", None)
+        if chat is not None and hasattr(chat, "font_scale"):
             try:
-                self._chat.font_scale = scale
+                chat.font_scale = sc
+            except Exception:
+                pass
+        inp = getattr(self, "_input", None)
+        if inp is not None:
+            try:
+                inp.setStyleSheet("QTextEdit#DsInput { font-size: %dpx; }"
+                                  % t.scaled(t.SIZE_UI, sc))
             except Exception:
                 pass
 
@@ -845,16 +1134,22 @@ class SynapsePanel(QtWidgets.QWidget):
         try:
             nxt = steps[(steps.index(cur) + 1) % len(steps)]
         except ValueError:
-            nxt = t.FONT_SCALE_DEFAULT
+            # cur is the host-derived base (not on the ladder) — step to the next
+            # size ABOVE it so the first Aa press never SHRINKS below the
+            # host-matched body; wrap to the smallest if already at/above the top.
+            above = [s for s in steps if s > cur + 1e-6]
+            nxt = above[0] if above else steps[0]
         self._set_scale(nxt)
 
     def _open_palette(self):
         try:
             from synapse.panel.tool_palette import ToolPalette
-            pal = ToolPalette(self)
+            pal = ToolPalette(self, scale=getattr(self, "_chrome_scale", t.FONT_SCALE_DEFAULT))
             pal.command_selected.connect(self._on_tool_picked)
             self._palette = pal  # keep a ref
-            self._position_popup(pal, getattr(self, "_more_btn", None))
+            # anchor to the input (the ⌘K button is gone — "/" in the input and
+            # Ctrl+K are the triggers now)
+            self._position_popup(pal, getattr(self, "_input", None))
             pal.show()
             pal.raise_()
             pal.activateWindow()
@@ -865,8 +1160,8 @@ class SynapsePanel(QtWidgets.QWidget):
     def _position_popup(self, popup, anchor):
         """Place a Qt.Popup the SideFX way: anchored to the widget that opened
         it, on that widget's screen, fully visible. The palette is tall and the
-        'more' button sits low in the panel, so prefer opening UPWARD from the
-        button — falling back to downward only when there's no room above."""
+        input row sits low in the panel, so prefer opening UPWARD from the anchor
+        — falling back to downward only when there's no room above."""
         popup.adjustSize()
         sz = popup.size()
         if sz.width() < popup.minimumWidth() or sz.height() < popup.minimumHeight():
@@ -879,6 +1174,14 @@ class SynapsePanel(QtWidgets.QWidget):
         if screen is None:
             screen = QtWidgets.QApplication.primaryScreen()
         avail = screen.availableGeometry()
+        # never let the popup exceed the screen, or the on-screen clamp below
+        # would invert (top > bottom) and push a too-tall popup partly off the
+        # display. The minimum size is already screen-clamped at construction;
+        # this caps the adjustSize() result too.
+        if sz.width() > avail.width() or sz.height() > avail.height():
+            sz = QtCore.QSize(min(sz.width(), avail.width()),
+                              min(sz.height(), avail.height()))
+            popup.resize(sz)
         if anchor is not None:
             tl = anchor.mapToGlobal(QtCore.QPoint(0, 0))
             x = tl.x()

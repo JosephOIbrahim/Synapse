@@ -9,12 +9,17 @@ until this document is updated.
 
 ## Remote endpoints
 
-Two remote hosts exist in first-party code:
+Three remote hosts exist in first-party code:
 
 - `api.anthropic.com:443` (TLS, `POST /v1/messages`) — the Claude lanes.
 - `generativelanguage.googleapis.com:443` (TLS, `POST …:streamGenerateContent`)
   — the **optional** Gemini panel provider, dormant unless the artist switches
   the panel to Gemini.
+- `integrate.api.nvidia.com:443` (TLS, `POST /v1/chat/completions`) — the
+  **optional** NVIDIA / Nemotron panel provider, dormant unless the artist
+  switches the panel to Nemotron. Endpoint-overridable via `NVIDIA_BASE_URL`
+  (OpenRouter / Ollama-cloud / self-hosted vLLM/NIM) — the default is the
+  NVIDIA NIM cloud above.
 
 Call sites:
 
@@ -22,6 +27,7 @@ Call sites:
 |---|---|---|
 | Panel worker (Claude) | `python/synapse/panel/claude_worker.py` → `panel/providers/anthropic_provider.py` | stdlib `http.client.HTTPSConnection`, streaming |
 | Panel worker (Gemini) | `claude_worker.py` → `panel/providers/gemini_provider.py` | stdlib `http.client.HTTPSConnection`, streaming SSE |
+| Panel worker (Nemotron) | `claude_worker.py` → `panel/providers/nemotron_provider.py` | stdlib `http.client.HTTPSConnection`, streaming SSE (OpenAI-compatible) |
 | Host daemon agent loop | `host/daemon.py` → `cognitive/agent_loop.py` | vendored `anthropic` SDK |
 | Routing tiers 2/3 | `routing/router.py` | `anthropic` SDK |
 
@@ -45,6 +51,9 @@ anywhere in the codebase.
 - The **GEMINI_API_KEY** (Gemini provider only) — leaves only as the
   `x-goog-api-key` auth header to `generativelanguage.googleapis.com`, never
   inside payloads.
+- The **NVIDIA_API_KEY** (Nemotron provider only) — leaves only as the
+  `Authorization: Bearer` auth header to the `NVIDIA_BASE_URL` host
+  (`integrate.api.nvidia.com` by default), never inside payloads.
 - The **memory store ciphertext** — at-rest only.
 - **Viewport/render pixels** — `capture_viewport` and render tools return
   *path strings*, not image bytes.

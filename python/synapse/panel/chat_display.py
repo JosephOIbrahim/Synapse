@@ -21,11 +21,15 @@ from synapse.panel.message_formatter import (
     format_timestamp_divider,
 )
 from synapse.panel.styles import get_chat_display_stylesheet
-from synapse.panel import tokens as t
+from synapse.panel.designsystem import tokens as t
 
 # Grouping window: messages from the same sender within this many seconds
 # are grouped together (no repeated label, tight margin).
 _GROUP_WINDOW_S = 60
+
+# Chat-local layout (was tokens.CHAT_BUBBLE_MARGIN_Y; inlined so chat_display
+# sources nothing from the ~/.synapse/design bridge — see designsystem.tokens).
+_BUBBLE_MARGIN_Y = 2  # px between grouped messages
 
 
 def _format_time(epoch):
@@ -71,7 +75,7 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         self.setOpenExternalLinks(False)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setStyleSheet(get_chat_display_stylesheet())
+        self.setStyleSheet(get_chat_display_stylesheet(self._font_scale))
 
         # Connect anchor clicks
         self.anchorClicked.connect(self._on_anchor_clicked)
@@ -88,6 +92,13 @@ class ChatDisplay(QtWidgets.QTextBrowser):
     @font_scale.setter
     def font_scale(self, value):
         self._font_scale = value
+        # Re-apply the base stylesheet so the QTextBrowser document default (and
+        # thus streamed plain-text tokens) tracks the new scale. Already-rendered
+        # messages keep their baked inline sizes — new messages use the new scale.
+        try:
+            self.setStyleSheet(get_chat_display_stylesheet(value))
+        except Exception:
+            pass
 
     # -- Grouping helpers ----------------------------------------------------
 
@@ -294,10 +305,10 @@ class ChatDisplay(QtWidgets.QTextBrowser):
             '</span></div>'
         ).format(
             sig=t.SIGNAL,
-            dim=t.TEXT_DIM,
+            dim=t.TEXT_SECONDARY,
             sz=int(t.SIZE_SMALL * self._font_scale),
             dots=dots,
-            my=t.CHAT_BUBBLE_MARGIN_Y,
+            my=_BUBBLE_MARGIN_Y,
         )
         cursor = self.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)

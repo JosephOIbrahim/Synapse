@@ -81,11 +81,31 @@ QPushButton#DsPill[active="true"] {{
     color: {t.TEXT_ACCENT}; border-bottom: 2px solid {t.SIGNAL};
 }}
 
+/* ---- engine selector: a segmented control (model selection must be
+   APPARENT, not buried in the ⋯ menu) — the active engine is a SIGNAL fill --- */
+QPushButton#DsSeg {{
+    background: {t.SURFACE}; color: {t.TEXT_SECONDARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_PILL}px;
+    padding: 3px {t.SPACE_MD}px;
+    font-size: {s(t.SIZE_SMALL)}px; font-weight: 600;
+}}
+QPushButton#DsSeg:hover {{ color: {t.TEXT_PRIMARY}; border-color: {t.BORDER_STRONG}; }}
+QPushButton#DsSeg[active="true"] {{
+    background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT}; border-color: {t.SIGNAL};
+}}
+
+/* ---- model picker chip — small label + ▾, NOT the dominant element ---- */
+QPushButton#DsModelChip {{
+    background: transparent; border: none; padding: 0 {t.SPACE_XS}px;
+    color: {t.TEXT_BRIGHT}; font-size: {s(t.SIZE_SMALL)}px; font-weight: 600;
+}}
+QPushButton#DsModelChip:hover {{ color: {t.TEXT_ACCENT}; }}
+
 /* ---- type-set verbs (Direct act bar + Review actions) — Mile 7 --- */
 /* Verbs read as type, not buttons: flat, mono, the chrome recedes. */
 QPushButton#DsVerb {{
     background: transparent; border: none; padding: 2px 0;
-    color: {t.TEXT_SECONDARY}; font-family: {t.FONT_MONO_CSS};
+    color: {t.TEXT_SECONDARY};
     font-size: {s(11)}px;
 }}
 QPushButton#DsVerb:hover {{ color: {t.TEXT_ACCENT}; }}
@@ -97,7 +117,7 @@ QPushButton#DsVerb[tone="accent"] {{ color: {t.TEXT_ACCENT}; }}
 QPushButton#DsChip {{
     background: transparent; color: {t.TEXT_TERTIARY};
     border: none; border-radius: {t.RADIUS_SM}px; padding: 3px 8px;
-    font-family: {t.FONT_MONO_CSS}; font-size: {s(10)}px;
+    font-size: {s(10)}px;
 }}
 QPushButton#DsChip:hover {{ color: {t.TEXT_SECONDARY}; }}
 QPushButton#DsChip[active="true"] {{ background: {t.SIGNAL_TINT}; color: {t.TEXT_ACCENT}; }}
@@ -122,7 +142,7 @@ QWidget#DsCard[tone="critical"] {{ border-color: {t.ERROR}; }}
 /* ---- badges / chips ------------------------------------------ */
 QLabel#DsBadge {{
     border-radius: {t.RADIUS_SM}px; padding: 1px {t.SPACE_SM}px;
-    font-family: {t.FONT_MONO_CSS}; font-size: {s(t.SIZE_MICRO)}px; font-weight: 600;
+    font-size: {s(t.SIZE_MICRO)}px; font-weight: 600;
     background: {t.RAISED}; color: {t.TEXT_SECONDARY};
 }}
 QLabel#DsBadge[kind="grow"]  {{ color: {t.GROW};  background: {t.STATE_TINTS["grow"]}; }}

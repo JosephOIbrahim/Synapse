@@ -519,13 +519,20 @@ def get_mode_toolbar_stylesheet():
     )
 
 
-def get_chat_display_stylesheet():
-    """Chat display QTextBrowser: spacious padding for conversational feel."""
+def get_chat_display_stylesheet(scale=1.0):
+    """Chat display QTextBrowser: spacious padding for conversational feel.
+
+    ``scale`` drives the QTextBrowser BASE font-size (the document default), so
+    streamed plain-text tokens — which carry no inline size — render at the
+    scaled body size instead of a fixed 11px. ChatDisplay re-applies this on a
+    font-scale change."""
+    t = _ds  # off the ~/.synapse/design bridge — render from the vendored design system
     return (
+        # No font-family — the chat body INHERITS Houdini's native UI font so the
+        # conversation reads as a built-in panel, not a web app (was Space Grotesk).
         "QTextBrowser {{"
         "  background: {bg};"
         "  color: {fg};"
-        "  font-family: '{sans}', 'Segoe UI', sans-serif;"
         "  font-size: {sz}px;"
         "  border: 1px solid {border};"
         "  border-radius: 4px;"
@@ -551,7 +558,7 @@ def get_chat_display_stylesheet():
         "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{"
         "  background: transparent;"
         "}}".format(
-            bg=t.VOID, fg=t.SILVER, sz=t.SIZE_SMALL, sans=t.FONT_SANS,
+            bg=t.GROUND, fg=t.SILVER, sz=t.scaled(t.SIZE_BODY, scale),
             border=t.GRAPHITE, pad=t.SPACE_MD, white=t.WHITE,
             scrollbar=t.GRAPHITE, scrollhover=t.SLATE,
         )
@@ -702,14 +709,16 @@ def animate_stack_transition(stacked_widget, new_index, duration_ms=200):
 
 def get_gate_widget_stylesheet():
     """Container for gate proposals + integrity bar."""
+    t = _ds  # off-bridge: vendored design system
     return (
         "background: {bg}; border: 1px solid {border}; "
-        "border-radius: 4px;".format(bg=t.VOID, border=t.GRAPHITE)
+        "border-radius: 4px;".format(bg=t.GROUND, border=t.GRAPHITE)
     )
 
 
 def get_gate_card_stylesheet(level_color):
     """Proposal card with colored left stripe indicating gate level."""
+    t = _ds  # off-bridge: vendored design system
     return (
         "QFrame {{"
         "  background: {bg};"
@@ -717,12 +726,13 @@ def get_gate_card_stylesheet(level_color):
         "  border-left: 3px solid {lc};"
         "  border-radius: 4px;"
         "  margin: 2px 0;"
-        "}}".format(bg=t.CARBON, lc=level_color)
+        "}}".format(bg=t.SURFACE, lc=level_color)
     )
 
 
 def get_gate_badge_stylesheet(color):
     """Small badge showing gate level name."""
+    t = _ds  # off-bridge: vendored design system
     return (
         "background: {c}20; color: {c}; border: 1px solid {c}40; "
         "border-radius: 3px; padding: 1px 6px; "
@@ -735,6 +745,7 @@ def get_gate_badge_stylesheet(color):
 
 def get_gate_approve_btn_stylesheet():
     """Green outlined approve button."""
+    t = _ds  # off-bridge: vendored design system
     return (
         "QPushButton {{"
         "  background: transparent;"
@@ -757,6 +768,7 @@ def get_gate_approve_btn_stylesheet():
 
 def get_gate_reject_btn_stylesheet():
     """Red outlined reject button."""
+    t = _ds  # off-bridge: vendored design system
     return (
         "QPushButton {{"
         "  background: transparent;"
@@ -778,9 +790,10 @@ def get_gate_reject_btn_stylesheet():
 
 def get_integrity_bar_stylesheet():
     """Single-row integrity status bar."""
+    t = _ds  # off-bridge: vendored design system
     return (
         "background: {bg}; border-top: 1px solid {border};".format(
-            bg=t.VOID, border=t.GRAPHITE
+            bg=t.GROUND, border=t.GRAPHITE
         )
     )
 
