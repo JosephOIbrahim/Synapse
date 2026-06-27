@@ -10,8 +10,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-3665%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.16.0-1e293b.svg" alt="Changelog"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-3785%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.17.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 ---
@@ -23,7 +23,7 @@ A docked **SYNAPSE panel** inside Houdini. You type what you want — *"make a b
 - ⚡ **In-process** — the agent runs in Houdini's own Python; tools are direct `hou.*` calls, not a slow round-trip bridge.
 - ↩️ **Undo-safe** — everything it does is an ordinary Houdini action. **Ctrl+Z undoes it.** Every mutation leaves a provenance record.
 - 🔌 **Multi-provider** — pick **Claude · Gemini · NVIDIA Nemotron** right in the panel; swap engines mid-session.
-- 🎬 **Built for the work** — SOPs, **Solaris / USD, Karma, COPs, PDG / TOPs, MaterialX** — 112 tools.
+- 🎬 **Built for the work** — SOPs, **Solaris / USD, Karma, COPs, PDG / TOPs, MaterialX** — 113 tools.
 
 > ✅ *"make a box" → a real geo node, confirmed in graphical Houdini 21.0.671.*
 
@@ -31,17 +31,32 @@ A docked **SYNAPSE panel** inside Houdini. You type what you want — *"make a b
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
     ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>chat · engine pills · /"]:::panel
-    PANEL -->|"Claude · Gemini · Nemotron"| LOOP["Agent loop<br/>chosen engine + 112 tools"]:::panel
+    PANEL -->|"Claude · Gemini · Nemotron"| LOOP["Agent loop<br/>chosen engine + 113 tools"]:::panel
     LOOP -->|"tool_use"| EXEC["Tool executor<br/>(main thread)"]:::panel
     EXEC --> BR["Handler<br/>undo-wrapped · integrity"]:::bridge
     BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
+    BR -.provenance.-> LEDGER["Provenance ledger<br/>audit fsync off hot path"]:::side
+    BR -.timing.-> METRICS["Latency metrics<br/>histograms → Prometheus"]:::side
     classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
     classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
     classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
     classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
+    classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
 ```
 
 **The panel, briefly:** a persistent rail (live state + a real **Stop**), two tabs under a same-pane law (**Direct** chat · **Work** glance), an **`Aa`** control that scales only what you *read*, typography that inherits Houdini's own UI font, and a **`/`** command palette over every tool.
+
+---
+
+## ✦ New in v5.17.0
+
+Three things landed this release — all verified on **Houdini 21.0.671**:
+
+- 🛠️ **PDG perception bug fixed.** The AI can now watch PDG / TOPs cooks. A phantom event-handler call was crashing the cook-watcher on H21; it now uses the real Houdini idiom. *(Old "crash, fix pending" note — now fixed.)*
+- 🎯 **It double-checks Houdini's real parameter names instead of guessing.** Light and USD parameter spellings used to be guessed — sometimes wrong, so the value was *silently never set*. Now they're checked against live Houdini, so Solaris light and geometry params actually take. **One new tool** (set a USD *primvar*) brings the count to **113**.
+- 👁️ **You can see where the time goes.** New timing readouts across the live path. It turns out the AI's own thinking is ~95% of each step and the Houdini ops are 1–70ms — so the panel can now point at a slow step instead of leaving you guessing, and the audit-write that used to sit in the way moved out of it. *This is visibility, not a speed-up — nothing here makes Houdini run faster.*
+
+Plus forward-looking **Houdini 22 prep** — encoding clean-ups and ABI / compatibility guards so the eventual jump to H22 is less of a cliff. *(The H22 bits are prep, not yet tested on H22.)*
 
 ---
 
@@ -127,7 +142,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.16.0):** the artist panel (multi-provider, undo-safe, 112 tools, live observability), the in-process substrate, two-tier provenance, freeze-safety, bounded autonomy + a kill switch, and an H22-readiness harness. SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success, and the per-tool capability audit + the full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
+**Shipping (v5.17.0):** the artist panel (multi-provider, undo-safe, 113 tools, live observability + latency instrumentation), the in-process substrate, two-tier provenance with the audit write off the hot path, freeze-safety, bounded autonomy + a kill switch, live-grounded Solaris / USD parameter names, and an H22-readiness harness. SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success, and the per-tool capability audit + the full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
 
 ---
 
@@ -161,7 +176,7 @@ python/synapse/
 ├── core/timeouts.py            # THE canonical per-tool timeout table
 └── _vendor/                    # anthropic + deps, CP311 win_amd64
 
-tests/                          # 3665 local (~70 Moneta-gated, skip on a clean clone)
+tests/                          # 3785 local (~70 Moneta-gated, skip on a clean clone)
 harness/                        # H22 readiness — self-verifying loop
 docs/                           # installation · upgrade · egress · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
