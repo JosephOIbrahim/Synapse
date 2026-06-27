@@ -57,6 +57,56 @@ if (
     _synapse_sys.path.insert(0, _vendor_path)
 
 
+# ---------------------------------------------------------------------------
+# Vendored-SDK ABI risk detection (H22 / Python 3.12+ legibility)
+# ---------------------------------------------------------------------------
+# The block above prepends _vendor ONLY on Python 3.11 + Windows, because the
+# bundled native wheels (pydantic_core, jiter) are cp311-win_amd64. On a newer
+# Houdini (H22 = Python 3.12+ on Windows) the equality is False, _vendor is
+# skipped, and SYNAPSE silently falls back to whatever real pydantic/anthropic
+# the interpreter has installed. That fallback is CORRECT when a real install
+# exists (the test suite is green on stock Python 3.14 precisely because it
+# resolves a pip-installed pydantic) — so we must NOT widen the gate and must
+# NOT hard-raise here.
+#
+# What we DO: when we're on Windows with a non-3.11 interpreter and the (always
+# committed) _vendor tree is present, flag the configuration as RISKY and emit
+# one prominent, actionable warning. The vendored binaries can't be loaded by
+# this interpreter; if no real pydantic/anthropic is installed, the eventual
+# failure would be a cryptic deep ImportError far from here. The flag below
+# lets doctor/diagnostics surface the risk early; the warning points the
+# operator at the two known remediations (re-vendor, or the sidecar).
+_VENDOR_ABI_RISK: bool = (
+    _synapse_sys.platform.startswith("win")
+    and _synapse_sys.version_info[:2] != (3, 11)
+    and _synapse_os.path.isdir(_vendor_path)
+)
+
+if _VENDOR_ABI_RISK:
+    import warnings as _synapse_warnings
+
+    _py = (
+        f"{_synapse_sys.version_info.major}."
+        f"{_synapse_sys.version_info.minor}."
+        f"{_synapse_sys.version_info.micro}"
+    )
+    _synapse_warnings.warn(
+        "SYNAPSE vendored-SDK ABI mismatch: the bundled wheels under "
+        f"{_vendor_path} are cp311-win_amd64, but this interpreter is "
+        f"Python {_py} on Windows. The vendor tree is INACTIVE on this "
+        "Python, so SYNAPSE will rely on a real pip-installed "
+        "pydantic/anthropic. If those are absent, the brain (agent loop) "
+        "will fail later with a cryptic deep ImportError. Remediate by "
+        "re-vendoring for this Python (see python/synapse/_vendor/README.md) "
+        "or by using the out-of-process sidecar "
+        "(see harness/notes/gate-0.1-sidecar-vs-abi3.md). "
+        "Query synapse._VENDOR_ABI_RISK to detect this in diagnostics.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+    del _synapse_warnings, _py
+
+
 __title__ = "Synapse"
 __version__ = "5.15.0"
 __author__ = "Joseph Ibrahim"
