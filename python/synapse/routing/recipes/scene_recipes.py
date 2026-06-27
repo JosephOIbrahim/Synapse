@@ -51,6 +51,172 @@ def register_scene_recipes(registry):
         ],
     ))
 
+    # --- Solaris Scatter Instances (set-dressing) ---
+    # Closes the missing Solaris set-dressing capability. Builds a prototype
+    # component asset, brings SOP-scattered points into Solaris via sopimport
+    # (Solaris has NO native scatter LOP -- scatter is SOP-side then imported),
+    # merges the two stages, and authors a PointInstancer that scatters the
+    # prototype across the points.
+    #
+    # Verified-live on Houdini 21.0.671:
+    #   * LOP types used are all real: componentgeometry, componentoutput,
+    #     sopimport, merge (fact C). NO native Solaris scatter LOP exists.
+    #   * The PointInstancer is authored via create_usd_prim + set_usd_attribute
+    #     using RAW USD schema names (protoIndices, positions) -- never the
+    #     punycode (xn__) parm spellings. set_usd_attribute calls
+    #     prim.GetAttribute(name).Set under an `if attr:` guard, so a punycode
+    #     name would SILENTLY NO-OP; raw schema names are stable across
+    #     Houdini/USD builds (fact A) -> H22-safe.
+    #   * componentoutput already publishes its root prim as kind=component by
+    #     design, so the prototype's component kind needs no separate modify;
+    #     the set-dressing root is marked kind=assembly via modify_usd_prim.
+    #
+    # KNOWN GAP (recorded, not guessed): a PointInstancer's `prototypes` is a
+    # USD *relationship*, not an attribute -- set_usd_attribute cannot author it
+    # (GetAttribute returns invalid -> the `if attr:` no-op). Binding the
+    # prototype + writing the real per-point positions/protoIndices arrays is a
+    # follow-up (execute_python with CreateRelationship/Vt arrays, or wiring the
+    # `instancer` LOP). This template seeds a single-instance placeholder.
+    registry.register(Recipe(
+        name="solaris_scatter_instances",
+        description=(
+            "Solaris set-dressing: build a prototype component asset, import "
+            "SOP-scattered points into Solaris (no native scatter LOP), merge "
+            "the stages, then author a PointInstancer that scatters the "
+            "prototype across the points. USD attributes use RAW schema names "
+            "(protoIndices/positions), never punycode. Intended parent: /stage."
+        ),
+        triggers=[
+            r"^(?:solaris\s+)?set[\s\-]?dress(?:ing)?(?:\s+(?:at|in|under|on)\s+(?P<parent>.+))?$",
+            r"^(?:scatter|instance)\s+(?:instances?|prototypes?|assets?)(?:\s+(?:on|onto|across|over|in|at|under)\s+(?P<parent>.+))?$",
+            r"^(?:set up|setup|create|build)\s+(?:a\s+)?(?:point\s*)?instancer(?:\s+(?:at|in|under)\s+(?P<parent>.+))?$",
+        ],
+        parameters=["parent"],
+        gate_level=GateLevel.REVIEW,
+        category="set_dressing",
+        steps=[
+            # 1. Prototype component asset: componentgeometry -> componentoutput.
+            RecipeStep(
+                action="create_node",
+                payload_template={
+                    "type": "componentgeometry",
+                    "name": "prototype_geo",
+                    "parent": "{parent}",
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            RecipeStep(
+                action="create_node",
+                payload_template={
+                    "type": "componentoutput",
+                    "name": "prototype",
+                    "parent": "{parent}",
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            RecipeStep(
+                action="connect_nodes",
+                payload_template={
+                    "source": "{parent}/prototype_geo",
+                    "target": "{parent}/prototype",
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # 2. Scatter source: SOP scatter brought into Solaris via sopimport.
+            RecipeStep(
+                action="create_node",
+                payload_template={
+                    "type": "sopimport",
+                    "name": "scatter_points",
+                    "parent": "{parent}",
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # 3. Merge prototype + scatter-point stages.
+            RecipeStep(
+                action="create_node",
+                payload_template={
+                    "type": "merge",
+                    "name": "set_dressing_merge",
+                    "parent": "{parent}",
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            RecipeStep(
+                action="connect_nodes",
+                payload_template={
+                    "source": "{parent}/prototype",
+                    "target": "{parent}/set_dressing_merge",
+                    "target_input": 0,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            RecipeStep(
+                action="connect_nodes",
+                payload_template={
+                    "source": "{parent}/scatter_points",
+                    "target": "{parent}/set_dressing_merge",
+                    "target_input": 1,
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+            # 4. Set-dressing assembly root (kind=assembly), authored on the
+            #    merged stage.
+            RecipeStep(
+                action="create_usd_prim",
+                payload_template={
+                    "node": "{parent}/set_dressing_merge",
+                    "prim_path": "/set_dressing",
+                    "prim_type": "Xform",
+                },
+                gate_level=GateLevel.REVIEW,
+                output_var="root",
+            ),
+            RecipeStep(
+                action="modify_usd_prim",
+                payload_template={
+                    "node": "$root.created_node",
+                    "prim_path": "/set_dressing",
+                    "kind": "assembly",
+                },
+                gate_level=GateLevel.REVIEW,
+                output_var="asm",
+            ),
+            # 5. PointInstancer authored with RAW USD schema names.
+            RecipeStep(
+                action="create_usd_prim",
+                payload_template={
+                    "node": "$asm.created_node",
+                    "prim_path": "/set_dressing/instancer",
+                    "prim_type": "PointInstancer",
+                },
+                gate_level=GateLevel.REVIEW,
+                output_var="inst",
+            ),
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "node": "$inst.created_node",
+                    "prim_path": "/set_dressing/instancer",
+                    "usd_attribute": "protoIndices",
+                    "value": [0],
+                },
+                gate_level=GateLevel.REVIEW,
+                output_var="pi",
+            ),
+            RecipeStep(
+                action="set_usd_attribute",
+                payload_template={
+                    "node": "$pi.created_node",
+                    "prim_path": "/set_dressing/instancer",
+                    "usd_attribute": "positions",
+                    "value": [[0.0, 0.0, 0.0]],
+                },
+                gate_level=GateLevel.REVIEW,
+            ),
+        ],
+    ))
+
     # --- Null Controller ---
     registry.register(Recipe(
         name="null_controller",
