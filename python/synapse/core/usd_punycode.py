@@ -70,6 +70,26 @@ PUNYCODE_PARMS: Dict[str, str] = {
     "horizontal_aperture": "xn__inputshorizontalaperture_ohb",
     "vertical_aperture": "xn__inputsverticalaperture_gfb",
     "clipping_range": "xn__inputsclippingrange_e4b",
+    # ------------------------------------------------------------------
+    # UNVERIFIED — spotlight cone shaping. Migrated here from render_recipes.py
+    # — the LAST punycode literals that still lived OUTSIDE this single source —
+    # so they can no longer silently diverge. Both values are the EXACT strings
+    # render_recipes.py emitted before the move (ZERO behavior change today),
+    # but note the INCONSISTENT casing — lowercase ``coneangle`` vs camelCase
+    # ``coneSoftness`` — which is itself a strong signal that at least one is
+    # phantom. Neither is in
+    # ``harness/notes/verified_usdlux_encodings_21.0.671.json`` — re-probe a real
+    # SphereLight on a live host and correct (UsdLux surfaces
+    # ``inputs:shaping:cone:angle`` / ``inputs:shaping:cone:softness``, encoded
+    # like width/height above).
+    #
+    # NOTE: SphereLight ``radius`` is deliberately NOT added here. Its encoding
+    # is unprobed, and the single-source convention keeps unknown encodings OUT
+    # so ``encoded()`` returns None — a VISIBLE gap — rather than a guessed
+    # literal. Pinned by tests/test_solaris_guardrails.py
+    # (test_radius_gap_is_visible_not_silently_wrong; rule lop_sphere_radius_encoding).
+    "shaping_cone_angle": "xn__inputsshapingconeangle_hgbb",  # UNVERIFIED 21.0.671 — re-probe on live Houdini
+    "shaping_cone_softness": "xn__inputsshapingconeSoftness_jlbb",  # UNVERIFIED 21.0.671 — re-probe on live Houdini
 }
 
 

@@ -20,6 +20,8 @@ _P_ENABLE_TEMP = _enc("enable_temperature")
 _P_COLOR_TEMP = _enc("color_temperature")
 _P_NORMALIZE = _enc("normalize")
 _P_ANGLE = _enc("angle")
+_P_CONE_ANGLE = _enc("shaping_cone_angle")
+_P_CONE_SOFTNESS = _enc("shaping_cone_softness")
 
 
 def register_render_recipes(registry):
@@ -952,7 +954,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": "xn__inputsshapingconeangle_hgbb",
+                    "attribute_name": _P_CONE_ANGLE,
                     "value": "{cone_angle}",
                 },
                 gate_level=GateLevel.REVIEW,
@@ -962,7 +964,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": "xn__inputsshapingconeSoftness_jlbb",
+                    "attribute_name": _P_CONE_SOFTNESS,
                     "value": 0.1,
                 },
                 gate_level=GateLevel.REVIEW,
