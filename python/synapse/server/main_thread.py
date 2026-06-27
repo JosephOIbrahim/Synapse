@@ -86,6 +86,58 @@ def reset_dispatch_wait_stats():
             _dispatch_wait["buckets"][b] = 0
 
 
+# C6 (continued) — main-thread DIRECT-path instrumentation. The dominant live
+# panel/bridge path runs INLINE on the main thread and short-circuits run_on_main
+# at fast path 2 below, returning fn() without ever recording a dispatch-wait
+# sample. Result: dispatch_waits.count stays 0 on the path that matters — zero
+# attribution. This histogram times fn() on that direct path so the panel/bridge
+# path is finally attributed. Distinct sink from _dispatch_wait: that one is the
+# enqueue→start WAIT on the worker path; this one is the fn() DURATION on the main
+# thread (no queue, so wait is ~0). Same bucket scheme for read parity.
+_DIRECT_DURATION_BUCKETS_MS = (1, 5, 10, 50, 100, 250, 500, 1000, 2000, 4000)
+_direct_lock = threading.Lock()
+_main_thread_direct = {
+    "count": 0,
+    "sum_ms": 0.0,
+    "max_ms": 0.0,
+    "buckets": {b: 0 for b in _DIRECT_DURATION_BUCKETS_MS},
+}
+
+
+def _record_main_thread_direct(ms):
+    with _direct_lock:
+        _main_thread_direct["count"] += 1
+        _main_thread_direct["sum_ms"] += ms
+        if ms > _main_thread_direct["max_ms"]:
+            _main_thread_direct["max_ms"] = ms
+        for b in _DIRECT_DURATION_BUCKETS_MS:
+            if ms <= b:
+                _main_thread_direct["buckets"][b] += 1
+
+
+def main_thread_direct_stats():
+    """Snapshot of the main-thread direct-path fn() duration histogram
+    (copy — safe to serialize). Records the panel/bridge inline path that the
+    dispatch-wait histogram never sees."""
+    with _direct_lock:
+        return {
+            "count": _main_thread_direct["count"],
+            "sum_ms": _main_thread_direct["sum_ms"],
+            "max_ms": _main_thread_direct["max_ms"],
+            "buckets": dict(_main_thread_direct["buckets"]),
+        }
+
+
+def reset_main_thread_direct_stats():
+    """Test/diagnostic helper — zero the direct-path histogram."""
+    with _direct_lock:
+        _main_thread_direct["count"] = 0
+        _main_thread_direct["sum_ms"] = 0.0
+        _main_thread_direct["max_ms"] = 0.0
+        for b in _DIRECT_DURATION_BUCKETS_MS:
+            _main_thread_direct["buckets"][b] = 0
+
+
 def is_main_thread_stalled():
     """Return True if recent run_on_main calls have been timing out.
 
@@ -131,8 +183,15 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT):
     # delivered via AutoConnection). Deferring would deadlock because
     # the main thread is blocked in this function waiting for the
     # deferred callback, which can't fire until this function returns.
+    # C6: this is the dominant panel/bridge inline path — time fn() so it is
+    # attributed (the dispatch-wait histogram only sees the worker path). Cheap:
+    # one perf_counter pair; record on the way out even if fn() raises.
     if threading.current_thread().ident == _MAIN_THREAD_ID:
-        return fn()
+        _t_direct = time.perf_counter()
+        try:
+            return fn()
+        finally:
+            _record_main_thread_direct((time.perf_counter() - _t_direct) * 1000.0)
 
     import hdefereval
 
