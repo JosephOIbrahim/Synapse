@@ -37,7 +37,7 @@ PARAM_ALIASES: Dict[str, List[str]] = {
     # USD
     "prim_path": ["prim_path", "primPath"],
     "prim_type": ["prim_type", "primType"],
-    "usd_attribute": ["usd_attribute", "usd_attr_name", "attrName"],
+    "usd_attribute": ["usd_attribute", "attribute_name", "usd_attr_name", "attrName"],
 
     # Memory operations
     "query": ["query", "q", "search"],
