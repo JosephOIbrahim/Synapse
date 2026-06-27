@@ -228,14 +228,149 @@ def check_theme_ok(ctx):
     # Honest: theme correctness is screenshot + human review. Surface, don't fake-pass.
     return {"ok": False, "detail": "ADAPT/HUMAN: capture panel screenshot in host theme; flagged for visual review, not auto-passed"}
 
+
+def check_mcp_registered(ctx):
+    # D-H22-1: the APEX MCP is registered as a first-class provider and a round-trip tool call
+    # returns a truth-contract-shaped envelope (it carries what was OBSERVED). On H21 this
+    # exercises the provider against the mock. ADAPT: provider registry accessor + a benign tool.
+    code = ("import synapse\n"
+            "try:\n"
+            "    prov = synapse.providers.get('apex_mcp')  # ADAPT registry accessor\n"
+            "    env = prov.call_tool('ping', {})           # ADAPT a benign tool name\n"
+            "    ok = bool(prov) and isinstance(env, dict) and env.get('observed') is not None\n"
+            "    print('MCP-OK' if ok else 'MCP-NO')\n"
+            "except Exception as e:\n"
+            "    print('MCP-ERR', e)")
+    rc, out, err = hython(ctx["hython"], code, ctx["wt"])
+    return {"ok": "MCP-OK" in out, "detail": (out or err).strip()[:500]}
+
+def check_mcp_surface_probe(ctx):
+    # D-H22-4: introspect the native APEX MCP's ACTUAL tool list on the installed build, diff
+    # vs the recorded surface, and quarantine absent/renamed endpoints. Same discipline as
+    # apex_probes, aimed at the MCP's tool surface instead of hou.*. On H21 it points at the
+    # mock (science/mcp_mock.py); the diff should be ~empty — that empty diff proves the probe
+    # works before the drop makes it real.
+    # ADAPT: how mcp_surface_probe.py enumerates the MCP's tools + where it writes the delta.
+    runner = ctx["hython"] or sys.executable
+    rc, out, err = sh([runner, "science/mcp_surface_probe.py", "--diff", "--out",
+                       ".claude/mcp_surface_delta.json"], cwd=ctx["wt"])
+    p = Path(ctx["wt"]) / ".claude/mcp_surface_delta.json"
+    if rc != 0 or not p.exists():
+        return {"ok": False, "detail": (out or err).strip()[:400] or "mcp_surface_probe.py not wired — ADAPT science/mcp_surface_probe.py"}
+    try:
+        d = json.loads(p.read_text())
+        absent, renamed = d.get("absent", []), d.get("renamed", [])
+        ok = not absent and not renamed
+        return {"ok": ok, "detail": f"absent={len(absent)} renamed={len(renamed)} (both must be 0 before wiring)"}
+    except Exception as e:
+        return {"ok": False, "detail": str(e)[:300]}
+
+def check_mcp_truth_contract(ctx):
+    # The handler cannot claim an outcome it didn't observe, and the MCP's own validator verdict
+    # is recorded as a provenance INPUT — never restated as a Synapse claim. ADAPT: envelope fields.
+    code = ("import synapse\n"
+            "try:\n"
+            "    env = synapse.providers.get('apex_mcp').call_tool('validate', {'src': 'noop'})  # ADAPT\n"
+            "    observed = 'observed' in env\n"
+            "    no_overclaim = ('claimed' not in env) or (env.get('claimed') == env.get('observed'))\n"
+            "    verdict_is_input = 'validator_verdict' in env  # the MCP's verdict, carried not asserted\n"
+            "    ok = observed and no_overclaim and verdict_is_input\n"
+            "    print('TC-OK' if ok else 'TC-NO', {'observed': observed, 'verdict_input': verdict_is_input})\n"
+            "except Exception as e:\n"
+            "    print('TC-ERR', e)")
+    rc, out, err = hython(ctx["hython"], code, ctx["wt"])
+    return {"ok": "TC-OK" in out, "detail": (out or err).strip()[:500]}
+
+def check_no_rigging_drift(ctx):
+    # D-H22-3 non-goal: Synapse's authoring center of gravity stays off rigging/APEX — that is
+    # the native MCP's floor. The clean signal is a declared authoring-domain allowlist.
+    # ADAPT: server/authoring_domains.json = {"domains": ["cop","lop","sop","karma","usd"]}.
+    wt = Path(ctx["wt"])
+    allow = wt / "server" / "authoring_domains.json"  # ADAPT path
+    in_scope = {"cop", "cops", "lop", "lops", "sop", "sops", "karma", "usd", "solaris", "mat", "obj"}
+    drift_terms = {"apex", "rig", "rigging", "kinefx", "muscle", "cfx"}
+    if allow.exists():
+        try:
+            decl = {d.lower() for d in json.loads(allow.read_text()).get("domains", [])}
+            drift = decl & drift_terms
+            if drift:
+                return {"ok": False, "detail": f"authoring domains include rigging surface: {sorted(drift)}"}
+            stray = decl - in_scope
+            note = f" (note: undeclared-scope entries {sorted(stray)})" if stray else ""
+            return {"ok": True, "detail": f"authoring domains in-scope: {sorted(decl)}{note}"}
+        except Exception as e:
+            return {"ok": False, "detail": f"authoring_domains.json unreadable: {str(e)[:200]}"}
+    return {"ok": None, "detail": "authoring-domain allowlist not declared yet (ADAPT server/authoring_domains.json)"}
+
+def check_provenance_not_bypassed(ctx):
+    # Non-goal: not a commodity hou.* passthrough. Every scene/stage mutation routes through the
+    # provenance gateway and lands in agent.usd. The rigorous form is a RUNTIME sentinel (perform
+    # a sandboxed mutation, assert the ledger grew by one). Until that's wired this WARNS — it
+    # neither fake-passes nor blocks every sprint.
+    # ADAPT: name the provenance gateway + either a mutation-capable-module manifest (static) or
+    # the sandbox sentinel (runtime, Mode B).
+    return {"ok": None, "detail": "ADAPT: wire the provenance-gateway manifest or the runtime ledger-grew sentinel. Warn-only until then."}
+
+def check_scout_federates(ctx):
+    # D-H22-2: scout returns APEX results tagged as sourced from the federated MCP provider,
+    # and exists_in_runtime remains present + authoritative on every hit. ADAPT: scout query API.
+    code = ("import synapse\n"
+            "try:\n"
+            "    hits = synapse.scout.query('apex rig pose', domains=['apex'])  # ADAPT query API\n"
+            "    src_ok = bool(hits) and all(h.get('source') == 'apex_mcp' for h in hits)\n"
+            "    rt_ok = all('exists_in_runtime' in h for h in hits)\n"
+            "    print('SCOUT-OK' if (src_ok and rt_ok) else 'SCOUT-NO')\n"
+            "except Exception as e:\n"
+            "    print('SCOUT-ERR', e)")
+    rc, out, err = hython(ctx["hython"], code, ctx["wt"])
+    return {"ok": "SCOUT-OK" in out, "detail": (out or err).strip()[:500]}
+
+def check_scout_no_apex_corpus(ctx):
+    # D-H22-2 non-goal: APEX syntax knowledge must come ONLY from the federated MCP, never a
+    # local corpus that competes with the first-party source. ADAPT: scout corpus root + registry.
+    wt = Path(ctx["wt"])
+    forbidden = []
+    for pat in ("**/scout/**/apex*", "**/rag/**/apex*corpus*", "**/corpus/**/apex*"):
+        forbidden += [p for p in wt.glob(pat) if ".git" not in str(p) and "worktrees" not in str(p)]
+    if forbidden:
+        rel = ", ".join(str(p.relative_to(wt)) for p in forbidden[:5])
+        return {"ok": False, "detail": f"local APEX corpus present (must federate, not rebuild): {rel}"}
+    reg = wt / "server" / "scout_sources.json"  # ADAPT path
+    if reg.exists():
+        try:
+            data = json.loads(reg.read_text())
+            apex = data.get("apex") or data.get("APEX")
+            if apex and apex.get("kind") != "provider":
+                return {"ok": False, "detail": f"scout APEX source kind='{apex.get('kind')}' — must be federated 'provider'"}
+            return {"ok": True, "detail": "no local APEX corpus; scout APEX source is federated"}
+        except Exception as e:
+            return {"ok": False, "detail": f"scout_sources.json unreadable: {str(e)[:200]}"}
+    return {"ok": None, "detail": "no APEX corpus found; scout source-registry not wired yet (ADAPT server/scout_sources.json)"}
+
+def run_one(name, task, ctx):
+    fn = DISPATCH.get(name)
+    if not fn:
+        return {"ok": False, "detail": "no check implemented — ADAPT"}
+    if name == "cook_node":
+        return check_cook(ctx, node=(task.get("target_node", "") or "").replace("ADAPT: ", "") or None)
+    return fn(ctx)
+
+
 DISPATCH = {
     "import_panel": check_import_panel, "brain_answers": check_brain_answers,
     "doctor": check_doctor, "probe_runs": check_probe_runs, "probe_clean": check_probe_clean,
     "version_single_source": check_version_single_source, "cook_existing": check_cook,
+    "cook_node": check_cook,  # FIX: was missing → cook_node silently reported "not implemented" on tasks 2.2/2.3
     "hip_opens": check_hip_opens, "shot_login": check_shot_login,
     "runsheet_present": check_runsheet_present, "clean_install": check_clean_install,
     "nodes_appear": check_nodes_appear, "ledger": check_ledger,
     "revert_clean": check_revert_clean, "render": check_render, "theme_ok": check_theme_ok,
+    # v2 — MCP orchestration
+    "mcp_surface_probe": check_mcp_surface_probe, "mcp_registered": check_mcp_registered,
+    "mcp_truth_contract": check_mcp_truth_contract, "scout_federates": check_scout_federates,
+    # v2 — guardrails
+    "scout_no_apex_corpus": check_scout_no_apex_corpus, "no_rigging_drift": check_no_rigging_drift,
+    "provenance_not_bypassed": check_provenance_not_bypassed,
 }
 
 def main():
@@ -246,29 +381,37 @@ def main():
     ap.add_argument("--mode", default="A")
     a = ap.parse_args()
 
-    tasks = json.loads((Path(__file__).resolve().parents[1] / "tasks.json").read_text())["tasks"]
+    doc = json.loads((Path(__file__).resolve().parents[1] / "tasks.json").read_text())
+    tasks = doc["tasks"]
+    guardrail_names = (doc.get("guardrails") or {}).get("checks", [])
     task = next((t for t in tasks if t["id"] == a.task), None)
     if not task:
         print(json.dumps({"verdict": "ERROR", "detail": f"unknown task {a.task}"})); return
 
     ctx = {"wt": a.worktree, "hython": a.hython, "mode": a.mode}
+
+    # task-specific verifies
     facts = {}
     for name in task.get("verify", []):
-        fn = DISPATCH.get(name)
-        if not fn:
-            facts[name] = {"ok": False, "detail": "no check implemented — ADAPT"}
-            continue
-        # cook_node uses the task's target_node; cook_existing uses the default
-        if name == "cook_node":
-            facts[name] = check_cook(ctx, node=task.get("target_node", "").replace("ADAPT: ", "") or None)
-        else:
-            facts[name] = fn(ctx)
+        facts[name] = run_one(name, task, ctx)
 
-    required_ok = all(v.get("ok") for v in facts.values()) if facts else True
+    # cross-cutting guardrails — every sprint
+    guards = {}
+    for name in guardrail_names:
+        guards[name] = run_one(name, task, ctx)
+    violations = [k for k, v in guards.items() if v.get("ok") is False]
+    unwired = [k for k, v in guards.items() if v.get("ok") is None]
+
+    task_ok = all(v.get("ok") for v in facts.values()) if facts else True
+    required_ok = task_ok and not violations
+
     print(json.dumps({
         "task": a.task, "mode": a.mode,
         "verdict": "PASS" if required_ok else "FAIL",
         "checks": facts,
+        "guardrails": guards,
+        "guardrail_violations": violations,
+        "guardrail_unwired": unwired,
     }, indent=2))
 
 if __name__ == "__main__":
