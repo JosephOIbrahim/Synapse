@@ -19,6 +19,19 @@
     "color_temperature_control": "xn__inputscolorTemperature_control_xpb",
     "normalize_control": "xn__inputsnormalize_control_jeb"
   },
+  "_geometry_shaping_note": "LIVE-PROBED 21.0.671 (2026-06-26). These were NEVER probed before this pass — they are NOT phantom, they were simply unverified. Prior code placeholders (shaping_cone_angle=_hgbb, shaping_cone_softness=_jlbb) and prior corpus values (_bobja/_brbja/_o5a/_k5a/_e5a/_i5a) WERE phantom and are superseded. Suffix is STRUCTURE-based on the full property string: inputs:<5-char> -> _zta (color/width); inputs:<6-char> -> _mva (radius/height/length).",
+  "geometry_verified": {
+    "radius": "xn__inputsradius_mva",
+    "width": "xn__inputswidth_zta",
+    "height": "xn__inputsheight_mva",
+    "length": "xn__inputslength_mva"
+  },
+  "shaping_verified": {
+    "shaping_cone_angle": "xn__inputsshapingconeangle_wcbhe",
+    "shaping_cone_softness": "xn__inputsshapingconesoftness_shbhe",
+    "shaping_focus": "xn__inputsshapingfocus_e5ah",
+    "shaping_focus_tint": "xn__inputsshapingfocusTint_wcbh"
+  },
   "tuples_verified": {
     "color": { "tuple_base": "xn__inputscolor_zta", "components": ["xn__inputscolor_ztar", "xn__inputscolor_ztag", "xn__inputscolor_ztab"] },
     "shadow_color": { "tuple_base": "xn__inputsshadowcolor_r3ag", "components": ["xn__inputsshadowcolor_r3agr", "xn__inputsshadowcolor_r3agg", "xn__inputsshadowcolor_r3agb"] }

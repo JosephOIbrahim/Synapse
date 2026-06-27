@@ -22,10 +22,12 @@ from typing import Dict, List, Optional, Tuple, Any
 
 from ..core.protocol import SynapseCommand
 from ..core.determinism import deterministic_uuid
-# Punycode parm encoding — single-sourced from synapse.core.usd_punycode.
-from ..core.usd_punycode import encoded as _enc
+# RAW USD prim attribute names — single-sourced from synapse.core.usd_punycode.
+# set_usd_attribute authors the RAW USD schema name on the prim (NOT the punycode
+# LOP-parm name, which silently no-ops via the handler's `if attr:` guard).
+from ..core.usd_punycode import raw as _raw
 
-_P_EXPOSURE = _enc("exposure")
+_RAW_EXPOSURE = _raw("exposure")
 
 logger = logging.getLogger("synapse.planner")
 
@@ -434,7 +436,7 @@ def _build_lighting_pipeline(
     }))
     cmds.append(_cmd("set_usd_attribute", {
         "prim_path": "/lights/key_light",
-        "attribute_name": _P_EXPOSURE,
+        "attribute_name": _RAW_EXPOSURE,
         "value": exposures["key"],
     }))
 
@@ -445,7 +447,7 @@ def _build_lighting_pipeline(
     }))
     cmds.append(_cmd("set_usd_attribute", {
         "prim_path": "/lights/fill_light",
-        "attribute_name": _P_EXPOSURE,
+        "attribute_name": _RAW_EXPOSURE,
         "value": exposures["fill"],
     }))
 
@@ -457,7 +459,7 @@ def _build_lighting_pipeline(
         }))
         cmds.append(_cmd("set_usd_attribute", {
             "prim_path": "/lights/rim_light",
-            "attribute_name": _P_EXPOSURE,
+            "attribute_name": _RAW_EXPOSURE,
             "value": exposures["rim"],
         }))
 
@@ -469,7 +471,7 @@ def _build_lighting_pipeline(
         }))
         cmds.append(_cmd("set_usd_attribute", {
             "prim_path": "/lights/dome_light",
-            "attribute_name": _P_EXPOSURE,
+            "attribute_name": _RAW_EXPOSURE,
             "value": exposures["dome"],
         }))
 

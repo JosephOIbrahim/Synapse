@@ -9,19 +9,32 @@ from ...core.gates import GateLevel
 # MaterialX node-type names — single-sourced from synapse.core.mtlx_types so
 # the embedded recipe code can't drift from the H22 survival-probed set.
 from ...core.mtlx_types import MTLX_STANDARD_SURFACE, MTLX_STANDARD_VOLUME
-# Punycode parm encodings — single-sourced from synapse.core.usd_punycode so
-# these can never drift from the live-probed 21.0.671 names.
-from ...core.usd_punycode import encoded as _enc
+# Names single-sourced from synapse.core.usd_punycode so they can never drift
+# from the live-probed 21.0.671 values. TWO name-spaces, picked PER STEP by its
+# action:
+#   * _P_* (encoded/punycode) — the LOP PARM interface (execute_python node.parm()
+#     pokes below). Build-specific; re-probed on a USD bump.
+#   * _RAW_* (raw USD schema name) — what set_usd_attribute authors on the prim
+#     (prim.GetAttribute(name).Set). Schema-stable / H22-safe. A punycode name
+#     passed to set_usd_attribute silently NO-OPS (handler's `if attr:` guard).
+from ...core.usd_punycode import encoded as _enc, raw as _raw
 
+# LOP parm-interface names — used only by the execute_python node.parm() pokes.
 _P_INTENSITY = _enc("intensity")
 _P_EXPOSURE = _enc("exposure")
 _P_EXPOSURE_CTRL = _enc("exposure_control")
-_P_ENABLE_TEMP = _enc("enable_temperature")
-_P_COLOR_TEMP = _enc("color_temperature")
-_P_NORMALIZE = _enc("normalize")
-_P_ANGLE = _enc("angle")
-_P_CONE_ANGLE = _enc("shaping_cone_angle")
-_P_CONE_SOFTNESS = _enc("shaping_cone_softness")
+
+# RAW USD prim attribute names — used by every set_usd_attribute step below.
+_RAW_INTENSITY = _raw("intensity")
+_RAW_EXPOSURE = _raw("exposure")
+_RAW_ENABLE_TEMP = _raw("enable_temperature")
+_RAW_COLOR_TEMP = _raw("color_temperature")
+_RAW_NORMALIZE = _raw("normalize")
+_RAW_ANGLE = _raw("angle")
+_RAW_CONE_ANGLE = _raw("shaping_cone_angle")
+_RAW_CONE_SOFTNESS = _raw("shaping_cone_softness")
+_RAW_WIDTH = _raw("width")
+_RAW_HEIGHT = _raw("height")
 
 
 def register_render_recipes(registry):
@@ -120,7 +133,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/dome_light",
-                    "attribute_name": _P_EXPOSURE,
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -203,7 +216,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/turntable_key",
-                    "attribute_name": _P_EXPOSURE,
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 5.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -221,7 +234,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/turntable_fill",
-                    "attribute_name": _P_EXPOSURE,
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 3.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -239,7 +252,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/turntable_rim",
-                    "attribute_name": _P_EXPOSURE,
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 4.5,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -257,7 +270,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/turntable_dome",
-                    "attribute_name": _P_EXPOSURE,
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 0.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -944,7 +957,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": _P_INTENSITY,
+                    "attribute_name": _RAW_INTENSITY,
                     "value": 1.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -954,7 +967,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": _P_CONE_ANGLE,
+                    "attribute_name": _RAW_CONE_ANGLE,
                     "value": "{cone_angle}",
                 },
                 gate_level=GateLevel.REVIEW,
@@ -964,7 +977,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": _P_CONE_SOFTNESS,
+                    "attribute_name": _RAW_CONE_SOFTNESS,
                     "value": 0.1,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -974,7 +987,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": _P_EXPOSURE,
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 4.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -984,7 +997,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": _P_ENABLE_TEMP,
+                    "attribute_name": _RAW_ENABLE_TEMP,
                     "value": True,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -993,7 +1006,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": _P_COLOR_TEMP,
+                    "attribute_name": _RAW_COLOR_TEMP,
                     "value": 6500,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1031,7 +1044,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": _P_INTENSITY,
+                    "attribute_name": _RAW_INTENSITY,
                     "value": 1.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1041,7 +1054,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": _P_ANGLE,  # single-sourced; was _06a (color_control) bug
+                    "attribute_name": _RAW_ANGLE,  # raw USD; was punycode _P_ANGLE (no-op on set_usd_attribute)
                     "value": 0.53,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1051,7 +1064,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": _P_EXPOSURE,
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1061,7 +1074,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": _P_ENABLE_TEMP,
+                    "attribute_name": _RAW_ENABLE_TEMP,
                     "value": True,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1070,7 +1083,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": _P_COLOR_TEMP,
+                    "attribute_name": _RAW_COLOR_TEMP,
                     "value": 5500,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1110,7 +1123,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/area_panel",
-                    "attribute_name": _P_INTENSITY,
+                    "attribute_name": _RAW_INTENSITY,
                     "value": 1.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1120,7 +1133,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/area_panel",
-                    "attribute_name": "xn__inputswidth_e5a",
+                    "attribute_name": _RAW_WIDTH,
                     "value": "{width}",
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1130,7 +1143,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/area_panel",
-                    "attribute_name": "xn__inputsheight_i5a",
+                    "attribute_name": _RAW_HEIGHT,
                     "value": "{height}",
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1140,7 +1153,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/area_panel",
-                    "attribute_name": _P_EXPOSURE,
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 3.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1150,7 +1163,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/area_panel",
-                    "attribute_name": _P_NORMALIZE,
+                    "attribute_name": _RAW_NORMALIZE,
                     "value": True,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1188,27 +1201,25 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/mesh_light",
-                    "attribute_name": _P_INTENSITY,
+                    "attribute_name": _RAW_INTENSITY,
                     "value": 1.0,
                 },
                 gate_level=GateLevel.REVIEW,
             ),
-            # Target geometry pattern
-            RecipeStep(
-                action="set_usd_attribute",
-                payload_template={
-                    "prim_path": "/lights/mesh_light",
-                    "attribute_name": "xn__inputsgeometry_01a",
-                    "value": "{target_geo_pattern}",
-                },
-                gate_level=GateLevel.REVIEW,
-            ),
+            # Target geometry binding intentionally OMITTED: UsdLux GeometryLight
+            # binds its emitting mesh via the *relationship* "geometry" (raw,
+            # schema-stable — NOT inputs:-namespaced, NOT punycode). set_usd_attribute
+            # authors attributes via GetAttribute().Set(), so it can't author a rel;
+            # there is no relationship-authoring handler today. Rather than leave a
+            # silent no-op step (the old phantom xn__inputsgeometry_01a), the bind is
+            # dropped until a rel-author path exists. {target_geo_pattern} is still
+            # captured as a recipe parameter for when that path lands.
             # Brightness via exposure
             RecipeStep(
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/mesh_light",
-                    "attribute_name": _P_EXPOSURE,
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 2.0,
                 },
                 gate_level=GateLevel.REVIEW,

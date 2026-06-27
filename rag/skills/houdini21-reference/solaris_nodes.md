@@ -299,8 +299,8 @@ key.parm("xn__inputsexposure_control_wcb").set("set")
 key.parm("xn__inputsexposure_vya").set(1.0)   # key light brightness
 
 # Size (larger = softer shadows)
-key.parm("xn__inputswidth_e5a").set(1.5)
-key.parm("xn__inputsheight_k5a").set(1.0)
+key.parm("xn__inputswidth_zta").set(1.5)
+key.parm("xn__inputsheight_mva").set(1.0)
 
 # Normalize: keep brightness constant as size changes (True = normalize)
 key.parm("xn__inputsnormalize_i0a").set(True)
@@ -317,8 +317,8 @@ fill = stage.createNode("rectlight", "fill_rect")
 fill.parm("xn__inputsintensity_i0a").set(1.0)
 fill.parm("xn__inputsexposure_control_wcb").set("set")
 fill.parm("xn__inputsexposure_vya").set(-0.585)  # 1.585 stops below key = 3:1 ratio
-fill.parm("xn__inputswidth_e5a").set(2.0)
-fill.parm("xn__inputsheight_k5a").set(1.5)
+fill.parm("xn__inputswidth_zta").set(2.0)
+fill.parm("xn__inputsheight_mva").set(1.5)
 fill.parm("tx").set(-3.0)
 fill.parm("ty").set(1.5)
 fill.parm("tz").set(1.5)
@@ -339,7 +339,7 @@ sph.parm("xn__inputsexposure_control_wcb").set("set")
 sph.parm("xn__inputsexposure_vya").set(0.5)
 
 # Radius > 0 = soft shadows. Radius = 0 = hard point-light shadows.
-sph.parm("xn__inputsradius_o5a").set(0.1)
+sph.parm("xn__inputsradius_mva").set(0.1)
 
 # Position (spherelight position DOES matter, unlike distantlight)
 sph.parm("tx").set(0.0)
@@ -363,7 +363,7 @@ disk = stage.createNode("disklight", "disk_light")
 disk.parm("xn__inputsintensity_i0a").set(1.0)
 disk.parm("xn__inputsexposure_control_wcb").set("set")
 disk.parm("xn__inputsexposure_vya").set(0.8)
-disk.parm("xn__inputsradius_o5a").set(0.5)   # disk radius
+disk.parm("xn__inputsradius_mva").set(0.5)   # disk radius
 disk.parm("tx").set(0.0)
 disk.parm("ty").set(3.0)
 disk.parm("tz").set(0.0)
@@ -374,8 +374,8 @@ cyl = stage.createNode("cylinderlight", "strip_light")
 cyl.parm("xn__inputsintensity_i0a").set(1.0)
 cyl.parm("xn__inputsexposure_control_wcb").set("set")
 cyl.parm("xn__inputsexposure_vya").set(0.5)
-cyl.parm("xn__inputslength_i5a").set(2.0)    # tube length
-cyl.parm("xn__inputsradius_o5a").set(0.05)   # tube radius
+cyl.parm("xn__inputslength_mva").set(2.0)    # tube length
+cyl.parm("xn__inputsradius_mva").set(0.05)   # tube radius
 cyl.parm("tx").set(0.0)
 cyl.parm("ty").set(2.5)
 cyl.parm("tz").set(-1.0)
@@ -672,8 +672,8 @@ key = stage.createNode("rectlight", "key")
 key.parm("xn__inputsintensity_i0a").set(1.0)
 key.parm("xn__inputsexposure_control_wcb").set("set")
 key.parm("xn__inputsexposure_vya").set(1.0)
-key.parm("xn__inputswidth_e5a").set(1.5)
-key.parm("xn__inputsheight_k5a").set(1.0)
+key.parm("xn__inputswidth_zta").set(1.5)
+key.parm("xn__inputsheight_mva").set(1.0)
 key.parm("tx").set(3.0); key.parm("ty").set(3.0); key.parm("tz").set(3.0)
 key.parm("rx").set(-35.0); key.parm("ry").set(-45.0)
 

@@ -8,6 +8,15 @@ dome light, domelight, HDRI, environment light, area light, rect light, rectligh
 
 Solaris lights are USD prims created via LOP nodes. All light brightness is controlled by exposure (logarithmic, in stops) — intensity is ALWAYS locked at 1.0. Houdini encodes USD attribute names as `xn__`-prefixed parameter names; use the encoded names when setting parms directly via `hou.node().parm()`.
 
+### Raw USD attribute names vs. `xn__` punycode — pick the right one (authoritative, H21.0.671 live-probed)
+
+The same light/camera property has TWO different names depending on which API you call. They are **not** interchangeable:
+
+- **`set_usd_attribute` / `prim.GetAttribute(...).Set(...)` → use the RAW USD attribute name.** e.g. `inputs:intensity`, `inputs:exposure`, `inputs:color`, `inputs:colorTemperature`, `inputs:enableColorTemperature`, `inputs:radius`, `inputs:width`, `inputs:height`, `inputs:length`, `inputs:angle`, `inputs:shaping:cone:angle`, `inputs:shaping:cone:softness`, `inputs:shaping:focus`, `inputs:texture:file`, `inputs:texture:format`. Raw USD schema names are **stable across Houdini/USD builds** (H22-safe).
+- **`node.parm(...)` / `set_parm` → use the `xn__` punycode name** (the encoded reference table below). These are the Houdini LOP **parm-interface** names ONLY, and the hash suffix is **build-specific** — re-probe on every Houdini bump.
+
+**Trap:** passing an `xn__…` punycode name to `set_usd_attribute` **silently no-ops** — the handler guards on `if attr:`, and `prim.GetAttribute("xn__inputsradius_mva")` is invalid, so it returns no attribute, writes nothing, and raises no error. Conversely, `node.parm("inputs:radius")` returns `None`. Always match the name space to the API: raw on the prim, punycode on the parm.
+
 ## Code
 
 ```python
@@ -57,9 +66,9 @@ import hou
 # inputs:texture:format       xn__inputstextureformat_06ah           latlong / mirroredBall / angular
 # inputs:enableColorTemperature xn__inputsenableColorTemperature_omb bool
 # inputs:colorTemperature     xn__inputscolorTemperature_wcb        float Kelvin
-# inputs:shaping:cone:angle   xn__inputsshapingconeangle_bobja      spot cone angle degrees
-# inputs:shaping:cone:softness xn__inputsshapingconesoftness_brbja  edge falloff 0-1
-# inputs:shaping:focus        xn__inputsshapingfocus_i5a            focus toward center
+# inputs:shaping:cone:angle   xn__inputsshapingconeangle_wcbhe      spot cone angle degrees
+# inputs:shaping:cone:softness xn__inputsshapingconesoftness_shbhe  edge falloff 0-1
+# inputs:shaping:focus        xn__inputsshapingfocus_e5ah            focus toward center
 
 
 def _set_light_intensity_law(light_node):
@@ -648,11 +657,11 @@ def make_spot_light(stage_path="/stage", name="spot",
     spot.parm("xn__inputsexposure_vya").set(exposure)
 
     # Shaping: cone angle and softness
-    spot.parm("xn__inputsshapingconeangle_bobja").set(cone_angle)
-    spot.parm("xn__inputsshapingconesoftness_brbja").set(cone_softness)
+    spot.parm("xn__inputsshapingconeangle_wcbhe").set(cone_angle)
+    spot.parm("xn__inputsshapingconesoftness_shbhe").set(cone_softness)
 
     # Optional: focus intensity toward cone center
-    # spot.parm("xn__inputsshapingfocus_i5a").set(0.5)
+    # spot.parm("xn__inputsshapingfocus_e5ah").set(0.5)
 
     return spot
 

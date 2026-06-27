@@ -68,6 +68,28 @@ CANON_ALIAS_TO_PHANTOMS = {
     "texture_format": ("xn__inputstextureformat_r1a", "xn__inputstextureformat_i7a"),
     "angle": ("xn__inputsangle_06a",),
     "shadow_color": ("xn__inputsshadowcolor_o5a",),
+    # Geometry + cone/focus shaping — DE-PHANTOMED 2026-06-26. These leaves were
+    # placeholders/guesses in both the corpus and the prior registry; the right
+    # values are now live-probed on 21.0.671 and single-sourced in
+    # PUNYCODE_PARMS (radius=_mva, width=_zta, height=_mva, length=_mva,
+    # shaping*cone*angle=_wcbhe, *softness=_shbhe, focus=_e5ah). The VALUES below
+    # are the wrong twins that were scrubbed from rag/ and must never return.
+    "radius": ("xn__inputsradius_o5a",),
+    "width": ("xn__inputswidth_e5a",),
+    "height": ("xn__inputsheight_k5a", "xn__inputsheight_i5a"),
+    "length": ("xn__inputslength_i5a",),
+    "shaping_cone_angle": (
+        "xn__inputsshapingconeangle_bobja",
+        "xn__inputsshapingconeangle_hgbb",
+    ),
+    "shaping_cone_softness": (
+        "xn__inputsshapingconesoftness_brbja",
+        "xn__inputsshapingconesoftness_jlbb",
+    ),
+    "shaping_focus": (
+        "xn__inputsshapingfocus_i5a",
+        "xn__inputsshapingfocus_e5a",
+    ),
 }
 
 # color3f component phantoms (the tuple base lives in PUNYCODE_PARMS, the

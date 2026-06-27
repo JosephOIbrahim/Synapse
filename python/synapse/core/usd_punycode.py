@@ -22,6 +22,21 @@ and every other caller references :data:`PUNYCODE_PARMS` / :func:`encoded`
 instead of pasting the strings, so the encodings can never diverge between
 files again. On the next USD bump, **re-probe** (the drop-day probe harness,
 task 0.2, auto-produces this map) rather than hand-editing.
+
+TWO REGISTRIES, TWO NAME-SPACES — this is the distinction that was silently
+breaking light authoring:
+
+* :data:`PUNYCODE_PARMS` / :func:`encoded` — the **LOP parm interface**. These
+  are what ``node.parm()`` / ``set_parm`` expect: the punycode ``xn__`` names
+  SideFX generates for the parm UI. They are **build-specific** and DO drift on
+  a USD bump, so they MUST be re-probed (above).
+* :data:`USD_ATTR_NAMES` / :func:`raw` — the **actual USD prim attribute**.
+  These are what ``set_usd_attribute`` writes onto the prim
+  (``prim.GetAttribute(name).Set``): the raw schema names — ``inputs:intensity``,
+  ``inputs:shaping:cone:angle`` — which are **schema-stable** across
+  Houdini/USD builds. Passing a punycode ``xn__`` name to ``set_usd_attribute``
+  silently NO-OPS (``prim.GetAttribute("xn__…")`` is invalid, and the handler
+  is guarded by ``if attr:``), which is exactly the bug this split prevents.
 """
 
 from typing import Dict, FrozenSet, Optional
@@ -71,25 +86,23 @@ PUNYCODE_PARMS: Dict[str, str] = {
     "vertical_aperture": "xn__inputsverticalaperture_gfb",
     "clipping_range": "xn__inputsclippingrange_e4b",
     # ------------------------------------------------------------------
-    # UNVERIFIED — spotlight cone shaping. Migrated here from render_recipes.py
-    # — the LAST punycode literals that still lived OUTSIDE this single source —
-    # so they can no longer silently diverge. Both values are the EXACT strings
-    # render_recipes.py emitted before the move (ZERO behavior change today),
-    # but note the INCONSISTENT casing — lowercase ``coneangle`` vs camelCase
-    # ``coneSoftness`` — which is itself a strong signal that at least one is
-    # phantom. Neither is in
-    # ``harness/notes/verified_usdlux_encodings_21.0.671.json`` — re-probe a real
-    # SphereLight on a live host and correct (UsdLux surfaces
-    # ``inputs:shaping:cone:angle`` / ``inputs:shaping:cone:softness``, encoded
-    # like width/height above).
-    #
-    # NOTE: SphereLight ``radius`` is deliberately NOT added here. Its encoding
-    # is unprobed, and the single-source convention keeps unknown encodings OUT
-    # so ``encoded()`` returns None — a VISIBLE gap — rather than a guessed
-    # literal. Pinned by tests/test_solaris_guardrails.py
-    # (test_radius_gap_is_visible_not_silently_wrong; rule lop_sphere_radius_encoding).
-    "shaping_cone_angle": "xn__inputsshapingconeangle_hgbb",  # UNVERIFIED 21.0.671 — re-probe on live Houdini
-    "shaping_cone_softness": "xn__inputsshapingconeSoftness_jlbb",  # UNVERIFIED 21.0.671 — re-probe on live Houdini
+    # Geometry + cone/focus shaping — LIVE-PROBED on 21.0.671 (2026-06-26),
+    # superseding the prior placeholders (``shaping_cone_angle``=``_hgbb``,
+    # ``shaping_cone_softness``=``_jlbb``) and the corpus geometry values
+    # (``_bobja``/``_brbja``/``_o5a``/``_k5a``/``_e5a``/``_i5a``) — ALL phantom.
+    # The suffix is STRUCTURE-based on the full property string: an
+    # ``inputs:<5-char>`` leaf -> ``_zta`` (color, width); an ``inputs:<6-char>``
+    # leaf -> ``_mva`` (radius, height, length). Probe-generated, never guessed.
+    # Ground truth: harness/notes/verified_usdlux_encodings_21.0.671.json.
+    # ``radius`` is now probed, so ``encoded("radius")`` resolves (previously a
+    # deliberate gap); the sphere-radius rule still defers via the single source.
+    "radius": "xn__inputsradius_mva",
+    "width": "xn__inputswidth_zta",
+    "height": "xn__inputsheight_mva",
+    "length": "xn__inputslength_mva",
+    "shaping_cone_angle": "xn__inputsshapingconeangle_wcbhe",
+    "shaping_cone_softness": "xn__inputsshapingconesoftness_shbhe",
+    "shaping_focus": "xn__inputsshapingfocus_e5ah",
 }
 
 
@@ -103,5 +116,53 @@ def encoded(alias: str) -> Optional[str]:
 
     Returns ``None`` if the alias is unknown. Pure function over a static
     dict — no determinism concern.
+
+    USE THIS for the LOP **parm interface** (``node.parm()`` / ``set_parm``).
+    For the actual USD prim attribute (``set_usd_attribute``), use :func:`raw`.
     """
     return PUNYCODE_PARMS.get(alias)
+
+
+# alias -> RAW USD attribute name authored on the prim by set_usd_attribute.
+# Live-probed off a real UsdLuxSphereLight prim on 21.0.671 (2026-06-26):
+# ``prim.GetAttribute("inputs:radius")`` is VALID, while the punycode form
+# ``prim.GetAttribute("xn__inputsradius_mva")`` is INVALID and the handler
+# (handlers_usd.py:_handle_set_usd_attribute, guarded ``if attr:``) silently
+# NO-OPS. These are the stable UsdLux schema names — unlike the punycode parm
+# names above, they do NOT drift between Houdini/USD builds, so they are
+# H22-safe.
+USD_ATTR_NAMES: Dict[str, str] = {
+    # Lights — scalars
+    "intensity": "inputs:intensity",
+    "exposure": "inputs:exposure",
+    "color": "inputs:color",  # color3f tuple
+    "color_temperature": "inputs:colorTemperature",
+    "enable_temperature": "inputs:enableColorTemperature",
+    "diffuse": "inputs:diffuse",
+    "specular": "inputs:specular",
+    "normalize": "inputs:normalize",
+    # Geometry
+    "radius": "inputs:radius",
+    "width": "inputs:width",
+    "height": "inputs:height",
+    "length": "inputs:length",
+    "angle": "inputs:angle",
+    # Cone / focus shaping (nested namespace -> colon-separated leaves)
+    "shaping_cone_angle": "inputs:shaping:cone:angle",
+    "shaping_cone_softness": "inputs:shaping:cone:softness",
+    "shaping_focus": "inputs:shaping:focus",
+    # DomeLight — HDRI texture (nested namespace)
+    "texture_file": "inputs:texture:file",
+    "texture_format": "inputs:texture:format",
+}
+
+
+def raw(alias: str) -> Optional[str]:
+    """Return the raw USD prim attribute name for a friendly ``alias``.
+
+    Returns ``None`` if the alias is unknown. Mirror of :func:`encoded`, but for
+    the **USD prim attribute** name-space (``set_usd_attribute`` ->
+    ``prim.GetAttribute(name).Set``) rather than the LOP parm interface. These
+    schema names are build-stable; :func:`encoded`'s punycode names are not.
+    """
+    return USD_ATTR_NAMES.get(alias)
