@@ -8,6 +8,13 @@ the recipe's name/description. The controller in ``hda_controller.py``
 handles the matching logic.
 """
 
+# Punycode parm encodings — single-sourced from synapse.core.usd_punycode so
+# the light-rig recipes can never drift from the live-probed 21.0.671 names.
+from ..core.usd_punycode import encoded as _enc
+_P_INTENSITY = _enc("intensity")
+_P_EXPOSURE = _enc("exposure")
+_P_EXPOSURE_CTRL = _enc("exposure_control")
+
 # Category mapping: user-facing context -> Houdini internal category
 CONTEXT_TO_CATEGORY = {
     "SOP": "Sop",
@@ -104,9 +111,9 @@ HDA_RECIPES = {
                 "name": "key_light",
                 "parms": {
                     "lighttype": "distant",
-                    "xn__inputsintensity_i0a": 1.0,
-                    "xn__inputsexposure_vya": 1.0,
-                    "xn__inputsexposure_control_wcb": "set",
+                    _P_INTENSITY: 1.0,
+                    _P_EXPOSURE: 1.0,
+                    _P_EXPOSURE_CTRL: "set",
                 },
             },
             {
@@ -114,9 +121,9 @@ HDA_RECIPES = {
                 "name": "fill_light",
                 "parms": {
                     "lighttype": "distant",
-                    "xn__inputsintensity_i0a": 1.0,
-                    "xn__inputsexposure_vya": -0.585,
-                    "xn__inputsexposure_control_wcb": "set",
+                    _P_INTENSITY: 1.0,
+                    _P_EXPOSURE: -0.585,
+                    _P_EXPOSURE_CTRL: "set",
                 },
             },
             {
@@ -124,18 +131,18 @@ HDA_RECIPES = {
                 "name": "rim_light",
                 "parms": {
                     "lighttype": "distant",
-                    "xn__inputsintensity_i0a": 1.0,
-                    "xn__inputsexposure_vya": 0.4,
-                    "xn__inputsexposure_control_wcb": "set",
+                    _P_INTENSITY: 1.0,
+                    _P_EXPOSURE: 0.4,
+                    _P_EXPOSURE_CTRL: "set",
                 },
             },
             {
                 "type": "domelight::2.0",
                 "name": "dome_light",
                 "parms": {
-                    "xn__inputsintensity_i0a": 1.0,
-                    "xn__inputsexposure_vya": 0.25,
-                    "xn__inputsexposure_control_wcb": "set",
+                    _P_INTENSITY: 1.0,
+                    _P_EXPOSURE: 0.25,
+                    _P_EXPOSURE_CTRL: "set",
                 },
             },
             {
@@ -153,22 +160,22 @@ HDA_RECIPES = {
         "promote_parameters": [
             {
                 "node": "key_light",
-                "parm": "xn__inputsexposure_vya",
+                "parm": _P_EXPOSURE,
                 "label": "Key Exposure",
             },
             {
                 "node": "fill_light",
-                "parm": "xn__inputsexposure_vya",
+                "parm": _P_EXPOSURE,
                 "label": "Fill Exposure",
             },
             {
                 "node": "rim_light",
-                "parm": "xn__inputsexposure_vya",
+                "parm": _P_EXPOSURE,
                 "label": "Rim Exposure",
             },
             {
                 "node": "dome_light",
-                "parm": "xn__inputsexposure_vya",
+                "parm": _P_EXPOSURE,
                 "label": "Dome Exposure",
             },
         ],

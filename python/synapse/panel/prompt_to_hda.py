@@ -13,6 +13,13 @@ natural language descriptions. Includes:
 import os
 import re
 
+# Punycode parm encodings — single-sourced from synapse.core.usd_punycode so
+# the light-rig recipe can never drift from the live-probed 21.0.671 names.
+from synapse.core.usd_punycode import encoded as _enc
+_P_INTENSITY = _enc("intensity")
+_P_EXPOSURE = _enc("exposure")
+_P_EXPOSURE_CTRL = _enc("exposure_control")
+
 # ---------------------------------------------------------------------------
 # HDA Recipes -- fast-path patterns keyed by keyword
 # ---------------------------------------------------------------------------
@@ -102,26 +109,26 @@ HDA_RECIPES = {
                 "type": "light::2.0", "name": "key_light",
                 "parms": {
                     "lighttype": "distant",
-                    "xn__inputsintensity_i0a": 1.0,
-                    "xn__inputsexposure_vya": 1.0,
-                    "xn__inputsexposure_control_wcb": "set",
+                    _P_INTENSITY: 1.0,
+                    _P_EXPOSURE: 1.0,
+                    _P_EXPOSURE_CTRL: "set",
                 },
             },
             {
                 "type": "light::2.0", "name": "fill_light",
                 "parms": {
                     "lighttype": "distant",
-                    "xn__inputsintensity_i0a": 1.0,
-                    "xn__inputsexposure_vya": -0.585,
-                    "xn__inputsexposure_control_wcb": "set",
+                    _P_INTENSITY: 1.0,
+                    _P_EXPOSURE: -0.585,
+                    _P_EXPOSURE_CTRL: "set",
                 },
             },
             {
                 "type": "domelight::2.0", "name": "dome_light",
                 "parms": {
-                    "xn__inputsintensity_i0a": 1.0,
-                    "xn__inputsexposure_vya": 0.25,
-                    "xn__inputsexposure_control_wcb": "set",
+                    _P_INTENSITY: 1.0,
+                    _P_EXPOSURE: 0.25,
+                    _P_EXPOSURE_CTRL: "set",
                 },
             },
             {"type": "merge", "name": "light_merge", "parms": {}},
@@ -132,9 +139,9 @@ HDA_RECIPES = {
             ["dome_light", "light_merge", "2"],
         ],
         "promoted_parms": [
-            {"node": "key_light", "parm": "xn__inputsexposure_vya", "label": "Key Exposure"},
-            {"node": "fill_light", "parm": "xn__inputsexposure_vya", "label": "Fill Exposure"},
-            {"node": "dome_light", "parm": "xn__inputsexposure_vya", "label": "Dome Exposure"},
+            {"node": "key_light", "parm": _P_EXPOSURE, "label": "Key Exposure"},
+            {"node": "fill_light", "parm": _P_EXPOSURE, "label": "Fill Exposure"},
+            {"node": "dome_light", "parm": _P_EXPOSURE, "label": "Dome Exposure"},
         ],
     },
 

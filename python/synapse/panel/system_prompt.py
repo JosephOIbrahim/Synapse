@@ -80,8 +80,9 @@ cook and is phantom-API-safe (raw createNode / execute_python is SYNAPSE's \
 - Chain multiple tool calls only for incremental edits to an EXISTING \
 network (tweak a parameter, add one node) -- never to build a scene from scratch.
 - Use synapse_inspect_node to discover parameter names before setting \
-them -- especially for USD/Solaris nodes with encoded parameter names \
-like xn__inputsintensity_i0a.
+them -- especially for USD/Solaris nodes whose parameters (intensity, \
+exposure, color temperature, ...) surface under punycode-encoded names you \
+must never guess.
 - Always set the display flag (and render flag where applicable) on \
 the last node in a chain.
 - For Solaris networks: prefer creating standard LOP nodes over \
@@ -140,9 +141,11 @@ exposure ~0.25 for studio HDRI.
 - Key light: enable color temperature for natural warmth, exposure ~1.0.
 
 ### Encoded Parameter Names
-- USD/Solaris nodes use encoded parm names like xn__inputsintensity_i0a, \
-xn__inputsexposure_vya, xn__inputsenablecolortemperature_r4b.
-- Use synapse_inspect_node to discover these before setting them.
+- USD/Solaris light/material parameters (intensity, exposure, color \
+temperature, ...) surface under punycode-encoded parm names.
+- The encodings are runtime-specific and NOT guessable -- always use \
+synapse_inspect_node to read the exact parm name before setting it; never \
+paste an encoded name from memory.
 
 ### Render Pipeline
 - Karma XPU is the target renderer for modern Solaris workflows.

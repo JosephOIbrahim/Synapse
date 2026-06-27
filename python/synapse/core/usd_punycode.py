@@ -35,6 +35,7 @@ PUNYCODE_PARMS: Dict[str, str] = {
     "diffuse": "xn__inputsdiffuse_8wa",
     "specular": "xn__inputsspecular_vya",
     "normalize": "xn__inputsnormalize_i0a",
+    "angle": "xn__inputsangle_zta",
     "color_temperature": "xn__inputscolorTemperature_wcb",
     "enable_temperature": "xn__inputsenableColorTemperature_omb",
     # Lights — scalar "control" companions (per-attr override toggles)

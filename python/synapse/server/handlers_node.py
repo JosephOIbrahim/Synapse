@@ -18,6 +18,7 @@ except ImportError:
 import logging
 
 from ..core.aliases import resolve_param, resolve_param_with_default
+from ..core.mtlx_types import MTLX_STANDARD_SURFACE, MTLX_GEOMPROPVALUE
 from ..core.errors import NodeNotFoundError, HoudiniUnavailableError
 from .handler_helpers import _HOUDINI_UNAVAILABLE
 
@@ -78,12 +79,12 @@ class NodeHandlerMixin:
                     new_node.cook(force=True)
                     mat_name = new_node.name()
                     shader = new_node.createNode(
-                        "mtlxstandard_surface", mat_name + "_shader"
+                        MTLX_STANDARD_SURFACE, mat_name + "_shader"
                     )
                     if shader is not None:
                         # Create UV coordinate reader (shared across textures)
                         uv_node = new_node.createNode(
-                            "mtlxgeompropvalue", "uv_reader"
+                            MTLX_GEOMPROPVALUE, "uv_reader"
                         )
                         if uv_node:
                             sig_parm = uv_node.parm("signature")
@@ -94,7 +95,7 @@ class NodeHandlerMixin:
                                 prop_parm.set("st")
                         new_node.layoutChildren()
                         result["shader_path"] = shader.path()
-                        result["shader_type"] = "mtlxstandard_surface"
+                        result["shader_type"] = MTLX_STANDARD_SURFACE
                         if uv_node:
                             result["uv_reader_path"] = uv_node.path()
                         result["materialx_ready"] = True

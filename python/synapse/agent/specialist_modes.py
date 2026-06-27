@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Sequence
 
+from ..core.mtlx_types import MTLX_STANDARD_SURFACE
+
 from ..core.usd_punycode import PUNYCODE_PARMS
 
 
@@ -140,7 +142,7 @@ MATERIAL_SPECIALIST = SpecialistMode(
     domain=SpecialistDomain.MATERIAL,
     system_prompt_extension=(
         "You are a material specialist for Solaris/Karma MaterialX workflows. "
-        "Use mtlxstandard_surface as the default shader. Always cook the "
+        f"Use {MTLX_STANDARD_SURFACE} as the default shader. Always cook the "
         "materiallibrary before creating shader children (matlib.cook(force=True)). "
         "Material prim patterns must match exact USD prim paths — not wildcards. "
         "Keep material assignments inside the matlib node, not as separate assign nodes."

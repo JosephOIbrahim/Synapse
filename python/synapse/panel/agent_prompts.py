@@ -48,7 +48,7 @@ You have deep Solaris expertise. Follow these patterns:
 - Material Library with multiple subnets preferred over separate matlib + assign nodes.
 - Assign geo paths directly in matlib (geopath1, geopath2).
 - Material prim patterns must match exact USD prim paths (e.g. /rubbertoy/geo/shape).
-- Use synapse_inspect_node to discover encoded parm names (xn__inputsintensity_i0a).
+- Use synapse_inspect_node to discover encoded parm names (the 'intensity' parm surfaces under a punycode-encoded name; never guess it).
 - When importing external assets (Megascans, Quixel), standardize materials to USD/MaterialX before integrating into the pipeline.
 
 ### Lighting
