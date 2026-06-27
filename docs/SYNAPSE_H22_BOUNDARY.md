@@ -2,7 +2,7 @@
 
 **`SYNAPSE_H22_BOUNDARY.md`**
 
-> **Status:** DRAFT — awaiting human ratification (flip DRAFT → **ratified** to unlock FORGE wiring of `2.7`/`2.8`).
+> **Status:** **RATIFIED 2026-06-27** (Joe Ibrahim) — the boundary is now the enforced contract. FORGE wiring of `2.7`/`2.8` is unlocked, pending D-H22-4 verification on the shipped build (gate §10.3).
 > **Owner:** Joe Ibrahim
 > **Implemented by:** [`SYNAPSE_H22_PROVIDER_APEX.md`](SYNAPSE_H22_PROVIDER_APEX.md) (D-H22-1 / D-H22-2 / D-H22-4)
 > **Enforced by:** `harness/verify/checks.py` guardrails + the `guardrails` block in `harness/tasks.json`
@@ -187,10 +187,13 @@ they return `ok:null` and warn — they never fake a pass.
   real MCP and wire (`2.7`/`2.8`). No design changes — only the endpoint moves.
 
 **Open gates (human-owned):**
-1. **Ratify this document** (DRAFT → ratified) before FORGE wires `2.7`/`2.8`.
+1. ~~**Ratify this document** (DRAFT → ratified) before FORGE wires `2.7`/`2.8`.~~ ✅ **Ratified 2026-06-27** (Joe Ibrahim).
 2. **Gold RFC** for `validator_verdict` schema placement in `agent.usd` (`customData` vs a typed USD
-   schema) — do not unilaterally place it.
-3. **D-H22-4 verification** against the shipped H22 build before `2.7`/`2.8` execute.
+   schema) — do not unilaterally place it. *(Open — needs Michael Gold.)*
+3. **D-H22-4 verification** against the shipped H22 build before `2.7`/`2.8` execute. *(Open by
+   necessity — needs H22 to exist.)*
 
-> Ratification is the human gate the harness will not cross. Until this flips to **ratified**, the
-> boundary is the intended direction; after, it is the enforced contract.
+> Ratification is the human gate the harness will not cross. As of **2026-06-27** it is ratified:
+> the boundary is no longer the intended direction — it is the enforced contract. The two remaining
+> gates (§10.2, §10.3) stay open out of necessity, not indecision: one needs Michael Gold, the other
+> needs the shipped H22 build.

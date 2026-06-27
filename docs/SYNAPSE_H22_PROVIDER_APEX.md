@@ -2,8 +2,8 @@
 
 **`SYNAPSE_H22_PROVIDER_APEX.md`**
 
-> **Status:** DRAFT — design only (ARCHITECT). Wiring (FORGE) is gated on `SYNAPSE_H22_BOUNDARY.md`
-> ratification + D-H22-4 verification against the shipped build.
+> **Status:** DRAFT — design only (ARCHITECT). Boundary **ratified 2026-06-27**; FORGE wiring now
+> gated only on D-H22-4 verification against the shipped build.
 > **Owner:** Joe Ibrahim · **Suggested repo path:** `docs/SYNAPSE_H22_PROVIDER_APEX.md`
 > **Implements:** `SYNAPSE_H22_BOUNDARY.md` D-H22-1 / D-H22-2 / D-H22-4
 > **Harness tasks:** scaffold `0.8`/`0.9` (Mode A, mock) → verify `1.7` (Mode B) → wire `2.7`/`2.8` (Mode B) → demo `3.3`
@@ -109,6 +109,6 @@ H22 MCP's actual tool list and diffs it against the recorded surface:
 - No overclaiming an MCP result — observed ≥ claimed (`mcp_truth_contract`).
 
 ## 8 · Open gates
-- Ratify `SYNAPSE_H22_BOUNDARY.md` (flip DRAFT → ratified) before FORGE.
+- ~~Ratify `SYNAPSE_H22_BOUNDARY.md` (flip DRAFT → ratified) before FORGE.~~ ✅ Ratified 2026-06-27.
 - Gold RFC for `validator_verdict` schema placement (`customData` vs typed schema).
 - D-H22-4 verification on the shipped H22 build before `2.7`/`2.8` execute.
