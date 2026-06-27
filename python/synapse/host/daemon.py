@@ -425,6 +425,36 @@ class SynapseDaemon:
         try:
             from anthropic import Anthropic  # type: ignore[import-not-found]
         except ImportError as exc:
+            # H22 / vendored-ABI legibility escalation. ``synapse.__init__``
+            # only prepends the cp311 ``_vendor`` tree on Python 3.11 + Windows
+            # and sets ``_VENDOR_ABI_RISK`` when it is INACTIVE on a newer
+            # interpreter (a RuntimeWarning is emitted there). If the vendor is
+            # inactive AND no real anthropic/pydantic is installed, this import
+            # is exactly where the brain stack dies — and without this branch it
+            # dies with a cryptic deep ImportError far from the root cause. When
+            # the risk flag is set, escalate to a legible RuntimeError naming the
+            # running Python and the two known remediations. When it is NOT set
+            # this is a genuinely-missing dependency (a different problem) — keep
+            # the existing actionable DaemonBootError path untouched.
+            import synapse as _synapse
+
+            if getattr(_synapse, "_VENDOR_ABI_RISK", False):
+                _py = (
+                    f"{sys.version_info.major}."
+                    f"{sys.version_info.minor}."
+                    f"{sys.version_info.micro}"
+                )
+                raise RuntimeError(
+                    "SYNAPSE brain stack failed to import (anthropic/pydantic) "
+                    f"on Python {_py}: the vendored wheels under "
+                    "python/synapse/_vendor are cp311-win_amd64 and are "
+                    "INACTIVE on this interpreter, and no real "
+                    "pydantic/anthropic is installed in its place. Remediate by "
+                    "re-vendoring the SDK stack for this Python (see "
+                    "python/synapse/_vendor/README.md) or by running the brain "
+                    "as an out-of-process cp311 sidecar (see "
+                    "harness/notes/gate-0.1-sidecar-vs-abi3.md)."
+                ) from exc
             raise DaemonBootError(
                 "anthropic SDK is not installed in this Python. "
                 "See Spike 0's install recipe for hython; for stock-"
