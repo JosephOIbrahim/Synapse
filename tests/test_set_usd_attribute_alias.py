@@ -155,7 +155,7 @@ def test_dispatch_with_attribute_name_reaches_handler(wired):
 
 
 def test_dispatch_with_old_usd_attribute_key_still_works(wired):
-    handler, py_lop, code = wired
+    handler, _, code = wired
     result = handler._handle_set_usd_attribute({
         "prim_path": "/lights/x",
         "usd_attribute": "inputs:exposure",

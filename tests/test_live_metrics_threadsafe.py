@@ -41,7 +41,7 @@ def _make_recording_hou(touched):
     hou = types.ModuleType("hou")
 
     def record(name):
-        touched.setdefault(name, threading.get_ident())
+        touched.setdefault(name, []).append(threading.get_ident())
 
     class _HipFile:
         def path(self):
@@ -82,9 +82,12 @@ def test_collect_scene_marshals_hou_through_run_on_main():
     calling_thread = threading.get_ident()
     marshalled_thread: dict = {}
 
+    seen_timeout: dict = {}
+
     def fake_run_on_main(fn, timeout=10.0):
         # Simulate the real marshaller: fn runs on a DIFFERENT ("main") thread,
         # never the daemon/caller thread. Bounded timeout is respected by join.
+        seen_timeout["v"] = timeout
         result: dict = {}
 
         def runner():
@@ -113,13 +116,19 @@ def test_collect_scene_marshals_hou_through_run_on_main():
     assert "id" in marshalled_thread
     assert marshalled_thread["id"] != calling_thread
 
-    # Every single hou access happened on the marshalled (main) thread —
-    # none leaked onto the calling/daemon thread. This is the Rule #3 guarantee.
-    for name, ident in touched.items():
-        assert ident == marshalled_thread["id"], (
-            f"hou access {name!r} ran on the daemon thread ({ident}) "
-            f"instead of the marshalled main thread ({marshalled_thread['id']})"
-        )
+    # _collect_scene must pass the documented 1-second marshal budget.
+    assert seen_timeout.get("v") == 1.0, (
+        f"expected the documented 1s marshal timeout, got {seen_timeout.get('v')}"
+    )
+
+    # EVERY hou access (not just the first per name) happened on the marshalled
+    # (main) thread — none leaked onto the calling/daemon thread. Rule #3.
+    for name, idents in touched.items():
+        for ident in idents:
+            assert ident == marshalled_thread["id"], (
+                f"hou access {name!r} ran on the daemon thread ({ident}) "
+                f"instead of the marshalled main thread ({marshalled_thread['id']})"
+            )
 
 
 def test_collect_scene_timeout_yields_empty_metrics():

@@ -338,8 +338,17 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
             try:
                 _metrics_aggregator.stop()
             except Exception:
-                pass
+                logger.debug(
+                    "Metrics aggregator cleanup failed after hwebserver startup failure",
+                    exc_info=True,
+                )
             _metrics_aggregator = None
+        # Clear the rest of the half-started state too, else stop_hwebserver()
+        # (which returns early while _running is False) can never reclaim it and
+        # a retry inherits stale handler/limiter/backpressure objects.
+        _handler = None
+        _rate_limiter = None
+        _backpressure = None
         raise
 
     _running = True
