@@ -7,12 +7,25 @@
 <p align="center"><em>An AI copilot that lives <strong>inside</strong> Houdini. Chat in, real nodes out — undo-safe, multi-provider, in-process.</em></p>
 
 <p align="center">
+  <a href="https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml"><img src="https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron-8b5cf6.svg" alt="Engines"></a>
   <a href="tests"><img src="https://img.shields.io/badge/tests-3796%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.17.1-1e293b.svg" alt="Changelog"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.17.2-1e293b.svg" alt="Changelog"></a>
 </p>
+
+---
+
+### ✦ Architecture at a glance
+
+The one idea, up front — SYNAPSE is **inside-out**:
+
+- 🧠 **The brain runs *inside* Houdini** — the panel and agent live in Houdini's own Python, **not** a separate server reaching in over a socket.
+- 🔁 **Chat becomes real nodes** — every turn is an ordinary Houdini action: **undo-safe** (Ctrl+Z), main-thread-safe.
+- 🧾 **Provenance-receipted** — each mutation leaves an auditable record of who did what.
+- 🔌 **Multi-provider, 113 tools** — pick Claude · Gemini · NVIDIA Nemotron in the panel, swap mid-session.
+- 📜 **MIT** ([LICENSE](LICENSE)) + **patent-pending methods** ([PATENTS](PATENTS)) — MIT covers copyright, not patents.
 
 ---
 
@@ -77,18 +90,20 @@ flowchart LR
     classDef done fill:#334155,stroke:#22c55e,color:#f1f5f9
 ```
 
-**1 · Get the files** — green **Code ▸ Download ZIP**, unzip somewhere stable (e.g. `C:\Users\<you>\SYNAPSE`).
+**1 · Get the files** *(~1 min)* — green **Code ▸ Download ZIP**, unzip somewhere stable (e.g. `C:\Users\<you>\SYNAPSE`).
 *Prefer git?* `git clone https://github.com/JosephOIbrahim/Synapse.git`
+> ✅ **You should see** a `SYNAPSE` folder containing `python/`, `scripts/`, and `README.md`.
 
-**2 · Tell Houdini about it** (once):
+**2 · Tell Houdini about it** *(~1 min, once):*
 
 ```powershell
 python scripts/install_synapse_package.py
 ```
 
 *No Python on PATH? Use Houdini's:* `& "C:\Program Files\Side Effects Software\Houdini 21.0.671\bin\hython.exe" scripts/install_synapse_package.py` &nbsp;·&nbsp; *(`--dry-run` previews.)*
+> ✅ **You should see** a success line ending in the wired `python/` path — and **no** traceback.
 
-**3 · Paste your Claude key** — make one at **console.anthropic.com** (`sk-ant-…`), then **double-click `set_anthropic_key.bat`**, paste, Enter.
+**3 · Paste your Claude key** *(~2 min)* — make one at **console.anthropic.com** (`sk-ant-…`), then **double-click `set_anthropic_key.bat`**, paste, Enter.
 *Want Gemini / Nemotron too?* Add their keys to a `.env` at the repo root (gitignored, auto-loaded):
 
 ```
@@ -97,16 +112,20 @@ GEMINI_API_KEY=AIza...
 NVIDIA_API_KEY=nvapi-...
 ```
 
-**4 · Restart Houdini** → **New Pane Tab ▸ SYNAPSE** → type **"make a box."**
+**4 · Restart Houdini** *(~1 min)* → **New Pane Tab ▸ SYNAPSE** → type **"make a box."**
+> ✅ **You should see** the **SYNAPSE** entry in the New Pane Tab menu, and *"make a box"* create a real geo node you can **Ctrl+Z**.
 
-That's the whole loop. Everything is an ordinary Houdini action — **Ctrl+Z undoes it**.
+That's the whole loop — **start to chatting in ~5 minutes.** Everything is an ordinary Houdini action — **Ctrl+Z undoes it**.
 
 <details>
-<summary><strong>If something's not working</strong></summary>
+<summary><strong>Troubleshooting</strong></summary>
 
-- **SYNAPSE isn't in the Pane Tab menu** → Houdini loads packages only at launch; fully restart it, and confirm the installer reported success.
-- **"No API key" / won't connect** → re-run `set_anthropic_key.bat` (or confirm the `GEMINI_API_KEY` / `NVIDIA_API_KEY` line in your `.env`), then **relaunch Houdini from scratch** — on Windows a freshly-set key only reaches apps started *after* you set it. Check in Houdini's Python Shell: `import os; print(bool(os.environ.get('ANTHROPIC_API_KEY')))` → should print `True`.
-- **`ModuleNotFoundError: No module named 'synapse'`** → the installer prints the path it wired; confirm it points at the repo's `python/` directory, and that you restarted Houdini.
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| **SYNAPSE isn't in the Pane Tab menu** | Houdini loads packages only at launch | Fully restart Houdini; confirm the installer reported success. |
+| **"No API key" / won't connect** | On Windows a freshly-set key only reaches apps started *after* you set it | Re-run `set_anthropic_key.bat` (or confirm the `GEMINI_API_KEY` / `NVIDIA_API_KEY` line in `.env`), then **relaunch Houdini from scratch**. Verify in Houdini's Python Shell: `import os; print(bool(os.environ.get('ANTHROPIC_API_KEY')))` → `True`. |
+| **`ModuleNotFoundError: No module named 'synapse'`** | The package path wasn't wired, or Houdini wasn't restarted | The installer prints the path it wired — confirm it points at the repo's `python/` directory, then restart Houdini. |
+| **Panel loads but says it can't reach Houdini** | The in-process bridge server isn't up yet | Click **Connect** in the panel rail (one click force-starts it). |
 
 </details>
 
@@ -143,6 +162,17 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 ## ✦ Project status
 
 **Shipping (v5.17.0):** the artist panel (multi-provider, undo-safe, 113 tools, live observability + latency instrumentation), the in-process substrate, two-tier provenance with the audit write off the hot path, freeze-safety, bounded autonomy + a kill switch, live-grounded Solaris / USD parameter names, and an H22-readiness harness. SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success, and the per-tool capability audit + the full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
+
+---
+
+## ✦ Dependencies
+
+**Core — works standalone.** A clean clone runs without anything exotic. Memory persists to a plain **JSONL** file (the live default), and the **Anthropic SDK is vendored** into the repo (`python/synapse/_vendor/`) — no `pip install anthropic` required. Add a provider key and go.
+
+**Optional — Moneta.** Moneta is a private, encrypted memory substrate (repo `JosephOIbrahim/Moneta`). It's **built but default-OFF** — JSONL stays the default until you opt in:
+
+- Flip it with the **`SYNAPSE_MEMORY_BACKEND`** env var → `moneta` (Moneta-backed) or `shadow` (JSONL primary + Moneta dual-write for parity). Any unknown value — or Moneta not being importable — **falls back to `jsonl` with a warning**, so the flag can never break startup.
+- The package isn't bundled. CI checks it out via the **`MONETA_DEPLOY_KEY`** secret: when that secret is configured ~70 Moneta-gated tests run; when it's absent those steps and tests skip and **CI stays green**. Wiring details in [`docs/MONETA_FOLLOWUPS.md`](docs/MONETA_FOLLOWUPS.md).
 
 ---
 
@@ -188,4 +218,6 @@ mcp_server.py                   # WebSocket adapter for external MCP clients
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+**MIT** — see [LICENSE](LICENSE). Use, modify, and ship the source freely under copyright.
+
+Certain methods are **patent-pending** (documented separately in [PATENTS](PATENTS)). The MIT grant covers **copyright, not patents** — the patent notice doesn't change the MIT terms, and MIT grants no license under any patent claims.
