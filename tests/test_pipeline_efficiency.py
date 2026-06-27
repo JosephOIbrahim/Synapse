@@ -131,16 +131,20 @@ class TestReadWriteLock:
         """Writer blocks new readers."""
         rwl = ReadWriteLock()
         writer_held = threading.Event()
+        release_writer = threading.Event()
         reader_entered = threading.Event()
 
         def writer():
             with rwl.write_lock():
                 writer_held.set()
-                time.sleep(0.1)
+                # Hold until the test explicitly releases us. Anchoring the
+                # hold to an event (not a wall-clock sleep) keeps the reader
+                # provably excluded for the whole assertion window even when a
+                # contended CI runner delays the main thread past a fixed sleep.
+                release_writer.wait(timeout=5)
 
         def reader():
             writer_held.wait(timeout=2)
-            time.sleep(0.02)  # Ensure writer is still held
             with rwl.read_lock():
                 reader_entered.set()
 
@@ -149,8 +153,13 @@ class TestReadWriteLock:
         wt.start()
         rt.start()
 
-        # Reader shouldn't enter until writer is done
-        assert not reader_entered.wait(timeout=0.05)
+        # The writer is provably holding the lock now.
+        assert writer_held.wait(timeout=2)
+        # While the writer holds, the reader must not get in — no matter how
+        # long the main thread takes to observe it.
+        assert not reader_entered.wait(timeout=0.2)
+        # Release the writer; the reader should then acquire.
+        release_writer.set()
         wt.join(timeout=5)
         rt.join(timeout=5)
         assert reader_entered.is_set()
