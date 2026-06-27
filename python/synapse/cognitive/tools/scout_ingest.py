@@ -158,16 +158,39 @@ def build_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None)
     return {"entries": len(entries), "path": str(out_fp), "store_root": str(out)}
 
 
+def _manifest_is_fresh(manifest_fp: Path, rag_root: Optional[str]) -> bool:
+    """True iff the cached corpus manifest's recorded ``source_digest`` still
+    matches the live digest of its rag/ source.
+
+    A drifted source (e.g. an H21→H22 edit to the reference markdown) makes the
+    cached corpus STALE. Serving it would trip scout's fail-closed drift gate
+    (``DRIFT_POLICY=refuse`` raises; the default) and break retrieval on the
+    headless/MCP path — so ``ensure_corpus`` must rebuild rather than return the
+    stale store as ``cached``. Any read/parse error reads as NOT fresh (rebuild —
+    fail toward a correct store, never silently serve unverifiable provenance)."""
+    try:
+        manifest = json.loads(manifest_fp.read_text(encoding="utf-8"))
+        recorded = manifest["source_digest"]
+        src = Path(rag_root) if rag_root else Path(manifest.get("source_root") or rag_source())
+        return source_digest(src) == recorded
+    except (json.JSONDecodeError, OSError, KeyError, TypeError):
+        return False
+
+
 def ensure_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None) -> dict:
-    """Build the corpus iff it is absent/empty (idempotent). The live wiring calls
-    this before dispatch so scout never goes live empty."""
+    """Build the corpus iff it is absent/empty/STALE (idempotent). The live wiring
+    calls this before dispatch so scout never goes live empty — and never serves a
+    corpus that has drifted from its rag/ source (which the refuse-policy gate would
+    reject, degrading the headless/MCP path)."""
     out = Path(out_root) if out_root else corpus_root()
     fp = out / "corpus" / "entries.jsonl"
-    # Rebuild if the corpus is absent/empty OR predates the freshness manifest
+    # Rebuild if the corpus is absent/empty, predates the freshness manifest
     # (a manifest-less corpus has unverifiable provenance — scout would flag it
-    # stale forever; rebuilding self-heals a pre-Spike-1 store on first use).
+    # stale forever; rebuilding self-heals a pre-Spike-1 store on first use), OR
+    # has drifted from its rag/ source (a stale store the drift gate would refuse).
     manifest_fp = out / CORPUS_MANIFEST_NAME
-    if fp.is_file() and fp.stat().st_size > 0 and manifest_fp.is_file():
+    if (fp.is_file() and fp.stat().st_size > 0 and manifest_fp.is_file()
+            and _manifest_is_fresh(manifest_fp, rag_root)):
         return {"entries": -1, "path": str(fp), "store_root": str(out), "cached": True}
     return build_corpus(rag_root, out_root)
 
