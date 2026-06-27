@@ -22,15 +22,17 @@ Design constraints (CTO decisions, baked in):
 
 from __future__ import annotations
 
+import atexit
 import collections
 import contextvars
 import hashlib
 import json
 import os
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Callable, Deque, Dict, Optional
+from typing import Any, Callable, Deque, Dict, Optional, Set
 
 # The op-id of the operation currently executing on this thread/context. Set by
 # ``FloorGate.wrap`` around ``fn()`` so a nested op can discover its parent. Read
@@ -60,18 +62,48 @@ class FloorContext:
     parent: Optional[str] = None
 
 
-def _canonical_digest(obj: Any) -> str:
-    """sha256 of a canonical JSON serialization of ``obj``.
+def _canonical_serialize(obj: Any) -> str:
+    """Canonical, total JSON serialization of ``obj`` (no hashing).
 
-    ``sort_keys`` makes the digest order-independent; ``default=str`` keeps it
-    total over non-JSON-native values (datetimes, hou stand-ins in tests, etc.)
-    instead of raising. Deterministic for equal inputs.
+    ``sort_keys`` makes downstream digests order-independent; ``default=str`` keeps it
+    total over non-JSON-native values (datetimes, hou stand-ins in tests, etc.) instead
+    of raising. Falls back to ``repr`` if even that fails. Deterministic for equal inputs.
     """
     try:
-        serialized = json.dumps(obj, sort_keys=True, default=str)
+        return json.dumps(obj, sort_keys=True, default=str)
     except Exception:
-        serialized = repr(obj)
-    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+        return repr(obj)
+
+
+def _canonical_digest(obj: Any) -> str:
+    """sha256 of the canonical serialization of ``obj``."""
+    return hashlib.sha256(_canonical_serialize(obj).encode("utf-8")).hexdigest()
+
+
+# Above this serialized size (bytes) a result is digested over a bounded summary
+# (length + head slice) instead of the whole payload, so a pathological large result
+# (the 127KB-dump class) cannot make the per-op digest cost scale with result size.
+RESULT_DIGEST_MAX_BYTES = 65536
+
+
+def _result_digest(result: Any, max_bytes: int = RESULT_DIGEST_MAX_BYTES) -> str:
+    """sha256 of the result, capping the hashed input for very large results.
+
+    For results whose canonical serialization is ``<= max_bytes`` this is identical to
+    :func:`_canonical_digest` (full-payload sha256 — unchanged behavior). Above the
+    threshold it hashes a bounded summary — the total length plus a head slice — so the
+    digest stays cheap and bounded while remaining deterministic and sensitive to both
+    the size and the leading content of the result.
+    """
+    encoded = _canonical_serialize(result).encode("utf-8")
+    if len(encoded) <= max_bytes:
+        return hashlib.sha256(encoded).hexdigest()
+    h = hashlib.sha256()
+    h.update(b"synapse-capped-result:")
+    h.update(str(len(encoded)).encode("utf-8"))
+    h.update(b":")
+    h.update(encoded[:max_bytes])
+    return h.hexdigest()
 
 
 def resolve_provenance_dir() -> str:
@@ -108,6 +140,91 @@ def resolve_provenance_max_records() -> int:
         return int(raw)
     except (TypeError, ValueError):
         return 0  # unparseable => rotation disabled
+
+
+# ---------------------------------------------------------------------------
+# Deferred-fsync executor (SUCCESS-path power-loss durability, off the hot path)
+# ---------------------------------------------------------------------------
+#
+# Mirrors the ``handlers._log_executor`` pattern: one small, bounded, process-wide
+# pool. The SUCCESS-path provenance file is written + ``os.replace``'d SYNCHRONOUSLY
+# on the dispatch thread — so a *process* crash never loses it (the bytes reach the OS
+# cache and the final filename already exists). Only the ``os.fsync`` (power-loss
+# durability — the measured ~3.5ms cost) is handed to this pool, leaving the dispatch
+# thread immediately. The ERROR path NEVER uses this: an error record fsyncs SYNCHRONOUSLY
+# (durable before the exception propagates), because a record of a failure must not be
+# the thing a crash loses.
+_fsync_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="synapse-floor-fsync")
+_fsync_pending_lock = threading.Lock()
+_fsync_pending: Set[Any] = set()
+
+
+def _fsync_is_synchronous() -> bool:
+    """Force fsync inline when ``$SYNAPSE_FLOOR_FSYNC_SYNC`` is truthy (tests).
+
+    Lets the existing Floor/FloorGate tests — and the new one — pin durability
+    deterministically without depending on background-thread timing.
+    """
+    return os.environ.get("SYNAPSE_FLOOR_FSYNC_SYNC", "").strip().lower() in (
+        "1", "true", "yes", "on",
+    )
+
+
+def _do_fsync(path: str) -> None:
+    """Commit one already-written success-path record to stable storage. Best-effort."""
+    try:
+        from synapse.cognitive.tools.write_report import fsync_path
+        fsync_path(path)
+    except Exception:
+        # A missed fsync only weakens power-loss durability; the content is already
+        # process-crash durable. Never let it surface on the (background) thread.
+        pass
+
+
+def _submit_fsync(path: str) -> None:
+    """Schedule the deferred power-loss fsync of a success-path record.
+
+    Runs inline when forced synchronous (tests) or if the executor has already been
+    torn down at interpreter exit. Otherwise the future is tracked so :func:`flush_fsync`
+    can drain pending fsyncs on a clean shutdown / on demand. Ordering is irrelevant here:
+    the record's filename + content are already committed; this only flushes them.
+    """
+    if _fsync_is_synchronous():
+        _do_fsync(path)
+        return
+    try:
+        fut = _fsync_executor.submit(_do_fsync, path)
+    except RuntimeError:
+        # Executor already shut down (interpreter teardown) — fall back to sync.
+        _do_fsync(path)
+        return
+    with _fsync_pending_lock:
+        _fsync_pending.add(fut)
+    fut.add_done_callback(_discard_fsync_future)
+
+
+def _discard_fsync_future(fut: Any) -> None:
+    with _fsync_pending_lock:
+        _fsync_pending.discard(fut)
+
+
+def flush_fsync(timeout: Optional[float] = None) -> None:
+    """Block until all currently-pending deferred fsyncs have completed.
+
+    Tests call this to make the success path durable deterministically; it is also
+    registered via :mod:`atexit` so a clean shutdown drains any queued fsyncs. Failures
+    in an individual fsync are swallowed (best-effort durability, never a crash on exit).
+    """
+    with _fsync_pending_lock:
+        snapshot = list(_fsync_pending)
+    for fut in snapshot:
+        try:
+            fut.result(timeout=timeout)
+        except Exception:
+            pass
+
+
+atexit.register(flush_fsync)
 
 
 class FloorGate:
@@ -248,7 +365,7 @@ class FloorGate:
             "ts": datetime.now(timezone.utc).isoformat(),
             "session": ctx.session if ctx else None,
             "payload_digest": _canonical_digest(payload),
-            "result_digest": _canonical_digest(result),
+            "result_digest": _result_digest(result),
             "outcome": outcome,
             "origin": ctx.origin if ctx else None,
             "parent": parent,
@@ -256,6 +373,17 @@ class FloorGate:
         if error_type is not None:
             record["error_type"] = error_type
 
+        # Durability split (audit invariant — "provenance or it did not happen"):
+        #   * ERROR (op failed / about to raise): fsync SYNCHRONOUSLY, so the failure
+        #     record is on stable storage BEFORE the exception propagates from ``wrap``.
+        #   * SUCCESS: write + ``os.replace`` SYNCHRONOUSLY (process-crash durable — the
+        #     bytes reach the OS cache and the final filename exists), then DEFER only the
+        #     ``os.fsync`` (power-loss durability) to the background pool below, moving the
+        #     ~3.5ms off the dispatch thread.
+        # The op_id (its monotonic sequence + timestamp) was minted at wrap-time, and the
+        # filename + content are written here in call order — so record ORDERING is fixed
+        # at submit time; deferring the fsync cannot reorder anything.
+        defer_fsync = outcome == "ok"
         try:
             from synapse.cognitive.tools.write_report import write_report
             write_report(
@@ -263,18 +391,27 @@ class FloorGate:
                 json.dumps(record, sort_keys=True, default=str),
                 overwrite=True,
                 base_dir=self.provenance_dir,
+                fsync=not defer_fsync,
             )
         except Exception:
             # Never let a provenance write failure break the live op.
             return
 
-        # Housekeeping AFTER the record is durably on disk. Wrapped so a rotation
+        record_path = os.path.join(self.provenance_dir, f"{op_id}.json")
+
+        # Housekeeping AFTER the record's content is on disk. Wrapped so a rotation
         # failure can never propagate — provenance + its trimming are
         # observability, not the operation.
         try:
-            self._rotate(os.path.join(self.provenance_dir, f"{op_id}.json"))
+            self._rotate(record_path)
         except Exception:
             pass
+
+        # Success path: the content + final filename are already committed (process-crash
+        # durable); hand the power-loss fsync to the background pool so it leaves the
+        # dispatch thread. Errors already fsynced inline above — never deferred.
+        if defer_fsync:
+            _submit_fsync(record_path)
 
     def _rotate(self, record_path: str) -> None:
         """FIFO-trim the provenance dir to :attr:`max_records` after a write.
