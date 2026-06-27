@@ -243,11 +243,11 @@ dome.parm("xn__inputsexposure_control_wcb").set("set")
 dome.parm("xn__inputsexposure_vya").set(0.25)   # 0.25 stops for HDRI ambient fill
 
 # HDRI texture (Greyscale Gorilla HDRIs or similar)
-dome.parm("xn__inputstexturefile_i1a").set(
+dome.parm("xn__inputstexturefile_r3ah").set(
     "D:/GreyscaleGorillaAssetLibrary/HDRIs/studio_01.exr"
 )
 # Format: "automatic" (let Houdini detect), "latlong", "mirroredBall"
-dome.parm("xn__inputstextureformat_i7a").set("automatic")
+dome.parm("xn__inputstextureformat_06ah").set("automatic")
 
 # Rotate the HDRI environment (azimuth)
 dome.parm("ry").set(45.0)
@@ -270,11 +270,11 @@ sun.parm("xn__inputsexposure_control_wcb").set("set")
 sun.parm("xn__inputsexposure_vya").set(1.0)   # key light: 1 stop
 
 # Enable color temperature for natural warmth (daylight = ~5600K, tungsten = 3200K)
-sun.parm("xn__inputsenablecolortemperature_r5a").set(True)
-sun.parm("xn__inputscolortemperature_u5a").set(5600.0)
+sun.parm("xn__inputsenableColorTemperature_omb").set(True)
+sun.parm("xn__inputscolorTemperature_wcb").set(5600.0)
 
 # Angular diameter: 0.53 = sun, larger = softer shadows (overcast)
-sun.parm("xn__inputsangle_06a").set(0.53)
+sun.parm("xn__inputsangle_zta").set(0.53)
 
 # Rotation controls direction. Position (tx/ty/tz) has NO effect on distant lights.
 sun.parm("rx").set(-45.0)   # elevation: negative = light coming from above
@@ -303,7 +303,7 @@ key.parm("xn__inputswidth_e5a").set(1.5)
 key.parm("xn__inputsheight_k5a").set(1.0)
 
 # Normalize: keep brightness constant as size changes (True = normalize)
-key.parm("xn__inputsnormalize_ida").set(True)
+key.parm("xn__inputsnormalize_i0a").set(True)
 
 # Position and aim
 key.parm("tx").set(3.0)
@@ -347,8 +347,8 @@ sph.parm("ty").set(2.0)
 sph.parm("tz").set(0.0)
 
 # Color (warm tungsten)
-sph.parm("xn__inputsenablecolortemperature_r5a").set(True)
-sph.parm("xn__inputscolortemperature_u5a").set(3200.0)
+sph.parm("xn__inputsenableColorTemperature_omb").set(True)
+sph.parm("xn__inputscolorTemperature_wcb").set(3200.0)
 ```
 
 ### Lights — Disk Light and Cylinder Light
@@ -665,7 +665,7 @@ dome = stage.createNode("domelight", "dome")
 dome.parm("xn__inputsintensity_i0a").set(1.0)
 dome.parm("xn__inputsexposure_control_wcb").set("set")
 dome.parm("xn__inputsexposure_vya").set(0.25)
-dome.parm("xn__inputstexturefile_i1a").set("D:/HDRIs/studio.exr")
+dome.parm("xn__inputstexturefile_r3ah").set("D:/HDRIs/studio.exr")
 
 # 5. Key light (rect)
 key = stage.createNode("rectlight", "key")

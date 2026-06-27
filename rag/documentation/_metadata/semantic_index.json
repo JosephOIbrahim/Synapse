@@ -113,7 +113,8 @@
       "syntax",
       "fireflies"
     ],
-    "summary": "24 common Houdini errors with causes and solutions"
+    "summary": "24 common Houdini errors with causes and solutions",
+    "reference_file": "common_errors"
   },
   "cops_compositing": {
     "description": "COPs at /img or inside cop2net. Generators: file, color, ramp, noise, font. Color correction: colorcorrect (gamma/gain/offset), grade (lift/gamma/gain), bright, hueshift, lut, tonemap. Compositing: over, multiply, add, screen, blend. Transform: xform, crop, scale, flip. Filters: blur, defocus, sharpen, edge, median. Channels: channelcopy, shuffle, premultiply. Output: rop_comp. Chain: file->colorcorrect->grade->null for basic correction.",
@@ -741,7 +742,8 @@
       "light",
       "group"
     ],
-    "summary": "Karma AOV setup: render passes, cryptomatte, denoising"
+    "summary": "Karma AOV setup: render passes, cryptomatte, denoising",
+    "reference_file": "karma_aov"
   },
   "karma_render_reference": {
     "description": "Full Karma rendering reference. Engine comparison: XPU (GPU+CPU hybrid, 5-20x faster) vs CPU (reference quality, OSL support, nested dielectrics). Render settings: pixel samples (karma:global:pathtracedsamples), convergence mode, pixel oracle. Bounce limits: diffuse (diffuselimit), specular (reflectlimit), transmission (refractlimit), volume (volumelimit), SSS (ssslimit). Progressive render pipeline: Stage 1 layout (320x240, 4 samples), Stage 2 lighting (960x540, 16-32), Stage 3 quality (1920x1080, 64), Stage 4 final (128-512 samples). Intel OIDN denoising (denoisemode='oidn'). 9 beauty AOVs (C, direct/indirect diffuse/specular, emission, sss, direct/indirect volume) + 8 utility AOVs (N, P, depth, Albedo, motionvector, crypto_material/object/asset). Volume rendering: step rate, shadow step rate. Camera DOF (fStop > 0), motion blur (xformsamples, geosamples). Light linking via USD collections. Light groups for per-light AOVs. 8 common render issues with fixes.",
@@ -804,7 +806,7 @@
     "summary": "KineFX SOP-based rigging, retargeting, and motion clips"
   },
   "lighting_setup": {
-    "description": "Solaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). LIGHTING LAW: intensity ALWAYS 1.0, brightness controlled by EXPOSURE (logarithmic, in stops). Encoded parm names: intensity='xn__inputsintensity_i0a' (always 1.0), color='xn__inputscolor_kya' (vec3), exposure='xn__inputsexposure_vya', exposure control='xn__inputsexposure_control_wcb' (set to 'set' to enable). Dome light texture: 'xn__inputstexturefile_i1a'. Key:fill ratio math: fill_exposure = key_exposure - log2(ratio). Standard 3-point: key=5.0, fill=3.0 (4:1), rim=4.5, dome=0.0.",
+    "description": "Solaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). LIGHTING LAW: intensity ALWAYS 1.0, brightness controlled by EXPOSURE (logarithmic, in stops). Encoded parm names: intensity='xn__inputsintensity_i0a' (always 1.0), color='xn__inputscolor_zta' (vec3), exposure='xn__inputsexposure_vya', exposure control='xn__inputsexposure_control_wcb' (set to 'set' to enable). Dome light texture: 'xn__inputstexturefile_r3ah'. Key:fill ratio math: fill_exposure = key_exposure - log2(ratio). Standard 3-point: key=5.0, fill=3.0 (4:1), rim=4.5, dome=0.0.",
     "keywords": [
       "light",
       "lighting",
@@ -819,7 +821,8 @@
       "stops",
       "ratio"
     ],
-    "summary": "Light types, Lighting Law, and exposure-based brightness control in Solaris"
+    "summary": "Light types, Lighting Law, and exposure-based brightness control in Solaris",
+    "reference_file": "lighting"
   },
   "materialx_reference": {
     "description": "Comprehensive MaterialX shader reference. Standard Surface 11 input groups: Base (base, base_color), Specular (specular, specular_roughness, specular_IOR), Metalness, Transmission, SSS (subsurface, subsurface_color/radius/scale), Emission, Coat, Sheen, Thin Film, Normal, Opacity. 21 encoded parameter names (basecolor, metalness, specular_roughness, specular_IOR, coat, coat_roughness, emission, emission_color, etc.). 10 material presets: brushed metal (metalness=1, roughness=0.25), polished chrome (roughness=0.02), matte plastic (roughness=0.4), glossy plastic (coat=0.5), clear glass (transmission=1), frosted glass (roughness=0.3, transmission=1), skin SSS (subsurface=0.6), marble (subsurface=0.4), fabric/velvet (sheen=0.8), car paint (metalness=0.5, coat=1). PBR texture set: diffuse/albedo (sRGB), roughness/metalness/normal/displacement (Raw/Linear). UDIM tiles (<UDIM> token). Color space rules. Displacement setup (displacement_scale, displacement_offset, displacement bound, subdivision). Material assignment: direct binding, collection-based, GeomSubset. 12 common MaterialX nodes.",
@@ -1526,9 +1529,15 @@
       "asset",
       "scene",
       "composition",
-      "payload"
+      "payload",
+      "LIVRPS",
+      "/World",
+      "composition arc",
+      "layer stack",
+      "opinion strength"
     ],
-    "summary": "USD scene assembly via reference, sublayer, and payload"
+    "summary": "USD scene assembly via reference, sublayer, and payload",
+    "reference_file": "scene_assembly"
   },
   "solaris_node_types": {
     "description": "Common Solaris LOP node types: sphere, cube, camera, domelight, distantlight, rectlight, cylinderlight, disklight, materiallibrary, assignmaterial, edit, merge, reference, sublayer, sopimport, karmarenderproperties, usdrender_rop, null. Note: there is no 'grid' or 'plane' LOP node — use cube with scale.y=0.01 for ground planes.",
@@ -1563,6 +1572,78 @@
       "lop"
     ],
     "summary": "Key Solaris/LOP parameter naming conventions"
+  },
+  "solaris_nodes": {
+    "description": "Python reference for creating and configuring Solaris (LOP) nodes via hou.node('/stage').createNode() + parm().set(). Covers stage management (merge, switch, null, configurestage), geometry import (sopcreate/sopimport), materials (materiallibrary, assignmaterial, materiallinker), all light types (domelight, distantlight, rectlight, disklight, cylinderlight, spherelight), cameras, render settings (karmarenderproperties, usdrender_rop), and layout/instancer nodes. All LOP nodes live in /stage. Lighting Law: intensity ALWAYS 1.0; brightness via exposure (stops). Light parms use punycode-encoded names (e.g. exposure='xn__inputsexposure_vya'); see solaris_parameters for the encoding table.",
+    "keywords": [
+      "solaris",
+      "lop",
+      "node",
+      "stage",
+      "sopcreate",
+      "merge",
+      "switch",
+      "domelight",
+      "rectlight",
+      "distantlight",
+      "materiallibrary",
+      "assignmaterial",
+      "camera",
+      "reference",
+      "sublayer",
+      "payload",
+      "layer stack",
+      "composition arc"
+    ],
+    "summary": "Solaris/LOP node creation and configuration reference (stage, geometry, materials, lights, cameras, render settings)",
+    "reference_file": "solaris_nodes"
+  },
+  "solaris_parameters": {
+    "description": "USD/LOP parameters surface under punycode-encoded names (xn__...) that don't match their friendly USD attribute names — discover them via node.parms()/parmTuple() rather than guessing. Verified light encodings (Houdini 21.0.671, live-probed): intensity='xn__inputsintensity_i0a' (always 1.0), exposure='xn__inputsexposure_vya', exposure control='xn__inputsexposure_control_wcb' ('set'), color (color3f parmTuple base)='xn__inputscolor_zta' (components _ztar/_ztag/_ztab), diffuse='xn__inputsdiffuse_8wa', specular='xn__inputsspecular_vya', normalize='xn__inputsnormalize_i0a', colorTemperature='xn__inputscolorTemperature_wcb' (camelCase), enableColorTemperature='xn__inputsenableColorTemperature_omb', texture file='xn__inputstexturefile_r3ah', texture format='xn__inputstextureformat_06ah'. color3f tuples use parmTuple. Camera attrs (focalLength, fStop, focusDistance) are plain camelCase, NOT encoded. MaterialX base color channels are base_colorr/g/b.",
+    "keywords": [
+      "parameter",
+      "parm",
+      "encoded name",
+      "xn__",
+      "punycode",
+      "intensity",
+      "exposure",
+      "color",
+      "colortemperature",
+      "texture",
+      "normalize",
+      "diffuse",
+      "specular",
+      "parmtuple",
+      "solaris",
+      "lop"
+    ],
+    "summary": "Solaris/LOP encoded (xn__) parameter names — verified light-param encodings and parmTuple usage",
+    "reference_file": "solaris_parameters"
+  },
+  "solaris_network_blueprint": {
+    "description": "Canonical node-wiring order for a Solaris (LOP) network: SOPCreate -> MaterialLibrary -> AssignMaterial -> Camera -> Lights -> RenderProperties -> OUTPUT null. Every node lives in /stage (never /obj). Use sopcreate (not sopimport) for new geometry. Wire linearly with node.setInput(0, previous). Composition: later sublayers/merge inputs are stronger (LIVRPS opinion strength); a reference adds asset content under a prim path, a sublayer merges a layer stack onto /World. Lighting Law: intensity ALWAYS 1.0; brightness via exposure only.",
+    "keywords": [
+      "solaris chain",
+      "lop chain",
+      "network blueprint",
+      "node order",
+      "wire order",
+      "solaris pipeline",
+      "sopcreate",
+      "stage",
+      "setinput",
+      "/World",
+      "sublayer",
+      "reference",
+      "payload",
+      "layer stack",
+      "opinion strength",
+      "LIVRPS",
+      "composition arc"
+    ],
+    "summary": "Canonical Solaris/LOP network wiring order and composition layering",
+    "reference_file": "solaris_network_blueprint"
   },
   "sop_solver_loops": {
     "description": "Solver SOP creates frame-to-frame feedback: output of frame N becomes input of frame N+1. Inside solver: Prev_Frame node gives last frame, Input_1 gives original input. Must play forward from start frame (no random access). Common patterns: point growth (expand each frame), trail/history (accumulate points), painting (accumulate attribute by proximity), custom particles (emit + gravity + kill). SOP Solver DOP integrates custom SOP logic inside DOP sims. Key rule: multiply velocities by @TimeInc for frame-rate independence.",

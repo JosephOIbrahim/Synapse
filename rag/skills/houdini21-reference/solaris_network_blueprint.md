@@ -58,14 +58,14 @@ dome = stage.createNode("domelight", "env_dome")
 dome.setInput(0, cam)
 dome.parm("xn__inputsintensity_i0a").set(1.0)       # Lighting Law: always 1.0
 dome.parm("xn__inputsexposure_vya").set(0.25)        # HDRI provides range
-# dome.parm("xn__inputstexturefile_a1b").set("path/to/hdri.exr")
+# dome.parm("xn__inputstexturefile_r3ah").set("path/to/hdri.exr")
 
 key = stage.createNode("distantlight", "key_light")
 key.setInput(0, dome)
 key.parm("xn__inputsintensity_i0a").set(1.0)         # Lighting Law
 key.parm("xn__inputsexposure_vya").set(1.0)
-key.parm("xn__inputsenablecolortemperature_r4b").set(True)
-key.parm("xn__inputscolortemperature_alb").set(5500)  # Daylight
+key.parm("xn__inputsenableColorTemperature_omb").set(True)
+key.parm("xn__inputscolorTemperature_wcb").set(5500)  # Daylight
 
 # 6. Render Properties
 render_props = stage.createNode("karmarenderproperties", "render_settings")

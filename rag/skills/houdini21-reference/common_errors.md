@@ -97,10 +97,10 @@ def find_usd_parm(node, friendly_name):
         "intensity": "xn__inputsintensity_i0a",
         "exposure": "xn__inputsexposure_vya",
         "exposure_control": "xn__inputsexposure_control_wcb",
-        "color": "xn__inputscolor_kya",
-        "texture_file": "xn__inputstexturefile_i1a",
-        "color_temperature": "xn__inputscolortemperature_u5a",
-        "enable_color_temperature": "xn__inputsenablecolortemperature_r5a",
+        "color": "xn__inputscolor_zta",
+        "texture_file": "xn__inputstexturefile_r3ah",
+        "color_temperature": "xn__inputscolorTemperature_wcb",
+        "enable_color_temperature": "xn__inputsenableColorTemperature_omb",
     }
 
     encoded = USD_PARM_MAP.get(friendly_name, friendly_name)
