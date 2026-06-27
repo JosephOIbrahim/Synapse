@@ -67,6 +67,7 @@ from .bridge_endpoint import publish_endpoint, clear_endpoint
 _handler: Optional[SynapseHandler] = None
 _rate_limiter: Optional[RateLimiter] = None
 _backpressure: Optional[BackpressureController] = None
+_metrics_aggregator = None  # live MetricsAggregator (Sprint E) — None until start
 _client_counter = 0
 _client_lock = threading.Lock()
 _client_sessions: Dict[int, str] = {}  # counter -> session_id
@@ -166,6 +167,26 @@ if HWEBSERVER_AVAILABLE:
                 except json.JSONDecodeError:
                     await self.close()
                     return
+
+            # Heartbeat fast path (raw-substring — skip SynapseCommand.from_json).
+            # Heartbeats are the highest-frequency message (3045/sample); short-
+            # circuit on the literal substring BEFORE the full protocol parse.
+            # Mirrors websocket.py:_handle_message. Behavior identical to the
+            # post-parse heartbeat branch below — just an earlier exit.
+            if '"heartbeat"' in text_data[:80]:
+                try:
+                    raw = json.loads(text_data)
+                    if raw.get("type") == "heartbeat":
+                        await self.send(_dumps({
+                            "id": raw.get("id", ""),
+                            "success": True,
+                            "data": {"pong": True},
+                            "sequence": raw.get("sequence", 0),
+                            "protocol_version": PROTOCOL_VERSION,
+                        }), is_binary=False)
+                        return
+                except (json.JSONDecodeError, KeyError):
+                    pass  # Fall through to normal parsing
 
             try:
                 command = SynapseCommand.from_json(text_data)
@@ -270,6 +291,7 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
         raise ImportError("hwebserver not available — must run inside Houdini")
 
     global _rate_limiter, _backpressure, _running, _handler, _port
+    global _metrics_aggregator
 
     if _running:
         logger.info("Already running")
@@ -282,6 +304,21 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
     if enable_rate_limiter:
         _rate_limiter = RateLimiter()
         _backpressure = BackpressureController()
+
+    # Live metrics aggregator (Sprint E). The legacy websocket.py builds + feeds
+    # one; this dominant hwebserver path never did, so telemetry always stamped
+    # live_metrics_latest_absent. Mirror websocket.py: construct, wire it to the
+    # handler via the same set_metrics_aggregator hook, and START its collection
+    # loop so .latest() returns real snapshots (it is FED, not empty). Best-effort
+    # — a metrics failure must never block the transport from starting.
+    try:
+        from .live_metrics import MetricsAggregator
+        _metrics_aggregator = MetricsAggregator()
+        _handler.set_metrics_aggregator(_metrics_aggregator)
+        _metrics_aggregator.start()
+    except Exception:
+        logger.debug("Metrics aggregator init failed (best-effort)", exc_info=True)
+        _metrics_aggregator = None
 
     # Start native server — non-blocking in GUI, blocking in hython
     hwebserver.run(
@@ -310,10 +347,18 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
 
 def stop_hwebserver():
     """Stop the Synapse hwebserver."""
-    global _running, _handler, _rate_limiter, _backpressure
+    global _running, _handler, _rate_limiter, _backpressure, _metrics_aggregator
 
     if not _running:
         return
+
+    # Stop the live metrics collector (best-effort — never block shutdown).
+    if _metrics_aggregator is not None:
+        try:
+            _metrics_aggregator.stop()
+        except Exception:
+            pass
+        _metrics_aggregator = None
 
     try:
         hwebserver.requestShutdown()

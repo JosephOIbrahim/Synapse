@@ -204,17 +204,17 @@ dome = hou.node("/stage/domelight1")   # example domelight LOP node
 # --- Read light parms via LOP node ---
 intensity = dome.evalParm("xn__inputsintensity_i0a")   # always keep at 1.0
 exposure  = dome.evalParm("xn__inputsexposure_vya")    # log2 stops, controls brightness
-color_r   = dome.evalParm("xn__inputscolorr_o5a")      # red channel
-color_g   = dome.evalParm("xn__inputscolorg_o5a")      # green channel
-color_b   = dome.evalParm("xn__inputscolorb_o5a")      # blue channel
-hdri_file = dome.evalParm("xn__inputstexturefile_i1a") # dome HDRI texture path
+color_r   = dome.evalParm("xn__inputscolor_ztar")      # red channel
+color_g   = dome.evalParm("xn__inputscolor_ztag")      # green channel
+color_b   = dome.evalParm("xn__inputscolor_ztab")      # blue channel
+hdri_file = dome.evalParm("xn__inputstexturefile_r3ah") # dome HDRI texture path
 
 print(f"intensity={intensity}, exposure={exposure}, hdri={hdri_file}")
 
 # --- Set light parms via LOP node (coaching tone: always intensity=1.0) ---
 dome.parm("xn__inputsintensity_i0a").set(1.0)    # LIGHTING LAW: never > 1.0
 dome.parm("xn__inputsexposure_vya").set(0.25)    # mild fill; studio HDRI provides range
-dome.parm("xn__inputstexturefile_i1a").set(
+dome.parm("xn__inputstexturefile_r3ah").set(
     "D:/GreyscaleGorillaAssetLibrary/hdri/studio_01.hdr"
 )
 

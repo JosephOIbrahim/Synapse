@@ -638,7 +638,6 @@ async def _inspector_call_tool(arguments: dict) -> list:
 # CANONICAL repo rag/ tree (build-if-absent) and bind scout to it, so the live
 # tool never serves an empty store nor the thin G:\ SideFXLabs-only one.
 # ---------------------------------------------------------------------------
-from pathlib import Path as _Path
 from synapse.cognitive.tools.scout import (
     synapse_scout as _scout_tool,
     SYNAPSE_SCOUT_SCHEMA as _SCOUT_SCHEMA,
@@ -661,15 +660,11 @@ def _get_scout_dispatcher() -> _Dispatcher:
     if _scout_dispatcher is not None:
         return _scout_dispatcher
     try:
-        info = _scout_ingest.ensure_corpus()
-        store_root = _Path(info["store_root"])
-        _scout_module.RAG_ROOT = store_root
-        _scout_module.VEX_ROOT = store_root
-        # Drop caches keyed on any previous root (defensive; usually fresh proc).
-        for _cache in (_scout_module._CORPUS, _scout_module._FTS,
-                       _scout_module._DENSE, _scout_module._SYMS,
-                       _scout_module._TABLE_CACHE):
-            _cache.clear()
+        # Mirror the panel's "Corpus" button EXACTLY: scout_ingest.activate() runs
+        # the canonical sequence (ensure_corpus build-if-absent/stale → bind
+        # scout.RAG_ROOT/VEX_ROOT → clear caches) so the headless/MCP path and the
+        # panel can't drift. Idempotent + guarded; rebuilds a stale store.
+        _scout_ingest.activate()
         # Host-layer version validation (Spike 2.5): stamp the running Houdini
         # version so a symbol table built for a different build reads STALE.
         # Boundary preserved — the hou read is here (host), not in scout.

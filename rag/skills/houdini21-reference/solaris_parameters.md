@@ -41,12 +41,12 @@ import hou
 # Common encoded parameter names for USD lights
 LIGHT_PARMS = {
     "intensity":         "xn__inputsintensity_i0a",       # float, always 1.0
-    "color":             "xn__inputscolor_kya",            # vec3 RGB
+    "color":             "xn__inputscolor_zta",            # vec3 RGB
     "exposure":          "xn__inputsexposure_vya",         # float, stops
     "exposure_control":  "xn__inputsexposure_control_wcb", # string, "set"
-    "texture_file":      "xn__inputstexturefile_i1a",      # string, HDRI path
-    "enable_colortemp":  "xn__inputsenablecolortemperature_r5a",  # bool
-    "color_temperature": "xn__inputscolortemperature_u5a", # float, Kelvin
+    "texture_file":      "xn__inputstexturefile_r3ah",      # string, HDRI path
+    "enable_colortemp":  "xn__inputsenableColorTemperature_omb",  # bool
+    "color_temperature": "xn__inputscolorTemperature_wcb", # float, Kelvin
 }
 
 def configure_dome_light(node_path, hdri_path, exposure=0.25):
@@ -88,8 +88,8 @@ def configure_key_light(node_path, exposure=1.0, color_temp=5500):
         "intensity":         "xn__inputsintensity_i0a",
         "exposure":          "xn__inputsexposure_vya",
         "exposure_control":  "xn__inputsexposure_control_wcb",
-        "enable_colortemp":  "xn__inputsenablecolortemperature_r5a",
-        "color_temperature": "xn__inputscolortemperature_u5a",
+        "enable_colortemp":  "xn__inputsenableColorTemperature_omb",
+        "color_temperature": "xn__inputscolorTemperature_wcb",
     }
 
     node.parm(LIGHT_PARMS["intensity"]).set(1.0)  # Lighting Law

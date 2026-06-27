@@ -105,12 +105,22 @@ def write_report(
     base_dir: Optional[str] = None,
     backups: int = 0,
     binary: bool = False,
+    fsync: bool = True,
 ) -> Dict[str, Any]:
     """Atomically write ``content`` to ``base_dir/relative_path``.
 
     Atomic (tmp + fsync + os.replace). When ``backups > 0`` and the target exists, the
     prior content is rotated into ``<name>.bak.1..N`` first. When ``binary`` is true,
     ``content`` is base64-decoded and written as bytes.
+
+    ``fsync`` (default True) controls power-loss durability. With ``fsync=True`` the tmp
+    file is fsync'd BEFORE the ``os.replace``, so the bytes are on stable storage before
+    the final name appears — full durability before this call returns. With ``fsync=False``
+    the content is still flushed to the OS and ``os.replace``'d (so the final filename
+    exists with complete content and survives a *process* crash), but the fsync is skipped;
+    the caller is responsible for committing power-loss durability later via
+    :func:`fsync_path`. This split lets a hot path move the ~3.5ms fsync off-thread while
+    keeping process-crash durability synchronous.
 
     Returns a JSON-serializable dict describing the write. Raises :class:`ReportPathError`
     on a path that escapes ``base_dir``.
@@ -129,7 +139,10 @@ def write_report(
     if backups and backups > 0 and target.exists():
         backed_up = _rotate_backups(target, int(backups))
 
-    # Atomic: write a tmp file in the same dir, fsync, then os.replace.
+    # Atomic: write a tmp file in the same dir, (optionally) fsync, then os.replace.
+    # The fsync inside the ``with`` flushes to stable storage BEFORE the rename; when
+    # ``fsync=False`` we only flush to the OS cache (process-crash durable) and defer
+    # the stable-storage fsync to a later :func:`fsync_path` on the final target.
     fd, tmp = tempfile.mkstemp(dir=str(target.parent), suffix=".tmp")
     try:
         if binary:
@@ -137,13 +150,15 @@ def write_report(
             with os.fdopen(fd, "wb") as fh:
                 fh.write(data)
                 fh.flush()
-                os.fsync(fh.fileno())
+                if fsync:
+                    os.fsync(fh.fileno())
             bytes_written = len(data)
         else:
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
                 fh.write(content)
                 fh.flush()
-                os.fsync(fh.fileno())
+                if fsync:
+                    os.fsync(fh.fileno())
             bytes_written = len(content.encode("utf-8"))
         os.replace(tmp, target)
     except BaseException:
@@ -159,3 +174,77 @@ def write_report(
         "binary": bool(binary),
         "backup": backed_up,
     }
+
+
+def fsync_path(path: str) -> None:
+    """Commit a previously-written file to stable storage (power-loss durability).
+
+    Companion to ``write_report(..., fsync=False)``: opens ``path`` and ``os.fsync``'s it,
+    flushing the OS page cache to disk so the record survives a power loss / kernel panic.
+
+    Best-effort by construction — a file that was rotated/removed in the meantime
+    (``FileNotFoundError`` / delete-pending) or is otherwise inaccessible is ignored: a
+    missed fsync only weakens power-loss durability, it never corrupts the already-committed
+    content or the live operation.
+
+    On Windows the handle is opened with ``FILE_SHARE_DELETE`` (via ``CreateFileW``) so a
+    concurrent FIFO-rotation ``os.unlink`` of this same provenance file is NOT blocked while
+    we flush it — a plain ``os.open`` handle there denies deletion of the open file and would
+    silently defeat retention. ``GENERIC_WRITE`` is required because ``os.fsync`` maps to
+    ``FlushFileBuffers``, which needs write access. POSIX allows unlink-while-open natively,
+    so it just uses ``os.open`` (read-only is sufficient for ``fsync`` there).
+    """
+    fd = _open_for_fsync(path)
+    if fd is None:
+        return
+    try:
+        os.fsync(fd)
+    except OSError:
+        pass
+    finally:
+        os.close(fd)
+
+
+if os.name == "nt":  # pragma: no cover - exercised only on Windows
+    import ctypes as _ctypes
+    import msvcrt as _msvcrt
+    from ctypes import wintypes as _wintypes
+
+    _GENERIC_READ = 0x80000000
+    _GENERIC_WRITE = 0x40000000
+    _FILE_SHARE_READ = 0x1
+    _FILE_SHARE_WRITE = 0x2
+    _FILE_SHARE_DELETE = 0x4
+    _OPEN_EXISTING = 3
+    _FILE_ATTRIBUTE_NORMAL = 0x80
+    _INVALID_HANDLE_VALUE = _ctypes.c_void_p(-1).value
+
+    _CreateFileW = _ctypes.windll.kernel32.CreateFileW
+    _CreateFileW.restype = _wintypes.HANDLE
+    _CreateFileW.argtypes = [
+        _wintypes.LPCWSTR, _wintypes.DWORD, _wintypes.DWORD,
+        _ctypes.c_void_p, _wintypes.DWORD, _wintypes.DWORD, _wintypes.HANDLE,
+    ]
+
+    def _open_for_fsync(path: str) -> Optional[int]:
+        """Open ``path`` share-delete and wrap it in a C fd, or None if unavailable."""
+        handle = _CreateFileW(
+            os.path.abspath(path),
+            _GENERIC_READ | _GENERIC_WRITE,
+            _FILE_SHARE_READ | _FILE_SHARE_WRITE | _FILE_SHARE_DELETE,
+            None, _OPEN_EXISTING, _FILE_ATTRIBUTE_NORMAL, None,
+        )
+        if not handle or handle == _INVALID_HANDLE_VALUE:
+            return None
+        try:
+            # open_osfhandle transfers ownership: os.close(fd) closes the handle.
+            return _msvcrt.open_osfhandle(handle, os.O_RDWR)
+        except OSError:
+            _ctypes.windll.kernel32.CloseHandle(handle)
+            return None
+else:
+    def _open_for_fsync(path: str) -> Optional[int]:
+        try:
+            return os.open(path, os.O_RDONLY)
+        except OSError:
+            return None

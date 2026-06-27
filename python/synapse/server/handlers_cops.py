@@ -25,6 +25,79 @@ from ..core.aliases import resolve_param, resolve_param_with_default
 from .handler_helpers import _HOUDINI_UNAVAILABLE
 
 
+# Legacy COP2 node types most exposed by the Houdini 22 Copernicus migration.
+# On H21 all three are registered -> the probe reports True and node creation is
+# completely unchanged. cop2net/copnet are network managers, vopcop2gen is a Cop2
+# node, so they live in different node-type categories.
+_LEGACY_COP_TYPES = ("cop2net", "vopcop2gen", "copnet")
+
+
+def _cop_type_registered(type_name: str) -> bool:
+    """Return True if ``type_name`` is a registered node type in the live runtime.
+
+    Scans every node-type category so we never have to guess the right one. When
+    ``hou`` is unavailable or the lookup itself raises, we return True: an inability
+    to prove the type is gone must never block the working H21 path.
+    """
+    if not HOU_AVAILABLE:
+        return True
+    try:
+        for category in hou.nodeTypeCategories().values():
+            if hou.nodeType(category, type_name) is not None:
+                return True
+    except Exception:
+        return True
+    return False
+
+
+def cop_type_survival() -> Dict[str, bool]:
+    """Probe whether the legacy COP node types survive in the live Houdini build.
+
+    Returns ``{type_name: bool}`` for cop2net / vopcop2gen / copnet. Pure no-op
+    (empty dict) when ``hou`` is unavailable -- zero side effects, no ``hou`` calls.
+    On H21 all three resolve True; a False on H22 is the early, legible signal that
+    the legacy COP2 surface was removed in the Copernicus migration.
+    """
+    if not HOU_AVAILABLE:
+        return {}
+    return {type_name: _cop_type_registered(type_name) for type_name in _LEGACY_COP_TYPES}
+
+
+def _cop_missing_type_message(type_name: str) -> str:
+    """Clear, actionable error text for a COP node type that isn't registered."""
+    return (
+        f"COP node type '{type_name}' is not registered in this Houdini build. "
+        "The legacy COP2 surface (cop2net / vopcop2gen) was migrated to Copernicus "
+        "in Houdini 22, so legacy types may no longer exist. Rebuild this network on "
+        "the modern Copernicus 'copnet' surface (see cops_create_copnet), or run on "
+        "Houdini 21 where the legacy COP2 types are still registered."
+    )
+
+
+def _create_cop_node(parent, type_name, node_name=None):
+    """``createNode`` wrapper that fails legibly when a COP type isn't registered.
+
+    H21 behavior is preserved exactly: when ``type_name`` exists this is a plain
+    pass-through to ``parent.createNode(...)`` with an identical return value and no
+    extra runtime lookups on the success path. Only when creation actually fails AND
+    the type is confirmed absent from the runtime do we raise a clear, actionable
+    error naming the type and pointing at the H22 Copernicus migration -- instead of
+    letting Houdini surface a cryptic one.
+    """
+    try:
+        if node_name is not None:
+            node = parent.createNode(type_name, node_name)
+        else:
+            node = parent.createNode(type_name)
+    except Exception as exc:
+        if not _cop_type_registered(type_name):
+            raise RuntimeError(_cop_missing_type_message(type_name)) from exc
+        raise
+    if node is None and not _cop_type_registered(type_name):
+        raise RuntimeError(_cop_missing_type_message(type_name))
+    return node
+
+
 class CopsHandlerMixin:
     """Mixin providing Copernicus (COP) handlers for SynapseHandler."""
 
@@ -63,7 +136,7 @@ class CopsHandlerMixin:
             created_any = False
             try:
                 with hou.undos.group("synapse_cops_create_network"):
-                    network = parent.createNode("cop2net", name)
+                    network = _create_cop_node(parent, "cop2net", name)
                     created_any = True
                     if network is None:
                         raise RuntimeError(
@@ -142,7 +215,7 @@ class CopsHandlerMixin:
             created_any = False
             try:
                 with hou.undos.group("synapse_cops_create_copnet"):
-                    network = parent.createNode("copnet", name)
+                    network = _create_cop_node(parent, "copnet", name)
                     created_any = True
                     if network is None:
                         raise RuntimeError(
@@ -491,7 +564,7 @@ class CopsHandlerMixin:
             created_any = False
             try:
                 with hou.undos.group("synapse_cops_composite_aovs"):
-                    network = parent.createNode("cop2net", name)
+                    network = _create_cop_node(parent, "cop2net", name)
                     created_any = True
                     network.moveToGoodPosition()
 
@@ -1293,7 +1366,7 @@ class CopsHandlerMixin:
 
                         node = halftone or quant
                     else:
-                        node = parent.createNode("vopcop2gen", name)
+                        node = _create_cop_node(parent, "vopcop2gen", name)
                         created_any = True
 
                     if node is None and not nodes_created:
@@ -1492,7 +1565,7 @@ class CopsHandlerMixin:
                     bake_nodes = []
 
                     for map_type in map_types:
-                        node = parent.createNode("vopcop2gen", f"{name}_{map_type}")
+                        node = _create_cop_node(parent, "vopcop2gen", f"{name}_{map_type}")
                         created_any = True
                         if node is None:
                             continue
@@ -1658,7 +1731,7 @@ class CopsHandlerMixin:
 
             with hou.undos.group("synapse_cops_stamp_scatter"):
                 # Create the stamp/copy node
-                scatter_node = parent.createNode("vopcop2gen", name)
+                scatter_node = _create_cop_node(parent, "vopcop2gen", name)
                 if scatter_node is None:
                     raise RuntimeError("Couldn't create stamp scatter node")
 

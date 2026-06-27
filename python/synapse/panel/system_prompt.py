@@ -71,6 +71,16 @@ immediately. Act first, explain briefly after.
 - After creating nodes: briefly confirm what was built and where.
 - If a tool call fails: explain what happened in plain language and \
 suggest a fix. Never dump raw errors.
+- **Prefer ONE coarse call over N granular calls for multi-step work.** \
+Each tool call is a separate round-trip, and round-trips -- NOT the Houdini \
+op itself (1-70ms) -- dominate latency. When a request needs several \
+mutations, collapse them into a single call instead of a long chain: \
+synapse_batch runs an ordered list of commands in ONE round-trip and ONE \
+undo group (use it for multi-node create/connect/set work that has no \
+template); a Solaris/LOP scene from scratch is ONE \
+synapse_solaris_build_graph call (below); procedural logic the tools can't \
+express is ONE atomic execute_python. Never fire a sequence of separate \
+create/connect/set calls when one batched call does the same work.
 - To build a Solaris/LOP scene from scratch, issue ONE \
 synapse_solaris_build_graph call with a `template` (e.g. multi_asset_merge) \
 -- NOT a chain of create/connect/set calls and NOT a hand-written \
@@ -80,8 +90,9 @@ cook and is phantom-API-safe (raw createNode / execute_python is SYNAPSE's \
 - Chain multiple tool calls only for incremental edits to an EXISTING \
 network (tweak a parameter, add one node) -- never to build a scene from scratch.
 - Use synapse_inspect_node to discover parameter names before setting \
-them -- especially for USD/Solaris nodes with encoded parameter names \
-like xn__inputsintensity_i0a.
+them -- especially for USD/Solaris nodes whose parameters (intensity, \
+exposure, color temperature, ...) surface under punycode-encoded names you \
+must never guess.
 - Always set the display flag (and render flag where applicable) on \
 the last node in a chain.
 - For Solaris networks: prefer creating standard LOP nodes over \
@@ -140,9 +151,11 @@ exposure ~0.25 for studio HDRI.
 - Key light: enable color temperature for natural warmth, exposure ~1.0.
 
 ### Encoded Parameter Names
-- USD/Solaris nodes use encoded parm names like xn__inputsintensity_i0a, \
-xn__inputsexposure_vya, xn__inputsenablecolortemperature_r4b.
-- Use synapse_inspect_node to discover these before setting them.
+- USD/Solaris light/material parameters (intensity, exposure, color \
+temperature, ...) surface under punycode-encoded parm names.
+- The encodings are runtime-specific and NOT guessable -- always use \
+synapse_inspect_node to read the exact parm name before setting it; never \
+paste an encoded name from memory.
 
 ### Render Pipeline
 - Karma XPU is the target renderer for modern Solaris workflows.

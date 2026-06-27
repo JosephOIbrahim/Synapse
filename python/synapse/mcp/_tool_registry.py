@@ -258,6 +258,25 @@ TOOL_DEFS: list[tuple] = [
      }, "required": ["prim_path", "attribute_name", "value"]},
      False, True, False),
 
+    ("houdini_set_usd_primvar", "set_usd_primvar",
+     _filter_keys(("node", "prim_path", "primvar_name", "type", "interpolation",
+                   "value", "element_size", "indices", "set_display")),
+     "Author a UsdGeom primvar on a prim via UsdGeomPrimvarsAPI -- carries an "
+     "interpolation token (constant/uniform/vertex/varying/faceVarying) plus "
+     "optional elementSize/indices that a raw set_usd_attribute write can't.",
+     {"type": "object", "properties": {
+         "node": {"type": "string", "description": "LOP node to wire after (optional)"},
+         "prim_path": {"type": "string", "description": "USD prim path"},
+         "primvar_name": {"type": "string", "description": "Primvar name (no 'primvars:' prefix needed)"},
+         "type": {"type": "string", "description": "Value type, e.g. float, float3, color3f, int, normal3f, texcoord2f; append '[]' for the array form (float3[])"},
+         "interpolation": {"type": "string", "description": "constant (default), uniform, vertex, varying, or faceVarying"},
+         "value": {"description": "Value to set (scalar for constant; array for per-element interpolation)"},
+         "element_size": {"type": "integer", "description": "Optional elementSize for multi-component primvars"},
+         "indices": {"type": "array", "items": {"type": "integer"}, "description": "Optional int indices for an indexed primvar"},
+         "set_display": {"type": "boolean", "description": "Move the LOP display flag to the new node when it extends the display chain (default true); on a side-branch fork the result returns display:not_set + needs_rewire instead"},
+     }, "required": ["prim_path", "primvar_name", "type", "value"]},
+     False, True, False),
+
     ("houdini_create_usd_prim", "create_usd_prim",
      _filter_keys(("node", "prim_path", "prim_type", "set_display")),
      "Create a USD prim on the stage.",

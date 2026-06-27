@@ -57,7 +57,7 @@ class Button(QtWidgets.QPushButton):
         super().__init__(text, parent)
         self.setObjectName("DsButton")
         self.setProperty("variant", variant)
-        self.setCursor(Qt.PointingHandCursor)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def set_variant(self, variant):
         self.setProperty("variant", variant)
@@ -70,7 +70,7 @@ class Pill(QtWidgets.QPushButton):
     def __init__(self, text="", parent=None):
         super().__init__(text, parent)
         self.setObjectName("DsPill")
-        self.setCursor(Qt.PointingHandCursor)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
 
 
 class Card(QtWidgets.QWidget):
@@ -79,7 +79,7 @@ class Card(QtWidgets.QWidget):
     def __init__(self, tone=None, parent=None):
         super().__init__(parent)
         self.setObjectName("DsCard")
-        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         if tone:
             self.setProperty("tone", tone)
 
@@ -94,7 +94,7 @@ class Badge(QtWidgets.QLabel):
     def __init__(self, text="", kind=None, parent=None):
         super().__init__(text, parent)
         self.setObjectName("DsBadge")
-        self.setAlignment(Qt.AlignCenter)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         if kind:
             self.setProperty("kind", kind)
 
@@ -119,7 +119,7 @@ class StatusDot(QtWidgets.QWidget):
     def paintEvent(self, _event):
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.Antialiasing)
-        p.setPen(Qt.NoPen)
+        p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QtGui.QColor(self._color))
         p.drawEllipse(1, 1, self._d, self._d)
         p.end()
@@ -176,20 +176,20 @@ class MarkDot(QtWidgets.QWidget):
         if self._state == "working":
             faint = QtGui.QColor(t.WARM)
             faint.setAlphaF(0.22)
-            p.setPen(Qt.NoPen)
+            p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(faint)
             p.drawEllipse(rect)                       # faint full ring behind
             p.setBrush(col)
             p.drawPie(rect, int(self._angle * 16), 180 * 16)  # sweeping half
         elif self._state == "done":
-            p.setPen(Qt.NoPen)
+            p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(col)
             p.drawEllipse(rect)                       # full disc
         else:  # resting → ring
             pen = QtGui.QPen(col)
             pen.setWidthF(2.0)
             p.setPen(pen)
-            p.setBrush(Qt.NoBrush)
+            p.setBrush(Qt.BrushStyle.NoBrush)
             p.drawEllipse(QtCore.QRectF(m + 1, m + 1, self._d - 2, self._d - 2))
         p.end()
 
@@ -219,6 +219,6 @@ def divider(parent=None):
     line = QtWidgets.QWidget(parent)
     line.setObjectName("DsDivider")
     line.setFixedHeight(1)
-    line.setAttribute(Qt.WA_StyledBackground, True)
+    line.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
     line.setStyleSheet(f"background:{t.BORDER};")  # token, not a raw literal
     return line

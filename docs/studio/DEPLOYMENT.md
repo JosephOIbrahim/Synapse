@@ -104,6 +104,7 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_DEPLOY_MODE` | `local` / `studio-lan` / `studio-vpn`; != `local` enforces RBAC; the WS server also WRITES this var at startup to propagate deploy.json's mode in-process | `local` | `server/sessions.py`, `server/rbac.py`, `server/hwebserver_adapter.py`, `mcp/server.py`, `server/websocket.py` (write) | Studio |
 | `SYNAPSE_ENCRYPTION_KEY` | Fernet key for memory-at-rest encryption; wrong key = degraded read-only load, save refused | unset (keyfile / auto-gen) | `core/crypto.py` | Studio: escrow it; must match on restore |
 | `SYNAPSE_FILE_LOG` | `"0"`/`"false"` disables the rotating file log (see docs/studio/DIAGNOSTICS.md) | on | `core/logfile.py` | Both: leave on |
+| `SYNAPSE_FLOOR_FSYNC_SYNC` | `1`/`true`/`yes`/`on` forces the Floor success-path provenance `os.fsync` inline instead of deferring it to the background pool (deterministic durability in tests) | unset (deferred) | `core/floor_gate.py` | Both: leave unset |
 | `SYNAPSE_INSPECTOR_TRANSPORT_MODULE` | Dotted module exposing `execute_python`; Inspector last-resort transport (NOT the test-only `..._LIVE_...` var) | unset | `inspector/tool_inspect_stage.py` | Dev |
 | `SYNAPSE_LEDGER_DIR` | agent.usd ledger records | `<repo>/.synapse/ledger` | `memory/ledger.py` | Studio: shared storage |
 | `SYNAPSE_LOG_DIR` | Directory for synapse.log + telemetry.json + freeze dumps | `~/.synapse/logs` | `core/logfile.py`, `server/doctor.py` | Both |
@@ -156,6 +157,30 @@ One env var, two incompatible consumers:
 Pointing it at a store-layout root silently empties recall — the
 KnowledgeIndex only checks that the directory exists. There is no split
 variable: no supported deployment needs the two meanings simultaneously.
+
+## Stage-Hash Integrity Tuning
+
+The R1 scene-integrity hash (`shared/bridge.py`) hashes the COMPOSED Solaris/LOP
+stage before and after every stage-touching op. The default algorithm,
+`stage.Flatten().ExportToString()` + sha256, scales with **stage size**, not the
+mutation — a real per-op cost floor on large production stages.
+
+| Variable | Meaning | Default | Read by |
+|----------|---------|---------|---------|
+| `SYNAPSE_STAGE_HASH_PRIM_THRESHOLD` | Prim-count gate above which the bridge switches from `Flatten()`+sha256 to a cheaper structural-traversal signature. **Structural hashing is OPT-IN and OFF by default** (default threshold is effectively unbounded), so the proven byte-identical `Flatten()` runs on every stage. Set a positive threshold (e.g. `5000`) to opt in. The structural signature changes on every mutation class — prim add/remove/rename, type/specifier change, attribute add/remove, attribute value change, **relationship-target change (material rebind / light-linking / collections)**, metadata/composition-arc change, activation, visibility. Non-negative ints only; a bad value falls back to the default. | unbounded (off) | `shared/bridge.py` |
+
+> Structural hashing is **opt-in pending live-at-scale measurement** (the explicit
+> "measure first" caveat): it can be *slower* than `Flatten()` on value-heavy stages,
+> and it carries one narrow known gap — editing the VALUE of an existing time sample
+> at constant key count is not detected (digesting time samples would reintroduce the
+> array-serialization cost the gate exists to avoid). For an integrity primitive the
+> default keeps the proven path everywhere. Before opting in, read the new
+> `scene_hash_ms` telemetry (`scene_hash_stats()`, surfaced in `telemetry_dump`) to
+> confirm the `Flatten()` cost actually dominates per-op latency on your heavy stages.
+>
+> This variable is read in `shared/`, outside the studio env-var conformance scanner
+> (`tests/test_m3_env_conformance.py` scans `python/synapse/**`), so it is documented
+> here rather than in the `### Environment Variables` table above.
 
 ## Roles
 

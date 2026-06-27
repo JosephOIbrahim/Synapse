@@ -42,6 +42,61 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# Panel inline-duration instrumentation (main-thread Qt slot path)
+# ---------------------------------------------------------------------------
+# The inline path runs the whole tool dispatch on Houdini's main thread — the
+# thread that pumps the Qt event loop — so a slow op stalls the loop for its
+# entire duration (the 127KB-dump execute_python: >5000ms → heartbeat 10.19s,
+# freeze_count=1). server/main_thread.main_thread_direct samples only the inner
+# hou fn(); this counter captures the FULL inline tool cost the artist feels as
+# a freeze and names the slow tool so the contributor is attributable.
+
+PANEL_INLINE_SLOW_MS = 1000.0  # a single inline op over this is logged as slow
+
+_panel_inline_lock = threading.Lock()
+_panel_inline_stats = {
+    "count": 0,
+    "sum_ms": 0.0,
+    "max_ms": 0.0,
+    "slow_count": 0,
+    "slowest_tool": None,
+}
+
+
+def _record_panel_inline(tool_name: str, ms: float) -> None:
+    """Record one inline tool-dispatch duration (main-thread)."""
+    with _panel_inline_lock:
+        _panel_inline_stats["count"] += 1
+        _panel_inline_stats["sum_ms"] += ms
+        if ms > _panel_inline_stats["max_ms"]:
+            _panel_inline_stats["max_ms"] = ms
+            _panel_inline_stats["slowest_tool"] = tool_name
+        if ms >= PANEL_INLINE_SLOW_MS:
+            _panel_inline_stats["slow_count"] += 1
+
+
+def panel_inline_stats() -> dict:
+    """Snapshot of the panel inline (main-thread) tool-duration counters.
+
+    Copy — safe to serialize into telemetry. Complements
+    ``main_thread.main_thread_direct_stats()``: that samples the inner hou fn()
+    duration, this is the full inline tool dispatch the Qt loop blocks on.
+    """
+    with _panel_inline_lock:
+        return dict(_panel_inline_stats)
+
+
+def reset_panel_inline_stats() -> None:
+    """Test/diagnostic helper — zero the panel inline counters."""
+    with _panel_inline_lock:
+        _panel_inline_stats["count"] = 0
+        _panel_inline_stats["sum_ms"] = 0.0
+        _panel_inline_stats["max_ms"] = 0.0
+        _panel_inline_stats["slow_count"] = 0
+        _panel_inline_stats["slowest_tool"] = None
+
+
+# ---------------------------------------------------------------------------
 # ToolRequest -- data object shared between worker thread and main thread
 # ---------------------------------------------------------------------------
 
@@ -238,10 +293,17 @@ class ToolExecutor(QtCore.QObject):
             ...  # use req.result
     """
 
+    # Non-blocking heads-up emitted on the main thread BEFORE a heavy inline op
+    # runs. (tool_name, advisory_message). The panel may connect this to a
+    # status/toast surface; even unconnected it is harmless. It NEVER blocks and
+    # NEVER changes the tool result — hou must run on the main thread regardless.
+    preflight_warning = QtCore.Signal(str, str)
+
     def __init__(self, parent: Optional[QtCore.QObject] = None) -> None:
         super().__init__(parent)
         self._handler = None  # Lazy-loaded SynapseHandler
         self._handler_error: Optional[str] = None  # real import/init failure
+        self._last_preflight: Optional[str] = None  # last advisory (diagnostic)
 
     # ------------------------------------------------------------------
     # Lazy handler initialisation
@@ -272,6 +334,34 @@ class ToolExecutor(QtCore.QObject):
         return self._handler
 
     # ------------------------------------------------------------------
+    # Pre-flight heads-up (TASK 1)
+    # ------------------------------------------------------------------
+
+    def _preflight(self, request: ToolRequest) -> None:
+        """Cheap pre-flight before an inline (main-thread) dispatch.
+
+        Estimates cost from the tool name + input shape (no round-trip). If the
+        op is heavy enough to briefly freeze the Qt loop, log a warning (so the
+        freeze is attributable) and emit a non-blocking advisory the panel can
+        surface. Does NOT block or change the result — best-effort only.
+        """
+        try:
+            from synapse.panel.bridge_adapter import estimate_inline_cost
+            heavy, message = estimate_inline_cost(request.tool_name, request.tool_input)
+        except Exception:
+            return  # never let pre-flight failure affect the actual dispatch
+
+        if not heavy:
+            return
+
+        self._last_preflight = message
+        logger.warning("Pre-flight advisory — %s", message)
+        try:
+            self.preflight_warning.emit(request.tool_name, message)
+        except Exception:
+            pass  # signal surface is optional; the log is the load-bearing part
+
+    # ------------------------------------------------------------------
     # Main-thread slot
     # ------------------------------------------------------------------
 
@@ -289,6 +379,10 @@ class ToolExecutor(QtCore.QObject):
                 and ``request.done`` will be signalled.
         """
         try:
+            # 0. Pre-flight heads-up (TASK 1): cheap cost estimate; warn + emit a
+            # non-blocking advisory if this inline op may briefly freeze the loop.
+            self._preflight(request)
+
             # 1. Resolve tool name to (command_type, payload_builder)
             dispatch = get_tool_dispatch(request.tool_name)
             if dispatch is None:
@@ -319,7 +413,10 @@ class ToolExecutor(QtCore.QObject):
                 )
                 return
 
-            # 5. Dispatch (through bridge if available, direct otherwise)
+            # 5. Dispatch (through bridge if available, direct otherwise).
+            # TASK 2: time the inline run so heavy ops are visible in telemetry
+            # and a single slow op (>PANEL_INLINE_SLOW_MS) names itself in the log.
+            _t0 = time.perf_counter()
             try:
                 from synapse.panel.bridge_adapter import (
                     execute_through_bridge, is_read_only,
@@ -332,6 +429,15 @@ class ToolExecutor(QtCore.QObject):
                     response = handler.handle(command)
             except ImportError:
                 response = handler.handle(command)
+            finally:
+                _elapsed_ms = (time.perf_counter() - _t0) * 1000.0
+                _record_panel_inline(request.tool_name, _elapsed_ms)
+                if _elapsed_ms >= PANEL_INLINE_SLOW_MS:
+                    logger.warning(
+                        "Inline tool %r ran %.0fms on the main thread "
+                        "(Qt loop stalled this long; slow threshold %.0fms)",
+                        request.tool_name, _elapsed_ms, PANEL_INLINE_SLOW_MS,
+                    )
 
             # 6. Transfer result
             if response.success:

@@ -149,7 +149,7 @@ class _ProposalCard(QtWidgets.QWidget):
             # Store as instance vars to prevent GC before layout takes ownership
             self._reject_btn = QtWidgets.QPushButton("Reject")
             self._reject_btn.setStyleSheet(get_gate_reject_btn_stylesheet())
-            self._reject_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+            self._reject_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
             self._reject_btn.clicked.connect(
                 partial(self._emit_reject, self._proposal_id)
             )
@@ -157,7 +157,7 @@ class _ProposalCard(QtWidgets.QWidget):
 
             self._approve_btn = QtWidgets.QPushButton("Approve")
             self._approve_btn.setStyleSheet(get_gate_approve_btn_stylesheet())
-            self._approve_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+            self._approve_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
             self._approve_btn.clicked.connect(self._on_approve_clicked)
             btn_row.addWidget(self._approve_btn)
 
@@ -316,7 +316,7 @@ class GateWidget(QtWidgets.QWidget):
 
         # -- Chevron toggle header --
         self._header = QtWidgets.QPushButton(self)
-        self._header.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self._header.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
         self._header.setStyleSheet(
             "QPushButton {{ background: transparent; color: {fg}; "
             "border: none; text-align: left; padding: 4px 8px; "

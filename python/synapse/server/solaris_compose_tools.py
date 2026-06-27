@@ -28,6 +28,7 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from synapse.server import solaris_compose as sc
+from synapse.core.mtlx_types import MTLX_STANDARD_SURFACE
 from synapse.server.handler_helpers import _is_resolver_uri, _path_warnings
 
 _log = logging.getLogger(__name__)
@@ -247,7 +248,7 @@ def build_karma_xpu_shot(
 # ---------------------------------------------------------------------------
 
 def ensure_mtlx_material(stage_node, name, prefix="/materials/", color=None,
-                         input_node=None, shader_type="mtlxstandard_surface"):
+                         input_node=None, shader_type=MTLX_STANDARD_SURFACE):
     """Create a materiallibrary + a MaterialX standard-surface material.
 
     Returns (material_prim_path, matlib_node). Recipe verified on 21.0.671:

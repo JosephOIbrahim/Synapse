@@ -6,6 +6,14 @@ Auto-extracted from the monolith recipes.py.
 
 from .base import Recipe, RecipeStep
 from ...core.gates import GateLevel
+# MaterialX node-type names — single-sourced from synapse.core.mtlx_types.
+from ...core.mtlx_types import MTLX_STANDARD_SURFACE
+# Punycode parm encodings — single-sourced from synapse.core.usd_punycode.
+from ...core.usd_punycode import encoded as _enc
+
+_P_INTENSITY = _enc("intensity")
+_P_EXPOSURE = _enc("exposure")
+_P_EXPOSURE_CTRL = _enc("exposure_control")
 
 
 def register_pipeline_recipes(registry):
@@ -829,7 +837,7 @@ def register_pipeline_recipes(registry):
                         "# Skin MaterialX subnet\n"
                         "skin = matlib.createNode('subnet', 'skin_mtl')\n"
                         "skin_surf = skin.createNode("
-                        "'mtlxstandard_surface', 'skin_shader')\n"
+                        f"'{MTLX_STANDARD_SURFACE}', 'skin_shader')\n"
                         "skin_surf.parm('base_color').set("
                         "(0.8, 0.6, 0.5))\n"
                         "skin_surf.parm('specular_roughness').set(0.4)\n"
@@ -841,7 +849,7 @@ def register_pipeline_recipes(registry):
                         "# Cloth MaterialX subnet\n"
                         "cloth = matlib.createNode('subnet', 'cloth_mtl')\n"
                         "cloth_surf = cloth.createNode("
-                        "'mtlxstandard_surface', 'cloth_shader')\n"
+                        f"'{MTLX_STANDARD_SURFACE}', 'cloth_shader')\n"
                         "cloth_surf.parm('base_color').set("
                         "(0.3, 0.3, 0.35))\n"
                         "cloth_surf.parm('specular_roughness').set(0.7)\n"
@@ -853,7 +861,7 @@ def register_pipeline_recipes(registry):
                         "# Hair MaterialX subnet\n"
                         "hair = matlib.createNode('subnet', 'hair_mtl')\n"
                         "hair_surf = hair.createNode("
-                        "'mtlxstandard_surface', 'hair_shader')\n"
+                        f"'{MTLX_STANDARD_SURFACE}', 'hair_shader')\n"
                         "hair_surf.parm('base_color').set("
                         "(0.15, 0.1, 0.08))\n"
                         "hair_surf.parm('specular_roughness').set(0.35)\n"
@@ -973,10 +981,10 @@ def register_pipeline_recipes(registry):
                         "shot_name + '_key')\n"
                         "key.parm('primpath').set("
                         "'/lights/' + shot_name + '_key')\n"
-                        "key.parm('xn__inputsintensity_i0a').set(1.0)\n"
+                        "key.parm('" + _P_INTENSITY + "').set(1.0)\n"
                         "key.parm("
-                        "'xn__inputsexposure_control_wcb').set('set')\n"
-                        "key.parm('xn__inputsexposure_vya').set(5.0)\n"
+                        "'" + _P_EXPOSURE_CTRL + "').set('set')\n"
+                        "key.parm('" + _P_EXPOSURE + "').set(5.0)\n"
                         "\n"
                         "# Merge lighting into shot layer\n"
                         "light_merge = stage.createNode('merge', "

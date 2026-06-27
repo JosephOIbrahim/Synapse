@@ -491,6 +491,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("get_stage_info", self._handle_get_stage_info)
         reg.register("get_usd_attribute", self._handle_get_usd_attribute)
         reg.register("set_usd_attribute", self._handle_set_usd_attribute)
+        reg.register("set_usd_primvar", self._handle_set_usd_primvar)
         reg.register("create_usd_prim", self._handle_create_usd_prim)
         reg.register("modify_usd_prim", self._handle_modify_usd_prim)
 
@@ -829,17 +830,23 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             if node is None:
                 raise NodeNotFoundError(node_path)
 
+            usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
+
             parm = node.parm(parm_name)
             # USD alias fallback -- resolve human-readable name to encoded parm
+            if parm is None and usd_encoded:
+                parm = node.parm(usd_encoded)
+                if parm is not None:
+                    parm_name = usd_encoded  # use resolved name in response
             if parm is None:
-                usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
-                if usd_encoded:
-                    parm = node.parm(usd_encoded)
-                    if parm is not None:
-                        parm_name = usd_encoded  # use resolved name in response
-            if parm is None:
-                # Try as parm tuple
+                # Try as parm tuple. USD color3f/vector attrs (e.g. inputs:color)
+                # surface as a parmTuple under the ENCODED name, not a scalar parm
+                # -- so try the encoded alias here too, not just the raw name.
                 parm_tuple = node.parmTuple(parm_name)
+                if parm_tuple is None and usd_encoded:
+                    parm_tuple = node.parmTuple(usd_encoded)
+                    if parm_tuple is not None:
+                        parm_name = usd_encoded
                 if parm_tuple is not None:
                     return {
                         "node": node_path,
@@ -893,14 +900,14 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             if node is None:
                 raise NodeNotFoundError(node_path)
 
+            usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
+
             parm = node.parm(parm_name)
             # USD alias fallback -- resolve human-readable name to encoded parm
-            if parm is None:
-                usd_encoded = USD_PARM_ALIASES.get(parm_name.lower())
-                if usd_encoded:
-                    parm = node.parm(usd_encoded)
-                    if parm is not None:
-                        parm_name = usd_encoded
+            if parm is None and usd_encoded:
+                parm = node.parm(usd_encoded)
+                if parm is not None:
+                    parm_name = usd_encoded
             if parm is not None:
                 # If value is a list/tuple but we found a scalar parm, try the
                 # tuple parm instead — this lets callers set color (R,G,B) in one
@@ -925,8 +932,14 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                         _log.debug("Lighting Law check skipped: %s", e)
                 return result
 
-            # Try as parm tuple
+            # Try as parm tuple. USD color3f/vector attrs (e.g. inputs:color)
+            # surface as a parmTuple under the ENCODED name -- try the encoded
+            # alias too, not just the raw name.
             parm_tuple = node.parmTuple(parm_name)
+            if parm_tuple is None and usd_encoded:
+                parm_tuple = node.parmTuple(usd_encoded)
+                if parm_tuple is not None:
+                    parm_name = usd_encoded
             if parm_tuple is not None:
                 if isinstance(value, (list, tuple)):
                     parm_tuple.set(value)
@@ -1319,12 +1332,39 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         except Exception:
             dispatch_waits = None
 
+        # C6 (continued) — the inline panel/bridge main-thread path short-circuits
+        # run_on_main and never samples dispatch_wait; this fn()-duration histogram
+        # attributes it. Same guarded-import + best-effort pattern as above.
+        try:
+            from .main_thread import main_thread_direct_stats
+            main_thread_directs = main_thread_direct_stats()
+        except Exception:
+            main_thread_directs = None
+
+        # R1 stage-integrity hash duration (the Flatten floor on large stages).
+        try:
+            from shared.bridge import scene_hash_stats
+            scene_hashes = scene_hash_stats()
+        except Exception:
+            scene_hashes = None
+
+        # Panel inline (main-thread Qt slot) tool-dispatch summary. Importing the
+        # accessor pulls in Qt; absent in headless servers → gracefully None.
+        try:
+            from ..panel.tool_executor import panel_inline_stats
+            panel_inlines = panel_inline_stats()
+        except Exception:
+            panel_inlines = None
+
         text = render_prometheus(
             router_stats=router_stats,
             circuit_breaker_state=cb_state,
             memory_entry_count=memory_count,
             tool_durations=self.tool_duration_stats(),
             dispatch_waits=dispatch_waits,
+            main_thread_directs=main_thread_directs,
+            scene_hashes=scene_hashes,
+            panel_inlines=panel_inlines,
             live_snapshot=live_snapshot,
         )
         return {"format": "prometheus", "text": text}

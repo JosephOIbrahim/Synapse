@@ -1,0 +1,52 @@
+{
+  "_provenance": "live probe via bridge — domelight::3.0 + distantlight, Houdini 21.0.671, 2026-06-26",
+  "_note": "punycode parm encodings are deterministic per USD property-name string, consistent across light types. They are NOT guessable and HAVE drifted between builds. Probe-generate; do not hand-maintain. This file is the ground truth for the usd_punycode single-source fix and for the drop-day probe harness (task 0.2).",
+  "scalars_verified": {
+    "intensity": "xn__inputsintensity_i0a",
+    "exposure": "xn__inputsexposure_vya",
+    "diffuse": "xn__inputsdiffuse_8wa",
+    "specular": "xn__inputsspecular_vya",
+    "normalize": "xn__inputsnormalize_i0a",
+    "color_temperature": "xn__inputscolorTemperature_wcb",
+    "enable_color_temperature": "xn__inputsenableColorTemperature_omb",
+    "angle": "xn__inputsangle_zta"
+  },
+  "controls_verified": {
+    "intensity_control": "xn__inputsintensity_control_jeb",
+    "exposure_control": "xn__inputsexposure_control_wcb",
+    "diffuse_control": "xn__inputsdiffuse_control_99a",
+    "color_control": "xn__inputscolor_control_06a",
+    "color_temperature_control": "xn__inputscolorTemperature_control_xpb",
+    "normalize_control": "xn__inputsnormalize_control_jeb"
+  },
+  "_geometry_shaping_note": "LIVE-PROBED 21.0.671 (2026-06-26). These were NEVER probed before this pass — they are NOT phantom, they were simply unverified. Prior code placeholders (shaping_cone_angle=_hgbb, shaping_cone_softness=_jlbb) and prior corpus values (_bobja/_brbja/_o5a/_k5a/_e5a/_i5a) WERE phantom and are superseded. Suffix is STRUCTURE-based on the full property string: inputs:<5-char> -> _zta (color/width); inputs:<6-char> -> _mva (radius/height/length).",
+  "geometry_verified": {
+    "radius": "xn__inputsradius_mva",
+    "width": "xn__inputswidth_zta",
+    "height": "xn__inputsheight_mva",
+    "length": "xn__inputslength_mva"
+  },
+  "shaping_verified": {
+    "shaping_cone_angle": "xn__inputsshapingconeangle_wcbhe",
+    "shaping_cone_softness": "xn__inputsshapingconesoftness_shbhe",
+    "shaping_focus": "xn__inputsshapingfocus_e5ah",
+    "shaping_focus_tint": "xn__inputsshapingfocusTint_wcbh"
+  },
+  "tuples_verified": {
+    "color": { "tuple_base": "xn__inputscolor_zta", "components": ["xn__inputscolor_ztar", "xn__inputscolor_ztag", "xn__inputscolor_ztab"] },
+    "shadow_color": { "tuple_base": "xn__inputsshadowcolor_r3ag", "components": ["xn__inputsshadowcolor_r3agr", "xn__inputsshadowcolor_r3agg", "xn__inputsshadowcolor_r3agb"] }
+  },
+  "PHANTOM_in_aliases_py": {
+    "color": { "shipped": "xn__inputscolor_kya", "real_tuple_base": "xn__inputscolor_zta", "note": "color3f -> must use parmTuple; handler fallback (handlers.py:835,899) only tries node.parm() so even the correct base needs a parmTuple fallback added" },
+    "color_control": { "shipped": "xn__inputscolor_control_r0b", "real": "xn__inputscolor_control_06a" },
+    "color_temperature": { "shipped": "xn__inputscolortemperature_job", "real": "xn__inputscolorTemperature_wcb", "note": "capital T in colorTemperature" },
+    "diffuse": { "shipped": "xn__inputsdiffuse_vya", "real": "xn__inputsdiffuse_8wa", "note": "vya was copy-pasted from exposure" }
+  },
+  "PHANTOM_in_system_prompt": {
+    "color": { "shipped": "xn__inputscolor_vya", "real_tuple_base": "xn__inputscolor_zta", "where": "mcp/server.py:382" }
+  },
+  "CONFIRMED_correct": ["intensity", "exposure", "exposure_control", "specular"],
+  "also_wrong_elsewhere": {
+    "render_recipes.py:980": { "shipped": "xn__inputscolorTemperature_r8a", "real": "xn__inputscolorTemperature_wcb" }
+  }
+}

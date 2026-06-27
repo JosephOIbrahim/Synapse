@@ -2,11 +2,20 @@
 
 ## Triggers
 
-dome light, domelight, HDRI, environment light, area light, rect light, rectlight, distant light, distantlight, sphere light, spherelight, disk light, disklight, cylinder light, three point lighting, 3-point lighting, key light, fill light, rim light, back light, exposure, intensity, light intensity, light exposure, color temperature, kelvin, light linking, light categories, shadow, barn doors, IES, specular contribution, diffuse contribution, light visibility, spot light, cone angle, light shaping, light setup, studio lighting, product lighting, turntable lighting, outdoor lighting, interior lighting, portal light, light ratio, key fill ratio, stops, lighting law, xn__inputsintensity_i0a, xn__inputsexposure_vya, xn__inputscolor_kya
+dome light, domelight, HDRI, environment light, area light, rect light, rectlight, distant light, distantlight, sphere light, spherelight, disk light, disklight, cylinder light, three point lighting, 3-point lighting, key light, fill light, rim light, back light, exposure, intensity, light intensity, light exposure, color temperature, kelvin, light linking, light categories, shadow, barn doors, IES, specular contribution, diffuse contribution, light visibility, spot light, cone angle, light shaping, light setup, studio lighting, product lighting, turntable lighting, outdoor lighting, interior lighting, portal light, light ratio, key fill ratio, stops, lighting law, xn__inputsintensity_i0a, xn__inputsexposure_vya, xn__inputscolor_zta
 
 ## Context
 
 Solaris lights are USD prims created via LOP nodes. All light brightness is controlled by exposure (logarithmic, in stops) — intensity is ALWAYS locked at 1.0. Houdini encodes USD attribute names as `xn__`-prefixed parameter names; use the encoded names when setting parms directly via `hou.node().parm()`.
+
+### Raw USD attribute names vs. `xn__` punycode — pick the right one (authoritative, H21.0.671 live-probed)
+
+The same light/camera property has TWO different names depending on which API you call. They are **not** interchangeable:
+
+- **`set_usd_attribute` / `prim.GetAttribute(...).Set(...)` → use the RAW USD attribute name.** e.g. `inputs:intensity`, `inputs:exposure`, `inputs:color`, `inputs:colorTemperature`, `inputs:enableColorTemperature`, `inputs:radius`, `inputs:width`, `inputs:height`, `inputs:length`, `inputs:angle`, `inputs:shaping:cone:angle`, `inputs:shaping:cone:softness`, `inputs:shaping:focus`, `inputs:texture:file`, `inputs:texture:format`. Raw USD schema names are **stable across Houdini/USD builds** (H22-safe).
+- **`node.parm(...)` / `set_parm` → use the `xn__` punycode name** (the encoded reference table below). These are the Houdini LOP **parm-interface** names ONLY, and the hash suffix is **build-specific** — re-probe on every Houdini bump.
+
+**Trap:** passing an `xn__…` punycode name to `set_usd_attribute` **silently no-ops** — the handler guards on `if attr:`, and `prim.GetAttribute("xn__inputsradius_mva")` is invalid, so it returns no attribute, writes nothing, and raises no error. Conversely, `node.parm("inputs:radius")` returns `None`. Always match the name space to the API: raw on the prim, punycode on the parm.
 
 ## Code
 
@@ -47,19 +56,19 @@ import hou
 # inputs:intensity            xn__inputsintensity_i0a               ALWAYS 1.0 — never change
 # inputs:exposure             xn__inputsexposure_vya                brightness in stops
 # inputs:exposure (control)   xn__inputsexposure_control_wcb        set to "set" to enable
-# inputs:color                xn__inputscolor_kya                   RGB via parmTuple
-# inputs:diffuse              xn__inputsdiffuse_vya                 diffuse multiplier 0-1
-# inputs:specular             xn__inputsspecular_01a                specular multiplier 0-1
+# inputs:color                xn__inputscolor_zta                   RGB via parmTuple
+# inputs:diffuse              xn__inputsdiffuse_8wa                 diffuse multiplier 0-1
+# inputs:specular             xn__inputsspecular_vya                specular multiplier 0-1
 # inputs:shadow:enable        xn__inputsshadowenable_2kb            bool — toggle shadows
-# inputs:shadow:color         xn__inputsshadowcolor_o5a             vec3 — shadow tint
-# inputs:normalize            xn__inputsnormalize_01a               bool — normalize by area
-# inputs:texture:file         xn__inputstexturefile_i1a             HDRI path (DomeLight only)
-# inputs:texture:format       xn__inputstextureformat_r1a           latlong / mirroredBall / angular
-# inputs:enableColorTemperature xn__inputsenablecolortemperature_r5a bool
-# inputs:colorTemperature     xn__inputscolortemperature_u5a        float Kelvin
-# inputs:shaping:cone:angle   xn__inputsshapingconeangle_bobja      spot cone angle degrees
-# inputs:shaping:cone:softness xn__inputsshapingconesoftness_brbja  edge falloff 0-1
-# inputs:shaping:focus        xn__inputsshapingfocus_i5a            focus toward center
+# inputs:shadow:color         xn__inputsshadowcolor_r3ag             vec3 — shadow tint
+# inputs:normalize            xn__inputsnormalize_i0a               bool — normalize by area
+# inputs:texture:file         xn__inputstexturefile_r3ah             HDRI path (DomeLight only)
+# inputs:texture:format       xn__inputstextureformat_06ah           latlong / mirroredBall / angular
+# inputs:enableColorTemperature xn__inputsenableColorTemperature_omb bool
+# inputs:colorTemperature     xn__inputscolorTemperature_wcb        float Kelvin
+# inputs:shaping:cone:angle   xn__inputsshapingconeangle_wcbhe      spot cone angle degrees
+# inputs:shaping:cone:softness xn__inputsshapingconesoftness_shbhe  edge falloff 0-1
+# inputs:shaping:focus        xn__inputsshapingfocus_e5ah            focus toward center
 
 
 def _set_light_intensity_law(light_node):
@@ -98,11 +107,11 @@ def create_dome_light(stage_path="/stage", name="env_light",
     # HDRI texture — EXR preferred (full HDR range, no clipping)
     # JPEG/PNG work but clip at 1.0 — no HDR range
     if hdri_path:
-        dome.parm("xn__inputstexturefile_i1a").set(hdri_path)
+        dome.parm("xn__inputstexturefile_r3ah").set(hdri_path)
 
     # latlong = equirectangular (most common for HDRIs)
     # mirroredBall = chrome ball capture, angular = light probe
-    dome.parm("xn__inputstextureformat_r1a").set("latlong")
+    dome.parm("xn__inputstextureformat_06ah").set("latlong")
 
     # Horizontal rotation — pan environment to reposition sun
     # ry by 15-30 degree increments during iteration to find optimal sun position
@@ -123,12 +132,12 @@ dome = create_dome_light(
 dome.parm("xn__inputsexposure_vya").set(-1.0)
 
 # Control HDRI contribution separately for diffuse vs. reflections
-dome.parm("xn__inputsdiffuse_vya").set(0.3)    # dim diffuse fill
-dome.parm("xn__inputsspecular_01a").set(1.0)   # full reflections from HDRI
+dome.parm("xn__inputsdiffuse_8wa").set(0.3)    # dim diffuse fill
+dome.parm("xn__inputsspecular_vya").set(1.0)   # full reflections from HDRI
 
 # Built-in Houdini test HDRIs
 hfs_hdri = "$HFS/houdini/pic/hdri/HDRIHaven_parking_lot_2k.exr"
-dome.parm("xn__inputstexturefile_i1a").set(hfs_hdri)
+dome.parm("xn__inputstexturefile_r3ah").set(hfs_hdri)
 ```
 
 ```python
@@ -168,7 +177,7 @@ def create_rect_light(stage_path="/stage", name="rect_light",
     rect.parm("sz").set(sz)   # height
 
     # Normalize: True = resize without changing total energy output
-    rect.parm("xn__inputsnormalize_01a").set(normalize)
+    rect.parm("xn__inputsnormalize_i0a").set(normalize)
 
     # Fill lights often look better without shadows (avoids double-shadow artifacts)
     rect.parm("xn__inputsshadowenable_2kb").set(shadows)
@@ -225,8 +234,8 @@ def create_distant_light(stage_path="/stage", name="sun_light",
     # Optional: color temperature instead of RGB
     # Guide: 3000K=warm tungsten, 5500K=noon daylight, 8000K=blue sky shade
     if color_temp_k is not None:
-        dist.parm("xn__inputsenablecolortemperature_r5a").set(True)
-        dist.parm("xn__inputscolortemperature_u5a").set(color_temp_k)
+        dist.parm("xn__inputsenableColorTemperature_omb").set(True)
+        dist.parm("xn__inputscolorTemperature_wcb").set(color_temp_k)
 
     return dist
 
@@ -306,8 +315,8 @@ def create_three_point_rig(stage_path="/stage",
     key.parm("rx").set(-35.0)   # downward angle
     key.parm("ry").set(-45.0)   # camera-left
     # Warm color temperature for natural key
-    key.parm("xn__inputsenablecolortemperature_r5a").set(True)
-    key.parm("xn__inputscolortemperature_u5a").set(5500)  # neutral daylight
+    key.parm("xn__inputsenableColorTemperature_omb").set(True)
+    key.parm("xn__inputscolorTemperature_wcb").set(5500)  # neutral daylight
 
     # --- FILL LIGHT (RectLight, camera right, soft) ---
     fill = stage.createNode("rectlight", "fill_light")
@@ -318,7 +327,7 @@ def create_three_point_rig(stage_path="/stage",
     fill.parm("ry").set(45.0)   # camera-right
     fill.parm("sx").set(3.0)    # large = very soft shadows
     fill.parm("sz").set(3.0)
-    fill.parm("xn__inputsnormalize_01a").set(True)
+    fill.parm("xn__inputsnormalize_i0a").set(True)
     # Fill lights: disable shadows to avoid double-shadow artifacts
     fill.parm("xn__inputsshadowenable_2kb").set(False)
 
@@ -338,8 +347,8 @@ def create_three_point_rig(stage_path="/stage",
         -1.0 if scenario == "noir" else env_exposure
     )
     # Keep env as subtle fill only
-    env.parm("xn__inputsdiffuse_vya").set(0.5)
-    env.parm("xn__inputsspecular_01a").set(1.0)
+    env.parm("xn__inputsdiffuse_8wa").set(0.5)
+    env.parm("xn__inputsspecular_vya").set(1.0)
 
     print(f"Three-point rig '{scenario}': "
           f"key={key_exposure:.2f} fill={fill_exposure:.2f} "
@@ -386,7 +395,7 @@ def create_product_rig(stage_path="/stage"):
         n.parm("ry").set(ry)
         n.parm("sx").set(sx)
         n.parm("sz").set(sz)
-        n.parm("xn__inputsnormalize_01a").set(True)  # consistent as resized
+        n.parm("xn__inputsnormalize_i0a").set(True)  # consistent as resized
         n.parm("xn__inputsshadowenable_2kb").set(shadows)
         return n
 
@@ -409,8 +418,8 @@ def create_product_rig(stage_path="/stage"):
     dome.parm("xn__inputsintensity_i0a").set(1.0)   # Lighting Law
     dome.parm("xn__inputsexposure_control_wcb").set("set")
     dome.parm("xn__inputsexposure_vya").set(1.0)
-    dome.parm("xn__inputsdiffuse_vya").set(0.5)
-    dome.parm("xn__inputsspecular_01a").set(1.0)
+    dome.parm("xn__inputsdiffuse_8wa").set(0.5)
+    dome.parm("xn__inputsspecular_vya").set(1.0)
 
     return top_key, side_a, side_b, backdrop, dome
 
@@ -464,8 +473,8 @@ def create_outdoor_rig(stage_path="/stage", time_of_day="noon"):
     sun.parm("xn__inputsexposure_vya").set(sun_exp)
     sun.parm("rx").set(rx)
     sun.parm("ry").set(-30.0)
-    sun.parm("xn__inputsenablecolortemperature_r5a").set(True)
-    sun.parm("xn__inputscolortemperature_u5a").set(kelvin)
+    sun.parm("xn__inputsenableColorTemperature_omb").set(True)
+    sun.parm("xn__inputscolorTemperature_wcb").set(kelvin)
 
     # --- SKY (DomeLight — HDRI sky or solid blue fill) ---
     sky = stage.createNode("domelight", "sky_dome")
@@ -473,7 +482,7 @@ def create_outdoor_rig(stage_path="/stage", time_of_day="noon"):
     sky.parm("xn__inputsexposure_control_wcb").set("set")
     sky.parm("xn__inputsexposure_vya").set(sky_exp)
     # Cool sky color for blue-sky scenarios
-    sky.parmTuple("xn__inputscolor_kya").set((0.6, 0.75, 1.0))
+    sky.parmTuple("xn__inputscolor_zta").set((0.6, 0.75, 1.0))
 
     # --- GROUND BOUNCE (RectLight, pointing up from below) ---
     bounce = stage.createNode("rectlight", "ground_bounce")
@@ -485,8 +494,8 @@ def create_outdoor_rig(stage_path="/stage", time_of_day="noon"):
     bounce.parm("sx").set(6.0)     # large for soft diffuse bounce
     bounce.parm("sz").set(6.0)
     # Warm ground bounce (sun-heated ground)
-    bounce.parm("xn__inputsenablecolortemperature_r5a").set(True)
-    bounce.parm("xn__inputscolortemperature_u5a").set(4000)
+    bounce.parm("xn__inputsenableColorTemperature_omb").set(True)
+    bounce.parm("xn__inputscolorTemperature_wcb").set(4000)
     bounce.parm("xn__inputsshadowenable_2kb").set(False)   # no bounce shadows
 
     return sun, sky, bounce
@@ -529,7 +538,7 @@ def create_interior_rig(stage_path="/stage",
             portal.parm("ry").set(ry)
             portal.parm("sx").set(w)    # width matches window
             portal.parm("sz").set(h)    # height matches window
-            portal.parm("xn__inputsnormalize_01a").set(True)
+            portal.parm("xn__inputsnormalize_i0a").set(True)
             lights.append(portal)
     else:
         # Default single window portal
@@ -554,8 +563,8 @@ def create_interior_rig(stage_path="/stage",
     lamp_a.parm("tx").set(1.5)
     lamp_a.parm("ty").set(0.8)
     lamp_a.parm("tz").set(0.5)
-    lamp_a.parm("xn__inputsenablecolortemperature_r5a").set(True)
-    lamp_a.parm("xn__inputscolortemperature_u5a").set(2700)  # warm tungsten
+    lamp_a.parm("xn__inputsenableColorTemperature_omb").set(True)
+    lamp_a.parm("xn__inputscolorTemperature_wcb").set(2700)  # warm tungsten
     lights.append(lamp_a)
 
     # --- ACCENT LAMP PRACTICAL ---
@@ -566,8 +575,8 @@ def create_interior_rig(stage_path="/stage",
     lamp_b.parm("tx").set(-1.0)
     lamp_b.parm("ty").set(0.6)
     lamp_b.parm("tz").set(1.0)
-    lamp_b.parm("xn__inputsenablecolortemperature_r5a").set(True)
-    lamp_b.parm("xn__inputscolortemperature_u5a").set(2700)
+    lamp_b.parm("xn__inputsenableColorTemperature_omb").set(True)
+    lamp_b.parm("xn__inputscolorTemperature_wcb").set(2700)
     lights.append(lamp_b)
 
     # --- AMBIENT DOME — very low, just enough to prevent pure black ---
@@ -604,14 +613,14 @@ def set_color_temperature(light_node, kelvin):
       8000-10000K blue sky shade (cool shadow fill)
     """
     # Enable color temperature mode (overrides RGB color parm)
-    light_node.parm("xn__inputsenablecolortemperature_r5a").set(True)
-    light_node.parm("xn__inputscolortemperature_u5a").set(kelvin)
+    light_node.parm("xn__inputsenableColorTemperature_omb").set(True)
+    light_node.parm("xn__inputscolorTemperature_wcb").set(kelvin)
 
 
 def set_rgb_color(light_node, r, g, b):
     """Set light color via RGB (0-1 range). Disables color temperature mode."""
-    light_node.parm("xn__inputsenablecolortemperature_r5a").set(False)
-    light_node.parmTuple("xn__inputscolor_kya").set((r, g, b))
+    light_node.parm("xn__inputsenableColorTemperature_omb").set(False)
+    light_node.parmTuple("xn__inputscolor_zta").set((r, g, b))
 
 
 # Examples
@@ -648,11 +657,11 @@ def make_spot_light(stage_path="/stage", name="spot",
     spot.parm("xn__inputsexposure_vya").set(exposure)
 
     # Shaping: cone angle and softness
-    spot.parm("xn__inputsshapingconeangle_bobja").set(cone_angle)
-    spot.parm("xn__inputsshapingconesoftness_brbja").set(cone_softness)
+    spot.parm("xn__inputsshapingconeangle_wcbhe").set(cone_angle)
+    spot.parm("xn__inputsshapingconesoftness_shbhe").set(cone_softness)
 
     # Optional: focus intensity toward cone center
-    # spot.parm("xn__inputsshapingfocus_i5a").set(0.5)
+    # spot.parm("xn__inputsshapingfocus_e5ah").set(0.5)
 
     return spot
 
@@ -685,8 +694,8 @@ def split_contribution(light_node, diffuse=1.0, specular=1.0):
       - diffuse=1, specular=0: diffuse-only fill (lifts shadows, no reflections)
       - diffuse=0.5, specular=1: half-strength diffuse, full specular
     """
-    light_node.parm("xn__inputsdiffuse_vya").set(diffuse)
-    light_node.parm("xn__inputsspecular_01a").set(specular)
+    light_node.parm("xn__inputsdiffuse_8wa").set(diffuse)
+    light_node.parm("xn__inputsspecular_vya").set(specular)
 
 
 # Art-direct specular eye-highlight light (does NOT shade the face)
@@ -716,7 +725,7 @@ def configure_shadows(light_node, enabled=True, shadow_color=(0, 0, 0)):
     """
     light_node.parm("xn__inputsshadowenable_2kb").set(enabled)
     if shadow_color != (0, 0, 0):
-        light_node.parmTuple("xn__inputsshadowcolor_o5a").set(shadow_color)
+        light_node.parmTuple("xn__inputsshadowcolor_r3ag").set(shadow_color)
 
 
 # Disable shadows on fill light (standard practice)
@@ -863,7 +872,7 @@ adjust_rig_exposure(
 - JPEG/PNG textures clip at 1.0 — no HDR range; use EXR or HDR format
 
 **Area light normalization**
-- When `xn__inputsnormalize_01a = False` (some types default to off), making the light bigger also makes it brighter
+- When `xn__inputsnormalize_i0a = False` (some types default to off), making the light bigger also makes it brighter
 - Enable normalize on area lights for consistent behavior when resizing for shadow softness
 
 **Missing exposure control enable**
@@ -876,7 +885,7 @@ adjust_rig_exposure(
 
 **Light not appearing in render**
 - Check the light LOP is wired into the merge node that feeds render properties
-- Check `xn__inputsdiffuse_vya` and `xn__inputsspecular_01a` are not both 0.0
+- Check `xn__inputsdiffuse_8wa` and `xn__inputsspecular_vya` are not both 0.0
 - Check exposure is not extremely negative (e.g., -20 is effectively invisible)
 - Check light linking collections are not accidentally excluding the target geometry
 - Check the light prim is active (not muted in the LOP network)

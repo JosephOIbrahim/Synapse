@@ -9,6 +9,7 @@ Phase 3 of the MOE wiring plan.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import sys
@@ -208,6 +209,86 @@ def get_bridge():
 def is_read_only(tool_name: str) -> bool:
     """Check if a tool is read-only (should skip bridge)."""
     return tool_name in _READ_ONLY_TOOLS
+
+
+# ── Inline-cost pre-flight (panel main-thread heads-up) ──────────
+# A tool dispatched inline by the panel runs on Houdini's MAIN thread — the same
+# thread that pumps the Qt event loop. We cannot move hou.* off it, so a heavy op
+# (a big execute_python, a render/cook) freezes the GUI for its whole duration.
+# Confirmed live (2026-06-27): a 127KB-dump execute_python ran inline >5000ms →
+# heartbeat 10.19s, freeze_count=1, with no warning because hou NEEDS the main
+# thread. Runtime is not cheaply predictable, but the *shapes* that froze us are:
+# a long inline-code field, an oversized payload, or a known-slow cook/render
+# tool. Flagging those up front makes the freeze attributable, not silent.
+#
+# This is a heads-up ONLY. estimate_inline_cost never blocks, never mutates the
+# tool input, and callers must NOT alter the result on its strength.
+
+# Inherently long main-thread tools (cook/render/batch) — flagged regardless of
+# payload size.
+_KNOWN_SLOW_TOOLS = frozenset({
+    "houdini_render",
+    "synapse_render_sequence", "synapse_autonomous_render",
+    "synapse_safe_render", "synapse_render_progressively",
+    "tops_batch_cook", "tops_cook_and_validate", "tops_multi_shot",
+    "tops_render_sequence", "cops_batch_cook",
+    "synapse_batch", "synapse_evolve_memory", "synapse_sleep_pass",
+})
+
+# Payload fields that carry inline source / arbitrary code (execute_python builds
+# {"content": code}; execute_vex carries "vex"). Their length is the cheapest
+# proxy for "this might run long on the main thread".
+_CODE_FIELDS = ("code", "content", "vex", "snippet", "script")
+
+# Length thresholds (chars). Tuned above a trivial "make a box" script (~100
+# chars → no advisory) and well below the 127KB dump that stalled the loop.
+PREFLIGHT_HEAVY_CODE_CHARS = 2000
+PREFLIGHT_HEAVY_PAYLOAD_CHARS = 10000
+
+
+def estimate_inline_cost(tool_name: str, tool_input: Any) -> tuple[bool, str]:
+    """Cheap pre-flight estimate of whether an inline (main-thread) tool call is
+    heavy enough to briefly freeze the Qt GUI.
+
+    Pure string arithmetic — no I/O, no extra round-trip. Returns
+    ``(is_heavy, advisory_message)``; ``is_heavy`` False ⇒ empty message.
+
+    Advisory ONLY: hou.* has to run on the main thread regardless, so callers
+    must not block or change the result based on this verdict.
+    """
+    payload = tool_input if isinstance(tool_input, dict) else {}
+
+    # 1. Longest inline-code field (the execute_python/vex freeze contributor).
+    code_len = 0
+    for field_name in _CODE_FIELDS:
+        val = payload.get(field_name)
+        if isinstance(val, str) and len(val) > code_len:
+            code_len = len(val)
+    if code_len >= PREFLIGHT_HEAVY_CODE_CHARS:
+        return True, (
+            "{}: ~{} chars of inline code will run on Houdini's main thread and "
+            "may briefly freeze the UI while it executes.".format(tool_name, code_len)
+        )
+
+    # 2. Oversized overall payload (large data blobs marshalled inline).
+    try:
+        payload_len = len(json.dumps(payload, default=str)) if payload else 0
+    except Exception:
+        payload_len = 0
+    if payload_len >= PREFLIGHT_HEAVY_PAYLOAD_CHARS:
+        return True, (
+            "{}: large payload (~{} chars) runs inline on the main thread and "
+            "may briefly freeze the UI.".format(tool_name, payload_len)
+        )
+
+    # 3. Known inherently-slow cook/render tools.
+    if tool_name in _KNOWN_SLOW_TOOLS:
+        return True, (
+            "{} runs on the main thread and may briefly freeze the UI while it "
+            "cooks/renders.".format(tool_name)
+        )
+
+    return False, ""
 
 
 def execute_through_bridge(

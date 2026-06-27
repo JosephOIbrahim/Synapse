@@ -176,11 +176,16 @@ class TopsEvent:
 class Subscription:
     """Token returned from ``warm(...)``. Caller stores for ``cool()``.
 
-    Per Spike 3.0 finding: cleanup is by handler-identity, not by an
-    opaque returned handle. The bridge stores the bound
-    ``pdg.PyEventHandler`` instance and the ``pdg.GraphContext`` it was
-    registered against so that ``cool()`` can call
-    ``graph_context.removeEventHandler(handler)``.
+    H21.0.671 reality: ``pdg.PyEventHandler(fn)`` is a PHANTOM constructor
+    ("TypeError: No constructor defined"). The live idiom is
+    ``graph_context.addEventHandler(raw_callable, EventType)`` — it
+    REGISTERS the callable AND RETURNS the wrapper object you later pass
+    to ``removeEventHandler``. One registration per event type yields one
+    wrapper per type, so the bridge stores ``_handlers`` (the tuple of
+    returned wrappers) plus the ``pdg.GraphContext`` they were registered
+    against, and ``cool()`` calls ``removeEventHandler(wrapper)`` for each.
+    ``_callback`` keeps a strong reference to the raw callable so it can't
+    be garbage-collected while events are still in flight.
 
     The ``_alive`` field is a single-element list whose only element is
     flipped from ``True`` to ``False`` by ``cool()``. Python's GIL makes
@@ -192,7 +197,8 @@ class Subscription:
     scope: str  # "graph" | "node" | "workitem"
     event_types: Tuple[int, ...]
     # Bridge-private fields (consumers read public fields only):
-    _handler: Any = field(repr=False)
+    _callback: Any = field(repr=False)
+    _handlers: Tuple[Any, ...] = field(repr=False)
     _graph_context: Any = field(repr=False)
     _alive: List[bool] = field(repr=False)
 
@@ -238,8 +244,9 @@ class TopsEventBridge:
 
         Acquires the live ``pdg.GraphContext`` via
         ``top_node.getPDGGraphContext()`` (R8 pattern, ``bridge.py:616``)
-        and registers a ``pdg.PyEventHandler`` against the surfaced
-        event types.
+        and registers a raw Python callable against the surfaced event
+        types via ``addEventHandler``, capturing the wrapper each call
+        returns for later teardown.
 
         Args:
             top_node: The TOP network's ``hou.Node``. Must expose
@@ -281,22 +288,26 @@ class TopsEventBridge:
             )
 
         alive: List[bool] = [True]
-        handler = self._make_event_handler(alive, top_node_path)
+        callback = self._make_event_callback(alive, top_node_path)
 
-        # Register the same handler against each surfaced event type.
-        # Per audit § 2.6, addEventHandler is the 2-arg form
-        # (handler, EventType). R8 prior art at bridge.py:637-638.
+        # Register the raw callable against each surfaced event type.
+        # H21.0.671: addEventHandler is the 2-arg form (callable,
+        # EventType) and RETURNS the wrapper object to pass to
+        # removeEventHandler — pdg.PyEventHandler(fn) is a phantom
+        # constructor. R8 prior art at bridge.py:654-670.
         registered: List[int] = []
+        handlers: List[Any] = []
         try:
             for event_type_int in sorted(_SURFACED_EVENT_TYPES):
                 event_type_enum = self._resolve_event_type_enum(event_type_int)
-                graph_context.addEventHandler(handler, event_type_enum)
+                wrapper = graph_context.addEventHandler(callback, event_type_enum)
+                handlers.append(wrapper)
                 registered.append(event_type_int)
         except Exception as exc:
             # Partial failure: roll back what we did register, then raise.
-            for event_type_int in registered:
+            for wrapper in handlers:
                 try:
-                    graph_context.removeEventHandler(handler)
+                    graph_context.removeEventHandler(wrapper)
                 except Exception:
                     pass
             raise TopsBridgeError(
@@ -308,7 +319,8 @@ class TopsEventBridge:
             top_node_path=top_node_path,
             scope="graph",
             event_types=tuple(registered),
-            _handler=handler,
+            _callback=callback,
+            _handlers=tuple(handlers),
             _graph_context=graph_context,
             _alive=alive,
         )
@@ -374,16 +386,17 @@ class TopsEventBridge:
         # Flip alive flag BEFORE removing the handler so any in-flight
         # event invocations see the closed state.
         subscription._alive[0] = False
-        try:
-            subscription._graph_context.removeEventHandler(
-                subscription._handler
-            )
-        except Exception as exc:
-            logger.info(
-                "TopsEventBridge cool() swallowed teardown error on %s: %r",
-                subscription.top_node_path,
-                exc,
-            )
+        # One wrapper per registered event type — detach each. Guard each
+        # individually so a single failed removal doesn't strand the rest.
+        for wrapper in subscription._handlers:
+            try:
+                subscription._graph_context.removeEventHandler(wrapper)
+            except Exception as exc:
+                logger.info(
+                    "TopsEventBridge cool() swallowed teardown error on %s: %r",
+                    subscription.top_node_path,
+                    exc,
+                )
         with self._lock:
             try:
                 self._subscriptions.remove(subscription)
@@ -430,17 +443,20 @@ class TopsEventBridge:
 
     # ── Internal — event handler factory ──────────────────────────
 
-    def _make_event_handler(
+    def _make_event_callback(
         self,
         subscription_alive: List[bool],
         top_node_path: str,
     ) -> Any:
-        """Build a ``pdg.PyEventHandler`` for one subscription.
+        """Build the raw event callable for one subscription.
 
-        The closure captures ``subscription_alive`` and ``top_node_path``
-        so the handler can early-return on cooled subscriptions and
-        attribute the event to the right TOP network. R8 pattern at
-        ``bridge.py:636``.
+        H21.0.671: ``pdg.PyEventHandler(fn)`` is a phantom constructor, so
+        this returns the bare callable — the caller registers it via
+        ``graph_context.addEventHandler(callable, EventType)``, which is
+        what wraps it. The closure captures ``subscription_alive`` and
+        ``top_node_path`` so the handler can early-return on cooled
+        subscriptions and attribute the event to the right TOP network.
+        R8 pattern at ``bridge.py:654``.
         """
 
         def on_pdg_event(event: Any) -> None:
@@ -481,7 +497,7 @@ class TopsEventBridge:
                 )
                 self._increment_dropped()
 
-        return pdg.PyEventHandler(on_pdg_event)
+        return on_pdg_event
 
     def _build_tops_event(
         self,

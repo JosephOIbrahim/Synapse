@@ -75,6 +75,27 @@ def _peek_live_handler():
         return None
 
 
+def _peek_live_aggregator():
+    """The live MetricsAggregator, if any — hwebserver module global first,
+    then the live websocket server's. Attribute peeks only; NEVER constructs
+    one (the freeze_chain._peek_* discipline). The hwebserver transport now
+    builds + feeds one (start_hwebserver), so the dominant path is no longer
+    always-absent."""
+    try:
+        from . import hwebserver_adapter
+        agg = getattr(hwebserver_adapter, "_metrics_aggregator", None)
+        if agg is not None:
+            return agg
+    except Exception:
+        pass
+    try:
+        from .freeze_chain import _peek_live_server
+        srv = _peek_live_server()
+        return getattr(srv, "_metrics_aggregator", None) if srv is not None else None
+    except Exception:
+        return None
+
+
 def collect_telemetry() -> dict:
     """Snapshot every telemetry surface. Each section is real data or None
     plus an ``*_absent`` marker stating why. Individually try/excepted —
@@ -84,6 +105,8 @@ def collect_telemetry() -> dict:
         "pid": os.getpid(),
         "synapse_version": None,
         "dispatch_waits": None,
+        "main_thread_direct": None,
+        "scene_hash": None,
         "tool_durations": None,
         "freeze": None,
         "live_metrics_latest": None,
@@ -100,6 +123,23 @@ def collect_telemetry() -> dict:
         out["dispatch_waits"] = dispatch_wait_stats()
     except Exception:
         out["dispatch_waits_absent"] = "main_thread stats unavailable"
+
+    # C6 (continued) — main-thread DIRECT-path fn() duration. The dominant
+    # panel/bridge inline path short-circuits run_on_main and never samples the
+    # dispatch-wait histogram; this surface attributes it. Module-level, always
+    # collectable.
+    try:
+        from .main_thread import main_thread_direct_stats
+        out["main_thread_direct"] = main_thread_direct_stats()
+    except Exception:
+        out["main_thread_direct_absent"] = "main_thread stats unavailable"
+
+    # R1 stage-integrity hash duration (the Flatten floor on large Solaris stages).
+    try:
+        from shared.bridge import scene_hash_stats
+        out["scene_hash"] = scene_hash_stats()
+    except Exception:
+        out["scene_hash_absent"] = "bridge scene_hash stats unavailable"
 
     # Per-tool duration histogram — lives on the live handler instance.
     try:
@@ -122,11 +162,10 @@ def collect_telemetry() -> dict:
     if out["freeze"] is None:
         out["freeze_absent"] = "freeze chain not constructed"
 
-    # Live-metrics ring — only the websocket fallback ever constructs one.
+    # Live-metrics ring — the hwebserver transport (dominant path) or the legacy
+    # websocket server may construct + feed one. Peek both; never construct.
     try:
-        from .freeze_chain import _peek_live_server
-        srv = _peek_live_server()
-        agg = getattr(srv, "_metrics_aggregator", None) if srv is not None else None
+        agg = _peek_live_aggregator()
         snap = agg.latest() if agg is not None else None
         if snap is not None:
             from .live_metrics import snapshot_to_dict
@@ -135,7 +174,7 @@ def collect_telemetry() -> dict:
         pass
     if out["live_metrics_latest"] is None:
         out["live_metrics_latest_absent"] = (
-            "no metrics aggregator (the hwebserver transport never constructs one)"
+            "no metrics aggregator running (none constructed, or no snapshot collected yet)"
         )
     return out
 

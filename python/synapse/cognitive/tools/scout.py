@@ -99,11 +99,14 @@ VEX_ROOT = Path(os.environ.get("SYNAPSE_VEX_ROOT", str(RAG_ROOT)))
 # Drift policy (Spike 1): a corpus is a CACHE derived from rag/ — caches drift,
 # and a drifted grounding corpus produces FALSE phantoms (flags a now-real API as
 # fake), which is worse than no gate. At load scout recomputes the rag/ digest and
-# compares it to the corpus manifest.
-#   "warn"   (default) — surface stale:true + a warning line; still return hits.
-#   "refuse"           — raise ScoutError on drift (hard gate for studio use).
+# compares it to the corpus manifest. The default is FAIL-CLOSED: when an H22
+# build makes the symbol table / corpus stale the phantom-API gate REFUSES
+# (raises) rather than silently disarm — a disarmed gate is the #1 failure class.
+#   "refuse" (default) — raise ScoutError on drift (fail-closed phantom gate).
+#   "warn"             — surface stale:true + a warning line; still return hits
+#                        (explicit opt-in to graceful degradation, e.g. mid-upgrade).
 # A missing/corrupt manifest reads as STALE, never silently fresh (invariant 1).
-DRIFT_POLICY = os.environ.get("SYNAPSE_SCOUT_DRIFT_POLICY", "warn").lower().strip()
+DRIFT_POLICY = os.environ.get("SYNAPSE_SCOUT_DRIFT_POLICY", "refuse").lower().strip()
 CORPUS_MANIFEST_NAME = "manifest.json"   # store-root manifest (NOT semantic_index/manifest.json)
 
 # Symbol-table membership authority (Spike 2.5). EXISTENCE is a `dir()` question

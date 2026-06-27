@@ -6,6 +6,35 @@ Auto-extracted from the monolith recipes.py.
 
 from .base import Recipe, RecipeStep
 from ...core.gates import GateLevel
+# MaterialX node-type names — single-sourced from synapse.core.mtlx_types so
+# the embedded recipe code can't drift from the H22 survival-probed set.
+from ...core.mtlx_types import MTLX_STANDARD_SURFACE, MTLX_STANDARD_VOLUME
+# Names single-sourced from synapse.core.usd_punycode so they can never drift
+# from the live-probed 21.0.671 values. TWO name-spaces, picked PER STEP by its
+# action:
+#   * _P_* (encoded/punycode) — the LOP PARM interface (execute_python node.parm()
+#     pokes below). Build-specific; re-probed on a USD bump.
+#   * _RAW_* (raw USD schema name) — what set_usd_attribute authors on the prim
+#     (prim.GetAttribute(name).Set). Schema-stable / H22-safe. A punycode name
+#     passed to set_usd_attribute silently NO-OPS (handler's `if attr:` guard).
+from ...core.usd_punycode import encoded as _enc, raw as _raw
+
+# LOP parm-interface names — used only by the execute_python node.parm() pokes.
+_P_INTENSITY = _enc("intensity")
+_P_EXPOSURE = _enc("exposure")
+_P_EXPOSURE_CTRL = _enc("exposure_control")
+
+# RAW USD prim attribute names — used by every set_usd_attribute step below.
+_RAW_INTENSITY = _raw("intensity")
+_RAW_EXPOSURE = _raw("exposure")
+_RAW_ENABLE_TEMP = _raw("enable_temperature")
+_RAW_COLOR_TEMP = _raw("color_temperature")
+_RAW_NORMALIZE = _raw("normalize")
+_RAW_ANGLE = _raw("angle")
+_RAW_CONE_ANGLE = _raw("shaping_cone_angle")
+_RAW_CONE_SOFTNESS = _raw("shaping_cone_softness")
+_RAW_WIDTH = _raw("width")
+_RAW_HEIGHT = _raw("height")
 
 
 def register_render_recipes(registry):
@@ -104,7 +133,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/dome_light",
-                    "attribute_name": "xn__inputsexposure_vya",
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -187,7 +216,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/turntable_key",
-                    "attribute_name": "xn__inputsexposure_vya",
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 5.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -205,7 +234,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/turntable_fill",
-                    "attribute_name": "xn__inputsexposure_vya",
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 3.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -223,7 +252,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/turntable_rim",
-                    "attribute_name": "xn__inputsexposure_vya",
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 4.5,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -241,7 +270,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/turntable_dome",
-                    "attribute_name": "xn__inputsexposure_vya",
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 0.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -512,27 +541,27 @@ def register_render_recipes(registry):
                         "# Key light: exposure 5\n"
                         "key = stage.createNode('light', 'key_light')\n"
                         "key.parm('primpath').set('/lights/key_light')\n"
-                        "key.parm('xn__inputsintensity_i0a').set(1.0)\n"
-                        "key.parm('xn__inputsexposure_control_wcb').set('set')\n"
-                        "key.parm('xn__inputsexposure_vya').set(5.0)\n"
+                        "key.parm('" + _P_INTENSITY + "').set(1.0)\n"
+                        "key.parm('" + _P_EXPOSURE_CTRL + "').set('set')\n"
+                        "key.parm('" + _P_EXPOSURE + "').set(5.0)\n"
                         "key.parmTuple('t').set((3, 4, 2))\n"
                         "key.parmTuple('r').set((-35, 45, 0))\n"
                         "\n"
                         "# Fill light: exposure 3 (4:1 ratio = 2 stops diff)\n"
                         "fill = stage.createNode('light', 'fill_light')\n"
                         "fill.parm('primpath').set('/lights/fill_light')\n"
-                        "fill.parm('xn__inputsintensity_i0a').set(1.0)\n"
-                        "fill.parm('xn__inputsexposure_control_wcb').set('set')\n"
-                        "fill.parm('xn__inputsexposure_vya').set(3.0)\n"
+                        "fill.parm('" + _P_INTENSITY + "').set(1.0)\n"
+                        "fill.parm('" + _P_EXPOSURE_CTRL + "').set('set')\n"
+                        "fill.parm('" + _P_EXPOSURE + "').set(3.0)\n"
                         "fill.parmTuple('t').set((-3, 3, 2))\n"
                         "fill.parmTuple('r').set((-25, -45, 0))\n"
                         "\n"
                         "# Rim light: exposure 4.5\n"
                         "rim = stage.createNode('light', 'rim_light')\n"
                         "rim.parm('primpath').set('/lights/rim_light')\n"
-                        "rim.parm('xn__inputsintensity_i0a').set(1.0)\n"
-                        "rim.parm('xn__inputsexposure_control_wcb').set('set')\n"
-                        "rim.parm('xn__inputsexposure_vya').set(4.5)\n"
+                        "rim.parm('" + _P_INTENSITY + "').set(1.0)\n"
+                        "rim.parm('" + _P_EXPOSURE_CTRL + "').set('set')\n"
+                        "rim.parm('" + _P_EXPOSURE + "').set(4.5)\n"
                         "rim.parmTuple('t').set((0, 3, -4))\n"
                         "rim.parmTuple('r').set((-20, 180, 0))\n"
                         "\n"
@@ -657,7 +686,7 @@ def register_render_recipes(registry):
                         "concrete = matlib.createNode('subnet', "
                         "'concrete_mtl')\n"
                         "concrete_surf = concrete.createNode("
-                        "'mtlxstandard_surface', 'concrete_shader')\n"
+                        f"'{MTLX_STANDARD_SURFACE}', 'concrete_shader')\n"
                         "concrete_surf.parm('base_color').set("
                         "(0.6, 0.58, 0.55))\n"
                         "concrete_surf.parm('specular_roughness').set("
@@ -667,7 +696,7 @@ def register_render_recipes(registry):
                         "dust = matlib.createNode('subnet', "
                         "'dust_mtl')\n"
                         "dust_vol = dust.createNode("
-                        "'mtlxstandard_volume', 'dust_shader')\n"
+                        f"'{MTLX_STANDARD_VOLUME}', 'dust_shader')\n"
                         "\n"
                         "# --- Merge all FX layers ---\n"
                         "merge = stage.createNode('merge', "
@@ -832,25 +861,25 @@ def register_render_recipes(registry):
                         "    # --- 3-point lighting (4:1 key:fill ratio) ---\n"
                         "    key = stage.createNode('light', 'key_light')\n"
                         "    key.parm('primpath').set('/lights/key_light')\n"
-                        "    key.parm('xn__inputsintensity_i0a').set(1.0)\n"
-                        "    key.parm('xn__inputsexposure_control_wcb').set('set')\n"
-                        "    key.parm('xn__inputsexposure_vya').set(5.0)\n"
+                        "    key.parm('" + _P_INTENSITY + "').set(1.0)\n"
+                        "    key.parm('" + _P_EXPOSURE_CTRL + "').set('set')\n"
+                        "    key.parm('" + _P_EXPOSURE + "').set(5.0)\n"
                         "    key.parmTuple('t').set((3, 4, 2))\n"
                         "    key.parmTuple('r').set((-35, 45, 0))\n"
                         "\n"
                         "    fill = stage.createNode('light', 'fill_light')\n"
                         "    fill.parm('primpath').set('/lights/fill_light')\n"
-                        "    fill.parm('xn__inputsintensity_i0a').set(1.0)\n"
-                        "    fill.parm('xn__inputsexposure_control_wcb').set('set')\n"
-                        "    fill.parm('xn__inputsexposure_vya').set(3.0)\n"
+                        "    fill.parm('" + _P_INTENSITY + "').set(1.0)\n"
+                        "    fill.parm('" + _P_EXPOSURE_CTRL + "').set('set')\n"
+                        "    fill.parm('" + _P_EXPOSURE + "').set(3.0)\n"
                         "    fill.parmTuple('t').set((-3, 3, 2))\n"
                         "    fill.parmTuple('r').set((-25, -45, 0))\n"
                         "\n"
                         "    rim = stage.createNode('light', 'rim_light')\n"
                         "    rim.parm('primpath').set('/lights/rim_light')\n"
-                        "    rim.parm('xn__inputsintensity_i0a').set(1.0)\n"
-                        "    rim.parm('xn__inputsexposure_control_wcb').set('set')\n"
-                        "    rim.parm('xn__inputsexposure_vya').set(4.5)\n"
+                        "    rim.parm('" + _P_INTENSITY + "').set(1.0)\n"
+                        "    rim.parm('" + _P_EXPOSURE_CTRL + "').set('set')\n"
+                        "    rim.parm('" + _P_EXPOSURE + "').set(4.5)\n"
                         "    rim.parmTuple('t').set((0, 3, -4))\n"
                         "    rim.parmTuple('r').set((-20, 180, 0))\n"
                         "\n"
@@ -928,7 +957,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": "xn__inputsintensity_i0a",
+                    "attribute_name": _RAW_INTENSITY,
                     "value": 1.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -938,7 +967,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": "xn__inputsshapingconeangle_hgbb",
+                    "attribute_name": _RAW_CONE_ANGLE,
                     "value": "{cone_angle}",
                 },
                 gate_level=GateLevel.REVIEW,
@@ -948,7 +977,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": "xn__inputsshapingconeSoftness_jlbb",
+                    "attribute_name": _RAW_CONE_SOFTNESS,
                     "value": 0.1,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -958,7 +987,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": "xn__inputsexposure_vya",
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 4.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -968,7 +997,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": "xn__inputsenableColorTemperature_znb",
+                    "attribute_name": _RAW_ENABLE_TEMP,
                     "value": True,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -977,7 +1006,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/spotlight",
-                    "attribute_name": "xn__inputscolorTemperature_r8a",
+                    "attribute_name": _RAW_COLOR_TEMP,
                     "value": 6500,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1015,7 +1044,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": "xn__inputsintensity_i0a",
+                    "attribute_name": _RAW_INTENSITY,
                     "value": 1.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1025,7 +1054,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": "xn__inputsangle_06a",
+                    "attribute_name": _RAW_ANGLE,  # raw USD; was punycode _P_ANGLE (no-op on set_usd_attribute)
                     "value": 0.53,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1035,7 +1064,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": "xn__inputsexposure_vya",
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1045,7 +1074,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": "xn__inputsenableColorTemperature_znb",
+                    "attribute_name": _RAW_ENABLE_TEMP,
                     "value": True,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1054,7 +1083,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/sun_light",
-                    "attribute_name": "xn__inputscolorTemperature_r8a",
+                    "attribute_name": _RAW_COLOR_TEMP,
                     "value": 5500,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1094,7 +1123,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/area_panel",
-                    "attribute_name": "xn__inputsintensity_i0a",
+                    "attribute_name": _RAW_INTENSITY,
                     "value": 1.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1104,7 +1133,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/area_panel",
-                    "attribute_name": "xn__inputswidth_e5a",
+                    "attribute_name": _RAW_WIDTH,
                     "value": "{width}",
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1114,7 +1143,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/area_panel",
-                    "attribute_name": "xn__inputsheight_i5a",
+                    "attribute_name": _RAW_HEIGHT,
                     "value": "{height}",
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1124,7 +1153,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/area_panel",
-                    "attribute_name": "xn__inputsexposure_vya",
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 3.0,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1134,7 +1163,7 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/area_panel",
-                    "attribute_name": "xn__inputsnormalize_01a",
+                    "attribute_name": _RAW_NORMALIZE,
                     "value": True,
                 },
                 gate_level=GateLevel.REVIEW,
@@ -1172,27 +1201,25 @@ def register_render_recipes(registry):
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/mesh_light",
-                    "attribute_name": "xn__inputsintensity_i0a",
+                    "attribute_name": _RAW_INTENSITY,
                     "value": 1.0,
                 },
                 gate_level=GateLevel.REVIEW,
             ),
-            # Target geometry pattern
-            RecipeStep(
-                action="set_usd_attribute",
-                payload_template={
-                    "prim_path": "/lights/mesh_light",
-                    "attribute_name": "xn__inputsgeometry_01a",
-                    "value": "{target_geo_pattern}",
-                },
-                gate_level=GateLevel.REVIEW,
-            ),
+            # Target geometry binding intentionally OMITTED: UsdLux GeometryLight
+            # binds its emitting mesh via the *relationship* "geometry" (raw,
+            # schema-stable — NOT inputs:-namespaced, NOT punycode). set_usd_attribute
+            # authors attributes via GetAttribute().Set(), so it can't author a rel;
+            # there is no relationship-authoring handler today. Rather than leave a
+            # silent no-op step (the old phantom xn__inputsgeometry_01a), the bind is
+            # dropped until a rel-author path exists. {target_geo_pattern} is still
+            # captured as a recipe parameter for when that path lands.
             # Brightness via exposure
             RecipeStep(
                 action="set_usd_attribute",
                 payload_template={
                     "prim_path": "/lights/mesh_light",
-                    "attribute_name": "xn__inputsexposure_vya",
+                    "attribute_name": _RAW_EXPOSURE,
                     "value": 2.0,
                 },
                 gate_level=GateLevel.REVIEW,

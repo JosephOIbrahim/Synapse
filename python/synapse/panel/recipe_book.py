@@ -15,6 +15,13 @@ Usage:
 import html
 import re
 
+# Punycode parm encodings — single-sourced from synapse.core.usd_punycode so
+# the light-rig recipe can never drift from the live-probed 21.0.671 names.
+from synapse.core.usd_punycode import encoded as _enc
+_P_EXPOSURE = _enc("exposure")
+_P_ENABLE_TEMP = _enc("enable_temperature")
+_P_COLOR_TEMP = _enc("color_temperature")
+
 # -- Design tokens (fallback for standalone use) ------------------------------
 try:
     from synapse.panel import tokens as _t
@@ -427,9 +434,9 @@ RECIPES = {
             "context": "LOP",
             "difficulty": "intermediate",
             "nodes": [
-                {"type": "light", "name": "key_light", "parms": {"lighttype": "distantlight", "xn__inputsexposure_vya": 1.0, "xn__inputsenableColorTemperature_k5b": 1, "xn__inputscolorTemperature_oib": 5500}},
-                {"type": "light", "name": "fill_light", "parms": {"lighttype": "distantlight", "xn__inputsexposure_vya": -0.585}},
-                {"type": "light", "name": "rim_light", "parms": {"lighttype": "distantlight", "xn__inputsexposure_vya": 0.5}},
+                {"type": "light", "name": "key_light", "parms": {"lighttype": "distantlight", _P_EXPOSURE: 1.0, _P_ENABLE_TEMP: 1, _P_COLOR_TEMP: 5500}},
+                {"type": "light", "name": "fill_light", "parms": {"lighttype": "distantlight", _P_EXPOSURE: -0.585}},
+                {"type": "light", "name": "rim_light", "parms": {"lighttype": "distantlight", _P_EXPOSURE: 0.5}},
                 {"type": "merge", "name": "merge_lights", "parms": {}},
             ],
             "connections": [
@@ -437,7 +444,7 @@ RECIPES = {
                 ["fill_light", "merge_lights", 1],
                 ["rim_light", "merge_lights", 2],
             ],
-            "key_parms": ["xn__inputsexposure_vya", "xn__inputscolorTemperature_oib", "lighttype"],
+            "key_parms": [_P_EXPOSURE, _P_COLOR_TEMP, "lighttype"],
             "explanation": (
                 "Creates a classic 3-point lighting setup: key light (main illumination "
                 "with warm color temperature), fill light (softer, 3:1 ratio below key), "

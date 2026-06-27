@@ -15,6 +15,12 @@ except ImportError:
     HOU_AVAILABLE = False
 
 from ..core.aliases import resolve_param, resolve_param_with_default
+from ..core.mtlx_types import (
+    MTLX_STANDARD_SURFACE,
+    MTLX_IMAGE,
+    MTLX_GEOMPROPVALUE,
+    MTLX_NORMALMAP,
+)
 from .handlers_usd import _usd_to_json, _coerce_bool
 from .handler_helpers import (
     _HOUDINI_UNAVAILABLE,
@@ -171,7 +177,7 @@ class MaterialHandlerMixin:
         category = resolve_param(payload, "category", required=False)
         preset_name = resolve_param(payload, "preset", required=False)
         shader_type = resolve_param_with_default(
-            payload, "shader_type", "mtlxstandard_surface"
+            payload, "shader_type", MTLX_STANDARD_SURFACE
         )
         set_display = _coerce_bool(
             resolve_param(payload, "set_display", required=False), default=True
@@ -502,15 +508,15 @@ class MaterialHandlerMixin:
                 matlib.cook(force=True)
 
                 # Create the main shader
-                shader = matlib.createNode("mtlxstandard_surface", name + "_shader")
+                shader = matlib.createNode(MTLX_STANDARD_SURFACE, name + "_shader")
                 if shader is None:
                     raise RuntimeError(
-                        "Couldn't create mtlxstandard_surface shader -- "
+                        f"Couldn't create {MTLX_STANDARD_SURFACE} shader -- "
                         "check that MaterialX is available in your Houdini build"
                     )
 
                 # Create UV coordinate node (shared by all texture readers)
-                uv_node = matlib.createNode("mtlxgeompropvalue", "uv_reader")
+                uv_node = matlib.createNode(MTLX_GEOMPROPVALUE, "uv_reader")
                 if uv_node:
                     # Set to read 'st' (UV) attribute as vector2
                     sig_parm = uv_node.parm("signature")
@@ -524,7 +530,7 @@ class MaterialHandlerMixin:
 
                 def _create_texture(tex_path, tex_name, shader_input, is_color=False):
                     """Create an mtlximage node and connect it to the shader."""
-                    img = matlib.createNode("mtlximage", tex_name)
+                    img = matlib.createNode(MTLX_IMAGE, tex_name)
                     if img is None:
                         return None
 
@@ -577,7 +583,7 @@ class MaterialHandlerMixin:
 
                 if normal_map:
                     # Normal maps need a mtlxnormalmap node between the image and shader
-                    normal_img = matlib.createNode("mtlximage", "normal_tex")
+                    normal_img = matlib.createNode(MTLX_IMAGE, "normal_tex")
                     if normal_img:
                         fp = normal_img.parm("file")
                         if fp:
@@ -589,7 +595,7 @@ class MaterialHandlerMixin:
                             normal_img.setNamedInput("texcoord", uv_node, 0)
 
                         # Create normalmap converter
-                        normal_conv = matlib.createNode("mtlxnormalmap", "normal_convert")
+                        normal_conv = matlib.createNode(MTLX_NORMALMAP, "normal_convert")
                         if normal_conv:
                             normal_conv.setNamedInput("in", normal_img, 0)
                             shader.setNamedInput("normal", normal_conv, 0)

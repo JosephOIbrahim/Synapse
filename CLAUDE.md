@@ -1,6 +1,6 @@
 # SYNAPSE Agent Team — Lossless MOE Orchestrator
 
-> **Target:** Houdini 21.0.631 · SYNAPSE v5.15.0 · Python 3.14 · 112 MCP tools registered
+> **Target:** Houdini 21.0.631 · SYNAPSE v5.17.0 · Python 3.14 · 113 MCP tools registered
 > **All revisions verified live** — zero hallucinated APIs remaining.
 
 ## Identity
@@ -150,17 +150,23 @@ async def _execute_pdg_deferred(self, operation, integrity):
     cook_complete = asyncio.Event()
     cook_success = [False]
 
-    class CookHandler(pdg.PyEventHandler):
-        def handleEvent(self, event):
-            if event.type == pdg.EventType.CookComplete:
-                cook_success[0] = True
-                cook_complete.set()
-            elif event.type == pdg.EventType.CookError:
-                cook_complete.set()
+    # H21.0.671: pdg.PyEventHandler(fn) is a PHANTOM constructor
+    # ("TypeError: No constructor defined"). Register a RAW callable —
+    # addEventHandler(fn, EventType) registers it AND returns the wrapper
+    # object you keep for removeEventHandler. One call per event type.
+    def on_cook_event(event):
+        if event.type == pdg.EventType.CookComplete:
+            cook_success[0] = True
+            cook_complete.set()
+        elif event.type == pdg.EventType.CookError:
+            cook_complete.set()
 
-    handler = CookHandler()
     graph_context = top_node.getPDGGraphContext()
-    graph_context.addEventHandler(handler)
+    handlers = [
+        graph_context.addEventHandler(on_cook_event, pdg.EventType.CookComplete),
+        graph_context.addEventHandler(on_cook_event, pdg.EventType.CookError),
+    ]
+    # … later, in teardown: for h in handlers: graph_context.removeEventHandler(h)
 
     hdefereval.executeInMainThread(lambda: graph_context.cook())
 

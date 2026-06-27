@@ -104,7 +104,7 @@ class DescribeView(QtWidgets.QWidget):
         # Generate button
         self.generate_btn = QtWidgets.QPushButton("GENERATE HDA")
         self.generate_btn.setObjectName("HdaGenerateBtn")
-        self.generate_btn.setCursor(QtCore.Qt.PointingHandCursor)
+        self.generate_btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         self.generate_btn.clicked.connect(self._on_generate)
         layout.addWidget(self.generate_btn)
 
@@ -162,7 +162,7 @@ class BuildingView(QtWidgets.QWidget):
         # Stage indicator
         self.stage_label = QtWidgets.QLabel("Preparing...")
         self.stage_label.setObjectName("StageLabel")
-        self.stage_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.stage_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.stage_label.setStyleSheet(
             "color: {c}; font-family: monospace; font-size: 14px; "
             "font-weight: 700;".format(c=t.BONE)
@@ -188,7 +188,7 @@ class BuildingView(QtWidgets.QWidget):
             dot.setStyleSheet(
                 "color: {c}; font-size: 8px;".format(c=t.HDA_STAGE_INACTIVE)
             )
-            dot.setAlignment(QtCore.Qt.AlignCenter)
+            dot.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
             self.dot_labels.append(dot)
             self.dots_layout.addWidget(dot)
         self.dots_layout.addStretch()
@@ -196,7 +196,7 @@ class BuildingView(QtWidgets.QWidget):
 
         # Detail text
         self.detail_label = QtWidgets.QLabel("")
-        self.detail_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.detail_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.detail_label.setStyleSheet(
             "color: {c}; font-family: monospace; font-size: 10px;".format(
                 c=t.SLATE
@@ -209,9 +209,9 @@ class BuildingView(QtWidgets.QWidget):
         # Cancel button
         self.cancel_btn = QtWidgets.QPushButton("Cancel")
         self.cancel_btn.setObjectName("CancelBtn")
-        self.cancel_btn.setCursor(QtCore.Qt.PointingHandCursor)
+        self.cancel_btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         self.cancel_btn.clicked.connect(self.cancel_requested.emit)
-        layout.addWidget(self.cancel_btn, alignment=QtCore.Qt.AlignCenter)
+        layout.addWidget(self.cancel_btn, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
 
     def update_stage(self, stage_name, progress_pct, detail=""):
         """Update to a new stage. Called via signal from controller."""
@@ -289,9 +289,9 @@ class ResultView(QtWidgets.QWidget):
         self.path_label = QtWidgets.QLabel("")
         self.path_label.setObjectName("NodePathLabel")
         self.path_label.setTextInteractionFlags(
-            QtCore.Qt.TextSelectableByMouse
+            QtCore.Qt.TextInteractionFlag.TextSelectableByMouse
         )
-        self.path_label.setCursor(QtCore.Qt.IBeamCursor)
+        self.path_label.setCursor(QtCore.Qt.CursorShape.IBeamCursor)
         layout.addWidget(self.path_label)
 
         # Parameter table
@@ -333,7 +333,7 @@ class ResultView(QtWidgets.QWidget):
         ]:
             btn = QtWidgets.QPushButton(label)
             btn.setObjectName("HdaActionBtn")
-            btn.setCursor(QtCore.Qt.PointingHandCursor)
+            btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
             btn.clicked.connect(
                 lambda checked=False, a=action: self.action_requested.emit(a)
             )
@@ -344,7 +344,7 @@ class ResultView(QtWidgets.QWidget):
         # Create Another button
         new_btn = QtWidgets.QPushButton("Create Another HDA")
         new_btn.setObjectName("HdaGenerateBtn")
-        new_btn.setCursor(QtCore.Qt.PointingHandCursor)
+        new_btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         new_btn.clicked.connect(
             lambda: self.action_requested.emit("new")
         )

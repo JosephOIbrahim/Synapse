@@ -26,6 +26,9 @@ def render_prometheus(
     memory_entry_count: int = 0,
     tool_durations: Optional[Dict[str, Any]] = None,
     dispatch_waits: Optional[Dict[str, Any]] = None,
+    main_thread_directs: Optional[Dict[str, Any]] = None,
+    scene_hashes: Optional[Dict[str, Any]] = None,
+    panel_inlines: Optional[Dict[str, Any]] = None,
     live_snapshot: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Render metrics in Prometheus text exposition format.
@@ -38,6 +41,13 @@ def render_prometheus(
         tool_durations: Per-tool duration stats {tool: {count, sum_ms, buckets}}
         dispatch_waits: run_on_main enqueue→start wait histogram
             {count, sum_ms, max_ms, buckets} (C6 — attributes the dispatch floor)
+        main_thread_directs: main-thread DIRECT-path fn() duration histogram
+            {count, sum_ms, max_ms, buckets} (C6 — the inline panel/bridge path
+            the dispatch-wait histogram never samples)
+        scene_hashes: scene-hash (R1 stage-integrity) duration histogram
+            {count, sum_ms, max_ms, buckets} — the Flatten floor on stage ops
+        panel_inlines: panel inline (main-thread Qt) tool-dispatch summary
+            {count, sum_ms, max_ms, slow_count, slowest_tool} (no buckets)
         live_snapshot: Optional MetricSnapshot dict from MetricsAggregator
 
     Returns:
@@ -123,6 +133,56 @@ def render_prometheus(
         lines.append(f'synapse_dispatch_wait_ms_sum {round_float(dispatch_waits.get("sum_ms", 0.0))}')
         lines.append(f'synapse_dispatch_wait_ms_count {count}')
         lines.append(f'synapse_dispatch_wait_ms_max {round_float(dispatch_waits.get("max_ms", 0.0))}')
+
+    # Main-thread DIRECT-path fn() duration histogram (C6 continued). The dominant
+    # panel/bridge path runs INLINE on the main thread and short-circuits
+    # run_on_main, so the dispatch-wait histogram never samples it — count stays 0
+    # on the path that matters. This surfaces that path's fn() duration so it is
+    # finally attributed. Mirrors the dispatch_wait export.
+    if main_thread_directs and main_thread_directs.get("count", 0) > 0:
+        lines.append("")
+        lines.append("# HELP synapse_main_thread_direct_ms Main-thread direct-path fn() duration in milliseconds")
+        lines.append("# TYPE synapse_main_thread_direct_ms histogram")
+        buckets = main_thread_directs.get("buckets", {})
+        for le in sorted(buckets, key=float):
+            lines.append(f'synapse_main_thread_direct_ms_bucket{{le="{le}"}} {buckets[le]}')
+        count = main_thread_directs.get("count", 0)
+        lines.append(f'synapse_main_thread_direct_ms_bucket{{le="+Inf"}} {count}')
+        lines.append(f'synapse_main_thread_direct_ms_sum {round_float(main_thread_directs.get("sum_ms", 0.0))}')
+        lines.append(f'synapse_main_thread_direct_ms_count {count}')
+        lines.append(f'synapse_main_thread_direct_ms_max {round_float(main_thread_directs.get("max_ms", 0.0))}')
+
+    # Scene-hash (R1 stage-integrity) duration histogram — the Flatten floor on
+    # stage-touching ops. Same shape as dispatch_wait; mirrors its export.
+    if scene_hashes and scene_hashes.get("count", 0) > 0:
+        lines.append("")
+        lines.append("# HELP synapse_scene_hash_ms Scene-hash (stage-integrity) duration in milliseconds")
+        lines.append("# TYPE synapse_scene_hash_ms histogram")
+        buckets = scene_hashes.get("buckets", {})
+        for le in sorted(buckets, key=float):
+            lines.append(f'synapse_scene_hash_ms_bucket{{le="{le}"}} {buckets[le]}')
+        count = scene_hashes.get("count", 0)
+        lines.append(f'synapse_scene_hash_ms_bucket{{le="+Inf"}} {count}')
+        lines.append(f'synapse_scene_hash_ms_sum {round_float(scene_hashes.get("sum_ms", 0.0))}')
+        lines.append(f'synapse_scene_hash_ms_count {count}')
+        lines.append(f'synapse_scene_hash_ms_max {round_float(scene_hashes.get("max_ms", 0.0))}')
+
+    # Panel inline (main-thread Qt slot) tool-dispatch duration. The accessor
+    # tracks count/sum/max + a slow-op count (no buckets), so it exports as a
+    # Prometheus summary plus a slow-op counter — the freeze-attribution signal,
+    # labelled with the slowest contributing tool.
+    if panel_inlines and panel_inlines.get("count", 0) > 0:
+        lines.append("")
+        lines.append("# HELP synapse_panel_inline_ms Panel inline (main-thread Qt) tool-dispatch duration in milliseconds")
+        lines.append("# TYPE synapse_panel_inline_ms summary")
+        count = panel_inlines.get("count", 0)
+        lines.append(f'synapse_panel_inline_ms_sum {round_float(panel_inlines.get("sum_ms", 0.0))}')
+        lines.append(f'synapse_panel_inline_ms_count {count}')
+        lines.append(f'synapse_panel_inline_ms_max {round_float(panel_inlines.get("max_ms", 0.0))}')
+        lines.append("# HELP synapse_panel_inline_slow_total Inline tool dispatches over the slow threshold")
+        lines.append("# TYPE synapse_panel_inline_slow_total counter")
+        slowest = panel_inlines.get("slowest_tool") or ""
+        lines.append(f'synapse_panel_inline_slow_total{{slowest_tool="{slowest}"}} {panel_inlines.get("slow_count", 0)}')
 
     # Live metrics (Sprint E) — scene, session, uptime
     if live_snapshot:

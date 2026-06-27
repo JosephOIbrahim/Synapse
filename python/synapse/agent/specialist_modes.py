@@ -19,6 +19,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Sequence
 
+from ..core.mtlx_types import MTLX_STANDARD_SURFACE
+
+from ..core.usd_punycode import PUNYCODE_PARMS
+
 
 # =============================================================================
 # SPECIALIST MODE
@@ -87,17 +91,22 @@ LIGHTING_SPECIALIST = SpecialistMode(
         "natural warmth on key lights. Dome exposure ~0.25 for studio HDRIs."
     ),
     parameter_vocabulary={
-        "intensity": "xn__inputsintensity_i0a",
-        "intensity_control": "xn__inputsintensity_control_r0b",
-        "exposure": "xn__inputsexposure_vya",
-        "exposure_control": "xn__inputsexposure_control_wcb",
-        "color": "xn__inputscolor_vya",
-        "color_control": "xn__inputscolor_control_wcb",
-        "color_temperature": "xn__inputscolortemperature_ica",
-        "color_temperature_control": "xn__inputscolortemperature_control_jdb",
-        "texture_file": "xn__inputstexturefile_i1a",
-        "texture_file_control": "xn__inputstexturefile_control_j2b",
-        "normalize": "xn__inputsnormalize_01a",
+        # Single-sourced from synapse.core.usd_punycode — every value live-probed
+        # off a real domelight on 21.0.671. Do NOT paste xn__ literals here: the
+        # prior literals were ~all phantom (intensity_control '_r0b',
+        # color_temperature '_ica', texture_file '_i1a', normalize '_01a' — none
+        # resolve on a live light). Re-probe, don't hand-edit.
+        "intensity": PUNYCODE_PARMS["intensity"],
+        "intensity_control": PUNYCODE_PARMS["intensity_control"],
+        "exposure": PUNYCODE_PARMS["exposure"],
+        "exposure_control": PUNYCODE_PARMS["exposure_control"],
+        "color": PUNYCODE_PARMS["color"],
+        "color_control": PUNYCODE_PARMS["color_control"],
+        "color_temperature": PUNYCODE_PARMS["color_temperature"],
+        "color_temperature_control": PUNYCODE_PARMS["color_temperature_control"],
+        "texture_file": PUNYCODE_PARMS["texture_file"],
+        "texture_file_control": PUNYCODE_PARMS["texture_file_control"],
+        "normalize": PUNYCODE_PARMS["normalize"],
     },
     quality_signals=(
         QualitySignal(
@@ -133,7 +142,7 @@ MATERIAL_SPECIALIST = SpecialistMode(
     domain=SpecialistDomain.MATERIAL,
     system_prompt_extension=(
         "You are a material specialist for Solaris/Karma MaterialX workflows. "
-        "Use mtlxstandard_surface as the default shader. Always cook the "
+        f"Use {MTLX_STANDARD_SURFACE} as the default shader. Always cook the "
         "materiallibrary before creating shader children (matlib.cook(force=True)). "
         "Material prim patterns must match exact USD prim paths — not wildcards. "
         "Keep material assignments inside the matlib node, not as separate assign nodes."
