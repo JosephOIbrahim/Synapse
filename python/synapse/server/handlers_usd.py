@@ -148,6 +148,58 @@ def _karma_visibility_pythonscript(
     ])
 
 
+# UsdGeomPrimvarsAPI authoring tables (set_usd_primvar).
+# Friendly type token -> Sdf.ValueTypeNames attribute name. These are stable
+# USD *schema* names (unlike the LOP-parm punycode encodings), so they are
+# H22-safe. Array forms are derived by appending "Array".
+_PRIMVAR_TYPE_MAP = {
+    "float": "Float", "float2": "Float2", "float3": "Float3", "float4": "Float4",
+    "double": "Double", "double2": "Double2", "double3": "Double3", "double4": "Double4",
+    "half": "Half",
+    "int": "Int", "int2": "Int2", "int3": "Int3", "int4": "Int4",
+    "int64": "Int64", "uint": "UInt", "bool": "Bool",
+    "string": "String", "token": "Token", "asset": "Asset",
+    "color3f": "Color3f", "color4f": "Color4f",
+    "color3h": "Color3h", "color4h": "Color4h",
+    "color3d": "Color3d", "color4d": "Color4d",
+    "normal3f": "Normal3f", "point3f": "Point3f", "vector3f": "Vector3f",
+    "texcoord2f": "TexCoord2f", "texcoord3f": "TexCoord3f",
+    "quatf": "Quatf", "matrix3d": "Matrix3d", "matrix4d": "Matrix4d",
+    "frame4d": "Frame4d",
+}
+
+# UsdGeom interpolation tokens: lowercased input -> canonical token.
+_PRIMVAR_INTERP = {
+    "constant": "constant", "uniform": "uniform", "varying": "varying",
+    "vertex": "vertex", "facevarying": "faceVarying",
+}
+
+
+def _resolve_primvar_type(type_token):
+    """Map a friendly primvar type token to a Sdf.ValueTypeNames attribute name.
+
+    Accepts an optional array suffix ("[]" or a trailing "array"/"Array") that
+    selects the array-valued variant. Returns the Sdf.ValueTypeNames attribute
+    name (e.g. "Color3f" or "Float3Array"), or None if the base type is unknown.
+    Pure/host-side -- no pxr dependency; the emitted LOP code resolves the real
+    Sdf.ValueTypeNames.<name> attribute at cook time.
+    """
+    if not type_token:
+        return None
+    t = str(type_token).strip()
+    is_array = False
+    if t.endswith("[]"):
+        is_array = True
+        t = t[:-2]
+    elif t.lower().endswith("array"):
+        is_array = True
+        t = t[:-5]
+    base = _PRIMVAR_TYPE_MAP.get(t.strip().lower())
+    if base is None:
+        return None
+    return base + "Array" if is_array else base
+
+
 class UsdHandlerMixin:
     """Mixin providing USD/Solaris stage handlers."""
 
@@ -391,6 +443,119 @@ class UsdHandlerMixin:
                         f"The value is a {type(value).__name__} with {len(value)} elements. "
                         "If the USD attribute expects a specific type (like GfVec3f), "
                         "you may need to use execute_python with explicit type construction."
+                    )
+                return result
+
+        return run_on_main(_on_main)
+
+    def _handle_set_usd_primvar(self, payload: Dict) -> Dict:
+        """Handle set_usd_primvar -- author a UsdGeom primvar via a Python LOP.
+
+        Mirrors set_usd_attribute (pythonscript LOP + editableStage) but uses
+        ``UsdGeom.PrimvarsAPI(prim).CreatePrimvar(name, Sdf.ValueTypeNames.<T>,
+        interpolation).Set(value)`` so it carries the interpolation token (and
+        optional elementSize / indices) that a raw attribute write can't.
+        ``UsdGeom.PrimvarsAPI.CreatePrimvar`` is verified live on H21.0.671.
+        """
+        node_path_arg = resolve_param(payload, "node", required=False)
+        prim_path = resolve_param(payload, "prim_path")
+        primvar_name = resolve_param(payload, "primvar_name")
+        type_token = resolve_param(payload, "type")
+        interp_arg = resolve_param_with_default(payload, "interpolation", "constant")
+        value = resolve_param(payload, "value")
+        element_size = resolve_param(payload, "element_size", required=False)
+        indices = resolve_param(payload, "indices", required=False)
+        set_display = _coerce_bool(
+            resolve_param(payload, "set_display", required=False), default=True
+        )
+
+        # Validate type + interpolation host-side -- fail fast with a helpful
+        # message instead of leaving a junk pythonscript node behind.
+        type_name = _resolve_primvar_type(type_token)
+        if type_name is None:
+            return {
+                "error": (
+                    f"Unsupported primvar type {type_token!r}. Supported base types: "
+                    + ", ".join(sorted(_PRIMVAR_TYPE_MAP))
+                    + " -- append '[]' for the array form (e.g. 'float3[]')."
+                ),
+            }
+        interpolation = _PRIMVAR_INTERP.get(str(interp_arg).strip().lower())
+        if interpolation is None:
+            return {
+                "error": (
+                    f"Unsupported interpolation {interp_arg!r}. Use one of: "
+                    "constant, uniform, varying, vertex, faceVarying."
+                ),
+            }
+
+        from .main_thread import run_on_main
+
+        def _on_main():
+            node = self._resolve_lop_node(node_path_arg)
+
+            with hou.undos.group("SYNAPSE: set_usd_primvar"):
+                parent = node.parent()
+                safe_name = f"primvar_{_safe_node_name(primvar_name, fallback='pv')}"
+                py_lop = parent.createNode("pythonscript", safe_name)
+                py_lop.setInput(0, node)
+                py_lop.moveToGoodPosition()
+
+                lines = [
+                    "from pxr import Sdf, UsdGeom, Vt",
+                    "stage = hou.pwd().editableStage()",
+                    f"prim = stage.GetPrimAtPath({repr(prim_path)})",
+                    "if prim:",
+                    (
+                        "    pv = UsdGeom.PrimvarsAPI(prim).CreatePrimvar("
+                        f"{repr(primvar_name)}, Sdf.ValueTypeNames.{type_name}, "
+                        f"{repr(interpolation)})"
+                    ),
+                    f"    pv.Set({repr(value)})",
+                ]
+                if element_size is not None:
+                    lines.append(f"    pv.SetElementSize({repr(int(element_size))})")
+                if indices is not None:
+                    lines.append(
+                        "    pv.SetIndices(Vt.IntArray("
+                        f"{repr([int(i) for i in indices])}))"
+                    )
+                py_lop.parm("python").set("\n".join(lines) + "\n")
+
+                # Cook and verify -- catch errors now instead of silent cook-time failure
+                try:
+                    py_lop.cook(force=True)
+                except hou.OperationFailed as e:
+                    error_msg = str(e)
+                    return {
+                        "created_node": py_lop.path(),
+                        "prim_path": prim_path,
+                        "cook_error": (
+                            f"The node was created but hit a snag when cooking -- {error_msg}. "
+                            "The pythonscript node is still in the network so you can inspect it. "
+                            "Check that the prim path exists and the primvar type/interpolation "
+                            "match the value's shape."
+                        ),
+                    }
+
+                result = {
+                    "created_node": py_lop.path(),
+                    "prim_path": prim_path,
+                    "primvar_name": primvar_name,
+                    "type": type_name,
+                    "interpolation": interpolation,
+                    "value": value,
+                }
+                if element_size is not None:
+                    result["element_size"] = int(element_size)
+                if indices is not None:
+                    result["indices"] = [int(i) for i in indices]
+                result.update(_wire_display(py_lop, node, set_display))
+                if isinstance(value, (list, tuple)):
+                    result["advisory"] = (
+                        f"The value is a {type(value).__name__} with {len(value)} elements. "
+                        "For non-constant interpolation the type should usually be an array form "
+                        "(e.g. 'float3[]') with one value per element."
                     )
                 return result
 

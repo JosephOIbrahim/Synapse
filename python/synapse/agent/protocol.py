@@ -71,6 +71,7 @@ DEFAULT_GATE_LEVELS: Dict[str, GateLevel] = {
     "create_usd_prim": GateLevel.REVIEW,
     "modify_usd_prim": GateLevel.REVIEW,
     "set_usd_attribute": GateLevel.REVIEW,
+    "set_usd_primvar": GateLevel.REVIEW,
     "add_memory": GateLevel.REVIEW,
     "decide": GateLevel.REVIEW,
 

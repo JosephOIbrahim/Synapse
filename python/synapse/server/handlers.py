@@ -491,6 +491,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("get_stage_info", self._handle_get_stage_info)
         reg.register("get_usd_attribute", self._handle_get_usd_attribute)
         reg.register("set_usd_attribute", self._handle_set_usd_attribute)
+        reg.register("set_usd_primvar", self._handle_set_usd_primvar)
         reg.register("create_usd_prim", self._handle_create_usd_prim)
         reg.register("modify_usd_prim", self._handle_modify_usd_prim)
 
