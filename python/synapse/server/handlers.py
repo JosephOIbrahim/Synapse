@@ -1332,12 +1332,39 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         except Exception:
             dispatch_waits = None
 
+        # C6 (continued) — the inline panel/bridge main-thread path short-circuits
+        # run_on_main and never samples dispatch_wait; this fn()-duration histogram
+        # attributes it. Same guarded-import + best-effort pattern as above.
+        try:
+            from .main_thread import main_thread_direct_stats
+            main_thread_directs = main_thread_direct_stats()
+        except Exception:
+            main_thread_directs = None
+
+        # R1 stage-integrity hash duration (the Flatten floor on large stages).
+        try:
+            from shared.bridge import scene_hash_stats
+            scene_hashes = scene_hash_stats()
+        except Exception:
+            scene_hashes = None
+
+        # Panel inline (main-thread Qt slot) tool-dispatch summary. Importing the
+        # accessor pulls in Qt; absent in headless servers → gracefully None.
+        try:
+            from ..panel.tool_executor import panel_inline_stats
+            panel_inlines = panel_inline_stats()
+        except Exception:
+            panel_inlines = None
+
         text = render_prometheus(
             router_stats=router_stats,
             circuit_breaker_state=cb_state,
             memory_entry_count=memory_count,
             tool_durations=self.tool_duration_stats(),
             dispatch_waits=dispatch_waits,
+            main_thread_directs=main_thread_directs,
+            scene_hashes=scene_hashes,
+            panel_inlines=panel_inlines,
             live_snapshot=live_snapshot,
         )
         return {"format": "prometheus", "text": text}
