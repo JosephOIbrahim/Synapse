@@ -91,6 +91,12 @@ class MetricSnapshot:
 _DEFAULT_INTERVAL = 2.0
 _DEFAULT_HISTORY_SIZE = 300  # ~10 min at 2s interval
 
+# Short marshal timeout for the scene collector. The daemon must never block,
+# so when Houdini's main thread is busy we skip this cycle (empty SceneMetrics)
+# rather than wait. 1s is generous for a read-only node walk yet small enough
+# that a busy main thread is shed within one collection interval.
+_SCENE_COLLECT_TIMEOUT = 1.0
+
 
 class MetricsAggregator:
     """Collects metrics on a daemon thread and stores snapshots in a circular buffer.
@@ -194,13 +200,25 @@ class MetricsAggregator:
     # ------------------------------------------------------------------
 
     def _collect_scene(self) -> SceneMetrics:
-        """Collect scene metrics from hou module. Graceful if unavailable."""
+        """Collect scene metrics from hou. Graceful if unavailable.
+
+        SAFETY (CLAUDE.md Rule #3): ``hou`` is not thread-safe off Houdini's
+        main thread. This collector runs on the metrics *daemon* thread, so the
+        entire hou-touching block is marshalled onto the main thread via
+        ``run_on_main``. A short timeout (``_SCENE_COLLECT_TIMEOUT``) means that
+        when the main thread is busy we SKIP this cycle (return an empty
+        ``SceneMetrics``) rather than block the daemon or risk a segfault from an
+        off-main hou call. Any failure — timeout, unavailable marshaller, or an
+        exception inside the walk — yields an empty ``SceneMetrics``.
+        """
         try:
             import hou
         except ImportError:
             return SceneMetrics()
 
-        try:
+        def _gather() -> SceneMetrics:
+            # Runs on Houdini's main thread (marshalled below). All hou.* access
+            # is confined here — never touched on the daemon thread.
             hip = hou.hipFile.path() or ""
             frame = int(hou.frame())
             fps = float(hou.fps())
@@ -231,8 +249,14 @@ class MetricsAggregator:
                 warnings=warns,
                 errors=errs,
             )
+
+        try:
+            from .main_thread import run_on_main
+            return run_on_main(_gather, timeout=_SCENE_COLLECT_TIMEOUT)
         except Exception:
-            logger.debug("Scene metrics collection failed", exc_info=True)
+            # Timeout (main thread busy), marshaller unavailable, or a failure
+            # inside the walk. Never block the daemon — shed this cycle.
+            logger.debug("Scene metrics collection failed/skipped", exc_info=True)
             return SceneMetrics()
 
     def _collect_routing(self) -> RoutingMetrics:

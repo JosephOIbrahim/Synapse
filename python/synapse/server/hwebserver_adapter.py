@@ -320,13 +320,27 @@ def start_hwebserver(port: int = 9999, enable_rate_limiter: bool = True):
         logger.debug("Metrics aggregator init failed (best-effort)", exc_info=True)
         _metrics_aggregator = None
 
-    # Start native server — non-blocking in GUI, blocking in hython
-    hwebserver.run(
-        port=port,
-        debug=False,
-        in_background=True,
-        max_num_threads=4,
-    )
+    # Start native server — non-blocking in GUI, blocking in hython.
+    # FINDING 3: the metrics daemon is already .start()ed above, but _running is
+    # only set True AFTER run() returns. If run() raises, _running stays False,
+    # so a retry slips past the `if _running: return` guard and constructs a
+    # SECOND aggregator — orphaning the first. Tear the started aggregator down
+    # before re-raising so the failure path leaves no leaked daemon thread.
+    try:
+        hwebserver.run(
+            port=port,
+            debug=False,
+            in_background=True,
+            max_num_threads=4,
+        )
+    except Exception:
+        if _metrics_aggregator is not None:
+            try:
+                _metrics_aggregator.stop()
+            except Exception:
+                pass
+            _metrics_aggregator = None
+        raise
 
     _running = True
     _port = port
