@@ -107,3 +107,8 @@ python/synapse/_vendor/**/*.pyc
 
 # close-the-loop harness run artifacts
 .close-the-loop/
+
+# H22 prep harness — bundle archives + transient check-debug dumps (never tracked)
+/H22_prep_harness.zip
+/houdini22prepareHarness_v2.zip
+.claude/checks_debug_*.txt
