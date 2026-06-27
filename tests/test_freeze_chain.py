@@ -30,6 +30,20 @@ def _redirect_freeze_dumps(monkeypatch, tmp_path):
     monkeypatch.setenv("SYNAPSE_LOG_DIR", str(tmp_path))
 
 
+def _poll(predicate, timeout=2.0, interval=0.005):
+    """Spin until predicate() is true or timeout elapses; return its final value.
+
+    Polls real state instead of guessing with a fixed sleep, so a contended
+    runner can't slide the observation outside the intended timing window.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return True
+        time.sleep(interval)
+    return bool(predicate())
+
+
 # Tiny-threshold chain: detection ~0.06s, escalation deadline 0.2s.
 def _chain():
     return fc.FreezeChain(escalate_after=0.2, heartbeat_interval=0.02,
@@ -68,13 +82,19 @@ def test_sustained_freeze_opens_breaker_and_halts_via_active_bridge():
 def test_recovery_before_deadline_cancels_escalation():
     srv, breaker, _ = _fake_server()
     ws._register_live_server(srv)
-    chain = _chain()
+    # Generous escalation deadline (1.0s) versus a tiny detection threshold
+    # (0.05s): on a contended runner, scheduling jitter in the brief "frozen"
+    # window cannot overrun the deadline and fire a spurious escalation. The
+    # earlier 0.1s sleep against a 0.2s deadline left no such margin.
+    chain = fc.FreezeChain(escalate_after=1.0, heartbeat_interval=0.02,
+                           freeze_threshold=0.05)
     try:
         chain.heartbeat()
-        time.sleep(0.1)                         # past detection (0.06), before deadline (0.2)
-        assert chain.is_frozen is True
-        # Recover AND keep beating past the (cancelled) deadline — stopping again
-        # would be a legitimate SECOND freeze and would rightly escalate.
+        # Detect the freeze the moment it registers, rather than assuming a
+        # fixed sleep landed inside the [threshold, deadline] window.
+        assert _poll(lambda: chain.is_frozen, timeout=2.0)
+        # Recover well before the 1.0s deadline and keep beating past it —
+        # stopping again would be a legitimate SECOND freeze and rightly escalate.
         for _ in range(15):
             chain.heartbeat()
             time.sleep(0.02)

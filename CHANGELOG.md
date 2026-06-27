@@ -2,6 +2,18 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.17.2 — open-source readiness
+
+*Docs, license, and CI polish from a rubric-driven audit — no code changes. Same 3,796 tests.*
+
+**Adoption / contributor on-ramp:**
+- **License is now GitHub-detectable as MIT.** Split the patent notice out of `LICENSE` into a separate `PATENTS` file (every term preserved) so GitHub detects pure MIT instead of `NOASSERTION` — the single biggest adoption blocker. Follows the portfolio license-split template.
+- **`CONTRIBUTING.md`** added — points new contributors at the pure-Python, zero-`hou` `cognitive/` layer (lint-enforced via `test_cognitive_boundary.py`) as the easiest entry point; no Houdini license required.
+- **README** — an "Architecture at a glance" quick-reference up top (the inside-out idea, first), a **Dependencies** section naming the optional **Moneta** memory backend + how to enable it (`SYNAPSE_MEMORY_BACKEND`), a troubleshooting **table**, and install **"you should see" checkpoints** with time tags.
+- **CI** now runs the suite on **macOS + Linux** (Python 3.11 + 3.14), with a live status badge.
+
+---
+
 ## v5.17.1 — patch: the set_usd_attribute fix actually fires + metrics thread-safety
 
 *Follow-up to v5.17.0 from an independent cross-cutting review (the review that did not get to run before merge). 3,796 tests passing.*

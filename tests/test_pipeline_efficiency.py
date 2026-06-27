@@ -90,6 +90,20 @@ _handlers_hou = handlers_mod.hou
 from synapse.memory.store import ReadWriteLock
 
 
+def _wait_until(predicate, timeout=2.0, interval=0.001):
+    """Spin until predicate() is true or timeout elapses; return its final value.
+
+    Polls real state instead of guessing with a fixed sleep, so timing-window
+    assertions stay deterministic on contended CI runners.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return True
+        time.sleep(interval)
+    return bool(predicate())
+
+
 class TestReadWriteLock:
     """Tests for the ReadWriteLock class."""
 
@@ -131,16 +145,20 @@ class TestReadWriteLock:
         """Writer blocks new readers."""
         rwl = ReadWriteLock()
         writer_held = threading.Event()
+        release_writer = threading.Event()
         reader_entered = threading.Event()
 
         def writer():
             with rwl.write_lock():
                 writer_held.set()
-                time.sleep(0.1)
+                # Hold until the test explicitly releases us. Anchoring the
+                # hold to an event (not a wall-clock sleep) keeps the reader
+                # provably excluded for the whole assertion window even when a
+                # contended CI runner delays the main thread past a fixed sleep.
+                release_writer.wait(timeout=5)
 
         def reader():
             writer_held.wait(timeout=2)
-            time.sleep(0.02)  # Ensure writer is still held
             with rwl.read_lock():
                 reader_entered.set()
 
@@ -149,8 +167,13 @@ class TestReadWriteLock:
         wt.start()
         rt.start()
 
-        # Reader shouldn't enter until writer is done
-        assert not reader_entered.wait(timeout=0.05)
+        # The writer is provably holding the lock now.
+        assert writer_held.wait(timeout=2)
+        # While the writer holds, the reader must not get in — no matter how
+        # long the main thread takes to observe it.
+        assert not reader_entered.wait(timeout=0.2)
+        # Release the writer; the reader should then acquire.
+        release_writer.set()
         wt.join(timeout=5)
         rt.join(timeout=5)
         assert reader_entered.is_set()
@@ -184,28 +207,27 @@ class TestReadWriteLock:
         rwl = ReadWriteLock()
         events = []
         reader_active = threading.Event()
+        release_r1 = threading.Event()
 
         def first_reader():
             with rwl.read_lock():
-                reader_active.set()
                 events.append("R1_enter")
-                time.sleep(0.15)
+                reader_active.set()
+                release_r1.wait(timeout=5)  # hold until the test releases us
                 events.append("R1_exit")
 
         def writer():
             reader_active.wait(timeout=2)
-            time.sleep(0.01)
             events.append("W_waiting")
-            with rwl.write_lock():
+            with rwl.write_lock():          # blocks while R1 holds the read lock
                 events.append("W_enter")
-                time.sleep(0.02)
-                events.append("W_exit")
 
         def second_reader():
-            reader_active.wait(timeout=2)
-            time.sleep(0.03)  # Start after writer is waiting
+            # Arrive only once a writer is registered as waiting on the lock, so
+            # this read provably has to queue behind it (the property under test).
+            _wait_until(lambda: rwl._writer_waiting > 0)
             events.append("R2_waiting")
-            with rwl.read_lock():
+            with rwl.read_lock():           # must wait out the prioritized writer
                 events.append("R2_enter")
 
         t1 = threading.Thread(target=first_reader)
@@ -213,16 +235,22 @@ class TestReadWriteLock:
         t2 = threading.Thread(target=second_reader)
 
         t1.start()
+        assert reader_active.wait(timeout=2)                 # R1 holds the read lock
         tw.start()
+        assert _wait_until(lambda: rwl._writer_waiting > 0)  # writer is queued, waiting
         t2.start()
+        assert _wait_until(lambda: "R2_waiting" in events)   # R2 is attempting its read
+        # R2 is now blocked behind the waiting writer. Releasing R1 must let the
+        # WRITER through first — that is writer priority. Independent of wall clock:
+        # while R1 holds, writer_waiting stays >0, so R2 cannot slip ahead.
+        release_r1.set()
         t1.join(timeout=5)
         tw.join(timeout=5)
         t2.join(timeout=5)
 
-        # Writer should enter before second reader (priority)
-        if "W_enter" in events and "R2_enter" in events:
-            assert events.index("W_enter") < events.index("R2_enter"), \
-                f"Writer should have priority over new readers: {events}"
+        assert "W_enter" in events and "R2_enter" in events, f"missing events: {events}"
+        assert events.index("W_enter") < events.index("R2_enter"), \
+            f"Writer should have priority over new readers: {events}"
 
 
 # =============================================================================

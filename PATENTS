@@ -1,0 +1,27 @@
+> This file is part of the license terms for this software and is
+> incorporated by reference into the LICENSE file.
+
+PATENT NOTICE
+=============
+
+This file documents patent matters for SYNAPSE. It is SEPARATE from, and in
+addition to, the copyright license. The copyright license for this software is
+the MIT License (see the LICENSE file); this notice does not change those terms.
+
+Certain methods and systems implemented in this software are the subject of one
+or more pending patent applications filed by Joseph Ibrahim. The MIT License
+(LICENSE) applies to the copyright in the software source code and does not
+grant any license, express or implied, under any patent claims.
+
+Patent Pending applies to, but is not limited to, the following aspects of this
+software:
+
+  - Tiered cognitive routing cascade with confidence-based tier forwarding
+  - Persistent memory tier architecture with cross-tier linking
+  - Deterministic state composition using priority-ordered resolution
+    semantics
+  - Agentic execution loop with gate-integrated outcome learning
+
+Users are free to use, modify, and distribute the software under the MIT License
+terms. However, practicing the patented methods in a commercial product or
+service may require a separate patent license once the patent(s) are granted.
