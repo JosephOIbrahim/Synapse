@@ -16,7 +16,7 @@ Elegant Revisions integrated:
   R2: Unbreakable async→sync boundary (hdefereval.executeInMainThreadWithResult)
   R4: Structural disk-write gate override (touches_disk → APPROVE)
   R7: Blast radius inference — auto-detect SOP→LOP bleed via dependency tracing
-  R8: PDG async cook bridge — pdg.PyEventHandler + asyncio.Event for farm cooks (H21)
+  R8: PDG async cook bridge — addEventHandler(raw_callable) + asyncio.Event for farm cooks (H21)
 """
 
 from __future__ import annotations
@@ -598,8 +598,10 @@ class LosslessExecutionBridge:
         R8: Safely bridges PDG asynchronous cooks with FastMCP async loops.
 
         H21 moved PDG events from hou.pdgEventType to the standalone pdg module.
-        Cook events use pdg.GraphContext.addEventHandler with pdg.PyEventHandler
-        instead of hou TopNode.addEventCallback (which handles hou.nodeEventType).
+        Cook events register a RAW callable via pdg.GraphContext.addEventHandler
+        (which returns the wrapper to pass to removeEventHandler) — NOT the
+        phantom pdg.PyEventHandler(fn) constructor — instead of hou
+        TopNode.addEventCallback (which handles hou.nodeEventType).
 
         On failure: wipes caches via dirtyAllTasks(remove_files=True).
         """
@@ -651,11 +653,15 @@ class LosslessExecutionBridge:
                 integrity, f"No PDG graph context on {node_path}", "invalid_node"
             )
 
-        handler = None
+        handlers = []
         try:
-            # H21: pdg.PyEventHandler wraps a Python callback for PDG events.
-            # This callback fires on Houdini's main thread — thread-safe
-            # threading.Event.set() is safe to call from any thread.
+            # H21.0.671: pdg.PyEventHandler(fn) is a PHANTOM constructor
+            # ("TypeError: No constructor defined"). The live idiom is
+            # graph_context.addEventHandler(raw_callable, EventType) — it
+            # REGISTERS the callable AND RETURNS the wrapper object, which
+            # we keep so we can removeEventHandler() it later. One call per
+            # event type → one wrapper per type. The callback fires on
+            # Houdini's main thread; threading.Event.set() is thread-safe.
             def on_cook_event(event):
                 if event.type == _pdg.EventType.CookComplete:
                     cook_success[0] = True
@@ -665,9 +671,12 @@ class LosslessExecutionBridge:
                     cook_error[0] = event.message if event.message else "Unknown PDG error"
                     cook_complete.set()
 
-            handler = _pdg.PyEventHandler(on_cook_event)
-            graph_context.addEventHandler(handler, _pdg.EventType.CookComplete)
-            graph_context.addEventHandler(handler, _pdg.EventType.CookError)
+            handlers.append(
+                graph_context.addEventHandler(on_cook_event, _pdg.EventType.CookComplete)
+            )
+            handlers.append(
+                graph_context.addEventHandler(on_cook_event, _pdg.EventType.CookError)
+            )
 
             # Trigger cook on main thread — wrap in try/except so exceptions
             # don't silently vanish in the fire-and-forget dispatch.
@@ -691,9 +700,9 @@ class LosslessExecutionBridge:
                 integrity, f"PDG callback error: {e}", "pdg_error"
             )
         finally:
-            if handler is not None:
+            for _handler in handlers:
                 try:
-                    graph_context.removeEventHandler(handler)
+                    graph_context.removeEventHandler(_handler)
                 except Exception:
                     pass
 

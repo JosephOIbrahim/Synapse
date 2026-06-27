@@ -135,6 +135,16 @@ class FakeNodeType:
         return self._category
 
 
+class _FakeEventHandlerWrapper:
+    """Wrapper object ``addEventHandler`` returns on H21.0.671."""
+
+    __slots__ = ("callback", "event_type")
+
+    def __init__(self, callback: Any, event_type: Any) -> None:
+        self.callback = callback
+        self.event_type = event_type
+
+
 class FakeGraphContext:
     """Fake ``pdg.GraphContext`` capturing handler registrations.
 
@@ -147,13 +157,17 @@ class FakeGraphContext:
         self.handlers: List[Any] = []
         self.remove_calls: int = 0
 
-    def addEventHandler(self, handler: Any, event_type: Any) -> None:
-        self.handlers.append((handler, event_type))
+    def addEventHandler(self, handler: Any, event_type: Any) -> Any:
+        # H21.0.671: addEventHandler REGISTERS the raw callable and
+        # RETURNS the wrapper later passed to removeEventHandler.
+        wrapper = _FakeEventHandlerWrapper(handler, event_type)
+        self.handlers.append((wrapper, event_type))
+        return wrapper
 
-    def removeEventHandler(self, handler: Any) -> None:
+    def removeEventHandler(self, wrapper: Any) -> None:
         self.remove_calls += 1
         self.handlers = [
-            (h, et) for h, et in self.handlers if h is not handler
+            (h, et) for h, et in self.handlers if h is not wrapper
         ]
 
 
@@ -296,10 +310,14 @@ class FakePDGEventTypeCls:
 
 
 class FakePyEventHandler:
-    __slots__ = ("callback",)
+    """Models H21.0.671: ``pdg.PyEventHandler`` has NO usable constructor.
 
-    def __init__(self, callback: Any) -> None:
-        self.callback = callback
+    Instantiation raises ``TypeError`` so the phantom-constructor pattern
+    can never silently pass CI again.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        raise TypeError("No constructor defined")
 
 
 class FakePDG:

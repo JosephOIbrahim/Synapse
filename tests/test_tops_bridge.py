@@ -86,13 +86,30 @@ class FakeEventTypeCls:
         raise ValueError(f"No FakeEventType with value {value}")
 
 
-class FakePyEventHandler:
-    """Fake ``pdg.PyEventHandler`` — captures the bound callback."""
+class FakeEventHandlerWrapper:
+    """Wrapper object ``addEventHandler`` returns on H21.0.671.
 
-    __slots__ = ("callback",)
+    Holds the raw callback so a test can still drive dispatch through a
+    registration, and is the identity ``removeEventHandler`` matches on.
+    """
 
-    def __init__(self, callback: Any) -> None:
+    __slots__ = ("callback", "event_type")
+
+    def __init__(self, callback: Any, event_type: Any) -> None:
         self.callback = callback
+        self.event_type = event_type
+
+
+class FakePyEventHandler:
+    """Models H21.0.671: ``pdg.PyEventHandler`` has NO usable constructor.
+
+    Instantiation raises ``TypeError: No constructor defined``, mirroring
+    the live runtime, so the phantom-constructor pattern can never
+    silently pass CI again.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        raise TypeError("No constructor defined")
 
 
 class FakePDG:
@@ -103,19 +120,26 @@ class FakePDG:
 
 
 class FakeGraphContext:
-    """Fake ``pdg.GraphContext`` capturing handler registrations."""
+    """Fake ``pdg.GraphContext`` capturing handler registrations.
+
+    Models the live API: ``addEventHandler(raw_callable, event_type)``
+    REGISTERS the callable and RETURNS a wrapper object, which is what
+    ``removeEventHandler`` is later given.
+    """
 
     def __init__(self) -> None:
-        self.handlers: List[Any] = []  # registrations: (handler, event_type)
+        self.handlers: List[Any] = []  # registrations: (wrapper, event_type)
         self.remove_calls: int = 0
 
-    def addEventHandler(self, handler: Any, event_type: Any) -> None:
-        self.handlers.append((handler, event_type))
+    def addEventHandler(self, handler: Any, event_type: Any) -> Any:
+        wrapper = FakeEventHandlerWrapper(handler, event_type)
+        self.handlers.append((wrapper, event_type))
+        return wrapper
 
-    def removeEventHandler(self, handler: Any) -> None:
+    def removeEventHandler(self, wrapper: Any) -> None:
         self.remove_calls += 1
         self.handlers = [
-            (h, et) for h, et in self.handlers if h is not handler
+            (h, et) for h, et in self.handlers if h is not wrapper
         ]
 
 
@@ -279,10 +303,10 @@ class TestWarmCool:
         bridge = TopsEventBridge(lambda e: None)
         sub = bridge.warm(fake_top_node)
         bridge.cool(sub)
-        # Per Spike 3.0: removeEventHandler takes the handler instance
-        # itself, not a handle. One call detaches the handler from all
-        # event types it was registered against.
-        assert fake_top_node.graph_context.remove_calls == 1
+        # H21.0.671: addEventHandler returns one wrapper per event type,
+        # and removeEventHandler takes a wrapper. cool() detaches each of
+        # the 7 captured wrappers — one removeEventHandler call per type.
+        assert fake_top_node.graph_context.remove_calls == 7
         assert fake_top_node.graph_context.handlers == []
 
     def test_cool_idempotent(self, fake_pdg, fake_top_node):
@@ -371,7 +395,7 @@ class TestEventDispatch:
 
     def test_dispatch_cook_start(self, fake_pdg, fake_top_node):
         bridge, sub, received = self._arm_bridge(fake_top_node)
-        sub._handler.callback(_build_fake_event(38))
+        sub._callback(_build_fake_event(38))
         assert len(received) == 1
         evt = received[0]
         assert evt.event_type == "tops.cook.start"
@@ -380,14 +404,14 @@ class TestEventDispatch:
 
     def test_dispatch_cook_complete(self, fake_pdg, fake_top_node):
         bridge, sub, received = self._arm_bridge(fake_top_node)
-        sub._handler.callback(_build_fake_event(14))
+        sub._callback(_build_fake_event(14))
         assert len(received) == 1
         assert received[0].event_type == "tops.cook.complete"
         assert received[0].pdg_event_type_int == 14
 
     def test_dispatch_cook_error_with_message(self, fake_pdg, fake_top_node):
         bridge, sub, received = self._arm_bridge(fake_top_node)
-        sub._handler.callback(
+        sub._callback(
             _build_fake_event(12, message="cook failed because magic")
         )
         assert received[0].event_type == "tops.cook.error"
@@ -397,7 +421,7 @@ class TestEventDispatch:
         self, fake_pdg, fake_top_node
     ):
         bridge, sub, received = self._arm_bridge(fake_top_node)
-        sub._handler.callback(
+        sub._callback(
             _build_fake_event(13, message="deprecated parm")
         )
         assert received[0].event_type == "tops.cook.warning"
@@ -406,7 +430,7 @@ class TestEventDispatch:
     def test_dispatch_workitem_add(self, fake_pdg, fake_top_node):
         bridge, sub, received = self._arm_bridge(fake_top_node)
         wi = _build_fake_workitem(item_id=42, frame=2.5, state="added")
-        sub._handler.callback(_build_fake_event(1, workItem=wi))
+        sub._callback(_build_fake_event(1, workItem=wi))
         assert received[0].event_type == "tops.workitem.add"
         assert received[0].work_item_id == 42
         assert received[0].work_item_frame == 2.5
@@ -417,7 +441,7 @@ class TestEventDispatch:
     ):
         bridge, sub, received = self._arm_bridge(fake_top_node)
         wi = _build_fake_workitem(item_id=7, state="cooked")
-        sub._handler.callback(_build_fake_event(5, workItem=wi))
+        sub._callback(_build_fake_event(5, workItem=wi))
         assert received[0].event_type == "tops.workitem.state_change"
         assert received[0].work_item_state == "cooked"
 
@@ -432,7 +456,7 @@ class TestEventDispatch:
             outputs=["/tmp/out_001.exr", "/tmp/out_002.exr"],
             node_path="/tasks/topnet1/render",
         )
-        sub._handler.callback(_build_fake_event(35, workItem=wi))
+        sub._callback(_build_fake_event(35, workItem=wi))
         evt = received[0]
         assert evt.event_type == "tops.workitem.result"
         assert evt.pdg_event_type_int == 35
@@ -450,7 +474,7 @@ class TestEventDispatch:
     ):
         bridge, sub, received = self._arm_bridge(fake_top_node)
         # WorkItemSetInt = 27, NOT in the surfaced allowlist
-        sub._handler.callback(_build_fake_event(27))
+        sub._callback(_build_fake_event(27))
         assert received == []
         # And the bridge does not count this as a "drop" (filtered, not dropped)
         assert bridge.dropped_event_count() == 0
@@ -461,7 +485,7 @@ class TestEventDispatch:
         bridge, sub, received = self._arm_bridge(fake_top_node)
         bridge.cool(sub)
         # Try to deliver an event after cool — handler must early-return
-        sub._handler.callback(_build_fake_event(14))
+        sub._callback(_build_fake_event(14))
         assert received == []
 
 
@@ -557,21 +581,26 @@ class TestHostileSubscriptionLeak:
     def test_subscription_alive_flag_holds_strong_handler_ref(
         self, fake_pdg, fake_top_node
     ):
-        """The Subscription must hold a strong ref to the bound
-        PyEventHandler. If the bridge let it be GC'd, future events
-        could segfault under pybind11. Defect category: weak ref.
+        """The Subscription must hold a strong ref to the raw callable
+        AND to every wrapper addEventHandler returned. If the bridge let
+        either be GC'd, future events could segfault under pybind11.
+        Defect category: weak ref.
         """
         bridge = TopsEventBridge(lambda e: None)
         sub = bridge.warm(fake_top_node)
-        handler_ref = sub._handler
-        # The handler must be a real object reachable through Subscription
-        assert handler_ref is not None
-        assert handler_ref.callback is not None
-        # The same handler must be in graph_context.handlers
-        registered_handlers = {
+        # The raw callable must be reachable through the Subscription.
+        assert sub._callback is not None
+        # One wrapper per surfaced event type, all retained.
+        assert len(sub._handlers) == 7
+        # Every retained wrapper must be the exact object the graph
+        # context still holds (identity match — no copies, no leak).
+        registered_wrappers = {
             h for h, _et in fake_top_node.graph_context.handlers
         }
-        assert handler_ref in registered_handlers
+        for wrapper in sub._handlers:
+            assert wrapper is not None
+            assert wrapper.callback is sub._callback
+            assert wrapper in registered_wrappers
 
 
 class TestHostileCookErrorDuringSubscription:
@@ -590,11 +619,11 @@ class TestHostileCookErrorDuringSubscription:
         bridge = TopsEventBridge(received.append)
         sub = bridge.warm(fake_top_node)
         # Fire CookError
-        sub._handler.callback(
+        sub._callback(
             _build_fake_event(12, message="catastrophic cook failure")
         )
         # Then fire a normal CookComplete
-        sub._handler.callback(_build_fake_event(14))
+        sub._callback(_build_fake_event(14))
         assert len(received) == 2
         assert received[0].event_type == "tops.cook.error"
         assert received[0].error_message == "catastrophic cook failure"
@@ -619,8 +648,8 @@ class TestHostileMultipleBridgesSameContext:
         bridge_b = TopsEventBridge(received_b.append)
         sub_a = bridge_a.warm(fake_top_node)
         sub_b = bridge_b.warm(fake_top_node)
-        # Both bridges' handlers are distinct instances
-        assert sub_a._handler is not sub_b._handler
+        # Both bridges' raw callables are distinct instances
+        assert sub_a._callback is not sub_b._callback
         # Graph context holds 14 registrations (7 per bridge)
         assert len(fake_top_node.graph_context.handlers) == 14
         # Cool bridge A
@@ -628,7 +657,7 @@ class TestHostileMultipleBridgesSameContext:
         # Bridge B's handler still attached
         assert len(fake_top_node.graph_context.handlers) == 7
         # Bridge B still receives events
-        sub_b._handler.callback(_build_fake_event(14))
+        sub_b._callback(_build_fake_event(14))
         assert len(received_b) == 1
         assert received_b[0].event_type == "tops.cook.complete"
         # Bridge A received nothing post-cool
@@ -655,9 +684,9 @@ class TestHostileEventFiringDuringShutdown:
         sub = bridge.warm(fake_top_node)
         bridge.cool(sub)
         # Event fires after cool — handler must early-return
-        sub._handler.callback(_build_fake_event(14))
-        sub._handler.callback(_build_fake_event(38))
-        sub._handler.callback(_build_fake_event(35))
+        sub._callback(_build_fake_event(14))
+        sub._callback(_build_fake_event(38))
+        sub._callback(_build_fake_event(35))
         assert received == [], (
             "Event delivered after cool() — alive flag race"
         )
@@ -686,7 +715,7 @@ class TestHostileEventFiringDuringShutdown:
             i = 0
             while not stop_flag.is_set():
                 try:
-                    sub._handler.callback(_build_fake_event(14))
+                    sub._callback(_build_fake_event(14))
                 except Exception:
                     pass
                 i += 1
@@ -731,7 +760,7 @@ class TestHostileCallbackRaising:
         sub = bridge.warm(fake_top_node)
         # Fire 10 events; 5 will fail (calls 2,4,6,8,10)
         for _ in range(10):
-            sub._handler.callback(_build_fake_event(14))
+            sub._callback(_build_fake_event(14))
         # Bridge state remains consistent
         assert call_count[0] == 10, "Bridge stopped delivering after failure"
         assert bridge.dropped_event_count() == 5, (
@@ -762,7 +791,7 @@ class TestHostileCallbackRaising:
         sub = bridge.warm(fake_top_node)
         # Fire 5 events — all must be swallowed, not crash
         for _ in range(5):
-            sub._handler.callback(_build_fake_event(14))
+            sub._callback(_build_fake_event(14))
         assert bridge.dropped_event_count() == 5
         assert len(bridge.active_subscriptions()) == 1
 
@@ -867,19 +896,19 @@ class TestHostileMultiEventOrdering:
         sub = bridge.warm(fake_top_node)
 
         # CookStart
-        sub._handler.callback(_build_fake_event(38))
+        sub._callback(_build_fake_event(38))
         # 5 × WorkItemAdd
         for i in range(5):
             wi = _build_fake_workitem(item_id=i, frame=float(i))
-            sub._handler.callback(_build_fake_event(1, workItem=wi))
+            sub._callback(_build_fake_event(1, workItem=wi))
         # 5 × WorkItemResult
         for i in range(5):
             wi = _build_fake_workitem(
                 item_id=i, frame=float(i), outputs=[f"/tmp/{i}.exr"]
             )
-            sub._handler.callback(_build_fake_event(35, workItem=wi))
+            sub._callback(_build_fake_event(35, workItem=wi))
         # CookComplete
-        sub._handler.callback(_build_fake_event(14))
+        sub._callback(_build_fake_event(14))
 
         # 12 events total, in original order, no drops, no dedup
         assert len(received) == 12
@@ -920,7 +949,7 @@ class TestHostileBonusEdges:
         wi = _build_fake_workitem(item_id=1)
         # Replace node with one that has no path() and no name
         wi.node = object()  # plain object — no path, no name
-        sub._handler.callback(_build_fake_event(35, workItem=wi))
+        sub._callback(_build_fake_event(35, workItem=wi))
         assert received[0].node_path is None  # Defensive fallback worked
 
     def test_expected_result_data_raises_returns_empty_outputs(
@@ -942,7 +971,7 @@ class TestHostileBonusEdges:
         )
         wi.node = MagicMock()
         wi.node.path = MagicMock(return_value="/n")
-        sub._handler.callback(_build_fake_event(35, workItem=wi))
+        sub._callback(_build_fake_event(35, workItem=wi))
         assert received[0].work_item_outputs == ()
 
     def test_event_type_int_cast_failure_increments_drop_counter(
@@ -960,5 +989,5 @@ class TestHostileBonusEdges:
             @property
             def type(self):
                 raise TypeError("event corrupted")
-        sub._handler.callback(_BadEvent())
+        sub._callback(_BadEvent())
         assert bridge.dropped_event_count() == 1
