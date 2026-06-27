@@ -104,3 +104,6 @@ python/synapse/_vendor/**/*.pyc
 
 # FORGE build-orchestration artifacts (run logs, specs)
 .forge/
+
+# close-the-loop harness run artifacts
+.close-the-loop/
