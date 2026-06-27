@@ -28,6 +28,9 @@ from enum import Enum
 import asyncio
 import hashlib
 import json
+import os
+import threading
+import time
 
 from shared.types import AgentID, ExecutionResult
 from shared.constants import (
@@ -74,6 +77,92 @@ except ImportError:
     GateDecision = None  # type: ignore[assignment,misc]
     CoreGateLevel = None  # type: ignore[assignment,misc]
     AuditCategory = None  # type: ignore[assignment,misc]
+
+
+# ── Scene-Hash Instrumentation (MEASURE-FIRST) ──────────────────
+# The R1 stage-integrity hash runs stage.Flatten().ExportToString()+sha256 TWICE
+# per stage-touching op (before + after) on the main thread. That cost scales with
+# STAGE SIZE, not the mutation -- a real per-op floor on production Solaris stages
+# that was UNMEASURED at scale. This module-level histogram times every
+# _compute_scene_hash() call so the Flatten cost becomes visible in telemetry and a
+# future tuning decision has real data. Same shape + bucket scheme as the
+# main_thread_direct / dispatch_wait histograms (server/main_thread.py) so a one-line
+# telemetry_dump pull surfaces it identically. Process-global (shared across bridge
+# instances); thread-safe; zero-cost to read.
+_SCENE_HASH_BUCKETS_MS = (1, 5, 10, 50, 100, 250, 500, 1000, 2000, 4000)
+_scene_hash_lock = threading.Lock()
+_scene_hash_metrics = {
+    "count": 0,
+    "sum_ms": 0.0,
+    "max_ms": 0.0,
+    "buckets": {b: 0 for b in _SCENE_HASH_BUCKETS_MS},
+}
+
+
+def _record_scene_hash_ms(ms: float) -> None:
+    with _scene_hash_lock:
+        _scene_hash_metrics["count"] += 1
+        _scene_hash_metrics["sum_ms"] += ms
+        if ms > _scene_hash_metrics["max_ms"]:
+            _scene_hash_metrics["max_ms"] = ms
+        for b in _SCENE_HASH_BUCKETS_MS:
+            if ms <= b:
+                _scene_hash_metrics["buckets"][b] += 1
+
+
+def scene_hash_stats() -> dict:
+    """Snapshot of the scene-hash (R1 stage-integrity) duration histogram in ms
+    (copy -- safe to serialize). Key surface: ``scene_hash_ms`` cost, the Flatten
+    floor on stage-touching ops. Mirrors main_thread_direct_stats()."""
+    with _scene_hash_lock:
+        return {
+            "count": _scene_hash_metrics["count"],
+            "sum_ms": _scene_hash_metrics["sum_ms"],
+            "max_ms": _scene_hash_metrics["max_ms"],
+            "buckets": dict(_scene_hash_metrics["buckets"]),
+        }
+
+
+def reset_scene_hash_stats() -> None:
+    """Test/diagnostic helper -- zero the scene-hash histogram."""
+    with _scene_hash_lock:
+        _scene_hash_metrics["count"] = 0
+        _scene_hash_metrics["sum_ms"] = 0.0
+        _scene_hash_metrics["max_ms"] = 0.0
+        for b in _SCENE_HASH_BUCKETS_MS:
+            _scene_hash_metrics["buckets"][b] = 0
+
+
+# ── Stage-Hash Size Gate (R1 cost control) ──────────────────────
+# Below this prim count the stage hash stays the EXACT, byte-identical
+# Flatten().ExportToString()+sha256 (zero behavior change for normal stages). ONLY
+# above it do we switch to a cheaper-but-COMPLETE structural traversal signature
+# that avoids the full USDA string serialization. Override via env at call time so
+# operators (and tests) can tune it without a restart. Documented in
+# docs/studio/DEPLOYMENT.md ('Stage-Hash Integrity Tuning').
+# Structural stage-hash is OPT-IN, OFF by default. It is unproven at scale (can be
+# SLOWER than Flatten on value-heavy stages) and carries a narrow time-sample-value
+# completeness gap, so for an INTEGRITY primitive the default keeps the proven
+# Flatten path on EVERY stage. Lower SYNAPSE_STAGE_HASH_PRIM_THRESHOLD (after reading
+# the scene_hash_ms telemetry the hash wrapper now records) to opt in.
+_DEFAULT_STAGE_HASH_PRIM_THRESHOLD = 1 << 62  # effectively unbounded => Flatten always
+_STAGE_HASH_THRESHOLD_ENV = "SYNAPSE_STAGE_HASH_PRIM_THRESHOLD"
+
+
+def _stage_hash_prim_threshold() -> int:
+    """Prim-count gate above which the stage hash uses the structural signature
+    instead of full Flatten()+ExportToString(). Env override; non-negative ints
+    only, else the default (effectively unbounded => structural OFF / opt-in; a bad
+    value never silently CHANGES the default)."""
+    raw = os.environ.get(_STAGE_HASH_THRESHOLD_ENV)
+    if raw:
+        try:
+            v = int(raw)
+            if v >= 0:
+                return v
+        except (TypeError, ValueError):
+            pass
+    return _DEFAULT_STAGE_HASH_PRIM_THRESHOLD
 
 
 # ── Integrity Block ─────────────────────────────────────────────
@@ -268,6 +357,21 @@ class LosslessExecutionBridge:
         """
         R1: Topological scene hashing via Houdini change-detection APIs.
 
+        Timed wrapper around _compute_scene_hash_impl: every call records its
+        wall-clock duration into the module ``scene_hash_ms`` histogram
+        (scene_hash_stats()) so the stage-Flatten cost is visible in telemetry.
+        The hash VALUE is identical to the un-timed implementation.
+        """
+        _t0 = time.perf_counter()
+        try:
+            return self._compute_scene_hash_impl(target_node_path)
+        finally:
+            _record_scene_hash_ms((time.perf_counter() - _t0) * 1000.0)
+
+    def _compute_scene_hash_impl(self, target_node_path: str | None = "/obj") -> str:
+        """
+        R1: Topological scene hashing via Houdini change-detection APIs.
+
         H21 replaced several H20 APIs:
           H20 hou.updateGraphTick()    -> H21 node.cookCount() + child count
           H20 node.modificationCount() -> H21 node.cookCount()
@@ -316,16 +420,13 @@ class LosslessExecutionBridge:
         # without this the hash collapses to "did the node recook" and cannot detect
         # that the composed stage CHANGED — blind on the headline Solaris path.
         # Flatten-export verified stable + attribute-value-sensitive on H21.0.631.
+        # Size-gated: below the prim threshold this is byte-identical to the old
+        # Flatten()+sha256; above it, a cheaper COMPLETE structural signature.
         try:
             if hasattr(node, "stage"):
                 stage = node.stage()
                 if stage is not None:
-                    flat = stage.Flatten().ExportToString()
-                    hash_data.append(
-                        "stage:" + hashlib.sha256(
-                            flat.encode("utf-8")
-                        ).hexdigest()[:HASH_LENGTH]
-                    )
+                    hash_data.append("stage:" + self._hash_stage_signature(stage))
         except Exception:
             pass  # graceful — never let one missing API kill the hash
 
@@ -337,6 +438,146 @@ class LosslessExecutionBridge:
         return hashlib.sha256(
             "|".join(str(x) for x in hash_data).encode("utf-8")
         ).hexdigest()[:HASH_LENGTH]
+
+    # ── R1 stage hash: size-gated complete signature ──────────
+
+    def _hash_stage_signature(self, stage) -> str:
+        """Hash a composed USD stage. Returns the 16-hex digest appended after the
+        ``stage:`` prefix in the scene hash.
+
+        SIZE GATE (cost control, INTEGRITY-PRESERVING):
+          - At/below the prim threshold: the EXACT original
+            ``sha256(stage.Flatten().ExportToString())[:HASH_LENGTH]`` — byte-identical,
+            zero behavior change for normal stages.
+          - Above the threshold: a cheaper-but-COMPLETE structural signature that
+            avoids the full USDA string serialization (see
+            _structural_stage_signature).
+
+        Conservative by construction: the size-probe and the structural path each
+        fall back to the proven Flatten path on ANY error, so the gate can only ever
+        make the hash *cheaper*, never *blinder* than before.
+        """
+        try:
+            large = self._stage_exceeds(stage, _stage_hash_prim_threshold())
+        except Exception:
+            large = False  # probe failed → behave exactly like before (Flatten)
+
+        if large:
+            try:
+                return self._structural_stage_signature(stage)
+            except Exception:
+                # Structural path failed → fall back to the proven Flatten algorithm
+                # rather than dropping the stage hash (under-capture is a defect).
+                pass
+
+        flat = stage.Flatten().ExportToString()
+        return hashlib.sha256(flat.encode("utf-8")).hexdigest()[:HASH_LENGTH]
+
+    @staticmethod
+    def _stage_exceeds(stage, threshold: int) -> bool:
+        """True if the stage has MORE than ``threshold`` prims. Short-circuits at
+        threshold+1 so the probe is bounded even on huge stages. Uses TraverseAll()
+        (inactive/abstract prims included) so the gate decision is conservative."""
+        n = 0
+        for _ in stage.TraverseAll():
+            n += 1
+            if n > threshold:
+                return True
+        return False
+
+    @staticmethod
+    def _structural_stage_signature(stage) -> str:
+        """Complete-but-cheaper structural signature for LARGE stages — avoids the
+        full Flatten().ExportToString() USDA serialization while still changing on
+        EVERY mutation class:
+
+          prim add/remove/rename ...... path set + per-prim path
+          type change ................. typeName
+          specifier change (def/over/class) ... specifier
+          activation .................. IsActive() (TraverseAll keeps inactive prims)
+          attribute add/remove ........ sorted authored property names
+          attribute VALUE change ...... per-attr value repr + value-type + #samples
+          visibility .................. authored as the ``visibility`` attribute → above
+          metadata / composition arc .. authored metadata dict + explicit arc flags +
+                                         variant set names & selections
+
+        Over-captures by design: when in doubt a signal is INCLUDED. Under-capture
+        would let an integrity check silently PASS on a real mutation, which is the
+        one failure this gate must never introduce. Incremental hashing keeps memory
+        flat regardless of stage size. Per-prim failures degrade to a path-bound
+        marker — one bad prim never erases the rest of the signature.
+        """
+        h = hashlib.sha256()
+        # TraverseAll() visits inactive/abstract prims too, so deactivating a prim
+        # flips a captured IsActive() flag instead of vanishing without a trace.
+        for prim in stage.TraverseAll():
+            try:
+                parts = [
+                    prim.GetPath().pathString,        # add/remove/rename
+                    str(prim.GetTypeName()),          # type change
+                    str(prim.GetSpecifier()),         # def / over / class
+                    "1" if prim.IsActive() else "0",  # activation
+                ]
+                # Authored property NAMES — attribute/relationship add/remove.
+                try:
+                    parts.append(",".join(sorted(prim.GetAuthoredPropertyNames())))
+                except Exception:
+                    parts.append("?props")
+                # Per-attribute VALUE digest — value change, value-type change,
+                # time-sample add/remove (count). visibility lands here too.
+                for attr in prim.GetAuthoredAttributes():
+                    try:
+                        parts.append(
+                            f"{attr.GetName()}:{attr.GetTypeName()}"
+                            f":{attr.GetNumTimeSamples()}={attr.Get()!r}"
+                        )
+                    except Exception:
+                        parts.append(f"{attr.GetName()}=<err>")
+                # Per-relationship TARGET digest — a relationship RETARGET (material
+                # rebind, light-linking/collection membership) leaves the property
+                # NAME and metadata unchanged, so without the targets the signature
+                # is blind to it (Flatten is not). Targets are paths (cheap, bounded),
+                # not arrays, so this over-capture adds no array-serialization cost.
+                for rel in prim.GetAuthoredRelationships():
+                    try:
+                        parts.append(
+                            f"REL:{rel.GetName()}="
+                            + ",".join(t.pathString for t in rel.GetTargets())
+                        )
+                    except Exception:
+                        parts.append(f"REL:{rel.GetName()}=<err>")
+                # Authored metadata — covers most composition arcs + misc metadata.
+                try:
+                    meta = prim.GetAllAuthoredMetadata()
+                    for k in sorted(meta):
+                        parts.append(f"@{k}={meta[k]!r}")
+                except Exception:
+                    pass
+                # Explicit composition-arc presence + variant selections
+                # (belt-and-suspenders over the metadata dict).
+                try:
+                    parts.append(
+                        "arc:"
+                        + ("r" if prim.HasAuthoredReferences() else "")
+                        + ("p" if prim.HasAuthoredPayloads() else "")
+                        + ("i" if prim.HasAuthoredInherits() else "")
+                        + ("s" if prim.HasAuthoredSpecializes() else "")
+                    )
+                    vsets = prim.GetVariantSets()
+                    for vs in sorted(vsets.GetNames()):
+                        parts.append(f"vset:{vs}={vsets.GetVariantSelection(vs)}")
+                except Exception:
+                    pass
+                line = "|".join(parts)
+            except Exception:
+                # Never let one prim kill the signature; still bind something unique.
+                try:
+                    line = "ERRPRIM:" + prim.GetPath().pathString
+                except Exception:
+                    line = "ERRPRIM:?"
+            h.update(line.encode("utf-8"))
+            h.update(b"\n")
+        return h.hexdigest()[:HASH_LENGTH]
 
     # ── R7: Blast Radius Inference ─────────────────────────────
 

@@ -106,6 +106,7 @@ def collect_telemetry() -> dict:
         "synapse_version": None,
         "dispatch_waits": None,
         "main_thread_direct": None,
+        "scene_hash": None,
         "tool_durations": None,
         "freeze": None,
         "live_metrics_latest": None,
@@ -132,6 +133,13 @@ def collect_telemetry() -> dict:
         out["main_thread_direct"] = main_thread_direct_stats()
     except Exception:
         out["main_thread_direct_absent"] = "main_thread stats unavailable"
+
+    # R1 stage-integrity hash duration (the Flatten floor on large Solaris stages).
+    try:
+        from shared.bridge import scene_hash_stats
+        out["scene_hash"] = scene_hash_stats()
+    except Exception:
+        out["scene_hash_absent"] = "bridge scene_hash stats unavailable"
 
     # Per-tool duration histogram — lives on the live handler instance.
     try:
