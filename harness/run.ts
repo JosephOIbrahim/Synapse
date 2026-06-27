@@ -122,10 +122,19 @@ function runAgent(systemPrompt: string, userMsg: string, cwd: string): string {
 
 function runChecks(task: any, cwd: string): any {
   if (DRY) return { _dry: true, verdict: "SKIPPED" };
+  // shell:true (required for the .cmd launcher) makes cmd.exe re-parse args WITHOUT escaping
+  // (Node DEP0190): a spaced path shatters and an empty-string arg vanishes — the latter made
+  // checks.py argparse-error ("--hython: expected one argument") whenever HYTHON was unset, read
+  // downstream as a spurious BLOCKED. So quote+forward-slash path args (only when shell is on),
+  // and omit --hython entirely when unset — checks.py then reports not-runnable, as intended.
+  const win = process.platform === "win32";
+  const qp = (p: string) => (win ? `"${String(p).replace(/\\/g, "/")}"` : String(p));
+  const checkArgs = ["harness/verify/checks.py", "--task", task.id, "--worktree", qp(cwd), "--mode", MODE];
+  if (HYTHON) checkArgs.push("--hython", qp(HYTHON));
   const r = spawnSync(
     PYTHON,
-    ["harness/verify/checks.py", "--task", task.id, "--worktree", cwd, "--hython", HYTHON, "--mode", MODE],
-    { cwd: REPO, encoding: "utf8", shell: process.platform === "win32", maxBuffer: 32 * 1024 * 1024 }
+    checkArgs,
+    { cwd: REPO, encoding: "utf8", shell: win, maxBuffer: 32 * 1024 * 1024 }
   );
   const out = r.stdout ?? "";
   // checks.py prints one JSON object, but hython/Houdini can emit a startup banner or warnings
