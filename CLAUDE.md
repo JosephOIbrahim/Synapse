@@ -83,27 +83,7 @@ fidelity             — 1.0 = pipeline functioning. <1.0 = pipeline bug.
 
 ### 1.4 Topological Hashing (R1)
 
-Scene change detection uses three H21-native primitives that together form a complete change-detection surface:
-
-```python
-hash_data = []
-# Global topology: child count + sessionIds detect create/delete/rewire
-for child in node.children():
-    hash_data.append(f"child:{child.sessionId()}")
-# Local: cookCount increments on any parameter or dependency change
-hash_data.append(f"cook:{node.cookCount()}")
-# Geometry: intrinsic values detect actual point/prim data mutations
-try:
-    geo = node.geometry()
-    if geo:
-        hash_data.append(f"pts:{geo.intrinsicValue('pointcount')}")
-        hash_data.append(f"bounds:{geo.intrinsicValue('bounds')}")
-except Exception:
-    pass  # Graceful — hash what you can
-return hashlib.sha256("|".join(str(x) for x in hash_data).encode("utf-8")).hexdigest()[:16]
-```
-
-Each component is individually try/excepted so one missing API never kills the whole hash. Falls back to timestamp-based hashing in standalone/test mode (no `hou`).
+Scene change detection hashes three H21-native primitives together — global topology (`child.sessionId()` per child), local state (`node.cookCount()`), and geometry intrinsics (`geo.intrinsicValue('pointcount')` + `'bounds'`) — via `sha256(...).hexdigest()[:16]`. Each component is individually try/excepted so one missing API never kills the whole hash; falls back to timestamp-based hashing in standalone/test mode (no `hou`). See `shared/bridge.py:_topo_hash`.
 
 ### 1.5 Async Execution Boundary (R2)
 
@@ -124,58 +104,15 @@ The `_sync_payload` closure captures the operation and executes it undo-wrapped 
 
 ### 1.6 Blast Radius Inference (R7)
 
-**Never trust the LLM's boundary flags.** Before every execution, the bridge traces the dependency graph forward from the operation's target node to detect if a SOP mutation bleeds into Solaris:
-
-```python
-def _infer_stage_touch(self, operation: Operation) -> bool:
-    if operation.touches_stage: return True
-
-    node = hou.node(operation.kwargs.get("node_path"))
-    for dep in node.dependents():
-        if isinstance(dep, hou.LopNode):
-            operation.touches_stage = True
-            operation.stage_path = dep.path()  # Auto-target the affected LOP
-            return True
-    return False
-```
-
-This fires the Scene Integrity anchor (composition validation + rollback) even when the agent didn't flag the operation as stage-touching. Agents that pass `node_path` or `parent_path` in kwargs get automatic blast radius detection.
+**Never trust the LLM's boundary flags.** Before every execution, `_infer_stage_touch` traces `node.dependents()` forward; if any dependent is a `hou.LopNode`, it auto-marks `touches_stage=True` and sets `stage_path` to that LOP. This fires the Scene Integrity anchor (composition validation + rollback) even when the agent didn't flag the op as stage-touching. Agents passing `node_path`/`parent_path` in kwargs get automatic blast-radius detection. See `shared/bridge.py`.
 
 ### 1.7 PDG Async Cook Bridge (R8)
 
-PDG farm cooks are inherently async — they can take minutes to hours. R8 bridges this with FastMCP's event loop using H21's `pdg` module APIs + `asyncio.Event`:
+PDG farm cooks are inherently async (minutes to hours). R8 bridges this to FastMCP's event loop using H21 `pdg` APIs + an `asyncio.Event`: register a raw callable via `graph_context.addEventHandler(fn, pdg.EventType.CookComplete)` and again for `CookError` (one call per type), keep the returned wrapper objects for `removeEventHandler` in teardown, kick `graph_context.cook()` on the main thread via `hdefereval`, then `await cook_complete.wait()` — the agent sleeps while FastMCP stays responsive.
 
-```python
-async def _execute_pdg_deferred(self, operation, integrity):
-    cook_complete = asyncio.Event()
-    cook_success = [False]
+> **⚠ H21.0.671 phantom:** `pdg.PyEventHandler(fn)` has **no constructor** ("TypeError: No constructor defined"). Register a raw callable with `addEventHandler(fn, EventType)` — it registers the handler AND returns the wrapper object you keep for `removeEventHandler`.
 
-    # H21.0.671: pdg.PyEventHandler(fn) is a PHANTOM constructor
-    # ("TypeError: No constructor defined"). Register a RAW callable —
-    # addEventHandler(fn, EventType) registers it AND returns the wrapper
-    # object you keep for removeEventHandler. One call per event type.
-    def on_cook_event(event):
-        if event.type == pdg.EventType.CookComplete:
-            cook_success[0] = True
-            cook_complete.set()
-        elif event.type == pdg.EventType.CookError:
-            cook_complete.set()
-
-    graph_context = top_node.getPDGGraphContext()
-    handlers = [
-        graph_context.addEventHandler(on_cook_event, pdg.EventType.CookComplete),
-        graph_context.addEventHandler(on_cook_event, pdg.EventType.CookError),
-    ]
-    # … later, in teardown: for h in handlers: graph_context.removeEventHandler(h)
-
-    hdefereval.executeInMainThread(lambda: graph_context.cook())
-
-    await cook_complete.wait()  # Agent sleeps. FastMCP stays responsive.
-```
-
-**On failure:** Wipes generated caches via `dirtyAllTasks(remove_files=True)` — disk-based rollback for operations where undo groups don't apply.
-
-**Routing:** Any `cook_pdg_chain` operation is automatically routed to `_execute_pdg_deferred` in the async path.
+**On failure:** wipes generated caches via `dirtyAllTasks(remove_files=True)` — disk-based rollback where undo groups don't apply. **Routing:** any `cook_pdg_chain` op auto-routes to `_execute_pdg_deferred` in the async path. See `shared/bridge.py`.
 
 ### 1.8 Emergency Halt
 
@@ -324,20 +261,7 @@ OR-node: ANY path solves the problem
 
 ## 5. Agent Handoff Protocol
 
-Cross-agent state transfer uses the `AgentHandoff` dataclass:
-
-```python
-AgentHandoff(
-    from_agent=AgentID.OBSERVER,
-    to_agent=AgentID.HANDS,
-    task_id="create_mtlx_shader",
-    source_output=observer_result,      # Must have fidelity=1.0
-    source_fidelity=1.0,
-    context={"domain": "materialx"},    # Must satisfy target's requirements
-    guidance="Scene has 3 mesh objects, normals present, no UVs",
-    provenance=[("OBSERVER", "scanned /obj network")]
-)
-```
+Cross-agent state transfer uses the `AgentHandoff` dataclass (`shared/bridge.py`): fields `from_agent`, `to_agent`, `task_id`, `source_output` (must carry `source_fidelity=1.0`), `context` (must satisfy the target agent's required keys — see table below), `guidance` (free-text scene brief, e.g. "3 mesh objects, normals present, no UVs"), and `provenance` (accumulating `(agent, action)` tuples).
 
 ### Context Requirements (Per Agent)
 
@@ -396,62 +320,15 @@ CHARIZARD:  memory.usd    — + composition arcs. Cross-scene references.
 
 ### Native OpenUSD Generation (R3)
 
-Evolution uses `pxr.Usd.Stage.CreateInMemory()` — no string templates:
+Evolution uses `pxr.Usd.Stage.CreateInMemory()` — no string templates. It defines `/SYNAPSE` as the default prim, sanitizes prim names, authors `synapse:*` attributes via `Sdf.ValueTypeNames` (String / StringArray through `Vt.StringArray`), and returns `stage.GetRootLayer().ExportToString()` for syntactically perfect USDA. See `shared/evolution.py`.
 
-> **⚠ Idiom-vs-code divergence (verified 2026-06-06).** The `Tf.MakeValidIdentifier` line below is
-> the *intended* idiom, not the live code. `evolution.py` imports only `from pxr import Usd, Sdf`
-> (no `Tf`) and `agent_state.py` hand-rolls `_safe_prim_name(...)`. Neither memory module calls
-> `Tf.MakeValidIdentifier` today. Reconciling on ONE sanitizer is RFC decision **D-3**
-> (`docs/RFC_agent_usd_ledger.md`). The §12 import guard, §12 production list, and R3 manifest row
-> carry the same aspirational `Tf` claim — treat them as the target, not as verified-live code.
+> **⚠ Idiom-vs-code divergence (verified 2026-06-06).** The `Tf.MakeValidIdentifier` idiom above is the *intended* target, not the live code. `evolution.py` imports only `from pxr import Usd, Sdf` (no `Tf`) and `agent_state.py` hand-rolls `_safe_prim_name(...)`. Reconciling on ONE sanitizer is RFC decision **D-3** (`docs/RFC_agent_usd_ledger.md`). The §12 import guard, §12 production list, and R3 manifest row carry the same aspirational `Tf` claim — treat as target, not verified-live.
 
-```python
-stage = Usd.Stage.CreateInMemory()
-root_prim = stage.DefinePrim("/SYNAPSE", "Xform")
-stage.SetDefaultPrim(root_prim)
-
-# Safe prim names regardless of LLM-generated input (H21: Tf, not Sdf.Path)
-safe_id = Tf.MakeValidIdentifier(session.id)
-sess_prim = stage.DefinePrim(f"/SYNAPSE/memory/sessions/{safe_id}", "Xform")
-
-# Native type handling auto-escapes VEX slashes, quotes, linebreaks
-sess_prim.CreateAttribute("synapse:narrative", Sdf.ValueTypeNames.String).Set(text)
-
-# Arrays without manual quoting
-sess_prim.CreateAttribute("synapse:decisions", Sdf.ValueTypeNames.StringArray).Set(
-    Vt.StringArray(decisions)
-)
-
-# Syntactically perfect USDA output
-return stage.GetRootLayer().ExportToString()
-```
-
-**Fallback:** String-template generation available for environments without `pxr` (testing only).
+**Fallback:** string-template generation for environments without `pxr` (testing only).
 
 ### Solaris Viewport Sync (R10)
 
-After successful evolution, force-cook any LOP nodes that reference the evolved USD file. H21 doesn't have `hou.lopNetworks()`, so we walk from root collecting `hou.LopNetwork` instances:
-
-```python
-def _sync_solaris_viewport(self, memory_path: str):
-    def _find_lop_networks(parent):
-        """Walk node tree collecting LopNetwork instances."""
-        found = []
-        for child in parent.children():
-            if isinstance(child, hou.LopNetwork):
-                found.append(child)
-            found.extend(_find_lop_networks(child))
-        return found
-
-    for lop_net in _find_lop_networks(hou.node("/")):
-        for node in lop_net.children():
-            if node.type().name() in ("sublayer", "reference"):
-                file_parm = node.parm("filepath1")
-                if file_parm and memory_path in file_parm.evalAsString():
-                    node.cook(force=True)
-```
-
-This ensures the Solaris viewport immediately reflects evolved memory data without requiring manual recook. Best-effort — never blocks evolution success.
+After successful evolution, force-cook any LOP nodes referencing the evolved USD file. H21 has no `hou.lopNetworks()`, so `_sync_solaris_viewport` walks from `hou.node("/")` collecting `hou.LopNetwork` instances recursively, then for each child of type `sublayer`/`reference` checks `parm("filepath1")` for the memory path and calls `node.cook(force=True)`. Best-effort — never blocks evolution success. See `shared/evolution.py`.
 
 ### Three-Tier Memory Hierarchy
 
@@ -593,56 +470,12 @@ Track across the session:
 
 ## 12. Houdini Import Guards
 
-All production code uses try/except import guards:
-
-```python
-# Houdini API — bridge.py
-_HOU_AVAILABLE = False
-try:
-    import hou
-    import hdefereval
-    _HOU_AVAILABLE = True
-except ImportError:
-    hou = None
-    hdefereval = None
-
-# PDG API — bridge.py (R8: H21 uses pdg module, not hou.pdgEventType)
-_PDG_AVAILABLE = False
-try:
-    import pdg
-    _PDG_AVAILABLE = True
-except ImportError:
-    pdg = None
-
-# OpenUSD API — evolution.py (R3: H21 uses Tf.MakeValidIdentifier)
-_PXR_AVAILABLE = False
-try:
-    from pxr import Usd, Sdf, Vt, Tf
-    _PXR_AVAILABLE = True
-except ImportError:
-    Usd = Sdf = Vt = Tf = None
-
-# Consent gate system — bridge.py (three-tier fallback)
-_GATES_AVAILABLE = False
-try:
-    from synapse.core.gates import HumanGate, GateDecision, CoreGateLevel
-    _GATES_AVAILABLE = True
-except ImportError:
-    HumanGate = GateDecision = CoreGateLevel = None
-
-# Houdini API — evolution.py (R10: viewport sync)
-_HOU_AVAILABLE = False
-try:
-    import hou
-    _HOU_AVAILABLE = True
-except ImportError:
-    hou = None
-```
+All production code uses try/except import guards with `*_AVAILABLE` flags: `hou`+`hdefereval` (bridge.py + evolution.py), `pdg` (bridge.py, R8 — H21 uses the `pdg` module, not `hou.pdgEventType`), `pxr` `{Usd,Sdf,Vt,Tf}` (evolution.py, R3), and `synapse.core.gates` `{HumanGate,GateDecision,CoreGateLevel}` (bridge.py, three-tier consent fallback). On `ImportError` the names are set to `None`. See `shared/bridge.py` / `shared/evolution.py` for the canonical blocks.
 
 All modules must work in both modes:
 
-- **Production (inside Houdini 21):** Full `hou` API, `hdefereval` main-thread dispatch, `pdg` module for PDG events, `pxr` native USD with `Tf.MakeValidIdentifier`, real topological hashing via `cookCount`/`sessionId`/intrinsics, SOP→LOP dependency tracing, consent gates via `synapse.core.gates.HumanGate`, viewport force-cook via LopNetwork walk
-- **Standalone (testing/CI):** Direct execution, timestamp-based hashes, string-template USD fallback, auto-approve consent, R7/R8/R10 no-op gracefully
+- **Production (inside Houdini 21):** full `hou` API, `hdefereval` main-thread dispatch, `pdg` for PDG events, `pxr` native USD with `Tf.MakeValidIdentifier`, real topological hashing via `cookCount`/`sessionId`/intrinsics, SOP→LOP dependency tracing, consent gates via `synapse.core.gates.HumanGate`, viewport force-cook via LopNetwork walk.
+- **Standalone (testing/CI):** direct execution, timestamp-based hashes, string-template USD fallback, auto-approve consent, R7/R8/R10 no-op gracefully.
 
 ---
 
@@ -719,93 +552,35 @@ section is public, frozen, and pinned by tests.
 
 ### 16.1 Data flow
 
-```
-LosslessExecutionBridge.operation_stats()      ──┐
-  per-agent counters, success rates, anchor      │
-  violations, log size, session id               │
-                                                 │
-MOERouter.fingerprint_counts()                 ──┤
-  fingerprint → call-count snapshot              │
-                                                 ▼
-LosslessEvolution → EvolutionIntegrity         ──→  ConductorAdvisor.analyze()
-  failure list with category prefixes               returns list[Recommendation]
-  ("Decision content drift: …" etc)
-                                                     │
-                                                     ▼
-                                                RecommendationHistory
-                                                  capped deque + JSONL
-                                                  persistence (.tmp + replace)
-                                                     │
-                                                     ▼
-                                                ConductorAdvisor.analyze_history()
-                                                  meta-recursion: same
-                                                  (kind, target) ≥5×
-                                                  → escalate
-```
+`LosslessExecutionBridge.operation_stats()` (per-agent counters, success rates, anchor violations, log size, session id) and `MOERouter.fingerprint_counts()` (fingerprint→count snapshot) feed `ConductorAdvisor.analyze()`, which also receives `LosslessEvolution`'s `EvolutionIntegrity` failure list (category-prefixed, e.g. "Decision content drift: …") and returns `list[Recommendation]`. Those flow into `RecommendationHistory` (capped deque + atomic JSONL persistence, `.tmp + replace`), then `ConductorAdvisor.analyze_history()` meta-recurses: the same `(kind, target)` ≥5× escalates.
 
 ### 16.2 Public API surface
 
-| Component | Method | Returns | Owner |
-|---|---|---|---|
-| `LosslessExecutionBridge` | `operation_stats()` | dict with `per_agent`, `per_agent_verified`, `per_agent_success_rate`, `success_rate`, `anchor_violations`, `operations_total`, `operations_verified`, `log_size`, `log_capacity`, `per_operation_type`, `session_id` | SUBSTRATE |
-| `LosslessExecutionBridge` | `recent_operations(n=100)` | list[IntegrityBlock] copy | SUBSTRATE |
-| `LosslessExecutionBridge` | `clear_operation_log()` | int dropped | SUBSTRATE |
-| `MOERouter` | `fingerprint_counts()` | dict[str, int] copy | SUBSTRATE |
-| `LosslessEvolution._verify_lossless` | (internal) | EvolutionIntegrity with content-hash failures | CONDUCTOR |
-| `ConductorAdvisor` | `analyze(bridge_stats, evolution_failures, routing_fingerprints)` | list[Recommendation] | CONDUCTOR |
-| `ConductorAdvisor` | `analyze_history(history)` | list[Recommendation] meta | CONDUCTOR |
-| `RecommendationHistory` | `record(recs, timestamp)` | int recorded | CONDUCTOR |
-| `RecommendationHistory` | `recent(n=50)` / `all()` / `clear()` | list[HistoryEntry] / int | CONDUCTOR |
-| `RecommendationHistory` | `to_jsonl(path)` / `from_jsonl(path)` | int / RecommendationHistory | CONDUCTOR |
-| `advise_from_bridge` | one-shot helper | list[Recommendation] | CONDUCTOR |
+- **SUBSTRATE** — `LosslessExecutionBridge.operation_stats()` (dict: `per_agent`, `per_agent_verified`, `per_agent_success_rate`, `success_rate`, `anchor_violations`, `operations_total`, `operations_verified`, `log_size`, `log_capacity`, `per_operation_type`, `session_id`); `recent_operations(n=100)` → list[IntegrityBlock] copy; `clear_operation_log()` → int dropped; `MOERouter.fingerprint_counts()` → dict[str,int] copy.
+- **CONDUCTOR** — `LosslessEvolution._verify_lossless` (internal) → `EvolutionIntegrity` with content-hash failures; `ConductorAdvisor.analyze(bridge_stats, evolution_failures, routing_fingerprints)` and `.analyze_history(history)` → `list[Recommendation]`; `RecommendationHistory.record(recs, timestamp)` → int, `.recent(n=50)`/`.all()`/`.clear()`, `.to_jsonl(path)`/`.from_jsonl(path)`; `advise_from_bridge` one-shot helper.
 
 ### 16.3 Recommendation schema
 
-`Recommendation` is `frozen=True, slots=True` and serializes via `.to_dict()`:
-
-```
-kind        — agent_health | evolution_writer_fix | router_promote |
-              trigger_tune | repeated_recommendation
-target      — subject identifier (agent id, fingerprint, category, slug)
-rationale   — one-line human explanation
-confidence  — 0..1 (scales with sample size)
-severity    — info | warn | critical (informational; gates still apply)
-evidence    — dict of supporting facts
-```
+`Recommendation` (`frozen=True, slots=True`, serializes via `.to_dict()`): `kind` (agent_health | evolution_writer_fix | router_promote | trigger_tune | repeated_recommendation), `target` (agent id / fingerprint / category / slug), `rationale` (one-line), `confidence` (0..1, scales with sample size), `severity` (info | warn | critical — informational; gates still apply), `evidence` (dict).
 
 ### 16.4 Design constraints
 
-- **Read-only by construction.** The advisor cannot mutate constants, router
-  state, or bridge logs. Verified by `test_advisor_never_mutates_inputs`.
-- **Statistically silent.** Below `MIN_OPS_FOR_VERDICT` (10) and
-  `DRIFT_FIELD_CLUSTER_THRESHOLD` (3) the advisor returns nothing. No alarm
-  fatigue.
-- **Severity is informational.** Even 'critical' recommendations route
-  through the bridge gate system before any tuning is applied. The artist
-  remains the decision authority.
-- **History is bounded.** `RecommendationHistory.DEFAULT_CAPACITY=500` —
-  oldest entries drop FIFO. JSONL persistence is atomic via `.tmp + replace`
-  and tolerates malformed lines on read (best-effort recovery).
-- **Meta-recursion threshold.** `REPEATED_RECOMMENDATION_THRESHOLD=5` —
-  five occurrences of the same `(kind, target)` flag a chronic issue. Ten+
-  escalates to CRITICAL.
-- **Per-agent counters are lifetime.** They survive operation log eviction;
-  bounded log only caps the IntegrityBlock detail, not the aggregate
-  counters.
+- **Read-only by construction** — advisor cannot mutate constants, router state, or bridge logs (`test_advisor_never_mutates_inputs`).
+- **Statistically silent** — below `MIN_OPS_FOR_VERDICT` (10) and `DRIFT_FIELD_CLUSTER_THRESHOLD` (3) returns nothing. No alarm fatigue.
+- **Severity is informational** — even 'critical' recommendations route through the bridge gate system before any tuning; the artist remains the decision authority.
+- **History is bounded** — `RecommendationHistory.DEFAULT_CAPACITY=500`, FIFO eviction; JSONL persistence atomic via `.tmp + replace`, tolerates malformed lines on read.
+- **Meta-recursion threshold** — `REPEATED_RECOMMENDATION_THRESHOLD=5`: five occurrences of the same `(kind, target)` flag a chronic issue; ten+ escalates to CRITICAL.
+- **Per-agent counters are lifetime** — survive operation-log eviction; bounded log caps IntegrityBlock detail, not aggregate counters.
 
 ### 16.5 Tests pinning the loop
 
-| Pin | File |
-|---|---|
-| Router conformance + auto-promotion | `tests/test_router_internals.py` |
-| Bridge per-agent + log accessors + evolution archive + content-aware verify | `tests/test_evolution_bridge_internals.py` |
-| ConductorAdvisor analyze + per-agent + drift + promotion | `tests/test_conductor_advisor.py` |
-| Per-agent advisor + canonical-constant pinning helper | `tests/test_pass7_per_agent_and_canonical.py` |
-| Router accessor + history JSONL round-trip + meta-analysis + end-to-end | `tests/test_pass8_history_and_meta.py` |
+- Router conformance + auto-promotion — `tests/test_router_internals.py`
+- Bridge per-agent + log accessors + evolution archive + content-aware verify — `tests/test_evolution_bridge_internals.py`
+- ConductorAdvisor analyze + per-agent + drift + promotion — `tests/test_conductor_advisor.py`
+- Per-agent advisor + canonical-constant pinning helper — `tests/test_pass7_per_agent_and_canonical.py`
+- Router accessor + history JSONL round-trip + meta-analysis + end-to-end — `tests/test_pass8_history_and_meta.py`
 
-If any of the API surface in §16.2 changes, the corresponding test in §16.5
-fails. The doc/code conformance test in `tests/test_router_internals.py`
-pins specific identifiers from this section so future doc drift fails loud.
+If any §16.2 API surface changes, the corresponding test above fails. The doc/code conformance test in `tests/test_router_internals.py` pins specific identifiers from this section so future doc drift fails loud.
 
 ---
 
