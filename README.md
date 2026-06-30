@@ -44,7 +44,7 @@ A docked **SYNAPSE panel** inside Houdini. You type what you want — *"make a b
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
     ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>chat · engine pills · /"]:::panel
-    PANEL -->|"Claude · Gemini · Nemotron"| LOOP["Agent loop<br/>chosen engine + 113 tools"]:::panel
+    PANEL -->|"Claude · Gemini · Nemotron"| LOOP["Agent loop<br/>chosen engine + 115 tools"]:::panel
     LOOP -->|"tool_use"| EXEC["Tool executor<br/>(main thread)"]:::panel
     EXEC --> BR["Handler<br/>undo-wrapped · integrity"]:::bridge
     BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
@@ -72,6 +72,22 @@ flowchart LR
 **And it wires Solaris the way you'd expect in production.** From your review: SYNAPSE now knows the real H21 patterns — the **Component Builder** for assets, the proper **`rendersettings` → render** terminal, **layered** scene assembly, and the **actual light nodes** (the old per-shape light names it used don't exist in H21) — plus which merge/sublayer input wins.
 
 Verified on **live Houdini 21.0.671**. *The propose → validate → build loop is now complete.*
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart LR
+    ASK["Artist<br/>'build a karma setup'"]:::artist --> PROP["Propose<br/>nodes + wires, on paper"]:::panel
+    PROP --> VAL["Validate vs your live scene<br/>inputs · wire types · occupied inputs · parent + targets exist"]:::bridge
+    VAL -->|"all clear · parked"| BUILD["Build — one undo group<br/>create → wire → read back"]:::hou
+    VAL -.->|"something's off"| STOP["Stop · nothing touched"]:::side
+    BUILD --> NODES[("Real nodes<br/>single Ctrl+Z reverts")]:::hou
+    BUILD -.provenance.-> REC["agent.usd receipt<br/>decision · reasoning · revert"]:::side
+    classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
+    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
+    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
+    classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
+```
 
 ---
 
