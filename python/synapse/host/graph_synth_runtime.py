@@ -93,14 +93,54 @@ def wire_propose() -> None:
         _propose_wired = True
 
 
+def _agent_usd_provenance(payload: Dict[str, Any]) -> None:
+    """Best-effort BUILD-provenance writer wired into the GraphBuilder.
+
+    Honors the "provenance or it didn't happen" convention for the mutation by
+    appending the build receipt to $HIP/claude/agent.usd's
+    /SYNAPSE/memory/decisions. Mirrors mcp/session.py's canonical agent.usd
+    ensure-pattern (hip/job -> ensure_scene_structure -> agent_usd -> writer).
+
+    It MUST NEVER raise: provenance is best-effort and a write failure must not
+    block or fail a build (the build completes + returns BUILT regardless). The
+    hou + scene_memory + agent_state imports are LAZY so this module stays
+    headless-importable.
+    """
+    try:
+        import os
+
+        import hou  # host context — hou allowed; lazy so module imports headless
+
+        from synapse.memory.scene_memory import ensure_scene_structure
+        from synapse.memory.agent_state import log_decision
+
+        hip_path = hou.hipFile.path()
+        job_path = hou.getenv("JOB", os.path.dirname(hip_path))
+        paths = ensure_scene_structure(hip_path, job_path)
+        agent_usd = paths.get("agent_usd", "")
+        if agent_usd and os.path.exists(agent_usd):
+            log_decision(agent_usd, payload)
+    except Exception:  # noqa: BLE001 — best-effort; build must never block on provenance
+        logger.warning(
+            "build provenance write to agent.usd failed (best-effort, build unaffected)",
+            exc_info=True,
+        )
+
+
 def _get_builder() -> GraphBuilder:
     """The ONE GraphBuilder, bound to the SHARED store. Its re-validation factory
     is ``_build_validator`` (the same oracles), so the store is the only shared
-    state the propose path and the build path co-own."""
+    state the propose path and the build path co-own. The build's mutation
+    provenance is wired to ``_agent_usd_provenance`` (best-effort agent.usd
+    receipt — never blocks the build)."""
     global _builder
     with _lock:
         if _builder is None:
-            _builder = GraphBuilder(_get_store(), validator_factory=_build_validator)
+            _builder = GraphBuilder(
+                _get_store(),
+                validator_factory=_build_validator,
+                provenance_writer=_agent_usd_provenance,
+            )
         return _builder
 
 

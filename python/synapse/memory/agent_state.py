@@ -454,6 +454,58 @@ def get_routing_log(agent_usd_path: str) -> List[Dict[str, str]]:
         return []
 
 
+# ── Memory Decisions (build/mutation provenance) ─────────────────
+
+
+def log_decision(agent_usd_path: str, payload: Dict[str, Any]) -> str:
+    """Append a build/mutation decision to /SYNAPSE/memory/decisions/.
+
+    Records the "provenance or it didn't happen" receipt for a graph-synth
+    BUILD (an operation, not a verified science claim — the ledger is the wrong
+    home for it). Mirrors log_routing_decision's structure exactly.
+
+    payload keys read: decision, reasoning, revert, parent_path, model_id,
+    created_paths (list -> joined with newlines, since agent_state authors
+    Strings not StringArrays).
+
+    Returns the prim name of the logged decision, or "" if pxr is unavailable
+    or the /SYNAPSE/memory/decisions parent prim is missing.
+    """
+    if not PXR_AVAILABLE:
+        return ""
+
+    stage = Usd.Stage.Open(agent_usd_path)
+    parent = stage.GetPrimAtPath("/SYNAPSE/memory/decisions")
+    if not parent.IsValid():
+        logger.warning("memory/decisions prim missing -- run migrate_to_v2")
+        return ""
+
+    name = _counter_suffix(parent, "decision_")
+    prim = stage.DefinePrim(f"/SYNAPSE/memory/decisions/{name}", "Xform")
+    prim.CreateAttribute("synapse:decision", Sdf.ValueTypeNames.String).Set(
+        str(payload.get("decision", ""))
+    )
+    prim.CreateAttribute("synapse:reasoning", Sdf.ValueTypeNames.String).Set(
+        str(payload.get("reasoning", ""))
+    )
+    prim.CreateAttribute("synapse:revert", Sdf.ValueTypeNames.String).Set(
+        str(payload.get("revert", ""))
+    )
+    prim.CreateAttribute("synapse:parentPath", Sdf.ValueTypeNames.String).Set(
+        str(payload.get("parent_path", ""))
+    )
+    prim.CreateAttribute("synapse:modelId", Sdf.ValueTypeNames.String).Set(
+        str(payload.get("model_id", ""))
+    )
+    prim.CreateAttribute("synapse:createdPaths", Sdf.ValueTypeNames.String).Set(
+        "\n".join(payload.get("created_paths") or [])
+    )
+    prim.CreateAttribute("synapse:timestamp", Sdf.ValueTypeNames.String).Set(_now())
+
+    stage.GetRootLayer().Save()
+    return name
+
+
 # ── Handoff Chain ───────────────────────────────────────────────
 
 

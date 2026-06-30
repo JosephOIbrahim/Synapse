@@ -331,6 +331,45 @@ def test_instantiate_graph_in_registry_surface():
     assert ann["idempotentHint"] is False
 
 
+# --------------------------------------------------------------------------- #
+# (d) BUILD provenance is wired AND best-effort — never blocks the build.      #
+# --------------------------------------------------------------------------- #
+def test_runtime_builder_wires_agent_usd_provenance(rt):
+    """_get_builder() binds the build's mutation provenance to the agent.usd
+    receipt writer — the 'provenance or it didn't happen' seam is actually
+    wired, not left dormant."""
+    builder = rt._get_builder()
+    assert builder._provenance is rt._agent_usd_provenance
+
+
+def test_build_returns_BUILT_even_when_provenance_raises(rt, monkeypatch):
+    """A provenance_writer that RAISES must NOT block or fail the build: the
+    receipt is best-effort, so the build still returns BUILT and its node is
+    present (the failure is swallowed inside GraphBuilder._emit_provenance)."""
+    from synapse.host.graph_builder import GraphBuilder
+    from synapse.cognitive.tools.propose_graph import _proposal_from_dict
+
+    scene = _Scene()
+    scene.add("/obj/geo1", "geo")
+    _install_fake_hou(monkeypatch, scene)
+
+    store = rt._get_store()
+    store.put(_proposal_from_dict(_valid_proposal_dict("p-boom")))
+
+    def _boom(_payload):
+        raise RuntimeError("boom")
+
+    builder = GraphBuilder(
+        store,
+        validator_factory=lambda: _AlwaysValid(),
+        provenance_writer=_boom,
+    )
+    result = builder.instantiate("p-boom")
+
+    assert result.status is InstantiationStatus.BUILT          # provenance failure swallowed
+    assert ("box", "/obj/geo1/box1") in scene.created          # the mutation still happened
+
+
 def test_propose_graph_in_registry_surface():
     """propose is a HOST registry tool too (not an in-process cognitive special
     case) -> it reaches BOTH transports via TOOL_DISPATCH -> WS, exactly like the

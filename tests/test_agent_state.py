@@ -218,6 +218,10 @@ class TestNoOpWithoutPxr:
         name = agent_state.log_routing_decision(agent_usd_path, "fp", "HANDS", "OBSERVER", "dense")
         assert name == ""
 
+    def test_log_decision_noop(self, agent_usd_path):
+        name = agent_state.log_decision(agent_usd_path, {"decision": "x", "created_paths": []})
+        assert name == ""
+
     def test_get_routing_log_empty(self, agent_usd_path):
         assert agent_state.get_routing_log(agent_usd_path) == []
 
@@ -611,6 +615,44 @@ class TestRoutingLogWithMockPxr:
 
         log = agent_state.get_routing_log(agent_usd_path)
         assert log[0]["advisory_agent"] == ""
+
+
+class TestMemoryDecisionsWithMockPxr:
+    """log_decision authors a build/mutation provenance receipt under
+    /SYNAPSE/memory/decisions — the 'provenance or it didn't happen' seam for a
+    graph-synth BUILD."""
+
+    _PAYLOAD = {
+        "decision": "instantiate graph proposal p-share",
+        "reasoning": "a single box",
+        "parent_path": "/obj/geo1",
+        "created_paths": ["/obj/geo1/box1", "/obj/geo1/xform1"],
+        "model_id": "glm-5.2",
+        "revert": "single undo: 'SYNAPSE graph synth p-share'",
+    }
+
+    def test_log_decision_roundtrip(self, agent_usd_path, mock_pxr):
+        agent_state.initialize_agent_usd(agent_usd_path)
+        name = agent_state.log_decision(agent_usd_path, self._PAYLOAD)
+        assert name == "decision_0000"
+
+        stage = _fake_stages[os.path.normpath(agent_usd_path)]
+        prim = stage.GetPrimAtPath("/SYNAPSE/memory/decisions/decision_0000")
+        assert prim.IsValid()
+        assert prim.GetAttribute("synapse:decision").Get() == self._PAYLOAD["decision"]
+        assert prim.GetAttribute("synapse:reasoning").Get() == self._PAYLOAD["reasoning"]
+        assert prim.GetAttribute("synapse:revert").Get() == self._PAYLOAD["revert"]
+        assert prim.GetAttribute("synapse:parentPath").Get() == self._PAYLOAD["parent_path"]
+        assert prim.GetAttribute("synapse:modelId").Get() == self._PAYLOAD["model_id"]
+        # created_paths -> newline-joined String (agent_state authors Strings, not arrays)
+        assert prim.GetAttribute("synapse:createdPaths").Get() == "/obj/geo1/box1\n/obj/geo1/xform1"
+
+    def test_log_decisions_sequential(self, agent_usd_path, mock_pxr):
+        agent_state.initialize_agent_usd(agent_usd_path)
+        n1 = agent_state.log_decision(agent_usd_path, self._PAYLOAD)
+        n2 = agent_state.log_decision(agent_usd_path, self._PAYLOAD)
+        assert n1 == "decision_0000"
+        assert n2 == "decision_0001"
 
 
 class TestHandoffChainWithMockPxr:
