@@ -4,28 +4,28 @@
 
 <h3 align="center"><strong>Talk to Houdini in plain English — it builds in your live scene.</strong></h3>
 
-<p align="center"><em>An AI copilot that lives <strong>inside</strong> Houdini. Chat in, real nodes out — undo-safe, multi-provider, in-process.</em></p>
+<p align="center"><em>An AI copilot that lives <strong>inside</strong> Houdini — say what you want and watch it build in your scene. Everything it makes is a normal Houdini action, so <strong>Ctrl+Z</strong> takes it back.</em></p>
 
 <p align="center">
   <a href="https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml"><img src="https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-3796%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.17.2-1e293b.svg" alt="Changelog"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-3803%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.18.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 ---
 
-### ✦ Architecture at a glance
+### ✦ The idea, in plain terms
 
-The one idea, up front — SYNAPSE is **inside-out**:
+SYNAPSE lives **inside** Houdini and turns plain English into real work:
 
-- 🧠 **The brain runs *inside* Houdini** — the panel and agent live in Houdini's own Python, **not** a separate server reaching in over a socket.
-- 🔁 **Chat becomes real nodes** — every turn is an ordinary Houdini action: **undo-safe** (Ctrl+Z), main-thread-safe.
-- 🧾 **Provenance-receipted** — each mutation leaves an auditable record of who did what.
-- 🔌 **Multi-provider, 113 tools** — pick Claude · Gemini · NVIDIA Nemotron in the panel, swap mid-session.
-- 📜 **MIT** ([LICENSE](LICENSE)) + **patent-pending methods** ([PATENTS](PATENTS)) — MIT covers copyright, not patents.
+- 🧠 **It works inside Houdini, not off to the side** — the assistant runs in Houdini itself, so there's no separate app to launch and no waiting on a server.
+- 🔁 **Your words become real nodes** — every request is just a normal Houdini action. Don't like it? **Ctrl+Z** takes it back.
+- 🧾 **It keeps the receipts** — every change is recorded, so you can always see what it did and why.
+- 🔌 **Pick your AI · 113 tools** — choose **Claude · Gemini · NVIDIA Nemotron** in the panel and switch whenever you like.
+- 📜 **Free to use (MIT)** ([LICENSE](LICENSE)) with **patent-pending methods** ([PATENTS](PATENTS)) — the license covers the code, not the patents.
 
 ---
 
@@ -58,6 +58,32 @@ flowchart LR
 ```
 
 **The panel, briefly:** a persistent rail (live state + a real **Stop**), two tabs under a same-pane law (**Direct** chat · **Work** glance), an **`Aa`** control that scales only what you *read*, typography that inherits Houdini's own UI font, and a **`/`** command palette over every tool.
+
+---
+
+## ✦ New in v5.18.0
+
+**Now it checks its plan against your real scene — *before* it builds.** When you ask for a network, SYNAPSE lays the whole thing out first (every node, every wire) and **checks it against your live Houdini scene** before creating a single node. It catches the impossible before it can touch your work:
+
+- 🔌 **No dead-end wires** — a connection into an input a node doesn't have, or a wire whose type can't fit, is caught up front.
+- 🛟 **It won't unplug your work** — if a wire would land on an input you've *already* connected, SYNAPSE stops instead of quietly overwriting it.
+- 🧭 **No nodes into thin air** — it confirms the parent network and every existing node it points at really exist in your scene.
+
+Every check was verified against **live Houdini 21.0.671**. *This is the checking half of AI network-building — the step that actually creates the nodes lands next.*
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart LR
+    ASK["Artist<br/>'build a karma setup'"]:::artist --> PLAN["AI plans the network<br/>nodes + wires, on paper"]:::panel
+    PLAN --> VAL["Check against your live scene<br/>inputs · wire types · already-used inputs · parent exists"]:::bridge
+    VAL -->|"all clear"| BUILD["Build it — undo-safe<br/>(lands next)"]:::hou
+    VAL -.->|"something's off"| STOP["Stop · nothing touched"]:::side
+    classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
+    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
+    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
+    classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
+```
 
 ---
 
@@ -161,7 +187,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.17.0):** the artist panel (multi-provider, undo-safe, 113 tools, live observability + latency instrumentation), the in-process substrate, two-tier provenance with the audit write off the hot path, freeze-safety, bounded autonomy + a kill switch, live-grounded Solaris / USD parameter names, and an H22-readiness harness. SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success, and the per-tool capability audit + the full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
+**Shipping (v5.18.0):** the artist panel (multi-provider, undo-safe, 113 tools, live observability + latency instrumentation), the in-process substrate, two-tier provenance with the audit write off the hot path, freeze-safety, bounded autonomy + a kill switch, live-grounded Solaris / USD parameter names, and an H22-readiness harness. SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success, and the per-tool capability audit + the full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
 
 ---
 
