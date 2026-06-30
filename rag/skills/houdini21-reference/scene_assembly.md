@@ -36,7 +36,9 @@ def reference_usd_asset(stage_path, usd_file, prim_path, parent="/stage"):
 def sublayer_usd(stage_path, usd_file, position="strongest", parent="/stage"):
     """Merge a full USD layer into the current stage.
     Use for: environment layouts, lighting rigs, base layers.
-    Sublayers are the strongest composition arc (direct edits)."""
+    NOTE (LIVRPS): sublayers are the WEAKEST composition arc — a reference or a
+    local/edit opinion overrides a sublayer. Strength WITHIN the sublayer stack is
+    set by the sublayer LOP's position control, not by the arc."""
     stage = hou.node(parent)
     if not stage:
         return

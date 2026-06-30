@@ -12,6 +12,70 @@ standard chain that every Solaris scene should follow. All LOP nodes live in /st
 never /obj. Use sopcreate (not sopimport) for new geometry. Wire linearly with
 setInput(0, prev). Lighting Law: intensity is ALWAYS 1.0; brightness via exposure only.
 
+## Production Reference Patterns (verified live on H21.0.671)
+
+> The linear chain in the next section is the MINIMAL / quick-scene case. Real shots are
+> assembled from the patterns below. Every node type here is confirmed to exist in 21.0.671;
+> the strength rule is confirmed by a live merge/sublayer probe.
+
+### 1. Component Builder — the publishable-asset pattern (preferred for assets)
+
+```
+componentgeometry ─┐(input 0)
+                   ├─→ componentmaterial ─→ componentoutput
+materiallibrary ───┘(input 1)
+```
+
+- `componentgeometry` holds the geo (default / proxy / sim variants); `materiallibrary` holds the shaders.
+- `componentmaterial` binds them: **geometry on input 0, material library on input 1**.
+- `componentoutput` writes the asset (default prim, variants, thumbnail). Use this for any geometry you would publish or reference — NOT `sopcreate`.
+
+### 2. Karma render terminal (production)
+
+```
+<scene> ─→ rendersettings ─→ renderproduct ─→ usdrender_rop
+              (or the modern `karmarendersettings` wrapper, which authors all three)
+              + rendergeometrysettings for per-prim render overrides
+```
+
+- The production render terminal is `rendersettings` / `renderproduct` / `usdrender_rop` (or `karmarendersettings`). Do **not** terminate on `karmarenderproperties`.
+- `usdrender` is NOT a valid node type in 21.0.671 — use `usdrender_rop`.
+
+### 3. Shot assembly — layered, NOT a single linear chain
+
+```
+reference / sopimport (per asset) ─→ merge | graftstages ─→ editproperties (overrides)
+   ─→ lighting ─→ camera ─→ render terminal
+```
+
+- Combine assets with `merge` or `graftstages`, not a flat `setInput(0, prev)` chain.
+- Manage the layer stack with `configurelayer` / `layerbreak`; override prims with `editproperties` / `editmaterialproperties` / `xform` / `prune`.
+- Organize large scenes into nested `lopnet` subnets per topic (lights, geometry, render).
+
+### 4. Lighting
+
+```
+domelight (HDRI) + light (generic; set light type via parm) ─→ lightmixer ─→ into scene
+```
+
+- `rectlight`, `spherelight`, `disklight` are **NOT valid node types** in 21.0.671. Create a generic `light` LOP and set its light-type parm, or use `domelight` / `distantlight`. `lightmixer` groups and balances lights.
+
+### 5. Geometry into the stage — decision
+
+| Situation | Node |
+|---|---|
+| New procedural geo for this scene | `sopcreate` |
+| Geometry already in `/obj` | `sopimport` |
+| Published USD asset | `reference` |
+| Publishable asset (geo + materials + variants) | Component Builder (pattern 1) |
+
+### Composition strength (verified by live probe, 21.0.671)
+
+- **`merge` and `sublayer` LOPs: the HIGHER input index / later input is STRONGER** — it wins on conflicting opinions. This is the OPPOSITE of raw USD `subLayerPaths` (where index 0 is strongest). The `sublayer` LOP's `positiontype` / `positionindex` parms set insertion strength.
+- **Downstream overrides upstream**: a later node in the chain wins over an earlier one on the same attribute; the last display-flagged LOP is the stage you see and render.
+
+---
+
 ## Chain Order
 
 ```
