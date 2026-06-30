@@ -1,0 +1,56 @@
+{
+  "arity_overflow": {
+    "status": "invalid",
+    "expect": "invalid",
+    "pass": true,
+    "errors": [
+      "edge target 'n1' input index 5 exceeds arity (max inputs 1) for type 'box' [houdini 21.0.671]"
+    ]
+  },
+  "hallucinated_type": {
+    "status": "invalid",
+    "expect": "invalid",
+    "pass": true,
+    "errors": [
+      "unknown node_type 'frobnicate' for category 'Sop' [houdini 21.0.671]"
+    ]
+  },
+  "occupied_halt": {
+    "status": "invalid",
+    "expect": "invalid",
+    "pass": true,
+    "errors": [
+      "input 0 of existing node '/obj/SYN_M2_PROBE/merge1' is already occupied \u2014 wiring it would sever the artist's existing connection [houdini 21.0.671]"
+    ]
+  },
+  "ghost_resolve": {
+    "status": "invalid",
+    "expect": "invalid",
+    "pass": true,
+    "errors": [
+      "existing node 'g' path '/obj/SYN_M2_PROBE/ghost_zzz' does not resolve in the live scene [houdini 21.0.671]"
+    ]
+  },
+  "missing_parent": {
+    "status": "invalid",
+    "expect": "invalid",
+    "pass": true,
+    "errors": [
+      "parent '/obj/NO_SUCH_PARENT_zzz' does not resolve in the live scene [houdini 21.0.671]"
+    ]
+  },
+  "valid_extend": {
+    "status": "valid",
+    "expect": "valid",
+    "pass": true,
+    "errors": []
+  },
+  "existence": {
+    "box": true,
+    "frobnicate": false,
+    "box.t": true,
+    "box.zzz_nope": false
+  },
+  "all_pass": true,
+  "scene_clean": true
+}

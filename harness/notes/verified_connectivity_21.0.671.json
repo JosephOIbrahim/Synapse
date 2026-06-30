@@ -1,0 +1,42 @@
+{
+  "_doc": "Mile-2 §2.5 preflight — IConnectivityOracle backing symbols, dir()-confirmed against LIVE Houdini 21.0.671 (headless hython, HYTHON=Houdini 21.0.671). Read-only: a throwaway /obj net was built in an isolated hython process; the user's session was untouched. Cross-checked against the committed scout symbol table (python/synapse/cognitive/tools/data/h21_symbol_table.json, houdini_version 21.0.671). Reproduce: harness/notes/mile2_2_5_introspect.py.",
+  "houdini_version": "21.0.671",
+  "symbols_present": {
+    "hou.node": true,
+    "hou.nodeType": true,
+    "hou.nodeTypeCategories": true,
+    "hou.NodeType.maxNumInputs": true,
+    "hou.NodeType.minNumInputs": true,
+    "hou.NodeType.maxNumOutputs": true,
+    "hou.NodeType.name": true,
+    "hou.NodeType.category": true,
+    "hou.NodeType.nameComponents": true,
+    "hou.Node.type": true,
+    "hou.Node.inputs": true,
+    "hou.Node.inputConnections": true,
+    "hou.Node.inputLabels": true,
+    "hou.NodeConnection.inputIndex": true,
+    "hou.NodeTypeCategory.name": true,
+    "hou.VopNode.inputDataTypes": true,
+    "hou.VopNode.outputDataTypes": true
+  },
+  "symbols_PHANTOM_do_not_use": {
+    "hou.NodeType.inputLabels": "ABSENT in 21.0.671 dir(hou.NodeType) — input labels are INSTANCE-level only (hou.Node.inputLabels). Type-level label lookup degrades to []. P3c is advisory, so this is graceful.",
+    "hou.NodeType.outputLabels": "ABSENT — same as inputLabels.",
+    "hou.NodeType.inputNames": "ABSENT in 21.0.671."
+  },
+  "verified_values": {
+    "category_keys": ["Chop", "ChopNet", "Cop", "Cop2", "CopNet", "Data", "Director", "Dop", "Driver", "Lop", "Manager", "Object", "Shop", "Sop", "Top", "TopNet", "Vop", "VopNet"],
+    "arity_min_max_outs": {
+      "Sop/box": [0, 1, 1],
+      "Sop/xform": [1, 1, 1],
+      "Sop/merge": [0, 9999, 1],
+      "Vop/add": [1, 2048, 1],
+      "Vop/constant": [0, 0, 1]
+    },
+    "variadic_sentinel_note": "Variadic max inputs reported as a large finite cap (Sop/merge=9999, Vop/add=2048), NOT -1. The validator must treat 'index < max' generically; the in-repo MOCK uses -1 as its own unlimited sentinel, so the validator also treats max<0 as unlimited. Both map to 'no overflow'.",
+    "occupied_input_logic": "merge with box wired to input0 -> inputConnections() yields one NodeConnection with inputIndex()==0. input_is_occupied(path, i) := any(c.inputIndex()==i for c in node.inputConnections()).",
+    "resolve_node_type_logic": "hou.node(path).type() -> (.name(), .category().name()); box -> ('box','Sop').",
+    "vop_datatypes_precook": "VopNode.inputDataTypes()/outputDataTypes() read ['undef'] on a fresh uncooked node -> NO reliable non-mutating type-level wire-compat oracle in 21.0.671. types_compatible() degrades; is_typed_category() still honest (Vop/Chop/Shop)."
+  }
+}

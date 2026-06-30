@@ -12,6 +12,19 @@ from .graph_proposal import (
 )
 from .interfaces import IConnectivityOracle, IExistenceOracle
 
+# network_type (GraphProposal.network_type) -> the node categories valid inside it.
+# Used by P4 for the node_category<->network_type consistency check. Unknown
+# network_types are skipped (no false reject). MAT nodes are VOPs or SHOPs; COP
+# spans the legacy Cop2 and the H21 Cop category.
+_NETWORK_CATEGORIES: dict[str, set[str]] = {
+    "SOP": {"Sop"},
+    "VOP": {"Vop"},
+    "MAT": {"Vop", "Shop"},
+    "DOP": {"Dop"},
+    "COP": {"Cop", "Cop2"},
+    "SOLARIS": {"Lop"},
+}
+
 
 class GraphValidator:
     def __init__(
@@ -19,13 +32,14 @@ class GraphValidator:
         existence: IExistenceOracle,
         connectivity: IConnectivityOracle,
         *,
-        live_phases_enabled: bool = False,
+        live_phases_enabled: bool = True,
     ):
         self._exist = existence
         self._conn = connectivity
-        # P3-P5 touch the live runtime / connectivity oracle. They stay dark
-        # until Mile 2 flips this on, so Mile 1 runs P1+P2 on mocks alone and
-        # existing-node edges defer to P5 instead of being symbol-checked.
+        # P3-P5 touch the live runtime / connectivity oracle. Mile 2 is DONE, so
+        # they run by default. Mile-1-style callers that only exercise the P1/P2
+        # symbol path (and inject a connectivity mock that refuses connectivity
+        # calls) opt out explicitly with live_phases_enabled=False.
         self._live_phases_enabled = live_phases_enabled
 
     def validate(self, p: GraphProposal) -> ValidationReport:
@@ -93,18 +107,246 @@ class GraphValidator:
                     ))
         return issues
 
+    # ---- shared endpoint resolution (P3/P5) ----
+    def _endpoint_type(self, node) -> tuple[str, str] | None:
+        # (node_type, category) for an edge endpoint. NEW nodes carry their own
+        # type+category; EXISTING nodes are introspected via the connectivity
+        # oracle (Amendment 1). A resolve failure returns None (not a crash) so
+        # the type-dependent checks skip it — P5 owns reporting the bad path.
+        if node.kind is NodeKind.NEW:
+            return (node.node_type, node.node_category)
+        try:
+            t, c = self._conn.resolve_node_type(node.scene_path)
+            return (str(t), str(c))
+        except Exception:  # noqa: BLE001 — any resolve failure defers to P5
+            return None
+
+    @staticmethod
+    def _overflows(index: int, max_count: int) -> bool:
+        # A slot index overflows iff it is negative, or it reaches a FINITE cap.
+        # max_count < 0 is the contract's variadic sentinel (the in-repo mock uses
+        # -1; live H21 reports a large finite cap e.g. merge=9999, which 'index <
+        # max' handles naturally) -> unlimited, never overflows on the high side.
+        return index < 0 or (max_count >= 0 and index >= max_count)
+
+    def _safe_occupied(self, scene_path: str, input_index: int) -> bool:
+        # 3d HALTS, never degrades: if occupancy cannot be determined we treat the
+        # input as OCCUPIED (reject), never as free. A false pass here severs the
+        # artist's live wiring — the one place graceful degradation is forbidden.
+        try:
+            return bool(self._conn.input_is_occupied(scene_path, input_index))
+        except Exception:  # noqa: BLE001 — fail-safe to OCCUPIED, never to a pass
+            return True
+
     # ---- Phase 3 — connection check, category-aware (MILE 2) ----
     def _phase3_connections(self, p: GraphProposal, advisories: list) -> list[ValidationIssue]:
-        # 3a arity (all) · 3b type-compat (typed only) · 3c slot-label advisory · 3d occupied-input guard
-        # Use resolve_node_type() for endpoints touching EXISTING nodes. NEVER degrade 3d to a pass.
-        raise NotImplementedError("Mile 2 — spec §5.3 + amendments 1,7")
+        # 3a arity (all) · 3b type-compat (typed only) · 3c slot-label advisory · 3d occupied-input guard.
+        # Collects ALL violations (no early-out) so the model sees every wiring fault at once.
+        issues: list[ValidationIssue] = []
+        by_id = {n.node_id: n for n in p.nodes}
+        for e in p.edges:
+            src = by_id.get(e.source_node_id)
+            tgt = by_id.get(e.target_node_id)
+            if src is None or tgt is None:
+                missing = e.source_node_id if src is None else e.target_node_id
+                issues.append(ValidationIssue(
+                    where=missing,
+                    message=self._stamp(p, f"edge references unknown node_id '{missing}'"),
+                ))
+                continue
+
+            st = self._endpoint_type(src)   # None == EXISTING source did not resolve (P5 reports it)
+            tt = self._endpoint_type(tgt)   # None == EXISTING target did not resolve (P5 reports it)
+
+            # --- 3a arity: target input index within the type's input capacity ---
+            if tt is not None:
+                _min_in, max_in = self._conn.input_arity(tt[0], tt[1])
+                if self._overflows(e.target_input_index, max_in):
+                    issues.append(ValidationIssue(
+                        where=tgt.node_id,
+                        message=self._stamp(
+                            p, f"edge target '{tgt.node_id}' input index "
+                               f"{e.target_input_index} exceeds arity (max inputs "
+                               f"{max_in}) for type '{tt[0]}'"),
+                    ))
+                # --- 3c slot-label advisory (NOT an error) ---
+                labels = self._conn.input_labels(tt[0], tt[1])
+                if labels and 0 <= e.target_input_index < len(labels) and labels[e.target_input_index]:
+                    advisories.append(ValidationIssue(
+                        where=tgt.node_id,
+                        message=self._stamp(
+                            p, f"edge wires into the '{labels[e.target_input_index]}' "
+                               f"input (index {e.target_input_index}) of '{tgt.node_id}'"),
+                    ))
+
+            # --- 3a arity: source output index within the type's output count ---
+            if st is not None:
+                out_count = self._conn.output_count(st[0], st[1])
+                if self._overflows(e.source_output_index, out_count):
+                    issues.append(ValidationIssue(
+                        where=src.node_id,
+                        message=self._stamp(
+                            p, f"edge source '{src.node_id}' output index "
+                               f"{e.source_output_index} exceeds output count "
+                               f"({out_count}) for type '{st[0]}'"),
+                    ))
+
+            # --- 3b type-compat: TYPED categories only (VOP/MAT/CHOP) ---
+            if st is not None and tt is not None and self._conn.is_typed_category(tt[1]):
+                if not self._conn.types_compatible(
+                        st[0], e.source_output_index, tt[0], e.target_input_index, tt[1]):
+                    issues.append(ValidationIssue(
+                        where=tgt.node_id,
+                        message=self._stamp(
+                            p, f"incompatible wire type: '{st[0]}' output "
+                               f"{e.source_output_index} -> '{tt[0]}' input "
+                               f"{e.target_input_index} in typed category '{tt[1]}'"),
+                    ))
+
+            # --- 3d occupied-input guard: TARGET side, EXISTING nodes only; HALTS ---
+            # Amendment 3: the guard is target-side only — outputs fan out freely.
+            if tgt.kind is NodeKind.EXISTING and tgt.scene_path:
+                if self._safe_occupied(tgt.scene_path, e.target_input_index):
+                    issues.append(ValidationIssue(
+                        where=tgt.node_id,
+                        message=self._stamp(
+                            p, f"input {e.target_input_index} of existing node "
+                               f"'{tgt.scene_path}' is already occupied — wiring it "
+                               f"would sever the artist's existing connection"),
+                    ))
+        return issues
 
     # ---- Phase 4 — structural, pure logic (MILE 2) ----
     def _phase4_structural(self, p: GraphProposal) -> list[ValidationIssue]:
-        # acyclicity (DAG) · new-vs-new name collision · node_category <-> network_type (M1 minor)
-        raise NotImplementedError("Mile 2 — spec §5.4 + amendment 4, M1")
+        # acyclicity (DAG) · new-vs-new friendly_name collision · node_category <-> network_type.
+        issues: list[ValidationIssue] = []
+        by_id = {n.node_id: n for n in p.nodes}
+
+        # --- acyclicity: the proposed edges must form a DAG ---
+        adj: dict[str, list[str]] = {}
+        for e in p.edges:
+            if e.source_node_id in by_id and e.target_node_id in by_id:
+                adj.setdefault(e.source_node_id, []).append(e.target_node_id)
+        cycle = self._find_cycle(adj)
+        if cycle is not None:
+            issues.append(ValidationIssue(
+                where=" -> ".join(cycle),
+                message=self._stamp(p, f"cycle detected in proposed edges: "
+                                       f"{' -> '.join(cycle)} (graphs must be acyclic)"),
+            ))
+
+        # --- NEW-vs-NEW friendly_name collision (EXISTING names are advisory-only) ---
+        seen: dict[str, str] = {}
+        for n in p.nodes:
+            if n.kind is not NodeKind.NEW or not n.friendly_name:
+                continue
+            if n.friendly_name in seen:
+                issues.append(ValidationIssue(
+                    where=n.node_id,
+                    message=self._stamp(
+                        p, f"duplicate friendly_name '{n.friendly_name}' — also used by "
+                           f"new node '{seen[n.friendly_name]}'"),
+                ))
+            else:
+                seen[n.friendly_name] = n.node_id
+
+        # --- node_category <-> network_type consistency (NEW nodes only) ---
+        allowed = _NETWORK_CATEGORIES.get(p.network_type.upper())
+        if allowed:
+            for n in p.nodes:
+                if n.kind is NodeKind.NEW and n.node_category not in allowed:
+                    issues.append(ValidationIssue(
+                        where=n.node_id,
+                        message=self._stamp(
+                            p, f"node_category '{n.node_category}' is invalid for a "
+                               f"'{p.network_type}' network (expected one of "
+                               f"{sorted(allowed)})"),
+                    ))
+        return issues
+
+    @staticmethod
+    def _find_cycle(adj: dict[str, list[str]]) -> list[str] | None:
+        # Iterative DFS with a gray/black colouring; returns a representative cycle
+        # path (for the error message) or None. Pure logic, no oracle.
+        WHITE, GRAY, BLACK = 0, 1, 2
+        color: dict[str, int] = {}
+        nodes = set(adj) | {t for ts in adj.values() for t in ts}
+        for root in nodes:
+            if color.get(root, WHITE) != WHITE:
+                continue
+            stack: list[tuple[str, int]] = [(root, 0)]
+            path: list[str] = []
+            while stack:
+                node, i = stack[-1]
+                if i == 0:
+                    color[node] = GRAY
+                    path.append(node)
+                succs = adj.get(node, [])
+                if i < len(succs):
+                    stack[-1] = (node, i + 1)
+                    nxt = succs[i]
+                    c = color.get(nxt, WHITE)
+                    if c == GRAY:                      # back-edge -> cycle
+                        return path[path.index(nxt):] + [nxt]
+                    if c == WHITE:
+                        stack.append((nxt, 0))
+                else:
+                    color[node] = BLACK
+                    path.pop()
+                    stack.pop()
+        return None
 
     # ---- Phase 5 — context check, host oracle (MILE 2) ----
     def _phase5_context(self, p: GraphProposal) -> list[ValidationIssue]:
-        # parent exists/type · every EXISTING scene_path resolves · new-vs-existing-children names
-        raise NotImplementedError("Mile 2 — spec §5.5 + amendment 4")
+        # parent exists (HARD) · every EXISTING scene_path resolves (HARD, never a
+        # crash) · new-vs-existing children names.
+        issues: list[ValidationIssue] = []
+
+        # --- parent existence (HARD): the proposal's container must resolve. This
+        # is the brief's P5 'parent exists' check — a graph cannot be built under a
+        # parent that is not there, so a non-resolving parent makes the proposal
+        # INVALID (not merely advisory). Parent TYPE-host compatibility (can this
+        # container hold these node categories?) is a separate concern deferred to
+        # the Mile-3 live builder, which re-runs P5 and where Houdini enforces it.
+        try:
+            self._conn.resolve_node_type(p.parent_path)
+        except Exception:  # noqa: BLE001 — clean context error, never a crash
+            issues.append(ValidationIssue(
+                where=p.parent_path,
+                message=self._stamp(
+                    p, f"parent '{p.parent_path}' does not resolve in the live scene"),
+            ))
+
+        # --- every EXISTING scene_path must resolve in the live scene (HARD) ---
+        existing = [n for n in p.nodes if n.kind is NodeKind.EXISTING]
+        for n in existing:
+            try:
+                self._conn.resolve_node_type(n.scene_path)
+            except Exception:  # noqa: BLE001 — clean context error, never a crash
+                issues.append(ValidationIssue(
+                    where=n.node_id,
+                    message=self._stamp(
+                        p, f"existing node '{n.node_id}' path '{n.scene_path}' does "
+                           f"not resolve in the live scene"),
+                ))
+
+        # --- NEW-vs-EXISTING child name collision under the same parent ---
+        # The oracle exposes no child enumeration, so the implementable check is:
+        # a NEW node's friendly_name colliding with the basename of an EXISTING
+        # node referenced in THIS proposal that lives under the same parent.
+        existing_basenames: dict[str, str] = {}
+        for n in existing:
+            if not n.scene_path:
+                continue
+            parent, _, base = n.scene_path.rpartition("/")
+            if base and parent == p.parent_path:
+                existing_basenames[base] = n.scene_path
+        for n in p.nodes:
+            if n.kind is NodeKind.NEW and n.friendly_name in existing_basenames:
+                issues.append(ValidationIssue(
+                    where=n.node_id,
+                    message=self._stamp(
+                        p, f"new node '{n.node_id}' name '{n.friendly_name}' collides "
+                           f"with existing child '{existing_basenames[n.friendly_name]}'"),
+                ))
+        return issues

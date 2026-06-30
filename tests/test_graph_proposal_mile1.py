@@ -85,7 +85,10 @@ def _mile1_proposal() -> GraphProposal:
 
 
 def test_mile1_hallucinated_types_and_existing_edge(existence, connectivity):
-    report = GraphValidator(existence, connectivity).validate(_mile1_proposal())
+    # Mile-1 scope: P1/P2 symbol path only. The connectivity mock refuses any
+    # connectivity call, so opt out of the now-default-on Mile-2 live phases.
+    report = GraphValidator(existence, connectivity,
+                            live_phases_enabled=False).validate(_mile1_proposal())
 
     assert report.status == ValidationStatus.INVALID
     bad = {i.where for i in report.errors}
@@ -101,7 +104,9 @@ def test_mile1_propose_graph_tool_and_store_roundtrip(existence, connectivity):
     from synapse.host.proposal_store import ProposalStore
 
     store = ProposalStore()
-    configure(GraphValidator(existence, connectivity), store)
+    # Mile-1 tool/store roundtrip exercises the P1/P2 path with the refusing
+    # connectivity mock; opt out of the now-default-on Mile-2 live phases.
+    configure(GraphValidator(existence, connectivity, live_phases_enabled=False), store)
 
     valid = {
         "proposal_id": "p-ok",
