@@ -22,7 +22,11 @@ package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 python_dir = os.path.join(package_root, "python")
 sys.path.insert(0, python_dir)
 
-from synapse.server.handlers_solaris_assemble import _SOLARIS_NODE_ORDER, _get_sort_key
+from synapse.server.handlers_solaris_assemble import (
+    _SOLARIS_NODE_ORDER,
+    _get_sort_key,
+    _merge_chain_order,
+)
 from synapse.routing.planner import _build_solaris_scene_pipeline
 from synapse.panel.system_prompt import _SOLARIS_CONTEXT_GUIDANCE
 
@@ -45,12 +49,16 @@ class TestSolarisNodeOrder:
         assert _SOLARIS_NODE_ORDER["materiallibrary"] < _SOLARIS_NODE_ORDER["camera"]
 
     def test_cameras_before_lights(self):
-        """Camera nodes (400) sort before light nodes (500)."""
-        assert _SOLARIS_NODE_ORDER["camera"] < _SOLARIS_NODE_ORDER["rectlight"]
+        """Camera nodes (400) sort before light nodes (500).
+
+        Uses the generic 'light' LOP — the per-shape light types
+        (rectlight/spherelight/disklight) are phantom on H21.0.671 (FIX 1).
+        """
+        assert _SOLARIS_NODE_ORDER["camera"] < _SOLARIS_NODE_ORDER["light"]
 
     def test_lights_before_render(self):
         """Light nodes (500) sort before render nodes (700)."""
-        assert _SOLARIS_NODE_ORDER["rectlight"] < _SOLARIS_NODE_ORDER["karmarenderproperties"]
+        assert _SOLARIS_NODE_ORDER["light"] < _SOLARIS_NODE_ORDER["karmarenderproperties"]
 
     def test_render_before_null(self):
         """Render nodes (700) sort before null/output nodes (900)."""
@@ -62,15 +70,39 @@ class TestSolarisNodeOrder:
             _SOLARIS_NODE_ORDER["sopcreate"],       # 100
             _SOLARIS_NODE_ORDER["materiallibrary"],  # 200
             _SOLARIS_NODE_ORDER["camera"],           # 400
-            _SOLARIS_NODE_ORDER["rectlight"],        # 500
+            _SOLARIS_NODE_ORDER["light"],            # 500
             _SOLARIS_NODE_ORDER["karmarenderproperties"],  # 700
             _SOLARIS_NODE_ORDER["null"],             # 900
         ]
         assert order == sorted(order), "Canonical order values must be strictly ascending"
 
-    def test_domelight_after_rectlight(self):
-        """Domelight (600) sorts AFTER rectlight (500)."""
-        assert _SOLARIS_NODE_ORDER["domelight"] > _SOLARIS_NODE_ORDER["rectlight"]
+    def test_domelight_after_generic_light(self):
+        """Domelight (600) sorts AFTER the generic area light (500)."""
+        assert _SOLARIS_NODE_ORDER["domelight"] > _SOLARIS_NODE_ORDER["light"]
+
+    def test_no_phantom_light_types(self):
+        """FIX 1: the order table must name ZERO phantom H21.0.671 light LOPs.
+
+        rectlight/spherelight/disklight/cylinderlight do not exist on
+        21.0.671 — createNode fails. Only the generic 'light' plus the
+        distinct domelight/distantlight/lightmixer are real.
+        """
+        phantom = {"rectlight", "spherelight", "disklight", "cylinderlight"}
+        assert phantom.isdisjoint(_SOLARIS_NODE_ORDER), (
+            "phantom light LOP types leaked into the order table: "
+            f"{phantom & set(_SOLARIS_NODE_ORDER)}"
+        )
+        # The real lighting LOPs are all present.
+        for real in ("light", "distantlight", "domelight", "lightmixer"):
+            assert real in _SOLARIS_NODE_ORDER, f"missing real light LOP: {real}"
+
+    def test_reference_sorts_in_geometry_tier(self):
+        """FIX 4: a 'reference' brings geometry, so it must sort BEFORE
+        materials/assign (it was 250, downstream of assignmaterial:220)."""
+        assert _SOLARIS_NODE_ORDER["reference"] < _SOLARIS_NODE_ORDER["materiallibrary"]
+        assert _SOLARIS_NODE_ORDER["reference"] < _SOLARIS_NODE_ORDER["assignmaterial"]
+        # Sits with the geometry-import tier (~100-150).
+        assert _SOLARIS_NODE_ORDER["reference"] <= _SOLARIS_NODE_ORDER["sceneimport"]
 
     def test_unknown_type_gets_default(self):
         """Unknown node types get default sort key 800 via _get_sort_key."""
@@ -108,6 +140,78 @@ class TestSolarisNodeOrder:
                 return _MockType()
 
         assert _get_sort_key(_MockNode()) == 600
+
+
+# =============================================================================
+# TestMergeChainOrder — FIX 3: canonical-position insertion (no blind append)
+# =============================================================================
+
+
+class _FakeType:
+    def __init__(self, name):
+        self._name = name
+
+    def name(self):
+        return self._name
+
+
+class _FakeNode:
+    """Minimal stand-in exposing .type().name() for _get_sort_key."""
+
+    def __init__(self, type_name):
+        self._type = _FakeType(type_name)
+
+    def type(self):
+        return self._type
+
+    def __repr__(self):
+        return f"<{self._type.name()}>"
+
+
+class TestMergeChainOrder:
+    """Tests for _merge_chain_order — the core of FIX 3."""
+
+    def test_low_order_target_not_placed_after_higher_tail(self):
+        """A light (500) merged into a chain ending in usdrender_rop (800)
+        must NOT land after the ROP — the original bug."""
+        matlib = _FakeNode("materiallibrary")   # 200
+        karma = _FakeNode("karmarenderproperties")  # 700
+        rop = _FakeNode("usdrender_rop")         # 800
+        light = _FakeNode("light")               # 500
+
+        ordered = _merge_chain_order([matlib, karma, rop], [light], _get_sort_key)
+        types = [n.type().name() for n in ordered]
+
+        # Light slots between materiallibrary and karma — never after the ROP.
+        assert types == [
+            "materiallibrary", "light", "karmarenderproperties", "usdrender_rop",
+        ], types
+        assert types.index("light") < types.index("usdrender_rop")
+        # General invariant: no node precedes one with a strictly higher key.
+        keys = [_get_sort_key(n) for n in ordered]
+        assert keys == sorted(keys)
+
+    def test_in_order_common_case_preserved(self):
+        """When every target sorts at/after the tail, result == append
+        (behaviour preserved for the common in-order case)."""
+        matlib = _FakeNode("materiallibrary")   # 200
+        camera = _FakeNode("camera")             # 400
+        light = _FakeNode("light")               # 500
+        rop = _FakeNode("usdrender_rop")         # 800
+
+        ordered = _merge_chain_order([matlib, camera], [light, rop], _get_sort_key)
+        assert [n.type().name() for n in ordered] == [
+            "materiallibrary", "camera", "light", "usdrender_rop",
+        ]
+
+    def test_empty_existing_chain_is_just_sorted_targets(self):
+        rop = _FakeNode("usdrender_rop")
+        light = _FakeNode("light")
+        camera = _FakeNode("camera")
+        ordered = _merge_chain_order([], [rop, light, camera], _get_sort_key)
+        assert [n.type().name() for n in ordered] == [
+            "camera", "light", "usdrender_rop",
+        ]
 
 
 # =============================================================================

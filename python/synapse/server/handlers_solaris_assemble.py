@@ -24,23 +24,28 @@ _SOLARIS_NODE_ORDER: Dict[str, int] = {
     "stagemanager": 5,              # HIP-level stage defaults (kitchen-sink config)
     # --- Scene hierarchy (Pattern 4: Hierarchy Discipline) ---
     "primitive": 10,                # Xform hierarchy root (Kind=Group)
-    # --- Geometry import (Pattern 1: chain sequentially, NEVER merge) ---
+    # --- Geometry import & references (Pattern 1: chain sequentially) ---
+    # FIX 4: a 'reference' usually BRINGS GEOMETRY, so it sorts in the
+    # geometry tier (BEFORE materiallibrary/assignmaterial) — referenced
+    # content must exist on the stage before any material library or
+    # assignment sequences against the prims it targets. (Was 250, which
+    # placed it AFTER assignmaterial:220 → material assign ran upstream of
+    # the prims it targeted.)
     "sopcreate": 100,
     "sopimport": 100,
+    "reference": 102,               # USD reference (usually brings geometry)
     "sceneimport": 105,             # Import full scene from external file
     # --- Component Builder internals (Pattern 2) ---
     "componentgeometry": 110,       # SOPs inside: geo → default/proxy/simproxy
+    "componentgeometryvariants": 115,  # Pattern 5: merge geometry variants
     "componentmaterial": 120,       # Auto-assigns materials to geometry
     "componentoutput": 130,         # Export: name, path, thumbnail
-    "componentgeometryvariants": 115,  # Pattern 5: merge geometry variants
     # --- Layer composition ---
     "sublayer": 150,                # USD sublayer composition
     "payload": 155,                 # Deferred USD payload loading
     # --- Materials ---
     "materiallibrary": 200,
     "assignmaterial": 220,
-    # --- References (Pattern 6: Megascans material import trick) ---
-    "reference": 250,               # /materials/* wildcard for material import
     # --- Collections & pruning ---
     "collection": 280,              # USD collection for light linking / grouping
     "prune": 290,                   # Prune prims from stage (deactivate)
@@ -50,13 +55,16 @@ _SOLARIS_NODE_ORDER: Dict[str, int] = {
     # --- Cameras ---
     "camera": 400,
     # --- Lighting ---
-    "rectlight": 500,
-    "distantlight": 500,
-    "spherelight": 500,
-    "disklight": 500,
-    "cylinderlight": 500,
-    "domelight": 600,
+    # FIX 1: per-shape light LOPs (rectlight/spherelight/disklight/
+    # cylinderlight) are PHANTOM on H21.0.671 — they fold into the generic
+    # 'light' node, with the shape chosen via a parm. Only domelight and
+    # distantlight remain distinct LOP types. Referencing the phantom types
+    # made createNode fail at assemble time.
+    "light": 500,                   # Generic area/point/spot light (shape via parm)
+    "distantlight": 500,            # Sun / directional light
+    "domelight": 600,               # Environment / HDRI dome
     "karmaphysicalsky": 610,        # Pattern 1: physical sky lighting
+    "lightmixer": 620,              # Aggregate / edit multiple lights
     # --- Layout + Physics (Pattern 8) ---
     "layout": 650,                  # Instanceable Reference mode for physics
     "edit": 660,                    # Add Physics + Use Physics
@@ -117,6 +125,52 @@ def _is_unwired(node) -> bool:
 def _is_chain_end(node) -> bool:
     """True if node has input(s) but no outputs -- i.e. the tail of a chain."""
     return len(node.inputs()) > 0 and len(node.outputs()) == 0
+
+
+def _reconstruct_chain(tail) -> List:
+    """Walk backwards from a chain tail along input 0, returning the existing
+    linear chain in root → ... → tail order.
+
+    Used by FIX 3: to insert new targets at their CANONICAL position we need
+    the full existing chain, not just its tail anchor.
+    """
+    chain: List = []
+    seen = set()
+    cursor = tail
+    while cursor is not None and id(cursor) not in seen:
+        chain.append(cursor)
+        seen.add(id(cursor))
+        inps = cursor.inputs()
+        cursor = inps[0] if inps else None
+    chain.reverse()
+    return chain
+
+
+def _merge_chain_order(existing_chain: List, targets: List, sort_key) -> List:
+    """Insert each new target into the existing chain at its canonical slot,
+    WITHOUT reordering existing-vs-existing nodes.
+
+    FIX 3 (v2 -- never silently reorder an intentional spine): the existing
+    chain order is preserved EXACTLY; only the new targets move. Each target
+    is placed before the first EXISTING node whose sort key is strictly
+    greater (so a low-order light:500 lands upstream of a high-order
+    usdrender_rop:800 tail), else appended. Targets keep canonical order among
+    themselves. A deliberately non-canonical existing chain (e.g.
+    materiallibrary -> sublayer authored for USD strength) is never reordered.
+    For a fully-canonical chain with targets at/after the tail the result is
+    identical to the old append.
+    """
+    result = list(existing_chain)
+    existing_ids = {id(n) for n in existing_chain}
+    for target in sorted(targets, key=sort_key):
+        tk = sort_key(target)
+        insert_at = len(result)
+        for i, node in enumerate(result):
+            if id(node) in existing_ids and sort_key(node) > tk:
+                insert_at = i
+                break
+        result.insert(insert_at, target)
+    return result
 
 
 class SolarisAssembleMixin:
@@ -258,23 +312,43 @@ class SolarisAssembleMixin:
                             anchor = child
 
             # -----------------------------------------------------------
+            # Build the final ordered chain.
+            #
+            # FIX 3: in mode 'all' we must NOT blindly append targets after
+            # the chain tail. The tail anchor may be a high-order node
+            # (usdrender_rop:800); a low-order target (light:500) belongs
+            # UPSTREAM of it. Reconstruct the existing chain and merge the
+            # targets in by canonical sort key so each lands at its correct
+            # position. For 'after'/'nodes' the caller gave an explicit anchor
+            # (or none), so we honour the simple append — no silent reorder.
+            # -----------------------------------------------------------
+            target_ids = {id(t) for t in targets}
+
+            if mode == "all" and anchor is not None:
+                existing_chain = _reconstruct_chain(anchor)
+                ordered = _merge_chain_order(
+                    existing_chain, targets, _get_sort_key
+                )
+            else:
+                ordered = ([anchor] if anchor is not None else []) + list(targets)
+
+            # -----------------------------------------------------------
             # Wire the chain
             # -----------------------------------------------------------
-            prev = anchor
+            prev = None
             chain_paths: List[str] = []
 
-            if prev is not None:
-                chain_paths.append(prev.path())
-
-            for node in targets:
+            for node in ordered:
                 if prev is not None:
-                    # Skip if already wired to this input
                     current_inputs = node.inputs()
                     if current_inputs and current_inputs[0] == prev:
-                        skipped.append({
-                            "node": node.path(),
-                            "reason": "already wired to predecessor",
-                        })
+                        # Already wired correctly. Only report it as a skipped
+                        # target — pre-existing internal chain links stay quiet.
+                        if id(node) in target_ids:
+                            skipped.append({
+                                "node": node.path(),
+                                "reason": "already wired to predecessor",
+                            })
                         chain_paths.append(node.path())
                         prev = node
                         continue

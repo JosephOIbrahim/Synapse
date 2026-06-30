@@ -176,6 +176,81 @@ def _find_terminal_nodes(
     return sorted(nid for nid in node_ids if nid not in has_outgoing)
 
 
+# Base LOP types where the input INDEX determines USD opinion/layer strength.
+# Mirrors handlers_usd._ORDER_DEPENDENT_TYPES — kept local (not imported) to
+# avoid pulling the heavy USD handler module into the graph builder's import
+# chain. ``switch``/``null``/``output`` are explicitly order-INDEPENDENT.
+_ORDER_DEPENDENT_BASE = frozenset({"merge", "sublayer", "graft", "layerbreak"})
+_ORDER_INDEPENDENT_BASE = frozenset({"switch", "switchif", "null", "output"})
+
+
+def detect_order_ambiguities(
+    nodes: List[Dict[str, Any]],
+    connections: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Surface (never silently reorder) order-dependent merge/sublayer targets.
+
+    FIX 2 / CLAUDE.md §11.12 "never trust LLM boundary flags": for order-
+    dependent LOPs (merge / sublayer / graft / layerbreak) the input INDEX
+    decides USD opinion strength — and on the Solaris merge & sublayer LOPs the
+    HIGHER input index is the STRONGER opinion (the opposite of raw USD
+    subLayerPaths). build_graph wires ``conn['input']`` verbatim from the
+    caller/LLM, so a flipped index silently inverts which layer wins.
+
+    We can't know the artist's intended strength, so we must NOT auto-correct
+    (a forced reorder can be just as wrong). Instead we DETECT every multi-input
+    order-dependent node and SURFACE it for review.
+
+    Returns a deterministic ``list[dict]`` with the same shape as
+    ``solaris_validate_ordering`` issues: ``node`` (id), ``node_type``,
+    ``input_count``, ``current_order`` (source ids ordered by input index),
+    ``suggested_fix``.
+    """
+    type_by_id = {n["id"]: str(n.get("type", "")) for n in nodes}
+    inbound: Dict[str, List[Tuple[int, str]]] = defaultdict(list)
+    for conn in connections:
+        inbound[conn["to"]].append((conn.get("input", 0), conn["from"]))
+
+    findings: List[Dict[str, Any]] = []
+    for to_id, pairs in inbound.items():
+        if len(pairs) < 2:
+            continue
+        base = type_by_id.get(to_id, "").split("::")[0].lower()
+        if base in _ORDER_INDEPENDENT_BASE:
+            continue
+        is_order_dependent = (
+            base in _ORDER_DEPENDENT_BASE
+            or base.startswith("merge")
+            or base.startswith("sublayer")
+        )
+        if not is_order_dependent:
+            continue
+
+        current_order = [fid for _idx, fid in sorted(pairs, key=lambda p: p[0])]
+        if "sublayer" in base:
+            fix = (
+                "Verify sublayer order matches intended opinion strength -- on "
+                "the Solaris sublayer LOP the HIGHER input index is the STRONGER "
+                "opinion (opposite of raw USD subLayerPaths)"
+            )
+        else:
+            fix = (
+                "Verify merge order matches intended layer strength -- on the "
+                "Solaris merge LOP the HIGHER input index wins; check geometry, "
+                "materials and lights are in the expected order"
+            )
+        findings.append({
+            "node": to_id,
+            "node_type": type_by_id.get(to_id, ""),
+            "input_count": len(pairs),
+            "current_order": current_order,
+            "suggested_fix": fix,
+        })
+
+    findings.sort(key=lambda f: f["node"])
+    return findings
+
+
 # ── Handler Mixin ────────────────────────────────────────────────────────
 
 
@@ -282,6 +357,19 @@ class SolarisGraphMixin:
             input_counts[conn["to"]] += 1
         merge_ids = [nid for nid, count in input_counts.items() if count > 1]
 
+        # ── FIX 2: detect-and-surface order-dependent input ambiguities ──
+        # We honour the caller's explicit input indices (forcing a reorder can
+        # be just as wrong as trusting one), but we refuse to accept them
+        # silently for merge/sublayer-style LOPs where index = opinion
+        # strength. Surface every such node so the caller reviews the order.
+        ambiguous_merges = detect_order_ambiguities(raw_nodes, raw_connections)
+        for f in ambiguous_merges:
+            warnings.append(
+                f"Order-dependent merge target '{f['node']}' "
+                f"({f['node_type']}) has {f['input_count']} inputs in order "
+                f"{f['current_order']} -- {f['suggested_fix']}"
+            )
+
         if dry_run:
             return {
                 "status": "preview",
@@ -303,6 +391,7 @@ class SolarisGraphMixin:
                     f"{parent_path}/{node_map[mid].get('name', mid)}"
                     for mid in merge_ids
                 ],
+                "ambiguous_merges": ambiguous_merges,
                 "warnings": warnings,
                 "dry_run": True,
             }
@@ -411,6 +500,7 @@ class SolarisGraphMixin:
                 "display_node": display_hou.path(),
                 "topology": topology,
                 "merge_points": [id_to_hou[mid].path() for mid in merge_ids],
+                "ambiguous_merges": ambiguous_merges,
                 "warnings": warnings,
                 "dry_run": False,
             }

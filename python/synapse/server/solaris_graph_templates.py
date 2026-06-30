@@ -248,7 +248,7 @@ def lighting_rig(
         light_types: List of light node types (defaults to domelight + key + fill).
         include_render: Add karma render settings + ROP (default: True).
     """
-    types = light_types or ["domelight", "rectlight", "rectlight"]
+    types = light_types or ["domelight", "light", "light"]
     if not types:
         raise ValueError("light_types must not be empty")
 

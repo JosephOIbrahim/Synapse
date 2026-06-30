@@ -22,6 +22,7 @@ from synapse.server.handlers_solaris_graph import (
     validate_graph,
     topo_sort,
     _find_terminal_nodes,
+    detect_order_ambiguities,
 )
 from synapse.server.solaris_graph_templates import (
     multi_asset_merge,
@@ -278,6 +279,118 @@ class TestFindTerminals:
     def test_no_connections(self):
         ids = {"a", "b"}
         assert _find_terminal_nodes(ids, []) == ["a", "b"]
+
+
+# =============================================================================
+# TestOrderAmbiguities — FIX 2: detect-and-surface merge/sublayer ordering
+# =============================================================================
+
+
+class TestOrderAmbiguities:
+    """Tests for detect_order_ambiguities() — the FIX 2 detection."""
+
+    def test_merge_multi_input_flagged(self):
+        """A merge with 2+ inputs is surfaced with its input order."""
+        nodes = [
+            {"id": "a", "type": "sopcreate"},
+            {"id": "b", "type": "sopcreate"},
+            {"id": "m", "type": "merge"},
+        ]
+        conns = [
+            {"from": "a", "to": "m", "input": 0},
+            {"from": "b", "to": "m", "input": 1},
+        ]
+        findings = detect_order_ambiguities(nodes, conns)
+        assert len(findings) == 1
+        f = findings[0]
+        assert f["node"] == "m"
+        assert f["node_type"] == "merge"
+        assert f["input_count"] == 2
+        # current_order is sorted by input index
+        assert f["current_order"] == ["a", "b"]
+        assert "HIGHER input index" in f["suggested_fix"]
+
+    def test_current_order_reflects_input_index_not_conn_order(self):
+        """Connections listed out of index order still report by input index."""
+        nodes = [
+            {"id": "a", "type": "sopcreate"},
+            {"id": "b", "type": "sopcreate"},
+            {"id": "m", "type": "merge"},
+        ]
+        # b is declared first but lands on input 1
+        conns = [
+            {"from": "b", "to": "m", "input": 1},
+            {"from": "a", "to": "m", "input": 0},
+        ]
+        findings = detect_order_ambiguities(nodes, conns)
+        assert findings[0]["current_order"] == ["a", "b"]
+
+    def test_sublayer_gets_sublayer_specific_fix(self):
+        nodes = [
+            {"id": "l0", "type": "sublayer"},
+            {"id": "l1", "type": "sublayer"},
+            {"id": "s", "type": "sublayer"},
+        ]
+        conns = [
+            {"from": "l0", "to": "s", "input": 0},
+            {"from": "l1", "to": "s", "input": 1},
+        ]
+        findings = detect_order_ambiguities(nodes, conns)
+        assert len(findings) == 1
+        assert "sublayer" in findings[0]["suggested_fix"].lower()
+        assert "subLayerPaths" in findings[0]["suggested_fix"]
+
+    def test_single_input_merge_not_flagged(self):
+        """A merge with one input has no ordering ambiguity."""
+        nodes = [
+            {"id": "a", "type": "sopcreate"},
+            {"id": "m", "type": "merge"},
+        ]
+        conns = [{"from": "a", "to": "m", "input": 0}]
+        assert detect_order_ambiguities(nodes, conns) == []
+
+    def test_switch_multi_input_not_flagged(self):
+        """A switch is order-INDEPENDENT (explicit input selection)."""
+        nodes = [
+            {"id": "a", "type": "sopcreate"},
+            {"id": "b", "type": "sopcreate"},
+            {"id": "sw", "type": "switch"},
+        ]
+        conns = [
+            {"from": "a", "to": "sw", "input": 0},
+            {"from": "b", "to": "sw", "input": 1},
+        ]
+        assert detect_order_ambiguities(nodes, conns) == []
+
+    def test_non_order_dependent_multi_input_not_flagged(self):
+        """A plain (non merge/sublayer) node with 2 inputs isn't an opinion
+        merge — not flagged."""
+        nodes = [
+            {"id": "a", "type": "sopcreate"},
+            {"id": "b", "type": "sopcreate"},
+            {"id": "x", "type": "assignmaterial"},
+        ]
+        conns = [
+            {"from": "a", "to": "x", "input": 0},
+            {"from": "b", "to": "x", "input": 1},
+        ]
+        assert detect_order_ambiguities(nodes, conns) == []
+
+    def test_deterministic_sort_by_node_id(self):
+        nodes = [
+            {"id": "a", "type": "sopcreate"},
+            {"id": "b", "type": "sopcreate"},
+            {"id": "m2", "type": "merge"},
+            {"id": "m1", "type": "merge"},
+        ]
+        conns = [
+            {"from": "a", "to": "m2", "input": 0},
+            {"from": "b", "to": "m2", "input": 1},
+            {"from": "a", "to": "m1", "input": 0},
+            {"from": "b", "to": "m1", "input": 1},
+        ]
+        findings = detect_order_ambiguities(nodes, conns)
+        assert [f["node"] for f in findings] == ["m1", "m2"]
 
 
 # =============================================================================
