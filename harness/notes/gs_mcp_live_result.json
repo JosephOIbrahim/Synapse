@@ -1,0 +1,17 @@
+{
+  "houdini": "21.0.671",
+  "wire_ok": true,
+  "propose_status": "valid",
+  "propose_id": "live-share",
+  "parked": true,
+  "scene_unmutated_after_propose": true,
+  "build_status": "built",
+  "box_exists": true,
+  "undo_reverts": true,
+  "unknown_status": "rejected",
+  "phantom_status": "invalid",
+  "phantom_errors": "[{\"where\": \"a\", \"message\": \"unknown node_type 'frobnicate_zzz' for category 'Sop' [houdini 21.0.671]\"}]",
+  "phantom_not_parked": true,
+  "ALL_PASS": true,
+  "scene_clean": true
+}
