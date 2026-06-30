@@ -2,6 +2,23 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.19.0 — graph-synthesis build half + Solaris production wiring
+
+*Mile 3 of the graph-synthesis relay closes the loop: a validated proposal is now BUILT into live nodes under one undo group, with build-failure rollback — plus a live-probe-grounded correction of how SYNAPSE wires Solaris networks. All verified on Houdini 21.0.671. 3,820 tests passing.*
+
+**Graph synthesis — the build half (`host/graph_builder.py`):**
+- `instantiate(proposal_id)` turns a VALIDATED parked proposal into real nodes: reject unknown id (zero mutation) → UNCONDITIONAL TOCTOU re-validate (a node deleted since propose halts, zero mutation) → ONE `hou.undos.group` (create NEW topologically → set parms NEW-only → connect → read-back per the truth contract) → best-effort provenance seam.
+- **Build-failure rollback:** if the build raises mid-way (a wire type the validator deferred to build-time `setInput`, or a TOCTOU `createNode` failure), it destroys the partial NEW nodes inside the undo group → zero net mutation → returns a structured `FAILED`, not an uncaught exception with orphan nodes.
+- Verified end-to-end on **live interactive Houdini 21.0.671** — build + single Ctrl+Z undo + reject + TOCTOU-halt + forced-failure rollback all pass (`harness/notes/mile3_live_result.json`). The full propose → validate → build pipeline is now complete.
+
+**Solaris production wiring (corpus + code):**
+- **Corpus** — a verified "Production Reference Patterns" section (Component Builder, `rendersettings`/`usdrender_rop` render terminal, layered assembly, generic-`light` lighting) + fixed a LIVRPS strength inversion. The composition-strength rule is live-probed: merge/sublayer **higher input index = stronger** (opposite of raw USD `subLayerPaths`).
+- **Code** — 4 runtime wiring bugs fixed: phantom per-shape lights (`rectlight`/`spherelight`/`disklight` are absent on 21.0.671) purged to the generic `light` node; `reference` reordered into the geometry tier (before material assign); `assemble_chain` no longer places a low-order node after a higher-order tail; `build_graph` now surfaces order-dependent merge/sublayer ambiguities instead of silently trusting the model's input indices.
+
+Every Mile and fix was adversarially reviewed by multi-agent panels. The FINAL design contracts (`graph_proposal.py`, `interfaces.py`) are untouched.
+
+---
+
 ## v5.18.0 — graph-synthesis validation pipeline
 
 *The AI now validates a whole proposed network against the live scene before any node is built — Mile 2 of the ARCHITECT → FORGE → FORGE-Evaluator → human-merge relay. **Validation only; the build step lands in Mile 3.** All checks verified on live Houdini 21.0.671. 3,803 tests passing.*

@@ -46,7 +46,7 @@ Run the suite — **the full suite is the gate**:
 python -m pytest tests/
 ```
 
-That's ~3,803 tests and counting. They run host-free (no Houdini needed) — the suite plants lightweight fakes for `hou` where a module touches it.
+That's ~3,820 tests and counting. They run host-free (no Houdini needed) — the suite plants lightweight fakes for `hou` where a module touches it.
 
 **About the Moneta memory backend.** SYNAPSE works **standalone out of the box** with a plain JSONL memory store — that's the live default, nothing to configure. [Moneta](https://github.com/JosephOIbrahim/Moneta) is an **optional** private encrypted memory substrate: it's **built but default-off**. You flip it on with an env var, selected in `python/synapse/memory/store.py`:
 

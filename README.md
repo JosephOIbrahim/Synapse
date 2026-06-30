@@ -11,8 +11,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-3803%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.18.0-1e293b.svg" alt="Changelog"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-3820%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.19.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 ---
@@ -58,6 +58,20 @@ flowchart LR
 ```
 
 **The panel, briefly:** a persistent rail (live state + a real **Stop**), two tabs under a same-pane law (**Direct** chat · **Work** glance), an **`Aa`** control that scales only what you *read*, typography that inherits Houdini's own UI font, and a **`/`** command palette over every tool.
+
+---
+
+## ✦ New in v5.19.0
+
+**Now it builds the network, not just checks it.** v5.18.0 taught SYNAPSE to *check* a planned network against your scene; v5.19.0 **builds it** — for real, under a single undo:
+
+- 🔨 **Plan → built** — a validated network becomes real nodes in your scene, wired up, in one step.
+- ↩️ **One Ctrl+Z** — the whole build is a single undo. Don't like it? One press takes it all back.
+- 🛟 **Safe if it trips** — if a build hits a snag partway through, it cleans up after itself (no half-built mess) and tells you what happened, instead of leaving stray nodes behind.
+
+**And it wires Solaris the way you'd expect in production.** From your review: SYNAPSE now knows the real H21 patterns — the **Component Builder** for assets, the proper **`rendersettings` → render** terminal, **layered** scene assembly, and the **actual light nodes** (the old per-shape light names it used don't exist in H21) — plus which merge/sublayer input wins.
+
+Verified on **live Houdini 21.0.671**. *The propose → validate → build loop is now complete.*
 
 ---
 
@@ -187,7 +201,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.18.0):** the artist panel (multi-provider, undo-safe, 113 tools, live observability + latency instrumentation), the in-process substrate, two-tier provenance with the audit write off the hot path, freeze-safety, bounded autonomy + a kill switch, live-grounded Solaris / USD parameter names, and an H22-readiness harness. SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success, and the per-tool capability audit + the full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
+**Shipping (v5.19.0):** the artist panel (multi-provider, undo-safe, 113 tools, live observability + latency instrumentation), the in-process substrate, two-tier provenance with the audit write off the hot path, freeze-safety, bounded autonomy + a kill switch, live-grounded Solaris / USD parameter names, and an H22-readiness harness. SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success, and the per-tool capability audit + the full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
 
 ---
 
