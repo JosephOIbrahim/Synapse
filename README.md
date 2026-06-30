@@ -21,11 +21,11 @@
 
 SYNAPSE lives **inside** Houdini and turns plain English into real work:
 
-- 🧠 **It works inside Houdini, not off to the side** — the assistant runs in Houdini itself, so there's no separate app to launch and no waiting on a server.
+- 🧠 **It works inside Houdini, not off to the side** — the assistant runs in Houdini itself, so there's no separate app to launch and nothing to wait on; it answers right where you're working.
 - 🔁 **Your words become real nodes** — every request is just a normal Houdini action. Don't like it? **Ctrl+Z** takes it back.
 - 🧾 **It keeps the receipts** — every change is recorded, so you can always see what it did and why.
 - 🔌 **Pick your AI · 113 tools** — choose **Claude · Gemini · NVIDIA Nemotron** in the panel and switch whenever you like.
-- 📜 **Free to use (MIT)** ([LICENSE](LICENSE)) with **patent-pending methods** ([PATENTS](PATENTS)) — the license covers the code, not the patents.
+- 📜 **Free to use (MIT license)** ([LICENSE](LICENSE)) with **patent-pending methods** ([PATENTS](PATENTS)) — the license covers the code, not the patents.
 
 ---
 
@@ -65,7 +65,7 @@ flowchart LR
 
 **Now it checks its plan against your real scene — *before* it builds.** When you ask for a network, SYNAPSE lays the whole thing out first (every node, every wire) and **checks it against your live Houdini scene** before creating a single node. It catches the impossible before it can touch your work:
 
-- 🔌 **No dead-end wires** — a connection into an input a node doesn't have, or a wire whose type can't fit, is caught up front.
+- 🔌 **No dead-end wires** — a connection into an input a node doesn't have, or a wire that can't plug into that kind of input, is caught up front.
 - 🛟 **It won't unplug your work** — if a wire would land on an input you've *already* connected, SYNAPSE stops instead of quietly overwriting it.
 - 🧭 **No nodes into thin air** — it confirms the parent network and every existing node it points at really exist in your scene.
 
@@ -75,7 +75,7 @@ Every check was verified against **live Houdini 21.0.671**. *This is the checkin
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
     ASK["Artist<br/>'build a karma setup'"]:::artist --> PLAN["AI plans the network<br/>nodes + wires, on paper"]:::panel
-    PLAN --> VAL["Check against your live scene<br/>inputs · wire types · already-used inputs · parent exists"]:::bridge
+    PLAN --> VAL["Check against your live scene<br/>does each input exist · does each wire fit · is the input already taken · is the target network there"]:::bridge
     VAL -->|"all clear"| BUILD["Build it — undo-safe<br/>(lands next)"]:::hou
     VAL -.->|"something's off"| STOP["Stop · nothing touched"]:::side
     classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
