@@ -58,7 +58,7 @@ from synapse.cognitive.dispatcher import AgentToolError, Dispatcher
 logger = logging.getLogger(__name__)
 
 
-DEFAULT_MODEL: str = "claude-sonnet-4-5"
+DEFAULT_MODEL: str = "claude-sonnet-4-6"
 """Default Anthropic model. Override via AgentTurnConfig(model=...)."""
 
 DEFAULT_MAX_TOKENS: int = 1024

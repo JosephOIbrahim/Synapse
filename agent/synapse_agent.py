@@ -34,7 +34,7 @@ logging.basicConfig(
 logger = logging.getLogger("synapse.agent")
 
 # Model configuration
-MODEL = "claude-opus-4-6-20250929"
+MODEL = "claude-opus-4-8"
 MAX_TOKENS = 16384
 MAX_AGENT_TURNS = 30  # Safety limit on agentic loop iterations
 

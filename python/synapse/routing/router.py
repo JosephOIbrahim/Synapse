@@ -110,7 +110,7 @@ class RoutingConfig:
     # LLM config
     llm_api_key: Optional[str] = None
     llm_model_fast: str = "claude-haiku-4-5-20251001"
-    llm_model_deep: str = "claude-sonnet-4-5-20250929"
+    llm_model_deep: str = "claude-sonnet-4-6"
     tier2_timeout: float = 5.0
     tier3_timeout: float = 15.0
     tier3_async: bool = True
