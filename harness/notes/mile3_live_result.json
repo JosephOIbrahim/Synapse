@@ -1,0 +1,18 @@
+{
+  "houdini": "21.0.671",
+  "build_status": "built",
+  "build_created": [
+    "/obj/SYN_M3_PROBE/bx",
+    "/obj/SYN_M3_PROBE/xf"
+  ],
+  "merge_has_xf_after_build": true,
+  "single_undo_reverts": true,
+  "reject_status": "rejected",
+  "toctou_status": "halted",
+  "toctou_zero_mutation": true,
+  "fail_status": "failed",
+  "fail_message": "build failed and was rolled back (zero net mutation): The attempted operation failed.\nInvalid node type name",
+  "rollback_zero_net": true,
+  "ALL_PASS": true,
+  "scene_clean": true
+}
