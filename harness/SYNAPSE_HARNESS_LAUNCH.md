@@ -14,7 +14,7 @@
 |---|---|---|
 | Planner | ARCHITECT v3 + 7 amendments + the scaffold blueprint | **done** — do not re-plan (phantom) |
 | Worktree | one per Leg | Leg 1 ✅ · Leg 2/3 below |
-| Generator (WIP=1) | a fresh FORGE instance fills **one Mile's** stubs, atomic commit | Mile 1 ✅ |
+| Generator (WIP=1) | a fresh FORGE instance fills **one Mile's** stubs, atomic commit | Mile 1 ✅ · Mile 2 ✅ (merged `e6e989d`) |
 | Evaluator (adversary) | `HARNESS/forge_evaluator_gate.py --mile N` (boundary + DoD + phantom + mutation) | ✅ runnable, Mile 1 PASS |
 | Repair loop | gate FAIL → `remediation[]` → fresh FORGE, same worktree | wired (exit code + manifest) |
 | Memory | `CHANGELOG.md` + `agent.usd` provenance + governing docs committed first (F3) | existing discipline |
