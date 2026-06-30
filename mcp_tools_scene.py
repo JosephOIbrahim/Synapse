@@ -39,6 +39,8 @@ TOOL_NAMES = [
     "houdini_undo",
     "houdini_redo",
     "synapse_batch",
+    "synapse_propose_graph",
+    "synapse_instantiate_graph",
 ]
 
 # Dispatch entries for this group
@@ -65,4 +67,6 @@ DISPATCH_KEYS = {
     "houdini_undo":             ("undo",              "passthrough"),
     "houdini_redo":             ("redo",              "passthrough"),
     "synapse_batch":            ("batch_commands",    "identity"),
+    "synapse_propose_graph":     ("propose_graph",     "identity"),
+    "synapse_instantiate_graph": ("instantiate_graph", "identity"),
 }

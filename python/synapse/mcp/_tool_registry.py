@@ -1113,6 +1113,29 @@ TOOL_DEFS: list[tuple] = [
      }, "required": []},
      True, False, True),
 
+    # -- Graph synthesis --
+    ("synapse_propose_graph", "propose_graph", _identity,
+     "Validate a declarative graph proposal against the LIVE Houdini runtime and "
+     "park it (if VALID) for later instantiation by synapse_instantiate_graph. "
+     "Mutates nothing -- grounds every node type/parameter against the live H21 "
+     "runtime (no phantom APIs), then returns status + errors + advisories. Runs "
+     "IN the Houdini process (its validator is a live hou oracle), so propose and "
+     "instantiate share that process's ONE proposal store.",
+     {"type": "object", "properties": {
+         "proposal": {"type": "object", "description": "The declarative GraphProposal to validate (proposal_id, network_type, parent_path, nodes, edges)"},
+     }, "required": ["proposal"]},
+     True, False, True),
+
+    ("synapse_instantiate_graph", "instantiate_graph", _identity,
+     "Instantiate a VALIDATED graph proposal (parked by synapse_propose_graph) "
+     "into the live scene, atomically. Re-validates against the current scene "
+     "(TOCTOU guard), then builds NEW nodes in one undo group; a single undo "
+     "reverts it. Returns the observed build result (created paths, parms, wiring).",
+     {"type": "object", "properties": {
+         "proposal_id": {"type": "string", "description": "The proposal id returned by synapse_propose_graph"},
+     }, "required": ["proposal_id"]},
+     False, True, False),
+
     # -- Copernicus (COPs) -- Foundation --
     ("cops_create_network", "cops_create_network", _identity,
      "Create a COP2 network container for Copernicus image processing.",

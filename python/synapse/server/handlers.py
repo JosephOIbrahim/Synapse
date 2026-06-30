@@ -56,6 +56,7 @@ from .handlers_cops import CopsHandlerMixin
 from .handlers_solaris_assemble import SolarisAssembleMixin
 from .handlers_solaris_graph import SolarisGraphMixin
 from .handlers_solaris_compose import SolarisComposeMixin
+from .handlers_graph_synth import GraphSynthHandlerMixin
 
 
 
@@ -118,6 +119,9 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "add_memory": AuditCategory.ENGRAM,
     "decide": AuditCategory.ENGRAM,
     "batch_commands": AuditCategory.SYNAPSE,
+    # Graph synthesis
+    "propose_graph": AuditCategory.PIPELINE,
+    "instantiate_graph": AuditCategory.PIPELINE,
     # TOPS / PDG
     "tops_get_work_items": AuditCategory.PIPELINE,
     "tops_get_dependency_graph": AuditCategory.PIPELINE,
@@ -283,7 +287,7 @@ class CommandHandlerRegistry:
 # SYNAPSE HANDLER
 # =============================================================================
 
-class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin):
+class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, TopsHandlerMixin, MaterialHandlerMixin, MemoryHandlerMixin, HdaHandlerMixin, CopsHandlerMixin, SolarisAssembleMixin, SolarisGraphMixin, SolarisComposeMixin, GraphSynthHandlerMixin):
     """
     Main command handler for the Synapse server.
 
@@ -655,6 +659,12 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         # Undo / Redo
         reg.register("undo", self._handle_undo)
         reg.register("redo", self._handle_redo)
+
+        # Graph synthesis — BOTH halves run in THIS Houdini process and share
+        # this process's single ProposalStore: propose validates against the
+        # live runtime + parks an id; instantiate builds that parked id.
+        reg.register("propose_graph", self._handle_propose_graph)
+        reg.register("instantiate_graph", self._handle_instantiate_graph)
 
         # Pre-populate alias names so dispatch never needs normalization.
         # Build reverse map: canonical_name -> [alias1, alias2, ...]

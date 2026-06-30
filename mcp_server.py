@@ -713,6 +713,18 @@ async def _scout_call_tool(arguments: dict) -> list:
     return [TextContent(type="text", text=_dumps_str(result))]
 
 
+# ---------------------------------------------------------------------------
+# Graph synthesis: BOTH halves (synapse_propose_graph + synapse_instantiate_graph)
+# are HOST tools in the canonical registry, routed over the WS path to command
+# handlers that run IN the Houdini process (command_type propose_graph /
+# instantiate_graph). They are NOT intercepted in-process here: propose's
+# validator is a LIVE hou oracle, and this mcp_server process has no hou, so
+# propose must reach the Houdini process exactly like the build half. Both run in
+# that one process and share its single ProposalStore. No special-casing below —
+# they flow through TOOL_DISPATCH -> send_command -> WS like every other host tool.
+# ---------------------------------------------------------------------------
+
+
 @server.list_tools()
 async def list_tools():
     """Register all Synapse MCP tools.

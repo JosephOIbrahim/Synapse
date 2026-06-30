@@ -399,9 +399,19 @@ class SynapseDaemon:
         narrowly-scoped dialog-suppression window.
         """
         executor = self._custom_executor or _default_executor
+        # Graph synthesis is NOT registered as an in-process cognitive tool here.
+        # Both halves (propose + instantiate) are HOST command handlers that run
+        # in this Houdini process and reach the agent via the host-tool path,
+        # symmetric to each other. propose's hou-backed validator is wired LAZILY
+        # inside its handler (graph_synth_runtime.wire_propose), so daemon boot
+        # never depends on constructing the hou oracles.
         return Dispatcher(
-            tools={"synapse_inspect_stage": inspect_stage},
-            schemas={"synapse_inspect_stage": INSPECT_STAGE_SCHEMA},
+            tools={
+                "synapse_inspect_stage": inspect_stage,
+            },
+            schemas={
+                "synapse_inspect_stage": INSPECT_STAGE_SCHEMA,
+            },
             main_thread_executor=executor,
         )
 
