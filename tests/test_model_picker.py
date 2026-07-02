@@ -8,11 +8,12 @@ from synapse.panel.providers import registry as reg
 
 def test_anthropic_models_listed():
     ids = [m for m, _ in reg.models_for("claude")]
+    assert "claude-sonnet-5" in ids
     assert "claude-sonnet-4-6" in ids
     assert "claude-opus-4-8" in ids
     assert "claude-haiku-4-5-20251001" in ids
     assert "claude-fable-5" in ids
-    assert len(ids) >= 4
+    assert len(ids) >= 5
 
 
 def test_models_for_unknown_is_empty():
@@ -57,7 +58,12 @@ def test_provider_ids_and_labels_consistent():
     assert set(reg.PROVIDER_IDS) == set(reg.PROVIDER_LABELS)
     assert set(reg.PROVIDER_IDS) == set(reg.PROVIDER_MODELS)
     assert set(reg.PROVIDER_IDS) == set(reg.PROVIDER_DEFAULT_MODEL)
-    # every default is itself a selectable row for its provider
+    # every default is itself a selectable row for its provider; the Custom
+    # engine may be UNCONFIGURED — empty rows ⇒ empty default (and only then,
+    # so row/default drift on the other providers still fails here)
     for pid in reg.PROVIDER_IDS:
         ids = [m for m, _ in reg.models_for(pid)]
-        assert reg.default_model(pid) in ids
+        if ids:
+            assert reg.default_model(pid) in ids
+        else:
+            assert reg.default_model(pid) == ""

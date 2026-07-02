@@ -152,12 +152,20 @@ def _stringify(content):
     return "" if content is None else str(content)
 
 
-def _to_openai_messages(messages, system):
+_USE_DEFAULT_DIRECTIVE = object()   # sentinel: None is a real value ("no directive")
+
+
+def _to_openai_messages(messages, system, directive=_USE_DEFAULT_DIRECTIVE):
     """Anthropic messages → OpenAI ``messages`` (role/content + tool_calls /
-    tool results), with the reasoning directive merged into the system turn."""
-    directive = _REASONING_ON if _emit_reasoning() else _REASONING_OFF
-    sys_text = (directive + ("\n" + system if system else ""))
-    out = [{"role": "system", "content": sys_text}]
+    tool results), with the reasoning ``directive`` merged into the system turn.
+    Default = Nemotron's on/off toggle; ``None`` ⇒ no directive (Ollama/Custom
+    backends where 'detailed thinking on/off' is meaningless)."""
+    if directive is _USE_DEFAULT_DIRECTIVE:
+        directive = _REASONING_ON if _emit_reasoning() else _REASONING_OFF
+    parts = [p for p in (directive, system) if p]
+    out = []
+    if parts:
+        out.append({"role": "system", "content": "\n".join(parts)})
 
     for msg in messages or []:
         role = msg.get("role", "user")
@@ -247,6 +255,20 @@ class NemotronProvider(StreamProvider):
         )
 
     # ------------------------------------------------------------------
+    # Subclass hooks (OllamaProvider / CustomProvider reuse the transport +
+    # SSE parser + <think> filter; only endpoint and directive differ)
+    # ------------------------------------------------------------------
+
+    def _get_endpoint(self):
+        """``(scheme, host, request_path)`` for the chat-completions call."""
+        return _endpoint()
+
+    def _system_directive(self):
+        """Reasoning directive merged into the system turn (``None`` ⇒ none).
+        Nemotron-specific — backends without the on/off toggle return None."""
+        return _REASONING_ON if _emit_reasoning() else _REASONING_OFF
+
+    # ------------------------------------------------------------------
     # Streaming request
     # ------------------------------------------------------------------
 
@@ -255,14 +277,15 @@ class NemotronProvider(StreamProvider):
             "model": self._model,
             "max_tokens": self._max_tokens,
             "stream": True,
-            "messages": _to_openai_messages(messages, system),
+            "messages": _to_openai_messages(
+                messages, system, directive=self._system_directive()),
         }
         otools = _to_openai_tools(tools)
         if otools:
             body["tools"] = otools
 
         payload = json.dumps(body).encode("utf-8")
-        scheme, host, path = _endpoint()
+        scheme, host, path = self._get_endpoint()
 
         if scheme == "http":   # plaintext self-hosted (vLLM/Ollama default posture)
             conn = http.client.HTTPConnection(host, timeout=_HTTP_TIMEOUT)

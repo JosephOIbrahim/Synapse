@@ -11,11 +11,16 @@ model picker reads ``PROVIDER_MODELS`` so switching models is a data lookup, and
 """
 from __future__ import annotations
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # -- model ids + token caps as data (the single source of truth) -----------
 
 # Anthropic — the full set selectable in the panel (mirrors Claude desktop).
 ANTHROPIC_MODELS = (
     ("claude-opus-4-8",            "Opus 4.8"),
+    ("claude-sonnet-5",            "Sonnet 5"),      # verified live (GET /v1/models, 2026-07-01)
     ("claude-sonnet-4-6",          "Sonnet 4.6"),
     ("claude-haiku-4-5-20251001",  "Haiku 4.5"),
     ("claude-fable-5",             "Fable 5"),
@@ -31,7 +36,7 @@ GEMINI_MAX_TOKENS = 4096
 
 # NVIDIA / Nemotron — OpenAI-compatible reasoning LLM (NVIDIA NIM cloud by
 # default). Model ids verified live via GET /v1/models on
-# integrate.api.nvidia.com (2026-06-24, per Comfy-Cozy agent/config.py).
+# integrate.api.nvidia.com (2026-07-01; both rows still served).
 NVIDIA_MODELS = (
     ("nvidia/nemotron-3-super-120b-a12b", "Nemotron Super 120B"),
     ("nvidia/nemotron-3-nano-30b-a3b",    "Nemotron Nano 30B"),
@@ -39,40 +44,85 @@ NVIDIA_MODELS = (
 NVIDIA_MODEL = "nvidia/nemotron-3-super-120b-a12b"   # default pick
 NVIDIA_MAX_TOKENS = 4096
 
+# Ollama — local-first OpenAI-compatible endpoint (http://localhost:11434 by
+# default; override via OLLAMA_HOST). Static FALLBACK rows only: the panel's
+# model menu fetches the live tag list from GET /api/tags and falls back here.
+# Tag verified live on Ollama 0.30.11 (2026-07-01): the GLM slot resolves to
+# "glm-5:cloud" on this install (no glm-5.2 tag exists; family glm5,
+# tools+thinking capable).
+OLLAMA_MODELS = (
+    ("glm-5:cloud", "GLM 5"),
+)
+OLLAMA_MODEL = "glm-5:cloud"   # default pick
+OLLAMA_MAX_TOKENS = 4096
+
+# Custom — a user-configured OpenAI-compatible endpoint. Base URL / model id /
+# key env-var name live in <repo>/.synapse/panel_settings.json (panel/settings.py);
+# no static rows here — models_for()/default_model() read the LIVE config, and
+# the empty-model default "" marks the unconfigured state (surfaced by the
+# provider's resolve_key, never a silent Claude switch).
+CUSTOM_MAX_TOKENS = 4096
+
 DEFAULT_PROVIDER = "claude"
 
 # Provider ids selectable in the panel (the engine selector iterates this).
-PROVIDER_IDS = ("claude", "gemini", "nemotron")
+PROVIDER_IDS = ("claude", "gemini", "nemotron", "ollama", "custom")
 
 # Display labels for the engine selector pills.
 PROVIDER_LABELS = {
     "claude": "Claude",
     "gemini": "Gemini",
     "nemotron": "Nemotron",
+    "ollama": "Ollama",
+    "custom": "Custom",
 }
 
 # Per-provider selectable model rows + the provider's default model id.
+# ("custom" holds static placeholders — models_for()/default_model() special-
+# case it against the live settings config.)
 PROVIDER_MODELS = {
     "claude": ANTHROPIC_MODELS,
     "gemini": GEMINI_MODELS,
     "nemotron": NVIDIA_MODELS,
+    "ollama": OLLAMA_MODELS,
+    "custom": (),
 }
 PROVIDER_DEFAULT_MODEL = {
     "claude": ANTHROPIC_MODEL,
     "gemini": GEMINI_MODEL,
     "nemotron": NVIDIA_MODEL,
+    "ollama": OLLAMA_MODEL,
+    "custom": "",
 }
+
+
+def _custom_config() -> dict:
+    """The persisted Custom-engine config (``base_url``/``model``/``key_env``).
+    Never raises — empty dict on any failure (the load_settings posture)."""
+    try:
+        from synapse.panel import settings as _pset
+        return _pset.load_settings().get("custom") or {}
+    except Exception:
+        return {}
 
 
 def models_for(provider_id: str):
     """The selectable ``(model_id, label)`` rows for a provider (empty tuple if
-    unknown)."""
-    return PROVIDER_MODELS.get((provider_id or "").lower(), ())
+    unknown). ``custom`` reads the live config — one row when configured."""
+    pid = (provider_id or "").lower()
+    if pid == "custom":
+        model = _custom_config().get("model") or ""
+        return ((model, model),) if model else ()
+    return PROVIDER_MODELS.get(pid, ())
 
 
 def default_model(provider_id: str) -> str:
-    """The default model id for a provider (Anthropic's if unknown)."""
-    return PROVIDER_DEFAULT_MODEL.get((provider_id or "").lower(), ANTHROPIC_MODEL)
+    """The default model id for a provider (Anthropic's if unknown). ``custom``
+    reads the live config — ``""`` marks the unconfigured state."""
+    pid = (provider_id or "").lower()
+    if pid == "custom":
+        return _custom_config().get("model") or ""
+    return PROVIDER_DEFAULT_MODEL.get(pid, ANTHROPIC_MODEL)
 
 
 def model_label(provider_id: str, model_id: str) -> str:
@@ -97,5 +147,23 @@ def build_provider(provider_id: str = DEFAULT_PROVIDER, model: str = None):
     if pid == "nemotron":
         from .nemotron_provider import NemotronProvider
         return NemotronProvider(model=model or NVIDIA_MODEL, max_tokens=NVIDIA_MAX_TOKENS)
+    if pid == "ollama":
+        from .ollama_provider import OllamaProvider
+        return OllamaProvider(model=model or OLLAMA_MODEL, max_tokens=OLLAMA_MAX_TOKENS)
+    if pid == "custom":
+        # NEVER the Claude floor — an unconfigured Custom engine is surfaced
+        # through the provider's resolve_key → key_error_message worker path.
+        from .custom_provider import CustomProvider
+        cfg = _custom_config()
+        return CustomProvider(
+            base_url=cfg.get("base_url", ""),
+            model=model or cfg.get("model", ""),
+            key_env=cfg.get("key_env", ""),
+            max_tokens=CUSTOM_MAX_TOKENS,
+        )
+    if pid != "claude":
+        # Stale persisted / unknown id: fall back to the Claude floor, but
+        # LOUDLY — the panel surfaces the swap in chat (never a silent switch).
+        logger.warning("Unknown provider id %r — falling back to the Claude floor", pid)
     from .anthropic_provider import AnthropicProvider
     return AnthropicProvider(model=model or ANTHROPIC_MODEL, max_tokens=ANTHROPIC_MAX_TOKENS)

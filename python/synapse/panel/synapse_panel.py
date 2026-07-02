@@ -206,16 +206,40 @@ class SynapsePanel(QtWidgets.QWidget):
         self._work_substate = "cook"
         self._was_busy = False
         self._provider_id = "claude"   # active chat engine (provider switch)
+        self._boot_note = None         # surfaced in chat once the UI exists
         # Per-provider picked model (the model switcher) — each engine remembers
         # its own selection; defaults come from the registry.
         try:
             from synapse.panel.providers import registry as _reg
             self._model_by_provider = dict(_reg.PROVIDER_DEFAULT_MODEL)
         except Exception:
+            _reg = None
             self._model_by_provider = {}
+        # Persisted picks (<repo>/.synapse/panel_settings.json) — a corrupt or
+        # missing file yields defaults, never blocks boot. A stale engine id is
+        # SURFACED (never a silent Claude switch).
+        try:
+            from synapse.panel import settings as _pset
+            st = _pset.load_settings()
+            pid = st.get("provider_id") or "claude"
+            known = set(_reg.PROVIDER_IDS) if _reg is not None else {"claude"}
+            if pid in known:
+                self._provider_id = pid
+            elif pid != "claude":
+                self._boot_note = (
+                    "Saved engine %r is unavailable — using Claude." % pid)
+            self._model_by_provider = _pset.merged_model_picks(
+                st, self._model_by_provider)
+        except Exception:
+            pass
 
         self.setAcceptDrops(True)
         self._build_ui()
+        if self._boot_note:
+            try:
+                self._chat.append_system_message(self._boot_note)
+            except Exception:
+                pass
         self._wire_gate()
         self._palette_shortcut = QShortcut(QKeySequence("Ctrl+K"), self)
         self._palette_shortcut.activated.connect(self._open_palette)
@@ -781,13 +805,27 @@ class SynapsePanel(QtWidgets.QWidget):
             return []
         pid = getattr(self, "_provider_id", "claude")
         cur = self._active_model()
-        return [(mid, lbl, mid == cur) for mid, lbl in reg.models_for(pid)]
+        rows = reg.models_for(pid)
+        if pid == "ollama":
+            # Live local tag list (menu-open is user-initiated; 1s localhost
+            # timeout) — the registry row is only the static fallback.
+            try:
+                from synapse.panel.providers.ollama_provider import OllamaProvider
+                live = OllamaProvider.available_models(timeout=1.0)
+                if live:
+                    rows = live
+            except Exception:
+                pass
+        return [(mid, lbl, mid == cur) for mid, lbl in rows]
 
     def _open_model_menu(self):
         """Drop the model picker for the active engine — switching Anthropic
-        models (Opus/Sonnet/Haiku/Fable) is now apparent, not hidden."""
+        models (Opus/Sonnet/Haiku/Fable) is now apparent, not hidden. The
+        Custom engine's menu carries a Configure… action (and opens even
+        while unconfigured, when it has no model row yet)."""
         items = self._model_menu_items()
-        if not items:
+        pid = getattr(self, "_provider_id", "claude")
+        if not items and pid != "custom":
             return
         menu = QtWidgets.QMenu(self)
         for mid, lbl, active in items:
@@ -795,6 +833,10 @@ class SynapsePanel(QtWidgets.QWidget):
             act.setCheckable(True)
             act.setChecked(active)
             act.triggered.connect(lambda _=False, m=mid: self._set_model(m))
+        if pid == "custom":
+            if items:
+                menu.addSeparator()
+            menu.addAction("Configure…", self._configure_custom)
         chip = getattr(self, "_model_chip", None)
         anchor = chip if chip is not None else self
         pos = anchor.mapToGlobal(QtCore.QPoint(0, anchor.height()))
@@ -806,10 +848,24 @@ class SynapsePanel(QtWidgets.QWidget):
         pid = getattr(self, "_provider_id", "claude")
         self._model_by_provider[pid] = model_id
         self._refresh_engine_selector()
+        self._persist_picks()
         try:
             from synapse.panel.providers.registry import model_label
             self._chat.append_system_message(
                 "Model set to %s." % model_label(pid, model_id))
+        except Exception:
+            pass
+
+    def _persist_picks(self):
+        """Persist the engine + per-provider model picks (custom config rides
+        along untouched). Best-effort — never breaks a switch."""
+        try:
+            from synapse.panel import settings as _pset
+            st = _pset.load_settings()
+            st["provider_id"] = getattr(self, "_provider_id", "claude")
+            st["model_by_provider"] = dict(
+                getattr(self, "_model_by_provider", {}) or {})
+            _pset.save_settings(st)
         except Exception:
             pass
 
@@ -847,21 +903,86 @@ class SynapsePanel(QtWidgets.QWidget):
         self._provider_id = provider_id
         # _refresh_engine_selector repaints the pills + chip AND the rail author.
         self._refresh_engine_selector()
+        self._persist_picks()
         try:
             from synapse.panel.providers.registry import PROVIDER_LABELS
             self._chat.append_system_message(
                 "Switched engine to %s." % PROVIDER_LABELS.get(provider_id, provider_id))
         except Exception:
             pass
+        # An unconfigured Custom pick opens the Configure dialog straight away
+        # — there is nothing to chat with until a base URL + model exist.
+        if provider_id == "custom" and not self._custom_configured():
+            self._configure_custom()
+
+    def _custom_configured(self):
+        """True when the Custom engine has both a base URL and a model id
+        persisted (the provider's own unconfigured test, panel-side)."""
+        try:
+            from synapse.panel import settings as _pset
+            cfg = _pset.load_settings().get("custom") or {}
+            return bool(cfg.get("base_url") and cfg.get("model"))
+        except Exception:
+            return False
+
+    def _configure_custom(self):
+        """The 3-field Custom-engine dialog (Base URL / Model id / Key env).
+        Accept → persisted to panel_settings.json + chip refresh; takes effect
+        on the NEXT message (the _set_model contract)."""
+        try:
+            from synapse.panel import settings as _pset
+            st = _pset.load_settings()
+        except Exception:
+            return
+        cfg = st.get("custom") or {}
+        dlg = QtWidgets.QDialog(self)
+        dlg.setWindowTitle("Configure Custom engine")
+        form = QtWidgets.QFormLayout(dlg)
+        fields = {}
+        for key, label, placeholder in (
+            ("base_url", "Base URL", "http://localhost:8000  or  https://host/v1"),
+            ("model", "Model id", "e.g. qwen3-vl:30b"),
+            ("key_env", "Key env (optional)", "e.g. MY_ENDPOINT_API_KEY"),
+        ):
+            edit = QtWidgets.QLineEdit(cfg.get(key, ""))
+            edit.setObjectName("DsField")   # designsystem QLineEdit styling
+            edit.setPlaceholderText(placeholder)
+            form.addRow(label, edit)
+            fields[key] = edit
+        buttons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+            | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+        form.addRow(buttons)
+        if not (dlg.exec() if hasattr(dlg, "exec") else dlg.exec_()):
+            return
+        st["custom"] = {k: e.text().strip() for k, e in fields.items()}
+        # Keep the per-provider pick in lockstep with the new config — a
+        # reconfigured model id must never lose to a stale persisted pick.
+        self._model_by_provider["custom"] = st["custom"]["model"]
+        st["provider_id"] = getattr(self, "_provider_id", "claude")
+        st["model_by_provider"] = dict(self._model_by_provider or {})
+        _pset.save_settings(st)
+        self._refresh_engine_selector()
 
     def _make_provider(self):
         """Build the StreamProvider for the active engine. ``None`` ⇒ the worker
-        falls back to its own Claude default (graceful degradation)."""
+        falls back to its own Claude default (graceful degradation). An unknown
+        engine id (stale persisted pick) hits the registry's Claude floor — and
+        is SURFACED in chat, never silently swapped."""
         try:
             from synapse.panel.providers.registry import build_provider
             pid = getattr(self, "_provider_id", "claude")
             model = getattr(self, "_model_by_provider", {}).get(pid)
-            return build_provider(pid, model=model)
+            prov = build_provider(pid, model=model)
+            if prov.id != pid:
+                try:
+                    self._chat.append_system_message(
+                        "Engine %r unavailable — using Claude." % pid)
+                except Exception:
+                    pass
+            return prov
         except Exception:
             return None
 

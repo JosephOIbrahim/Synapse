@@ -217,6 +217,19 @@ class AnthropicProvider(StreamProvider):
                     "name": block.get("name", ""),
                     "input": {},
                 }
+            elif block_type == "thinking":
+                # Thinking block (adaptive/extended thinking). Accumulated and
+                # returned UNCHANGED so it round-trips in replayed history —
+                # the API requires thinking blocks back verbatim on the same
+                # model. Never rendered (nothing is emitted for its deltas).
+                state["current_block"] = {
+                    "type": "thinking",
+                    "thinking": "",
+                    "signature": "",
+                }
+            elif block_type == "redacted_thinking":
+                # Arrives complete in content_block_start — keep verbatim.
+                state["current_block"] = dict(block)
             else:
                 state["current_block"] = {
                     "type": "text",
@@ -239,6 +252,14 @@ class AnthropicProvider(StreamProvider):
                 partial = delta.get("partial_json", "")
                 state["current_text"] += partial
 
+            elif delta_type == "thinking_delta":
+                if state["current_block"] and state["current_block"]["type"] == "thinking":
+                    state["current_block"]["thinking"] += delta.get("thinking", "")
+
+            elif delta_type == "signature_delta":
+                if state["current_block"] and state["current_block"]["type"] == "thinking":
+                    state["current_block"]["signature"] = delta.get("signature", "")
+
         elif event_type == "content_block_stop":
             block = state["current_block"]
             if block is not None:
@@ -252,7 +273,11 @@ class AnthropicProvider(StreamProvider):
                         )
                         block["input"] = {}
 
-                state["content_blocks"].append(block)
+                # Never append an empty text block: under display:"omitted" a
+                # thinking-only or unknown block used to become {"text": ""},
+                # which the API rejects on replay (400 on tool-loop turn 2).
+                if block["type"] != "text" or block["text"]:
+                    state["content_blocks"].append(block)
                 state["current_block"] = None
                 state["current_text"] = ""
 

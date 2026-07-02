@@ -82,7 +82,7 @@ async def run_spike():
     try:
         # Cheap model for raw physics check — not representative of production model choice
         response = await client.messages.create(
-            model="claude-3-haiku-20240307",
+            model="claude-haiku-4-5",
             max_tokens=64,
             messages=[{
                 "role": "user",

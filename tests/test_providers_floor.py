@@ -89,6 +89,72 @@ def test_anthropic_provider_abort_stops_parsing():
     assert blocks == []  # should_abort short-circuits the line iterator
 
 
+def test_anthropic_provider_preserves_thinking_blocks():
+    """A thinking block (adaptive/extended thinking) must round-trip as a
+    ``{"type":"thinking",...}`` block — NOT degrade into an empty text block,
+    which the API rejects when the history is replayed on tool-loop turn 2."""
+    prov = AnthropicProvider(model="claude-sonnet-5", max_tokens=4096)
+    tokens: list = []
+    stream = _sse([
+        ("content_block_start", {"index": 0, "content_block": {"type": "thinking", "thinking": ""}}),
+        ("content_block_delta", {"index": 0, "delta": {"type": "thinking_delta", "thinking": "let me "}}),
+        ("content_block_delta", {"index": 0, "delta": {"type": "thinking_delta", "thinking": "reason"}}),
+        ("content_block_delta", {"index": 0, "delta": {"type": "signature_delta", "signature": "SIG42"}}),
+        ("content_block_stop", {"index": 0}),
+        ("content_block_start", {"index": 1, "content_block": {"type": "text", "text": ""}}),
+        ("content_block_delta", {"index": 1, "delta": {"type": "text_delta", "text": "answer"}}),
+        ("content_block_stop", {"index": 1}),
+        ("message_delta", {"delta": {"stop_reason": "end_turn"}}),
+        ("message_stop", {}),
+    ])
+    stop_reason, blocks = prov._parse_sse_stream(
+        _FakeResponse(stream), emit_token=tokens.append, should_abort=lambda: False)
+    assert stop_reason == "end_turn"
+    # thinking is never rendered — only the visible answer streams
+    assert tokens == ["answer"]
+    assert blocks[0] == {"type": "thinking", "thinking": "let me reason", "signature": "SIG42"}
+    assert blocks[1] == {"type": "text", "text": "answer"}
+    # no empty text block anywhere (the replay-400 hazard)
+    assert not any(b.get("type") == "text" and not b.get("text") for b in blocks)
+
+
+def test_anthropic_provider_thinking_only_turn_emits_no_empty_text():
+    """A thinking-only tool turn (display omitted → no text deltas) must not
+    append ``{"type":"text","text":""}`` to the returned blocks."""
+    prov = AnthropicProvider(model="claude-fable-5", max_tokens=4096)
+    tokens: list = []
+    stream = _sse([
+        ("content_block_start", {"index": 0, "content_block": {"type": "thinking", "thinking": ""}}),
+        ("content_block_stop", {"index": 0}),
+        ("content_block_start", {"index": 1, "content_block": {
+            "type": "tool_use", "id": "toolu_9", "name": "houdini_scene_info", "input": {}}}),
+        ("content_block_stop", {"index": 1}),
+        ("message_delta", {"delta": {"stop_reason": "tool_use"}}),
+        ("message_stop", {}),
+    ])
+    stop_reason, blocks = prov._parse_sse_stream(
+        _FakeResponse(stream), emit_token=tokens.append, should_abort=lambda: False)
+    assert stop_reason == "tool_use"
+    assert tokens == []
+    types = [b["type"] for b in blocks]
+    assert types == ["thinking", "tool_use"]
+    assert not any(b.get("type") == "text" for b in blocks)
+
+
+def test_anthropic_provider_redacted_thinking_kept_verbatim():
+    prov = AnthropicProvider(model="m", max_tokens=10)
+    stream = _sse([
+        ("content_block_start", {"index": 0, "content_block": {
+            "type": "redacted_thinking", "data": "OPAQUE"}}),
+        ("content_block_stop", {"index": 0}),
+        ("message_delta", {"delta": {"stop_reason": "end_turn"}}),
+        ("message_stop", {}),
+    ])
+    _stop, blocks = prov._parse_sse_stream(
+        _FakeResponse(stream), emit_token=lambda t: None, should_abort=lambda: False)
+    assert blocks == [{"type": "redacted_thinking", "data": "OPAQUE"}]
+
+
 def test_anthropic_provider_endpoint_is_anthropic():
     assert _API_HOST == "api.anthropic.com"
 
