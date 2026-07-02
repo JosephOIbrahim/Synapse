@@ -15,7 +15,9 @@ H21, so drop day is **verification, not surgery**.
 
 ## THE THREE HUMAN GATES — never auto-handle these
 1. **`0.1` architecture: sidecar vs abi3.** *Recommended: **sidecar*** (brain in its own
-   pinned interpreter, immune to H22's Python). Undecided until you commit it. The harness
+   pinned interpreter, immune to H22's Python). Bounded pick now, not a survival cliff — IPC
+   measured a non-discriminator, cp312/cp313 wheels pre-cached, cp311 → no-op, sidecar =
+   post-release durable fix; undecided until you commit it. The harness
    verifies the property ("brain answers"), not the mechanism — either choice keeps the loop valid.
 2. **The drop trigger** (`1.1`/`1.2`): install H22, read Python · USD · PySide, write `drop.json`.
 3. **Merge to main:** the harness commits in worktrees only. Promotion is your call (tag the PR).
@@ -60,3 +62,7 @@ H21, so drop day is **verification, not surgery**.
 - 2026-06-26 21:33 · 0.7 BLOCKED after 1 rounds — needs a human — Rehearse the clean-machine install on H21- 2026-07-02 09:30 · 0.2 UNBLOCKED+DONE by human spec + release train (PR #38) — spec harness/notes/spec-0.2-api-delta-probe.md; probe chain built; Mode-A identity diff EMPTY on 21.0.671 (check_probe_clean ok=True); probe surfaced+fixed 15 product phantoms
 - 2026-07-02 09:35 · 0.8/0.9 checks flip TRUE (mcp_registered, mcp_truth_contract, scout_federates, scout_no_apex_corpus); guardrails: 0 violations, only provenance_not_bypassed unwired (0a-prime track)
 - 2026-07-02 09:50 · Mode-B REHEARSAL PASS (scratch worktree, fake drop.json w/ real H21 numbers): MODE B armed, full 1.1→3.3 queue in order; found+fixed two runbook defects — pxr.__version__ capture one-liner (real API: Usd.GetVersion(), live-verified (0,25,5)) and run.ts --dry mutating (created worktrees/branches; dry now describes, never mutates)
+- 2026-07-02 · P1 harness upgrade (ec4791a): completion ledger `harness/state/done.json` (per-task PASS + refs-hash; skips banked tasks unless a ref changed; --force/--task override) + read-only ratification surface (run.ts surfaces flywheel_queue.json `ratified:false` candidates at run end — never writes `ratified`)
+- 2026-07-02 · P2 harness upgrade (00fc953): phantom-API guardrail `check_phantom_clean` in tasks.json `guardrails.checks` (dir()-symbol-table-gated, scoped to the sprint's changed .py; ok:false ⇒ short-circuit to a repair ticket before the Evaluator, ok:null ⇒ WARN)
+- 2026-07-02 · P1/P2 hardening (44437bd) per closing adversarial pass: GUI-submodule allowlist (hou.ui/qt/… were headless-absent → false-blocked panel/host sprints); added-line precision (only introduced phantoms fail); ledger skips only real-file-ref tasks; atomic done.json; ratification array-guards
+- 2026-07-02 · P3: task 0.1 layer survival→bounded-decision + human_gate.why now cites the measured IPC/wheel-cache evidence; stays gated (sidecar-vs-abi3 is still the human's call)
