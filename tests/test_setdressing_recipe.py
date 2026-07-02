@@ -5,7 +5,7 @@ ground truth this recipe is built on:
 
   * The set-dressing LOP types that EXIST: instancer, layout, duplicate,
     componentgeometry, componentoutput, extractinstances, mergepointinstancers,
-    modifypointinstancers, splitpointinstancers. There is NO native Solaris
+    modifypointinstances, splitpointinstancers. There is NO native Solaris
     scatter LOP -- scatter is SOP-side, brought in via sopimport.
   * set_usd_attribute authors the RAW USD attribute name (prim.GetAttribute
     (name).Set under an `if attr:` guard). A punycode (xn__) name resolves to
@@ -48,7 +48,7 @@ VERIFIED_NODE_TYPES = {
     "componentoutput",
     "extractinstances",
     "mergepointinstancers",
-    "modifypointinstancers",
+    "modifypointinstances",
     "splitpointinstancers",
     "sopimport",
     "merge",

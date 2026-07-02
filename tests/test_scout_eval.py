@@ -13,6 +13,7 @@ import json
 
 import pytest
 
+from conftest import HOUDINI_BUILD
 from synapse.cognitive.tools import scout, scout_eval
 from synapse.cognitive.tools.scout_eval import GroundTruth, run_eval
 
@@ -35,7 +36,7 @@ def _wire_corpus(tmp_path, monkeypatch, entries, table_symbols=None):
         syms = sorted(table_symbols)
         digest = hashlib.blake2b("\n".join(syms).encode("utf-8"), digest_size=16).hexdigest()
         (tmp_path / scout.SYMBOL_TABLE_NAME).write_text(json.dumps({
-            "schema": "scout_symbol_table/v1", "houdini_version": "21.0.671",
+            "schema": "scout_symbol_table/v1", "houdini_version": HOUDINI_BUILD,
             "blake2b": digest, "symbol_count": len(syms), "symbols": syms,
         }), encoding="utf-8")
         monkeypatch.setattr(scout, "_PKG_SYMBOL_TABLE", tmp_path / "no_pkg_table.json")

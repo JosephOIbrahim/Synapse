@@ -32,6 +32,7 @@ from pathlib import Path
 import pytest
 
 import synapse
+from conftest import VENDOR_ABI_TAG, VENDOR_PY
 
 
 # ---------------------------------------------------------------------------
@@ -78,8 +79,8 @@ class TestVendorLayout:
         # We pin the ABI explicitly; if Houdini ever ships Python 3.12
         # we re-vendor with a matching binary.
         names = [b.name for b in binaries]
-        assert any("cp311-win_amd64" in n for n in names), (
-            f"Expected cp311-win_amd64 binary in vendor tree, "
+        assert any(VENDOR_ABI_TAG in n for n in names), (
+            f"Expected {VENDOR_ABI_TAG} binary in vendor tree, "
             f"got: {names}. Refresh via: "
             f"PYTHONNOUSERSITE=1 hython -m pip install --target "
             f"{synapse._vendor_path} --upgrade anthropic"
@@ -170,10 +171,10 @@ class TestVendorPathActivation:
         that branch explicitly.
         """
         on_path = synapse._vendor_path in sys.path
-        is_311 = sys.version_info[:2] == (3, 11)
+        is_vendor_py = sys.version_info[:2] == VENDOR_PY
         is_windows = sys.platform.startswith("win")
 
-        if is_311 and is_windows:
+        if is_vendor_py and is_windows:
             assert on_path, (
                 "Python 3.11 + Windows detected but vendor path is "
                 "not on sys.path — import synapse should have "
@@ -182,7 +183,7 @@ class TestVendorPathActivation:
         else:
             reason = (
                 "non-Windows (vendored binary is win_amd64 only)"
-                if is_311
+                if is_vendor_py
                 else (
                     f"Python {sys.version_info.major}."
                     f"{sys.version_info.minor} (vendored binaries "
@@ -225,7 +226,7 @@ class TestVendorPathActivation:
 
 
 @pytest.mark.skipif(
-    sys.version_info[:2] != (3, 11) or not sys.platform.startswith("win"),
+    sys.version_info[:2] != VENDOR_PY or not sys.platform.startswith("win"),
     reason=(
         "Vendored binaries require Python 3.11 + Windows ABI "
         "(see python/synapse/__init__.py vendor gate). On Linux/macOS "

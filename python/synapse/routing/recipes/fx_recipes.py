@@ -56,8 +56,8 @@ def register_fx_recipes(registry):
         name="vellum_cloth_sim",
         description=(
             "Set up a complete Vellum cloth simulation: "
-            "vellumcloth configure -> vellumsolver -> filecache. "
-            "Configures stretch/bend stiffness, substeps, and collision."
+            "vellumconstraints (cloth preset) -> vellumsolver -> filecache. "
+            "Configures the cloth constraint preset and substeps."
         ),
         triggers=[
             r"^(?:set up|setup|create)\s+(?:a\s+)?(?:vellum\s+)?cloth\s+sim(?:ulation)?(?:\s+(?:on|for|at|in|under)\s+(?P<parent>.+))?$",
@@ -73,18 +73,17 @@ def register_fx_recipes(registry):
                     "code": (
                         "import hou\n"
                         "parent = hou.node('{parent}') or hou.node('/obj')\n"
-                        "# Create Vellum cloth configure\n"
-                        "cloth = parent.createNode('vellumcloth', 'vellum_cloth')\n"
-                        "cloth.parm('stretchstiffness').set(10000)\n"
-                        "cloth.parm('bendstiffness').set(0.001)\n"
-                        "cloth.parm('thickness').set(0.01)\n"
+                        "# Vellum cloth constraints (H21 has no 'vellumcloth'\n"
+                        "# SOP -- cloth is a vellumconstraints preset)\n"
+                        "cloth = parent.createNode('vellumconstraints', 'vellum_cloth')\n"
+                        "cloth.parm('constrainttype').set('cloth')\n"
                         "# Create Vellum solver\n"
                         "solver = parent.createNode('vellumsolver', 'vellum_solver')\n"
                         "solver.parm('substeps').set(5)\n"
-                        "# Wire: cloth geo output -> solver input 1\n"
+                        "# Wire: cloth geo output -> solver 'Vellum Geometry' input\n"
                         "solver.setInput(0, cloth, 0)\n"
-                        "# Wire: cloth constraints output -> solver input 2\n"
-                        "solver.setInput(2, cloth, 1)\n"
+                        "# Wire: constraints output -> solver 'Constraint Geometry' input\n"
+                        "solver.setInput(1, cloth, 1)\n"
                         "# File cache for sim output\n"
                         "cache = parent.createNode('filecache', 'cloth_cache')\n"
                         "cache.parm('file').set('$HIP/cache/cloth.$F4.bgeo.sc')\n"
@@ -108,7 +107,7 @@ def register_fx_recipes(registry):
         description=(
             "Set up an RBD destruction pipeline: "
             "rbdmaterialfracture -> assemble -> rbdconstraintsfromrules -> "
-            "rbdconstraintproperties (glue) -> rigidsolver -> filecache."
+            "rbdconstraintproperties (glue) -> rbdbulletsolver -> filecache."
         ),
         triggers=[
             r"^(?:set up|setup|create)\s+(?:a\s+)?(?:rbd\s+)?destruction(?:\s+(?:on|for|at|in|under)\s+(?P<parent>.+))?$",
@@ -140,10 +139,11 @@ def register_fx_recipes(registry):
                         "props.parm('type').set(0)  # Glue\n"
                         "props.parm('strength').set(500)\n"
                         "props.setInput(0, cons, 0)\n"
-                        "# Rigid body solver\n"
-                        "solver = parent.createNode('rigidsolver', 'rbd_solver')\n"
+                        "# RBD Bullet solver (SOP-level Bullet sim)\n"
+                        "solver = parent.createNode('rbdbulletsolver', 'rbd_solver')\n"
                         "solver.setInput(0, asm, 0)\n"
-                        "solver.setInput(2, props, 0)\n"
+                        "# Wire: constraint geo -> solver 'Constraint Geometry' input\n"
+                        "solver.setInput(1, props, 0)\n"
                         "# Cache\n"
                         "cache = parent.createNode('filecache', 'rbd_cache')\n"
                         "cache.parm('file').set('$HIP/cache/rbd.$F4.bgeo.sc')\n"
@@ -273,7 +273,8 @@ def register_fx_recipes(registry):
         name="vellum_wire_sim",
         description=(
             "Set up Vellum hair/wire simulation for cables, ropes, or "
-            "strands: vellumhair configure -> vellumsolver -> filecache."
+            "strands: vellumconstraints (hair preset) -> vellumsolver -> "
+            "filecache."
         ),
         triggers=[
             r"^(?:set up|setup|create)\s+(?:a\s+)?(?:vellum\s+)?(?:wire|cable|rope|hair)\s+sim(?:ulation)?(?:\s+(?:on|for|at|in|under)\s+(?P<parent>.+))?$",
@@ -289,15 +290,15 @@ def register_fx_recipes(registry):
                     "code": (
                         "import hou\n"
                         "parent = hou.node('{parent}') or hou.node('/obj')\n"
-                        "# Vellum hair configure (used for wires/cables)\n"
-                        "hair = parent.createNode('vellumhair', 'vellum_wire')\n"
-                        "hair.parm('stretchstiffness').set(50000)\n"
-                        "hair.parm('bendstiffness').set(1.0)\n"
+                        "# Vellum hair constraints (H21 has no 'vellumhair'\n"
+                        "# SOP -- hair is a vellumconstraints preset)\n"
+                        "hair = parent.createNode('vellumconstraints', 'vellum_wire')\n"
+                        "hair.parm('constrainttype').set('hair')\n"
                         "# Vellum solver\n"
                         "solver = parent.createNode('vellumsolver', 'wire_solver')\n"
                         "solver.parm('substeps').set(3)\n"
                         "solver.setInput(0, hair, 0)\n"
-                        "solver.setInput(2, hair, 1)\n"
+                        "solver.setInput(1, hair, 1)\n"
                         "# Cache\n"
                         "cache = parent.createNode('filecache', 'wire_cache')\n"
                         "cache.parm('file').set('$HIP/cache/wires.$F4.bgeo.sc')\n"

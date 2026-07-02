@@ -2,6 +2,28 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## Unreleased — the H22 release train (PR #38)
+
+*Day-1 of the runway to Houdini 22 (ships 2026-07-15): the drop-day API-delta probe (which immediately caught 15 phantoms in our own emitters), the ratified-boundary scaffolds for H22's native APEX MCP, multi-client hardening, and the panel's expansion to five engines. 3,969 tests passing; G3 pass; Mode-A identity diff empty; Mode-B trigger rehearsed.*
+
+**H22 day-0 compatibility (WS1):**
+- **Task 0.2 built + proven** — `scripts/h22_api_delta.py` diffs symbol table + emitted-node-type catalog + punycode encodings against committed H21 baselines → `.claude/probe_delta.json` (`check_probe_clean` contract). Identity diff on 21.0.671 is EMPTY (785 aliases byte-matched) — the drop-day machine is proven before the drop.
+- **The probe ate its own dogfood:** 6 phantom camera punycode entries (live camera parms are plain camelCase — `focalLength`, `fStop`, …) and 9 phantom node-type spellings purged with live-verified replacements (`rigidsolver`→`rbdbulletsolver` in SOP chains, `oceanflat`→`oceansource`, vellum trio → `vellumconstraints` presets…), plus two live-probed swapped solver-input wirings fixed.
+- Dual-build plumbing: `SYNAPSE_TEST_HOUDINI_BUILD` test axis, per-major symbol tables (scout + doctor keyed on the running major, H21 file never overwritten), pref-dir derivation via `hou.homeHoudiniDirectory()` with a regression guard.
+- Gate-0.1 evidence: sidecar IPC measured (p50 ≈ 0.1 ms — latency is a non-discriminator); re-vendor runbook (UPGRADE.md Step 2a); cp312+cp313 wheels pre-cached; `drop.json.example` + Mode-B rehearsal (which found and fixed a mutating `--dry` run and a phantom `pxr.__version__` in the capture one-liner — the real API is `Usd.GetVersion()`).
+
+**MCP coexistence (WS2, per the ratified `SYNAPSE_H22_BOUNDARY.md`):**
+- D-H22-1/2/4 scaffolds: `providers/apex_mcp` truth-contract envelope (observed/claimed/args_digest, fail-loud, mock endpoint until the shipped-surface probe passes), `science/mcp_surface_probe.py`, scout `domain="apex"` federation (explicit opt-in; no local APEX corpus). Harness 0.8/0.9 checks flip TRUE; no new MCP tools (registry 115, stdio 123).
+- Multi-client hardening: hash-guarded rollback (never pops a foreign/artist undo block), `external_change_detected` attribution, stall-detector recovery probe, doctor port audit, `docs/MCP_COEXISTENCE.md` (keep-all + differentiate by receipts).
+
+**Panel (WS3):**
+- **Thinking-block fix** — the SSE parser turned `thinking` blocks into empty text blocks that 400 on replay; fable-5 tool loops were exposed. Thinking now round-trips. Sonnet 5 row added (default unchanged pending live smoke).
+- **Ollama engine** (`glm-5:cloud`, `/api/tags` discovery) and **Custom engine** (base_url/model/key env via Configure dialog; unknown-id floor surfaced, never silent). Provider+model picks persist across sessions.
+
+**Loop closures (WS4):** `deposit_fn` seam closed (probe verdicts reach the durable Ledger, live sessions only); DOC-1 scout pin; `prov_live_verify.py` rescued.
+
+---
+
 ## v5.19.0 — graph-synthesis build half + Solaris production wiring
 
 *Mile 3 of the graph-synthesis relay closes the loop: a validated proposal is now BUILT into live nodes under one undo group, with build-failure rollback — plus a live-probe-grounded correction of how SYNAPSE wires Solaris networks. All verified on Houdini 21.0.671. 3,820 tests passing.*

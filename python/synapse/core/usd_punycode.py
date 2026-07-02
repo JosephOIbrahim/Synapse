@@ -70,21 +70,13 @@ PUNYCODE_PARMS: Dict[str, str] = {
     "texture_file": "xn__inputstexturefile_r3ah",
     "texture_file_control": "xn__inputstexturefile_control_shbh",
     "texture_format": "xn__inputstextureformat_06ah",
-    # ------------------------------------------------------------------
-    # UNVERIFIED — camera attrs. NOT probe-confirmed (could not instance a
-    # camera prim this pass). These are almost certainly WRONG as written:
-    # standard UsdGeomCamera attributes (focalLength, fStop, focusDistance,
-    # horizontalAperture, verticalAperture, clippingRange) are NOT in the
-    # ``inputs:`` namespace, so they are NOT punycode-encoded at all — the
-    # real parm names are the plain camelCase attrs. Kept ONLY so callers that
-    # reference these alias keys still import; re-probe a real camera prim and
-    # correct (or drop these in favour of the plain attr names) on H22.
-    "focal_length": "xn__inputsfocallength_e4b",
-    "focus_distance": "xn__inputsfocusdistance_f7b",
-    "fstop": "xn__inputsfstop_vya",
-    "horizontal_aperture": "xn__inputshorizontalaperture_ohb",
-    "vertical_aperture": "xn__inputsverticalaperture_gfb",
-    "clipping_range": "xn__inputsclippingrange_e4b",
+    # Camera attrs do NOT live here — see USD_ATTR_NAMES below. Live-probed
+    # off the camera LOP on 21.0.671 (2026-07-01,
+    # harness/notes/verified_nodetype_catalog_21.0.671.json): standard
+    # UsdGeomCamera attributes are NOT in the ``inputs:`` namespace, so they
+    # are NEVER punycode-encoded — the parm names are the plain camelCase
+    # attrs (focalLength, fStop, …). The six xn__inputs* camera guesses that
+    # used to sit here were phantom.
     # ------------------------------------------------------------------
     # Geometry + cone/focus shaping — LIVE-PROBED on 21.0.671 (2026-06-26),
     # superseding the prior placeholders (``shaping_cone_angle``=``_hgbb``,
@@ -154,6 +146,18 @@ USD_ATTR_NAMES: Dict[str, str] = {
     # DomeLight — HDRI texture (nested namespace)
     "texture_file": "inputs:texture:file",
     "texture_format": "inputs:texture:format",
+    # Camera — UsdGeomCamera. NOT ``inputs:``-namespaced, so the camera LOP
+    # never punycode-encodes them: parm name == raw attr name (plain
+    # camelCase, each with a ``_control`` companion). Live-probed off the
+    # camera LOP on 21.0.671 (2026-07-01) — the prior xn__inputs* entries in
+    # PUNYCODE_PARMS were phantom guesses and are gone. Ground truth:
+    # harness/notes/verified_nodetype_catalog_21.0.671.json.
+    "focal_length": "focalLength",
+    "focus_distance": "focusDistance",
+    "fstop": "fStop",
+    "horizontal_aperture": "horizontalAperture",
+    "vertical_aperture": "verticalAperture",
+    "clipping_range": "clippingRange",  # float2 tuple (near/far)
 }
 
 

@@ -281,8 +281,23 @@ def _check_symbol_table() -> Dict[str, Any]:
     try:
         import synapse
         # Committed package authority (scout.py _PKG_SYMBOL_TABLE path).
-        table = (Path(synapse.__file__).resolve().parent
-                 / "cognitive" / "tools" / "data" / "h21_symbol_table.json")
+        data_dir = (Path(synapse.__file__).resolve().parent
+                    / "cognitive" / "tools" / "data")
+        running = None
+        try:
+            import hou
+            running = hou.applicationVersionString()
+        except Exception:
+            running = None
+        # Per-major table (runway §1.4) — mirror scout's loader rule: prefer
+        # h<major>_symbol_table.json for the RUNNING major when committed,
+        # else the h21 file (the stamp compare below still trips the gate).
+        table = data_dir / "h21_symbol_table.json"
+        major = str(running or "").split(".", 1)[0]
+        if major.isdigit():
+            candidate = data_dir / f"h{major}_symbol_table.json"
+            if candidate.exists():
+                table = candidate
         if not table.exists():
             return {"name": name, "status": "fail",
                     "detail": f"symbol table missing: {table}"}
@@ -290,12 +305,6 @@ def _check_symbol_table() -> Dict[str, Any]:
         stamp = meta.get("houdini_version")
         described = (f"stamp {stamp} ({meta.get('symbol_count')} symbols, "
                      f"blake2b {meta.get('blake2b')})")
-        running = None
-        try:
-            import hou
-            running = hou.applicationVersionString()
-        except Exception:
-            running = None
         if not isinstance(running, str):
             return {"name": name, "status": "skipped",
                     "detail": f"{described}; runtime comparison skipped (no hou)"}
@@ -324,6 +333,92 @@ def _check_bridge_endpoint(base: Path) -> Dict[str, Any]:
     except json.JSONDecodeError as e:
         return {"name": name, "status": "fail",
                 "detail": f"bridge.json unreadable/corrupt: {e}"}
+    except Exception as e:
+        return {"name": name, "status": "skipped", "detail": f"probe failed: {e}"}
+
+
+# H5 (multi-client hardening): known localhost MCP-server ports to audit for
+# coexistence. Add the official H22 APEX MCP port here once task 1.7 reveals
+# it. Hazards + posture: docs/MCP_COEXISTENCE.md.
+KNOWN_MCP_PORTS = {8100: "fxhoudinimcp"}
+
+
+def _check_mcp_coexistence(base: Path) -> Dict[str, Any]:
+    """H5: port-collision audit. Resolve our actual bound port (the injectable
+    sidecar at ``base/bridge.json`` when present, else the live resolver's
+    env/home sidecar → 9999/$SYNAPSE_PORT fallback), TCP-probe the known
+    foreign MCP ports, and confirm our own port accepts a connection.
+    Read-only, stdlib-only, info/warn detail — NEVER fail: a foreign MCP is a
+    documented coexistence hazard, not a broken seat."""
+    name = "mcp_coexistence"
+    try:
+        import socket
+        from .bridge_endpoint import resolve_endpoint
+
+        host, our_port = resolve_endpoint()
+        sidecar = base / "bridge.json"
+        if sidecar.exists():
+            try:
+                data = json.loads(sidecar.read_text(encoding="utf-8"))
+                host = str(data.get("host") or host)
+                our_port = int(data.get("port") or our_port)
+            except Exception:
+                pass  # unreadable sidecar is _check_bridge_endpoint's finding
+
+        def _open(probe_host: str, port: int) -> bool:
+            try:
+                with socket.create_connection((probe_host, port), timeout=0.25):
+                    return True
+            except OSError:
+                return False
+
+        ours_up = _open(host, our_port)
+        foreign = [
+            f"{label} on :{port}"
+            for port, label in sorted(KNOWN_MCP_PORTS.items())
+            if port != our_port and _open("127.0.0.1", port)
+        ]
+        parts = [
+            f"SYNAPSE endpoint {host}:{our_port} "
+            + ("accepting connections" if ours_up
+               else "not accepting connections (server may be down)")
+        ]
+        if foreign:
+            parts.append(
+                "foreign MCP detected: " + ", ".join(foreign)
+                + " — coexistence hazards documented in docs/MCP_COEXISTENCE.md"
+            )
+        else:
+            parts.append("no known foreign MCP ports open")
+        return {"name": name, "status": "ok", "detail": "; ".join(parts),
+                "result": {"our_host": host, "our_port": our_port,
+                           "our_endpoint_up": ours_up,
+                           "foreign_detected": foreign}}
+    except Exception as e:
+        return {"name": name, "status": "skipped", "detail": f"probe failed: {e}"}
+
+
+def _check_main_thread() -> Dict[str, Any]:
+    """H3 surfacing: stall-detector state + dispatch-wait histogram. Reports
+    state only — the bounded recovery probe belongs to the fast-fail gates."""
+    name = "main_thread"
+    try:
+        from .main_thread import dispatch_wait_stats, stall_state
+        state = stall_state()
+        waits = dispatch_wait_stats()
+        result = {"stall": state, "dispatch_waits": waits}
+        if state["stalled"]:
+            return {"name": name, "status": "fail",
+                    "detail": (f"main thread stalled "
+                               f"({state['consecutive_timeouts']} consecutive "
+                               "run_on_main timeouts) — a heavy cook, render, or "
+                               "another MCP client may be saturating it"),
+                    "result": result}
+        return {"name": name, "status": "ok",
+                "detail": (f"not stalled ({state['consecutive_timeouts']} "
+                           f"consecutive timeouts, {waits['count']} dispatch-wait "
+                           f"samples, max {waits['max_ms']:.0f}ms)"),
+                "result": result}
     except Exception as e:
         return {"name": name, "status": "skipped", "detail": f"probe failed: {e}"}
 
@@ -498,6 +593,8 @@ def run_doctor(payload: Dict, handler=None, home: Optional[Path] = None) -> Dict
         _wrap_memory_key_check(home),
         _check_symbol_table(),
         _check_bridge_endpoint(base),
+        _check_mcp_coexistence(base),
+        _check_main_thread(),
         _check_houdini(handler),
     ]
     summary = {"ok": 0, "fail": 0, "skipped": 0}

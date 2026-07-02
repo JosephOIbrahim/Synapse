@@ -480,7 +480,10 @@ class TestUSDParameterAliases:
 
     def test_focal_length_alias(self):
         from synapse.core.aliases import USD_PARM_ALIASES
-        assert USD_PARM_ALIASES["focal_length"] == "xn__inputsfocallength_e4b"
+        # Camera parms are plain camelCase — UsdGeomCamera attrs are not
+        # inputs:*, never punycode (live camera-LOP probe 2026-07-01,
+        # harness/notes/verified_nodetype_catalog_21.0.671.json).
+        assert USD_PARM_ALIASES["focal_length"] == "focalLength"
 
     def test_resolve_usd_parm_function(self):
         from synapse.core.aliases import resolve_usd_parm

@@ -1008,7 +1008,7 @@ class CopsHandlerMixin:
                         path_parm.set(block_begin.path())
 
                     # Create processing chain inside solver: dilate -> blur -> threshold
-                    dilate = parent.createNode("dilate_erode", f"{name}_dilate")
+                    dilate = parent.createNode("dilateerode", f"{name}_dilate")
                     created_any = True
                     blur = parent.createNode("blur", f"{name}_blur")
                     created_any = True
@@ -1345,13 +1345,14 @@ class CopsHandlerMixin:
                             if lp is not None:
                                 lp.set(levels)
                     elif style_type == "risograph":
-                        # Risograph: quantize + halftone chain
+                        # Risograph: quantize + halftone-style chain.
+                        # H21.0.671 has no 'halftone' COP in any category
+                        # (live catalog probe) -- use a vopcop2gen stage
+                        # for the halftone pattern instead.
                         quant = parent.createNode("quantize", f"{name}_quant")
                         created_any = True
-                        halftone = parent.createNode("halftone", f"{name}_halftone")
+                        halftone = parent.createNode("vopcop2gen", f"{name}_halftone")
                         created_any = True
-                        if halftone is None:
-                            halftone = parent.createNode("vopcop2gen", f"{name}_halftone")
 
                         if quant is not None:
                             lp = quant.parm("levels") or quant.parm("steps")

@@ -34,6 +34,7 @@ if str(_PKG) not in sys.path:
     sys.path.insert(0, str(_PKG))
 
 from synapse.science import APEX_SEED, Registry, probe, run_search  # noqa: E402
+from synapse.science.deposit import LedgerDeposit  # noqa: E402
 
 
 def _build_namespace() -> dict:
@@ -79,7 +80,17 @@ def main(argv: list[str]) -> int:
     have_apex = "apex" in namespace
     have_catalog = "nodetypes" in namespace
 
-    registry = Registry(jsonl_path=jsonl_path)
+    # RFC_agent_usd_ledger §7.2: forward every fresh verdict to the durable
+    # Ledger (file-first + best-effort USD projection). JSONL stays the count
+    # authority; deposit failures are surfaced below, never fatal.
+    # ONLY live sessions deposit: in standalone mode the namespace is empty, so
+    # every surface probes "absent" — that is absent-AS-SPELLED in an empty
+    # namespace, not a durable DeadEnd about the Houdini build.
+    sink = LedgerDeposit()
+    registry = Registry(
+        jsonl_path=jsonl_path,
+        deposit_fn=sink if (have_apex or have_catalog) else None,
+    )
     result = run_search(APEX_SEED, registry, lambda s: probe(namespace, s))
 
     recorded = result["recorded"]
@@ -100,6 +111,9 @@ def main(argv: list[str]) -> int:
     print(f"  skipped (known): {len(result['skipped'])}")
     print(f"  held:            {len(result['held'])}")
     print(f"  halted:          {len(result['halted'])}")
+    print(f"  ledger deposits: {sink.deposited} ok, {len(sink.failures)} failed")
+    for failure in sink.failures:
+        print(f"    !! {failure}")
     print("-" * 60)
     for rec in recorded:
         mark = "OK " if rec.status == "champion" else "XX "

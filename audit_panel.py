@@ -369,6 +369,14 @@ try:
     panel._set_provider("claude")
     print(f"   chip short (nemotron): {nemo_chip!r}  "
           + tag("/" not in nemo_chip and len(nemo_chip) < 30))
+
+    # --- same for Ollama — the registry label ('GLM 5'), never the raw
+    #     tag-bearing id ('glm-5:cloud') ---
+    panel._set_provider("ollama")
+    oll_chip = panel._model_chip.text()
+    panel._set_provider("claude")
+    print(f"   chip short (ollama)  : {oll_chip!r}  "
+          + tag("/" not in oll_chip and ":" not in oll_chip and len(oll_chip) < 30))
 except (Exception, SystemExit) as e:
     WARNS.append(1)
     print(f"   [skip] live build unavailable here: {type(e).__name__}: {e}")

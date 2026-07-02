@@ -67,11 +67,13 @@ def _walk(obj, prefix, depth, max_depth, visited, out):
             _walk(child, sym, depth + 1, max_depth, visited, out)
 
 
-def _data_path() -> Path:
+def _data_path(major: int = 21) -> Path:
     # host/introspect_runtime.py  ->  parents[1] = repo root
+    # Per-major output (runway §1.4): h<major>_symbol_table.json — an H22 run
+    # writes alongside the committed H21 table, never over it.
     return (Path(__file__).resolve().parents[1]
             / "python" / "synapse" / "cognitive" / "tools" / "data"
-            / "h21_symbol_table.json")
+            / f"h{major}_symbol_table.json")
 
 
 def build_table() -> dict:
@@ -128,7 +130,7 @@ def build_table() -> dict:
 
 def main() -> int:
     table = build_table()
-    out_fp = _data_path()
+    out_fp = _data_path(int(table["houdini_version"].split(".")[0]))
     out_fp.parent.mkdir(parents=True, exist_ok=True)
     out_fp.write_text(json.dumps(table, ensure_ascii=False), encoding="utf-8")
     sys.stdout.write(

@@ -23,6 +23,7 @@ from pathlib import Path
 
 import pytest
 
+from conftest import HOUDINI_BUILD
 from synapse.cognitive.tools import scout
 from synapse.panel.gate_stamp import phantom_gate_status
 
@@ -35,7 +36,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 # ---------------------------------------------------------------------------
 
 
-def _write_table(path, symbols, version="21.0.671", corrupt=False):
+def _write_table(path, symbols, version=HOUDINI_BUILD, corrupt=False):
     syms = sorted(symbols)
     digest = hashlib.blake2b("\n".join(syms).encode("utf-8"), digest_size=16).hexdigest()
     if corrupt:
@@ -47,7 +48,7 @@ def _write_table(path, symbols, version="21.0.671", corrupt=False):
 
 
 def _table_store(tmp_path, monkeypatch, entries, *, table_symbols=None,
-                 table_version="21.0.671", corrupt=False, expected_version=None,
+                 table_version=HOUDINI_BUILD, corrupt=False, expected_version=None,
                  policy="warn"):
     cdir = tmp_path / "corpus"; cdir.mkdir()
     (cdir / "entries.jsonl").write_text(
@@ -200,3 +201,25 @@ def test_upgrade_doc_conformance():
         if path is not None:
             assert path.exists(), f"UPGRADE.md names a nonexistent artifact: {name}"
     assert "SYNAPSE_SCOUT_DRIFT_POLICY" in doc
+
+
+def test_no_hardcoded_pref_dir_version_in_product_code():
+    """No product code hardcodes the versioned pref dir ('houdini21.0') — it
+    breaks silently when the pref dir becomes houdini22.0. Derive it from the
+    session instead (hou.homeHoudiniDirectory()). One documented exception:
+    prompt_to_hda.py's last-ditch standalone fallback (no hou, no env) — pinned
+    to EXACTLY one occurrence so new hardcodes there still fail loud."""
+    allowed = {"panel/prompt_to_hda.py": 1}
+    offenders = {}
+    pkg = _ROOT / "python" / "synapse"
+    for path in pkg.rglob("*.py"):
+        if "_vendor" in path.parts:
+            continue
+        rel = path.relative_to(pkg).as_posix()
+        count = path.read_text(encoding="utf-8", errors="ignore").count("houdini21.0")
+        if count and count != allowed.get(rel, 0):
+            offenders[rel] = count
+    assert not offenders, (
+        f"hardcoded 'houdini21.0' pref-dir literals in product code: {offenders} "
+        "-- derive from hou.homeHoudiniDirectory() (see the H22 runway plan)."
+    )

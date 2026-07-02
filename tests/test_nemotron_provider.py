@@ -146,6 +146,31 @@ def test_default_endpoint_is_nvidia_nim():
     assert path == "/v1/chat/completions"
 
 
+# -- subclass hooks (OllamaProvider/CustomProvider reuse the transport) ------
+
+def test_get_endpoint_hook_matches_module_endpoint(monkeypatch):
+    monkeypatch.delenv("NVIDIA_BASE_URL", raising=False)
+    assert _prov()._get_endpoint() == _endpoint()
+
+
+def test_system_directive_hook_default_off(monkeypatch):
+    monkeypatch.delenv("NVIDIA_EMIT_REASONING", raising=False)
+    assert _prov()._system_directive() == "detailed thinking off"
+    monkeypatch.setenv("NVIDIA_EMIT_REASONING", "true")
+    assert _prov()._system_directive() == "detailed thinking on"
+
+
+def test_translation_with_directive_none_drops_the_toggle():
+    out = _to_openai_messages([{"role": "user", "content": "hi"}],
+                              system="be helpful", directive=None)
+    assert out[0] == {"role": "system", "content": "be helpful"}
+    assert out[1] == {"role": "user", "content": "hi"}
+    # no directive AND no system prompt → no system turn at all
+    out2 = _to_openai_messages([{"role": "user", "content": "hi"}],
+                               system="", directive=None)
+    assert out2 == [{"role": "user", "content": "hi"}]
+
+
 def test_registry_builds_nemotron():
     from synapse.panel.providers.registry import build_provider, NVIDIA_MODEL
     prov = build_provider("nemotron")

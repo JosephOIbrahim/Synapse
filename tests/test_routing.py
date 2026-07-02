@@ -1567,11 +1567,13 @@ class TestRouteChatHandler:
         """route_chat is registered in the handler registry."""
         import types
 
+        from conftest import HOUDINI_BUILD_TUPLE
+
         # Minimal hou stub (needs Node class for guards.py type annotations)
         mock_hou = types.ModuleType("hou")
         mock_hou.hipFile = Mock()
         mock_hou.hipFile.name = Mock(return_value="untitled.hip")
-        mock_hou.applicationVersion = Mock(return_value=(21, 0, 0))
+        mock_hou.applicationVersion = Mock(return_value=HOUDINI_BUILD_TUPLE)
         mock_hou.node = Mock(return_value=None)
         mock_hou.undos = Mock()
         mock_hou.NodeTypeCategory = Mock()

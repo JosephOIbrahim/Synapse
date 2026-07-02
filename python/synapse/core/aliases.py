@@ -8,7 +8,7 @@ Allows clients to use different naming conventions (camelCase, snake_case, etc.)
 import threading
 from typing import Dict, List, Any, Optional
 
-from .usd_punycode import PUNYCODE_PARMS
+from .usd_punycode import PUNYCODE_PARMS, USD_ATTR_NAMES
 
 
 # =============================================================================
@@ -164,8 +164,10 @@ for _canonical, _aliases in PARAM_ALIASES.items():
 # =============================================================================
 
 # xn__ values are single-sourced from synapse.core.usd_punycode (PUNYCODE_PARMS)
-# so the encodings can never diverge between files. Non-punycode names
-# (xformOp:*, visibility, purpose) stay as literals — usd_punycode doesn't own them.
+# so the encodings can never diverge between files. Camera parms are plain
+# camelCase (single-sourced from usd_punycode.USD_ATTR_NAMES). Other
+# non-punycode names (xformOp:*, visibility, purpose) stay as literals —
+# usd_punycode doesn't own them.
 USD_PARM_ALIASES: Dict[str, str] = {
     # Lights — intensity
     "intensity": PUNYCODE_PARMS["intensity"],
@@ -189,13 +191,16 @@ USD_PARM_ALIASES: Dict[str, str] = {
     # DomeLight
     "texture_file": PUNYCODE_PARMS["texture_file"],
     "texture_format": PUNYCODE_PARMS["texture_format"],
-    # Camera
-    "focal_length": PUNYCODE_PARMS["focal_length"],
-    "focus_distance": PUNYCODE_PARMS["focus_distance"],
-    "fstop": PUNYCODE_PARMS["fstop"],
-    "horizontal_aperture": PUNYCODE_PARMS["horizontal_aperture"],
-    "vertical_aperture": PUNYCODE_PARMS["vertical_aperture"],
-    "clipping_range": PUNYCODE_PARMS["clipping_range"],
+    # Camera — UsdGeomCamera attrs are NOT ``inputs:``-namespaced, so the LOP
+    # surfaces them under their PLAIN camelCase schema names (never punycode).
+    # Single-sourced from usd_punycode.USD_ATTR_NAMES — live-probed 2026-07-01
+    # (harness/notes/verified_nodetype_catalog_21.0.671.json).
+    "focal_length": USD_ATTR_NAMES["focal_length"],
+    "focus_distance": USD_ATTR_NAMES["focus_distance"],
+    "fstop": USD_ATTR_NAMES["fstop"],
+    "horizontal_aperture": USD_ATTR_NAMES["horizontal_aperture"],
+    "vertical_aperture": USD_ATTR_NAMES["vertical_aperture"],
+    "clipping_range": USD_ATTR_NAMES["clipping_range"],
     # Xform
     "translate": "xformOp:translate",
     "rotate": "xformOp:rotateXYZ",

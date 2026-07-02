@@ -232,11 +232,12 @@ def check_theme_ok(ctx):
 def check_mcp_registered(ctx):
     # D-H22-1: the APEX MCP is registered as a first-class provider and a round-trip tool call
     # returns a truth-contract-shaped envelope (it carries what was OBSERVED). On H21 this
-    # exercises the provider against the mock. ADAPT: provider registry accessor + a benign tool.
-    code = ("import synapse\n"
+    # exercises the provider against the mock (science/mcp_mock.py behind the endpoint seam).
+    # WIRED (WS2 Part 1): registry = synapse.providers.get; benign tool = ping.
+    code = _BOOT + ("import synapse.providers as providers\n"
             "try:\n"
-            "    prov = synapse.providers.get('apex_mcp')  # ADAPT registry accessor\n"
-            "    env = prov.call_tool('ping', {})           # ADAPT a benign tool name\n"
+            "    prov = providers.get('apex_mcp')\n"
+            "    env = prov.call_tool('ping', {})\n"
             "    ok = bool(prov) and isinstance(env, dict) and env.get('observed') is not None\n"
             "    print('MCP-OK' if ok else 'MCP-NO')\n"
             "except Exception as e:\n"
@@ -250,13 +251,14 @@ def check_mcp_surface_probe(ctx):
     # apex_probes, aimed at the MCP's tool surface instead of hou.*. On H21 it points at the
     # mock (science/mcp_mock.py); the diff should be ~empty — that empty diff proves the probe
     # works before the drop makes it real.
-    # ADAPT: how mcp_surface_probe.py enumerates the MCP's tools + where it writes the delta.
+    # WIRED (WS2 Part 1): the probe enumerates via providers.get('apex_mcp').list_tools()
+    # and writes the delta where --out points. Exit 0 = facts reported; the gate below judges.
     runner = ctx["hython"] or sys.executable
-    rc, out, err = sh([runner, "science/mcp_surface_probe.py", "--diff", "--out",
+    rc, out, err = sh([runner, "python/synapse/science/mcp_surface_probe.py", "--diff", "--out",
                        ".claude/mcp_surface_delta.json"], cwd=ctx["wt"])
     p = Path(ctx["wt"]) / ".claude/mcp_surface_delta.json"
     if rc != 0 or not p.exists():
-        return {"ok": False, "detail": (out or err).strip()[:400] or "mcp_surface_probe.py not wired — ADAPT science/mcp_surface_probe.py"}
+        return {"ok": False, "detail": (out or err).strip()[:400] or "mcp_surface_probe.py produced no delta — see python/synapse/science/mcp_surface_probe.py"}
     try:
         d = json.loads(p.read_text())
         absent, renamed = d.get("absent", []), d.get("renamed", [])
@@ -267,10 +269,11 @@ def check_mcp_surface_probe(ctx):
 
 def check_mcp_truth_contract(ctx):
     # The handler cannot claim an outcome it didn't observe, and the MCP's own validator verdict
-    # is recorded as a provenance INPUT — never restated as a Synapse claim. ADAPT: envelope fields.
-    code = ("import synapse\n"
+    # is recorded as a provenance INPUT — never restated as a Synapse claim.
+    # WIRED (WS2 Part 1): envelope fields per synapse/providers/apex_mcp.py.
+    code = _BOOT + ("import synapse.providers as providers\n"
             "try:\n"
-            "    env = synapse.providers.get('apex_mcp').call_tool('validate', {'src': 'noop'})  # ADAPT\n"
+            "    env = providers.get('apex_mcp').call_tool('validate', {'src': 'noop'})\n"
             "    observed = 'observed' in env\n"
             "    no_overclaim = ('claimed' not in env) or (env.get('claimed') == env.get('observed'))\n"
             "    verdict_is_input = 'validator_verdict' in env  # the MCP's verdict, carried not asserted\n"
@@ -284,9 +287,10 @@ def check_mcp_truth_contract(ctx):
 def check_no_rigging_drift(ctx):
     # D-H22-3 non-goal: Synapse's authoring center of gravity stays off rigging/APEX — that is
     # the native MCP's floor. The clean signal is a declared authoring-domain allowlist.
-    # ADAPT: server/authoring_domains.json = {"domains": ["cop","lop","sop","karma","usd"]}.
+    # WIRED (WS2 Part 1): python/synapse/server/authoring_domains.json =
+    # {"domains": ["cop","lop","sop","karma","usd"]}.
     wt = Path(ctx["wt"])
-    allow = wt / "server" / "authoring_domains.json"  # ADAPT path
+    allow = wt / "python" / "synapse" / "server" / "authoring_domains.json"
     in_scope = {"cop", "cops", "lop", "lops", "sop", "sops", "karma", "usd", "solaris", "mat", "obj"}
     drift_terms = {"apex", "rig", "rigging", "kinefx", "muscle", "cfx"}
     if allow.exists():
@@ -300,7 +304,7 @@ def check_no_rigging_drift(ctx):
             return {"ok": True, "detail": f"authoring domains in-scope: {sorted(decl)}{note}"}
         except Exception as e:
             return {"ok": False, "detail": f"authoring_domains.json unreadable: {str(e)[:200]}"}
-    return {"ok": None, "detail": "authoring-domain allowlist not declared yet (ADAPT server/authoring_domains.json)"}
+    return {"ok": None, "detail": "authoring-domain allowlist not declared yet (python/synapse/server/authoring_domains.json missing)"}
 
 def check_provenance_not_bypassed(ctx):
     # Non-goal: not a commodity hou.* passthrough. Every scene/stage mutation routes through the
@@ -313,10 +317,11 @@ def check_provenance_not_bypassed(ctx):
 
 def check_scout_federates(ctx):
     # D-H22-2: scout returns APEX results tagged as sourced from the federated MCP provider,
-    # and exists_in_runtime remains present + authoritative on every hit. ADAPT: scout query API.
-    code = ("import synapse\n"
-            "try:\n"
-            "    hits = synapse.scout.query('apex rig pose', domains=['apex'])  # ADAPT query API\n"
+    # and exists_in_runtime remains present + authoritative on every hit.
+    # WIRED (WS2 Part 1): query API = synapse_scout(query, domain='apex').
+    code = _BOOT + ("try:\n"
+            "    from synapse.cognitive.tools.scout import synapse_scout\n"
+            "    hits = synapse_scout('apex rig pose', domain='apex')['hits']\n"
             "    src_ok = bool(hits) and all(h.get('source') == 'apex_mcp' for h in hits)\n"
             "    rt_ok = all('exists_in_runtime' in h for h in hits)\n"
             "    print('SCOUT-OK' if (src_ok and rt_ok) else 'SCOUT-NO')\n"
@@ -335,7 +340,7 @@ def check_scout_no_apex_corpus(ctx):
     if forbidden:
         rel = ", ".join(str(p.relative_to(wt)) for p in forbidden[:5])
         return {"ok": False, "detail": f"local APEX corpus present (must federate, not rebuild): {rel}"}
-    reg = wt / "server" / "scout_sources.json"  # ADAPT path
+    reg = wt / "python" / "synapse" / "server" / "scout_sources.json"  # WIRED (WS2 Part 1)
     if reg.exists():
         try:
             data = json.loads(reg.read_text())
@@ -345,7 +350,7 @@ def check_scout_no_apex_corpus(ctx):
             return {"ok": True, "detail": "no local APEX corpus; scout APEX source is federated"}
         except Exception as e:
             return {"ok": False, "detail": f"scout_sources.json unreadable: {str(e)[:200]}"}
-    return {"ok": None, "detail": "no APEX corpus found; scout source-registry not wired yet (ADAPT server/scout_sources.json)"}
+    return {"ok": None, "detail": "no APEX corpus found; scout source-registry not wired yet (python/synapse/server/scout_sources.json missing)"}
 
 def run_one(name, task, ctx):
     fn = DISPATCH.get(name)

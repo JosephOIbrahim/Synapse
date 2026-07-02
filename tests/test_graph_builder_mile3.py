@@ -25,6 +25,7 @@ import types
 
 import pytest
 
+from conftest import HOUDINI_BUILD
 from synapse.cognitive.graph_proposal import (
     GraphProposal,
     NodeKind,
@@ -241,7 +242,7 @@ def _extend_proposal():
         edges=edges,
         natural_language_intent="extend the existing merge with a transformed box",
         model_id="glm-5.2",
-        houdini_version_stamp="21.0.671",
+        houdini_version_stamp=HOUDINI_BUILD,
     )
 
 

@@ -21,6 +21,20 @@ Three remote hosts exist in first-party code:
   (OpenRouter / Ollama-cloud / self-hosted vLLM/NIM) — the default is the
   NVIDIA NIM cloud above.
 
+Two further panel engines carry **no fixed first-party endpoint**:
+
+- **Ollama** (`panel/providers/ollama_provider.py`) is localhost-first
+  (`http://localhost:11434` — see "Localhost surfaces") but `OLLAMA_HOST`
+  can redirect it to a remote/TLS host (e.g. Ollama cloud), making it egress.
+- **Custom** (`panel/providers/custom_provider.py`) streams to a
+  **user-configured** OpenAI-compatible base URL
+  (`.synapse/panel_settings.json`, set via the model chip → Configure…
+  dialog). Where it points is entirely operator-chosen.
+
+Both reuse the streaming transport pinned in `nemotron_provider.py`, so the
+frozen-egress pin (`tests/test_m3_egress_docs.py`) already covers their code
+path; this document is the control for where they are pointed.
+
 Call sites:
 
 | Lane | Code | Transport |
@@ -28,6 +42,8 @@ Call sites:
 | Panel worker (Claude) | `python/synapse/panel/claude_worker.py` → `panel/providers/anthropic_provider.py` | stdlib `http.client.HTTPSConnection`, streaming |
 | Panel worker (Gemini) | `claude_worker.py` → `panel/providers/gemini_provider.py` | stdlib `http.client.HTTPSConnection`, streaming SSE |
 | Panel worker (Nemotron) | `claude_worker.py` → `panel/providers/nemotron_provider.py` | stdlib `http.client.HTTPSConnection`, streaming SSE (OpenAI-compatible) |
+| Panel worker (Ollama) | `claude_worker.py` → `panel/providers/ollama_provider.py` | inherited nemotron transport — plaintext HTTP to localhost by default; TLS when `OLLAMA_HOST` is https |
+| Panel worker (Custom) | `claude_worker.py` → `panel/providers/custom_provider.py` | inherited nemotron transport to the configured base URL (http or https, scheme preserved) |
 | Host daemon agent loop | `host/daemon.py` → `cognitive/agent_loop.py` | vendored `anthropic` SDK |
 | Routing tiers 2/3 | `routing/router.py` | `anthropic` SDK |
 
@@ -54,6 +70,12 @@ anywhere in the codebase.
 - The **NVIDIA_API_KEY** (Nemotron provider only) — leaves only as the
   `Authorization: Bearer` auth header to the `NVIDIA_BASE_URL` host
   (`integrate.api.nvidia.com` by default), never inside payloads.
+- The **OLLAMA_API_KEY** (Ollama provider, optional — cloud/proxied posture
+  only; local Ollama needs no key) — leaves only as the `Authorization:
+  Bearer` auth header to the `OLLAMA_HOST` endpoint, never inside payloads.
+- The **Custom engine key** (optional; the env var *named* in the Configure…
+  dialog) — leaves only as the `Authorization: Bearer` auth header to the
+  user-configured base URL, never inside payloads.
 - The **memory store ciphertext** — at-rest only.
 - **Viewport/render pixels** — `capture_viewport` and render tools return
   *path strings*, not image bytes.
@@ -67,6 +89,11 @@ anywhere in the codebase.
 ## Localhost surfaces (not egress)
 
 - Panel → MCP loopback `http://localhost:<port>`.
+- The Ollama panel engine talks to the local daemon at
+  `http://localhost:11434` (`POST /v1/chat/completions` for chat +
+  `GET /api/tags` for the model menu) — plaintext HTTP, loopback by default.
+  **Caveat:** `OLLAMA_HOST` can redirect this lane to a remote (TLS) host,
+  at which point it is egress (see "Remote endpoints").
 - The WS fallback server binds localhost by default (deploy-config
   override for studio modes).
 - The hwebserver endpoint (port 9999) has origin validation and optional

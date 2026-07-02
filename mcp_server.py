@@ -127,6 +127,12 @@ async def _auth_handshake(ws) -> None:
 # ---------------------------------------------------------------------------
 # Deterministic command IDs (He2025: same input -> same ID within a session)
 # ---------------------------------------------------------------------------
+# Multi-client note (H4, verified NO-OP 2026-07-01): these IDs are PER-PROCESS
+# (module-global counter) and the server has NO global keying/dedup by command
+# id — responses echo per-connection. Two concurrent SYNAPSE stdio processes
+# both sending "create_node-1" is therefore harmless. If server-side global
+# keying ever appears, prefix these with os.getpid() (a one-liner). See
+# docs/MCP_COEXISTENCE.md.
 _cmd_seq = 0
 
 def _cmd_id(cmd_type: str, payload: dict | None) -> str:

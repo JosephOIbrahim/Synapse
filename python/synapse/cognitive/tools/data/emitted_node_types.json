@@ -1,0 +1,718 @@
+{
+  "schema": "emitted_node_types/v1",
+  "generated_from_commit": "ddf85354125309ccb7a4fbbbfd61916c5ba2e56a",
+  "entries": [
+    {
+      "category": "apex_seed",
+      "type_name": "apex::autorigbuilder",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::autorigcomponent",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::buildfkgraph",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::configurecontrols",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::configuregraph",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::controlextract",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::graph",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::invokegraph",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::mapcharacter",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::packcharacter",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "apex::sceneinvoke",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "assemble",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "assignmaterial",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/server/handlers_material.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "attribwrangle",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py",
+        "python/synapse/routing/recipes/scene_recipes.py",
+        "python/synapse/server/handlers.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "block_begin",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "block_end",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "blur",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "bright",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "cam",
+      "source_files": [
+        "python/synapse/panel/scene_doctor.py",
+        "python/synapse/routing/recipes/render_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "camera",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/routing/recipes/render_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "colorcorrect",
+      "source_files": [
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "setdressing_verified",
+      "type_name": "componentgeometry",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "setdressing_verified",
+      "type_name": "componentoutput",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "composite",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "cop2net",
+      "source_files": [
+        "python/synapse/routing/recipes/pipeline_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "debrissource",
+      "source_files": [
+        "python/synapse/routing/planner.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "dilateerode",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "domelight",
+      "source_files": [
+        "python/synapse/routing/recipes/render_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "dopnet",
+      "source_files": [
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "setdressing_verified",
+      "type_name": "duplicate",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "edge",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "edgedetect",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "setdressing_verified",
+      "type_name": "extractinstances",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "ffmpegencodevideo",
+      "source_files": [
+        "python/synapse/server/handlers_tops/render_sequence.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "file",
+      "source_files": [
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "filecache",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py",
+        "python/synapse/routing/recipes/pipeline_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "flipsolver",
+      "source_files": [
+        "python/synapse/routing/planner.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "genericgenerator",
+      "source_files": [
+        "python/synapse/server/handlers_tops/render_sequence.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "geo",
+      "source_files": [
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/server/handlers.py",
+        "python/synapse/server/handlers_hda.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "gravity",
+      "source_files": [
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "heightfield",
+      "source_files": [
+        "python/synapse/routing/recipes/scene_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "heightfield_erode",
+      "source_files": [
+        "python/synapse/routing/recipes/scene_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "heightfield_noise",
+      "source_files": [
+        "python/synapse/routing/recipes/scene_recipes.py"
+      ]
+    },
+    {
+      "category": "setdressing_verified",
+      "type_name": "instancer",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "karma",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/routing/recipes/render_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "karmarenderproperties",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/render_recipes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "kinefx::blendtransforms",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "kinefx::rigdoctor",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "apex_seed",
+      "type_name": "kinefx::twoboneik",
+      "source_files": [
+        "python/synapse/science/apex_probes.py"
+      ]
+    },
+    {
+      "category": "setdressing_verified",
+      "type_name": "layout",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "light",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/routing/recipes/render_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "limit",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "localscheduler",
+      "source_files": [
+        "python/synapse/server/handlers_tops/_common.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "lopnet",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/routing/recipes/render_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "materiallibrary",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/routing/recipes/render_recipes.py",
+        "python/synapse/server/handlers_material.py"
+      ]
+    },
+    {
+      "category": "createNode_literal+setdressing_verified",
+      "type_name": "merge",
+      "source_files": [
+        "python/synapse/routing/recipes/fx_recipes.py",
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/routing/recipes/render_recipes.py",
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "setdressing_verified",
+      "type_name": "mergepointinstancers",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "setdressing_verified",
+      "type_name": "modifypointinstances",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "noise",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "null",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py",
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/routing/recipes/scene_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "oceanevaluate",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "oceansource",
+      "source_files": [
+        "python/synapse/routing/planner.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "oceanspectrum",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "opencl",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "output",
+      "source_files": [
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "over",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "partitionbyattribute",
+      "source_files": [
+        "python/synapse/server/handlers_tops/render_sequence.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "pyrosolver",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "pythonscript",
+      "source_files": [
+        "python/synapse/server/handlers_render.py",
+        "python/synapse/server/handlers_usd.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "quantize",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "rbdbulletsolver",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "rbdconstraintproperties",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "rbdconstraintsfromrules",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "rbdmaterialfracture",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "rbdpackedobject",
+      "source_files": [
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "reference",
+      "source_files": [
+        "python/synapse/server/handlers_usd.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "rigidbodysolver",
+      "source_files": [
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "rop_comp",
+      "source_files": [
+        "python/synapse/routing/recipes/pipeline_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "ropfetch",
+      "source_files": [
+        "python/synapse/server/handlers_tops/render_sequence.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "scatter",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal+setdressing_verified",
+      "type_name": "sopimport",
+      "source_files": [
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/routing/recipes/render_recipes.py",
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "setdressing_verified",
+      "type_name": "splitpointinstancers",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "sublayer",
+      "source_files": [
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/server/handlers_usd.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "subnet",
+      "source_files": [
+        "python/synapse/routing/recipes/pipeline_recipes.py",
+        "python/synapse/routing/recipes/render_recipes.py",
+        "python/synapse/server/handlers_hda.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "tonemap",
+      "source_files": [
+        "python/synapse/routing/recipes/pipeline_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "topnet",
+      "source_files": [
+        "python/synapse/server/handlers_tops/render_sequence.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "vellumconstraintproperty",
+      "source_files": [
+        "python/synapse/routing/planner.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "vellumconstraints",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "vellumdrape",
+      "source_files": [
+        "python/synapse/routing/planner.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "vellumsolver",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "volumerasterizeattributes",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "vopcop2gen",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "wedge",
+      "source_files": [
+        "python/synapse/server/handlers_tops/wedge.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "whitewatersolver",
+      "source_files": [
+        "python/synapse/routing/planner.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "whitewatersource",
+      "source_files": [
+        "python/synapse/routing/planner.py"
+      ]
+    }
+  ]
+}

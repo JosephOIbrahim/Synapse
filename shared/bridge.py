@@ -184,6 +184,14 @@ class IntegrityBlock:
     scene_hash_after: str = ""
     delta_hash: str = ""
 
+    # H1 (multi-client hardening): the scene changed BETWEEN SYNAPSE ops —
+    # the hash parked at the end of the previous op on this target differs
+    # from this op's scene_hash_before. Attribution metadata ONLY: artists
+    # legitimately edit between ops, so this is never a fidelity violation
+    # (fidelity below is untouched). It stops foreign/artist edits from being
+    # silently folded into SYNAPSE's integrity narrative.
+    external_change_detected: bool = False
+
     @property
     def anchors_hold(self) -> bool:
         return all([
@@ -216,6 +224,7 @@ class IntegrityBlock:
             "scene_hash_before": self.scene_hash_before,
             "scene_hash_after": self.scene_hash_after,
             "delta_hash": self.delta_hash,
+            "external_change_detected": self.external_change_detected,
         }
 
 
@@ -291,6 +300,12 @@ class LosslessExecutionBridge:
         # — survive operation log eviction.
         self._per_agent_total: dict[str, int] = {}
         self._per_agent_verified: dict[str, int] = {}
+        # H1 (multi-client hardening): last computed scene hash per hash_target,
+        # parked at op end (after scene_hash_after / after rollback). Compared
+        # against the NEXT op's scene_hash_before to attribute between-op
+        # foreign/artist edits. Zero extra hashing — compares values already
+        # computed by the integrity flow.
+        self._parked_hash: dict[str, str] = {}
         self._consent_callback = consent_callback
         self._gate = (
             HumanGate.get_instance()
@@ -632,6 +647,104 @@ class LosslessExecutionBridge:
 
         return False
 
+    # ── H1/H2: Multi-Client Hardening ──────────────────────────
+    # Foreign clients (fxhoudinimcp) marshal via hdefereval too, so foreign
+    # work cannot interleave INSIDE a SYNAPSE op — the real exposures are
+    # between-op attribution (H1) and the empty-group rollback edge where
+    # performUndo() pops a foreign/artist block when fn raised before
+    # mutating (H2). See docs/MCP_COEXISTENCE.md.
+
+    @staticmethod
+    def _is_sentinel_hash(scene_hash: str) -> bool:
+        """True when a scene hash is not a real topology digest: empty (never
+        computed), the no-node marker, or the no-hou timestamp fallback —
+        a timestamp hash ALWAYS differs and would false-alarm any comparison."""
+        return (not scene_hash) or scene_hash == "invalid_context" or not _HOU_AVAILABLE
+
+    def _note_external_change(self, integrity: IntegrityBlock,
+                              hash_target: str) -> None:
+        """H1: between-op attribution. If the hash parked at the end of the
+        last op on this target differs from THIS op's scene_hash_before, the
+        scene changed between SYNAPSE ops (artist or another MCP client).
+        Informational only — auto-reverting the foreign edit would revert the
+        artist (indistinguishable), so attribution is the correct posture."""
+        parked = self._parked_hash.get(hash_target)
+        if (
+            parked is not None
+            and not self._is_sentinel_hash(parked)
+            and not self._is_sentinel_hash(integrity.scene_hash_before)
+            and parked != integrity.scene_hash_before
+        ):
+            integrity.external_change_detected = True
+
+    def _park_hash(self, hash_target: str, scene_hash: str) -> None:
+        """H1: park the last computed hash for this target at op end."""
+        self._parked_hash[hash_target] = scene_hash
+
+    def _guarded_rollback(self, integrity: IntegrityBlock,
+                          hash_target: str) -> str | None:
+        """H2: hash-guarded rollback shared by the sync (_execute_houdini) and
+        async (_sync_payload) exception paths — previously near-duplicate
+        unconditional performUndo() sites.
+
+        Uses ONLY hashes already in production use (undo-stack label
+        inspection is rejected: `hou.undos` member APIs are not in the
+        introspected symbol table, so not scout-verifiable):
+
+          1. Scene hash unchanged since scene_hash_before → fn raised before
+             mutating. performUndo() would pop the artist's or a foreign
+             client's most recent block (the CTO-review empty-group edge) —
+             SKIP the undo, delta_hash = "no_mutation_no_rollback".
+          2. Changed → performUndo() once, then re-hash. Still differs from
+             scene_hash_before → delta_hash = "rollback_incomplete" and an
+             attribution note is returned — honest surfacing instead of a
+             false "rolled_back" claim.
+          3. Sentinel hashes (see _is_sentinel_hash) disable the guard
+             conservatively: unconditional single performUndo(), exactly the
+             pre-H2 behavior, and never a false "rollback_incomplete" alarm.
+
+        Returns an attribution note to append to the error message, or None.
+        """
+        before = integrity.scene_hash_before
+        try:
+            h_now = self._compute_scene_hash(hash_target)
+        except Exception:
+            h_now = "invalid_context"
+
+        if self._is_sentinel_hash(before) or self._is_sentinel_hash(h_now):
+            try:
+                hou.undos.performUndo()
+            except Exception:
+                pass
+            integrity.delta_hash = "rolled_back"
+            self._park_hash(hash_target, h_now)
+            return None
+
+        if h_now == before:
+            integrity.delta_hash = "no_mutation_no_rollback"
+            self._park_hash(hash_target, h_now)
+            return None
+
+        try:
+            hou.undos.performUndo()
+        except Exception:
+            pass
+        try:
+            h_post = self._compute_scene_hash(hash_target)
+        except Exception:
+            h_post = "invalid_context"
+        self._park_hash(hash_target, h_post)
+        if not self._is_sentinel_hash(h_post) and h_post != before:
+            integrity.delta_hash = "rollback_incomplete"
+            return (
+                f"rollback incomplete on {hash_target}: the scene hash still "
+                "differs from the pre-op state — concurrent scene changes "
+                "(another MCP client or the artist) may have interfered; "
+                f"manual review of {hash_target} recommended"
+            )
+        integrity.delta_hash = "rolled_back"
+        return None
+
     # ── Synchronous Execute (test / direct main-thread) ──────
 
     def execute(self, operation: Operation) -> ExecutionResult:
@@ -697,11 +810,13 @@ class LosslessExecutionBridge:
 
         try:
             integrity.scene_hash_before = self._compute_scene_hash(hash_target)
+            self._note_external_change(integrity, hash_target)  # H1
 
             with hou.undos.group(f"SYNAPSE: {operation.summary}"):
                 result = operation.fn(*operation.args, **operation.kwargs)
 
                 integrity.scene_hash_after = self._compute_scene_hash(hash_target)
+                self._park_hash(hash_target, integrity.scene_hash_after)  # H1
 
                 if integrity.scene_hash_before != integrity.scene_hash_after:
                     integrity.delta_hash = hashlib.sha256(
@@ -726,12 +841,9 @@ class LosslessExecutionBridge:
                 return self._finalize(operation, integrity, result)
 
         except Exception as e:
-            try:
-                hou.undos.performUndo()
-            except Exception:
-                pass
-            integrity.delta_hash = "rolled_back"
-            return self._fail_with_integrity(integrity, str(e), "execution_error")
+            note = self._guarded_rollback(integrity, hash_target)  # H2
+            msg = f"{e} [{note}]" if note else str(e)
+            return self._fail_with_integrity(integrity, msg, "execution_error")
 
     # ── R2: Async Execute (FastMCP server path) ──────────────
 
@@ -779,12 +891,14 @@ class LosslessExecutionBridge:
             integrity.main_thread_executed = True
             integrity.undo_group_active = True
             integrity.scene_hash_before = self._compute_scene_hash(hash_target)
+            self._note_external_change(integrity, hash_target)  # H1
 
             try:
                 with hou.undos.group(f"SYNAPSE: {operation.summary}"):
                     result = operation.fn(*operation.args, **operation.kwargs)
 
                     integrity.scene_hash_after = self._compute_scene_hash(hash_target)
+                    self._park_hash(hash_target, integrity.scene_hash_after)  # H1
 
                     if integrity.scene_hash_before != integrity.scene_hash_after:
                         integrity.delta_hash = hashlib.sha256(
@@ -804,12 +918,9 @@ class LosslessExecutionBridge:
                     return self._finalize(operation, integrity, result)
 
             except Exception as e:
-                try:
-                    hou.undos.performUndo()
-                except Exception:
-                    pass
-                integrity.delta_hash = "rolled_back"
-                return self._fail_with_integrity(integrity, str(e), "execution_error")
+                note = self._guarded_rollback(integrity, hash_target)  # H2
+                msg = f"{e} [{note}]" if note else str(e)
+                return self._fail_with_integrity(integrity, msg, "execution_error")
 
         # ── Dispatch to main thread without blocking FastMCP ──
         # Timeout prevents indefinite hang if Houdini main thread stalls.

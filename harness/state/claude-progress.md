@@ -57,4 +57,6 @@ H21, so drop day is **verification, not surgery**.
 - 2026-06-25 17:25 · 0.2 BLOCKED after 3 rounds — needs a human — Build the H22 probe harness
 - 2026-06-25 17:26 · 0.2 BLOCKED after 3 rounds — needs a human — Build the H22 probe harness
 - 2026-06-25 18:03 · 0.2 BLOCKED after 3 rounds — needs a human — Build the H22 probe harness
-- 2026-06-26 21:33 · 0.7 BLOCKED after 1 rounds — needs a human — Rehearse the clean-machine install on H21
+- 2026-06-26 21:33 · 0.7 BLOCKED after 1 rounds — needs a human — Rehearse the clean-machine install on H21- 2026-07-02 09:30 · 0.2 UNBLOCKED+DONE by human spec + release train (PR #38) — spec harness/notes/spec-0.2-api-delta-probe.md; probe chain built; Mode-A identity diff EMPTY on 21.0.671 (check_probe_clean ok=True); probe surfaced+fixed 15 product phantoms
+- 2026-07-02 09:35 · 0.8/0.9 checks flip TRUE (mcp_registered, mcp_truth_contract, scout_federates, scout_no_apex_corpus); guardrails: 0 violations, only provenance_not_bypassed unwired (0a-prime track)
+- 2026-07-02 09:50 · Mode-B REHEARSAL PASS (scratch worktree, fake drop.json w/ real H21 numbers): MODE B armed, full 1.1→3.3 queue in order; found+fixed two runbook defects — pxr.__version__ capture one-liner (real API: Usd.GetVersion(), live-verified (0,25,5)) and run.ts --dry mutating (created worktrees/branches; dry now describes, never mutates)

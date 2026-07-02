@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import pytest
 
+from conftest import HOUDINI_BUILD
 from synapse.cognitive.graph_proposal import (
     GraphProposal,
     NodeKind,
@@ -80,7 +81,7 @@ def _mile1_proposal() -> GraphProposal:
         edges=edges,
         natural_language_intent="add a box off copy1",
         model_id="glm-5.2",
-        houdini_version_stamp="21.0.671",
+        houdini_version_stamp=HOUDINI_BUILD,
     )
 
 
@@ -95,7 +96,7 @@ def test_mile1_hallucinated_types_and_existing_edge(existence, connectivity):
     assert {"n2", "n4"} <= bad                      # both hallucinated types named
     assert "n1" not in bad and "n3" not in bad      # valid new types pass
     assert "e1" not in bad                          # existing node NOT symbol-checked (routed to P5)
-    assert all("21.0.671" in i.message for i in report.errors)   # version stamp on every issue
+    assert all(HOUDINI_BUILD in i.message for i in report.errors)   # version stamp on every issue
 
 
 def test_mile1_propose_graph_tool_and_store_roundtrip(existence, connectivity):
@@ -119,7 +120,7 @@ def test_mile1_propose_graph_tool_and_store_roundtrip(existence, connectivity):
         "edges": [{"source_node_id": "a", "source_output_index": 0, "target_node_id": "b", "target_input_index": 0}],
         "natural_language_intent": "box into xform",
         "model_id": "glm-5.2",
-        "houdini_version_stamp": "21.0.671",
+        "houdini_version_stamp": HOUDINI_BUILD,
     }
     out = synapse_propose_graph(valid)
     assert out["status"] == "valid"

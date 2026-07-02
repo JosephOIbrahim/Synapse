@@ -274,18 +274,18 @@ def _build_cloth_pipeline(
     cmds: List[SynapseCommand] = []
     parent = _infer_parent(params)
 
-    # Core: vellumcloth + solver
+    # Core: vellumconstraints (cloth preset) + solver.
+    # H21 has no 'vellumcloth' SOP -- cloth is a vellumconstraints preset.
     cmds.append(_cmd("execute_python", {
         "code": (
             "import hou\n"
             f"{_generate_parent_line(params)}\n"
-            "cloth = parent.createNode('vellumcloth', 'vellum_cloth')\n"
-            "cloth.parm('stretchstiffness').set(10000)\n"
-            "cloth.parm('bendstiffness').set(0.001)\n"
+            "cloth = parent.createNode('vellumconstraints', 'vellum_cloth')\n"
+            "cloth.parm('constrainttype').set('cloth')\n"
             "solver = parent.createNode('vellumsolver', 'vellum_solver')\n"
             "solver.parm('substeps').set(5)\n"
             "solver.setInput(0, cloth, 0)\n"
-            "solver.setInput(2, cloth, 1)\n"
+            "solver.setInput(1, cloth, 1)\n"
             "result = {'cloth': cloth.path(), 'solver': solver.path()}\n"
         ),
     }))
@@ -307,9 +307,11 @@ def _build_cloth_pipeline(
             "code": (
                 "import hou\n"
                 f"{_generate_parent_line(params)}\n"
-                "collider = parent.createNode('vellumcollider', 'collider')\n"
+                "# H21 has no 'vellumcollider' SOP -- collision geo wires\n"
+                "# straight into the solver's 'Collision Geometry' input.\n"
+                "collider = parent.createNode('null', 'collision_geo')\n"
                 "solver = parent.node('vellum_solver')\n"
-                "if solver: solver.setInput(1, collider, 0)\n"
+                "if solver: solver.setInput(2, collider, 0)\n"
                 "result = {'collider': collider.path()}\n"
             ),
         }))
@@ -370,9 +372,9 @@ def _build_destruction_pipeline(
             "props.parm('type').set(0)\n"
             "props.parm('strength').set(500)\n"
             "props.setInput(0, cons, 0)\n"
-            "solver = parent.createNode('rigidsolver', 'rbd_solver')\n"
+            "solver = parent.createNode('rbdbulletsolver', 'rbd_solver')\n"
             "solver.setInput(0, asm, 0)\n"
-            "solver.setInput(2, props, 0)\n"
+            "solver.setInput(1, props, 0)\n"
             "result = {'fracture': frac.path(), 'solver': solver.path()}\n"
         ),
     }))
@@ -383,7 +385,9 @@ def _build_destruction_pipeline(
                 "import hou\n"
                 f"{_generate_parent_line(params)}\n"
                 "solver = parent.node('rbd_solver')\n"
-                "debris = parent.createNode('popnet', 'debris_particles')\n"
+                "# H21 has no SOP 'popnet' -- seed debris emission points\n"
+                "# from the RBD sim with a debrissource SOP instead.\n"
+                "debris = parent.createNode('debrissource', 'debris_source')\n"
                 "if solver: debris.setInput(0, solver, 0)\n"
                 "result = {'debris': debris.path()}\n"
             ),
@@ -543,7 +547,9 @@ def _build_ocean_pipeline(
             "code": (
                 "import hou\n"
                 f"{_generate_parent_line(params)}\n"
-                "flat = parent.createNode('oceanflat', 'ocean_flat')\n"
+                "# H21 has no 'oceanflat' SOP -- oceansource is the live\n"
+                "# family for feeding spectral oceans into FLIP.\n"
+                "src = parent.createNode('oceansource', 'ocean_source')\n"
                 "solver = parent.createNode('flipsolver', 'flip_solver')\n"
                 "solver.parm('particlesep').set(0.1)\n"
                 "evl = parent.node('ocean_evaluate')\n"

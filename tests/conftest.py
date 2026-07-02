@@ -5,11 +5,29 @@ Existing tests that do their own mocking are unaffected -- these
 fixtures only activate when explicitly requested by name.
 """
 
+import os
 import pytest
 import sys
 import types
 from contextlib import contextmanager
 from unittest.mock import MagicMock
+
+
+# ---------------------------------------------------------------------------
+# Single-source build constants (runway §1.3 — the dual-build H21/H22 axis)
+# ---------------------------------------------------------------------------
+# Tests that pin against the RUNNING build parametrize on HOUDINI_BUILD.
+# Tests that pin a COMMITTED artifact (e.g. the introspected H21 symbol
+# table's stamp, the cp311 vendor .pyd) keep their own literals / the
+# VENDOR_* constants so they track the artifact, not the env.
+
+HOUDINI_BUILD = os.environ.get("SYNAPSE_TEST_HOUDINI_BUILD", "21.0.671")
+HOUDINI_BUILD_TUPLE = tuple(int(p) for p in HOUDINI_BUILD.split("."))
+
+# Vendored-dependency ABI (python/synapse/_vendor) — tracks the committed
+# .pyd binary, NOT the running build; update these when re-vendoring.
+VENDOR_PY = (3, 11)
+VENDOR_ABI_TAG = "cp311-win_amd64"
 
 
 # ---------------------------------------------------------------------------

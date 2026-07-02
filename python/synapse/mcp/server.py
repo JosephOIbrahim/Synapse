@@ -56,12 +56,20 @@ except ImportError:
 
 # Main-thread stall detection
 try:
-    from ..server.main_thread import is_main_thread_stalled
+    from ..server.main_thread import (
+        is_main_thread_stalled,
+        probe_main_thread,
+        stall_state,
+    )
     _STALL_DETECT_AVAILABLE = True
 except ImportError:
     _STALL_DETECT_AVAILABLE = False
     def is_main_thread_stalled():
         return False
+    def probe_main_thread(timeout=2.0):
+        return True
+    def stall_state():
+        return {"stalled": False, "consecutive_timeouts": 0, "last_timeout_ts": None}
 
 # Fast JSON (He2025: sort_keys)
 try:
@@ -444,13 +452,20 @@ class MCPServer:
 
         # --- Resilience gates (match WebSocket server behavior) ---
 
-        # 1. Main-thread stall detection
-        if _STALL_DETECT_AVAILABLE and is_main_thread_stalled():
+        # 1. Main-thread stall detection. H3: while stalled, one bounded
+        #    (<=2s) probe first — success resets the stall counter and the
+        #    command proceeds, so recovery no longer depends on incidental
+        #    read-only traffic.
+        if _STALL_DETECT_AVAILABLE and is_main_thread_stalled() and not probe_main_thread():
             if self._circuit_breaker:
                 self._circuit_breaker.record_failure()
             raise JsonRpcError(
                 INTERNAL_ERROR,
-                "Houdini's main thread is unresponsive — commands will resume when it recovers",
+                "Houdini's main thread is unresponsive ({} consecutive timeouts) "
+                "— a heavy cook, render, or another MCP client may be saturating "
+                "it; commands will resume when it recovers".format(
+                    stall_state()["consecutive_timeouts"]
+                ),
             )
 
         # 2. Rate limiting (keyed by MCP session, not per-client like WS)

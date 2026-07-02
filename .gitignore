@@ -112,3 +112,9 @@ python/synapse/_vendor/**/*.pyc
 /H22_prep_harness.zip
 /houdini22prepareHarness_v2.zip
 .claude/checks_debug_*.txt
+harness/notes/_prov_live.json
+# API-delta probe run artifacts (regenerated per run; drop-day outputs)
+.claude/probe_delta.json
+.claude/probe_delta.md
+.claude/mcp_surface_delta.json
+harness/state/wheel_cache/

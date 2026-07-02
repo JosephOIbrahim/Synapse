@@ -12,6 +12,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from conftest import HOUDINI_BUILD_TUPLE
+
 
 # ---------------------------------------------------------------------------
 # hou stub
@@ -22,7 +24,7 @@ def _make_hou_stub():
     hou = types.ModuleType("hou")
     hou.node = MagicMock()
     hou.hipFile = MagicMock()
-    hou.applicationVersion = MagicMock(return_value=(21, 0, 596))
+    hou.applicationVersion = MagicMock(return_value=HOUDINI_BUILD_TUPLE)
     hou.fps = MagicMock(return_value=24.0)
     hou.playbar = MagicMock()
     hou.selectedNodes = MagicMock(return_value=[])
@@ -62,27 +64,36 @@ def _hou_stub():
 # ---------------------------------------------------------------------------
 
 def _load_handlers():
-    """Import handlers module via importlib (bypasses hou dependency)."""
-    import importlib
-    # Ensure fresh import picks up our hou stub
-    for mod_name in list(sys.modules):
-        if "synapse" in mod_name:
-            del sys.modules[mod_name]
+    """Import a FRESH handlers module under the resident hou stub, then restore
+    the session's synapse module graph.
 
-    spec = importlib.util.spec_from_file_location(
-        "synapse.server.handlers",
-        r"C:\Users\User\SYNAPSE\python\synapse\server\handlers.py",
-        submodule_search_locations=[],
-    )
-    # We need the package hierarchy for relative imports
-    import synapse  # noqa: F811
-    return importlib.import_module("synapse.server.handlers")
+    The fresh import is needed so handlers binds our stub (a cached module
+    would keep whatever hou it saw first). But leaving the swap in place
+    bifurcates module identities for every later test file (the repo's
+    fake-residency trap: a test module's collection-time class references
+    point at the OLD modules while monkeypatches land on the NEW ones) — so
+    save and restore, same pattern as test_routing's handler test.
+    """
+    import importlib
+    saved = {m: sys.modules.pop(m) for m in list(sys.modules) if "synapse" in m}
+    try:
+        # We need the package hierarchy for relative imports
+        import synapse  # noqa: F811
+        return importlib.import_module("synapse.server.handlers")
+    finally:
+        for mod_name in [m for m in list(sys.modules) if "synapse" in m]:
+            del sys.modules[mod_name]
+        sys.modules.update(saved)
 
 
 def _get_handler_instance():
-    """Return a SynapseHandler instance."""
+    """Return (SynapseHandler instance, the fresh handlers module).
+
+    The module comes back explicitly because sys.modules is restored by
+    _load_handlers — the fresh module is NOT resident there.
+    """
     handlers_mod = _load_handlers()
-    return handlers_mod.SynapseHandler()
+    return handlers_mod.SynapseHandler(), handlers_mod
 
 
 # ---------------------------------------------------------------------------
@@ -94,8 +105,7 @@ class TestUndoHandler:
 
     def test_undo_handler_calls_performUndo(self, _hou_stub):
         """_handle_undo should call hou.undos.performUndo()."""
-        handler = _get_handler_instance()
-        handlers_mod = sys.modules["synapse.server.handlers"]
+        handler, handlers_mod = _get_handler_instance()
         _handlers_hou = handlers_mod.hou
         with patch.object(_handlers_hou.undos, "performUndo") as mock_undo:
             result = handler._handle_undo({})
@@ -103,14 +113,14 @@ class TestUndoHandler:
 
     def test_undo_returns_status(self, _hou_stub):
         """_handle_undo should return a dict with status and message."""
-        handler = _get_handler_instance()
+        handler, _ = _get_handler_instance()
         result = handler._handle_undo({})
         assert result["status"] == "ok"
         assert "Undid" in result["message"]
 
     def test_undo_registered_in_handlers(self, _hou_stub):
         """undo should be registered in the handler registry."""
-        handler = _get_handler_instance()
+        handler, _ = _get_handler_instance()
         assert "undo" in handler._registry.registered_types
 
 
@@ -119,8 +129,7 @@ class TestRedoHandler:
 
     def test_redo_handler_calls_performRedo(self, _hou_stub):
         """_handle_redo should call hou.undos.performRedo()."""
-        handler = _get_handler_instance()
-        handlers_mod = sys.modules["synapse.server.handlers"]
+        handler, handlers_mod = _get_handler_instance()
         _handlers_hou = handlers_mod.hou
         with patch.object(_handlers_hou.undos, "performRedo") as mock_redo:
             result = handler._handle_redo({})
@@ -128,12 +137,12 @@ class TestRedoHandler:
 
     def test_redo_returns_status(self, _hou_stub):
         """_handle_redo should return a dict with status and message."""
-        handler = _get_handler_instance()
+        handler, _ = _get_handler_instance()
         result = handler._handle_redo({})
         assert result["status"] == "ok"
         assert "Redid" in result["message"]
 
     def test_redo_registered_in_handlers(self, _hou_stub):
         """redo should be registered in the handler registry."""
-        handler = _get_handler_instance()
+        handler, _ = _get_handler_instance()
         assert "redo" in handler._registry.registered_types
