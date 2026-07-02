@@ -192,11 +192,20 @@ def test_scripted_conversation_renders():
 
 
 def test_direct_input_is_roomy_multiline():
-    # Spike 4 — the Direct composer is a roomy multi-line prompt (not a one-line
-    # field), with Send present; conversation is told apart by type, no bubbles.
+    # v9 — the Direct composer defaults to the comp's roomy 132px (Preferred
+    # policy: it may compress toward the 64px floor only when the pane is
+    # short, so the embedded Send never crops). Needs an activated layout.
     p = _make_panel()
-    assert p._input.height() >= 120, "the prompt must be roomy multi-line"
-    assert p._send_btn is not None
+    p.resize(500, 700)
+    p.show()                                   # offscreen: activates layout
+    QtWidgets.QApplication.processEvents()
+    try:
+        assert p._input.height() >= 120, "the prompt must be roomy multi-line"
+        assert p._send_btn is not None
+        # Send is embedded INSIDE the composer (comp), never a separate row
+        assert p._send_btn.parent() is p._input
+    finally:
+        p.hide()
 
 
 def test_synapse_reply_carries_signed_author():
@@ -216,13 +225,13 @@ def test_work_face_present():
 
 
 def test_work_face_pulses_while_thinking():
-    # The cook preview runs its indeterminate sweep while the agent thinks,
-    # and stops at rest — "the walk-away glance" reads alive.
+    # The cook bar runs its indeterminate busy sweep while the agent thinks
+    # (QProgressBar range 0..0 — v9 DsCookBar), and rests static after.
     p = _make_panel()
     p._set_thinking(True)
-    assert p._work_face._cook._timer.isActive()
+    assert p._work_face._cook.maximum() == 0, "thinking → indeterminate sweep"
     p._set_thinking(False)
-    assert not p._work_face._cook._timer.isActive()
+    assert p._work_face._cook.maximum() != 0, "at rest → static track"
 
 
 def test_tool_status_feeds_plan():
@@ -238,12 +247,13 @@ def test_tool_status_feeds_plan():
 
 
 def test_cook_progress_is_determinate():
-    # Real cook counts switch the grid out of pulse into determinate progress.
+    # Real cook counts switch the bar out of the busy sweep into determinate
+    # progress; the cookline reads the comp's "cooked d/t" grammar.
     p = _make_panel()
     p._work_face.set_cook(14, 30)
-    assert p._work_face._cook._determinate
-    assert not p._work_face._cook._timer.isActive()
-    assert "14 / 30" in p._work_face._cook_lbl.text()
+    assert p._work_face._cook.maximum() == 30
+    assert p._work_face._cook.value() == 14
+    assert "14/30" in p._work_face._cook_lbl.text()
 
 
 def test_review_face_present_with_gate():
@@ -270,8 +280,8 @@ def test_review_show_result_populates_all_parts():
         signed="sonnet-4.6",
     )
     assert "Dark_Glass" in rf._verdict.text()
-    # DECISION leads the headline; VIA folds into the (collapsed) detail
-    assert rf._credit_box.count() == 1
+    # DECISION leads the credit grid; VIA folds into the (collapsed) detail
+    assert len(rf._decisions) == 1
     assert rf._via_box.count() == 1
     assert rf._flags_box.count() == 2
     # SIGNED line is display-only and shown
@@ -333,38 +343,141 @@ def test_fonts_bundled_and_registered():
         assert "Space Grotesk" in st["families"] and "Space Mono" in st["families"]
 
 
+def test_font_load_survives_panel_reload_purge():
+    # v9 hardening (CRUCIBLE) — the .pypanel loader purges synapse.* from
+    # sys.modules on every panel reopen, which resets fontload's module cache.
+    # The QFontDatabase registrations OUTLIVE the purge, so a fresh import must
+    # adopt the process-level status instead of re-registering the bundle
+    # (3 duplicate registrations per reopen, unbounded over a session).
+    from synapse.panel.designsystem import fontload
+    QtGui = fontload.QtGui
+    first = fontload.load_application_fonts()     # ensure the real load ran
+    calls = {"n": 0}
+    real = QtGui.QFontDatabase.addApplicationFont
+
+    def counted(path):
+        calls["n"] += 1
+        return real(path)
+
+    QtGui.QFontDatabase.addApplicationFont = staticmethod(counted)
+    try:
+        fontload._STATUS = None                   # what a fresh import sees
+        again = fontload.load_application_fonts()
+        assert calls["n"] == 0, "a reload purge must not re-register the bundle"
+        assert again["ok"] == first["ok"]
+        assert again["build_mismatch"] == first["build_mismatch"]
+        assert again["families"] == first["families"]
+    finally:
+        QtGui.QFontDatabase.addApplicationFont = real
+
+
 def test_tracking_applied_per_role():
-    # Spike 6 — the factory sets AbsoluteSpacing = em × px per role; BODY is
-    # untracked (default PercentageSpacing).
+    # v9 comp — the factory sets PercentageSpacing = 100 + em×100 per role
+    # (the AbsoluteSpacing form was superseded with the TRACKING_EM restore).
     from synapse.panel.designsystem import fontload
     from synapse.panel.designsystem import tokens as t
     f = fontload.tracked_font("BRAND", 16)
-    AbsoluteSpacing = type(f).AbsoluteSpacing
-    assert f.letterSpacingType() == AbsoluteSpacing
-    # Qt stores AbsoluteSpacing in 26.6 fixed-point (1/64 px), so allow a
-    # quantization tolerance rather than exact float equality.
-    assert abs(f.letterSpacing() - t.TRACKING_EM["BRAND"] * 16) < 0.05
-    # negative tracking for the display role (tighter verdict)
+    PercentageSpacing = type(f).PercentageSpacing
+    assert f.letterSpacingType() == PercentageSpacing
+    assert abs(f.letterSpacing() - (100 + t.TRACKING_EM["BRAND"] * 100)) < 0.05
+    # negative tracking for the display role (tighter verdict) → below 100%
     fd = fontload.tracked_font("DISPLAY", 15)
-    assert fd.letterSpacing() < 0
-    # BODY: no absolute tracking applied
+    assert 0 < fd.letterSpacing() < 100
+    # BODY: untracked — spacing left at the QFont default (0 / Percentage)
     fb = fontload.tracked_font("BODY", 13)
-    assert fb.letterSpacingType() == type(fb).PercentageSpacing
+    assert fb.letterSpacingType() == PercentageSpacing
+    assert fb.letterSpacing() == 0
+
+
+def test_tracked_font_uses_bundled_families():
+    # v9 ratified call — tracked_font defaults to the bundled Space Grotesk;
+    # mono=True opts into Space Mono. When the bundle failed to register, the
+    # factory keeps the native family instead (graceful fallback, flagged).
+    from synapse.panel.designsystem import fontload
+    p = _make_panel()                    # panel init loads the bundle
+    st = fontload.font_status() or p._font_status or {}
+    sans = fontload.tracked_font("BRAND", 14)
+    mono = fontload.tracked_font("DATA", 11, mono=True)
+    if st.get("ok") and not st.get("build_mismatch"):
+        assert sans.family() == "Space Grotesk"
+        assert mono.family() == "Space Mono"
+    else:
+        assert st.get("build_mismatch"), "unregistered bundle must be flagged"
 
 
 def test_wordmark_carries_brand_tracking():
-    # Spike 6 — the wordmark QFont carries BRAND AbsoluteSpacing (QSS can't).
+    # v9 — the wordmark QFont carries BRAND PercentageSpacing (QSS can't track).
+    from synapse.panel.designsystem import tokens as t
     p = _make_panel()
     f = p._wordmark.font()
-    assert f.letterSpacingType() == type(f).AbsoluteSpacing
+    assert f.letterSpacingType() == type(f).PercentageSpacing
+    assert abs(f.letterSpacing() - (100 + t.TRACKING_EM["BRAND"] * 100)) < 0.05
 
 
 def test_rail_author_token_shows():
-    # Spike 5 — the rail carries the author signature (display-only); the label
-    # tracks _author_token() regardless of whether the worker model imports.
+    # v9 — the rail author token is the ENGINE+MODEL click target: a clickable
+    # button whose text tracks _author_token(); its menu data covers every
+    # provider with exactly one active (engine, model) pair.
+    from synapse.panel.providers.registry import PROVIDER_IDS
     p = _make_panel()
     assert p._author_lbl is not None
+    assert isinstance(p._author_lbl, QtWidgets.QAbstractButton)
     assert p._author_lbl.text() == p._author_token()
+    assert hasattr(p, "_open_author_menu")
+    items = p._author_menu_items()
+    assert [pid for pid, _, _ in items] == list(PROVIDER_IDS)
+    active = [(pid, mid) for pid, _, rows in items for mid, _, on in rows if on]
+    assert active == [(p._provider_id, p._active_model())]
+
+
+def test_author_menu_tracks_engine_and_model_switch():
+    # v9 — selection stays OBSERVABLE on the token: a provider switch and a
+    # model switch each repaint the author token and move the single active row.
+    p = _make_panel()
+    pid0, mid0 = p._provider_id, p._active_model()   # restore whatever was picked
+    p._set_provider("gemini")
+    try:
+        assert p._author_lbl.text() == p._author_token()
+        active = [(pid, mid) for pid, _, rows in p._author_menu_items()
+                  for mid, _, on in rows if on]
+        assert active == [("gemini", p._active_model())]
+        # a row pick through the menu path switches engine AND model in one go
+        p._pick_engine_model("claude", "claude-fable-5")
+        assert p._provider_id == "claude"
+        assert p._active_model() == "claude-fable-5"
+        assert p._author_lbl.text() == p._author_token()
+        active = [(pid, mid) for pid, _, rows in p._author_menu_items()
+                  for mid, _, on in rows if on]
+        assert active == [("claude", "claude-fable-5")]
+    finally:
+        p._pick_engine_model(pid0, mid0)
+
+
+def test_stale_persisted_model_selection_stays_observable():
+    # v9 hardening (CRUCIBLE) — a persisted model pick can go STALE between
+    # sessions (registry rotation) while its provider stays valid. The boot
+    # merge keeps the pick; the selection must stay OBSERVABLE: every menu
+    # still leads with the registry rows in order, and the active pair is
+    # present + checked (exactly one) — never a silently blank menu.
+    from synapse.panel.providers import registry as reg
+    p = _make_panel()
+    pid = p._provider_id
+    stale = "claude-sonnet-4-5-RETIRED-TEST"
+    p._model_by_provider[pid] = stale     # what boot merges from a stale file
+    try:
+        want_ids = [m for m, _ in reg.models_for(pid)]
+        items = p._model_menu_items()
+        got_ids = [m for m, _, _ in items]
+        actives = [m for m, _, a in items if a]
+        assert got_ids[: len(want_ids)] == want_ids, "registry rows must lead, in order"
+        assert actives == [stale], "the stale pick must be checked (exactly one)"
+        assert got_ids[-1] == stale, "the stale row is appended at the tail"
+        a_active = [(apid, mid) for apid, _, rows in p._author_menu_items()
+                    for mid, _, on in rows if on]
+        assert a_active == [(pid, stale)], "author menu: exactly one active pair"
+        assert p._author_token(), "the token still renders a signature"
+    finally:
+        p._model_by_provider[pid] = reg.PROVIDER_DEFAULT_MODEL[pid]
 
 
 def test_stop_gated_to_working_state():
@@ -399,7 +512,7 @@ def test_reduced_motion_stops_animations():
         p = _make_panel()
         p._set_thinking(True)
         assert not p._mark._spin.isActive(), "mark must not spin under reduced-motion"
-        assert not p._work_face._cook._timer.isActive(), "cook must not pulse"
+        assert p._work_face._cook.maximum() != 0, "cook bar must stay static"
     finally:
         t.set_reduced_motion(None)
 
@@ -412,7 +525,7 @@ def test_motion_default_still_animates():
     try:
         p = _make_panel()
         p._set_thinking(True)
-        assert p._work_face._cook._timer.isActive()
+        assert p._work_face._cook.maximum() == 0   # indeterminate busy sweep
     finally:
         t.set_reduced_motion(None)
 

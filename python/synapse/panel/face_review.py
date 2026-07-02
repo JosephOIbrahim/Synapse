@@ -38,11 +38,12 @@ try:
 except Exception:  # pragma: no cover
     run_preflight = None
 
-# quality-flag status → dot color
+# quality-flag status → dot color (v9: the muted comp hues — GROW/WARN/ERROR
+# stay full-strength for gates/badges; the done-state verdict grammar is quiet)
 _FLAG_COLOR = {
-    "ok": t.GROW, "pass": t.GROW,
-    "warn": t.WARN,
-    "fail": t.ERROR, "no": t.ERROR,
+    "ok": t.OK_SOFT, "pass": t.OK_SOFT,
+    "warn": t.HOT_SOFT,
+    "fail": t.NO_SOFT, "no": t.NO_SOFT,
 }
 
 
@@ -181,19 +182,29 @@ class FaceReview(QtWidgets.QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         col = QtWidgets.QVBoxLayout(self)
-        col.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_MD)
+        col.setContentsMargins(26, 20, 26, 20)   # comp face padding
         col.setSpacing(t.SPACE_SM)
+
+        # — the done sub-state shows the same cook bar, full (comp) —
+        self._cookbar = QtWidgets.QProgressBar()
+        self._cookbar.setObjectName("DsCookBar")
+        self._cookbar.setTextVisible(False)
+        self._cookbar.setFixedHeight(3)
+        self._cookbar.setRange(0, 1)
+        self._cookbar.setValue(1)
+        col.addWidget(self._cookbar)
 
         # — the render, the hero —
         self._hero = RenderHero()
         col.addWidget(self._hero)
 
-        # — taut benefit verdict —
+        # — taut benefit verdict (comp .verdict: 21px/500, ~360px measure) —
         self._verdict = c.label("", role="title")
         self._verdict.setWordWrap(True)
         self._verdict.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
-        self._verdict.setFont(fontload.tracked_font("DISPLAY", 15))  # tight display
-        col.addWidget(self._verdict)
+        self._verdict.setFont(fontload.tracked_font("DISPLAY", 21, weight=500))
+        self._verdict.setMaximumWidth(360)
+        col.addWidget(self._verdict, 0, Qt.AlignmentFlag.AlignLeft)
 
         # — no-frame locator — when no real frame is on disk, the render stays
         # Houdini's job: show the frame/AOV/path meta + a verb that surfaces the
@@ -214,18 +225,24 @@ class FaceReview(QtWidgets.QWidget):
         self._locator.setVisible(False)
         col.addWidget(self._locator)
 
-        # — SIGNED authorship line — DISPLAY ONLY. It reports who produced the
-        # result (the panel's model); it NEVER authors USD / customData. —
-        self._signed = c.label("", role="code")
-        self._signed.setStyleSheet(
-            "color:%s; font-size:10px; letter-spacing:1px;" % t.TEXT_TERTIARY)
-        self._signed.setVisible(False)
-        col.addWidget(self._signed)
-
-        # — credit headline (the DECISION leads; provenance folds into detail) —
-        self._credit_box = QtWidgets.QVBoxLayout()
-        self._credit_box.setSpacing(1)
-        col.addLayout(self._credit_box)
+        # — credit grid (comp): a 64px mono key column · DECISION rows lead ·
+        # SIGNED folds in as a grid row (display-only authorship — it NEVER
+        # authors USD / customData). Rebuilt from state on every set. —
+        self._decisions = []        # [(label, value, note)] — DECISION rows
+        self._signed_author = ""    # the SIGNED row's model (display-only)
+        self._signed = None         # the live SIGNED value QLabel (rebuilt)
+        credit_wrap = QtWidgets.QWidget()
+        credit_wrap.setObjectName("DsSection")
+        credit_wrap.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        credit_wrap.setMaximumWidth(440)     # reading measure (WIDE DOCKS rule)
+        self._credit_grid = QtWidgets.QGridLayout(credit_wrap)
+        self._credit_grid.setContentsMargins(0, 0, 0, 0)
+        self._credit_grid.setColumnMinimumWidth(0, 64)
+        self._credit_grid.setColumnStretch(1, 1)
+        self._credit_grid.setVerticalSpacing(8)
+        self._credit_grid.setHorizontalSpacing(0)
+        col.addWidget(credit_wrap, 0, Qt.AlignmentFlag.AlignLeft)
+        self._rebuild_credit()
 
         # — quality flags / status dots (preflight + BL-007 / BL-008) —
         self._flags_box = QtWidgets.QVBoxLayout()
@@ -260,15 +277,29 @@ class FaceReview(QtWidgets.QWidget):
         else:
             self.gate = None
 
-        # — the close: accept / revert / commit —
-        acts = QtWidgets.QHBoxLayout()
-        acts.setSpacing(t.SPACE_MD)
-        acts.addWidget(_verb("ACCEPT", lambda _=False: self.accepted.emit(), tone="ok"))
-        acts.addWidget(_verb("↶ REVERT", lambda _=False: self.reverted.emit()))
+        # — the close: accept / revert / commit (comp .acts: HAIR top rule,
+        # 440px measure, LABEL_SM mono verbs; Commit reads as a question) —
+        col.addSpacing(t.SPACE_LG)
+        acts_wrap = QtWidgets.QWidget()
+        acts_wrap.setObjectName("DsActs")
+        acts_wrap.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        acts_wrap.setMaximumWidth(440)       # reading measure (WIDE DOCKS rule)
+        acts = QtWidgets.QHBoxLayout(acts_wrap)
+        acts.setContentsMargins(0, 20, 0, 0)  # QSS padding can't move children
+        acts.setSpacing(22)
+        _acts_font = fontload.tracked_font("LABEL_SM", 11, mono=True)
+        for verb in (
+            _verb("ACCEPT", lambda _=False: self.accepted.emit(), tone="ok"),
+            _verb("↶ REVERT", lambda _=False: self.reverted.emit()),
+        ):
+            verb.setFont(_acts_font)
+            acts.addWidget(verb)
         acts.addStretch(1)
-        acts.addWidget(_verb("COMMIT TO /STAGE", lambda _=False: self.committed.emit(),
-                             tone="hot"))
-        col.addLayout(acts)
+        commit = _verb("COMMIT TO /STAGE?", lambda _=False: self.committed.emit(),
+                       tone="hot")
+        commit.setFont(_acts_font)
+        acts.addWidget(commit)
+        col.addWidget(acts_wrap, 0, Qt.AlignmentFlag.AlignLeft)
         col.addStretch(1)
 
         self._verdict.setText("Standing by for the next result.")
@@ -291,16 +322,67 @@ class FaceReview(QtWidgets.QWidget):
         self._verdict.setText(text or "")
 
     def set_signed(self, author):
-        """The SIGNED authorship line — DISPLAY ONLY. Reports who produced the
-        result (the panel's model). It NEVER authors USD / customData."""
-        if author:
-            self._signed.setText("SIGNED  %s" % author)
-            self._signed.setVisible(True)
-        else:
-            self._signed.setText("")
-            self._signed.setVisible(False)
+        """The SIGNED authorship credit — DISPLAY ONLY, a credit-grid row (v9).
+        Reports who produced the result (the panel's model). It NEVER authors
+        USD / customData. Same signature as the retired standalone label."""
+        self._signed_author = author or ""
+        self._rebuild_credit()
 
-    def _credit_row(self, label, value, note):
+    def _credit_key(self, label):
+        """Col-0 key: 11px mono LABEL_SM, tertiary, pre-uppercased."""
+        key = QtWidgets.QLabel(str(label).upper())
+        key.setFont(fontload.tracked_font("LABEL_SM", 11, mono=True))
+        key.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+        key.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        return key
+
+    def _credit_value(self, value, note):
+        """Col-1 value line: SIGNAL value + ' — ' TEXT_SECONDARY note."""
+        row = QtWidgets.QLabel()
+        row.setTextFormat(Qt.TextFormat.RichText)
+        row.setWordWrap(True)
+        row.setFont(fontload.tracked_font("DATA", 11, mono=True))
+        row.setText(
+            '<span style="color:%s;">%s</span>'
+            '<span style="color:%s;">%s</span>' % (
+                t.SIGNAL, value,
+                t.TEXT_SECONDARY, (" — " + note) if note else "",
+            )
+        )
+        return row
+
+    def _rebuild_credit(self):
+        """Rebuild the credit grid from state: DECISION rows lead, SIGNED
+        closes. ``self._signed`` stays the live SIGNED value label so the
+        display-only pin (tests) keeps a stable handle."""
+        self._clear(self._credit_grid)
+        r = 0
+        for label, value, note in self._decisions:
+            self._credit_grid.addWidget(self._credit_key(label), r, 0)
+            self._credit_grid.addWidget(self._credit_value(value, note), r, 1)
+            r += 1
+        self._signed_key = self._credit_key("SIGNED")
+        self._signed = self._credit_value(self._signed_author, "")
+        show = bool(self._signed_author)
+        self._signed_key.setVisible(show)
+        self._signed.setVisible(show)
+        self._credit_grid.addWidget(self._signed_key, r, 0)
+        self._credit_grid.addWidget(self._signed, r, 1)
+
+    def set_credit(self, items):
+        """items: list of (label, value, note). DECISION leads the credit grid;
+        VIA / ROUTED / other provenance fold into the expandable detail
+        (the simplified synthesis keeps the headline taut)."""
+        self._decisions = [(label, value, note) for label, value, note in items or []
+                           if str(label).upper() == "DECISION"]
+        self._clear(self._via_box)
+        for label, value, note in items or []:
+            if str(label).upper() != "DECISION":
+                self._via_box.addWidget(self._legacy_credit_row(label, value, note))
+        self._rebuild_credit()
+
+    def _legacy_credit_row(self, label, value, note):
+        """The folded-detail provenance row (VIA / ROUTED) — unchanged form."""
         row = QtWidgets.QLabel()
         row.setTextFormat(Qt.TextFormat.RichText)
         row.setWordWrap(True)
@@ -315,32 +397,24 @@ class FaceReview(QtWidgets.QWidget):
         )
         return row
 
-    def set_credit(self, items):
-        """items: list of (label, value, note). DECISION leads the headline;
-        VIA / ROUTED / other provenance fold into the expandable detail
-        (the simplified synthesis keeps the headline taut)."""
-        self._clear(self._credit_box)
-        self._clear(self._via_box)
-        for label, value, note in items or []:
-            box = self._credit_box if str(label).upper() == "DECISION" else self._via_box
-            box.addWidget(self._credit_row(label, value, note))
-
     def _toggle_detail(self):
         self._detail_expanded = not self._detail_expanded
         self._detail.setVisible(self._detail_expanded)
         self._detail_btn.setText("▾ detail" if self._detail_expanded else "▸ detail")
 
     def set_flags(self, flags):
-        """flags: list of (status, text). status in ok/pass/warn/fail/no."""
+        """flags: list of (status, text). status in ok/pass/warn/fail/no.
+        v9: muted dot hues (OK/NO/HOT_SOFT) + 10px mono secondary text."""
         self._clear(self._flags_box)
         for status, text in flags or []:
             color = _FLAG_COLOR.get(status, t.TEXT_SECONDARY)
             row = QtWidgets.QLabel()
             row.setTextFormat(Qt.TextFormat.RichText)
             row.setWordWrap(True)
+            row.setFont(fontload.tracked_font("DATA", 10, mono=True))
             row.setText(
                 '<span style="color:%s;">&#9679;</span> '
-                '<span style="color:%s;">%s</span>' % (color, t.TEXT_PRIMARY, text)
+                '<span style="color:%s;">%s</span>' % (color, t.TEXT_SECONDARY, text)
             )
             self._flags_box.addWidget(row)
 

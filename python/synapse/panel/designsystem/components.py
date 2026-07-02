@@ -16,6 +16,7 @@ except ImportError:  # pragma: no cover - Houdini ships PySide6
     from PySide2.QtCore import Qt
 
 from . import tokens as t
+from . import fontload
 
 __all__ = [
     "Button", "Pill", "Card", "Badge", "StatusDot", "MarkDot", "ProgressBar",
@@ -32,13 +33,13 @@ def repolish(w):
 
 
 def apply_font_role(w, role="body", scale=1.0):
-    """Apply size/weight/tracking from a TYPE_ROLE while INHERITING Houdini's
-    native app-level UI font — only the ``code`` role forces the mono family
-    (paths / data). This is what makes the panel read as native, not web."""
-    _fam, size, weight, tracking = t.TYPE_ROLES.get(role, t.TYPE_ROLES["body"])
-    f = QtGui.QFont(w.font())  # start from the inherited native UI font
-    if role == "code":
-        f.setFamily(t.FONT_MONO)
+    """Apply family/size/weight/tracking from a TYPE_ROLE. v9 ratified call:
+    the family is the bundled pair (Space Grotesk sans / Space Mono for the
+    mono-stack roles), applied via QFont with fontload's graceful native
+    fallback when the bundle didn't register (build_mismatch)."""
+    fam, size, weight, tracking = t.TYPE_ROLES.get(role, t.TYPE_ROLES["body"])
+    f = QtGui.QFont(w.font())  # inherit host attrs (hinting, style strategy)
+    fontload.apply_family(f, mono=(fam == t.FONT_MONO_CSS))
     f.setPixelSize(t.scaled(size, scale))
     f.setBold(weight >= 600)
     if tracking:
