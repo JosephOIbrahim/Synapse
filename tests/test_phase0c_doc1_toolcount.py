@@ -49,20 +49,23 @@ def test_doc_tool_count_matches_registry():
 
 # ── DOC-1 tool-count, transport relationship (v5 runbook Task A) ──────────────
 # CTO decision #2: the registry (synapse.mcp._tool_registry.TOOL_DEFS) is the
-# CANONICAL core (110); CLAUDE.md derives from it (pinned above); transports may
+# CANONICAL core; CLAUDE.md derives from it (pinned above); transports may
 # legitimately differ. They surface the core differently, and the difference is a
 # fixed, named set -- pinned here so a tool silently moving between layers (or an
 # accidental duplicate registration) fails loud:
 #   · HTTP  /mcp  (synapse.mcp.server -> synapse.mcp.tools.get_tools): registry core
-#   · stdio       (mcp_server.py -> list_tools): registry core + 7 NAMED local tools
-#     served WITHOUT a Houdini connection -- 6 group-knowledge preambles + the
-#     Inspector. These are NOT dispatch handlers (absent from the registry), so
-#     they are stdio-only and never double-counted. stdio == 110 + 7 == 117.
+#   · stdio       (mcp_server.py -> list_tools): registry core + the NAMED local
+#     tools below, served WITHOUT a Houdini connection -- 6 group-knowledge
+#     preambles + the Inspector + Scout. These are NOT dispatch handlers (absent
+#     from the registry), so they are stdio-only and never double-counted.
+#     stdio == len(TOOL_DEFS) + len(_STDIO_LOCAL_TOOLS); no absolute numbers here
+#     on purpose -- the 110/117 prose in an earlier revision went stale silently.
 
 _STDIO_LOCAL_TOOLS = [
     "synapse_group_scene", "synapse_group_render", "synapse_group_usd",
     "synapse_group_tops", "synapse_group_memory", "synapse_group_cops",
     "synapse_inspect_stage",
+    "synapse_scout",
 ]
 
 
@@ -72,14 +75,16 @@ def _registry_names():
 
 
 def test_stdio_equals_registry_core_plus_named_local_tools():
-    """stdio surface == registry core + the 7 NAMED local tools (the value/mechanism
+    """stdio surface == registry core + the NAMED local tools (the value/mechanism
     binding the CTO review asked for, not bare identifier presence). The locals are
     wired into mcp_server.py's list_tools assembly (_GROUP_INFO_TOOLS keys +
-    _INSPECTOR_TOOL_NAME), and NONE of them are in the dispatch registry -- so the
-    +7 are legitimate transport tools, never accidental duplicate registrations.
-    Source-scanned so it needs no mcp/websockets import (CI-safe)."""
+    _INSPECTOR_TOOL_NAME + _SCOUT_TOOL_NAME), and NONE of them are in the dispatch
+    registry -- so the extras are legitimate transport tools, never accidental
+    duplicate registrations. Source-scanned so it needs no mcp/websockets import
+    (CI-safe)."""
     src = (_ROOT / "mcp_server.py").read_text(encoding="utf-8")
-    for token in ("_REGISTRY_TOOL_DEFS", "_GROUP_INFO_TOOLS", "_INSPECTOR_TOOL_NAME"):
+    for token in ("_REGISTRY_TOOL_DEFS", "_GROUP_INFO_TOOLS", "_INSPECTOR_TOOL_NAME",
+                  "_SCOUT_TOOL_NAME"):
         assert token in src, (
             f"stdio list_tools no longer composes {token} -- the documented "
             "stdio == registry + 6 group + inspector relationship moved."
@@ -96,9 +101,9 @@ def test_stdio_equals_registry_core_plus_named_local_tools():
 
 def test_http_lists_registry_core_only():
     """TEST-2 (stdio-vs-HTTP relationship): the HTTP /mcp transport
-    (synapse.mcp.tools.get_tools) lists EXACTLY the registry core; the 7 stdio-local
+    (synapse.mcp.tools.get_tools) lists EXACTLY the registry core; the stdio-local
     tools are stdio-only. Transports may legitimately differ (decision #2) -- this
-    pins the documented relationship (stdio = HTTP core + the 7 named locals) so the
+    pins the documented relationship (stdio = HTTP core + the named locals) so the
     difference can't drift silently into a real divergence."""
     from synapse.mcp.tools import get_tools
     http_names = {t["name"] for t in get_tools()}
