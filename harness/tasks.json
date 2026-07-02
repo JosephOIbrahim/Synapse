@@ -16,11 +16,11 @@
   },
   "tasks": [
     {
-      "id": "0.1", "phase": "prep", "mode": "A", "crit": true, "layer": "survival",
+      "id": "0.1", "phase": "prep", "mode": "A", "crit": true, "layer": "bounded-decision",
       "title": "Split the cp311 vendored seam (sidecar vs abi3)",
       "refs": ["python/synapse/__init__.py", "host/daemon.py"],
       "human_gate": { "decision": "sidecar | abi3", "recommended": "sidecar",
-        "why": "Architecture choice, not a cook. Harness prepares + verifies the bridge; you commit the direction." },
+        "why": "Bounded, evidence-backed direction — not a survival cliff. MEASURED: sidecar IPC (harness/notes/gate01_ipc_latency.py) runs p50 ~0.1-0.3ms — ~4 orders under the LLM + ~2s Houdini-cook floor, so IPC does NOT discriminate the arms. cp312/cp313 wheels are pre-cached at harness/state/wheel_cache/ (runbook docs/studio/UPGRADE.md Step 2a), so re-vendor-on-drop is cheap; if H22 ships cp311 this is a no-op. Sidecar is the durable fix, deferrable to the first post-release cycle. Harness verifies the property (brain_answers), not the mechanism; you commit the direction." },
       "verify": ["import_panel", "brain_answers"]
     },
     {
