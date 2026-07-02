@@ -10,9 +10,9 @@
   <a href="https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml"><img src="https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
-  <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-3820%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.19.0-1e293b.svg" alt="Changelog"></a>
+  <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-3994%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.20.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 ---
@@ -23,9 +23,22 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 
 - 🧠 **It works inside Houdini, not off to the side** — the assistant runs in Houdini itself, so there's no separate app to launch and nothing to wait on; it answers right where you're working.
 - 🔁 **Your words become real nodes** — every request is just a normal Houdini action. Don't like it? **Ctrl+Z** takes it back.
-- 🧾 **It keeps the receipts** — every change is recorded, so you can always see what it did and why.
-- 🔌 **Pick your AI · 113 tools** — choose **Claude · Gemini · NVIDIA Nemotron** in the panel and switch whenever you like.
+- 🧾 **It keeps the receipts** — every change is undo-safe *and* recorded, so you can always see what it did and why. That's the differentiator — not magic, receipts.
+- 🔌 **Pick your AI · 115 tools** — choose **Claude · Gemini · NVIDIA Nemotron · Ollama (local) · Custom** in the panel and switch whenever you like.
 - 📜 **Free to use (MIT license)** ([LICENSE](LICENSE)) with **patent-pending methods** ([PATENTS](PATENTS)) — the license covers the code, not the patents.
+
+---
+
+### ✦ Map — you are here
+
+| You want… | Read… |
+|---|---|
+| **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
+| **What shipped in v5.20.0** | *New in v5.20.0* — H22 readiness, the utility flywheel, panel v9 |
+| **How AI network-building stays safe** | *Propose → validate → build* |
+| **To install it** | *Install — 5 minutes* |
+| **The architecture** | *How it works — inside-out* |
+| **Every release + per-tool detail** | [CHANGELOG.md](CHANGELOG.md) |
 
 ---
 
@@ -35,16 +48,16 @@ A docked **SYNAPSE panel** inside Houdini. You type what you want — *"make a b
 
 - ⚡ **In-process** — the agent runs in Houdini's own Python; tools are direct `hou.*` calls, not a slow round-trip bridge.
 - ↩️ **Undo-safe** — everything it does is an ordinary Houdini action. **Ctrl+Z undoes it.** Every mutation leaves a provenance record.
-- 🔌 **Multi-provider** — pick **Claude · Gemini · NVIDIA Nemotron** right in the panel; swap engines mid-session.
-- 🎬 **Built for the work** — SOPs, **Solaris / USD, Karma, COPs, PDG / TOPs, MaterialX** — 113 tools.
+- 🔌 **Multi-provider** — pick **Claude · Gemini · NVIDIA Nemotron · Ollama · Custom** right in the panel; swap engines mid-session.
+- 🎬 **Built for the work** — SOPs, **Solaris / USD, Karma, COPs, PDG / TOPs, MaterialX** — 115 tools.
 
 > ✅ *"make a box" → a real geo node, confirmed in graphical Houdini 21.0.671.*
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
-    ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>chat · engine pills · /"]:::panel
-    PANEL -->|"Claude · Gemini · Nemotron"| LOOP["Agent loop<br/>chosen engine + 115 tools"]:::panel
+    ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>rail · Direct + Work · author token"]:::panel
+    PANEL -->|"Claude · Gemini · Nemotron · Ollama · Custom"| LOOP["Agent loop<br/>chosen engine + 115 tools"]:::panel
     LOOP -->|"tool_use"| EXEC["Tool executor<br/>(main thread)"]:::panel
     EXEC --> BR["Handler<br/>undo-wrapped · integrity"]:::bridge
     BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
@@ -57,27 +70,81 @@ flowchart LR
     classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
 ```
 
-**The panel, briefly:** a persistent rail (live state + a real **Stop**), two tabs under a same-pane law (**Direct** chat · **Work** glance), an **`Aa`** control that scales only what you *read*, typography that inherits Houdini's own UI font, and a **`/`** command palette over every tool.
+**The panel, briefly (v9):** a persistent rail (live state + a real **Stop**), two faces under a same-pane law (**Direct** chat · **Work** glance), the **author token** — engine + model in one rail control — an **`Aa`** control that scales only what you *read*, a bundled **Space Grotesk / Space Mono** type system, a token-only meter, and a **`/`** command palette over every tool.
 
 ---
 
-## ✦ New in v5.19.0
+## ✦ New in v5.20.0
 
-**Now it builds the network, not just checks it.** v5.18.0 taught SYNAPSE to *check* a planned network against your scene; v5.19.0 **builds it** — for real, under a single undo:
+Three things landed this release: **H22 readiness** (machinery, not hope), the **utility flywheel** (a self-improving probe → review → wire loop), and **panel v9** (five engines, its own type system).
 
-- 🔨 **Plan → built** — a validated network becomes real nodes in your scene, wired up, in one step.
-- ↩️ **One Ctrl+Z** — the whole build is a single undo. Don't like it? One press takes it all back.
-- 🛟 **Safe if it trips** — if a build hits a snag partway through, it cleans up after itself (no half-built mess) and tells you what happened, instead of leaving stray nodes behind.
+### H22-ready before H22 ships
 
-**And it wires Solaris the way you'd expect in production.** From your review: SYNAPSE now knows the real H21 patterns — the **Component Builder** for assets, the proper **`rendersettings` → render** terminal, **layered** scene assembly, and the **actual light nodes** (the old per-shape light names it used don't exist in H21) — plus which merge/sublayer input wins.
+**Houdini 22 lands mid-July. SYNAPSE meets it with a drop-day machine that's already proven.**
 
-Verified on **live Houdini 21.0.671**. *The propose → validate → build loop is now complete.*
+- 🎯 **Drop-day probe** — `scripts/h22_api_delta.py` diffs the running build's symbol table, node-type catalog, and punycode parm encodings against committed H21 baselines. Run against 21.0.671 the identity diff is **empty** — the machine is proven *before* the drop.
+- 🗂️ **Per-major symbol tables** — scout + doctor key on the running Houdini major; the H21 table is never overwritten by an H22 run.
+- 🧪 **Dual-build test axis** — `SYNAPSE_TEST_HOUDINI_BUILD` points the suite at either build.
+- 🤝 **APEX MCP boundary contract** — Houdini 22 ships a native APEX MCP. The ratified boundary ([`docs/SYNAPSE_H22_BOUNDARY.md`](docs/SYNAPSE_H22_BOUNDARY.md)): SYNAPSE **consumes it as a truth-contract provider** (observed-vs-claimed envelope, fail-loud) — it never competes with it. Coexistence rules: [`docs/MCP_COEXISTENCE.md`](docs/MCP_COEXISTENCE.md). SYNAPSE's lane stays the receipts: undo-safe mutations + recorded provenance.
+- 🔒 **Multi-client hardening** — hash-guarded rollback that never pops a foreign (artist or other-client) undo block, plus `external_change_detected` attribution when someone else moved the scene.
+
+### The utility flywheel
+
+**SYNAPSE now improves itself on a loop: probe live Houdini for ground truth → review its own code against that truth → wire the truth into the live path.** Nothing enters the live path on memory alone — memory drifts; probes don't.
+
+The first cycle shipped: **node-wiring connectivity.**
+
+- 🔬 **Probe** — `host/introspect_connectivity.py` instantiates **282 node types** headless and records their real input/output counts and slot labels → a committed, integrity-checked catalog (`python/synapse/cognitive/tools/data/connectivity_21.json`).
+- 🔍 **Review** — `scripts/flywheel_review_wiring.py` sweeps every `setInput` call site in the codebase against the catalog and classifies provable miswires.
+- 🔌 **Wire** — `wire_by_label()` (`python/synapse/core/wiring.py`) resolves inputs by **probed label**, never remembered index — fail-loud on an unknown label or type. The graph validator gained **slot-semantic checks (P3e)**: an edge into an input the type doesn't have, or a label that resolves to a different index, is rejected before anything is built.
+- 🏆 **The receipts** — this loop caught **15 real phantoms + 2 miswires** before H22 (phantom node-type spellings and camera parm encodings purged; two swapped solver-input wirings fixed).
+- 🧍 **Anti-runaway** — a human ratifies each new cycle; queue entries must carry evidence; where the catalog and a code comment disagree, **the catalog wins**.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart LR
+    PROBE["PROBE<br/>live Houdini ground truth<br/>282 node types → catalog"]:::hou -->|"committed catalog"| REV["REVIEW<br/>sweep the code against it<br/>every setInput call site"]:::bridge
+    REV -->|"findings → fixes"| WIRE["WIRE<br/>truth into the live path<br/>wire_by_label · validator P3e · test pins"]:::panel
+    WIRE -->|"new probeable truth classes"| NEXT["Queue<br/>human ratifies the next cycle"]:::side
+    NEXT -->|"cycle N+1"| PROBE
+    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
+    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
+    classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
+```
+
+### Panel v9
+
+**Five engines, one click, and the panel's own type.**
+
+- 🔌 **Five engines** — **Claude · Gemini · NVIDIA Nemotron · Ollama (local, GLM) · Custom** (bring your own OpenAI-compatible endpoint — base URL, model, key).
+- 👤 **The author token** — engine + model live in one rail control; click it, pick, done. **Picks persist across sessions.**
+- 🪟 **Two faces, one pane** — **Direct** (chat) · **Work** (glance). Faces swap in place; the panel never spawns another pane.
+- 🔤 **Bundled type** — **Space Grotesk / Space Mono** ship with the panel and load with it; a missing family is flagged, never silently substituted.
+- 🔢 **Token-only meter** — real provider-reported token counts (`812 · 18.0k · 1.2M`). Never estimated, never dollars.
+
+---
+
+## ✦ Propose → validate → build — how AI network-building stays safe
+
+**SYNAPSE never builds a network on the model's word alone.** Every plan is checked against your live scene *and* probed ground truth before a single node is created — and the build itself is one undo group.
+
+- 📝 **Propose** — the model lays the whole network out first: every node, every wire, on paper.
+- 🔎 **Validate against your live scene** — every input exists, every wire fits its input type, the parent network and every referenced node are really there, the plan is a DAG, and names don't collide. If a wire would land on an input you've *already* connected, validation **halts** — it never quietly severs your work.
+- 📐 **Validate against probed truth (P3e)** — the wiring catalog rejects an edge into an input index the node type doesn't have, and a slot label that resolves to a different index. Memory doesn't get a vote; the probe does.
+- 🔨 **Build — one undo group** — an unconditional TOCTOU re-validate first (a node deleted since propose halts with zero mutation), then create → set parms → wire → read back, all inside a single `hou.undos.group`. **One Ctrl+Z reverts the whole build.**
+- 🛟 **Rollback on failure** — if the build trips mid-way, it destroys the partial nodes inside the undo group. Zero net mutation, a structured `FAILED` result, no orphan nodes.
+- 🧾 **Receipts** — every build writes an `agent.usd` record: decision, reasoning, revert path.
+
+It also wires **Solaris the way production expects** — live-probed against 21.0.671: the **Component Builder** pattern for assets, the proper **`rendersettings` → render** terminal, **layered** scene assembly, the real H21 light nodes (the per-shape light names don't exist), and the actual merge/sublayer strength rule (**higher input index wins**).
+
+Verified end-to-end on **live Houdini 21.0.671** — build, single-undo revert, TOCTOU halt, and forced-failure rollback all pass.
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
     ASK["Artist<br/>'build a karma setup'"]:::artist --> PROP["Propose<br/>nodes + wires, on paper"]:::panel
-    PROP --> VAL["Validate vs your live scene<br/>inputs · wire types · occupied inputs · parent + targets exist"]:::bridge
+    PROP --> VAL["Validate<br/>vs your live scene · vs the probed wiring catalog (P3e)<br/>inputs · wire types · slot labels · occupied inputs · parent + targets exist"]:::bridge
     VAL -->|"all clear · parked"| BUILD["Build — one undo group<br/>create → wire → read back"]:::hou
     VAL -.->|"something's off"| STOP["Stop · nothing touched"]:::side
     BUILD --> NODES[("Real nodes<br/>single Ctrl+Z reverts")]:::hou
@@ -91,41 +158,16 @@ flowchart LR
 
 ---
 
-## ✦ New in v5.18.0
+## ✦ Earlier releases — the short version
 
-**Now it checks its plan against your real scene — *before* it builds.** When you ask for a network, SYNAPSE lays the whole thing out first (every node, every wire) and **checks it against your live Houdini scene** before creating a single node. It catches the impossible before it can touch your work:
+**Each row is one release's headline; the full record lives in [CHANGELOG.md](CHANGELOG.md).**
 
-- 🔌 **No dead-end wires** — a connection into an input a node doesn't have, or a wire that can't plug into that kind of input, is caught up front.
-- 🛟 **It won't unplug your work** — if a wire would land on an input you've *already* connected, SYNAPSE stops instead of quietly overwriting it.
-- 🧭 **No nodes into thin air** — it confirms the parent network and every existing node it points at really exist in your scene.
-
-Every check was verified against **live Houdini 21.0.671**. *This is the checking half of AI network-building — the step that actually creates the nodes lands next.*
-
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
-flowchart LR
-    ASK["Artist<br/>'build a karma setup'"]:::artist --> PLAN["AI plans the network<br/>nodes + wires, on paper"]:::panel
-    PLAN --> VAL["Check against your live scene<br/>does each input exist · does each wire fit · is the input already taken · is the target network there"]:::bridge
-    VAL -->|"all clear"| BUILD["Build it — undo-safe<br/>(lands next)"]:::hou
-    VAL -.->|"something's off"| STOP["Stop · nothing touched"]:::side
-    classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
-    classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
-```
-
----
-
-## ✦ New in v5.17.0
-
-Three things landed this release — all verified on **Houdini 21.0.671**:
-
-- 🛠️ **PDG perception bug fixed.** The AI can now watch PDG / TOPs cooks. A phantom event-handler call was crashing the cook-watcher on H21; it now uses the real Houdini idiom. *(Old "crash, fix pending" note — now fixed.)*
-- 🎯 **It double-checks Houdini's real parameter names instead of guessing.** Light and USD parameter spellings used to be guessed — sometimes wrong, so the value was *silently never set*. Now they're checked against live Houdini, so Solaris light and geometry params actually take. **One new tool** (set a USD *primvar*) brings the count to **113**.
-- 👁️ **You can see where the time goes.** New timing readouts across the live path. It turns out the AI's own thinking is ~95% of each step and the Houdini ops are 1–70ms — so the panel can now point at a slow step instead of leaving you guessing, and the audit-write that used to sit in the way moved out of it. *This is visibility, not a speed-up — nothing here makes Houdini run faster.*
-
-Plus forward-looking **Houdini 22 prep** — encoding clean-ups and ABI / compatibility guards so the eventual jump to H22 is less of a cliff. *(The H22 bits are prep, not yet tested on H22.)*
+| Release | Headline |
+|---|---|
+| **v5.19.0** | **The build half landed** — a validated proposal becomes real nodes under one undo group, with mid-build rollback. Plus the Solaris production-wiring correction (phantom per-shape lights purged, merge/sublayer strength rule live-probed). |
+| **v5.18.0** | **Whole-graph validation** — every proposed node + wire checked against the live scene before anything is built; the occupied-input guard halts rather than sever artist wiring. |
+| **v5.17.x** | **PDG cook-watcher fixed** (phantom event-handler idiom replaced with the real one) · **Solaris/USD parm names live-grounded** — silently-no-op'd light writes now land · **latency visibility** — the LLM turn is ~95% of each step, Houdini ops run 1–70 ms; the audit fsync moved off the hot path · license split so GitHub detects **pure MIT**. |
+| **v5.16.0** | **Multi-provider selector** (first three engines) · prompt caching · one-call render-ready Solaris builds. |
 
 ---
 
@@ -156,11 +198,12 @@ flowchart LR
 python scripts/install_synapse_package.py
 ```
 
-*No Python on PATH? Use Houdini's:* `& "C:\Program Files\Side Effects Software\Houdini 21.0.671\bin\hython.exe" scripts/install_synapse_package.py` &nbsp;·&nbsp; *(`--dry-run` previews.)*
+The installer **auto-detects your Houdini prefs directory** and writes a package file pointing at this repo (`--pref-dir` overrides, `--dry-run` previews).
+*No Python on PATH? Use Houdini's:* `& "C:\Program Files\Side Effects Software\Houdini 21.0.671\bin\hython.exe" scripts/install_synapse_package.py`
 > ✅ **You should see** a success line ending in the wired `python/` path — and **no** traceback.
 
 **3 · Paste your Claude key** *(~2 min)* — make one at **console.anthropic.com** (`sk-ant-…`), then **double-click `set_anthropic_key.bat`**, paste, Enter.
-*Want Gemini / Nemotron too?* Add their keys to a `.env` at the repo root (gitignored, auto-loaded):
+*Want the other engines?* Add their keys to a `.env` at the repo root (gitignored, auto-loaded). **Ollama needs no key** (it's your local server), and **Custom** is configured right in the panel (base URL · model · key).
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
@@ -217,7 +260,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.19.0):** the artist panel (multi-provider, undo-safe, 113 tools, live observability + latency instrumentation), the in-process substrate, two-tier provenance with the audit write off the hot path, freeze-safety, bounded autonomy + a kill switch, live-grounded Solaris / USD parameter names, and an H22-readiness harness. SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success, and the per-tool capability audit + the full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
+**Shipping (v5.20.0):** the artist panel v9 (five engines, undo-safe, 115 tools, live observability + latency instrumentation), the complete propose → validate → build pipeline with probed wiring truth, the utility flywheel (cycle 1: connectivity), the H22 drop-day probe + dual-build test axis, the in-process substrate, two-tier provenance with the audit write off the hot path, freeze-safety, bounded autonomy + a kill switch, live-grounded Solaris / USD parameter names, and the ratified APEX-MCP coexistence boundary. SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success, and the per-tool capability audit + the full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
 
 ---
 
@@ -242,29 +285,34 @@ python/synapse/
 ├── cognitive/                  # zero hou imports (lint-enforced)
 │   ├── dispatcher.py           # Dispatcher + AgentToolError
 │   ├── agent_loop.py           # Anthropic SDK turn runner
-│   └── tools/                  # pure-Python tool implementations
+│   ├── graph_validator.py      # whole-graph validation (P3/P4/P5 + P3e slot semantics)
+│   └── tools/                  # pure-Python tool implementations + committed truth catalogs
 ├── host/                       # Houdini-specific (hou / hdefereval OK)
 │   ├── daemon.py               # SynapseDaemon lifecycle
 │   ├── auth.py                 # API key resolver (.env + env var + hou.secure probe)
+│   ├── graph_builder.py        # build half — one undo group, TOCTOU re-check, rollback
 │   ├── tops_bridge.py          # PDG event bridge (perception, Phase A)
 │   └── scene_load_bridge.py    # auto-warm on AfterLoad (Phase B)
+├── providers/apex_mcp.py       # H22 APEX MCP truth-contract envelope (boundary-ratified)
 ├── memory/                     # Moneta-backed memory substrate
 ├── panel/                      # artist-facing copilot panel (Qt / PySide6)
-│   ├── providers/              # multi-provider engines — anthropic / gemini / nemotron (raw http.client, no SDK)
-│   ├── synapse_panel.py        # the docked panel — rail + 2 tabs, engine selector, "/" palette, Connect, honest Stop
+│   ├── providers/              # five engines — anthropic / gemini / nemotron / ollama / custom (raw http.client, no SDK)
+│   ├── synapse_panel.py        # the docked panel — rail + author token, Direct/Work faces, "/" palette, Connect, honest Stop
 │   ├── claude_worker.py        # background QThread — streams the engine + tool loop
 │   ├── tool_executor.py        # main-thread tool dispatch (per-tool timeouts)
-│   └── designsystem/           # vendored tokens / qss / components (one source)
+│   └── designsystem/           # vendored tokens / qss / components + bundled Space Grotesk/Mono
 ├── server/                     # live transport + safety wiring
 │   ├── freeze_chain.py         # process-wide watchdog: 5s detect → 30s escalate → halt
 │   ├── solaris_graph_templates.py  # one-call render-ready Solaris topologies
 │   └── handlers*.py            # command handlers — inline undo, cross-client mutation lock
-├── core/timeouts.py            # THE canonical per-tool timeout table
+├── core/                       # canonical tables — timeouts.py (per-tool budgets) · wiring.py (wire_by_label vs the probed catalog)
 └── _vendor/                    # anthropic + deps, CP311 win_amd64
 
-tests/                          # 3785 local (~70 Moneta-gated, skip on a clean clone)
-harness/                        # H22 readiness — self-verifying loop
-docs/                           # installation · upgrade · egress · reviews
+host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols)
+scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_wiring.py
+tests/                          # 3,994 local (~70 Moneta-gated, skip on a clean clone)
+harness/                        # H22 readiness — self-verifying loop + flywheel queue
+docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
 ```
 

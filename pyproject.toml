@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "synapse-houdini"
-version = "5.19.0"
+version = "5.20.0"
 description = "An AI copilot inside Houdini: chat in plain English and it builds in your live scene over a self-healing WebSocket bridge — every mutation undo-wrapped, reversible, and provenance-recorded across 112 tools, under a registry-wide truth contract (a result may not claim an outcome the handler did not observe), with a multi-provider chat engine (switch the panel between Claude, Google Gemini, and NVIDIA Nemotron — the latter over any OpenAI-compatible endpoint — via raw-stdlib providers, no vendor SDK), pipeline citizenship (tokens stay raw, per-frame render paths, OCIO color-managed previews, per-show config) and studio operability (rotating logs, synapse_doctor diagnostics + bundle, env-var conformance, bounded autonomy with a reachable kill switch, upgrade runbook, egress + key-provisioning docs), a two-tier audit trail (Tier-0 Floor hook + agent.usd Ledger), crash-atomic escrowed memory, and a process-wide freeze-safety chain (detect → breaker → emergency halt). Verified end-to-end on Houdini 21."
 readme = "README.md"
 license = {text = "MIT"}

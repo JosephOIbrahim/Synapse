@@ -2,11 +2,23 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
-## Unreleased — the H22 release train (PR #38)
+## v5.20.0 — the H22 release train · utility flywheel · panel v9
 
-*Day-1 of the runway to Houdini 22 (ships 2026-07-15): the drop-day API-delta probe (which immediately caught 15 phantoms in our own emitters), the ratified-boundary scaffolds for H22's native APEX MCP, multi-client hardening, and the panel's expansion to five engines. 3,969 tests passing; G3 pass; Mode-A identity diff empty; Mode-B trigger rehearsed.*
+*Three merged arcs (PRs #38/#41/#42, 2026-07-02): the runway to Houdini 22 (ships 2026-07-15) with the drop-day API-delta probe that immediately caught 15 phantoms in our own emitters; the first turn of the self-improving UTILITY FLYWHEEL; and the panel's v9 type-led redesign. **3,994 tests passing** · G3 pass ×2 · Mode-A identity diff empty · Mode-B trigger rehearsed · CRUCIBLE adversarial pass clean.*
 
-**H22 day-0 compatibility (WS1):**
+**UTILITY FLYWHEEL — cycle U.1, wiring truth (PR #41):**
+- The recursion-bounded self-improvement loop lands in `harness/`: **EXPLORE** (live-probe → committed ground truth) → **REVIEW** (diff code against it, deposit findings to the Ledger, queue evidenced next cycles) → **SCAFFOLD** (wire the truth into the live path + pin it). New cycle classes require human ratification.
+- `host/introspect_connectivity.py` → 282-type connectivity catalog (input labels, arity, outputs; byte-stable); `core/wiring.py::wire_by_label` (catalog-backed, fail-loud) adopted at the solver sites; `graph_validator` P3e slot-semantic checks on the live propose path; 147-site review sweep (0 critical); 3 golden-miswire fixtures the validator must reject; U.2–U.4 queued with evidence.
+- Meta-finding fixed at the runner: worktree gates now pin `PYTHONPATH` so they can never silently test the main checkout through a dev-machine editable install.
+
+**Panel v9 — "in Houdini's skin" (PR #42):**
+- Type-led redesign per the ratified comp: bundled **Space Grotesk / Space Mono** (OFL) with flagged native fallback; per-role tracking via `QFont.setLetterSpacing`; comp greys land only as seeded-pipeline fallbacks (text ramp stays contrast-SOLVED).
+- The rail's **author token is now the engine+model menu** — five engines (Claude / Gemini / Nemotron / Ollama `glm-5:cloud` / Custom endpoint) stay reachable + observable; the pill bar leaves the chrome; picks persist. Tokens-only meter (never estimates). Underline DIRECT/WORK tabs; 132px composer with embedded SEND; Work-face cook bar (reduced-motion static), 21px verdict, credit grid, acts row; 440/492px reading measures in wide docks.
+- CRUCIBLE adversarial rerun: **zero production breaks** across headless fallback, font-bundle-missing, stub-leak both orders, double cold-Qt audit, min-pane/wide-dock geometry, unconfigured-Custom surfacing, Ollama-down degradation, malformed-settings reopen ×4; +3 pins.
+
+**H22 release train (PR #38):**
+
+*H22 day-0 compatibility (WS1):*
 - **Task 0.2 built + proven** — `scripts/h22_api_delta.py` diffs symbol table + emitted-node-type catalog + punycode encodings against committed H21 baselines → `.claude/probe_delta.json` (`check_probe_clean` contract). Identity diff on 21.0.671 is EMPTY (785 aliases byte-matched) — the drop-day machine is proven before the drop.
 - **The probe ate its own dogfood:** 6 phantom camera punycode entries (live camera parms are plain camelCase — `focalLength`, `fStop`, …) and 9 phantom node-type spellings purged with live-verified replacements (`rigidsolver`→`rbdbulletsolver` in SOP chains, `oceanflat`→`oceansource`, vellum trio → `vellumconstraints` presets…), plus two live-probed swapped solver-input wirings fixed.
 - Dual-build plumbing: `SYNAPSE_TEST_HOUDINI_BUILD` test axis, per-major symbol tables (scout + doctor keyed on the running major, H21 file never overwritten), pref-dir derivation via `hou.homeHoudiniDirectory()` with a regression guard.
