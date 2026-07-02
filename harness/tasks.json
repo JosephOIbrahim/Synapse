@@ -7,7 +7,8 @@
     "nodes_appear", "ledger", "revert_clean", "render", "theme_ok",
     "mcp_surface_probe", "mcp_registered", "mcp_truth_contract",
     "scout_federates", "scout_no_apex_corpus", "no_rigging_drift",
-    "provenance_not_bypassed"
+    "provenance_not_bypassed",
+    "connectivity_catalog_fresh", "wiring_conformance", "validator_catches_miswire"
   ],
   "guardrails": {
     "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger.",
@@ -123,6 +124,24 @@
       "refs": ["DEMO_SCRIPT.md"],
       "verify": ["mcp_registered", "ledger"],
       "note": "Prove leg. Show the boundary live: Synapse calls the native MCP as one source, the call is truth-contract-wrapped and recorded in agent.usd, and is reversible. The receipts are the one thing the native MCP can't do alone — that's the whole pitch." },
-    { "id": "3.4", "mode": "B", "blocked_on": "drop", "crit": false, "title": "Capsule the ship state", "human_gate": { "decision": "manual" }, "verify": [] }
+    { "id": "3.4", "mode": "B", "blocked_on": "drop", "crit": false, "title": "Capsule the ship state", "human_gate": { "decision": "manual" }, "verify": [] },
+
+    {
+      "id": "U.1", "phase": "utility", "mode": "A", "crit": false, "layer": "utility",
+      "title": "Utility flywheel cycle 1 — network-wiring truth (connectivity catalog -> review sweep -> wire_by_label + validator pin)",
+      "refs": [
+        "harness/notes/spec-U1-wiring-flywheel.md",
+        "harness/state/flywheel_queue.json",
+        "host/introspect_connectivity.py",
+        "harness/notes/verified_connectivity_21.0.671.json",
+        "scripts/flywheel_review_wiring.py",
+        "python/synapse/core/wiring.py",
+        "python/synapse/cognitive/tools/data/connectivity_21.json",
+        "python/synapse/cognitive/graph_validator.py",
+        "tests/test_wiring_flywheel.py"
+      ],
+      "verify": ["connectivity_catalog_fresh", "wiring_conformance", "validator_catches_miswire"],
+      "note": "Cycle contract in spec-U1-wiring-flywheel.md. Anti-runaway anchors: human ratifies new cycle classes (flywheel_queue.json 'ratified'), evidence-linked queue entries only, guardrails every sprint."
+    }
   ]
 }

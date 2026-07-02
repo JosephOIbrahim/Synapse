@@ -15,13 +15,22 @@ Usage (called by run.ts):
 import argparse, json, os, subprocess, sys, tempfile
 from pathlib import Path
 
-def sh(cmd, cwd=None, timeout=900):
+def sh(cmd, cwd=None, timeout=900, env=None):
     try:
         p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout,
-                            shell=(os.name == "nt"))
+                            shell=(os.name == "nt"), env=env)
         return p.returncode, p.stdout or "", p.stderr or ""
     except Exception as e:
         return 1, "", f"{type(e).__name__}: {e}"
+
+
+def _wt_env(ctx):
+    """Env for stock-python subprocesses with the WORKTREE's synapse package
+    first on the path — a dev machine may carry an editable install pointing at
+    the main checkout, which would silently test the wrong code."""
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(Path(ctx["wt"]) / "python") + os.pathsep + env.get("PYTHONPATH", "")
+    return env
 
 def hython(hython_bin, script, cwd):
     """Run a python snippet inside Houdini's interpreter."""
@@ -352,6 +361,76 @@ def check_scout_no_apex_corpus(ctx):
             return {"ok": False, "detail": f"scout_sources.json unreadable: {str(e)[:200]}"}
     return {"ok": None, "detail": "no APEX corpus found; scout source-registry not wired yet (python/synapse/server/scout_sources.json missing)"}
 
+def check_connectivity_catalog_fresh(ctx):
+    # U.1: the packaged connectivity catalog (the wire_by_label / P3e authority) must be
+    # (a) internally sound — schema v2 + blake2b recomputes over its entries,
+    # (b) byte-identical to the harness probe artifact it claims to be a copy of, and
+    # (c) stamped with the live build when hython is available (stamp==build or the check
+    #     FAILS explicitly — a stale catalog is a phantom-wiring vector, never silent).
+    wt = Path(ctx["wt"])
+    pkg = wt / "python/synapse/cognitive/tools/data/connectivity_21.json"
+    if not pkg.exists():
+        return {"ok": False, "detail": "packaged connectivity_21.json missing"}
+    try:
+        import hashlib
+        data = json.loads(pkg.read_text(encoding="utf-8"))
+        if data.get("schema") != "verified_connectivity/v2":
+            return {"ok": False, "detail": f"schema={data.get('schema')} != verified_connectivity/v2"}
+        digest = hashlib.blake2b(
+            json.dumps(data.get("entries", {}), sort_keys=True, ensure_ascii=False).encode("utf-8"),
+            digest_size=16).hexdigest()
+        if digest != data.get("blake2b"):
+            return {"ok": False, "detail": "packaged catalog blake2b mismatch (corrupt/hand-edited)"}
+        stamp = data.get("houdini_version", "")
+        harness_fp = wt / "harness" / "notes" / f"verified_connectivity_{stamp}.json"
+        if not harness_fp.exists() or harness_fp.read_bytes() != pkg.read_bytes():
+            return {"ok": False, "detail": f"packaged copy != {harness_fp.name} (re-run "
+                                           "host/introspect_connectivity.py + re-copy)"}
+    except Exception as e:
+        return {"ok": False, "detail": f"catalog unreadable: {str(e)[:300]}"}
+    if ctx["hython"]:
+        code = "import hou\nprint('BUILD', hou.applicationVersionString())"
+        rc, out, err = hython(ctx["hython"], code, ctx["wt"])
+        live = next((l.split(" ", 1)[1] for l in out.splitlines() if l.startswith("BUILD ")), None)
+        if live is None:
+            return {"ok": False, "detail": f"could not read live build: {(err or out).strip()[:200]}"}
+        if live != stamp:
+            return {"ok": False, "detail": f"catalog stamp {stamp} != live build {live} — STALE; "
+                                           "regenerate via host/introspect_connectivity.py"}
+        return {"ok": True, "detail": f"catalog sound, byte-matched, stamp==live build {live}"}
+    return {"ok": True, "detail": f"catalog sound + byte-matched (stamp {stamp}; live-build "
+                                  "comparison skipped — HYTHON unset)"}
+
+def check_wiring_conformance(ctx):
+    # U.1: the REVIEW sweep re-runs clean — scripts/flywheel_review_wiring.py exits 0 with
+    # zero CRITICAL findings (index-out-of-arity / label-claim-mismatch vs the catalog).
+    # Runs WITHOUT --deposit / --queue-append: the Ledger deposit and queue append are the
+    # Stage-3 opt-ins, never an every-sprint side effect.
+    rc, out, err = sh([sys.executable, "scripts/flywheel_review_wiring.py"],
+                      cwd=ctx["wt"], env=_wt_env(ctx))
+    p = Path(ctx["wt"]) / ".claude/flywheel_u1_findings.json"
+    if not p.exists():
+        return {"ok": False, "detail": (out or err).strip()[:400] or "sweep produced no findings file"}
+    try:
+        crit = json.loads(p.read_text(encoding="utf-8"))["summary"]["critical"]
+    except Exception as e:
+        return {"ok": False, "detail": f"findings unreadable: {str(e)[:200]}"}
+    head = (out or err).strip().splitlines()
+    return {"ok": rc == 0 and crit == 0,
+            "detail": f"rc={rc} critical={crit}; {head[0][:300] if head else ''}"}
+
+def check_validator_catches_miswire(ctx):
+    # U.1: the golden miswire fixtures (vellumsolver constraint->2 / collision->1 swap,
+    # rbdbulletsolver constraint->2, out-of-range index) are REJECTED by GraphValidator P3e
+    # while the corrected forms pass — pinned in tests/test_wiring_flywheel.py. Runs the
+    # pinned assertions directly (stock python; the fixtures are pure + packaged-catalog-backed).
+    rc, out, err = sh([sys.executable, "-m", "pytest",
+                       "tests/test_wiring_flywheel.py", "-q"],
+                      cwd=ctx["wt"], env=_wt_env(ctx))
+    tail = (out or err).strip().splitlines()
+    return {"ok": rc == 0, "detail": (tail[-1] if tail else "no pytest output")[:400]}
+
+
 def run_one(name, task, ctx):
     fn = DISPATCH.get(name)
     if not fn:
@@ -376,6 +455,10 @@ DISPATCH = {
     # v2 — guardrails
     "scout_no_apex_corpus": check_scout_no_apex_corpus, "no_rigging_drift": check_no_rigging_drift,
     "provenance_not_bypassed": check_provenance_not_bypassed,
+    # U.1 — utility flywheel: network-wiring truth
+    "connectivity_catalog_fresh": check_connectivity_catalog_fresh,
+    "wiring_conformance": check_wiring_conformance,
+    "validator_catches_miswire": check_validator_catches_miswire,
 }
 
 def main():
@@ -385,6 +468,15 @@ def main():
     ap.add_argument("--hython", default="")
     ap.add_argument("--mode", default="A")
     a = ap.parse_args()
+
+    # Worktree-shadowing guard (flywheel U.1 meta-finding): a dev-machine
+    # editable install (__editable__.synapse-*.pth) resolves `synapse` to the
+    # MAIN checkout — for this process AND bare children — so a worktree gate
+    # can green-light code it never imported. Pin the WORKTREE's package first
+    # for both resolution paths.
+    _wt_py = str(Path(a.worktree).resolve() / "python")
+    sys.path.insert(0, _wt_py)
+    os.environ["PYTHONPATH"] = _wt_py + os.pathsep + os.environ.get("PYTHONPATH", "")
 
     doc = json.loads((Path(__file__).resolve().parents[1] / "tasks.json").read_text())
     tasks = doc["tasks"]

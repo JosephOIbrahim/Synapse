@@ -12,6 +12,12 @@ from .graph_proposal import (
 )
 from .interfaces import IConnectivityOracle, IExistenceOracle
 
+# U.1: the probe-verified connectivity catalog (packaged copy of the
+# host/introspect_connectivity.py output). Pure JSON, zero hou — loading it
+# keeps this layer host-agnostic. Missing/corrupt degrades to None and P3e
+# simply skips (the oracle-backed checks are never weakened).
+from ..core.wiring import load_connectivity_catalog, resolve_catalog_entry
+
 # network_type (GraphProposal.network_type) -> the node categories valid inside it.
 # Used by P4 for the node_category<->network_type consistency check. Unknown
 # network_types are skipped (no false reject). MAT nodes are VOPs or SHOPs; COP
@@ -33,6 +39,7 @@ class GraphValidator:
         connectivity: IConnectivityOracle,
         *,
         live_phases_enabled: bool = True,
+        connectivity_catalog: "dict | None" = None,
     ):
         self._exist = existence
         self._conn = connectivity
@@ -41,6 +48,11 @@ class GraphValidator:
         # symbol path (and inject a connectivity mock that refuses connectivity
         # calls) opt out explicitly with live_phases_enabled=False.
         self._live_phases_enabled = live_phases_enabled
+        # U.1 P3e: probe-verified slot semantics. Default = the packaged catalog
+        # (non-strict: unusable -> None -> P3e skips, nothing else changes).
+        # Injectable for tests / a future per-build override.
+        self._catalog = (connectivity_catalog if connectivity_catalog is not None
+                         else load_connectivity_catalog(strict=False))
 
     def validate(self, p: GraphProposal) -> ValidationReport:
         errors: list[ValidationIssue] = []
@@ -214,6 +226,63 @@ class GraphValidator:
                                f"'{tgt.scene_path}' is already occupied — wiring it "
                                f"would sever the artist's existing connection"),
                     ))
+
+            # --- 3e catalog slot semantics (U.1) — ADDITIVE, catalog-known types only ---
+            if tt is not None:
+                issues += self._catalog_slot_check(p, e, tgt, tt)
+        return issues
+
+    # ---- P3e — probe-verified slot semantics (U.1) ----
+    def _catalog_slot_check(self, p: GraphProposal, e, tgt, tt) -> list[ValidationIssue]:
+        # When the connectivity catalog (probe truth, not the live oracle) knows
+        # the target type: reject an edge into an index >= the probe-verified
+        # max_inputs, and — when the proposal NAMES a target slot label — reject
+        # a label that is unknown or resolves to a different index. Adds errors
+        # only; the oracle-backed 3a-3d above are untouched.
+        if self._catalog is None:
+            return []
+        entry = resolve_catalog_entry(self._catalog, tt[1], tt[0])
+        if entry is None:
+            return []
+        issues: list[ValidationIssue] = []
+        max_in = entry.get("max_inputs")
+        if max_in is not None and max_in >= 0 and (
+                e.target_input_index < 0 or e.target_input_index >= max_in):
+            issues.append(ValidationIssue(
+                where=tgt.node_id,
+                message=self._stamp(
+                    p, f"edge target '{tgt.node_id}' input index "
+                       f"{e.target_input_index} exceeds the probe-verified arity "
+                       f"(max inputs {max_in}) for type '{tt[0]}' "
+                       f"[connectivity catalog {self._catalog.get('houdini_version')}]"),
+            ))
+        label = getattr(e, "target_input_label", "") or ""
+        labels = entry.get("input_labels") or []
+        if label and labels:
+            wanted = label.strip().lower()
+            resolved = next((i for i, have in enumerate(labels)
+                             if str(have).strip().lower() == wanted), None)
+            if resolved is None:
+                issues.append(ValidationIssue(
+                    where=tgt.node_id,
+                    message=self._stamp(
+                        p, f"edge names target input label '{label}' but type "
+                           f"'{tt[0]}' has no such input — probe-verified labels "
+                           f"are {labels}"),
+                ))
+            elif resolved != e.target_input_index:
+                if 0 <= e.target_input_index < len(labels):
+                    wired_slot = f"'{labels[e.target_input_index]}'"
+                else:
+                    wired_slot = "out of the labeled range"
+                issues.append(ValidationIssue(
+                    where=tgt.node_id,
+                    message=self._stamp(
+                        p, f"edge names target input label '{label}' which lives "
+                           f"at index {resolved} of '{tt[0]}', but wires index "
+                           f"{e.target_input_index} ({wired_slot}) — "
+                           f"label-mismatched slot"),
+                ))
         return issues
 
     # ---- Phase 4 — structural, pure logic (MILE 2) ----

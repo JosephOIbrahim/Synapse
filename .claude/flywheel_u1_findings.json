@@ -1,0 +1,2544 @@
+{
+ "schema": "flywheel_findings/v1",
+ "task": "U.1",
+ "catalog": {
+  "path": "harness/notes/verified_connectivity_21.0.671.json",
+  "houdini_version": "21.0.671",
+  "blake2b": "c213570959156138a7cda52936fcd2c1"
+ },
+ "summary": {
+  "total_sites": 147,
+  "critical": 0,
+  "by_kind": {
+   "dynamic-index": 3,
+   "index-within-arity": 108,
+   "label-claim-verified": 3,
+   "unresolved-receiver": 33
+  }
+ },
+ "findings": [
+  {
+   "file": "python/synapse/core/wiring.py",
+   "line": 163,
+   "call": "setInput",
+   "receiver": "node",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "index",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/core/wiring.py",
+   "line": 166,
+   "call": "setInput",
+   "receiver": "node",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "resolved",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/host/graph_builder.py",
+   "line": 157,
+   "call": "setInput",
+   "receiver": "tgt",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "e.target_input_index",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/panel/system_prompt.py",
+   "line": 107,
+   "call": "setInput",
+   "receiver": "node",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/panel/system_prompt.py",
+   "line": 143,
+   "call": "setInput",
+   "receiver": "new_node",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/panel/system_prompt.py",
+   "line": 144,
+   "call": "setInput",
+   "receiver": "display_node",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 302,
+   "call": "setInput",
+   "receiver": "drape",
+   "receiver_type": "vellumdrape",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'vellumdrape'",
+   "candidate_keys": [
+    "Sop/vellumdrape"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 331,
+   "call": "setInput",
+   "receiver": "wind",
+   "receiver_type": "vellumconstraintproperty",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'vellumconstraintproperty'",
+   "candidate_keys": [
+    "Dop/vellumconstraintproperty",
+    "Sop/vellumconstraintproperty"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 344,
+   "call": "setInput",
+   "receiver": "cache",
+   "receiver_type": "filecache",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'filecache'",
+   "candidate_keys": [
+    "Lop/filecache",
+    "Sop/filecache",
+    "Sop/filecache::2.0",
+    "Sop/labs::filecache::1.0",
+    "Sop/labs::filecache::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 371,
+   "call": "setInput",
+   "receiver": "asm",
+   "receiver_type": "assemble",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'assemble'",
+   "candidate_keys": [
+    "Sop/assemble"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 373,
+   "call": "setInput",
+   "receiver": "cons",
+   "receiver_type": "rbdconstraintsfromrules",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'rbdconstraintsfromrules'",
+   "candidate_keys": [
+    "Sop/rbdconstraintsfromrules"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 377,
+   "call": "setInput",
+   "receiver": "props",
+   "receiver_type": "rbdconstraintproperties",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'rbdconstraintproperties'",
+   "candidate_keys": [
+    "Sop/rbdconstraintproperties",
+    "Sop/rbdconstraintproperties::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 396,
+   "call": "setInput",
+   "receiver": "debris",
+   "receiver_type": "debrissource",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'debrissource'",
+   "candidate_keys": [
+    "Sop/debrissource",
+    "Sop/debrissource::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 409,
+   "call": "setInput",
+   "receiver": "pyro",
+   "receiver_type": "pyrosolver",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pyrosolver'",
+   "candidate_keys": [
+    "Dop/pyrosolver",
+    "Dop/pyrosolver::2.0",
+    "Sop/pyrosolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 422,
+   "call": "setInput",
+   "receiver": "cache",
+   "receiver_type": "filecache",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'filecache'",
+   "candidate_keys": [
+    "Lop/filecache",
+    "Sop/filecache",
+    "Sop/filecache::2.0",
+    "Sop/labs::filecache::1.0",
+    "Sop/labs::filecache::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 545,
+   "call": "setInput",
+   "receiver": "evl",
+   "receiver_type": "oceanevaluate",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'oceanevaluate'",
+   "candidate_keys": [
+    "Sop/oceanevaluate",
+    "Sop/oceanevaluate::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 561,
+   "call": "setInput",
+   "receiver": "solver",
+   "receiver_type": "flipsolver",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'flipsolver'",
+   "candidate_keys": [
+    "Dop/flipsolver",
+    "Dop/flipsolver::2.0",
+    "Sop/flipsolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 573,
+   "call": "setInput",
+   "receiver": "ww_solve",
+   "receiver_type": "whitewatersolver",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'whitewatersolver'",
+   "candidate_keys": [
+    "Dop/whitewatersolver",
+    "Dop/whitewatersolver::2.0",
+    "Sop/whitewatersolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 575,
+   "call": "setInput",
+   "receiver": "ww_src",
+   "receiver_type": "whitewatersource",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'whitewatersource'",
+   "candidate_keys": [
+    "Sop/whitewatersource",
+    "Sop/whitewatersource::2.0",
+    "Sop/whitewatersource::3.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 602,
+   "call": "setInput",
+   "receiver": "wrangle",
+   "receiver_type": "attribwrangle",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'attribwrangle'",
+   "candidate_keys": [
+    "Lop/attribwrangle",
+    "Sop/attribwrangle"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 605,
+   "call": "setInput",
+   "receiver": "rast",
+   "receiver_type": "volumerasterizeattributes",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'volumerasterizeattributes'",
+   "candidate_keys": [
+    "Sop/volumerasterizeattributes"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 608,
+   "call": "setInput",
+   "receiver": "solver",
+   "receiver_type": "pyrosolver",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pyrosolver'",
+   "candidate_keys": [
+    "Dop/pyrosolver",
+    "Dop/pyrosolver::2.0",
+    "Sop/pyrosolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 611,
+   "call": "setInput",
+   "receiver": "cache",
+   "receiver_type": "filecache",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'filecache'",
+   "candidate_keys": [
+    "Lop/filecache",
+    "Sop/filecache",
+    "Sop/filecache::2.0",
+    "Sop/labs::filecache::1.0",
+    "Sop/labs::filecache::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 657,
+   "call": "setInput",
+   "receiver": "matlib",
+   "receiver_type": "materiallibrary",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'materiallibrary'",
+   "candidate_keys": [
+    "Lop/materiallibrary"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 660,
+   "call": "setInput",
+   "receiver": "assign",
+   "receiver_type": "assignmaterial",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'assignmaterial'",
+   "candidate_keys": [
+    "Lop/assignmaterial"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 669,
+   "call": "setInput",
+   "receiver": "cam",
+   "receiver_type": "camera",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'camera'",
+   "candidate_keys": [
+    "Lop/camera"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 678,
+   "call": "setInput",
+   "receiver": "key",
+   "receiver_type": "light",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'light'",
+   "candidate_keys": [
+    "Cop/light",
+    "Cop2/light",
+    "Lop/light",
+    "Lop/light::2.0",
+    "Object/light",
+    "VopNet/light"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 681,
+   "call": "setInput",
+   "receiver": "fill",
+   "receiver_type": "light",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'light'",
+   "candidate_keys": [
+    "Cop/light",
+    "Cop2/light",
+    "Lop/light",
+    "Lop/light::2.0",
+    "Object/light",
+    "VopNet/light"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 684,
+   "call": "setInput",
+   "receiver": "rim",
+   "receiver_type": "light",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'light'",
+   "candidate_keys": [
+    "Cop/light",
+    "Cop2/light",
+    "Lop/light",
+    "Lop/light::2.0",
+    "Object/light",
+    "VopNet/light"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 692,
+   "call": "setInput",
+   "receiver": "light",
+   "receiver_type": "light",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'light'",
+   "candidate_keys": [
+    "Cop/light",
+    "Cop2/light",
+    "Lop/light",
+    "Lop/light::2.0",
+    "Object/light",
+    "VopNet/light"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 701,
+   "call": "setInput",
+   "receiver": "rs",
+   "receiver_type": "karmarenderproperties",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'karmarenderproperties'",
+   "candidate_keys": [
+    "Lop/karmarenderproperties"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 704,
+   "call": "setInput",
+   "receiver": "karma",
+   "receiver_type": "karma",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'karma'",
+   "candidate_keys": [
+    "Driver/karma",
+    "Lop/karma",
+    "Lop/labs::karma::1.0",
+    "Lop/labs::karma::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/planner.py",
+   "line": 712,
+   "call": "setInput",
+   "receiver": "out",
+   "receiver_type": "null",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'null'",
+   "candidate_keys": [
+    "Chop/null",
+    "Cop/null",
+    "Cop2/null",
+    "Dop/null",
+    "Driver/null",
+    "Lop/null",
+    "Object/null",
+    "Sop/null",
+    "Top/null",
+    "Vop/null"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 84,
+   "call": "setInput",
+   "receiver": "solver",
+   "receiver_type": "vellumsolver",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [
+    "Vellum Geometry"
+   ],
+   "severity": "INFO",
+   "kind": "label-claim-verified",
+   "detail": "comment label claim matches catalog label at index 0",
+   "candidate_keys": [
+    "Dop/vellumsolver",
+    "Sop/vellumsolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 86,
+   "call": "setInput",
+   "receiver": "solver",
+   "receiver_type": "vellumsolver",
+   "index": 1,
+   "index_expr": "1",
+   "claimed_labels": [
+    "Constraint Geometry"
+   ],
+   "severity": "INFO",
+   "kind": "label-claim-verified",
+   "detail": "comment label claim matches catalog label at index 1",
+   "candidate_keys": [
+    "Dop/vellumsolver",
+    "Sop/vellumsolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 90,
+   "call": "setInput",
+   "receiver": "cache",
+   "receiver_type": "filecache",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'filecache'",
+   "candidate_keys": [
+    "Lop/filecache",
+    "Sop/filecache",
+    "Sop/filecache::2.0",
+    "Sop/labs::filecache::1.0",
+    "Sop/labs::filecache::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 133,
+   "call": "setInput",
+   "receiver": "asm",
+   "receiver_type": "assemble",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'assemble'",
+   "candidate_keys": [
+    "Sop/assemble"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 136,
+   "call": "setInput",
+   "receiver": "cons",
+   "receiver_type": "rbdconstraintsfromrules",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'rbdconstraintsfromrules'",
+   "candidate_keys": [
+    "Sop/rbdconstraintsfromrules"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 141,
+   "call": "setInput",
+   "receiver": "props",
+   "receiver_type": "rbdconstraintproperties",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'rbdconstraintproperties'",
+   "candidate_keys": [
+    "Sop/rbdconstraintproperties",
+    "Sop/rbdconstraintproperties::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 144,
+   "call": "setInput",
+   "receiver": "solver",
+   "receiver_type": "rbdbulletsolver",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'rbdbulletsolver'",
+   "candidate_keys": [
+    "Sop/rbdbulletsolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 146,
+   "call": "setInput",
+   "receiver": "solver",
+   "receiver_type": "rbdbulletsolver",
+   "index": 1,
+   "index_expr": "1",
+   "claimed_labels": [
+    "Constraint Geometry"
+   ],
+   "severity": "INFO",
+   "kind": "label-claim-verified",
+   "detail": "comment label claim matches catalog label at index 1",
+   "candidate_keys": [
+    "Sop/rbdbulletsolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 150,
+   "call": "setInput",
+   "receiver": "cache",
+   "receiver_type": "filecache",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'filecache'",
+   "candidate_keys": [
+    "Lop/filecache",
+    "Sop/filecache",
+    "Sop/filecache::2.0",
+    "Sop/labs::filecache::1.0",
+    "Sop/labs::filecache::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 193,
+   "call": "setInput",
+   "receiver": "evl",
+   "receiver_type": "oceanevaluate",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'oceanevaluate'",
+   "candidate_keys": [
+    "Sop/oceanevaluate",
+    "Sop/oceanevaluate::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 196,
+   "call": "setInput",
+   "receiver": "out",
+   "receiver_type": "null",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'null'",
+   "candidate_keys": [
+    "Chop/null",
+    "Cop/null",
+    "Cop2/null",
+    "Dop/null",
+    "Driver/null",
+    "Lop/null",
+    "Object/null",
+    "Sop/null",
+    "Top/null",
+    "Vop/null"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 243,
+   "call": "setInput",
+   "receiver": "wrangle",
+   "receiver_type": "attribwrangle",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'attribwrangle'",
+   "candidate_keys": [
+    "Lop/attribwrangle",
+    "Sop/attribwrangle"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 248,
+   "call": "setInput",
+   "receiver": "rast",
+   "receiver_type": "volumerasterizeattributes",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'volumerasterizeattributes'",
+   "candidate_keys": [
+    "Sop/volumerasterizeattributes"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 254,
+   "call": "setInput",
+   "receiver": "solver",
+   "receiver_type": "pyrosolver",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pyrosolver'",
+   "candidate_keys": [
+    "Dop/pyrosolver",
+    "Dop/pyrosolver::2.0",
+    "Sop/pyrosolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 258,
+   "call": "setInput",
+   "receiver": "cache",
+   "receiver_type": "filecache",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'filecache'",
+   "candidate_keys": [
+    "Lop/filecache",
+    "Sop/filecache",
+    "Sop/filecache::2.0",
+    "Sop/labs::filecache::1.0",
+    "Sop/labs::filecache::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 300,
+   "call": "setInput",
+   "receiver": "solver",
+   "receiver_type": "vellumsolver",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'vellumsolver'",
+   "candidate_keys": [
+    "Dop/vellumsolver",
+    "Sop/vellumsolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 301,
+   "call": "setInput",
+   "receiver": "solver",
+   "receiver_type": "vellumsolver",
+   "index": 1,
+   "index_expr": "1",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 1 within max_inputs for 'vellumsolver'",
+   "candidate_keys": [
+    "Dop/vellumsolver",
+    "Sop/vellumsolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 305,
+   "call": "setInput",
+   "receiver": "cache",
+   "receiver_type": "filecache",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'filecache'",
+   "candidate_keys": [
+    "Lop/filecache",
+    "Sop/filecache",
+    "Sop/filecache::2.0",
+    "Sop/labs::filecache::1.0",
+    "Sop/labs::filecache::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 355,
+   "call": "setInput",
+   "receiver": "merge",
+   "receiver_type": "merge",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'merge'",
+   "candidate_keys": [
+    "Chop/merge",
+    "Cop2/merge",
+    "Dop/merge",
+    "Driver/merge",
+    "Lop/merge",
+    "Sop/merge",
+    "Top/merge"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 358,
+   "call": "setInput",
+   "receiver": "solver",
+   "receiver_type": "rigidbodysolver",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'rigidbodysolver'",
+   "candidate_keys": [
+    "Dop/rigidbodysolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 359,
+   "call": "setInput",
+   "receiver": "solver",
+   "receiver_type": "rigidbodysolver",
+   "index": 1,
+   "index_expr": "1",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 1 within max_inputs for 'rigidbodysolver'",
+   "candidate_keys": [
+    "Dop/rigidbodysolver"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/fx_recipes.py",
+   "line": 363,
+   "call": "setInput",
+   "receiver": "out",
+   "receiver_type": "output",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'output'",
+   "candidate_keys": [
+    "Chop/output",
+    "Cop/output",
+    "Dop/output",
+    "Lop/output",
+    "Sop/output",
+    "Top/output",
+    "Vop/output"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 115,
+   "call": "setInput",
+   "receiver": "cache",
+   "receiver_type": "filecache",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'filecache'",
+   "candidate_keys": [
+    "Lop/filecache",
+    "Sop/filecache",
+    "Sop/filecache::2.0",
+    "Sop/labs::filecache::1.0",
+    "Sop/labs::filecache::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 181,
+   "call": "setInput",
+   "receiver": "output_null",
+   "receiver_type": "null",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'null'",
+   "candidate_keys": [
+    "Chop/null",
+    "Cop/null",
+    "Cop2/null",
+    "Dop/null",
+    "Driver/null",
+    "Lop/null",
+    "Object/null",
+    "Sop/null",
+    "Top/null",
+    "Vop/null"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 184,
+   "call": "setInput",
+   "receiver": "input_null",
+   "receiver_type": "null",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'null'",
+   "candidate_keys": [
+    "Chop/null",
+    "Cop/null",
+    "Cop2/null",
+    "Dop/null",
+    "Driver/null",
+    "Lop/null",
+    "Object/null",
+    "Sop/null",
+    "Top/null",
+    "Vop/null"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 307,
+   "call": "setInput",
+   "receiver": "edit_props",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 310,
+   "call": "setInput",
+   "receiver": "config_prim",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 414,
+   "call": "setInput",
+   "receiver": "karma_props",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 425,
+   "call": "setInput",
+   "receiver": "edit_res",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 698,
+   "call": "setInput",
+   "receiver": "wrangle",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 703,
+   "call": "setInput",
+   "receiver": "output_null",
+   "receiver_type": "null",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'null'",
+   "candidate_keys": [
+    "Chop/null",
+    "Cop/null",
+    "Cop2/null",
+    "Dop/null",
+    "Driver/null",
+    "Lop/null",
+    "Object/null",
+    "Sop/null",
+    "Top/null",
+    "Vop/null"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 706,
+   "call": "setInput",
+   "receiver": "input_null",
+   "receiver_type": "null",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'null'",
+   "candidate_keys": [
+    "Chop/null",
+    "Cop/null",
+    "Cop2/null",
+    "Dop/null",
+    "Driver/null",
+    "Lop/null",
+    "Object/null",
+    "Sop/null",
+    "Top/null",
+    "Vop/null"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 832,
+   "call": "setInput",
+   "receiver": "matlib",
+   "receiver_type": "materiallibrary",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'materiallibrary'",
+   "candidate_keys": [
+    "Lop/materiallibrary"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 847,
+   "call": "setInput",
+   "receiver": "skin_out",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 859,
+   "call": "setInput",
+   "receiver": "cloth_out",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 870,
+   "call": "setInput",
+   "receiver": "hair_out",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 877,
+   "call": "setInput",
+   "receiver": "cloth_import",
+   "receiver_type": "sopimport",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'sopimport'",
+   "candidate_keys": [
+    "Cop/sopimport",
+    "Cop2/sopimport",
+    "Lop/sopimport"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 883,
+   "call": "setInput",
+   "receiver": "rendergeo",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 899,
+   "call": "setInput",
+   "receiver": "configure",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 962,
+   "call": "setInput",
+   "receiver": "shot_layer",
+   "receiver_type": "sublayer",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'sublayer'",
+   "candidate_keys": [
+    "Lop/sublayer"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 972,
+   "call": "setInput",
+   "receiver": "cam",
+   "receiver_type": "camera",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'camera'",
+   "candidate_keys": [
+    "Lop/camera"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 977,
+   "call": "setInput",
+   "receiver": "light_layer",
+   "receiver_type": "sublayer",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'sublayer'",
+   "candidate_keys": [
+    "Lop/sublayer"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 992,
+   "call": "setInput",
+   "receiver": "light_merge",
+   "receiver_type": "merge",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'merge'",
+   "candidate_keys": [
+    "Chop/merge",
+    "Cop2/merge",
+    "Dop/merge",
+    "Driver/merge",
+    "Lop/merge",
+    "Sop/merge",
+    "Top/merge"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 993,
+   "call": "setInput",
+   "receiver": "light_merge",
+   "receiver_type": "merge",
+   "index": 1,
+   "index_expr": "1",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 1 within max_inputs for 'merge'",
+   "candidate_keys": [
+    "Chop/merge",
+    "Cop2/merge",
+    "Dop/merge",
+    "Driver/merge",
+    "Lop/merge",
+    "Sop/merge",
+    "Top/merge"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 999,
+   "call": "setInput",
+   "receiver": "rs",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 1005,
+   "call": "setInput",
+   "receiver": "karma",
+   "receiver_type": "karma",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'karma'",
+   "candidate_keys": [
+    "Driver/karma",
+    "Lop/karma",
+    "Lop/labs::karma::1.0",
+    "Lop/labs::karma::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 1158,
+   "call": "setInput",
+   "receiver": "grade",
+   "receiver_type": "colorcorrect",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'colorcorrect'",
+   "candidate_keys": [
+    "Cop/colorcorrect",
+    "Cop2/colorcorrect"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 1168,
+   "call": "setInput",
+   "receiver": "tonemap",
+   "receiver_type": "tonemap",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'tonemap'",
+   "candidate_keys": [
+    "Cop/tonemap"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/pipeline_recipes.py",
+   "line": 1173,
+   "call": "setInput",
+   "receiver": "rop_out",
+   "receiver_type": "rop_comp",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'rop_comp'",
+   "candidate_keys": [
+    "Cop2/rop_comp"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 578,
+   "call": "setInput",
+   "receiver": "merge",
+   "receiver_type": "merge",
+   "index": null,
+   "index_expr": "i",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "dynamic-index",
+   "detail": "input index 'i' is not a literal — not provable statically",
+   "candidate_keys": [
+    "Chop/merge",
+    "Cop2/merge",
+    "Dop/merge",
+    "Driver/merge",
+    "Lop/merge",
+    "Sop/merge",
+    "Top/merge"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 583,
+   "call": "setInput",
+   "receiver": "rs",
+   "receiver_type": "karmarenderproperties",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'karmarenderproperties'",
+   "candidate_keys": [
+    "Lop/karmarenderproperties"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 597,
+   "call": "setInput",
+   "receiver": "karma",
+   "receiver_type": "karma",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'karma'",
+   "candidate_keys": [
+    "Driver/karma",
+    "Lop/karma",
+    "Lop/labs::karma::1.0",
+    "Lop/labs::karma::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 706,
+   "call": "setInput",
+   "receiver": "merge",
+   "receiver_type": "merge",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'merge'",
+   "candidate_keys": [
+    "Chop/merge",
+    "Cop2/merge",
+    "Dop/merge",
+    "Driver/merge",
+    "Lop/merge",
+    "Sop/merge",
+    "Top/merge"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 707,
+   "call": "setInput",
+   "receiver": "merge",
+   "receiver_type": "merge",
+   "index": 1,
+   "index_expr": "1",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 1 within max_inputs for 'merge'",
+   "candidate_keys": [
+    "Chop/merge",
+    "Cop2/merge",
+    "Dop/merge",
+    "Driver/merge",
+    "Lop/merge",
+    "Sop/merge",
+    "Top/merge"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 708,
+   "call": "setInput",
+   "receiver": "merge",
+   "receiver_type": "merge",
+   "index": 2,
+   "index_expr": "2",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 2 within max_inputs for 'merge'",
+   "candidate_keys": [
+    "Chop/merge",
+    "Cop2/merge",
+    "Dop/merge",
+    "Driver/merge",
+    "Lop/merge",
+    "Sop/merge",
+    "Top/merge"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 709,
+   "call": "setInput",
+   "receiver": "merge",
+   "receiver_type": "merge",
+   "index": 3,
+   "index_expr": "3",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 3 within max_inputs for 'merge'",
+   "candidate_keys": [
+    "Chop/merge",
+    "Cop2/merge",
+    "Dop/merge",
+    "Driver/merge",
+    "Lop/merge",
+    "Sop/merge",
+    "Top/merge"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 715,
+   "call": "setInput",
+   "receiver": "rs",
+   "receiver_type": "karmarenderproperties",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'karmarenderproperties'",
+   "candidate_keys": [
+    "Lop/karmarenderproperties"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 730,
+   "call": "setInput",
+   "receiver": "karma",
+   "receiver_type": "karma",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'karma'",
+   "candidate_keys": [
+    "Driver/karma",
+    "Lop/karma",
+    "Lop/labs::karma::1.0",
+    "Lop/labs::karma::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 892,
+   "call": "setInput",
+   "receiver": "merge",
+   "receiver_type": "merge",
+   "index": null,
+   "index_expr": "i",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "dynamic-index",
+   "detail": "input index 'i' is not a literal — not provable statically",
+   "candidate_keys": [
+    "Chop/merge",
+    "Cop2/merge",
+    "Dop/merge",
+    "Driver/merge",
+    "Lop/merge",
+    "Sop/merge",
+    "Top/merge"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 897,
+   "call": "setInput",
+   "receiver": "rs",
+   "receiver_type": "karmarenderproperties",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'karmarenderproperties'",
+   "candidate_keys": [
+    "Lop/karmarenderproperties"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/render_recipes.py",
+   "line": 905,
+   "call": "setInput",
+   "receiver": "karma",
+   "receiver_type": "karma",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'karma'",
+   "candidate_keys": [
+    "Driver/karma",
+    "Lop/karma",
+    "Lop/labs::karma::1.0",
+    "Lop/labs::karma::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/scene_recipes.py",
+   "line": 392,
+   "call": "setInput",
+   "receiver": "noise",
+   "receiver_type": "heightfield_noise",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'heightfield_noise'",
+   "candidate_keys": [
+    "Sop/heightfield_noise"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/scene_recipes.py",
+   "line": 397,
+   "call": "setInput",
+   "receiver": "erode",
+   "receiver_type": "heightfield_erode",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'heightfield_erode'",
+   "candidate_keys": [
+    "Sop/heightfield_erode",
+    "Sop/heightfield_erode::2.0",
+    "Sop/heightfield_erode::3.0"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/scene_recipes.py",
+   "line": 400,
+   "call": "setInput",
+   "receiver": "out",
+   "receiver_type": "null",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'null'",
+   "candidate_keys": [
+    "Chop/null",
+    "Cop/null",
+    "Cop2/null",
+    "Dop/null",
+    "Driver/null",
+    "Lop/null",
+    "Object/null",
+    "Sop/null",
+    "Top/null",
+    "Vop/null"
+   ]
+  },
+  {
+   "file": "python/synapse/routing/recipes/scene_recipes.py",
+   "line": 593,
+   "call": "setInput",
+   "receiver": "wrangle",
+   "receiver_type": "attribwrangle",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'attribwrangle'",
+   "candidate_keys": [
+    "Lop/attribwrangle",
+    "Sop/attribwrangle"
+   ]
+  },
+  {
+   "file": "python/synapse/server/api_adapter.py",
+   "line": 206,
+   "call": "setInput",
+   "receiver": "target_node",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "int(target_input",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/guards.py",
+   "line": 76,
+   "call": "setInput",
+   "receiver": "target",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "target_input",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/guards.py",
+   "line": 78,
+   "call": "setInput",
+   "receiver": "target",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "len(target.inputs(",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/guards.py",
+   "line": 91,
+   "call": "setInput",
+   "receiver": "target",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "idx",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/guards.py",
+   "line": 113,
+   "call": "setInput",
+   "receiver": "merge",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "idx",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/handlers.py",
+   "line": 1187,
+   "call": "setInput",
+   "receiver": "wrangle",
+   "receiver_type": "attribwrangle",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'attribwrangle'",
+   "candidate_keys": [
+    "Lop/attribwrangle",
+    "Sop/attribwrangle"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 330,
+   "call": "setInput",
+   "receiver": "target",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "target_input",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 605,
+   "call": "setInput",
+   "receiver": "merge_node",
+   "receiver_type": "over",
+   "index": null,
+   "index_expr": "i",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "dynamic-index",
+   "detail": "input index 'i' is not a literal — not provable statically",
+   "candidate_keys": [
+    "Cop2/over"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 825,
+   "call": "setInput",
+   "receiver": "block_end",
+   "receiver_type": "block_end",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'block_end'",
+   "candidate_keys": [
+    "Cop/block_end",
+    "Sop/block_end",
+    "Vop/block_end"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1020,
+   "call": "setInput",
+   "receiver": "dilate",
+   "receiver_type": "dilateerode",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'dilateerode'",
+   "candidate_keys": [
+    "Cop/dilateerode",
+    "Cop2/dilateerode"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1027,
+   "call": "setInput",
+   "receiver": "blur",
+   "receiver_type": "blur",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'blur'",
+   "candidate_keys": [
+    "Cop/blur",
+    "Cop2/blur",
+    "Data/cop/convolve3::sidefx::blur"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1033,
+   "call": "setInput",
+   "receiver": "thresh",
+   "receiver_type": "limit",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'limit'",
+   "candidate_keys": [
+    "Chop/limit",
+    "Cop2/limit"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1040,
+   "call": "setInput",
+   "receiver": "block_end",
+   "receiver_type": "block_end",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'block_end'",
+   "candidate_keys": [
+    "Cop/block_end",
+    "Sop/block_end",
+    "Vop/block_end"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1046,
+   "call": "setInput",
+   "receiver": "block_begin",
+   "receiver_type": "block_begin",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'block_begin'",
+   "candidate_keys": [
+    "Cop/block_begin",
+    "Sop/block_begin",
+    "Vop/block_begin"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1142,
+   "call": "setInput",
+   "receiver": "opencl_node",
+   "receiver_type": "vopcop2gen",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'vopcop2gen'",
+   "candidate_keys": [
+    "Cop2/vopcop2gen"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1161,
+   "call": "setInput",
+   "receiver": "block_end",
+   "receiver_type": "block_end",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'block_end'",
+   "candidate_keys": [
+    "Cop/block_end",
+    "Sop/block_end",
+    "Vop/block_end"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1249,
+   "call": "setInput",
+   "receiver": "sort_node",
+   "receiver_type": "vopcop2gen",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'vopcop2gen'",
+   "candidate_keys": [
+    "Cop2/vopcop2gen"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1365,
+   "call": "setInput",
+   "receiver": "halftone",
+   "receiver_type": "vopcop2gen",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'vopcop2gen'",
+   "candidate_keys": [
+    "Cop2/vopcop2gen"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1384,
+   "call": "setInput",
+   "receiver": "first_node",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1479,
+   "call": "setInput",
+   "receiver": "blur_node",
+   "receiver_type": "blur",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'blur'",
+   "candidate_keys": [
+    "Cop/blur",
+    "Cop2/blur",
+    "Data/cop/convolve3::sidefx::blur"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1494,
+   "call": "setInput",
+   "receiver": "decay_node",
+   "receiver_type": "colorcorrect",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'colorcorrect'",
+   "candidate_keys": [
+    "Cop/colorcorrect",
+    "Cop2/colorcorrect"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1497,
+   "call": "setInput",
+   "receiver": "block_end",
+   "receiver_type": "block_end",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'block_end'",
+   "candidate_keys": [
+    "Cop/block_end",
+    "Sop/block_end",
+    "Vop/block_end"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_cops.py",
+   "line": 1743,
+   "call": "setInput",
+   "receiver": "scatter_node",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/handlers_hda.py",
+   "line": 445,
+   "call": "setInput",
+   "receiver": "dst_node",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "dst_input",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/handlers_material.py",
+   "line": 235,
+   "call": "setInput",
+   "receiver": "matlib",
+   "receiver_type": "materiallibrary",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'materiallibrary'",
+   "candidate_keys": [
+    "Lop/materiallibrary"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_material.py",
+   "line": 315,
+   "call": "setInput",
+   "receiver": "assign_node",
+   "receiver_type": "assignmaterial",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'assignmaterial'",
+   "candidate_keys": [
+    "Lop/assignmaterial"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_material.py",
+   "line": 506,
+   "call": "setInput",
+   "receiver": "matlib",
+   "receiver_type": "materiallibrary",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'materiallibrary'",
+   "candidate_keys": [
+    "Lop/materiallibrary"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_material.py",
+   "line": 633,
+   "call": "setInput",
+   "receiver": "assign_node",
+   "receiver_type": "assignmaterial",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'assignmaterial'",
+   "candidate_keys": [
+    "Lop/assignmaterial"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_node.py",
+   "line": 162,
+   "call": "setInput",
+   "receiver": "target_node",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "int(target_input",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/handlers_render.py",
+   "line": 1282,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_solaris_assemble.py",
+   "line": 357,
+   "call": "setInput",
+   "receiver": "node",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/handlers_solaris_graph.py",
+   "line": 445,
+   "call": "setInput",
+   "receiver": "target",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "input_idx",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/handlers_tops/render_sequence.py",
+   "line": 455,
+   "call": "setInput",
+   "receiver": "rop_fetch",
+   "receiver_type": "ropfetch",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'ropfetch'",
+   "candidate_keys": [
+    "Top/ropfetch"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_tops/render_sequence.py",
+   "line": 478,
+   "call": "setInput",
+   "receiver": "partition",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/handlers_tops/render_sequence.py",
+   "line": 489,
+   "call": "setInput",
+   "receiver": "encode_node",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 405,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 501,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 582,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 655,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 794,
+   "call": "setInput",
+   "receiver": "node",
+   "receiver_type": "reference",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'reference'",
+   "candidate_keys": [
+    "Cop2/reference",
+    "Lop/reference",
+    "Lop/reference::2.0"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 824,
+   "call": "setInput",
+   "receiver": "kv_lop",
+   "receiver_type": null,
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 1059,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 1111,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 1257,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 1334,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 1442,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 1757,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/handlers_usd.py",
+   "line": 1848,
+   "call": "setInput",
+   "receiver": "py_lop",
+   "receiver_type": "pythonscript",
+   "index": 0,
+   "index_expr": "0",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "index-within-arity",
+   "detail": "input index 0 within max_inputs for 'pythonscript'",
+   "candidate_keys": [
+    "Lop/pythonscript",
+    "Object/pythonscript",
+    "Top/pythonscript"
+   ]
+  },
+  {
+   "file": "python/synapse/server/solaris_compose.py",
+   "line": 140,
+   "call": "setInput",
+   "receiver": "node",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "input_index",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  }
+ ]
+}

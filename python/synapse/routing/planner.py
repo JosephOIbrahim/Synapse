@@ -284,8 +284,10 @@ def _build_cloth_pipeline(
             "cloth.parm('constrainttype').set('cloth')\n"
             "solver = parent.createNode('vellumsolver', 'vellum_solver')\n"
             "solver.parm('substeps').set(5)\n"
-            "solver.setInput(0, cloth, 0)\n"
-            "solver.setInput(1, cloth, 1)\n"
+            "from synapse.core.wiring import wire_by_label\n"
+            "# U.1 catalog truth: vellumsolver 0=Vellum/1=Constraint/2=Collision\n"
+            "wire_by_label(solver, 'Vellum Geometry', cloth, source_output=0)\n"
+            "wire_by_label(solver, 'Constraint Geometry', cloth, source_output=1)\n"
             "result = {'cloth': cloth.path(), 'solver': solver.path()}\n"
         ),
     }))
@@ -311,7 +313,8 @@ def _build_cloth_pipeline(
                 "# straight into the solver's 'Collision Geometry' input.\n"
                 "collider = parent.createNode('null', 'collision_geo')\n"
                 "solver = parent.node('vellum_solver')\n"
-                "if solver: solver.setInput(2, collider, 0)\n"
+                "from synapse.core.wiring import wire_by_label\n"
+                "if solver: wire_by_label(solver, 'Collision Geometry', collider)\n"
                 "result = {'collider': collider.path()}\n"
             ),
         }))
@@ -373,8 +376,10 @@ def _build_destruction_pipeline(
             "props.parm('strength').set(500)\n"
             "props.setInput(0, cons, 0)\n"
             "solver = parent.createNode('rbdbulletsolver', 'rbd_solver')\n"
-            "solver.setInput(0, asm, 0)\n"
-            "solver.setInput(1, props, 0)\n"
+            "from synapse.core.wiring import wire_by_label\n"
+            "# U.1 catalog truth: rbdbulletsolver 0=Geometry/1=Constraint Geometry\n"
+            "wire_by_label(solver, 'Geometry', asm)\n"
+            "wire_by_label(solver, 'Constraint Geometry', props)\n"
             "result = {'fracture': frac.path(), 'solver': solver.path()}\n"
         ),
     }))

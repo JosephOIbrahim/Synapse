@@ -110,6 +110,13 @@ function runAgent(systemPrompt: string, userMsg: string, cwd: string): string {
         shell: process.platform === "win32",
         input: userMsg,                 // prompt via stdin — keeps it off the command line
         maxBuffer: 64 * 1024 * 1024,
+        // Worktree-shadowing guard (flywheel U.1 meta-finding): the agent's bare
+        // `pytest` would resolve `synapse` from the MAIN checkout via a dev-machine
+        // editable install — pin this worktree's package first for all children.
+        env: {
+          ...process.env,
+          PYTHONPATH: `${cwd.replace(/\\/g, "/")}/python${process.platform === "win32" ? ";" : ":"}${process.env.PYTHONPATH ?? ""}`,
+        },
       }
     );
     if (r.status !== 0) log(`${c.warn}  agent exited ${r.status}: ${(r.stderr || "").slice(0, 400)}${c.off}`);

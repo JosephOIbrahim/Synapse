@@ -41,6 +41,11 @@ class ProposedEdge:
     target_input_index: int
     # Amendment 3: an existing node may be source OR target. Occupied-input guard
     # (P3d) applies to the TARGET side only — outputs fan out freely.
+    # U.1: OPTIONAL declared target-slot label. When set AND the connectivity
+    # catalog knows the target type, P3e verifies the label resolves to exactly
+    # target_input_index (case-insensitive) — the index stays authoritative for
+    # the build; the label is the checkable statement of intent.
+    target_input_label: str = ""
 
 
 @dataclass
