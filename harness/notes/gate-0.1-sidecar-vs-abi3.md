@@ -53,3 +53,29 @@ SideFX has **not announced H22's Python version** (SPECULATION-free statement: i
 - Real IPC latency for a sidecar (unmeasured — build the skeleton and measure before committing).
 
 _Evidence base: `daemon.py`, `host/main_thread_executor.py`, `cognitive/agent_loop.py`, `__init__.py:20-57`, `_vendor/{pydantic_core,jiter}/*.pyd` + `*-dist-info/WHEEL`, `_vendor/README.md`, `tests/test_vendored_deps.py`, `server/{websocket,hwebserver_adapter,bridge_endpoint,freeze_chain}.py`, `mcp/server.py`, `harness/verify/checks.py`._
+
+## Evidence appended 2026-07-01 — the IPC-latency spike (the open number, now measured)
+
+`harness/notes/gate01_ipc_latency.py` — cross-process localhost WebSocket echo
+(same `websockets` lib as the transport), JSON-enveloped, 200 rounds/size,
+Python 3.14.2, this workstation:
+
+| payload | p50 | p95 | p99 |
+|---|---|---|---|
+| 256 B (tool call) | 0.102 ms | 0.192 ms | 0.375 ms |
+| 4 KB (tool result) | 0.119 ms | 0.233 ms | 0.296 ms |
+| 64 KB (fat observation) | 0.319 ms | 0.509 ms | 1.004 ms |
+
+**Reading:** sidecar IPC is ~4 orders of magnitude under the latency floor that
+actually governs turns (LLM inference + the ~2 s Houdini cook floor per the
+latency-refactor findings). Latency is NOT a discriminator between the two
+arms. The remaining trade is purely engineering: sidecar = a skeleton +
+process-lifecycle work, buys permanent immunity to Houdini's Python bumps;
+in-process re-vendor = near-zero work now (wheels for cp312 AND cp313 are
+pre-cached at `harness/state/wheel_cache/`, runbook at
+`docs/studio/UPGRADE.md` Step 2a), repeats on every future bump.
+
+**Recommendation with evidence in hand:** if H22 ships cp311 → no-op, defer
+sidecar to the post-release backlog. If H22 moved Python → re-vendor on drop
+day (cheap, pre-cached), and schedule the sidecar as the durable fix in the
+first post-release cycle rather than inside the drop window.

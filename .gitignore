@@ -117,3 +117,4 @@ harness/notes/_prov_live.json
 .claude/probe_delta.json
 .claude/probe_delta.md
 .claude/mcp_surface_delta.json
+harness/state/wheel_cache/

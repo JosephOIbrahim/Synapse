@@ -44,6 +44,12 @@ Drift policy: the default is `SYNAPSE_SCOUT_DRIFT_POLICY=refuse` (fail-closed)
 Set `SYNAPSE_SCOUT_DRIFT_POLICY=warn` to opt into graceful degradation (serve
 hits + null verdicts with a warning) during a controlled upgrade.
 
+> **Per-major tables:** the regen inside an H22 build writes
+> `h22_symbol_table.json` ALONGSIDE the committed H21 file (never overwrites
+> it), and scout auto-selects the table matching the running major —
+> dual-build support is free. (Doctor's artifact check still names the h21
+> file; tracked residual.)
+
 ## Step 2 — Verify the vendored-dependency ABI
 
 ```powershell
@@ -56,6 +62,41 @@ hits + null verdicts with a warning) during a controlled upgrade.
   `python/synapse/__init__.py`, update tests in lockstep.
 
 Either way, verify: `python -m pytest tests/test_vendored_deps.py -v`.
+
+### Step 2a — Re-vendor runbook (gate-0.1, in-process path)
+
+Only the two **native** wheels are ABI-locked (`pydantic_core`, `jiter` —
+cp311, NOT abi3); the other ~13 vendored packages are pure Python. If the
+new build's `sys.version_info[:2]` moved off `(3, 11)`:
+
+1. **Pre-cache wheels** (do this BEFORE drop day so the day has no network
+   dependency; both 3.12 and 3.13 sets cost a few MB):
+
+   ```powershell
+   pip download pydantic_core jiter --python-version 3.12 --platform win_amd64 `
+       --only-binary=:all: -d harness/state/wheel_cache/cp312
+   pip download pydantic_core jiter --python-version 3.13 --platform win_amd64 `
+       --only-binary=:all: -d harness/state/wheel_cache/cp313
+   ```
+
+2. **Place the `.pyd`s**: unzip the matching wheels and copy the
+   `pydantic_core/` and `jiter/` binary payloads into
+   `python/synapse/_vendor/`, keeping the pure-Python tree unchanged
+   (layout examples in `python/synapse/_vendor/README.md`).
+3. **Widen the activation gate** in `python/synapse/__init__.py` (the
+   `(3, 11)` equality) — prefer deriving acceptance from which ABI tags are
+   actually present in `_vendor` so the next re-vendor needs no code change.
+4. **Lockstep tests**: `tests/test_vendored_deps.py` pins the ABI tag
+   (single-sourced via `tests/conftest.py`'s `VENDOR_ABI_TAG` once the 1.3
+   parametrization lands); flip it with the wheels, same commit.
+5. **Prove the brain wakes**: `"<new build>\bin\hython.exe" -c "import synapse"`
+   then the harness `check_brain_answers`. Rollback = `git revert` (wheels
+   and gate travel in one commit).
+
+The **sidecar** alternative (brain in its own pinned cp311 process — immune
+to every future Python bump) is the other gate-0.1 arm; see
+`harness/notes/gate-0.1-sidecar-vs-abi3.md`. Decision owner: human, with the
+IPC-latency spike numbers in hand.
 
 ## Step 3 — Re-run the package installer
 

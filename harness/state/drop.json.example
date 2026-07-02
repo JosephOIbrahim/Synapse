@@ -1,0 +1,17 @@
+{
+  "_doc": [
+    "The Mode-B human trigger (human gate #2). Copy to harness/state/drop.json",
+    "ON H22 DROP DAY ONLY - run.ts arms the post-drop 1.x/2.x queue on the file's",
+    "EXISTENCE (run.ts:58-59); the fields below are the three numbers + build the",
+    "post-drop tasks read (gate-0.1 checklist step 1-2). Capture them inside the",
+    "installed H22:",
+    "  hython -c \"import sys,pxr,PySide6.QtCore as q; print(sys.version_info, pxr.__version__ if hasattr(pxr,'__version__') else '?', q.__version__)\"",
+    "Never commit a real drop.json - only this .example is tracked."
+  ],
+  "houdini_build": "22.0.XXX",
+  "python": "3.XX.X",
+  "usd": "0.XX.XX",
+  "pyside": "6.X.X",
+  "dropped_at": "2026-07-15T00:00:00Z",
+  "written_by": "human"
+}
