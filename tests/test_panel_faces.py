@@ -371,6 +371,34 @@ def test_font_load_survives_panel_reload_purge():
         QtGui.QFontDatabase.addApplicationFont = real
 
 
+def test_font_load_no_app_never_poisons_cache():
+    # v9 hardening (CRUCIBLE) — an early load/tracked_font call with NO
+    # QApplication (pre-boot) must report not-loaded WITHOUT caching, so it
+    # can never block the real load once the app exists. tracked_font must
+    # still construct a QFont on that path (no raise, no poison).
+    from synapse.panel.designsystem import fontload
+    _make_panel()                                  # real app + real load ran
+    st_real = fontload.load_application_fonts()
+    saved = fontload._STATUS
+    real_instance = fontload.QtWidgets.QApplication.instance
+    fontload.QtWidgets.QApplication.instance = staticmethod(lambda: None)
+    try:
+        fontload._STATUS = None                    # what a fresh import sees
+        st = fontload.load_application_fonts()
+        assert st["ok"] is False and st["build_mismatch"] is True
+        assert fontload._STATUS is None, "no-app status must never be cached"
+        fontload.tracked_font("BRAND", 14)         # constructs — no raise
+        fontload.tracked_font("DATA", 11, mono=True)
+        assert fontload._STATUS is None, "tracked_font pre-app must not cache"
+    finally:
+        fontload.QtWidgets.QApplication.instance = real_instance
+        fontload._STATUS = saved
+    # the real load stays reachable — the cache was never poisoned
+    st2 = fontload.load_application_fonts()
+    assert st2["ok"] == st_real["ok"]
+    assert st2["families"] == st_real["families"]
+
+
 def test_tracking_applied_per_role():
     # v9 comp — the factory sets PercentageSpacing = 100 + em×100 per role
     # (the AbsoluteSpacing form was superseded with the TRACKING_EM restore).
@@ -478,6 +506,66 @@ def test_stale_persisted_model_selection_stays_observable():
         assert p._author_token(), "the token still renders a signature"
     finally:
         p._model_by_provider[pid] = reg.PROVIDER_DEFAULT_MODEL[pid]
+
+
+def test_unconfigured_custom_surfaces_configure_dialog():
+    # v9 adversarial (CRUCIBLE) — picking Custom while unconfigured must
+    # SURFACE the Configure dialog path (never a silent Claude floor, never a
+    # dead engine with nothing to chat with); a configured Custom must NOT
+    # re-open it. Settings are pointed at a tmp path so the real
+    # .synapse/panel_settings.json is never touched.
+    import tempfile
+    from pathlib import Path
+    from synapse.panel import settings as pset
+    p = _make_panel()
+    pid0 = p._provider_id
+    tmpfile = Path(tempfile.mkdtemp(prefix="synapse_test_custom_")) / "s.json"
+    real_path = pset.settings_path
+    pset.settings_path = lambda: tmpfile
+    calls = []
+    p._configure_custom = lambda: calls.append(1)   # record, don't open a dialog
+    try:
+        assert not p._custom_configured()
+        p._set_provider("custom")
+        assert calls == [1], "unconfigured Custom must surface Configure…"
+        assert p._provider_id == "custom", "the pick must hold — no silent floor"
+        st = pset.load_settings()
+        st["custom"] = {"base_url": "http://localhost:1", "model": "m", "key_env": ""}
+        pset.save_settings(st)
+        p._set_provider("custom")
+        assert calls == [1], "a configured Custom must not re-open the dialog"
+    finally:
+        p._set_provider(pid0)            # restore state (still on the tmp path)
+        p.__dict__.pop("_configure_custom", None)
+        pset.settings_path = real_path
+
+
+def test_author_submenu_ollama_down_degrades_static():
+    # v9 adversarial (CRUCIBLE) — the Ollama author submenu re-fills on
+    # aboutToShow; with the daemon down (available_models raising) both the
+    # initial fill and the refresh must degrade to the static registry rows
+    # WITHOUT raising — opening the menu never breaks on a dead daemon.
+    from synapse.panel.providers import registry as reg
+    from synapse.panel.providers import ollama_provider as op
+    p = _make_panel()
+    real = op.OllamaProvider.available_models
+
+    def down(timeout=1.0):
+        raise OSError("CRUCIBLE: daemon down")
+
+    op.OllamaProvider.available_models = staticmethod(down)
+    try:
+        menu = QtWidgets.QMenu()
+        sub = menu.addMenu("Ollama")
+        p._fill_author_submenu(sub, "ollama")          # initial fill
+        got1 = [a.text() for a in sub.actions() if not a.isSeparator()]
+        p._fill_author_submenu(sub, "ollama")          # the aboutToShow refresh
+        got2 = [a.text() for a in sub.actions() if not a.isSeparator()]
+    finally:
+        op.OllamaProvider.available_models = real
+    want = [lbl for _, lbl in reg.models_for("ollama")]
+    assert got1[: len(want)] == want, "registry rows must lead when the daemon is down"
+    assert got1 == got2, "the refresh must be stable, not shrink or raise"
 
 
 def test_stop_gated_to_working_state():
