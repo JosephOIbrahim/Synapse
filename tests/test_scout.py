@@ -10,6 +10,7 @@ import json
 
 import pytest
 
+from conftest import HOUDINI_BUILD
 from synapse.cognitive.tools import scout
 
 
@@ -244,7 +245,7 @@ def test_default_drift_policy_is_refuse(monkeypatch):
 import hashlib
 
 
-def _write_table(path, symbols, version="21.0.671", corrupt=False):
+def _write_table(path, symbols, version=HOUDINI_BUILD, corrupt=False):
     syms = sorted(symbols)
     digest = hashlib.blake2b("\n".join(syms).encode("utf-8"), digest_size=16).hexdigest()
     if corrupt:
@@ -256,7 +257,7 @@ def _write_table(path, symbols, version="21.0.671", corrupt=False):
 
 
 def _table_store(tmp_path, monkeypatch, entries, *, table_symbols=None,
-                 table_version="21.0.671", corrupt=False, expected_version=None,
+                 table_version=HOUDINI_BUILD, corrupt=False, expected_version=None,
                  policy="warn"):
     """A store wired into scout with the package table NEUTRALIZED, so membership
     comes ONLY from the store table (or its absence) — hermetic and deterministic."""
@@ -323,17 +324,17 @@ def test_version_mismatch_reads_stale(tmp_path, monkeypatch):
     _table_store(tmp_path, monkeypatch,
                  entries=[{"id": "d", "type": "ref", "source": "d.md", "searchable_text": "x"}],
                  table_symbols={"hou.LopNode"}, table_version="21.0.512",
-                 expected_version="21.0.671")
+                 expected_version=HOUDINI_BUILD)
     out = scout.synapse_scout("use hou.LopNode", k=3)
     assert out["table"]["loaded"] is False and out["table"]["stale"] is True
-    assert "21.0.512" in out["table"]["reason"] and "21.0.671" in out["table"]["reason"]
+    assert "21.0.512" in out["table"]["reason"] and HOUDINI_BUILD in out["table"]["reason"]
 
 
 def test_version_match_trusts_table(tmp_path, monkeypatch):
     _table_store(tmp_path, monkeypatch,
                  entries=[{"id": "d", "type": "ref", "source": "d.md", "searchable_text": "x"}],
-                 table_symbols={"hou.LopNode"}, table_version="21.0.671",
-                 expected_version="21.0.671")
+                 table_symbols={"hou.LopNode"}, table_version=HOUDINI_BUILD,
+                 expected_version=HOUDINI_BUILD)
     out = scout.synapse_scout("use hou.LopNode", k=3)
     assert out["table"]["loaded"] is True and out["table"]["stale"] is False
 
@@ -344,3 +345,37 @@ def test_refuse_policy_raises_on_missing_table(tmp_path, monkeypatch):
                  table_symbols=None, policy="refuse")
     with pytest.raises(scout.ScoutError):
         scout.synapse_scout("use hou.LopNode", k=3)
+
+
+# ── runway §1.4: per-major committed package table ───────────────────────────
+
+def test_pkg_table_keyed_on_running_major(tmp_path, monkeypatch):
+    """The package authority resolves h<major>_symbol_table.json from the RUNNING
+    Houdini major (EXPECTED_HOUDINI_VERSION); no major / no per-major file falls
+    back to the committed H21 table, whose stamp mismatch still reads STALE."""
+    pkg = tmp_path / "data"; pkg.mkdir()
+    _write_table(pkg / "h21_symbol_table.json", {"hou.LopNode"}, version="21.0.671")
+    _write_table(pkg / "h22_symbol_table.json", {"hou.LopNode", "hou.NewH22"}, version="22.0.100")
+    monkeypatch.setattr(scout, "RAG_ROOT", tmp_path / "no_store")   # no store override
+    monkeypatch.setattr(scout, "_PKG_SYMBOL_TABLE", pkg / "h21_symbol_table.json")
+
+    # Known major with a committed per-major table -> that table is the authority.
+    monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", "22.0.100")
+    scout._TABLE_CACHE.clear()
+    syms, status = scout._load_symbol_table()
+    assert status["path"].endswith("h22_symbol_table.json")
+    assert status["stale"] is False and "hou.NewH22" in syms
+
+    # No major known (headless/stock python) -> the committed H21 file, unchanged.
+    monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", None)
+    scout._TABLE_CACHE.clear()
+    syms21, status21 = scout._load_symbol_table()
+    assert status21["path"].endswith("h21_symbol_table.json")
+    assert status21["stale"] is False and syms21 == {"hou.LopNode"}
+
+    # Known major but NO per-major file -> h21 fallback, stamp mismatch = STALE.
+    monkeypatch.setattr(scout, "EXPECTED_HOUDINI_VERSION", "23.0.000")
+    scout._TABLE_CACHE.clear()
+    syms23, status23 = scout._load_symbol_table()
+    assert syms23 is None and status23["stale"] is True
+    assert "23.0.000" in status23["reason"]

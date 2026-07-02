@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import pytest
 
+from conftest import HOUDINI_BUILD
 from synapse.cognitive.graph_proposal import (
     GraphProposal,
     NodeKind,
@@ -88,7 +89,7 @@ def _proposal(network_type, parent_path, nodes, edges) -> GraphProposal:
         edges=edges,
         natural_language_intent="mile 2 fixture",
         model_id="glm-5.2",
-        houdini_version_stamp="21.0.671",
+        houdini_version_stamp=HOUDINI_BUILD,
     )
 
 
@@ -113,7 +114,7 @@ def test_mile2_p3a_arity_overflow_is_rejected():
     assert report.status == ValidationStatus.INVALID
     assert any(("n1" in i.where) or ("input" in i.message.lower()) or ("arity" in i.message.lower())
                for i in report.errors)
-    assert all("21.0.671" in i.message for i in report.errors)
+    assert all(HOUDINI_BUILD in i.message for i in report.errors)
 
 
 def test_mile2_p3b_type_incompat_flagged_in_typed_category():

@@ -23,6 +23,7 @@ from pathlib import Path
 
 import pytest
 
+from conftest import HOUDINI_BUILD
 from synapse.cognitive.tools import scout
 from synapse.panel.gate_stamp import phantom_gate_status
 
@@ -35,7 +36,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 # ---------------------------------------------------------------------------
 
 
-def _write_table(path, symbols, version="21.0.671", corrupt=False):
+def _write_table(path, symbols, version=HOUDINI_BUILD, corrupt=False):
     syms = sorted(symbols)
     digest = hashlib.blake2b("\n".join(syms).encode("utf-8"), digest_size=16).hexdigest()
     if corrupt:
@@ -47,7 +48,7 @@ def _write_table(path, symbols, version="21.0.671", corrupt=False):
 
 
 def _table_store(tmp_path, monkeypatch, entries, *, table_symbols=None,
-                 table_version="21.0.671", corrupt=False, expected_version=None,
+                 table_version=HOUDINI_BUILD, corrupt=False, expected_version=None,
                  policy="warn"):
     cdir = tmp_path / "corpus"; cdir.mkdir()
     (cdir / "entries.jsonl").write_text(

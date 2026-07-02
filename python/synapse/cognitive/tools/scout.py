@@ -411,11 +411,25 @@ def _corpus_symbols(store: Store) -> set[str]:
     return syms
 
 
+def _pkg_symbol_table_path() -> Path:
+    """Per-major committed authority (runway §1.4): h<major>_symbol_table.json
+    keyed on the RUNNING Houdini major (EXPECTED_HOUDINI_VERSION, host-injected).
+    No major known (headless/stock python) or no per-major file committed ->
+    the H21 table, unchanged — a build-mismatched stamp still reads STALE in
+    _load_symbol_table (gate down, never silent)."""
+    major = str(EXPECTED_HOUDINI_VERSION or "").split(".", 1)[0]
+    if major.isdigit():
+        candidate = _PKG_SYMBOL_TABLE.with_name(f"h{major}_symbol_table.json")
+        if candidate.is_file():
+            return candidate
+    return _PKG_SYMBOL_TABLE
+
+
 def _symbol_table_path() -> Path:
     """Store-root override (spec: 'in the canonical store, alongside the corpus')
-    wins; else the committed package authority."""
+    wins; else the committed package authority (per running major)."""
     override = RAG_ROOT / SYMBOL_TABLE_NAME
-    return override if override.is_file() else _PKG_SYMBOL_TABLE
+    return override if override.is_file() else _pkg_symbol_table_path()
 
 
 def _read_symbol_table(path: Path) -> dict:

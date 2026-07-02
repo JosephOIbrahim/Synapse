@@ -23,6 +23,7 @@ import types
 
 import pytest
 
+from conftest import HOUDINI_BUILD
 from synapse.cognitive.graph_proposal import (
     ValidationReport,
     ValidationStatus,
@@ -114,7 +115,7 @@ def _valid_proposal_dict(pid="p-share"):
         "edges": [],
         "natural_language_intent": "a single box",
         "model_id": "glm-5.2",
-        "houdini_version_stamp": "21.0.671",
+        "houdini_version_stamp": HOUDINI_BUILD,
     }
 
 
