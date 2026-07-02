@@ -333,6 +333,12 @@ def check_provenance_not_bypassed(ctx):
 # drove false-phantom 0.667 -> 0). AST-based, so comments / docstrings / string-literals are
 # inherently ignored (a phantom named in prose is a Constant node, never an Attribute).
 
+# GUI-only top-level hou submodules that a HEADLESS dir() introspection can't see (Houdini
+# doesn't load them without a UI), yet are real, documented, and used across panel/host code —
+# absence from the headless table is an introspection artifact, NOT a phantom, so union them in.
+_GUI_HOU_ABSENT_HEADLESS = {"hou.ui", "hou.qt", "hou.audio", "hou.desktop", "hou.viewportVisualizers"}
+
+
 def _hou_phantoms_in_source(src, table_syms):
     """[(lineno, "hou.<attr>"), ...] for hou-module attribute accesses the table PROVES absent.
     Depth-1 hou.<attr> ONLY: the table enumerates every top-level name of `hou` via dir(), so
@@ -356,6 +362,38 @@ def _hou_phantoms_in_source(src, table_syms):
                 hits.append((node.lineno, symbol))
     return hits
 
+def _sprint_added_py(wt, base):
+    """{relpath: set(added_line_no) | None} for .py touched since <base> — None marks a new
+    untracked file (whole file is new). `git diff --unified=0` gives exact added line numbers
+    (committed + staged + unstaged); ls-files --others adds files the Generator never `git add`ed.
+    Judging only ADDED lines is what makes the gate fail *introduced* phantoms, not pre-existing
+    ones on an unchanged line of a merely-edited file."""
+    import re
+    added = {}
+    _, diff, _ = sh(["git", "diff", "--unified=0", "--diff-filter=d", base, "--", "*.py"], cwd=wt)
+    cur, newline = None, 0
+    for line in diff.splitlines():
+        if line.startswith("+++ b/"):
+            cur = line[6:].strip()
+            cur = cur if cur.endswith(".py") else None
+        elif line.startswith("@@"):
+            m = re.search(r"\+(\d+)", line)
+            newline = int(m.group(1)) if m else 0
+        elif line.startswith("+") and not line.startswith("+++"):
+            if cur:
+                added.setdefault(cur, set()).add(newline)
+            newline += 1
+        elif line.startswith("-") and not line.startswith("---"):
+            pass  # deletions don't advance the new-file line counter
+        else:
+            newline += 1
+    _, u_out, _ = sh(["git", "ls-files", "--others", "--exclude-standard", "--", "*.py"], cwd=wt)
+    for ln in u_out.splitlines():
+        rel = ln.strip()
+        if rel.endswith(".py"):
+            added[rel] = None
+    return added
+
 def check_phantom_clean(ctx):
     # Cross-cutting guardrail (tasks.json guardrails.checks): ok:False ⇒ run.ts short-circuits to
     # a repair ticket BEFORE the Evaluator. Table missing/stale/gate-down ⇒ ok:None (WARN, never
@@ -373,23 +411,23 @@ def check_phantom_clean(ctx):
     if "hou" not in table_syms:
         return {"ok": None, "detail": "symbol table lacks the hou surface — cannot prove hou.* absence "
                                       "(regenerate via host/introspect_runtime.py)"}
-    # 2) scope to CHANGED .py — base = master HEAD at worktree-add time (fork point, robust if
-    #    master advanced). Single-arg `git diff <base>` = base vs WORKING TREE (committed + staged
-    #    + unstaged in one shot); ls-files --others adds new .py the Generator never `git add`ed.
+    # GUI-only submodules (hou.ui/qt/audio/…) are real but absent from a HEADLESS dir() table —
+    # union them so a live panel/host sprint isn't false-flagged into a stall.
+    table_syms = table_syms | _GUI_HOU_ABSENT_HEADLESS
+    # 2) scope to the sprint's ADDED .py lines — base = master HEAD at worktree-add time (fork
+    #    point, robust if master advanced). Judging only newly-authored lines means a pre-existing
+    #    phantom on an unchanged line of a merely-edited file never blocks the sprint.
     base_rc, base_out, base_err = sh(["git", "merge-base", "master", "HEAD"], cwd=wt)
     base = base_out.strip()
     if base_rc != 0 or not base:
         return {"ok": None, "detail": f"cannot determine diff base (git merge-base failed): "
                                       f"{(base_err or base_out).strip()[:200]}"}
-    _, d_out, _ = sh(["git", "diff", "--name-only", "--diff-filter=d", base, "--", "*.py"], cwd=wt)
-    _, u_out, _ = sh(["git", "ls-files", "--others", "--exclude-standard", "--", "*.py"], cwd=wt)
-    touched = sorted({ln.strip() for ln in (d_out + "\n" + u_out).splitlines()
-                      if ln.strip().endswith(".py")})
-    if not touched:
-        return {"ok": True, "detail": "no changed .py files in this sprint"}
-    # 3) AST-scan each changed file for table-proven-absent hou.<attr> accesses.
+    added = _sprint_added_py(wt, base)  # {relpath: set(added_lines) | None (=whole new file)}
+    if not added:
+        return {"ok": True, "detail": "no changed .py lines in this sprint"}
+    # 3) AST-scan each changed file; flag table-proven-absent hou.<attr> only on ADDED lines.
     offenders, unparseable = [], []
-    for rel in touched:
+    for rel, addl in added.items():
         f = Path(wt) / rel
         if not f.is_file():
             continue  # rename/deletion artifact, or a path outside the tree
@@ -403,7 +441,8 @@ def check_phantom_clean(ctx):
             unparseable.append(rel)  # a broken file fails other checks anyway — don't crash the gate
             continue
         for lineno, symbol in hits:
-            offenders.append(f"{rel}:{lineno}:{symbol}")
+            if addl is None or lineno in addl:
+                offenders.append(f"{rel}:{lineno}:{symbol}")
     ver = status.get("houdini_version", "?")
     if offenders:
         note = f" (+{len(unparseable)} unparseable, skipped)" if unparseable else ""

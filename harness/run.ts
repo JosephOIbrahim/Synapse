@@ -29,7 +29,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync, statSync, renameSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { createHash } from "node:crypto";
 
@@ -226,14 +226,18 @@ function refsHash(task: any): string {
 }
 function isDone(task: any): boolean {
   const rec = doneLog[task.id];
-  return !!rec && rec.verdict === "PASS" && rec.refs_hash === refsHash(task);
+  if (!rec || rec.verdict !== "PASS" || rec.refs_hash !== refsHash(task)) return false;
+  // Only honor a skip when the hash folded REAL file bytes. A task with no refs, or only
+  // directory/missing refs, hashes to a near-constant and would otherwise bank forever.
+  return (task.refs ?? []).some((r: string) => { try { return statSync(join(REPO, r)).isFile(); } catch { return false; } });
 }
 function recordDone(task: any, wt: string) {
   if (DRY) return;
   let commit = "";
   try { const r = sh("git", ["rev-parse", "HEAD"], wt); if (r.status === 0) commit = (r.stdout || "").trim().slice(0, 12); } catch {}
   doneLog[task.id] = { verdict: "PASS", refs_hash: refsHash(task), commit, ts: new Date().toISOString().slice(0, 19) + "Z" };
-  try { writeFileSync(DONE, JSON.stringify(doneLog, null, 2) + "\n"); } catch {}
+  // atomic: a kill mid-write must not truncate done.json (loadDone would then wipe the ledger).
+  try { writeFileSync(DONE + ".tmp", JSON.stringify(doneLog, null, 2) + "\n"); renameSync(DONE + ".tmp", DONE); } catch {}
 }
 
 // ---------- ratification surface (Upgrade 2: the flywheel's missing seam) ----------
@@ -246,15 +250,20 @@ function surfaceRatification() {
   if (!existsSync(QUEUE)) return;
   let raw = "", data: any;
   try { raw = readFileSync(QUEUE, "utf8"); data = JSON.parse(raw); } catch { return; }
-  const pending = (data.cycles ?? []).filter((cy: any) => cy.ratified === false);
+  const cycles = Array.isArray(data.cycles) ? data.cycles : [];
+  const pending = cycles.filter((cy: any) => cy && typeof cy === "object" && cy.ratified === false);
   if (!pending.length) return;
   const lines = raw.split("\n");
   head("ratification pending — flywheel candidates (a human flips ratified, never the harness)");
   for (const cyc of pending) {
     const idLine = lines.findIndex((l: string) => l.includes('"id"') && l.includes(`"${cyc.id}"`));
+    // bound the forward scan to THIS cycle's object — stop before the next cycle's id line, so a
+    // reversed field order or an adjacent cycle can't make us borrow the wrong ratified line.
+    let stop = lines.length;
+    for (let i = idLine + 1; i < lines.length; i++) { if (/"id"\s*:/.test(lines[i])) { stop = i; break; } }
     let ratLine = -1;
-    for (let i = idLine; i >= 0 && i < lines.length; i++) { if (/"ratified"\s*:\s*false/.test(lines[i])) { ratLine = i + 1; break; } }
-    const ev = cyc.evidence ?? [];
+    for (let i = idLine; i >= 0 && i < stop; i++) { if (/"ratified"\s*:\s*false/.test(lines[i])) { ratLine = i + 1; break; } }
+    const ev = Array.isArray(cyc.evidence) ? cyc.evidence : [];
     const invalid = ev.length === 0;
     log(`  ${invalid ? c.bad : c.sig}${cyc.id}${c.off}  ${cyc.title ?? ""}`);
     log(`     ${c.dim}status:${c.off} ${cyc.status ?? "?"}    ${c.dim}evidence:${c.off} ${invalid ? `${c.bad}NONE — INVALID candidate (evidence-free; reject at review)${c.off}` : `${ev.length} artifact(s)`}`);

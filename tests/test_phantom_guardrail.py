@@ -56,3 +56,14 @@ def test_attribute_named_hou_on_other_object_not_flagged():
 
 def test_clean_file_is_empty():
     assert _syms("import hou\nfor i in range(3):\n    print(hou.node(str(i)))\n") == []
+
+
+def test_gui_submodules_allowlisted():
+    # hou.ui/qt/audio/desktop/viewportVisualizers are real but absent from a HEADLESS dir() table;
+    # check_phantom_clean unions them in. Simulate that union and confirm they're not flagged.
+    gui = checks._GUI_HOU_ABSENT_HEADLESS
+    assert {"hou.ui", "hou.qt"} <= gui
+    tbl = TABLE | gui
+    assert checks._hou_phantoms_in_source("import hou\nhou.ui.displayMessage('x')\nx = hou.qt.mainWindow()\n", tbl) == []
+    # a genuine phantom still trips even with the allowlist in place
+    assert ("hou.lopNetworks" in [s for _, s in checks._hou_phantoms_in_source("hou.lopNetworks()\n", tbl)])
