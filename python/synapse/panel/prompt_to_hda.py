@@ -416,7 +416,14 @@ def default_save_path(name: str) -> str:
     if hda_dir is None:
         pref_dir = os.environ.get("HOUDINI_USER_PREF_DIR", "")
         if not pref_dir:
-            # Best-effort default
+            # Derive from the running session — version-proof (houdini22.0 on H22).
+            try:
+                import hou
+                pref_dir = hou.homeHoudiniDirectory()
+            except Exception:  # noqa: BLE001 — hou is a soft dependency here
+                pref_dir = ""
+        if not pref_dir:
+            # Best-effort default (standalone, no hou)
             pref_dir = os.path.expanduser("~/houdini21.0")
         hda_dir = os.path.join(pref_dir, "hda")
 
