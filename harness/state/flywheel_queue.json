@@ -13,6 +13,42 @@
         "python/synapse/routing/recipes/fx_recipes.py"
       ],
       "ratified": true
+    },
+    {
+      "id": "U.2",
+      "title": "Parameter-name truth: gate emitted parm()/setParm literals against the nodetype catalog's live parm fingerprints",
+      "status": "candidate",
+      "evidence": [
+        "harness/notes/verified_nodetype_catalog_21.0.671.json",
+        ".claude/flywheel_u1_findings.json",
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ],
+      "ratified": false,
+      "note": "The nodetype catalog already carries ordered [(parm, type, default)] per resolved type — the same sweep pattern (createNode var map -> parm('x') literals) closes the loop nobody gates today."
+    },
+    {
+      "id": "U.3",
+      "title": "Source-output-index truth: validate setInput's third arg against catalog output_count/output_labels",
+      "status": "candidate",
+      "evidence": [
+        "harness/notes/verified_connectivity_21.0.671.json",
+        ".claude/flywheel_u1_findings.json"
+      ],
+      "ratified": false,
+      "note": "v2 catalog now carries output_count + ordered output_labels (e.g. vellumconstraints out 1 = Constraint Geometry, relied on by solver.setInput(1, cloth, 1)); the U.1 sweep only proves the TARGET side."
+    },
+    {
+      "id": "U.4",
+      "title": "Wire-time arity guard at the dynamic-index API boundary (handlers_node/api_adapter setInput passthroughs)",
+      "status": "candidate",
+      "evidence": [
+        ".claude/flywheel_u1_findings.json",
+        "python/synapse/server/api_adapter.py",
+        "python/synapse/server/handlers_node.py"
+      ],
+      "ratified": false,
+      "note": "The sweep's dynamic-index INFO sites are runtime passthroughs with no catalog check; wiring.wire_by_label/catalog lookup can gate them at call time."
     }
   ]
 }
