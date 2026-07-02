@@ -144,6 +144,17 @@ class ChatDisplay(QtWidgets.QTextBrowser):
         scrollbar = self.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
+    def resizeEvent(self, event):
+        """v9 WIDE DOCKS rule: reading holds a ~440px measure inside wide
+        panes (440 + 26×2 padding) — cap the document text width; structure
+        spans. Best-effort: if the cap ever fights QTextBrowser's relayout,
+        the fallback is dropping it (long lines, no breakage)."""
+        super().resizeEvent(event)
+        try:
+            self.document().setTextWidth(min(self.viewport().width(), 492))
+        except Exception:
+            pass
+
     # -- Message append methods ----------------------------------------------
 
     def append_user_message(self, text):

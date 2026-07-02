@@ -122,21 +122,30 @@ def _format_inline_code(match, font_scale=1.0):
     )
 
 
-def _format_node_path(match, font_scale=1.0):
+def _format_node_path(match, font_scale=1.0, signed=None):
     """Render a Houdini node path as a clickable **artifact chip** — a node
     mark + the mono path, a thing rather than a sentence fragment. The
-    ``node:`` href keeps click-to-locate (ChatDisplay.node_clicked) intact."""
+    ``node:`` href keeps click-to-locate (ChatDisplay.node_clicked) intact.
+    ``signed`` (v9 comp) appends a quiet ``· signed <model>`` authorship
+    suffix inside the chip — display-only, once per message."""
     path = match.group(1)
     sz = _scale(_SMALL_PX, font_scale)
+    note = ""
+    if signed:
+        note = (
+            '&#160;&#183;&#160;<span style="color:{dim}; '
+            'font-size:{ssz}px;">signed {who}</span>'
+        ).format(dim=_TEXT_DIM, ssz=_scale(10, font_scale),
+                 who=html.escape(str(signed)))
     return (
         '<a href="node:{path}" style="text-decoration:none;">'
         '<span style="background:{bg}; font-family:{mono}; font-size:{sz}px;">'
         '<span style="color:{mark};">&#9642;</span> '
         '<span style="color:{fg};">{path}</span>'
-        "&#160;</span></a>"
+        "{note}&#160;</span></a>"
     ).format(
         path=path, bg=_GROUND, mark=_SIGNAL, fg=_TEXT_BRIGHT,
-        mono=_MONO, sz=sz,
+        mono=_MONO, sz=sz, note=note,
     )
 
 
@@ -152,11 +161,23 @@ def _format_list_items(text):
     return _LIST_ITEM_RE.sub("", text).rstrip() + ul_html
 
 
-def _process_rich_text(raw, font_scale=1.0):
-    """Apply code block, inline code, node-chip, and list formatting."""
+def _process_rich_text(raw, font_scale=1.0, signed=None):
+    """Apply code block, inline code, node-chip, and list formatting. Returns
+    ``(html, signed_used)`` — when ``signed`` is given, the FIRST node chip
+    carries the authorship suffix (once per message) and ``signed_used`` says
+    whether a chip took it (else the caller renders the standalone note)."""
+    state = {"signed_used": False}
+
+    def _node(m):
+        s = None
+        if signed and not state["signed_used"]:
+            state["signed_used"] = True
+            s = signed
+        return _format_node_path(m, font_scale, signed=s)
+
     raw = _CODE_BLOCK_RE.sub(lambda m: _format_code_block(m, font_scale), raw)
     raw = _INLINE_CODE_RE.sub(lambda m: _format_inline_code(m, font_scale), raw)
-    raw = _NODE_PATH_RE.sub(lambda m: _format_node_path(m, font_scale), raw)
+    raw = _NODE_PATH_RE.sub(_node, raw)
     raw = _format_list_items(raw)
 
     # Newlines to <br> (but not inside <pre> blocks)
@@ -164,15 +185,12 @@ def _process_rich_text(raw, font_scale=1.0):
     for i, part in enumerate(parts):
         if not part.startswith("<pre"):
             parts[i] = part.replace("\n", "<br>")
-    return "".join(parts)
+    return "".join(parts), state["signed_used"]
 
 
-def format_response(response, font_scale=1.0):
-    """Convert a SYNAPSE response (dict or str) to styled HTML.
-
-    The agent voice: neutral body copy, no chrome. Node refs become artifact
-    chips; a status, if present, leads with a single colored dot.
-    """
+def _format_response_ex(response, font_scale=1.0, signed=None):
+    """format_response + ``signed_used`` (did a node chip carry the authorship
+    suffix?). Internal — the public surface stays unchanged."""
     if isinstance(response, str):
         raw = response
         status = None
@@ -186,14 +204,23 @@ def format_response(response, font_scale=1.0):
         )
         status = response.get("status")
 
-    raw = _process_rich_text(raw, font_scale)
+    raw, signed_used = _process_rich_text(raw, font_scale, signed=signed)
     prefix = _status_prefix(status) if status else ""
 
     return (
         '<div style="color:{fg}; font-size:{sz}px;">{prefix}{body}</div>'
     ).format(
         fg=_TEXT, sz=_scale(_BODY_PX, font_scale), prefix=prefix, body=raw,
-    )
+    ), signed_used
+
+
+def format_response(response, font_scale=1.0):
+    """Convert a SYNAPSE response (dict or str) to styled HTML.
+
+    The agent voice: neutral body copy, no chrome. Node refs become artifact
+    chips; a status, if present, leads with a single colored dot.
+    """
+    return _format_response_ex(response, font_scale)[0]
 
 
 def format_user_message(text, grouped=False, timestamp=None, font_scale=1.0):
@@ -207,12 +234,14 @@ def format_user_message(text, grouped=False, timestamp=None, font_scale=1.0):
     escaped = html.escape(text).replace("\n", "<br>")
     body_sz = _scale(_BODY_PX, font_scale)
     my = _MSG_MARGIN_Y if grouped else _GROUP_MARGIN_Y
+    # v9 comp .you: 2px SIGNAL rule · 14px gap · bright text at 1.5 line-height
+    # (line-height is best-effort — harmless if the QTextDocument subset drops it).
     return (
         '<table border="0" cellspacing="0" cellpadding="0" width="100%" '
         'style="margin:{my}px 0;"><tr>'
         '<td width="2" style="background:{sig};"></td>'
-        '<td width="10"></td>'
-        '<td style="color:{fg}; font-size:{sz}px;">{body}</td>'
+        '<td width="14"></td>'
+        '<td style="color:{fg}; font-size:{sz}px; line-height:150%;">{body}</td>'
         "</tr></table>"
     ).format(my=my, sig=_SIGNAL, fg=_TEXT_BRIGHT, sz=body_sz, body=escaped)
 
@@ -224,11 +253,14 @@ def format_synapse_message(content, grouped=False, timestamp=None, font_scale=1.
 
     ``signed`` adds a quiet, display-only authorship note (the model that
     produced the result) once at the head of a SYNAPSE group — never per
-    message. It is a label, not a substrate write."""
-    body = format_response(content, font_scale)
+    message. It is a label, not a substrate write. v9: when the result carries
+    a node chip, the FIRST chip carries the ``signed`` suffix (comp anatomy);
+    otherwise the standalone note renders as before — exactly one either way."""
+    body, chip_signed = _format_response_ex(
+        content, font_scale, signed=None if grouped else signed)
     my = _MSG_MARGIN_Y if grouped else _GROUP_MARGIN_Y
     note = ""
-    if signed and not grouped:
+    if signed and not grouped and not chip_signed:
         note = (
             '<div style="color:{dim}; font-size:{sz}px; letter-spacing:1px; '
             'margin-top:2px;">signed {who}</div>'

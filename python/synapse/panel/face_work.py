@@ -23,6 +23,7 @@ except ImportError:  # pragma: no cover - Houdini ships PySide6
 
 from synapse.panel.designsystem import tokens as t
 from synapse.panel.designsystem import components as c
+from synapse.panel.designsystem import fontload
 
 try:
     from synapse.panel.designsystem.loader import BouncingToy
@@ -159,7 +160,7 @@ class FaceWork(QtWidgets.QWidget):
         self._steps = []   # ordered [name, phase] — the live plan-with-progress
 
         col = QtWidgets.QVBoxLayout(self)
-        col.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        col.setContentsMargins(26, 20, 26, 20)   # comp face padding
         col.setSpacing(t.SPACE_SM)
 
         # — activity + current tool status —
@@ -174,17 +175,28 @@ class FaceWork(QtWidgets.QWidget):
         head.addStretch(1)
         col.addLayout(head)
 
-        # — the cook preview (the focus of the glance) —
-        self._cook = BucketGrid()
+        # — the cook bar (comp .cookbar): a 3px neutral track; the fill is
+        # RAISED, not signal. Indeterminate = the style busy sweep (working
+        # with no counts); reduced-motion shows a static track instead —
+        # never a fabricated number. (BucketGrid below is retired from the
+        # layout but kept in-file this pass.)
+        self._cook = QtWidgets.QProgressBar()
+        self._cook.setObjectName("DsCookBar")
+        self._cook.setTextVisible(False)
+        self._cook.setFixedHeight(3)
+        self._cook.setRange(0, 1)
+        self._cook.setValue(0)
         col.addWidget(self._cook)
+        # — cookline (comp): 10px mono DATA, e.g. "cooked 30/30 · 41s · karma_xpu"
         self._cook_lbl = c.label("waiting for work", role="caption")
+        self._cook_lbl.setFont(fontload.tracked_font("DATA", 10, mono=True))
         self._cook_lbl.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
         col.addWidget(self._cook_lbl)
 
         # — plan-with-progress (driven by the live tool stream + routing_log) —
         self._plan_title = c.label("PLAN", role="label")
-        self._plan_title.setStyleSheet(
-            "color:%s; letter-spacing:1.5px;" % t.TEXT_TERTIARY)
+        self._plan_title.setFont(fontload.tracked_font("EYEBROW", 10, mono=True))
+        self._plan_title.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
         col.addWidget(self._plan_title)
         self._plan_box = QtWidgets.QVBoxLayout()
         self._plan_box.setSpacing(2)
@@ -201,14 +213,18 @@ class FaceWork(QtWidgets.QWidget):
 
     # -- panel-facing API ------------------------------------------------
     def set_thinking(self, on):
-        """Working ↔ at rest. Couples the toy + the cook's indeterminate pulse."""
+        """Working ↔ at rest. Couples the toy + the cook bar's busy sweep.
+        Reduced-motion: a static track (range 0..1, empty) — the sweep never
+        runs and no progress is fabricated."""
         if self._toy is not None:
             self._toy.start() if on else self._toy.stop()
-        if on:
-            self._cook.start_pulse()
+        if on and not t.reduced_motion():
+            self._cook.setRange(0, 0)        # style-driven indeterminate sweep
         else:
-            self._cook.stop_pulse()
-            self._status.setText("Standing by")
+            self._cook.setRange(0, 1)
+            self._cook.setValue(0)
+            if not on:
+                self._status.setText("Standing by")
 
     def set_tool_status(self, name, phase, detail=None):
         """A live tool event → update the status line + the plan-with-progress."""
@@ -225,10 +241,12 @@ class FaceWork(QtWidgets.QWidget):
         self._render_plan()
 
     def set_cook(self, done, total, live=True, label=None):
-        """Wire real cook / render progress onto the bucket grid."""
-        self._cook.set_progress(done, total, live=live)
-        self._cook_lbl.setText(
-            label or ("cooking %d / %d" % (done, total)))
+        """Wire real cook / render progress onto the cook bar. ``live`` is
+        accepted for call-site compatibility (the bar has no per-bucket state)."""
+        total = max(1, int(total))
+        self._cook.setRange(0, total)
+        self._cook.setValue(max(0, min(total, int(done))))
+        self._cook_lbl.setText(label or ("cooked %d/%d" % (done, total)))
 
     def set_health(self, data):
         if self._health is not None:
@@ -236,7 +254,8 @@ class FaceWork(QtWidgets.QWidget):
 
     def reset(self):
         self._steps = []
-        self._cook.reset()
+        self._cook.setRange(0, 1)
+        self._cook.setValue(0)
         self._cook_lbl.setText("waiting for work")
         self._render_plan()
 

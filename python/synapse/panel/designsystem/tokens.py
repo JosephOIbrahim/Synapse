@@ -117,7 +117,9 @@ def _host_surface_rgb():
 # Houdini-native dark pane grey (verified vs UIDark.hcs) — the HEADLESS surface
 # anchor. The text ramp is no longer a fixed table; it is solved from these by
 # _derive_palette so headless and live use the identical contrast-aware path.
-_FALLBACK_RGB = (46, 46, 46)   # #2E2E2E — the host pane grey when no scheme reads
+# v9: retuned to the ratified comp's --panel (#2A2A2A) — a seeded fallback
+# input, never a scattered literal (the comp hexes land HERE only).
+_FALLBACK_RGB = (42, 42, 42)   # #2A2A2A — the host pane grey when no scheme reads
 
 # Contrast targets for the solved text ramp. body=primary is held a hair above
 # AA (4.5); bright is AAA-crisp; tertiary stays above the dark-DCC pragmatic
@@ -138,10 +140,13 @@ def _derive_palette(r, g, b):
     A3 sweep gates. Exposed (underscore) so the audit can sweep it directly."""
     def step(d):
         return _hexrgb(r + d, g + d, b + d)
+    # v9 elevation offsets, retuned to the ratified comp (relative to --panel):
+    # --ground −11 · field inset = ground · --raised +8 · --line +12 (borders
+    # flip lighter-than-panel) · --hair +6 (rail rule / acts rule) · strong +18.
     surface = {
-        "ground": step(-8), "field_inset": step(-16), "panel": _hexrgb(r, g, b),
-        "surface": step(12), "raised": step(40), "border": step(-8),
-        "border_strong": step(30),
+        "ground": step(-11), "field_inset": step(-11), "panel": _hexrgb(r, g, b),
+        "surface": step(12), "raised": step(8), "border": step(12),
+        "border_strong": step(18), "hair": step(6),
     }
     # Text lands on ground / panel / surface. Choose the text DIRECTION (light
     # vs dark) that MAXIMIZES the achievable contrast on those surfaces — not a
@@ -184,6 +189,7 @@ SURFACE       = _SURF["surface"]        # cards, drawers, containers
 RAISED        = _SURF["raised"]         # raised / hover surface
 BORDER        = _SURF["border"]         # hairline divider
 BORDER_STRONG = _SURF["border_strong"]  # separator
+HAIR          = _SURF["hair"]           # quietest rule — rail bottom, acts top
 
 ELEVATION = {  # role -> bg color, for components to read by name
     "ground": GROUND, "panel": PANEL, "surface": SURFACE,
@@ -205,7 +211,7 @@ TEXT_TERTIARY  = _TXT["tertiary"]   # captions / hints
 TEXT_BRIGHT    = _TXT["bright"]     # emphasis / headings
 TEXT_ACCENT    = SIGNAL     # links, accent labels (NOT body — see WCAG note)
 TEXT_DISABLED  = _TXT["disabled"]
-TEXT_ON_ACCENT = "#13212C"  # text on a SIGNAL fill (dark navy on light blue = AA-safe)
+TEXT_ON_ACCENT = "#0F1F2B"  # text on a SIGNAL fill (comp --signal-ink; AA-safe)
 
 # WCAG note: SIGNAL (#8FB3D9) on PANEL passes AA for >=14px / bold, but FAILS
 # for small body text. Use TEXT_ACCENT for labels/links/icons only; never for
@@ -229,6 +235,13 @@ WARM        = "#FF7759"
 WARM_HOVER  = "#FF8E72"
 WARM_PRESS  = "#E5634A"
 WARM_TINT   = "rgba(255, 119, 89, 0.14)"
+
+# v9 muted status hues (comp --ok/--no/--hot) — the Work face's quiet verdict
+# grammar (status dots, DsVerb ok/hot tones). NOT a retune of GROW/ERROR/FIRE:
+# gates, badges and the STATUS table keep the full-strength hues.
+OK_SOFT  = "#6FBF8E"
+NO_SOFT  = "#D96975"
+HOT_SOFT = "#D08A57"
 
 HOVER_BG   = RAISED        # neutral hover surface
 PRESS_BG   = "#202022"     # neutral press surface
@@ -285,22 +298,21 @@ TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
     "status":  (FONT_MONO_CSS, SIZE_SMALL, 500, 0.5),
 }
 
-# v9 tracking map — em per role. Tracking lives on QFont (AbsoluteSpacing =
-# em × px), NEVER in QSS (Qt QSS has no letter-spacing). fontload.tracked_font()
-# reads this. Roles → where they apply:
+# v9 tracking map — em per role, RESTORED to the ratified comp values (the
+# near-flat "match Houdini" dial was superseded by the ratified v9 comp).
+# Tracking lives on QFont (PercentageSpacing = 100 + em×100), NEVER in QSS
+# (Qt QSS has no letter-spacing). fontload.tracked_font() reads this.
+#   EYEBROW  +0.22  section labels (PLAN title, credit-section heads)
 #   BRAND    +0.16  wordmark
-#   LABEL    +0.15  tabs, section + action labels
-#   LABEL_SM +0.12  credit keys, tiny labels
-#   DATA     +0.03  author, meter, paths, cookline, chip, mini
+#   LABEL    +0.15  tabs (DIRECT / WORK)
+#   LABEL_SM +0.12  credit keys, acts verbs, tiny labels
+#   DATA     +0.03  author, meter, paths, cookline, ⌘K chip
+#   SEND     +0.08  the SEND button
 #   DISPLAY  -0.015 verdict
 #   BODY      0     conversation, prompt
-# Dialed near-flat to match Houdini's native UI (which doesn't letter-space its
-# labels). BRAND keeps a hair of tracking (the wordmark's only remaining flourish
-# — and tracked_font needs it non-zero to apply AbsoluteSpacing); DISPLAY stays
-# slightly tight. Everything else is flat.
 TRACKING_EM: Dict[str, float] = {
-    "BRAND": 0.02, "LABEL": 0.0, "LABEL_SM": 0.0,
-    "DATA": 0.0, "DISPLAY": -0.01, "BODY": 0.0,
+    "EYEBROW": 0.22, "BRAND": 0.16, "LABEL": 0.15, "LABEL_SM": 0.12,
+    "DATA": 0.03, "SEND": 0.08, "DISPLAY": -0.015, "BODY": 0.0,
 }
 
 

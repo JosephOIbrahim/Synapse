@@ -173,7 +173,7 @@ try:
           f"{len(under)} under {TARGET_FLOOR}px  " + tag(not under, warnable=True))
 
     texts = [b.text() for b in btns if b.text()]
-    faces = [f for f in ("Direct", "Work") if f in texts]
+    faces = [f for f in ("DIRECT", "WORK") if f in texts]   # v9: pre-uppercased tabs
     print(f"   tabs present        : {faces}  " + tag(len(faces) == 2))
     # v9: Review folded into Work's done sub-state. Assert its synthesis (the
     # consent gate) still lives in-tree, so the fold didn't silently drop the
@@ -202,60 +202,84 @@ try:
     qss_bundled = [b for b in ("space grotesk", "space mono") if b in qss_text]
     print(f"   no bundled font in QSS: {qss_bundled or 'clean'}  " + tag(not qss_bundled))
 
-    # --- Image #6 · model selection must be APPARENT (not buried in a menu) ---
-    from synapse.panel.providers.registry import PROVIDER_LABELS, DEFAULT_PROVIDER
-    label_set = set(PROVIDER_LABELS.values())
-    engine_btns = [b for b in btns if b.text() in label_set and not b.isHidden()]
-    print(f"   model selector      : {[b.text() for b in engine_btns]}  "
-          + tag(len(engine_btns) >= len(PROVIDER_LABELS)))
-    # the active engine must be visibly marked (active property), and match state
-    active = [b for b in engine_btns if b.property("active") in (True, "true")]
-    want = PROVIDER_LABELS.get(getattr(panel, "_provider_id", DEFAULT_PROVIDER))
-    sel_ok = len(active) == 1 and active[0].text() == want
-    print(f"   active engine mark  : {[b.text() for b in active]} (want {want!r})  "
-          + tag(sel_ok))
-    # prominent model chip (the readout) is present + non-empty
-    chip = getattr(panel, "_model_chip", None)
-    chip_ok = chip is not None and bool(chip.text()) and not chip.isHidden()
-    chip_txt = repr(chip.text()) if chip is not None else None
-    print(f"   model readout chip  : {chip_txt}  " + tag(chip_ok))
+    # --- v9 · engine selection must stay REACHABLE + OBSERVABLE from the rail
+    #     author token (the ENGINE pill bar left the chrome; same intent as the
+    #     old visible-pills check, re-anchored). The token is a visible,
+    #     enabled button; _author_menu_items() — the exact data its menu
+    #     renders — covers every provider. ---
+    from synapse.panel.providers.registry import PROVIDER_IDS, DEFAULT_PROVIDER
+    author = getattr(panel, "_author_lbl", None)
+    author_ok = (isinstance(author, QtWidgets.QAbstractButton)
+                 and not author.isHidden() and author.isEnabled()
+                 and bool(author.text()) and hasattr(panel, "_open_author_menu"))
+    a_txt = repr(author.text()) if author is not None else None
+    print(f"   engine reachable    : author token {a_txt}  " + tag(author_ok))
+    aitems = panel._author_menu_items() if hasattr(panel, "_author_menu_items") else []
+    got_pids = [pid for pid, _, _ in aitems]
+    print(f"   engine menu covers  : {got_pids}  "
+          + tag(got_pids == list(PROVIDER_IDS)))
+    # exactly ONE (engine, model) row active across the whole menu, == state
+    a_active = [(pid, mid) for pid, _, rows in aitems for mid, _, on in rows if on]
+    want_pair = (getattr(panel, "_provider_id", DEFAULT_PROVIDER),
+                 panel._active_model())
+    print(f"   active engine mark  : {a_active} (want {want_pair})  "
+          + tag(a_active == [want_pair]))
+    # the author token IS the model readout — non-empty and equal to the
+    # panel's own author formatting (selection observable)
+    readout_ok = author is not None and author.text() == panel._author_token()
+    print(f"   model readout token : {a_txt}  " + tag(readout_ok))
 
     # --- the model switcher must expose the registry's models + mark the active
-    #     one (switching Anthropic models must be apparent, not hidden) ---
+    #     one (switching Anthropic models must be apparent, not hidden) —
+    #     machinery reused, re-anchored to the author token. The rows lead with
+    #     the registry models IN ORDER; at most ONE extra row is permitted at
+    #     the tail: the active model, when the persisted pick went stale
+    #     (registry rotation) — the selection stays observable, never blank ---
     from synapse.panel.providers import registry as _reg
     items = panel._model_menu_items() if hasattr(panel, "_model_menu_items") else []
     want_ids = [m for m, _ in _reg.models_for(getattr(panel, "_provider_id", "claude"))]
     got_ids = [m for m, _, _ in items]
     actives = [m for m, _, a in items if a]
-    picker_ok = (got_ids == want_ids and len(got_ids) >= 2 and len(actives) == 1
-                 and isinstance(chip, QtWidgets.QAbstractButton))
+    rows_ok = (got_ids == want_ids
+               or (got_ids[:-1] == want_ids and got_ids[-1:] == actives))
+    picker_ok = (rows_ok and len(got_ids) >= 2 and len(actives) == 1
+                 and isinstance(author, QtWidgets.QAbstractButton))
     print(f"   model picker        : {len(got_ids)} models, active={actives}  "
           + tag(picker_ok))
 
-    # --- match Houdini: the panel must inherit the host's native UI font, not
-    #     override it with the bundled designed families (Space Grotesk/Mono).
-    #     Mono stays legal only for genuine code/paths inside the chat HTML. ---
+    # --- token meter: tokens ONLY, never $ (metering-deferred D4, structural).
+    #     Providers surface no usage yet, so empty is the honest state. ---
+    meter = getattr(panel, "_meter_lbl", None)
+    meter_ok = meter is not None and "$" not in (meter.text() or "")
+    m_txt = repr(meter.text()) if meter is not None else None
+    print(f"   meter tokens-only   : {m_txt}  " + tag(meter_ok))
+
+    # --- v9 ratified bundle (INVERTED from the old native-chrome check): the
+    #     chrome the type system fonts must resolve to the BUNDLED families
+    #     (Space Grotesk / Space Mono) — OR the documented graceful fallback
+    #     with font_status().build_mismatch flagged. Samples are the widgets
+    #     the role factory types (chat/verbs inherit per L1 and are not here);
+    #     the 'no bundled font in QSS' check above survives (QFont only). ---
     BUNDLED = {"space grotesk", "space mono"}
-    verbs = [b for b in btns if b.objectName() == "DsVerb"]
     samples = {
-        "wordmark":  getattr(panel, "_wordmark", None),
-        "tab":       (getattr(panel, "_face_pills", {}) or {}).get("direct"),
-        "verb":      verbs[0] if verbs else None,
-        "model chip": getattr(panel, "_model_chip", None),
-        "engine seg": (getattr(panel, "_engine_pills", {}) or {}).get("claude"),
-        "chat":      getattr(panel, "_chat", None),
+        "wordmark": getattr(panel, "_wordmark", None),
+        "tab":      (getattr(panel, "_face_pills", {}) or {}).get("direct"),
+        "author":   getattr(panel, "_author_lbl", None),
+        "meter":    getattr(panel, "_meter_lbl", None),
     }
-    fams, bad = {}, []
+    fams, not_bundled = {}, []
     for nm, wdg in samples.items():
         if wdg is None:
             continue
         fam = wdg.font().family()
         fams[nm] = fam
-        if fam.strip().lower() in BUNDLED:
-            bad.append("%s=%s" % (nm, fam))
-    print(f"   native chrome font  : host={app.font().family()!r}  " + tag(not bad))
-    if bad:
-        print("      overrides host font: " + ", ".join(bad))
+        if fam.strip().lower() not in BUNDLED:
+            not_bundled.append("%s=%s" % (nm, fam))
+    flagged_fb = bool((fontload.font_status() or {}).get("build_mismatch"))
+    print(f"   bundled chrome font : {fams}  "
+          + tag(not not_bundled or flagged_fb))
+    if not_bundled and not flagged_fb:
+        print("      not bundled: " + ", ".join(not_bundled))
 
     # --- Image #5 bug 3 · the prompt box must not crop at the min pane height ---
     try:
@@ -286,10 +310,10 @@ try:
     print(f"   body matches host   : body {body_px}px vs host {host_px}px  "
           + tag(body_px >= host_px - 1))
 
-    # --- model chip shows a SHORT label, not the long raw model id ---
-    chip_short = chip is not None and "/" not in chip.text() and 0 < len(chip.text()) < 30
-    _chip_txt = repr(chip.text()) if chip is not None else None
-    print(f"   chip short-label    : {_chip_txt}  " + tag(chip_short))
+    # --- the author token shows a SHORT label, not the long raw model id ---
+    chip_short = (author is not None and "/" not in author.text()
+                  and 0 < len(author.text()) < 30)
+    print(f"   token short-label   : {a_txt}  " + tag(chip_short))
 
     # --- ⌘K folded into the input ("/" opens palette; no bar glyph button) ---
     inp = getattr(panel, "_input", None)
@@ -337,7 +361,7 @@ try:
     _saved_scale = panel._font_scale
     try:
         chrome = ("_wordmark", "_header_status", "_palette_hint", "_author_lbl",
-                  "_foot_label", "_ctx_label", "_engine_lbl")
+                  "_foot_label", "_ctx_label", "_meter_lbl")
         panel._set_scale(1.0)
         chrome_a = {n: _hdr_px(n) for n in chrome}
         in_a, chat_a = _input_px(), getattr(panel._chat, "font_scale", None)
@@ -348,10 +372,16 @@ try:
         panel._set_scale(_saved_scale)
 
     READABLE_FLOOR = 11  # px — chrome must clear this
+    # v9: the wordmark is the 14px/500 BRAND word (demoted from the 19px hero)
+    # and must carry BRAND tracking (PercentageSpacing 100 + em×100).
     wm = chrome_a.get("_wordmark")
-    wm_heading = wm is not None and wm >= round(t.SIZE_TITLE)
-    print(f"   wordmark is heading  : {wm}px >= title {round(t.SIZE_TITLE)}px  "
-          + tag(wm_heading))
+    _wmf = panel._wordmark.font()
+    _want_pct = 100 + t.TRACKING_EM["BRAND"] * 100
+    wm_brand = (wm == round(14 * panel._chrome_scale)
+                and _wmf.letterSpacingType() == type(_wmf).PercentageSpacing
+                and abs(_wmf.letterSpacing() - _want_pct) < 0.05)
+    print(f"   wordmark is brand    : {wm}px @ tracking {_wmf.letterSpacing():.1f}%  "
+          + tag(wm_brand))
     chrome_floor_ok = all(v is not None and v >= READABLE_FLOOR
                           for n, v in chrome_a.items() if n != "_wordmark")
     print(f"   chrome floor (>=11)  : {chrome_a}  " + tag(chrome_floor_ok))
@@ -362,21 +392,22 @@ try:
     print(f"   content scales on Aa : prompt {in_a}->{in_b}px · chat {chat_a}->{chat_b}  "
           + tag(content_scales))
 
-    # --- the chip stays SHORT for the slash-bearing provider (Nemotron) — the
-    #     real test the long raw id isn't shown (claude alone never has a slash) ---
+    # --- the author token stays SHORT for the slash-bearing provider (Nemotron)
+    #     — the real test the long raw id isn't shown (claude never has a slash);
+    #     it must also TRACK the switch (selection observable) ---
     panel._set_provider("nemotron")
-    nemo_chip = panel._model_chip.text()
+    nemo_tok = panel._author_lbl.text()
     panel._set_provider("claude")
-    print(f"   chip short (nemotron): {nemo_chip!r}  "
-          + tag("/" not in nemo_chip and len(nemo_chip) < 30))
+    print(f"   token short (nemotron): {nemo_tok!r}  "
+          + tag("/" not in nemo_tok and 0 < len(nemo_tok) < 30))
 
     # --- same for Ollama — the registry label ('GLM 5'), never the raw
     #     tag-bearing id ('glm-5:cloud') ---
     panel._set_provider("ollama")
-    oll_chip = panel._model_chip.text()
+    oll_tok = panel._author_lbl.text()
     panel._set_provider("claude")
-    print(f"   chip short (ollama)  : {oll_chip!r}  "
-          + tag("/" not in oll_chip and ":" not in oll_chip and len(oll_chip) < 30))
+    print(f"   token short (ollama)  : {oll_tok!r}  "
+          + tag("/" not in oll_tok and ":" not in oll_tok and 0 < len(oll_tok) < 30))
 except (Exception, SystemExit) as e:
     WARNS.append(1)
     print(f"   [skip] live build unavailable here: {type(e).__name__}: {e}")
@@ -434,8 +465,10 @@ else:
         _tl.set_reduced_motion(True)
         try:
             panel._set_thinking(True)
+            # v9 DsCookBar: reduced-motion = a static determinate track (never
+            # the style-driven indeterminate sweep, i.e. maximum() != 0).
             rm_ok = (not panel._mark._spin.isActive()
-                     and not panel._work_face._cook._timer.isActive())
+                     and panel._work_face._cook.maximum() != 0)
         finally:
             panel._set_thinking(False)
             _tl.set_reduced_motion(None)

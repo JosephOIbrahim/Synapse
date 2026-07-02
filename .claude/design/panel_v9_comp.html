@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!-- SYNAPSE panel v9 comp — "in Houdini's skin" — saved from the design brief 2026-07-02.
+     RATIFIED CALLS (CTO defaults, owner may override): bundle Space Grotesk + Space Mono (OFL,
+     native fallback) · underline tabs · author-token-opens-engine-menu (no pill bar in chrome) ·
+     land by Jul 11 off feat/h22-release-train. Cost meter: TOKENS ONLY (no $ — metering deferred D4). -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SYNAPSE — panel · v9 · in Houdini's skin</title>
+<style>
+  :root{
+    /* greys from Houdini UIDark.hcs · field inset nudged to Houdini's editable grey */
+    --stage:#1a1a1a; --panel:#2A2A2A; --ground:#1f1f1f; --raised:#323232;
+    --line:#363636; --hair:#303030;
+    --t1:#AEAEAE; --tb:#D4D4D4; --t2:#8A8A8A; --t3:#7E7E7E;
+    --signal:#8FB3D9; --signal-ink:#0F1F2B; --coral:#FF7759;
+    --ok:#6FBF8E; --no:#D96975; --hot:#D08A57;
+    --hou-tabstrip:#1c1c1c; --hou-tabline:#141414; --hou-tabtext:#9a9a9a;
+    --sans:'Space Grotesk','DM Sans',sans-serif;
+    --mono:'Space Mono','JetBrains Mono',monospace;
+    --tr-eyebrow: 0.22em; --tr-brand: 0.16em; --tr-label: 0.15em;
+    --tr-label-sm:0.12em; --tr-data: 0.03em; --tr-display: -0.015em; --tr-lede: -0.012em;
+  }
+  /* ── RAIL ── */
+  .rail{padding:16px 26px 14px;border-bottom:0.5px solid var(--hair);display:flex;align-items:center;}
+  .mk{width:16px;height:16px;border-radius:50%;}
+  .mk-idle{background:transparent;border:2px solid var(--coral);}
+  .mk-work{background:conic-gradient(var(--coral) 0 35%,transparent 35% 100%);animation:sweep 1.5s linear infinite;}
+  .mk-done{background:var(--coral);border:2px solid var(--coral);}
+  @media (prefers-reduced-motion: reduce){.mk-work{animation:none;}}
+  .word{font:500 14px var(--sans);letter-spacing:var(--tr-brand);color:var(--t1);margin-left:12px;}
+  .author{font:11px var(--mono);letter-spacing:var(--tr-data);color:var(--signal);} /* v9: CLICK TARGET → engine+model menu */
+  .meter{font:11px var(--mono);letter-spacing:var(--tr-data);color:var(--t3);} /* tokens only, e.g. "18.0k" */
+  .cmdk{font:10.5px var(--mono);letter-spacing:var(--tr-data);color:var(--t3);border:0.5px solid var(--line);border-radius:4px;padding:3px 7px;}
+  /* ── TABS (underline — ratified) ── */
+  .tabs{display:flex;gap:28px;padding:20px 26px 0;border-bottom:0.5px solid var(--line);}
+  .tabs b{font:400 11px var(--mono);letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--t3);
+          padding-bottom:12px;border-bottom:2px solid transparent;}
+  .tabs b.on{color:var(--tb);border-bottom-color:var(--signal);}
+  /* ── DIRECT face: prose holds a measure (~440px); the input spans the pane ── */
+  .you{border-left:2px solid var(--signal);padding-left:14px;color:var(--tb);font-size:14px;line-height:1.5;max-width:440px;}
+  .syn{font-size:14px;line-height:1.55;color:var(--t1);margin-top:16px;max-width:440px;}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--ground);border:0.5px solid var(--line);
+        border-radius:4px;padding:7px 11px;}  /* node chip: 10px square swatch + mono path + "signed <model>" */
+  .bigfield{width:100%;min-height:132px;background:var(--ground);border:0.5px solid var(--line);border-radius:4px;
+            padding:14px 15px;color:var(--t3);font-size:13.5px;line-height:1.55;}
+  .send{background:var(--signal);color:var(--signal-ink);font:500 11px var(--sans);letter-spacing:0.08em;
+        text-transform:uppercase;padding:9px 15px;border-radius:4px;} /* bottom-right inside composer */
+  .khint{font:10px var(--mono);letter-spacing:var(--tr-data);color:var(--t3);margin-top:12px;}
+  /* ── WORK face ── */
+  .cookbar{height:3px;border-radius:2px;background:var(--ground);} /* fill: var(--raised) */
+  .cookline{font:10px var(--mono);letter-spacing:var(--tr-data);color:var(--t3);margin-top:8px;} /* "cooked 30/30 · 41s · karma_xpu · f1" + signal link */
+  .verdict{font:500 21px var(--sans);color:var(--tb);line-height:1.28;letter-spacing:var(--tr-display);max-width:360px;}
+  .credit{font:10.5px var(--mono);letter-spacing:var(--tr-data);color:var(--t3);line-height:1.95;}
+  /* credit rows: "DECISION <signal>value</signal> — rationale" / "SIGNED <signal>model</signal> · /stage customData"; key column 64px */
+  .ddot{width:6px;height:6px;border-radius:50%;} /* ok/no/hot status dots + 10px mono lines */
+  .acts{display:flex;gap:22px;margin-top:24px;padding-top:20px;border-top:0.5px solid var(--hair);max-width:440px;}
+  /* acts: "Accept"(ok) "↶ Revert"(t2) spacer "Commit to /stage?"(hot) — 10.5px mono uppercase tracking label */
+  /* ── WIDE DOCKS: structure spans the pane (rail/tabs/input/cookbar); reading holds ~340-440px measure ── */
+  /* ── PySide realities (from the comp's reconciliation column):
+       tracking = QFont.setLetterSpacing per role (QSS has none);
+       fonts = QFontDatabase.addApplicationFont, fallback native family;
+       mark = QPainter (existing MarkDat) incl. reduced-motion;
+       0.5px hairlines round up to ~1px on device. ── */
+</style>
+</head>
+<body><!-- structure: rail → tabs → stage{Direct face | Work face} — the panel IS the pane content; never a second pane --></body>
+</html>

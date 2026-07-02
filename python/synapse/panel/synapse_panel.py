@@ -88,12 +88,11 @@ class _GrowingInput(QtWidgets.QTextEdit):
         self.setObjectName("DsInput")
         self.setAcceptRichText(False)
         self.setPlaceholderText("Ask SYNAPSE…    ·    / for commands")
-        # Default a comfortable multi-line height — but small enough that the
-        # input + Send row are never pushed off the bottom at the min pane
-        # height (the old 216px default was the crop culprit). The artist can
-        # still drag it taller via the resize grip; it also auto-grows to fit.
-        self._user_h = 96
+        # v9 comp: a 132px composer (was 96). The artist can still drag it
+        # taller via the resize grip; it also auto-grows to fit the content.
+        self._user_h = 132
         self._floor, self._max_h = 64, 600
+        self._send_widget = None    # the embedded Send (attach_send)
         self.setFixedHeight(self._user_h)
         self.textChanged.connect(self._autosize)
 
@@ -105,6 +104,32 @@ class _GrowingInput(QtWidgets.QTextEdit):
         """Set the artist's preferred input height (driven by the resize grip)."""
         self._user_h = max(self._floor, min(self._max_h, int(h)))
         self._autosize()
+
+    # -- embedded Send (v9 comp: bottom-right INSIDE the field) -------------
+    def attach_send(self, btn):
+        """Parent the Send button to the field itself (NOT the viewport, so it
+        never scrolls) and reserve a bottom viewport margin so text never
+        flows under it."""
+        self._send_widget = btn
+        btn.setParent(self)
+        try:
+            self.setViewportMargins(0, 0, 0, btn.sizeHint().height() + 12)
+        except Exception:
+            pass
+        btn.show()
+        self._place_send()
+
+    def _place_send(self):
+        btn = self._send_widget
+        if btn is None:
+            return
+        bs = btn.sizeHint()
+        btn.resize(bs)
+        btn.move(self.width() - bs.width() - 10, self.height() - bs.height() - 10)
+
+    def resizeEvent(self, e):
+        super().resizeEvent(e)
+        self._place_send()
 
     def keyPressEvent(self, e):
         # "/" on an empty prompt opens the command palette (⌘K folded into the
@@ -302,15 +327,13 @@ class SynapsePanel(QtWidgets.QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # Persistent rail (Mile 1) → context ribbon → switcher → the three faces.
-        # Each face is a full content surface; the controller brings the right
-        # one forward as the agent's state changes. The work is the hero.
-        root.addWidget(self._build_rail())          # mark-as-status · state · Stop
-        root.addWidget(c.divider())
-        root.addWidget(self._build_model_bar())     # engine selection — apparent
-        root.addWidget(c.divider())
+        # Persistent rail (Mile 1) → context ribbon → switcher → the two faces.
+        # v9: the ENGINE pill bar left the chrome — the rail author token is the
+        # engine+model click target now (its menu machinery is reused). The
+        # rail's bottom rule is the #DsHeader HAIR border (no divider widget).
+        root.addWidget(self._build_rail())          # mark · brand · author · Stop
         root.addWidget(self._build_context_ribbon())
-        root.addWidget(self._build_mode_bar())      # Direct · Work · Review pills
+        root.addWidget(self._build_mode_bar())      # DIRECT · WORK underline tabs
         root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
         self._set_face("direct")                    # idle resting face
 
@@ -322,55 +345,79 @@ class SynapsePanel(QtWidgets.QWidget):
         beneath. Termination and live state never scroll away.
         """
         w = self._section()
-        w.setObjectName("DsHeader")          # keep the subtle cool→warm gradient
+        w.setObjectName("DsHeader")          # flat PANEL + 1px HAIR bottom rule
         col = QtWidgets.QVBoxLayout(w)
-        # Generous, confident header padding (Pentagram): a wider left margin and
-        # real vertical air so the brand isn't crammed against the pane edge.
-        col.setContentsMargins(t.SPACE_LG, t.SPACE_MD, t.SPACE_MD, t.SPACE_MD)
+        # Comp row-1 padding: 16 / 26 / 14 (the confident header air).
+        col.setContentsMargins(26, 16, 26, 14)
         col.setSpacing(t.SPACE_SM)
 
-        # line 1 — identity + state. The mark fills with the agent's state.
+        # line 1 — identity + selection + state (comp order):
+        # [mark]·12·[SYNAPSE] ··· [state] [author▾] [meter] [⌘K] [⋯] [Stop*]
         top = QtWidgets.QHBoxLayout()
         top.setSpacing(t.SPACE_SM)
         self._mark = c.MarkDot("idle", diameter=16)
-        word = c.label("SYNAPSE", role="display")
-        # BRAND tracking lives on the QFont (Qt QSS has no letter-spacing); the
-        # stylesheet carries colour only.
-        word.setStyleSheet("color:%s;" % t.TEXT_BRIGHT)
-        word.setFont(fontload.tracked_font("BRAND", t.SIZE_HERO, scale=self._chrome_scale))
+        # brand word — demoted to 14px/500/TEXT_PRIMARY (comp .word); tracking
+        # lives on the QFont (Qt QSS has no letter-spacing), colour in the sheet.
+        word = c.label("SYNAPSE", role="body")
+        word.setStyleSheet("color:%s;" % t.TEXT_PRIMARY)
+        word.setFont(fontload.tracked_font("BRAND", 14, scale=self._chrome_scale,
+                                           weight=500))
         self._wordmark = word
         self._header_status = c.label("Standing by", role="caption", scale=self._chrome_scale)
         self._header_status.setStyleSheet("color:%s;" % t.TEXT_SECONDARY)
+        # author token — THE engine+model click target (v9): a flat button whose
+        # text is _author_token(); click opens the engine menu. Discoverability =
+        # pointing-hand + hover underline + tooltip (comp shows no ▾).
+        self._author_lbl = QtWidgets.QPushButton()
+        self._author_lbl.setObjectName("DsAuthor")
+        self._author_lbl.setFlat(True)
+        self._author_lbl.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._author_lbl.setToolTip("Engine & model — click to switch")
+        self._author_lbl.setFont(fontload.tracked_font(
+            "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        self._author_lbl.setText(self._author_token())
+        self._author_lbl.clicked.connect(self._open_author_menu)
+        # token meter — TOKENS ONLY, never $ (metering-deferred D4). Providers
+        # don't surface usage yet, so it stays EMPTY until real usage arrives —
+        # never estimated. _format_tokens is the one display rule.
+        self._meter_lbl = c.label("", role="caption")
+        self._meter_lbl.setObjectName("DsMeter")
+        self._meter_lbl.setFont(fontload.tracked_font(
+            "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        self._session_tokens = 0
         # quiet ⌘K affordance — the palette is already bound (QShortcut); this
-        # only makes it discoverable. Its text is set from the ACTUAL bound
+        # only makes it discoverable, restyled as a bordered chip (comp .cmdk;
+        # 11px = the L2 chrome floor). Its text is set from the ACTUAL bound
         # QKeySequence after the shortcut is created (platform-correct, never
-        # lies about the key). It rides line 1, never the meter row.
+        # lies about the key).
         self._palette_hint = c.label("", role="caption")
-        self._palette_hint.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_SMALL, scale=self._chrome_scale))
-        self._palette_hint.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
+        self._palette_hint.setObjectName("DsKHint")
+        self._palette_hint.setFont(fontload.tracked_font(
+            "DATA", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
         overflow = c.Button("⋯", variant="ghost")
         overflow.setFixedWidth(32)
         overflow.clicked.connect(self._show_overflow)
+        self._stop_btn = c.Button("Stop", variant="danger")
+        self._stop_btn.setMinimumWidth(64)
+        self._stop_btn.clicked.connect(self._on_stop)
+        self._stop_btn.setEnabled(False)
+        self._stop_btn.setVisible(False)   # state-gated: shown only while working
         top.addWidget(self._mark)
         top.addSpacing(t.SPACE_XS)        # a beat between the mark and the wordmark
         top.addWidget(word)
-        top.addSpacing(t.SPACE_SM)        # let the brand breathe before the stretch
         top.addStretch(1)
         top.addWidget(self._header_status)
+        top.addWidget(self._author_lbl)
+        top.addWidget(self._meter_lbl)
         top.addWidget(self._palette_hint)
         top.addWidget(overflow)
+        top.addWidget(self._stop_btn)     # termination never scrolls away
         col.addLayout(top)
 
-        # line 2 — connection · activity meter · Stop. The meter lifts to WARM
-        # while the agent works, dim at rest (observability, always on).
+        # line 2 — connection · corpus · activity strip (kept-for-now: not in
+        # the comp, not ratified out — retiring it is a future owner call).
         bot = QtWidgets.QHBoxLayout()
         bot.setSpacing(t.SPACE_SM)
-        # author signature — DISPLAY ONLY — leads the telemetry cluster it
-        # answers for (the model that produces results in this panel).
-        self._author_lbl = c.label("", role="caption")
-        self._author_lbl.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
-        self._author_lbl.setFont(fontload.tracked_font("DATA", t.SIZE_SMALL, scale=self._chrome_scale))
-        self._author_lbl.setText(self._author_token())
         self._foot_dot = c.StatusDot("disconnected")
         self._foot_label = c.label("Not connected", role="caption", scale=self._chrome_scale)
         self._foot_label.setStyleSheet("color:%s;" % t.TEXT_TERTIARY)
@@ -400,20 +447,35 @@ class SynapsePanel(QtWidgets.QWidget):
         self._observe.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._observe.setFixedHeight(3)
         self._observe.setStyleSheet("background:%s; border-radius:2px;" % t.SIGNAL_TINT)
-        self._stop_btn = c.Button("Stop", variant="danger")
-        self._stop_btn.setMinimumWidth(64)
-        self._stop_btn.clicked.connect(self._on_stop)
-        self._stop_btn.setEnabled(False)
-        self._stop_btn.setVisible(False)   # state-gated: shown only while working
-        bot.addWidget(self._author_lbl)
         bot.addWidget(self._foot_dot)
         bot.addWidget(self._foot_label)
         bot.addWidget(self._connect_btn)
         bot.addWidget(self._corpus_btn)
         bot.addWidget(self._observe, 1)
-        bot.addWidget(self._stop_btn)
         col.addLayout(bot)
         return w
+
+    def _format_tokens(self, n):
+        """Token-count display rule for the rail meter — tokens only, no $:
+        812 · 18.0k · 1.2M. Pure formatting; the meter never estimates."""
+        n = int(n)
+        if n < 1000:
+            return "%d" % n
+        if n < 1_000_000:
+            return "%.1fk" % (n / 1000.0)
+        return "%.1fM" % (n / 1_000_000.0)
+
+    def _note_usage(self, total_tokens):
+        """Accumulate real provider-reported usage into the session meter.
+        No provider surfaces usage yet (the seam is a future providers/ slice);
+        until it lands the meter stays empty — never estimated."""
+        try:
+            self._session_tokens += int(total_tokens)
+        except Exception:
+            return
+        lbl = getattr(self, "_meter_lbl", None)
+        if lbl is not None:
+            lbl.setText(self._format_tokens(self._session_tokens))
 
     def _on_connect(self):
         """Force-start the Synapse bridge server — the hwebserver that serves the
@@ -517,66 +579,11 @@ class SynapsePanel(QtWidgets.QWidget):
         if btn is not None:
             btn.setText("Corpus ✓" if loaded else "Corpus")
 
-    def _build_model_bar(self):
-        """Model selection, made APPARENT (Image #6). A segmented Claude·Gemini
-        control whose active engine reads as a filled SIGNAL pill, plus a
-        prominent model-id chip — the switch used to be buried two levels deep
-        in the ⋯ menu. Display/telemetry only; the pick takes effect on the NEXT
-        message (same contract as the old menu switch)."""
-        w = self._section()
-        lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
-        lay.setSpacing(t.SPACE_SM)
-        lbl = c.label("ENGINE", role="caption")
-        lbl.setFont(fontload.tracked_font("LABEL_SM", t.SIZE_SMALL, scale=self._chrome_scale))
-        self._engine_lbl = lbl
-        lay.addWidget(lbl)
-        self._engine_pills = {}
-        try:
-            from synapse.panel.providers.registry import PROVIDER_IDS, PROVIDER_LABELS
-            ids, labels = PROVIDER_IDS, PROVIDER_LABELS
-        except Exception:
-            ids, labels = ("claude",), {"claude": "Claude"}
-        for pid in ids:
-            seg = QtWidgets.QPushButton(labels.get(pid, pid))
-            seg.setObjectName("DsSeg")
-            seg.setCursor(Qt.CursorShape.PointingHandCursor)
-            seg.clicked.connect(lambda _=False, p=pid: self._set_provider(p))
-            lay.addWidget(seg)
-            self._engine_pills[pid] = seg
-        lay.addStretch(1)
-        # prominent model-id readout (e.g. 'sonnet-4.6') — the chip Image #6 asks
-        # for; cost is intentionally omitted (the worker doesn't surface usage yet,
-        # so a cost figure would be fabricated).
-        # Clickable model picker — a SHORT model label + a ▾ affordance; opens a
-        # menu of the active engine's models (Opus/Sonnet/Haiku/Fable for Claude).
-        # Styled by the QSS #DsModelChip rule (caption-size, so the long NVIDIA
-        # ids no longer dominate the panel).
-        self._model_chip = QtWidgets.QPushButton(self._model_chip_text())
-        self._model_chip.setObjectName("DsModelChip")
-        self._model_chip.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._model_chip.setFlat(True)
-        self._model_chip.setToolTip("Switch model")
-        self._model_chip.clicked.connect(self._open_model_menu)
-        lay.addWidget(self._model_chip)
-        self._refresh_engine_selector()
-        return w
-
     def _refresh_engine_selector(self):
-        """Paint the active engine (filled pill) + the model chip from the live
-        provider id. Idempotent; safe before the bar is built."""
-        cur = getattr(self, "_provider_id", "claude")
-        for pid, seg in getattr(self, "_engine_pills", {}).items():
-            seg.setProperty("active", pid == cur)
-            c.repolish(seg)
-        chip = getattr(self, "_model_chip", None)
-        if chip is not None:
-            try:
-                chip.setText(self._model_chip_text())
-            except Exception:
-                pass
-        # keep the rail author signature in sync too — a MODEL switch (not just a
-        # provider switch) must update it (its docstring promises this).
+        """Repaint the engine/model selection readout — v9: the rail author
+        token IS the selector (the ENGINE pill bar left the chrome; this keeps
+        its name for the 4 call sites). A MODEL switch (not just a provider
+        switch) must update it. Idempotent; safe before the rail is built."""
         lbl = getattr(self, "_author_lbl", None)
         if lbl is not None:
             try:
@@ -614,32 +621,41 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
         # The chat is the dominant surface via stretch (it expands to fill), so
         # its MINIMUM is kept low — a high min here was what summed past the pane
-        # height and clipped the input/Send row at short pane sizes.
-        self._chat.setMinimumHeight(80)
+        # height and clipped the input/Send row at short pane sizes. v9: lower
+        # still (the 132px comp composer + khint reclaim the floor's budget).
+        self._chat.setMinimumHeight(24)
         self._converse_stack = QtWidgets.QStackedWidget()
         self._converse_stack.addWidget(self._chat)              # page 0: chat
         self._converse_stack.addWidget(self._build_hda_form())  # page 1: Build HDA
+        # Vertical IGNORED: the stack lives off its stretch factor, not its
+        # pages' size hints — otherwise the chat/HDA-form hints manufacture a
+        # layout deficit that compresses the 132px composer even in tall panes.
         self._converse_stack.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding
+            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Ignored
         )
-        self._converse_stack.setMinimumHeight(80)
+        self._converse_stack.setMinimumHeight(24)
         return self._converse_stack
 
     # the two tabs, in switcher order (v9: Review folded into Work's done state)
     _FACE_INDEX = {"direct": 0, "work": 1}
 
     def _build_mode_bar(self):
-        """The switcher: Direct · Work. Underline tabs (v9 call 1). A pill click
+        """The switcher: DIRECT · WORK. Underline tabs on a shared baseline
+        track (v9 call 1; #DsTabRow carries the 1px BORDER rule). A pill click
         is the *only* thing that moves the visible tab — agent state never does
-        (the same-pane law)."""
+        (the same-pane law). Text is pre-uppercased (QSS has no text-transform);
+        `_face_pills` keys stay "direct"/"work" — the same-pane invariants key
+        on those, not on the label text."""
         w = self._section()
+        w.setObjectName("DsTabRow")
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_XS)
-        lay.setSpacing(t.SPACE_SM)
+        lay.setContentsMargins(26, 20, 26, 0)
+        lay.setSpacing(28)
         self._face_pills = {}
-        for face, text in (("direct", "Direct"), ("work", "Work")):
+        for face, text in (("direct", "DIRECT"), ("work", "WORK")):
             pill = c.Pill(text)
-            pill.setFont(fontload.tracked_font("LABEL", t.SIZE_UI + 2))  # tab tracking
+            pill.setFont(fontload.tracked_font(
+                "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
             pill.clicked.connect(lambda _=False, f=face: self._set_face(f))
             lay.addWidget(pill)
             self._face_pills[face] = pill
@@ -663,10 +679,12 @@ class SynapsePanel(QtWidgets.QWidget):
         return self._faces
 
     def _build_direct_face(self):
-        """Direct — converse + quick actions + input. The artist's surface."""
+        """Direct — converse + quick actions + input. The artist's surface.
+        The face carries the comp's 26/20 content padding; inner rows are
+        flush (their old horizontal margins would double it)."""
         page = self._section()
         col = QtWidgets.QVBoxLayout(page)
-        col.setContentsMargins(0, 0, 0, 0)
+        col.setContentsMargins(26, 20, 26, 20)
         col.setSpacing(0)
         col.addWidget(self._build_converse(), 1)   # chat | Build-HDA inner stack
         col.addWidget(self._build_act())
@@ -767,17 +785,6 @@ class SynapsePanel(QtWidgets.QWidget):
             pass
         return t.FONT_SCALE_DEFAULT
 
-    def _model_chip_text(self):
-        """Short, readable chip label for the active model (e.g. 'Sonnet 4.6'),
-        NOT the raw model id (which is long enough to dominate the panel)."""
-        try:
-            from synapse.panel.providers.registry import model_label
-            pid = getattr(self, "_provider_id", "claude")
-            lbl = model_label(pid, self._active_model())
-        except Exception:
-            lbl = self._author_token()
-        return (lbl or "model") + "  ▾"
-
     def _active_model(self):
         """Model id of the active engine — the picked model for this provider,
         else the registry default (no network)."""
@@ -795,28 +802,110 @@ class SynapsePanel(QtWidgets.QWidget):
             except Exception:
                 return ""
 
-    def _model_menu_items(self):
-        """``(model_id, label, active)`` rows for the active provider's picker —
-        the exact data the model menu renders; exposed for the readability
-        audit so the picker is gate-checkable offscreen."""
+    def _provider_model_rows(self, pid):
+        """``(model_id, label)`` rows for a provider — the registry rows, with
+        the Ollama live-tag special case hoisted here (menu-open is user-
+        initiated; 1s localhost timeout; the registry row is only the static
+        fallback). Shared by the model picker AND the author engine menu.
+
+        Guarantee (v9 hardening): when ``pid`` is the ACTIVE provider, the
+        active model is always among the rows — a persisted pick can go stale
+        (registry rotation) or be live-only (an Ollama tag while the daemon is
+        down), and the selection must stay OBSERVABLE: the artist sees exactly
+        what will run, checked, never a silently blank menu. The stale row is
+        appended after the registry rows (label falls back to the raw id)."""
         try:
             from synapse.panel.providers import registry as reg
         except Exception:
             return []
-        pid = getattr(self, "_provider_id", "claude")
-        cur = self._active_model()
-        rows = reg.models_for(pid)
+        rows = list(reg.models_for(pid))
         if pid == "ollama":
-            # Live local tag list (menu-open is user-initiated; 1s localhost
-            # timeout) — the registry row is only the static fallback.
             try:
                 from synapse.panel.providers.ollama_provider import OllamaProvider
                 live = OllamaProvider.available_models(timeout=1.0)
                 if live:
-                    rows = live
+                    rows = list(live)
             except Exception:
                 pass
-        return [(mid, lbl, mid == cur) for mid, lbl in rows]
+        if pid == getattr(self, "_provider_id", "claude"):
+            cur = self._active_model()
+            if cur and cur not in {mid for mid, _ in rows}:
+                rows.append((cur, reg.model_label(pid, cur)))
+        return rows
+
+    def _model_menu_items(self):
+        """``(model_id, label, active)`` rows for the active provider's picker —
+        the exact data the model menu renders; exposed for the readability
+        audit so the picker is gate-checkable offscreen."""
+        pid = getattr(self, "_provider_id", "claude")
+        cur = self._active_model()
+        return [(mid, lbl, mid == cur)
+                for mid, lbl in self._provider_model_rows(pid)]
+
+    def _author_menu_items(self):
+        """``(pid, provider_label, [(mid, label, active)])`` — the exact data
+        the author-token engine menu renders, exposed so engine selection stays
+        gate-checkable offscreen (the ``_model_menu_items`` pattern). Exactly
+        ONE ``(pid, mid)`` is active across the whole tree."""
+        try:
+            from synapse.panel.providers.registry import PROVIDER_IDS, PROVIDER_LABELS
+        except Exception:
+            return []
+        cur_pid = getattr(self, "_provider_id", "claude")
+        cur_mid = self._active_model()
+        return [
+            (pid, PROVIDER_LABELS.get(pid, pid),
+             [(mid, lbl, pid == cur_pid and mid == cur_mid)
+              for mid, lbl in self._provider_model_rows(pid)])
+            for pid in PROVIDER_IDS
+        ]
+
+    def _fill_author_submenu(self, sub, pid):
+        """(Re)build one provider submenu from live rows. The Ollama submenu
+        re-fills on aboutToShow so the local tag list stays current; Custom
+        appends Configure… (and opens even while unconfigured)."""
+        sub.clear()
+        cur_pid = getattr(self, "_provider_id", "claude")
+        cur_mid = self._active_model()
+        for mid, lbl in self._provider_model_rows(pid):
+            act = sub.addAction(lbl)
+            act.setCheckable(True)
+            act.setChecked(pid == cur_pid and mid == cur_mid)
+            act.triggered.connect(
+                lambda _=False, p=pid, m=mid: self._pick_engine_model(p, m))
+        if pid == "custom":
+            if not sub.isEmpty():
+                sub.addSeparator()
+            sub.addAction("Configure…", self._configure_custom)
+
+    def _open_author_menu(self):
+        """The rail author token's engine+model menu (v9) — one submenu per
+        provider, rows from the registry; REUSES the proven _set_provider /
+        _set_model / _persist_picks machinery (only the anchor moved from the
+        retired pill bar). Exactly one row is checked: the active pair."""
+        try:
+            from synapse.panel.providers.registry import PROVIDER_IDS, PROVIDER_LABELS
+        except Exception:
+            return
+        menu = QtWidgets.QMenu(self)
+        for pid in PROVIDER_IDS:
+            sub = menu.addMenu(PROVIDER_LABELS.get(pid, pid))
+            self._fill_author_submenu(sub, pid)
+            if pid == "ollama":
+                sub.aboutToShow.connect(
+                    lambda s=sub, p=pid: self._fill_author_submenu(s, p))
+        btn = getattr(self, "_author_lbl", None)
+        anchor = btn if btn is not None else self
+        pos = anchor.mapToGlobal(QtCore.QPoint(0, anchor.height()))
+        menu.exec(pos) if hasattr(menu, "exec") else menu.exec_(pos)
+
+    def _pick_engine_model(self, pid, mid):
+        """A row pick from the author menu: switch the engine if needed, then
+        the model — both existing persisted paths (effective on the NEXT
+        message; two chat announcements are acceptable)."""
+        if pid != getattr(self, "_provider_id", "claude"):
+            self._set_provider(pid)
+        self._set_model(mid)
 
     def _open_model_menu(self):
         """Drop the model picker for the active engine — switching Anthropic
@@ -1163,7 +1252,7 @@ class SynapsePanel(QtWidgets.QWidget):
     def _build_act(self):
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(t.SPACE_MD, t.SPACE_SM, t.SPACE_MD, t.SPACE_SM)
+        lay.setContentsMargins(0, t.SPACE_SM, 0, t.SPACE_SM)  # face carries 26/20
         lay.setSpacing(t.SPACE_MD)
         for label_text, prompt in _QUICK_ACTIONS:
             lay.addWidget(self._verb(
@@ -1183,7 +1272,7 @@ class SynapsePanel(QtWidgets.QWidget):
     def _build_input(self):
         w = self._section()
         col = QtWidgets.QVBoxLayout(w)
-        col.setContentsMargins(t.SPACE_MD, 0, t.SPACE_MD, t.SPACE_SM)
+        col.setContentsMargins(0, 0, 0, 0)   # the Direct face carries the 26/20
         col.setSpacing(t.SPACE_XS)
         self._input = _GrowingInput()
         # The prompt scales with the Aa content scale via a widget-level sheet
@@ -1199,13 +1288,24 @@ class SynapsePanel(QtWidgets.QWidget):
         attach.setFixedWidth(32)
         attach.setToolTip("Attach image / file as context")
         attach.clicked.connect(self._on_attach)
-        self._send_btn = c.Button("Send", variant="primary")
-        self._send_btn.setMinimumWidth(72)
+        # v9 comp: SEND rides bottom-right INSIDE the composer (the attr name
+        # `_send_btn` is load-bearing — the clip audit finds it by name).
+        self._send_btn = QtWidgets.QPushButton("SEND")
+        self._send_btn.setObjectName("DsSend")
+        self._send_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._send_btn.setFont(fontload.tracked_font(
+            "SEND", t.SIZE_SMALL, scale=self._chrome_scale, weight=500))
         self._send_btn.clicked.connect(self._on_submit)
+        self._input.attach_send(self._send_btn)
         row.addWidget(self._input, 1)
         row.addWidget(attach)
-        row.addWidget(self._send_btn)
         col.addLayout(row)
+        # khint — the composer's quiet key legend (comp .khint)
+        self._khint = c.label("↵ send · ⇧↵ newline · / commands", role="caption")
+        self._khint.setFont(fontload.tracked_font(
+            "DATA", t.SIZE_MICRO, scale=self._chrome_scale, mono=True))
+        col.addSpacing(t.SPACE_SM)          # +XS layout spacing ⇒ the comp's 12
+        col.addWidget(self._khint)
         return w
 
     def _on_attach(self):

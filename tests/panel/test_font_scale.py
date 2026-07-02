@@ -94,8 +94,10 @@ def test_aa_scales_content_only_chrome_frozen():
     # never jitters when the artist changes reading size.
     import re
     p = _panel()
+    # v9: the ENGINE pill bar (and its _engine_lbl) left the chrome; the rail
+    # token meter joined it.
     chrome = ("_wordmark", "_header_status", "_palette_hint", "_author_lbl",
-              "_foot_label", "_ctx_label", "_engine_lbl")
+              "_foot_label", "_ctx_label", "_meter_lbl")
 
     def _px(name):
         w = getattr(p, name, None)

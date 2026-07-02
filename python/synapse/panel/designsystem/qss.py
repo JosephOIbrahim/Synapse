@@ -26,10 +26,11 @@ QWidget#DsRoot {{
 }}
 QWidget#DsSection {{ background: {t.PANEL}; }}
 QTextBrowser {{ background: {t.GROUND}; border: none; }}
-/* Cohere 'gradient atmosphere' — a faint cool→warm wash across the header. */
+/* v9 rail: flat PANEL with a 1px HAIR bottom rule (the comp retired the
+   cool→warm gradient wash). */
 QWidget#DsHeader {{
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-        stop:0 #2B2E33, stop:0.5 {t.PANEL}, stop:1 #332E2C);
+    background: {t.PANEL};
+    border-bottom: 1px solid {t.HAIR};
 }}
 QToolTip {{
     background: {t.SURFACE}; color: {t.TEXT_PRIMARY};
@@ -39,7 +40,7 @@ QToolTip {{
 
 /* ---- buttons (variant via dynamic property) ------------------ */
 QPushButton#DsButton {{
-    border-radius: {t.RADIUS_MD}px;
+    border-radius: {t.RADIUS_SM}px;
     padding: {t.SPACE_SM}px {t.SPACE_MD}px;
     font-size: {s(t.SIZE_UI)}px;
     font-weight: 600;
@@ -67,39 +68,41 @@ QPushButton#DsButton:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DIS
 
 /* ---- tabs: underline on a baseline track (v9 call 1) --------- */
 /* Retires the filled-pill active state: tabs read as text on a shared 2px
-   baseline; the active tab lights its rule + text. Flat, native font; the
-   active accent is the only chrome. */
-QPushButton#DsPill {{
-    background: none; color: {t.TEXT_SECONDARY};
-    border: none; border-bottom: 2px solid transparent; border-radius: 0;
-    padding: {t.SPACE_XS}px {t.SPACE_MD}px;
-    font-size: {s(t.SIZE_UI + 2)}px; font-weight: 500;
+   baseline; the active tab lights its rule + text (TEXT_BRIGHT per comp).
+   Font family/size/tracking live on the QFont (LABEL role), never here. */
+QWidget#DsTabRow {{
+    background: {t.PANEL};
+    border-bottom: 1px solid {t.BORDER};
 }}
-QPushButton#DsPill:hover  {{ color: {t.TEXT_ACCENT}; }}
+QPushButton#DsPill {{
+    background: none; color: {t.TEXT_TERTIARY};
+    border: none; border-bottom: 2px solid transparent; border-radius: 0;
+    padding: 0 0 12px 0;
+}}
+QPushButton#DsPill:hover  {{ color: {t.TEXT_BRIGHT}; }}
 QPushButton#DsPill:disabled {{ color: {t.TEXT_DISABLED}; }}
 QPushButton#DsPill[active="true"] {{
-    color: {t.TEXT_ACCENT}; border-bottom: 2px solid {t.SIGNAL};
+    color: {t.TEXT_BRIGHT}; border-bottom: 2px solid {t.SIGNAL};
 }}
 
-/* ---- engine selector: a segmented control (model selection must be
-   APPARENT, not buried in the ⋯ menu) — the active engine is a SIGNAL fill --- */
-QPushButton#DsSeg {{
-    background: {t.SURFACE}; color: {t.TEXT_SECONDARY};
-    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_PILL}px;
-    padding: 3px {t.SPACE_MD}px;
-    font-size: {s(t.SIZE_SMALL)}px; font-weight: 600;
-}}
-QPushButton#DsSeg:hover {{ color: {t.TEXT_PRIMARY}; border-color: {t.BORDER_STRONG}; }}
-QPushButton#DsSeg[active="true"] {{
-    background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT}; border-color: {t.SIGNAL};
-}}
-
-/* ---- model picker chip — small label + ▾, NOT the dominant element ---- */
-QPushButton#DsModelChip {{
+/* ---- rail author token — THE engine+model click target (v9) ----
+   Mono/DATA family+tracking live on the QFont; hover underline + pointing
+   hand carry discoverability (the comp shows no ▾). */
+QPushButton#DsAuthor {{
     background: transparent; border: none; padding: 0 {t.SPACE_XS}px;
-    color: {t.TEXT_BRIGHT}; font-size: {s(t.SIZE_SMALL)}px; font-weight: 600;
+    color: {t.SIGNAL};
 }}
-QPushButton#DsModelChip:hover {{ color: {t.TEXT_ACCENT}; }}
+QPushButton#DsAuthor:hover {{
+    color: {t.SIGNAL_HOVER}; text-decoration: underline;
+}}
+
+/* ---- rail token meter (tokens only, never $) + ⌘K chip -------- */
+QLabel#DsMeter {{ color: {t.TEXT_TERTIARY}; }}
+QLabel#DsKHint {{
+    color: {t.TEXT_TERTIARY};
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: 3px 7px;
+}}
 
 /* ---- type-set verbs (Direct act bar + Review actions) — Mile 7 --- */
 /* Verbs read as type, not buttons: flat, mono, the chrome recedes. */
@@ -109,8 +112,8 @@ QPushButton#DsVerb {{
     font-size: {s(11)}px;
 }}
 QPushButton#DsVerb:hover {{ color: {t.TEXT_ACCENT}; }}
-QPushButton#DsVerb[tone="ok"]     {{ color: {t.GROW}; }}
-QPushButton#DsVerb[tone="hot"]    {{ color: {t.WARM}; }}
+QPushButton#DsVerb[tone="ok"]     {{ color: {t.OK_SOFT}; }}
+QPushButton#DsVerb[tone="hot"]    {{ color: {t.HOT_SOFT}; }}
 QPushButton#DsVerb[tone="accent"] {{ color: {t.TEXT_ACCENT}; }}
 
 /* ---- two-axis palette chips (⌘K · DO × WHERE) ---------------- */
@@ -153,11 +156,21 @@ QLabel#DsBadge[kind="signal"]{{ color: {t.SIGNAL};background: {t.STATE_TINTS["si
 /* ---- text inputs (v9 call 2: darker field-inset grey) -------- */
 QTextEdit#DsInput, QLineEdit#DsField {{
     background: {t.FIELD_INSET}; color: {t.TEXT_PRIMARY};
-    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_MD}px;
-    padding: {t.SPACE_SM}px; font-size: {s(t.SIZE_UI)}px;
+    border: 1px solid {t.BORDER}; border-radius: {t.RADIUS_SM}px;
+    padding: 14px 15px; font-size: {s(t.SIZE_UI)}px;
     selection-background-color: {t.SIGNAL_TINT_STRONG};
 }}
 QTextEdit#DsInput:focus, QLineEdit#DsField:focus {{ border-color: {t.SIGNAL}; }}
+
+/* ---- SEND — embedded bottom-right inside the composer (comp) --- */
+QPushButton#DsSend {{
+    background: {t.SIGNAL}; color: {t.TEXT_ON_ACCENT};
+    border: none; border-radius: {t.RADIUS_SM}px;
+    padding: 9px 15px;
+}}
+QPushButton#DsSend:hover   {{ background: {t.SIGNAL_HOVER}; }}
+QPushButton#DsSend:pressed {{ background: {t.SIGNAL_PRESS}; }}
+QPushButton#DsSend:disabled {{ background: {t.DISABLED_BG}; color: {t.TEXT_DISABLED}; }}
 
 /* ---- role labels (color; font set in Python from TYPE_ROLES) -- */
 QLabel[role="title"]   {{ color: {t.TEXT_BRIGHT}; }}
@@ -172,6 +185,18 @@ QProgressBar#DsProgress {{
     height: {t.SPACE_XS}px; text-align: center;
 }}
 QProgressBar#DsProgress::chunk {{ background: {t.SIGNAL}; border-radius: {t.RADIUS_SM}px; }}
+
+/* ---- cook bar (comp .cookbar): 3px neutral track, RAISED fill --- */
+QProgressBar#DsCookBar {{
+    background: {t.GROUND}; border: none; border-radius: 2px;
+}}
+QProgressBar#DsCookBar::chunk {{ background: {t.RAISED}; border-radius: 2px; }}
+
+/* ---- Work-face acts row (comp .acts): quiet HAIR top rule ----- */
+QWidget#DsActs {{
+    background: {t.PANEL};
+    border-top: 1px solid {t.HAIR};
+}}
 
 /* ---- scrollbars (quiet) -------------------------------------- */
 QScrollBar:vertical {{ background: transparent; width: {t.SPACE_SM}px; margin: 0; }}
