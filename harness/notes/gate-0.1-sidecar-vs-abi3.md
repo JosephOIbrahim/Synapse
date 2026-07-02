@@ -40,7 +40,7 @@ SideFX has **not announced H22's Python version** (SPECULATION-free statement: i
 - Either way the harness is ready: `check_brain_answers` validates the property, not the mechanism.
 
 ## Drop-day checklist (works for either architecture)
-1. Install H22 clean; `hython -c "import sys,pxr,PySide6.QtCore as q; print(sys.version_info, pxr.__version__ if hasattr(pxr,'__version__') else '?', q.__version__)"` → read **Python · USD · PySide**.
+1. Install H22 clean; `hython -c "import sys; from pxr import Usd; import PySide6.QtCore as q; print(sys.version_info, Usd.GetVersion(), q.__version__)"` → read **Python · USD · PySide**.
 2. Write `harness/state/drop.json` with those three numbers (+ houdini build). *(This is the Mode-B human trigger.)*
 3. Regenerate the symbol table inside H22: `hython host/introspect_runtime.py` → `h22_symbol_table.json`.
 4. Does the brain wake under H22? Run `check_brain_answers` (sidecar: through IPC; in-proc: after re-vendoring the 2 wheels for H22's cpXX + widening the `__init__.py:51` gate).

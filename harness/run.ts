@@ -201,6 +201,12 @@ function runTask(task: any): "PASS" | "BLOCKED" | "GATED" {
     return "GATED";
   }
 
+  // dry run: describe, never mutate (no worktree, no branch, no agent).
+  if (DRY) {
+    log(`  ${c.dim}(dry: would create worktree feature-${task.id}, generate, then check ${(task.verify ?? []).join(", ") || "—"} + guardrails)${c.off}`);
+    return "PASS";
+  }
+
   const wt = ensureWorktree(task.id);
   log(`  worktree: ${c.dim}${wt}${c.off}`);
 
