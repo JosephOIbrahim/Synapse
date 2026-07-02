@@ -7,12 +7,12 @@
     "nodes_appear", "ledger", "revert_clean", "render", "theme_ok",
     "mcp_surface_probe", "mcp_registered", "mcp_truth_contract",
     "scout_federates", "scout_no_apex_corpus", "no_rigging_drift",
-    "provenance_not_bypassed",
+    "provenance_not_bypassed", "phantom_clean",
     "connectivity_catalog_fresh", "wiring_conformance", "validator_catches_miswire"
   ],
   "guardrails": {
-    "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger.",
-    "checks": ["scout_no_apex_corpus", "no_rigging_drift", "provenance_not_bypassed"]
+    "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger, and no newly-introduced phantom hou.* API (dir()-symbol-table-gated).",
+    "checks": ["scout_no_apex_corpus", "no_rigging_drift", "provenance_not_bypassed", "phantom_clean"]
   },
   "tasks": [
     {

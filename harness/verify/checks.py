@@ -324,6 +324,96 @@ def check_provenance_not_bypassed(ctx):
     # the sandbox sentinel (runtime, Mode B).
     return {"ok": None, "detail": "ADAPT: wire the provenance-gateway manifest or the runtime ledger-grew sentinel. Warn-only until then."}
 
+# ---------- phantom guardrail (Upgrade 3 / P2): the orphaned gate, wired into the loop ----------
+# forge_evaluator_gate.py::gate_phantom scanned a fixed file list and was never called by the
+# loop. This is the live-loop form: a deterministic guardrail that fails a sprint which
+# INTRODUCES a phantom hou.* API — SYNAPSE's #1 failure class (hou.pdg / hou.secure /
+# hou.lopNetworks / hou.updateGraphTick). Authority is the introspected dir() symbol table
+# (the Spike-2.5 lesson: membership by the table, NEVER a hardcoded denylist — that demotion
+# drove false-phantom 0.667 -> 0). AST-based, so comments / docstrings / string-literals are
+# inherently ignored (a phantom named in prose is a Constant node, never an Attribute).
+
+def _hou_phantoms_in_source(src, table_syms):
+    """[(lineno, "hou.<attr>"), ...] for hou-module attribute accesses the table PROVES absent.
+    Depth-1 hou.<attr> ONLY: the table enumerates every top-level name of `hou` via dir(), so
+    absence there is proof; deeper access (hou.Class.method) is not table-complete, so unknown
+    != phantom (the inner hou.Class is judged + covered; the outer has an Attribute value and is
+    skipped). `import hou as X` aliases resolve to the canonical hou.<attr>."""
+    import ast  # local, mirrors check_version_single_source's local `import re`
+    tree = ast.parse(src)  # SyntaxError on a broken file — the caller handles it
+    hou_names = {"hou"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "hou":
+                    hou_names.add(alias.asname or "hou")
+    hits = []
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name)
+                and node.value.id in hou_names):
+            symbol = "hou." + node.attr
+            if symbol not in table_syms:
+                hits.append((node.lineno, symbol))
+    return hits
+
+def check_phantom_clean(ctx):
+    # Cross-cutting guardrail (tasks.json guardrails.checks): ok:False ⇒ run.ts short-circuits to
+    # a repair ticket BEFORE the Evaluator. Table missing/stale/gate-down ⇒ ok:None (WARN, never
+    # a false block). Scoped to the sprint's CHANGED .py (git diff vs the branch fork point).
+    wt = ctx["wt"]
+    # 1) membership authority — reuse scout's own loader (per-major path + blake2b integrity +
+    #    host-version staleness, for free; pure-python, zero-hou). None ⇒ gate down ⇒ WARN.
+    try:
+        from synapse.cognitive.tools.scout import _load_symbol_table
+    except Exception as e:
+        return {"ok": None, "detail": f"scout unavailable; phantom gate down: {type(e).__name__}: {e}"[:300]}
+    table_syms, status = _load_symbol_table()
+    if table_syms is None:
+        return {"ok": None, "detail": f"symbol table missing/stale; phantom gate down: {status.get('reason')}"[:300]}
+    if "hou" not in table_syms:
+        return {"ok": None, "detail": "symbol table lacks the hou surface — cannot prove hou.* absence "
+                                      "(regenerate via host/introspect_runtime.py)"}
+    # 2) scope to CHANGED .py — base = master HEAD at worktree-add time (fork point, robust if
+    #    master advanced). Single-arg `git diff <base>` = base vs WORKING TREE (committed + staged
+    #    + unstaged in one shot); ls-files --others adds new .py the Generator never `git add`ed.
+    base_rc, base_out, base_err = sh(["git", "merge-base", "master", "HEAD"], cwd=wt)
+    base = base_out.strip()
+    if base_rc != 0 or not base:
+        return {"ok": None, "detail": f"cannot determine diff base (git merge-base failed): "
+                                      f"{(base_err or base_out).strip()[:200]}"}
+    _, d_out, _ = sh(["git", "diff", "--name-only", "--diff-filter=d", base, "--", "*.py"], cwd=wt)
+    _, u_out, _ = sh(["git", "ls-files", "--others", "--exclude-standard", "--", "*.py"], cwd=wt)
+    touched = sorted({ln.strip() for ln in (d_out + "\n" + u_out).splitlines()
+                      if ln.strip().endswith(".py")})
+    if not touched:
+        return {"ok": True, "detail": "no changed .py files in this sprint"}
+    # 3) AST-scan each changed file for table-proven-absent hou.<attr> accesses.
+    offenders, unparseable = [], []
+    for rel in touched:
+        f = Path(wt) / rel
+        if not f.is_file():
+            continue  # rename/deletion artifact, or a path outside the tree
+        try:
+            src = f.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        try:
+            hits = _hou_phantoms_in_source(src, table_syms)
+        except SyntaxError:
+            unparseable.append(rel)  # a broken file fails other checks anyway — don't crash the gate
+            continue
+        for lineno, symbol in hits:
+            offenders.append(f"{rel}:{lineno}:{symbol}")
+    ver = status.get("houdini_version", "?")
+    if offenders:
+        note = f" (+{len(unparseable)} unparseable, skipped)" if unparseable else ""
+        return {"ok": False, "detail": (f"phantom hou.* introduced (absent in the {ver} symbol "
+                f"table): {', '.join(sorted(set(offenders))[:12])}{note}")[:500]}
+    clean = f"{len(touched)} changed .py clean of table-proven phantom hou.* APIs (vs {len(table_syms)} live symbols @ {ver})"
+    if unparseable:
+        clean += f" ({len(unparseable)} unparseable, skipped)"
+    return {"ok": True, "detail": clean[:500]}
+
 def check_scout_federates(ctx):
     # D-H22-2: scout returns APEX results tagged as sourced from the federated MCP provider,
     # and exists_in_runtime remains present + authoritative on every hit.
@@ -455,6 +545,7 @@ DISPATCH = {
     # v2 — guardrails
     "scout_no_apex_corpus": check_scout_no_apex_corpus, "no_rigging_drift": check_no_rigging_drift,
     "provenance_not_bypassed": check_provenance_not_bypassed,
+    "phantom_clean": check_phantom_clean,
     # U.1 — utility flywheel: network-wiring truth
     "connectivity_catalog_fresh": check_connectivity_catalog_fresh,
     "wiring_conformance": check_wiring_conformance,
