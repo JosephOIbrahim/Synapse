@@ -343,7 +343,9 @@ def diff_punycode(
     * ``vanished``  — H21-probe-verified (value appears in the baseline
       verified JSON) but absent from the live probe -> unpatched.
     * ``unverified_unprobed`` — pinned but never probe-verified and not seen
-      live (the six camera entries today) -> informational, NOT unpatched.
+      live -> informational, NOT unpatched. (Empty today: the six camera
+      entries were de-phantomed 2026-07-01 — camera parms are plain camelCase
+      and live in ``USD_ATTR_NAMES``, not ``PUNYCODE_PARMS``.)
     * ``new``       — live raw properties with no pinned alias -> info.
     """
     live_by_alias = {alias_from_raw(raw): (raw, enc) for raw, enc in live_raw_map.items()}
@@ -503,8 +505,7 @@ def render_markdown(report: Mapping, proposed_block: str = "") -> str:
         lines.append(f"  - VANISHED `{v['alias']}` (was `{v['pinned']}`)")
     if pc["unverified_unprobed"]:
         lines.append(
-            "- pinned-but-never-verified, not seen live (known: the six camera "
-            "entries — see usd_punycode.py:82-87): "
+            "- pinned-but-never-verified, not seen live: "
             + ", ".join(f"`{a}`" for a in pc["unverified_unprobed"])
         )
     lines += [

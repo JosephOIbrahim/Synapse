@@ -16,7 +16,7 @@ package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 python_dir = os.path.join(package_root, "python")
 sys.path.insert(0, python_dir)
 
-from synapse.core.usd_punycode import PUNYCODE_PARMS, encoded
+from synapse.core.usd_punycode import PUNYCODE_PARMS, USD_ATTR_NAMES, encoded
 from synapse.core.aliases import USD_PARM_ALIASES, resolve_usd_parm
 
 
@@ -30,6 +30,30 @@ _CANONICAL_COLOR = "xn__inputscolor_zta"
 
 _SYNAPSE_DIR = os.path.join(python_dir, "synapse")
 _USD_PUNYCODE_FILE = os.path.join(_SYNAPSE_DIR, "core", "usd_punycode.py")
+
+# Camera — UsdGeomCamera attrs are NOT ``inputs:``-namespaced, so the camera
+# LOP never punycode-encodes them: the parm names are the plain camelCase
+# schema attrs. Live-probed off the camera LOP on 21.0.671 (2026-07-01,
+# harness/notes/verified_nodetype_catalog_21.0.671.json). These aliases live
+# in USD_ATTR_NAMES, never in PUNYCODE_PARMS.
+_CAMERA_PLAIN = {
+    "focal_length": "focalLength",
+    "focus_distance": "focusDistance",
+    "fstop": "fStop",
+    "horizontal_aperture": "horizontalAperture",
+    "vertical_aperture": "verticalAperture",
+    "clipping_range": "clippingRange",
+}
+# The six phantom xn__ camera guesses scrubbed 2026-07-01. Grep-guarded below:
+# none may ever reappear anywhere under python/synapse (not even usd_punycode).
+_PHANTOM_CAMERA = (
+    "xn__inputsfocallength_e4b",
+    "xn__inputsfocusdistance_f7b",
+    "xn__inputsfstop_vya",
+    "xn__inputshorizontalaperture_ohb",
+    "xn__inputsverticalaperture_gfb",
+    "xn__inputsclippingrange_e4b",
+)
 
 
 def test_punycode_parms_has_known_keys():
@@ -47,12 +71,6 @@ def test_punycode_parms_has_known_keys():
         "specular",
         "texture_file",
         "texture_format",
-        "focal_length",
-        "focus_distance",
-        "fstop",
-        "horizontal_aperture",
-        "vertical_aperture",
-        "clipping_range",
     }
     missing = expected - set(PUNYCODE_PARMS)
     assert not missing, f"PUNYCODE_PARMS missing keys: {sorted(missing)}"
@@ -111,4 +129,46 @@ def test_wrong_color_literals_absent_everywhere_but_usd_punycode():
     assert not offenders, (
         f"Phantom color literal(s) found in: {offenders}. "
         f"Use synapse.core.usd_punycode.PUNYCODE_PARMS['color'] instead."
+    )
+
+
+def test_camera_parms_are_plain_camelcase_not_punycode():
+    """Camera parms are plain camelCase — never punycode (2026-07-01 probe).
+
+    UsdGeomCamera attrs are not ``inputs:*``, so the camera LOP surfaces them
+    under the schema names verbatim. The aliases must resolve to those plain
+    names via USD_ATTR_NAMES, and must never re-enter PUNYCODE_PARMS.
+    """
+    for alias, plain in _CAMERA_PLAIN.items():
+        assert alias not in PUNYCODE_PARMS, (
+            f"{alias!r} re-entered PUNYCODE_PARMS — camera parms are plain "
+            f"camelCase, never punycode (verified_nodetype_catalog_21.0.671.json)"
+        )
+        assert USD_ATTR_NAMES[alias] == plain
+        assert USD_PARM_ALIASES[alias] == plain
+        assert resolve_usd_parm(alias) == plain
+
+
+def test_phantom_camera_literals_absent_in_code():
+    """grep-guard: none of the six phantom camera encodings may reappear.
+
+    Unlike the color guard, there is NO exempt file — the phantoms were
+    guesses, not probe results, so not even usd_punycode.py may carry them.
+    """
+    offenders = []
+    for dirpath, _dirnames, filenames in os.walk(_SYNAPSE_DIR):
+        for fname in filenames:
+            if not fname.endswith(".py"):
+                continue
+            fpath = os.path.join(dirpath, fname)
+            with open(fpath, "r", encoding="utf-8") as fh:
+                text = fh.read()
+            for wrong in _PHANTOM_CAMERA:
+                if wrong in text:
+                    offenders.append(
+                        f"{os.path.relpath(fpath, _SYNAPSE_DIR)} ({wrong})"
+                    )
+    assert not offenders, (
+        f"Phantom camera encoding(s) found in: {offenders}. Camera parms are "
+        f"plain camelCase — use synapse.core.usd_punycode.USD_ATTR_NAMES."
     )

@@ -100,6 +100,23 @@ COMPONENT_PHANTOMS = (
     "xn__inputscolorb_o5a",
 )
 
+# Camera phantoms — DE-PHANTOMED 2026-07-01 (live camera-LOP probe,
+# harness/notes/verified_nodetype_catalog_21.0.671.json). UsdGeomCamera attrs
+# (focalLength, focusDistance, fStop, horizontalAperture, verticalAperture,
+# clippingRange) are NOT ``inputs:``-namespaced, so the camera LOP never
+# punycode-encodes them: the real parm names are the plain camelCase schema
+# attrs, single-sourced in ``usd_punycode.USD_ATTR_NAMES`` (NOT in
+# PUNYCODE_PARMS — camera keys are not in CANON_ALIAS_TO_PHANTOMS above for
+# that reason). The xn__ guesses below must never (re)appear in the corpus.
+CAMERA_PHANTOMS = (
+    "xn__inputsfocallength_e4b",
+    "xn__inputsfocusdistance_f7b",
+    "xn__inputsfstop_vya",
+    "xn__inputshorizontalaperture_ohb",
+    "xn__inputsverticalaperture_gfb",
+    "xn__inputsclippingrange_e4b",
+)
+
 
 def _load_verified():
     return json.loads(_VERIFIED_JSON.read_text(encoding="utf-8"))
@@ -115,7 +132,7 @@ def _verified_components():
 
 def _phantom_set():
     """Every encoding that must NOT appear in the corpus."""
-    phantoms = set(COMPONENT_PHANTOMS)
+    phantoms = set(COMPONENT_PHANTOMS) | set(CAMERA_PHANTOMS)
     for sibs in CANON_ALIAS_TO_PHANTOMS.values():
         phantoms.update(sibs)
     # Augment from the verified JSON's own phantom ledger.

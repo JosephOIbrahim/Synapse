@@ -54,9 +54,10 @@ NOTES_DIR = _REPO / "harness" / "notes"
 PUNYCODE_REFERENCE_TYPES = ("light::2.0", "domelight::3.0", "distantlight")
 CAMERA_TYPE = "camera"
 
-# The six camera aliases pinned UNVERIFIED at usd_punycode.py:82-87. Standard
-# UsdGeomCamera attrs (NOT in ``inputs:``) — the probe reports what the live
-# camera LOP actually exposes; usd_punycode.py is corrected by a human pass.
+# The six camera aliases. Standard UsdGeomCamera attrs (NOT in ``inputs:``),
+# probe-confirmed plain camelCase on 21.0.671 (2026-07-01) and single-sourced
+# in usd_punycode.USD_ATTR_NAMES — the probe keeps reporting what the live
+# camera LOP exposes so any drift stays visible.
 CAMERA_ALIASES = {
     "focal_length": "focalLength",
     "focus_distance": "focusDistance",
@@ -299,7 +300,7 @@ def _probe_punycode(hou, light_types, errors: list) -> dict:
 
 def _probe_camera(hou, errors: list) -> dict:
     """The camera-LOP probe: what does the live build call the six camera
-    attrs pinned UNVERIFIED at usd_punycode.py:82-87?"""
+    attrs single-sourced in usd_punycode.USD_ATTR_NAMES?"""
     stage = hou.node("/stage")
     try:
         node = stage.createNode(CAMERA_TYPE)
