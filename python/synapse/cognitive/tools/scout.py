@@ -96,6 +96,14 @@ class ScoutError(RuntimeError):
 RAG_ROOT = Path(os.environ.get("SYNAPSE_RAG_ROOT", r"G:\HOUDINI21_RAG_SYSTEM"))
 VEX_ROOT = Path(os.environ.get("SYNAPSE_VEX_ROOT", str(RAG_ROOT)))
 
+# D-H22-2: the federated-source registry (scout owns NO local APEX corpus —
+# APEX knowledge comes from the first-party MCP provider, explicit opt-in via
+# domain="apex" only; "both" never includes it).
+SCOUT_SOURCES_PATH = Path(os.environ.get(
+    "SYNAPSE_SCOUT_SOURCES",
+    str(Path(__file__).resolve().parents[2] / "server" / "scout_sources.json"),
+))
+
 # Drift policy (Spike 1): a corpus is a CACHE derived from rag/ — caches drift,
 # and a drifted grounding corpus produces FALSE phantoms (flags a now-real API as
 # fake), which is worse than no gate. At load scout recomputes the rag/ digest and
@@ -541,6 +549,89 @@ def _check_freshness(stores: list[Store]) -> bool:
 
 
 # --------------------------------------------------------------------------- #
+#  APEX federation  (D-H22-2 — consume the first-party MCP, don't rebuild)     #
+# --------------------------------------------------------------------------- #
+_APEX_UNVERIFIED_REASON = ("APEX-graph symbol — python symbol table N/A; "
+                           "node-type existence is science/apex_probes.py's "
+                           "job on-host")
+
+
+def _scout_apex(query: str, k: int, max_chars: int) -> dict:
+    """Federate the APEX MCP provider as the retrieval source (domain="apex").
+
+    Explicit opt-in only — "both" deliberately excludes apex (no silent
+    behavior change; rigging knowledge on request). The MCP is a retrieval
+    source, NEVER a membership authority: ``exists_in_runtime`` verdicts stay
+    with the introspected symbol table. Provider failure raises
+    :class:`ScoutError` (fail-loud, mirrors DRIFT_POLICY="refuse") — no
+    silent fallback to local retrieval.
+    """
+    try:
+        sources = json.loads(SCOUT_SOURCES_PATH.read_text(encoding="utf-8"))
+        src = sources["apex"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as e:
+        raise ScoutError(
+            f"[scout] apex source registry unreadable at {SCOUT_SOURCES_PATH}: {e}")
+    if src.get("kind") != "provider":
+        raise ScoutError(
+            f"[scout] apex source kind must be 'provider' (federated, D-H22-2), "
+            f"got '{src.get('kind')}'.")
+
+    from synapse import providers      # lazy: hou-free registry, apex-path-only cost
+    try:
+        provider = providers.get(src["provider"])
+        env = provider.call_tool(src.get("search_tool", "search_snippets"),
+                                 {"query": query, "k": k})
+    except Exception as e:
+        raise ScoutError(
+            f"[scout] apex federation failed via provider "
+            f"'{src.get('provider')}': {e}")
+
+    table_syms, table_status = _load_symbol_table()
+    if table_status["stale"]:
+        _WARN.append(f"[scout] symbol table unavailable: {table_status['reason']} "
+                     "— membership unverified")
+
+    observed = env.get("observed") if isinstance(env, dict) else None
+    snippets = observed.get("snippets", []) if isinstance(observed, dict) else []
+    hits: list[dict] = []
+    for rank, s in enumerate(snippets[:k]):
+        snippet = str(s.get("text", ""))[:max_chars].strip()
+        hit = {
+            "id": str(s.get("id") or f"apex:{rank}"),
+            "domain": "apex",
+            "type": str(s.get("type", "apex_snippet")),
+            "source": src["provider"],
+            "score": round(1.0 / (rank + 1), 4),
+            "snippet": snippet,
+        }
+        # Ratified D-H22-2 wording: every federated hit carries exists_in_runtime.
+        # True/False from the introspected table when the hit/query references
+        # dotted hou/pdg/pxr symbols; None + unverified_reason otherwise.
+        syms = sorted(set(_DOTTED_RE.findall(f"{query} {snippet}")))
+        if syms and table_syms is not None:
+            hit["exists_in_runtime"] = all(sym in table_syms for sym in syms)
+        else:
+            hit["exists_in_runtime"] = None
+            hit["unverified_reason"] = (
+                (table_status.get("reason") or "no trustworthy symbol table loaded")
+                if syms else _APEX_UNVERIFIED_REASON)
+        hits.append(hit)
+
+    return {
+        "query": query,
+        "mode": "federated",
+        "domain": "apex",
+        "stale": None,                   # local-corpus axis N/A on the federated path
+        "gate_armed": table_syms is not None,
+        "table": table_status,
+        "hits": hits,
+        "symbols": _ground_symbols(query, [], table_syms, table_status.get("reason")),
+        "warnings": list(_WARN),
+    }
+
+
+# --------------------------------------------------------------------------- #
 #  The tool                                                                    #
 # --------------------------------------------------------------------------- #
 def synapse_scout(
@@ -554,7 +645,9 @@ def synapse_scout(
 
     Args:
         query:      natural-language need OR an API/VEX signature to verify.
-        domain:     "docs" | "vex" | "both"  (default "both").
+        domain:     "docs" | "vex" | "both" | "apex"  (default "both").
+                    "apex" federates the first-party APEX MCP provider
+                    (D-H22-2, explicit opt-in — "both" never includes it).
         k:          max hits to return.
         max_chars:  snippet truncation per hit (token economy).
         where:      optional post-filter, e.g. {"type": "vex_function",
@@ -572,10 +665,14 @@ def synapse_scout(
     """
     _WARN.clear()
     domain = domain.lower().strip()
-    if domain not in ("docs", "vex", "both"):
-        raise ScoutError(f"[scout] domain must be docs|vex|both, got '{domain}'.")
+    if domain not in ("docs", "vex", "both", "apex"):
+        raise ScoutError(f"[scout] domain must be docs|vex|both|apex, got '{domain}'.")
     if not query or not query.strip():
         raise ScoutError("[scout] query is empty.")
+
+    if domain == "apex":
+        # D-H22-2: explicit opt-in federation; "both" deliberately excludes it.
+        return _scout_apex(query, k, max_chars)
 
     stores = _stores()
     stale = _check_freshness(stores)     # Floor: surface corpus drift before grounding (Spike 1)
@@ -680,14 +777,18 @@ SYNAPSE_SCOUT_SCHEMA: dict = {
         "mismatched symbol table -- result.table.reason and each symbol's "
         "unverified_reason say why, gate_armed=false): treat the symbol as "
         "UNVERIFIED, do not emit it on memory alone, and regenerate the table "
-        "per docs/studio/UPGRADE.md."
+        "per docs/studio/UPGRADE.md. "
+        "domain='apex' federates the first-party APEX MCP provider as the "
+        "retrieval source (explicit opt-in — 'both' does NOT include it); "
+        "existence verdicts still come from the introspected table (D-H22-2)."
     ),
     "input_schema": {
         "type": "object",
         "properties": {
             "query": {"type": "string",
                       "description": "Natural-language need, or an API/VEX signature to verify."},
-            "domain": {"type": "string", "enum": ["docs", "vex", "both"], "default": "both"},
+            "domain": {"type": "string", "enum": ["docs", "vex", "both", "apex"],
+                       "default": "both"},
             "k": {"type": "integer", "default": DEFAULT_K, "minimum": 1, "maximum": 25},
             "max_chars": {"type": "integer", "default": DEFAULT_MAX_CHARS},
             "where": {"type": "object",

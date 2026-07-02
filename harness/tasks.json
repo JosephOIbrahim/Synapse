@@ -25,7 +25,7 @@
     {
       "id": "0.2", "phase": "prep", "mode": "A", "crit": true, "layer": "survival",
       "title": "Build the H22 probe harness",
-      "refs": ["science/apex_probes.py", "server/solaris_compose.py"],
+      "refs": ["harness/notes/spec-0.2-api-delta-probe.md", "science/apex_probes.py", "server/solaris_compose.py"],
       "verify": ["probe_runs"],
       "note": "On H21 the delta vs the H21-pinned constants should be ~empty — that empty diff is the proof the probe works before the drop makes the diff real."
     },
@@ -63,14 +63,14 @@
     {
       "id": "0.8", "phase": "prep", "mode": "A", "crit": true, "layer": "integrate-scaffold",
       "title": "Scaffold the external-MCP provider seam (truth-contract envelope) against a mock APEX MCP",
-      "refs": ["server/providers/apex_mcp.py", "server/providers/__init__.py", "science/mcp_mock.py", "docs/SYNAPSE_H22_PROVIDER_APEX.md"],
+      "refs": ["python/synapse/providers/apex_mcp.py", "python/synapse/providers/__init__.py", "python/synapse/science/mcp_mock.py", "docs/SYNAPSE_H22_PROVIDER_APEX.md"],
       "verify": ["mcp_registered", "mcp_truth_contract"],
       "note": "D-H22-1 scaffold. H22's MCP does not exist yet — build + contract-test the provider abstraction against a mock so drop day is wiring-in, not design. The mock's tool list stands in for the real surface; task 1.7 swaps it for the shipped build. Normalize on the Anthropic-shaped envelope, NOT a gateway."
     },
     {
       "id": "0.9", "phase": "prep", "mode": "A", "crit": true, "layer": "integrate-scaffold",
       "title": "Wire scout to federate the (mock) APEX MCP — consume, don't rebuild",
-      "refs": ["server/synapse_scout.py", "server/scout_sources.json", "science/mcp_mock.py"],
+      "refs": ["python/synapse/cognitive/tools/scout.py", "python/synapse/server/scout_sources.json", "python/synapse/science/mcp_mock.py"],
       "verify": ["scout_federates", "scout_no_apex_corpus"],
       "note": "D-H22-2 scaffold. APEX syntax comes ONLY from the federated provider. exists_in_runtime stays authoritative. Scout must own NO APEX-syntax corpus — that is the standing guardrail."
     },
@@ -89,7 +89,7 @@
       "title": "Panel reads correctly in H22's new theme", "verify": ["theme_ok"] },
     { "id": "1.7", "mode": "B", "blocked_on": "drop", "crit": true,
       "title": "Probe the SHIPPED native APEX MCP tool surface; quarantine absent/renamed endpoints (D-H22-4)",
-      "refs": ["science/mcp_surface_probe.py"],
+      "refs": ["python/synapse/science/mcp_surface_probe.py"],
       "verify": ["mcp_surface_probe"],
       "note": "Pre-release prose is NOT ground truth. Introspect the real MCP's tool list on the installed H22 before any wiring. Confirmed-absent endpoints auto-quarantine without re-litigation. Gates 2.7/2.8." },
 
@@ -107,12 +107,12 @@
       "title": "Karma XPU render the result on H22", "verify": ["render"] },
     { "id": "2.7", "mode": "B", "blocked_on": "drop", "crit": true,
       "title": "Register the shipped APEX MCP as a first-class provider, truth-contract-wrapped, recorded in agent.usd (D-H22-1)",
-      "refs": ["server/providers/apex_mcp.py"],
+      "refs": ["python/synapse/providers/apex_mcp.py"],
       "verify": ["mcp_registered", "mcp_truth_contract", "ledger"],
       "note": "Swap the mock for the real surface verified by 1.7. Every MCP tool call enters the truth contract; the MCP's own validator verdict lands as a provenance INPUT, never as a Synapse claim. This is the H22 critical-path leg." },
     { "id": "2.8", "mode": "B", "blocked_on": "drop", "crit": true,
       "title": "Scout federates the real APEX MCP; no APEX corpus (D-H22-2)",
-      "refs": ["server/synapse_scout.py", "server/scout_sources.json"],
+      "refs": ["python/synapse/cognitive/tools/scout.py", "python/synapse/server/scout_sources.json"],
       "verify": ["scout_federates", "scout_no_apex_corpus"] },
 
     { "id": "3.1", "mode": "B", "blocked_on": "drop", "crit": true,

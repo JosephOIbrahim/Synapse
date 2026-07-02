@@ -1,0 +1,65 @@
+{
+  "schema": "apex_mcp_surface/v1",
+  "recorded_at": "2026-07-01",
+  "endpoint": "mock",
+  "note": "Recorded APEX MCP tool surface (names + input-schema digests). Mode A: authored against science/mcp_mock.py. Re-record from the shipped H22 MCP is HUMAN-GATED (task 1.7).",
+  "tools": [
+    {
+      "name": "get_rules",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "Optional rule topic filter."
+          }
+        }
+      },
+      "schema_digest": "61ef6af98dfb0a9e1dfbdbdef2a861a9c5ebfbb7acddd34fc2cd9ad5cdaa9f3c"
+    },
+    {
+      "name": "ping",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "schema_digest": "efddc7bd8bbcef73a14eb1ace1ffdaec81e518ef1e13c1e9271d0b8acb694a49"
+    },
+    {
+      "name": "search_snippets",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural-language APEX need."
+          },
+          "k": {
+            "type": "integer",
+            "default": 6
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "schema_digest": "9ff7517ba64e4897eec971bd167126cde0616d594c894033e8b40002fdc4ceb4"
+    },
+    {
+      "name": "validate",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "src": {
+            "type": "string",
+            "description": "APEX script source to validate."
+          }
+        },
+        "required": [
+          "src"
+        ]
+      },
+      "schema_digest": "4f0161517ae0c30a9b71240cae5d40b46bed408f94f045a0bdd5032af97028c5"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "domains": ["cop", "lop", "sop", "karma", "usd"],
+  "note": "D-H22-3: SYNAPSE's authoring center of gravity. Rigging/APEX authoring is the native MCP's floor — a drift term (apex/rig/rigging/kinefx/muscle/cfx) entering this list is a deterministic guardrail failure (check_no_rigging_drift)."
+}

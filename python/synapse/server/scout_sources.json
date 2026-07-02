@@ -1,0 +1,8 @@
+{
+  "apex": {
+    "kind": "provider",
+    "provider": "apex_mcp",
+    "search_tool": "search_snippets",
+    "note": "D-H22-2: APEX knowledge is FEDERATED from the first-party MCP provider (explicit domain='apex' opt-in; 'both' never includes it). SYNAPSE owns no local APEX corpus — guardrail scout_no_apex_corpus."
+  }
+}
