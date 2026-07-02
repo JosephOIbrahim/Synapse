@@ -469,6 +469,15 @@ def main():
     ap.add_argument("--mode", default="A")
     a = ap.parse_args()
 
+    # Worktree-shadowing guard (flywheel U.1 meta-finding): a dev-machine
+    # editable install (__editable__.synapse-*.pth) resolves `synapse` to the
+    # MAIN checkout — for this process AND bare children — so a worktree gate
+    # can green-light code it never imported. Pin the WORKTREE's package first
+    # for both resolution paths.
+    _wt_py = str(Path(a.worktree).resolve() / "python")
+    sys.path.insert(0, _wt_py)
+    os.environ["PYTHONPATH"] = _wt_py + os.pathsep + os.environ.get("PYTHONPATH", "")
+
     doc = json.loads((Path(__file__).resolve().parents[1] / "tasks.json").read_text())
     tasks = doc["tasks"]
     guardrail_names = (doc.get("guardrails") or {}).get("checks", [])
