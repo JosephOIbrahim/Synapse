@@ -31,6 +31,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "node:fs";
 import { resolve, join } from "node:path";
+import { createHash } from "node:crypto";
 
 // ---------- config ----------
 const REPO = process.cwd();
@@ -43,6 +44,7 @@ const WORKTREE_DIR = process.env.WORKTREE_DIR ?? ".claude/worktrees";
 const args = process.argv.slice(2);
 const DRY = args.includes("--dry");
 const ONLY = args.includes("--task") ? args[args.indexOf("--task") + 1] : null;
+const FORCE = args.includes("--force");   // re-run tasks the completion ledger marks done
 
 const GEN_PROMPT = readFileSync(join(REPO, "harness/prompts/generator.md"), "utf8");
 const EVAL_PROMPT = readFileSync(join(REPO, "harness/prompts/evaluator.md"), "utf8");
@@ -57,6 +59,7 @@ const head = (s: string) => log(`\n${c.sig}━━ ${s}${c.off}`);
 // ---------- mode ----------
 const DROP = join(REPO, "harness/state/drop.json");
 const MODE: "A" | "B" = existsSync(DROP) ? "B" : "A";
+const DONE = join(REPO, "harness/state/done.json");   // completion ledger (runtime state, like drop.json — not tracked)
 
 // ---------- helpers ----------
 function sh(cmd: string, cmdArgs: string[], cwd = REPO) {
@@ -198,6 +201,70 @@ function appendProgress(line: string) {
   writeFileSync(PROGRESS, `${readFileSync(PROGRESS, "utf8")}\n- ${stamp} · ${line}`);
 }
 
+// ---------- completion ledger (Upgrade 1: monotonic progress + resume) ----------
+// The loop had no memory of what passed — a re-run re-did the whole queue, and a kill
+// lost the campaign. This records each PASS keyed by a hash of the task's `refs` source.
+// A task is skipped on re-run only if it passed AND its refs are byte-identical to pass
+// time; editing a ref (or merging its worktree, which changes main) re-arms it. Nothing
+// but PASS is ever recorded — BLOCKED/GATED must surface every run. --force / --task override.
+type DoneRec = { verdict: string; refs_hash: string; commit: string; ts: string };
+function loadDone(): Record<string, DoneRec> {
+  if (!existsSync(DONE)) return {};
+  try { return JSON.parse(readFileSync(DONE, "utf8")); } catch { return {}; }
+}
+const doneLog: Record<string, DoneRec> = loadDone();
+
+// Hash the refs' contents. A ref may be a not-yet-created file or a directory; when it is
+// a readable file we fold its bytes in, else only its path — best-effort skip, never a gate.
+function refsHash(task: any): string {
+  const h = createHash("sha256");
+  for (const ref of (task.refs ?? [])) {
+    h.update(String(ref) + "\0");
+    try { const p = join(REPO, ref); if (existsSync(p)) h.update(readFileSync(p)); } catch {}
+  }
+  return h.digest("hex").slice(0, 16);
+}
+function isDone(task: any): boolean {
+  const rec = doneLog[task.id];
+  return !!rec && rec.verdict === "PASS" && rec.refs_hash === refsHash(task);
+}
+function recordDone(task: any, wt: string) {
+  if (DRY) return;
+  let commit = "";
+  try { const r = sh("git", ["rev-parse", "HEAD"], wt); if (r.status === 0) commit = (r.stdout || "").trim().slice(0, 12); } catch {}
+  doneLog[task.id] = { verdict: "PASS", refs_hash: refsHash(task), commit, ts: new Date().toISOString().slice(0, 19) + "Z" };
+  try { writeFileSync(DONE, JSON.stringify(doneLog, null, 2) + "\n"); } catch {}
+}
+
+// ---------- ratification surface (Upgrade 2: the flywheel's missing seam) ----------
+// run.ts never opened flywheel_queue.json before, so ratified:false candidates sat dormant.
+// This surfaces them at run end with evidence + the exact line to flip — the human's whole
+// interaction is one boolean. STRICTLY READ-ONLY: the harness reads `ratified`, never writes
+// it (the anti-runaway anchor, spec-U1-wiring-flywheel.md). Evidence-free ⇒ flagged INVALID.
+function surfaceRatification() {
+  const QUEUE = join(REPO, "harness/state/flywheel_queue.json");
+  if (!existsSync(QUEUE)) return;
+  let raw = "", data: any;
+  try { raw = readFileSync(QUEUE, "utf8"); data = JSON.parse(raw); } catch { return; }
+  const pending = (data.cycles ?? []).filter((cy: any) => cy.ratified === false);
+  if (!pending.length) return;
+  const lines = raw.split("\n");
+  head("ratification pending — flywheel candidates (a human flips ratified, never the harness)");
+  for (const cyc of pending) {
+    const idLine = lines.findIndex((l: string) => l.includes('"id"') && l.includes(`"${cyc.id}"`));
+    let ratLine = -1;
+    for (let i = idLine; i >= 0 && i < lines.length; i++) { if (/"ratified"\s*:\s*false/.test(lines[i])) { ratLine = i + 1; break; } }
+    const ev = cyc.evidence ?? [];
+    const invalid = ev.length === 0;
+    log(`  ${invalid ? c.bad : c.sig}${cyc.id}${c.off}  ${cyc.title ?? ""}`);
+    log(`     ${c.dim}status:${c.off} ${cyc.status ?? "?"}    ${c.dim}evidence:${c.off} ${invalid ? `${c.bad}NONE — INVALID candidate (evidence-free; reject at review)${c.off}` : `${ev.length} artifact(s)`}`);
+    if (!invalid) for (const e of ev) log(`        ${c.dim}· ${e}${c.off}`);
+    log(ratLine > 0
+      ? `     ${c.warn}→ to arm: set ratified:true at harness/state/flywheel_queue.json:${ratLine}${c.off}`
+      : `     ${c.warn}→ to arm: set this cycle's "ratified" to true in harness/state/flywheel_queue.json${c.off}`);
+  }
+}
+
 // ---------- the loop ----------
 function runTask(task: any): "PASS" | "BLOCKED" | "GATED" {
   // human gate — never auto-handled
@@ -250,7 +317,7 @@ function runTask(task: any): "PASS" | "BLOCKED" | "GATED" {
     const s = verdict.scores ?? {};
     log(`  evaluator → ${verdict.gate_status === "PASS" ? c.ok : c.bad}${verdict.gate_status}${c.off} ${c.dim}${Object.entries(s).map(([k, v]) => `${k}:${v}`).join(" ")}${c.off}`);
 
-    if (verdict.gate_status === "PASS") { appendProgress(`${task.id} PASS — ${task.title}`); return "PASS"; }
+    if (verdict.gate_status === "PASS") { appendProgress(`${task.id} PASS — ${task.title}`); recordDone(task, wt); return "PASS"; }
     writeTicket(wt, verdict.remediation_manifest ?? []);
   }
 
@@ -271,6 +338,11 @@ if (ONLY) queue = queue.filter((t: any) => t.id === ONLY);
 const result: Record<string, string> = {};
 for (const task of queue) {            // WIP = 1 — strictly sequential
   head(`${task.id} · ${task.title}`);
+  if (!ONLY && !FORCE && isDone(task)) {   // completion ledger — skip work already banked
+    log(`  ${c.dim}✓ already passed (refs unchanged) — skipping. --force re-runs.${c.off}`);
+    result[task.id] = "SKIP";
+    continue;
+  }
   result[task.id] = runTask(task);
 }
 
@@ -279,8 +351,13 @@ head("summary");
 const passed = Object.entries(result).filter(([, v]) => v === "PASS").map(([k]) => k);
 const blocked = Object.entries(result).filter(([, v]) => v === "BLOCKED").map(([k]) => k);
 const gated = Object.entries(result).filter(([, v]) => v === "GATED").map(([k]) => k);
-log(`  ${c.ok}PASS ${passed.length}${c.off}  ${c.bad}BLOCKED ${blocked.length}${c.off}  ${c.warn}GATED ${gated.length}${c.off}`);
+const skipped = Object.entries(result).filter(([, v]) => v === "SKIP").map(([k]) => k);
+log(`  ${c.ok}PASS ${passed.length}${c.off}  ${c.bad}BLOCKED ${blocked.length}${c.off}  ${c.warn}GATED ${gated.length}${c.off}  ${c.dim}SKIP ${skipped.length}${c.off}`);
 if (passed.length) log(`  ${c.dim}passing in worktrees, awaiting YOUR merge: ${passed.join(", ")}${c.off}`);
 if (blocked.length) log(`  ${c.warn}needs a human: ${blocked.join(", ")}${c.off}`);
 if (gated.length) log(`  ${c.warn}human-gated (decision required): ${gated.join(", ")}${c.off}`);
+if (skipped.length) log(`  ${c.dim}already banked (completion ledger): ${skipped.join(", ")}${c.off}`);
+
+// Upgrade 2 — surface flywheel candidates awaiting human ratification (read-only)
+surfaceRatification();
 log("");
