@@ -1,6 +1,6 @@
 {
   "schema": "emitted_node_types/v1",
-  "generated_from_commit": "1829a7c2516bcfc5c3e8b62c5f0d56ff4d5160b4",
+  "generated_from_commit": "ddf85354125309ccb7a4fbbbfd61916c5ba2e56a",
   "entries": [
     {
       "category": "apex_seed",
@@ -188,7 +188,14 @@
     },
     {
       "category": "createNode_literal",
-      "type_name": "dilate_erode",
+      "type_name": "debrissource",
+      "source_files": [
+        "python/synapse/routing/planner.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "dilateerode",
       "source_files": [
         "python/synapse/server/handlers_cops.py"
       ]
@@ -287,13 +294,6 @@
       "type_name": "gravity",
       "source_files": [
         "python/synapse/routing/recipes/fx_recipes.py"
-      ]
-    },
-    {
-      "category": "createNode_literal",
-      "type_name": "halftone",
-      "source_files": [
-        "python/synapse/server/handlers_cops.py"
       ]
     },
     {
@@ -430,7 +430,7 @@
     },
     {
       "category": "setdressing_verified",
-      "type_name": "modifypointinstancers",
+      "type_name": "modifypointinstances",
       "source_files": [
         "tests/test_setdressing_recipe.py"
       ]
@@ -462,7 +462,7 @@
     },
     {
       "category": "createNode_literal",
-      "type_name": "oceanflat",
+      "type_name": "oceansource",
       "source_files": [
         "python/synapse/routing/planner.py"
       ]
@@ -505,13 +505,6 @@
     },
     {
       "category": "createNode_literal",
-      "type_name": "popnet",
-      "source_files": [
-        "python/synapse/routing/planner.py"
-      ]
-    },
-    {
-      "category": "createNode_literal",
       "type_name": "pyrosolver",
       "source_files": [
         "python/synapse/routing/planner.py",
@@ -531,6 +524,14 @@
       "type_name": "quantize",
       "source_files": [
         "python/synapse/server/handlers_cops.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "rbdbulletsolver",
+      "source_files": [
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
       ]
     },
     {
@@ -575,14 +576,6 @@
       "category": "createNode_literal",
       "type_name": "rigidbodysolver",
       "source_files": [
-        "python/synapse/routing/recipes/fx_recipes.py"
-      ]
-    },
-    {
-      "category": "createNode_literal",
-      "type_name": "rigidsolver",
-      "source_files": [
-        "python/synapse/routing/planner.py",
         "python/synapse/routing/recipes/fx_recipes.py"
       ]
     },
@@ -657,21 +650,6 @@
     },
     {
       "category": "createNode_literal",
-      "type_name": "vellumcloth",
-      "source_files": [
-        "python/synapse/routing/planner.py",
-        "python/synapse/routing/recipes/fx_recipes.py"
-      ]
-    },
-    {
-      "category": "createNode_literal",
-      "type_name": "vellumcollider",
-      "source_files": [
-        "python/synapse/routing/planner.py"
-      ]
-    },
-    {
-      "category": "createNode_literal",
       "type_name": "vellumconstraintproperty",
       "source_files": [
         "python/synapse/routing/planner.py"
@@ -679,16 +657,17 @@
     },
     {
       "category": "createNode_literal",
-      "type_name": "vellumdrape",
+      "type_name": "vellumconstraints",
       "source_files": [
-        "python/synapse/routing/planner.py"
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
       ]
     },
     {
       "category": "createNode_literal",
-      "type_name": "vellumhair",
+      "type_name": "vellumdrape",
       "source_files": [
-        "python/synapse/routing/recipes/fx_recipes.py"
+        "python/synapse/routing/planner.py"
       ]
     },
     {
