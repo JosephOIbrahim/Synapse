@@ -1,0 +1,18 @@
+{
+  "schema": "flywheel_queue/v1",
+  "_doc": "Utility-flywheel cycle queue. status: building | candidate | done. ratified is flipped by a HUMAN only (anti-runaway anchor, spec-U1-wiring-flywheel.md); an unratified candidate is a proposal, never a work order. Every entry must carry evidence (artifact paths) — evidence-free entries are invalid.",
+  "cycles": [
+    {
+      "id": "U.1",
+      "title": "Network-wiring truth: connectivity catalog -> review sweep -> wire_by_label + validator pin",
+      "status": "building",
+      "evidence": [
+        "harness/notes/spec-U1-wiring-flywheel.md",
+        "harness/notes/verified_connectivity_21.0.671.json",
+        "python/synapse/routing/planner.py",
+        "python/synapse/routing/recipes/fx_recipes.py"
+      ],
+      "ratified": true
+    }
+  ]
+}
