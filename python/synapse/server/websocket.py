@@ -652,16 +652,28 @@ class SynapseServer:
                     return
 
             # Fast-fail if main thread is persistently unresponsive —
-            # prevents 30s blocking per command during stall cascades
+            # prevents 30s blocking per command during stall cascades.
+            # H3: while stalled, one bounded (<=2s) probe first — success
+            # resets the stall counter and the command proceeds, so recovery
+            # no longer depends on incidental read-only traffic.
             try:
-                from synapse.server.main_thread import is_main_thread_stalled
-                if is_main_thread_stalled():
+                from synapse.server.main_thread import (
+                    is_main_thread_stalled,
+                    probe_main_thread,
+                    stall_state,
+                )
+                if is_main_thread_stalled() and not probe_main_thread():
                     if self._circuit_breaker:
                         self._circuit_breaker.record_failure()
+                    n = stall_state()["consecutive_timeouts"]
                     websocket.send(SynapseResponse(
                         id=command.id,
                         success=False,
-                        error="Houdini's main thread is unresponsive — commands will resume when it recovers",
+                        error=(
+                            f"Houdini's main thread is unresponsive ({n} consecutive "
+                            "timeouts) — a heavy cook, render, or another MCP client "
+                            "may be saturating it; commands will resume when it recovers"
+                        ),
                         data={"retry_after": 5.0},
                         sequence=command.sequence,
                     ).to_json())

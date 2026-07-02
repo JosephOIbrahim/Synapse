@@ -36,6 +36,7 @@ _MAIN_THREAD_ID = threading.main_thread().ident
 # new commands fail immediately instead of each blocking for 10-30s.
 _stall_lock = threading.Lock()
 _consecutive_timeouts = 0
+_last_timeout_ts = None   # time.time() of the most recent run_on_main timeout (H3)
 _STALL_THRESHOLD = 2
 
 # C6 (Mile 3.1) — dispatch-wait instrumentation. The load-bearing "~2s mutation
@@ -149,10 +150,47 @@ def is_main_thread_stalled():
         return _consecutive_timeouts >= _STALL_THRESHOLD
 
 
+def stall_state():
+    """Snapshot of the stall detector (H3) — copy, safe to serialize.
+
+    Surfaced by the doctor (_check_main_thread) and used by the fast-fail
+    gates for attribution-aware error messages. ``last_timeout_ts`` is the
+    time.time() of the most recent timeout and survives a counter reset
+    (it answers "when did this last happen", not "are we stalled now").
+    """
+    with _stall_lock:
+        return {
+            "stalled": _consecutive_timeouts >= _STALL_THRESHOLD,
+            "consecutive_timeouts": _consecutive_timeouts,
+            "last_timeout_ts": _last_timeout_ts,
+        }
+
+
+def probe_main_thread(timeout=2.0):
+    """H3: bounded recovery probe for the two fast-fail gates.
+
+    Only a successful worker-path run_on_main resets the stall counter, so a
+    stall could stick until incidental read-only traffic happened to reset it.
+    While stalled, the gates attempt this <=`timeout`s probe once per rejected
+    command: success resets the counter (and the command proceeds); failure
+    fast-fails as before. Returns True when the main thread responded.
+    """
+    try:
+        run_on_main(lambda: True, timeout=timeout)
+    except Exception:
+        return False
+    # run_on_main's worker path already reset the counter; the main-thread
+    # fast paths return early without doing so — reset explicitly (idempotent)
+    # so a probe that provably ran is always a recovery signal.
+    _record_success()
+    return True
+
+
 def _record_timeout(timeout):
-    global _consecutive_timeouts
+    global _consecutive_timeouts, _last_timeout_ts
     with _stall_lock:
         _consecutive_timeouts += 1
+        _last_timeout_ts = time.time()
         count = _consecutive_timeouts
     logger.warning("Main thread timeout (%d consecutive, %.0fs limit)", count, timeout)
 
