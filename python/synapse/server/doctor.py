@@ -281,8 +281,23 @@ def _check_symbol_table() -> Dict[str, Any]:
     try:
         import synapse
         # Committed package authority (scout.py _PKG_SYMBOL_TABLE path).
-        table = (Path(synapse.__file__).resolve().parent
-                 / "cognitive" / "tools" / "data" / "h21_symbol_table.json")
+        data_dir = (Path(synapse.__file__).resolve().parent
+                    / "cognitive" / "tools" / "data")
+        running = None
+        try:
+            import hou
+            running = hou.applicationVersionString()
+        except Exception:
+            running = None
+        # Per-major table (runway §1.4) — mirror scout's loader rule: prefer
+        # h<major>_symbol_table.json for the RUNNING major when committed,
+        # else the h21 file (the stamp compare below still trips the gate).
+        table = data_dir / "h21_symbol_table.json"
+        major = str(running or "").split(".", 1)[0]
+        if major.isdigit():
+            candidate = data_dir / f"h{major}_symbol_table.json"
+            if candidate.exists():
+                table = candidate
         if not table.exists():
             return {"name": name, "status": "fail",
                     "detail": f"symbol table missing: {table}"}
@@ -290,12 +305,6 @@ def _check_symbol_table() -> Dict[str, Any]:
         stamp = meta.get("houdini_version")
         described = (f"stamp {stamp} ({meta.get('symbol_count')} symbols, "
                      f"blake2b {meta.get('blake2b')})")
-        running = None
-        try:
-            import hou
-            running = hou.applicationVersionString()
-        except Exception:
-            running = None
         if not isinstance(running, str):
             return {"name": name, "status": "skipped",
                     "detail": f"{described}; runtime comparison skipped (no hou)"}
