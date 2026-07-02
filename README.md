@@ -11,9 +11,11 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-3994%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4004%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.20.0-1e293b.svg" alt="Changelog"></a>
 </p>
+
+> ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it's all recorded (receipts, not magic). Five engines, 115 tools. **Install ↓ in ~5 min.**
 
 ---
 
@@ -82,11 +84,23 @@ Three things landed this release: **H22 readiness** (machinery, not hope), the *
 
 **Houdini 22 lands mid-July. SYNAPSE meets it with a drop-day machine that's already proven.**
 
-- 🎯 **Drop-day probe** — `scripts/h22_api_delta.py` diffs the running build's symbol table, node-type catalog, and punycode parm encodings against committed H21 baselines. Run against 21.0.671 the identity diff is **empty** — the machine is proven *before* the drop.
+- 🎯 **Drop-day probe** — `scripts/h22_api_delta.py` diffs the running build's symbol table, node-type catalog, and punycode parm encodings against committed H21 baselines. Run against 21.0.671 the identity diff is **empty** — the machine is proven *before* the drop. *(First run against our own emitters, it caught **15 phantom spellings** — now purged.)*
 - 🗂️ **Per-major symbol tables** — scout + doctor key on the running Houdini major; the H21 table is never overwritten by an H22 run.
 - 🧪 **Dual-build test axis** — `SYNAPSE_TEST_HOUDINI_BUILD` points the suite at either build.
 - 🤝 **APEX MCP boundary contract** — Houdini 22 ships a native APEX MCP. The ratified boundary ([`docs/SYNAPSE_H22_BOUNDARY.md`](docs/SYNAPSE_H22_BOUNDARY.md)): SYNAPSE **consumes it as a truth-contract provider** (observed-vs-claimed envelope, fail-loud) — it never competes with it. Coexistence rules: [`docs/MCP_COEXISTENCE.md`](docs/MCP_COEXISTENCE.md). SYNAPSE's lane stays the receipts: undo-safe mutations + recorded provenance.
 - 🔒 **Multi-client hardening** — hash-guarded rollback that never pops a foreign (artist or other-client) undo block, plus `external_change_detected` attribution when someone else moved the scene.
+
+**How the drop stays boring:** de-risk everything on H21 *now*, so drop day is verification, not surgery. One human write — the three version numbers into `drop.json` — arms the H22 pipeline; nothing before it can expand.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+flowchart LR
+    A["MODE A · now (H21)<br/>de-risk: probe · flywheel · panel · clean-install"]:::hou -->|"human writes drop.json<br/>python · usd · pyside"| G{{"Drop day"}}:::side
+    G --> B["MODE B · H22<br/>pipeline arms — verify, not surgery"]:::panel
+    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
+    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
+    classDef side fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
+```
 
 ### The utility flywheel
 
@@ -97,7 +111,7 @@ The first cycle shipped: **node-wiring connectivity.**
 - 🔬 **Probe** — `host/introspect_connectivity.py` instantiates **282 node types** headless and records their real input/output counts and slot labels → a committed, integrity-checked catalog (`python/synapse/cognitive/tools/data/connectivity_21.json`).
 - 🔍 **Review** — `scripts/flywheel_review_wiring.py` sweeps every `setInput` call site in the codebase against the catalog and classifies provable miswires.
 - 🔌 **Wire** — `wire_by_label()` (`python/synapse/core/wiring.py`) resolves inputs by **probed label**, never remembered index — fail-loud on an unknown label or type. The graph validator gained **slot-semantic checks (P3e)**: an edge into an input the type doesn't have, or a label that resolves to a different index, is rejected before anything is built.
-- 🏆 **The receipts** — this loop caught **15 real phantoms + 2 miswires** before H22 (phantom node-type spellings and camera parm encodings purged; two swapped solver-input wirings fixed).
+- 🏆 **The receipts** — the review sweep ran **147 call sites, 0 critical**, and the cycle fixed **2 known miswires** (two swapped solver-input wirings). *(The 15 phantom spellings were caught separately by the drop-day probe — see H22-ready above.)*
 - 🧍 **Anti-runaway** — a human ratifies each new cycle; queue entries must carry evidence; where the catalog and a code comment disagree, **the catalog wins**.
 
 ```mermaid
@@ -260,7 +274,16 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.20.0):** the artist panel v9 (five engines, undo-safe, 115 tools, live observability + latency instrumentation), the complete propose → validate → build pipeline with probed wiring truth, the utility flywheel (cycle 1: connectivity), the H22 drop-day probe + dual-build test axis, the in-process substrate, two-tier provenance with the audit write off the hot path, freeze-safety, bounded autonomy + a kill switch, live-grounded Solaris / USD parameter names, and the ratified APEX-MCP coexistence boundary. SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success, and the per-tool capability audit + the full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
+**Shipping (v5.20.0):**
+
+- 🎛️ **Artist panel v9** — five engines, undo-safe, 115 tools, live observability + latency instrumentation.
+- 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
+- 🔁 **Utility flywheel** — cycle 1 (connectivity) shipped and self-improving.
+- 🚀 **H22 drop-day machine** — API-delta probe + dual-build test axis, proven empty against H21.
+- ⚙️ **In-process substrate** — two-tier provenance (audit write off the hot path), freeze-safety, bounded autonomy + a kill switch.
+- 🎬 **Live-grounded Solaris / USD** parameter names + the ratified APEX-MCP coexistence boundary.
+
+SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success. The per-tool capability audit + full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
 
 ---
 
@@ -310,7 +333,7 @@ python/synapse/
 
 host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols)
 scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_wiring.py
-tests/                          # 3,994 local (~70 Moneta-gated, skip on a clean clone)
+tests/                          # 4,004 local (~70 Moneta-gated, skip on a clean clone)
 harness/                        # H22 readiness — self-verifying loop + flywheel queue
 docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
