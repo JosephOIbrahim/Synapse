@@ -7,16 +7,42 @@
   "blake2b": "c213570959156138a7cda52936fcd2c1"
  },
  "summary": {
-  "total_sites": 150,
+  "total_sites": 147,
   "critical": 0,
   "by_kind": {
    "dynamic-index": 3,
-   "index-within-arity": 113,
+   "index-within-arity": 108,
    "label-claim-verified": 3,
-   "unresolved-receiver": 31
+   "unresolved-receiver": 33
   }
  },
  "findings": [
+  {
+   "file": "python/synapse/core/wiring.py",
+   "line": 163,
+   "call": "setInput",
+   "receiver": "node",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "index",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
+  {
+   "file": "python/synapse/core/wiring.py",
+   "line": 166,
+   "call": "setInput",
+   "receiver": "node",
+   "receiver_type": null,
+   "index": null,
+   "index_expr": "resolved",
+   "claimed_labels": [],
+   "severity": "INFO",
+   "kind": "unresolved-receiver",
+   "detail": "receiver's node type not lexically resolvable (runtime object)"
+  },
   {
    "file": "python/synapse/host/graph_builder.py",
    "line": 157,
@@ -71,41 +97,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 287,
-   "call": "setInput",
-   "receiver": "solver",
-   "receiver_type": "vellumsolver",
-   "index": 0,
-   "index_expr": "0",
-   "claimed_labels": [],
-   "severity": "INFO",
-   "kind": "index-within-arity",
-   "detail": "input index 0 within max_inputs for 'vellumsolver'",
-   "candidate_keys": [
-    "Dop/vellumsolver",
-    "Sop/vellumsolver"
-   ]
-  },
-  {
-   "file": "python/synapse/routing/planner.py",
-   "line": 288,
-   "call": "setInput",
-   "receiver": "solver",
-   "receiver_type": "vellumsolver",
-   "index": 1,
-   "index_expr": "1",
-   "claimed_labels": [],
-   "severity": "INFO",
-   "kind": "index-within-arity",
-   "detail": "input index 1 within max_inputs for 'vellumsolver'",
-   "candidate_keys": [
-    "Dop/vellumsolver",
-    "Sop/vellumsolver"
-   ]
-  },
-  {
-   "file": "python/synapse/routing/planner.py",
-   "line": 300,
+   "line": 302,
    "call": "setInput",
    "receiver": "drape",
    "receiver_type": "vellumdrape",
@@ -121,24 +113,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 314,
-   "call": "setInput",
-   "receiver": "solver",
-   "receiver_type": "vellumsolver",
-   "index": 2,
-   "index_expr": "2",
-   "claimed_labels": [],
-   "severity": "INFO",
-   "kind": "index-within-arity",
-   "detail": "input index 2 within max_inputs for 'vellumsolver'",
-   "candidate_keys": [
-    "Dop/vellumsolver",
-    "Sop/vellumsolver"
-   ]
-  },
-  {
-   "file": "python/synapse/routing/planner.py",
-   "line": 328,
+   "line": 331,
    "call": "setInput",
    "receiver": "wind",
    "receiver_type": "vellumconstraintproperty",
@@ -155,7 +130,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 341,
+   "line": 344,
    "call": "setInput",
    "receiver": "cache",
    "receiver_type": "filecache",
@@ -175,7 +150,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 368,
+   "line": 371,
    "call": "setInput",
    "receiver": "asm",
    "receiver_type": "assemble",
@@ -191,7 +166,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 370,
+   "line": 373,
    "call": "setInput",
    "receiver": "cons",
    "receiver_type": "rbdconstraintsfromrules",
@@ -207,7 +182,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 374,
+   "line": 377,
    "call": "setInput",
    "receiver": "props",
    "receiver_type": "rbdconstraintproperties",
@@ -224,39 +199,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 376,
-   "call": "setInput",
-   "receiver": "solver",
-   "receiver_type": "rbdbulletsolver",
-   "index": 0,
-   "index_expr": "0",
-   "claimed_labels": [],
-   "severity": "INFO",
-   "kind": "index-within-arity",
-   "detail": "input index 0 within max_inputs for 'rbdbulletsolver'",
-   "candidate_keys": [
-    "Sop/rbdbulletsolver"
-   ]
-  },
-  {
-   "file": "python/synapse/routing/planner.py",
-   "line": 377,
-   "call": "setInput",
-   "receiver": "solver",
-   "receiver_type": "rbdbulletsolver",
-   "index": 1,
-   "index_expr": "1",
-   "claimed_labels": [],
-   "severity": "INFO",
-   "kind": "index-within-arity",
-   "detail": "input index 1 within max_inputs for 'rbdbulletsolver'",
-   "candidate_keys": [
-    "Sop/rbdbulletsolver"
-   ]
-  },
-  {
-   "file": "python/synapse/routing/planner.py",
-   "line": 391,
+   "line": 396,
    "call": "setInput",
    "receiver": "debris",
    "receiver_type": "debrissource",
@@ -273,7 +216,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 404,
+   "line": 409,
    "call": "setInput",
    "receiver": "pyro",
    "receiver_type": "pyrosolver",
@@ -291,7 +234,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 417,
+   "line": 422,
    "call": "setInput",
    "receiver": "cache",
    "receiver_type": "filecache",
@@ -311,7 +254,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 540,
+   "line": 545,
    "call": "setInput",
    "receiver": "evl",
    "receiver_type": "oceanevaluate",
@@ -328,7 +271,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 556,
+   "line": 561,
    "call": "setInput",
    "receiver": "solver",
    "receiver_type": "flipsolver",
@@ -346,7 +289,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 568,
+   "line": 573,
    "call": "setInput",
    "receiver": "ww_solve",
    "receiver_type": "whitewatersolver",
@@ -364,7 +307,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 570,
+   "line": 575,
    "call": "setInput",
    "receiver": "ww_src",
    "receiver_type": "whitewatersource",
@@ -382,7 +325,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 597,
+   "line": 602,
    "call": "setInput",
    "receiver": "wrangle",
    "receiver_type": "attribwrangle",
@@ -399,7 +342,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 600,
+   "line": 605,
    "call": "setInput",
    "receiver": "rast",
    "receiver_type": "volumerasterizeattributes",
@@ -415,7 +358,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 603,
+   "line": 608,
    "call": "setInput",
    "receiver": "solver",
    "receiver_type": "pyrosolver",
@@ -433,7 +376,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 606,
+   "line": 611,
    "call": "setInput",
    "receiver": "cache",
    "receiver_type": "filecache",
@@ -453,7 +396,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 652,
+   "line": 657,
    "call": "setInput",
    "receiver": "matlib",
    "receiver_type": "materiallibrary",
@@ -469,7 +412,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 655,
+   "line": 660,
    "call": "setInput",
    "receiver": "assign",
    "receiver_type": "assignmaterial",
@@ -485,7 +428,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 664,
+   "line": 669,
    "call": "setInput",
    "receiver": "cam",
    "receiver_type": "camera",
@@ -501,7 +444,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 673,
+   "line": 678,
    "call": "setInput",
    "receiver": "key",
    "receiver_type": "light",
@@ -522,7 +465,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 676,
+   "line": 681,
    "call": "setInput",
    "receiver": "fill",
    "receiver_type": "light",
@@ -543,7 +486,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 679,
+   "line": 684,
    "call": "setInput",
    "receiver": "rim",
    "receiver_type": "light",
@@ -564,7 +507,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 687,
+   "line": 692,
    "call": "setInput",
    "receiver": "light",
    "receiver_type": "light",
@@ -585,7 +528,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 696,
+   "line": 701,
    "call": "setInput",
    "receiver": "rs",
    "receiver_type": "karmarenderproperties",
@@ -601,7 +544,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 699,
+   "line": 704,
    "call": "setInput",
    "receiver": "karma",
    "receiver_type": "karma",
@@ -620,7 +563,7 @@
   },
   {
    "file": "python/synapse/routing/planner.py",
-   "line": 707,
+   "line": 712,
    "call": "setInput",
    "receiver": "out",
    "receiver_type": "null",

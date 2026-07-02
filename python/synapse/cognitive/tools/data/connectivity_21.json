@@ -1,0 +1,4982 @@
+{
+ "blake2b": "c213570959156138a7cda52936fcd2c1",
+ "entries": {
+  "Chop/cop2net": {
+   "category": "Chop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 0,
+   "output_labels": null,
+   "sources": [
+    "emitted:cop2net"
+   ],
+   "type_name": "cop2net"
+  },
+  "Chop/dopnet": {
+   "category": "Chop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 0,
+   "output_labels": null,
+   "sources": [
+    "emitted:dopnet"
+   ],
+   "type_name": "dopnet"
+  },
+  "Chop/file": {
+   "category": "Chop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 1,
+   "output_labels": null,
+   "sources": [
+    "emitted:file"
+   ],
+   "type_name": "file"
+  },
+  "Chop/limit": {
+   "category": "Chop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "note": "no container for this category",
+   "output_count": 1,
+   "output_labels": null,
+   "sources": [
+    "emitted:limit"
+   ],
+   "type_name": "limit"
+  },
+  "Chop/lopnet": {
+   "category": "Chop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 0,
+   "output_labels": null,
+   "sources": [
+    "emitted:lopnet"
+   ],
+   "type_name": "lopnet"
+  },
+  "Chop/merge": {
+   "category": "Chop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "note": "no container for this category",
+   "output_count": 1,
+   "output_labels": null,
+   "sources": [
+    "emitted:merge"
+   ],
+   "type_name": "merge"
+  },
+  "Chop/noise": {
+   "category": "Chop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 1,
+   "output_labels": null,
+   "sources": [
+    "emitted:noise"
+   ],
+   "type_name": "noise"
+  },
+  "Chop/null": {
+   "category": "Chop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "note": "no container for this category",
+   "output_count": 1,
+   "output_labels": null,
+   "sources": [
+    "emitted:null"
+   ],
+   "type_name": "null"
+  },
+  "Chop/output": {
+   "category": "Chop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "note": "no container for this category",
+   "output_count": 1,
+   "output_labels": null,
+   "sources": [
+    "emitted:output"
+   ],
+   "type_name": "output"
+  },
+  "Chop/subnet": {
+   "category": "Chop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 1,
+   "output_labels": null,
+   "sources": [
+    "emitted:subnet"
+   ],
+   "type_name": "subnet"
+  },
+  "Chop/topnet": {
+   "category": "Chop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 0,
+   "output_labels": null,
+   "sources": [
+    "emitted:topnet"
+   ],
+   "type_name": "topnet"
+  },
+  "Cop/block_begin": {
+   "category": "Cop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 2048,
+   "min_inputs": 0,
+   "output_count": 2048,
+   "output_labels": [],
+   "sources": [
+    "emitted:block_begin"
+   ],
+   "type_name": "block_begin"
+  },
+  "Cop/block_end": {
+   "category": "Cop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 2048,
+   "min_inputs": 0,
+   "output_count": 2048,
+   "output_labels": [],
+   "sources": [
+    "emitted:block_end"
+   ],
+   "type_name": "block_end"
+  },
+  "Cop/blur": {
+   "category": "Cop",
+   "input_labels": [
+    "source",
+    "size"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "blur"
+   ],
+   "sources": [
+    "emitted:blur"
+   ],
+   "type_name": "blur"
+  },
+  "Cop/bright": {
+   "category": "Cop",
+   "input_labels": [
+    "source",
+    "bright",
+    "shift",
+    "mask"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "bright"
+   ],
+   "sources": [
+    "emitted:bright"
+   ],
+   "type_name": "bright"
+  },
+  "Cop/colorcorrect": {
+   "category": "Cop",
+   "input_labels": [
+    "source",
+    "mask"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "correct"
+   ],
+   "sources": [
+    "emitted:colorcorrect"
+   ],
+   "type_name": "colorcorrect"
+  },
+  "Cop/dilateerode": {
+   "category": "Cop",
+   "input_labels": [
+    "source",
+    "radius",
+    "mask"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "dilate"
+   ],
+   "sources": [
+    "emitted:dilateerode"
+   ],
+   "type_name": "dilateerode"
+  },
+  "Cop/dopnet": {
+   "category": "Cop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:dopnet"
+   ],
+   "type_name": "dopnet"
+  },
+  "Cop/edgedetect": {
+   "category": "Cop",
+   "input_labels": [
+    "source"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "edge"
+   ],
+   "sources": [
+    "emitted:edgedetect"
+   ],
+   "type_name": "edgedetect"
+  },
+  "Cop/file": {
+   "category": "Cop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 2048,
+   "output_labels": [],
+   "sources": [
+    "emitted:file"
+   ],
+   "type_name": "file"
+  },
+  "Cop/light": {
+   "category": "Cop",
+   "input_labels": [
+    "source",
+    "N",
+    "mask"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "lit"
+   ],
+   "sources": [
+    "emitted:light"
+   ],
+   "type_name": "light"
+  },
+  "Cop/lopnet": {
+   "category": "Cop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:lopnet"
+   ],
+   "type_name": "lopnet"
+  },
+  "Cop/null": {
+   "category": "Cop",
+   "input_labels": [
+    "input1"
+   ],
+   "instantiated": true,
+   "max_inputs": 2048,
+   "min_inputs": 0,
+   "output_count": 2048,
+   "output_labels": [
+    "output1"
+   ],
+   "sources": [
+    "emitted:null"
+   ],
+   "type_name": "null"
+  },
+  "Cop/opencl": {
+   "category": "Cop",
+   "input_labels": [
+    "src"
+   ],
+   "instantiated": true,
+   "max_inputs": 2048,
+   "min_inputs": 0,
+   "output_count": 2048,
+   "output_labels": [
+    "dst"
+   ],
+   "sources": [
+    "emitted:opencl"
+   ],
+   "type_name": "opencl"
+  },
+  "Cop/output": {
+   "category": "Cop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 2048,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:output"
+   ],
+   "type_name": "output"
+  },
+  "Cop/quantize": {
+   "category": "Cop",
+   "input_labels": [
+    "source",
+    "mask"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "quantize"
+   ],
+   "sources": [
+    "emitted:quantize"
+   ],
+   "type_name": "quantize"
+  },
+  "Cop/sopimport": {
+   "category": "Cop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "geometry"
+   ],
+   "sources": [
+    "emitted:sopimport"
+   ],
+   "type_name": "sopimport"
+  },
+  "Cop/subnet": {
+   "category": "Cop",
+   "input_labels": [
+    "src"
+   ],
+   "instantiated": true,
+   "max_inputs": 2048,
+   "min_inputs": 0,
+   "output_count": 2048,
+   "output_labels": [
+    "dst"
+   ],
+   "sources": [
+    "emitted:subnet"
+   ],
+   "type_name": "subnet"
+  },
+  "Cop/tonemap": {
+   "category": "Cop",
+   "input_labels": [
+    "source",
+    "mask"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "tonemap"
+   ],
+   "sources": [
+    "emitted:tonemap"
+   ],
+   "type_name": "tonemap"
+  },
+  "Cop/topnet": {
+   "category": "Cop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:topnet"
+   ],
+   "type_name": "topnet"
+  },
+  "Cop2/blur": {
+   "category": "Cop2",
+   "input_labels": [
+    "Image to Blur",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:blur"
+   ],
+   "type_name": "blur"
+  },
+  "Cop2/bright": {
+   "category": "Cop2",
+   "input_labels": [
+    "Image to Brighten",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:bright"
+   ],
+   "type_name": "bright"
+  },
+  "Cop2/colorcorrect": {
+   "category": "Cop2",
+   "input_labels": [
+    "Image to Correct",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:colorcorrect"
+   ],
+   "type_name": "colorcorrect"
+  },
+  "Cop2/composite": {
+   "category": "Cop2",
+   "input_labels": [
+    "Foreground",
+    "Background",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:composite"
+   ],
+   "type_name": "composite"
+  },
+  "Cop2/cop2net": {
+   "category": "Cop2",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:cop2net"
+   ],
+   "type_name": "cop2net"
+  },
+  "Cop2/dilateerode": {
+   "category": "Cop2",
+   "input_labels": [
+    "Matte to Expand",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:dilateerode"
+   ],
+   "type_name": "dilateerode"
+  },
+  "Cop2/dopnet": {
+   "category": "Cop2",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:dopnet"
+   ],
+   "type_name": "dopnet"
+  },
+  "Cop2/edge": {
+   "category": "Cop2",
+   "input_labels": [
+    "Image to Edge Detect",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:edge"
+   ],
+   "type_name": "edge"
+  },
+  "Cop2/file": {
+   "category": "Cop2",
+   "input_labels": [
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:file"
+   ],
+   "type_name": "file"
+  },
+  "Cop2/light": {
+   "category": "Cop2",
+   "input_labels": [
+    "Input 1",
+    "Input 2",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:light"
+   ],
+   "type_name": "light"
+  },
+  "Cop2/limit": {
+   "category": "Cop2",
+   "input_labels": [
+    "Image to Limit",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:limit"
+   ],
+   "type_name": "limit"
+  },
+  "Cop2/lopnet": {
+   "category": "Cop2",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:lopnet"
+   ],
+   "type_name": "lopnet"
+  },
+  "Cop2/merge": {
+   "category": "Cop2",
+   "input_labels": [
+    "Images to Merge"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:merge"
+   ],
+   "type_name": "merge"
+  },
+  "Cop2/noise": {
+   "category": "Cop2",
+   "input_labels": [
+    "Image to Add To",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:noise"
+   ],
+   "type_name": "noise"
+  },
+  "Cop2/null": {
+   "category": "Cop2",
+   "input_labels": [
+    "Source Image"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:null"
+   ],
+   "type_name": "null"
+  },
+  "Cop2/over": {
+   "category": "Cop2",
+   "input_labels": [
+    "Foreground",
+    "Background",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:over"
+   ],
+   "type_name": "over"
+  },
+  "Cop2/quantize": {
+   "category": "Cop2",
+   "input_labels": [
+    "Image to Quantize",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:quantize"
+   ],
+   "type_name": "quantize"
+  },
+  "Cop2/reference": {
+   "category": "Cop2",
+   "input_labels": [
+    "Source Image"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:reference"
+   ],
+   "type_name": "reference"
+  },
+  "Cop2/rop_comp": {
+   "category": "Cop2",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:rop_comp"
+   ],
+   "type_name": "rop_comp"
+  },
+  "Cop2/sopimport": {
+   "category": "Cop2",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:sopimport"
+   ],
+   "type_name": "sopimport"
+  },
+  "Cop2/subnet": {
+   "category": "Cop2",
+   "input_labels": [
+    "Sub-Network Input #1",
+    "Sub-Network Input #2",
+    "Sub-Network Input #3",
+    "Sub-Network Input #4"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:subnet"
+   ],
+   "type_name": "subnet"
+  },
+  "Cop2/topnet": {
+   "category": "Cop2",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:topnet"
+   ],
+   "type_name": "topnet"
+  },
+  "Cop2/vopcop2gen": {
+   "category": "Cop2",
+   "input_labels": [
+    "Image to Add Planes To",
+    "Mask Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:vopcop2gen"
+   ],
+   "type_name": "vopcop2gen"
+  },
+  "Data/cop/convolve3::sidefx::blur": {
+   "category": "Data",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 0,
+   "output_labels": null,
+   "sources": [
+    "emitted:blur"
+   ],
+   "type_name": "cop/convolve3::sidefx::blur"
+  },
+  "Dop/cop2net": {
+   "category": "Dop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:cop2net"
+   ],
+   "type_name": "cop2net"
+  },
+  "Dop/dopnet": {
+   "category": "Dop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:dopnet"
+   ],
+   "type_name": "dopnet"
+  },
+  "Dop/file": {
+   "category": "Dop",
+   "input_labels": [
+    "Objects to use when not reading from file"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:file"
+   ],
+   "type_name": "file"
+  },
+  "Dop/flipsolver": {
+   "category": "Dop",
+   "input_labels": [
+    "Fluid to Solve",
+    "Particle Velocity",
+    "Volume Velocity",
+    "Sourcing (post-solve)"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 4,
+   "output_labels": [
+    "Sub-Network Output #1"
+   ],
+   "sources": [
+    "emitted:flipsolver"
+   ],
+   "type_name": "flipsolver"
+  },
+  "Dop/flipsolver::2.0": {
+   "category": "Dop",
+   "input_labels": [
+    "Fluid to Solve",
+    "Particle Velocity",
+    "Volume Velocity",
+    "Sourcing (post-solve)"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 4,
+   "output_labels": [
+    "Sub-Network Output #1"
+   ],
+   "sources": [
+    "emitted:flipsolver"
+   ],
+   "type_name": "flipsolver::2.0"
+  },
+  "Dop/gravity": {
+   "category": "Dop",
+   "input_labels": [
+    "Objects to be processed",
+    "Data to attach\n\nAccepts any number of:\n    Mask Field\n    Noise Field"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:gravity"
+   ],
+   "type_name": "gravity"
+  },
+  "Dop/lopnet": {
+   "category": "Dop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:lopnet"
+   ],
+   "type_name": "lopnet"
+  },
+  "Dop/merge": {
+   "category": "Dop",
+   "input_labels": [
+    "Any node type"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:merge"
+   ],
+   "type_name": "merge"
+  },
+  "Dop/noise": {
+   "category": "Dop",
+   "input_labels": [
+    "Objects to be processed"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:noise"
+   ],
+   "type_name": "noise"
+  },
+  "Dop/null": {
+   "category": "Dop",
+   "input_labels": [
+    "Input 0"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:null"
+   ],
+   "type_name": "null"
+  },
+  "Dop/output": {
+   "category": "Dop",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:output"
+   ],
+   "type_name": "output"
+  },
+  "Dop/pyrosolver": {
+   "category": "Dop",
+   "input_labels": [
+    "Object",
+    "Pre-solve",
+    "Velocity Update",
+    "Advection",
+    "Sourcing (post-solve)"
+   ],
+   "instantiated": true,
+   "max_inputs": 5,
+   "min_inputs": 1,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:pyrosolver"
+   ],
+   "type_name": "pyrosolver"
+  },
+  "Dop/pyrosolver::2.0": {
+   "category": "Dop",
+   "input_labels": [
+    "Object",
+    "Pre-solve",
+    "Velocity Update",
+    "Advection",
+    "Sourcing (post-solve)"
+   ],
+   "instantiated": true,
+   "max_inputs": 5,
+   "min_inputs": 1,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:pyrosolver"
+   ],
+   "type_name": "pyrosolver::2.0"
+  },
+  "Dop/rbdpackedobject": {
+   "category": "Dop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:rbdpackedobject"
+   ],
+   "type_name": "rbdpackedobject"
+  },
+  "Dop/rigidbodysolver": {
+   "category": "Dop",
+   "input_labels": [
+    "Objects",
+    "Pre-Solve",
+    "Post-Solve"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:rigidbodysolver"
+   ],
+   "type_name": "rigidbodysolver"
+  },
+  "Dop/subnet": {
+   "category": "Dop",
+   "input_labels": [
+    "Input 1",
+    "Input 2",
+    "Input 3",
+    "Input 4"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:subnet"
+   ],
+   "type_name": "subnet"
+  },
+  "Dop/topnet": {
+   "category": "Dop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:topnet"
+   ],
+   "type_name": "topnet"
+  },
+  "Dop/vellumconstraintproperty": {
+   "category": "Dop",
+   "input_labels": [
+    "Sub-Network Input #1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:vellumconstraintproperty"
+   ],
+   "type_name": "vellumconstraintproperty"
+  },
+  "Dop/vellumconstraints": {
+   "category": "Dop",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:vellumconstraints"
+   ],
+   "type_name": "vellumconstraints"
+  },
+  "Dop/vellumsolver": {
+   "category": "Dop",
+   "input_labels": [
+    "Objects to Solve",
+    "Particle Forces",
+    "Post-Solve"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:vellumsolver"
+   ],
+   "type_name": "vellumsolver"
+  },
+  "Dop/whitewatersolver": {
+   "category": "Dop",
+   "input_labels": [
+    "Objects to Solve",
+    "Extra Sources",
+    "Particle Forces",
+    "Post-Solve"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:whitewatersolver"
+   ],
+   "type_name": "whitewatersolver"
+  },
+  "Dop/whitewatersolver::2.0": {
+   "category": "Dop",
+   "input_labels": [
+    "Objects to Solve",
+    "Extra Sources",
+    "Particle Forces",
+    "Post-Solve"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:whitewatersolver"
+   ],
+   "type_name": "whitewatersolver::2.0"
+  },
+  "Driver/cop2net": {
+   "category": "Driver",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:cop2net"
+   ],
+   "type_name": "cop2net"
+  },
+  "Driver/dopnet": {
+   "category": "Driver",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:dopnet"
+   ],
+   "type_name": "dopnet"
+  },
+  "Driver/karma": {
+   "category": "Driver",
+   "input_labels": [
+    "Input #1"
+   ],
+   "instantiated": true,
+   "max_inputs": 999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:karma"
+   ],
+   "type_name": "karma"
+  },
+  "Driver/lopnet": {
+   "category": "Driver",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:lopnet"
+   ],
+   "type_name": "lopnet"
+  },
+  "Driver/merge": {
+   "category": "Driver",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:merge"
+   ],
+   "type_name": "merge"
+  },
+  "Driver/null": {
+   "category": "Driver",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:null"
+   ],
+   "type_name": "null"
+  },
+  "Driver/subnet": {
+   "category": "Driver",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 31,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:subnet"
+   ],
+   "type_name": "subnet"
+  },
+  "Driver/topnet": {
+   "category": "Driver",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:topnet"
+   ],
+   "type_name": "topnet"
+  },
+  "Driver/wedge": {
+   "category": "Driver",
+   "input_labels": [
+    "ROP to Wedge"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:wedge"
+   ],
+   "type_name": "wedge"
+  },
+  "Lop/assignmaterial": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:assignmaterial"
+   ],
+   "type_name": "assignmaterial"
+  },
+  "Lop/attribwrangle": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Input 2",
+    "Input 3",
+    "Input 4"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:attribwrangle"
+   ],
+   "type_name": "attribwrangle"
+  },
+  "Lop/camera": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:camera"
+   ],
+   "type_name": "camera"
+  },
+  "Lop/componentgeometry": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:componentgeometry"
+   ],
+   "type_name": "componentgeometry"
+  },
+  "Lop/componentoutput": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Thumbnail Scene"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:componentoutput"
+   ],
+   "type_name": "componentoutput"
+  },
+  "Lop/cop2net": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:cop2net"
+   ],
+   "type_name": "cop2net"
+  },
+  "Lop/domelight": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:domelight"
+   ],
+   "type_name": "domelight"
+  },
+  "Lop/domelight::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:domelight"
+   ],
+   "type_name": "domelight::2.0"
+  },
+  "Lop/domelight::3.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:domelight"
+   ],
+   "type_name": "domelight::3.0"
+  },
+  "Lop/dopnet": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:dopnet"
+   ],
+   "type_name": "dopnet"
+  },
+  "Lop/duplicate": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:duplicate"
+   ],
+   "type_name": "duplicate"
+  },
+  "Lop/extractinstances": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:extractinstances"
+   ],
+   "type_name": "extractinstances"
+  },
+  "Lop/filecache": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:filecache"
+   ],
+   "type_name": "filecache"
+  },
+  "Lop/instancer": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Possible Prototype Source"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:instancer"
+   ],
+   "type_name": "instancer"
+  },
+  "Lop/karma": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Additional Render Products"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:karma"
+   ],
+   "type_name": "karma"
+  },
+  "Lop/karmarenderproperties": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Additional Render Vars"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:karmarenderproperties"
+   ],
+   "type_name": "karmarenderproperties"
+  },
+  "Lop/labs::karma::1.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Additional Render Products"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:karma"
+   ],
+   "type_name": "labs::karma::1.0"
+  },
+  "Lop/labs::karma::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Additional Render Products"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:karma"
+   ],
+   "type_name": "labs::karma::2.0"
+  },
+  "Lop/layout": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:layout"
+   ],
+   "type_name": "layout"
+  },
+  "Lop/light": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:light"
+   ],
+   "type_name": "light"
+  },
+  "Lop/light::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:light"
+   ],
+   "type_name": "light::2.0"
+  },
+  "Lop/lopnet": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:lopnet"
+   ],
+   "type_name": "lopnet"
+  },
+  "Lop/materiallibrary": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:materiallibrary"
+   ],
+   "type_name": "materiallibrary"
+  },
+  "Lop/merge": {
+   "category": "Lop",
+   "input_labels": [
+    "Merge Stage Layers"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:merge"
+   ],
+   "type_name": "merge"
+  },
+  "Lop/mergepointinstancers": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:mergepointinstancers"
+   ],
+   "type_name": "mergepointinstancers"
+  },
+  "Lop/modifypointinstances": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:modifypointinstances"
+   ],
+   "type_name": "modifypointinstances"
+  },
+  "Lop/null": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:null"
+   ],
+   "type_name": "null"
+  },
+  "Lop/output": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:output"
+   ],
+   "type_name": "output"
+  },
+  "Lop/pythonscript": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:pythonscript"
+   ],
+   "type_name": "pythonscript"
+  },
+  "Lop/reference": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Add As Reference"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:reference"
+   ],
+   "type_name": "reference"
+  },
+  "Lop/reference::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Add As Reference"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:reference"
+   ],
+   "type_name": "reference::2.0"
+  },
+  "Lop/sopimport": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:sopimport"
+   ],
+   "type_name": "sopimport"
+  },
+  "Lop/splitpointinstancers": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:splitpointinstancers"
+   ],
+   "type_name": "splitpointinstancers"
+  },
+  "Lop/sublayer": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Add As Sublayer"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:sublayer"
+   ],
+   "type_name": "sublayer"
+  },
+  "Lop/subnet": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Input 2",
+    "Input 3",
+    "Input 4"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 10,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "emitted:subnet"
+   ],
+   "type_name": "subnet"
+  },
+  "Lop/topnet": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:topnet"
+   ],
+   "type_name": "topnet"
+  },
+  "Object/cam": {
+   "category": "Object",
+   "input_labels": [
+    "parent"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:cam"
+   ],
+   "type_name": "cam"
+  },
+  "Object/cop2net": {
+   "category": "Object",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:cop2net"
+   ],
+   "type_name": "cop2net"
+  },
+  "Object/dopnet": {
+   "category": "Object",
+   "input_labels": [
+    "parent"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:dopnet"
+   ],
+   "type_name": "dopnet"
+  },
+  "Object/geo": {
+   "category": "Object",
+   "input_labels": [
+    "parent"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:geo"
+   ],
+   "type_name": "geo"
+  },
+  "Object/light": {
+   "category": "Object",
+   "input_labels": [
+    "parent"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:light"
+   ],
+   "type_name": "light"
+  },
+  "Object/lopnet": {
+   "category": "Object",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:lopnet"
+   ],
+   "type_name": "lopnet"
+  },
+  "Object/null": {
+   "category": "Object",
+   "input_labels": [
+    "parent"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:null"
+   ],
+   "type_name": "null"
+  },
+  "Object/pythonscript": {
+   "category": "Object",
+   "input_labels": [
+    "parent"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:pythonscript"
+   ],
+   "type_name": "pythonscript"
+  },
+  "Object/subnet": {
+   "category": "Object",
+   "input_labels": [
+    "Sub-Network Input #1",
+    "Sub-Network Input #2",
+    "Sub-Network Input #3",
+    "Sub-Network Input #4"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:subnet"
+   ],
+   "type_name": "subnet"
+  },
+  "Object/topnet": {
+   "category": "Object",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:topnet"
+   ],
+   "type_name": "topnet"
+  },
+  "Shop/cop2net": {
+   "category": "Shop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 0,
+   "output_labels": null,
+   "sources": [
+    "emitted:cop2net"
+   ],
+   "type_name": "cop2net"
+  },
+  "Shop/dopnet": {
+   "category": "Shop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 0,
+   "output_labels": null,
+   "sources": [
+    "emitted:dopnet"
+   ],
+   "type_name": "dopnet"
+  },
+  "Shop/lopnet": {
+   "category": "Shop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 0,
+   "output_labels": null,
+   "sources": [
+    "emitted:lopnet"
+   ],
+   "type_name": "lopnet"
+  },
+  "Shop/topnet": {
+   "category": "Shop",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 0,
+   "output_labels": null,
+   "sources": [
+    "emitted:topnet"
+   ],
+   "type_name": "topnet"
+  },
+  "Sop/apex::autorigbuilder": {
+   "category": "Sop",
+   "input_labels": [
+    "CharacterStream",
+    "Rig Template"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 2,
+   "output_labels": [
+    "CharacterStream",
+    "Rig Template"
+   ],
+   "sources": [
+    "emitted:apex::autorigbuilder"
+   ],
+   "type_name": "apex::autorigbuilder"
+  },
+  "Sop/apex::autorigcomponent": {
+   "category": "Sop",
+   "input_labels": [
+    "CharacterStream",
+    "Component Script"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 2,
+   "output_labels": [
+    "CharacterStream",
+    "Component Script"
+   ],
+   "sources": [
+    "emitted:apex::autorigcomponent"
+   ],
+   "type_name": "apex::autorigcomponent"
+  },
+  "Sop/apex::autorigcomponent::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "CharacterStream",
+    "ComponentScript"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 2,
+   "output_labels": [
+    "CharacterStream",
+    "ComponentScript"
+   ],
+   "sources": [
+    "emitted:apex::autorigcomponent"
+   ],
+   "type_name": "apex::autorigcomponent::2.0"
+  },
+  "Sop/apex::autorigcomponent::3.0": {
+   "category": "Sop",
+   "input_labels": [
+    "CharacterStream",
+    "Component Script"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 2,
+   "output_labels": [
+    "CharacterStream",
+    "Component Script"
+   ],
+   "sources": [
+    "emitted:apex::autorigcomponent"
+   ],
+   "type_name": "apex::autorigcomponent::3.0"
+  },
+  "Sop/apex::buildfkgraph": {
+   "category": "Sop",
+   "input_labels": [
+    "Sub-Network Input #1",
+    "Sub-Network Input #2"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:apex::buildfkgraph"
+   ],
+   "type_name": "apex::buildfkgraph"
+  },
+  "Sop/apex::configurecontrols": {
+   "category": "Sop",
+   "input_labels": [
+    "CharacterStream",
+    "Shape Library"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "CharacterStream"
+   ],
+   "sources": [
+    "emitted:apex::configurecontrols"
+   ],
+   "type_name": "apex::configurecontrols"
+  },
+  "Sop/apex::configuregraph": {
+   "category": "Sop",
+   "input_labels": [
+    "Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output"
+   ],
+   "sources": [
+    "emitted:apex::configuregraph"
+   ],
+   "type_name": "apex::configuregraph"
+  },
+  "Sop/apex::controlextract": {
+   "category": "Sop",
+   "input_labels": [
+    "Scene/Character/Rig"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 2,
+   "output_labels": [
+    "Control Constraint Graph",
+    "Control Skeleton"
+   ],
+   "sources": [
+    "emitted:apex::controlextract"
+   ],
+   "type_name": "apex::controlextract"
+  },
+  "Sop/apex::graph": {
+   "category": "Sop",
+   "input_labels": [
+    "Sub-Network Input #1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:apex::graph"
+   ],
+   "type_name": "apex::graph"
+  },
+  "Sop/apex::invokegraph": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1",
+    "Input 2"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:apex::invokegraph"
+   ],
+   "type_name": "apex::invokegraph"
+  },
+  "Sop/apex::mapcharacter": {
+   "category": "Sop",
+   "input_labels": [
+    "Scene/Character"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Scene/Character"
+   ],
+   "sources": [
+    "emitted:apex::mapcharacter"
+   ],
+   "type_name": "apex::mapcharacter"
+  },
+  "Sop/apex::mergegraph": {
+   "category": "Sop",
+   "input_labels": [
+    "Sub-Network Input #1",
+    "Sub-Network Input #2"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "apex::mergegraph"
+  },
+  "Sop/apex::packcharacter": {
+   "category": "Sop",
+   "input_labels": [
+    "Character/Scene",
+    "Rest Geometry",
+    "Capture Pose",
+    "Animated Pose"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Character/Scene"
+   ],
+   "sources": [
+    "emitted:apex::packcharacter"
+   ],
+   "type_name": "apex::packcharacter"
+  },
+  "Sop/apex::sceneinvoke": {
+   "category": "Sop",
+   "input_labels": [
+    "Scene"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 1,
+   "output_count": 2,
+   "output_labels": [
+    "Scene Outputs"
+   ],
+   "sources": [
+    "emitted:apex::sceneinvoke"
+   ],
+   "type_name": "apex::sceneinvoke"
+  },
+  "Sop/apex::sceneinvoke::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Scene"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Scene Outputs"
+   ],
+   "sources": [
+    "emitted:apex::sceneinvoke"
+   ],
+   "type_name": "apex::sceneinvoke::2.0"
+  },
+  "Sop/assemble": {
+   "category": "Sop",
+   "input_labels": [
+    "Polygons to Assemble into Pieces"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:assemble"
+   ],
+   "type_name": "assemble"
+  },
+  "Sop/attribwrangle": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry to Process with Wrangle",
+    "Ancillary Input, point(1, ...) to Access",
+    "Ancillary Input, point(2, ...) to Access",
+    "Ancillary Input, point(3, ...) to Access"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:attribwrangle"
+   ],
+   "type_name": "attribwrangle"
+  },
+  "Sop/beta::tissuesolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Tissue",
+    "Fascia",
+    "Target Constraint Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Tissue Output"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "beta::tissuesolver"
+  },
+  "Sop/blendshapes": {
+   "category": "Sop",
+   "input_labels": [
+    "Blend Source",
+    "Blend Source"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "blendshapes"
+  },
+  "Sop/blendshapes::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Blend Source",
+    "Blend Source"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "blendshapes::2.0"
+  },
+  "Sop/block_begin": {
+   "category": "Sop",
+   "input_labels": [
+    "Initial Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:block_begin"
+   ],
+   "type_name": "block_begin"
+  },
+  "Sop/block_end": {
+   "category": "Sop",
+   "input_labels": [
+    "Nodes to Iterate Over",
+    "Geometry Pieces to Loop Over"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:block_end"
+   ],
+   "type_name": "block_end"
+  },
+  "Sop/cop2net": {
+   "category": "Sop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:cop2net"
+   ],
+   "type_name": "cop2net"
+  },
+  "Sop/debrissource": {
+   "category": "Sop",
+   "input_labels": [
+    "Simulated or Rest Geometry",
+    "Simulation Points when using Rest Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Source Points"
+   ],
+   "sources": [
+    "emitted:debrissource"
+   ],
+   "type_name": "debrissource"
+  },
+  "Sop/debrissource::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Simulated or Rest Geometry",
+    "Simulation Points when using Rest Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Source Points"
+   ],
+   "sources": [
+    "emitted:debrissource"
+   ],
+   "type_name": "debrissource::2.0"
+  },
+  "Sop/dopnet": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1",
+    "Input 2",
+    "Input 3",
+    "Input 4"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:dopnet"
+   ],
+   "type_name": "dopnet"
+  },
+  "Sop/duplicate": {
+   "category": "Sop",
+   "input_labels": [
+    "Source geometry to duplicate"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:duplicate"
+   ],
+   "type_name": "duplicate"
+  },
+  "Sop/fasciasolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Fascia",
+    "Collision Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Solved Fascia"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "fasciasolver"
+  },
+  "Sop/feathersurfaceblend": {
+   "category": "Sop",
+   "input_labels": [
+    "Feathers",
+    "Skin",
+    "VDB",
+    "Target Surface"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 3,
+   "output_labels": [
+    "Feathers",
+    "Skin",
+    "VDB"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "feathersurfaceblend"
+  },
+  "Sop/file": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:file"
+   ],
+   "type_name": "file"
+  },
+  "Sop/filecache": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry to Cache to Disk"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Cached Geometry"
+   ],
+   "sources": [
+    "emitted:filecache"
+   ],
+   "type_name": "filecache"
+  },
+  "Sop/filecache::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry to Cache to Disk"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Cached Geometry"
+   ],
+   "sources": [
+    "emitted:filecache"
+   ],
+   "type_name": "filecache::2.0"
+  },
+  "Sop/filemerge": {
+   "category": "Sop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "filemerge"
+  },
+  "Sop/filemerge::2.0": {
+   "category": "Sop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "filemerge::2.0"
+  },
+  "Sop/flipsolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Sources",
+    "Container",
+    "Collisions",
+    "Boundary Flow"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 3,
+   "output_count": 3,
+   "output_labels": [
+    "Fluid Particles",
+    "Container",
+    "Collisions"
+   ],
+   "sources": [
+    "emitted:flipsolver",
+    "sop_pattern"
+   ],
+   "type_name": "flipsolver"
+  },
+  "Sop/groomblend": {
+   "category": "Sop",
+   "input_labels": [
+    "Guides A",
+    "Skin A",
+    "Skin VDB",
+    "Guides B",
+    "Skin B"
+   ],
+   "instantiated": true,
+   "max_inputs": 5,
+   "min_inputs": 1,
+   "output_count": 3,
+   "output_labels": [
+    "Guides B",
+    "Skin",
+    "Skin VDB"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "groomblend"
+  },
+  "Sop/groomswitch": {
+   "category": "Sop",
+   "input_labels": [
+    "Guides A",
+    "Skin A",
+    "Skin VDB A",
+    "Guides B",
+    "Skin B",
+    "Skin VDB B"
+   ],
+   "instantiated": true,
+   "max_inputs": 6,
+   "min_inputs": 6,
+   "output_count": 3,
+   "output_labels": [
+    "Guides",
+    "Skin",
+    "Skin VDB"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "groomswitch"
+  },
+  "Sop/heightfield": {
+   "category": "Sop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Sub-Network Output #1"
+   ],
+   "sources": [
+    "emitted:heightfield"
+   ],
+   "type_name": "heightfield"
+  },
+  "Sop/heightfield_erode": {
+   "category": "Sop",
+   "input_labels": [
+    "Terrain to Erode",
+    "Masks"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Eroded Terrain"
+   ],
+   "sources": [
+    "emitted:heightfield_erode"
+   ],
+   "type_name": "heightfield_erode"
+  },
+  "Sop/heightfield_erode::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Terrain to Erode",
+    "Masks"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Sub-Network Output #1"
+   ],
+   "sources": [
+    "emitted:heightfield_erode"
+   ],
+   "type_name": "heightfield_erode::2.0"
+  },
+  "Sop/heightfield_erode::3.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Terrain to Erode",
+    "Masks"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Eroded Terrain"
+   ],
+   "sources": [
+    "emitted:heightfield_erode"
+   ],
+   "type_name": "heightfield_erode::3.0"
+  },
+  "Sop/heightfield_noise": {
+   "category": "Sop",
+   "input_labels": [
+    "Terrain",
+    "Mask"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:heightfield_noise"
+   ],
+   "type_name": "heightfield_noise"
+  },
+  "Sop/kinefx::characterblendshapechannels": {
+   "category": "Sop",
+   "input_labels": [
+    "Skeleton",
+    "Mesh"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Skeleton"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::characterblendshapechannels"
+  },
+  "Sop/kinefx::characterblendshapes": {
+   "category": "Sop",
+   "input_labels": [
+    "Rest Geometry",
+    "Capture Pose",
+    "Animated Pose"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 3,
+   "output_count": 3,
+   "output_labels": [
+    "Rest Geometry",
+    "Capture Pose",
+    "Animated Pose"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::characterblendshapes"
+  },
+  "Sop/kinefx::characterblendshapesadd": {
+   "category": "Sop",
+   "input_labels": [
+    "Mesh",
+    "Packed Blendshapes"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::characterblendshapesadd"
+  },
+  "Sop/kinefx::characterblendshapescore": {
+   "category": "Sop",
+   "input_labels": [
+    "Input Geometry",
+    "Animated Pose"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::characterblendshapescore"
+  },
+  "Sop/kinefx::characterblendshapesextract": {
+   "category": "Sop",
+   "input_labels": [
+    "Mesh"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Blend Shape"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::characterblendshapesextract"
+  },
+  "Sop/kinefx::motionclipblend": {
+   "category": "Sop",
+   "input_labels": [
+    "Base",
+    "Layer"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "MotionClip"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::motionclipblend"
+  },
+  "Sop/kinefx::motionclipblend::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Base",
+    "Layer"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "MotionClip"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::motionclipblend::2.0"
+  },
+  "Sop/kinefx::motionclipmerge": {
+   "category": "Sop",
+   "input_labels": [
+    "Motion Clips",
+    "Motion Clip to Merge"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::motionclipmerge"
+  },
+  "Sop/kinefx::ragdollsolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Skeleton",
+    "Collision Shapes",
+    "Collision Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 2,
+   "output_labels": [
+    "Skeleton"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::ragdollsolver"
+  },
+  "Sop/kinefx::ragdollsolver::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Skeleton",
+    "Collision Shapes",
+    "Collision Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Skeleton"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::ragdollsolver::2.0"
+  },
+  "Sop/kinefx::rigdoctor": {
+   "category": "Sop",
+   "input_labels": [
+    "Poly Lines"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Skeleton"
+   ],
+   "sources": [
+    "emitted:kinefx::rigdoctor"
+   ],
+   "type_name": "kinefx::rigdoctor"
+  },
+  "Sop/kinefx::skeletonblend": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1",
+    "Input 2"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::skeletonblend"
+  },
+  "Sop/kinefx::skeletonblend::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1",
+    "Input 2"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::skeletonblend::2.0"
+  },
+  "Sop/kinefx::skeletonblend::3.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1",
+    "Input 2"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "kinefx::skeletonblend::3.0"
+  },
+  "Sop/labs::color_blend": {
+   "category": "Sop",
+   "input_labels": [
+    "Input Mesh",
+    "Additional Mesh",
+    "(Optional) Mask Mesh"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "labs::color_blend"
+  },
+  "Sop/labs::filecache::1.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry to Cache to Disk"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Cached Geometry"
+   ],
+   "sources": [
+    "emitted:filecache"
+   ],
+   "type_name": "labs::filecache::1.0"
+  },
+  "Sop/labs::filecache::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry to Cache to Disk"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Cached Geometry"
+   ],
+   "sources": [
+    "emitted:filecache"
+   ],
+   "type_name": "labs::filecache::2.0"
+  },
+  "Sop/labs::merge_small_islands": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry with UVs"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "labs::merge_small_islands"
+  },
+  "Sop/labs::merge_small_islands::1.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry with UVs"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "labs::merge_small_islands::1.0"
+  },
+  "Sop/labs::merge_splines::1.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Polylines to Merge"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 2,
+   "output_labels": [
+    "Output",
+    "Guide Visual Output"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "labs::merge_splines::1.0"
+  },
+  "Sop/linearsolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Matrix/Decomposition (&Vectors)",
+    "Known Vector",
+    "Unknown Vector"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "linearsolver"
+  },
+  "Sop/lopnet": {
+   "category": "Sop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:lopnet"
+   ],
+   "type_name": "lopnet"
+  },
+  "Sop/merge": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:merge",
+    "sop_pattern"
+   ],
+   "type_name": "merge"
+  },
+  "Sop/mergepacked": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "mergepacked"
+  },
+  "Sop/mpmsolver": {
+   "category": "Sop",
+   "input_labels": [
+    "MPM Sources",
+    "MPM Colliders",
+    "MPM Container"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "MPM Output Particles"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "mpmsolver"
+  },
+  "Sop/musclemerge": {
+   "category": "Sop",
+   "input_labels": [
+    "Sub-Network Input #1",
+    "Sub-Network Input #2",
+    "Sub-Network Input #3",
+    "Sub-Network Input #4",
+    "Input #5",
+    "Input #6"
+   ],
+   "instantiated": true,
+   "max_inputs": 6,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "musclemerge"
+  },
+  "Sop/musclesolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Muscles",
+    "Bones",
+    "Muscle Tension Ref"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Solved Muscles"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "musclesolver"
+  },
+  "Sop/musclesolverfem": {
+   "category": "Sop",
+   "input_labels": [
+    "Muscles",
+    "Bones",
+    "Muscle Tension Ref"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Solved Muscles"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "musclesolverfem"
+  },
+  "Sop/musclesolvervellum": {
+   "category": "Sop",
+   "input_labels": [
+    "Muscles",
+    "Bones",
+    "Activation Attribute Reference"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Solved Muscles"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "musclesolvervellum"
+  },
+  "Sop/null": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:null"
+   ],
+   "type_name": "null"
+  },
+  "Sop/object_merge": {
+   "category": "Sop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "object_merge"
+  },
+  "Sop/oceanevaluate": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry to Deform",
+    "Ocean Spectrum"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Sub-Network Output #1"
+   ],
+   "sources": [
+    "emitted:oceanevaluate"
+   ],
+   "type_name": "oceanevaluate"
+  },
+  "Sop/oceanevaluate::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry to Deform",
+    "Ocean Spectrum"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Sub-Network Output #1"
+   ],
+   "sources": [
+    "emitted:oceanevaluate"
+   ],
+   "type_name": "oceanevaluate::2.0"
+  },
+  "Sop/oceansource": {
+   "category": "Sop",
+   "input_labels": [
+    "Ocean Spectrum",
+    "Collision Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Initial",
+    "Maintain"
+   ],
+   "sources": [
+    "emitted:oceansource"
+   ],
+   "type_name": "oceansource"
+  },
+  "Sop/oceansource::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Ocean Spectrum",
+    "Collision Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 2,
+   "output_labels": [
+    "Initial",
+    "Maintain"
+   ],
+   "sources": [
+    "emitted:oceansource"
+   ],
+   "type_name": "oceansource::2.0"
+  },
+  "Sop/oceanspectrum": {
+   "category": "Sop",
+   "input_labels": [
+    "Wave Instancing Points",
+    "Mask"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Spectrum Layer"
+   ],
+   "sources": [
+    "emitted:oceanspectrum"
+   ],
+   "type_name": "oceanspectrum"
+  },
+  "Sop/opencl": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1",
+    "Input 2",
+    "Input 3",
+    "Input 4"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:opencl"
+   ],
+   "type_name": "opencl"
+  },
+  "Sop/otissolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Vellum Geometry",
+    "Constraint Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 2,
+   "output_count": 2,
+   "output_labels": [
+    "Vellum Geometry",
+    "Constraint Geometry"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "otissolver"
+  },
+  "Sop/output": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:output"
+   ],
+   "type_name": "output"
+  },
+  "Sop/pyrosolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Sources",
+    "Collision Geometry/Volumes"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Simulated Fields"
+   ],
+   "sources": [
+    "emitted:pyrosolver",
+    "sop_pattern"
+   ],
+   "type_name": "pyrosolver"
+  },
+  "Sop/rbdbulletsolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry",
+    "Collision Geometry",
+    "Guide Sim"
+   ],
+   "instantiated": true,
+   "max_inputs": 5,
+   "min_inputs": 1,
+   "output_count": 4,
+   "output_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry",
+    "Simulation Points"
+   ],
+   "sources": [
+    "emitted:rbdbulletsolver",
+    "sop_pattern"
+   ],
+   "type_name": "rbdbulletsolver"
+  },
+  "Sop/rbdconstraintproperties": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 3,
+   "output_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry"
+   ],
+   "sources": [
+    "emitted:rbdconstraintproperties"
+   ],
+   "type_name": "rbdconstraintproperties"
+  },
+  "Sop/rbdconstraintproperties::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 3,
+   "output_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry"
+   ],
+   "sources": [
+    "emitted:rbdconstraintproperties"
+   ],
+   "type_name": "rbdconstraintproperties::2.0"
+  },
+  "Sop/rbdconstraintsfromrules": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry",
+    "Bounding Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 3,
+   "output_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry"
+   ],
+   "sources": [
+    "emitted:rbdconstraintsfromrules"
+   ],
+   "type_name": "rbdconstraintsfromrules"
+  },
+  "Sop/rbdmaterialfracture": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry",
+    "Extra Voronoi Points (Concrete) / Impact Points (Glass) / Cutter Geometry (Custom)"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 3,
+   "output_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry"
+   ],
+   "sources": [
+    "emitted:rbdmaterialfracture"
+   ],
+   "type_name": "rbdmaterialfracture"
+  },
+  "Sop/rbdmaterialfracture::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry",
+    "Extra Voronoi Points (Concrete) / Impact Points (Glass)"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 3,
+   "output_labels": [
+    "Geometry"
+   ],
+   "sources": [
+    "emitted:rbdmaterialfracture"
+   ],
+   "type_name": "rbdmaterialfracture::2.0"
+  },
+  "Sop/rbdmaterialfracture::3.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry",
+    "Extra Voronoi Points (Concrete) / Impact Points (Glass) / Cutter Geometry (Custom)"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 3,
+   "output_labels": [
+    "Geometry",
+    "Constraint Geometry",
+    "Proxy Geometry"
+   ],
+   "sources": [
+    "emitted:rbdmaterialfracture"
+   ],
+   "type_name": "rbdmaterialfracture::3.0"
+  },
+  "Sop/ripplesolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Rest Geometry",
+    "Displaced Geometry",
+    "Collide Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Geometry with Simulated Ripples"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "ripplesolver"
+  },
+  "Sop/sblend": {
+   "category": "Sop",
+   "input_labels": [
+    "Blend Source"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "sblend"
+  },
+  "Sop/sblend::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Blend Source"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "sblend::2.0"
+  },
+  "Sop/scatter": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry to scatter points onto"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:scatter"
+   ],
+   "type_name": "scatter"
+  },
+  "Sop/scatter::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry to scatter points onto"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:scatter"
+   ],
+   "type_name": "scatter::2.0"
+  },
+  "Sop/shallowwatersolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Height Fields"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Height Fields with Simulated Water"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "shallowwatersolver"
+  },
+  "Sop/skinsolvervellum": {
+   "category": "Sop",
+   "input_labels": [
+    "Tissue",
+    "Internal Attach Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Tissue Output"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "skinsolvervellum"
+  },
+  "Sop/solver": {
+   "category": "Sop",
+   "input_labels": [
+    "Initial Geometry",
+    "Auxillary #1",
+    "Auxillary #2",
+    "Auxillary #3"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "solver"
+  },
+  "Sop/subnet": {
+   "category": "Sop",
+   "input_labels": [
+    "Sub-Network Input #1",
+    "Sub-Network Input #2",
+    "Sub-Network Input #3",
+    "Sub-Network Input #4"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 11,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:subnet"
+   ],
+   "type_name": "subnet"
+  },
+  "Sop/switch": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "switch"
+  },
+  "Sop/switchif": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1",
+    "Input 2"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "switchif"
+  },
+  "Sop/timeblend": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry to Evaluate at Another Time"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "timeblend"
+  },
+  "Sop/timeblend::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry to Evaluate at Another Time"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "timeblend::2.0"
+  },
+  "Sop/tissuesolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Skin",
+    "Animated Muscles",
+    "Static Muscles",
+    "Animated Bones",
+    "Static Bones"
+   ],
+   "instantiated": true,
+   "max_inputs": 5,
+   "min_inputs": 0,
+   "output_count": 2,
+   "output_labels": [
+    "Solver Output"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "tissuesolver"
+  },
+  "Sop/tissuesolvervellum": {
+   "category": "Sop",
+   "input_labels": [
+    "Tissue",
+    "Internal Attach Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Tissue Output"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "tissuesolvervellum"
+  },
+  "Sop/topnet": {
+   "category": "Sop",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:topnet"
+   ],
+   "type_name": "topnet"
+  },
+  "Sop/vdbmerge": {
+   "category": "Sop",
+   "input_labels": [
+    "VDBs To Merge"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "vdbmerge"
+  },
+  "Sop/vdbvectormerge": {
+   "category": "Sop",
+   "input_labels": [
+    "Scalar VDBs to merge into vector"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "vdbvectormerge"
+  },
+  "Sop/vellumconstraintproperty": {
+   "category": "Sop",
+   "input_labels": [
+    "Vellum Geometry",
+    "Constraint Geometry",
+    "Collision Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 2,
+   "output_count": 3,
+   "output_labels": [
+    "Vellum Geometry",
+    "Constraint Geometry",
+    "Collision Geometry"
+   ],
+   "sources": [
+    "emitted:vellumconstraintproperty"
+   ],
+   "type_name": "vellumconstraintproperty"
+  },
+  "Sop/vellumconstraints": {
+   "category": "Sop",
+   "input_labels": [
+    "Vellum Geometry",
+    "Constraint Geometry",
+    "Collision Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 1,
+   "output_count": 3,
+   "output_labels": [
+    "Vellum Geometry",
+    "Constraint Geometry",
+    "Collision Geometry"
+   ],
+   "sources": [
+    "emitted:vellumconstraints"
+   ],
+   "type_name": "vellumconstraints"
+  },
+  "Sop/vellumdrape": {
+   "category": "Sop",
+   "input_labels": [
+    "Vellum Geometry",
+    "Constraint Geometry",
+    "Collision Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 2,
+   "output_count": 3,
+   "output_labels": [
+    "Vellum Geometry",
+    "Constraint Geometry",
+    "Collision Geometry"
+   ],
+   "sources": [
+    "emitted:vellumdrape"
+   ],
+   "type_name": "vellumdrape"
+  },
+  "Sop/vellumrestblend": {
+   "category": "Sop",
+   "input_labels": [
+    "Geometry",
+    "Constraints",
+    "Collisions",
+    "Rest Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 2,
+   "output_count": 3,
+   "output_labels": [
+    "Geometry",
+    "Constraints",
+    "Collisions"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "vellumrestblend"
+  },
+  "Sop/vellumsolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Vellum Geometry",
+    "Constraint Geometry",
+    "Collision Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 2,
+   "output_count": 3,
+   "output_labels": [
+    "Vellum Geometry",
+    "Constraint Geometry",
+    "Collision Geometry"
+   ],
+   "sources": [
+    "emitted:vellumsolver",
+    "sop_pattern"
+   ],
+   "type_name": "vellumsolver"
+  },
+  "Sop/volumemerge": {
+   "category": "Sop",
+   "input_labels": [
+    "Base Volume",
+    "Volumes to Merge in"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "volumemerge"
+  },
+  "Sop/volumerasterizeattributes": {
+   "category": "Sop",
+   "input_labels": [
+    "Points to Rasterize"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "VDBs"
+   ],
+   "sources": [
+    "emitted:volumerasterizeattributes"
+   ],
+   "type_name": "volumerasterizeattributes"
+  },
+  "Sop/whitewatersolver": {
+   "category": "Sop",
+   "input_labels": [
+    "Emission and Fluid Fields",
+    "Container",
+    "Collisions"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 3,
+   "output_count": 3,
+   "output_labels": [
+    "Whitewater Particles",
+    "Container",
+    "Collisions"
+   ],
+   "sources": [
+    "emitted:whitewatersolver",
+    "sop_pattern"
+   ],
+   "type_name": "whitewatersolver"
+  },
+  "Sop/whitewatersource": {
+   "category": "Sop",
+   "input_labels": [
+    "Liquid Simulation",
+    "Container",
+    "Collisions",
+    "Extra Sources"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Volumes",
+    "Container",
+    "Collisions",
+    "Visualization Particles"
+   ],
+   "sources": [
+    "emitted:whitewatersource"
+   ],
+   "type_name": "whitewatersource"
+  },
+  "Sop/whitewatersource::2.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Liquid Simulation",
+    "Extra Source Points",
+    "Emission Mask"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Volumes"
+   ],
+   "sources": [
+    "emitted:whitewatersource"
+   ],
+   "type_name": "whitewatersource::2.0"
+  },
+  "Sop/whitewatersource::3.0": {
+   "category": "Sop",
+   "input_labels": [
+    "Liquid Simulation",
+    "Container",
+    "Collisions",
+    "Extra Sources"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 4,
+   "output_labels": [
+    "Volumes",
+    "Container",
+    "Collisions",
+    "Visualization Particles"
+   ],
+   "sources": [
+    "emitted:whitewatersource"
+   ],
+   "type_name": "whitewatersource::3.0"
+  },
+  "Sop/wireblend": {
+   "category": "Sop",
+   "input_labels": [
+    "Blend Source"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "sop_pattern"
+   ],
+   "type_name": "wireblend"
+  },
+  "Top/cop2net": {
+   "category": "Top",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:cop2net"
+   ],
+   "type_name": "cop2net"
+  },
+  "Top/dopnet": {
+   "category": "Top",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:dopnet"
+   ],
+   "type_name": "dopnet"
+  },
+  "Top/ffmpegencodevideo": {
+   "category": "Top",
+   "input_labels": [
+    "input"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "output"
+   ],
+   "sources": [
+    "emitted:ffmpegencodevideo"
+   ],
+   "type_name": "ffmpegencodevideo"
+  },
+  "Top/genericgenerator": {
+   "category": "Top",
+   "input_labels": [
+    "input"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "output"
+   ],
+   "sources": [
+    "emitted:genericgenerator"
+   ],
+   "type_name": "genericgenerator"
+  },
+  "Top/labs::wedge::1.0": {
+   "category": "Top",
+   "input_labels": [
+    "Work-Items to wedge"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Wedged Work-Items"
+   ],
+   "sources": [
+    "emitted:wedge"
+   ],
+   "type_name": "labs::wedge::1.0"
+  },
+  "Top/localscheduler": {
+   "category": "Top",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:localscheduler"
+   ],
+   "type_name": "localscheduler"
+  },
+  "Top/lopnet": {
+   "category": "Top",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:lopnet"
+   ],
+   "type_name": "lopnet"
+  },
+  "Top/merge": {
+   "category": "Top",
+   "input_labels": [
+    "input"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "output"
+   ],
+   "sources": [
+    "emitted:merge"
+   ],
+   "type_name": "merge"
+  },
+  "Top/null": {
+   "category": "Top",
+   "input_labels": [
+    "input"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "output"
+   ],
+   "sources": [
+    "emitted:null"
+   ],
+   "type_name": "null"
+  },
+  "Top/output": {
+   "category": "Top",
+   "input_labels": [
+    "input"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "output"
+   ],
+   "sources": [
+    "emitted:output"
+   ],
+   "type_name": "output"
+  },
+  "Top/partitionbyattribute": {
+   "category": "Top",
+   "input_labels": [
+    "input"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "output"
+   ],
+   "sources": [
+    "emitted:partitionbyattribute"
+   ],
+   "type_name": "partitionbyattribute"
+  },
+  "Top/pythonscript": {
+   "category": "Top",
+   "input_labels": [
+    "input"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "output"
+   ],
+   "sources": [
+    "emitted:pythonscript"
+   ],
+   "type_name": "pythonscript"
+  },
+  "Top/ropfetch": {
+   "category": "Top",
+   "input_labels": [
+    "input"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "output"
+   ],
+   "sources": [
+    "emitted:ropfetch"
+   ],
+   "type_name": "ropfetch"
+  },
+  "Top/subnet": {
+   "category": "Top",
+   "input_labels": [
+    "Input 1",
+    "Input 2",
+    "Input 3",
+    "Input 4"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 4,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:subnet"
+   ],
+   "type_name": "subnet"
+  },
+  "Top/topnet": {
+   "category": "Top",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "emitted:topnet"
+   ],
+   "type_name": "topnet"
+  },
+  "Top/wedge": {
+   "category": "Top",
+   "input_labels": [
+    "input"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "output"
+   ],
+   "sources": [
+    "emitted:wedge"
+   ],
+   "type_name": "wedge"
+  },
+  "TopNet/topnet": {
+   "category": "TopNet",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 0,
+   "output_labels": null,
+   "sources": [
+    "emitted:topnet"
+   ],
+   "type_name": "topnet"
+  },
+  "Vop/block_begin": {
+   "category": "Vop",
+   "input_labels": [
+    "Next (Any Type)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2048,
+   "min_inputs": 0,
+   "output_count": 2048,
+   "output_labels": [],
+   "sources": [
+    "emitted:block_begin"
+   ],
+   "type_name": "block_begin"
+  },
+  "Vop/block_end": {
+   "category": "Vop",
+   "input_labels": [
+    "Next (Any Type)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2048,
+   "min_inputs": 0,
+   "output_count": 2048,
+   "output_labels": [],
+   "sources": [
+    "emitted:block_end"
+   ],
+   "type_name": "block_end"
+  },
+  "Vop/composite": {
+   "category": "Vop",
+   "input_labels": [
+    "Operation",
+    "A",
+    "A Alpha",
+    "B",
+    "B Alpha"
+   ],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 2,
+   "output_labels": [
+    "Resulting Color",
+    "Resulting Alpha"
+   ],
+   "sources": [
+    "emitted:composite"
+   ],
+   "type_name": "composite"
+  },
+  "Vop/file": {
+   "category": "Vop",
+   "input_labels": [
+    "File",
+    "Frame Offset",
+    "Motion Blur Style",
+    "Use Velocity Motion Blur",
+    "Blur File",
+    "Shutter",
+    "Material Archive",
+    "Share Geometry"
+   ],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Geometry"
+   ],
+   "sources": [
+    "emitted:file"
+   ],
+   "type_name": "file"
+  },
+  "Vop/kinefx::blendtransforms": {
+   "category": "Vop",
+   "input_labels": [
+    "Transform 1",
+    "Transform 2",
+    "Components",
+    "Bias"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Transform"
+   ],
+   "sources": [
+    "emitted:kinefx::blendtransforms"
+   ],
+   "type_name": "kinefx::blendtransforms"
+  },
+  "Vop/kinefx::twoboneik": {
+   "category": "Vop",
+   "input_labels": [
+    "Root",
+    "Mid",
+    "Tip",
+    "Root Driver",
+    "Twist",
+    "Goal",
+    "Stretch",
+    "Twist Offset",
+    "Blend",
+    "Orient Tip to Goal"
+   ],
+   "instantiated": true,
+   "max_inputs": 10,
+   "min_inputs": 0,
+   "output_count": 3,
+   "output_labels": [
+    "Root",
+    "Mid",
+    "Tip"
+   ],
+   "sources": [
+    "emitted:kinefx::twoboneik"
+   ],
+   "type_name": "kinefx::twoboneik"
+  },
+  "Vop/null": {
+   "category": "Vop",
+   "input_labels": [
+    "Next Input (all types allowed)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2048,
+   "min_inputs": 0,
+   "output_count": 2048,
+   "output_labels": [],
+   "sources": [
+    "emitted:null"
+   ],
+   "type_name": "null"
+  },
+  "Vop/output": {
+   "category": "Vop",
+   "input_labels": [
+    "Surface Color",
+    "Surface Opacity",
+    "Surface Alpha",
+    "Surface Normal",
+    "BSDF"
+   ],
+   "instantiated": true,
+   "max_inputs": 2048,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output 1"
+   ],
+   "sources": [
+    "emitted:output"
+   ],
+   "type_name": "output"
+  },
+  "Vop/subnet": {
+   "category": "Vop",
+   "input_labels": [
+    "Next Input (all types allowed)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2048,
+   "min_inputs": 0,
+   "output_count": 2048,
+   "output_labels": [],
+   "sources": [
+    "emitted:subnet"
+   ],
+   "type_name": "subnet"
+  },
+  "VopNet/light": {
+   "category": "VopNet",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 1,
+   "output_labels": null,
+   "sources": [
+    "emitted:light"
+   ],
+   "type_name": "light"
+  },
+  "VopNet/subnet": {
+   "category": "VopNet",
+   "input_labels": null,
+   "instantiated": false,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "note": "no container for this category",
+   "output_count": 1,
+   "output_labels": null,
+   "sources": [
+    "emitted:subnet"
+   ],
+   "type_name": "subnet"
+  }
+ },
+ "generated": {
+  "by": "host/introspect_connectivity.py",
+  "from": "python/synapse/cognitive/tools/data/emitted_node_types.json",
+  "note": "deterministic: no wall-clock stamp — a second run on the same build must be byte-identical (the U.1 determinism pin)"
+ },
+ "houdini_version": "21.0.671",
+ "probe_errors": [],
+ "schema": "verified_connectivity/v2",
+ "v1_preserved": {
+  "_doc": "Mile-2 §2.5 preflight — IConnectivityOracle backing symbols, dir()-confirmed against LIVE Houdini 21.0.671 (headless hython, HYTHON=Houdini 21.0.671). Read-only: a throwaway /obj net was built in an isolated hython process; the user's session was untouched. Cross-checked against the committed scout symbol table (python/synapse/cognitive/tools/data/h21_symbol_table.json, houdini_version 21.0.671). Reproduce: harness/notes/mile2_2_5_introspect.py.",
+  "_provenance": "carried verbatim from verified_connectivity v1 (Mile-2 §2.5 preflight, dir()-confirmed on live 21.0.671; harness/notes/mile2_2_5_introspect.py) — NOT re-derived by host/introspect_connectivity.py",
+  "symbols_PHANTOM_do_not_use": {
+   "hou.NodeType.inputLabels": "ABSENT in 21.0.671 dir(hou.NodeType) — input labels are INSTANCE-level only (hou.Node.inputLabels). Type-level label lookup degrades to []. P3c is advisory, so this is graceful.",
+   "hou.NodeType.inputNames": "ABSENT in 21.0.671.",
+   "hou.NodeType.outputLabels": "ABSENT — same as inputLabels."
+  },
+  "symbols_present": {
+   "hou.Node.inputConnections": true,
+   "hou.Node.inputLabels": true,
+   "hou.Node.inputs": true,
+   "hou.Node.type": true,
+   "hou.NodeConnection.inputIndex": true,
+   "hou.NodeType.category": true,
+   "hou.NodeType.maxNumInputs": true,
+   "hou.NodeType.maxNumOutputs": true,
+   "hou.NodeType.minNumInputs": true,
+   "hou.NodeType.name": true,
+   "hou.NodeType.nameComponents": true,
+   "hou.NodeTypeCategory.name": true,
+   "hou.VopNode.inputDataTypes": true,
+   "hou.VopNode.outputDataTypes": true,
+   "hou.node": true,
+   "hou.nodeType": true,
+   "hou.nodeTypeCategories": true
+  },
+  "verified_values": {
+   "arity_min_max_outs": {
+    "Sop/box": [
+     0,
+     1,
+     1
+    ],
+    "Sop/merge": [
+     0,
+     9999,
+     1
+    ],
+    "Sop/xform": [
+     1,
+     1,
+     1
+    ],
+    "Vop/add": [
+     1,
+     2048,
+     1
+    ],
+    "Vop/constant": [
+     0,
+     0,
+     1
+    ]
+   },
+   "category_keys": [
+    "Chop",
+    "ChopNet",
+    "Cop",
+    "Cop2",
+    "CopNet",
+    "Data",
+    "Director",
+    "Dop",
+    "Driver",
+    "Lop",
+    "Manager",
+    "Object",
+    "Shop",
+    "Sop",
+    "Top",
+    "TopNet",
+    "Vop",
+    "VopNet"
+   ],
+   "occupied_input_logic": "merge with box wired to input0 -> inputConnections() yields one NodeConnection with inputIndex()==0. input_is_occupied(path, i) := any(c.inputIndex()==i for c in node.inputConnections()).",
+   "resolve_node_type_logic": "hou.node(path).type() -> (.name(), .category().name()); box -> ('box','Sop').",
+   "variadic_sentinel_note": "Variadic max inputs reported as a large finite cap (Sop/merge=9999, Vop/add=2048), NOT -1. The validator must treat 'index < max' generically; the in-repo MOCK uses -1 as its own unlimited sentinel, so the validator also treats max<0 as unlimited. Both map to 'no overflow'.",
+   "vop_datatypes_precook": "VopNode.inputDataTypes()/outputDataTypes() read ['undef'] on a fresh uncooked node -> NO reliable non-mutating type-level wire-compat oracle in 21.0.671. types_compatible() degrades; is_typed_category() still honest (Vop/Chop/Shop)."
+  }
+ }
+}

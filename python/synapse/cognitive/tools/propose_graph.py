@@ -57,6 +57,9 @@ def _edge_from_dict(d: dict) -> ProposedEdge:
         source_output_index=int(d.get("source_output_index", 0)),
         target_node_id=d["target_node_id"],
         target_input_index=int(d.get("target_input_index", 0)),
+        # U.1: optional declared slot label — P3e verifies it against the
+        # connectivity catalog when the target type is known.
+        target_input_label=str(d.get("target_input_label", "") or ""),
     )
 
 
