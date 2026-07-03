@@ -11,7 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4004%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4024%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.20.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
@@ -104,23 +104,20 @@ flowchart LR
 
 ### The utility flywheel
 
-**SYNAPSE now improves itself on a loop: probe live Houdini for ground truth → review its own code against that truth → wire the truth into the live path.** Nothing enters the live path on memory alone — memory drifts; probes don't.
+**SYNAPSE now improves itself on a loop: ground the AI's Houdini knowledge in probe-verified truth → review its own code against that truth → wire the truth into the live path.** Nothing enters the live path on memory alone — memory drifts; probes don't. Every cycle runs the same **EXPLORE → REVIEW → SCAFFOLD** contract; a human ratifies each new cycle; and where a catalog and a code comment disagree, **the catalog wins**.
 
-The first cycle shipped: **node-wiring connectivity.**
+**Two cycles have shipped — two kinds of truth:**
 
-- 🔬 **Probe** — `host/introspect_connectivity.py` instantiates **282 node types** headless and records their real input/output counts and slot labels → a committed, integrity-checked catalog (`python/synapse/cognitive/tools/data/connectivity_21.json`).
-- 🔍 **Review** — `scripts/flywheel_review_wiring.py` sweeps every `setInput` call site in the codebase against the catalog and classifies provable miswires.
-- 🔌 **Wire** — `wire_by_label()` (`python/synapse/core/wiring.py`) resolves inputs by **probed label**, never remembered index — fail-loud on an unknown label or type. The graph validator gained **slot-semantic checks (P3e)**: an edge into an input the type doesn't have, or a label that resolves to a different index, is rejected before anything is built.
-- 🏆 **The receipts** — the review sweep ran **147 call sites, 0 critical**, and the cycle fixed **2 known miswires** (two swapped solver-input wirings). *(The 15 phantom spellings were caught separately by the drop-day probe — see H22-ready above.)*
-- 🧍 **Anti-runaway** — a human ratifies each new cycle; queue entries must carry evidence; where the catalog and a code comment disagree, **the catalog wins**.
+- 🔌 **① Wiring truth — *how* nodes connect.** `host/introspect_connectivity.py` instantiates **282 node types** headless and records their real input/output counts + slot labels → a committed, integrity-checked catalog. `wire_by_label()` (`python/synapse/core/wiring.py`) then resolves inputs by **probed label, never remembered index** (fail-loud on an unknown label/type), and the validator's **slot-semantic checks (P3e)** reject an edge into an input the type doesn't have. *Receipts: the review sweep ran **141 sites, 0 critical**; the cycle fixed **2 known miswires** (swapped solver inputs).*
+- 🧭 **② Solaris context truth — *what* the nodes are.** A corpus-authored, probe-cross-checked **LOP / Solaris knowledge catalog** teaches the validator the semantics wiring truth can't see. It **hard-rejects phantom LOP types** the model reaches for out of SOP habit — there is no `grid` or `plane` LOP (use a `cube`) — and **advises** when an `assignmaterial` has no material source upstream (a `materiallibrary`, *or* a `reference`/`sublayer` layer that already authors the materials). *Receipts: **20 checks, 0 critical**; the ordering rule was hardened from a hard error to an advisory after adversarial review caught it would false-reject valid reference/sublayer material graphs.*
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
-    PROBE["PROBE<br/>live Houdini ground truth<br/>282 node types → catalog"]:::hou -->|"committed catalog"| REV["REVIEW<br/>sweep the code against it<br/>every setInput call site"]:::bridge
-    REV -->|"findings → fixes"| WIRE["WIRE<br/>truth into the live path<br/>wire_by_label · validator P3e · test pins"]:::panel
-    WIRE -->|"new probeable truth classes"| NEXT["Queue<br/>human ratifies the next cycle"]:::side
-    NEXT -->|"cycle N+1"| PROBE
+    EXP["EXPLORE<br/>probe-verified ground truth<br/>live probe · or probe-checked corpus"]:::hou -->|"committed, integrity-checked catalog"| REV["REVIEW<br/>sweep the code vs the catalog<br/>0 critical"]:::bridge
+    REV -->|"findings → fixes"| SCAF["SCAFFOLD<br/>truth into the live path<br/>wire_by_label · validator P3e + LOP · test pins"]:::panel
+    SCAF -->|"new truth classes"| NEXT["Queue<br/>human ratifies each new cycle"]:::side
+    NEXT -->|"cycle N+1 · so far: ① wiring · ② Solaris context"| EXP
     classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
     classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
     classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
@@ -146,6 +143,7 @@ flowchart LR
 - 📝 **Propose** — the model lays the whole network out first: every node, every wire, on paper.
 - 🔎 **Validate against your live scene** — every input exists, every wire fits its input type, the parent network and every referenced node are really there, the plan is a DAG, and names don't collide. If a wire would land on an input you've *already* connected, validation **halts** — it never quietly severs your work.
 - 📐 **Validate against probed truth (P3e)** — the wiring catalog rejects an edge into an input index the node type doesn't have, and a slot label that resolves to a different index. Memory doesn't get a vote; the probe does.
+- 🧭 **Validate against Solaris knowledge** — a corpus-authored, probe-cross-checked catalog rejects **phantom LOP types** (there is no `grid`/`plane` LOP — use a `cube`) and flags a missing material source upstream of `assignmaterial`. Context the wiring truth can't see.
 - 🔨 **Build — one undo group** — an unconditional TOCTOU re-validate first (a node deleted since propose halts with zero mutation), then create → set parms → wire → read back, all inside a single `hou.undos.group`. **One Ctrl+Z reverts the whole build.**
 - 🛟 **Rollback on failure** — if the build trips mid-way, it destroys the partial nodes inside the undo group. Zero net mutation, a structured `FAILED` result, no orphan nodes.
 - 🧾 **Receipts** — every build writes an `agent.usd` record: decision, reasoning, revert path.
@@ -158,7 +156,7 @@ Verified end-to-end on **live Houdini 21.0.671** — build, single-undo revert, 
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
     ASK["Artist<br/>'build a karma setup'"]:::artist --> PROP["Propose<br/>nodes + wires, on paper"]:::panel
-    PROP --> VAL["Validate<br/>vs your live scene · vs the probed wiring catalog (P3e)<br/>inputs · wire types · slot labels · occupied inputs · parent + targets exist"]:::bridge
+    PROP --> VAL["Validate<br/>vs your live scene · vs the wiring catalog (P3e) · vs the Solaris knowledge catalog<br/>inputs · wire types · slot labels · phantom LOP types · material-source ordering · occupied inputs"]:::bridge
     VAL -->|"all clear · parked"| BUILD["Build — one undo group<br/>create → wire → read back"]:::hou
     VAL -.->|"something's off"| STOP["Stop · nothing touched"]:::side
     BUILD --> NODES[("Real nodes<br/>single Ctrl+Z reverts")]:::hou
@@ -278,7 +276,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 - 🎛️ **Artist panel v9** — five engines, undo-safe, 115 tools, live observability + latency instrumentation.
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
-- 🔁 **Utility flywheel** — cycle 1 (connectivity) shipped and self-improving.
+- 🔁 **Utility flywheel** — two cycles shipped (wiring truth + Solaris context truth), self-improving on a ratified loop.
 - 🚀 **H22 drop-day machine** — API-delta probe + dual-build test axis, proven empty against H21.
 - ⚙️ **In-process substrate** — two-tier provenance (audit write off the hot path), freeze-safety, bounded autonomy + a kill switch.
 - 🎬 **Live-grounded Solaris / USD** parameter names + the ratified APEX-MCP coexistence boundary.
@@ -332,8 +330,8 @@ python/synapse/
 └── _vendor/                    # anthropic + deps, CP311 win_amd64
 
 host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols)
-scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_wiring.py
-tests/                          # 4,004 local (~70 Moneta-gated, skip on a clean clone)
+scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_{wiring,lop}.py · mine_lop_knowledge.py
+tests/                          # 4,024 local (~70 Moneta-gated, skip on a clean clone)
 harness/                        # H22 readiness — self-verifying loop + flywheel queue
 docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
