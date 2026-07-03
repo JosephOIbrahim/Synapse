@@ -2,9 +2,9 @@
 
 Catalog: `harness/notes/verified_connectivity_21.0.671.json` (build 21.0.671, blake2b `c21357095915`)
 
-**0 CRITICAL** of 147 call sites. By kind: dynamic-index=3, index-within-arity=108, label-claim-verified=3, unresolved-receiver=33
+**0 CRITICAL** of 141 call sites. By kind: dynamic-index=3, index-within-arity=105, unresolved-receiver=33
 
-## INFO (147)
+## INFO (141)
 
 - `python/synapse/core/wiring.py:163` **unresolved-receiver** `node.setInput(index, ...)` type=None — receiver's node type not lexically resolvable (runtime object)
 - `python/synapse/core/wiring.py:166` **unresolved-receiver** `node.setInput(resolved, ...)` type=None — receiver's node type not lexically resolvable (runtime object)
@@ -39,11 +39,11 @@ Catalog: `harness/notes/verified_connectivity_21.0.671.json` (build 21.0.671, bl
 - `python/synapse/routing/planner.py:701` **index-within-arity** `rs.setInput(0, ...)` type=karmarenderproperties — input index 0 within max_inputs for 'karmarenderproperties'
 - `python/synapse/routing/planner.py:704` **index-within-arity** `karma.setInput(0, ...)` type=karma — input index 0 within max_inputs for 'karma'
 - `python/synapse/routing/planner.py:712` **index-within-arity** `out.setInput(0, ...)` type=null — input index 0 within max_inputs for 'null'
-- `python/synapse/routing/recipes/fx_recipes.py:84` **label-claim-verified** `solver.setInput(0, ...)` type=vellumsolver — comment label claim matches catalog label at index 0
-- `python/synapse/routing/recipes/fx_recipes.py:86` **label-claim-verified** `solver.setInput(1, ...)` type=vellumsolver — comment label claim matches catalog label at index 1
 - `python/synapse/routing/recipes/fx_recipes.py:90` **index-within-arity** `cache.setInput(0, ...)` type=filecache — input index 0 within max_inputs for 'filecache'
 - `python/synapse/routing/recipes/fx_recipes.py:133` **index-within-arity** `asm.setInput(0, ...)` type=assemble — input index 0 within max_inputs for 'assemble'
 - `python/synapse/routing/recipes/fx_recipes.py:136` **index-within-arity** `cons.setInput(0, ...)` type=rbdconstraintsfromrules — input index 0 within max_inputs for 'rbdconstraintsfromrules'
 - `python/synapse/routing/recipes/fx_recipes.py:141` **index-within-arity** `props.setInput(0, ...)` type=rbdconstraintproperties — input index 0 within max_inputs for 'rbdconstraintproperties'
-- `python/synapse/routing/recipes/fx_recipes.py:144` **index-within-arity** `solver.setInput(0, ...)` type=rbdbulletsolver — input index 0 within max_inputs for 'rbdbulletsolver'
-- ... and 107 more (see JSON)
+- `python/synapse/routing/recipes/fx_recipes.py:151` **index-within-arity** `cache.setInput(0, ...)` type=filecache — input index 0 within max_inputs for 'filecache'
+- `python/synapse/routing/recipes/fx_recipes.py:194` **index-within-arity** `evl.setInput(0, ...)` type=oceanevaluate — input index 0 within max_inputs for 'oceanevaluate'
+- `python/synapse/routing/recipes/fx_recipes.py:197` **index-within-arity** `out.setInput(0, ...)` type=null — input index 0 within max_inputs for 'null'
+- ... and 101 more (see JSON)

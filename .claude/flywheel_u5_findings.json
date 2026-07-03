@@ -1,0 +1,139 @@
+{
+ "schema": "flywheel_findings/v1",
+ "task": "U.5",
+ "catalog": {
+  "path": "python/synapse/cognitive/tools/data/lop_solaris_knowledge_21.json",
+  "houdini_version": "21.0.671",
+  "blake2b": "685ced35bb371bcc9973215345d126a8"
+ },
+ "summary": {
+  "total": 20,
+  "critical": 0,
+  "by_kind": {
+   "authored-only": 10,
+   "probe-confirmed": 10
+  }
+ },
+ "findings": [
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'cube' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "cube"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'cylinderlight' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "cylinderlight"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'disklight' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "disklight"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'distantlight' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "distantlight"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'edit' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "edit"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'mtlxstandard_surface' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "mtlxstandard_surface"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'rectlight' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "rectlight"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'sphere' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "sphere"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'spherelight' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "spherelight"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'usdrender_rop' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "usdrender_rop"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'assignmaterial' authored entry is also present in the live probe",
+   "type_name": "assignmaterial"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'camera' authored entry is also present in the live probe",
+   "type_name": "camera"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'domelight' authored entry is also present in the live probe",
+   "type_name": "domelight"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'karmarenderproperties' authored entry is also present in the live probe",
+   "type_name": "karmarenderproperties"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'materiallibrary' authored entry is also present in the live probe",
+   "type_name": "materiallibrary"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'merge' authored entry is also present in the live probe",
+   "type_name": "merge"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'null' authored entry is also present in the live probe",
+   "type_name": "null"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'reference' authored entry is also present in the live probe",
+   "type_name": "reference"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'sopimport' authored entry is also present in the live probe",
+   "type_name": "sopimport"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'sublayer' authored entry is also present in the live probe",
+   "type_name": "sublayer"
+  }
+ ]
+}

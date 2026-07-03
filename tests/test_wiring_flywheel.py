@@ -363,3 +363,40 @@ class TestPlannerAdoption:
         assert "wire_by_label(solver, 'Geometry', asm)" in code
         assert "wire_by_label(solver, 'Constraint Geometry', props)" in code
         assert "solver.setInput(" not in code
+
+
+# ---------------------------------------------------------------------------
+# 5. Recipe adoption pin (P0b) — the fx RECIPE path is matched EARLIER in the
+#    cascade than the planner, so it must ALSO emit wire_by_label, not raw solver
+#    indices. Before this, the most-hit FX path bypassed U.1's ratified truth.
+# ---------------------------------------------------------------------------
+
+class TestRecipeAdoption:
+    def setup_method(self):
+        from synapse.routing.recipes import RecipeRegistry
+        self.registry = RecipeRegistry()
+
+    def _solver_code(self, query, params):
+        match = self.registry.match(query)
+        assert match is not None, f"no recipe matched {query!r}"
+        ep = [s for s in match[0].steps if s.action == "execute_python"][0]
+        return ep.instantiate(params).payload["code"]
+
+    def test_cloth_recipe_wires_by_label(self):
+        code = self._solver_code("set up a vellum cloth simulation",
+                                 {"parent": "/obj/test"})
+        assert "wire_by_label(solver, 'Vellum Geometry', cloth, source_output=0)" in code
+        assert "wire_by_label(solver, 'Constraint Geometry', cloth, source_output=1)" in code
+        assert "solver.setInput(" not in code
+
+    def test_destruction_recipe_wires_by_label(self):
+        code = self._solver_code("set up rbd destruction", {"parent": "/obj/test"})
+        assert "wire_by_label(solver, 'Geometry', asm)" in code
+        assert "wire_by_label(solver, 'Constraint Geometry', props)" in code
+        assert "solver.setInput(" not in code
+
+    def test_wire_recipe_wires_by_label(self):
+        code = self._solver_code("set up a wire simulation", {"parent": "/obj/test"})
+        assert "wire_by_label(solver, 'Vellum Geometry', hair, source_output=0)" in code
+        assert "wire_by_label(solver, 'Constraint Geometry', hair, source_output=1)" in code
+        assert "solver.setInput(" not in code

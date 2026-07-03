@@ -7,12 +7,11 @@
   "blake2b": "c213570959156138a7cda52936fcd2c1"
  },
  "summary": {
-  "total_sites": 147,
+  "total_sites": 141,
   "critical": 0,
   "by_kind": {
    "dynamic-index": 3,
-   "index-within-arity": 108,
-   "label-claim-verified": 3,
+   "index-within-arity": 105,
    "unresolved-receiver": 33
   }
  },
@@ -588,44 +587,6 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 84,
-   "call": "setInput",
-   "receiver": "solver",
-   "receiver_type": "vellumsolver",
-   "index": 0,
-   "index_expr": "0",
-   "claimed_labels": [
-    "Vellum Geometry"
-   ],
-   "severity": "INFO",
-   "kind": "label-claim-verified",
-   "detail": "comment label claim matches catalog label at index 0",
-   "candidate_keys": [
-    "Dop/vellumsolver",
-    "Sop/vellumsolver"
-   ]
-  },
-  {
-   "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 86,
-   "call": "setInput",
-   "receiver": "solver",
-   "receiver_type": "vellumsolver",
-   "index": 1,
-   "index_expr": "1",
-   "claimed_labels": [
-    "Constraint Geometry"
-   ],
-   "severity": "INFO",
-   "kind": "label-claim-verified",
-   "detail": "comment label claim matches catalog label at index 1",
-   "candidate_keys": [
-    "Dop/vellumsolver",
-    "Sop/vellumsolver"
-   ]
-  },
-  {
-   "file": "python/synapse/routing/recipes/fx_recipes.py",
    "line": 90,
    "call": "setInput",
    "receiver": "cache",
@@ -695,41 +656,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 144,
-   "call": "setInput",
-   "receiver": "solver",
-   "receiver_type": "rbdbulletsolver",
-   "index": 0,
-   "index_expr": "0",
-   "claimed_labels": [],
-   "severity": "INFO",
-   "kind": "index-within-arity",
-   "detail": "input index 0 within max_inputs for 'rbdbulletsolver'",
-   "candidate_keys": [
-    "Sop/rbdbulletsolver"
-   ]
-  },
-  {
-   "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 146,
-   "call": "setInput",
-   "receiver": "solver",
-   "receiver_type": "rbdbulletsolver",
-   "index": 1,
-   "index_expr": "1",
-   "claimed_labels": [
-    "Constraint Geometry"
-   ],
-   "severity": "INFO",
-   "kind": "label-claim-verified",
-   "detail": "comment label claim matches catalog label at index 1",
-   "candidate_keys": [
-    "Sop/rbdbulletsolver"
-   ]
-  },
-  {
-   "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 150,
+   "line": 151,
    "call": "setInput",
    "receiver": "cache",
    "receiver_type": "filecache",
@@ -749,7 +676,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 193,
+   "line": 194,
    "call": "setInput",
    "receiver": "evl",
    "receiver_type": "oceanevaluate",
@@ -766,7 +693,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 196,
+   "line": 197,
    "call": "setInput",
    "receiver": "out",
    "receiver_type": "null",
@@ -791,7 +718,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 243,
+   "line": 244,
    "call": "setInput",
    "receiver": "wrangle",
    "receiver_type": "attribwrangle",
@@ -808,7 +735,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 248,
+   "line": 249,
    "call": "setInput",
    "receiver": "rast",
    "receiver_type": "volumerasterizeattributes",
@@ -824,7 +751,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 254,
+   "line": 255,
    "call": "setInput",
    "receiver": "solver",
    "receiver_type": "pyrosolver",
@@ -842,7 +769,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 258,
+   "line": 259,
    "call": "setInput",
    "receiver": "cache",
    "receiver_type": "filecache",
@@ -862,41 +789,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 300,
-   "call": "setInput",
-   "receiver": "solver",
-   "receiver_type": "vellumsolver",
-   "index": 0,
-   "index_expr": "0",
-   "claimed_labels": [],
-   "severity": "INFO",
-   "kind": "index-within-arity",
-   "detail": "input index 0 within max_inputs for 'vellumsolver'",
-   "candidate_keys": [
-    "Dop/vellumsolver",
-    "Sop/vellumsolver"
-   ]
-  },
-  {
-   "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 301,
-   "call": "setInput",
-   "receiver": "solver",
-   "receiver_type": "vellumsolver",
-   "index": 1,
-   "index_expr": "1",
-   "claimed_labels": [],
-   "severity": "INFO",
-   "kind": "index-within-arity",
-   "detail": "input index 1 within max_inputs for 'vellumsolver'",
-   "candidate_keys": [
-    "Dop/vellumsolver",
-    "Sop/vellumsolver"
-   ]
-  },
-  {
-   "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 305,
+   "line": 308,
    "call": "setInput",
    "receiver": "cache",
    "receiver_type": "filecache",
@@ -916,7 +809,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 355,
+   "line": 358,
    "call": "setInput",
    "receiver": "merge",
    "receiver_type": "merge",
@@ -938,7 +831,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 358,
+   "line": 361,
    "call": "setInput",
    "receiver": "solver",
    "receiver_type": "rigidbodysolver",
@@ -954,7 +847,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 359,
+   "line": 362,
    "call": "setInput",
    "receiver": "solver",
    "receiver_type": "rigidbodysolver",
@@ -970,7 +863,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/fx_recipes.py",
-   "line": 363,
+   "line": 366,
    "call": "setInput",
    "receiver": "out",
    "receiver_type": "output",
