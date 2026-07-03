@@ -560,6 +560,64 @@ def check_validator_catches_miswire(ctx):
     return {"ok": rc == 0, "detail": (tail[-1] if tail else "no pytest output")[:400]}
 
 
+def check_lop_knowledge_fresh(ctx):
+    # U.5: the packaged LOP/Solaris knowledge catalog (the validator's CONTEXT authority)
+    # must be (a) schema lop_solaris_knowledge/v1 + blake2b recomputes over `content`, and
+    # (b) byte-identical to the harness artifact it claims to copy (a hand-edit fails loud).
+    # Corpus-authored (not a live probe), so there is no live-build stamp comparison — the
+    # per-build re-mine duty is enforced by the byte-identical + source_digest gate in the miner.
+    wt = Path(ctx["wt"])
+    pkg = wt / "python/synapse/cognitive/tools/data/lop_solaris_knowledge_21.json"
+    if not pkg.exists():
+        return {"ok": False, "detail": "packaged lop_solaris_knowledge_21.json missing"}
+    try:
+        import hashlib
+        data = json.loads(pkg.read_text(encoding="utf-8"))
+        if data.get("schema") != "lop_solaris_knowledge/v1":
+            return {"ok": False, "detail": f"schema={data.get('schema')} != lop_solaris_knowledge/v1"}
+        digest = hashlib.blake2b(
+            json.dumps(data.get("content", {}), sort_keys=True, ensure_ascii=False).encode("utf-8"),
+            digest_size=16).hexdigest()
+        if digest != data.get("blake2b"):
+            return {"ok": False, "detail": "packaged catalog blake2b mismatch (corrupt/hand-edited)"}
+        stamp = data.get("houdini_version", "")
+        harness_fp = wt / "harness" / "notes" / f"verified_lop_solaris_knowledge_{stamp}.json"
+        if not harness_fp.exists() or harness_fp.read_bytes() != pkg.read_bytes():
+            return {"ok": False, "detail": f"packaged copy != {harness_fp.name} (re-run "
+                                           "scripts/mine_lop_knowledge.py)"}
+    except Exception as e:
+        return {"ok": False, "detail": f"catalog unreadable: {str(e)[:300]}"}
+    return {"ok": True, "detail": f"LOP catalog sound + byte-matched (schema v1, stamp {stamp})"}
+
+def check_lop_review_clean(ctx):
+    # U.5: the REVIEW grounding sweep re-runs clean — scripts/flywheel_review_lop.py exits 0
+    # with zero CRITICAL (integrity / structural / probe-confirmed-drift / known-absent-
+    # contradiction). Runs WITHOUT --deposit: the Ledger deposit is the Stage-3 post-merge opt-in.
+    rc, out, err = sh([sys.executable, "scripts/flywheel_review_lop.py"],
+                      cwd=ctx["wt"], env=_wt_env(ctx))
+    p = Path(ctx["wt"]) / ".claude/flywheel_u5_findings.json"
+    if not p.exists():
+        return {"ok": False, "detail": (out or err).strip()[:400] or "review produced no findings file"}
+    try:
+        crit = json.loads(p.read_text(encoding="utf-8"))["summary"]["critical"]
+    except Exception as e:
+        return {"ok": False, "detail": f"findings unreadable: {str(e)[:200]}"}
+    head = (out or err).strip().splitlines()
+    return {"ok": rc == 0 and crit == 0,
+            "detail": f"rc={rc} critical={crit}; {head[0][:300] if head else ''}"}
+
+def check_validator_lop_conformance(ctx):
+    # U.5: the golden LOP behaviors are pinned in tests/test_lop_flywheel.py — grid/plane
+    # HARD-ERROR (incl. capitalized + EXISTING-skip); materiallibrary/reference/sublayer SATISFY;
+    # a missing material source ADVISES (never a hard reject); a malformed catalog degrades to skip.
+    # Runs the pinned assertions directly (stock python; pure + packaged-catalog-backed).
+    rc, out, err = sh([sys.executable, "-m", "pytest",
+                       "tests/test_lop_flywheel.py", "-q"],
+                      cwd=ctx["wt"], env=_wt_env(ctx))
+    tail = (out or err).strip().splitlines()
+    return {"ok": rc == 0, "detail": (tail[-1] if tail else "no pytest output")[:400]}
+
+
 def run_one(name, task, ctx):
     fn = DISPATCH.get(name)
     if not fn:
@@ -589,6 +647,10 @@ DISPATCH = {
     "connectivity_catalog_fresh": check_connectivity_catalog_fresh,
     "wiring_conformance": check_wiring_conformance,
     "validator_catches_miswire": check_validator_catches_miswire,
+    # U.5 — utility flywheel: LOP/Solaris knowledge (context truth)
+    "lop_knowledge_fresh": check_lop_knowledge_fresh,
+    "lop_review_clean": check_lop_review_clean,
+    "validator_lop_conformance": check_validator_lop_conformance,
 }
 
 def main():
