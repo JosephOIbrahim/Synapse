@@ -17,6 +17,9 @@ from .interfaces import IConnectivityOracle, IExistenceOracle
 # keeps this layer host-agnostic. Missing/corrupt degrades to None and P3e
 # simply skips (the oracle-backed checks are never weakened).
 from ..core.wiring import load_connectivity_catalog, resolve_catalog_entry
+# U.5: corpus-authored, probe-cross-checked LOP/Solaris knowledge (ordering rules
+# + known-absent types). Same non-strict-skip posture as the connectivity catalog.
+from ..core.lop_knowledge import load_lop_catalog
 
 # network_type (GraphProposal.network_type) -> the node categories valid inside it.
 # Used by P4 for the node_category<->network_type consistency check. Unknown
@@ -40,6 +43,7 @@ class GraphValidator:
         *,
         live_phases_enabled: bool = True,
         connectivity_catalog: "dict | None" = None,
+        lop_catalog: "dict | None" = None,
     ):
         self._exist = existence
         self._conn = connectivity
@@ -53,6 +57,9 @@ class GraphValidator:
         # Injectable for tests / a future per-build override.
         self._catalog = (connectivity_catalog if connectivity_catalog is not None
                          else load_connectivity_catalog(strict=False))
+        # U.5 LOP knowledge (non-strict: unusable -> None -> the LOP phase skips).
+        self._lop_catalog = (lop_catalog if lop_catalog is not None
+                             else load_lop_catalog(strict=False))
 
     def validate(self, p: GraphProposal) -> ValidationReport:
         errors: list[ValidationIssue] = []
@@ -67,6 +74,7 @@ class GraphValidator:
             errors += self._phase3_connections(p, advisories)
             errors += self._phase4_structural(p)
             errors += self._phase5_context(p)
+            errors += self._lop_ordering_check(p, advisories)
 
         status = ValidationStatus.VALID if not errors else ValidationStatus.INVALID
         return ValidationReport(
@@ -284,6 +292,110 @@ class GraphValidator:
                            f"label-mismatched slot"),
                 ))
         return issues
+
+    # ---- LOP known-absent (error) + ordering (advisory) (U.5) — ADDITIVE ----
+    def _lop_ordering_check(self, p: GraphProposal,
+                            advisories: list[ValidationIssue]) -> list[ValidationIssue]:
+        # Catalog-driven, Solaris-only. Two halves at DIFFERENT severities:
+        #   (a) known-absent LOP types (grid/plane) -> HARD ERROR. Those types do
+        #       not exist in any build (zero false-positive surface). NEW nodes only:
+        #       an EXISTING node's node_type is advisory per the ProposedNode contract
+        #       and a live node cannot be an absent type. Case-insensitive so a
+        #       capitalized spelling still gets the corpus remediation.
+        #   (b) ordering rules (assignmaterial expects a material source upstream)
+        #       -> ADVISORY. This is a common-pattern heuristic, not a provable
+        #       invariant: material prims also arrive via reference/sublayer
+        #       composition arcs (catalog `satisfied_by`) or a pre-composed live
+        #       stage, so a hard error would false-reject valid graphs.
+        # Returns errors; appends advisories in place. Never weakens the oracle phases.
+        cat = self._lop_catalog
+        if not isinstance(cat, dict) or p.network_type != "SOLARIS":
+            return []
+        # Shape-coerce every field: the checksum-gated load path can only yield a
+        # well-formed catalog or None, but the lop_catalog= injection seam is not
+        # gated, and the contract is "malformed -> skip, never raise".
+        content = cat.get("content")
+        if not isinstance(content, dict):
+            return []
+        absent = content.get("known_absent")
+        absent = absent if isinstance(absent, dict) else {}
+        raw_rules = content.get("ordering_rules")
+        rules = ([r for r in raw_rules
+                  if isinstance(r, dict) and r.get("relation") == "upstream"]
+                 if isinstance(raw_rules, list) else [])
+        if not absent and not rules:
+            return []
+        ver = cat.get("houdini_version")
+        errors: list[ValidationIssue] = []
+        by_id = {n.node_id: n for n in p.nodes}
+
+        # (a) known-absent LOP types (NEW nodes, case-insensitive) — corpus-flagged pitfall.
+        absent_lc = {k.lower(): v for k, v in absent.items()
+                     if isinstance(k, str) and isinstance(v, dict)}
+        for n in p.nodes:
+            if n.kind is not NodeKind.NEW or n.node_category != "Lop":
+                continue
+            hit = absent_lc.get((n.node_type or "").lower())
+            if hit is not None:
+                errors.append(ValidationIssue(
+                    where=n.node_id,
+                    message=self._stamp(
+                        p, f"'{n.node_type}' is not a real LOP node type — "
+                           f"{hit.get('remediation', 'unavailable')} "
+                           f"[LOP knowledge {ver}]"),
+                ))
+
+        # (b) upstream ordering rules -> ADVISORY. Fires only where the proposal
+        # fully authors the upstream chain (all-NEW) and NO satisfying material
+        # source is present (the required type OR any `satisfied_by` type). If the
+        # chain reaches an EXISTING or undeclared node — a boundary into the
+        # pre-composed live stage whose content the proposal does not model — we
+        # under-advise (stay silent) rather than emit a spurious advisory. That
+        # deliberately accepts a false-negative class (an unrelated existing node
+        # quiets the advisory) as a reviewed trade for signal quality; this is an
+        # advisory, never a block.
+        if rules:
+            back: dict[str, list[str]] = {}
+            for e in p.edges:
+                back.setdefault(e.target_node_id, []).append(e.source_node_id)
+
+            def upstream_ids(nid: str) -> set[str]:
+                seen: set[str] = set()
+                stack = list(back.get(nid, []))
+                while stack:
+                    cur = stack.pop()
+                    if cur in seen:
+                        continue
+                    seen.add(cur)
+                    stack.extend(back.get(cur, []))
+                return seen
+
+            for rule in rules:
+                on_t = rule.get("on_type")
+                sb = rule.get("satisfied_by")
+                satisfying = {rule.get("requires_type"),
+                              *(sb if isinstance(sb, list) else [])}
+                satisfying.discard(None)
+                for n in p.nodes:
+                    if n.node_category != "Lop" or n.node_type != on_t:
+                        continue
+                    up = upstream_ids(n.node_id)
+                    # Boundary into the pre-composed stage -> under-advise.
+                    if any(by_id.get(u) is None or by_id[u].kind is NodeKind.EXISTING
+                           for u in up):
+                        continue
+                    up_types = {by_id[u].node_type for u in up
+                                if by_id.get(u) is not None and by_id[u].node_type}
+                    if not (up_types & satisfying):
+                        advisories.append(ValidationIssue(
+                            where=n.node_id,
+                            message=self._stamp(
+                                p, f"'{on_t}' node '{n.friendly_name or n.node_id}' has no "
+                                   f"material source upstream (expected one of "
+                                   f"{sorted(satisfying)}) — {rule.get('detail', '')} "
+                                   f"[LOP knowledge {ver}]"),
+                        ))
+        return errors
 
     # ---- Phase 4 — structural, pure logic (MILE 2) ----
     def _phase4_structural(self, p: GraphProposal) -> list[ValidationIssue]:

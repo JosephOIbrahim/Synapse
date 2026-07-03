@@ -1,0 +1,293 @@
+{
+  "blake2b": "685ced35bb371bcc9973215345d126a8",
+  "content": {
+    "authored": {
+      "_provenance": "authored (LLM-extracted from documentation/solaris_reference/{solaris_nodes,scene_assembly}.md on H21.0.671); carried verbatim, NOT re-derived by the miner; re-author on source_digest mismatch"
+    },
+    "composition": {
+      "reference": {
+        "key_parms": [
+          "filepath1",
+          "primpath",
+          "reftype"
+        ],
+        "strength": "stronger-overridable",
+        "use": "import assets under a prim path; per-instance overrides"
+      },
+      "sublayer": {
+        "key_parms": [
+          "filepath1",
+          "position"
+        ],
+        "strength": "strongest-direct-edit",
+        "use": "merge a full layer (environments, lighting rigs, base layers)"
+      }
+    },
+    "entries": {
+      "assignmaterial": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "primpattern1",
+          "matspecpath1"
+        ],
+        "role": "material",
+        "type_name": "assignmaterial",
+        "usd_type": null
+      },
+      "camera": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "focalLength",
+          "fStop",
+          "tx",
+          "ty",
+          "tz",
+          "rx",
+          "ry",
+          "rz"
+        ],
+        "role": "camera",
+        "type_name": "camera",
+        "usd_type": "Camera"
+      },
+      "cube": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "tx",
+          "ty",
+          "tz"
+        ],
+        "role": "geometry",
+        "type_name": "cube",
+        "usd_type": "Cube"
+      },
+      "cylinderlight": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [],
+        "role": "light",
+        "type_name": "cylinderlight",
+        "usd_type": "CylinderLight"
+      },
+      "disklight": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [],
+        "role": "light",
+        "type_name": "disklight",
+        "usd_type": "DiskLight"
+      },
+      "distantlight": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [],
+        "role": "light",
+        "type_name": "distantlight",
+        "usd_type": "DistantLight"
+      },
+      "domelight": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [],
+        "role": "light",
+        "type_name": "domelight",
+        "usd_type": "DomeLight"
+      },
+      "edit": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "primpattern",
+          "tx",
+          "ty",
+          "tz",
+          "rx",
+          "ry",
+          "rz",
+          "sx",
+          "sy",
+          "sz"
+        ],
+        "role": "scene",
+        "type_name": "edit",
+        "usd_type": null
+      },
+      "karmarenderproperties": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "engine"
+        ],
+        "role": "render",
+        "type_name": "karmarenderproperties",
+        "usd_type": null
+      },
+      "materiallibrary": {
+        "category": "Lop",
+        "gotchas": [
+          "After creating materiallibrary, call matlib.cook(force=True) before creating child shader nodes, else createNode() returns None."
+        ],
+        "key_parms": [],
+        "role": "material",
+        "type_name": "materiallibrary",
+        "usd_type": null
+      },
+      "merge": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [],
+        "role": "scene",
+        "type_name": "merge",
+        "usd_type": null
+      },
+      "mtlxstandard_surface": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "base_colorr",
+          "base_colorg",
+          "base_colorb",
+          "metalness",
+          "specular_roughness"
+        ],
+        "role": "material",
+        "type_name": "mtlxstandard_surface",
+        "usd_type": null
+      },
+      "null": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [],
+        "role": "geometry",
+        "type_name": "null",
+        "usd_type": null
+      },
+      "rectlight": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [],
+        "role": "light",
+        "type_name": "rectlight",
+        "usd_type": "RectLight"
+      },
+      "reference": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "filepath1",
+          "primpath",
+          "reftype"
+        ],
+        "role": "scene",
+        "type_name": "reference",
+        "usd_type": null
+      },
+      "sopimport": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "soppath"
+        ],
+        "role": "geometry",
+        "type_name": "sopimport",
+        "usd_type": null
+      },
+      "sphere": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "tx",
+          "ty",
+          "tz"
+        ],
+        "role": "geometry",
+        "type_name": "sphere",
+        "usd_type": "Sphere"
+      },
+      "spherelight": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [],
+        "role": "light",
+        "type_name": "spherelight",
+        "usd_type": "SphereLight"
+      },
+      "sublayer": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "filepath1",
+          "position"
+        ],
+        "role": "scene",
+        "type_name": "sublayer",
+        "usd_type": null
+      },
+      "usdrender_rop": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "loppath",
+          "outputimage"
+        ],
+        "role": "render",
+        "type_name": "usdrender_rop",
+        "usd_type": null
+      }
+    },
+    "known_absent": {
+      "grid": {
+        "remediation": "there is NO grid LOP — use a cube with sy=0.01 for a ground plane"
+      },
+      "plane": {
+        "remediation": "there is NO plane LOP — use a cube with sy=0.01 for a ground plane"
+      }
+    },
+    "ordering_rules": [
+      {
+        "detail": "assignmaterial binds material prims that must be authored upstream — usually by a materiallibrary (cook it, matlib.cook(force=True), before its shaders resolve), or brought in by a reference/sublayer composition arc; materials may also already exist in a pre-composed stage.",
+        "id": "assignmaterial_requires_material_source",
+        "on_type": "assignmaterial",
+        "relation": "upstream",
+        "requires_type": "materiallibrary",
+        "satisfied_by": [
+          "reference",
+          "sublayer"
+        ]
+      }
+    ],
+    "recipes": [
+      {
+        "name": "solaris_render_scene",
+        "note": "geo -> matlib (+child shader, cooked) -> assignmaterial -> camera -> light -> karmarenderproperties -> OUTPUT null",
+        "sequence": [
+          "sphere",
+          "materiallibrary",
+          "assignmaterial",
+          "camera",
+          "domelight",
+          "karmarenderproperties",
+          "null"
+        ]
+      }
+    ]
+  },
+  "houdini_version": "21.0.671",
+  "probe_confirmed_types": [
+    "assignmaterial",
+    "camera",
+    "domelight",
+    "karmarenderproperties",
+    "materiallibrary",
+    "merge",
+    "null",
+    "reference",
+    "sopimport",
+    "sublayer"
+  ],
+  "schema": "lop_solaris_knowledge/v1",
+  "source_digest": "319604501a474ecade1e605def69a7b7"
+}
