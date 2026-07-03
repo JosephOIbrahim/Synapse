@@ -448,7 +448,7 @@ def check_phantom_clean(ctx):
         note = f" (+{len(unparseable)} unparseable, skipped)" if unparseable else ""
         return {"ok": False, "detail": (f"phantom hou.* introduced (absent in the {ver} symbol "
                 f"table): {', '.join(sorted(set(offenders))[:12])}{note}")[:500]}
-    clean = f"{len(touched)} changed .py clean of table-proven phantom hou.* APIs (vs {len(table_syms)} live symbols @ {ver})"
+    clean = f"{len(added)} changed .py clean of table-proven phantom hou.* APIs (vs {len(table_syms)} live symbols @ {ver})"
     if unparseable:
         clean += f" ({len(unparseable)} unparseable, skipped)"
     return {"ok": True, "detail": clean[:500]}

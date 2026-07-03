@@ -6,6 +6,18 @@
 > graphical Houdini. It rides your existing constitutional dispatch (ARCHITECT →
 > FORGE → CRUCIBLE); it does **not** add a second harness next to `autonomy/`.
 
+> **⚠ SUPERSEDED for headless auth + permissions (2026-07-03).** The bare `claude -p …`
+> invocation in *"The loop"* below (no `--settings`) predates the current harness. The
+> authoritative headless launch is now `harness/run.ts` → `runAgent()`, which passes
+> `--settings harness/agent-settings.json` — that blanks `ANTHROPIC_API_KEY` so spawned
+> agents auth on the Max-plan login (not the credit-starved key), and carries the full
+> allow/deny list: `git push` / `git merge` / `Edit(VERSION)` denies **plus** the
+> self-governance fence (`agent-settings.json` / `run.ts` / `daily.ts` / `harness/state/**`,
+> which includes the human-only `ratified` flywheel authority). Running the commands below
+> verbatim would spawn agents on the credit-starved key **and** without the promotion-safety
+> denies. Drive the loop with `bun run harness/run.ts` (or the daily driver `harness/daily.ts`)
+> — see `harness/README.md`.
+
 ---
 
 ## The relay, as harness rounds

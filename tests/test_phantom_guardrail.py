@@ -67,3 +67,27 @@ def test_gui_submodules_allowlisted():
     assert checks._hou_phantoms_in_source("import hou\nhou.ui.displayMessage('x')\nx = hou.qt.mainWindow()\n", tbl) == []
     # a genuine phantom still trips even with the allowlist in place
     assert ("hou.lopNetworks" in [s for _, s in checks._hou_phantoms_in_source("hou.lopNetworks()\n", tbl)])
+
+
+def test_check_phantom_clean_clean_path_returns_ok(monkeypatch, tmp_path):
+    # Regression for the checks.py:451 NameError (`len(touched)` where the bound var
+    # is `added`). check_phantom_clean runs as a guardrail on EVERY sprint; on the
+    # clean path (added .py, zero phantom offenders) the summary line referenced an
+    # unbound name and crashed the whole checks.py JSON emit — the happy path the
+    # helper-level tests above never exercised, which is why the bug shipped. Stub the
+    # three externals and prove the guardrail now returns ok:True instead of raising.
+    import synapse.cognitive.tools.scout as scout
+    monkeypatch.setattr(
+        scout, "_load_symbol_table",
+        lambda: ({"hou", "hou.node"}, {"houdini_version": "21.0.671"}),
+    )
+    monkeypatch.setattr(checks, "sh", lambda *a, **k: (0, "deadbeef\n", ""))
+    # a real-looking added .py that isn't on disk → the AST loop skips it, so offenders
+    # stays empty and execution reaches the (previously broken) clean-summary line.
+    monkeypatch.setattr(
+        checks, "_sprint_added_py",
+        lambda wt, base: {"python/synapse/_nope.py": None},
+    )
+    result = checks.check_phantom_clean({"wt": str(tmp_path)})
+    assert result["ok"] is True
+    assert "clean" in result["detail"]
