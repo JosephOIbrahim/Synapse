@@ -189,6 +189,46 @@ class _InputResizeGrip(QtWidgets.QWidget):
         p.end()
 
 
+def _image_icon(px=18, color=None):
+    """A small photo/image glyph (frame · sun · mountain) for the attach button.
+
+    A *drawn* icon, not an emoji: the bundled Space Mono has no pictographs, so
+    a paperclip/📷 codepoint renders as a tofu box (unreadable). This matches the
+    panel's QPainter drawing idiom and reads as 'add an image' at 18px."""
+    color = color or t.TEXT_SECONDARY
+    dpr = 2                                        # supersample → crisp when small
+    pm = QtGui.QPixmap(px * dpr, px * dpr)
+    pm.setDevicePixelRatio(dpr)
+    pm.fill(QtGui.QColor(0, 0, 0, 0))              # transparent
+    p = QtGui.QPainter(pm)
+    p.setRenderHint(QtGui.QPainter.Antialiasing)
+    col = QtGui.QColor(color)
+    m = 1.6
+    frame = QtCore.QRectF(m, m, px - 2 * m, px - 2 * m)
+    pen = QtGui.QPen(col, 1.4)
+    pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+    p.setPen(pen)
+    p.setBrush(QtGui.QColor(0, 0, 0, 0))
+    p.drawRoundedRect(frame, 2.4, 2.4)             # picture frame
+    clip = QtGui.QPainterPath()                    # keep sun + mountain inside it
+    clip.addRoundedRect(frame, 2.4, 2.4)
+    p.setClipPath(clip)
+    p.setPen(Qt.PenStyle.NoPen)
+    p.setBrush(col)
+    sr = px * 0.11                                 # sun
+    p.drawEllipse(QtCore.QPointF(frame.left() + frame.width() * 0.33,
+                                 frame.top() + frame.height() * 0.30), sr, sr)
+    base = frame.bottom()                          # mountain rising from the base
+    p.drawPolygon(QtGui.QPolygonF([
+        QtCore.QPointF(frame.left(), base),
+        QtCore.QPointF(frame.left() + frame.width() * 0.40, frame.center().y()),
+        QtCore.QPointF(frame.left() + frame.width() * 0.60, frame.top() + frame.height() * 0.66),
+        QtCore.QPointF(frame.right(), base),
+    ]))
+    p.end()
+    return QtGui.QIcon(pm)
+
+
 class SynapsePanel(QtWidgets.QWidget):
     """The redesigned SYNAPSE panel."""
 
@@ -1284,7 +1324,11 @@ class SynapsePanel(QtWidgets.QWidget):
         col.addWidget(_InputResizeGrip(self._input))   # drag handle at the top
         row = QtWidgets.QHBoxLayout()
         row.setSpacing(t.SPACE_SM)
-        attach = c.Button("\U0001F4CE", variant="ghost")  # paperclip
+        # Image-attach: a drawn image glyph, NOT an emoji (the bundled mono font
+        # has no pictographs → a paperclip codepoint renders as an unreadable tofu box).
+        attach = c.Button("", variant="ghost")
+        attach.setIcon(_image_icon())
+        attach.setIconSize(QtCore.QSize(18, 18))
         attach.setFixedWidth(32)
         attach.setToolTip("Attach image / file as context")
         attach.clicked.connect(self._on_attach)
