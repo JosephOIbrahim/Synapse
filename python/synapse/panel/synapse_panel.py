@@ -373,9 +373,9 @@ class SynapsePanel(QtWidgets.QWidget):
         # rail's bottom rule is the #DsHeader HAIR border (no divider widget).
         root.addWidget(self._build_rail())          # mark · brand · author · Stop
         root.addWidget(self._build_context_ribbon())
-        root.addWidget(self._build_mode_bar())      # DIRECT · WORK underline tabs
+        root.addWidget(self._build_mode_bar())      # the CHAT surface label (v9.1)
         root.addWidget(self._build_faces(), 1)      # dominant — the stacked faces
-        self._set_face("direct")                    # idle resting face
+        self._set_face("direct")                    # rest on the CHAT surface
 
     def _build_rail(self):
         """The persistent rail (Pentagram pass, Mile 1).

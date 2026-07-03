@@ -11,7 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4024%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4025%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.20.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
@@ -58,13 +58,15 @@ A docked **SYNAPSE panel** inside Houdini. You type what you want — *"make a b
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
-    ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>rail · Direct + Work · author token"]:::panel
+    ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>rail · CHAT · author token"]:::panel
     PANEL -->|"Claude · Gemini · Nemotron · Ollama · Custom"| LOOP["Agent loop<br/>chosen engine + 115 tools"]:::panel
     LOOP -->|"tool_use"| EXEC["Tool executor<br/>(main thread)"]:::panel
     EXEC --> BR["Handler<br/>undo-wrapped · integrity"]:::bridge
     BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
     BR -.provenance.-> LEDGER["Provenance ledger<br/>audit fsync off hot path"]:::side
     BR -.timing.-> METRICS["Latency metrics<br/>histograms → Prometheus"]:::side
+    BR -.needs approval.-> GATE["Consent gate<br/>auto-surfaces in CHAT · accept / revert"]:::bridge
+    GATE -.hands back.-> ART
     classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
     classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
     classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
@@ -72,7 +74,7 @@ flowchart LR
     classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
 ```
 
-**The panel, briefly (v9):** a persistent rail (live state + a real **Stop**), two faces under a same-pane law (**Direct** chat · **Work** glance), the **author token** — engine + model in one rail control — an **`Aa`** control that scales only what you *read*, a bundled **Space Grotesk / Space Mono** type system, a token-only meter, and a **`/`** command palette over every tool.
+**The panel, briefly (v9.1):** a persistent rail (live state + a real **Stop**), one **CHAT** surface where the build review + **consent gate auto-surface** when a build needs approval — consent comes to you, then hands back on accept/revert — the **author token** (engine + model in one rail control), an **`Aa`** control that scales only what you *read*, a bundled **Space Grotesk / Space Mono** type system, a token-only meter, and a **`/`** command palette over every tool.
 
 ---
 
@@ -130,7 +132,7 @@ flowchart LR
 
 - 🔌 **Five engines** — **Claude · Gemini · NVIDIA Nemotron · Ollama (local, GLM) · Custom** (bring your own OpenAI-compatible endpoint — base URL, model, key).
 - 👤 **The author token** — engine + model live in one rail control; click it, pick, done. **Picks persist across sessions.**
-- 🪟 **Two faces, one pane** — **Direct** (chat) · **Work** (glance). Faces swap in place; the panel never spawns another pane.
+- 🪟 **One surface — consent comes to you (v9.1)** — a single **CHAT** pane; when a build needs approval the **review + consent gate auto-surface**, then hand back to chat on accept/revert. Quiet state never yanks the view — consent is unmissable, not hidden behind a tab.
 - 🔤 **Bundled type** — **Space Grotesk / Space Mono** ship with the panel and load with it; a missing family is flagged, never silently substituted.
 - 🔢 **Token-only meter** — real provider-reported token counts (`812 · 18.0k · 1.2M`). Never estimated, never dollars.
 
@@ -274,7 +276,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 **Shipping (v5.20.0):**
 
-- 🎛️ **Artist panel v9** — five engines, undo-safe, 115 tools, live observability + latency instrumentation.
+- 🎛️ **Artist panel v9.1** — five engines, undo-safe, 115 tools, a single **CHAT** surface where the review + consent gate auto-surface, live observability + latency instrumentation (WCAG/usability **G3-audited**).
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
 - 🔁 **Utility flywheel** — two cycles shipped (wiring truth + Solaris context truth), self-improving on a ratified loop.
 - 🚀 **H22 drop-day machine** — API-delta probe + dual-build test axis, proven empty against H21.
@@ -318,7 +320,7 @@ python/synapse/
 ├── memory/                     # Moneta-backed memory substrate
 ├── panel/                      # artist-facing copilot panel (Qt / PySide6)
 │   ├── providers/              # five engines — anthropic / gemini / nemotron / ollama / custom (raw http.client, no SDK)
-│   ├── synapse_panel.py        # the docked panel — rail + author token, Direct/Work faces, "/" palette, Connect, honest Stop
+│   ├── synapse_panel.py        # the docked panel — rail + author token, single CHAT surface (consent auto-surfaces), "/" palette, Connect, honest Stop
 │   ├── claude_worker.py        # background QThread — streams the engine + tool loop
 │   ├── tool_executor.py        # main-thread tool dispatch (per-tool timeouts)
 │   └── designsystem/           # vendored tokens / qss / components + bundled Space Grotesk/Mono
@@ -331,7 +333,7 @@ python/synapse/
 
 host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols)
 scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_{wiring,lop}.py · mine_lop_knowledge.py
-tests/                          # 4,024 local (~70 Moneta-gated, skip on a clean clone)
+tests/                          # 4,025 local (~70 Moneta-gated, skip on a clean clone)
 harness/                        # H22 readiness — self-verifying loop + flywheel queue
 docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
