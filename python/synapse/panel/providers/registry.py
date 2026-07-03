@@ -125,11 +125,28 @@ def default_model(provider_id: str) -> str:
     return PROVIDER_DEFAULT_MODEL.get(pid, ANTHROPIC_MODEL)
 
 
+def _pretty_ollama(model_id: str) -> str:
+    """A clean family label for a live Ollama tag the static registry doesn't
+    carry: drop the ``:tag`` and any ``ns/`` prefix, spell out separators, and
+    upper the short family word ('glm-5.2:cloud' -> 'GLM 5.2'). Never the raw id —
+    the header author token must stay short + colon-free (G3)."""
+    base = (model_id.split(":", 1)[0].split("/")[-1]
+            .replace("-", " ").replace("_", " ").strip())
+    words = [(w.upper() if w.isalpha() and len(w) <= 3 else (w[:1].upper() + w[1:]))
+             for w in base.split()]
+    return " ".join(words) or model_id
+
+
 def model_label(provider_id: str, model_id: str) -> str:
-    """Display label for a model id under a provider (falls back to the id)."""
+    """Display label for a model id under a provider. A registry row wins; an
+    unknown *Ollama* tag is prettified (never the raw ':tag' id — Ollama tags
+    advance faster than the static fallback rows); any other unknown id falls
+    back to itself."""
     for mid, lbl in models_for(provider_id):
         if mid == model_id:
             return lbl
+    if (provider_id or "").lower() == "ollama" and model_id:
+        return _pretty_ollama(model_id)
     return model_id or ""
 
 

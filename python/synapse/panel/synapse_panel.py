@@ -1006,14 +1006,16 @@ class SynapsePanel(QtWidgets.QWidget):
         if not m:
             return ""
         # Prefer the registry's curated short label — it handles Haiku's dated id
-        # (claude-haiku-4-5-20251001 → 'Haiku 4.5', not 'haiku-4.5.20251001') and
-        # the long slash-bearing NVIDIA ids cleanly. Fall back to the claude-
-        # string surgery only for an unknown (non-registry) model id.
+        # (claude-haiku-4-5-20251001 → 'Haiku 4.5'), the long slash-bearing NVIDIA
+        # ids, AND an unknown Ollama live tag (glm-5.2:cloud → 'GLM 5.2', never the
+        # raw ':tag'). model_label returns the id verbatim only for an unknown
+        # non-Ollama id → then fall back to the claude- string surgery below.
         try:
-            from synapse.panel.providers.registry import model_label, models_for
+            from synapse.panel.providers.registry import model_label
             pid = getattr(self, "_provider_id", "claude")
-            if m in {mid for mid, _ in models_for(pid)}:
-                return model_label(pid, m)
+            lbl = model_label(pid, m)
+            if lbl and lbl != m:
+                return lbl
         except Exception:
             pass
         if m.startswith("claude-"):

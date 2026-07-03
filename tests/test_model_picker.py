@@ -39,6 +39,16 @@ def test_model_label_short_and_safe():
     assert reg.model_label("claude", "claude-unknown-9") == "claude-unknown-9"
 
 
+def test_model_label_ollama_unknown_tag_prettified():
+    # A live Ollama tag the static registry doesn't carry must NOT surface its raw
+    # ':tag' id — the header author token stays short + colon-free (G3 audit).
+    assert reg.model_label("ollama", "glm-5:cloud") == "GLM 5"        # registry hit
+    assert reg.model_label("ollama", "glm-5.2:cloud") == "GLM 5.2"    # unknown live tag → prettified
+    for mid in ("glm-5.2:cloud", "llama3.1:8b", "hf.co/user/qwen3-coder:latest"):
+        lbl = reg.model_label("ollama", mid)
+        assert ":" not in lbl and "/" not in lbl and 0 < len(lbl) < 30, (mid, lbl)
+
+
 def test_build_provider_honours_model_override():
     p = reg.build_provider("claude", model="claude-opus-4-8")
     assert p.id == "claude" and p.model_identity == "claude-opus-4-8"
