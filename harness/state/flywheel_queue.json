@@ -64,8 +64,8 @@
         "python/synapse/cognitive/graph_validator.py",
         "tests/test_lop_flywheel.py"
       ],
-      "ratified": false,
-      "note": "NEW cycle CLASS — CONTEXT truth (per-LOP role/usd_type/parms, ordering, known-absent), a different axis from U.1-U.4 WIRING truth. Built + shipped to feat/h22-knowledge-flywheel AHEAD of ratification; per the anti-runaway anchor a HUMAN flips ratified:true to sanction (or rejects). Substantive design call: assignmaterial->material-source ordering is an ADVISORY, not a hard error (reference/sublayer composition arcs author materials too); grid/plane stay hard errors. Ledger deposit via scripts/flywheel_review_lop.py --deposit (run under hython post-merge, like U.1)."
+      "ratified": true,
+      "note": "RATIFIED 2026-07-03 (human sanction) — U.5 accepted as a context-truth cycle class. NEW cycle CLASS — CONTEXT truth (per-LOP role/usd_type/parms, ordering, known-absent), a different axis from U.1-U.4 WIRING truth. Shipped to feat/h22-knowledge-flywheel; the anti-runaway anchor's human sign-off is now granted. Substantive design call: assignmaterial->material-source ordering is an ADVISORY, not a hard error (reference/sublayer composition arcs author materials too); grid/plane stay hard errors. Ledger deposit via scripts/flywheel_review_lop.py --deposit (run under hython post-merge, like U.1)."
     }
   ]
 }

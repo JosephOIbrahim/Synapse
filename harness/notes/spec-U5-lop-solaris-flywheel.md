@@ -46,11 +46,11 @@ Same three phases as every utility cycle, adapted to a prose truth source; each 
 | `harness/verify/checks.py` U.5 verbs (`--task U.5` VERDICT=PASS) | ✅ shipped |
 | Ledger deposit **mechanism** (`flywheel_review_lop.py --deposit`) | ✅ shipped |
 | Ledger deposit **execution** (run under hython post-merge, like U.1) | ⚠ post-merge step |
-| Human ratification (`ratified: true`) | ⚠ OWED — human-only |
+| Human ratification (`ratified: true`) | ✅ ratified 2026-07-03 (human sanction) |
 
 ## Anti-runaway anchors
 
-- **Human ratifies new cycle CLASSES.** U.5 introduced a new truth axis (CONTEXT truth, distinct from U.1–U.4's WIRING truth). Per the standing anchor, a new class needs human ratification **before** building; U.5 was built ahead of that record. The evidence-linked queue entry now exists (`flywheel_queue.json` U.5, `status: building`, `ratified: false`) plus a `tasks.json` U.5 task carrying a `human_gate` — but the `ratified: true` flip stays **human-only** and is still owed. Until it flips, U.5 is a proposal on the record, not a sanctioned cycle.
+- **Human ratifies new cycle CLASSES.** U.5 introduced a new truth axis (CONTEXT truth, distinct from U.1–U.4's WIRING truth). Per the standing anchor, a new class needs human ratification **before** building; U.5 was built ahead of that record. The evidence-linked queue entry exists (`flywheel_queue.json` U.5, `status: building`) plus a `tasks.json` U.5 task carrying a `human_gate`. The `ratified: true` flip is **human-only** — granted 2026-07-03, so U.5 is now a **sanctioned** cycle (queue `ratified: true`), not merely a proposal.
 - **Probe truth > authored prose.** The consistency gate flags any authored type the live connectivity catalog affirmatively lacks; the miner refuses to emit an ungrounded claim.
 - **Re-author, never silent re-extract.** A `source_digest` mismatch (corpus changed) arms a human+LLM re-authoring pass, not an automatic re-extract.
 - **Per-build re-probe duty.** Re-run `python scripts/mine_lop_knowledge.py` per Houdini build (needs the `G:/` RAG corpus); the packaged copy must stay byte-identical to the harness artifact (test-pinned).

@@ -159,7 +159,7 @@
         "tests/test_lop_flywheel.py"
       ],
       "verify": ["lop_knowledge_fresh", "lop_review_clean", "validator_lop_conformance"],
-      "human_gate": { "decision": "ratify U.5 in flywheel_queue.json — a NEW cycle CLASS (context truth, not wiring) built ahead of its human sign-off; flip 'ratified' to true to sanction, or reject" },
+      "human_gate": { "decision": "RATIFIED 2026-07-03 (human sanction) — U.5 accepted as a context-truth cycle class; flywheel_queue.json U.5 now ratified:true" },
       "note": "Cycle contract in spec-U5-lop-solaris-flywheel.md. Substantive design call: assignmaterial->material-source ordering is an ADVISORY, not a hard error (reference/sublayer composition arcs author materials too); grid/plane stay hard errors. Anti-runaway: human ratifies the new class (see human_gate)."
     }
   ]
