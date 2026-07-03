@@ -173,8 +173,11 @@ try:
           f"{len(under)} under {TARGET_FLOOR}px  " + tag(not under, warnable=True))
 
     texts = [b.text() for b in btns if b.text()]
-    faces = [f for f in ("DIRECT", "WORK") if f in texts]   # v9: pre-uppercased tabs
-    print(f"   tabs present        : {faces}  " + tag(len(faces) == 2))
+    # v9.1 (Option A): the DIRECT · WORK tabs are gone — one home surface, CHAT;
+    # consent auto-surfaces the Work face when actionable (invariant #2 below).
+    faces = [f for f in ("CHAT",) if f in texts]
+    print(f"   home label (CHAT)   : {faces} · WORK gone={'WORK' not in texts}  "
+          + tag(faces == ["CHAT"] and "WORK" not in texts))
     # v9: Review folded into Work's done sub-state. Assert its synthesis (the
     # consent gate) still lives in-tree, so the fold didn't silently drop the
     # gate — a stronger check than the old 3-tab name match.
@@ -435,13 +438,19 @@ else:
                 offenders.append(os.path.basename(f))
         print(f"   no pane spawn (scan) : {offenders or 'clean'}  " + tag(not offenders))
 
-        # 2 · no auto-switch — state events must NOT move the visible tab
-        idx0 = panel._faces.currentIndex()
+        # 2 · consent auto-surfaces; quiet state does NOT (v9.1 · Option A).
+        # A raised actionable gate brings Work forward (consent must be seen);
+        # busy + tool-status are quiet state and never move the visible face.
+        panel._set_face("direct")
+        idx_chat = panel._faces.currentIndex()
         panel._set_busy(True)
         panel._on_tool_status("houdini_render", "running", "")
+        quiet_ok = panel._faces.currentIndex() == idx_chat
         panel._on_gate_raised({"level": "approve"})
-        print(f"   no auto-switch       : idx {idx0}->{panel._faces.currentIndex()}  "
-              + tag(panel._faces.currentIndex() == idx0))
+        surfaced = panel._faces.currentIndex() == panel._FACE_INDEX["work"]
+        panel._set_face("direct")
+        print(f"   consent auto-surfaces: quiet={quiet_ok} gate->work={surfaced}  "
+              + tag(quiet_ok and surfaced))
 
         # 3 · mark-as-status — the rail mark tracks agent state
         panel._set_busy(False)

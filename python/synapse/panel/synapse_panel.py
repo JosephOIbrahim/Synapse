@@ -680,32 +680,32 @@ class SynapsePanel(QtWidgets.QWidget):
     _FACE_INDEX = {"direct": 0, "work": 1}
 
     def _build_mode_bar(self):
-        """The switcher: DIRECT · WORK. Underline tabs on a shared baseline
-        track (v9 call 1; #DsTabRow carries the 1px BORDER rule). A pill click
-        is the *only* thing that moves the visible tab — agent state never does
-        (the same-pane law). Text is pre-uppercased (QSS has no text-transform);
-        `_face_pills` keys stay "direct"/"work" — the same-pane invariants key
-        on those, not on the label text."""
+        """The home surface's label. v9.1 (Option A): the DIRECT · WORK tabs are
+        gone — there is one surface, **CHAT**, and consent/review AUTO-SURFACES
+        when it's actionable (a raised gate brings the Work face forward, then
+        accept/revert hands back). Clicking CHAT is the manual way back to the
+        conversation. `#DsTabRow` still carries the 1px BORDER rule; the internal
+        face keys stay "direct"/"work" — the invariants key on those, not the label."""
         w = self._section()
         w.setObjectName("DsTabRow")
         lay = QtWidgets.QHBoxLayout(w)
         lay.setContentsMargins(26, 20, 26, 0)
         lay.setSpacing(28)
         self._face_pills = {}
-        for face, text in (("direct", "DIRECT"), ("work", "WORK")):
-            pill = c.Pill(text)
-            pill.setFont(fontload.tracked_font(
-                "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
-            pill.clicked.connect(lambda _=False, f=face: self._set_face(f))
-            lay.addWidget(pill)
-            self._face_pills[face] = pill
+        pill = c.Pill("CHAT")
+        pill.setFont(fontload.tracked_font(
+            "LABEL", t.SIZE_SMALL, scale=self._chrome_scale, mono=True))
+        pill.clicked.connect(lambda _=False: self._set_face("direct"))
+        self._face_pills["direct"] = pill      # the idle default marks it active
+        lay.addWidget(pill)
         lay.addStretch(1)
         return w
 
     def _build_faces(self):
-        """The two tabs in one stack. Direct is the artist's surface; Work is the
-        working glance AND the payoff (its done sub-state folds in the old
-        Review). The controller never auto-switches between them."""
+        """The two faces in one stack. Direct (CHAT) is the artist's surface; Work
+        is the working glance AND the payoff (its done sub-state folds in the old
+        Review). Only an actionable consent gate auto-surfaces Work (v9.1 · Option
+        A); quiet agent state never does."""
         self._faces = QtWidgets.QStackedWidget()
         self._faces.addWidget(self._build_direct_face())   # 0 · idle / converse
         self._faces.addWidget(self._build_work_face())     # 1 · glance → done payoff
@@ -1136,6 +1136,7 @@ class SynapsePanel(QtWidgets.QWidget):
             self._chat.append_system_message("Accepted — keeping the result.")
         except Exception:
             pass
+        self._set_face("direct")            # v9.1 · hand back to the conversation
 
     def _on_revert(self):
         # Reversibility: route an undo through the proven agent/bridge path
@@ -1145,6 +1146,7 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
         self._send("Undo the last change using houdini_undo, then confirm what was reverted.")
+        self._set_face("direct")            # v9.1 · hand back to the conversation
 
     def _on_commit(self):
         # Commit is a consent moment — it routes through the gate; the panel
@@ -1223,10 +1225,11 @@ class SynapsePanel(QtWidgets.QWidget):
 
     # ------------------------------------------------------- tab controller
     def _set_face(self, face, manual=True):
-        """Bring a tab forward. The *only* caller is a user pill click (and the
-        explicit idle default); agent state never calls this — it drives the
-        Work sub-state + the rail mark instead (the same-pane law). ``manual``
-        is accepted for call-site compatibility and otherwise unused."""
+        """Bring a face forward. Callers: a user click on the CHAT label, the idle
+        default, and the consent AUTO-SURFACE (a raised gate → Work, then
+        accept/revert → back; v9.1). Quiet agent state (busy / tool status) never
+        calls this — it drives the Work sub-state + rail mark. ``manual`` is
+        accepted for call-site compatibility and otherwise unused."""
         if not hasattr(self, "_faces") or face not in self._FACE_INDEX:
             return
         self._faces.setCurrentIndex(self._FACE_INDEX[face])
@@ -1389,10 +1392,11 @@ class SynapsePanel(QtWidgets.QWidget):
                 pass
 
     def _on_gate_raised(self, proposal):
-        """A gate proposal arrived → surface it in Work's done sub-state and let
-        the rail mark signal a ready result (skip noisy INFORM). Same-pane law:
-        we never auto-switch the visible tab — the artist moves to Work when they
-        choose; the mark is the call to attention."""
+        """An actionable gate proposal arrived → AUTO-SURFACE Work's done sub-state
+        (v9.1 · Option A: consent comes to the artist). Noisy INFORM is skipped.
+        This is the one revision to the same-pane law: consent surfaces itself;
+        quiet state (busy / tool status / a plain answer) still never moves the
+        view. Accept/revert hand back to chat; commit stays forward."""
         if isinstance(proposal, dict):
             level = proposal.get("level", "")
         else:
@@ -1401,6 +1405,7 @@ class SynapsePanel(QtWidgets.QWidget):
             self._populate_review()
             self._set_work_substate("done")
             self._set_header("done", "Result ready")
+            self._set_face("work")          # consent auto-surfaces (Option A)
 
     def _show_overflow(self):
         menu = QtWidgets.QMenu(self)
@@ -1703,11 +1708,11 @@ class SynapsePanel(QtWidgets.QWidget):
         self._observe.setStyleSheet(
             "background:%s; border-radius:2px;" % (t.WARM if busy else t.SIGNAL_TINT)
         )
-        # state→Work-sub-state edges (NO tab switch — the same-pane law). A new
-        # work cycle shows the cook sub-state; finishing fills + shows the done
-        # payoff. Because the tab never auto-switches, the RAIL MARK is the only
-        # ready-result signal — so the falling edge lifts it to 'done'; the
-        # artist moves to the Work tab when they choose.
+        # state→Work-sub-state edges. Quiet state never moves the visible face
+        # (v9.1 · only an ACTIONABLE consent gate auto-surfaces — see
+        # _on_gate_raised). A new work cycle shows the cook sub-state; finishing
+        # fills the done payoff and lifts the RAIL MARK to 'done' as the quiet
+        # ready-result signal (a plain answer never changes the view).
         if busy and not self._was_busy:
             self._set_header("working", "Working on it")
             self._set_work_substate("cook")

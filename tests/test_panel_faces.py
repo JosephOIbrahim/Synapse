@@ -155,15 +155,18 @@ def test_state_persists_across_tab_switch():
     assert p._work_stack.currentIndex() == 1
 
 
-def test_gate_raised_sets_done_substate_no_switch():
-    # A real gate proposal surfaces in Work's done sub-state and marks a ready
-    # result — but never auto-switches the visible tab (the same-pane law).
+def test_gate_raised_auto_surfaces_work():
+    # v9.1 (Option A): an actionable gate proposal AUTO-SURFACES Work's done
+    # sub-state — consent comes to the artist (revised same-pane law: consent
+    # surfaces; quiet state does not). Accept/revert hand back to chat.
     p = _make_panel()
     p._set_face("direct")
     p._on_gate_raised({"level": "approve"})
-    assert _idx(p) == 0, "a gate must not auto-switch the tab"
+    assert _idx(p) == 1, "an actionable gate must auto-surface the Work face"
     assert p._work_substate == "done"
     assert p._mark._state == "done"
+    p._on_accept()
+    assert _idx(p) == 0, "accept must hand back to the conversation"
 
 
 def test_inform_gate_is_ignored():
