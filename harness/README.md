@@ -57,6 +57,36 @@ flywheel candidates awaiting ratification — each `ratified:false` cycle with i
 exact `harness/state/flywheel_queue.json` line to flip. It never writes `ratified` itself; the flip
 is yours, but nothing blocks on it.
 
+## The v6 track — the second state-file trigger
+Peer of `drop.json`: the v6→H22 build plan (`docs/v6/PLAN.md`) stays **held** until a human
+drops blueprints. Arming marker: `docs/v6/BP00_manifest.md` — exact name, and it must be
+**committed** (worktrees branch from HEAD; an uncommitted drop is invisible to every check).
+Held → all `blocked_on:"blueprints"` tasks are filtered out and a read-only intake surface
+prints the drop list; armed → the V-queue runs. Full contract: `docs/v6/INTAKE.md`.
+
+- `V.1` scaffold the skeleton — stub every module in BP00's `## Module Manifest` (Mode A)
+- `V.2` write BP09, the Iteration Controller spec (Mode A)
+- `V.3` spec + BUILD BP10, the Global Knowledge Base — pure Python, zero hou (Mode A)
+- `V.4` pure-Python layers, test-first — gsplat_compare, rubrics, meta-cognitive stats (Mode A)
+- `V.5` Miles 1–2 — BP01 Perception + BP02 G-Splat vs shipped H22 (Mode B)
+- `V.6` Miles 3–4 — BP08 three-tier evaluator, the keystone (Mode B)
+- `V.7` Miles 5–7 — BP09+BP10 integration, first autonomous cycle, pyro only (Mode B)
+
+## The context track — the third state-file trigger
+Peer of `drop.json` and `BP00_manifest.md`: measures what SYNAPSE can actually CREATE in each
+Houdini context (SOP · LOP · COP · TOP · DOP · MAT) by driving its own live handler surface
+(`SynapseHandler.handle()`) under hython — golden create→verify→revert per context plus
+extended gap probes — and deposits the truth as `harness/notes/context_capability_21.json`.
+That catalog file is the arming marker (and it must be **committed** — worktrees fork from
+HEAD): absent → `C.1`–`C.6` are held and a read-only intake surface says to run `C.0`;
+present → the improvement queue grinds, each sprint gated by its context's golden AND a
+ratchet (the context's gap count must strictly decrease unless already 0). Renders stay out
+of every golden (Indie husk no-ops silently); APEX/rigging stays out structurally
+(`no_rigging_drift`). Full contract: `harness/notes/spec-C-context-capability.md`.
+
+- `C.0` probe all six contexts → catalog + review sweep (Mode A, runnable now)
+- `C.1`–`C.6` close the top create-gap per context — sop, lop, cop, top, dop, mat — golden+ratchet-gated (Mode A, armed by the committed catalog)
+
 ## Files
 | path | role |
 |---|---|
@@ -70,6 +100,14 @@ is yours, but nothing blocks on it.
 | `harness/state/done.json` | completion ledger — per-task PASS + refs-hash; skips already-banked work on re-run (runtime state, untracked) |
 | `harness/state/flywheel_queue.json` | flywheel cycle candidates; a human flips `ratified`, the harness only surfaces them read-only |
 | `.claude/settings.json` | pre-approved tool allowlist + format hook |
+| `docs/v6/INTAKE.md` | blueprint paper→disk contract — arming rule, manifest table format, drop checklist |
+| `docs/v6/PLAN.md` | the v6→H22 build plan reconciled against repo truth (Sessions→V.1–V.4, miles→V.5–V.7) |
+| `tests/test_v6_track.py` | pins the six v6 checks + V-task/vocabulary conformance |
+| `harness/notes/spec-C-context-capability.md` | context-track frozen contract — catalog trigger, goldens, ratchet, builder split |
+| `host/introspect_context_capability.py` | per-context create-capability probe (hython; drives SynapseHandler.handle(), never raw hou for mutations) |
+| `scripts/flywheel_review_context.py` | context-catalog review sweep (stock python; CRITICAL/ADVISORY findings) |
+| `harness/notes/context_capability_21.json` | the capability catalog — C.1–C.6 arming trigger, peer of drop.json (commit it) |
+| `tests/test_ctx_track.py` | pins the eight context checks + C-task/vocabulary conformance |
 | `docs/SYNAPSE_H22_BOUNDARY.md` | the boundary doc this harness enforces (the "why") |
 | `docs/SYNAPSE_H22_PROVIDER_APEX.md` | provider-registration spec — what 0.8/2.7 implement |
 | `CLAUDE.md` | distilled conventions (<2,500 tokens, cached) |

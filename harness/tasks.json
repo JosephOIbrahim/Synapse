@@ -9,7 +9,12 @@
     "scout_federates", "scout_no_apex_corpus", "no_rigging_drift",
     "provenance_not_bypassed", "phantom_clean",
     "connectivity_catalog_fresh", "wiring_conformance", "validator_catches_miswire",
-    "lop_knowledge_fresh", "lop_review_clean", "validator_lop_conformance"
+    "lop_knowledge_fresh", "lop_review_clean", "validator_lop_conformance",
+    "blueprints_present", "v6_skeleton_conformance", "v6_spec_bp09",
+    "v6_spec_bp10", "v6_kb_roundtrip", "v6_tests_green",
+    "context_catalog_fresh", "context_review_clean",
+    "context_golden_sop", "context_golden_lop", "context_golden_cop",
+    "context_golden_top", "context_golden_dop", "context_golden_mat"
   ],
   "guardrails": {
     "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger, and no newly-introduced phantom hou.* API (dir()-symbol-table-gated).",
@@ -161,6 +166,106 @@
       "verify": ["lop_knowledge_fresh", "lop_review_clean", "validator_lop_conformance"],
       "human_gate": { "decision": "RATIFIED 2026-07-03 (human sanction) — U.5 accepted as a context-truth cycle class; flywheel_queue.json U.5 now ratified:true" },
       "note": "Cycle contract in spec-U5-lop-solaris-flywheel.md. Substantive design call: assignmaterial->material-source ordering is an ADVISORY, not a hard error (reference/sublayer composition arcs author materials too); grid/plane stay hard errors. Anti-runaway: human ratifies the new class (see human_gate)."
+    },
+
+    {
+      "id": "V.1", "phase": "v6", "mode": "A", "blocked_on": "blueprints", "crit": false, "layer": "scaffold",
+      "title": "v6 Session A — scaffold the skeleton: stub every module in the BP00 manifest",
+      "refs": ["docs/v6/BP00_manifest.md", "docs/v6/INTAKE.md"],
+      "verify": ["blueprints_present", "v6_skeleton_conformance"],
+      "note": "Stubs land exactly where BP00's '## Module Manifest' table says; pass bodies; zero hou imports in pure layers. The drop must be COMMITTED first — worktrees fork from HEAD, so an uncommitted docs/v6/ is invisible to this task (docs/v6/INTAKE.md checklist)."
+    },
+    {
+      "id": "V.2", "phase": "v6", "mode": "A", "blocked_on": "blueprints", "crit": false, "layer": "spec",
+      "title": "v6 Session B — write BP09 (Iteration Controller) at BP00–08 fidelity",
+      "refs": ["docs/v6/BP09_iteration_controller.md", "docs/v6/BP00_manifest.md"],
+      "verify": ["blueprints_present", "v6_spec_bp09"],
+      "note": "propose -> build -> evaluate -> decide -> iterate; convergence/stop logic; max-iteration handling; pulls active strategies from BP07. Spec only — no code."
+    },
+    {
+      "id": "V.3", "phase": "v6", "mode": "A", "blocked_on": "blueprints", "crit": false, "layer": "build",
+      "title": "v6 Session C — spec + BUILD BP10 (Global Knowledge Base): pure Python, zero hou",
+      "refs": ["docs/v6/BP00_manifest.md", "docs/v6/BP10_knowledge_base.md", "python/synapse/v6/knowledge_base.py", "tests/v6/test_knowledge_base.py"],
+      "verify": ["v6_spec_bp10", "v6_kb_roundtrip", "v6_tests_green"],
+      "note": "Recipe store + failure DB + vector schema (spec'd; JSONL is the shipped store) + query API. The one spine piece shippable before H22. The KB public API is pre-frozen by the v6_kb_roundtrip check — BP10 documents it, it does not redesign it."
+    },
+    {
+      "id": "V.4", "phase": "v6", "mode": "A", "blocked_on": "blueprints", "crit": false, "layer": "build",
+      "title": "v6 Session D — pure-Python layers, test-first: gsplat_compare interpretation, scoring rubrics, meta-cognitive stats",
+      "refs": ["docs/v6/BP00_manifest.md", "docs/v6/INTAKE.md", "python/synapse/v6/", "tests/v6/"],
+      "verify": ["v6_tests_green"],
+      "note": "Tests FIRST (each blueprint specifies them) so drop day is 'make them pass'."
+    },
+    {
+      "id": "V.5", "phase": "v6", "mode": "B", "blocked_on": "blueprints", "crit": false,
+      "title": "v6 Miles 1–2 — BP01 Perception + BP02 G-Splat against shipped H22 (highest uncertainty first)",
+      "refs": ["docs/v6/BP00_manifest.md", "python/synapse/v6/", "tests/v6/"],
+      "verify": ["probe_clean", "v6_tests_green"],
+      "note": "The 1.4 probe report re-ranks V.5–V.7 before work starts; build to survive 'feature X shipped differently'. probe_clean reads THIS worktree's delta artifact — re-fire the probe here first; an honest first-round FAIL until then is expected, not a bug."
+    },
+    {
+      "id": "V.6", "phase": "v6", "mode": "B", "blocked_on": "blueprints", "crit": false,
+      "title": "v6 Miles 3–4 — BP08 three-tier evaluator (keystone; 01+02 become the engine)",
+      "refs": ["docs/v6/BP00_manifest.md", "python/synapse/v6/", "tests/v6/"],
+      "verify": ["v6_tests_green"],
+      "note": "Builds on V.5's output, but worktrees fork from HEAD — merge V.5 before running this, or the engine gets rebuilt divergently in-worktree. run -> merge -> re-run is the intended cadence (docs/v6/PLAN.md POST-DROP)."
+    },
+    {
+      "id": "V.7", "phase": "v6", "mode": "B", "blocked_on": "blueprints", "crit": false,
+      "title": "v6 Miles 5–7 — BP09+BP10 integration: first autonomous cycle, PYRO ONLY",
+      "refs": ["docs/v6/BP00_manifest.md", "docs/v6/BP09_iteration_controller.md", "docs/v6/BP10_knowledge_base.md", "python/synapse/v6/"],
+      "verify": ["v6_tests_green", "ledger"],
+      "note": "Prove pyro end-to-end before branches (BP07: G-Splat convergence tracks pyro r=0.78, characters r=0.31). Branches 03–07 are production-ordered after this, not corpus-ordered. Needs V.3's KB and V.6's evaluator merged to main first — same run -> merge -> re-run cadence as V.6."
+    },
+
+    {
+      "id": "C.0", "phase": "context", "mode": "A", "crit": false, "layer": "utility",
+      "title": "Context track — probe SYNAPSE's create-capability per Houdini context (SOP/LOP/COP/TOP/DOP/MAT), deposit the catalog + review sweep",
+      "refs": ["harness/notes/spec-C-context-capability.md", "host/introspect_context_capability.py", "scripts/flywheel_review_context.py", "harness/notes/context_capability_21.json", "tests/test_ctx_track.py"],
+      "verify": ["context_catalog_fresh", "context_review_clean"],
+      "note": "Read-only vs product code — the probe drives the live handler surface (SynapseHandler.handle), it never edits python/synapse. The catalog is the deliverable; merging it arms C.1–C.6. Re-run per Houdini build."
+    },
+    {
+      "id": "C.1", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "title": "Context track — SOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
+      "verify": ["context_golden_sop", "context_catalog_fresh"],
+      "note": "Read the catalog's `gaps` for sop; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
+    },
+    {
+      "id": "C.2", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "title": "Context track — LOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
+      "verify": ["context_golden_lop", "context_catalog_fresh"],
+      "note": "Read the catalog's `gaps` for lop; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
+    },
+    {
+      "id": "C.3", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "title": "Context track — COP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
+      "verify": ["context_golden_cop", "context_catalog_fresh"],
+      "note": "Read the catalog's `gaps` for cop; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
+    },
+    {
+      "id": "C.4", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "title": "Context track — TOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
+      "verify": ["context_golden_top", "context_catalog_fresh"],
+      "note": "Read the catalog's `gaps` for top; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
+    },
+    {
+      "id": "C.5", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "title": "Context track — DOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
+      "verify": ["context_golden_dop", "context_catalog_fresh"],
+      "note": "Read the catalog's `gaps` for dop; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. No dop_ verb family exists — an honest golden fail via generic verbs IS this task's target. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
+    },
+    {
+      "id": "C.6", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "title": "Context track — MAT: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
+      "verify": ["context_golden_mat", "context_catalog_fresh"],
+      "note": "Read the catalog's `gaps` for mat; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
     }
   ]
 }

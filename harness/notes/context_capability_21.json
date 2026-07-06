@@ -1,0 +1,545 @@
+{
+ "blake2b": "f2957e96c762bae8509107b16a062861",
+ "contexts": {
+  "cop": {
+   "commands": [
+    "cops_analyze_render",
+    "cops_bake_textures",
+    "cops_batch_cook",
+    "cops_composite_aovs",
+    "cops_connect",
+    "cops_create_copnet",
+    "cops_create_network",
+    "cops_create_node",
+    "cops_create_solver",
+    "cops_growth_propagation",
+    "cops_pixel_sort",
+    "cops_procedural_texture",
+    "cops_reaction_diffusion",
+    "cops_read_layer_info",
+    "cops_set_opencl",
+    "cops_slap_comp",
+    "cops_stamp_scatter",
+    "cops_stylize",
+    "cops_temporal_analysis",
+    "cops_to_materialx",
+    "cops_wetmap"
+   ],
+   "extended": [
+    {
+     "detail": "/obj/ctxprobe_cop/ctxprobe_ptex",
+     "ok": true,
+     "step": "procedural_texture"
+    },
+    {
+     "detail": "/obj/ctxprobe_aovcomp layers=2",
+     "ok": true,
+     "step": "composite_aovs"
+    },
+    {
+     "detail": "op:/obj/ctxprobe_cop/noise1",
+     "ok": true,
+     "step": "cops_to_materialx"
+    },
+    {
+     "detail": "undo unwound 3 probe root(s) in 7 step(s)",
+     "ok": true,
+     "step": "undo_unwind"
+    }
+   ],
+   "gaps": [],
+   "golden": {
+    "ok": true,
+    "revert_ok": true,
+    "steps": [
+     {
+      "detail": "/obj/ctxprobe_cop + /obj/ctxprobe_cop/noise1",
+      "ok": true,
+      "step": "create_cop_network"
+     },
+     {
+      "detail": "/obj/ctxprobe_cop/ctxprobe_out",
+      "ok": true,
+      "step": "create_null"
+     },
+     {
+      "detail": "noise -> null",
+      "ok": true,
+      "step": "wire_noise_to_null"
+     },
+     {
+      "detail": "cooked 1/1",
+      "ok": true,
+      "step": "cook"
+     },
+     {
+      "detail": "cook_status=ok resolution=[1920, 1080] planes=2",
+      "ok": true,
+      "step": "read_layer_info"
+     }
+    ]
+   }
+  },
+  "dop": {
+   "commands": [],
+   "extended": [
+    {
+     "detail": "/obj/ctxprobe_dop/ctxprobe_volsrc",
+     "ok": true,
+     "step": "sop_volumesource"
+    },
+    {
+     "detail": "/obj/ctxprobe_dop/ctxprobe_pyro",
+     "ok": true,
+     "step": "pyrosolver"
+    },
+    {
+     "detail": "/obj/ctxprobe_dop/ctxprobe_vellum",
+     "ok": true,
+     "step": "vellum_min"
+    },
+    {
+     "detail": "/obj/ctxprobe_dop/ctxprobe_rbdobj -> /obj/ctxprobe_dop/ctxprobe_rbdsolver",
+     "ok": true,
+     "step": "rbd_min"
+    },
+    {
+     "detail": "undo unwound 1 probe root(s) in 18 step(s)",
+     "ok": true,
+     "step": "undo_unwind"
+    }
+   ],
+   "gaps": [
+    "verify_density_field"
+   ],
+   "golden": {
+    "ok": false,
+    "revert_ok": true,
+    "steps": [
+     {
+      "detail": "/obj/ctxprobe_dop",
+      "ok": true,
+      "step": "create_dopnet"
+     },
+     {
+      "detail": "/obj/ctxprobe_dop/ctxprobe_smoke",
+      "ok": true,
+      "step": "create_smokeobject"
+     },
+     {
+      "detail": "/obj/ctxprobe_dop/ctxprobe_solver",
+      "ok": true,
+      "step": "create_smokesolver"
+     },
+     {
+      "detail": "smokeobject -> smokesolver",
+      "ok": true,
+      "step": "wire_object_to_solver"
+     },
+     {
+      "detail": "divsize=0.5",
+      "ok": true,
+      "step": "set_coarse_divisions"
+     },
+     {
+      "detail": "cooked frames 1..3",
+      "ok": true,
+      "step": "cook_3_frames"
+     },
+     {
+      "detail": "_StepFail: verify: simulation has no objects",
+      "ok": false,
+      "step": "verify_density_field"
+     }
+    ]
+   }
+  },
+  "generic": {
+   "commands": [
+    "connect_nodes",
+    "create_node",
+    "delete_node",
+    "execute_python",
+    "execute_vex",
+    "get_parm",
+    "inspect_node",
+    "network_explain",
+    "redo",
+    "set_keyframe",
+    "set_parm",
+    "undo"
+   ],
+   "extended": [],
+   "gaps": [],
+   "golden": {
+    "ok": true,
+    "revert_ok": null,
+    "steps": []
+   }
+  },
+  "lop": {
+   "commands": [
+    "assess_render_ready",
+    "configure_light_linking",
+    "create_point_instancer",
+    "create_usd_prim",
+    "get_stage_info",
+    "get_usd_attribute",
+    "manage_collection",
+    "manage_variant_set",
+    "modify_usd_prim",
+    "query_prims",
+    "reference_usd",
+    "set_payload_loadstate",
+    "set_usd_attribute",
+    "set_usd_primvar",
+    "shot_render_ready",
+    "solaris_assemble_chain",
+    "solaris_build_graph",
+    "solaris_shotsetup_karma_xpu",
+    "solaris_validate_ordering"
+   ],
+   "extended": [
+    {
+     "detail": "/materials/ctxprobe_lopmtl_shader assigned via /stage/assign_ctxprobe_lopmtl_shader",
+     "ok": true,
+     "step": "mtlx_in_lop"
+    },
+    {
+     "detail": "/lights/ctxprobe_light inputs:intensity=2.0",
+     "ok": true,
+     "step": "usdlux_light"
+    },
+    {
+     "detail": "variant set on /ctxprobe_sphere",
+     "ok": true,
+     "step": "variant_set"
+    },
+    {
+     "detail": "collection on /ctxprobe_sphere",
+     "ok": true,
+     "step": "collection"
+    },
+    {
+     "detail": "instances=2",
+     "ok": true,
+     "step": "point_instancer"
+    },
+    {
+     "detail": "undo unwound 7 probe root(s) in 10 step(s)",
+     "ok": true,
+     "step": "undo_unwind"
+    }
+   ],
+   "gaps": [],
+   "golden": {
+    "ok": true,
+    "revert_ok": true,
+    "steps": [
+     {
+      "detail": "/stage/ctxprobe_sphere",
+      "ok": true,
+      "step": "create_stage_sphere"
+     },
+     {
+      "detail": "radius=2.5",
+      "ok": true,
+      "step": "set_sphere_radius"
+     },
+     {
+      "detail": "/ctxprobe_sphere radius=2.5",
+      "ok": true,
+      "step": "verify_stage_prim"
+     }
+    ]
+   }
+  },
+  "mat": {
+   "commands": [
+    "assign_material",
+    "create_material",
+    "create_textured_material",
+    "matlib_bind",
+    "read_material"
+   ],
+   "extended": [
+    {
+     "detail": "/stage/ctxprobe_tex diffuse=op:/obj/ctxprobe_mat_cop/noise1",
+     "ok": true,
+     "step": "textured_material"
+    },
+    {
+     "detail": "light-link /lights/ctxprobe_mat_light -> /ctxprobe_box",
+     "ok": true,
+     "step": "light_linking"
+    },
+    {
+     "detail": "undo unwound 8 probe root(s) in 9 step(s)",
+     "ok": true,
+     "step": "undo_unwind"
+    }
+   ],
+   "gaps": [],
+   "golden": {
+    "ok": true,
+    "revert_ok": true,
+    "steps": [
+     {
+      "detail": "/stage/ctxprobe_mat_anchor",
+      "ok": true,
+      "step": "create_stage_anchor"
+     },
+     {
+      "detail": "Cube at /ctxprobe_box via /stage/create_ctxprobe_box",
+      "ok": true,
+      "step": "create_probe_box"
+     },
+     {
+      "detail": "/materials/ctxprobe_mtl_shader (mtlxstandard_surface)",
+      "ok": true,
+      "step": "create_material"
+     },
+     {
+      "detail": "/stage/assign_ctxprobe_mtl_shader",
+      "ok": true,
+      "step": "assign_material"
+     },
+     {
+      "detail": "bound to /materials/ctxprobe_mtl_shader",
+      "ok": true,
+      "step": "read_material_verify"
+     }
+    ]
+   }
+  },
+  "sop": {
+   "commands": [],
+   "extended": [
+    {
+     "detail": "/obj/ctxprobe_sop/synapse_vex",
+     "ok": true,
+     "step": "vex_wrangle"
+    },
+    {
+     "detail": "/obj/ctxprobe_sop/ctxprobe_bool union cooked",
+     "ok": true,
+     "step": "boolean_union"
+    },
+    {
+     "detail": "/obj/ctxprobe_sop/ctxprobe_group",
+     "ok": true,
+     "step": "group_create"
+    },
+    {
+     "detail": "undo unwound 1 probe root(s) in 22 step(s)",
+     "ok": true,
+     "step": "undo_unwind"
+    }
+   ],
+   "gaps": [],
+   "golden": {
+    "ok": true,
+    "revert_ok": true,
+    "steps": [
+     {
+      "detail": "/obj/ctxprobe_sop",
+      "ok": true,
+      "step": "create_geo_container"
+     },
+     {
+      "detail": "/obj/ctxprobe_sop/ctxprobe_box",
+      "ok": true,
+      "step": "create_box"
+     },
+     {
+      "detail": "box scale=2.0",
+      "ok": true,
+      "step": "set_box_scale"
+     },
+     {
+      "detail": "/obj/ctxprobe_sop/ctxprobe_scatter npts=64",
+      "ok": true,
+      "step": "create_scatter"
+     },
+     {
+      "detail": "box -> scatter",
+      "ok": true,
+      "step": "wire_box_to_scatter"
+     },
+     {
+      "detail": "pointcount=64",
+      "ok": true,
+      "step": "cook_verify_pointcount"
+     }
+    ]
+   }
+  },
+  "top": {
+   "commands": [
+    "tops_batch_cook",
+    "tops_cancel_cook",
+    "tops_configure_scheduler",
+    "tops_cook_and_validate",
+    "tops_cook_node",
+    "tops_diagnose",
+    "tops_dirty_node",
+    "tops_generate_items",
+    "tops_get_cook_stats",
+    "tops_get_dependency_graph",
+    "tops_get_work_items",
+    "tops_monitor_stream",
+    "tops_multi_shot",
+    "tops_pause_cook",
+    "tops_pipeline_status",
+    "tops_query_items",
+    "tops_render_sequence",
+    "tops_resume_cook",
+    "tops_setup_wedge",
+    "wedge"
+   ],
+   "extended": [
+    {
+     "detail": "_StepFail: tops_cook_node: Hit a snag processing that request: hdefereval is only available in a graphical Houdini",
+     "ok": false,
+     "step": "local_cook_3"
+    },
+    {
+     "detail": "_StepFail: tops_get_cook_stats: Hit a snag processing that request: hdefereval is only available in a graphical Houdini",
+     "ok": false,
+     "step": "cook_stats"
+    },
+    {
+     "detail": "undo unwound 1 probe root(s) in 1 step(s)",
+     "ok": true,
+     "step": "undo_unwind"
+    }
+   ],
+   "gaps": [
+    "setup_wedge",
+    "set_wedgecount_3",
+    "generate_items",
+    "verify_3_work_items",
+    "local_cook_3",
+    "cook_stats"
+   ],
+   "golden": {
+    "ok": false,
+    "revert_ok": true,
+    "steps": [
+     {
+      "detail": "/obj/ctxprobe_top",
+      "ok": true,
+      "step": "create_topnet"
+     },
+     {
+      "detail": "_StepFail: tops_setup_wedge: Hit a snag processing that request: hdefereval is only available in a graphical Houdini",
+      "ok": false,
+      "step": "setup_wedge"
+     },
+     {
+      "detail": "_StepFail: set_parm: Couldn't find a node at ''",
+      "ok": false,
+      "step": "set_wedgecount_3"
+     },
+     {
+      "detail": "_StepFail: tops_generate_items: Hit a snag processing that request: hdefereval is only available in a graphical Houdini",
+      "ok": false,
+      "step": "generate_items"
+     },
+     {
+      "detail": "_StepFail: tops_get_work_items: Hit a snag processing that request: hdefereval is only available in a graphical Houdini",
+      "ok": false,
+      "step": "verify_3_work_items"
+     }
+    ]
+   }
+  }
+ },
+ "generated": "2026-07-06T21:42:41.861847+00:00",
+ "handler_command_count": 127,
+ "houdini_version": "21.0.671",
+ "schema": "context_capability/v1",
+ "summary": {
+  "cop": {
+   "gaps": 0,
+   "golden_ok": true
+  },
+  "dop": {
+   "gaps": 1,
+   "golden_ok": false
+  },
+  "generic": {
+   "gaps": 0,
+   "golden_ok": true
+  },
+  "lop": {
+   "gaps": 0,
+   "golden_ok": true
+  },
+  "mat": {
+   "gaps": 0,
+   "golden_ok": true
+  },
+  "sop": {
+   "gaps": 0,
+   "golden_ok": true
+  },
+  "top": {
+   "gaps": 6,
+   "golden_ok": false
+  }
+ },
+ "synapse_version": "5.20.0",
+ "unclassified": [
+  "add_memory",
+  "autonomous_render",
+  "batch_commands",
+  "capture_viewport",
+  "configure_render_passes",
+  "context",
+  "decide",
+  "doctor",
+  "engram_add",
+  "engram_context",
+  "engram_decide",
+  "engram_recall",
+  "engram_search",
+  "evolve_memory",
+  "get_health",
+  "get_help",
+  "get_live_metrics",
+  "get_metrics",
+  "get_scene_info",
+  "get_selection",
+  "hda_create",
+  "hda_list",
+  "hda_package",
+  "hda_promote_parm",
+  "hda_set_help",
+  "inspect_scene",
+  "inspect_selection",
+  "instantiate_graph",
+  "knowledge_lookup",
+  "list_recipes",
+  "memory_query",
+  "memory_status",
+  "memory_write",
+  "ping",
+  "project_setup",
+  "propose_graph",
+  "recall",
+  "render",
+  "render_farm_cancel",
+  "render_farm_status",
+  "render_progressively",
+  "render_sequence",
+  "render_settings",
+  "route_chat",
+  "router_stats",
+  "safe_render",
+  "search",
+  "sleep_pass",
+  "validate_frame",
+  "write_report"
+ ]
+}

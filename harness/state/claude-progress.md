@@ -12,6 +12,14 @@ H21, so drop day is **verification, not surgery**.
 - **MODE A (now):** `drop.json` absent → only Phase 0 (`0.x`) tasks run, on H21's hython.
 - **MODE B (drop):** a human writes `harness/state/drop.json` with the three numbers →
   the `1.x`/`2.x`/`3.x` pipeline arms, pointed at H22's hython.
+- **v6 arm (orthogonal to A/B):** a human COMMITS `docs/v6/BP00_manifest.md` (exact name;
+  worktrees branch from HEAD, so uncommitted drops don't count) → the `V.x` track's
+  `blocked_on:"blueprints"` hold lifts: V.1–V.4 grind in Mode A, V.5–V.7 wait for Mode B.
+  Drop contract: `docs/v6/INTAKE.md`.
+- **context arm (orthogonal to A/B):** `C.0` deposits + a human COMMITS
+  `harness/notes/context_capability_21.json` (same worktrees-fork-from-HEAD rule) → the
+  `C.x` track's `blocked_on:"catalog"` hold lifts: C.1–C.6 grind in Mode A, each gated by
+  its context golden + gap ratchet. Contract: `harness/notes/spec-C-context-capability.md`.
 
 ## THE THREE HUMAN GATES — never auto-handle these
 1. **`0.1` architecture: sidecar vs abi3.** *Recommended: **sidecar*** (brain in its own
@@ -66,3 +74,5 @@ H21, so drop day is **verification, not surgery**.
 - 2026-07-02 · P2 harness upgrade (00fc953): phantom-API guardrail `check_phantom_clean` in tasks.json `guardrails.checks` (dir()-symbol-table-gated, scoped to the sprint's changed .py; ok:false ⇒ short-circuit to a repair ticket before the Evaluator, ok:null ⇒ WARN)
 - 2026-07-02 · P1/P2 hardening (44437bd) per closing adversarial pass: GUI-submodule allowlist (hou.ui/qt/… were headless-absent → false-blocked panel/host sprints); added-line precision (only introduced phantoms fail); ledger skips only real-file-ref tasks; atomic done.json; ratification array-guards
 - 2026-07-02 · P3: task 0.1 layer survival→bounded-decision + human_gate.why now cites the measured IPC/wheel-cache evidence; stays gated (sidecar-vs-abi3 is still the human's call)
+- 2026-07-04 · v6 track grafted (additive, HELD): blueprint-intake trigger `docs/v6/BP00_manifest.md` (second state-file trigger, peer of drop.json), tasks V.1–V.7 blocked_on:"blueprints", 6 checks, docs/v6/{INTAKE,PLAN}.md, tests/test_v6_track.py; Session E of the plan = already-done task 0.2, NOT duplicated; arms only when a human commits a blueprint drop
+- 2026-07-06 · context track grafted (additive): capability-catalog trigger `harness/notes/context_capability_21.json` (third state-file trigger), C.0 probe task + C.1–C.6 per-context improvement tasks blocked_on:"catalog", 8 checks, probe host/introspect_context_capability.py (drives SynapseHandler.handle() — the live seam), review scripts/flywheel_review_context.py, tests/test_ctx_track.py; cycle class queued ratified:false in flywheel_queue.json (human sign-off, U.5 precedent)

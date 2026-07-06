@@ -9,6 +9,7 @@
  *
  *   MODE A (now, on H21):  grinds Phase 0. Trigger: just run it.
  *   MODE B (mid-July):     fires when harness/state/drop.json exists (the three numbers).
+ *   V6 TRACK:              V-tasks arm when docs/v6/BP00_manifest.md exists (blueprint drop).
  *
  * v2 (boundary graft): the cross-cutting non-goal GUARDRAILS from checks.py are enforced
  * DETERMINISTICALLY here. Any guardrail ok:false fails the sprint and writes a repair ticket
@@ -60,6 +61,15 @@ const head = (s: string) => log(`\n${c.sig}━━ ${s}${c.off}`);
 const DROP = join(REPO, "harness/state/drop.json");
 const MODE: "A" | "B" = existsSync(DROP) ? "B" : "A";
 const DONE = join(REPO, "harness/state/done.json");   // completion ledger (runtime state, like drop.json — not tracked)
+// v6 blueprint intake — the second state-file trigger, peer of drop.json. A human drops
+// blueprints into docs/v6/; the exact file BP00_manifest.md is the arming marker. Until it
+// exists, every blocked_on:"blueprints" task is held out of the queue.
+const V6 = existsSync(join(REPO, "docs/v6/BP00_manifest.md"));
+// C-track catalog intake — the third state-file trigger. C.0's probe deposits the per-context
+// create-capability catalog; a human merges it. Until it exists, every blocked_on:"catalog"
+// task (C.1–C.6) is held out of the queue — they read the catalog's gaps, so arming them
+// catalog-less would be a sprint without a target.
+const CTX = existsSync(join(REPO, "harness/notes/context_capability_21.json"));
 
 // ---------- helpers ----------
 function sh(cmd: string, cmdArgs: string[], cwd = REPO) {
@@ -274,6 +284,45 @@ function surfaceRatification() {
   }
 }
 
+// ---------- blueprint intake surface (v6 track: paper → disk) ----------
+// The v6 plan exists only on paper until a human drops blueprints into docs/v6/. While the
+// track is held this prints the canonical drop list — the human's whole interaction is
+// copying files in and committing. STRICTLY READ-ONLY: the harness never authors blueprints
+// BP00–BP08 (BP09/BP10 are V-task deliverables, authored in worktrees, not here). Once
+// armed it prints nothing — the queue speaks.
+function surfaceBlueprintIntake() {
+  if (V6) return;
+  if (!TASKS.some((t: any) => t.blocked_on === "blueprints")) return;
+  head("v6 track held — blueprint drop wanted (a human drops files, never the harness)");
+  log(`  ${c.warn}required:${c.off}    docs/v6/BP00_manifest.md  (the arming marker — exact name)`);
+  log(`  ${c.dim}recommended: docs/v6/BP01_*.md … BP08_*.md  (human-authored, BP0N_*.md pattern)${c.off}`);
+  log(`  ${c.dim}harness-authored — do NOT drop: BP09_iteration_controller.md, BP10_knowledge_base.md${c.off}`);
+  log(`  ${c.dim}contract + drop checklist: docs/v6/INTAKE.md — COMMIT the drop; worktrees fork from HEAD${c.off}`);
+  // --task cannot pierce the hold: the blueprints filter runs before ONLY selects, so naming
+  // a held V-task yields an empty queue. Say so instead of printing a bare empty summary.
+  if (ONLY && TASKS.some((t: any) => t.id === ONLY && t.blocked_on === "blueprints"))
+    log(`  ${c.warn}--task ${ONLY} cannot override this hold — V-tasks stay filtered until BP00_manifest.md lands.${c.off}`);
+}
+
+// ---------- context intake surface (C track: probe → catalog) ----------
+// The context track holds until the capability catalog lands on disk. While held this
+// prints the one command that deposits it — the human's whole interaction is running C.0
+// and merging its worktree. STRICTLY READ-ONLY: the harness never authors the catalog here
+// (C.0's probe writes it, in its worktree, under hython). Once armed it prints nothing —
+// the queue speaks.
+function surfaceContextIntake() {
+  if (CTX) return;
+  if (!TASKS.some((t: any) => t.blocked_on === "catalog")) return;
+  head("context track held — capability catalog wanted (C.0 deposits it, a human merges)");
+  log(`  ${c.warn}to arm:${c.off}      bun run harness/run.ts --task C.0`);
+  log(`  ${c.dim}then MERGE the C.0 worktree — the catalog must reach HEAD (worktrees fork from HEAD)${c.off}`);
+  log(`  ${c.dim}once harness/notes/context_capability_21.json is committed, C.1–C.6 arm and re-rank off its gaps${c.off}`);
+  // --task cannot pierce the hold: the catalog filter runs before ONLY selects, so naming
+  // a held C-task yields an empty queue. Say so instead of printing a bare empty summary.
+  if (ONLY && TASKS.some((t: any) => t.id === ONLY && t.blocked_on === "catalog"))
+    log(`  ${c.warn}--task ${ONLY} cannot override this hold — C-tasks stay filtered until the catalog lands.${c.off}`);
+}
+
 // ---------- the loop ----------
 function runTask(task: any): "PASS" | "BLOCKED" | "GATED" {
   // human gate — never auto-handled
@@ -339,9 +388,29 @@ head(`SYNAPSE → H22 harness  ·  MODE ${MODE}${DRY ? "  (dry run)" : ""}`);
 if (MODE === "A") log(`${c.dim}  H22 not dropped — grinding Phase 0 on H21. drop.json absent.${c.off}`);
 else log(`${c.dim}  drop.json present — post-drop pipeline armed.${c.off}`);
 if (!HYTHON && !DRY) log(`${c.warn}  HYTHON unset — checks that cook/import will report not-runnable. Set it to your Houdini bin/hython.${c.off}`);
+if (V6) {
+  log(`${c.dim}  v6 track armed — docs/v6/BP00_manifest.md present. V-tasks in the queue.${c.off}`);
+  // Worktrees fork from HEAD (ensureWorktree), so an UNCOMMITTED drop arms the track here
+  // while every V-task worktree — and every worktree-relative check — sees no docs/v6 at
+  // all. Catch that before it burns MAX_ROUNDS on a baffling "BP00 missing". Read-only.
+  const st = sh("git", ["status", "--porcelain", "docs/v6"]);
+  if (st.status === 0 && (st.stdout || "").trim())
+    log(`${c.warn}  docs/v6 has uncommitted changes — worktrees fork from HEAD and will NOT see them. Commit the drop first.${c.off}`);
+} else log(`${c.dim}  v6 track held — docs/v6/BP00_manifest.md absent. Blueprint drop arms it (docs/v6/INTAKE.md).${c.off}`);
+if (CTX) {
+  log(`${c.dim}  context track armed — harness/notes/context_capability_21.json present. C.1–C.6 in the queue.${c.off}`);
+  // Same trap as the v6 drop: an UNCOMMITTED catalog arms the track here while every C-task
+  // worktree — and every worktree-relative check — forks from HEAD and sees no catalog at
+  // all. Catch that before it burns MAX_ROUNDS on a baffling "run C.0 first". Read-only.
+  const st = sh("git", ["status", "--porcelain", "harness/notes/context_capability_21.json"]);
+  if (st.status === 0 && (st.stdout || "").trim())
+    log(`${c.warn}  context_capability_21.json has uncommitted changes — worktrees fork from HEAD and will NOT see them. Commit the catalog first.${c.off}`);
+} else log(`${c.dim}  context track held — harness/notes/context_capability_21.json absent. C.0 deposits it (--task C.0).${c.off}`);
 
 let queue = TASKS.filter((t: any) => t.mode === "A" || MODE === "B");
 queue = queue.filter((t: any) => !(t.mode === "B" && t.blocked_on === "drop" && MODE === "A"));
+queue = queue.filter((t: any) => !(t.blocked_on === "blueprints" && !V6));
+queue = queue.filter((t: any) => !(t.blocked_on === "catalog" && !CTX));
 if (ONLY) queue = queue.filter((t: any) => t.id === ONLY);
 
 const result: Record<string, string> = {};
@@ -369,4 +438,8 @@ if (skipped.length) log(`  ${c.dim}already banked (completion ledger): ${skipped
 
 // Upgrade 2 — surface flywheel candidates awaiting human ratification (read-only)
 surfaceRatification();
+// v6 track — surface the blueprint drop list while the track is held (read-only)
+surfaceBlueprintIntake();
+// context track — surface the C.0 arming path while the catalog is absent (read-only)
+surfaceContextIntake();
 log("");

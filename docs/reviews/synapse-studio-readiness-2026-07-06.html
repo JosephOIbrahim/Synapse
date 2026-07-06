@@ -1,0 +1,729 @@
+<title>SYNAPSE — Studio Readiness & Context-Capability Review</title>
+<style>
+  :root {
+    /* Houdini's own world: cool near-black workspace grey, the panel's muted light-blue accent.
+       Neutrals carry a deliberate cool/blue bias — chosen, not defaulted to mid-grey. */
+    --ground:   #F4F6F8;
+    --surface:  #FFFFFF;
+    --surface-2:#EDF0F4;
+    --ink:      #171A1F;
+    --ink-2:    #565E6B;
+    --ink-3:    #8A93A1;
+    --line:     #DDE2E9;
+    --line-2:   #C9D0DA;
+    --accent:   #5E86B0;   /* panel blue, deepened for text on light */
+    --accent-bg:#8FB3D9;
+    --accent-soft:#E6EEF6;
+    --crit:     #C0413A;
+    --high:     #B9722A;
+    --med:      #6B7482;
+    --good:     #3F8468;
+    --mono-bg:  #1B1F26;
+    --mono-ink: #C6D2E0;
+    --shadow:   0 1px 2px rgba(20,30,45,.06), 0 8px 24px rgba(20,30,45,.05);
+    --stripe-w: 4px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:   #14171B;
+      --surface:  #1D2127;
+      --surface-2:#242A31;
+      --ink:      #E7ECF2;
+      --ink-2:    #A2ACB9;
+      --ink-3:    #6E7885;
+      --line:     #2C333B;
+      --line-2:   #39424C;
+      --accent:   #9CBEE0;
+      --accent-bg:#5E86B0;
+      --accent-soft:#232D38;
+      --crit:     #E27B72;
+      --high:     #E0A45C;
+      --med:      #8892A0;
+      --good:     #6BB894;
+      --mono-bg:  #10141A;
+      --mono-ink: #B8C6D6;
+      --shadow:   0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF0F4; --ink:#171A1F; --ink-2:#565E6B;
+    --ink-3:#8A93A1; --line:#DDE2E9; --line-2:#C9D0DA; --accent:#5E86B0; --accent-bg:#8FB3D9;
+    --accent-soft:#E6EEF6; --crit:#C0413A; --high:#B9722A; --med:#6B7482; --good:#3F8468;
+    --mono-bg:#1B1F26; --mono-ink:#C6D2E0; --shadow:0 1px 2px rgba(20,30,45,.06),0 8px 24px rgba(20,30,45,.05);
+  }
+  :root[data-theme="dark"] {
+    --ground:#14171B; --surface:#1D2127; --surface-2:#242A31; --ink:#E7ECF2; --ink-2:#A2ACB9;
+    --ink-3:#6E7885; --line:#2C333B; --line-2:#39424C; --accent:#9CBEE0; --accent-bg:#5E86B0;
+    --accent-soft:#232D38; --crit:#E27B72; --high:#E0A45C; --med:#8892A0; --good:#6BB894;
+    --mono-bg:#10141A; --mono-ink:#B8C6D6; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono {
+    font-family: "Cascadia Code", "Cascadia Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 44px 0; border-top: 1px solid var(--line); }
+  section:first-of-type { border-top: none; }
+
+  /* ---- masthead ---- */
+  header { padding: 52px 0 40px; }
+  .eyebrow {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 18px;
+  }
+  h1 {
+    font-size: clamp(30px, 5vw, 46px); line-height: 1.08; margin: 0 0 16px;
+    font-weight: 700; letter-spacing: -.02em; text-wrap: balance; max-width: 18ch;
+  }
+  .lede { font-size: 18px; color: var(--ink-2); margin: 0; max-width: 62ch; }
+  .runbar {
+    display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px;
+  }
+  .chip {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+    font-size: 12.5px; padding: 6px 11px; border-radius: 3px;
+    background: var(--surface); border: 1px solid var(--line-2); color: var(--ink-2);
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .chip b { color: var(--ink); font-weight: 600; }
+  .chip.good b { color: var(--good); }
+
+  h2 {
+    font-size: 13px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 700; margin: 0 0 6px;
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+  }
+  .h2sub { font-size: clamp(22px, 3.4vw, 30px); font-weight: 700; letter-spacing: -.015em;
+    margin: 0 0 22px; text-wrap: balance; }
+  p { max-width: 68ch; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  strong { font-weight: 650; }
+  code {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+    font-size: .88em; background: var(--surface-2); border: 1px solid var(--line);
+    padding: 1px 5px; border-radius: 3px; color: var(--ink);
+  }
+
+  /* ---- capability catalog grid ---- */
+  .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .ctx {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 5px;
+    border-left: var(--stripe-w) solid var(--good); padding: 16px 16px 15px;
+    box-shadow: var(--shadow); position: relative;
+  }
+  .ctx.fail { border-left-color: var(--high); }
+  .ctx-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .ctx-name {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+    font-weight: 700; font-size: 17px; letter-spacing: .02em; color: var(--ink);
+  }
+  .pill {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+    font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .pill.pass { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good);
+    border: 1px solid color-mix(in srgb, var(--good) 40%, transparent); }
+  .pill.fail { background: color-mix(in srgb, var(--high) 16%, transparent); color: var(--high);
+    border: 1px solid color-mix(in srgb, var(--high) 40%, transparent); }
+  .ctx-role { font-size: 12.5px; color: var(--ink-3); margin: 3px 0 11px; }
+  .ctx-detail { font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+  .gapline {
+    margin-top: 11px; padding-top: 10px; border-top: 1px dashed var(--line-2);
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace; font-size: 12.5px;
+    display: flex; justify-content: space-between; color: var(--ink-3);
+  }
+  .gapline .n { color: var(--ink); font-weight: 600; }
+  .gapline .n.zero { color: var(--good); }
+  .gapline .n.hot  { color: var(--high); }
+
+  /* ---- findings register ---- */
+  .fnote { color: var(--ink-2); font-size: 14.5px; margin: -8px 0 22px; max-width: 70ch; }
+  .finding {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 5px;
+    border-left: var(--stripe-w) solid var(--med);
+    padding: 15px 18px; margin-bottom: 11px; box-shadow: var(--shadow);
+  }
+  .finding.crit { border-left-color: var(--crit); }
+  .finding.high { border-left-color: var(--high); }
+  .finding.med  { border-left-color: var(--med); }
+  .f-top { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-bottom: 7px; }
+  .sev {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .sev.crit { background: color-mix(in srgb, var(--crit) 15%, transparent); color: var(--crit); }
+  .sev.high { background: color-mix(in srgb, var(--high) 15%, transparent); color: var(--high); }
+  .sev.med  { background: color-mix(in srgb, var(--med) 16%, transparent); color: var(--med); }
+  .verd {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+    font-size: 10.5px; font-weight: 600; letter-spacing: .05em;
+    padding: 2px 7px; border-radius: 3px; border: 1px solid var(--line-2); color: var(--ink-3);
+  }
+  .verd.confirmed { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 45%, transparent); }
+  .verd.partial   { color: var(--high); border-color: color-mix(in srgb, var(--high) 45%, transparent); }
+  .ctxtags { margin-left: auto; display: flex; gap: 5px; flex-wrap: wrap; }
+  .ctxtag {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+    font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--ink-3); background: var(--surface-2); border: 1px solid var(--line);
+    padding: 2px 6px; border-radius: 3px;
+  }
+  .f-title { font-weight: 650; font-size: 15.5px; margin: 0 0 5px; line-height: 1.35; letter-spacing: -.01em; }
+  .f-body { font-size: 14px; color: var(--ink-2); margin: 0; max-width: 82ch; line-height: 1.55; }
+  .f-corr {
+    margin-top: 8px; font-size: 13px; color: var(--ink-2); line-height: 1.5;
+    padding: 8px 11px; background: var(--surface-2); border-radius: 4px;
+    border-left: 2px solid var(--accent-bg);
+  }
+  .f-corr b { color: var(--accent); font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+  .f-ev { margin-top: 8px; font-size: 12px; color: var(--ink-3); }
+  .f-ev code { font-size: 11.5px; background: transparent; border: none; padding: 0; color: var(--ink-3); }
+
+  /* ---- tail + strengths lists ---- */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 32px; }
+  @media (max-width: 720px) { .cols { grid-template-columns: 1fr; } }
+  .li { display: flex; gap: 10px; font-size: 14px; color: var(--ink-2); padding: 7px 0;
+    border-bottom: 1px solid var(--line); line-height: 1.45; }
+  .li:last-child { border-bottom: none; }
+  .li .mk { color: var(--ink-3); flex: none; font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+    font-size: 12px; padding-top: 1px; }
+  .li.pos .mk { color: var(--good); }
+
+  /* ---- upgrade path (a real ordered sequence) ---- */
+  .step {
+    display: grid; grid-template-columns: 44px 1fr; gap: 18px; padding: 18px 0;
+    border-bottom: 1px solid var(--line); align-items: start;
+  }
+  .step:last-child { border-bottom: none; }
+  .step-n {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace;
+    font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1; padding-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .step-h { font-weight: 650; font-size: 16px; margin: 0 0 4px; letter-spacing: -.01em; }
+  .step-b { font-size: 14px; color: var(--ink-2); margin: 0; max-width: 76ch; }
+  .step-tag {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace; font-size: 11px;
+    color: var(--ink-3); letter-spacing: .04em; margin-top: 6px; display: block;
+  }
+
+  /* ---- acceptance / mono block ---- */
+  .accept {
+    background: var(--mono-bg); border-radius: 6px; padding: 20px 22px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  .accept .row {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace; font-size: 13px;
+    color: var(--mono-ink); line-height: 1.7; white-space: nowrap;
+  }
+  .accept .ok { color: #6BB894; }
+  .accept .dim { color: #6E7885; }
+  .accept .k { color: #9CBEE0; }
+
+  .divlabel {
+    font-family: "Cascadia Code", ui-monospace, Consolas, monospace; font-size: 12px;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+    margin: 26px 0 12px; display: flex; align-items: center; gap: 10px;
+  }
+  .divlabel::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  footer { padding: 40px 0 60px; color: var(--ink-3); font-size: 13px; }
+  footer .mono { font-size: 12px; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .finding, .ctx, .step { animation: rise .5s cubic-bezier(.2,.7,.3,1) both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">SYNAPSE · production-readiness dossier · 2026-07-06</p>
+  <h1>Studio readiness &amp; context-capability review</h1>
+  <p class="lede">Two workstreams over the agentic-Houdini harness: a top-to-bottom deployment
+  review scored for solo, multi-seat studio, render farm, and pipeline-TD contexts — and a new
+  self-verifying harness track that measures, per Houdini context, what SYNAPSE can actually
+  <em>create</em> through its own live command surface.</p>
+  <div class="runbar">
+    <span class="chip">Houdini <b>21.0.671</b></span>
+    <span class="chip">Python <b>3.14</b></span>
+    <span class="chip good">suite <b>4062&nbsp;passed</b> · 0&nbsp;failed</span>
+    <span class="chip">review <b>35 agents</b> · 93→62→<b>24 verified</b> · 0 refuted</span>
+    <span class="chip">handler commands <b>127</b></span>
+  </div>
+</header>
+
+<!-- ============ PART I — WHAT SHIPPED ============ -->
+<section id="ctrack">
+  <h2>Part I — What shipped</h2>
+  <p class="h2sub">The context-capability track — a per-context review that improves what it measures</p>
+  <p>Your request was a harness that reviews SYNAPSE's ability to affect Houdini <em>per context</em>,
+  and on that same per-context basis grinds SYNAPSE's ability to create — using dynamic workflows and
+  agent teams. Rather than build a second loop, this grafts onto the existing
+  <code>harness/run.ts</code> as a <strong>third state-file trigger</strong>, peer of the H22 drop and
+  the v6 blueprint drop. A spec was frozen, then four builder agents implemented it against disjoint
+  file sets on the live tree; an adversarial pass and the full suite verified it.</p>
+
+  <div class="cols" style="margin-top:20px">
+    <div>
+      <div class="divlabel">The loop</div>
+      <div class="li"><span class="mk mono">C.0</span><span>Probe all six contexts by driving <code>SynapseHandler.handle()</code> — the same seam the live WebSocket transport calls, never raw <code>hou</code> for mutations — then deposit the capability catalog + a review sweep.</span></div>
+      <div class="li"><span class="mk mono">↓</span><span>Committing the catalog arms <code>C.1</code>–<code>C.6</code>: one improvement sprint per context (SOP · LOP · COP · TOP · DOP · MAT).</span></div>
+      <div class="li"><span class="mk mono">C.n</span><span>Each sprint is gated by its context's <strong>golden</strong> (create → verify → revert) <em>and</em> a <strong>ratchet</strong> — the gap count must strictly decrease, or already be zero — proven against the <code>HEAD</code> baseline so a sprint can't grade its own refresh.</span></div>
+    </div>
+    <div>
+      <div class="divlabel">Governance held intact</div>
+      <div class="li pos"><span class="mk mono">✓</span><span>Merge stays the human gate — the harness commits in worktrees only, never to master.</span></div>
+      <div class="li pos"><span class="mk mono">✓</span><span>New cycle class queued <code>ratified:false</code> in the flywheel queue — the same human sign-off U.5 got, per the anti-runaway anchor.</span></div>
+      <div class="li pos"><span class="mk mono">✓</span><span>Renders excluded from every golden (Indie husk no-ops silently); APEX/rigging excluded structurally by the <code>no_rigging_drift</code> guardrail. Existing guardrails run on every C-sprint for free.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ THE CATALOG ============ -->
+<section id="catalog">
+  <h2>Part II — The first per-context review</h2>
+  <p class="h2sub">Capability catalog, live on Houdini 21.0.671</p>
+  <p class="fnote">The probe ran headless against your live install: it instantiated the real handler,
+  classified all 127 registered commands by context, and for each context executed a golden
+  create→verify→revert plus extended gap probes. Four contexts create cleanly end-to-end; two fail
+  honestly — and those two failures <em>are</em> the C.4 / C.5 targets. Reversibility held everywhere
+  (<code class="mono">undo_unwind = true</code> in all six).</p>
+
+  <div class="cat-grid">
+    <div class="ctx">
+      <div class="ctx-head"><span class="ctx-name">SOP</span><span class="pill pass">pass · 0 gaps</span></div>
+      <p class="ctx-role">geometry</p>
+      <p class="ctx-detail">box → set scale → scatter → wire → cook → <code>pointcount&nbsp;&gt;&nbsp;0</code> → revert. VEX wrangle, boolean, group all clean.</p>
+      <div class="gapline"><span>golden</span><span class="n zero">verified</span></div>
+    </div>
+    <div class="ctx">
+      <div class="ctx-head"><span class="ctx-name">LOP</span><span class="pill pass">pass · 0 gaps</span></div>
+      <p class="ctx-role">USD / Solaris</p>
+      <p class="ctx-detail">/stage sphere → set radius → read back via <code>node.stage()</code> → revert. MtlX-in-LOP, UsdLux light, variant set, collection, instancer clean.</p>
+      <div class="gapline"><span>golden</span><span class="n zero">verified</span></div>
+    </div>
+    <div class="ctx">
+      <div class="ctx-head"><span class="ctx-name">COP</span><span class="pill pass">pass · 0 gaps</span></div>
+      <p class="ctx-role">compositing</p>
+      <p class="ctx-detail">cop2net → noise → cook → layer/resolution read → revert. Procedural texture, AOV composite, to-MaterialX clean.</p>
+      <div class="gapline"><span>golden</span><span class="n zero">verified</span></div>
+    </div>
+    <div class="ctx">
+      <div class="ctx-head"><span class="ctx-name">MAT</span><span class="pill pass">pass · 0 gaps</span></div>
+      <p class="ctx-role">MaterialX shading</p>
+      <p class="ctx-detail">MtlX standard-surface → assign to a probe box → read binding → revert. Textured material + light-linking clean.</p>
+      <div class="gapline"><span>golden</span><span class="n zero">verified</span></div>
+    </div>
+    <div class="ctx fail">
+      <div class="ctx-head"><span class="ctx-name">TOP</span><span class="pill fail">fail · 6 gaps</span></div>
+      <p class="ctx-role">PDG orchestration</p>
+      <p class="ctx-detail">Every TOP verb refuses headless: <code>hdefereval is only available in a graphical Houdini</code>. Wedge, generate, cook, stats all blocked — a real farm/batch limitation, not a missing feature.</p>
+      <div class="gapline"><span>gaps</span><span class="n hot">6 open</span></div>
+    </div>
+    <div class="ctx fail">
+      <div class="ctx-head"><span class="ctx-name">DOP</span><span class="pill fail">fail · 1 gap</span></div>
+      <p class="ctx-role">dynamics / sim</p>
+      <p class="ctx-detail">dopnet + smoke object + solver build and cook 3 frames — but <code>verify_density_field</code> finds the simulation has no objects. Populated via generic verbs only: exactly the "no dedicated DOP verb family" gap the spec predicted.</p>
+      <div class="gapline"><span>gaps</span><span class="n hot">1 open</span></div>
+    </div>
+  </div>
+  <p class="fnote" style="margin-top:20px">Review sweep: <strong>0 CRITICAL</strong>, 5 advisory (both fails + their gaps).
+  The <code>C.0</code> gate passes; catalog blake2b-sealed and stamped <code class="mono">== live build 21.0.671</code>.
+  The two failures now re-rank the improvement queue: <strong>C.4 (TOP headless)</strong> and
+  <strong>C.5 (DOP sim population)</strong> are where creation capability is genuinely absent today.</p>
+</section>
+
+<!-- ============ PART III — DEPLOYMENT FINDINGS ============ -->
+<section id="findings">
+  <h2>Part III — Deployment review</h2>
+  <p class="h2sub">24 findings, ranked, tagged by the contexts they bite</p>
+  <p class="fnote">Every finding below was cross-checked by an adversarial verifier whose default verdict was
+  <em>refuted</em>; none were. <b class="mono" style="color:var(--crit)">CONFIRMED</b> means reproduced
+  from code; <b class="mono" style="color:var(--high)">PARTIAL</b> means the core holds but a stated
+  detail or severity was corrected — those corrections are called out, because several
+  <em>lowered</em> the risk. The severity shown is the post-verification rating. The solo-localhost
+  posture is deliberate and test-pinned; findings say precisely which contexts each gap actually
+  harms.</p>
+
+  <!-- CRITICALS -->
+  <div class="finding crit">
+    <div class="f-top"><span class="sev crit">critical</span><span class="verd confirmed">confirmed</span>
+      <span class="ctxtags"><span class="ctxtag">studio</span><span class="ctxtag">farm</span><span class="ctxtag">solo</span></span></div>
+    <p class="f-title">Consent gates auto-approve or are absent on every live execution path</p>
+    <p class="f-body">The one production bridge is the panel singleton, built with an unconditional-true
+    callback and then explicitly disarmed (<code>_bridge._gate = None</code>). The <code>/mcp</code>
+    dispatch shares that same disarmed singleton; the live <code>/synapse</code> transport bypasses the
+    bridge entirely. So REVIEW / APPROVE / CRITICAL gates on <code>execute_python</code>,
+    <code>delete_node</code>, render submits and exports fire <em>nowhere</em> at runtime, while the
+    IntegrityBlock records <code>consent_verified = true</code>. <code>HumanGate.propose</code> has zero
+    live producers — the panel's consent auto-surface consumes proposals that never arrive.</p>
+    <p class="f-corr"><b>note</b> Solo-localhost auto-approve is documented and forced by a real GUI-thread
+    deadlock — but the bridge-path disarm contradicts the repo's own Safety Rule 5 even for solo.</p>
+    <p class="f-ev"><code>panel/bridge_adapter.py:202 · mcp/tools.py:118 · server/handlers.py:1051 · shared/bridge.py:762</code></p>
+  </div>
+
+  <div class="finding crit">
+    <div class="f-top"><span class="sev crit">critical</span><span class="verd confirmed">confirmed</span>
+      <span class="ctxtags"><span class="ctxtag">studio</span><span class="ctxtag">td</span></span></div>
+    <p class="f-title">Studio auth/RBAC fails open on the shared-key path and is absent on the production transport</p>
+    <p class="f-body"><code>check_permission()</code> runs only in <code>websocket.py</code> — the
+    non-default testing backend. The production <code>hwebserver /synapse</code> and <code>/mcp</code>
+    transports have shared-key auth but no roles, RBAC, or per-user sessions. Even on websocket, RBAC is
+    guarded by <code>if user_session:</code> with no <code>else</code>: a shared-key client with no
+    directory entry authenticates, gets no session, skips permission checks, and lands in the audit log
+    with <code>user_id = ''</code>. This is tracked internally as SEC-1.</p>
+    <p class="f-corr"><b>corrected</b> The <code>/mcp</code> fail-open is <code>except ImportError: pass</code>
+    (fails open only if the auth module can't load), not a bare except.</p>
+    <p class="f-ev"><code>server/websocket.py:591,447 · server/hwebserver_adapter.py:232 · mcp/server.py:690</code></p>
+  </div>
+
+  <div class="finding crit">
+    <div class="f-top"><span class="sev crit">critical</span><span class="verd confirmed">confirmed</span>
+      <span class="ctxtags"><span class="ctxtag">studio</span></span></div>
+    <p class="f-title"><code>execute_python</code> is unsandboxed full-<code>__builtins__</code> RCE, LAN-reachable in studio mode</p>
+    <p class="f-body">The live handler executes arbitrary Python with full builtins and <code>hou</code> in
+    scope, no import filter, no length cap, no gate — deliberately pinned ungated for single-user
+    localhost. In studio mode the same handler is reachable over the network by anyone holding the shared
+    key (or, per the finding above, no key at all), turning a create tool into remote code execution on
+    every artist's workstation.</p>
+    <p class="f-ev"><code>server/handlers.py:1021–1097</code> (pinned by <code>tests/test_phase0b_consent_posture.py</code>)</p>
+  </div>
+
+  <div class="finding crit">
+    <div class="f-top"><span class="sev crit">critical</span><span class="verd partial">partial</span>
+      <span class="ctxtags"><span class="ctxtag">studio</span></span></div>
+    <p class="f-title">One shared handler holds per-connection identity in mutable state → cross-user audit misattribution</p>
+    <p class="f-body">A single <code>SynapseHandler</code> instance carries <code>_user_id</code> as mutable
+    state that each connection overwrites via <code>set_user_id</code>. Under concurrent studio clients,
+    one user's command can be stamped with another's identity in the audit trail — the accountability the
+    studio posture exists to provide.</p>
+    <p class="f-corr"><b>corrected</b> Not <em>every</em> on-disk decision is anonymous — the gate store
+    does persist <code>decided_by=user_id</code>. The race is on the hash-chained audit JSONL, which is
+    the narrower but still real claim.</p>
+    <p class="f-ev"><code>server/handlers.py:301,342,456</code></p>
+  </div>
+
+  <div class="divlabel">High — architecture &amp; policy root</div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd confirmed">confirmed</span>
+      <span class="ctxtags"><span class="ctxtag">studio</span><span class="ctxtag">td</span><span class="ctxtag">farm</span><span class="ctxtag">solo</span></span></div>
+    <p class="f-title">No single source of truth for policy: five disagreeing taxonomies, default-open on the bridge path</p>
+    <p class="f-body">Capability, gate level, read-only status, and disk-touch are each defined more than
+    once across the bridge, the handlers, the tool registry, and the worker policy — and they disagree.
+    The bridge path defaults <em>open</em> when a lookup misses. This is the architectural root the four
+    criticals grow from: with no one authoritative policy table, there is nowhere to enforce consent or
+    permission consistently.</p>
+    <p class="f-ev"><code>shared/bridge.py · mcp/_tool_registry.py · server/handlers.py · panel/worker_policy.py</code></p>
+  </div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd confirmed">confirmed</span>
+      <span class="ctxtags"><span class="ctxtag">td</span><span class="ctxtag">farm</span><span class="ctxtag">studio</span></span></div>
+    <p class="f-title">Scout's phantom-API gate mis-serves on build mismatch; one point-build table can't serve a mixed fleet</p>
+    <p class="f-body">The phantom-API defense keys on a single introspected symbol table for one exact
+    Houdini build. In the external-process topology the version check is skipped, and a studio running
+    several H21 point-builds (or H21 + H22) has one table that is authoritative for at most one of them —
+    the gate silently over- or under-serves the rest. Directly relevant to the new context track, whose
+    catalog is likewise per-build.</p>
+    <p class="f-ev"><code>cognitive/tools/scout.py · cognitive/tools/data/h21_symbol_table.json</code></p>
+  </div>
+
+  <div class="divlabel">High — evaluation coverage</div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd confirmed">confirmed</span>
+      <span class="ctxtags"><span class="ctxtag">farm</span><span class="ctxtag">studio</span><span class="ctxtag">td</span></span></div>
+    <p class="f-title">The prompt → reversible → recorded → render promise has no automated demonstration</p>
+    <p class="f-body">The golden, scenario, and recovery tests that would prove SYNAPSE's core value end
+    to end are ADAPT stubs or missing. Nothing in CI drives a prompt to a reversible, recorded scene
+    mutation and on to a verified frame. <em>This is precisely the gap the new context track begins to
+    close</em> — its per-context goldens are the first automated create→verify→revert demonstrations.</p>
+    <p class="f-ev"><code>harness/verify/checks.py</code> (render/ledger/revert checks) · missing e2e scenarios</p>
+  </div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd confirmed">confirmed</span>
+      <span class="ctxtags"><span class="ctxtag">solo</span><span class="ctxtag">studio</span><span class="ctxtag">farm</span><span class="ctxtag">td</span></span></div>
+    <p class="f-title">Fake-<code>hou</code> module residency is systemic and unguarded; suite validity depends on collection order</p>
+    <p class="f-body">Dozens of test files plant fake <code>hou</code> modules in <code>sys.modules</code> at
+    import time; the alphabetically-first planter wins for the whole run. ~4000 tests are green in
+    standalone mode but never touch a real Houdini session, and nothing guards against a residency
+    collision quietly changing what the suite actually exercises. A TD cannot fully trust the suite as an
+    upgrade gate.</p>
+    <p class="f-ev">46 test files plant module-level <code>sys.modules['hou']</code> fakes</p>
+  </div>
+
+  <div class="divlabel">High — memory &amp; provenance</div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd confirmed">confirmed</span>
+      <span class="ctxtags"><span class="ctxtag">studio</span><span class="ctxtag">solo</span><span class="ctxtag">td</span></span></div>
+    <p class="f-title">Memory provenance is mislabeled at write time — AI decisions stamped <code>source='user'</code></p>
+    <p class="f-body">Model-authored memories are written with <code>source = 'user'</code>, markdown
+    entries carry no author, and the trust-tier fields are dead. The provenance discipline the docs
+    describe — knowing whether a remembered fact came from the artist or the model — does not survive the
+    write path, so low-trust model inferences are indistinguishable from operator intent.</p>
+    <p class="f-ev"><code>memory/</code> write path · tier fields unused</p>
+  </div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd confirmed">confirmed</span>
+      <span class="ctxtags"><span class="ctxtag">solo</span><span class="ctxtag">studio</span><span class="ctxtag">farm</span></span></div>
+    <p class="f-title">Recall has no staleness, conflict, or recency semantics — stale memories can outrank fresh facts</p>
+    <p class="f-body">Retrieval has no notion of recency or contradiction and its order is nondeterministic,
+    so an outdated memory can outrank a newer, conflicting scene fact. Context assembly is treated as a
+    ranking problem, not a trust problem.</p>
+    <p class="f-ev"><code>synapse_recall / synapse_memory_query</code> handlers</p>
+  </div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd confirmed">confirmed</span>
+      <span class="ctxtags"><span class="ctxtag">studio</span><span class="ctxtag">farm</span><span class="ctxtag">td</span></span></div>
+    <p class="f-title">Three parallel memory stores, per-process env-selected — split-brain by construction</p>
+    <p class="f-body">JSONL, Living-Memory markdown, and Moneta all exist, with the active backend chosen
+    by an environment variable per process. Two artists — or a panel and a farm job — with different env
+    settings write to different stores that can silently diverge, with no reconciliation authority.</p>
+    <p class="f-ev"><code>SYNAPSE_MEMORY_BACKEND</code> selects jsonl | moneta | shadow at process start</p>
+  </div>
+
+  <div class="divlabel">High — corrected on verification (risk reduced)</div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd partial">partial</span>
+      <span class="ctxtags"><span class="ctxtag">farm</span><span class="ctxtag">studio</span><span class="ctxtag">solo</span></span></div>
+    <p class="f-title">PDG cook-failure "rollback" deletes generated outputs — but the destructive path has no live caller</p>
+    <p class="f-body">On cook failure the bridge's async path wipes generated caches with
+    <code>dirtyAllTasks(remove_files=True)</code> — a non-granular disk delete unsafe on shared farm
+    storage.</p>
+    <p class="f-corr"><b>corrected</b> Severity was overstated: <code>execute_async</code> is test-only —
+    the panel, <code>/mcp</code>, and live paths all reach the file-preserving handlers, so no cook today
+    can trigger this. It is a latent architectural hazard, not a live data-loss path.</p>
+    <p class="f-ev"><code>shared/bridge.py</code> (execute_async, no production caller)</p>
+  </div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd partial">partial</span>
+      <span class="ctxtags"><span class="ctxtag">farm</span><span class="ctxtag">studio</span></span></div>
+    <p class="f-title">Long-running renders block the process — largely already solved</p>
+    <p class="f-body">The finding claimed renders run as one synchronous blocking RPC holding the mutation
+    lock for the whole sequence.</p>
+    <p class="f-corr"><b>corrected — mostly refuted</b> <code>tops_render_sequence</code> and
+    <code>tops_multi_shot</code> already default <code>blocking=False</code> and return a
+    <code>job_id</code> immediately with status <code>cooking</code>. The async render path the finding
+    asked for is already implemented; only a subset of single-frame calls remain synchronous.</p>
+    <p class="f-ev"><code>handlers_tops / render_sequence.py:120,296,382,507</code></p>
+  </div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd partial">partial</span>
+      <span class="ctxtags"><span class="ctxtag">farm</span></span></div>
+    <p class="f-title">No farm evaluation scenario, and the harness render-truth check is a stub</p>
+    <p class="f-body">The harness <code>check_render</code> asserts only <code>size &gt; 1024</code> bytes —
+    it cannot tell a black frame from a good one — and there is no headless/farm eval scenario.</p>
+    <p class="f-corr"><b>corrected</b> Production already ships a <em>real</em> black-frame validator:
+    <code>validate_frame</code> runs quantified OIIO checks (mean luminance, NaN/Inf, clipping). The gap
+    is that the harness gate doesn't call it — the primitive to fix this already exists.</p>
+    <p class="f-ev"><code>server/handlers_render.py:753</code> (validate_frame) vs <code>harness/verify/checks.py</code> (check_render)</p>
+  </div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd partial">partial</span>
+      <span class="ctxtags"><span class="ctxtag">solo</span><span class="ctxtag">farm</span></span></div>
+    <p class="f-title">Client retries duplicate mutating side effects — no server-side idempotency</p>
+    <p class="f-body">A transparently-retried mutating tool call re-executes the side effect; there is no
+    server-side dedupe.</p>
+    <p class="f-corr"><b>corrected</b> The idempotent flag <em>is</em> consumed — published as the MCP
+    <code>idempotentHint</code> annotation and test-pinned — but nothing on the server enforces
+    dedupe from it. The hint exists; the enforcement doesn't.</p>
+    <p class="f-ev"><code>mcp/_tool_registry.py:1390</code></p>
+  </div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd partial">partial</span>
+      <span class="ctxtags"><span class="ctxtag">studio</span><span class="ctxtag">td</span><span class="ctxtag">solo</span></span></div>
+    <p class="f-title">The documented MOE routing protocol has no live callers</p>
+    <p class="f-body">The Mixture-of-Experts routing described in the blueprint as the operating protocol
+    is not consulted by the live tool paths — the routers exist but none is authoritative on a production
+    request.</p>
+    <p class="f-corr"><b>corrected</b> Core holds, but the finding misread one detail: the idle-router
+    scan finds the bridge, not the router; the router is a module singleton. The point stands — routing
+    is aspirational scaffolding, not the live dispatch — which is worth reconciling in the docs.</p>
+    <p class="f-ev"><code>shared/router.py:305 · routing/</code></p>
+  </div>
+
+  <div class="finding high">
+    <div class="f-top"><span class="sev high">high</span><span class="verd partial">partial</span>
+      <span class="ctxtags"><span class="ctxtag">solo</span><span class="ctxtag">studio</span><span class="ctxtag">td</span></span></div>
+    <p class="f-title">The live memory-evolution tool runs the deprecated evolver, not the lossless pipeline the docs describe</p>
+    <p class="f-body">The wired <code>evolve_memory</code> path uses the older evolver rather than the
+    lossless markdown→USD→companion→diff pipeline the blueprint promises.</p>
+    <p class="f-corr"><b>corrected</b> Not as lossy as claimed: the parser keeps each session's full block
+    text, written to USD as <code>synapse:narrative</code> and echoed verbatim in the companion. A
+    doc-vs-code drift worth fixing, but not silent data loss.</p>
+    <p class="f-ev"><code>shared/evolution.py:142,250</code></p>
+  </div>
+
+  <p class="fnote" style="margin-top:22px">Three more highs were verified and corrected in the same
+  direction — provider keys are plaintext shared <code>.env</code> (but the load source <em>is</em>
+  logged); memory persistence lacks cross-process locking (but scene-memory markdown writes <em>are</em>
+  atomic appends, not truncating); destructive live ops lack preview/dry-run (but USD handlers <em>are</em>
+  undo-wrapped — ~10 of them). The pattern: the engineering is more careful than the surface suggests,
+  and verification kept the severities honest.</p>
+</section>
+
+<!-- ============ MEDIUM/LOW + STRENGTHS ============ -->
+<section id="tail">
+  <div class="cols">
+    <div>
+      <div class="divlabel">Medium / low — operational tail</div>
+      <div class="li"><span class="mk mono">·</span><span>All ~123 tools always exposed to the model — no task/context filtering of the pool.</span></div>
+      <div class="li"><span class="mk mono">·</span><span>Zero token/cost accounting — every provider drops usage events; the rail meter is permanently empty.</span></div>
+      <div class="li"><span class="mk mono">·</span><span>Panel conversation, session, and pending-approval state is memory-only — close/reopen or crash loses it.</span></div>
+      <div class="li"><span class="mk mono">·</span><span>Tool arguments are not validated against declared schemas at the execution boundary.</span></div>
+      <div class="li"><span class="mk mono">·</span><span>Emergency halt misses TOP nets outside <code>/obj</code>, blocks nothing, notifies no one, persists nothing.</span></div>
+      <div class="li"><span class="mk mono">·</span><span>Kill switch is a single-slot, last-wins registry with cooperative iteration-boundary cancel.</span></div>
+      <div class="li"><span class="mk mono">·</span><span>No hip-file checkpoint/autosave around risky mutations — undo dies with the process.</span></div>
+      <div class="li"><span class="mk mono">·</span><span>Knowledge-injection paths bypass the phantom-API gate; corpus conformance covers only USD-lux encodings.</span></div>
+      <div class="li"><span class="mk mono">·</span><span>Multi-Houdini-session targeting is last-writer-wins with no session isolation.</span></div>
+      <div class="li"><span class="mk mono">·</span><span>Panel "connected" indicators read in-process flags, not a live bridge probe.</span></div>
+    </div>
+    <div>
+      <div class="divlabel">Strengths a studio can rely on</div>
+      <div class="li pos"><span class="mk mono">✓</span><span><b>FloorGate Tier-0 provenance spine</b> — every mutating op on every entry path records a provenance file; genuinely production-grade and on the live path.</span></div>
+      <div class="li pos"><span class="mk mono">✓</span><span><b>Canonical tool registry</b> with real side-effect metadata, shared by both transports.</span></div>
+      <div class="li pos"><span class="mk mono">✓</span><span><b>Hardened main-thread marshalling</b> — per-call timeouts, zombie-kill, circuit breaker + rate limiter + watchdog against Houdini's single thread.</span></div>
+      <div class="li pos"><span class="mk mono">✓</span><span><b>Scout phantom-API gate</b> is fail-closed end to end — membership from a checksum-verified introspected <code>dir()</code> table, not a hand-list.</span></div>
+      <div class="li pos"><span class="mk mono">✓</span><span><b>Fail-closed worker policy</b> — the autonomous panel worker denies unknown tools by an allowlist derived from the registry.</span></div>
+      <div class="li pos"><span class="mk mono">✓</span><span><b>Real render QC</b> — <code>validate_frame</code> runs quantified OIIO black-frame / NaN / clipping checks.</span></div>
+      <div class="li pos"><span class="mk mono">✓</span><span><b>Portable, self-verifying install</b> — <code>packages/synapse.json</code> derives all paths from the package root; the H-upgrade is one scripted, fail-loud hython command; studio docs are conformance-pinned.</span></div>
+      <div class="li pos"><span class="mk mono">✓</span><span><b>Append-only, hash-chained audit JSONL</b> with structured I/O capture.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ UPGRADE PATH ============ -->
+<section id="upgrade">
+  <h2>Part IV — Prioritized upgrade path</h2>
+  <p class="h2sub">Silent safety first, then durability, then the eval wedge</p>
+  <p class="fnote">Ordered by the evaluation playbook's priority: silent safety gaps, then
+  duplicate-write / durability, then evaluation coverage, then farm correctness. Step 1 alone collapses
+  four of the five safety findings.</p>
+
+  <div class="step">
+    <div class="step-n mono">1</div>
+    <div>
+      <p class="step-h">Unify the policy layer and enforce consent at the dispatch boundary</p>
+      <p class="step-b">Collapse the five disagreeing taxonomies into one authoritative table keyed by
+      gate level, and check it inside <code>registry.invoke()</code> / <code>handle()</code> so every
+      transport hits the same policy. Give <code>/mcp</code> and autonomous paths their own HumanGate-wired
+      bridge instead of the disarmed panel singleton; make auto-approve an explicit per-deploy-mode choice;
+      record the real consent source in the IntegrityBlock; default-deny in studio mode.</p>
+      <span class="step-tag">closes criticals 1 · 3 · 4 + the policy-root high — safety-permissions</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-n mono">2</div>
+    <div>
+      <p class="step-h">Carry per-user identity through dispatch</p>
+      <p class="step-b">Move authn/RBAC into the transport-agnostic boundary keyed by per-connection
+      identity; require per-user keys on all three transports; end the shared-handler mutable
+      <code>_user_id</code> race so audit entries attribute correctly; default-deny when role/session is
+      unresolved.</p>
+      <span class="step-tag">closes critical 2 + the identity race — safety-permissions</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-n mono">3</div>
+    <div>
+      <p class="step-h">Choose one authoritative memory store and make provenance real</p>
+      <p class="step-b">Pick a single source of truth among JSONL / Living-Memory / Moneta with explicit
+      reconciliation; stamp source, author, and trust tier at write time; add recency and conflict
+      handling to recall so a stale memory can never outrank a fresher, contradicting scene fact.</p>
+      <span class="step-tag">closes the three memory highs — context-memory-eval / architecture</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-n mono">4</div>
+    <div>
+      <p class="step-h">Turn the context track into the evaluation backbone</p>
+      <p class="step-b">The C-track goldens are the first automated create→verify→revert demonstrations —
+      extend them to a headless/farm scenario, and swap the harness's <code>size&gt;1024</code> stub for
+      the real <code>validate_frame</code> that already ships. Guard the fake-<code>hou</code> residency so
+      suite validity stops depending on collection order, and pin permission boundaries as invariants, not
+      enumerated regressions.</p>
+      <span class="step-tag">closes the golden-stub, render-stub, and fake-hou highs — context-memory-eval</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-n mono">5</div>
+    <div>
+      <p class="step-h">Close the farm-headless creation gaps the catalog just surfaced</p>
+      <p class="step-b">The TOP <code>hdefereval</code> GUI-binding and the DOP sim-population failure are now
+      the <code>C.4</code> / <code>C.5</code> targets — make TOP tools work headless (or declare them
+      GUI-only, honestly) and give DOP a create path that populates the simulation. Neutralize the latent
+      PDG <code>remove_files=True</code> rollback before any caller reaches it, and per-build the scout
+      symbol table so a mixed fleet is served correctly.</p>
+      <span class="step-tag">C.4 · C.5 improvement sprints + the PDG and scout highs — farm / td</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ACCEPTANCE ============ -->
+<section id="accept">
+  <h2>Part V — Acceptance checks</h2>
+  <p class="h2sub">What proves each fix landed</p>
+
+  <div class="divlabel">Shipped now — the context track (verified this session)</div>
+  <div class="accept" role="img" aria-label="Acceptance check results for the context track, all passing">
+    <div class="row"><span class="ok">✓</span> <span class="k">pytest</span> tests/  &nbsp;<span class="dim">→</span>  4062 passed · 0 failed · 87 skipped <span class="dim">(61s)</span></div>
+    <div class="row"><span class="ok">✓</span> <span class="k">pytest</span> tests/test_ctx_track.py  &nbsp;<span class="dim">→</span>  14 passed <span class="dim">(2 await catalog-commit, no real fails)</span></div>
+    <div class="row"><span class="ok">✓</span> <span class="k">run.ts</span> --dry  &nbsp;<span class="dim">→</span>  C.0 queued · C.1–C.6 held · --task can't pierce the hold</div>
+    <div class="row"><span class="ok">✓</span> <span class="k">checks.py</span> --task C.0 --hython 21.0.671  &nbsp;<span class="dim">→</span>  PASS</div>
+    <div class="row"><span class="ok">✓</span> <span class="k">catalog</span> blake2b sealed · stamp == live build 21.0.671</div>
+    <div class="row"><span class="ok">✓</span> <span class="k">review</span> flywheel_review_context.py  &nbsp;<span class="dim">→</span>  0 CRITICAL · 5 advisory</div>
+  </div>
+
+  <div class="cols" style="margin-top:26px">
+    <div>
+      <div class="divlabel">Policy &amp; identity (steps 1–2)</div>
+      <div class="li"><span class="mk mono">□</span><span>A conformance test fails if any non-panel path resolves a bridge with <code>_gate=None</code> and an unconditional callback.</span></div>
+      <div class="li"><span class="mk mono">□</span><span>A wire-level test denies a sessionless / viewer client a mutating command through the socket.</span></div>
+      <div class="li"><span class="mk mono">□</span><span>Every transport rejects a request with an unresolved role in studio mode (default-deny).</span></div>
+      <div class="li"><span class="mk mono">□</span><span>Audit entries under concurrent clients attribute to the correct <code>user_id</code>.</span></div>
+    </div>
+    <div>
+      <div class="divlabel">Memory, eval &amp; farm (steps 3–5)</div>
+      <div class="li"><span class="mk mono">□</span><span>Recall returns provenance + last-validated; a stale memory never outranks a fresher conflicting fact (invariant test).</span></div>
+      <div class="li"><span class="mk mono">□</span><span>A CI-runnable headless golden drives prompt → create → revert and asserts a non-black frame via <code>validate_frame</code>.</span></div>
+      <div class="li"><span class="mk mono">□</span><span>The fake-<code>hou</code> residency has a guard; permission boundaries are pinned as invariants.</span></div>
+      <div class="li"><span class="mk mono">□</span><span>C.4 / C.5 land: TOP resolves headless (or is declared GUI-only) and DOP's golden populates the sim — gaps ratchet to 0.</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p class="mono">Deployment review — 35 agents · 93 raw → 62 canonical → 24 verified (0 refuted) · adversarial-verified.<br>
+  Context track — spec frozen → 4 builders → suite 4062✓ · first catalog live on H21.0.671.<br>
+  Nothing committed. All work sits on <span style="color:var(--accent)">feat/harness-v6-track</span> awaiting your merge.</p>
+</footer>
+</div>

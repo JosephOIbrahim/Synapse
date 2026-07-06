@@ -618,6 +618,343 @@ def check_validator_lop_conformance(ctx):
     return {"ok": rc == 0, "detail": (tail[-1] if tail else "no pytest output")[:400]}
 
 
+# ---------- v6 track: blueprint-armed checks (all stock python, no hython) ----------
+# Every check here reads the WORKTREE (ctx['wt']) like the rest of this file. run.ts arms
+# the track off the MAIN checkout's working tree, but worktrees fork from HEAD — so an
+# uncommitted docs/v6/ drop arms V-tasks whose worktrees contain no docs/v6 at all. The
+# failure details below say so explicitly; the fix is always "commit the drop".
+
+_V6_CANONICAL = ("BP00_manifest.md", "BP09_iteration_controller.md", "BP10_knowledge_base.md")
+
+def check_blueprints_present(ctx):
+    # v6: the arming marker + the Evaluator's drop inventory. ok hinges ONLY on BP00 (the
+    # trigger file); the detail enumerates the whole BP00–BP10 surface either way. Never ok:None
+    # — a missing drop is a fact, not a down gate.
+    d = Path(ctx["wt"]) / "docs" / "v6"
+    canon = {name: (d / name).is_file() for name in _V6_CANONICAL}
+    pattern = sorted(p.name for p in d.glob("BP0[1-8]_*.md")) if d.is_dir() else []
+    present = sorted([n for n, there in canon.items() if there] + pattern)
+    missing = [n for n, there in canon.items() if not there]
+    inv = f"present: {', '.join(present) or 'none'}; missing canonical: {', '.join(missing) or 'none'}"
+    if not canon["BP00_manifest.md"]:
+        return {"ok": False, "detail": ("docs/v6/BP00_manifest.md absent from the WORKTREE — "
+                "if you dropped it, did you `git add docs/v6 && git commit`? (worktrees fork "
+                f"from HEAD). {inv}")[:500]}
+    return {"ok": True, "detail": inv[:500]}
+
+def _bp00_manifest_rows(text):
+    """[(path, layer_cell), ...] from BP00's `## Module Manifest` table, or None if the
+    section or its table is missing entirely. A row counts as data only when its first
+    column is a .py path — the header row ('path | layer | …') and the |---| separator
+    fall out for free. Distinguishing None (no table) from [] (hollow table) matters: a
+    zero-row table must NOT vacuously pass the conformance check."""
+    import re
+    lines = text.splitlines()
+    idx = next((i for i, l in enumerate(lines)
+                if re.match(r"\s*#{2,6}\s", l) and "module manifest" in l.lower()), None)
+    if idx is None:
+        return None
+    rows, seen_table = [], False
+    for l in lines[idx + 1:]:
+        s = l.strip()
+        if re.match(r"#{1,6}\s", s):
+            break  # next section
+        if not s.startswith("|"):
+            if seen_table and s:
+                break  # prose after the table ends it
+            continue
+        seen_table = True
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if cells and cells[0].endswith(".py"):
+            rows.append((cells[0].replace("\\", "/"), cells[1] if len(cells) > 1 else ""))
+    return rows if seen_table else None
+
+def check_v6_skeleton_conformance(ctx):
+    # V.1's gate: every module BP00's manifest names must exist and compile; "pure"-layer
+    # rows must carry ZERO hou imports at ANY depth (V.1's wording — pure means pure; a
+    # function-level `import hou` is still a hou dependency. importlib-string evasion is
+    # left to the adversarial Evaluator). Compile is in-memory builtin compile(), not
+    # py_compile — a verify step must not litter __pycache__ into the tree it judges.
+    import ast
+    wt = Path(ctx["wt"])
+    bp00 = wt / "docs" / "v6" / "BP00_manifest.md"
+    if not bp00.is_file():
+        return {"ok": False, "detail": "docs/v6/BP00_manifest.md missing in worktree "
+                                       "(commit the drop?) — see docs/v6/INTAKE.md"}
+    # utf-8-sig on every human-authored read: a Windows-saved drop arrives BOM'd, and a BOM
+    # survives a plain utf-8 decode — it then breaks the heading regex here and is a
+    # SyntaxError to compile() below. Tolerate the BOM, don't flunk the drop over an editor.
+    rows = _bp00_manifest_rows(bp00.read_text(encoding="utf-8-sig", errors="ignore"))
+    if rows is None:
+        return {"ok": False, "detail": "no `## Module Manifest` section/table in "
+                                       "BP00_manifest.md — see docs/v6/INTAKE.md"}
+    if not rows:
+        return {"ok": False, "detail": "Module Manifest table has no module rows (first "
+                                       "column must be a repo-relative .py path) — see docs/v6/INTAKE.md"}
+    missing, broken, impure, escapes = [], [], [], []
+    for rel, layer in rows:
+        rp = Path(rel)
+        # containment: rows are contractually repo-relative. An absolute/drive/.. path makes
+        # `wt / rel` silently REPLACE the base (pathlib join semantics), so a file OUTSIDE
+        # the worktree could satisfy "exists + compiles" — reject the row, never judge
+        # foreign disk.
+        if rp.is_absolute() or rp.drive or ".." in rp.parts:
+            escapes.append(rel)
+            continue
+        f = wt / rel
+        if not f.is_file():
+            missing.append(rel)
+            continue
+        src = f.read_text(encoding="utf-8-sig", errors="ignore")
+        try:
+            tree = ast.parse(src)
+            compile(src, str(f), "exec")
+        except SyntaxError as e:
+            broken.append(f"{rel}:{e.lineno}")
+            continue
+        if "pure" in layer.lower():
+            for node in ast.walk(tree):
+                names = ([a.name for a in node.names] if isinstance(node, ast.Import)
+                         else [node.module or ""] if isinstance(node, ast.ImportFrom) else [])
+                if any(n == "hou" or n.startswith("hou.") for n in names):
+                    impure.append(rel)
+                    break
+    bad = []
+    if escapes:
+        bad.append(f"not repo-relative (escapes worktree): {', '.join(escapes[:6])}")
+    if missing:
+        bad.append(f"missing: {', '.join(missing[:6])}")
+    if broken:
+        bad.append(f"won't compile: {', '.join(broken[:6])}")
+    if impure:
+        bad.append(f"pure layer imports hou: {', '.join(impure[:6])}")
+    if bad:
+        return {"ok": False, "detail": ("; ".join(bad))[:500]}
+    return {"ok": True, "detail": f"{len(rows)} manifest module(s) present + compile; pure layers hou-free"}
+
+def _v6_spec_headings(ctx, rel, required):
+    # Shared mechanic for v6_spec_bp09/bp10: case-insensitive substring match restricted to
+    # HEADING LINES (^#{1,6}\s) only — body prose like "we will add tests later" must never
+    # satisfy the "Tests" requirement (that would be a quiet fake pass).
+    import re
+    f = Path(ctx["wt"]) / rel
+    if not f.is_file():
+        return {"ok": False, "detail": f"{rel} missing in worktree"}
+    heads = [l.strip().lower() for l in f.read_text(encoding="utf-8-sig", errors="ignore").splitlines()
+             if re.match(r"\s*#{1,6}\s", l)]
+    missing = [t for t in required if not any(t.lower() in h for h in heads)]
+    if missing:
+        return {"ok": False, "detail": f"{rel}: missing required heading(s): "
+                                       f"{', '.join(missing)} ({len(heads)} headings scanned)"}
+    return {"ok": True, "detail": f"{rel}: all {len(required)} required headings present"}
+
+def check_v6_spec_bp09(ctx):
+    # "Convergence" + "Stop" may live in one heading ("Convergence & Stop Logic") — matched
+    # as two independent terms, so that form satisfies both.
+    return _v6_spec_headings(ctx, "docs/v6/BP09_iteration_controller.md",
+                             ["Loop Orchestration", "Convergence", "Stop", "Max-Iteration",
+                              "Strategy", "H22 Dependencies", "Tests"])
+
+def check_v6_spec_bp10(ctx):
+    return _v6_spec_headings(ctx, "docs/v6/BP10_knowledge_base.md",
+                             ["Recipe Store", "Failure", "Vector Schema", "Query API", "Tests"])
+
+# The roundtrip driver runs in a STOCK-PYTHON SUBPROCESS with the worktree's package pinned
+# first (env=_wt_env) — in-process import would resolve `synapse` to whatever this process
+# already loaded (editable install / repo checkout), silently testing the wrong tree. The
+# KB-FILE line lets the parent assert the module really came from the worktree.
+_KB_ROUNDTRIP_DRIVER = """\
+import sys, tempfile
+import synapse.v6.knowledge_base as kb_mod
+print("KB-FILE", getattr(kb_mod, "__file__", "?"))
+recipe = {"name": "pyro_smoke_v1",
+          "steps": [{"op": "create", "type": "pyrosolver", "parms": {"divsize": 0.05}}],
+          "tags": ["pyro", "smoke"]}
+failure = {"symptom": "black frame",
+           "context": {"node": "/stage/karma1", "frames": [1, 2, 3], "settings": {"engine": "xpu"}}}
+with tempfile.TemporaryDirectory() as tmp:
+    kb = kb_mod.KnowledgeBase(root=tmp)
+    kb.add_recipe(recipe)
+    kb.add_failure(failure)
+    got_r = kb.query("recipe")
+    got_f = kb.query("failure")
+    lossless = any(x == recipe for x in got_r) and any(x == failure for x in got_f)
+    print("KB-ROUNDTRIP-OK" if lossless else "KB-ROUNDTRIP-LOSSY",
+          f"recipes={len(got_r)} failures={len(got_f)}")
+"""
+
+def check_v6_kb_roundtrip(ctx):
+    # V.3's independent gate (vs v6_tests_green's generator-authored tests): nested payloads
+    # in, deep-equal out — lossless or fail. Disk check FIRST so the verdict never depends on
+    # what `synapse` resolves to in THIS process (the module-absent branch stays hermetic
+    # forever, even after v6/ merges to the main repo).
+    wt = Path(ctx["wt"]).resolve()
+    mod = wt / "python" / "synapse" / "v6" / "knowledge_base.py"
+    if not mod.is_file():
+        return {"ok": False, "detail": "BP10 not built yet (task V.3): "
+                                       "python/synapse/v6/knowledge_base.py absent"}
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+        f.write(_KB_ROUNDTRIP_DRIVER); path = f.name
+    try:
+        rc, out, err = sh([sys.executable, path], cwd=ctx["wt"], env=_wt_env(ctx))
+    finally:
+        os.unlink(path)
+    fileline = next((l for l in out.splitlines() if l.startswith("KB-FILE ")), "")
+    resolved = fileline[8:].strip().replace("\\", "/").lower()
+    if resolved and str(wt).replace("\\", "/").lower() not in resolved:
+        return {"ok": False, "detail": f"knowledge_base resolved OUTSIDE the worktree: {resolved[:300]}"}
+    if rc == 0 and "KB-ROUNDTRIP-OK" in out:
+        return {"ok": True, "detail": "recipe + failure round-trip deep-equal (lossless)"}
+    return {"ok": False, "detail": (err or out).strip()[-500:] or "roundtrip produced no output"}
+
+def check_v6_tests_green(ctx):
+    # V.3–V.7's shared gate. tests/v6 absent → honest-false (test-first is the v6 law).
+    # rc 0 alone is NOT green: an all-skipped run also exits 0, so a blanket pytestmark=skip
+    # could fake a pass — require ≥1 test actually PASSED in the summary. (Empty dir is
+    # already safe: pytest rc 5.)
+    import re
+    wt = Path(ctx["wt"])
+    if not (wt / "tests" / "v6").is_dir():
+        return {"ok": False, "detail": "test-first: tests/v6/ must land first"}
+    rc, out, err = sh([sys.executable, "-m", "pytest", "tests/v6/", "-q", "--no-header", "-x"],
+                      cwd=ctx["wt"], env=_wt_env(ctx))
+    tail = (out or err).strip().splitlines()
+    summary = tail[-1] if tail else "no pytest output"
+    if rc == 0 and not re.search(r"\b[1-9]\d* passed\b", out):
+        return {"ok": False, "detail": f"rc=0 but ZERO tests passed (all skipped?) — {summary[:350]}"}
+    return {"ok": rc == 0, "detail": f"rc={rc}; {summary[:400]}"}
+
+
+# ---------- C track: context-capability (catalog + review sweep + per-context goldens) ----------
+# The catalog (harness/notes/context_capability_21.json) is this track's truth deposit: what
+# SYNAPSE can actually CREATE per Houdini context (sop/lop/cop/top/dop/mat), probed through the
+# live handler surface — never raw hou for mutations. Worktrees fork from HEAD, so the failure
+# details below say "commit/merge" explicitly, same discipline as the v6 block above.
+
+def check_context_catalog_fresh(ctx):
+    # C.0 + every C.n: the catalog must be (a) internally sound — schema v1 + blake2b
+    # recomputes over `contexts` (generated/summary/unclassified sit OUTSIDE the digest by
+    # design), and (b) stamped with the live build when hython is available (stale → FAIL
+    # loud; a stale catalog re-ranks C.1–C.6 off dead truth). Unlike connectivity there is
+    # no packaged copy yet — the harness note IS canonical — so no byte-identity leg.
+    wt = Path(ctx["wt"])
+    cat = wt / "harness" / "notes" / "context_capability_21.json"
+    if not cat.exists():
+        return {"ok": False, "detail": "harness/notes/context_capability_21.json missing — "
+                                       "run C.0 first; commit the catalog — worktrees fork from HEAD"}
+    try:
+        import hashlib
+        data = json.loads(cat.read_text(encoding="utf-8"))
+        if data.get("schema") != "context_capability/v1":
+            return {"ok": False, "detail": f"schema={data.get('schema')} != context_capability/v1"}
+        digest = hashlib.blake2b(
+            json.dumps(data.get("contexts", {}), sort_keys=True, ensure_ascii=False).encode("utf-8"),
+            digest_size=16).hexdigest()
+        if digest != data.get("blake2b"):
+            return {"ok": False, "detail": "catalog blake2b mismatch (corrupt/hand-edited)"}
+        stamp = data.get("houdini_version", "")
+    except Exception as e:
+        return {"ok": False, "detail": f"catalog unreadable: {str(e)[:300]}"}
+    if ctx["hython"]:
+        code = "import hou\nprint('BUILD', hou.applicationVersionString())"
+        rc, out, err = hython(ctx["hython"], code, ctx["wt"])
+        live = next((l.split(" ", 1)[1] for l in out.splitlines() if l.startswith("BUILD ")), None)
+        if live is None:
+            return {"ok": False, "detail": f"could not read live build: {(err or out).strip()[:200]}"}
+        if live != stamp:
+            return {"ok": False, "detail": f"catalog stamp {stamp} != live build {live} — STALE; "
+                                           "regenerate via host/introspect_context_capability.py"}
+        return {"ok": True, "detail": f"catalog sound, stamp==live build {live}"}
+    return {"ok": True, "detail": f"catalog sound (stamp {stamp}; live-build "
+                                  "comparison skipped — HYTHON unset)"}
+
+def check_context_review_clean(ctx):
+    # C.0: the REVIEW sweep re-runs clean — scripts/flywheel_review_context.py exits 0 with
+    # zero CRITICAL findings (integrity / misclassification / internal inconsistency). The
+    # sweep only reports; THIS check judges critical — mirrors check_lop_review_clean.
+    rc, out, err = sh([sys.executable, "scripts/flywheel_review_context.py"],
+                      cwd=ctx["wt"], env=_wt_env(ctx))
+    p = Path(ctx["wt"]) / ".claude/flywheel_ctx_findings.json"
+    if not p.exists():
+        return {"ok": False, "detail": (out or err).strip()[:400] or "review produced no findings file"}
+    try:
+        crit = json.loads(p.read_text(encoding="utf-8"))["summary"]["critical"]
+    except Exception as e:
+        return {"ok": False, "detail": f"findings unreadable: {str(e)[:200]}"}
+    head = (out or err).strip().splitlines()
+    return {"ok": rc == 0 and crit == 0,
+            "detail": f"rc={rc} critical={crit}; {head[0][:300] if head else ''}"}
+
+def _context_golden(ctx, name):
+    # C.1–C.6's shared gate: re-run the probe for ONE context; ok needs BOTH the golden (the
+    # context's minimum viable create-path) AND the ratchet (gaps strictly decrease vs the
+    # COMMITTED catalog, unless already 0). The baseline reads HEAD's catalog via `git show`,
+    # NOT the worktree file — the sprint refreshes the catalog in-tree, and a refreshed file
+    # as baseline would compare the probe against itself (fresh==fresh ⇒ the ratchet could
+    # never hold). HEAD is what the human merged; promoting a new baseline is theirs.
+    if not ctx["hython"]:
+        # ok:False, not ok:None — a golden that can't run is not verified (spec §3).
+        return {"ok": False, "detail": "HYTHON unset — a golden that cannot run is not verified"}
+    rc_b, cat, _ = sh(["git", "show", "HEAD:harness/notes/context_capability_21.json"], cwd=ctx["wt"])
+    if rc_b != 0 or not cat.strip():
+        return {"ok": False, "detail": "no committed catalog at HEAD — run C.0 + merge first "
+                                       "(the ratchet baseline is the MERGED catalog, not this sprint's refresh)"}
+    try:
+        gaps_base = len(json.loads(cat)["contexts"][name].get("gaps") or [])
+    except Exception as e:
+        return {"ok": False, "detail": f"committed catalog lacks a sound '{name}' entry "
+                                       f"({type(e).__name__}: {str(e)[:150]}) — run C.0 + merge first"}
+    artifact = f".claude/ctx_probe_{name}.json"
+    p = Path(ctx["wt"]) / artifact
+    p.unlink(missing_ok=True)  # a stale artifact surviving a failed probe run must not fake a verdict
+    rc, out, err = sh([ctx["hython"], "host/introspect_context_capability.py",
+                       "--context", name, "--out", artifact], cwd=ctx["wt"])
+    if not p.exists():
+        # the probe's contract is rc 0 iff the artifact was written — judge the FILE, and
+        # NEVER stdout (hython banners pollute it); the tail is only failure evidence.
+        return {"ok": False, "detail": f"probe wrote no artifact (rc={rc}): {(err or out).strip()[-300:]}"}
+    try:
+        entry = json.loads(p.read_text(encoding="utf-8"))["contexts"][name]
+        golden = entry.get("golden") or {}
+        golden_ok = golden.get("ok") is True
+        steps = golden.get("steps") or []
+        gaps = entry.get("gaps") or []
+        gaps_now = len(gaps)
+    except Exception as e:
+        return {"ok": False, "detail": f"probe artifact unreadable/malformed for '{name}': "
+                                       f"{type(e).__name__}: {str(e)[:250]}"}
+    first_fail = next((s for s in steps if s.get("ok") is not True), None)
+    if first_fail is not None:
+        fail_note = f"; first failing step: {first_fail.get('step')} ({str(first_fail.get('detail'))[:120]})"
+    elif gaps:
+        fail_note = f"; first gap: {str(gaps[0])[:120]}"  # extended-step failure — golden steps all ok
+    else:
+        fail_note = ""
+    ratchet = (gaps_base == 0 and gaps_now == 0) or (gaps_base > 0 and gaps_now <= gaps_base - 1)
+    return {"ok": golden_ok and ratchet,
+            "detail": (f"golden={'ok' if golden_ok else 'FAIL'}; gaps now={gaps_now} baseline={gaps_base}; "
+                       f"ratchet {'holds' if ratchet else 'broken (gaps must strictly decrease unless already 0)'}"
+                       + fail_note)[:500]}
+
+def check_context_golden_sop(ctx):
+    return _context_golden(ctx, "sop")
+
+def check_context_golden_lop(ctx):
+    return _context_golden(ctx, "lop")
+
+def check_context_golden_cop(ctx):
+    return _context_golden(ctx, "cop")
+
+def check_context_golden_top(ctx):
+    return _context_golden(ctx, "top")
+
+def check_context_golden_dop(ctx):
+    return _context_golden(ctx, "dop")
+
+def check_context_golden_mat(ctx):
+    return _context_golden(ctx, "mat")
+
+
 def run_one(name, task, ctx):
     fn = DISPATCH.get(name)
     if not fn:
@@ -651,6 +988,22 @@ DISPATCH = {
     "lop_knowledge_fresh": check_lop_knowledge_fresh,
     "lop_review_clean": check_lop_review_clean,
     "validator_lop_conformance": check_validator_lop_conformance,
+    # v6 — blueprint-armed track (V.1–V.7)
+    "blueprints_present": check_blueprints_present,
+    "v6_skeleton_conformance": check_v6_skeleton_conformance,
+    "v6_spec_bp09": check_v6_spec_bp09,
+    "v6_spec_bp10": check_v6_spec_bp10,
+    "v6_kb_roundtrip": check_v6_kb_roundtrip,
+    "v6_tests_green": check_v6_tests_green,
+    # C — context-capability track
+    "context_catalog_fresh": check_context_catalog_fresh,
+    "context_review_clean": check_context_review_clean,
+    "context_golden_sop": check_context_golden_sop,
+    "context_golden_lop": check_context_golden_lop,
+    "context_golden_cop": check_context_golden_cop,
+    "context_golden_top": check_context_golden_top,
+    "context_golden_dop": check_context_golden_dop,
+    "context_golden_mat": check_context_golden_mat,
 }
 
 def main():
