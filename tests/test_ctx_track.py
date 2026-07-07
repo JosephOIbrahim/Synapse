@@ -47,7 +47,8 @@ SCHEMA = "context_capability/v1"
 # guardrails.checks as of the graft's start — the C track adds TASK verifies, never
 # guardrails, so this list is frozen byte-for-byte (spec-C §6 "guardrails.checks unchanged").
 GUARDRAILS_FROZEN = ["scout_no_apex_corpus", "no_rigging_drift",
-                     "provenance_not_bypassed", "phantom_clean"]
+                     "provenance_not_bypassed", "phantom_clean",
+                     "suite_baseline"]  # ratchet: full-suite green baseline (2026-07-07)
 
 
 def _blake(obj):

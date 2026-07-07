@@ -65,7 +65,8 @@ S_CRITICAL_CHECKS = ["posture_declared", "policy_single_source", "consent_enforc
 # guardrails.checks as of the graft's start — the S track adds TASK verifies, NEVER guardrails,
 # so this list is frozen byte-for-byte (spec-S §6 "guardrails.checks unchanged").
 GUARDRAILS_FROZEN = ["scout_no_apex_corpus", "no_rigging_drift",
-                     "provenance_not_bypassed", "phantom_clean"]
+                     "provenance_not_bypassed", "phantom_clean",
+                     "suite_baseline"]  # ratchet: full-suite green baseline (2026-07-07)
 
 _CTX_KEYS = {"hython": "", "mode": "A"}
 
