@@ -1,146 +1,472 @@
 {
   "_comment": "Machine source of truth for the harness. Human-readable prose lives in the SYNAPSE→H22 checklist HTML; this file is what run.ts executes. Keep the two in sync (that sync IS task 0.3). 'verify' lists the deterministic checks from harness/verify/checks.py that gate the task. 'human_gate' marks a decision the harness must NOT make. 'mode' A runs now on H21; mode B is staged until harness/state/drop.json exists. v2: grafted with SYNAPSE_H22_BOUNDARY.md — D-H22-1/2/4 are now first-class (and critical), and the boundary non-goals are enforced as cross-cutting guardrails.",
   "checks_vocabulary": [
-    "import_panel", "brain_answers", "probe_runs", "probe_clean",
-    "version_single_source", "doctor", "cook_existing", "cook_node",
-    "hip_opens", "shot_login", "runsheet_present", "clean_install",
-    "nodes_appear", "ledger", "revert_clean", "render", "theme_ok",
-    "mcp_surface_probe", "mcp_registered", "mcp_truth_contract",
-    "scout_federates", "scout_no_apex_corpus", "no_rigging_drift",
-    "provenance_not_bypassed", "phantom_clean",
-    "connectivity_catalog_fresh", "wiring_conformance", "validator_catches_miswire",
-    "lop_knowledge_fresh", "lop_review_clean", "validator_lop_conformance",
-    "blueprints_present", "v6_skeleton_conformance", "v6_spec_bp09",
-    "v6_spec_bp10", "v6_kb_roundtrip", "v6_tests_green",
-    "context_catalog_fresh", "context_review_clean",
-    "context_golden_sop", "context_golden_lop", "context_golden_cop",
-    "context_golden_top", "context_golden_dop", "context_golden_mat",
-    "cook_api_confirmed", "cook_truth_fresh", "cook_review_clean",
-    "cook_golden_sop", "cook_golden_lop", "cook_golden_cop",
-    "cook_golden_dop", "tops_path_untouched",
-    "posture_declared", "policy_single_source", "consent_enforced",
-    "rbac_at_dispatch", "memory_provenance", "eval_backbone",
-    "farm_headless", "studio_readiness_review",
+    "import_panel",
+    "brain_answers",
+    "probe_runs",
+    "probe_clean",
+    "version_single_source",
+    "doctor",
+    "cook_existing",
+    "cook_node",
+    "hip_opens",
+    "shot_login",
+    "runsheet_present",
+    "clean_install",
+    "nodes_appear",
+    "ledger",
+    "revert_clean",
+    "render",
+    "theme_ok",
+    "mcp_surface_probe",
+    "mcp_registered",
+    "mcp_truth_contract",
+    "scout_federates",
+    "scout_no_apex_corpus",
+    "no_rigging_drift",
+    "provenance_not_bypassed",
+    "phantom_clean",
+    "connectivity_catalog_fresh",
+    "wiring_conformance",
+    "validator_catches_miswire",
+    "lop_knowledge_fresh",
+    "lop_review_clean",
+    "validator_lop_conformance",
+    "blueprints_present",
+    "v6_skeleton_conformance",
+    "v6_spec_bp09",
+    "v6_spec_bp10",
+    "v6_kb_roundtrip",
+    "v6_tests_green",
+    "context_catalog_fresh",
+    "context_review_clean",
+    "context_golden_sop",
+    "context_golden_lop",
+    "context_golden_cop",
+    "context_golden_top",
+    "context_golden_dop",
+    "context_golden_mat",
+    "cook_api_confirmed",
+    "cook_truth_fresh",
+    "cook_review_clean",
+    "cook_golden_sop",
+    "cook_golden_lop",
+    "cook_golden_cop",
+    "cook_golden_dop",
+    "tops_path_untouched",
+    "posture_declared",
+    "policy_single_source",
+    "consent_enforced",
+    "rbac_at_dispatch",
+    "memory_provenance",
+    "eval_backbone",
+    "farm_headless",
+    "studio_readiness_review",
     "suite_baseline"
   ],
   "guardrails": {
     "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger, and no newly-introduced phantom hou.* API (dir()-symbol-table-gated). PLUS the green ratchet (suite_baseline): the full `pytest tests/` result must not regress vs the committed floor in harness/verify/suite_baseline.json — failures only DOWN, passes only UP — so no Generator round can green its target while reddening other tests.",
-    "checks": ["scout_no_apex_corpus", "no_rigging_drift", "provenance_not_bypassed", "phantom_clean", "suite_baseline"]
+    "checks": [
+      "scout_no_apex_corpus",
+      "no_rigging_drift",
+      "provenance_not_bypassed",
+      "phantom_clean",
+      "suite_baseline"
+    ]
   },
   "tasks": [
     {
-      "id": "0.1", "phase": "prep", "mode": "A", "crit": true, "layer": "bounded-decision",
+      "id": "0.1",
+      "phase": "prep",
+      "mode": "A",
+      "crit": true,
+      "layer": "bounded-decision",
       "title": "Split the cp311 vendored seam (sidecar vs abi3)",
-      "refs": ["python/synapse/__init__.py", "host/daemon.py"],
-      "human_gate": { "decision": "sidecar | abi3", "recommended": "sidecar",
-        "why": "Bounded, evidence-backed direction — not a survival cliff. MEASURED: sidecar IPC (harness/notes/gate01_ipc_latency.py) runs p50 ~0.1-0.3ms — ~4 orders under the LLM + ~2s Houdini-cook floor, so IPC does NOT discriminate the arms. cp312/cp313 wheels are pre-cached at harness/state/wheel_cache/ (runbook docs/studio/UPGRADE.md Step 2a), so re-vendor-on-drop is cheap; if H22 ships cp311 this is a no-op. Sidecar is the durable fix, deferrable to the first post-release cycle. Harness verifies the property (brain_answers), not the mechanism; you commit the direction." },
-      "verify": ["import_panel", "brain_answers"]
+      "refs": [
+        "python/synapse/__init__.py",
+        "host/daemon.py"
+      ],
+      "human_gate": {
+        "decision": "sidecar | abi3",
+        "recommended": "sidecar",
+        "why": "Bounded, evidence-backed direction — not a survival cliff. MEASURED: sidecar IPC (harness/notes/gate01_ipc_latency.py) runs p50 ~0.1-0.3ms — ~4 orders under the LLM + ~2s Houdini-cook floor, so IPC does NOT discriminate the arms. cp312/cp313 wheels are pre-cached at harness/state/wheel_cache/ (runbook docs/studio/UPGRADE.md Step 2a), so re-vendor-on-drop is cheap; if H22 ships cp311 this is a no-op. Sidecar is the durable fix, deferrable to the first post-release cycle. Harness verifies the property (brain_answers), not the mechanism; you commit the direction."
+      },
+      "verify": [
+        "import_panel",
+        "brain_answers"
+      ]
     },
     {
-      "id": "0.2", "phase": "prep", "mode": "A", "crit": true, "layer": "survival",
+      "id": "0.2",
+      "phase": "prep",
+      "mode": "A",
+      "crit": true,
+      "layer": "survival",
       "title": "Build the H22 probe harness",
-      "refs": ["harness/notes/spec-0.2-api-delta-probe.md", "science/apex_probes.py", "server/solaris_compose.py"],
-      "verify": ["probe_runs"],
+      "refs": [
+        "harness/notes/spec-0.2-api-delta-probe.md",
+        "science/apex_probes.py",
+        "server/solaris_compose.py"
+      ],
+      "verify": [
+        "probe_runs"
+      ],
       "note": "On H21 the delta vs the H21-pinned constants should be ~empty — that empty diff is the proof the probe works before the drop makes the diff real."
     },
     {
-      "id": "0.3", "phase": "prep", "mode": "A", "crit": false, "layer": "hygiene",
+      "id": "0.3",
+      "phase": "prep",
+      "mode": "A",
+      "crit": false,
+      "layer": "hygiene",
       "title": "Single-source the version",
-      "refs": ["VERSION", "pyproject.toml", "DEMO_SCRIPT.md"],
-      "verify": ["version_single_source"]
+      "refs": [
+        "VERSION",
+        "pyproject.toml",
+        "DEMO_SCRIPT.md"
+      ],
+      "verify": [
+        "version_single_source"
+      ]
     },
     {
-      "id": "0.4", "phase": "prep", "mode": "A", "crit": false, "layer": "survival",
+      "id": "0.4",
+      "phase": "prep",
+      "mode": "A",
+      "crit": false,
+      "layer": "survival",
       "title": "Fold the duplicate ui/ tree into panel/",
-      "refs": ["python/synapse/ui/", "panel/"],
-      "verify": ["import_panel", "doctor", "cook_existing"]
+      "refs": [
+        "python/synapse/ui/",
+        "panel/"
+      ],
+      "verify": [
+        "import_panel",
+        "doctor",
+        "cook_existing"
+      ]
     },
     {
-      "id": "0.5", "phase": "prep", "mode": "A", "crit": false, "layer": "prove",
+      "id": "0.5",
+      "phase": "prep",
+      "mode": "A",
+      "crit": false,
+      "layer": "prove",
       "title": "Pre-stage the demo scaffold (.hip, shot, OCIO)",
-      "refs": ["panel/shot_login.py", "demo/synapse_demo.hip"],
-      "verify": ["hip_opens", "shot_login"]
+      "refs": [
+        "panel/shot_login.py",
+        "demo/synapse_demo.hip"
+      ],
+      "verify": [
+        "hip_opens",
+        "shot_login"
+      ]
     },
     {
-      "id": "0.6", "phase": "prep", "mode": "A", "crit": false, "layer": "prove",
+      "id": "0.6",
+      "phase": "prep",
+      "mode": "A",
+      "crit": false,
+      "layer": "prove",
       "title": "Lock the demo runsheet",
-      "refs": ["DEMO_SCRIPT.md"],
-      "verify": ["runsheet_present"],
+      "refs": [
+        "DEMO_SCRIPT.md"
+      ],
+      "verify": [
+        "runsheet_present"
+      ],
       "note": "Content + rehearsal. Harness confirms presence/beat-count; the rehearsal is yours."
     },
     {
-      "id": "0.7", "phase": "prep", "mode": "A", "crit": true, "layer": "survival",
+      "id": "0.7",
+      "phase": "prep",
+      "mode": "A",
+      "crit": true,
+      "layer": "survival",
       "title": "Rehearse the clean-machine install on H21",
-      "refs": ["install.py", "synapse_panel.pypanel"],
-      "verify": ["clean_install", "nodes_appear"]
+      "refs": [
+        "install.py",
+        "synapse_panel.pypanel"
+      ],
+      "verify": [
+        "clean_install",
+        "nodes_appear"
+      ]
     },
     {
-      "id": "0.8", "phase": "prep", "mode": "A", "crit": true, "layer": "integrate-scaffold",
+      "id": "0.8",
+      "phase": "prep",
+      "mode": "A",
+      "crit": true,
+      "layer": "integrate-scaffold",
       "title": "Scaffold the external-MCP provider seam (truth-contract envelope) against a mock APEX MCP",
-      "refs": ["python/synapse/providers/apex_mcp.py", "python/synapse/providers/__init__.py", "python/synapse/science/mcp_mock.py", "docs/SYNAPSE_H22_PROVIDER_APEX.md"],
-      "verify": ["mcp_registered", "mcp_truth_contract"],
+      "refs": [
+        "python/synapse/providers/apex_mcp.py",
+        "python/synapse/providers/__init__.py",
+        "python/synapse/science/mcp_mock.py",
+        "docs/SYNAPSE_H22_PROVIDER_APEX.md"
+      ],
+      "verify": [
+        "mcp_registered",
+        "mcp_truth_contract"
+      ],
       "note": "D-H22-1 scaffold. H22's MCP does not exist yet — build + contract-test the provider abstraction against a mock so drop day is wiring-in, not design. The mock's tool list stands in for the real surface; task 1.7 swaps it for the shipped build. Normalize on the Anthropic-shaped envelope, NOT a gateway."
     },
     {
-      "id": "0.9", "phase": "prep", "mode": "A", "crit": true, "layer": "integrate-scaffold",
+      "id": "0.9",
+      "phase": "prep",
+      "mode": "A",
+      "crit": true,
+      "layer": "integrate-scaffold",
       "title": "Wire scout to federate the (mock) APEX MCP — consume, don't rebuild",
-      "refs": ["python/synapse/cognitive/tools/scout.py", "python/synapse/server/scout_sources.json", "python/synapse/science/mcp_mock.py"],
-      "verify": ["scout_federates", "scout_no_apex_corpus"],
+      "refs": [
+        "python/synapse/cognitive/tools/scout.py",
+        "python/synapse/server/scout_sources.json",
+        "python/synapse/science/mcp_mock.py"
+      ],
+      "verify": [
+        "scout_federates",
+        "scout_no_apex_corpus"
+      ],
       "note": "D-H22-2 scaffold. APEX syntax comes ONLY from the federated provider. exists_in_runtime stays authoritative. Scout must own NO APEX-syntax corpus — that is the standing guardrail."
     },
-
-    { "id": "1.1", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "Install H22 clean + Synapse via package", "human_gate": { "decision": "manual install", "why": "Can't install software that doesn't exist yet." }, "verify": ["clean_install", "nodes_appear"] },
-    { "id": "1.2", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "Capture the three numbers: Python · USD · PySide", "human_gate": { "decision": "write harness/state/drop.json", "why": "A human reads these first. Writing drop.json is the Mode-B trigger." }, "verify": [] },
-    { "id": "1.3", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "Verify the cp311 fix holds on H22's Python", "verify": ["import_panel", "brain_answers"] },
-    { "id": "1.4", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "Fire the probe → API delta report", "verify": ["probe_runs"] },
-    { "id": "1.5", "mode": "B", "blocked_on": "drop", "crit": false,
-      "title": "synapse_doctor green on H22", "verify": ["doctor"] },
-    { "id": "1.6", "mode": "B", "blocked_on": "drop", "crit": false,
-      "title": "Panel reads correctly in H22's new theme", "verify": ["theme_ok"] },
-    { "id": "1.7", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "Probe the SHIPPED native APEX MCP tool surface; quarantine absent/renamed endpoints (D-H22-4)",
-      "refs": ["python/synapse/science/mcp_surface_probe.py"],
-      "verify": ["mcp_surface_probe"],
-      "note": "Pre-release prose is NOT ground truth. Introspect the real MCP's tool list on the installed H22 before any wiring. Confirmed-absent endpoints auto-quarantine without re-litigation. Gates 2.7/2.8." },
-
-    { "id": "2.1", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "Patch the probe deltas (promote probe truth over pinned constants)", "verify": ["probe_clean", "cook_existing", "doctor"] },
-    { "id": "2.2", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "COPs — Ocean Spectrum / texture-synth from a prompt", "verify": ["cook_node", "ledger"], "target_node": "ADAPT: /obj/cop_net/cops_ocean_spectrum" },
-    { "id": "2.3", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "Solaris — scatter / set-dressing from a prompt", "verify": ["cook_node", "ledger"], "target_node": "ADAPT: /stage/synapse_scatter" },
-    { "id": "2.4", "mode": "B", "blocked_on": "drop", "crit": false,
-      "title": "Wire both into the command palette (verb × context)", "verify": ["import_panel"] },
-    { "id": "2.5", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "Provenance proof: both land in agent.usd", "verify": ["ledger", "revert_clean"] },
-    { "id": "2.6", "mode": "B", "blocked_on": "drop", "crit": false,
-      "title": "Karma XPU render the result on H22", "verify": ["render"] },
-    { "id": "2.7", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "Register the shipped APEX MCP as a first-class provider, truth-contract-wrapped, recorded in agent.usd (D-H22-1)",
-      "refs": ["python/synapse/providers/apex_mcp.py"],
-      "verify": ["mcp_registered", "mcp_truth_contract", "ledger"],
-      "note": "Swap the mock for the real surface verified by 1.7. Every MCP tool call enters the truth contract; the MCP's own validator verdict lands as a provenance INPUT, never as a Synapse claim. This is the H22 critical-path leg." },
-    { "id": "2.8", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "Scout federates the real APEX MCP; no APEX corpus (D-H22-2)",
-      "refs": ["python/synapse/cognitive/tools/scout.py", "python/synapse/server/scout_sources.json"],
-      "verify": ["scout_federates", "scout_no_apex_corpus"] },
-
-    { "id": "3.1", "mode": "B", "blocked_on": "drop", "crit": true,
-      "title": "Dry-run the full runsheet, timed", "human_gate": { "decision": "timed rehearsal", "why": "Human-timed; harness can't judge dead air." }, "verify": ["runsheet_present"] },
-    { "id": "3.2", "mode": "B", "blocked_on": "drop", "crit": false, "title": "Record the demo", "human_gate": { "decision": "manual capture" }, "verify": [] },
-    { "id": "3.3", "mode": "B", "blocked_on": "drop", "crit": false,
-      "title": "Demo beat — Synapse orchestrating the native APEX MCP, with receipts",
-      "refs": ["DEMO_SCRIPT.md"],
-      "verify": ["mcp_registered", "ledger"],
-      "note": "Prove leg. Show the boundary live: Synapse calls the native MCP as one source, the call is truth-contract-wrapped and recorded in agent.usd, and is reversible. The receipts are the one thing the native MCP can't do alone — that's the whole pitch." },
-    { "id": "3.4", "mode": "B", "blocked_on": "drop", "crit": false, "title": "Capsule the ship state", "human_gate": { "decision": "manual" }, "verify": [] },
-
     {
-      "id": "U.1", "phase": "utility", "mode": "A", "crit": false, "layer": "utility",
+      "id": "1.1",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "Install H22 clean + Synapse via package",
+      "human_gate": {
+        "decision": "manual install",
+        "why": "Can't install software that doesn't exist yet."
+      },
+      "verify": [
+        "clean_install",
+        "nodes_appear"
+      ]
+    },
+    {
+      "id": "1.2",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "Capture the three numbers: Python · USD · PySide",
+      "human_gate": {
+        "decision": "write harness/state/drop.json",
+        "why": "A human reads these first. Writing drop.json is the Mode-B trigger."
+      },
+      "verify": []
+    },
+    {
+      "id": "1.3",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "Verify the cp311 fix holds on H22's Python",
+      "verify": [
+        "import_panel",
+        "brain_answers"
+      ]
+    },
+    {
+      "id": "1.4",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "Fire the probe → API delta report",
+      "verify": [
+        "probe_runs"
+      ]
+    },
+    {
+      "id": "1.5",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": false,
+      "title": "synapse_doctor green on H22",
+      "verify": [
+        "doctor"
+      ]
+    },
+    {
+      "id": "1.6",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": false,
+      "title": "Panel reads correctly in H22's new theme",
+      "verify": [
+        "theme_ok"
+      ]
+    },
+    {
+      "id": "1.7",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "Probe the SHIPPED native APEX MCP tool surface; quarantine absent/renamed endpoints (D-H22-4)",
+      "refs": [
+        "python/synapse/science/mcp_surface_probe.py"
+      ],
+      "verify": [
+        "mcp_surface_probe"
+      ],
+      "note": "Pre-release prose is NOT ground truth. Introspect the real MCP's tool list on the installed H22 before any wiring. Confirmed-absent endpoints auto-quarantine without re-litigation. Gates 2.7/2.8."
+    },
+    {
+      "id": "2.1",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "Patch the probe deltas (promote probe truth over pinned constants)",
+      "verify": [
+        "probe_clean",
+        "cook_existing",
+        "doctor"
+      ]
+    },
+    {
+      "id": "2.2",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "COPs — Ocean Spectrum / texture-synth from a prompt",
+      "verify": [
+        "cook_node",
+        "ledger"
+      ],
+      "target_node": "ADAPT: /obj/cop_net/cops_ocean_spectrum"
+    },
+    {
+      "id": "2.3",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "Solaris — scatter / set-dressing from a prompt",
+      "verify": [
+        "cook_node",
+        "ledger"
+      ],
+      "target_node": "ADAPT: /stage/synapse_scatter"
+    },
+    {
+      "id": "2.4",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": false,
+      "title": "Wire both into the command palette (verb × context)",
+      "verify": [
+        "import_panel"
+      ]
+    },
+    {
+      "id": "2.5",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "Provenance proof: both land in agent.usd",
+      "verify": [
+        "ledger",
+        "revert_clean"
+      ]
+    },
+    {
+      "id": "2.6",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": false,
+      "title": "Karma XPU render the result on H22",
+      "verify": [
+        "render"
+      ]
+    },
+    {
+      "id": "2.7",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "Register the shipped APEX MCP as a first-class provider, truth-contract-wrapped, recorded in agent.usd (D-H22-1)",
+      "refs": [
+        "python/synapse/providers/apex_mcp.py"
+      ],
+      "verify": [
+        "mcp_registered",
+        "mcp_truth_contract",
+        "ledger"
+      ],
+      "note": "Swap the mock for the real surface verified by 1.7. Every MCP tool call enters the truth contract; the MCP's own validator verdict lands as a provenance INPUT, never as a Synapse claim. This is the H22 critical-path leg."
+    },
+    {
+      "id": "2.8",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "Scout federates the real APEX MCP; no APEX corpus (D-H22-2)",
+      "refs": [
+        "python/synapse/cognitive/tools/scout.py",
+        "python/synapse/server/scout_sources.json"
+      ],
+      "verify": [
+        "scout_federates",
+        "scout_no_apex_corpus"
+      ]
+    },
+    {
+      "id": "3.1",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": true,
+      "title": "Dry-run the full runsheet, timed",
+      "human_gate": {
+        "decision": "timed rehearsal",
+        "why": "Human-timed; harness can't judge dead air."
+      },
+      "verify": [
+        "runsheet_present"
+      ]
+    },
+    {
+      "id": "3.2",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": false,
+      "title": "Record the demo",
+      "human_gate": {
+        "decision": "manual capture"
+      },
+      "verify": []
+    },
+    {
+      "id": "3.3",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": false,
+      "title": "Demo beat — Synapse orchestrating the native APEX MCP, with receipts",
+      "refs": [
+        "DEMO_SCRIPT.md"
+      ],
+      "verify": [
+        "mcp_registered",
+        "ledger"
+      ],
+      "note": "Prove leg. Show the boundary live: Synapse calls the native MCP as one source, the call is truth-contract-wrapped and recorded in agent.usd, and is reversible. The receipts are the one thing the native MCP can't do alone — that's the whole pitch."
+    },
+    {
+      "id": "3.4",
+      "mode": "B",
+      "blocked_on": "drop",
+      "crit": false,
+      "title": "Capsule the ship state",
+      "human_gate": {
+        "decision": "manual"
+      },
+      "verify": []
+    },
+    {
+      "id": "U.1",
+      "phase": "utility",
+      "mode": "A",
+      "crit": false,
+      "layer": "utility",
       "title": "Utility flywheel cycle 1 — network-wiring truth (connectivity catalog -> review sweep -> wire_by_label + validator pin)",
       "refs": [
         "harness/notes/spec-U1-wiring-flywheel.md",
@@ -153,11 +479,19 @@
         "python/synapse/cognitive/graph_validator.py",
         "tests/test_wiring_flywheel.py"
       ],
-      "verify": ["connectivity_catalog_fresh", "wiring_conformance", "validator_catches_miswire"],
+      "verify": [
+        "connectivity_catalog_fresh",
+        "wiring_conformance",
+        "validator_catches_miswire"
+      ],
       "note": "Cycle contract in spec-U1-wiring-flywheel.md. Anti-runaway anchors: human ratifies new cycle classes (flywheel_queue.json 'ratified'), evidence-linked queue entries only, guardrails every sprint."
     },
     {
-      "id": "U.5", "phase": "utility", "mode": "A", "crit": false, "layer": "utility",
+      "id": "U.5",
+      "phase": "utility",
+      "mode": "A",
+      "crit": false,
+      "layer": "utility",
       "title": "Utility flywheel cycle U.5 — LOP/Solaris knowledge (context truth): corpus catalog -> consistency gate -> loader + additive validator advisory phase",
       "refs": [
         "harness/notes/spec-U5-lop-solaris-flywheel.md",
@@ -170,202 +504,551 @@
         "python/synapse/cognitive/graph_validator.py",
         "tests/test_lop_flywheel.py"
       ],
-      "verify": ["lop_knowledge_fresh", "lop_review_clean", "validator_lop_conformance"],
-      "human_gate": { "decision": "RATIFIED 2026-07-03 (human sanction) — U.5 accepted as a context-truth cycle class; flywheel_queue.json U.5 now ratified:true" },
+      "verify": [
+        "lop_knowledge_fresh",
+        "lop_review_clean",
+        "validator_lop_conformance"
+      ],
+      "human_gate": {
+        "decision": "RATIFIED 2026-07-03 (human sanction) — U.5 accepted as a context-truth cycle class; flywheel_queue.json U.5 now ratified:true"
+      },
       "note": "Cycle contract in spec-U5-lop-solaris-flywheel.md. Substantive design call: assignmaterial->material-source ordering is an ADVISORY, not a hard error (reference/sublayer composition arcs author materials too); grid/plane stay hard errors. Anti-runaway: human ratifies the new class (see human_gate)."
     },
-
     {
-      "id": "V.1", "phase": "v6", "mode": "A", "blocked_on": "blueprints", "crit": false, "layer": "scaffold",
+      "id": "V.1",
+      "phase": "v6",
+      "mode": "A",
+      "blocked_on": "blueprints",
+      "crit": false,
+      "layer": "scaffold",
       "title": "v6 Session A — scaffold the skeleton: stub every module in the BP00 manifest",
-      "refs": ["docs/v6/BP00_manifest.md", "docs/v6/INTAKE.md"],
-      "verify": ["blueprints_present", "v6_skeleton_conformance"],
+      "refs": [
+        "docs/v6/BP00_manifest.md",
+        "docs/v6/INTAKE.md"
+      ],
+      "verify": [
+        "blueprints_present",
+        "v6_skeleton_conformance"
+      ],
       "note": "Stubs land exactly where BP00's '## Module Manifest' table says; pass bodies; zero hou imports in pure layers. The drop must be COMMITTED first — worktrees fork from HEAD, so an uncommitted docs/v6/ is invisible to this task (docs/v6/INTAKE.md checklist)."
     },
     {
-      "id": "V.2", "phase": "v6", "mode": "A", "blocked_on": "blueprints", "crit": false, "layer": "spec",
+      "id": "V.2",
+      "phase": "v6",
+      "mode": "A",
+      "blocked_on": "blueprints",
+      "crit": false,
+      "layer": "spec",
       "title": "v6 Session B — write BP09 (Iteration Controller) at BP00–08 fidelity",
-      "refs": ["docs/v6/BP09_iteration_controller.md", "docs/v6/BP00_manifest.md"],
-      "verify": ["blueprints_present", "v6_spec_bp09"],
+      "refs": [
+        "docs/v6/BP09_iteration_controller.md",
+        "docs/v6/BP00_manifest.md"
+      ],
+      "verify": [
+        "blueprints_present",
+        "v6_spec_bp09"
+      ],
       "note": "propose -> build -> evaluate -> decide -> iterate; convergence/stop logic; max-iteration handling; pulls active strategies from BP07. Spec only — no code."
     },
     {
-      "id": "V.3", "phase": "v6", "mode": "A", "blocked_on": "blueprints", "crit": false, "layer": "build",
+      "id": "V.3",
+      "phase": "v6",
+      "mode": "A",
+      "blocked_on": "blueprints",
+      "crit": false,
+      "layer": "build",
       "title": "v6 Session C — spec + BUILD BP10 (Global Knowledge Base): pure Python, zero hou",
-      "refs": ["docs/v6/BP00_manifest.md", "docs/v6/BP10_knowledge_base.md", "python/synapse/v6/knowledge_base.py", "tests/v6/test_knowledge_base.py"],
-      "verify": ["v6_spec_bp10", "v6_kb_roundtrip", "v6_tests_green"],
+      "refs": [
+        "docs/v6/BP00_manifest.md",
+        "docs/v6/BP10_knowledge_base.md",
+        "python/synapse/v6/knowledge_base.py",
+        "tests/v6/test_knowledge_base.py"
+      ],
+      "verify": [
+        "v6_spec_bp10",
+        "v6_kb_roundtrip",
+        "v6_tests_green"
+      ],
       "note": "Recipe store + failure DB + vector schema (spec'd; JSONL is the shipped store) + query API. The one spine piece shippable before H22. The KB public API is pre-frozen by the v6_kb_roundtrip check — BP10 documents it, it does not redesign it."
     },
     {
-      "id": "V.4", "phase": "v6", "mode": "A", "blocked_on": "blueprints", "crit": false, "layer": "build",
+      "id": "V.4",
+      "phase": "v6",
+      "mode": "A",
+      "blocked_on": "blueprints",
+      "crit": false,
+      "layer": "build",
       "title": "v6 Session D — pure-Python layers, test-first: gsplat_compare interpretation, scoring rubrics, meta-cognitive stats",
-      "refs": ["docs/v6/BP00_manifest.md", "docs/v6/INTAKE.md", "python/synapse/v6/", "tests/v6/"],
-      "verify": ["v6_tests_green"],
+      "refs": [
+        "docs/v6/BP00_manifest.md",
+        "docs/v6/INTAKE.md",
+        "python/synapse/v6/",
+        "tests/v6/"
+      ],
+      "verify": [
+        "v6_tests_green"
+      ],
       "note": "Tests FIRST (each blueprint specifies them) so drop day is 'make them pass'."
     },
     {
-      "id": "V.5", "phase": "v6", "mode": "B", "blocked_on": "blueprints", "crit": false,
+      "id": "V.5",
+      "phase": "v6",
+      "mode": "B",
+      "blocked_on": "blueprints",
+      "crit": false,
       "title": "v6 Miles 1–2 — BP01 Perception + BP02 G-Splat against shipped H22 (highest uncertainty first)",
-      "refs": ["docs/v6/BP00_manifest.md", "python/synapse/v6/", "tests/v6/"],
-      "verify": ["probe_clean", "v6_tests_green"],
+      "refs": [
+        "docs/v6/BP00_manifest.md",
+        "python/synapse/v6/",
+        "tests/v6/"
+      ],
+      "verify": [
+        "probe_clean",
+        "v6_tests_green"
+      ],
       "note": "The 1.4 probe report re-ranks V.5–V.7 before work starts; build to survive 'feature X shipped differently'. probe_clean reads THIS worktree's delta artifact — re-fire the probe here first; an honest first-round FAIL until then is expected, not a bug."
     },
     {
-      "id": "V.6", "phase": "v6", "mode": "B", "blocked_on": "blueprints", "crit": false,
+      "id": "V.6",
+      "phase": "v6",
+      "mode": "B",
+      "blocked_on": "blueprints",
+      "crit": false,
       "title": "v6 Miles 3–4 — BP08 three-tier evaluator (keystone; 01+02 become the engine)",
-      "refs": ["docs/v6/BP00_manifest.md", "python/synapse/v6/", "tests/v6/"],
-      "verify": ["v6_tests_green"],
+      "refs": [
+        "docs/v6/BP00_manifest.md",
+        "python/synapse/v6/",
+        "tests/v6/"
+      ],
+      "verify": [
+        "v6_tests_green"
+      ],
       "note": "Builds on V.5's output, but worktrees fork from HEAD — merge V.5 before running this, or the engine gets rebuilt divergently in-worktree. run -> merge -> re-run is the intended cadence (docs/v6/PLAN.md POST-DROP)."
     },
     {
-      "id": "V.7", "phase": "v6", "mode": "B", "blocked_on": "blueprints", "crit": false,
+      "id": "V.7",
+      "phase": "v6",
+      "mode": "B",
+      "blocked_on": "blueprints",
+      "crit": false,
       "title": "v6 Miles 5–7 — BP09+BP10 integration: first autonomous cycle, PYRO ONLY",
-      "refs": ["docs/v6/BP00_manifest.md", "docs/v6/BP09_iteration_controller.md", "docs/v6/BP10_knowledge_base.md", "python/synapse/v6/"],
-      "verify": ["v6_tests_green", "ledger"],
+      "refs": [
+        "docs/v6/BP00_manifest.md",
+        "docs/v6/BP09_iteration_controller.md",
+        "docs/v6/BP10_knowledge_base.md",
+        "python/synapse/v6/"
+      ],
+      "verify": [
+        "v6_tests_green",
+        "ledger"
+      ],
       "note": "Prove pyro end-to-end before branches (BP07: G-Splat convergence tracks pyro r=0.78, characters r=0.31). Branches 03–07 are production-ordered after this, not corpus-ordered. Needs V.3's KB and V.6's evaluator merged to main first — same run -> merge -> re-run cadence as V.6."
     },
-
     {
-      "id": "C.0", "phase": "context", "mode": "A", "crit": false, "layer": "utility",
+      "id": "C.0",
+      "phase": "context",
+      "mode": "A",
+      "crit": false,
+      "layer": "utility",
       "title": "Context track — probe SYNAPSE's create-capability per Houdini context (SOP/LOP/COP/TOP/DOP/MAT), deposit the catalog + review sweep",
-      "refs": ["harness/notes/spec-C-context-capability.md", "host/introspect_context_capability.py", "scripts/flywheel_review_context.py", "harness/notes/context_capability_21.json", "tests/test_ctx_track.py"],
-      "verify": ["context_catalog_fresh", "context_review_clean"],
+      "refs": [
+        "harness/notes/spec-C-context-capability.md",
+        "host/introspect_context_capability.py",
+        "scripts/flywheel_review_context.py",
+        "harness/notes/context_capability_21.json",
+        "tests/test_ctx_track.py"
+      ],
+      "verify": [
+        "context_catalog_fresh",
+        "context_review_clean"
+      ],
       "note": "Read-only vs product code — the probe drives the live handler surface (SynapseHandler.handle), it never edits python/synapse. The catalog is the deliverable; merging it arms C.1–C.6. Re-run per Houdini build."
     },
     {
-      "id": "C.1", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "id": "C.1",
+      "phase": "context",
+      "mode": "A",
+      "blocked_on": "catalog",
+      "crit": false,
+      "layer": "build",
       "title": "Context track — SOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
-      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
-      "verify": ["context_golden_sop", "context_catalog_fresh"],
+      "refs": [
+        "harness/notes/spec-C-context-capability.md",
+        "harness/notes/context_capability_21.json",
+        "python/synapse/server/handlers.py",
+        "tests/test_ctx_track.py"
+      ],
+      "verify": [
+        "context_golden_sop",
+        "context_catalog_fresh"
+      ],
       "note": "Read the catalog's `gaps` for sop; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
     },
     {
-      "id": "C.2", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "id": "C.2",
+      "phase": "context",
+      "mode": "A",
+      "blocked_on": "catalog",
+      "crit": false,
+      "layer": "build",
       "title": "Context track — LOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
-      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
-      "verify": ["context_golden_lop", "context_catalog_fresh"],
+      "refs": [
+        "harness/notes/spec-C-context-capability.md",
+        "harness/notes/context_capability_21.json",
+        "python/synapse/server/handlers.py",
+        "tests/test_ctx_track.py"
+      ],
+      "verify": [
+        "context_golden_lop",
+        "context_catalog_fresh"
+      ],
       "note": "Read the catalog's `gaps` for lop; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
     },
     {
-      "id": "C.3", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "id": "C.3",
+      "phase": "context",
+      "mode": "A",
+      "blocked_on": "catalog",
+      "crit": false,
+      "layer": "build",
       "title": "Context track — COP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
-      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
-      "verify": ["context_golden_cop", "context_catalog_fresh"],
+      "refs": [
+        "harness/notes/spec-C-context-capability.md",
+        "harness/notes/context_capability_21.json",
+        "python/synapse/server/handlers.py",
+        "tests/test_ctx_track.py"
+      ],
+      "verify": [
+        "context_golden_cop",
+        "context_catalog_fresh"
+      ],
       "note": "Read the catalog's `gaps` for cop; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
     },
     {
-      "id": "C.4", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "id": "C.4",
+      "phase": "context",
+      "mode": "A",
+      "blocked_on": "catalog",
+      "crit": false,
+      "layer": "build",
       "title": "Context track — TOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
-      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
-      "verify": ["context_golden_top", "context_catalog_fresh"],
+      "refs": [
+        "harness/notes/spec-C-context-capability.md",
+        "harness/notes/context_capability_21.json",
+        "python/synapse/server/handlers.py",
+        "tests/test_ctx_track.py"
+      ],
+      "verify": [
+        "context_golden_top",
+        "context_catalog_fresh"
+      ],
       "note": "Read the catalog's `gaps` for top; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
     },
     {
-      "id": "C.5", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "id": "C.5",
+      "phase": "context",
+      "mode": "A",
+      "blocked_on": "catalog",
+      "crit": false,
+      "layer": "build",
       "title": "Context track — DOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
-      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
-      "verify": ["context_golden_dop", "context_catalog_fresh"],
+      "refs": [
+        "harness/notes/spec-C-context-capability.md",
+        "harness/notes/context_capability_21.json",
+        "python/synapse/server/handlers.py",
+        "tests/test_ctx_track.py"
+      ],
+      "verify": [
+        "context_golden_dop",
+        "context_catalog_fresh"
+      ],
       "note": "Read the catalog's `gaps` for dop; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. No dop_ verb family exists — an honest golden fail via generic verbs IS this task's target. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
     },
     {
-      "id": "C.6", "phase": "context", "mode": "A", "blocked_on": "catalog", "crit": false, "layer": "build",
+      "id": "C.6",
+      "phase": "context",
+      "mode": "A",
+      "blocked_on": "catalog",
+      "crit": false,
+      "layer": "build",
       "title": "Context track — MAT: close the top create-gap the catalog surfaces; prove by golden + ratchet",
-      "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
-      "verify": ["context_golden_mat", "context_catalog_fresh"],
+      "refs": [
+        "harness/notes/spec-C-context-capability.md",
+        "harness/notes/context_capability_21.json",
+        "python/synapse/server/handlers.py",
+        "tests/test_ctx_track.py"
+      ],
+      "verify": [
+        "context_golden_mat",
+        "context_catalog_fresh"
+      ],
       "note": "Read the catalog's `gaps` for mat; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
     },
-
     {
-      "id": "S.0", "phase": "studio", "mode": "A", "crit": true, "layer": "bounded-decision",
+      "id": "S.0",
+      "phase": "studio",
+      "mode": "A",
+      "crit": true,
+      "layer": "bounded-decision",
       "title": "Studio track — declare the deployment posture (mode + identity model) → write harness/state/posture.json",
-      "refs": ["harness/notes/spec-S-studio-readiness.md", "harness/state/posture.json.example"],
-      "human_gate": { "decision": "solo | studio | farm + identity model + auto_approve policy", "recommended": "declare the mode explicitly; auto_approve only in solo; default-deny in studio/farm", "why": "The report's Step-1 hinge: consent auto-approve and RBAC default-deny cannot be enforced until the deployment mode is a committed fact. Writing posture.json is the S-track trigger." },
-      "verify": ["posture_declared"],
+      "refs": [
+        "harness/notes/spec-S-studio-readiness.md",
+        "harness/state/posture.json.example"
+      ],
+      "human_gate": {
+        "decision": "solo | studio | farm + identity model + auto_approve policy",
+        "recommended": "declare the mode explicitly; auto_approve only in solo; default-deny in studio/farm",
+        "why": "The report's Step-1 hinge: consent auto-approve and RBAC default-deny cannot be enforced until the deployment mode is a committed fact. Writing posture.json is the S-track trigger."
+      },
+      "verify": [
+        "posture_declared"
+      ],
       "note": "The S-track trigger — the fourth state-file gate, peer of drop.json. A human writes harness/state/posture.json (mode + identity_model + auto_approve); until it lands S.1–S.3 stay filtered out of the queue. Read-only: the harness surfaces the declaration template, it never authors the posture."
     },
     {
-      "id": "S.1", "phase": "studio", "mode": "A", "blocked_on": "posture", "crit": true, "layer": "safety",
+      "id": "S.1",
+      "phase": "studio",
+      "mode": "A",
+      "blocked_on": "posture",
+      "crit": true,
+      "layer": "safety",
       "title": "Studio track — unify the policy layer: one authoritative capability/gate/read-only/disk table checked at the transport-agnostic dispatch boundary",
-      "refs": ["shared/bridge.py", "python/synapse/mcp/_tool_registry.py", "python/synapse/server/handlers.py", "python/synapse/panel/worker_policy.py"],
-      "human_gate": { "decision": "author the single-source policy table + wire it into registry.invoke()/handle()", "why": "Security-architecture change; the harness gates + reviews it, it does not autonomously rewrite the policy layer. Closes report finding 'no single source of truth' + is the root the criticals grow from." },
-      "verify": ["policy_single_source"]
+      "refs": [
+        "shared/bridge.py",
+        "python/synapse/mcp/_tool_registry.py",
+        "python/synapse/server/handlers.py",
+        "python/synapse/panel/worker_policy.py"
+      ],
+      "human_gate": {
+        "decision": "author the single-source policy table + wire it into registry.invoke()/handle()",
+        "why": "Security-architecture change; the harness gates + reviews it, it does not autonomously rewrite the policy layer. Closes report finding 'no single source of truth' + is the root the criticals grow from."
+      },
+      "verify": [
+        "policy_single_source"
+      ]
     },
     {
-      "id": "S.2", "phase": "studio", "mode": "A", "blocked_on": "posture", "crit": true, "layer": "safety",
+      "id": "S.2",
+      "phase": "studio",
+      "mode": "A",
+      "blocked_on": "posture",
+      "crit": true,
+      "layer": "safety",
       "title": "Studio track — enforce consent at the dispatch boundary: /mcp + autonomous paths get a HumanGate-wired bridge (not the disarmed panel singleton); record the real consent source in the IntegrityBlock",
-      "refs": ["python/synapse/panel/bridge_adapter.py", "python/synapse/mcp/tools.py", "shared/bridge.py", "python/synapse/core/gates.py"],
-      "human_gate": { "decision": "arm consent on the non-panel bridges + record the consent source", "why": "Closes the #1 critical (consent auto-approve/absent everywhere). Security-critical; human-authored, harness-gated. The panel-path solo auto-approve stays a documented per-mode choice via posture.json." },
-      "verify": ["consent_enforced"]
+      "refs": [
+        "python/synapse/panel/bridge_adapter.py",
+        "python/synapse/mcp/tools.py",
+        "shared/bridge.py",
+        "python/synapse/core/gates.py"
+      ],
+      "human_gate": {
+        "decision": "arm consent on the non-panel bridges + record the consent source",
+        "why": "Closes the #1 critical (consent auto-approve/absent everywhere). Security-critical; human-authored, harness-gated. The panel-path solo auto-approve stays a documented per-mode choice via posture.json."
+      },
+      "verify": [
+        "consent_enforced"
+      ]
     },
     {
-      "id": "S.3", "phase": "studio", "mode": "A", "blocked_on": "posture", "crit": true, "layer": "safety",
+      "id": "S.3",
+      "phase": "studio",
+      "mode": "A",
+      "blocked_on": "posture",
+      "crit": true,
+      "layer": "safety",
       "title": "Studio track — per-user identity + RBAC through dispatch on all three transports; default-deny on unresolved role/session; end the shared-handler _user_id race",
-      "refs": ["python/synapse/server/websocket.py", "python/synapse/server/hwebserver_adapter.py", "python/synapse/mcp/server.py", "python/synapse/server/handlers.py"],
-      "human_gate": { "decision": "move authn/RBAC to the dispatch boundary keyed by per-connection identity", "why": "Closes criticals 2 + the identity race (SEC-1). Security-critical; human-authored, harness-gated." },
-      "verify": ["rbac_at_dispatch"]
+      "refs": [
+        "python/synapse/server/websocket.py",
+        "python/synapse/server/hwebserver_adapter.py",
+        "python/synapse/mcp/server.py",
+        "python/synapse/server/handlers.py"
+      ],
+      "human_gate": {
+        "decision": "move authn/RBAC to the dispatch boundary keyed by per-connection identity",
+        "why": "Closes criticals 2 + the identity race (SEC-1). Security-critical; human-authored, harness-gated."
+      },
+      "verify": [
+        "rbac_at_dispatch"
+      ]
     },
     {
-      "id": "S.4", "phase": "studio", "mode": "A", "crit": false, "layer": "memory",
+      "id": "S.4",
+      "phase": "studio",
+      "mode": "A",
+      "crit": false,
+      "layer": "memory",
       "title": "Studio track — memory: one authoritative store + real provenance (source/author/tier) + recency & conflict in recall",
-      "refs": ["python/synapse/memory/", "shared/evolution.py"],
-      "verify": ["memory_provenance"],
+      "refs": [
+        "python/synapse/memory/",
+        "shared/evolution.py"
+      ],
+      "verify": [
+        "memory_provenance"
+      ],
       "note": "loop-gradable. Closes the three memory highs (source='user' mislabel, dead tier fields, no recency → stale outranks fresh, three-store split-brain)."
     },
     {
-      "id": "S.5", "phase": "studio", "mode": "A", "crit": false, "layer": "eval",
+      "id": "S.5",
+      "phase": "studio",
+      "mode": "A",
+      "crit": false,
+      "layer": "eval",
       "title": "Studio track — eval backbone: wire the real validate_frame into the harness render check; guard the fake-hou sys.modules residency; pin permission boundaries as invariants",
-      "refs": ["harness/verify/checks.py", "python/synapse/server/handlers_render.py", "tests/"],
-      "verify": ["eval_backbone"],
+      "refs": [
+        "harness/verify/checks.py",
+        "python/synapse/server/handlers_render.py",
+        "tests/"
+      ],
+      "verify": [
+        "eval_backbone"
+      ],
       "note": "loop-gradable + highest-leverage-per-risk (improves the harness's OWN eval, which then better verifies every other fix). Touching harness/verify/checks.py here is deliberate self-improvement, allowed (like the P1/P2/U upgrades). The C-track goldens are the e2e demonstration this extends."
     },
     {
-      "id": "S.6", "phase": "studio", "mode": "A", "crit": false, "layer": "farm",
+      "id": "S.6",
+      "phase": "studio",
+      "mode": "A",
+      "crit": false,
+      "layer": "farm",
       "title": "Studio track — farm-headless correctness: neutralize the latent PDG remove_files=True rollback; per-build the scout symbol table for mixed fleets; the TOP-headless + DOP-populate creation gaps (== C.4/C.5)",
-      "refs": ["shared/bridge.py", "python/synapse/cognitive/tools/scout.py", "host/introspect_context_capability.py"],
-      "verify": ["farm_headless", "context_review_clean"],
+      "refs": [
+        "shared/bridge.py",
+        "python/synapse/cognitive/tools/scout.py",
+        "host/introspect_context_capability.py"
+      ],
+      "verify": [
+        "farm_headless",
+        "context_review_clean"
+      ],
       "note": "loop-gradable. Cross-links the C-track catalog — the TOP/DOP creation gaps live there; context_review_clean re-asserts the catalog stays sound as those gaps close."
     },
     {
-      "id": "S.R", "phase": "studio", "mode": "A", "crit": true, "layer": "review",
+      "id": "S.R",
+      "phase": "studio",
+      "mode": "A",
+      "crit": true,
+      "layer": "review",
       "title": "Studio track — capstone studio-readiness review: aggregate every S-check, require the criticals green, emit the verdict; run the adversarial sweep",
-      "refs": ["harness/notes/spec-S-studio-readiness.md", "docs/reviews/synapse-studio-readiness-2026-07-06.html", "harness/state/studio_readiness_verdict.json"],
-      "verify": ["studio_readiness_review"],
+      "refs": [
+        "harness/notes/spec-S-studio-readiness.md",
+        "docs/reviews/synapse-studio-readiness-2026-07-06.html",
+        "harness/state/studio_readiness_verdict.json"
+      ],
+      "verify": [
+        "studio_readiness_review"
+      ],
       "note": "the \"review at the end\". Deterministic aggregate + verdict artifact; the run.ts adversarial Evaluator reviews it, and a human may invoke a red-team workflow (the same fan-out that produced the report) — that workflow is an OPTIONAL surface, never a deterministic dependency of this check."
     },
-
     {
-      "id": "D.1", "phase": "diagnostic", "mode": "A", "crit": false, "layer": "utility", "blocked_on": "cook_ratified",
+      "id": "D.1",
+      "phase": "diagnostic",
+      "mode": "A",
+      "crit": false,
+      "layer": "utility",
+      "blocked_on": "cook_ratified",
       "title": "Diagnostic track — Mile 1: cook-API confirmation probe. Every hou.* symbol on D's critical path dir()-confirmed against live hython; absences auto-quarantine. Deposits harness/notes/verified_cook_api_<build>.json",
-      "refs": ["harness/notes/spec-D-diagnostic-truth.md", "python/synapse/cognitive/tools/scout.py", "host/introspect_context_capability.py"],
-      "verify": ["cook_api_confirmed", "tops_path_untouched"],
+      "refs": [
+        "harness/notes/spec-D-diagnostic-truth.md",
+        "python/synapse/cognitive/tools/scout.py",
+        "host/introspect_context_capability.py"
+      ],
+      "verify": [
+        "cook_api_confirmed",
+        "tops_path_untouched"
+      ],
       "note": "Phantom-first: the probe decides, not the spec's candidate list. The deposit is this check's OWN authority — NEVER spliced into h21_symbol_table.json (blake2b + dir()-membership invariant; depth-1 absences are already enforced free by phantom_clean). Precondition for every later mile."
     },
     {
-      "id": "D.2", "phase": "diagnostic", "mode": "A", "crit": false, "layer": "utility", "blocked_on": "cook_ratified",
+      "id": "D.2",
+      "phase": "diagnostic",
+      "mode": "A",
+      "crit": false,
+      "layer": "utility",
+      "blocked_on": "cook_ratified",
       "title": "Diagnostic track — Mile 2: perturbation catalog. host/introspect_cook_truth.py (hython-only, zero-synapse-import) runs perturbation trials per context (sop/lop/cop/dop) and deposits harness/notes/cook_truth_21.json — the D.3+ arming trigger",
-      "refs": ["harness/notes/spec-D-diagnostic-truth.md", "host/introspect_context_capability.py", "harness/notes/verified_cook_api_21.0.671.json"],
-      "verify": ["cook_api_confirmed", "cook_truth_fresh", "tops_path_untouched"],
+      "refs": [
+        "harness/notes/spec-D-diagnostic-truth.md",
+        "host/introspect_context_capability.py",
+        "harness/notes/verified_cook_api_21.0.671.json"
+      ],
+      "verify": [
+        "cook_api_confirmed",
+        "cook_truth_fresh",
+        "tops_path_untouched"
+      ],
       "note": "C.0-shaped arming task. Copy introspect_context_capability.py's discipline: artifact-write-iff-rc0, undo-wrapped + residue-verified trials, judge the FILE never stdout. May only use §1-confirmed symbols. Committing + merging the catalog arms D.3-D.5 (COOK trigger)."
     },
     {
-      "id": "D.3", "phase": "diagnostic", "mode": "A", "crit": false, "layer": "build", "blocked_on": "cook_truth",
+      "id": "D.3",
+      "phase": "diagnostic",
+      "mode": "A",
+      "crit": false,
+      "layer": "build",
+      "blocked_on": "cook_truth",
       "title": "Diagnostic track — Mile 3: review sweep + per-context goldens. scripts/flywheel_review_cook.py sweeps emitter/explainer claims against the catalog; one frozen perturbation trial per context reproduces its cataloged dirty-set exactly",
-      "refs": ["harness/notes/spec-D-diagnostic-truth.md", "scripts/flywheel_review_context.py", "harness/notes/cook_truth_21.json"],
-      "verify": ["cook_truth_fresh", "cook_review_clean", "cook_golden_sop", "cook_golden_lop", "cook_golden_cop", "cook_golden_dop", "tops_path_untouched"],
+      "refs": [
+        "harness/notes/spec-D-diagnostic-truth.md",
+        "scripts/flywheel_review_context.py",
+        "harness/notes/cook_truth_21.json"
+      ],
+      "verify": [
+        "cook_api_confirmed",
+        "cook_truth_fresh",
+        "cook_review_clean",
+        "cook_golden_sop",
+        "cook_golden_lop",
+        "cook_golden_cop",
+        "cook_golden_dop",
+        "tops_path_untouched"
+      ],
       "note": "A claim the catalog can't back is a finding, not a footnote. Goldens are deterministic + render-free (Indie husk no-ops headless — renders never golden). Commandment 7: a golden that starts failing is fixed forward, never softened."
     },
     {
-      "id": "D.4", "phase": "diagnostic", "mode": "A", "crit": false, "layer": "build", "blocked_on": "cook_truth",
+      "id": "D.4",
+      "phase": "diagnostic",
+      "mode": "A",
+      "crit": false,
+      "layer": "build",
+      "blocked_on": "cook_truth",
       "title": "Diagnostic track — Mile 4: synapse_explain_recook (read-only handler on the SynapseHandler seam): given a node path (+ optional hypothetical parm change), answer what will recook and WHY from catalog + live flags, citing the trial fingerprint",
-      "refs": ["harness/notes/spec-D-diagnostic-truth.md", "python/synapse/server/handlers.py", "harness/notes/cook_truth_21.json"],
-      "verify": ["cook_review_clean", "cook_golden_sop", "cook_golden_lop", "cook_golden_cop", "cook_golden_dop", "tops_path_untouched"],
+      "refs": [
+        "harness/notes/spec-D-diagnostic-truth.md",
+        "python/synapse/server/handlers.py",
+        "harness/notes/cook_truth_21.json"
+      ],
+      "verify": [
+        "cook_api_confirmed",
+        "cook_review_clean",
+        "cook_golden_sop",
+        "cook_golden_lop",
+        "cook_golden_cop",
+        "cook_golden_dop",
+        "tops_path_untouched"
+      ],
       "note": "CROWN finding #1 (ODFORCE O.1). Registered via CommandHandlerRegistry like every shipped tool — no new transport, no new panel surface. The review sweep re-runs against the explainer's claims: live truth, never doc reasoning."
     },
     {
-      "id": "D.5", "phase": "diagnostic", "mode": "A", "crit": false, "layer": "build", "blocked_on": "cook_truth",
+      "id": "D.5",
+      "phase": "diagnostic",
+      "mode": "A",
+      "crit": false,
+      "layer": "build",
+      "blocked_on": "cook_truth",
       "title": "Diagnostic track — Mile 5 (staged D.1 of the scour): synapse_diagnose_callback — replay an errored parm callback/expression under capture, return the dispatcher-style envelope (traceback_str seam) + cook-state before/after",
-      "refs": ["harness/notes/spec-D-diagnostic-truth.md", "python/synapse/cognitive/dispatcher.py", "python/synapse/server/handlers.py"],
-      "verify": ["cook_review_clean", "cook_golden_sop", "cook_golden_lop", "cook_golden_cop", "cook_golden_dop", "tops_path_untouched"],
+      "refs": [
+        "harness/notes/spec-D-diagnostic-truth.md",
+        "python/synapse/cognitive/dispatcher.py",
+        "python/synapse/server/handlers.py"
+      ],
+      "verify": [
+        "cook_api_confirmed",
+        "cook_review_clean",
+        "cook_golden_sop",
+        "cook_golden_lop",
+        "cook_golden_cop",
+        "cook_golden_dop",
+        "tops_path_untouched"
+      ],
       "note": "CROWN finding #2 (ODFORCE O.3). Consumes Mile 1's event-callback symbols ONLY if confirmed; otherwise degrades to expression-evaluation diagnosis and says so — the truth contract: never claim capture it didn't perform."
     }
   ]

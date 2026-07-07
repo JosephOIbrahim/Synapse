@@ -1007,13 +1007,21 @@ def _resolve_cook_note(ctx, stem):
     cands = []
     if notes.is_dir():
         for f in notes.iterdir():
-            m = _re.fullmatch(rf"{_re.escape(stem)}_(\d+(?:\.\d+)*)\.json", f.name)
+            # re.ASCII: \d must mean ASCII digits only — unicode-digit filenames must not
+            # resolve here while run.ts's JS regex (ASCII \d) rejects them (TS/py lockstep).
+            m = _re.fullmatch(rf"{_re.escape(stem)}_(\d+(?:\.\d+)*)\.json", f.name, _re.ASCII)
             if m:
                 cands.append((tuple(int(p) for p in m.group(1).split(".")), f))
     live = None
     if ctx.get("hython"):
-        rc, out, _ = hython(ctx["hython"], "import hou\nprint('BUILD', hou.applicationVersionString())", ctx["wt"])
+        rc, out, err = hython(ctx["hython"], "import hou\nprint('BUILD', hou.applicationVersionString())", ctx["wt"])
         live = next((l.split(" ", 1)[1].strip() for l in out.splitlines() if l.startswith("BUILD ")), None)
+        if live is None:
+            # A SET-but-FAILED hython (license crash, mute build) is a hard miss, never
+            # leniency: degrading to the benign HYTHON-unset path would let a stale artifact
+            # green under a broken H22 hython with a lying detail (crucible HIGH, 2026-07-07).
+            return None, None, (f"hython ran but reported no BUILD (rc={rc}): "
+                                f"{(err or out).strip()[:80]} — staleness UNVERIFIABLE")
     if not cands:
         return None, live, "no artifact"
     if live:
@@ -1118,9 +1126,14 @@ def _cook_golden(ctx, name):
         return {"ok": False, "detail": "host/introspect_cook_truth.py missing — D.2 ships the cook-truth probe"}
     live_p, live, note = _resolve_cook_note(ctx, "cook_truth")
     if live_p is None:
-        return {"ok": False, "detail": "no cook_truth catalog in tree — run D.2 first"}
+        return {"ok": False, "detail": f"no cook_truth catalog in tree ({note}) — run D.2 first"[:500]}
     mb_rc, mb_out, _ = sh(["git", "merge-base", "master", "HEAD"], cwd=ctx["wt"])
-    anchor = mb_out.strip() if mb_rc == 0 and mb_out.strip() else "HEAD"
+    if mb_rc != 0 or not mb_out.strip():
+        # honest red, never a self-tip fallback: anchoring at HEAD would let a sprint golden
+        # against its own refreshed catalog (the exact exploit the merge-base anchor kills).
+        return {"ok": False, "detail": "cannot anchor the golden baseline — master ref unresolvable; "
+                                       "fetch/create master before trusting goldens"}
+    anchor = mb_out.strip()
     rc_b, cat_raw, _ = sh(["git", "show", f"{anchor}:harness/notes/{live_p.name}"], cwd=ctx["wt"])
     if rc_b != 0 or not cat_raw.strip():
         return {"ok": False, "detail": f"no committed {live_p.name} at the ratchet anchor — commit/merge the catalog first "
@@ -1175,7 +1188,12 @@ def check_tops_path_untouched(ctx):
     # merge-base(master, HEAD) — the human-promoted line — plus untracked adds.
     guard_dir = "python/synapse/server/handlers_tops/"
     mb_rc, mb_out, _ = sh(["git", "merge-base", "master", "HEAD"], cwd=ctx["wt"])
-    anchor = mb_out.strip() if mb_rc == 0 and mb_out.strip() else "HEAD"
+    if mb_rc != 0 or not mb_out.strip():
+        # honest red, never a self-tip fallback: a HEAD anchor would blind the quarantine to
+        # anything the sprint already committed.
+        return {"ok": False, "detail": "cannot anchor the quarantine diff — master ref unresolvable; "
+                                       "fetch/create master before trusting this guard"}
+    anchor = mb_out.strip()
     rc_d, diff_out, err_d = sh(["git", "diff", "--name-only", anchor, "--", guard_dir], cwd=ctx["wt"])
     if rc_d != 0:
         return {"ok": False, "detail": f"diff guard could not run: {(err_d or diff_out).strip()[:200]}"}

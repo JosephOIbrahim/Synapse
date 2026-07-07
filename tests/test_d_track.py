@@ -43,12 +43,16 @@ D_CHECKS = {"cook_api_confirmed", "cook_truth_fresh", "cook_review_clean",
 D_VERIFY = {
     "D.1": ["cook_api_confirmed", "tops_path_untouched"],
     "D.2": ["cook_api_confirmed", "cook_truth_fresh", "tops_path_untouched"],
-    "D.3": ["cook_truth_fresh", "cook_review_clean", "cook_golden_sop", "cook_golden_lop",
+    # cook_api_confirmed rides every later mile too — Mile 1's greenness is enforced
+    # TRANSITIVELY (a corrupted cook-api file must fail D.3-D.5, not just D.1/D.2); D.5
+    # especially consumes the file as runtime authority ("event-callback symbols ONLY if
+    # confirmed"). Crucible conformance finding, 2026-07-07.
+    "D.3": ["cook_api_confirmed", "cook_truth_fresh", "cook_review_clean", "cook_golden_sop",
+            "cook_golden_lop", "cook_golden_cop", "cook_golden_dop", "tops_path_untouched"],
+    "D.4": ["cook_api_confirmed", "cook_review_clean", "cook_golden_sop", "cook_golden_lop",
             "cook_golden_cop", "cook_golden_dop", "tops_path_untouched"],
-    "D.4": ["cook_review_clean", "cook_golden_sop", "cook_golden_lop", "cook_golden_cop",
-            "cook_golden_dop", "tops_path_untouched"],
-    "D.5": ["cook_review_clean", "cook_golden_sop", "cook_golden_lop", "cook_golden_cop",
-            "cook_golden_dop", "tops_path_untouched"],
+    "D.5": ["cook_api_confirmed", "cook_review_clean", "cook_golden_sop", "cook_golden_lop",
+            "cook_golden_cop", "cook_golden_dop", "tops_path_untouched"],
 }
 
 # guardrails.checks stays frozen — the D track adds TASK verifies, NEVER guardrails.
@@ -161,6 +165,45 @@ def test_cook_ratified_predicate_mirror():
     assert _cook_ratified({"cycles": [{"id": "U.5", "ratified": True}]}) is False
     assert _cook_ratified({"cycles": "corrupt"}) is False
     assert _cook_ratified({}) is False
+    # type-coerced ratified must never arm (run.ts requires === true / boolean type)
+    assert _cook_ratified({"cycles": [{"id": "D.0", "ratified": "true"}]}) is False
+
+
+def _d_armed(task, cook, ratified):
+    """Pure-data mirror of run.ts's D queue filters. cook_truth is an AND, not an OR — the
+    catalog can NEVER out-rank the human anchor (crucible gate-inversion HIGH, 2026-07-07)."""
+    if task.get("blocked_on") == "cook_ratified":
+        return ratified
+    if task.get("blocked_on") == "cook_truth":
+        return cook and ratified
+    return True
+
+
+def test_catalog_alone_never_arms_the_code_authoring_miles():
+    # THE gate-inversion pin: a hand-dropped/merged cook_truth file with D.0 unratified must
+    # arm NOTHING — stage 2 presupposes stage 1, structurally.
+    d3 = {"blocked_on": "cook_truth"}
+    d1 = {"blocked_on": "cook_ratified"}
+    assert _d_armed(d3, cook=True, ratified=False) is False
+    assert _d_armed(d1, cook=True, ratified=False) is False
+    assert _d_armed(d3, cook=False, ratified=True) is False   # part-armed: catalog still wanted
+    assert _d_armed(d1, cook=False, ratified=True) is True    # probes armed by ratification alone
+    assert _d_armed(d3, cook=True, ratified=True) is True
+
+
+def test_ts_py_filename_predicate_parity():
+    # The COOK trigger (run.ts) and _resolve_cook_note (checks.py) must accept the SAME
+    # filename set — a divergence arms the queue while checks can't resolve, or vice versa.
+    ts_regex = re.compile(r"^cook_truth_\d+(?:\.\d+)*\.json$", re.ASCII)
+    py_regex = re.compile(r"^cook_truth_(\d+(?:\.\d+)*)\.json$", re.ASCII)
+    canonical = ["cook_truth_21.json", "cook_truth_22.json", "cook_truth_22.0.100.json",
+                 "cook_truth_21.json.bak", "cook_truth_21_old.json", "cook_truth_.json",
+                 "cook_truth_٢١.json"]  # arabic-indic digits: BOTH must reject
+    for name in canonical:
+        assert bool(ts_regex.match(name)) == bool(py_regex.match(name)), name
+    # and the shipped run.ts literally carries the lockstep regex
+    runts = (_REPO / "harness" / "run.ts").read_text(encoding="utf-8")
+    assert r"/^cook_truth_\d+(?:\.\d+)*\.json$/" in runts
 
 
 def test_spec_docs_committed_verbatim_home():
@@ -219,6 +262,35 @@ def test_cook_truth_stale_stamp_vs_live_red(tmp_path, monkeypatch):
                         lambda hy, script, cwd: (0, "BUILD 22.0.100\n", ""))
     res = _run("cook_truth_fresh", _ctx(tmp_path, hython="fake-hython"))
     assert res["ok"] is False and ("STALE" in res["detail"] or "no cook_truth artifact" in res["detail"])
+
+
+def test_cook_truth_broken_hython_is_unverifiable_red(tmp_path, monkeypatch):
+    # A SET-but-FAILED hython (license crash, mute build) must be a hard red saying
+    # UNVERIFIABLE — never a silent degrade to the benign HYTHON-unset green (crucible HIGH:
+    # a 21-stamped artifact greening under a broken H22 hython with a lying detail).
+    _plant(tmp_path, "harness/notes/cook_truth_21.json", _cook_truth_doc())
+    monkeypatch.setattr(checks, "hython",
+                        lambda hy, script, cwd: (1, "", "Fatal error: no license found"))
+    res = _run("cook_truth_fresh", _ctx(tmp_path, hython="broken-hython"))
+    assert res["ok"] is False and "UNVERIFIABLE" in res["detail"]
+
+
+def test_cook_api_broken_hython_is_unverifiable_red(tmp_path, monkeypatch):
+    _plant(tmp_path, "harness/notes/verified_cook_api_21.0.671.json", _cook_api_doc())
+    monkeypatch.setattr(checks, "hython", lambda hy, script, cwd: (1, "", "crash"))
+    res = _run("cook_api_confirmed", _ctx(tmp_path, hython="broken-hython"))
+    assert res["ok"] is False and "UNVERIFIABLE" in res["detail"]
+
+
+def test_cook_golden_unresolvable_master_is_honest_red(tmp_path, monkeypatch):
+    # merge-base failure must be an honest red, never a silent HEAD (self-tip) fallback.
+    (tmp_path / "host").mkdir(parents=True)
+    (tmp_path / "host" / "introspect_cook_truth.py").write_text("# probe\n", encoding="utf-8")
+    _plant(tmp_path, "harness/notes/cook_truth_21.json", _cook_truth_doc())
+    monkeypatch.setattr(checks, "hython", lambda hy, script, cwd: (0, "BUILD 21.0.671\n", ""))
+    monkeypatch.setattr(checks, "sh", lambda cmd, cwd=None, timeout=900, env=None: (1, "", "no master"))
+    res = _run("cook_golden_sop", _ctx(tmp_path, hython="fake-hython"))
+    assert res["ok"] is False and "master" in res["detail"]
 
 
 def test_cook_truth_multiple_majors_no_hython_picks_highest(tmp_path):

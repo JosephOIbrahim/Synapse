@@ -90,7 +90,16 @@ const COOK_RATIFIED = (() => {
   if (!existsSync(q)) return false;
   try {
     const data = JSON.parse(readFileSync(q, "utf8"));
-    return (Array.isArray(data.cycles) ? data.cycles : []).some((cy: any) => cy && cy.id === "D.0" && cy.ratified === true);
+    if (!Array.isArray(data.cycles)) {   // structural drift holds SAFE but must hold LOUD
+      console.log(`  ⚠ flywheel_queue.json 'cycles' is not a list — D track held (loud, not silent)`);
+      return false;
+    }
+    const d0 = data.cycles.find((cy: any) => cy && cy.id === "D.0");
+    if (d0 && "ratified" in d0 && typeof d0.ratified !== "boolean") {
+      console.log(`  ⚠ flywheel_queue.json D.0.ratified is non-boolean (${typeof d0.ratified}) — treated as unratified, D held`);
+      return false;
+    }
+    return d0?.ratified === true;
   } catch (e) {
     console.log(`  ⚠ flywheel_queue.json unparseable (${String(e).slice(0, 80)}) — D track held (loud, not silent)`);
     return false;
@@ -98,7 +107,10 @@ const COOK_RATIFIED = (() => {
 })();
 const COOK = (() => {
   try {
-    return readdirSync(join(REPO, "harness/notes")).some((f: string) => /^cook_truth_\d+\.json$/.test(f));
+    // keep this pattern in lockstep with checks.py's _resolve_cook_note (ASCII digits,
+    // dotted version tokens) — a TS/py divergence arms the queue while checks can't resolve,
+    // or greens checks while the queue stays held.
+    return readdirSync(join(REPO, "harness/notes")).some((f: string) => /^cook_truth_\d+(?:\.\d+)*\.json$/.test(f));
   } catch { return false; }
 })();
 
@@ -441,14 +453,20 @@ function surfaceCookIntake() {
     log(`  ${c.warn}to arm:${c.off}      set D.0's "ratified" to true in harness/state/flywheel_queue.json`);
     log(`  ${c.dim}spec (frozen contract + mile split): harness/notes/spec-D-diagnostic-truth.md${c.off}`);
     log(`  ${c.dim}intake adjudication: harness/notes/SYNAPSE_ODFORCE_HARNESS.md${c.off}`);
+    if (COOK)  // anomaly: a catalog exists but the anchor was never flipped — say so LOUDLY
+      log(`  ${c.bad}⚠ a cook_truth catalog is present while D.0 is UNRATIFIED — the catalog does NOT arm D.3–D.5 ` +
+          `(ratification is the anchor). Did you mean to ratify D.0, or should this catalog not exist?${c.off}`);
   } else {
     head("diagnostic track part-armed — cook-truth catalog wanted (D.2 deposits it, a human merges)");
     log(`  ${c.warn}to arm D.3–D.5:${c.off}  bun run harness/run.ts --task D.2   (D.1 first if the cook-API file is absent)`);
     log(`  ${c.dim}then MERGE the worktree — harness/notes/cook_truth_<major>.json must reach HEAD${c.off}`);
   }
-  // --task cannot pierce the hold: both D filters run before ONLY selects, so naming a held
-  // D-task yields an empty queue. Say so instead of printing a bare empty summary.
-  if (ONLY && TASKS.some((t: any) => t.id === ONLY && (t.blocked_on === "cook_ratified" || t.blocked_on === "cook_truth")))
+  // --task cannot pierce the hold — but only say so for a task that is actually STILL HELD
+  // (in the part-armed state D.1/D.2 are armed; warning against the exact command we just
+  // recommended would be false).
+  const held = (t: any) => (t.blocked_on === "cook_ratified" && !COOK_RATIFIED)
+    || (t.blocked_on === "cook_truth" && !(COOK && COOK_RATIFIED));
+  if (ONLY && TASKS.some((t: any) => t.id === ONLY && held(t)))
     log(`  ${c.warn}--task ${ONLY} cannot override this hold — D-tasks stay filtered until the track arms.${c.off}`);
 }
 
@@ -548,7 +566,10 @@ if (COOK_RATIFIED) {
     if (st.status === 0 && (st.stdout || "").split("\n").some((l: string) => /cook_truth_\d+\.json/.test(l)))
       log(`${c.warn}  cook_truth catalog has uncommitted changes — worktrees fork from HEAD and will NOT see them. Commit the catalog first.${c.off}`);
   } else log(`${c.dim}  diagnostic track part-armed — D.0 ratified; D.1/D.2 in the queue. D.2's committed catalog arms D.3–D.5.${c.off}`);
-} else log(`${c.dim}  diagnostic track held — D.0 not ratified (harness/state/flywheel_queue.json). A human flips it; the harness never does.${c.off}`);
+} else {
+  log(`${c.dim}  diagnostic track held — D.0 not ratified (harness/state/flywheel_queue.json). A human flips it; the harness never does.${c.off}`);
+  if (COOK) log(`${c.warn}  ⚠ cook_truth catalog present while D.0 is unratified — it does NOT arm D.3–D.5 (see the intake surface below).${c.off}`);
+}
 
 let queue = TASKS.filter((t: any) => t.mode === "A" || MODE === "B");
 queue = queue.filter((t: any) => !(t.mode === "B" && t.blocked_on === "drop" && MODE === "A"));
@@ -556,7 +577,11 @@ queue = queue.filter((t: any) => !(t.blocked_on === "blueprints" && !V6));
 queue = queue.filter((t: any) => !(t.blocked_on === "catalog" && !CTX));
 queue = queue.filter((t: any) => !(t.blocked_on === "posture" && !POSTURE));
 queue = queue.filter((t: any) => !(t.blocked_on === "cook_ratified" && !COOK_RATIFIED));
-queue = queue.filter((t: any) => !(t.blocked_on === "cook_truth" && !COOK));
+// cook_truth is an AND, not an OR: the catalog can never out-rank the human anchor. Without
+// the COOK_RATIFIED conjunct, a hand-dropped/agent-authored-then-merged cook_truth file would
+// arm the three code-AUTHORING miles (D.3–D.5) with D.0 still unratified — the exact gate
+// inversion the crucible reproduced (2026-07-07). Stage 2 presupposes stage 1, structurally.
+queue = queue.filter((t: any) => !(t.blocked_on === "cook_truth" && !(COOK && COOK_RATIFIED)));
 if (ONLY) queue = queue.filter((t: any) => t.id === ONLY);
 if (DRIVE) {                              // red-driver narrows to the next blocking-red (or idles)
   const redId = selectRedTask();
