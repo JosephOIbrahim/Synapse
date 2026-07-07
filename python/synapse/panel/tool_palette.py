@@ -1,7 +1,7 @@
 """Unified command palette — the 1:1 + discovery surface.
 
 Ctrl+K fuzzy-searches across EVERYTHING the artist can ask for:
-  * the 110 server tools (canonical _tool_registry.TOOL_DEFS), destructive ones
+  * all registry tools (canonical _tool_registry.TOOL_DEFS), destructive ones
     flagged off the registry's own annotation;
   * the legacy knowledge base — slash-commands, network recipes, APEX rigs, VEX
     functions (via command_palette.build_palette_entries);

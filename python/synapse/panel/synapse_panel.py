@@ -799,7 +799,7 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _set_work_substate(self, state):
         """Swap the Work face between 'cook' and 'done'. A content update WITHIN
-        the Work tab — never a top-level tab switch (the same-pane law). The rail
+        the Work face — never a surface switch (the same-pane law). The rail
         mark, not a tab change, is what signals a ready result."""
         stack = getattr(self, "_work_stack", None)
         if stack is None:

@@ -1,3 +1,6 @@
+> **ARCHIVED SNAPSHOT — v5.4.0-era (43 tools).** Kept for history; the numbers below are stale.
+> Current truth: **115 registry tools**, v5.21.0 — see [README.md](README.md) + [CHANGELOG.md](CHANGELOG.md).
+
 # Synapse Codebase Inventory
 
 **Version:** 5.4.0 | **Protocol:** v4.0.0 (WS) / v5.0.0 (MCP bridge) / MCP 2025-06-18 (HTTP)

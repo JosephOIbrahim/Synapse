@@ -65,13 +65,14 @@ createInterface = onCreateInterface
 
 Type what you want ("make a box", "set up a 3-point light rig", "build a
 Karma render") and SYNAPSE builds it in your live scene — real nodes, not
-suggestions. Pick your AI engine in the panel (Claude, Gemini, or NVIDIA
-Nemotron) and a model to match.
+suggestions. Pick your AI engine in the panel (Claude, Gemini, NVIDIA
+Nemotron, Ollama for local models, or a Custom OpenAI-compatible endpoint)
+and a model to match.
 
 Every action is undo-safe and recorded: nothing happens to your scene that
 you can't undo, and there's a receipt for what was done and why. Press the
 Connect button if the panel says it can't reach Houdini, and use the
-"/" command palette to browse the 113 built-in tools.
+"/" command palette to browse the 115 built-in tools.
 
 The panel code lives in synapse.panel; this file just loads it.]]></help>
   </interface>

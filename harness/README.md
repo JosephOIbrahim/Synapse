@@ -106,6 +106,24 @@ harness never merges); the memory/eval/farm clusters are loop-gradable. Full con
 - `S.4`–`S.6` memory provenance · eval backbone (wire `validate_frame` + guard fake-hou) · farm-headless (PDG/scout + C.4/C.5) — loop-gradable, Mode A
 - `S.R` capstone review — aggregate every S-check, require the criticals green, emit the verdict (the review at the end)
 
+## The diagnostic-truth track — the fifth trigger (the first JSON-predicate one)
+What the scene observably DOES when poked — dirty-propagation, recook triggers, time-dependence,
+callback runtime errors — probed into version-stamped catalogs, then wired into artist-facing
+explainers ("why did this recook?"). Born from the ODFORCE intake
+(`harness/notes/SYNAPSE_ODFORCE_HARNESS.md`); frozen contract `harness/notes/spec-D-diagnostic-truth.md`.
+Two-stage HUMAN gating, as an AND (the catalog can never out-rank the ratification anchor):
+1. a human flips `D.0`'s `ratified` in the git-tracked `harness/state/flywheel_queue.json` → arms
+   `blocked_on:"cook_ratified"` (D.1/D.2, the probes);
+2. D.2's committed `harness/notes/cook_truth_<major>.json` (major-agnostic — the H22 drop needs
+   zero edits here) → arms `blocked_on:"cook_truth"` (D.3–D.5).
+Held → a read-only intake surface prints the exact next human act; `--task` cannot pierce either hold.
+
+- `D.1` cook-API confirmation probe → `verified_cook_api_<build>.json` (dir()-membership authority; absences quarantine)
+- `D.2` perturbation catalog → `cook_truth_<major>.json` (the D.3+ arming trigger)
+- `D.3` review sweep + per-context goldens (exact dirty-set reproduction, render-free)
+- `D.4` `synapse_explain_recook` · `D.5` `synapse_diagnose_callback` — the two CROWN handlers, on the existing `SynapseHandler` seam
+- guard on every D task: `tops_path_untouched` (the shipped TOPs diagnostic surface is quarantined)
+
 ## Files
 | path | role |
 |---|---|

@@ -11,11 +11,13 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4025%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.20.0-1e293b.svg" alt="Changelog"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4118%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.21.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 > ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it's all recorded (receipts, not magic). Five engines, 115 tools. **Install ↓ in ~5 min.**
+
+> 🧪 **The moat, in one line:** every other Houdini copilot reasons from docs and memory — SYNAPSE **probes the running Houdini and commits what it finds** (five truth catalogs and counting: wiring, Solaris context, capability, readiness, and now **live cook behavior**). Docs drift. Probes don't.
 
 ---
 
@@ -36,7 +38,7 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 | You want… | Read… |
 |---|---|
 | **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
-| **What shipped in v5.20.0** | *New in v5.20.0* — H22 readiness, the utility flywheel, panel v9 |
+| **What shipped in v5.21.0** | *New in v5.21.0* — diagnostic truth, the self-protecting harness, the readiness verdict |
 | **How AI network-building stays safe** | *Propose → validate → build* |
 | **To install it** | *Install — 5 minutes* |
 | **The architecture** | *How it works — inside-out* |
@@ -78,11 +80,33 @@ flowchart LR
 
 ---
 
-## ✦ New in v5.20.0
+## ✦ New in v5.21.0
 
-Three things landed this release: **H22 readiness** (machinery, not hope), the **utility flywheel** (a self-improving probe → review → wire loop), and **panel v9** (five engines, its own type system).
+Three things landed this release: **diagnostic truth** (the scene, interrogated — a fifth truth class no external LLM can hold), the **self-protecting harness** (it guards its own green, selects its own red, and demands proof its fixes are real), and the **studio-readiness verdict** (an honest READY, with the trade-offs named instead of hidden).
 
-### H22-ready before H22 ships
+### Diagnostic truth — the scene, interrogated
+
+**"Why did this recook?" is the question every Houdini artist asks and no chatbot can answer — because the answer only exists as live cook-state.** SYNAPSE now probes it and commits it:
+
+- 🔬 **The cook-API probe** dir()-confirms every symbol on the track's path against the running build — and immediately caught the track's *own spec* citing **H18-era phantom spellings** (the cook surface lives on `hou.OpNode`, not `hou.Node`; the event enum is lowercase). The probe decides, not the docs.
+- 🌀 **The perturbation catalog** pokes frozen tiny graphs per context — set a parm, rewire an input, make something time-dependent — and records **what actually goes dirty**. First run captured a real engine divergence: *a Copernicus rewire dirties upstream nodes that SOP semantics say it shouldn't.* That's now cataloged, deterministic, and golden-reproducible.
+- 🎯 **Staged on this catalog** (armed in the queue): `synapse_explain_recook` — point at a node, get *what will recook and why*, cited to a probe trial — and `synapse_diagnose_callback` — replay an errored parm callback under capture and get the real traceback.
+
+### The harness now protects its own green
+
+**4,118 tests, and the machine that grows them can no longer regress them:**
+
+- 🟢 **The green ratchet** — every autonomous sprint runs the FULL suite against a committed floor: failures only go down, passes only up. A change that greens its own target while reddening other tests fails *deterministically*, before any LLM judgment. It caught its own wiring regression on first run.
+- 🎯 **The red-driver** — `--drive` reads the readiness scoreboard and targets the next blocking-red finding. Posture-scoped: accepted trade-offs are structurally un-drivable; security criticals surface as human decisions, never auto-authored code.
+- 🧾 **Fix-is-real probes** — a check that greens on a marker string must name a committed *behavioral* proof. Gut the guard it points at and the probe goes red even though the marker survives.
+
+### The readiness verdict — honest, not rubber-stamped
+
+The 24-finding deployment review is now **durable regression gates** with a capstone verdict: **READY (solo posture)** — with the three security criticals (policy / consent / RBAC) held **honestly RED as named, posture-scoped trade-offs** that snap back to hard blockers the moment the posture says studio or farm. Accepted ≠ fixed, and every acceptance is written down.
+
+---
+
+## ✦ H22-ready before H22 ships
 
 **Houdini 22 lands mid-July. SYNAPSE meets it with a drop-day machine that's already proven.**
 
@@ -91,6 +115,7 @@ Three things landed this release: **H22 readiness** (machinery, not hope), the *
 - 🧪 **Dual-build test axis** — `SYNAPSE_TEST_HOUDINI_BUILD` points the suite at either build.
 - 🤝 **APEX MCP boundary contract** — Houdini 22 ships a native APEX MCP. The ratified boundary ([`docs/SYNAPSE_H22_BOUNDARY.md`](docs/SYNAPSE_H22_BOUNDARY.md)): SYNAPSE **consumes it as a truth-contract provider** (observed-vs-claimed envelope, fail-loud) — it never competes with it. Coexistence rules: [`docs/MCP_COEXISTENCE.md`](docs/MCP_COEXISTENCE.md). SYNAPSE's lane stays the receipts: undo-safe mutations + recorded provenance.
 - 🔒 **Multi-client hardening** — hash-guarded rollback that never pops a foreign (artist or other-client) undo block, plus `external_change_detected` attribution when someone else moved the scene.
+- 🌀 **Cook-behavior diffs on day one** *(v5.21.0)* — the diagnostic-truth catalogs are **build-stamped and major-agnostic**: under H22 they go stale-loud and re-probe with zero code edits, so *how H22 changed cook behavior* becomes a diffable artifact instead of forum anecdotes.
 
 **How the drop stays boring:** de-risk everything on H21 *now*, so drop day is verification, not surgery. One human write — the three version numbers into `drop.json` — arms the H22 pipeline; nothing before it can expand.
 
@@ -104,14 +129,17 @@ flowchart LR
     classDef side fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
 ```
 
-### The utility flywheel
+---
 
-**SYNAPSE now improves itself on a loop: ground the AI's Houdini knowledge in probe-verified truth → review its own code against that truth → wire the truth into the live path.** Nothing enters the live path on memory alone — memory drifts; probes don't. Every cycle runs the same **EXPLORE → REVIEW → SCAFFOLD** contract; a human ratifies each new cycle; and where a catalog and a code comment disagree, **the catalog wins**.
+## ✦ The utility flywheel — probe-verified truth on a loop
 
-**Two cycles have shipped — two kinds of truth:**
+**SYNAPSE improves itself on a loop: ground the AI's Houdini knowledge in probe-verified truth → review its own code against that truth → wire the truth into the live path.** Nothing enters the live path on memory alone — memory drifts; probes don't. Every cycle runs the same **EXPLORE → REVIEW → SCAFFOLD** contract; a human ratifies each new cycle; and where a catalog and a code comment disagree, **the catalog wins**.
+
+**Three cycles have shipped — three kinds of truth** (with capability + readiness catalogs behind them):
 
 - 🔌 **① Wiring truth — *how* nodes connect.** `host/introspect_connectivity.py` instantiates **282 node types** headless and records their real input/output counts + slot labels → a committed, integrity-checked catalog. `wire_by_label()` (`python/synapse/core/wiring.py`) then resolves inputs by **probed label, never remembered index** (fail-loud on an unknown label/type), and the validator's **slot-semantic checks (P3e)** reject an edge into an input the type doesn't have. *Receipts: the review sweep ran **141 sites, 0 critical**; the cycle fixed **2 known miswires** (swapped solver inputs).*
 - 🧭 **② Solaris context truth — *what* the nodes are.** A corpus-authored, probe-cross-checked **LOP / Solaris knowledge catalog** teaches the validator the semantics wiring truth can't see. It **hard-rejects phantom LOP types** the model reaches for out of SOP habit — there is no `grid` or `plane` LOP (use a `cube`) — and **advises** when an `assignmaterial` has no material source upstream (a `materiallibrary`, *or* a `reference`/`sublayer` layer that already authors the materials). *Receipts: **20 checks, 0 critical**; the ordering rule was hardened from a hard error to an advisory after adversarial review caught it would false-reject valid reference/sublayer material graphs.*
+- 🌀 **③ Diagnostic truth — what the scene *does* when poked** *(new in v5.21.0)*. Perturbation probes catalog live **dirty-propagation, recook triggers, and time-dependence** per context (SOP/LOP/COP/DOP) — the one truth class no external LLM can hold, because it only exists as live cook-state. *Receipts: the API probe caught the track's own spec citing **H18-era phantom spellings** (the cook surface lives on `hou.OpNode`, not `hou.Node`); the catalog's first run captured a real divergence — **a COP rewire dirties upstream nodes SOP semantics say it shouldn't**. Staged next on this catalog: `synapse_explain_recook` — ask "why did this recook?" and get an answer cited to a probe trial.*
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
@@ -119,22 +147,12 @@ flowchart LR
     EXP["EXPLORE<br/>probe-verified ground truth<br/>live probe · or probe-checked corpus"]:::hou -->|"committed, integrity-checked catalog"| REV["REVIEW<br/>sweep the code vs the catalog<br/>0 critical"]:::bridge
     REV -->|"findings → fixes"| SCAF["SCAFFOLD<br/>truth into the live path<br/>wire_by_label · validator P3e + LOP · test pins"]:::panel
     SCAF -->|"new truth classes"| NEXT["Queue<br/>human ratifies each new cycle"]:::side
-    NEXT -->|"cycle N+1 · so far: ① wiring · ② Solaris context"| EXP
+    NEXT -->|"cycle N+1 · so far: ① wiring · ② Solaris context · ③ diagnostic (cook truth)"| EXP
     classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
     classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
     classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
     classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
 ```
-
-### Panel v9
-
-**Five engines, one click, and the panel's own type.**
-
-- 🔌 **Five engines** — **Claude · Gemini · NVIDIA Nemotron · Ollama (local, GLM) · Custom** (bring your own OpenAI-compatible endpoint — base URL, model, key).
-- 👤 **The author token** — engine + model live in one rail control; click it, pick, done. **Picks persist across sessions.**
-- 🪟 **One surface — consent comes to you (v9.1)** — a single **CHAT** pane; when a build needs approval the **review + consent gate auto-surface**, then hand back to chat on accept/revert. Quiet state never yanks the view — consent is unmissable, not hidden behind a tab.
-- 🔤 **Bundled type** — **Space Grotesk / Space Mono** ship with the panel and load with it; a missing family is flagged, never silently substituted.
-- 🔢 **Token-only meter** — real provider-reported token counts (`812 · 18.0k · 1.2M`). Never estimated, never dollars.
 
 ---
 
@@ -178,6 +196,7 @@ flowchart LR
 
 | Release | Headline |
 |---|---|
+| **v5.20.0** | **H22 drop-day machine + utility flywheel + panel v9/v9.1** — the API-delta probe (proven empty on H21, caught 15 phantom spellings in our own emitters), the self-improving probe→review→wire loop, and the five-engine panel: **Claude · Gemini · NVIDIA Nemotron · Ollama · Custom**, the author token, one CHAT surface where **consent auto-surfaces** (v9.1), bundled Space Grotesk/Mono, a token-only meter. |
 | **v5.19.0** | **The build half landed** — a validated proposal becomes real nodes under one undo group, with mid-build rollback. Plus the Solaris production-wiring correction (phantom per-shape lights purged, merge/sublayer strength rule live-probed). |
 | **v5.18.0** | **Whole-graph validation** — every proposed node + wire checked against the live scene before anything is built; the occupied-input guard halts rather than sever artist wiring. |
 | **v5.17.x** | **PDG cook-watcher fixed** (phantom event-handler idiom replaced with the real one) · **Solaris/USD parm names live-grounded** — silently-no-op'd light writes now land · **latency visibility** — the LLM turn is ~95% of each step, Houdini ops run 1–70 ms; the audit fsync moved off the hot path · license split so GitHub detects **pure MIT**. |
@@ -274,12 +293,14 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.20.0):**
+**Shipping (v5.21.0):**
 
 - 🎛️ **Artist panel v9.1** — five engines, undo-safe, 115 tools, a single **CHAT** surface where the review + consent gate auto-surface, live observability + latency instrumentation (WCAG/usability **G3-audited**).
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
-- 🔁 **Utility flywheel** — two cycles shipped (wiring truth + Solaris context truth), self-improving on a ratified loop.
-- 🚀 **H22 drop-day machine** — API-delta probe + dual-build test axis, proven empty against H21.
+- 🔁 **Utility flywheel** — three ratified cycles (wiring · Solaris context · **diagnostic cook-truth**), self-improving on a human-ratified loop, with capability + readiness catalogs behind them.
+- 🌀 **Diagnostic-truth catalogs** — live dirty-propagation / recook / time-dependence trials per context, golden-reproducible; the recook-explainer + callback-debugger handlers staged on them.
+- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint, a posture-scoped red-driver, fix-is-real behavioral probes, and a **READY (solo posture)** studio-readiness verdict with the trade-offs named.
+- 🚀 **H22 drop-day machine** — API-delta probe + dual-build test axis, proven empty against H21; cook-behavior diffs on day one.
 - ⚙️ **In-process substrate** — two-tier provenance (audit write off the hot path), freeze-safety, bounded autonomy + a kill switch.
 - 🎬 **Live-grounded Solaris / USD** parameter names + the ratified APEX-MCP coexistence boundary.
 
@@ -331,10 +352,10 @@ python/synapse/
 ├── core/                       # canonical tables — timeouts.py (per-tool budgets) · wiring.py (wire_by_label vs the probed catalog)
 └── _vendor/                    # anthropic + deps, CP311 win_amd64
 
-host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols)
+host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols · cook API · cook-truth perturbation trials)
 scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_{wiring,lop}.py · mine_lop_knowledge.py
-tests/                          # 4,025 local (~70 Moneta-gated, skip on a clean clone)
-harness/                        # H22 readiness — self-verifying loop + flywheel queue
+tests/                          # 4,204 collected · 4,118 passing (Moneta-gated tests skip on a clean clone)
+harness/                        # the self-verifying loop — five tracks (H22 · v6 · context · studio · diagnostic), boundary guardrails, the full-suite green ratchet, the readiness verdict
 docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
 ```

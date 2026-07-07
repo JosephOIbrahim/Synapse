@@ -2,7 +2,7 @@
 MOE Tool Filter -- Classify artist messages and filter tools by domain.
 
 Uses shared/router.py (extract_features, MOERouter) to classify artist
-messages into agent domains, then filters the 108-tool list down to
+messages into agent domains, then filters the full registry tool list down to
 domain-relevant subsets. Falls back to full tool list on any error.
 
 Phase 1 of the MOE wiring plan.

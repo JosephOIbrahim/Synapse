@@ -304,7 +304,7 @@ TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
 # (Qt QSS has no letter-spacing). fontload.tracked_font() reads this.
 #   EYEBROW  +0.22  section labels (PLAN title, credit-section heads)
 #   BRAND    +0.16  wordmark
-#   LABEL    +0.15  tabs (DIRECT / WORK)
+#   LABEL    +0.15  the CHAT pill (DIRECT/WORK tabs removed in v9.1)
 #   LABEL_SM +0.12  credit keys, acts verbs, tiny labels
 #   DATA     +0.03  author, meter, paths, cookline, ⌘K chip
 #   SEND     +0.08  the SEND button

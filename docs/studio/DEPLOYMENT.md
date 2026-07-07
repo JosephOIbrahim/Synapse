@@ -122,7 +122,7 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_REDUCED_MOTION` | `1`/`true`/`yes`/`on` minimizes panel motion (accessibility) | off | `panel/designsystem/tokens.py` | Single-seat (accessibility) |
 | `SYNAPSE_REPORTS_DIR` | `synapse_write_report` output dir | `<repo>/docs` | `server/handlers.py` | Studio: show storage |
 | `SYNAPSE_RESILIENCE` | `"0"` disables rate-limiter + circuit-breaker (CI escape hatch only) | enabled | `mcp/server.py`, `server/websocket.py` | Studio: never set 0 |
-| `SYNAPSE_ROOT` | Repo root for panel bootstrap + agent-health JSONL; set by `packages/synapse.json` in live Houdini | `C:\Users\User\SYNAPSE` (.pypanel) / `~` (agent_health) | `panel/synapse_chat.pypanel`, `panel/agent_health.py` | Both |
+| `SYNAPSE_ROOT` | Repo root for panel bootstrap + agent-health JSONL; set by `packages/synapse.json` in live Houdini | `C:\Users\User\SYNAPSE` (.pypanel) / `~` (agent_health) | `houdini/python_panels/synapse_panel.pypanel` (the shipped loader), `panel/agent_health.py` | Both |
 | `SYNAPSE_SCOUT_DRIFT_POLICY` | `warn` (default) / `refuse` on scout corpus drift | `warn` | `cognitive/tools/scout.py` | Studio: refuse |
 | `SYNAPSE_SHOW_CONFIG` | Path to a show.json config layer; precedence env > $HIP > $JOB > defaults | unset | `core/show_config.py` | Both |
 | `SYNAPSE_TELEMETRY_FLUSH_S` | Periodic telemetry.json flush interval, seconds; <=0 disables | `60.0` | `server/telemetry_dump.py` | Both |

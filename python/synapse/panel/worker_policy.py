@@ -2,7 +2,7 @@
 Worker Tool Policy -- ALLOWLIST gate for the autonomous panel worker.
 
 The autonomous ClaudeWorker runs an LLM tool-use loop with no human in the
-loop. Left unfiltered it arms the FULL ~110-tool set, including
+loop. Left unfiltered it arms the FULL registry tool set, including
 ``execute_python``/``execute_vex`` (arbitrary code) and destructive ops
 (``delete_node``, renders, exports). The threat here is the LLM's own
 autonomy, not a remote attacker -- so we filter ALWAYS, regardless of deploy
