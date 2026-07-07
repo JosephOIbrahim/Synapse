@@ -1,0 +1,8 @@
+{
+  "_comment": "Full `pytest tests/` GREEN floor for the ratchet guardrail (checks.py::check_suite_baseline). Failures may only ratchet DOWN, passes only UP — any new failure is a collateral regression and fails the sprint before the Evaluator. Advance this file ONLY in a human-promoted commit that legitimately changes the counts (the ratchet reads it at HEAD, never the worktree, so a sprint cannot lower its own bar).",
+  "passed": 4080,
+  "failed": 0,
+  "skipped": 87,
+  "commit": "5e01f09",
+  "generated": "2026-07-07"
+}

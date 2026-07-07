@@ -17,11 +17,12 @@
     "context_golden_top", "context_golden_dop", "context_golden_mat",
     "posture_declared", "policy_single_source", "consent_enforced",
     "rbac_at_dispatch", "memory_provenance", "eval_backbone",
-    "farm_headless", "studio_readiness_review"
+    "farm_headless", "studio_readiness_review",
+    "suite_baseline"
   ],
   "guardrails": {
-    "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger, and no newly-introduced phantom hou.* API (dir()-symbol-table-gated).",
-    "checks": ["scout_no_apex_corpus", "no_rigging_drift", "provenance_not_bypassed", "phantom_clean"]
+    "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger, and no newly-introduced phantom hou.* API (dir()-symbol-table-gated). PLUS the green ratchet (suite_baseline): the full `pytest tests/` result must not regress vs the committed floor in harness/verify/suite_baseline.json — failures only DOWN, passes only UP — so no Generator round can green its target while reddening other tests.",
+    "checks": ["scout_no_apex_corpus", "no_rigging_drift", "provenance_not_bypassed", "phantom_clean", "suite_baseline"]
   },
   "tasks": [
     {

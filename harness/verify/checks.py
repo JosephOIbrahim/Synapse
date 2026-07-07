@@ -1334,6 +1334,51 @@ def check_studio_readiness_review(ctx):
             f"live gates: {', '.join(findings_live) or 'none'}")[:500]}
 
 
+# ---------- Ratchet guardrail: protect GREEN, catch collateral regressions ----------
+# The "instinct" harness (harness-architect, 2026-07-07): the full-suite green
+# baseline is the one primitive run.ts lacked. Per-check subset pytest runs are
+# NOT gates — collection-order / fake-hou residency effects (see the residency
+# trap note atop tests/conftest.py) — so this guardrail runs the FULL `pytest
+# tests/` every sprint and ratchets the result against the COMMITTED baseline:
+# failures may only go DOWN, passes only UP. A change that greens its own target
+# but reddens N OTHER tests (the 4080->47-red collateral case that had to be
+# caught by hand) fails the sprint deterministically, before the Evaluator. The
+# baseline advances ONLY via a human-promoted commit that legitimately moves the
+# counts (read at HEAD, never the worktree copy — a sprint must not lower its bar).
+def check_suite_baseline(ctx):
+    import re
+    rc_b, base_raw, _ = sh(["git", "show", "HEAD:harness/verify/suite_baseline.json"], cwd=ctx["wt"])
+    if rc_b != 0 or not base_raw.strip():
+        return {"ok": False, "detail": "no committed harness/verify/suite_baseline.json at HEAD — seed "
+                                       "it with the current green counts so the ratchet has a floor"}
+    try:
+        base = json.loads(base_raw)
+        passed_base, failed_base = int(base["passed"]), int(base["failed"])
+    except Exception as e:
+        return {"ok": False, "detail": f"baseline unreadable: {type(e).__name__}: {str(e)[:200]}"}
+    rc, out, err = sh([sys.executable, "-m", "pytest", "tests/", "-q", "-p", "no:cacheprovider"],
+                      cwd=ctx["wt"], env=_wt_env(ctx), timeout=1800)
+    blob = out + "\n" + err
+    def _n(pat):
+        m = re.search(pat, blob)
+        return int(m.group(1)) if m else 0
+    passed_now = _n(r"\b(\d+) passed\b")
+    failed_now = _n(r"\b(\d+) failed\b") + _n(r"\b(\d+) errors?\b")
+    if passed_now == 0:
+        # rc 0 alone lies: an all-skipped or collection-errored run is NOT green.
+        tail = blob.strip().splitlines()
+        return {"ok": False, "detail": f"ZERO tests passed (collection error / all skipped?) rc={rc} — "
+                                       f"{(tail[-1] if tail else 'no pytest output')[:280]}"}
+    ok = failed_now <= failed_base and passed_now >= passed_base
+    detail = (f"passed {passed_now} (base {passed_base}), failed {failed_now} (base {failed_base}); "
+              f"ratchet {'holds' if ok else 'BROKEN'}")
+    if not ok and failed_now > failed_base:
+        detail += f" — {failed_now - failed_base} NEW failure(s): collateral regression, protect green"
+    elif not ok and passed_now < passed_base:
+        detail += f" — {passed_base - passed_now} test(s) stopped passing (turned skip/error/removed)"
+    return {"ok": ok, "detail": detail[:500]}
+
+
 def run_one(name, task, ctx):
     fn = DISPATCH.get(name)
     if not fn:
@@ -1359,6 +1404,8 @@ DISPATCH = {
     "scout_no_apex_corpus": check_scout_no_apex_corpus, "no_rigging_drift": check_no_rigging_drift,
     "provenance_not_bypassed": check_provenance_not_bypassed,
     "phantom_clean": check_phantom_clean,
+    # ratchet guardrail — full-suite green baseline (collateral-regression detector)
+    "suite_baseline": check_suite_baseline,
     # U.1 — utility flywheel: network-wiring truth
     "connectivity_catalog_fresh": check_connectivity_catalog_fresh,
     "wiring_conformance": check_wiring_conformance,
