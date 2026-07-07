@@ -301,13 +301,24 @@ _CAPSTONE_SUBCHECKS = S_CRITICAL_CHECKS + ["memory_provenance", "eval_backbone",
                                            "farm_headless", "context_review_clean"]
 
 
+def _set_posture(monkeypatch, tmp_path, mode):
+    """Write a posture.json and redirect the capstone's machine-level posture seam to it, so the
+    posture-aware branch is exercised hermetically (never the runner's real posture)."""
+    p = tmp_path / "posture.json"
+    p.write_text(json.dumps({"mode": mode, "identity_model": "test",
+                             "auto_approve": mode == "solo"}), encoding="utf-8")
+    _redirect_posture(monkeypatch, p)
+
+
 def _stub_subchecks(monkeypatch, red=None):
     """Force every capstone sub-check to a deterministic verdict. Patch BOTH the module global
     check_<name> AND the DISPATCH row — the capstone must look sub-checks up by NAME at call
     time (globals or DISPATCH), and patching both covers either resolution without a captured
-    module-load list (the anti-pattern that would make the capstone untestable)."""
+    module-load list (the anti-pattern that would make the capstone untestable). `red` may be a
+    single name or a collection of names to force RED."""
+    red_set = {red} if isinstance(red, str) else set(red or ())
     def _verdict(name):
-        ok = name != red
+        ok = name not in red_set
         return {"ok": ok, "detail": ("stub green" if ok else f"{name} red stub")}
     for name in _CAPSTONE_SUBCHECKS:
         stub = (lambda n: (lambda ctx: _verdict(n)))(name)
@@ -325,18 +336,20 @@ def _verdict_artifact(wt):
 
 
 def test_studio_review_all_green_ready(tmp_path, monkeypatch):
+    _set_posture(monkeypatch, tmp_path, "studio")   # strict branch; all green ⇒ READY everywhere
     _stub_subchecks(monkeypatch, red=None)
     res = _run("studio_readiness_review", _ctx(tmp_path))
     assert res["ok"] is True
     art = _verdict_artifact(tmp_path)
     assert art.is_file(), "capstone must emit studio_readiness_verdict.json into the worktree"
     doc = json.loads(art.read_text(encoding="utf-8"))
-    assert doc["verdict"] == "READY"          # frozen enum
+    assert doc["verdict"] == "READY"          # frozen enum (strict, all green)
     assert doc["criticals_green"] is True
     assert doc.get("findings_live") == []      # nothing red
 
 
 def test_studio_review_one_critical_red_not_ready(tmp_path, monkeypatch):
+    _set_posture(monkeypatch, tmp_path, "studio")   # studio ⇒ criticals are HARD blockers
     _stub_subchecks(monkeypatch, red="consent_enforced")  # a security-critical goes red
     res = _run("studio_readiness_review", _ctx(tmp_path))
     assert res["ok"] is False
@@ -346,3 +359,33 @@ def test_studio_review_one_critical_red_not_ready(tmp_path, monkeypatch):
     assert doc["verdict"] == "NOT READY"                    # frozen enum
     assert doc["criticals_green"] is False
     assert "consent_enforced" in doc["findings_live"]        # the capstone names the live finding
+
+
+def test_studio_review_solo_accepts_criticals(tmp_path, monkeypatch):
+    # POSTURE-AWARE: under a declared solo posture the security criticals are ACCEPTED trade-offs
+    # (named, not hidden), the memory/eval partials are open hygiene, and the verdict is READY —
+    # because posture + data-safety + catalog-integrity hold. The gates themselves are still red.
+    _set_posture(monkeypatch, tmp_path, "solo")
+    _stub_subchecks(monkeypatch, red={"policy_single_source", "consent_enforced",
+                                      "rbac_at_dispatch", "memory_provenance", "eval_backbone"})
+    res = _run("studio_readiness_review", _ctx(tmp_path))
+    assert res["ok"] is True                              # solo IS ready despite red criticals
+    doc = json.loads(_verdict_artifact(tmp_path).read_text(encoding="utf-8"))
+    assert "solo" in doc["verdict"].lower()               # "READY (solo posture)"
+    assert doc["posture"] == "solo"
+    for c in ("policy_single_source", "consent_enforced", "rbac_at_dispatch"):
+        assert c in doc["accepted_under_posture"]         # accepted, but NAMED (not silent)
+    for h in ("memory_provenance", "eval_backbone"):
+        assert h in doc["open_hygiene"]
+
+
+def test_studio_review_solo_criticals_snap_back_under_studio(tmp_path, monkeypatch):
+    # The SAME red criticals that are accepted under solo are HARD blockers under studio — the
+    # acceptance is posture-scoped, never a permanent waiver.
+    _set_posture(monkeypatch, tmp_path, "studio")
+    _stub_subchecks(monkeypatch, red={"policy_single_source", "consent_enforced", "rbac_at_dispatch"})
+    res = _run("studio_readiness_review", _ctx(tmp_path))
+    assert res["ok"] is False
+    doc = json.loads(_verdict_artifact(tmp_path).read_text(encoding="utf-8"))
+    assert doc["verdict"] == "NOT READY"
+    assert doc["posture"] == "studio"

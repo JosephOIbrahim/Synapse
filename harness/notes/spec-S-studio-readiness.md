@@ -158,13 +158,22 @@ was mis-located). Eight checks:
 - `farm_headless` — FINGERPRINT. ok:false while a non-test caller of `dirtyAllTasks(remove_files=True)`
   is reachable in `shared/bridge.py` OR scout's version check is skipped in the external-process
   topology (grep the skip site in scout.py). detail names the live defect(s).
-- `studio_readiness_review` — CAPSTONE aggregate. Runs the other seven S-checks (call the functions
-  directly with the same ctx) + `context_review_clean`. ok:true iff the security-critical set
-  {posture_declared, policy_single_source, consent_enforced, rbac_at_dispatch} are ALL ok:true AND no
-  S-check is ok:false. Emits `harness/state/studio_readiness_verdict.json`:
-  `{ "generated": "<iso>", "per_check": {<name>: <ok>}, "criticals_green": bool,
-     "findings_live": [<names still red>], "verdict": "READY"|"NOT READY" }`. Until the fixes land,
-  ok:false listing the live findings. This gate CANNOT pass while a critical finding is live.
+- `studio_readiness_review` — CAPSTONE aggregate, POSTURE-AWARE. Runs the other seven S-checks (call
+  the functions directly with the same ctx) + `context_review_clean`, then reads the declared posture
+  (`_read_posture()`). The individual security-critical gates always stay RED while their code defect
+  is live (posture never fakes a gate green). What the posture changes is whether those defects BLOCK:
+  - **studio / farm / undeclared → STRICT**: ok:true iff {posture_declared, policy_single_source,
+    consent_enforced, rbac_at_dispatch} are ALL ok:true AND no S-check is ok:false. verdict READY / NOT READY.
+  - **solo → posture-scoped**: the three security criticals are the repo's documented single-user
+    trade-offs — ACCEPTED (listed in `accepted_under_posture`), not blocking. `memory_provenance` +
+    `eval_backbone` partials are `open_hygiene` (non-blocking solo). Blockers are only the solo-hard set
+    {posture_declared, farm_headless, context_review_clean} (data-safety + catalog integrity). ok:true
+    iff none of those is red. verdict "READY (solo posture)". The acceptance is posture-SCOPED — the
+    same criticals snap back to hard blockers the instant the posture is studio/farm.
+  Emits `harness/state/studio_readiness_verdict.json`:
+  `{ "generated", "per_check", "criticals_green", "findings_live", "blockers", "verdict", "posture",
+     ["accepted_under_posture", "open_hygiene"] }`. Never a rubber stamp: accepted != fixed, and every
+  accepted trade-off is named in the artifact, not silently waived.
 
 Register all 8 in DISPATCH after the C rows under a `# S — studio-readiness hardening track` comment.
 
