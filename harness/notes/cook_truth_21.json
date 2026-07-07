@@ -1,0 +1,185 @@
+{
+  "schema": "cook_truth/v1",
+  "houdini_version": "21.0.671",
+  "blake2b": "3dabd139628cad3c68d1c29bd8056312",
+  "trials": [
+    {
+      "context": "sop",
+      "graph_fingerprint": "sop:box>scatter>OUT",
+      "perturbation": "parm:box1/scale",
+      "expected_dirty": [
+        "OUT",
+        "box1",
+        "scatter1"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "box1",
+        "scatter1"
+      ],
+      "cookcount_deltas": {
+        "box1": 1,
+        "scatter1": 1,
+        "OUT": 1
+      },
+      "time_dependent": []
+    },
+    {
+      "context": "sop",
+      "graph_fingerprint": "sop:box>scatter>OUT",
+      "perturbation": "rewire:OUT<-box1",
+      "expected_dirty": [
+        "OUT"
+      ],
+      "observed_dirty": [
+        "OUT"
+      ],
+      "cookcount_deltas": {
+        "box1": 0,
+        "scatter1": 0,
+        "OUT": 1
+      },
+      "time_dependent": []
+    },
+    {
+      "context": "sop",
+      "graph_fingerprint": "sop:box>scatter>OUT",
+      "perturbation": "time:box1/tx=$F",
+      "expected_dirty": [
+        "OUT",
+        "box1",
+        "scatter1"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "box1",
+        "scatter1"
+      ],
+      "cookcount_deltas": {
+        "box1": 1,
+        "scatter1": 1,
+        "OUT": 1
+      },
+      "time_dependent": [
+        "OUT",
+        "box1",
+        "scatter1"
+      ]
+    },
+    {
+      "context": "lop",
+      "graph_fingerprint": "lop:sphere>materiallibrary>OUT",
+      "perturbation": "parm:sphere1/radius",
+      "expected_dirty": [
+        "OUT",
+        "matlib1",
+        "sphere1"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "matlib1",
+        "sphere1"
+      ],
+      "cookcount_deltas": {
+        "sphere1": 1,
+        "matlib1": 1,
+        "OUT": 1
+      },
+      "time_dependent": []
+    },
+    {
+      "context": "lop",
+      "graph_fingerprint": "lop:sphere>materiallibrary>OUT",
+      "perturbation": "rewire:OUT<-sphere1",
+      "expected_dirty": [
+        "OUT"
+      ],
+      "observed_dirty": [
+        "OUT"
+      ],
+      "cookcount_deltas": {
+        "sphere1": 0,
+        "matlib1": 0,
+        "OUT": 1
+      },
+      "time_dependent": []
+    },
+    {
+      "context": "lop",
+      "graph_fingerprint": "lop:sphere>materiallibrary>OUT",
+      "perturbation": "time:sphere1/radius=$F",
+      "expected_dirty": [
+        "OUT",
+        "matlib1",
+        "sphere1"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "matlib1",
+        "sphere1"
+      ],
+      "cookcount_deltas": {
+        "sphere1": 1,
+        "matlib1": 1,
+        "OUT": 1
+      },
+      "time_dependent": [
+        "OUT",
+        "matlib1",
+        "sphere1"
+      ]
+    },
+    {
+      "context": "cop",
+      "graph_fingerprint": "cop:file>blur>OUT",
+      "perturbation": "parm:blur1/size",
+      "expected_dirty": [
+        "OUT",
+        "blur1"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "blur1"
+      ],
+      "cookcount_deltas": {
+        "file1": 0,
+        "blur1": 1,
+        "OUT": 1
+      },
+      "time_dependent": []
+    },
+    {
+      "context": "cop",
+      "graph_fingerprint": "cop:file>blur>OUT",
+      "perturbation": "rewire:OUT<-file1",
+      "expected_dirty": [
+        "OUT"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "blur1"
+      ],
+      "cookcount_deltas": {
+        "file1": 0,
+        "blur1": 0,
+        "OUT": 1
+      },
+      "time_dependent": []
+    },
+    {
+      "context": "dop",
+      "graph_fingerprint": "dop:emptyobject",
+      "perturbation": "parm:eo1/solvefirstframe",
+      "expected_dirty": [
+        "eo1"
+      ],
+      "observed_dirty": [
+        "eo1"
+      ],
+      "cookcount_deltas": {
+        "eo1": 1
+      },
+      "time_dependent": []
+    }
+  ]
+}
