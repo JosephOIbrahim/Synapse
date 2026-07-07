@@ -1022,7 +1022,10 @@ class SynapseMemory:
             memory_type=MemoryType.DECISION,
             tags=tags or ["decision"],
             keywords=self._extract_keywords(decision + " " + reasoning),
-            source="user"
+            # Provenance: a decision recorded through this API is the AI/agent's
+            # reasoning, not something the user typed. Stamp the real author so a
+            # memory's source reflects who authored it (was mislabeled "user").
+            source="ai"
         )
 
     def action(
