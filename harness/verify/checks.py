@@ -1198,6 +1198,10 @@ def check_eval_backbone(ctx):
     # size>1024), AND a fake-hou residency guard exists (a tests/ file marked
     # `# FAKE_HOU_RESIDENCY_GUARD` that asserts a single sys.modules['hou'] planter / fails on
     # collision). Until both: RED naming which is missing.
+    # FIX_IS_REAL_PROBE: tests/test_residency_guard_fires.py::test_residency_guard_raises_on_rogue_planter
+    #   Behavioral proof the residency guard actually FIRES. A PRESENCE gate greens on the marker
+    #   string alone; this probe reddens the instant conftest's pytest_collection_finish hook is
+    #   gutted (see the PRESENCE-gate standard pinned by tests/test_s_track.py).
     import re
     missing = []
     checks_src, _ = _read_src(ctx, "harness/verify/checks.py")

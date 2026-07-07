@@ -46,6 +46,7 @@ const args = process.argv.slice(2);
 const DRY = args.includes("--dry");
 const ONLY = args.includes("--task") ? args[args.indexOf("--task") + 1] : null;
 const FORCE = args.includes("--force");   // re-run tasks the completion ledger marks done
+const DRIVE = args.includes("--drive");   // red-driver: select the next blocking-red readiness finding and drive only it
 
 const GEN_PROMPT = readFileSync(join(REPO, "harness/prompts/generator.md"), "utf8");
 const EVAL_PROMPT = readFileSync(join(REPO, "harness/prompts/evaluator.md"), "utf8");
@@ -91,6 +92,51 @@ function ensureWorktree(id: string): string {
   const r = sh("git", ["worktree", "add", "-b", branch, wt, "HEAD"]);
   if (r.status !== 0) log(`${c.warn}  worktree note: ${(r.stderr || "").trim()}${c.off}`);
   return wt;
+}
+
+// Red-driver (--drive): select the next blocking-red readiness finding and map it to its
+// remediation task. Phase 2 of the instinct loop — protect green (the ratchet) already lands;
+// this SELECTS the red to target. It refreshes the studio-readiness verdict against the REPO
+// first (so a stale on-disk snapshot can never mis-target), then keys on the POSTURE-SCOPED
+// `blockers` set — NEVER findings_live — so posture-accepted trade-offs are structurally
+// un-drivable and a solo posture (blockers:[]) idles correctly. It selects only; runTask is
+// unchanged, so human-gated criticals (S.1–S.3) still surface as GATED (a human MUST author
+// security fixes); only ungated reds (S.4–S.6) remediate autonomously. Writes nothing itself.
+function selectRedTask(): string | null {
+  const verdictPath = join(REPO, "harness/state/studio_readiness_verdict.json");
+  const stampBefore = existsSync(verdictPath)
+    ? (() => { try { return JSON.parse(readFileSync(verdictPath, "utf8")).generated ?? ""; } catch { return ""; } })()
+    : "";
+  // freshness: recompute the capstone against the REPO so we never drive on a stale snapshot
+  const r = sh(PYTHON, ["harness/verify/checks.py", "--task", "S.R", "--worktree", REPO, "--mode", MODE]);
+  if (r.status !== 0) {
+    log(`${c.warn}  --drive: S.R refresh failed (status ${r.status}) — refusing to drive on a stale verdict.${c.off}`);
+    return null;
+  }
+  if (!existsSync(verdictPath)) {
+    log(`${c.warn}  --drive: no studio_readiness_verdict.json after refresh — nothing to drive.${c.off}`);
+    return null;
+  }
+  let v: any;
+  try { v = JSON.parse(readFileSync(verdictPath, "utf8")); }
+  catch (e) { log(`${c.warn}  --drive: unreadable verdict — ${String(e)}${c.off}`); return null; }
+  if ((v.generated ?? "") === stampBefore && stampBefore !== "") {
+    log(`${c.warn}  --drive: verdict 'generated' did not advance — the S.R refresh may have silently failed; refusing to drive on a possibly-stale verdict.${c.off}`);
+    return null;
+  }
+  const blockers: string[] = Array.isArray(v.blockers) ? v.blockers : [];
+  if (String(v.verdict ?? "").startsWith("READY") || blockers.length === 0) {
+    log(`${c.dim}  --drive: no blocking-red under ${v.posture ?? "?"} posture — nothing to drive (${v.verdict ?? "?"}).${c.off}`);
+    return null;
+  }
+  const finding = blockers[0];  // honest "next blocking-red": strict order, never skip a gate to do easier work
+  const target = TASKS.find((t: any) => t.phase === "studio" && (t.verify ?? []).includes(finding));
+  if (!target) {
+    log(`${c.warn}  --drive: blocking-red '${finding}' maps to no studio task — surface to a human.${c.off}`);
+    return null;
+  }
+  log(`${c.sig}  --drive: next blocking-red '${finding}' → ${target.id} (${target.title}).${c.off}`);
+  return target.id;
 }
 
 /**
@@ -445,11 +491,15 @@ queue = queue.filter((t: any) => !(t.blocked_on === "blueprints" && !V6));
 queue = queue.filter((t: any) => !(t.blocked_on === "catalog" && !CTX));
 queue = queue.filter((t: any) => !(t.blocked_on === "posture" && !POSTURE));
 if (ONLY) queue = queue.filter((t: any) => t.id === ONLY);
+if (DRIVE) {                              // red-driver narrows to the next blocking-red (or idles)
+  const redId = selectRedTask();
+  queue = redId ? queue.filter((t: any) => t.id === redId) : [];
+}
 
 const result: Record<string, string> = {};
 for (const task of queue) {            // WIP = 1 — strictly sequential
   head(`${task.id} · ${task.title}`);
-  if (!ONLY && !FORCE && isDone(task)) {   // completion ledger — skip work already banked
+  if (!ONLY && !DRIVE && !FORCE && isDone(task)) {   // completion ledger — skip work already banked (--drive re-attempts a banked finding)
     log(`  ${c.dim}✓ already passed (refs unchanged) — skipping. --force re-runs.${c.off}`);
     result[task.id] = "SKIP";
     continue;

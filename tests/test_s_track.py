@@ -390,3 +390,98 @@ def test_studio_review_solo_criticals_snap_back_under_studio(tmp_path, monkeypat
     doc = json.loads(_verdict_artifact(tmp_path).read_text(encoding="utf-8"))
     assert doc["verdict"] == "NOT READY"
     assert doc["posture"] == "studio"
+
+
+# ===========================================================================
+# Phase 2 — red-driver (--drive) DATA CONTRACT. run.ts has no TS test harness,
+# so the selector's finding->task join + posture-scoped idle are pinned here at
+# the data level — the exact predicate selectRedTask() implements in run.ts.
+# ===========================================================================
+_TASKS = json.loads((_REPO / "harness" / "tasks.json").read_text(encoding="utf-8"))["tasks"]
+
+
+def _select_red(verdict, tasks=_TASKS):
+    """Pure-data mirror of run.ts selectRedTask(): key on the POSTURE-SCOPED `blockers`
+    set (never findings_live); map blockers[0] to its studio task."""
+    if str(verdict.get("verdict", "")).startswith("READY") or not verdict.get("blockers"):
+        return None
+    finding = verdict["blockers"][0]
+    return next((t["id"] for t in tasks
+                 if t.get("phase") == "studio" and finding in (t.get("verify") or [])), None)
+
+
+def test_red_driver_join_is_unique_under_studio():
+    # Every S-check finding maps to EXACTLY ONE phase=='studio' task's verify — the join
+    # selectRedTask relies on. The phase=='studio' guard pins the one non-unique key
+    # context_review_clean to S.6 (it is also in C.0, which is NOT studio-phase).
+    studio = [t for t in _TASKS if t.get("phase") == "studio"]
+    expect = {"policy_single_source": "S.1", "consent_enforced": "S.2",
+              "rbac_at_dispatch": "S.3", "memory_provenance": "S.4",
+              "eval_backbone": "S.5", "farm_headless": "S.6",
+              "context_review_clean": "S.6"}
+    for finding, want in expect.items():
+        owners = [t["id"] for t in studio if finding in (t.get("verify") or [])]
+        assert owners == [want], f"{finding} -> {owners} (want [{want}])"
+
+
+def test_red_driver_idle_under_solo_and_ignores_accepted():
+    # blockers == [] -> no target. Crucially, a solo verdict that lists the accepted criticals
+    # in findings_live (NOT blockers) must STILL yield no target: posture-accepted trade-offs
+    # are structurally un-drivable because the selector keys on `blockers`, never findings_live.
+    assert _select_red({"verdict": "READY (solo posture)", "blockers": [], "posture": "solo"}) is None
+    assert _select_red({"verdict": "READY (solo posture)", "blockers": [],
+                        "findings_live": ["policy_single_source", "consent_enforced",
+                                          "rbac_at_dispatch"], "posture": "solo"}) is None
+
+
+def test_red_driver_targets_first_blocker_under_strict():
+    # Strict (studio) posture: the criticals snap back into `blockers`; the driver targets
+    # blockers[0], and that task is human_gated -> runTask surfaces GATED (a human MUST author
+    # the security fix). Strict order: never skip a gate to do easier work.
+    strict = {"verdict": "NOT READY", "posture": "studio",
+              "blockers": ["policy_single_source", "consent_enforced", "rbac_at_dispatch"]}
+    target = _select_red(strict)
+    assert target == "S.1"
+    task = next(t for t in _TASKS if t["id"] == target)
+    assert task.get("human_gate"), "blockers[0] target must be human-gated (GATED, never auto-authored)"
+
+
+# ===========================================================================
+# Phase 3 — the PRESENCE-gate -> FIX_IS_REAL_PROBE standard, self-hosting.
+# A PRESENCE gate can flip green on a bare string; every check tagged
+# `# PRESENCE gate` must therefore name a committed BEHAVIORAL probe proving
+# the defect is really fixed. Adding a presence gate without a real probe (or
+# letting the pointer rot) reddens this test — the standard enforces itself.
+# ===========================================================================
+def _check_body(src, fname):
+    # the exact body-isolation idiom check_eval_backbone uses on check_render, so one gate's
+    # tag/pointer can't satisfy an adjacent gate's.
+    m = re.search(rf"def {re.escape(fname)}\(ctx[^)]*\):(.*?)(?=\ndef |\Z)", src, re.S)
+    return m.group(1) if m else ""
+
+
+def test_presence_gates_name_a_real_probe():
+    src = _CHECKS.read_text(encoding="utf-8")
+    bodies = {}
+    for fn in checks.DISPATCH.values():
+        fname = getattr(fn, "__name__", "")
+        if fname and fname not in bodies:
+            bodies[fname] = _check_body(src, fname)
+    # the tag token is the distinctive phrase "PRESENCE gate" (a check may id-prefix it,
+    # e.g. "# S.5 PRESENCE gate"); SENTINEL-worded gates are deliberately not yet in scope.
+    tagged = {fn: b for fn, b in bodies.items() if "PRESENCE gate" in b}
+    assert "check_eval_backbone" in tagged, "eval_backbone must self-declare a `PRESENCE gate` tag"
+    for fname, body in tagged.items():
+        m = re.search(r"#\s*FIX_IS_REAL_PROBE:\s*(\S+)", body)
+        assert m, (f"presence gate '{fname}' names no FIX_IS_REAL_PROBE — a check that greens on a "
+                   "marker string must point at a behavioral probe (or `none (...)` if exempt)")
+        pointer = m.group(1)
+        if pointer.lower().startswith("none"):
+            continue  # declaration-only exemption (e.g. posture_declared)
+        rel, _, nodeid = pointer.partition("::")
+        probe_file = _REPO / rel
+        assert probe_file.is_file(), f"{fname}: FIX_IS_REAL_PROBE file missing: {rel}"
+        testname = nodeid.split("::")[-1]
+        assert testname and re.search(rf"def {re.escape(testname)}\b",
+                                      probe_file.read_text(encoding="utf-8")), \
+            f"{fname}: FIX_IS_REAL_PROBE names '{nodeid}' but {testname} isn't defined in {rel}"
