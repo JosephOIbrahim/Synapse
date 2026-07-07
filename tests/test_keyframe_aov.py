@@ -9,7 +9,8 @@ _original_hou = sys.modules.get("hou", None)
 
 # Create hou mock
 hou_mock = types.ModuleType("hou")
-sys.modules["hou"] = hou_mock
+if "hou" not in sys.modules:  # defer to conftest's canonical hou resident
+    sys.modules["hou"] = hou_mock
 
 
 class _MockKeyframe:

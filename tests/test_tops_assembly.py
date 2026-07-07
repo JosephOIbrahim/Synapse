@@ -8,7 +8,8 @@ from unittest.mock import MagicMock, patch, PropertyMock
 
 # Create hou mock
 hou_mock = types.ModuleType("hou")
-sys.modules["hou"] = hou_mock
+if "hou" not in sys.modules:  # defer to conftest's canonical hou resident
+    sys.modules["hou"] = hou_mock
 hou_mock.node = MagicMock()
 hou_mock.frame = MagicMock(return_value=1)
 hou_mock.selectedNodes = MagicMock(return_value=[])

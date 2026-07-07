@@ -20,8 +20,10 @@ _mock_hou.frame = MagicMock(return_value=1)
 _mock_hdefereval = ModuleType("hdefereval")
 _mock_hdefereval.executeInMainThreadWithResult = staticmethod(lambda fn, *args, **kwargs: fn(*args, **kwargs))
 
-sys.modules["hou"] = _mock_hou
-sys.modules["hdefereval"] = _mock_hdefereval
+if "hou" not in sys.modules:  # defer to conftest's canonical hou resident
+    sys.modules["hou"] = _mock_hou
+if "hdefereval" not in sys.modules:
+    sys.modules["hdefereval"] = _mock_hdefereval
 
 from synapse.server.handlers import SynapseHandler  # noqa: E402
 from synapse.server import handlers_render as _hr  # noqa: E402

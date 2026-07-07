@@ -30,7 +30,8 @@ _mock_hou.paneTabType = MagicMock()
 _mock_hou.paneTabType.NetworkEditor = "NetworkEditor"
 
 _orig_hou = sys.modules.get("hou")
-sys.modules["hou"] = _mock_hou
+if "hou" not in sys.modules:  # defer to conftest's canonical hou resident
+    sys.modules["hou"] = _mock_hou
 
 # Stub hdefereval (both methods needed — handlers use both)
 _orig_hdefereval = sys.modules.get("hdefereval")

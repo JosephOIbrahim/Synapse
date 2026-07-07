@@ -31,6 +31,103 @@ VENDOR_ABI_TAG = "cp311-win_amd64"
 
 
 # ---------------------------------------------------------------------------
+# Canonical fake `hou` — the ONE authoritative sys.modules['hou'] planter
+# ---------------------------------------------------------------------------
+# Historically 56 test modules each planted their own sys.modules['hou'] fake
+# at import time. 41 did so CONDITIONALLY (`if "hou" not in sys.modules`) and
+# deferred to whoever planted first; 7 planted UNCONDITIONALLY and clobbered
+# the resident mid-collection. Because pytest imports every test module during
+# collection, the surviving resident — and thus which fake each handler module
+# bound its `hou` global to — depended on collection ORDER. That is the fake-hou
+# residency trap (docs/HARDENING_RUN_2026-06-10.md): green locally, red in CI,
+# false-green evals when a diverging fake wins the race.
+#
+# conftest.py is imported before any test module is collected, so planting one
+# canonical fake here makes it the authoritative resident. Conditional planters
+# see it present and defer; the (converted) unconditional planters swap it in
+# only to bind their module-under-test, then RESTORE this canonical object. The
+# pytest_collection_finish guard at the bottom of this file fails the run if the
+# canonical resident was replaced by a rogue unconditional planter.
+#
+# Under real Houdini (hython) `hou` is already resident, so we never plant and
+# the guard is a no-op — real hou owns the module.
+
+def _build_canonical_hou():
+    """A permissive, superset fake `hou` shared by the whole standalone suite."""
+    hou = types.ModuleType("hou")
+    hou.__synapse_canonical__ = True  # sentinel the residency guard checks
+
+    # Real types: isinstance() / `except` targets must be genuine classes.
+    hou.OperationFailed = type("OperationFailed", (Exception,), {})
+    hou.LoadWarning = type("LoadWarning", (Exception,), {})
+    hou.NodeError = type("NodeError", (Exception,), {})
+    for _t in ("Node", "LopNode", "SopNode", "ObjNode", "RopNode", "CopNode",
+               "LopNetwork", "NodeType", "Parm", "ParmTuple", "Geometry"):
+        setattr(hou, _t, type(_t, (), {}))
+
+    class _Keyframe:
+        def __init__(self, *a, **k):
+            self._frame, self._value, self._expr = 0, 0.0, None
+        def setFrame(self, f): self._frame = f
+        def setValue(self, v): self._value = v
+        def setExpression(self, *a, **k): self._expr = a[0] if a else None
+        def frame(self): return self._frame
+        def value(self): return self._value
+    hou.Keyframe = _Keyframe
+
+    # Parm templates (constructed by HDA-building code).
+    for _pt in ("FolderParmTemplate", "StringParmTemplate", "FloatParmTemplate",
+                "IntParmTemplate", "ToggleParmTemplate", "MenuParmTemplate",
+                "FolderSetParmTemplate", "ParmTemplateGroup", "RampParmTemplate"):
+        setattr(hou, _pt, MagicMock(name=_pt))
+
+    # Numeric / string scalars that code reads and compares.
+    hou.frame = MagicMock(return_value=1.0)
+    hou.fps = MagicMock(return_value=24.0)
+    hou.hscriptExpression = MagicMock(return_value="untitled")
+    hou.applicationVersion = MagicMock(return_value=(21, 0, 671))
+    hou.applicationVersionString = MagicMock(return_value="21.0.671")
+
+    # Scene access.
+    hou.node = MagicMock(return_value=None)
+    hou.nodeType = MagicMock(return_value=None)
+    hou.selectedNodes = MagicMock(return_value=[])
+    hou.pwd = MagicMock(return_value=None)
+    hou.undos = MagicMock()  # undos.group(...) is an auto context manager
+    hou.hipFile = MagicMock()
+    hou.hipFile.path = MagicMock(return_value="/tmp/untitled.hip")
+    hou.hipFile.name = MagicMock(return_value="untitled.hip")
+    hou.text = MagicMock()
+    hou.text.expandString = MagicMock(side_effect=lambda s, *a, **k: s)
+    hou.hda = MagicMock()
+    hou.playbar = MagicMock()
+    hou.playbar.frameRange = MagicMock(return_value=(1, 240))
+    hou.playbar.playbackRange = MagicMock(return_value=(1, 240))
+
+    # UI surface (headless-safe stubs).
+    hou.ui = MagicMock()
+    hou.ui.paneTabs = MagicMock(return_value=[])
+    hou.paneTabType = MagicMock()
+    hou.paneTabType.SceneViewer = "SceneViewer"
+    hou.paneTabType.NetworkEditor = "NetworkEditor"
+    hou.paneTabType.PythonPanel = "PythonPanel"
+
+    # Enums referenced by name.
+    hou.exprLanguage = types.SimpleNamespace(Hscript="hscript", Python="python")
+    hou.scriptLanguage = types.SimpleNamespace(Hscript="hscript", Python="python")
+    hou.severityType = types.SimpleNamespace(
+        Message="message", ImportantMessage="importantmessage",
+        Warning="warning", Error="error", Fatal="fatal")
+    return hou
+
+
+_CANONICAL_HOU_INSTALLED = False
+if "hou" not in sys.modules:
+    sys.modules["hou"] = _build_canonical_hou()
+    _CANONICAL_HOU_INSTALLED = True
+
+
+# ---------------------------------------------------------------------------
 # Mock Houdini parameter
 # ---------------------------------------------------------------------------
 
@@ -365,3 +462,33 @@ def dispatcher():
     """
     from synapse.cognitive.dispatcher import Dispatcher
     return Dispatcher(is_testing=True)
+
+
+# ===========================================================================
+# FAKE_HOU_RESIDENCY_GUARD — exactly one module may plant sys.modules['hou'].
+# ---------------------------------------------------------------------------
+# The canonical fake above is the single authoritative planter. Every test
+# module must DEFER to it (`if "hou" not in sys.modules`) or temporarily swap
+# it in only to bind its module-under-test and then RESTORE it. This hook runs
+# once, after collection has imported every test module, and fails the run if
+# the canonical resident was replaced by a rogue unconditional planter — the
+# collection-order-dependent residency that the guard exists to prevent.
+#
+# No-op under real Houdini (hython): we never planted, so there is nothing to
+# guard — real hou legitimately owns sys.modules['hou'].
+# ===========================================================================
+def pytest_collection_finish(session):
+    if not _CANONICAL_HOU_INSTALLED:
+        return
+    resident = sys.modules.get("hou")
+    if resident is None:
+        return
+    if not getattr(resident, "__synapse_canonical__", False):
+        raise pytest.UsageError(
+            "FAKE_HOU_RESIDENCY_GUARD: sys.modules['hou'] was replaced by a "
+            "non-canonical planter during collection. Exactly one module (this "
+            "conftest) may plant hou; every other module must DEFER to it "
+            "(`if \"hou\" not in sys.modules`) or swap-and-RESTORE around its "
+            f"own import. Offending resident: {resident!r}. See the fake-hou "
+            "residency trap note at the top of tests/conftest.py."
+        )

@@ -18,7 +18,6 @@ import pytest
 # ---------------------------------------------------------------------------
 _original_hou = sys.modules.get("hou", None)
 hou_mock = MagicMock()
-sys.modules["hou"] = hou_mock
 
 # Import guards via importlib (same pattern as test_resilience.py)
 import importlib.util
@@ -30,7 +29,16 @@ guards_path = os.path.join(
 
 spec = importlib.util.spec_from_file_location("guards", guards_path)
 guards = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(guards)
+# Bind guards' `hou` global to hou_mock (the tests assert on it directly) only
+# for the duration of exec_module, then RESTORE conftest's canonical resident so
+# the collection-time residency guard stays satisfied. Standalone (no conftest):
+# _original_hou is None, so hou_mock stays resident as before.
+sys.modules["hou"] = hou_mock
+try:
+    spec.loader.exec_module(guards)
+finally:
+    if getattr(_original_hou, "__synapse_canonical__", False):
+        sys.modules["hou"] = _original_hou
 
 ensure_node = guards.ensure_node
 ensure_node_deleted = guards.ensure_node_deleted

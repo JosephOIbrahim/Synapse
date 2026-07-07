@@ -9,7 +9,8 @@ import types
 
 # Stub hou before importing anything that might touch it
 _mock_hou = types.ModuleType("hou")
-sys.modules["hou"] = _mock_hou
+if "hou" not in sys.modules:  # defer to conftest's canonical hou resident
+    sys.modules["hou"] = _mock_hou
 
 import importlib.util
 import os

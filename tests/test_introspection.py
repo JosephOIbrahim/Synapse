@@ -22,7 +22,7 @@ _mock_hou = ModuleType("hou")
 _mock_hou.selectedNodes = MagicMock(return_value=[])
 _mock_hou.node = MagicMock(return_value=None)
 _mock_hou.undos = MagicMock()
-sys.modules["hou"] = _mock_hou
+_original_hou = sys.modules.get("hou")
 
 import importlib.util
 
@@ -33,7 +33,15 @@ introspection_path = os.path.join(
 
 spec = importlib.util.spec_from_file_location("introspection", introspection_path)
 introspection = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(introspection)
+# Bind introspection's `hou` global to _mock_hou (the tests assert on it
+# directly) only for the duration of exec_module, then RESTORE conftest's
+# canonical resident so the collection-time residency guard stays satisfied.
+sys.modules["hou"] = _mock_hou
+try:
+    spec.loader.exec_module(introspection)
+finally:
+    if getattr(_original_hou, "__synapse_canonical__", False):
+        sys.modules["hou"] = _original_hou
 
 
 # ---------------------------------------------------------------------------
