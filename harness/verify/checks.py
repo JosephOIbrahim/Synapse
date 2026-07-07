@@ -227,11 +227,39 @@ def check_render(ctx):
     img = Path(ctx["wt"]) / out_img
     if rc != 0 or not img.exists():
         return {"ok": False, "detail": (e or o).strip()[:500] or "render produced no file"}
-    # non-black check
-    code = (f"import hou\nimport numpy as np\n"
-            f"# ADAPT: load {out_img} and check variance > 0; or use OIIO if available\n"
-            f"print('IMG-NONBLACK')  # ADAPT real pixel check")
-    return {"ok": img.stat().st_size > 1024, "detail": f"frame written ({img.stat().st_size} bytes); ADAPT real non-black check"}
+    # REAL frame validation (was a size>1024 byte stub — a 2 KB all-black EXR passes that but is a
+    # failed render). Score the rendered PIXELS with the shipped product validator,
+    # synapse.server.handlers_render._handle_validate_frame, which runs OIIO black-frame / NaN-Inf
+    # analysis and degrades to file-integrity when OIIO is absent. Run it inside hython — OIIO and
+    # the synapse package live in Houdini's interpreter, not stock python.
+    driver = (_BOOT + "import json\n"
+              "from synapse.server.handlers_render import RenderHandlerMixin\n"
+              "class _V(RenderHandlerMixin):\n"
+              "    pass\n"
+              "res = _V()._handle_validate_frame({'image_path': " + json.dumps(str(img)) + ",\n"
+              "    'checks': ['file_integrity', 'black_frame', 'nan_check']})\n"
+              "print('VALIDATE', json.dumps(res))\n")
+    vrc, vout, verr = hython(ctx["hython"], driver, ctx["wt"])
+    line = next((l for l in vout.splitlines() if l.startswith("VALIDATE ")), "")
+    if not line:
+        return {"ok": False, "detail": ("validate_frame did not run: " + (verr or vout).strip())[:500]
+                or "validate_frame produced no output"}
+    try:
+        verdict = json.loads(line[len("VALIDATE "):])
+    except Exception as ex:
+        return {"ok": False, "detail": f"validate_frame output unparseable: {str(ex)[:300]}"}
+    if not verdict.get("oiio_available"):
+        # honest-false: without OIIO the validator only checked file integrity, so a real
+        # non-black assertion is impossible here — never a fake pass on an unverifiable frame.
+        return {"ok": False, "detail": "OIIO unavailable in hython — frame written but pixels "
+                                       "unverified (cannot assert non-black)"}
+    black = verdict.get("checks", {}).get("black_frame", {})
+    non_black = bool(black.get("passed"))
+    nan_ok = bool(verdict.get("checks", {}).get("nan_check", {}).get("passed", True))
+    ok = non_black and nan_ok
+    return {"ok": ok, "detail": (f"validate_frame: non_black={non_black} (mean_lum="
+            f"{black.get('value')}) nan_ok={nan_ok}; {img.stat().st_size} bytes — "
+            f"{verdict.get('summary', '')}")[:500]}
 
 def check_theme_ok(ctx):
     # Honest: theme correctness is screenshot + human review. Surface, don't fake-pass.
