@@ -432,6 +432,22 @@ def _symbol_table_path() -> Path:
     return override if override.is_file() else _pkg_symbol_table_path()
 
 
+def _pkg_table_version() -> Optional[str]:
+    """The Houdini build the committed package symbol table is stamped for.
+
+    Used as the EXPECTED build when EXPECTED_HOUDINI_VERSION is NOT host-injected
+    (an external / farm process — mcp_server only sets it when `hou` imports). It
+    lets the staleness gate keep enforcing instead of silently skipping: a
+    store-root override table that drifted from the shipped authority now reads
+    STALE on a mixed fleet rather than being blindly trusted. Reads the committed
+    authority (never a store override) and reuses _TABLE_CACHE, so it costs no
+    extra read when that table is already the one being loaded."""
+    key = str(_PKG_SYMBOL_TABLE)
+    if key not in _TABLE_CACHE:
+        _TABLE_CACHE[key] = _read_symbol_table(_PKG_SYMBOL_TABLE)
+    return _TABLE_CACHE[key]["meta"].get("houdini_version")
+
+
 def _read_symbol_table(path: Path) -> dict:
     """Read + integrity-check the table file. Missing/corrupt reads STALE with
     symbols=None — never a silent-valid empty table (invariant: 'fails loud')."""
@@ -466,12 +482,17 @@ def _load_symbol_table() -> tuple[Optional[set[str]], dict]:
     status = {"loaded": syms is not None, "path": key,
               "houdini_version": meta.get("houdini_version"),
               "stale": rec["stale"], "reason": rec["reason"]}
-    if syms is not None and EXPECTED_HOUDINI_VERSION and \
-            meta.get("houdini_version") != EXPECTED_HOUDINI_VERSION:
-        status.update(stale=True, loaded=False,
-                      reason=(f"table stamp {meta.get('houdini_version')} != running "
-                              f"{EXPECTED_HOUDINI_VERSION}"))
-        return None, status
+    # Enforce the stamp check even in an external/farm process. When the host did
+    # not inject EXPECTED_HOUDINI_VERSION, fall back to the committed package
+    # table's own stamp as the expected build — so the gate RUNS (catching a
+    # drifted store-root override on a mixed fleet) instead of silently skipping.
+    if syms is not None:
+        expected = EXPECTED_HOUDINI_VERSION or _pkg_table_version()
+        if expected and meta.get("houdini_version") != expected:
+            status.update(stale=True, loaded=False,
+                          reason=(f"table stamp {meta.get('houdini_version')} != expected "
+                                  f"{expected}"))
+            return None, status
     return syms, status
 
 

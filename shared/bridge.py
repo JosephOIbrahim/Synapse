@@ -955,7 +955,11 @@ class LosslessExecutionBridge:
         phantom pdg.PyEventHandler(fn) constructor — instead of hou
         TopNode.addEventCallback (which handles hou.nodeEventType).
 
-        On failure: wipes caches via dirtyAllTasks(remove_files=True).
+        On failure: dirties the generated tasks so they recook. Cache files on
+        disk are PRESERVED by default — a blanket remove_files delete is
+        non-granular and unsafe on shared farm storage. On-disk removal is
+        opt-in per operation via the ``remove_generated_files`` kwarg
+        (single-user local scratch), never the default.
         """
         integrity.main_thread_executed = True
         integrity.undo_group_active = True
@@ -1059,17 +1063,23 @@ class LosslessExecutionBridge:
                     pass
 
         if not cook_success[0]:
-            # Disk-based rollback: wipe generated caches
+            # Rollback: dirty the generated tasks so they recook. By DEFAULT the
+            # cache files on disk are PRESERVED — a blanket remove_files=True wipe
+            # is non-granular and unsafe on shared farm storage (deletes work other
+            # nodes/artists may still depend on). On-disk removal is opt-in per
+            # operation (single-user local scratch), never the default.
+            remove_files = bool(operation.kwargs.get("remove_generated_files", False))
             try:
                 hdefereval.executeInMainThread(
-                    lambda: top_node.dirtyAllTasks(remove_files=True)
+                    lambda: top_node.dirtyAllTasks(remove_files=remove_files)
                 )
             except Exception:
                 pass
             integrity.delta_hash = "pdg_rolled_back"
+            disposition = "removed from disk" if remove_files else "preserved on disk"
             return self._fail_with_integrity(
                 integrity,
-                f"PDG cook failed on farm. Caches wiped. {cook_error[0]}",
+                f"PDG cook failed on farm. Generated caches {disposition}. {cook_error[0]}",
                 "pdg_error",
             )
 

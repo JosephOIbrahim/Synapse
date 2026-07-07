@@ -112,7 +112,7 @@ PDG farm cooks are inherently async (minutes to hours). R8 bridges this to FastM
 
 > **⚠ H21.0.671 phantom:** `pdg.PyEventHandler(fn)` has **no constructor** ("TypeError: No constructor defined"). Register a raw callable with `addEventHandler(fn, EventType)` — it registers the handler AND returns the wrapper object you keep for `removeEventHandler`.
 
-**On failure:** wipes generated caches via `dirtyAllTasks(remove_files=True)` — disk-based rollback where undo groups don't apply. **Routing:** any `cook_pdg_chain` op auto-routes to `_execute_pdg_deferred` in the async path. See `shared/bridge.py`.
+**On failure:** dirties the generated tasks via `dirtyAllTasks(remove_files=remove_files)` so they recook — cache files on disk are **preserved by default** (a blanket `remove_files=True` wipe is non-granular and unsafe on shared farm storage; on-disk removal is opt-in per operation via the `remove_generated_files` kwarg). **Routing:** any `cook_pdg_chain` op auto-routes to `_execute_pdg_deferred` in the async path. See `shared/bridge.py`.
 
 ### 1.8 Emergency Halt
 
