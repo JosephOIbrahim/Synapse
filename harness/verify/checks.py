@@ -1348,13 +1348,19 @@ def check_studio_readiness_review(ctx):
 # but reddens N OTHER tests (the 4080->47-red collateral case that had to be
 # caught by hand) fails the sprint deterministically, before the Evaluator. The
 # baseline advances ONLY via a human-promoted commit that legitimately moves the
-# counts (read at HEAD, never the worktree copy — a sprint must not lower its bar).
+# counts. The floor is read at the HUMAN-PROMOTED line — merge-base(master, HEAD),
+# mirroring check_phantom_clean's anchor — NOT the worktree's own HEAD: inside a
+# harness sprint the agent has already made its atomic commit, so HEAD is the agent's
+# tip and `git show HEAD:` would let a sprint commit a lowered floor and green its own
+# regression. agent-settings.json also denies Edit of this file (belt + suspenders).
 def check_suite_baseline(ctx):
     import re
-    rc_b, base_raw, _ = sh(["git", "show", "HEAD:harness/verify/suite_baseline.json"], cwd=ctx["wt"])
+    mb_rc, mb_out, _ = sh(["git", "merge-base", "master", "HEAD"], cwd=ctx["wt"])
+    anchor = mb_out.strip() if mb_rc == 0 and mb_out.strip() else "HEAD"  # fall back only if master unresolvable
+    rc_b, base_raw, _ = sh(["git", "show", f"{anchor}:harness/verify/suite_baseline.json"], cwd=ctx["wt"])
     if rc_b != 0 or not base_raw.strip():
-        return {"ok": False, "detail": "no committed harness/verify/suite_baseline.json at HEAD — seed "
-                                       "it with the current green counts so the ratchet has a floor"}
+        return {"ok": False, "detail": "no committed harness/verify/suite_baseline.json at the ratchet "
+                                       "anchor (merge-base master HEAD) — seed it with current green counts"}
     try:
         base = json.loads(base_raw)
         passed_base, failed_base = int(base["passed"]), int(base["failed"])

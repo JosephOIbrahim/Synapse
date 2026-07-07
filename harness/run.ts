@@ -102,13 +102,19 @@ function ensureWorktree(id: string): string {
 // un-drivable and a solo posture (blockers:[]) idles correctly. It selects only; runTask is
 // unchanged, so human-gated criticals (S.1–S.3) still surface as GATED (a human MUST author
 // security fixes); only ungated reds (S.4–S.6) remediate autonomously. Writes nothing itself.
+// REACHABILITY: under the shipped SOLO posture blockers is [] so --drive idles by construction;
+// under STUDIO blockers[0] is a human-gated critical (S.1) so it surfaces GATED. The autonomous
+// S.4–S.6 remediation path is reachable only when a NON-critical finding is the top blocker.
 function selectRedTask(): string | null {
   const verdictPath = join(REPO, "harness/state/studio_readiness_verdict.json");
   const stampBefore = existsSync(verdictPath)
     ? (() => { try { return JSON.parse(readFileSync(verdictPath, "utf8")).generated ?? ""; } catch { return ""; } })()
     : "";
   // freshness: recompute the capstone against the REPO so we never drive on a stale snapshot
-  const r = sh(PYTHON, ["harness/verify/checks.py", "--task", "S.R", "--worktree", REPO, "--mode", MODE]);
+  // qp: quote+forward-slash the path under win32 shell:true (sibling runChecks does the same) —
+  // an unquoted spaced REPO would shred into argparse and permanently idle the driver.
+  const wtArg = process.platform === "win32" ? `"${REPO.replace(/\\/g, "/")}"` : REPO;
+  const r = sh(PYTHON, ["harness/verify/checks.py", "--task", "S.R", "--worktree", wtArg, "--mode", MODE]);
   if (r.status !== 0) {
     log(`${c.warn}  --drive: S.R refresh failed (status ${r.status}) — refusing to drive on a stale verdict.${c.off}`);
     return null;

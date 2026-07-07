@@ -403,9 +403,12 @@ _TASKS = json.loads((_REPO / "harness" / "tasks.json").read_text(encoding="utf-8
 def _select_red(verdict, tasks=_TASKS):
     """Pure-data mirror of run.ts selectRedTask(): key on the POSTURE-SCOPED `blockers`
     set (never findings_live); map blockers[0] to its studio task."""
-    if str(verdict.get("verdict", "")).startswith("READY") or not verdict.get("blockers"):
+    blockers = verdict.get("blockers")
+    # mirror the TS Array.isArray guard: a non-list blockers idles, never indexes.
+    if (str(verdict.get("verdict", "")).startswith("READY")
+            or not isinstance(blockers, list) or not blockers):
         return None
-    finding = verdict["blockers"][0]
+    finding = blockers[0]
     return next((t["id"] for t in tasks
                  if t.get("phase") == "studio" and finding in (t.get("verify") or [])), None)
 
@@ -476,12 +479,13 @@ def test_presence_gates_name_a_real_probe():
         assert m, (f"presence gate '{fname}' names no FIX_IS_REAL_PROBE — a check that greens on a "
                    "marker string must point at a behavioral probe (or `none (...)` if exempt)")
         pointer = m.group(1)
-        if pointer.lower().startswith("none"):
+        if pointer.lower() == "none":   # exact token, so `none_probe.py` can't self-exempt
             continue  # declaration-only exemption (e.g. posture_declared)
         rel, _, nodeid = pointer.partition("::")
         probe_file = _REPO / rel
         assert probe_file.is_file(), f"{fname}: FIX_IS_REAL_PROBE file missing: {rel}"
         testname = nodeid.split("::")[-1]
-        assert testname and re.search(rf"def {re.escape(testname)}\b",
-                                      probe_file.read_text(encoding="utf-8")), \
+        # ^\s*def (line-anchored, re.M) so a commented-out `# def testname` cannot satisfy the pin.
+        assert testname and re.search(rf"^\s*def {re.escape(testname)}\b",
+                                      probe_file.read_text(encoding="utf-8"), re.M), \
             f"{fname}: FIX_IS_REAL_PROBE names '{nodeid}' but {testname} isn't defined in {rel}"
