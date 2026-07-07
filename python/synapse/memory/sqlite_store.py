@@ -652,8 +652,13 @@ class SQLiteMemoryStore:
                     )
                 )
 
-        # He2025: stable sort with ID tiebreaker for deterministic ordering
-        results.sort(key=lambda r: (-r.score, r.memory.id))
+        # He2025 + recency: score desc, then fresher-first (created_at is an ISO-8601 string,
+        # lexical desc == chronological desc), then id asc for determinism. Layered stable
+        # sorts — a string field can't be negated in one tuple key. Identical across ALL
+        # backends so recall ranking stays parity-consistent (test_moneta_store ranking parity).
+        results.sort(key=lambda r: r.memory.id)
+        results.sort(key=lambda r: r.memory.created_at, reverse=True)
+        results.sort(key=lambda r: r.score, reverse=True)
 
         if query.limit > 0:
             results = results[:query.limit]

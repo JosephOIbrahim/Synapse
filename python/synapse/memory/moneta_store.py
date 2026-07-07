@@ -139,7 +139,12 @@ def score_memories(
                 )
             )
 
-    results.sort(key=lambda r: (-r.score, r.memory.id))
+    # Recency-aware ranking, IDENTICAL to MemoryStore/SqliteStore so recall parity holds
+    # (test_moneta_store ranking parity): score desc, then fresher-first (created_at is an
+    # ISO-8601 string, lexical desc == chronological desc), then id asc. Layered stable sorts.
+    results.sort(key=lambda r: r.memory.id)
+    results.sort(key=lambda r: r.memory.created_at, reverse=True)
+    results.sort(key=lambda r: r.score, reverse=True)
     if query.limit > 0:
         results = results[: query.limit]
     return results
