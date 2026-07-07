@@ -87,6 +87,25 @@ of every golden (Indie husk no-ops silently); APEX/rigging stays out structurall
 - `C.0` probe all six contexts → catalog + review sweep (Mode A, runnable now)
 - `C.1`–`C.6` close the top create-gap per context — sop, lop, cop, top, dop, mat — golden+ratchet-gated (Mode A, armed by the committed catalog)
 
+## The studio-readiness track — the fourth state-file trigger
+Peer of `drop.json`: wraps the 24 adversarially-verified findings of
+`docs/reviews/synapse-studio-readiness-2026-07-06.html` into **durable regression gates** — each
+S-check reads RED while its finding's fingerprint is live in the code and flips GREEN when the fix
+lands (and stays green, so a finding can never silently regress). Prose review → executable gate wall.
+Trigger: a human declares the deployment posture in `harness/state/posture.json`
+(`{mode: solo|studio|farm, identity_model, auto_approve}`) — the report's Step-1 hinge, since
+consent auto-approve and RBAC default-deny can't be enforced until the mode is a committed fact.
+Held → the safety tasks (`blocked_on:"posture"`) are filtered out and a read-only intake surface
+prints the declaration template. The three **security-critical** clusters are `human_gate` (the
+harness owns the acceptance check and the review; a human authors the auth/consent change and the
+harness never merges); the memory/eval/farm clusters are loop-gradable. Full contract:
+`harness/notes/spec-S-studio-readiness.md`.
+
+- `S.0` declare the deployment posture → write `posture.json` (human gate, Mode A)
+- `S.1`–`S.3` unify policy · consent-at-dispatch · RBAC + per-user identity (human-authored, harness-gated; armed by posture)
+- `S.4`–`S.6` memory provenance · eval backbone (wire `validate_frame` + guard fake-hou) · farm-headless (PDG/scout + C.4/C.5) — loop-gradable, Mode A
+- `S.R` capstone review — aggregate every S-check, require the criticals green, emit the verdict (the review at the end)
+
 ## Files
 | path | role |
 |---|---|
@@ -108,6 +127,11 @@ of every golden (Indie husk no-ops silently); APEX/rigging stays out structurall
 | `scripts/flywheel_review_context.py` | context-catalog review sweep (stock python; CRITICAL/ADVISORY findings) |
 | `harness/notes/context_capability_21.json` | the capability catalog — C.1–C.6 arming trigger, peer of drop.json (commit it) |
 | `tests/test_ctx_track.py` | pins the eight context checks + C-task/vocabulary conformance |
+| `harness/notes/spec-S-studio-readiness.md` | studio-readiness frozen contract — posture trigger, finding-fingerprint gates, capstone review |
+| `docs/reviews/synapse-studio-readiness-2026-07-06.html` | the 24-finding review the S-track wraps into gates (the "why" for S.x) |
+| `harness/state/posture.json` | deployment-posture declaration — S.1–S.3 arming trigger, peer of drop.json (runtime state, untracked) |
+| `harness/state/studio_readiness_verdict.json` | S.R capstone output — per-check verdict + READY/NOT-READY (runtime state) |
+| `tests/test_s_track.py` | pins the eight S-checks + S-task/vocabulary/human-gate conformance |
 | `docs/SYNAPSE_H22_BOUNDARY.md` | the boundary doc this harness enforces (the "why") |
 | `docs/SYNAPSE_H22_PROVIDER_APEX.md` | provider-registration spec — what 0.8/2.7 implement |
 | `CLAUDE.md` | distilled conventions (<2,500 tokens, cached) |

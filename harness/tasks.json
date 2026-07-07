@@ -14,7 +14,10 @@
     "v6_spec_bp10", "v6_kb_roundtrip", "v6_tests_green",
     "context_catalog_fresh", "context_review_clean",
     "context_golden_sop", "context_golden_lop", "context_golden_cop",
-    "context_golden_top", "context_golden_dop", "context_golden_mat"
+    "context_golden_top", "context_golden_dop", "context_golden_mat",
+    "posture_declared", "policy_single_source", "consent_enforced",
+    "rbac_at_dispatch", "memory_provenance", "eval_backbone",
+    "farm_headless", "studio_readiness_review"
   ],
   "guardrails": {
     "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger, and no newly-introduced phantom hou.* API (dir()-symbol-table-gated).",
@@ -266,6 +269,64 @@
       "refs": ["harness/notes/spec-C-context-capability.md", "harness/notes/context_capability_21.json", "python/synapse/server/handlers.py", "tests/test_ctx_track.py"],
       "verify": ["context_golden_mat", "context_catalog_fresh"],
       "note": "Read the catalog's `gaps` for mat; close the highest-leverage one by extending the HANDLER surface (new/fixed command verbs), never by weakening the probe. The golden ratchet gates: gaps must strictly decrease unless already 0. Re-run the probe in-worktree to refresh the catalog as part of the sprint. The catalog re-ranks C.1–C.6 — a context whose golden already passes with 0 gaps banks trivially, and that is correct."
+    },
+
+    {
+      "id": "S.0", "phase": "studio", "mode": "A", "crit": true, "layer": "bounded-decision",
+      "title": "Studio track — declare the deployment posture (mode + identity model) → write harness/state/posture.json",
+      "refs": ["harness/notes/spec-S-studio-readiness.md", "harness/state/posture.json.example"],
+      "human_gate": { "decision": "solo | studio | farm + identity model + auto_approve policy", "recommended": "declare the mode explicitly; auto_approve only in solo; default-deny in studio/farm", "why": "The report's Step-1 hinge: consent auto-approve and RBAC default-deny cannot be enforced until the deployment mode is a committed fact. Writing posture.json is the S-track trigger." },
+      "verify": ["posture_declared"],
+      "note": "The S-track trigger — the fourth state-file gate, peer of drop.json. A human writes harness/state/posture.json (mode + identity_model + auto_approve); until it lands S.1–S.3 stay filtered out of the queue. Read-only: the harness surfaces the declaration template, it never authors the posture."
+    },
+    {
+      "id": "S.1", "phase": "studio", "mode": "A", "blocked_on": "posture", "crit": true, "layer": "safety",
+      "title": "Studio track — unify the policy layer: one authoritative capability/gate/read-only/disk table checked at the transport-agnostic dispatch boundary",
+      "refs": ["shared/bridge.py", "python/synapse/mcp/_tool_registry.py", "python/synapse/server/handlers.py", "python/synapse/panel/worker_policy.py"],
+      "human_gate": { "decision": "author the single-source policy table + wire it into registry.invoke()/handle()", "why": "Security-architecture change; the harness gates + reviews it, it does not autonomously rewrite the policy layer. Closes report finding 'no single source of truth' + is the root the criticals grow from." },
+      "verify": ["policy_single_source"]
+    },
+    {
+      "id": "S.2", "phase": "studio", "mode": "A", "blocked_on": "posture", "crit": true, "layer": "safety",
+      "title": "Studio track — enforce consent at the dispatch boundary: /mcp + autonomous paths get a HumanGate-wired bridge (not the disarmed panel singleton); record the real consent source in the IntegrityBlock",
+      "refs": ["python/synapse/panel/bridge_adapter.py", "python/synapse/mcp/tools.py", "shared/bridge.py", "python/synapse/core/gates.py"],
+      "human_gate": { "decision": "arm consent on the non-panel bridges + record the consent source", "why": "Closes the #1 critical (consent auto-approve/absent everywhere). Security-critical; human-authored, harness-gated. The panel-path solo auto-approve stays a documented per-mode choice via posture.json." },
+      "verify": ["consent_enforced"]
+    },
+    {
+      "id": "S.3", "phase": "studio", "mode": "A", "blocked_on": "posture", "crit": true, "layer": "safety",
+      "title": "Studio track — per-user identity + RBAC through dispatch on all three transports; default-deny on unresolved role/session; end the shared-handler _user_id race",
+      "refs": ["python/synapse/server/websocket.py", "python/synapse/server/hwebserver_adapter.py", "python/synapse/mcp/server.py", "python/synapse/server/handlers.py"],
+      "human_gate": { "decision": "move authn/RBAC to the dispatch boundary keyed by per-connection identity", "why": "Closes criticals 2 + the identity race (SEC-1). Security-critical; human-authored, harness-gated." },
+      "verify": ["rbac_at_dispatch"]
+    },
+    {
+      "id": "S.4", "phase": "studio", "mode": "A", "crit": false, "layer": "memory",
+      "title": "Studio track — memory: one authoritative store + real provenance (source/author/tier) + recency & conflict in recall",
+      "refs": ["python/synapse/memory/", "shared/evolution.py"],
+      "verify": ["memory_provenance"],
+      "note": "loop-gradable. Closes the three memory highs (source='user' mislabel, dead tier fields, no recency → stale outranks fresh, three-store split-brain)."
+    },
+    {
+      "id": "S.5", "phase": "studio", "mode": "A", "crit": false, "layer": "eval",
+      "title": "Studio track — eval backbone: wire the real validate_frame into the harness render check; guard the fake-hou sys.modules residency; pin permission boundaries as invariants",
+      "refs": ["harness/verify/checks.py", "python/synapse/server/handlers_render.py", "tests/"],
+      "verify": ["eval_backbone"],
+      "note": "loop-gradable + highest-leverage-per-risk (improves the harness's OWN eval, which then better verifies every other fix). Touching harness/verify/checks.py here is deliberate self-improvement, allowed (like the P1/P2/U upgrades). The C-track goldens are the e2e demonstration this extends."
+    },
+    {
+      "id": "S.6", "phase": "studio", "mode": "A", "crit": false, "layer": "farm",
+      "title": "Studio track — farm-headless correctness: neutralize the latent PDG remove_files=True rollback; per-build the scout symbol table for mixed fleets; the TOP-headless + DOP-populate creation gaps (== C.4/C.5)",
+      "refs": ["shared/bridge.py", "python/synapse/cognitive/tools/scout.py", "host/introspect_context_capability.py"],
+      "verify": ["farm_headless", "context_review_clean"],
+      "note": "loop-gradable. Cross-links the C-track catalog — the TOP/DOP creation gaps live there; context_review_clean re-asserts the catalog stays sound as those gaps close."
+    },
+    {
+      "id": "S.R", "phase": "studio", "mode": "A", "crit": true, "layer": "review",
+      "title": "Studio track — capstone studio-readiness review: aggregate every S-check, require the criticals green, emit the verdict; run the adversarial sweep",
+      "refs": ["harness/notes/spec-S-studio-readiness.md", "docs/reviews/synapse-studio-readiness-2026-07-06.html", "harness/state/studio_readiness_verdict.json"],
+      "verify": ["studio_readiness_review"],
+      "note": "the \"review at the end\". Deterministic aggregate + verdict artifact; the run.ts adversarial Evaluator reviews it, and a human may invoke a red-team workflow (the same fan-out that produced the report) — that workflow is an OPTIONAL surface, never a deterministic dependency of this check."
     }
   ]
 }

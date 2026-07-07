@@ -20,6 +20,11 @@ H21, so drop day is **verification, not surgery**.
   `harness/notes/context_capability_21.json` (same worktrees-fork-from-HEAD rule) → the
   `C.x` track's `blocked_on:"catalog"` hold lifts: C.1–C.6 grind in Mode A, each gated by
   its context golden + gap ratchet. Contract: `harness/notes/spec-C-context-capability.md`.
+- **studio arm (orthogonal to A/B):** a human writes `harness/state/posture.json`
+  (`{mode: solo|studio|farm, identity_model, auto_approve}`) → the `S.x` track's safety
+  tasks (`blocked_on:"posture"`) arm. S.1–S.3 are human_gate (auth/consent is human-authored,
+  harness-gated); S.4–S.6 + S.R grind in Mode A. Each S-check is a finding-fingerprint gate:
+  RED while the finding is live, GREEN when fixed. Contract: `harness/notes/spec-S-studio-readiness.md`.
 
 ## THE THREE HUMAN GATES — never auto-handle these
 1. **`0.1` architecture: sidecar vs abi3.** *Recommended: **sidecar*** (brain in its own
@@ -75,4 +80,5 @@ H21, so drop day is **verification, not surgery**.
 - 2026-07-02 · P1/P2 hardening (44437bd) per closing adversarial pass: GUI-submodule allowlist (hou.ui/qt/… were headless-absent → false-blocked panel/host sprints); added-line precision (only introduced phantoms fail); ledger skips only real-file-ref tasks; atomic done.json; ratification array-guards
 - 2026-07-02 · P3: task 0.1 layer survival→bounded-decision + human_gate.why now cites the measured IPC/wheel-cache evidence; stays gated (sidecar-vs-abi3 is still the human's call)
 - 2026-07-04 · v6 track grafted (additive, HELD): blueprint-intake trigger `docs/v6/BP00_manifest.md` (second state-file trigger, peer of drop.json), tasks V.1–V.7 blocked_on:"blueprints", 6 checks, docs/v6/{INTAKE,PLAN}.md, tests/test_v6_track.py; Session E of the plan = already-done task 0.2, NOT duplicated; arms only when a human commits a blueprint drop
-- 2026-07-06 · context track grafted (additive): capability-catalog trigger `harness/notes/context_capability_21.json` (third state-file trigger), C.0 probe task + C.1–C.6 per-context improvement tasks blocked_on:"catalog", 8 checks, probe host/introspect_context_capability.py (drives SynapseHandler.handle() — the live seam), review scripts/flywheel_review_context.py, tests/test_ctx_track.py; cycle class queued ratified:false in flywheel_queue.json (human sign-off, U.5 precedent)
+- 2026-07-06 · context track grafted (additive): capability-catalog trigger `harness/notes/context_capability_21.json` (third state-file trigger), C.0 probe task + C.1–C.6 per-context improvement tasks blocked_on:"catalog", 8 checks, probe host/introspect_context_capability.py (drives SynapseHandler.handle() — the live seam), review scripts/flywheel_review_context.py, tests/test_ctx_track.py; cycle class queued ratified:false in flywheel_queue.json (human sign-off, U.5 precedent). COMMITTED 8e42dc1 (with pre-existing v6 WIP — shared plumbing, unsplittable).
+- 2026-07-06 · studio-readiness track grafted (additive): posture trigger `harness/state/posture.json` (fourth state-file trigger), S.0–S.R tasks wrapping the 24-finding review (docs/reviews/synapse-studio-readiness-2026-07-06.html) into 8 finding-fingerprint regression gates (RED while a finding is live, GREEN when fixed); S.1–S.3 human_gate (auth/consent human-authored, harness-gated), S.4–S.6 loop-gradable, S.R capstone (can't pass while a critical finding is live); cycle class queued ratified:false. All 24 gates RED now = accurate current state.

@@ -70,6 +70,12 @@ const V6 = existsSync(join(REPO, "docs/v6/BP00_manifest.md"));
 // task (C.1–C.6) is held out of the queue — they read the catalog's gaps, so arming them
 // catalog-less would be a sprint without a target.
 const CTX = existsSync(join(REPO, "harness/notes/context_capability_21.json"));
+// S-track studio-posture intake — the fourth state-file trigger. A human declares the
+// deployment posture (mode + identity model + auto_approve) by writing posture.json; it is
+// runtime state (untracked, peer of drop.json), NOT a committed catalog. Until it exists,
+// every blocked_on:"posture" task (S.1–S.3) is held out of the queue — they cannot enforce a
+// consent/RBAC posture the deployment has not declared. S.0 (a human gate) prompts the write.
+const POSTURE = existsSync(join(REPO, "harness/state/posture.json"));
 
 // ---------- helpers ----------
 function sh(cmd: string, cmdArgs: string[], cwd = REPO) {
@@ -323,6 +329,28 @@ function surfaceContextIntake() {
     log(`  ${c.warn}--task ${ONLY} cannot override this hold — C-tasks stay filtered until the catalog lands.${c.off}`);
 }
 
+// ---------- studio posture surface (S track: declare → policy/consent/RBAC arm) ----------
+// The studio-readiness track holds until a human declares the deployment posture on disk.
+// posture.json is a machine-level declaration (mode + identity model + auto_approve), the
+// fourth state-file trigger and peer of drop.json. While held this prints the declaration
+// template — the human's whole interaction is writing the three fields. STRICTLY READ-ONLY:
+// the harness never authors posture.json (S.0 is a human gate; the human writes it). Once
+// declared it prints nothing — the queue speaks.
+function surfaceStudioPosture() {
+  if (POSTURE) return;
+  if (!TASKS.some((t: any) => t.blocked_on === "posture")) return;
+  head("studio track held — deployment posture wanted (a human declares it, never the harness)");
+  log(`  ${c.warn}to arm:${c.off}      write harness/state/posture.json with the three fields:`);
+  log(`  ${c.dim}    mode           solo | studio | farm   (the deployment topology)${c.off}`);
+  log(`  ${c.dim}    identity_model free text — who the caller is and how identity resolves${c.off}`);
+  log(`  ${c.dim}    auto_approve   bool — allowed in solo; studio/farm must default-deny${c.off}`);
+  log(`  ${c.dim}contract + example: harness/notes/spec-S-studio-readiness.md · harness/state/posture.json.example${c.off}`);
+  // --task cannot pierce the hold: the posture filter runs before ONLY selects, so naming a
+  // held S-task yields an empty queue. Say so instead of printing a bare empty summary.
+  if (ONLY && TASKS.some((t: any) => t.id === ONLY && t.blocked_on === "posture"))
+    log(`  ${c.warn}--task ${ONLY} cannot override this hold — S.1–S.3 stay filtered until posture.json lands.${c.off}`);
+}
+
 // ---------- the loop ----------
 function runTask(task: any): "PASS" | "BLOCKED" | "GATED" {
   // human gate — never auto-handled
@@ -406,11 +434,16 @@ if (CTX) {
   if (st.status === 0 && (st.stdout || "").trim())
     log(`${c.warn}  context_capability_21.json has uncommitted changes — worktrees fork from HEAD and will NOT see them. Commit the catalog first.${c.off}`);
 } else log(`${c.dim}  context track held — harness/notes/context_capability_21.json absent. C.0 deposits it (--task C.0).${c.off}`);
+// posture.json is read from the MAIN repo by checks.py (a machine-level declaration), not from
+// a worktree — so unlike the v6/context drops there is no uncommitted-in-worktree trap here.
+if (POSTURE) log(`${c.dim}  studio track armed — harness/state/posture.json present. S.1–S.3 in the queue.${c.off}`);
+else log(`${c.dim}  studio track held — harness/state/posture.json absent. A human declares the posture via S.0 (--task S.0).${c.off}`);
 
 let queue = TASKS.filter((t: any) => t.mode === "A" || MODE === "B");
 queue = queue.filter((t: any) => !(t.mode === "B" && t.blocked_on === "drop" && MODE === "A"));
 queue = queue.filter((t: any) => !(t.blocked_on === "blueprints" && !V6));
 queue = queue.filter((t: any) => !(t.blocked_on === "catalog" && !CTX));
+queue = queue.filter((t: any) => !(t.blocked_on === "posture" && !POSTURE));
 if (ONLY) queue = queue.filter((t: any) => t.id === ONLY);
 
 const result: Record<string, string> = {};
@@ -442,4 +475,6 @@ surfaceRatification();
 surfaceBlueprintIntake();
 // context track — surface the C.0 arming path while the catalog is absent (read-only)
 surfaceContextIntake();
+// studio track — surface the posture declaration template while the track is held (read-only)
+surfaceStudioPosture();
 log("");

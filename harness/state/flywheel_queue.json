@@ -79,6 +79,19 @@
       ],
       "ratified": false,
       "note": "NEW cycle CLASS — CAPABILITY truth (what SYNAPSE can actually CREATE per context, measured by driving SynapseHandler.handle() under hython — the same surface the live WS path calls), a different axis from WIRING truth (U.1-U.4) and CONTEXT truth (U.5). Human-requested 2026-07-06 (per-context review + improvement directive); queued per the anti-runaway anchor for the same sign-off U.5 got. The catalog file (harness/notes/context_capability_21.json) is also the C.1-C.6 arming trigger, peer of drop.json/BP00_manifest.md."
+    },
+    {
+      "id": "S.0",
+      "title": "Studio-readiness truth: the 24-finding deployment review wrapped into durable finding-fingerprint regression gates (posture trigger -> S.1-S.R hardening + capstone review)",
+      "status": "candidate",
+      "evidence": [
+        "harness/notes/spec-S-studio-readiness.md",
+        "docs/reviews/synapse-studio-readiness-2026-07-06.html",
+        "harness/verify/checks.py",
+        "tests/test_s_track.py"
+      ],
+      "ratified": false,
+      "note": "NEW cycle CLASS — READINESS truth (does the code still carry each verified deployment finding), a different axis from WIRING/CONTEXT/CAPABILITY truth. Each S-check fingerprints a live finding: RED now (finding present), GREEN when fixed, and never silently regresses. Human-requested 2026-07-06 ('wrap the observations into a harness ... with review at the end'). Trigger = harness/state/posture.json (deploy-mode declaration), peer of drop.json. S.1-S.3 are human_gate: the harness gates + reviews auth/consent fixes, it never autonomously rewrites security code and never merges. Queued per the anti-runaway anchor for the same sign-off U.5 got."
     }
   ]
 }

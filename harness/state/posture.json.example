@@ -1,0 +1,24 @@
+{
+  "_doc": [
+    "The studio-readiness posture (S-track trigger — the fourth state-file trigger,",
+    "peer of drop.json). Copy to harness/state/posture.json to ARM the S.1-S.3",
+    "blocked_on:'posture' queue; run.ts arms the track on this file's EXISTENCE.",
+    "The three fields declare HOW SYNAPSE is deployed so consent auto-approve and RBAC",
+    "default-deny become committed facts a check can gate on (report Step-1 hinge).",
+    "",
+    "  mode           : 'solo' | 'studio' | 'farm'  (the deployment posture)",
+    "  identity_model : free text — who the caller is + how identity resolves per mode",
+    "  auto_approve   : bool — consent auto-approve (ONLY defensible in solo/localhost)",
+    "",
+    "Commented example per mode (copy ONE field-set to posture.json as the top level):",
+    "  solo   : { \"mode\": \"solo\",   \"identity_model\": \"single local artist, one seat on localhost\",                 \"auto_approve\": true  }",
+    "  studio : { \"mode\": \"studio\", \"identity_model\": \"per-user SSO resolved at the dispatch boundary, default-deny\", \"auto_approve\": false }",
+    "  farm   : { \"mode\": \"farm\",   \"identity_model\": \"headless service accounts, per-job token, default-deny\",       \"auto_approve\": false }",
+    "",
+    "The top level below is a ready-to-edit solo default. Never commit a real",
+    "posture.json — only this .example is tracked."
+  ],
+  "mode": "solo",
+  "identity_model": "single local artist, one seat on localhost",
+  "auto_approve": true
+}

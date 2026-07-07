@@ -955,6 +955,329 @@ def check_context_golden_mat(ctx):
     return _context_golden(ctx, "mat")
 
 
+# ---------- S — studio-readiness hardening track (all stock python, no hython) ----------
+# Each S-check is a DURABLE REGRESSION GATE around a finding of
+# docs/reviews/synapse-studio-readiness-2026-07-06.html: it reads RED while the finding's
+# fingerprint is live in the product source and flips GREEN only when the SPECIFIC defect is
+# gone (then stays green so the finding can never silently regress). Fingerprints are static
+# grep/AST over the worktree's source (ctx['wt']) — none needs hython. Honest-false ethos:
+# every ok:false names the live defect + the fix criterion. The four security-critical checks
+# (posture/policy/consent/rbac) are the capstone's gate; the fixes are the human's/loop's
+# separate sprints — these checks only READ product code, they never edit it.
+
+def _posture_path():
+    # Posture is a MACHINE-LEVEL declaration (peer of drop.json), NOT worktree state — so it is
+    # read from the MAIN repo, never ctx['wt']. checks.py lives at <repo>/harness/verify/, so
+    # parents[1] is harness/ and parents[1].parent is the repo root. A module-level function so
+    # tests can monkeypatch the seam to a tmp posture file.
+    return Path(__file__).resolve().parents[1].parent / "harness" / "state" / "posture.json"
+
+def _read_posture():
+    """Parsed posture dict, or None if absent/malformed. Never raises — a down posture just
+    means the studio legs stay dormant (solo/undeclared is the default posture)."""
+    p = _posture_path()
+    try:
+        if not p.exists():
+            return None
+        return json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+def _read_src(ctx, rel):
+    """(text, path) for a product file under the worktree, or (None, path) if unreadable.
+    The worktree is the SSOT the harness gates (worktrees fork from HEAD; committed product
+    code is present). Tests set ctx['wt'] to a tmp tree carrying synthetic sources."""
+    p = Path(ctx["wt"]) / rel
+    try:
+        return p.read_text(encoding="utf-8", errors="ignore"), p
+    except Exception:
+        return None, p
+
+_POSTURE_TEMPLATE = ('{"mode": "solo|studio|farm", "identity_model": "<free text>", '
+                     '"auto_approve": <true|false>}')
+
+def check_posture_declared(ctx):
+    # S.0 trigger: the deployment posture must be a committed fact before consent-auto-approve
+    # and RBAC-default-deny can be enforced per-mode. Reads the MAIN-repo posture.json (NOT the
+    # worktree). Never ok:None — a missing declaration is a FACT (write the file), not a down gate.
+    p = _posture_path()
+    if not p.exists():
+        return {"ok": False, "detail": (f"harness/state/posture.json not declared — write "
+                f"{_POSTURE_TEMPLATE} (mode in solo/studio/farm). See S.0 / spec-S-studio-readiness.md")[:500]}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except Exception as e:
+        return {"ok": False, "detail": (f"posture.json malformed ({type(e).__name__}: "
+                f"{str(e)[:120]}) — expected {_POSTURE_TEMPLATE}")[:500]}
+    mode, idm, aa = data.get("mode"), data.get("identity_model"), data.get("auto_approve")
+    problems = []
+    if mode not in ("solo", "studio", "farm"):
+        problems.append(f"mode={mode!r} not in solo/studio/farm")
+    if not (isinstance(idm, str) and idm.strip()):
+        problems.append("identity_model missing/empty")
+    if not isinstance(aa, bool):
+        problems.append("auto_approve not a bool")
+    if problems:
+        return {"ok": False, "detail": (f"posture.json invalid: {'; '.join(problems)} — "
+                f"expected {_POSTURE_TEMPLATE}")[:500]}
+    return {"ok": True, "detail": f"posture declared: mode={mode}, identity_model={idm!r}, auto_approve={aa}"}
+
+def check_policy_single_source(ctx):
+    # S.1 SENTINEL gate (report: "No single source of truth for policy: five disagreeing
+    # taxonomies, default-open on the bridge path"). GREEN needs BOTH a declared single source
+    # (python/synapse/core/policy.py OR a `# POLICY_SINGLE_SOURCE` marker in the authoritative
+    # table) AND the bridge's default-open fallback removed. Until then RED, naming the divergent
+    # taxonomy files + the default-open site.
+    wt = Path(ctx["wt"])
+    sentinel = (wt / "python/synapse/core/policy.py").is_file()
+    taxonomy = ("shared/bridge.py", "python/synapse/mcp/_tool_registry.py",
+                "python/synapse/server/handlers.py", "python/synapse/panel/worker_policy.py")
+    marker = False
+    for rel in taxonomy + ("python/synapse/core/policy.py",):
+        src, _ = _read_src(ctx, rel)
+        if src and "# POLICY_SINGLE_SOURCE" in src:
+            marker = True
+            break
+    bridge_src, _ = _read_src(ctx, "shared/bridge.py")
+    # default-open: an unmapped op falls back to REVIEW (logs-and-continues, never blocks) rather
+    # than default-deny. The literal on the bridge path — its removal is the fix's fingerprint.
+    default_open = bool(bridge_src) and "OPERATION_GATES.get(self.operation_type, GateLevel.REVIEW)" in bridge_src
+    present = [rel for rel in taxonomy if (wt / rel).is_file()]
+    if (sentinel or marker) and not default_open:
+        how = "core/policy.py" if sentinel else "# POLICY_SINGLE_SOURCE marker"
+        return {"ok": True, "detail": f"single-source policy present ({how}); bridge default-open fallback removed"}
+    reasons = []
+    if not (sentinel or marker):
+        reasons.append("no single source (python/synapse/core/policy.py absent AND no "
+                       "`# POLICY_SINGLE_SOURCE` marker in the authoritative table)")
+    if default_open:
+        reasons.append("bridge default-open fallback live (shared/bridge.py: "
+                       "OPERATION_GATES.get(self.operation_type, GateLevel.REVIEW) — unmapped ops "
+                       "default to REVIEW, not default-deny)")
+    reasons.append(f"divergent policy taxonomies: {', '.join(present)}")
+    return {"ok": False, "detail": ("; ".join(reasons))[:500]}
+
+def check_consent_enforced(ctx):
+    # S.2 FINGERPRINT (report: HumanGate.propose has zero live producers; the only bridge-wired
+    # path disarms its own gate and the MCP tools share that neutered singleton). RED while ANY
+    # sub-condition holds; detail lists which are still true. Grep/AST over source, no hython.
+    import re
+    live = []
+    ba_src, _ = _read_src(ctx, "python/synapse/panel/bridge_adapter.py")
+    disarmed = bool(ba_src and re.search(r"_gate\s*=\s*None", ba_src))
+    if disarmed:
+        live.append("panel/bridge_adapter.py disarms consent (`_gate = None` on the panel bridge singleton)")
+        # mcp sharing the panel singleton is a defect ONLY while that singleton is disarmed — once
+        # the disarm is removed, the same import routes through an ARMED bridge. Gate this leg on the
+        # disarm being live, else a correct fix (arm the bridge, keep the import) would stick RED.
+        tools_src, _ = _read_src(ctx, "python/synapse/mcp/tools.py")
+        if tools_src and "execute_through_bridge" in tools_src and "bridge_adapter" in tools_src:
+            live.append("mcp/tools.py dispatches through the DISARMED panel singleton "
+                        "(imports execute_through_bridge from synapse.panel.bridge_adapter)")
+    # Producer backstop: a HumanGate.propose producer must exist SOMEWHERE on the consent surface —
+    # INCLUDING the bridge's own site + core/gates.py. The natural fix arms the EXISTING bridge.py
+    # producer by un-nulling _gate, which adds no `.propose(` token to a transport file; scanning
+    # only transports would stay RED after that fix (a stuck gate, and consent is a critical → the
+    # capstone would never certify READY). So fire only when NO producer exists anywhere — a real
+    # regression, not the armed-bridge state.
+    producer_surface = ("python/synapse/mcp/tools.py", "python/synapse/mcp/server.py",
+                        "python/synapse/server/handlers.py", "python/synapse/server/websocket.py",
+                        "python/synapse/server/hwebserver_adapter.py",
+                        "python/synapse/panel/bridge_adapter.py",
+                        "shared/bridge.py", "python/synapse/core/gates.py")
+    producers = [rel for rel in producer_surface
+                 if (_read_src(ctx, rel)[0] or "").find(".propose(") >= 0]
+    if not producers:
+        live.append("HumanGate.propose has zero producers across the consent surface "
+                    "(bridge + gates + transports) — consent proposals are never created")
+    if live:
+        return {"ok": False, "detail": ("consent NOT enforced: " + "; ".join(live))[:500]}
+    return {"ok": True, "detail": "consent armed: panel disarm removed, mcp/tools off the disarmed "
+                                  "singleton, a live HumanGate.propose producer exists at dispatch"}
+
+def check_rbac_at_dispatch(ctx):
+    # S.3 FINGERPRINT (report: RBAC enforced only on one transport; `if user_session:` with no
+    # else lets an unresolved session skip RBAC; default-deny missing). RED while EITHER the
+    # single-transport enforcement OR the no-else bypass persists. Studio/farm posture additionally
+    # requires a default-deny site. detail enumerates the missing enforcement points.
+    import re, ast
+    live = []
+    ws_src, _ = _read_src(ctx, "python/synapse/server/websocket.py")
+    hw_src, _ = _read_src(ctx, "python/synapse/server/hwebserver_adapter.py")
+    mcp_src, _ = _read_src(ctx, "python/synapse/mcp/server.py")
+    def _calls(src):
+        return len(re.findall(r"check_permission\s*\(", src or ""))
+    if _calls(ws_src) >= 1 and _calls(hw_src) == 0 and _calls(mcp_src) == 0:
+        live.append("check_permission enforced ONLY on the WS transport (0 calls in "
+                    "hwebserver_adapter.py + mcp/server.py) — the hweb + MCP transports dispatch ungated by role")
+    if ws_src:
+        try:
+            tree = ast.parse(ws_src)
+            for node in ast.walk(tree):
+                if (isinstance(node, ast.If) and isinstance(node.test, ast.Name)
+                        and node.test.id == "user_session" and not node.orelse
+                        and any(isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+                                and n.func.id == "check_permission" for n in ast.walk(node))):
+                    live.append("websocket.py: `if user_session:` guards check_permission with NO "
+                                "else — an unresolved session skips RBAC entirely (no default-deny)")
+                    break
+        except SyntaxError:
+            pass  # a broken file fails other checks anyway
+    posture = _read_posture()
+    if posture and posture.get("mode") in ("studio", "farm"):
+        deny = False
+        for rel in ("python/synapse/server/websocket.py",
+                    "python/synapse/server/hwebserver_adapter.py", "python/synapse/mcp/server.py"):
+            src, _ = _read_src(ctx, rel)
+            if src and re.search(r"default[_\s-]?den|unresolved\s+(role|session)", src, re.I):
+                deny = True
+                break
+        if not deny:
+            live.append(f"posture mode={posture['mode']} requires default-deny on an unresolved "
+                        "role/session — no default-deny site found on any transport")
+    if live:
+        return {"ok": False, "detail": ("RBAC not at dispatch: " + "; ".join(live))[:500]}
+    return {"ok": True, "detail": "RBAC enforced at dispatch on all transports; no no-else bypass; "
+                                  "default-deny satisfied for posture"}
+
+def check_memory_provenance(ctx):
+    # S.4 FINGERPRINT (report: AI decisions stamped source='user' at write time; recall has no
+    # recency/conflict ordering so a stale memory can outrank a fresh fact). RED while EITHER
+    # defect is live; detail names them. Loop-gradable (not a critical).
+    import re
+    live = []
+    store_src, _ = _read_src(ctx, "python/synapse/memory/store.py")
+    if store_src and re.search(r"source\s*=\s*['\"]user['\"]", store_src):
+        live.append("memory write path stamps source='user' (store.py) — AI-authored content "
+                    "mislabeled as user provenance")
+    # recall ranks by score with an id tiebreaker only — no recency term, so stale outranks fresh.
+    # Match the EXACT current score-only sort literal, NOT a prefix: the natural fix inserts a
+    # recency term (…(-r.score, -r.memory.created_at, r.memory.id)…) which keeps the `(-r.score`
+    # prefix, so a prefix grep would stick RED after the fix. The full 2-tuple literal changes the
+    # moment recency lands → the gate clears exactly when the defect is gone.
+    if store_src and "results.sort(key=lambda r: (-r.score, r.memory.id))" in store_src:
+        live.append("recall ranks by score only (store.py: results.sort(key=lambda r: "
+                    "(-r.score, r.memory.id))) — no recency/created_at term; a stale memory can "
+                    "outrank a fresher fact")
+    if live:
+        return {"ok": False, "detail": ("memory provenance/recall defects: " + "; ".join(live))[:500]}
+    return {"ok": True, "detail": "memory write path stamps a real source (not hardcoded 'user'); "
+                                  "recall ranking is recency-aware"}
+
+def check_eval_backbone(ctx):
+    # S.5 PRESENCE gate (self-improvement of the harness's OWN eval, allowed like P1/P2/U). GREEN
+    # needs BOTH: this file's check_render wires the real validate_frame handler (not merely
+    # size>1024), AND a fake-hou residency guard exists (a tests/ file marked
+    # `# FAKE_HOU_RESIDENCY_GUARD` that asserts a single sys.modules['hou'] planter / fails on
+    # collision). Until both: RED naming which is missing.
+    import re
+    missing = []
+    checks_src, _ = _read_src(ctx, "harness/verify/checks.py")
+    # isolate check_render's body so this check's OWN mention of validate_frame can't self-satisfy
+    body = ""
+    if checks_src:
+        m = re.search(r"def check_render\(ctx\):(.*?)(?=\ndef |\Z)", checks_src, re.S)
+        body = m.group(1) if m else ""
+    if "validate_frame" not in body:
+        missing.append("harness/verify/checks.py check_render still asserts only size>1024 — wire "
+                       "the real validate_frame handler (handlers_render.py::_handle_validate_frame)")
+    # The guard must live in a conftest.py — the ONE place a residency assert actually runs at
+    # collection time and gates the whole suite. Scanning any tests/*.py let the S-track's own
+    # test_s_track.py (which names the marker in a fixture string) spuriously satisfy this — a
+    # fake-pass that would flip GREEN the instant the validate_frame leg landed, with no real guard.
+    # Require the marker in a conftest.py (tests/**/conftest.py or the repo-root conftest.py).
+    guard = False
+    candidates = list((Path(ctx["wt"]) / "tests").rglob("conftest.py"))
+    root_conftest = Path(ctx["wt"]) / "conftest.py"
+    if root_conftest.is_file():
+        candidates.append(root_conftest)
+    for f in candidates:
+        try:
+            if "# FAKE_HOU_RESIDENCY_GUARD" in f.read_text(encoding="utf-8", errors="ignore"):
+                guard = True
+                break
+        except Exception:
+            continue
+    if not guard:
+        missing.append("no fake-hou residency guard — add a conftest.py marked "
+                       "`# FAKE_HOU_RESIDENCY_GUARD` that asserts a single sys.modules['hou'] "
+                       "planter at collection time (fails on collision)")
+    if missing:
+        return {"ok": False, "detail": ("eval backbone incomplete: " + "; ".join(missing))[:500]}
+    return {"ok": True, "detail": "check_render wires validate_frame + fake-hou residency guard present"}
+
+def check_farm_headless(ctx):
+    # S.6 FINGERPRINT (report/latent: PDG-fail rollback wipes generated caches via
+    # dirtyAllTasks(remove_files=True); scout skips the symbol-table version check in an external
+    # process, unsafe on a mixed fleet). RED while EITHER defect is live; detail names them.
+    import re
+    live = []
+    bridge_src, _ = _read_src(ctx, "shared/bridge.py")
+    if bridge_src and "dirtyAllTasks(remove_files=True)" in bridge_src:
+        live.append("shared/bridge.py calls dirtyAllTasks(remove_files=True) — PDG-fail rollback "
+                    "wipes generated caches on disk (a latent farm-headless data-loss path)")
+    scout_src, _ = _read_src(ctx, "python/synapse/cognitive/tools/scout.py")
+    if (scout_src and re.search(r"EXPECTED_HOUDINI_VERSION\s*:\s*Optional\[str\]\s*=\s*None", scout_src)
+            and "and EXPECTED_HOUDINI_VERSION and" in scout_src):
+        live.append("scout.py skips the symbol-table version check when EXPECTED_HOUDINI_VERSION is "
+                    "unset (default None, host-injected only) — in an external farm process the "
+                    "staleness gate is bypassed (mixed-fleet phantom-wiring risk)")
+    if live:
+        return {"ok": False, "detail": ("farm-headless defects: " + "; ".join(live))[:500]}
+    return {"ok": True, "detail": "no reachable dirtyAllTasks(remove_files=True); scout version "
+                                  "check enforced in external processes"}
+
+def check_studio_readiness_review(ctx):
+    # S.R CAPSTONE: aggregate the other seven S-checks + context_review_clean, emit the verdict
+    # artifact, and REFUSE to pass while any security-critical finding is live. ok:true iff the
+    # critical set {posture, policy, consent, rbac} are ALL ok:true AND no aggregated check is
+    # ok:false. Calls the check functions directly (global names, so tests can monkeypatch them).
+    import datetime
+    aggregate = {
+        "posture_declared": check_posture_declared,
+        "policy_single_source": check_policy_single_source,
+        "consent_enforced": check_consent_enforced,
+        "rbac_at_dispatch": check_rbac_at_dispatch,
+        "memory_provenance": check_memory_provenance,
+        "eval_backbone": check_eval_backbone,
+        "farm_headless": check_farm_headless,
+        "context_review_clean": check_context_review_clean,
+    }
+    per_check = {}
+    for name, fn in aggregate.items():
+        try:
+            per_check[name] = fn(ctx).get("ok")
+        except Exception as e:
+            per_check[name] = None  # a broken sub-check is a down gate, not a silent pass
+    criticals = ("posture_declared", "policy_single_source", "consent_enforced", "rbac_at_dispatch")
+    criticals_green = all(per_check.get(c) is True for c in criticals)
+    findings_live = [name for name, ok in per_check.items() if ok is not True]
+    # READY iff every critical is green AND no aggregated check is non-green (False OR None — a
+    # down/errored sub-check is NOT a pass). Basing this on findings_live (not just `is False`)
+    # keeps the verdict consistent with the list we report: a None sub-check can't co-exist with READY.
+    ok = criticals_green and not findings_live
+    verdict = "READY" if ok else "NOT READY"
+    out = {
+        "generated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "per_check": per_check,
+        "criticals_green": criticals_green,
+        "findings_live": findings_live,
+        "verdict": verdict,
+    }
+    try:
+        vp = Path(ctx["wt"]) / "harness" / "state" / "studio_readiness_verdict.json"
+        vp.parent.mkdir(parents=True, exist_ok=True)
+        vp.write_text(json.dumps(out, indent=2), encoding="utf-8")
+    except Exception:
+        pass  # a read-only fs must not crash the gate — the return value is the authority
+    if ok:
+        return {"ok": True, "detail": "studio-readiness verdict: READY — all criticals green, no S-check red"}
+    red_crit = [c for c in criticals if per_check.get(c) is not True]
+    return {"ok": False, "detail": (f"studio-readiness verdict: NOT READY — findings live: "
+            f"{', '.join(findings_live) or 'none'}"
+            + (f"; criticals still red: {', '.join(red_crit)}" if red_crit else ""))[:500]}
+
+
 def run_one(name, task, ctx):
     fn = DISPATCH.get(name)
     if not fn:
@@ -1004,6 +1327,15 @@ DISPATCH = {
     "context_golden_top": check_context_golden_top,
     "context_golden_dop": check_context_golden_dop,
     "context_golden_mat": check_context_golden_mat,
+    # S — studio-readiness hardening track
+    "posture_declared": check_posture_declared,
+    "policy_single_source": check_policy_single_source,
+    "consent_enforced": check_consent_enforced,
+    "rbac_at_dispatch": check_rbac_at_dispatch,
+    "memory_provenance": check_memory_provenance,
+    "eval_backbone": check_eval_backbone,
+    "farm_headless": check_farm_headless,
+    "studio_readiness_review": check_studio_readiness_review,
 }
 
 def main():
