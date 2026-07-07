@@ -1,0 +1,30 @@
+{
+  "schema": "cook_api/v1",
+  "houdini_version": "21.0.671",
+  "confirmed": [
+    "hou.OpNode.addEventCallback",
+    "hou.OpNode.cook",
+    "hou.OpNode.cookCount",
+    "hou.OpNode.infoTree",
+    "hou.OpNode.isTimeDependent",
+    "hou.OpNode.needsToCook",
+    "hou.OpNode.removeEventCallback",
+    "hou.Parm.evalAsString",
+    "hou.Parm.expressionLanguage",
+    "hou.expressionGlobals",
+    "hou.nodeEventType.InputRewired",
+    "hou.nodeEventType.ParmTupleChanged"
+  ],
+  "absent": [
+    "hou.Node.addEventCallback",
+    "hou.Node.cook",
+    "hou.Node.cookCount",
+    "hou.Node.infoTree",
+    "hou.Node.isTimeDependent",
+    "hou.Node.needsToCook",
+    "hou.Node.removeEventCallback",
+    "hou.NodeEventType.InputRewired",
+    "hou.NodeEventType.ParmTupleChanged"
+  ],
+  "blake2b": "6e17207b5d8699b07e80a171a2d32cfe"
+}
