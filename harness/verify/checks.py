@@ -983,6 +983,210 @@ def check_context_golden_mat(ctx):
     return _context_golden(ctx, "mat")
 
 
+# ---------- D — diagnostic-truth track (dormant until D.0 ratified) ----------
+# Frozen contract: harness/notes/spec-D-diagnostic-truth.md (intake per
+# harness/notes/SYNAPSE_ODFORCE_HARNESS.md). What the scene observably DOES when poked —
+# dirty-propagation, recook triggers, time-dependence, callback runtime errors — captured as a
+# probed, version-stamped catalog. Every check below is HONEST-FALSE until its mile's artifact
+# exists: the track arms only when a human flips D.0 ratified:true (COOK_RATIFIED trigger in
+# run.ts), and D.3+ only when the committed catalog exists (COOK trigger). H22 note: artifact
+# filenames are resolved MAJOR-AGNOSTICALLY below, so the H22 drop needs zero check edits —
+# a 21-stamped catalog under live H22 hython goes stale-loud, forcing the re-probe.
+
+def _resolve_cook_note(ctx, stem):
+    """Resolve harness/notes/<stem>_<version>.json major-agnostically.
+
+    Covers both naming precedents: major-pinned catalogs (cook_truth_21.json, the
+    context_capability_21.json pattern) and full-build authority files
+    (verified_cook_api_21.0.671.json, the verified_usdlux_encodings pattern).
+    With hython: the live build picks the candidate (same major) — none for the live
+    major is an honest miss. Without: single candidate wins; multiple → highest
+    version, noted. Returns (path_or_None, live_build_or_None, note_str)."""
+    import re as _re
+    notes = Path(ctx["wt"]) / "harness" / "notes"
+    cands = []
+    if notes.is_dir():
+        for f in notes.iterdir():
+            m = _re.fullmatch(rf"{_re.escape(stem)}_(\d+(?:\.\d+)*)\.json", f.name)
+            if m:
+                cands.append((tuple(int(p) for p in m.group(1).split(".")), f))
+    live = None
+    if ctx.get("hython"):
+        rc, out, _ = hython(ctx["hython"], "import hou\nprint('BUILD', hou.applicationVersionString())", ctx["wt"])
+        live = next((l.split(" ", 1)[1].strip() for l in out.splitlines() if l.startswith("BUILD ")), None)
+    if not cands:
+        return None, live, "no artifact"
+    if live:
+        major = live.split(".")[0]
+        hit = next((f for v, f in sorted(cands, reverse=True) if str(v[0]) == major), None)
+        return hit, live, ("" if hit else f"no {stem} artifact for live major {major}")
+    if len(cands) > 1:
+        v, f = max(cands)
+        return f, None, f"multiple majors present; picked {f.name}; live disambiguation skipped — HYTHON unset"
+    return cands[0][1], None, ""
+
+def check_cook_api_confirmed(ctx):
+    # Mile 1 (D.1): every hou.* symbol on D's critical path dir()-confirmed against live hython.
+    # Spec-frozen schema cook_api/v1: {schema, houdini_version, confirmed:[], absent:[], blake2b}.
+    # DESIGN LAW: this file is cook_api_confirmed's OWN check-side authority — it is NEVER
+    # spliced into h21_symbol_table.json (that table's blake2b + dir()-membership invariant are
+    # untouchable; depth-1 hou.* absences are already enforced free by phantom_clean). This file
+    # carries the deeper symbols (hou.Node.<m>, event enums) phantom_clean structurally cannot judge.
+    import hashlib
+    p, live, note = _resolve_cook_note(ctx, "verified_cook_api")
+    if p is None:
+        return {"ok": False, "detail": f"{note or 'harness/notes/verified_cook_api_<build>.json missing'} — "
+                                       "run D.1 (after D.0 ratification); commit the artifact — worktrees fork from HEAD"}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if data.get("schema") != "cook_api/v1":
+            return {"ok": False, "detail": f"schema={data.get('schema')} != cook_api/v1"}
+        confirmed, absent = data.get("confirmed") or [], data.get("absent") or []
+        if not confirmed:
+            return {"ok": False, "detail": "empty confirmed list — probe ran but confirmed nothing (invalid)"}
+        if set(confirmed) & set(absent):
+            return {"ok": False, "detail": f"confirmed/absent overlap: {sorted(set(confirmed) & set(absent))[:5]}"}
+        digest = hashlib.blake2b(json.dumps({"confirmed": confirmed, "absent": absent},
+                                            sort_keys=True, ensure_ascii=False).encode("utf-8"),
+                                 digest_size=16).hexdigest()
+        if digest != data.get("blake2b"):
+            return {"ok": False, "detail": "cook-api file blake2b mismatch (corrupt/hand-edited)"}
+        stamp = data.get("houdini_version", "")
+    except Exception as e:
+        return {"ok": False, "detail": f"cook-api file unreadable: {str(e)[:300]}"}
+    if live and live != stamp:
+        return {"ok": False, "detail": f"stamp {stamp} != live build {live} — STALE; re-run the D.1 probe on this build"}
+    return {"ok": True, "detail": f"cook API confirmed ({len(confirmed)} confirmed / {len(absent)} quarantined, "
+                                  f"stamp {stamp}{'' if live else '; live comparison skipped — HYTHON unset'})"}
+
+def check_cook_truth_fresh(ctx):
+    # Mile 2 (D.2): the perturbation catalog — cook_truth/v1 {schema, houdini_version, blake2b,
+    # trials:[...]} (digest over `trials`; other keys sit outside by design, the
+    # context_capability pattern). This committed file is the COOK arming trigger for D.3+.
+    import hashlib
+    p, live, note = _resolve_cook_note(ctx, "cook_truth")
+    if p is None:
+        return {"ok": False, "detail": f"{note or 'harness/notes/cook_truth_<major>.json missing'} — "
+                                       "run D.2 (after D.0 ratification); commit the catalog — worktrees fork from HEAD"}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if data.get("schema") != "cook_truth/v1":
+            return {"ok": False, "detail": f"schema={data.get('schema')} != cook_truth/v1"}
+        digest = hashlib.blake2b(json.dumps(data.get("trials", []), sort_keys=True, ensure_ascii=False).encode("utf-8"),
+                                 digest_size=16).hexdigest()
+        if digest != data.get("blake2b"):
+            return {"ok": False, "detail": "cook-truth catalog blake2b mismatch (corrupt/hand-edited)"}
+        stamp = data.get("houdini_version", "")
+    except Exception as e:
+        return {"ok": False, "detail": f"cook-truth catalog unreadable: {str(e)[:300]}"}
+    if live and live != stamp:
+        return {"ok": False, "detail": f"catalog stamp {stamp} != live build {live} — STALE; "
+                                       "regenerate via host/introspect_cook_truth.py"}
+    extra = f"; {note}" if note else ("" if live else "; live-build comparison skipped — HYTHON unset")
+    return {"ok": True, "detail": f"cook-truth catalog sound (stamp {stamp}{extra})"}
+
+def check_cook_review_clean(ctx):
+    # Mile 3 (D.3): the review sweep — scripts/flywheel_review_cook.py sweeps SYNAPSE's own
+    # emitters + the explainer's claims against the catalog; a claim the catalog can't back is
+    # a finding, not a footnote. The sweep only REPORTS; THIS check judges summary.critical
+    # (the flywheel_review_context pattern). Dormant honest-false until D.3 ships the script.
+    if not (Path(ctx["wt"]) / "scripts" / "flywheel_review_cook.py").is_file():
+        return {"ok": False, "detail": "scripts/flywheel_review_cook.py missing — D.3 ships the cook review sweep"}
+    rc, out, err = sh([sys.executable, "scripts/flywheel_review_cook.py"], cwd=ctx["wt"], env=_wt_env(ctx))
+    p = Path(ctx["wt"]) / ".claude/flywheel_cook_findings.json"
+    if not p.exists():
+        return {"ok": False, "detail": (out or err).strip()[:400] or "cook review produced no findings file"}
+    try:
+        crit = json.loads(p.read_text(encoding="utf-8"))["summary"]["critical"]
+    except Exception as e:
+        return {"ok": False, "detail": f"findings unreadable: {str(e)[:200]}"}
+    head = (out or err).strip().splitlines()
+    return {"ok": rc == 0 and crit == 0,
+            "detail": f"rc={rc} critical={crit}; {head[0][:300] if head else ''}"}
+
+def _cook_golden(ctx, name):
+    # D.3+ goldens: one frozen perturbation trial per context must reproduce its CATALOGED
+    # dirty-set exactly — deterministic, render-free (spec §3; renders never golden). Baseline =
+    # the catalog at merge-base(master, HEAD) — the human-promoted line (suite_baseline's anchor,
+    # deliberately harder than _context_golden's HEAD read: a sprint that refreshes the cook
+    # catalog in-tree must not golden against its own tip). Commandment 7: a golden that starts
+    # failing is a bug to fix forward, never an assertion to soften.
+    if not ctx["hython"]:
+        return {"ok": False, "detail": "HYTHON unset — a golden that cannot run is not verified"}
+    probe = Path(ctx["wt"]) / "host" / "introspect_cook_truth.py"
+    if not probe.is_file():
+        return {"ok": False, "detail": "host/introspect_cook_truth.py missing — D.2 ships the cook-truth probe"}
+    live_p, live, note = _resolve_cook_note(ctx, "cook_truth")
+    if live_p is None:
+        return {"ok": False, "detail": "no cook_truth catalog in tree — run D.2 first"}
+    mb_rc, mb_out, _ = sh(["git", "merge-base", "master", "HEAD"], cwd=ctx["wt"])
+    anchor = mb_out.strip() if mb_rc == 0 and mb_out.strip() else "HEAD"
+    rc_b, cat_raw, _ = sh(["git", "show", f"{anchor}:harness/notes/{live_p.name}"], cwd=ctx["wt"])
+    if rc_b != 0 or not cat_raw.strip():
+        return {"ok": False, "detail": f"no committed {live_p.name} at the ratchet anchor — commit/merge the catalog first "
+                                       "(the golden baseline is the MERGED catalog, not this sprint's refresh)"}
+    try:
+        committed = [t for t in json.loads(cat_raw).get("trials", []) if t.get("context") == name]
+    except Exception as e:
+        return {"ok": False, "detail": f"committed catalog unreadable: {str(e)[:200]}"}
+    if not committed:
+        return {"ok": False, "detail": f"committed catalog has no '{name}' trials — regenerate via D.2"}
+    artifact = f".claude/cook_probe_{name}.json"
+    p = Path(ctx["wt"]) / artifact
+    p.unlink(missing_ok=True)  # a stale artifact surviving a failed probe run must not fake a verdict
+    rc, out, err = sh([ctx["hython"], "host/introspect_cook_truth.py",
+                       "--context", name, "--out", artifact], cwd=ctx["wt"])
+    if not p.exists():
+        # probe contract: rc 0 iff the artifact was written — judge the FILE, never stdout
+        # (hython banners pollute it); the tail is only failure evidence.
+        return {"ok": False, "detail": f"probe wrote no artifact (rc={rc}): {(err or out).strip()[-300:]}"}
+    try:
+        observed = {(t.get("graph_fingerprint"), t.get("perturbation")): sorted(t.get("observed_dirty") or [])
+                    for t in json.loads(p.read_text(encoding="utf-8")).get("trials", [])
+                    if t.get("context") == name}
+    except Exception as e:
+        return {"ok": False, "detail": f"probe artifact unreadable/malformed for '{name}': {str(e)[:250]}"}
+    for t in committed:
+        key = (t.get("graph_fingerprint"), t.get("perturbation"))
+        want = sorted(t.get("observed_dirty") or [])
+        got = observed.get(key)
+        if got is None:
+            return {"ok": False, "detail": f"golden trial {key} not reproduced by the probe (missing from artifact)"}
+        if got != want:
+            return {"ok": False, "detail": (f"dirty-set divergence on {key}: cataloged {want[:4]}… vs live {got[:4]}… — "
+                                            "fix forward (Commandment 7), never soften")[:500]}
+    return {"ok": True, "detail": f"'{name}' golden reproduces all {len(committed)} cataloged trial(s) exactly"}
+
+def check_cook_golden_sop(ctx):
+    return _cook_golden(ctx, "sop")
+
+def check_cook_golden_lop(ctx):
+    return _cook_golden(ctx, "lop")
+
+def check_cook_golden_cop(ctx):
+    return _cook_golden(ctx, "cop")
+
+def check_cook_golden_dop(ctx):
+    return _cook_golden(ctx, "dop")
+
+def check_tops_path_untouched(ctx):
+    # Structural quarantine (spec: the TOPs dirty/cook surface is SHIPPED — D generalizes the
+    # pattern WITHOUT touching the path; hou.pdg.* stays dead). Diff guard anchored at
+    # merge-base(master, HEAD) — the human-promoted line — plus untracked adds.
+    guard_dir = "python/synapse/server/handlers_tops/"
+    mb_rc, mb_out, _ = sh(["git", "merge-base", "master", "HEAD"], cwd=ctx["wt"])
+    anchor = mb_out.strip() if mb_rc == 0 and mb_out.strip() else "HEAD"
+    rc_d, diff_out, err_d = sh(["git", "diff", "--name-only", anchor, "--", guard_dir], cwd=ctx["wt"])
+    if rc_d != 0:
+        return {"ok": False, "detail": f"diff guard could not run: {(err_d or diff_out).strip()[:200]}"}
+    rc_u, untracked, _ = sh(["git", "ls-files", "--others", "--exclude-standard", "--", guard_dir], cwd=ctx["wt"])
+    touched = [l for l in (diff_out + "\n" + (untracked if rc_u == 0 else "")).splitlines() if l.strip()]
+    if touched:
+        return {"ok": False, "detail": f"TOPs path touched ({len(touched)} file(s)): {', '.join(touched[:4])} — "
+                                       "the shipped TOPs surface is quarantined; D generalizes the pattern elsewhere"}
+    return {"ok": True, "detail": "handlers_tops/ untouched vs the promoted line"}
+
+
 # ---------- S — studio-readiness hardening track (all stock python, no hython) ----------
 # Each S-check is a DURABLE REGRESSION GATE around a finding of
 # docs/reviews/synapse-studio-readiness-2026-07-06.html: it reads RED while the finding's
@@ -1440,6 +1644,15 @@ DISPATCH = {
     "context_golden_top": check_context_golden_top,
     "context_golden_dop": check_context_golden_dop,
     "context_golden_mat": check_context_golden_mat,
+    # D — diagnostic-truth track (dormant until D.0 ratified)
+    "cook_api_confirmed": check_cook_api_confirmed,
+    "cook_truth_fresh": check_cook_truth_fresh,
+    "cook_review_clean": check_cook_review_clean,
+    "cook_golden_sop": check_cook_golden_sop,
+    "cook_golden_lop": check_cook_golden_lop,
+    "cook_golden_cop": check_cook_golden_cop,
+    "cook_golden_dop": check_cook_golden_dop,
+    "tops_path_untouched": check_tops_path_untouched,
     # S — studio-readiness hardening track
     "posture_declared": check_posture_declared,
     "policy_single_source": check_policy_single_source,

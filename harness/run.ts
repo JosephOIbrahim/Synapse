@@ -30,7 +30,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync, statSync, renameSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync, statSync, renameSync, readdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { createHash } from "node:crypto";
 
@@ -77,6 +77,30 @@ const CTX = existsSync(join(REPO, "harness/notes/context_capability_21.json"));
 // every blocked_on:"posture" task (S.1–S.3) is held out of the queue — they cannot enforce a
 // consent/RBAC posture the deployment has not declared. S.0 (a human gate) prompts the write.
 const POSTURE = existsSync(join(REPO, "harness/state/posture.json"));
+// D-track diagnostic-truth intake — the fifth trigger, and the first JSON-PREDICATE trigger
+// (the four above are existsSync). Stage 1: a human flips D.0's `ratified` in the git-TRACKED
+// flywheel_queue.json (a committed fact, unlike drop/posture runtime state) — that arms the
+// blocked_on:"cook_ratified" tasks (D.1/D.2). Stage 2: D.2's committed catalog
+// (harness/notes/cook_truth_<major>.json — major-agnostic, so the H22 drop needs zero edits
+// here) arms blocked_on:"cook_truth" (D.3–D.5). A corrupted queue must hold LOUDLY, never
+// silently — hence the logged catch. STRICTLY READ-ONLY: the harness reads `ratified`, never
+// writes it (the anti-runaway anchor). Spec: harness/notes/spec-D-diagnostic-truth.md.
+const COOK_RATIFIED = (() => {
+  const q = join(REPO, "harness/state/flywheel_queue.json");
+  if (!existsSync(q)) return false;
+  try {
+    const data = JSON.parse(readFileSync(q, "utf8"));
+    return (Array.isArray(data.cycles) ? data.cycles : []).some((cy: any) => cy && cy.id === "D.0" && cy.ratified === true);
+  } catch (e) {
+    console.log(`  ⚠ flywheel_queue.json unparseable (${String(e).slice(0, 80)}) — D track held (loud, not silent)`);
+    return false;
+  }
+})();
+const COOK = (() => {
+  try {
+    return readdirSync(join(REPO, "harness/notes")).some((f: string) => /^cook_truth_\d+\.json$/.test(f));
+  } catch { return false; }
+})();
 
 // ---------- helpers ----------
 function sh(cmd: string, cmdArgs: string[], cwd = REPO) {
@@ -403,6 +427,31 @@ function surfaceStudioPosture() {
     log(`  ${c.warn}--task ${ONLY} cannot override this hold — S.1–S.3 stay filtered until posture.json lands.${c.off}`);
 }
 
+// ---------- diagnostic intake surface (D track: ratify → probe → catalog) ----------
+// The D track is dormant scaffolding until TWO human acts: (1) flip D.0's `ratified` in the
+// git-tracked flywheel_queue.json (arms D.1/D.2 — the probes), then (2) merge D.2's committed
+// cook_truth catalog (arms D.3–D.5 — sweep, goldens, the two CROWN handlers). While held this
+// prints the exact next act. STRICTLY READ-ONLY: the harness never flips ratified and never
+// authors the catalog here. Once both are armed it prints nothing — the queue speaks.
+function surfaceCookIntake() {
+  if (!TASKS.some((t: any) => t.blocked_on === "cook_ratified" || t.blocked_on === "cook_truth")) return;
+  if (COOK_RATIFIED && COOK) return;
+  if (!COOK_RATIFIED) {
+    head("diagnostic track held — D.0 awaits ratification (a human flips it, never the harness)");
+    log(`  ${c.warn}to arm:${c.off}      set D.0's "ratified" to true in harness/state/flywheel_queue.json`);
+    log(`  ${c.dim}spec (frozen contract + mile split): harness/notes/spec-D-diagnostic-truth.md${c.off}`);
+    log(`  ${c.dim}intake adjudication: harness/notes/SYNAPSE_ODFORCE_HARNESS.md${c.off}`);
+  } else {
+    head("diagnostic track part-armed — cook-truth catalog wanted (D.2 deposits it, a human merges)");
+    log(`  ${c.warn}to arm D.3–D.5:${c.off}  bun run harness/run.ts --task D.2   (D.1 first if the cook-API file is absent)`);
+    log(`  ${c.dim}then MERGE the worktree — harness/notes/cook_truth_<major>.json must reach HEAD${c.off}`);
+  }
+  // --task cannot pierce the hold: both D filters run before ONLY selects, so naming a held
+  // D-task yields an empty queue. Say so instead of printing a bare empty summary.
+  if (ONLY && TASKS.some((t: any) => t.id === ONLY && (t.blocked_on === "cook_ratified" || t.blocked_on === "cook_truth")))
+    log(`  ${c.warn}--task ${ONLY} cannot override this hold — D-tasks stay filtered until the track arms.${c.off}`);
+}
+
 // ---------- the loop ----------
 function runTask(task: any): "PASS" | "BLOCKED" | "GATED" {
   // human gate — never auto-handled
@@ -490,12 +539,24 @@ if (CTX) {
 // a worktree — so unlike the v6/context drops there is no uncommitted-in-worktree trap here.
 if (POSTURE) log(`${c.dim}  studio track armed — harness/state/posture.json present. S.1–S.3 in the queue.${c.off}`);
 else log(`${c.dim}  studio track held — harness/state/posture.json absent. A human declares the posture via S.0 (--task S.0).${c.off}`);
+if (COOK_RATIFIED) {
+  if (COOK) {
+    log(`${c.dim}  diagnostic track armed — D.0 ratified + cook_truth catalog present. D.1–D.5 in the queue.${c.off}`);
+    // Same trap as the context catalog: an UNCOMMITTED cook_truth file arms the track here
+    // while every D-task worktree forks from HEAD and sees no catalog. Read-only.
+    const st = sh("git", ["status", "--porcelain", "harness/notes"]);
+    if (st.status === 0 && (st.stdout || "").split("\n").some((l: string) => /cook_truth_\d+\.json/.test(l)))
+      log(`${c.warn}  cook_truth catalog has uncommitted changes — worktrees fork from HEAD and will NOT see them. Commit the catalog first.${c.off}`);
+  } else log(`${c.dim}  diagnostic track part-armed — D.0 ratified; D.1/D.2 in the queue. D.2's committed catalog arms D.3–D.5.${c.off}`);
+} else log(`${c.dim}  diagnostic track held — D.0 not ratified (harness/state/flywheel_queue.json). A human flips it; the harness never does.${c.off}`);
 
 let queue = TASKS.filter((t: any) => t.mode === "A" || MODE === "B");
 queue = queue.filter((t: any) => !(t.mode === "B" && t.blocked_on === "drop" && MODE === "A"));
 queue = queue.filter((t: any) => !(t.blocked_on === "blueprints" && !V6));
 queue = queue.filter((t: any) => !(t.blocked_on === "catalog" && !CTX));
 queue = queue.filter((t: any) => !(t.blocked_on === "posture" && !POSTURE));
+queue = queue.filter((t: any) => !(t.blocked_on === "cook_ratified" && !COOK_RATIFIED));
+queue = queue.filter((t: any) => !(t.blocked_on === "cook_truth" && !COOK));
 if (ONLY) queue = queue.filter((t: any) => t.id === ONLY);
 if (DRIVE) {                              // red-driver narrows to the next blocking-red (or idles)
   const redId = selectRedTask();
@@ -533,4 +594,6 @@ surfaceBlueprintIntake();
 surfaceContextIntake();
 // studio track — surface the posture declaration template while the track is held (read-only)
 surfaceStudioPosture();
+// diagnostic track — surface the ratify→probe→catalog ladder while the track is held (read-only)
+surfaceCookIntake();
 log("");

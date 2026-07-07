@@ -15,6 +15,9 @@
     "context_catalog_fresh", "context_review_clean",
     "context_golden_sop", "context_golden_lop", "context_golden_cop",
     "context_golden_top", "context_golden_dop", "context_golden_mat",
+    "cook_api_confirmed", "cook_truth_fresh", "cook_review_clean",
+    "cook_golden_sop", "cook_golden_lop", "cook_golden_cop",
+    "cook_golden_dop", "tops_path_untouched",
     "posture_declared", "policy_single_source", "consent_enforced",
     "rbac_at_dispatch", "memory_provenance", "eval_backbone",
     "farm_headless", "studio_readiness_review",
@@ -328,6 +331,42 @@
       "refs": ["harness/notes/spec-S-studio-readiness.md", "docs/reviews/synapse-studio-readiness-2026-07-06.html", "harness/state/studio_readiness_verdict.json"],
       "verify": ["studio_readiness_review"],
       "note": "the \"review at the end\". Deterministic aggregate + verdict artifact; the run.ts adversarial Evaluator reviews it, and a human may invoke a red-team workflow (the same fan-out that produced the report) — that workflow is an OPTIONAL surface, never a deterministic dependency of this check."
+    },
+
+    {
+      "id": "D.1", "phase": "diagnostic", "mode": "A", "crit": false, "layer": "utility", "blocked_on": "cook_ratified",
+      "title": "Diagnostic track — Mile 1: cook-API confirmation probe. Every hou.* symbol on D's critical path dir()-confirmed against live hython; absences auto-quarantine. Deposits harness/notes/verified_cook_api_<build>.json",
+      "refs": ["harness/notes/spec-D-diagnostic-truth.md", "python/synapse/cognitive/tools/scout.py", "host/introspect_context_capability.py"],
+      "verify": ["cook_api_confirmed", "tops_path_untouched"],
+      "note": "Phantom-first: the probe decides, not the spec's candidate list. The deposit is this check's OWN authority — NEVER spliced into h21_symbol_table.json (blake2b + dir()-membership invariant; depth-1 absences are already enforced free by phantom_clean). Precondition for every later mile."
+    },
+    {
+      "id": "D.2", "phase": "diagnostic", "mode": "A", "crit": false, "layer": "utility", "blocked_on": "cook_ratified",
+      "title": "Diagnostic track — Mile 2: perturbation catalog. host/introspect_cook_truth.py (hython-only, zero-synapse-import) runs perturbation trials per context (sop/lop/cop/dop) and deposits harness/notes/cook_truth_21.json — the D.3+ arming trigger",
+      "refs": ["harness/notes/spec-D-diagnostic-truth.md", "host/introspect_context_capability.py", "harness/notes/verified_cook_api_21.0.671.json"],
+      "verify": ["cook_api_confirmed", "cook_truth_fresh", "tops_path_untouched"],
+      "note": "C.0-shaped arming task. Copy introspect_context_capability.py's discipline: artifact-write-iff-rc0, undo-wrapped + residue-verified trials, judge the FILE never stdout. May only use §1-confirmed symbols. Committing + merging the catalog arms D.3-D.5 (COOK trigger)."
+    },
+    {
+      "id": "D.3", "phase": "diagnostic", "mode": "A", "crit": false, "layer": "build", "blocked_on": "cook_truth",
+      "title": "Diagnostic track — Mile 3: review sweep + per-context goldens. scripts/flywheel_review_cook.py sweeps emitter/explainer claims against the catalog; one frozen perturbation trial per context reproduces its cataloged dirty-set exactly",
+      "refs": ["harness/notes/spec-D-diagnostic-truth.md", "scripts/flywheel_review_context.py", "harness/notes/cook_truth_21.json"],
+      "verify": ["cook_truth_fresh", "cook_review_clean", "cook_golden_sop", "cook_golden_lop", "cook_golden_cop", "cook_golden_dop", "tops_path_untouched"],
+      "note": "A claim the catalog can't back is a finding, not a footnote. Goldens are deterministic + render-free (Indie husk no-ops headless — renders never golden). Commandment 7: a golden that starts failing is fixed forward, never softened."
+    },
+    {
+      "id": "D.4", "phase": "diagnostic", "mode": "A", "crit": false, "layer": "build", "blocked_on": "cook_truth",
+      "title": "Diagnostic track — Mile 4: synapse_explain_recook (read-only handler on the SynapseHandler seam): given a node path (+ optional hypothetical parm change), answer what will recook and WHY from catalog + live flags, citing the trial fingerprint",
+      "refs": ["harness/notes/spec-D-diagnostic-truth.md", "python/synapse/server/handlers.py", "harness/notes/cook_truth_21.json"],
+      "verify": ["cook_review_clean", "cook_golden_sop", "cook_golden_lop", "cook_golden_cop", "cook_golden_dop", "tops_path_untouched"],
+      "note": "CROWN finding #1 (ODFORCE O.1). Registered via CommandHandlerRegistry like every shipped tool — no new transport, no new panel surface. The review sweep re-runs against the explainer's claims: live truth, never doc reasoning."
+    },
+    {
+      "id": "D.5", "phase": "diagnostic", "mode": "A", "crit": false, "layer": "build", "blocked_on": "cook_truth",
+      "title": "Diagnostic track — Mile 5 (staged D.1 of the scour): synapse_diagnose_callback — replay an errored parm callback/expression under capture, return the dispatcher-style envelope (traceback_str seam) + cook-state before/after",
+      "refs": ["harness/notes/spec-D-diagnostic-truth.md", "python/synapse/cognitive/dispatcher.py", "python/synapse/server/handlers.py"],
+      "verify": ["cook_review_clean", "cook_golden_sop", "cook_golden_lop", "cook_golden_cop", "cook_golden_dop", "tops_path_untouched"],
+      "note": "CROWN finding #2 (ODFORCE O.3). Consumes Mile 1's event-callback symbols ONLY if confirmed; otherwise degrades to expression-evaluation diagnosis and says so — the truth contract: never claim capture it didn't perform."
     }
   ]
 }
