@@ -79,3 +79,13 @@ pre-cached at `harness/state/wheel_cache/`, runbook at
 sidecar to the post-release backlog. If H22 moved Python → re-vendor on drop
 day (cheap, pre-cached), and schedule the sidecar as the durable fix in the
 first post-release cycle rather than inside the drop window.
+
+## DECISION — 2026-07-10 (human sanction)
+
+**Sidecar.** Chosen by the owner with the IPC evidence in hand (p50 ~0.1 ms
+— latency a non-discriminator; the trade was purely engineering). Per this
+brief's own window guidance: the sidecar is the durable architecture, built
+in the **first post-release cycle**, not inside the drop window. Drop-day
+contingency stays UPGRADE.md Step 2a (re-vendor from the pre-cached
+cp312/cp313 wheels at `harness/state/wheel_cache/`) if H22 ships a
+non-cp311 Python; if H22 is cp311 the drop is a no-op either way.
