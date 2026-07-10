@@ -165,6 +165,18 @@ def _stage_hash_prim_threshold() -> int:
     return _DEFAULT_STAGE_HASH_PRIM_THRESHOLD
 
 
+# ── PDG Cook Timeout (R8-bounded) ───────────────────────────────
+# Backstop against a PDG cook that fires NEITHER CookComplete NOR CookError
+# (stuck work item, scheduler stall, a graph already cooking from another
+# trigger). Without it, _execute_pdg_deferred's poll loop ran forever -- no
+# IntegrityBlock finalized, the operation never returned. The general
+# execute_async path has a 120s guard; the PDG path -- the longest op type --
+# did not. 1800s is a backstop, not a target: real farm cooks run minutes-to-
+# hours, so override per-op via the ``cook_timeout`` kwarg (seconds). cancelCook()
+# is the same API EmergencyProtocol.trigger_emergency_halt uses -- H21-real.
+DEFAULT_COOK_TIMEOUT_S: float = 1800.0
+
+
 # ── Integrity Block ─────────────────────────────────────────────
 
 @dataclass
@@ -1010,6 +1022,7 @@ class LosslessExecutionBridge:
             )
 
         handlers = []
+        timed_out = False
         try:
             # H21.0.671: pdg.PyEventHandler(fn) is a PHANTOM constructor
             # ("TypeError: No constructor defined"). The live idiom is
@@ -1019,6 +1032,8 @@ class LosslessExecutionBridge:
             # event type → one wrapper per type. The callback fires on
             # Houdini's main thread; threading.Event.set() is thread-safe.
             def on_cook_event(event):
+                if timed_out:
+                    return  # late event after timeout/cancel -- don't overwrite
                 if event.type == _pdg.EventType.CookComplete:
                     cook_success[0] = True
                     cook_complete.set()
@@ -1047,9 +1062,37 @@ class LosslessExecutionBridge:
 
             # Poll the threading.Event from the async loop so FastMCP stays
             # responsive. 250ms poll interval matches gate polling cadence.
-            loop = asyncio.get_running_loop()
+            # BOUNDED (R8): a stuck cook that fires neither CookComplete nor
+            # CookError used to poll here FOREVER -- no IntegrityBlock finalized,
+            # the operation never returned. The general execute_async path has a
+            # 120s guard; the PDG path -- the longest op type -- did not. Bound
+            # it by cook_timeout (default DEFAULT_COOK_TIMEOUT_S; override via the
+            # kwarg, seconds). On expiry, cancel the cook on the main thread and
+            # fall through to the dirty+fail path with a distinct delta_hash.
+            # cancelCook() is the same API EmergencyProtocol uses -- H21-real.
+            cook_timeout = float(
+                operation.kwargs.get("cook_timeout", DEFAULT_COOK_TIMEOUT_S)
+            )
+            deadline = time.monotonic() + cook_timeout
             while not cook_complete.is_set():
+                if time.monotonic() >= deadline:
+                    timed_out = True
+                    break
                 await asyncio.sleep(0.25)
+
+            if timed_out:
+                try:
+                    hdefereval.executeInMainThread(
+                        lambda: graph_context.cancelCook()
+                    )
+                except Exception:
+                    pass
+                cook_error[0] = (
+                    f"PDG cook timed out after {cook_timeout:.0f}s on "
+                    f"{node_path} -- cancelled. The cook fired neither "
+                    "CookComplete nor CookError (stuck work item, scheduler "
+                    "stall, or a graph already cooking from another trigger)."
+                )
 
         except Exception as e:
             return self._fail_with_integrity(
@@ -1075,7 +1118,7 @@ class LosslessExecutionBridge:
                 )
             except Exception:
                 pass
-            integrity.delta_hash = "pdg_rolled_back"
+            integrity.delta_hash = "pdg_timeout" if timed_out else "pdg_rolled_back"
             disposition = "removed from disk" if remove_files else "preserved on disk"
             return self._fail_with_integrity(
                 integrity,
