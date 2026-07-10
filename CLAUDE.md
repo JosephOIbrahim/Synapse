@@ -8,9 +8,9 @@
 You are the **SYNAPSE Orchestrator**, a Mixture-of-Experts (MOE) router that decomposes VFX pipeline tasks and dispatches them to 6 specialist Claude Code subagents. Operations reach Houdini by **two paths with different safety surfaces:**
 
 - **`/mcp` (external-MCP) → the Lossless Execution Bridge:** undo-wrapped, main-thread-marshalled, consent-gated, scene-hashed, with an `IntegrityBlock` + fidelity verdict per op. The *audited* path.
-- **`/synapse` (live WS) → `server.handlers` directly:** RBAC-gated, undo-wrapped (`hou.undos.group`), main-thread-marshalled (`run_on_main`), 30s slow-op timeout. **Not** bridge-routed — no `IntegrityBlock`, no scene hash, no fidelity verdict, no provenance, no `HumanGate` consent escalation, no import filter (`execute_python`/`execute_vex` run with full `__builtins__`). The *RBAC-guarded* path.
+- **`/synapse` (live WS) → `server.handlers` directly:** RBAC-gated, main-thread-marshalled (`run_on_main`), 30s slow-op timeout, undo-wrapped only **partially** (⚠ drift, verified 2026-07-10: usd/material/cops/batch/execute handlers wrap in `hou.undos.group`; the `handlers_node.py` create/set_parm/connect/delete handlers do NOT). **Not** bridge-routed — but mutating ops get a PATH-QUALIFIED observe-only `IntegrityBlock` envelope (`server/integrity_envelope.py`: cheap topo hashes, `execution_path="live"`, consent/composition/undo recorded not-applicable — never faked) in the shared process bridge trail. Still no `HumanGate` consent escalation, no import filter (`execute_python`/`execute_vex` run with full `__builtins__`). The *RBAC-guarded* path.
 
-**Core guarantee (path-qualified):** On the `/mcp` path, every mutation is reversible, every handoff traceable, every scene state reconstructable. The `/synapse` path guarantees undo-reversibility and main-thread safety, but does **not** produce integrity provenance — its mutations are reversible but not audited. (See §1 for the audit-layer contract and the live-path reality notes.)
+**Core guarantee (path-qualified):** On the `/mcp` path, every mutation is reversible, every handoff traceable, every scene state reconstructable. The `/synapse` path guarantees main-thread safety and produces observe-only path-qualified provenance (live envelope blocks), but no consent gating, no composition validation, and only partial undo-reversibility (drift note above). (See §1 for the audit-layer contract and the live-path reality notes.)
 
 ---
 
@@ -31,9 +31,9 @@ You are the **SYNAPSE Orchestrator**, a Mixture-of-Experts (MOE) router that dec
 
 ## 1. Lossless Execution Bridge
 
-> **⚠ Live-path reality (Phase 0c · D2 · 2026-06-05, re-confirmed §0.8).** `LosslessExecutionBridge` is the **audit / integrity layer**, not the only road to Houdini. It is wired into the **external-MCP (`/mcp`) path**. The **live `/synapse` WS transport does NOT route through it** — it calls the `synapse.server.handlers` command handlers **directly**, and those handlers do their own undo-wrapping inline (`hou.undos.group(...)`) and their own main-thread marshalling (`server/main_thread.run_on_main`). So the four anchors below describe what the bridge *enforces on the `/mcp` path*; they are **not** a guarantee that "no code path skips them" on the live path. Treat this section as the audit-layer contract, not a claim of universal interception.
+> **⚠ Live-path reality (Phase 0c · D2 · 2026-06-05, re-confirmed §0.8).** `LosslessExecutionBridge` is the **audit / integrity layer**, not the only road to Houdini. It is wired into the **external-MCP (`/mcp`) path**. The **live `/synapse` WS transport does NOT route through it** — it calls the `synapse.server.handlers` command handlers **directly**, and those handlers do their own main-thread marshalling (`server/main_thread.run_on_main`) and their own inline undo-wrapping (`hou.undos.group(...)`) — the latter only **partially** (⚠ drift note in Identity). So the four anchors below describe what the bridge *enforces on the `/mcp` path*; they are **not** a guarantee that "no code path skips them" on the live path. Treat this section as the audit-layer contract, not a claim of universal interception.
 
-The bridge gives operations that *do* flow through it (the `/mcp` path) an undo-wrapped, thread-safe, integrity-verified envelope with a recorded `IntegrityBlock`. Agents on that path call through it and inherit its anchors. The live handler path reaches the same `hou` API by a parallel, hand-wired mechanism (inline undo + main-thread dispatch) — equivalent safety, separate plumbing.
+The bridge gives operations that *do* flow through it (the `/mcp` path) an undo-wrapped, thread-safe, integrity-verified envelope with a recorded `IntegrityBlock`. Agents on that path call through it and inherit its anchors. The live handler path reaches the same `hou` API by a parallel, hand-wired mechanism (partial inline undo + main-thread dispatch) — separate plumbing, near-equivalent safety minus the undo gap.
 
 ### 1.1 Four Safety Anchors (on the bridge / `/mcp` path)
 
@@ -75,10 +75,11 @@ Every operation produces an `IntegrityBlock`:
 scene_hash_before    — Topological hash of scene state pre-mutation
 scene_hash_after     — Topological hash post-mutation
 delta_hash           — Hash of the change (for replay/audit)
-undo_group_active    — Was it wrapped? (must be True)
-main_thread_executed — Did it run on main thread? (must be True)
+undo_group_active    — Wrapped, EVIDENCE-derived (v5.22.0): hou.undos areEnabled/undoLabels snapshots around the group; inconclusive evidence keeps True + warns once
+main_thread_executed — Ran on main thread, EVIDENCE-derived: real thread identity at execution time (must be True)
 consent_verified     — Did gate level pass? (must be True)
 composition_valid    — Is USD still valid? (must be True)
+execution_path + *_applicable — path qualifier ("mcp"/"live") + per-anchor applicability; live envelope blocks record N/A honestly, never fake True
 fidelity             — 1.0 = pipeline functioning. <1.0 = pipeline bug.
 ```
 
@@ -132,6 +133,8 @@ PDG farm cooks are inherently async (minutes to hours). R8 bridges this to FastM
 ---
 
 ## 2. MOE Routing Protocol
+
+> **⚠ Live-path reality (verified 2026-07-10).** `MOERouter` (`shared/router.py`) is a panel-side classifier — consumed by `panel/tool_filter.py`, `routing_log.py`, `agent_health.py` + the §16 advisor. Live `/synapse` dispatch uses `TieredRouter` (`python/synapse/routing/router.py`, built in `server/handlers.py`) — a tiered cascade, not MOE. The 6 specialists are Claude-level orchestration personae, not live-path processes.
 
 ### 2.1 Feature Extraction (4 Dimensions)
 
@@ -454,7 +457,7 @@ Track across the session:
 ## 11. Safety Rules
 
 1. **Never let two agents write the same file** — route through INTEGRATOR
-2. **Bridge = audit/integrity layer on the `/mcp` path** — `LosslessExecutionBridge` wraps every operation it routes (undo + thread + integrity) and is the integrity authority for the external-MCP path. It is **not** the only code path to Houdini: the live `/synapse` transport calls `synapse.server.handlers` directly, with inline `hou.undos.group(...)` undo-wrapping + `server.main_thread.run_on_main` main-thread marshalling. Handlers = the live mechanism; bridge = the audited mechanism. Pinned by `tests/test_phase0b_consent_posture.py` (consent slice).
+2. **Bridge = audit/integrity layer on the `/mcp` path** — `LosslessExecutionBridge` wraps every operation it routes (undo + thread + integrity) and is the integrity authority for the external-MCP path. It is **not** the only code path to Houdini: the live `/synapse` transport calls `synapse.server.handlers` directly, with `server.main_thread.run_on_main` main-thread marshalling + inline `hou.undos.group(...)` undo-wrapping (partial — see §1 drift note). Live mutations DO leave observe-only path-qualified `IntegrityBlock`s in the shared process bridge (`server/integrity_envelope.py`). Handlers = the live mechanism; bridge = the audited mechanism. Pinned by `tests/test_phase0b_consent_posture.py` (consent slice).
 3. **All hou.* calls via hdefereval** — SUBSTRATE's async boundary, no direct access
 4. **Gate levels enforced structurally** — disk writes auto-elevate to APPROVE, code execution requires CRITICAL (R4)
 5. **Consent gates are real — on the bridge path only** — REVIEW/APPROVE/CRITICAL route through `synapse.core.gates.HumanGate` with timeout-to-rejection *when an operation goes through `LosslessExecutionBridge`*. The live `/synapse` handler path does **not** route through the bridge, so `execute_python`/`execute_vex` are **ungated** (single-user-localhost auto-approve — see §1.2 live-path note; D1). Pinned by `tests/test_phase0b_consent_posture.py`.
@@ -559,7 +562,7 @@ section is public, frozen, and pinned by tests.
 
 ### 16.2 Public API surface
 
-- **SUBSTRATE** — `LosslessExecutionBridge.operation_stats()` (dict: `per_agent`, `per_agent_verified`, `per_agent_success_rate`, `success_rate`, `anchor_violations`, `operations_total`, `operations_verified`, `log_size`, `log_capacity`, `per_operation_type`, `session_id`); `recent_operations(n=100)` → list[IntegrityBlock] copy; `clear_operation_log()` → int dropped; `MOERouter.fingerprint_counts()` → dict[str,int] copy.
+- **SUBSTRATE** — `LosslessExecutionBridge.operation_stats()` (dict: `per_agent`, `per_agent_verified`, `per_agent_success_rate`, `success_rate`, `anchor_violations`, `operations_total`, `operations_verified`, `log_size`, `log_capacity`, `per_operation_type`, `session_id`); `recent_operations(n=100)` → list[IntegrityBlock] copy; `clear_operation_log()` → int dropped; `record_external_block(block)` → thread-safe live-envelope append; `MOERouter.fingerprint_counts()` → dict[str,int] copy.
 - **CONDUCTOR** — `LosslessEvolution._verify_lossless` (internal) → `EvolutionIntegrity` with content-hash failures; `ConductorAdvisor.analyze(bridge_stats, evolution_failures, routing_fingerprints)` and `.analyze_history(history)` → `list[Recommendation]`; `RecommendationHistory.record(recs, timestamp)` → int, `.recent(n=50)`/`.all()`/`.clear()`, `.to_jsonl(path)`/`.from_jsonl(path)`; `advise_from_bridge` one-shot helper.
 
 ### 16.3 Recommendation schema

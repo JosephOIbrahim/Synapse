@@ -65,6 +65,8 @@ A multi-agent workflow: **8 dimension reviewers** (PRD-reconciliation, latency h
 | TEST-2 | Tool-count parity DONE (`e0fe0ef`) | Registry→handler parity test still missing — a `TOOL_DEFS` cmd with no handler fails at call time, not CI |
 | ARC-1 | D2 doc rewrite DONE (`c54d592`, bridge = audit-only) | Anchors still self-certified literals (`bridge.py:430-431,538-539` stamp `=True`, not measured) |
 
+> **Addendum 2026-07-10 (v5.22.0):** ARC-1's "what's left" is overtaken — anchor flags are now evidence-derived (`hou.undos.areEnabled()`/`undoLabels()` snapshots around the group + thread-identity at execution time, `shared/bridge.py`; adversarially reviewed so cook-induced hash shifts never false-flag).
+
 ### OPEN (carried forward into this report's backlog)
 `RSI-S` (deposit_fn unwired at science entrypoint), `RSI-F` (router fast-path persistence — but legitimately deprioritized: `MOERouter.route()` has no live caller per `c676999`), `DOC-RSI` (RSI audit not bannered superseded), `SEC-1` (hwebserver has **zero** `check_permission` — a VIEWER can call `execute_python`), `MEM-2` (memory.jsonl still truncating rewrite — **now the top correctness risk**), `MEM-3`/`RSI-E` (deferred-as-decided), `ARC-2` (two WS servers, divergent resilience — drift already bit SEC-0), **EmergencyProtocol** (`bridge.py:987-1005`, called only by its test).
 
