@@ -11,8 +11,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4118%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.21.0-1e293b.svg" alt="Changelog"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4186%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.22.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 > ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it's all recorded (receipts, not magic). Five engines, 115 tools. **Install ↓ in ~5 min.**
@@ -38,7 +38,7 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 | You want… | Read… |
 |---|---|
 | **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
-| **What shipped in v5.21.0** | *New in v5.21.0* — diagnostic truth, the self-protecting harness, the readiness verdict |
+| **What shipped in v5.22.0** | *New in v5.22.0* — the honest envelope, evidence-based anchors, the drop-day runbook |
 | **How AI network-building stays safe** | *Propose → validate → build* |
 | **To install it** | *Install — 5 minutes* |
 | **The architecture** | *How it works — inside-out* |
@@ -65,7 +65,7 @@ flowchart LR
     LOOP -->|"tool_use"| EXEC["Tool executor<br/>(main thread)"]:::panel
     EXEC --> BR["Handler<br/>undo-wrapped · integrity"]:::bridge
     BR -->|in-process call| HOU[("hou.*<br/>node created")]:::hou
-    BR -.provenance.-> LEDGER["Provenance ledger<br/>audit fsync off hot path"]:::side
+    BR -.provenance.-> LEDGER["IntegrityBlock trail<br/>audited /mcp + live envelope"]:::side
     BR -.timing.-> METRICS["Latency metrics<br/>histograms → Prometheus"]:::side
     BR -.needs approval.-> GATE["Consent gate<br/>auto-surfaces in CHAT · accept / revert"]:::bridge
     GATE -.hands back.-> ART
@@ -80,29 +80,32 @@ flowchart LR
 
 ---
 
-## ✦ New in v5.21.0
+## ✦ New in v5.22.0
 
-Three things landed this release: **diagnostic truth** (the scene, interrogated — a fifth truth class no external LLM can hold), the **self-protecting harness** (it guards its own green, selects its own red, and demands proof its fixes are real), and the **studio-readiness verdict** (an honest READY, with the trade-offs named instead of hidden).
+Three things landed this release: **the honest envelope** (receipts on *both* roads into Houdini — recorded honestly, never faked), **evidence-based anchors** (the integrity flags now come from runtime evidence, not self-report), and the **drop-day runbook** (H22 lands 2026-07-15; the whole drop is one ordered page, and the machine was proven beforehand).
 
-### Diagnostic truth — the scene, interrogated
+### The honest envelope — receipts on BOTH roads
 
-**"Why did this recook?" is the question every Houdini artist asks and no chatbot can answer — because the answer only exists as live cook-state.** SYNAPSE now probes it and commits it:
+**There are two roads into Houdini — the audited `/mcp` bridge and the live `/synapse` panel path — and until now only the first one left `IntegrityBlock` receipts.** Live-path mutations were invisible to the operation stats and the self-tuning advisor. Now every mutating live op leaves a record too:
 
-- 🔬 **The cook-API probe** dir()-confirms every symbol on the track's path against the running build — and immediately caught the track's *own spec* citing **H18-era phantom spellings** (the cook surface lives on `hou.OpNode`, not `hou.Node`; the event enum is lowercase). The probe decides, not the docs.
-- 🌀 **The perturbation catalog** pokes frozen tiny graphs per context — set a parm, rewire an input, make something time-dependent — and records **what actually goes dirty**. First run captured a real engine divergence: *a Copernicus rewire dirties upstream nodes that SOP semantics say it shouldn't.* That's now cataloged, deterministic, and golden-reproducible.
-- 🎯 **Staged on this catalog** (armed in the queue): `synapse_explain_recook` — point at a node, get *what will recook and why*, cited to a probe trial — and `synapse_diagnose_callback` — replay an errored parm callback under capture and get the real traceback.
+- 🧾 **Path-qualified, never faked** — live records carry `execution_path="live"`, cheap scene hashes before and after, and per-anchor honesty: the consent, composition, and undo checks the live path doesn't run are recorded as **not-applicable — never faked `True`**. Honesty over theater.
+- 👁️ **The advisor finally SEES the live path** — the shared operation stats, recent-operations trail, and the self-tuning advisor now cover both roads, so a live-path anomaly can no longer hide from the loop that watches for them.
+- 🛡️ **Hardened before it shipped** — a fixed 1-second capture bound (env-tunable) so the envelope can never hold the mutation lock; a kill switch (`SYNAPSE_LIVE_ENVELOPE=0`, tested end-to-end); captures skip when the main thread is already stalled; and envelope bookkeeping never leaks into the latency instruments.
 
-### The harness now protects its own green
+### Anchors with evidence — fidelity you can trust
 
-**4,118 tests, and the machine that grows them can no longer regress them:**
+**The bridge's integrity flags used to be self-attested — the code path assigned `True` about itself.** Now they come from evidence:
 
-- 🟢 **The green ratchet** — every autonomous sprint runs the FULL suite against a committed floor: failures only go down, passes only up. A change that greens its own target while reddening other tests fails *deterministically*, before any LLM judgment. It caught its own wiring regression on first run.
-- 🎯 **The red-driver** — `--drive` reads the readiness scoreboard and targets the next blocking-red finding. Posture-scoped: accepted trade-offs are structurally un-drivable; security criticals surface as human decisions, never auto-authored code.
-- 🧾 **Fix-is-real probes** — a check that greens on a marker string must name a committed *behavioral* proof. Gut the guard it points at and the probe goes red even though the marker survives.
+- 🔬 **Undo + thread flags read the runtime** — undo-stack snapshots around the undo group plus real thread identity at execution time. **Fidelity 1.0 now means *verified*, not "didn't throw."**
+- 🧯 **Adversarially reviewed before landing** — three lenses read the diff; two independently converged on the same false-violation mode (cook-induced hash shifts misread as uncaptured mutations). Fixed: cook-sensitive hash components are never treated as authored-change evidence, and inconclusive evidence keeps the anchor with a one-time warning.
+- 🧬 **Composition validation grew arcs** — it covered only `reference` arcs; now `payload` arcs get the same hard checks (self-cycle, unresolvable layer), and `inherit` / `specialize` self-cycles are caught too. Conservative by design: legal USD flexibility never hard-fails.
 
-### The readiness verdict — honest, not rubber-stamped
+### Drop day has a runbook
 
-The 24-finding deployment review is now **durable regression gates** with a capstone verdict: **READY (solo posture)** — with the three security criticals (policy / consent / RBAC) held **honestly RED as named, posture-scoped trade-offs** that snap back to hard blockers the moment the posture says studio or farm. Accepted ≠ fixed, and every acceptance is written down.
+**Houdini 22 lands 2026-07-15, and the whole drop is now one page: [`docs/studio/DROP_DAY.md`](docs/studio/DROP_DAY.md) — 11 ordered steps, human gates marked.** Drop day is verification, not surgery: the Mode-B rehearsal already passed, the wheels are pre-cached, and the vendor decision is made — sidecar, with the re-vendor contingency scripted. Two smaller guarantees rode along:
+
+- ⏱️ **The PDG cook poll is bounded** — a `cook_timeout` kwarg with an 1800-second backstop; on expiry the cook is cancelled and the generated tasks dirtied, with on-disk caches preserved. The unbounded-poll hang is dead.
+- 🎞️ **Animation can't slip the detector** — animated USD attributes now digest **every authored time sample** into the structural stage signature, so an animation edit can no longer sneak past the scene-change detector.
 
 ---
 
@@ -111,6 +114,7 @@ The 24-finding deployment review is now **durable regression gates** with a caps
 **Houdini 22 lands mid-July. SYNAPSE meets it with a drop-day machine that's already proven.**
 
 - 🎯 **Drop-day probe** — `scripts/h22_api_delta.py` diffs the running build's symbol table, node-type catalog, and punycode parm encodings against committed H21 baselines. Run against 21.0.671 the identity diff is **empty** — the machine is proven *before* the drop. *(First run against our own emitters, it caught **15 phantom spellings** — now purged.)*
+- 📋 **Drop-day runbook** *(v5.22.0)* — [`docs/studio/DROP_DAY.md`](docs/studio/DROP_DAY.md): one page, ordered, human gates marked. Drop day is verification, not surgery.
 - 🗂️ **Per-major symbol tables** — scout + doctor key on the running Houdini major; the H21 table is never overwritten by an H22 run.
 - 🧪 **Dual-build test axis** — `SYNAPSE_TEST_HOUDINI_BUILD` points the suite at either build.
 - 🤝 **APEX MCP boundary contract** — Houdini 22 ships a native APEX MCP. The ratified boundary ([`docs/SYNAPSE_H22_BOUNDARY.md`](docs/SYNAPSE_H22_BOUNDARY.md)): SYNAPSE **consumes it as a truth-contract provider** (observed-vs-claimed envelope, fail-loud) — it never competes with it. Coexistence rules: [`docs/MCP_COEXISTENCE.md`](docs/MCP_COEXISTENCE.md). SYNAPSE's lane stays the receipts: undo-safe mutations + recorded provenance.
@@ -196,6 +200,7 @@ flowchart LR
 
 | Release | Headline |
 |---|---|
+| **v5.21.0** | **Diagnostic truth + the self-protecting harness + the readiness verdict** — the scene interrogated live (dirty-propagation / recook / time-dependence cataloged per context — the truth class no external LLM can hold), the harness that guards its own green (full-suite ratchet, posture-scoped red-driver, fix-is-real probes), and an honest **READY (solo posture)** verdict with the trade-offs named instead of hidden. |
 | **v5.20.0** | **H22 drop-day machine + utility flywheel + panel v9/v9.1** — the API-delta probe (proven empty on H21, caught 15 phantom spellings in our own emitters), the self-improving probe→review→wire loop, and the five-engine panel: **Claude · Gemini · NVIDIA Nemotron · Ollama · Custom**, the author token, one CHAT surface where **consent auto-surfaces** (v9.1), bundled Space Grotesk/Mono, a token-only meter. |
 | **v5.19.0** | **The build half landed** — a validated proposal becomes real nodes under one undo group, with mid-build rollback. Plus the Solaris production-wiring correction (phantom per-shape lights purged, merge/sublayer strength rule live-probed). |
 | **v5.18.0** | **Whole-graph validation** — every proposed node + wire checked against the live scene before anything is built; the occupied-input guard halts rather than sever artist wiring. |
@@ -293,10 +298,12 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.21.0):**
+**Shipping (v5.22.0):**
 
 - 🎛️ **Artist panel v9.1** — five engines, undo-safe, 115 tools, a single **CHAT** surface where the review + consent gate auto-surface, live observability + latency instrumentation (WCAG/usability **G3-audited**).
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
+- 🧾 **The honest envelope** — both roads into Houdini leave `IntegrityBlock` receipts: the audited `/mcp` bridge, and path-qualified, never-faked live-path records the self-tuning advisor can see.
+- 🔬 **Evidence-based anchors** — the undo + main-thread integrity flags come from runtime evidence, not self-report (fidelity 1.0 = *verified*); composition validation covers `reference`, `payload`, `inherit`, and `specialize` arcs.
 - 🔁 **Utility flywheel** — three ratified cycles (wiring · Solaris context · **diagnostic cook-truth**), self-improving on a human-ratified loop, with capability + readiness catalogs behind them.
 - 🌀 **Diagnostic-truth catalogs** — live dirty-propagation / recook / time-dependence trials per context, golden-reproducible; the recook-explainer + callback-debugger handlers staged on them.
 - 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint, a posture-scoped red-driver, fix-is-real behavioral probes, and a **READY (solo posture)** studio-readiness verdict with the trade-offs named.
@@ -354,7 +361,7 @@ python/synapse/
 
 host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols · cook API · cook-truth perturbation trials)
 scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_{wiring,lop}.py · mine_lop_knowledge.py
-tests/                          # 4,204 collected · 4,118 passing (Moneta-gated tests skip on a clean clone)
+tests/                          # 4,186 passing (Moneta-gated tests skip on a clean clone)
 harness/                        # the self-verifying loop — five tracks (H22 · v6 · context · studio · diagnostic), boundary guardrails, the full-suite green ratchet, the readiness verdict
 docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
