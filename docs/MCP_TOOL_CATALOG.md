@@ -1,5 +1,5 @@
 > **ARCHIVED SNAPSHOT — v5.6.0-era (80 tools).** Kept for history; the numbers below are stale.
-> Current truth: **115 registry tools**, v5.21.0 — see [README.md](../README.md) + [CHANGELOG.md](../CHANGELOG.md).
+> Current truth: **115 registry tools**, v5.22.0 — see [README.md](../README.md) + [CHANGELOG.md](../CHANGELOG.md).
 
 # MCP Tool Catalog
 
