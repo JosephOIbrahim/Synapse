@@ -173,6 +173,29 @@ def test_structural_signature_changes_per_mutation_class(mutator):
     )
 
 
+def test_structural_signature_catches_nondefault_time_value_edit():
+    """The time-sample COMPLETENESS gap closure. The old structural form captured
+    only the default-time value + sample COUNT. An already-animated attribute
+    whose value at a NON-default frame changes (count fixed, default value fixed)
+    left the signature UNCHANGED — a real keyframe edit the integrity gate
+    silently passed. The closed form digests every authored time-sample value, so
+    this mutation MUST now flip the signature. This is the blocker that kept
+    structural unsafe as a DEFAULT; closing it unblocks a future default-flip."""
+    stage = _base_stage()
+    # radius starts static at 1.0. Author a keyframe at frame 5 = 7.0.
+    radius = stage.GetPrimAtPath("/root/child").GetAttribute("radius")
+    radius.Set(7.0, Usd.TimeCode(5.0))
+    before = _sig(stage)
+    # Edit the NON-default-time value (frame 5: 7.0 -> 99.0). Default value and
+    # sample count are both unchanged -- this is exactly the edit the old form missed.
+    radius.Set(99.0, Usd.TimeCode(5.0))
+    after = _sig(stage)
+    assert after != before, (
+        "non-default-time value edit did NOT change the structural signature -- "
+        "an animated-attr keyframe edit would silently pass integrity above threshold"
+    )
+
+
 def test_structural_signature_catches_relationship_retarget():
     """Relationship RETARGET (material:binding rebind, light-linking, collections):
     the property NAME and prim metadata stay identical — only the targets move.

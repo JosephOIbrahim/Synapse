@@ -523,7 +523,8 @@ class LosslessExecutionBridge:
           specifier change (def/over/class) ... specifier
           activation .................. IsActive() (TraverseAll keeps inactive prims)
           attribute add/remove ........ sorted authored property names
-          attribute VALUE change ...... per-attr value repr + value-type + #samples
+          attribute VALUE change ...... per-attr value repr + value-type + per-time-sample
+                                         values (animated attrs: every authored frame)
           visibility .................. authored as the ``visibility`` attribute → above
           metadata / composition arc .. authored metadata dict + explicit arc flags +
                                          variant set names & selections
@@ -551,13 +552,38 @@ class LosslessExecutionBridge:
                 except Exception:
                     parts.append("?props")
                 # Per-attribute VALUE digest — value change, value-type change,
-                # time-sample add/remove (count). visibility lands here too.
+                # time-sample add/remove. visibility lands here too.
+                #
+                # TIME-SAMPLE COMPLETENESS (gap closure): the old form captured only
+                # the DEFAULT-time value (`attr.Get()`) plus the sample COUNT. An edit
+                # at a NON-default time (the common case on animated Solaris stages —
+                # a keyframe value change at frame != 0) left the signature unchanged
+                # while the count stayed the same → a real mutation the gate silently
+                # passed. That gap is the reason structural was unsafe as a DEFAULT.
+                #
+                # Now: for an animated attr (GetNumTimeSamples() > 0) digest EVERY
+                # authored time-sample value via GetTimeSamples() + Get(t) — so a
+                # non-default-time value edit flips the signature. For a STATIC attr
+                # the form is byte-identical to before (`:0={Get()!r}`) — the closure
+                # costs nothing on the static stages where structural is the perf win.
+                # GetTimeSamples()/Get(t) are dir()-confirmed in the H21.0.671 symbol
+                # table; Get() / GetNumTimeSamples() are already used in production.
                 for attr in prim.GetAuthoredAttributes():
                     try:
-                        parts.append(
-                            f"{attr.GetName()}:{attr.GetTypeName()}"
-                            f":{attr.GetNumTimeSamples()}={attr.Get()!r}"
-                        )
+                        n_samples = attr.GetNumTimeSamples()
+                        if n_samples and n_samples > 0:
+                            sample_vals = [
+                                f"{t}={attr.Get(t)!r}" for t in attr.GetTimeSamples()
+                            ]
+                            parts.append(
+                                f"{attr.GetName()}:{attr.GetTypeName()}"
+                                f":{n_samples}=" + "|".join(sample_vals)
+                            )
+                        else:
+                            parts.append(
+                                f"{attr.GetName()}:{attr.GetTypeName()}"
+                                f":0={attr.Get()!r}"
+                            )
                     except Exception:
                         parts.append(f"{attr.GetName()}=<err>")
                 # Per-relationship TARGET digest — a relationship RETARGET (material
