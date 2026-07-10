@@ -1,0 +1,70 @@
+{
+  "schema": "cook_truth/v1",
+  "houdini_version": "21.0.671",
+  "blake2b": "067854c9328fc61582322a578b586ddd",
+  "trials": [
+    {
+      "context": "lop",
+      "graph_fingerprint": "lop:sphere>materiallibrary>OUT",
+      "perturbation": "parm:sphere1/radius",
+      "expected_dirty": [
+        "OUT",
+        "matlib1",
+        "sphere1"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "matlib1",
+        "sphere1"
+      ],
+      "cookcount_deltas": {
+        "sphere1": 1,
+        "matlib1": 1,
+        "OUT": 1
+      },
+      "time_dependent": []
+    },
+    {
+      "context": "lop",
+      "graph_fingerprint": "lop:sphere>materiallibrary>OUT",
+      "perturbation": "rewire:OUT<-sphere1",
+      "expected_dirty": [
+        "OUT"
+      ],
+      "observed_dirty": [
+        "OUT"
+      ],
+      "cookcount_deltas": {
+        "sphere1": 0,
+        "matlib1": 0,
+        "OUT": 1
+      },
+      "time_dependent": []
+    },
+    {
+      "context": "lop",
+      "graph_fingerprint": "lop:sphere>materiallibrary>OUT",
+      "perturbation": "time:sphere1/radius=$F",
+      "expected_dirty": [
+        "OUT",
+        "matlib1",
+        "sphere1"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "matlib1",
+        "sphere1"
+      ],
+      "cookcount_deltas": {
+        "sphere1": 1,
+        "matlib1": 1,
+        "OUT": 1
+      },
+      "time_dependent": [
+        "OUT",
+        "matlib1",
+        "sphere1"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema": "cook_truth/v1",
+  "houdini_version": "21.0.671",
+  "blake2b": "9f1559f5583ea846a43e90653e82bd22",
+  "trials": [
+    {
+      "context": "cop",
+      "graph_fingerprint": "cop:file>blur>OUT",
+      "perturbation": "parm:blur1/size",
+      "expected_dirty": [
+        "OUT",
+        "blur1"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "blur1"
+      ],
+      "cookcount_deltas": {
+        "file1": 0,
+        "blur1": 1,
+        "OUT": 1
+      },
+      "time_dependent": []
+    },
+    {
+      "context": "cop",
+      "graph_fingerprint": "cop:file>blur>OUT",
+      "perturbation": "rewire:OUT<-file1",
+      "expected_dirty": [
+        "OUT"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "blur1"
+      ],
+      "cookcount_deltas": {
+        "file1": 0,
+        "blur1": 0,
+        "OUT": 1
+      },
+      "time_dependent": []
+    }
+  ]
+}

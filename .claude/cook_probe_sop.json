@@ -1,0 +1,70 @@
+{
+  "schema": "cook_truth/v1",
+  "houdini_version": "21.0.671",
+  "blake2b": "997777e83db1d48e2d38a7190c34097a",
+  "trials": [
+    {
+      "context": "sop",
+      "graph_fingerprint": "sop:box>scatter>OUT",
+      "perturbation": "parm:box1/scale",
+      "expected_dirty": [
+        "OUT",
+        "box1",
+        "scatter1"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "box1",
+        "scatter1"
+      ],
+      "cookcount_deltas": {
+        "box1": 1,
+        "scatter1": 1,
+        "OUT": 1
+      },
+      "time_dependent": []
+    },
+    {
+      "context": "sop",
+      "graph_fingerprint": "sop:box>scatter>OUT",
+      "perturbation": "rewire:OUT<-box1",
+      "expected_dirty": [
+        "OUT"
+      ],
+      "observed_dirty": [
+        "OUT"
+      ],
+      "cookcount_deltas": {
+        "box1": 0,
+        "scatter1": 0,
+        "OUT": 1
+      },
+      "time_dependent": []
+    },
+    {
+      "context": "sop",
+      "graph_fingerprint": "sop:box>scatter>OUT",
+      "perturbation": "time:box1/tx=$F",
+      "expected_dirty": [
+        "OUT",
+        "box1",
+        "scatter1"
+      ],
+      "observed_dirty": [
+        "OUT",
+        "box1",
+        "scatter1"
+      ],
+      "cookcount_deltas": {
+        "box1": 1,
+        "scatter1": 1,
+        "OUT": 1
+      },
+      "time_dependent": [
+        "OUT",
+        "box1",
+        "scatter1"
+      ]
+    }
+  ]
+}

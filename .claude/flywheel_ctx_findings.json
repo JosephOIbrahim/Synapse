@@ -1,0 +1,39 @@
+{
+ "schema": "ctx_review/v1",
+ "summary": {
+  "critical": 0,
+  "advisory": 5
+ },
+ "findings": [
+  {
+   "severity": "ADVISORY",
+   "context": "dop",
+   "what": "dop-verb-void",
+   "evidence": "no dedicated dop_* handler verbs exist — DOP creation rides generic verbs only"
+  },
+  {
+   "severity": "ADVISORY",
+   "context": "dop",
+   "what": "gaps-open",
+   "evidence": "1 gap(s): verify_density_field"
+  },
+  {
+   "severity": "ADVISORY",
+   "context": "dop",
+   "what": "golden-fail",
+   "evidence": "golden fails (first failing step: verify_density_field)"
+  },
+  {
+   "severity": "ADVISORY",
+   "context": "top",
+   "what": "gaps-open",
+   "evidence": "6 gap(s): setup_wedge; set_wedgecount_3; generate_items; verify_3_work_items; local_cook_3; cook_stats"
+  },
+  {
+   "severity": "ADVISORY",
+   "context": "top",
+   "what": "golden-fail",
+   "evidence": "golden fails (first failing step: setup_wedge)"
+  }
+ ]
+}

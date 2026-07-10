@@ -1,0 +1,22 @@
+{
+  "schema": "cook_truth/v1",
+  "houdini_version": "21.0.671",
+  "blake2b": "38a89e64f71bdbfa84ede652f33c68ef",
+  "trials": [
+    {
+      "context": "dop",
+      "graph_fingerprint": "dop:emptyobject",
+      "perturbation": "parm:eo1/solvefirstframe",
+      "expected_dirty": [
+        "eo1"
+      ],
+      "observed_dirty": [
+        "eo1"
+      ],
+      "cookcount_deltas": {
+        "eo1": 1
+      },
+      "time_dependent": []
+    }
+  ]
+}
