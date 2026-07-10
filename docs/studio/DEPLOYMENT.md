@@ -105,10 +105,12 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_DEPLOY_CONFIG` | Path to deploy.json | `~/.synapse/deploy.json` | `server/sessions.py` | Studio |
 | `SYNAPSE_DEPLOY_MODE` | `local` / `studio-lan` / `studio-vpn`; != `local` enforces RBAC; the WS server also WRITES this var at startup to propagate deploy.json's mode in-process | `local` | `server/sessions.py`, `server/rbac.py`, `server/hwebserver_adapter.py`, `mcp/server.py`, `server/websocket.py` (write) | Studio |
 | `SYNAPSE_ENCRYPTION_KEY` | Fernet key for memory-at-rest encryption; wrong key = degraded read-only load, save refused | unset (keyfile / auto-gen) | `core/crypto.py` | Studio: escrow it; must match on restore |
+| `SYNAPSE_ENVELOPE_CAPTURE_TIMEOUT` | Fixed bound (seconds, float > 0) on each live-envelope scene-hash hop; bad/<=0 values fall back to the default | `1.0` | `server/integrity_envelope.py` | Both: leave unset |
 | `SYNAPSE_FILE_LOG` | `"0"`/`"false"` disables the rotating file log (see docs/studio/DIAGNOSTICS.md) | on | `core/logfile.py` | Both: leave on |
 | `SYNAPSE_FLOOR_FSYNC_SYNC` | `1`/`true`/`yes`/`on` forces the Floor success-path provenance `os.fsync` inline instead of deferring it to the background pool (deterministic durability in tests) | unset (deferred) | `core/floor_gate.py` | Both: leave unset |
 | `SYNAPSE_INSPECTOR_TRANSPORT_MODULE` | Dotted module exposing `execute_python`; Inspector last-resort transport (NOT the test-only `..._LIVE_...` var) | unset | `inspector/tool_inspect_stage.py` | Dev |
 | `SYNAPSE_LEDGER_DIR` | agent.usd ledger records | `<repo>/.synapse/ledger` | `memory/ledger.py` | Studio: shared storage |
+| `SYNAPSE_LIVE_ENVELOPE` | `"0"`/`"false"`/`"off"` disables live-path IntegrityBlock envelope captures + blocks (latency escape hatch for the unresolved C6/T1 wake-floor hypothesis) | on | `server/integrity_envelope.py` | Both: leave on unless live latency demands shedding it |
 | `SYNAPSE_LOG_DIR` | Directory for synapse.log + telemetry.json + freeze dumps | `~/.synapse/logs` | `core/logfile.py`, `server/doctor.py` | Both |
 | `SYNAPSE_MEMORY_BACKEND` | `jsonl` (default) / `moneta` / `shadow`; unknown values fall back to jsonl with a warning; `sqlite` is NOT live (dormant factory only) | `jsonl` | `memory/store.py` | Both |
 | `SYNAPSE_METRICS_INTERVAL` | Live-metrics sample interval, seconds (floor 0.5) | `2.0` | `server/live_metrics.py` | Both |

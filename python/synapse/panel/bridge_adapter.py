@@ -9,6 +9,7 @@ Phase 3 of the MOE wiring plan.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -32,6 +33,7 @@ try:
         IntegrityBlock,
         GateLevel,
         OPERATION_GATES,
+        get_process_bridge,
     )
     from shared.types import AgentID
     _BRIDGE_AVAILABLE = True
@@ -41,6 +43,7 @@ except ImportError:
     IntegrityBlock = None  # type: ignore[assignment,misc]
     GateLevel = None  # type: ignore[assignment,misc]
     OPERATION_GATES = {}  # type: ignore[assignment]
+    get_process_bridge = None  # type: ignore[assignment]
     AgentID = None  # type: ignore[assignment,misc]
 
 
@@ -192,6 +195,14 @@ def _panel_consent(operation) -> bool:
 def get_bridge():
     """Get or create the panel's singleton LosslessExecutionBridge.
 
+    Sourced from the PROCESS-WIDE accessor (shared.bridge.get_process_bridge)
+    so the panel, the in-process /mcp adapter, and the live /synapse envelope
+    all write ONE operation trail — a second in-process instance would make
+    the §16 gc-scan read (agent_health._find_bridge_instance) nondeterministic.
+    Order-independent: get_process_bridge() always constructs gate-less with
+    an auto-approve callback, so whichever caller creates it first, panel ops
+    never reach the GUI-freezing HumanGate poll.
+
     Consent is resolved by the non-blocking ``_panel_consent`` (artist-initiated
     = pre-consented), never the GUI-freezing HumanGate poll.
     """
@@ -199,9 +210,10 @@ def get_bridge():
     if not _BRIDGE_AVAILABLE:
         return None
     if _bridge is None:
-        _bridge = LosslessExecutionBridge(consent_callback=_panel_consent)
-        # Disable the default HumanGate on THIS panel bridge so consent uses our
-        # non-blocking callback (the bridge otherwise prefers _gate over it).
+        _bridge = get_process_bridge()
+        # Panel posture on the shared instance: non-blocking artist consent +
+        # HumanGate off (the bridge otherwise prefers _gate over the callback).
+        _bridge._consent_callback = _panel_consent
         _bridge._gate = None
     return _bridge
 
@@ -291,6 +303,17 @@ def estimate_inline_cost(tool_name: str, tool_input: Any) -> tuple[bool, str]:
     return False, ""
 
 
+def _bridge_routed_cm():
+    """Context manager marking the nested handler.handle() as bridge-routed
+    (live-envelope suppression). nullcontext when the envelope module is
+    unavailable — dispatch behavior is then exactly as before."""
+    try:
+        from synapse.server.integrity_envelope import bridge_routed
+        return bridge_routed()
+    except ImportError:
+        return contextlib.nullcontext()
+
+
 def execute_through_bridge(
     tool_name: str,
     handler,
@@ -341,7 +364,11 @@ def execute_through_bridge(
     # breaking the handler signature. kwargs carry bridge metadata
     # (node_path for blast radius inference), not handler params.
     def _dispatch(*_args, **_kwargs):
-        return handler.handle(command)
+        # Suppress the live-path envelope for this NESTED handle() call: the
+        # bridge's _finalize records this op, so a live block on top would
+        # double-count in the shared process trail.
+        with _bridge_routed_cm():
+            return handler.handle(command)
 
     op_kwargs = {"node_path": node_path} if node_path else {}
     # R4: disk-writing tools carry touches_disk so the gate elevates to APPROVE.

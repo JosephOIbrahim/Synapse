@@ -79,6 +79,113 @@ except ImportError:
     AuditCategory = None  # type: ignore[assignment,misc]
 
 
+# ── pxr Import Seam (Finding 4: composition validation) ────────
+def _import_pxr_composition() -> tuple[Any, Any]:
+    """Lazy pxr import for _verify_composition. Returns ``(Sdf, Usd)``;
+    each is None when unavailable. pxr stays a call-time import (heavy,
+    absent in standalone/CI). ``Sdf is not None`` preserves the original
+    in-function ``_pxr_available`` semantics for the reference path.
+
+    Module-level ON PURPOSE: tests exercise the pxr-available branches by
+    monkeypatching this seam on the module — never via sys.modules (the
+    fake-residency trap).
+    """
+    try:
+        from pxr import Sdf
+    except ImportError:
+        return None, None
+    try:
+        from pxr import Usd
+    except ImportError:
+        Usd = None  # Sdf alone still enables the reference/payload checks
+    return Sdf, Usd
+
+
+# ── Anchor Evidence (Finding 1: no self-attested flags) ─────────
+# The IntegrityBlock anchor flags were previously ASSIGNED True by the code
+# path that intended them — never measured. These helpers derive them from
+# evidence at execution time, so fidelity=1.0 means "verified", not "didn't
+# throw". Both hou.undos evidence APIs (areEnabled, undoLabels) are
+# live-verified members of hou.undos on H21.0.671.
+
+
+def _on_main_thread() -> bool:
+    """Thread Safety anchor evidence: is THIS frame executing on the process
+    main thread?
+
+    Module-level ON PURPOSE: tests that fake hdefereval and run the payload
+    on an executor thread can monkeypatch ``bridge._on_main_thread`` to keep
+    documenting production behavior. Production evidence stays real —
+    hdefereval guarantees the main thread by construction, so the live value
+    is True.
+    """
+    return threading.current_thread() is threading.main_thread()
+
+
+def _topo_component(node_path: str | None) -> str | None:
+    """Authored-change proxy for the undo-evidence rule (CTO decision
+    2026-07-10): the TOPOLOGY component of the R1 hash ONLY — child count +
+    child sessionIds (node create/delete evidence). Deliberately EXCLUDES
+    cookCount and geometry intrinsics: those shift on NON-undoable events
+    (a lazy cook the op triggered, a frame change) and are NOT evidence that
+    anything was authored. Returns None when unavailable (no hou, missing
+    node, API error) — callers treat None as "no evidence"."""
+    if not _HOU_AVAILABLE or node_path is None:
+        return None
+    try:
+        node = hou.node(node_path)
+        if not node:
+            return None
+        children = node.children()
+        return f"children:{len(children)}|" + "|".join(
+            str(child.sessionId()) for child in children
+        )
+    except Exception:
+        return None
+
+
+def _topo_shifted(topo_before: str | None, hash_target: str | None) -> bool:
+    """True only when BOTH topology snapshots exist and differ — missing
+    evidence is never treated as a shift."""
+    if topo_before is None:
+        return False
+    topo_after = _topo_component(hash_target)
+    return topo_after is not None and topo_after != topo_before
+
+
+def _undo_evidence_snapshot(
+        hash_target: str | None = None) -> tuple[bool | None, int | None,
+                                                 str | None]:
+    """Undo Safety anchor evidence, part 1: snapshot BEFORE the undo group
+    opens.
+
+    Returns ``(enabled, depth_before, topo_before)``. enabled/depth are None
+    when the evidence API is unavailable (fake hou modules in tests may lack
+    areEnabled/undoLabels) — evidence-unavailable falls back to the
+    pre-evidence behavior in
+    :meth:`LosslessExecutionBridge._undo_group_evidence`. ``topo_before``
+    (the authored-change proxy) is captured ONLY when undos are measured
+    disabled — the sole case that consults it — so the healthy path pays no
+    extra children scan.
+    """
+    enabled: bool | None = None
+    depth_before: int | None = None
+    try:
+        are_enabled = getattr(hou.undos, "areEnabled", None)
+        if are_enabled is not None:
+            enabled = bool(are_enabled())
+    except Exception:
+        enabled = None
+    try:
+        undo_labels = getattr(hou.undos, "undoLabels", None)
+        if undo_labels is not None:
+            depth_before = len(undo_labels())
+    except Exception:
+        depth_before = None
+    topo_before = _topo_component(hash_target) if enabled is False else None
+    return enabled, depth_before, topo_before
+
+
 # ── Scene-Hash Instrumentation (MEASURE-FIRST) ──────────────────
 # The R1 stage-integrity hash runs stage.Flatten().ExportToString()+sha256 TWICE
 # per stage-touching op (before + after) on the main thread. That cost scales with
@@ -204,14 +311,31 @@ class IntegrityBlock:
     # silently folded into SYNAPSE's integrity narrative.
     external_change_detected: bool = False
 
+    # Path-qualified provenance (live-envelope, 2026-07). Defaults preserve
+    # exact pre-existing "/mcp" semantics at every existing construction site.
+    # *_applicable=False means "no such check EXISTS on this path" — the anchor
+    # is N/A and recorded honestly as such, never faked True. The live
+    # /synapse envelope (server/integrity_envelope.py) sets consent/
+    # composition/undo not-applicable: no gate ran (D1 posture, pinned), no
+    # composition validation ran, and inline undo-wrapping is only PARTIAL
+    # across the live handlers (per-op verification is not scout-verifiable).
+    execution_path: str = "mcp"          # "mcp" (bridge-enforced) | "live" (handler-envelope, observed)
+    consent_applicable: bool = True      # False => no consent gate exists on this path — anchor N/A
+    composition_applicable: bool = True  # False => no composition validation ran on this path — anchor N/A
+    undo_applicable: bool = True         # False => undo wrapping not verified on this path — anchor N/A
+    hash_target: str = ""                # what node path the topo hashes measured ("" = legacy/implicit)
+
     @property
     def anchors_hold(self) -> bool:
-        return all([
-            self.undo_group_active,
-            self.main_thread_executed,
-            self.consent_verified,
-            self.composition_valid,
-        ])
+        # *_applicable flags gate the anchor set per execution path; defaults
+        # (all True) reduce EXACTLY to the old four-way conjunction.
+        # execution_path itself is pure metadata — never branched on.
+        return (
+            (self.undo_group_active or not self.undo_applicable)
+            and self.main_thread_executed
+            and (self.consent_verified or not self.consent_applicable)
+            and (self.composition_valid or not self.composition_applicable)
+        )
 
     @property
     def fidelity(self) -> float:
@@ -237,6 +361,11 @@ class IntegrityBlock:
             "scene_hash_after": self.scene_hash_after,
             "delta_hash": self.delta_hash,
             "external_change_detected": self.external_change_detected,
+            "execution_path": self.execution_path,
+            "consent_applicable": self.consent_applicable,
+            "composition_applicable": self.composition_applicable,
+            "undo_applicable": self.undo_applicable,
+            "hash_target": self.hash_target,
         }
 
 
@@ -312,12 +441,21 @@ class LosslessExecutionBridge:
         # — survive operation log eviction.
         self._per_agent_total: dict[str, int] = {}
         self._per_agent_verified: dict[str, int] = {}
+        # Live-envelope thread safety: record_external_block() is called from
+        # the handlers' _log_executor threads concurrent with execute() on the
+        # main thread. One lock guards the log deque + counter dicts at every
+        # mutation/iteration site — behavior identical single-threaded.
+        self._log_lock = threading.Lock()
         # H1 (multi-client hardening): last computed scene hash per hash_target,
         # parked at op end (after scene_hash_after / after rollback). Compared
         # against the NEXT op's scene_hash_before to attribute between-op
         # foreign/artist edits. Zero extra hashing — compares values already
         # computed by the integrity flow.
         self._parked_hash: dict[str, str] = {}
+        # Undo-evidence warn-once (CTO constraint 4): inconclusive undo-stack
+        # evidence emits at most ONE logging.warning per bridge instance —
+        # never per op (a flat stack is routine at the undo memory cap).
+        self._undo_evidence_warned: bool = False
         self._consent_callback = consent_callback
         self._gate = (
             HumanGate.get_instance()
@@ -336,51 +474,74 @@ class LosslessExecutionBridge:
         """Return the last *n* IntegrityBlocks (newest last). Caller-owned copy."""
         if n <= 0:
             return []
-        log = list(self._operation_log)
+        with self._log_lock:
+            log = list(self._operation_log)
         return log[-n:]
 
     def operation_stats(self) -> dict[str, Any]:
         """Aggregate execution statistics. Cheap O(N over current log)."""
-        log = list(self._operation_log)
-        per_op: dict[str, int] = {}
-        for ib in log:
-            per_op[ib.operation_type] = per_op.get(ib.operation_type, 0) + 1
-        success_rate = (
-            self._operations_verified / self._operations_total
-            if self._operations_total > 0 else 0.0
-        )
-        # Pass 7: per-agent lifetime totals + success rates so the
-        # ConductorAdvisor can flag a specific agent rather than the bridge
-        # as a whole. These survive operation log eviction.
-        per_agent_success_rate: dict[str, float] = {}
-        for agent_key, total in self._per_agent_total.items():
-            verified = self._per_agent_verified.get(agent_key, 0)
-            per_agent_success_rate[agent_key] = (
-                verified / total if total > 0 else 0.0
+        with self._log_lock:
+            log = list(self._operation_log)
+            per_op: dict[str, int] = {}
+            for ib in log:
+                per_op[ib.operation_type] = per_op.get(ib.operation_type, 0) + 1
+            success_rate = (
+                self._operations_verified / self._operations_total
+                if self._operations_total > 0 else 0.0
             )
-        return {
-            "operations_total": self._operations_total,
-            "operations_verified": self._operations_verified,
-            "anchor_violations": self._anchor_violations,
-            "success_rate": success_rate,
-            "log_size": len(log),
-            "log_capacity": self._log_max_size,
-            "per_agent": dict(self._per_agent_total),
-            "per_agent_verified": dict(self._per_agent_verified),
-            "per_agent_success_rate": per_agent_success_rate,
-            "per_operation_type": per_op,
-            "session_id": self._session_id,
-        }
+            # Pass 7: per-agent lifetime totals + success rates so the
+            # ConductorAdvisor can flag a specific agent rather than the bridge
+            # as a whole. These survive operation log eviction.
+            per_agent_success_rate: dict[str, float] = {}
+            for agent_key, total in self._per_agent_total.items():
+                verified = self._per_agent_verified.get(agent_key, 0)
+                per_agent_success_rate[agent_key] = (
+                    verified / total if total > 0 else 0.0
+                )
+            return {
+                "operations_total": self._operations_total,
+                "operations_verified": self._operations_verified,
+                "anchor_violations": self._anchor_violations,
+                "success_rate": success_rate,
+                "log_size": len(log),
+                "log_capacity": self._log_max_size,
+                "per_agent": dict(self._per_agent_total),
+                "per_agent_verified": dict(self._per_agent_verified),
+                "per_agent_success_rate": per_agent_success_rate,
+                "per_operation_type": per_op,
+                "session_id": self._session_id,
+            }
 
     def clear_operation_log(self) -> int:
         """Clear the operation log. Returns the number of entries dropped."""
-        n = len(self._operation_log)
-        self._operation_log.clear()
+        with self._log_lock:
+            n = len(self._operation_log)
+            self._operation_log.clear()
         return n
+
+    def record_external_block(self, integrity: IntegrityBlock) -> None:
+        """Append an externally-produced IntegrityBlock (the live /synapse
+        handler envelope) into this bridge's log + lifetime counters.
+        Thread-safe — callers are the handlers' _log_executor threads,
+        concurrent with execute() on the main thread. Mirrors _finalize's
+        counting: fidelity == 1.0 -> verified, else anchor_violations."""
+        with self._log_lock:
+            self._operations_total += 1
+            key = integrity.agent_id or ""
+            self._per_agent_total[key] = self._per_agent_total.get(key, 0) + 1
+            if integrity.fidelity >= FIDELITY_PERFECT:
+                self._operations_verified += 1
+                self._per_agent_verified[key] = (
+                    self._per_agent_verified.get(key, 0) + 1
+                )
+            else:
+                self._anchor_violations += 1
+            self._operation_log.append(integrity)
 
     # ── R1: Cryptographic Topological Hashing ────────────────
 
-    def _compute_scene_hash(self, target_node_path: str | None = "/obj") -> str:
+    def _compute_scene_hash(self, target_node_path: str | None = "/obj",
+                            include_stage: bool = True) -> str:
         """
         R1: Topological scene hashing via Houdini change-detection APIs.
 
@@ -388,14 +549,24 @@ class LosslessExecutionBridge:
         wall-clock duration into the module ``scene_hash_ms`` histogram
         (scene_hash_stats()) so the stage-Flatten cost is visible in telemetry.
         The hash VALUE is identical to the un-timed implementation.
+
+        ``include_stage=False`` is the live-envelope path: skip the S2 composed-
+        stage hash entirely so the live /synapse path can NEVER hit
+        stage.Flatten() (the Finding 3 floor), even on a LOP hash target.
+        Forwarded ONLY when non-default so existing single-arg monkeypatched
+        impl stubs (tests/test_scene_hash_gate.py) stay byte-identical.
         """
         _t0 = time.perf_counter()
         try:
-            return self._compute_scene_hash_impl(target_node_path)
+            if include_stage:
+                return self._compute_scene_hash_impl(target_node_path)
+            return self._compute_scene_hash_impl(target_node_path,
+                                                 include_stage=False)
         finally:
             _record_scene_hash_ms((time.perf_counter() - _t0) * 1000.0)
 
-    def _compute_scene_hash_impl(self, target_node_path: str | None = "/obj") -> str:
+    def _compute_scene_hash_impl(self, target_node_path: str | None = "/obj",
+                                 include_stage: bool = True) -> str:
         """
         R1: Topological scene hashing via Houdini change-detection APIs.
 
@@ -449,8 +620,9 @@ class LosslessExecutionBridge:
         # Flatten-export verified stable + attribute-value-sensitive on H21.0.631.
         # Size-gated: below the prim threshold this is byte-identical to the old
         # Flatten()+sha256; above it, a cheaper COMPLETE structural signature.
+        # include_stage=False (live envelope) skips this block structurally.
         try:
-            if hasattr(node, "stage"):
+            if include_stage and hasattr(node, "stage"):
                 stage = node.stage()
                 if stage is not None:
                     hash_data.append("stage:" + self._hash_stage_signature(stage))
@@ -783,13 +955,93 @@ class LosslessExecutionBridge:
         integrity.delta_hash = "rolled_back"
         return None
 
+    def _undo_group_evidence(self, enabled: bool | None,
+                             depth_before: int | None,
+                             topo_before: str | None, delta_hash: str,
+                             hash_target: str | None) -> bool:
+        """Undo Safety anchor evidence, part 2: decide ``undo_group_active``
+        AFTER the undo group has CLOSED (the caller exits the with-block
+        first).
+
+        PINNED SEMANTICS (CTO decision 2026-07-10 — zero false violations):
+
+          - A scene-hash delta is NEVER, by itself, mutation evidence: the R1
+            hash digests cookCount + geo intrinsics, which shift on
+            NON-undoable events (a lazy cook the op triggered, a frame
+            change). The only authored-change proxy is the topology component
+            (:func:`_topo_component` — child sessionIds).
+          - ``hou.undos.areEnabled()`` False AND the topology component
+            shifted → False: an authored structural change provably had no
+            undo protection. This is the ONLY violation verdict this
+            evidence can return.
+          - ``areEnabled()`` False with NO authored-change evidence → True:
+            nothing needed undo protection — the anchor ("every MUTATION
+            wrapped") is vacuously satisfied. Reads and cook-only deltas
+            under a ``hou.undos.disabler()`` scope or a zeroed undo memory
+            cap must not fail.
+          - Undo-stack depth (undoLabels) is corroborating ONLY: the stack
+            legitimately stays flat for captured mutations (eviction at
+            ``hou.undos.memoryUsageLimit``), so flat depth + a changed hash
+            is INCONCLUSIVE — keep True and emit at most ONE warning per
+            bridge instance (``self._undo_evidence_warned``), then stop
+            scanning the stack.
+          - Evidence unavailable (fake hou without areEnabled/undoLabels,
+            standalone) → True: the with-statement having been entered and
+            exited without raising IS the wrap evidence (the pre-evidence
+            behavior, pinned) — inconclusive, so it shares the one warning.
+        """
+        if enabled is False:
+            if _topo_shifted(topo_before, hash_target):
+                import logging
+                logging.getLogger("synapse.bridge").warning(
+                    "Undo anchor evidence: undos are DISABLED and the node "
+                    "topology of %s changed — the authored mutation had no "
+                    "undo protection.", hash_target,
+                )
+                return False
+            return True
+        # enabled True (or unknown): NEVER a hard violation — undo-stack
+        # eviction and cook-visible deltas would false-flag. Flat/missing
+        # depth on a changed scene is worth exactly one warning per bridge.
+        if self._undo_evidence_warned or delta_hash in ("", "no_change"):
+            return True
+        depth_after: int | None = None
+        try:
+            undo_labels = getattr(hou.undos, "undoLabels", None)
+            if undo_labels is not None:
+                depth_after = len(undo_labels())
+        except Exception:
+            depth_after = None
+        import logging
+        if depth_before is None or depth_after is None:
+            self._undo_evidence_warned = True
+            logging.getLogger("synapse.bridge").warning(
+                "Undo anchor evidence INCONCLUSIVE: the scene changed "
+                "(delta=%s) but the undo-stack evidence APIs are "
+                "unavailable — keeping the anchor (entered-and-exited wrap "
+                "is the only evidence). Warning once per bridge instance.",
+                delta_hash,
+            )
+        elif depth_after <= depth_before:
+            self._undo_evidence_warned = True
+            logging.getLogger("synapse.bridge").warning(
+                "Undo anchor evidence INCONCLUSIVE: the scene changed "
+                "(delta=%s) but the undo stack did not grow (%s -> %s). "
+                "Expected for non-undoable deltas (a cook the op triggered, "
+                "a frame change) and for eviction at the undo memory limit "
+                "— keeping the anchor. Warning once per bridge instance.",
+                delta_hash, depth_before, depth_after,
+            )
+        return True
+
     # ── Synchronous Execute (test / direct main-thread) ──────
 
     def execute(self, operation: Operation) -> ExecutionResult:
         """Synchronous path. For async MCP server, use execute_async()."""
-        self._operations_total += 1
         agent_key = operation.agent_id.value if operation.agent_id else ""
-        self._per_agent_total[agent_key] = self._per_agent_total.get(agent_key, 0) + 1
+        with self._log_lock:
+            self._operations_total += 1
+            self._per_agent_total[agent_key] = self._per_agent_total.get(agent_key, 0) + 1
 
         integrity = IntegrityBlock(
             agent_id=operation.agent_id.value,
@@ -843,13 +1095,22 @@ class LosslessExecutionBridge:
     def _execute_houdini(self, operation: Operation, integrity: IntegrityBlock,
                          hash_target: str) -> ExecutionResult:
         """Production path: undo-wrapped execution on Houdini main thread."""
-        integrity.main_thread_executed = True
+        # Anchor flags from EVIDENCE, not self-attestation (Finding 1).
+        integrity.main_thread_executed = _on_main_thread()
+        # Provisional: the exception path keeps the entered-wrap presumption;
+        # the success path refines this from undo-stack evidence after the
+        # group closes below.
         integrity.undo_group_active = True
 
+        undo_enabled: bool | None = None
+        undo_topo_before: str | None = None
         try:
             integrity.scene_hash_before = self._compute_scene_hash(hash_target)
             self._note_external_change(integrity, hash_target)  # H1
 
+            undo_enabled, undo_depth_before, undo_topo_before = (
+                _undo_evidence_snapshot(hash_target)
+            )
             with hou.undos.group(f"SYNAPSE: {operation.summary}"):
                 result = operation.fn(*operation.args, **operation.kwargs)
 
@@ -876,10 +1137,25 @@ class LosslessExecutionBridge:
                             f"USD Composition violation on {operation.stage_path}"
                         )
 
-                return self._finalize(operation, integrity, result)
+            # Group CLOSED — capture undo-stack evidence (Finding 1).
+            integrity.undo_group_active = self._undo_group_evidence(
+                undo_enabled, undo_depth_before, undo_topo_before,
+                integrity.delta_hash, hash_target,
+            )
+            return self._finalize(operation, integrity, result)
 
         except Exception as e:
             note = self._guarded_rollback(integrity, hash_target)  # H2
+            # F-E: evidence in hand overrides the entered-wrap presumption —
+            # undos were measured DISABLED before the group opened AND an
+            # authored structural change is still on the scene (the no-op
+            # rollback could not restore it): the trail must not claim the
+            # mutation was undo-protected. Same pinned semantics as
+            # _undo_group_evidence; presumption stands when evidence is
+            # absent.
+            if undo_enabled is False and _topo_shifted(undo_topo_before,
+                                                       hash_target):
+                integrity.undo_group_active = False
             msg = f"{e} [{note}]" if note else str(e)
             return self._fail_with_integrity(integrity, msg, "execution_error")
 
@@ -893,9 +1169,10 @@ class LosslessExecutionBridge:
         Houdini payload to main thread via hdefereval without blocking
         the MCP server. All anchors enforced inside the closure.
         """
-        self._operations_total += 1
         agent_key = operation.agent_id.value if operation.agent_id else ""
-        self._per_agent_total[agent_key] = self._per_agent_total.get(agent_key, 0) + 1
+        with self._log_lock:
+            self._operations_total += 1
+            self._per_agent_total[agent_key] = self._per_agent_total.get(agent_key, 0) + 1
 
         integrity = IntegrityBlock(
             agent_id=operation.agent_id.value,
@@ -926,12 +1203,22 @@ class LosslessExecutionBridge:
 
         # ── The Synchronous Payload Closure ──────────────────
         def _sync_payload() -> ExecutionResult:
-            integrity.main_thread_executed = True
+            # Anchor flags from EVIDENCE, not self-attestation (Finding 1;
+            # parity with _execute_houdini).
+            integrity.main_thread_executed = _on_main_thread()
+            # Provisional: the exception path keeps the entered-wrap
+            # presumption; the success path refines this from undo-stack
+            # evidence after the group closes below.
             integrity.undo_group_active = True
             integrity.scene_hash_before = self._compute_scene_hash(hash_target)
             self._note_external_change(integrity, hash_target)  # H1
 
+            undo_enabled: bool | None = None
+            undo_topo_before: str | None = None
             try:
+                undo_enabled, undo_depth_before, undo_topo_before = (
+                    _undo_evidence_snapshot(hash_target)
+                )
                 with hou.undos.group(f"SYNAPSE: {operation.summary}"):
                     result = operation.fn(*operation.args, **operation.kwargs)
 
@@ -953,10 +1240,21 @@ class LosslessExecutionBridge:
                             # outer `except` performs the single rollback.
                             raise RuntimeError("USD Composition violation detected.")
 
-                    return self._finalize(operation, integrity, result)
+                # Group CLOSED — capture undo-stack evidence (Finding 1).
+                integrity.undo_group_active = self._undo_group_evidence(
+                    undo_enabled, undo_depth_before, undo_topo_before,
+                    integrity.delta_hash, hash_target,
+                )
+                return self._finalize(operation, integrity, result)
 
             except Exception as e:
                 note = self._guarded_rollback(integrity, hash_target)  # H2
+                # F-E parity with _execute_houdini: measured-disabled undos +
+                # an authored structural change still on the scene → the
+                # recorded block must not claim undo protection.
+                if undo_enabled is False and _topo_shifted(undo_topo_before,
+                                                           hash_target):
+                    integrity.undo_group_active = False
                 msg = f"{e} [{note}]" if note else str(e)
                 return self._fail_with_integrity(integrity, msg, "execution_error")
 
@@ -999,13 +1297,25 @@ class LosslessExecutionBridge:
         opt-in per operation via the ``remove_generated_files`` kwarg
         (single-user local scratch), never the default.
         """
-        integrity.main_thread_executed = True
-        integrity.undo_group_active = True
-
         if not _HOU_AVAILABLE:
-            # Test fallback: simulate successful cook
+            # Test/standalone fallback: simulate successful cook — keeps the
+            # _execute_direct posture (both anchors asserted, no hou).
+            integrity.main_thread_executed = True
+            integrity.undo_group_active = True
             integrity.delta_hash = "pdg_test_cook"
             return self._finalize(operation, integrity, {"pdg": "test_cook_ok"})
+
+        # F1 parity — no self-attested anchors on the PDG path:
+        #   undo: PDG cooks are NOT undo-wrapped (failure recovery is
+        #   dirtyAllTasks, not hou.undos) — recorded honestly as
+        #   not-applicable, never faked True (same N/A semantics as the live
+        #   envelope, server/integrity_envelope.py).
+        #   main thread: measured (_on_main_thread) inside the hdefereval-
+        #   marshalled frame that triggers the graph cook — the scene-
+        #   mutating call on this path — not asserted by this coroutine
+        #   (which runs on the FastMCP loop/executor thread).
+        integrity.undo_applicable = False
+        integrity.undo_group_active = False
 
         node_path = operation.kwargs.get("node_path")
         if not node_path:
@@ -1078,6 +1388,10 @@ class LosslessExecutionBridge:
             # Trigger cook on main thread — wrap in try/except so exceptions
             # don't silently vanish in the fire-and-forget dispatch.
             def _exec_graph_safe():
+                # Thread anchor evidence (F1 parity): measured in the frame
+                # hdefereval marshals — True in production by construction.
+                # Stays False (honest) if the main thread never ran this.
+                integrity.main_thread_executed = _on_main_thread()
                 try:
                     top_node.executeGraph()
                 except Exception as e:
@@ -1168,18 +1482,20 @@ class LosslessExecutionBridge:
                   result: Any) -> ExecutionResult:
         fidelity = integrity.fidelity
         if fidelity < FIDELITY_PERFECT:
-            self._anchor_violations += 1
+            with self._log_lock:
+                self._anchor_violations += 1
             return self._fail_with_integrity(
                 integrity, f"Integrity check failed: fidelity={fidelity}",
                 "integrity_violation",
             )
 
-        self._operations_verified += 1
         agent_key = operation.agent_id.value if operation.agent_id else ""
-        self._per_agent_verified[agent_key] = (
-            self._per_agent_verified.get(agent_key, 0) + 1
-        )
-        self._operation_log.append(integrity)
+        with self._log_lock:
+            self._operations_verified += 1
+            self._per_agent_verified[agent_key] = (
+                self._per_agent_verified.get(agent_key, 0) + 1
+            )
+            self._operation_log.append(integrity)
 
         if isinstance(result, ExecutionResult):
             return result.with_integrity(integrity)
@@ -1308,11 +1624,32 @@ class LosslessExecutionBridge:
             if not stage:
                 return True
 
-            try:
-                from pxr import Sdf
-                _pxr_available = True
-            except ImportError:
-                _pxr_available = False
+            Sdf, Usd = _import_pxr_composition()
+            _pxr_available = Sdf is not None
+
+            # F-H cost control: the inherit/specialize sweep adds two
+            # composed-metadata queries per prim plus (on the PCQ fallback
+            # path) a PrimCompositionQuery per inheriting prim — main-thread
+            # time inside the open undo group, scaling with stage size. Gate
+            # it behind the SAME operator-tunable prim threshold as the
+            # stage hash: at the default (unbounded) no probe runs and the
+            # sweep is always on; lowering
+            # SYNAPSE_STAGE_HASH_PRIM_THRESHOLD for hash cost also sheds
+            # this sweep on stages above it (advisory skip, debug note).
+            class_arcs_enabled = Usd is not None
+            if class_arcs_enabled:
+                threshold = _stage_hash_prim_threshold()
+                if threshold < _DEFAULT_STAGE_HASH_PRIM_THRESHOLD:
+                    try:
+                        if self._stage_exceeds(stage, threshold):
+                            class_arcs_enabled = False
+                            import logging
+                            logging.getLogger("synapse.bridge").debug(
+                                "stage exceeds %d prims -- skipping the "
+                                "inherit/specialize sweep on %s (size gate)",
+                                threshold, stage_path)
+                    except Exception:
+                        pass  # probe failure never disables validation
 
             for prim in stage.Traverse():
                 if not prim.IsValid():
@@ -1323,26 +1660,106 @@ class LosslessExecutionBridge:
                     continue
 
                 if prim.HasAuthoredReferences() and _pxr_available:
-                    refs_api = prim.GetReferences()
-                    prim_path = str(prim.GetPath())
-                    for ref_item in refs_api.GetAddedOrExplicitItems():
-                        # Cycle detection: prim referencing itself
-                        ref_prim_path = str(ref_item.primPath) if ref_item.primPath else ""
-                        if ref_prim_path == prim_path:
-                            self._log_composition_failure(
-                                stage_path, prim.GetPath(),
-                                f"self-referencing cycle: {prim_path}")
+                    # GetAddedOrExplicitItems is live-verified on
+                    # Usd.References (H21.0.671) — called unguarded so a
+                    # broken References API keeps failing CLOSED through the
+                    # outer except (pre-Finding-4 reference outcome preserved).
+                    if not self._check_arc_items(
+                            stage_path, prim, prim.GetReferences(), Sdf,
+                            kind="reference"):
+                        return False
+
+                if prim.HasAuthoredPayloads() and _pxr_available:
+                    payloads_api = prim.GetPayloads()
+                    # GetAddedOrExplicitItems is verified only on References;
+                    # on Usd.Payloads it is hasattr-guarded — an absent
+                    # optional API skips the sub-check (debug), it is NOT an
+                    # exception path and never a hard fail (INT-3 untouched).
+                    if hasattr(payloads_api, "GetAddedOrExplicitItems"):
+                        if not self._check_arc_items(
+                                stage_path, prim, payloads_api, Sdf,
+                                kind="payload"):
                             return False
-                        # Validate referenced layers resolve
-                        if ref_item.assetPath:
-                            resolved = Sdf.Layer.Find(str(ref_item.assetPath))
-                            if resolved is None:
-                                resolved = Sdf.Layer.FindOrOpen(str(ref_item.assetPath))
-                            if resolved is None:
-                                self._log_composition_failure(
-                                    stage_path, prim.GetPath(),
-                                    f"unresolvable reference: {ref_item.assetPath}")
+                    else:
+                        import logging
+                        logging.getLogger("synapse.bridge").debug(
+                            "Usd.Payloads.GetAddedOrExplicitItems absent -- "
+                            "skipping payload item checks at %s",
+                            prim.GetPath())
+
+                if class_arcs_enabled:
+                    has_inherits = prim.HasAuthoredInherits()
+                    has_specializes = prim.HasAuthoredSpecializes()
+                else:
+                    has_inherits = has_specializes = False
+
+                if has_inherits or has_specializes:
+                    # PrimCompositionQuery statics accept only genuine
+                    # Usd.Prim objects (Boost.Python rejects anything else
+                    # with an ArgumentError). A non-Usd.Prim traverser
+                    # (fake/mock stages in tests) is API-inapplicability,
+                    # NOT an exception path — debug-skip, never fail-closed.
+                    usd_prim_cls = getattr(Usd, "Prim", None)
+                    if usd_prim_cls is not None and not isinstance(
+                            prim, usd_prim_cls):
+                        import logging
+                        logging.getLogger("synapse.bridge").debug(
+                            "prim at %s is not a Usd.Prim -- skipping "
+                            "inherit/specialize checks", prim.GetPath())
+                        has_inherits = has_specializes = False
+
+                if has_inherits:
+                    # F-H fast path: read the inherits LIST OP (items are
+                    # target paths) — a self-target is detectable WITHOUT
+                    # constructing a Usd.PrimCompositionQuery per inheriting
+                    # prim (prim-index walk + per-arc allocation). Attr-
+                    # guarded; absent APIs fall back to the PCQ static.
+                    handled, ok = self._check_class_listop_self_target(
+                        stage_path, prim, "GetInherits", kind="inherit")
+                    if handled:
+                        if not ok:
+                            return False
+                    else:
+                        # GetDirectInherits is a live-verified static
+                        # (H21.0.671). Self-cycle is the ONLY hard failure —
+                        # inheriting a nonexistent class prim is LEGAL USD
+                        # (composes to nothing).
+                        query = Usd.PrimCompositionQuery.GetDirectInherits(prim)
+                        if not self._check_class_arc_cycles(
+                                stage_path, prim, query, kind="inherit"):
+                            return False
+
+                if has_specializes:
+                    # F-H fast path (same as inherits above).
+                    handled, ok = self._check_class_listop_self_target(
+                        stage_path, prim, "GetSpecializes", kind="specialize")
+                    if handled:
+                        if not ok:
+                            return False
+                    else:
+                        # No live-verified PrimCompositionQuery static exists
+                        # for specializes (H21.0.671) — fully hasattr-guarded;
+                        # an absent optional API skips with a debug note,
+                        # never a hard fail.
+                        pcq = getattr(Usd, "PrimCompositionQuery", None)
+                        get_specializes = getattr(
+                            pcq, "GetDirectSpecializes", None
+                        ) if pcq is not None else None
+                        if get_specializes is not None:
+                            if not self._check_class_arc_cycles(
+                                    stage_path, prim, get_specializes(prim),
+                                    kind="specialize"):
                                 return False
+                        else:
+                            import logging
+                            logging.getLogger("synapse.bridge").debug(
+                                "PrimCompositionQuery.GetDirectSpecializes "
+                                "absent -- skipping specializes check at %s",
+                                prim.GetPath())
+
+                # Variants: deliberately OUT OF SCOPE of hard validation — a
+                # selection naming a missing variant composes to nothing by
+                # design (legal USD flexibility).
             return True
         except Exception as exc:
             import logging
@@ -1356,6 +1773,106 @@ class LosslessExecutionBridge:
             # un-verifiable composition is treated as invalid → rollback.
             return False
 
+    def _check_arc_items(self, stage_path: str, prim, items_api, Sdf,
+                         kind: str) -> bool:
+        """Shared hard checks for listed composition arcs (references,
+        payloads). Extracted from the original reference loop (Finding 4).
+
+        (1) Self-cycle — an INTERNAL arc (empty assetPath) whose primPath is
+        the prim itself. An external arc targeting the same prim path in a
+        DIFFERENT layer (``payload = @cache.usda@</World/A>`` authored on
+        /World/A — the standard export-then-payload-back round-trip) is
+        LEGAL composition, not a cycle (F-C).
+
+        (2) Unresolvable assetPath — hard fail for references (pre-Finding-4
+        outcome preserved); ADVISORY for payloads (F-G): authored payload
+        paths are commonly anchored-relative ('./payload.usdc') and resolve
+        against the INTRODUCING layer, which this raw-path registry lookup
+        cannot reproduce (it resolves against CWD) — a miss is not evidence
+        of a broken stage. No FindOrOpen for payloads either: payloads are
+        commonly unloaded, and opening from disk per stage-touching op on
+        the main thread inside the open undo group (handle dropped at loop
+        end) is a latency tax the check must not impose."""
+        prim_path = str(prim.GetPath())
+        cycle_word = "referencing" if kind == "reference" else kind
+        for item in items_api.GetAddedOrExplicitItems():
+            # Cycle detection: an INTERNAL arc (no assetPath) targeting the
+            # prim itself. With an assetPath the target lives in another
+            # layer — same-path targeting there is legal (F-C).
+            item_prim_path = str(item.primPath) if item.primPath else ""
+            if item_prim_path == prim_path and not item.assetPath:
+                self._log_composition_failure(
+                    stage_path, prim.GetPath(),
+                    f"self-{cycle_word} cycle: {prim_path}")
+                return False
+            # Validate targeted layers resolve
+            if item.assetPath:
+                if kind == "payload":
+                    # Advisory only (see docstring) — never a hard fail.
+                    if Sdf.Layer.Find(str(item.assetPath)) is None:
+                        import logging
+                        logging.getLogger("synapse.bridge").debug(
+                            "payload asset not in the layer registry by raw "
+                            "path (advisory — relative paths anchor to the "
+                            "introducing layer): %s at %s",
+                            item.assetPath, prim.GetPath())
+                    continue
+                resolved = Sdf.Layer.Find(str(item.assetPath))
+                if resolved is None:
+                    resolved = Sdf.Layer.FindOrOpen(str(item.assetPath))
+                if resolved is None:
+                    self._log_composition_failure(
+                        stage_path, prim.GetPath(),
+                        f"unresolvable {kind}: {item.assetPath}")
+                    return False
+        return True
+
+    def _check_class_listop_self_target(self, stage_path: str, prim,
+                                        accessor: str,
+                                        kind: str) -> tuple[bool, bool]:
+        """F-H fast path for the class-arc self-cycle check: read the
+        inherit/specialize LIST OP directly — items are target paths, so a
+        self-target is readable WITHOUT constructing a
+        Usd.PrimCompositionQuery (the per-inheriting-prim cost on
+        class-based pipelines). ``GetInherits``/``GetSpecializes`` are
+        live-verified members of Usd.Prim on H21.0.671;
+        ``GetAddedOrExplicitItems`` on their return objects is NOT (verified
+        on Usd.References only) — both lookups are attr-guarded, and an
+        absent API returns ``handled=False`` so the caller falls back to the
+        PCQ path. Returns ``(handled, ok)``."""
+        api_getter = getattr(prim, accessor, None)
+        if api_getter is None:
+            return False, True
+        try:
+            items_fn = getattr(api_getter(), "GetAddedOrExplicitItems", None)
+        except Exception:
+            return False, True
+        if items_fn is None:
+            return False, True
+        prim_path = str(prim.GetPath())
+        for target in items_fn():
+            if str(target) == prim_path:
+                self._log_composition_failure(
+                    stage_path, prim.GetPath(),
+                    f"self-{kind} cycle: {prim_path}")
+                return True, False
+        return True, True
+
+    def _check_class_arc_cycles(self, stage_path: str, prim, query,
+                                kind: str) -> bool:
+        """Hard-fail ONLY on a self-cycle (an arc targeting the prim
+        itself). An inherit/specialize to a nonexistent class prim is
+        LEGAL USD — it composes to nothing by design and is never failed
+        here (Finding 4, conservative broadening)."""
+        prim_path = str(prim.GetPath())
+        for arc in query.GetCompositionArcs():
+            if str(arc.GetTargetPrimPath()) == prim_path:
+                self._log_composition_failure(
+                    stage_path, prim.GetPath(),
+                    f"self-{kind} cycle: {prim_path}")
+                return False
+        return True
+
     def _log_composition_failure(self, stage_path: str, prim_path, reason: str) -> None:
         import logging
         logger = logging.getLogger("synapse.bridge")
@@ -1366,7 +1883,8 @@ class LosslessExecutionBridge:
 
     def _fail_with_integrity(self, integrity: IntegrityBlock,
                              error: str, error_type: str) -> ExecutionResult:
-        self._operation_log.append(integrity)
+        with self._log_lock:
+            self._operation_log.append(integrity)
         result = ExecutionResult.fail(
             error=error, error_type=error_type,
             agent_id=AgentID(integrity.agent_id) if integrity.agent_id else None,
@@ -1394,7 +1912,48 @@ class LosslessExecutionBridge:
         }
 
     def reconstruct_operation_history(self) -> list[dict]:
-        return [b.to_dict() for b in self._operation_log]
+        with self._log_lock:
+            log = list(self._operation_log)
+        return [b.to_dict() for b in log]
+
+
+# ── Process-Wide Bridge Singleton ────────────────────────────────
+# One LosslessExecutionBridge per process — the shared §16 operation trail.
+# Rationale: agent_health._find_bridge_instance() gc-scans for *any* instance,
+# so a second in-process instance would make the §16 read nondeterministic.
+# Both writers share this one object: the panel/in-process-MCP adapter
+# (panel/bridge_adapter.get_bridge) and the live /synapse envelope
+# (server/integrity_envelope.record_live_block).
+#
+# PANEL POSTURE BY CONSTRUCTION (ordering landmine): the default __init__
+# wires HumanGate.get_instance() as the gate. If the live envelope created
+# the instance first with that default, panel CRITICAL ops (execute_python)
+# would later route through HumanGate's blocking poll on the GUI thread —
+# the documented "make a box" freeze (bridge_adapter._panel_consent). So the
+# singleton is ALWAYS constructed gate-less with an auto-approve callback,
+# regardless of which caller creates it first; the panel adapter re-points
+# the callback to _panel_consent on first panel use.
+
+_process_bridge: LosslessExecutionBridge | None = None
+_process_bridge_lock = threading.Lock()
+
+
+def get_process_bridge() -> LosslessExecutionBridge:
+    """Get or lazily create the process-wide LosslessExecutionBridge."""
+    global _process_bridge
+    with _process_bridge_lock:
+        if _process_bridge is None:
+            bridge = LosslessExecutionBridge(consent_callback=lambda op: True)
+            bridge._gate = None  # never the blocking HumanGate poll (see above)
+            _process_bridge = bridge
+        return _process_bridge
+
+
+def reset_process_bridge() -> None:
+    """Test helper — drop the process-wide singleton."""
+    global _process_bridge
+    with _process_bridge_lock:
+        _process_bridge = None
 
 
 # ── Agent Handoff ────────────────────────────────────────────────

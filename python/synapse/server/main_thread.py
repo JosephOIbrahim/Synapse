@@ -201,7 +201,7 @@ def _record_success():
         _consecutive_timeouts = 0
 
 
-def run_on_main(fn, timeout=_DEFAULT_TIMEOUT):
+def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=True):
     """Run *fn* on Houdini's main thread with a timeout.
 
     Returns the result of fn(). Raises RuntimeError if the timeout
@@ -212,6 +212,19 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT):
     (already on the main thread), fn() is invoked directly.
     Also detects when the caller is already on the main thread
     (e.g. via a Qt slot) and calls fn() directly to avoid deadlock.
+
+    ``record_stall=False`` opts a timeout OUT of the stall detector
+    (_record_timeout / is_main_thread_stalled). For observe-only callers with
+    short timeouts (the live integrity envelope's scene-hash captures): two
+    such timeouts back-to-back would otherwise trip the 2-strike threshold
+    and flip the WS resilience layer into fast-failing REAL commands.
+    The RuntimeError is raised either way; success still resets the counter.
+
+    ``record_wait=False`` additionally opts the wake OUT of the C6
+    dispatch-wait histogram (_record_dispatch_wait). The live envelope's
+    captures pass it: ~2 envelope wakes per mutating op would otherwise
+    dominate the C6/T1 attribution instrument — that histogram must stay
+    a measure of REAL command waits only.
     """
     # Fast path 1: reentrant call from within a run_on_main callback
     if getattr(_tls, "on_main", False):
@@ -248,8 +261,11 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT):
 
     def _on_main():
         # C6: every wake is a dispatch-wait sample — including abandoned ones
-        # (the queue-sit time is the datum, regardless of whether fn() runs).
-        _record_dispatch_wait((time.perf_counter() - t_enqueue) * 1000.0)
+        # (the queue-sit time is the datum, regardless of whether fn() runs) —
+        # unless the caller opted out (record_wait=False: observe-only
+        # envelope captures must not pollute the attribution instrument).
+        if record_wait:
+            _record_dispatch_wait((time.perf_counter() - t_enqueue) * 1000.0)
         with state_lock:
             if abandoned[0]:
                 return  # caller already timed out — do not mutate the scene
@@ -267,7 +283,8 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT):
     if not done.wait(timeout=timeout):
         with state_lock:
             abandoned[0] = True
-        _record_timeout(timeout)
+        if record_stall:
+            _record_timeout(timeout)
         raise RuntimeError(
             "Houdini's main thread didn't respond in time -- "
             "it may be busy cooking or rendering. "

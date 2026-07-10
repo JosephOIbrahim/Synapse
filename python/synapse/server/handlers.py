@@ -57,6 +57,9 @@ from .handlers_solaris_assemble import SolarisAssembleMixin
 from .handlers_solaris_graph import SolarisGraphMixin
 from .handlers_solaris_compose import SolarisComposeMixin
 from .handlers_graph_synth import GraphSynthHandlerMixin
+# Live-path integrity envelope (observe-only, PATH-QUALIFIED IntegrityBlocks).
+# The module is import-safe standalone; its internals are guarded.
+from . import integrity_envelope as _envelope
 
 
 
@@ -381,22 +384,46 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             # C5: serialize mutating commands across clients (skip on the main
             # thread — already serialized there, and locking would deadlock
             # run_on_main). Read-only commands never contend.
-            _serialize = (cmd_type not in _READ_ONLY_COMMANDS
+            _mutating = cmd_type not in _READ_ONLY_COMMANDS
+            _serialize = (_mutating
                           and threading.current_thread() is not threading.main_thread())
             _lock_cm = _MUTATION_LOCK if _serialize else contextlib.nullcontext()
+            # Live-path integrity envelope: cheap topo hashes bracketing the
+            # mutation, INSIDE the C5 lock so the pair is adjacent to exactly
+            # this op. Observe-only: never wraps, never gates (D1 pinned),
+            # never Flattens (include_stage=False in the capture). Decided on
+            # the calling thread — the bridge-routed TLS suppression flag does
+            # not survive the hop to the log executor.
+            # batch_commands: its inner sub-ops dispatch through
+            # registry.invoke() directly and bypass handle(), so a batch gets
+            # ONE envelope block bracketing the whole batch — inherent to
+            # this seam, documented on purpose.
+            _enveloped = _mutating and _envelope.envelope_active(cmd_type)
+            _hash_before = _hash_after = None
             # Route through invoke() so the FloorGate records Tier-0 provenance
             # for mutating ops (additive — does not replace _submit_logs below).
             with _lock_cm:
+                if _enveloped:
+                    _hash_before = _envelope.capture_scene_hash(command.payload)
                 result = self._registry.invoke(
                     cmd_type,
                     command.payload,
                     ctx=FloorContext(session=self._session_id, origin="handler"),
                 )
+                # A before-capture miss (busy main thread) already forces the
+                # hash_unavailable sentinel — no delta is computable, so skip
+                # the after-capture rather than hold the C5 lock up to another
+                # full capture-timeout (halves the stuck-main worst case).
+                if _enveloped and _hash_before is not None:
+                    _hash_after = _envelope.capture_scene_hash(command.payload)
             self._record_tool_duration(cmd_type, (time.perf_counter() - _t0) * 1000.0)
 
             # Log action asynchronously — don't block the response path
-            if cmd_type not in _READ_ONLY_COMMANDS:
-                self._submit_logs(cmd_type, command.payload, result)
+            if _mutating:
+                self._submit_logs(cmd_type, command.payload, result,
+                                  hash_before=_hash_before,
+                                  hash_after=_hash_after,
+                                  enveloped=_enveloped)
 
             return SynapseResponse(
                 id=command.id,
@@ -437,7 +464,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 sequence=command.sequence,
             )
 
-    def _submit_logs(self, cmd_type: str, payload: Dict, result: Any):
+    def _submit_logs(self, cmd_type: str, payload: Dict, result: Any,
+                     hash_before: Optional[str] = None,
+                     hash_after: Optional[str] = None,
+                     enveloped: bool = False):
         """Submit bridge + audit log in a single executor call."""
         bridge = self._get_bridge()
         sid = self._session_id
@@ -457,6 +487,18 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 input_data=payload,
                 output_data=output,
             )
+            # Live-path integrity envelope: append the PATH-QUALIFIED
+            # IntegrityBlock into the process-wide bridge trail. Fire-and-
+            # forget isolation preserved: an envelope failure can never fail
+            # the command (the response was already returned) or kill the
+            # audit write above.
+            if enveloped:
+                try:
+                    _envelope.record_live_block(
+                        cmd_type, payload, hash_before, hash_after)
+                except Exception:
+                    _log.debug("live integrity envelope record failed",
+                               exc_info=True)
 
         _log_executor.submit(_do_log)
 
