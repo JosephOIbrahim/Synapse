@@ -1,15 +1,18 @@
 export const meta = {
   name: 'h22-leg0',
-  description: 'Leg 0 paper deliverables: Mile 0.1 G7 doc fixes + Mile 0.2 baseline freeze + Mile 0.3 four Phase-0 specs, each adversarially reviewed',
+  description: 'Leg 0 paper deliverables: Mile 0.1 G7 doc fixes + Mile 0.2 baseline freeze + Mile 0.3 four Phase-0 specs — each drafted, adversarially reviewed, revised, AND re-verified after revision',
   whenToUse: 'MODE A-legal, run now (pre-drop). Pass {groundTruth} = the h22-ground-truth findings if available.',
   phases: [
     { title: 'Draft', detail: 'scribe: four specs in parallel · docsurgeon: G7 · scribe: baseline freeze' },
     { title: 'Verify', detail: 'crucible attacks each artifact as it lands' },
-    { title: 'Revise', detail: 'scribe closes blockers; unresolved → human' },
+    { title: 'Revise', detail: 'scribe/docsurgeon closes blockers; unresolved → human' },
+    { title: 'Re-verify', detail: 'crucible re-attacks the revision — confirms closure or flags NEEDS_HUMAN' },
   ],
 }
 
-const GT = args && args.groundTruth ? `\n\nGround-truth findings from the §11 sweep (trust these over the blueprint's INFERENCE tags):\n${JSON.stringify(args.groundTruth)}` : ''
+// args can arrive as an object OR a JSON string depending on the caller — normalize both.
+const A = typeof args === 'string' ? JSON.parse(args) : (args || {})
+const GT = A.groundTruth ? `\n\nGround-truth findings from the §11 sweep (trust these over the blueprint's INFERENCE tags):\n${JSON.stringify(A.groundTruth)}` : ''
 
 const SPECS = [
   {
@@ -39,7 +42,28 @@ const FINDINGS = {
   required: ['blockers', 'weaknesses'],
 }
 
-// The three legs are independent — one pipeline, no barrier between them.
+const REVERDICT = {
+  type: 'object',
+  properties: {
+    stillOpen: { type: 'array', items: { type: 'string' }, description: 'blockers NOT genuinely closed by the revision (cite why)' },
+    newBlockers: { type: 'array', items: { type: 'string' }, description: 'regressions the revision introduced' },
+    verdict: { type: 'string', description: 'CLEAN | NEEDS_FIX' },
+  },
+  required: ['stillOpen', 'newBlockers', 'verdict'],
+}
+
+const reverifyPrompt = (target, blockers) =>
+  `RE-VERIFY (adversarial). Attack the CURRENT on-disk state of ${target}. You did not write it and you are ` +
+  `motivated to prove the revision did NOT close its blockers. For each blocker reported closed, confirm it is ` +
+  `genuinely fixed NOW (cite the closing line) or declare it stillOpen with evidence:\n` +
+  blockers.map((b, i) => `${i + 1}. ${b}`).join('\n') +
+  `\n\nThen a fresh pass for regressions the revision introduced: a new factual error, a citation that no longer ` +
+  `resolves, a rebuilt-shipped-code claim, an unprobed phantom hou.*/pdg.*/pxr.* symbol, or rigging-scope leakage. ` +
+  `Verdict CLEAN only if EVERY prior blocker is genuinely closed AND no new blocker exists.`
+
+const isClean = v => v && v.verdict === 'CLEAN' && !(v.stillOpen || []).length && !(v.newBlockers || []).length
+
+// Each spec runs draft → verify → revise → re-verify independently (no barrier).
 const specResults = pipeline(
   SPECS,
   s => agent(
@@ -57,15 +81,24 @@ const specResults = pipeline(
     { agentType: 'crucible', label: `verify:${s.slug}`, phase: 'Verify', schema: FINDINGS }
   ),
   (findings, s) => {
-    if (!findings || !findings.blockers.length) return { spec: s.out, status: 'CLEAN', findings }
+    if (!findings || !findings.blockers.length) return { findings, revised: false }
     return agent(
       `Revise ${s.out} to close these blockers, and only these:\n${findings.blockers.map((b, i) => `${i + 1}. ${b}`).join('\n')}\n` +
       `If a blocker is actually a human decision, move it into the OPEN DECISIONS block instead of resolving it.`,
       { agentType: 'h22-scribe', label: `revise:${s.slug}`, phase: 'Revise' }
-    ).then(() => ({ spec: s.out, status: 'REVISED', findings }))
+    ).then(() => ({ findings, revised: true }))
+  },
+  // Re-verify: a revised spec is not trusted until crucible re-attacks the closure. Bounded — one revise, one
+  // re-verify; still-blocked → NEEDS_HUMAN (no infinite loop, per the clean-stop-beats-broken-guess rule).
+  (ctx, s) => {
+    if (!ctx || !ctx.revised) return { spec: s.out, status: 'CLEAN', findings: ctx && ctx.findings }
+    return agent(reverifyPrompt(s.out, ctx.findings.blockers),
+      { agentType: 'crucible', label: `reverify:${s.slug}`, phase: 'Re-verify', schema: REVERDICT }
+    ).then(v => ({ spec: s.out, status: isClean(v) ? 'VERIFIED_CLEAN' : 'NEEDS_HUMAN', findings: ctx.findings, reverify: v }))
   }
 )
 
+// G7 gets the same draft → verify → revise → re-verify discipline.
 const g7 = agent(
   `Execute the standing G7 worklist on README.md and docs/ (your agent charter lists it: auth setx fix, ` +
   `outside-in framing, loopback sentence, C3 Moneta rider, badge/version reconciliation).${GT} ` +
@@ -73,10 +106,21 @@ const g7 = agent(
   { agentType: 'h22-docsurgeon', label: 'g7:doc-surface', phase: 'Draft' }
 ).then(r => agent(
   `Attack the G7 changes just made to README.md/docs/ (git diff shows them). Did any edit weaken a true claim, ` +
-  `add mechanism detail that should stay at claim level (IP hygiene), or miss a live instance of the worklist? ` +
-  `Report of the surgeon: ${typeof r === 'string' ? r.slice(0, 2000) : JSON.stringify(r)}`,
+  `add mechanism detail that should stay at claim level (IP hygiene), state a security mechanism the code does ` +
+  `not implement, or miss a live instance of the worklist? Surgeon's report: ${typeof r === 'string' ? r.slice(0, 2000) : JSON.stringify(r)}`,
   { agentType: 'crucible', label: 'verify:g7', phase: 'Verify', schema: FINDINGS }
-))
+)).then(findings => {
+  if (!findings || !findings.blockers.length) return { status: 'CLEAN', findings }
+  return agent(
+    `Close these G7 blockers on README.md/docs/ and only these:\n${findings.blockers.map((b, i) => `${i + 1}. ${b}`).join('\n')}\n` +
+    `Surgical diffs; honesty over completeness — if a claim can't be made true against the shipped code, REMOVE it ` +
+    `rather than assert a mechanism the code does not implement.`,
+    { agentType: 'h22-docsurgeon', label: 'revise:g7', phase: 'Revise' }
+  ).then(() => agent(
+    reverifyPrompt('the G7 doc changes (README.md / docs/mcp/SETUP.md / docs/index.md)', findings.blockers),
+    { agentType: 'crucible', label: 'reverify:g7', phase: 'Re-verify', schema: REVERDICT }
+  )).then(v => ({ status: isClean(v) ? 'VERIFIED_CLEAN' : 'NEEDS_HUMAN', findings, reverify: v }))
+})
 
 const baselines = agent(
   `Mile 0.2 baseline freeze → write harness/state/leg0_baselines.json. Freeze, with evidence commands shown: ` +
@@ -90,5 +134,9 @@ const baselines = agent(
 
 const [specs, g7Result, baselineResult] = await parallel([() => specResults, () => g7, () => baselines])
 
-log('Leg 0 paper pass complete — merge-to-main remains the human gate on every artifact')
-return { specs, g7: g7Result, baselines: baselineResult }
+const needsHuman = (specs || []).filter(Boolean).filter(s => s.status === 'NEEDS_HUMAN').map(s => s.spec)
+if (g7Result && g7Result.status === 'NEEDS_HUMAN') needsHuman.push('G7 docs')
+log(needsHuman.length
+  ? `Re-verify flagged for human: ${needsHuman.join(', ')} — merge-to-main is the human gate; fix these first`
+  : 'All artifacts re-verified clean — merge-to-main is the remaining human gate on every artifact')
+return { specs, g7: g7Result, baselines: baselineResult, needsHuman }
