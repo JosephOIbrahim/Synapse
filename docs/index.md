@@ -1,6 +1,6 @@
 # Synapse
 
-**AI-Houdini Bridge** -- A standalone Python package that lets AI assistants control SideFX Houdini via WebSocket.
+**An AI copilot inside Houdini** -- the agent loop runs in Houdini's own Python interpreter and turns plain English into real nodes in your live scene, dispatching tools as direct in-process `hou` calls. External MCP / WebSocket clients can also connect on the same machine (SYNAPSE assumes a single-user, localhost posture).
 
 ## What Synapse Does
 

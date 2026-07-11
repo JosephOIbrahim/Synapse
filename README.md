@@ -219,7 +219,7 @@ Tested on **Windows 11 + Houdini 21.0.671**. macOS / Linux: same steps, differen
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
     DL["1 · Download<br/>the SYNAPSE folder"]:::step --> REG["2 · Run the installer<br/>(once)"]:::step
-    REG --> KEY["3 · Paste your API key<br/>(double-click the .bat)"]:::step
+    REG --> KEY["3 · Add your API key<br/>to the .env"]:::step
     KEY --> OPEN["4 · Restart Houdini,<br/>open the panel"]:::step
     OPEN --> CHAT["Type 'make a box'<br/>→ it builds"]:::done
     classDef step fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
@@ -240,8 +240,8 @@ The installer **auto-detects your Houdini prefs directory** and writes a package
 *No Python on PATH? Use Houdini's:* `& "C:\Program Files\Side Effects Software\Houdini 21.0.671\bin\hython.exe" scripts/install_synapse_package.py`
 > ✅ **You should see** a success line ending in the wired `python/` path — and **no** traceback.
 
-**3 · Paste your Claude key** *(~2 min)* — make one at **console.anthropic.com** (`sk-ant-…`), then **double-click `set_anthropic_key.bat`**, paste, Enter.
-*Want the other engines?* Add their keys to a `.env` at the repo root (gitignored, auto-loaded). **Ollama needs no key** (it's your local server), and **Custom** is configured right in the panel (base URL · model · key).
+**3 · Add your Claude key** *(~2 min)* — make one at **console.anthropic.com** (`sk-ant-…`), then put it in a **`.env` at the repo root** (gitignored, auto-loaded). This keeps the key **scoped to SYNAPSE** — it is *not* set as a system-wide `ANTHROPIC_API_KEY`, so it can't collide with or bill other Anthropic tools on your machine.
+*Other engines* go in the same `.env`. **Ollama needs no key** (it's your local server), and **Custom** is configured right in the panel (base URL · model · key).
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
@@ -260,7 +260,7 @@ That's the whole loop — **start to chatting in ~5 minutes.** Everything is an 
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | **SYNAPSE isn't in the Pane Tab menu** | Houdini loads packages only at launch | Fully restart Houdini; confirm the installer reported success. |
-| **"No API key" / won't connect** | On Windows a freshly-set key only reaches apps started *after* you set it | Re-run `set_anthropic_key.bat` (or confirm the `GEMINI_API_KEY` / `NVIDIA_API_KEY` line in `.env`), then **relaunch Houdini from scratch**. Verify in Houdini's Python Shell: `import os; print(bool(os.environ.get('ANTHROPIC_API_KEY')))` → `True`. |
+| **"No API key" / won't connect** | The key line is missing from the repo-root `.env`, or Houdini was already open when you added it | Confirm the `ANTHROPIC_API_KEY` (and any `GEMINI_API_KEY` / `NVIDIA_API_KEY`) line in the `.env` at the repo root, then **relaunch Houdini from scratch** — the `.env` loads at startup. Verify in Houdini's Python Shell: `from synapse.host import auth; import os; print(bool(os.environ.get('ANTHROPIC_API_KEY')))` → `True`. |
 | **`ModuleNotFoundError: No module named 'synapse'`** | The package path wasn't wired, or Houdini wasn't restarted | The installer prints the path it wired — confirm it points at the repo's `python/` directory, then restart Houdini. |
 | **Panel loads but says it can't reach Houdini** | The in-process bridge server isn't up yet | Click **Connect** in the panel rail (one click force-starts it). |
 

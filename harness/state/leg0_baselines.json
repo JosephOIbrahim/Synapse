@@ -1,0 +1,123 @@
+{
+  "schema": "leg0_baselines/v1",
+  "_purpose": "Mile 0.2 baseline freeze. This file is the FIXED LEFT SIDE of every H22 drop-week diff. Blueprint (docs/H22_AGENT_HARNESS.md) §9 runbook step 1 stops with status REFUSED if this file is absent or unparseable; step 3 (quarantine re-litigation) reads quarantine_snapshot.members from here and NEVER from memory; step 4 (sweep re-run) hash-checks the H22 connectivity catalog against connectivity_catalog.sha256 here before diffing. Every datum below was verified by the freezing agent's own read-only Read/Grep/Bash in the freeze dispatch — no value is copied from another document's assertion. Frozen values are re-derivable via the `evidence_command` beside each. Nothing here is re-run at drop time except the four probes named in `consumers`.",
+
+  "provenance": {
+    "mile": "0.2",
+    "leg": "Leg 0 (paper, MODE A)",
+    "governing_gate": "Two gates. (1) Freeze-time: human merge-to-main of this artifact (per blueprint §6 acceptance — MODE A workflows may write only docs/, harness/notes/, harness/state/leg0_baselines.json, README.md; promotion to master is the human). (2) Consume-time: drop-week runbook step 1 baseline check, executed by h22-gatewarden — emits `GATE VERDICT: ALLOW` only if BOTH harness/state/drop.json AND this file exist and parse; otherwise the runbook returns status REFUSED and nothing runs.",
+    "relay": "Produced in Leg 0. Consumed in Leg 1+ by the h22-drop-week runbook (steps 1, 3, 4). Frozen against the pre-drop H21.0.671 runtime; the RIGHT SIDE of every drop diff is the live H22 runtime.",
+    "frozen_at_commit": "314acd6fc3d8411e44cc26a5848e9ae30a376008",
+    "frozen_at_commit_subject": "release: v5.22.0 — the honest envelope · evidence-based anchors · drop-day runbook",
+    "frozen_date": "2026-07-11",
+    "baseline_runtime": "Houdini 21.0.671 (pre-H22)",
+    "author": "h22-scribe",
+    "evidence_discipline": "Every field verified by the author's own Read/Grep/Bash(read-only) this dispatch. Bash used only for sha256sum, json parsing, and git log -1 — no mutating command."
+  },
+
+  "baselines": {
+
+    "connectivity_catalog": {
+      "_what": "Item (1) — catalog hash. The connectivity sweep catalog that runbook step 4 re-runs and diffs against on H22. Its sha256 is the tamper/staleness anchor: step 4 hash-checks the live H22 sweep's baseline against this value before trusting any diff.",
+      "path": "harness/notes/verified_connectivity_21.0.671.json",
+      "sha256": "7d57c1a73cb154fc77b6f729e593d343e2b04cb3d1ee8f3e5dec7cc514e3eba3",
+      "algorithm": "sha256 (whole-file bytes)",
+      "evidence_command": "sha256sum harness/notes/verified_connectivity_21.0.671.json",
+      "verified_this_dispatch": true
+    },
+
+    "symbol_table": {
+      "_what": "Item (4) — sha256 of the committed dir() symbol-table authority. This is the membership authority that decides whether any hou.* symbol is present or phantom (per CLAUDE.md §11 rule 15 and checks.py::check_phantom_clean at checks.py:425). The whole-file sha256 is the drop-diff anchor; blake2b + symbol_count + houdini_version are the table's own internal integrity/version fields (read from inside the file, used by scout's loader).",
+      "path": "python/synapse/cognitive/tools/data/h21_symbol_table.json",
+      "sha256": "368efac027b8eaa6cdf1e17922cd4799d2b6264ffee093db4f2afd39de9dea1d",
+      "algorithm": "sha256 (whole-file bytes)",
+      "evidence_command": "sha256sum python/synapse/cognitive/tools/data/h21_symbol_table.json",
+      "internal_schema": "scout_symbol_table/v1",
+      "internal_houdini_version": "21.0.671",
+      "internal_symbol_count": 33255,
+      "internal_blake2b": "ae7688f80a7076dc1c5b9fb3c05ab53d",
+      "internal_fields_evidence_command": "python -c \"import json; d=json.load(open('python/synapse/cognitive/tools/data/h21_symbol_table.json')); print(d['schema'], d['houdini_version'], d['symbol_count'], d['blake2b'])\"",
+      "note": "This is a HEADLESS-hython dir() table. GUI-only submodules (hou.ui, hou.qt, hou.audio, ...) and lazily-loaded namespaces are legitimately absent from it and are NOT phantoms — check_phantom_clean unions _GUI_HOU_ABSENT_HEADLESS to compensate (checks.py:444). Regenerate this table per Houdini build via host/introspect_runtime.py.",
+      "verified_this_dispatch": true
+    },
+
+    "quarantine_snapshot": {
+      "_what": "Item (2) — the exact confirmed-ABSENT symbol list and where it came from. Runbook step 3 (P6: the ONE legitimate re-probe event) reads members[] from here verbatim, probes each ONCE against the live H22 runtime, and re-pins each with an H22 tag. Membership is DECIDED by absence from the symbol_table above; the source enumerations below are where the harness codifies the list in prose.",
+      "governing_source": {
+        "file_line": "harness/notes/SYNAPSE_ODFORCE_HARNESS.md:46",
+        "context": "Filter 3 — Phantom gate. Verbatim: 'No confirmed-absent API on the critical path (`hou.pdg.*`, `hou.secure`, `hou.lopNetworks()`, `hou.updateGraphTick()` — auto-quarantined, never re-litigated).'",
+        "evidence_command": "grep -n 'auto-quarantined' harness/notes/SYNAPSE_ODFORCE_HARNESS.md"
+      },
+      "cross_references": [
+        {"file_line": "harness/SYNAPSE_HARNESS_LAUNCH.md:79", "form": "absent: hou.pdg.*, hou.secure, hou.lopNetworks(), hou.updateGraphTick."},
+        {"file_line": "harness/prompts/forge_mile2.md:14-15", "form": "Confirmed ABSENT, auto-quarantine: `hou.pdg.*`, `hou.secure`, `hou.lopNetworks()`, `hou.updateGraphTick`."},
+        {"file_line": "python/synapse/cognitive/tools/data/h21_symbol_table.json (via checks.py:425)", "form": "check_phantom_clean enforces this membership on every sprint's ADDED .py lines using the symbol_table as authority."}
+      ],
+      "note_form_divergence": "Sources vary the call-form of the fourth symbol: SYNAPSE_ODFORCE_HARNESS.md and SYNAPSE_HARNESS_LAUNCH.md write `hou.updateGraphTick()` (parens); forge_mile2.md writes `hou.updateGraphTick` (no parens). Both refer to the same probed attribute `hou.updateGraphTick`. Frozen below by dotted attribute, call-form is cosmetic.",
+      "membership_authority": "Absence from python/synapse/cognitive/tools/data/h21_symbol_table.json (symbol_count 33255, houdini_version 21.0.671). Each member below was checked present:false by the author this dispatch.",
+      "members": [
+        {
+          "symbol": "hou.pdg",
+          "quarantine_form": "hou.pdg.*",
+          "kind": "namespace (whole subtree)",
+          "table_present": false,
+          "table_evidence_command": "python -c \"import json; s=set(json.load(open('python/synapse/cognitive/tools/data/h21_symbol_table.json'))['symbols']); print(any(x=='hou.pdg' or x.startswith('hou.pdg.') for x in s))\"",
+          "note": "The live PDG API is the top-level `pdg` module, NOT `hou.pdg.*`. Any `hou.pdg.<x>` is phantom. Stays dead on every D/O critical path (spec-D-diagnostic-truth.md:14). Re-litigate: low expectation of reappearance."
+        },
+        {
+          "symbol": "hou.secure",
+          "quarantine_form": "hou.secure",
+          "kind": "attribute / lazy namespace",
+          "table_present": false,
+          "table_evidence_command": "python -c \"import json; s=set(json.load(open('python/synapse/cognitive/tools/data/h21_symbol_table.json'))['symbols']); print('hou.secure' in s)\"",
+          "re_litigate_priority": "HIGH",
+          "note": "Absence here is NOT conclusive: hou.secure is a lazily-loaded namespace and a documented dir() blind spot (spec-0.2-api-delta-probe.md:50 — 'touch the lazily-loaded hou.qt/hou.text/hou.secure namespaces first'). Runbook step 3 states 'hou.secure PASS is significant: the auth resolver auto-adopts it.' Probe by importing the namespace, not by plain dir()."
+        },
+        {
+          "symbol": "hou.lopNetworks",
+          "quarantine_form": "hou.lopNetworks()",
+          "kind": "method / callable",
+          "table_present": false,
+          "table_evidence_command": "python -c \"import json; s=set(json.load(open('python/synapse/cognitive/tools/data/h21_symbol_table.json'))['symbols']); print('hou.lopNetworks' in s)\"",
+          "note": "Known-phantom on H21; the LopNetwork walk-from-root idiom replaced it (CLAUDE.md R10 / shared/evolution.py::_sync_solaris_viewport)."
+        },
+        {
+          "symbol": "hou.updateGraphTick",
+          "quarantine_form": "hou.updateGraphTick() / hou.updateGraphTick",
+          "kind": "method / callable",
+          "table_present": false,
+          "table_evidence_command": "python -c \"import json; s=set(json.load(open('python/synapse/cognitive/tools/data/h21_symbol_table.json'))['symbols']); print('hou.updateGraphTick' in s)\"",
+          "note": "Known-phantom on H21."
+        }
+      ]
+    },
+
+    "test_pass_floor": {
+      "_what": "Item (3) — the full `pytest tests/` GREEN floor, COPIED (not re-run) from harness/verify/suite_baseline.json. This is the ratchet floor read by checks.py::check_suite_baseline at merge-base(master, HEAD); a sprint may ratchet failures DOWN and passes UP but may never lower its own bar. Frozen here as the drop-week left side so a post-drop suite can be diffed against the pre-drop count.",
+      "source_path": "harness/verify/suite_baseline.json",
+      "source_sha256": "e03cb10858747abc27b6fb59aa1dcade4aea778e41a86c7c3ee87e0d89e65e0f",
+      "copied_not_rerun": true,
+      "passed": 4118,
+      "failed": 0,
+      "skipped": 87,
+      "source_commit_field": "178798d + D-track graft + crucible remediation (gate-AND, hython hard-miss)",
+      "source_generated": "2026-07-07",
+      "evidence_command": "python -c \"import json; d=json.load(open('harness/verify/suite_baseline.json')); print(d['passed'], d['failed'], d['skipped'])\"",
+      "verified_this_dispatch": true
+    }
+  },
+
+  "consumers": [
+    "runbook step 1 (h22-gatewarden): gate ALLOW requires this file to exist + parse — else REFUSED.",
+    "runbook step 3 (assayer): reads quarantine_snapshot.members[] verbatim, probes each ONCE on live H22, re-pins with H22 tag. hou.secure PASS auto-adopts the auth resolver.",
+    "runbook step 4 (sweep re-run): hash-checks the H22 connectivity baseline against connectivity_catalog.sha256 before diffing against verified_connectivity_21.0.671.json.",
+    "drop-week suite compare: post-drop full pytest diffed against test_pass_floor (passed 4118 / failed 0 / skipped 87)."
+  ],
+
+  "non_goals": [
+    "This file does NOT re-run the pytest suite — the floor is copied from suite_baseline.json and cited (item 3 is a copy-not-run by spec).",
+    "This file does NOT adjudicate the quarantine — it freezes membership + source. Re-litigation is runbook step 3's job on H22 (P6: the one legitimate re-probe event). Do not probe at freeze time.",
+    "This file does NOT regenerate the symbol table or the connectivity catalog — it hashes the committed H21.0.671 artifacts as-is. Regeneration is a drop-time host-layer probe.",
+    "This file is not a spec: it names no new design. It is a frozen evidence anchor. The four Phase-0 specs are Mile 0.3, written separately."
+  ]
+}

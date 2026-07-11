@@ -128,6 +128,8 @@ Use `tools/list` to get the full list with descriptions and input schemas.
 
 MCP Bearer token authentication is opt-in. When `SYNAPSE_API_KEY` is set (or `~/.synapse/auth.key` exists), the `/mcp` endpoint requires an `Authorization: Bearer <token>` header on all requests. Without a key configured, auth is disabled (backward compatible).
 
+SYNAPSE assumes a **single-user, localhost** posture, and that assumption is load-bearing for safety: on the live `/synapse` handler path `execute_python` / `execute_vex` run **ungated** — no per-command permission check (see CLAUDE.md §1.2) — so keeping both the WebSocket (`/synapse`) and MCP HTTP (`/mcp`) surfaces on a single-user local machine is what contains arbitrary code execution. Do **not** expose either surface to an untrusted network. A multi-user / studio-LAN / VPN deployment requires a handler-layer auth gate (tracked as **SEC-1** in `docs/SCIENCE_HARNESS_LEDGER.md`), which is **not yet shipped**; the Bearer-token auth above gates `/mcp` when `SYNAPSE_API_KEY` is set, but does not by itself make `execute_python` safe on a shared host.
+
 ```bash
 # Set API key via environment variable
 export SYNAPSE_API_KEY="your-secret-key"
