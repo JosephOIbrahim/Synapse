@@ -32,7 +32,7 @@ const attack = await agent(
   `(1) any ADOPT/ADAPT that violates a non-goal (§6) or lacks a tier label, ` +
   `(2) any REJECT that threw away a genuinely harvestable mechanism, ` +
   `(3) missed rigging/scope pressure, (4) any claim credited because of who said it (P1 violation), ` +
-  `(5) confabulation leakage — Moneta-as-memory-service, H22-has-launched. ` +
+  `(5) confabulation leakage — cognitive-state-as-vector-similarity (NOT Moneta-as-memory: Moneta IS the memory backend), H22-has-launched. ` +
   `Adjudicator's summary: ${typeof appendix === 'string' ? appendix.slice(0, 3000) : JSON.stringify(appendix)}`,
   { agentType: 'crucible', label: `attack:${args.slug}`, phase: 'Attack', schema: ATTACK }
 )

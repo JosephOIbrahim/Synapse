@@ -101,7 +101,7 @@ const specResults = pipeline(
 // G7 gets the same draft → verify → revise → re-verify discipline.
 const g7 = agent(
   `Execute the standing G7 worklist on README.md and docs/ (your agent charter lists it: auth setx fix, ` +
-  `outside-in framing, loopback sentence, C3 Moneta rider, badge/version reconciliation).${GT} ` +
+  `outside-in framing, loopback sentence, Moneta-naming per the one-Moneta ruling, badge/version reconciliation).${GT} ` +
   `Surgical diffs only. Report per-item: fixed / already-correct / could-not-verify.`,
   { agentType: 'h22-docsurgeon', label: 'g7:doc-surface', phase: 'Draft' }
 ).then(r => agent(

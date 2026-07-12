@@ -3,6 +3,7 @@
   Committed to docs/ 2026-07-12 as blueprint §7 Leg-0 Mile 0 (F3 — "commit this blueprint before any
   execution it governs"). Verbatim v2.0 as authored; the text below is unmodified.
   Companion spec (the harness that runs this): harness/SPEC.md.
+  v2.1 correction (2026-07-12): C3 corrected inline (one-Moneta ruling) — see §1 + docs/reviews/h22-c3-moneta-decision.md.
   Executor playbook: docs/H22_AGENT_HARNESS.md. Reconciliation crosswalk: harness/SPEC.md §4.
 -->
 
@@ -47,6 +48,8 @@ Execution of the gaps is **not** part of done. MODE A holds until `drop.json`, e
 **C2 — No public evidence of a SideFX first-party MCP/agent surface. [VERIFIED-WEB]** APEX is the H22 *character* story (rigging, animation, retargeting, motion mixing with KineFX). Community demand for built-in agent connectivity is documented and unanswered on SideFX's own forum. Posture: plan for a first-party vacuum; confirm/deny at runbook step 7. The whitepaper is silent on first-party MCP, consistent with the vacuum.
 
 **C3 — Moneta is the Nuke host, not a memory service. [VERIFIED-WEB — README portfolio section]** *New in v2.* The whitepaper reassigns "Moneta" to a decoupled vector-backed memory substrate. That is a confabulation. Moneta remains the planned Nuke inside-out host; the memory layer is the Cognitive Substrate / Cognitive Bridge. Recorded here so the misassignment doesn't propagate into any downstream doc, pitch, or search result. If a *named* telemetry service is ever wanted, it gets a new name — naming is Joe's call and out of scope here.
+
+> **C3 CORRECTION — v2.1 (2026-07-12 · CTO ruling: "one Moneta").** Superseded on the memory point. Moneta **is** SYNAPSE's memory substrate (repo `JosephOIbrahim/Moneta`; shipped `moneta_store.py`; `SYNAPSE_MEMORY_BACKEND=moneta`) — the name is from Juno *Moneta* ("she who reminds"). The whitepaper's actual error was narrower: calling it a *vector-index* service. **Corrected rider:** cognitive **state** is deterministic USD/LIVRPS, never vector similarity (Non-Goal 6); "Moneta" names the memory layer, **not** a DCC host; the Nuke inside-out host is a separate, differently-named product. Full ruling + evidence: `docs/reviews/h22-c3-moneta-decision.md`.
 
 ---
 

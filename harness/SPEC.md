@@ -191,10 +191,11 @@ Report  → consolidated status + standing open decisions (incl. C3) + the singl
    **(a)** narrow C3 to the Nuke-host referent and keep the `moneta` memory backend named as-is, or
    **(b)** rename the shipped backend away from "Moneta." Route via `h22-intake` (adjudicate the C3 rider vs
    shipped reality) or a direct CTO ruling. **Until then: no doc surgery on the Moneta lines.**
-   **RULED (2026-07-12, CTO):** `docs/reviews/h22-c3-moneta-decision.md` — code proves Moneta **is** the shipped
-   memory backend (`moneta_store.py`; live recall keyword, vector staged in shadow), so C3 as written is
-   factually wrong. Recommendation: **correct C3, do not enforce it**; keep only its Non-Goal-6 core (cognitive
-   *state* ≠ vector similarity). Only the two-Monetas brand disambiguation is reserved to Joe.
+   **RESOLVED (2026-07-12, CTO — "one Moneta"):** `docs/reviews/h22-c3-moneta-decision.md`. Code proves Moneta
+   **is** the shipped memory backend (`moneta_store.py`; live recall keyword, vector staged in shadow), so C3 as
+   written was factually wrong. Ruling: Moneta keeps the name (the memory substrate); the Nuke inside-out host is
+   a separate, differently-named product. Corrected rider = cognitive *state* ≠ vector similarity (Non-Goal 6).
+   Applied: `README.md:273` corrected · guardrails softened · blueprint → v2.1 C3 correction. No open C3 action.
 
 2. **G7 residuals (independent of C3, safe now).** README test badge `4,186` → ratchet floor **`4118`**
    (`README.md:364`; re-derive from `suite_baseline.json`, never copy). Add a loopback-only ingress sentence to the

@@ -19,8 +19,10 @@ Protocol (blueprint §10, verbatim discipline):
    runbook step-9 probe list; never into code or specs as fact.
 5. Rigging/KineFX/APEX scope inclusions: log as a boundary-pressure event in the appendix and
    REJECT without re-litigation. No proxy variants.
-6. Known confabulations stay dead: Moneta is the Nuke host, not a memory service (C3); H22
-   "has launched" reads as "was announced" until a release-notes fetch proves otherwise (C1).
+6. Known confabulations stay dead: SYNAPSE's cognitive STATE is deterministic USD/LIVRPS, never
+   vector similarity (C3, one-Moneta ruling — Moneta IS the memory backend; that is NOT the
+   confabulation); H22 "has launched" reads as "was announced" until a release-notes fetch proves
+   otherwise (C1).
 
 Skills: `last30days` for what practitioners are actually saying; `deep-research` only when a
 single claim is load-bearing AND cheap checks disagree. WebSearch/WebFetch for provenance.

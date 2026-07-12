@@ -1,8 +1,16 @@
 # C3 — the "Moneta" decision brief
 
 > **Date:** 2026-07-12 · **Author:** CTO-orchestrator session (main Claude Code, under blueprint authority).
-> **Status:** RECOMMENDATION. One item reserved to Joe (brand disambiguation). No public surface was edited.
+> **Status:** RULED 2026-07-12 (CTO — "one Moneta"). Applied across charters, workflows, README, blueprint v2.1.
 > **Trigger:** blueprint v2.0 §1 C3 rider, reconciled against shipped code during the v2 harness pass.
+
+## Ruling — one Moneta (2026-07-12, CTO)
+
+**Moneta keeps the name; it IS the memory substrate.** The name is from Juno *Moneta* ("she who reminds," Latin *monēre*) — coined for a memory engine and shipped as one (`moneta_store.py`, repo `JosephOIbrahim/Moneta`, `SYNAPSE_MEMORY_BACKEND=moneta`). The "Moneta/Nuke" portfolio line (`README.md:273`) was a naming slip: the Nuke inside-out host is a **separate, differently-named product** (a SYNAPSE-for-Nuke sibling). Its purpose is real but name-independent, so it does not warrant sharing the memory tech's name — one Moneta.
+
+**The whitepaper's real error was narrower than C3 claimed** — it called Moneta a *vector-index* service. Corrected rider: SYNAPSE's cognitive **state** is deterministic USD/LIVRPS, **never vector similarity** (Non-Goal 6); "Moneta" names the memory layer, not a DCC host.
+
+**Applied:** `README.md:273` corrected · guardrails softened (`h22-docsurgeon`, `h22-adjudicator`, `h22-intake`, `h22-ground-truth`, `h22-relay`) · blueprint §1 C3 → v2.1 correction note. Nothing anywhere now denies Moneta is the memory backend. The recommendation below is the reasoning of record.
 
 ## The contradiction
 

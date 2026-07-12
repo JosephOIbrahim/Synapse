@@ -64,7 +64,7 @@ const LEG0_DRIFT_TARGETS = [
     priorBlockers: [
       'the test-count badge matches the ratchet floor in harness/verify/suite_baseline.json (currently 4118), not a stale release-era number (e.g. 4186)',
       'a loopback-only ingress/security sentence is present on the MCP/WS surface',
-      'C3: report whether the "Moneta" name is used consistently — the shipped moneta_store backend + SYNAPSE_MEMORY_BACKEND=moneta call it a MEMORY substrate, while the blueprint C3 rider calls it the Nuke host. FLAG the contradiction as an OPEN DECISION; do NOT assert a fix (a blind cut would make README contradict the code).',
+      'C3 (RULED: one Moneta) — Moneta IS the memory substrate; the Nuke host is a separate, differently-named product. Flag only misuse of "Moneta" as a host label, or any description of cognitive STATE as vector-similarity-recalled. Do NOT deny Moneta is the memory backend.',
     ] },
 ]
 
@@ -102,11 +102,10 @@ phase('Report')
 
 // Standing open decisions the relay always re-surfaces until a human rules on them.
 const openDecisions = [
-  'C3 — the "Moneta" naming contradiction. Blueprint C3 says Moneta is the Nuke host and must NOT be called a ' +
-  'memory service, but README.md:322-348 + the shipped python/synapse/memory/moneta_store.py + ' +
-  'SYNAPSE_MEMORY_BACKEND=moneta describe/ship it AS SYNAPSE\'s memory backend. Ruling needed (CTO/Joe): either ' +
-  '(a) narrow C3 to the Nuke-host referent and keep the moneta memory backend named as-is, or (b) rename the ' +
-  'shipped backend away from "Moneta". Until then, NO doc surgery on the Moneta lines. Route via h22-intake or a direct ruling.',
+  // C3 RESOLVED 2026-07-12 (one-Moneta ruling) — kept as a breadcrumb, not an open action.
+  'C3 — RESOLVED (one Moneta): Moneta IS SYNAPSE\'s memory substrate; the Nuke inside-out host is a ' +
+  'separate, differently-named product (README:273 corrected). Corrected rider: cognitive STATE is ' +
+  'deterministic USD/LIVRPS, never vector similarity. Full ruling: docs/reviews/h22-c3-moneta-decision.md.',
 ]
 
 // Pull any drift/needs-fix the drive phase surfaced.
@@ -118,7 +117,7 @@ const driftNeedsFix =
 const humanNext =
   driven.mode === 'B'
     ? 'Review every drop-week artifact; blueprint §9 step 10 (ratify) is yours — flip nothing until each reads clean. Then dispatch h22-port-wave per ratified wave.'
-    : `Review the re-verify + any intake appendix. Resolve the C3 open decision. Then the standing gate is merge-to-main; ` +
+    : `Review the re-verify + any intake appendix. Then the standing gate is merge-to-main;` +
       `Leg 1 (write harness/state/drop.json) is the human act that opens MODE B. ${orient.humanActToAdvance || ''}`.trim()
 
 log(driftNeedsFix.length ? `Leg-0 drift flagged: ${driftNeedsFix.length} item(s) — see driven.leg0.result.needsFix` : 'No Leg-0 drift flagged.')
