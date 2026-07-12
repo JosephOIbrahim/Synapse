@@ -1,7 +1,7 @@
 # G9 — PRE-FLIGHT ADMISSION GATE (P7 made operational)
 
 **`docs/PREFLIGHT_GATE.md`** · Repo: `C:\Users\User\SYNAPSE` · Grounded against HEAD `314acd6` / H21.0.671.
-All paths repo-relative. Every path, count, and symbol below was verified by this dispatch's own
+Module paths (`host/`, `server/`, `core/`, `mcp/`, `routing/`, `cognitive/`) are `python/synapse/`-relative — e.g. `host/graph_builder.py` = `python/synapse/host/graph_builder.py` (a *separate* repo-root `host/` holds the live-probe scripts); harness/docs paths are repo-root-relative. Every path, count, and symbol below was verified by this dispatch's own
 Read/Grep/Bash; anything not locally verifiable is tagged `[UNVERIFIED — …]` or `V0` inline.
 
 **Status: PROPOSAL — design spec (MODE A paper).**
