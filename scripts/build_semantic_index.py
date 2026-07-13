@@ -25,12 +25,37 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "python"))
+
+
+def embed_source_digest(rag_root: Path) -> str:
+    """Content digest of everything that determines the embedded text: the
+    reference .md tree + semantic_index.json (whose topic enrichment is folded
+    into each entry's searchable_text by _entries_from_knowledge). Content-based
+    (not mtime) so it is stable across checkouts and meaningful across edits.
+
+    K.5 freshness invariant: build_semantic_index stamps this into manifest.json,
+    and harness/verify/checks.py::check_semantic_index_fresh recomputes it with the
+    IDENTICAL formula (pure file reads, no synapse/torch import) to detect a corpus
+    that drifted from its committed vectors. If you change this formula, change the
+    check in lockstep — a mismatch makes the gate read stale-forever or fresh-blind."""
+    parts = []
+    md_dir = rag_root / "skills" / "houdini21-reference"
+    if md_dir.is_dir():
+        for p in sorted(md_dir.glob("*.md"), key=lambda p: p.name):
+            parts.append((p.name, hashlib.blake2b(p.read_bytes(), digest_size=16).hexdigest()))
+    sem = rag_root / "documentation" / "_metadata" / "semantic_index.json"
+    if sem.is_file():
+        parts.append(("semantic_index.json",
+                      hashlib.blake2b(sem.read_bytes(), digest_size=16).hexdigest()))
+    blob = "\n".join(f"{name}:{h}" for name, h in parts)
+    return hashlib.blake2b(blob.encode("utf-8"), digest_size=16).hexdigest()
 
 
 def main() -> int:
@@ -80,6 +105,8 @@ def main() -> int:
             "dim": dim,
             "entries": len(entries),
             "normalized": True,
+            # K.5: content digest of the embedded source — the freshness anchor.
+            "content_digest": embed_source_digest(rag_root),
         }, indent=2),
         encoding="utf-8",
     )

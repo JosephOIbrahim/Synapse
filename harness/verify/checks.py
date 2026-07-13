@@ -2131,6 +2131,53 @@ def check_semantic_index_built(ctx):
     return {"ok": True, "detail": f"semantic index sound ({n_meta} embedded entries, model={manifest.get('model')})"}
 
 
+def check_semantic_index_fresh(ctx):
+    # K.5: the committed embedding index must match the CURRENT rag/ content it
+    # claims to represent. build_semantic_index stamps manifest.json with a
+    # content_digest over the embedded source (reference .md tree +
+    # semantic_index.json, whose topic enrichment is folded into embedded text);
+    # this recomputes it and compares. Stale (a reference file or topic was
+    # edited/added but the vectors were not rebuilt — e.g. K.2 changed enrichment
+    # after K.1 embedded) reads RED -> run scripts/refresh_knowledge.py. This is
+    # THE "easy to update for H22" gate: it makes doc drift loud instead of silent.
+    #
+    # The digest formula below MUST stay identical to
+    # scripts/build_semantic_index.py::embed_source_digest (pure file reads, no
+    # synapse/torch import, so the gate runs anywhere the repo does).
+    import hashlib
+    wt = Path(ctx["wt"])
+    rag = wt / "rag"
+    manifest_fp = rag / "semantic_index" / "manifest.json"
+    if not manifest_fp.is_file():
+        return {"ok": False, "detail": "rag/semantic_index/manifest.json missing — "
+                                       "run scripts/build_semantic_index.py (K.1)"}
+    try:
+        manifest = json.loads(manifest_fp.read_text(encoding="utf-8"))
+    except Exception as e:
+        return {"ok": False, "detail": f"manifest unreadable: {str(e)[:200]}"}
+    recorded = manifest.get("content_digest")
+    if not recorded:
+        return {"ok": False, "detail": "manifest has no content_digest — rebuild via "
+                                       "scripts/build_semantic_index.py to stamp the K.5 freshness anchor"}
+    parts = []
+    md_dir = rag / "skills" / "houdini21-reference"
+    if md_dir.is_dir():
+        for p in sorted(md_dir.glob("*.md"), key=lambda p: p.name):
+            parts.append((p.name, hashlib.blake2b(p.read_bytes(), digest_size=16).hexdigest()))
+    sem = rag / "documentation" / "_metadata" / "semantic_index.json"
+    if sem.is_file():
+        parts.append(("semantic_index.json",
+                      hashlib.blake2b(sem.read_bytes(), digest_size=16).hexdigest()))
+    live = hashlib.blake2b("\n".join(f"{n}:{h}" for n, h in parts).encode("utf-8"),
+                           digest_size=16).hexdigest()
+    if live != recorded:
+        return {"ok": False, "detail": f"embeddings STALE — rag/ content changed since last embed "
+                                       f"(manifest {recorded[:12]}… != live {live[:12]}…); "
+                                       "run scripts/refresh_knowledge.py"}
+    return {"ok": True, "detail": f"embeddings fresh vs rag/ content "
+                                  f"({manifest.get('entries', '?')} entries, digest {live[:12]}…)"}
+
+
 def check_knowledge_topic_coverage(ctx):
     # K.2: every reference .md file must have a topic in semantic_index.json whose
     # reference_file points at it — otherwise the Tier-1 fast path (keyword/no-LLM)
@@ -2258,6 +2305,7 @@ DISPATCH = {
     # K — knowledge/corpus-freshness track
     "knowledge_baseline_fresh": check_knowledge_baseline_fresh,
     "semantic_index_built": check_semantic_index_built,
+    "semantic_index_fresh": check_semantic_index_fresh,
     "knowledge_topic_coverage": check_knowledge_topic_coverage,
     "knowledge_root_canonical": check_knowledge_root_canonical,
 }

@@ -3,5 +3,6 @@
   "model": "all-MiniLM-L6-v2",
   "dim": 384,
   "entries": 117,
-  "normalized": true
+  "normalized": true,
+  "content_digest": "65d55f2c4e84eda475981bb7b3d0a55f"
 }

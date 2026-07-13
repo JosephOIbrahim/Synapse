@@ -77,6 +77,7 @@
     "suite_baseline",
     "knowledge_baseline_fresh",
     "semantic_index_built",
+    "semantic_index_fresh",
     "knowledge_topic_coverage",
     "knowledge_root_canonical"
   ],
@@ -1359,6 +1360,38 @@
         "knowledge_root_canonical"
       ],
       "note": "The G: store's corpus/ entries had no searchable_text field -- a session defaulted there loaded hollow (confirmed by adversarial verification 2026-07-13). The 803 sidefxlabs_entries.json rows already matched scout's corpus schema verbatim; they were orphaned only because scout's loader scans <root>/corpus/, never <root>/semantic_index/ where they physically sat. Migrated, not regenerated. G:\\HOUDINI21_RAG_SYSTEM\\_raw_documentation\" + garbled cp-artifact directory (embedded newline in the dirname, from a historical botched cp command) left untouched -- contains real nested sample content (FullSourceSamples, Dev_HDA_Test HDAs), not junk; needs manual handling, not a scripted move."
+    },
+    {
+      "id": "K.5",
+      "phase": "knowledge",
+      "mode": "A",
+      "crit": false,
+      "layer": "build",
+      "title": "Knowledge track — the freshness gate + one-command refresh: stamp the embedding index with a content digest of its rag/ source and RED the gate when they drift. THE 'easy to update for H22' mechanism — makes doc drift loud, not silent",
+      "refs": [
+        "scripts/build_semantic_index.py",
+        "scripts/refresh_knowledge.py",
+        "rag/semantic_index/manifest.json"
+      ],
+      "verify": [
+        "semantic_index_fresh"
+      ],
+      "note": "Mode A (runnable now) AND the drop-day update anchor: on the same drop.json trigger the H21->H22 tracks use, an operator authors H22 docs into rag/ then runs `python scripts/refresh_knowledge.py` (rebuild embeddings + corpus + baseline) and the gate flips green. build_semantic_index.embed_source_digest and checks.py::check_semantic_index_fresh share ONE digest formula (pure file reads, no torch) — a drift between them would break the gate. Discovered + fixed a live staleness in the same breath: K.1's vectors were built before K.2 changed semantic_index.json enrichment, so the committed embeddings were stale for ~27 relinked files (pyro_fx etc.) until this task rebuilt them. That silent staleness is exactly what the gate now prevents. Not a guardrail (would fail every sprint mid-edit); it's K.5's own verify + a K.R capstone input."
+    },
+    {
+      "id": "K.4",
+      "phase": "knowledge",
+      "mode": "A",
+      "crit": false,
+      "layer": "bounded-decision",
+      "blocked_on": "product_call",
+      "title": "Knowledge track — vex-corpus -> rag/ integration: the sync ALREADY RAN and produced 14 low-quality vex_corpus_*.md files now polluting scout. DECISION: block further sync; RECOMMEND pruning the 14 (pending a human Houdini-expert call)",
+      "refs": [
+        "rag/skills/houdini21-reference/vex_corpus_point_cloud_ops.md",
+        "python/synapse/cognitive/tools/scout_ingest.py"
+      ],
+      "verify": [],
+      "note": "DECIDED (close-the-loop 2026-07-13, agent-investigated + spot-verified): the premise 'should we wire vex-corpus' is overtaken — vex-corpus/scripts/sync_to_synapse.py already ran and wrote 14 vex_corpus_*.md into rag/skills/houdini21-reference/ (tracked in HEAD, ~2079 chunks per .vex_corpus_manifest.json). They are live in scout (embedded 1-per-file). VERIFIED low quality: vex_corpus_point_cloud_ops.md is 5639 lines, line 1102 is broken VEX 'vector pts = pts[];', line 7 is mojibake '### Exercises a~'; ~65% of source is joy-of-vex (already cleanly in rag/ as joy_of_vex_*.md via vex_rag_pipeline) so it's largely redundant AND noisier; whole-file embedding (build_semantic_index MVP) can't represent a 5639-line file and it out-term-frequencies clean files on common VEX queries = active pollution. vex-corpus's real output is a FINE-TUNING corpus (intake.py to_training_pair), unvetted Ollama explanations, not curated retrieval. RECOMMENDATION: prune the 14 files + their semantic_index.json/agent_relevance_map.json entries, then scripts/refresh_knowledge.py (K.5 gate makes this a clean prune->red->refresh->green loop). NOT done unilaterally — pre-existing user content, a Houdini-expert quality call. Re-WIRE condition: vex-corpus grows dedup + VEX-syntax validation + section-level chunking so only net-new verified patterns remain. No H22 dependency."
     }
   ]
 }
