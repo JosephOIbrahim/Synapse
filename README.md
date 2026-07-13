@@ -12,7 +12,7 @@
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
   <a href="tests"><img src="https://img.shields.io/badge/tests-4118%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.22.0-1e293b.svg" alt="Changelog"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.23.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 > ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it's all recorded (receipts, not magic). Five engines, 115 tools. **Install ↓ in ~5 min.**
@@ -38,7 +38,7 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 | You want… | Read… |
 |---|---|
 | **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
-| **What shipped in v5.22.0** | *New in v5.22.0* — the honest envelope, evidence-based anchors, the drop-day runbook |
+| **What's new in v5.23.0** | *New in v5.23.0* — honest claims (one Moneta · real test count) + the H22 blueprint harness |
 | **How AI network-building stays safe** | *Propose → validate → build* |
 | **To install it** | *Install — 5 minutes* |
 | **The architecture** | *How it works — inside-out* |
@@ -80,32 +80,15 @@ flowchart LR
 
 ---
 
-## ✦ New in v5.22.0
+## ✦ New in v5.23.0 — a truth-and-prep release
 
-Three things landed this release: **the honest envelope** (receipts on *both* roads into Houdini — recorded honestly, never faked), **evidence-based anchors** (the integrity flags now come from runtime evidence, not self-report), and the **drop-day runbook** (H22 lands 2026-07-15; the whole drop is one ordered page, and the machine was proven beforehand).
+**No product code changed this release. What changed: the public claims got more honest, and the H22 gap-closure blueprint got the harness that runs it.**
 
-### The honest envelope — receipts on BOTH roads
+- 🎯 **One Moneta** — Moneta *is* SYNAPSE's memory substrate (it always was, in the code); an earlier internal doc rider wrongly implied otherwise. Corrected everywhere, so the docs match the code. → [the ruling](docs/reviews/h22-c3-moneta-decision.md)
+- 🧾 **Honest numbers, stated plainly** — the test badge now reads the real green-floor count (**4,118**, replacing a stale 4,186), and the MCP surface states its **local-first, single-user** security posture out loud (Origin / DNS-rebinding checks, Bearer auth, `SYNAPSE_DEPLOY_MODE=local`).
+- 🧭 **The H22 blueprint runs itself** *(dev-facing)* — the H22 gap blueprint (now v2.1) is committed with a one-command orchestrator (`h22-relay`) that drives it end-to-end and **stops at every human gate**. It ran its own acceptance pass green (`MODE_A_VERIFIED`) and caught + closed four of its own doc-drift items. → [the harness spec](harness/SPEC.md)
 
-**There are two roads into Houdini — the audited `/mcp` bridge and the live `/synapse` panel path — and until now only the first one left `IntegrityBlock` receipts.** Live-path mutations were invisible to the operation stats and the self-tuning advisor. Now every mutating live op leaves a record too:
-
-- 🧾 **Path-qualified, never faked** — live records carry `execution_path="live"`, cheap scene hashes before and after, and per-anchor honesty: the consent, composition, and undo checks the live path doesn't run are recorded as **not-applicable — never faked `True`**. Honesty over theater.
-- 👁️ **The advisor finally SEES the live path** — the shared operation stats, recent-operations trail, and the self-tuning advisor now cover both roads, so a live-path anomaly can no longer hide from the loop that watches for them.
-- 🛡️ **Hardened before it shipped** — a fixed 1-second capture bound (env-tunable) so the envelope can never hold the mutation lock; a kill switch (`SYNAPSE_LIVE_ENVELOPE=0`, tested end-to-end); captures skip when the main thread is already stalled; and envelope bookkeeping never leaks into the latency instruments.
-
-### Anchors with evidence — fidelity you can trust
-
-**The bridge's integrity flags used to be self-attested — the code path assigned `True` about itself.** Now they come from evidence:
-
-- 🔬 **Undo + thread flags read the runtime** — undo-stack snapshots around the undo group plus real thread identity at execution time. **Fidelity 1.0 now means *verified*, not "didn't throw."**
-- 🧯 **Adversarially reviewed before landing** — three lenses read the diff; two independently converged on the same false-violation mode (cook-induced hash shifts misread as uncaptured mutations). Fixed: cook-sensitive hash components are never treated as authored-change evidence, and inconclusive evidence keeps the anchor with a one-time warning.
-- 🧬 **Composition validation grew arcs** — it covered only `reference` arcs; now `payload` arcs get the same hard checks (self-cycle, unresolvable layer), and `inherit` / `specialize` self-cycles are caught too. Conservative by design: legal USD flexibility never hard-fails.
-
-### Drop day has a runbook
-
-**Houdini 22 lands 2026-07-15, and the whole drop is now one page: [`docs/studio/DROP_DAY.md`](docs/studio/DROP_DAY.md) — 11 ordered steps, human gates marked.** Drop day is verification, not surgery: the Mode-B rehearsal already passed, the wheels are pre-cached, and the vendor decision is made — sidecar, with the re-vendor contingency scripted. Two smaller guarantees rode along:
-
-- ⏱️ **The PDG cook poll is bounded** — a `cook_timeout` kwarg with an 1800-second backstop; on expiry the cook is cancelled and the generated tasks dirtied, with on-disk caches preserved. The unbounded-poll hang is dead.
-- 🎞️ **Animation can't slip the detector** — animated USD attributes now digest **every authored time sample** into the structural stage signature, so an animation edit can no longer sneak past the scene-change detector.
+> *The last **product-feature** release is **v5.22.0** (in the table below). Houdini 22 ships **2026-07-15** — see [H22-ready before H22 ships](#-h22-ready-before-h22-ships).*
 
 ---
 
@@ -200,6 +183,7 @@ flowchart LR
 
 | Release | Headline |
 |---|---|
+| **v5.22.0** | **The honest envelope + evidence-based anchors + the drop-day runbook** — receipts on *both* roads into Houdini (the audited `/mcp` bridge **and** the live panel path, recorded honestly, never faked); integrity flags now derived from runtime evidence instead of self-report (fidelity 1.0 = *verified*); composition validation extended to `payload` / `inherit` / `specialize` arcs; and the H22 drop compressed to one ordered, human-gated page. |
 | **v5.21.0** | **Diagnostic truth + the self-protecting harness + the readiness verdict** — the scene interrogated live (dirty-propagation / recook / time-dependence cataloged per context — the truth class no external LLM can hold), the harness that guards its own green (full-suite ratchet, posture-scoped red-driver, fix-is-real probes), and an honest **READY (solo posture)** verdict with the trade-offs named instead of hidden. |
 | **v5.20.0** | **H22 drop-day machine + utility flywheel + panel v9/v9.1** — the API-delta probe (proven empty on H21, caught 15 phantom spellings in our own emitters), the self-improving probe→review→wire loop, and the five-engine panel: **Claude · Gemini · NVIDIA Nemotron · Ollama · Custom**, the author token, one CHAT surface where **consent auto-surfaces** (v9.1), bundled Space Grotesk/Mono, a token-only meter. |
 | **v5.19.0** | **The build half landed** — a validated proposal becomes real nodes under one undo group, with mid-build rollback. Plus the Solaris production-wiring correction (phantom per-shape lights purged, merge/sublayer strength rule live-probed). |
@@ -298,7 +282,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.22.0):**
+**Shipping (v5.23.0):**
 
 - 🎛️ **Artist panel v9.1** — five engines, undo-safe, 115 tools, a single **CHAT** surface where the review + consent gate auto-surface, live observability + latency instrumentation (WCAG/usability **G3-audited**).
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.

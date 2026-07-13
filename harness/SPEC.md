@@ -183,10 +183,10 @@ Report  → consolidated status + standing open decisions (incl. C3) + the singl
 
 1. **C3 — the "Moneta" naming contradiction. [SHARPEST — blocks the G7 doc fix]**
    The blueprint C3 rider says Moneta is the *Nuke inside-out host* and must **not** be described as a memory
-   service. But SYNAPSE's own surface contradicts this: `README.md:322-348` describes *"Moneta … a private,
+   service. But SYNAPSE's own surface contradicts this: the README's *Optional — Moneta* section describes *"Moneta … a private,
    encrypted memory substrate (repo `JosephOIbrahim/Moneta`)"*, `SYNAPSE_MEMORY_BACKEND=moneta` selects it, and
    `python/synapse/memory/moneta_store.py` + `moneta_runtime.py` **ship it as the memory backend**. (Note
-   `README.md:273` *does* use the Nuke-host framing — `Moneta/Nuke` — so the README is internally split.)
+   the README portfolio line *did* use the Nuke-host framing — `Moneta/Nuke` — so the README was internally split.)
    **A blind docsurgeon cut per C3 would make the README contradict the shipped code.** Ruling needed:
    **(a)** narrow C3 to the Nuke-host referent and keep the `moneta` memory backend named as-is, or
    **(b)** rename the shipped backend away from "Moneta." Route via `h22-intake` (adjudicate the C3 rider vs
@@ -195,10 +195,10 @@ Report  → consolidated status + standing open decisions (incl. C3) + the singl
    **is** the shipped memory backend (`moneta_store.py`; live recall keyword, vector staged in shadow), so C3 as
    written was factually wrong. Ruling: Moneta keeps the name (the memory substrate); the Nuke inside-out host is
    a separate, differently-named product. Corrected rider = cognitive *state* ≠ vector similarity (Non-Goal 6).
-   Applied: `README.md:273` corrected · guardrails softened · blueprint → v2.1 C3 correction. No open C3 action.
+   Applied: the README portfolio line corrected · guardrails softened · blueprint → v2.1 C3 correction. No open C3 action.
 
 2. **G7 residuals (independent of C3, safe now).** README test badge `4,186` → ratchet floor **`4118`**
-   (`README.md:364`; re-derive from `suite_baseline.json`, never copy). Add a loopback-only ingress sentence to the
+   (the README test badge; re-derive from `suite_baseline.json`, never copy). Add a loopback-only ingress sentence to the
    MCP/WS surface (grep confirms none present). Both are on the docsurgeon worklist; merge-to-main is the gate.
 
 3. **§10 first exercise.** The intake protocol is wired but has produced zero appendices (`docs/intake/` absent).

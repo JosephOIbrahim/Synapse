@@ -104,7 +104,7 @@ phase('Report')
 const openDecisions = [
   // C3 RESOLVED 2026-07-12 (one-Moneta ruling) — kept as a breadcrumb, not an open action.
   'C3 — RESOLVED (one Moneta): Moneta IS SYNAPSE\'s memory substrate; the Nuke inside-out host is a ' +
-  'separate, differently-named product (README:273 corrected). Corrected rider: cognitive STATE is ' +
+  'separate, differently-named product (README portfolio line corrected). Corrected rider: cognitive STATE is' +
   'deterministic USD/LIVRPS, never vector similarity. Full ruling: docs/reviews/h22-c3-moneta-decision.md.',
 ]
 

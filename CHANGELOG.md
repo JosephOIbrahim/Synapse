@@ -2,6 +2,27 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.23.0 — one Moneta · honest claims · the H22 blueprint harness
+
+*One arc, 2026-07-12: a documentation-integrity + H22-prep release — **no product code changed**; the public claim surface got more honest and the H22 gap-closure blueprint got its executor harness. **4,118 tests passing** (the badge stopped overstating) · tool count unchanged at 115 · Houdini 21.0.671.*
+
+**ONE MONETA (C3 correction) — the docs now match the code:**
+- The H22 blueprint's C3 rider claimed *"Moneta is the Nuke host, not a memory service."* The shipped code disagrees: `python/synapse/memory/moneta_store.py` + `SYNAPSE_MEMORY_BACKEND=moneta` ship Moneta **as** SYNAPSE's memory substrate (keyword recall live, vector staged in shadow). Enforcing the rider would have made the README contradict the code — the v2 reconcile pass caught it before any doc surgery.
+- **Ruling (`docs/reviews/h22-c3-moneta-decision.md`):** one Moneta. The memory engine keeps the name (from Juno *Moneta*, "she who reminds"); the planned Nuke inside-out host is a separate, differently-named product. Corrected rider = SYNAPSE's cognitive *state* is deterministic USD/LIVRPS, never vector similarity (Non-Goal 6). Applied across 10 files — agent charters, workflows, the README portfolio line, and the blueprint → **v2.1** inline correction (original C3 preserved beneath it).
+
+**HONEST PUBLIC SURFACE (G7):**
+- Test badge `4,186` → **`4,118`** — the ratchet floor at `harness/verify/suite_baseline.json`, re-derived not copied (`4,186` was a stale release-era number).
+- README now states the **local-first, single-user** security posture plainly: the MCP surface enforces Origin validation (DNS-rebinding protection) + supports Bearer auth, `SYNAPSE_DEPLOY_MODE` defaults to `local` (`python/synapse/mcp/server.py:695-720`).
+- Three Leg-0 spec citation fixes (paths that didn't resolve; a mis-cited docstring) — surfaced by the harness's own adversarial re-verify pass.
+
+**THE H22 BLUEPRINT HARNESS (dev-facing — `docs/` + `.claude/` + `harness/`):**
+- The H22 gap-closure blueprint (**v2.1**) is committed to `docs/SYNAPSE_H22_GAP_BLUEPRINT.md` — it was never in-repo before, only its executor playbook was.
+- `harness/SPEC.md` — the reconciliation authority: a **G1–G9 / P1–P7 ↔ in-repo-artifact crosswalk** + the two-engine architecture (the `run.ts` headless grinder and the interactive `.claude/workflows` blueprint executor, joined at a deliberate human seam).
+- `.claude/workflows/h22-relay.js` — the cross-leg meta-relay: **one command** that orients on gate state, drives the current-MODE spine, and **halts at every human gate** (`drop.json`, merge, ratify). It ran its own acceptance pass (`MODE_A_VERIFIED`, 14 agents) and its self-verification caught + closed 4 doc-drift items.
+- Its ground-truth sweep **refuted a blueprint premise** — the "no pre-flight admission gate exists" claim: the gate substantially already exists (`python/synapse/host/graph_builder.py:112-120` re-validates unconditionally before any mutation). G9 *hardens* it; it doesn't build it.
+
+**RECONCILE-ONLY:** the H22 harness was already ~95% built (v1, commits `3c2076b`..`42f32ba`); a 10-reader reconnaissance confirmed all four Phase-0 specs, the 10-agent / 6-workflow team, and P7→G9 + §10 intake already matched blueprint v2. This release adds the genuine v2 delta and rebuilds nothing.
+
 ## v5.22.0 — the honest envelope · evidence-based anchors · drop-day runbook
 
 *One arc, 2026-07-10: the audit trail stopped lying by omission — live `/synapse` mutations now leave path-qualified, observe-only IntegrityBlocks in the shared process trail, the `/mcp` anchor flags upgraded from self-attested to evidence-derived, composition validation broadened beyond references — and the H22 drop got its one-page runbook, five days out. **4,186 tests passing** · **tool count unchanged at 115** · every `hou.*`/`pxr.*` API emitted in this release live-verified via a headless hython dir() probe against 21.0.671 BEFORE implementation (the committed symbol table is blind to `hou` submodule members — the probe closed that gap).*

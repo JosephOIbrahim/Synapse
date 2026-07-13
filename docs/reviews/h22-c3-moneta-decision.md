@@ -6,11 +6,11 @@
 
 ## Ruling — one Moneta (2026-07-12, CTO)
 
-**Moneta keeps the name; it IS the memory substrate.** The name is from Juno *Moneta* ("she who reminds," Latin *monēre*) — coined for a memory engine and shipped as one (`moneta_store.py`, repo `JosephOIbrahim/Moneta`, `SYNAPSE_MEMORY_BACKEND=moneta`). The "Moneta/Nuke" portfolio line (`README.md:273`) was a naming slip: the Nuke inside-out host is a **separate, differently-named product** (a SYNAPSE-for-Nuke sibling). Its purpose is real but name-independent, so it does not warrant sharing the memory tech's name — one Moneta.
+**Moneta keeps the name; it IS the memory substrate.** The name is from Juno *Moneta* ("she who reminds," Latin *monēre*) — coined for a memory engine and shipped as one (`moneta_store.py`, repo `JosephOIbrahim/Moneta`, `SYNAPSE_MEMORY_BACKEND=moneta`). The "Moneta/Nuke" portfolio line was a naming slip: the Nuke inside-out host is a **separate, differently-named product** (a SYNAPSE-for-Nuke sibling). Its purpose is real but name-independent, so it does not warrant sharing the memory tech's name — one Moneta.
 
 **The whitepaper's real error was narrower than C3 claimed** — it called Moneta a *vector-index* service. Corrected rider: SYNAPSE's cognitive **state** is deterministic USD/LIVRPS, **never vector similarity** (Non-Goal 6); "Moneta" names the memory layer, not a DCC host.
 
-**Applied:** `README.md:273` corrected · guardrails softened (`h22-docsurgeon`, `h22-adjudicator`, `h22-intake`, `h22-ground-truth`, `h22-relay`) · blueprint §1 C3 → v2.1 correction note. Nothing anywhere now denies Moneta is the memory backend. The recommendation below is the reasoning of record.
+**Applied:** the README portfolio line corrected · guardrails softened (`h22-docsurgeon`, `h22-adjudicator`, `h22-intake`, `h22-ground-truth`, `h22-relay`) · blueprint §1 C3 → v2.1 correction note. Nothing anywhere now denies Moneta is the memory backend. The recommendation below is the reasoning of record.
 
 ## The contradiction
 
@@ -29,10 +29,10 @@ README lines that describe Moneta as a memory substrate — and those lines are 
 | Tier | Fact |
 |---|---|
 | **VERIFIED-CODE** | `python/synapse/memory/moneta_store.py:1` — *"MonetaBackedStore — SYNAPSE MemoryStore backed by the Moneta engine (Mile 4)."* Moneta **is** SYNAPSE's memory engine. `moneta_runtime.py` ships alongside it. |
-| **VERIFIED-CODE** | `SYNAPSE_MEMORY_BACKEND=moneta` selects it (README:324); JSONL is the default, `moneta`/`shadow` opt in. |
+| **VERIFIED-CODE** | `SYNAPSE_MEMORY_BACKEND=moneta` selects it (README, *Optional — Moneta*); JSONL is the default, `moneta`/`shadow` opt in. |
 | **VERIFIED-CODE** | `moneta_store.py:11,15-16` — content is embedded for vector recall, but **live recall is keyword** (`score_memories`, a parity re-impl of `MemoryStore.search`); *"vector recall is a deliberate later upgrade, measured against keyword recall in shadow first."* |
-| **VERIFIED-REPO** | `README.md:322` — *"Moneta is a private, encrypted memory substrate (repo `JosephOIbrahim/Moneta`)."* `:348` — *"memory/ # Moneta-backed memory substrate."* |
-| **VERIFIED-REPO** | `README.md:273` — *"Moneta/Nuke"* listed among portfolio hosts (the **only** Nuke-host framing on the surface). |
+| **VERIFIED-REPO** | README *Optional — Moneta* — *"Moneta is a private, encrypted memory substrate (repo `JosephOIbrahim/Moneta`)."* · repo-tree — *"memory/ # Moneta-backed memory substrate."* |
+| **VERIFIED-REPO** | README portfolio line — *"Moneta/Nuke"* at ruling time (since corrected to "a Nuke host") — was the **only** Nuke-host framing on the surface. |
 | **BLUEPRINT** | C3: "Moneta is the Nuke host, not a memory service." |
 | **UNVERIFIED (whitepaper, via blueprint §3 row 3)** | "Moneta = memory service **with vector index**." |
 
@@ -62,15 +62,15 @@ when only the *vector-similarity-recall mechanism* was the confabulation. Agains
 4. **Blueprint:** C3 is a *corrected load-bearing fact* → warrants a **v2.1** correction per §10 rule 2.
    Escalated to Joe; the harness does not self-revise the blueprint.
 5. **RESERVED TO JOE (the one brand call):** Does a **separate** "Moneta" Nuke inside-out host actually exist
-   (README:273 `Moneta/Nuke`), distinct from the memory-substrate repo `JosephOIbrahim/Moneta`?
+   (the README portfolio line's `Moneta/Nuke`), distinct from the memory-substrate repo `JosephOIbrahim/Moneta`?
    - **If yes** → two projects share the name; one needs a rename (brand decision, yours).
-   - **If no** → README:273's Nuke-host framing is loose, and C3's "Nuke host" premise simply drops.
+   - **If no** → the portfolio line's Nuke-host framing is loose, and C3's "Nuke host" premise simply drops.
 
 ## Until ruled
 
 - **No doc surgery on the Moneta lines.** They are substantially correct.
 - The **safe G7 residuals proceed independently:** test-count badge `4,186` → ratchet floor **`4118`**
-  (`README.md:364`; re-derive from `harness/verify/suite_baseline.json`), and add the loopback-only ingress
+  (the README test badge; re-derive from `harness/verify/suite_baseline.json`), and add the loopback-only ingress
   sentence. Neither touches the Moneta question.
 
 ---
