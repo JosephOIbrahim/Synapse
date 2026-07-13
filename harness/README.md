@@ -124,6 +124,30 @@ Held → a read-only intake surface prints the exact next human act; `--task` ca
 - `D.4` `synapse_explain_recook` · `D.5` `synapse_diagnose_callback` — the two CROWN handlers, on the existing `SynapseHandler` seam
 - guard on every D task: `tops_path_untouched` (the shipped TOPs diagnostic surface is quarantined)
 
+## The release-readiness track — the sixth trigger (second JSON-predicate one)
+Wraps the 2026-07-10 external H22 readiness review (`docs/reviews/synapse-h22-readiness-2026-07-10.md`
+— verdict "H22 RC0, do not label stable"; every claim adversarially verified against the live tree)
+into 12 durable regression gates: RED while a release-blocking defect's fingerprint is live
+(fail-open mutations ×3 sites, panel-owned freeze beat, unconditional module purge, cp311-only
+vendor cliff, exists-only installer detect, POSIX-only CI, stale shelf, unsafe unknown-tool
+default, the shared-bridge consent disarm S.2 can't see, fail-open auth, repo-root packaging),
+GREEN only when the review's required fix lands — then green forever. The `R.R` capstone computes
+the release LABEL: **STABLE-READY** only when every machine gate is green AND every live-Houdini
+gate carries a passing human receipt (`harness/state/release_receipts.json`, human-authored —
+G1 clean install / G5 lifecycle / G6 core smoke / G7 undo / G8 restart / G9 rollback) AND host
+truth is stamped (Mode B) AND the README's claim never outruns the receipts (G10). Anything less
+is an honest `RC — …` with blockers named. Trigger: a human flips `R.0`'s `ratified` in the
+git-tracked `harness/state/flywheel_queue.json` (the D.0 pattern); `--task R.n` cannot pierce the
+hold. The verdict is computable UNRATIFIED via
+`python harness/verify/checks.py --task R.R --worktree . --mode A` — arming only lets the loop
+DRIVE the fixes. Full contract: `harness/notes/spec-R-release-readiness.md`.
+
+- `R.1`–`R.6` the six P0s, in the review's Phase-1 order (mutation fail-closed → runtime beat owner → gated hot reload → dependency isolation → host-targeted installer → shipping-surface CI)
+- `R.7` shelf currency · `R.8` unknown-tool fail-closed metadata (both P1, R.7 blocks stable)
+- `R.9` fail-closed security defaults (process bridge + auth) — **human gate**, S.2/S.3 precedent; posture-scoped in the capstone (accepted+named under solo, blocking under studio/farm)
+- `R.10` packaging self-containment — POST-stabilization by the review's own sequencing; open hygiene, never blocks
+- `R.R` capstone — the review's binary G1–G10 gates made executable; emits `harness/state/release_readiness_verdict.json`
+
 ## Files
 | path | role |
 |---|---|
@@ -150,6 +174,11 @@ Held → a read-only intake surface prints the exact next human act; `--task` ca
 | `harness/state/posture.json` | deployment-posture declaration — S.1–S.3 arming trigger, peer of drop.json (runtime state, untracked) |
 | `harness/state/studio_readiness_verdict.json` | S.R capstone output — per-check verdict + READY/NOT-READY (runtime state) |
 | `tests/test_s_track.py` | pins the eight S-checks + S-task/vocabulary/human-gate conformance |
+| `harness/notes/spec-R-release-readiness.md` | release-track frozen contract — ratification trigger, verified fingerprints, receipts schema, G1–G10 capstone |
+| `docs/reviews/synapse-h22-readiness-2026-07-10.md` | the external H22 readiness review the R-track wraps into gates (the "why" for R.x) |
+| `harness/state/release_receipts.json.example` | live-gate receipt template — a human attests G1/G5/G6/G7/G8/G9 drills; the harness never writes it |
+| `harness/state/release_readiness_verdict.json` | R.R capstone output — per-check + receipts + G-map + the honest release label (runtime state) |
+| `tests/test_r_track.py` | pins the 12 R-checks + R-task conformance + live-tree RED honesty + capstone scenarios |
 | `docs/SYNAPSE_H22_BOUNDARY.md` | the boundary doc this harness enforces (the "why") |
 | `docs/SYNAPSE_H22_PROVIDER_APEX.md` | provider-registration spec — what 0.8/2.7 implement |
 | `CLAUDE.md` | distilled conventions (<2,500 tokens, cached) |

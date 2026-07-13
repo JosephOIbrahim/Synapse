@@ -39,16 +39,24 @@ Retrieval contract (no fabrication)
 
 Config seams (override via env, no code edit)
 ---------------------------------------------
-* SYNAPSE_RAG_ROOT   default: G:\\HOUDINI21_RAG_SYSTEM   (corpus\\ + semantic_index\\)
+* SYNAPSE_RAG_ROOT   default: the repo rag/ tree (corpus/ + semantic_index/ are
+                     ephemeral, materialized under .synapse/scout_corpus/ by
+                     scout_ingest.activate() — see that module).
 * SYNAPSE_VEX_ROOT   default: == RAG_ROOT  -> VEX is the same store, distinguished
                      by entry `type` (e.g. "vex*"). Point it at a separate folder
                      if your VEX corpus is a distinct store.
 
-NOTE (2026-06-08): the SYNAPSE knowledge-scaffold review found that
-``G:\\HOUDINI21_RAG_SYSTEM`` is the thin SideFXLabs-only store and the CANONICAL
-H21 corpus is the repo ``rag/`` tree (which ``routing/knowledge.py::KnowledgeIndex``
-already defaults to). Set ``SYNAPSE_RAG_ROOT`` to the repo ``rag`` dir to scout the
-canonical corpus; the default is left at G:\\ per the original contract.
+NOTE (2026-07-13, K.3): the SYNAPSE knowledge-scaffold review (2026-06-08) found
+that ``G:\\HOUDINI21_RAG_SYSTEM`` is a thin, largely orphaned SideFXLabs-only store
+(its corpus/ entries have no ``searchable_text``, so a session defaulted there
+loads hollow) and that the CANONICAL H21 corpus is the repo ``rag/`` tree, which
+``routing/knowledge.py::KnowledgeIndex`` already defaulted to. The module default
+below was left pointed at G:\\ "per the original contract" at the time; that drift
+is now closed — the default is the repo ``rag/`` tree, matching KnowledgeIndex and
+matching what ``scout_ingest.activate()`` (the actual runtime wiring, called from
+both the panel's Corpus button and the MCP dispatcher's first synapse_scout call)
+has pointed at all along. ``SYNAPSE_RAG_ROOT`` still overrides this for anyone who
+wants to scout a different store, including the legacy G:\\ tree.
 """
 
 from __future__ import annotations
@@ -93,7 +101,10 @@ class ScoutError(RuntimeError):
 # --------------------------------------------------------------------------- #
 #  Config                                                                      #
 # --------------------------------------------------------------------------- #
-RAG_ROOT = Path(os.environ.get("SYNAPSE_RAG_ROOT", r"G:\HOUDINI21_RAG_SYSTEM"))
+# K.3: default follows KnowledgeIndex (server/handlers.py) — repo rag/, not the
+# legacy G:\HOUDINI21_RAG_SYSTEM store. SYNAPSE_RAG_ROOT still overrides either way.
+_DEFAULT_RAG_ROOT = str(Path(__file__).resolve().parents[4] / "rag")
+RAG_ROOT = Path(os.environ.get("SYNAPSE_RAG_ROOT", _DEFAULT_RAG_ROOT))
 VEX_ROOT = Path(os.environ.get("SYNAPSE_VEX_ROOT", str(RAG_ROOT)))
 
 # D-H22-2: the federated-source registry (scout owns NO local APEX corpus —

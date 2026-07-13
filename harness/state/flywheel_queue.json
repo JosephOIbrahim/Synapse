@@ -94,6 +94,20 @@
       "note": "NEW cycle CLASS — READINESS truth (does the code still carry each verified deployment finding), a different axis from WIRING/CONTEXT/CAPABILITY truth. Each S-check fingerprints a live finding: RED now (finding present), GREEN when fixed, and never silently regresses. Human-requested 2026-07-06 ('wrap the observations into a harness ... with review at the end'). Trigger = harness/state/posture.json (deploy-mode declaration), peer of drop.json. S.1-S.3 are human_gate: the harness gates + reviews auth/consent fixes, it never autonomously rewrites security code and never merges. Queued per the anti-runaway anchor for the same sign-off U.5 got."
     },
     {
+      "id": "R.0",
+      "title": "Release-readiness truth (H22 RC): the 2026-07-10 external readiness review wrapped into 12 durable regression gates + a receipts-backed release-label capstone (ratify -> R.1-R.10 remediation + R.R verdict)",
+      "status": "candidate",
+      "evidence": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        "harness/verify/checks.py",
+        "tests/test_r_track.py",
+        "harness/state/release_receipts.json.example"
+      ],
+      "ratified": false,
+      "note": "NEW cycle CLASS — RELEASE truth (does the shipping product still carry each verified release-blocking defect, and is every release-label claim receipt-backed), a different axis from WIRING/CONTEXT/CAPABILITY/READINESS/DIAGNOSTIC truth. Every review claim adversarially verified 2026-07-10 (11-agent sweep, all CONFIRMED; refinements: THREE fail-open mutation sites not two; panel close FALSE-POSITIVES a freeze escalation; a second consent disarm in shared/bridge.py that S.2 cannot see; gate-0.1 already DECIDED sidecar). Human-requested 2026-07-10 ('create a harness to address these changes'); queued per the anti-runaway anchor for the same sign-off U.5/D.0 received. Trigger = this ratified flip (second JSON-predicate trigger, D.0 pattern); R.9 stays human_gate (security authoring). The R.R verdict is computable UNRATIFIED via checks.py --task R.R; ratification only lets the loop DRIVE the fixes."
+    },
+    {
       "id": "D.0",
       "title": "Diagnostic truth (COOK/RUNTIME): cook-API confirmation probe -> perturbation catalog -> review sweep -> recook-explainer + callback-diagnosis handlers gated by per-context goldens",
       "status": "candidate",

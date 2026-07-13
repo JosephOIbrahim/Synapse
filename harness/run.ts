@@ -113,6 +113,34 @@ const COOK = (() => {
     return readdirSync(join(REPO, "harness/notes")).some((f: string) => /^cook_truth_\d+(?:\.\d+)*\.json$/.test(f));
   } catch { return false; }
 })();
+// R-track release-readiness intake — the sixth trigger, second JSON-PREDICATE one (the D.0
+// pattern): a human flips R.0's `ratified` in the git-TRACKED flywheel_queue.json — that arms
+// every blocked_on:"release_ratified" task (R.1–R.10 + the R.R capstone), the gate wall around
+// docs/reviews/synapse-h22-readiness-2026-07-10.md. Same loud-hold parsing as COOK_RATIFIED
+// (a corrupted queue holds LOUDLY, never silently — yes, both readers then warn; loud twice
+// beats silent once). STRICTLY READ-ONLY: the harness reads `ratified`, never writes it (the
+// anti-runaway anchor). The R.R verdict stays computable on demand WITHOUT arming:
+// python harness/verify/checks.py --task R.R --worktree . --mode A
+const RELEASE_RATIFIED = (() => {
+  const q = join(REPO, "harness/state/flywheel_queue.json");
+  if (!existsSync(q)) return false;
+  try {
+    const data = JSON.parse(readFileSync(q, "utf8"));
+    if (!Array.isArray(data.cycles)) {
+      console.log(`  ⚠ flywheel_queue.json 'cycles' is not a list — R track held (loud, not silent)`);
+      return false;
+    }
+    const r0 = data.cycles.find((cy: any) => cy && cy.id === "R.0");
+    if (r0 && "ratified" in r0 && typeof r0.ratified !== "boolean") {
+      console.log(`  ⚠ flywheel_queue.json R.0.ratified is non-boolean (${typeof r0.ratified}) — treated as unratified, R held`);
+      return false;
+    }
+    return r0?.ratified === true;
+  } catch (e) {
+    console.log(`  ⚠ flywheel_queue.json unparseable (${String(e).slice(0, 80)}) — R track held (loud, not silent)`);
+    return false;
+  }
+})();
 
 // ---------- helpers ----------
 function sh(cmd: string, cmdArgs: string[], cwd = REPO) {
@@ -470,6 +498,28 @@ function surfaceCookIntake() {
     log(`  ${c.warn}--task ${ONLY} cannot override this hold — D-tasks stay filtered until the track arms.${c.off}`);
 }
 
+// ---------- release intake surface (R track: ratify → gate wall → receipts → label) ----------
+// The R track is a gate wall around the 2026-07-10 H22 readiness review, dormant until a human
+// flips R.0's `ratified` in the git-tracked flywheel_queue.json (the second JSON-predicate
+// trigger, D.0's pattern). While held this prints the one flip — plus the fact that the R.R
+// verdict is computable on demand WITHOUT arming (the gates are read-only over source; arming
+// only lets the loop DRIVE the fixes). STRICTLY READ-ONLY: the harness never flips ratified
+// and never writes release_receipts.json (live-Houdini drills are the human's attestation).
+function surfaceReleaseIntake() {
+  if (RELEASE_RATIFIED) return;
+  if (!TASKS.some((t: any) => t.blocked_on === "release_ratified")) return;
+  head("release track held — R.0 awaits ratification (a human flips it, never the harness)");
+  log(`  ${c.warn}to arm:${c.off}      set R.0's "ratified" to true in harness/state/flywheel_queue.json`);
+  log(`  ${c.dim}spec (frozen contract + G1–G10 map): harness/notes/spec-R-release-readiness.md${c.off}`);
+  log(`  ${c.dim}the review it wraps: docs/reviews/synapse-h22-readiness-2026-07-10.md${c.off}`);
+  log(`  ${c.dim}verdict on demand (no arming needed): python harness/verify/checks.py --task R.R --worktree . --mode A${c.off}`);
+  log(`  ${c.dim}live-gate receipts (human-authored): harness/state/release_receipts.json.example${c.off}`);
+  // --task cannot pierce the hold: the release filter runs before ONLY selects, so naming a
+  // held R-task yields an empty queue. Say so instead of printing a bare empty summary.
+  if (ONLY && TASKS.some((t: any) => t.id === ONLY && t.blocked_on === "release_ratified"))
+    log(`  ${c.warn}--task ${ONLY} cannot override this hold — R-tasks stay filtered until R.0 is ratified.${c.off}`);
+}
+
 // ---------- the loop ----------
 function runTask(task: any): "PASS" | "BLOCKED" | "GATED" {
   // human gate — never auto-handled
@@ -570,6 +620,8 @@ if (COOK_RATIFIED) {
   log(`${c.dim}  diagnostic track held — D.0 not ratified (harness/state/flywheel_queue.json). A human flips it; the harness never does.${c.off}`);
   if (COOK) log(`${c.warn}  ⚠ cook_truth catalog present while D.0 is unratified — it does NOT arm D.3–D.5 (see the intake surface below).${c.off}`);
 }
+if (RELEASE_RATIFIED) log(`${c.dim}  release track armed — R.0 ratified. R.1–R.10 + R.R in the queue.${c.off}`);
+else log(`${c.dim}  release track held — R.0 not ratified (harness/state/flywheel_queue.json). A human flips it; the harness never does.${c.off}`);
 
 let queue = TASKS.filter((t: any) => t.mode === "A" || MODE === "B");
 queue = queue.filter((t: any) => !(t.mode === "B" && t.blocked_on === "drop" && MODE === "A"));
@@ -582,6 +634,7 @@ queue = queue.filter((t: any) => !(t.blocked_on === "cook_ratified" && !COOK_RAT
 // arm the three code-AUTHORING miles (D.3–D.5) with D.0 still unratified — the exact gate
 // inversion the crucible reproduced (2026-07-07). Stage 2 presupposes stage 1, structurally.
 queue = queue.filter((t: any) => !(t.blocked_on === "cook_truth" && !(COOK && COOK_RATIFIED)));
+queue = queue.filter((t: any) => !(t.blocked_on === "release_ratified" && !RELEASE_RATIFIED));
 if (ONLY) queue = queue.filter((t: any) => t.id === ONLY);
 if (DRIVE) {                              // red-driver narrows to the next blocking-red (or idles)
   const redId = selectRedTask();
@@ -621,4 +674,6 @@ surfaceContextIntake();
 surfaceStudioPosture();
 // diagnostic track — surface the ratify→probe→catalog ladder while the track is held (read-only)
 surfaceCookIntake();
+// release track — surface the R.0 ratification flip while the gate wall is held (read-only)
+surfaceReleaseIntake();
 log("");

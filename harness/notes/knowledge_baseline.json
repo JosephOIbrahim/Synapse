@@ -1,0 +1,15 @@
+{
+  "schema": "knowledge_baseline/v1",
+  "stats": {
+    "reference_files": 117,
+    "corpus_entries_from_markdown": 117,
+    "corpus_entries_from_extra_sources": 803,
+    "corpus_entries": 920,
+    "lexical_topic_map_size": 140,
+    "semantic_index_built": true,
+    "semantic_index_model": "all-MiniLM-L6-v2",
+    "retrieval_mode": "hybrid",
+    "rag_root_default_canonical": true
+  },
+  "blake2b": "caab218854a2755d2af3e190aafe79e7"
+}

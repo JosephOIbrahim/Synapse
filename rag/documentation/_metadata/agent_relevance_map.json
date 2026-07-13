@@ -69,5 +69,13 @@
   "vex_patterns": "sop_agent",
   "vex_performance": "sop_agent",
   "vex_types": "sop_agent",
-  "wire_dynamics": "fx_agent"
+  "wire_dynamics": "fx_agent",
+  "aces_color_management": "render_agent",
+  "camera_sensor_database": "camera_agent",
+  "copernicus_compositing": "cop_agent",
+  "mpm_production_workflows": "dop_agent",
+  "mpm_solver": "dop_agent",
+  "render_farm": "pipeline_agent",
+  "temporal_coherence": "render_agent",
+  "tops_advanced": "pipeline_agent"
 }

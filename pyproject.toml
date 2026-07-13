@@ -66,6 +66,14 @@ build = [
     "cython>=3.0",
     "setuptools>=61.0",
 ]
+semantic = [
+    # Query-time + offline-build dependency for scout's dense-retrieval path
+    # (python/synapse/cognitive/tools/scout.py EMBEDDERS registry). Optional:
+    # absent -> scout degrades to mode="lexical_only" (existing behavior,
+    # unchanged). Not required on a clean H22 install; only needed wherever
+    # the semantic index is (re)built or queried in hybrid mode.
+    "sentence-transformers>=2.2",
+]
 
 [project.urls]
 Homepage = "https://github.com/JosephOIbrahim/Synapse"

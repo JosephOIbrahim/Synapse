@@ -1560,6 +1560,463 @@ def check_studio_readiness_review(ctx):
             f"live gates: {', '.join(findings_live) or 'none'}")[:500]}
 
 
+# ---------- R — release-readiness (H22 RC) track (all stock python, no hython) ----------
+# Each R-check is a DURABLE REGRESSION GATE around a finding of
+# docs/reviews/synapse-h22-readiness-2026-07-10.md (external CTO review; every claim
+# adversarially verified against the live tree 2026-07-10): RED while the finding's
+# fingerprint is live in the product source, GREEN only when the review's required fix lands
+# — then green forever, so a release-blocking defect can never silently regress. Fingerprints
+# are static grep/regex over the worktree (ctx['wt']); none needs hython. The capstone
+# computes the release LABEL: STABLE-READY only when every machine gate is green AND every
+# live-Houdini gate has a human receipt (harness/state/release_receipts.json — human-authored
+# runtime state, peer of posture.json). Contract: harness/notes/spec-R-release-readiness.md.
+# These checks READ product code only; the fixes are the armed loop's / human's sprints.
+
+def _receipts_path():
+    # Release receipts are a MACHINE-LEVEL human declaration (peer of posture.json), read
+    # from the MAIN repo, never ctx['wt'] — a live-Houdini drill attests the machine, not a
+    # worktree. Module-level so tests can monkeypatch the seam to a tmp file.
+    return Path(__file__).resolve().parents[1].parent / "harness" / "state" / "release_receipts.json"
+
+def _drop_path():
+    # drop.json (the Mode-B trigger) — main repo, module-level seam for tests.
+    return Path(__file__).resolve().parents[1].parent / "harness" / "state" / "drop.json"
+
+def _read_receipts():
+    """Parsed receipts dict, or {} if absent/malformed. Never raises — a missing receipt just
+    means that live gate is PENDING (never faked green)."""
+    p = _receipts_path()
+    try:
+        if not p.exists():
+            return {}
+        data = json.loads(p.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+def check_mutation_fail_closed(ctx):
+    # R.1 FINGERPRINT (review P0.2 — "the most important code-level finding"): mutations fail
+    # OPEN when the integrity bridge is unavailable. THREE sites (the sweep found one more than
+    # the review): the twin `except ImportError → handler.handle` fallbacks in
+    # panel/tool_executor.py + mcp/tools.py, and bridge_adapter's `bridge is None → direct
+    # dispatch` (the LIVE path in practice: _BRIDGE_AVAILABLE=False silently disarms every
+    # panel + /mcp mutation). The mcp/server.py lookalike is the read-only resources path
+    # (its ImportError is hdefereval) — deliberately NOT matched.
+    import re
+    live = []
+    imp_fall = re.compile(r"except ImportError:\s*\n\s*response = handler\.handle\(command\)")
+    for rel, label in (("python/synapse/panel/tool_executor.py", "panel ToolExecutor"),
+                       ("python/synapse/mcp/tools.py", "/mcp dispatch_tool")):
+        src, _ = _read_src(ctx, rel)
+        if src and imp_fall.search(src):
+            live.append(f"{rel}: {label} falls back to direct handler.handle on bridge_adapter "
+                        "ImportError — mutating tools dispatch with no bridge, no receipt")
+    ba_src, _ = _read_src(ctx, "python/synapse/panel/bridge_adapter.py")
+    # bounded lookahead: matches execute_through_bridge's None-branch (comment + return within
+    # 80 chars), never get_session_report's `if bridge is None: return None` nor the
+    # bridge-routed handler.handle further down.
+    if ba_src and re.search(r"if bridge is None:[\s\S]{0,80}?return handler\.handle\(command\)", ba_src):
+        live.append("python/synapse/panel/bridge_adapter.py: execute_through_bridge dispatches "
+                    "direct when get_bridge() is None — the live fail-open path")
+    if live:
+        return {"ok": False, "detail": ("mutations fail OPEN: " + "; ".join(live) +
+                " — fix: fail closed for non-read-only tools, classification from an "
+                "import-independent source (e.g. handlers._READ_ONLY_COMMANDS)")[:500]}
+    return {"ok": True, "detail": "no fail-open mutation path: ImportError fallbacks + the "
+                                  "bridge-None direct dispatch are gone"}
+
+def check_runtime_owns_heartbeat(ctx):
+    # R.2 (review P0.3): the 1s freeze beat is a QTimer parented to the SynapsePanel widget —
+    # close the panel, lose the beat; WORSE (sweep refinement): the Watchdog monitor thread
+    # survives and reads the dead beat source as a freeze → false-positive breaker + emergency
+    # halt on a healthy session ~35s after panel close. Two legs so a lazy fix can't green it:
+    # leg 1 fires while the panel owns the beat; leg 2 fires if the panel timer is gone but NO
+    # process-lifetime owner replaced it (deleting protection is not relocating it).
+    import re
+    panel_src, _ = _read_src(ctx, "python/synapse/panel/synapse_panel.py")
+    if panel_src and re.search(r"self\._freeze_timer = QTimer\(self\)", panel_src):
+        return {"ok": False, "detail": (
+            "panel owns the freeze beat (synapse_panel.py: self._freeze_timer = QTimer(self)) — "
+            "the beat dies with the widget AND the surviving Watchdog false-positives a freeze "
+            "after panel close. Move the beat to a process-lifetime owner under "
+            "python/synapse/server/ marked `# RUNTIME_BEAT_SOURCE` (or def ensure_beat_started) "
+            "that also handles deliberate beat-source detach")[:500]}
+    server_dir = Path(ctx["wt"]) / "python" / "synapse" / "server"
+    owner = False
+    if server_dir.is_dir():
+        for f in server_dir.rglob("*.py"):
+            try:
+                src = f.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                continue
+            if "# RUNTIME_BEAT_SOURCE" in src or "def ensure_beat_started" in src:
+                owner = True
+                break
+    if not owner:
+        return {"ok": False, "detail": (
+            "panel-parented beat timer is gone but NO process-lifetime beat owner exists under "
+            "python/synapse/server/ (`# RUNTIME_BEAT_SOURCE` marker or def ensure_beat_started) "
+            "— freeze protection was removed, not relocated")[:500]}
+    return {"ok": True, "detail": "freeze beat owned by a process-lifetime service "
+                                  "(RUNTIME_BEAT_SOURCE under server/); panel no longer "
+                                  "constructs the beat timer"}
+
+def check_hot_reload_gated(ctx):
+    # R.3 (review P0.4): both .pypanel loaders purge sys.modules['synapse.*'] UNCONDITIONALLY
+    # at module scope on every panel creation — production hot-reload: duplicate bridges, stale
+    # callbacks, split singletons. RED per loader while the column-0 purge is live, or while a
+    # purge exists with no SYNAPSE_DEV_HOT_RELOAD gate anywhere in the file (catches re-nesting
+    # under an always-true block). A loader that no longer ships auto-greens its leg; deleting
+    # the purge outright is also a valid fix (gate-or-delete, never unconditional).
+    import re
+    live = []
+    for rel in ("houdini/python_panels/synapse_panel.pypanel",
+                "python/synapse/panel/synapse_chat.pypanel"):
+        src, _ = _read_src(ctx, rel)
+        if src is None:
+            continue  # loader removed entirely — leg green
+        col0 = (re.search(r'^for \w+ in sorted\(k for k in sys\.modules if k\.startswith\("synapse\."\)\):',
+                          src, re.M)
+                or re.search(r'^sys\.modules\.pop\("synapse", None\)', src, re.M))
+        ungated = "del sys.modules[" in src and "SYNAPSE_DEV_HOT_RELOAD" not in src
+        if col0:
+            live.append(f"{rel}: unconditional column-0 sys.modules purge")
+        elif ungated:
+            live.append(f"{rel}: sys.modules purge present with no SYNAPSE_DEV_HOT_RELOAD gate")
+    if live:
+        return {"ok": False, "detail": ("production hot-reload live: " + "; ".join(live) +
+                ' — wrap the purge in `if os.environ.get("SYNAPSE_DEV_HOT_RELOAD") == "1":` '
+                "or delete it")[:500]}
+    return {"ok": True, "detail": "module purge gated behind SYNAPSE_DEV_HOT_RELOAD (or removed) "
+                                  "in both loaders"}
+
+def check_deps_isolated(ctx):
+    # R.4 (review P0.1 — the H22 boot cliff): _vendor activates ONLY on cp311+win
+    # (__init__.py strict equality); on H22's likely cp312/cp313 a clean install's brain dies
+    # at daemon.py's manual-sidecar RuntimeError. Direction is DECIDED — gate-0.1 → sidecar
+    # (docs/studio/DROP_DAY.md, 2026-07-10), built first post-release; the drop-window minimum
+    # is versioned vendor roots from sys.version_info. GREEN on EITHER mechanism: the strict
+    # equality replaced (versioned roots), or a real sidecar implementation under host/
+    # (def/class lines only — the daemon's RuntimeError MESSAGE says "sidecar" and must never
+    # satisfy this).
+    import re
+    init_src, _ = _read_src(ctx, "python/synapse/__init__.py")
+    strict = bool(init_src and re.search(r"_synapse_sys\.version_info\[:2\] == \(3, 11\)", init_src))
+    if not strict:
+        return {"ok": True, "detail": "single-ABI strict gate gone from __init__.py — vendor root "
+                                      "is version-derived (or vendoring retired for the sidecar)"}
+    host_dir = Path(ctx["wt"]) / "python" / "synapse" / "host"
+    sidecar = False
+    if host_dir.is_dir():
+        pat = re.compile(r"^\s*(def \w*sidecar\w*|class \w*Sidecar\w*)", re.M)
+        for f in host_dir.rglob("*.py"):
+            try:
+                if pat.search(f.read_text(encoding="utf-8", errors="ignore")):
+                    sidecar = True
+                    break
+            except Exception:
+                continue
+    if sidecar:
+        return {"ok": True, "detail": "sidecar implementation present under host/ (gate-0.1's "
+                                      "decided direction) — the cp311 strict gate is no longer "
+                                      "the boot cliff"}
+    return {"ok": False, "detail": (
+        "H22 boot cliff live: _vendor activates only on Python 3.11+win (__init__.py "
+        "`version_info[:2] == (3, 11)`) and no sidecar exists under host/ — a clean "
+        "cp312/cp313 install dies at daemon.py's manual-sidecar RuntimeError. Fix: versioned "
+        "vendor roots (wheel_cache cp312/cp313 payloads are pre-staged) or the decided "
+        "sidecar")[:500]}
+
+def check_installer_host_targeted(ctx):
+    # R.5 PRESENCE gate (review P0.5): auto-detect only sees pref dirs that already exist — a
+    # fresh H22 pref dir (created on first launch) is silently omitted — and nothing verifies
+    # the written package from the host's side. GREEN needs BOTH: a --houdini-exe argument
+    # (derive pref dir/hython from the executable, mkdir a missing pref dir) AND a post-install
+    # verification surface (def verify_install/_host or an add_argument("--verify") line).
+    # FIX_IS_REAL_PROBE: none (R.5 unbuilt — the fixing sprint adds a behavioral installer
+    # test per spec §4; presence here, proof there once host-targeting lands)
+    import re
+    src, p = _read_src(ctx, "scripts/install_synapse_package.py")
+    if src is None:
+        return {"ok": False, "detail": f"installer missing: {p}"}
+    missing = []
+    if "--houdini-exe" not in src:
+        missing.append("no --houdini-exe argument (derive pref dir + hython from the "
+                       "executable; mkdir a fresh H22 pref dir instead of omitting it)")
+    if not (re.search(r"def verify_(install|host)", src) or 'add_argument("--verify"' in src):
+        missing.append("no post-install host verification (package parses, SYNAPSE_ROOT "
+                       "correct, synapse importable, pypanel + shelf discoverable)")
+    if missing:
+        return {"ok": False, "detail": ("installer not host-targeted: " + "; ".join(missing))[:500]}
+    return {"ok": True, "detail": "installer host-targeted: --houdini-exe + post-install "
+                                  "verification present"}
+
+def check_ci_covers_shipping_surface(ctx):
+    # R.6 (review P0.6): CI runs ubuntu+macos only — the shipping platform (Windows, the ONLY
+    # place the vendored cp311 binaries can even load) is never exercised; the vendored wheel
+    # is asserted by FILENAME, never imported. GREEN needs a windows lane AND a vendored-load
+    # probe (the workflow importing pydantic_core, not listing it). Host lanes (hython /
+    # graphical smoke) need licensed runners — those are G6 receipts, deliberately not gated
+    # here.
+    src, p = _read_src(ctx, ".github/workflows/ci.yml")
+    if src is None:
+        return {"ok": False, "detail": f"CI workflow missing: {p}"}
+    missing = []
+    if "windows-latest" not in src:
+        missing.append("no windows-latest lane (matrix is POSIX-only; the bundled native "
+                       "wheels are win_amd64 and never load in CI)")
+    if "pydantic_core" not in src:
+        missing.append("no vendored-load probe (a Windows step must IMPORT the vendored "
+                       "pydantic_core, not just assert the filename)")
+    if missing:
+        return {"ok": False, "detail": ("CI misses the shipping surface: " + "; ".join(missing))[:500]}
+    return {"ok": True, "detail": "CI covers the shipping surface: windows lane + vendored-load probe"}
+
+def check_shelf_current(ctx):
+    # R.7 PRESENCE gate (review P1-shelf): the shelf clipboard helper imports PySide2 ONLY —
+    # H21 ships PySide6 only, so clipboard silently returns False on the target platform — and
+    # the missing-panel message names the wrong installer (`python install.py`). The
+    # repo-standard fix keeps PySide2 as a FALLBACK, so the PySide2 literal survives — gate on
+    # PySide6 presence + current-installer presence, never on PySide2 absence.
+    # FIX_IS_REAL_PROBE: none (R.7 unbuilt — the fixing sprint adds a behavioral shelf test
+    # proving PySide6-first clipboard + current installer message; presence here, proof there)
+    src, p = _read_src(ctx, "houdini/scripts/python/synapse_shelf.py")
+    if src is None:
+        return {"ok": False, "detail": f"shelf helper missing: {p}"}
+    missing = []
+    if "from PySide6" not in src:
+        missing.append("clipboard path never tries PySide6 (H21 ships PySide6 only — copy "
+                       "always fails); add the PySide6-first fallback")
+    if "install_synapse_package.py" not in src:
+        missing.append("missing-panel message still says `python install.py` — the documented "
+                       "installer is scripts/install_synapse_package.py")
+    if missing:
+        return {"ok": False, "detail": ("shelf stale: " + "; ".join(missing))[:500]}
+    return {"ok": True, "detail": "shelf current: PySide6-first clipboard + current installer message"}
+
+def check_tool_metadata_single_source(ctx):
+    # R.8 FINGERPRINT (review P1-metadata; NOT covered by S.1 — check_policy_single_source
+    # fingerprints shared/bridge.py's gate fallback and its taxonomy list omits
+    # bridge_adapter): an UNKNOWN tool name silently classifies as "set_parameter" → INFORM,
+    # the weakest gate — unknown capability executing with mere notification. Repo-unique
+    # literal; its removal (fail-closed unknown handling / policy-source import) is the fix.
+    src, _ = _read_src(ctx, "python/synapse/panel/bridge_adapter.py")
+    if src and '_TOOL_TO_OPERATION.get(tool_name, "set_parameter")' in src:
+        return {"ok": False, "detail": (
+            "unknown tools default to set_parameter→INFORM (bridge_adapter.py "
+            '`_TOOL_TO_OPERATION.get(tool_name, "set_parameter")`) — unknown capability must '
+            "fail closed (refuse, or classify REVIEW-or-higher) and metadata should live in "
+            "the single policy source (S.1)")[:500]}
+    return {"ok": True, "detail": "no silent set_parameter default for unknown tools in bridge_adapter"}
+
+def check_process_bridge_armed(ctx):
+    # R.9a FINGERPRINT (review P1-consent, sweep refinement): the consent disarm exists at TWO
+    # sites and S.2 sees only bridge_adapter's. get_process_bridge() constructs the
+    # process-wide singleton gate-less with a blanket auto-approve lambda — deleting the panel
+    # disarm alone would flip S.2 green while every consumer still shares a bridge born
+    # disarmed. The `bridge.` prefix keeps the pattern off self._gate assignments.
+    import re
+    src, _ = _read_src(ctx, "shared/bridge.py")
+    live = []
+    if src and re.search(r"bridge\._gate = None", src):
+        live.append("get_process_bridge constructs gate-less (`bridge._gate = None`)")
+    if src and "consent_callback=lambda op: True" in src:
+        live.append("blanket auto-approve baked in (`consent_callback=lambda op: True`)")
+    if live:
+        return {"ok": False, "detail": ("process bridge born disarmed: " + "; ".join(live) +
+                " — arm construction with a real (non-blocking) consent path; solo "
+                "auto-approve stays a posture choice, not a hardcode")[:500]}
+    return {"ok": True, "detail": "process bridge constructed armed (no _gate=None / blanket lambda)"}
+
+def check_auth_fail_closed(ctx):
+    # R.9b FINGERPRINT (review P1-auth; ENTIRELY outside existing gates — no check references
+    # auth.py or websocket auth): no key ⇒ every token passes; empty Origin ⇒ allow; the
+    # handshake itself is skipped unless a key already exists. Under a solo posture these are
+    # accepted trade-offs (the capstone lists, never hides them); under studio/farm they block.
+    import re
+    live = []
+    auth_src, _ = _read_src(ctx, "python/synapse/server/auth.py")
+    if auth_src and re.search(r"if expected_key is None:\s*\n\s*return True", auth_src):
+        live.append("auth.py: no key ⇒ authenticate() returns True for every token")
+    if auth_src and re.search(r"if not origin:\s*\n\s*return True", auth_src):
+        live.append("auth.py: empty Origin unconditionally accepted")
+    ws_src, _ = _read_src(ctx, "python/synapse/server/websocket.py")
+    if ws_src and "auth_required = auth_key is not None" in ws_src:
+        live.append("websocket.py: the auth handshake only runs when a key already exists")
+    if live:
+        return {"ok": False, "detail": ("auth defaults fail OPEN: " + "; ".join(live) +
+                " — fail closed for mutating endpoints unless an explicit insecure-local flag "
+                "is set")[:500]}
+    return {"ok": True, "detail": "auth fail-closed: no token-always-passes default, no "
+                                  "unconditional empty-Origin allow, handshake unconditional"}
+
+def check_packaging_self_contained(ctx):
+    # R.10 FINGERPRINT (review P1-packaging; the review's own scope: fix AFTER H22
+    # stabilization — open hygiene, never blocks). Imports depend on checkout structure:
+    # shared/ lives at the repo root, so both package-JSON writers carry a dual-path
+    # PYTHONPATH and packaged product code imports top-level `shared` (plus an import-time
+    # sys.path climb in integrity_envelope.py the review missed). The two-element PYTHONPATH
+    # sequence never matches the SYNAPSE_ROOT env-var definition block.
+    import re
+    live = []
+    pkg_src, _ = _read_src(ctx, "packages/synapse.json")
+    if pkg_src and re.search(r'"\$SYNAPSE_ROOT/python",\s*"\$SYNAPSE_ROOT"', pkg_src):
+        live.append("packages/synapse.json PYTHONPATH carries the bare repo root "
+                    "(shared/ outside the package)")
+    env_src, _ = _read_src(ctx, "python/synapse/server/integrity_envelope.py")
+    if env_src and "from shared.bridge import IntegrityBlock" in env_src:
+        live.append("integrity_envelope.py imports top-level `shared` (repo-root coupled)")
+    if live:
+        return {"ok": False, "detail": ("packaging repo-root coupled: " + "; ".join(live) +
+                " — move shared/ into the installable package post-stabilization (the "
+                "review's own sequencing)")[:500]}
+    return {"ok": True, "detail": "packaging self-contained: no bare repo-root PYTHONPATH, no "
+                                  "top-level shared import in packaged code"}
+
+_RECEIPT_KEYS = ("g1_clean_install", "g5_lifecycle", "g6_core_smoke",
+                 "g7_reversibility", "g8_restart", "g9_rollback")
+
+def check_release_readiness_review(ctx):
+    # R.R CAPSTONE — the review's "binary release gates" made executable. Aggregates the
+    # other 11 R-checks + the human receipts + posture + drop state into the release LABEL:
+    # STABLE-READY only when every machine gate is green, security legs are green-or-
+    # posture-accepted, every live gate has a passing human receipt, host truth is stamped
+    # (mode B), and the README's claim matches the receipts (G10 — the label may never outrun
+    # the evidence). Anything less is an honest RC with the blockers named. Calls sub-checks
+    # via global names (tests monkeypatch them). ok:true ONLY on STABLE-READY: R.R is the
+    # stable-promotion gate, un-bankable until the drop is verified — by design.
+    import datetime, re
+    machine = {
+        "mutation_fail_closed": check_mutation_fail_closed,
+        "runtime_owns_heartbeat": check_runtime_owns_heartbeat,
+        "hot_reload_gated": check_hot_reload_gated,
+        "deps_isolated": check_deps_isolated,
+        "installer_host_targeted": check_installer_host_targeted,
+        "ci_covers_shipping_surface": check_ci_covers_shipping_surface,
+        "shelf_current": check_shelf_current,
+    }
+    security = {
+        "process_bridge_armed": check_process_bridge_armed,
+        "auth_fail_closed": check_auth_fail_closed,
+    }
+    hygiene = {
+        "tool_metadata_single_source": check_tool_metadata_single_source,
+        "packaging_self_contained": check_packaging_self_contained,
+    }
+    per_check = {}
+    for name, fn in {**machine, **security, **hygiene}.items():
+        try:
+            per_check[name] = fn(ctx).get("ok")
+        except Exception:
+            per_check[name] = None  # a broken sub-check is a down gate, not a silent pass
+
+    machine_red = [n for n in machine if per_check.get(n) is not True]
+    open_hygiene = [n for n in hygiene if per_check.get(n) is not True]
+
+    # security legs mirror S.R's posture scoping: honest RED individually, accepted (named,
+    # non-blocking) under a declared solo posture, hard blockers under studio/farm/undeclared.
+    posture = _read_posture()
+    mode_p = (posture or {}).get("mode")
+    sec_red = [n for n in security if per_check.get(n) is not True]
+    if mode_p == "solo":
+        accepted, sec_block = sec_red, []
+    else:
+        accepted, sec_block = [], sec_red
+
+    # live gates: human receipts only — a machine can't attest a fresh-account install or a
+    # restart drill. Absent/failed ⇒ PENDING (never faked).
+    receipts = _read_receipts()
+    def _passed(k):
+        r = receipts.get(k)
+        return isinstance(r, dict) and r.get("result") == "pass"
+    receipts_pending = [k for k in _RECEIPT_KEYS if not _passed(k)]
+
+    # G3 host truth: no H22 exists in mode A — honestly pending-drop. Mode B: the per-major
+    # symbol table must be committed in the worktree, stamped by the drop's major.
+    g3 = "pending-drop"
+    if ctx.get("mode") == "B":
+        major = ""
+        try:
+            major = str(json.loads(_drop_path().read_text(encoding="utf-8"))
+                        .get("houdini", "")).split(".")[0]
+        except Exception:
+            pass
+        table = (Path(ctx["wt"]) / "python" / "synapse" / "cognitive" / "tools" / "data"
+                 / f"h{major}_symbol_table.json")
+        g3 = "green" if (major and table.is_file()) else f"missing h{major or '?'}_symbol_table.json"
+
+    # G10 documentation truth: a README H22-verified claim is legitimate only once everything
+    # above holds — a premature claim is itself a blocker.
+    readme_src, _ = _read_src(ctx, "README.md")
+    claims = bool(readme_src and re.search(
+        r"H22[\s-]*(ready|verified)|Houdini\s*22[\s-]*(ready|verified)", readme_src, re.I))
+    substance = not machine_red and not receipts_pending and g3 == "green"
+    g10_ok = (not claims) or substance
+
+    blockers = list(machine_red) + list(sec_block)
+    blockers += [f"receipt:{k}" for k in receipts_pending]
+    if g3 != "green":
+        blockers.append(f"g3:{g3}")
+    if not g10_ok:
+        blockers.append("g10:README claims H22-ready without receipts")
+
+    ok = not blockers
+    if ok:
+        verdict = "STABLE-READY"
+    elif machine_red or sec_block:
+        verdict = "RC — release-blocking gates red"
+    elif receipts_pending or g3 != "green":
+        verdict = "RC — machine gates green, live receipts/host truth pending"
+    else:
+        verdict = "RC — documentation claim outruns receipts"
+
+    g_map = {
+        "G1_clean_install": "pass" if _passed("g1_clean_install") else "pending",
+        "G2_dependency_isolation": per_check.get("deps_isolated"),
+        "G3_host_truth": g3,
+        "G4_mutation_integrity": per_check.get("mutation_fail_closed"),
+        "G5_lifecycle": {"machine": per_check.get("runtime_owns_heartbeat"),
+                         "live": "pass" if _passed("g5_lifecycle") else "pending"},
+        "G6_core_smoke": "pass" if _passed("g6_core_smoke") else "pending",
+        "G7_reversibility": "pass" if _passed("g7_reversibility") else "pending",
+        "G8_restart": "pass" if _passed("g8_restart") else "pending",
+        "G9_rollback": "pass" if _passed("g9_rollback") else "pending",
+        "G10_documentation_truth": g10_ok,
+    }
+    # read-only crossref: the studio verdict is CONTEXT (S.R owns it) — never recomputed or
+    # re-aggregated here, so the two capstones can't double-count each other's gates.
+    crossref = None
+    try:
+        sv = Path(ctx["wt"]) / "harness" / "state" / "studio_readiness_verdict.json"
+        if sv.is_file():
+            crossref = json.loads(sv.read_text(encoding="utf-8")).get("verdict")
+    except Exception:
+        pass
+
+    out = {
+        "generated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "per_check": per_check,
+        "receipts": {k: ("pass" if _passed(k) else "pending") for k in _RECEIPT_KEYS},
+        "g_map": g_map,
+        "blockers": blockers,
+        "accepted_under_posture": accepted,
+        "open_hygiene": open_hygiene,
+        "verdict": verdict,
+        "posture": mode_p or "undeclared",
+        "mode": ctx.get("mode", "A"),
+        "studio_readiness_crossref": crossref,
+    }
+    try:
+        vp = Path(ctx["wt"]) / "harness" / "state" / "release_readiness_verdict.json"
+        vp.parent.mkdir(parents=True, exist_ok=True)
+        vp.write_text(json.dumps(out, indent=2), encoding="utf-8")
+    except Exception:
+        pass  # a read-only fs must not crash the gate — the return value is the authority
+    return {"ok": ok, "detail": (f"release verdict: {verdict} — blockers: "
+            f"{', '.join(blockers) or 'none'}; accepted (solo): {', '.join(accepted) or 'none'}; "
+            f"open hygiene: {', '.join(open_hygiene) or 'none'}")[:500]}
+
+
 # ---------- Ratchet guardrail: protect GREEN, catch collateral regressions ----------
 # The "instinct" harness (harness-architect, 2026-07-07): the full-suite green
 # baseline is the one primitive run.ts lacked. Per-check subset pytest runs are
@@ -1618,6 +2075,111 @@ def run_one(name, task, ctx):
     if name == "cook_node":
         return check_cook(ctx, node=(task.get("target_node", "") or "").replace("ADAPT: ", "") or None)
     return fn(ctx)
+
+
+def check_knowledge_baseline_fresh(ctx):
+    # K.0: corpus baseline snapshot must exist and be internally consistent — schema
+    # v1 + blake2b recompute over the stats block. Read-only, no hython dependency
+    # (corpus stats aren't Houdini-build-specific).
+    wt = Path(ctx["wt"])
+    fp = wt / "harness" / "notes" / "knowledge_baseline.json"
+    if not fp.exists():
+        return {"ok": False, "detail": "harness/notes/knowledge_baseline.json missing — run K.0 first"}
+    try:
+        import hashlib
+        data = json.loads(fp.read_text(encoding="utf-8"))
+        if data.get("schema") != "knowledge_baseline/v1":
+            return {"ok": False, "detail": f"schema={data.get('schema')} != knowledge_baseline/v1"}
+        digest = hashlib.blake2b(
+            json.dumps(data.get("stats", {}), sort_keys=True, ensure_ascii=False).encode("utf-8"),
+            digest_size=16).hexdigest()
+        if digest != data.get("blake2b"):
+            return {"ok": False, "detail": "baseline blake2b mismatch (corrupt/hand-edited)"}
+    except Exception as e:
+        return {"ok": False, "detail": f"baseline unreadable: {str(e)[:300]}"}
+    stats = data.get("stats", {})
+    return {"ok": True, "detail": f"baseline sound ({stats.get('reference_files', '?')} reference files, "
+                                  f"{stats.get('corpus_entries', '?')} corpus entries)"}
+
+
+def check_semantic_index_built(ctx):
+    # K.1: the offline embedding index must exist and be internally consistent —
+    # manifest declares a registered embedder, meta.jsonl row count matches the
+    # manifest's declared entry count, embeddings.npy is present. Does not load
+    # sentence-transformers itself (this check must pass even where that optional
+    # dependency isn't installed — it's checking BUILD artifacts, not re-embedding).
+    wt = Path(ctx["wt"])
+    idx = wt / "rag" / "semantic_index"
+    manifest_fp = idx / "manifest.json"
+    meta_fp = idx / "meta.jsonl"
+    npy_fp = idx / "embeddings.npy"
+    if not manifest_fp.is_file():
+        return {"ok": False, "detail": "rag/semantic_index/manifest.json missing — "
+                                       "run scripts/build_semantic_index.py"}
+    try:
+        manifest = json.loads(manifest_fp.read_text(encoding="utf-8"))
+    except Exception as e:
+        return {"ok": False, "detail": f"manifest unreadable: {str(e)[:300]}"}
+    if manifest.get("embedder") != "sentence-transformers":
+        return {"ok": False, "detail": f"embedder={manifest.get('embedder')} not a registered scout embedder"}
+    if not meta_fp.is_file() or not npy_fp.is_file():
+        return {"ok": False, "detail": "meta.jsonl or embeddings.npy missing alongside manifest.json"}
+    n_meta = sum(1 for l in meta_fp.read_text(encoding="utf-8").splitlines() if l.strip())
+    declared = manifest.get("entries")
+    if declared is not None and n_meta != declared:
+        return {"ok": False, "detail": f"meta.jsonl has {n_meta} rows but manifest declares {declared} entries"}
+    return {"ok": True, "detail": f"semantic index sound ({n_meta} embedded entries, model={manifest.get('model')})"}
+
+
+def check_knowledge_topic_coverage(ctx):
+    # K.2: every reference .md file must have a topic in semantic_index.json whose
+    # reference_file points at it — otherwise the Tier-1 fast path (keyword/no-LLM)
+    # can only reach it by header-word luck. Read-only, no hython. Robust to adding
+    # files: a new .md with no topic reads red, correctly prompting a topic entry.
+    wt = Path(ctx["wt"])
+    sem_fp = wt / "rag" / "documentation" / "_metadata" / "semantic_index.json"
+    ref_dir = wt / "rag" / "skills" / "houdini21-reference"
+    if not sem_fp.is_file() or not ref_dir.is_dir():
+        return {"ok": False, "detail": "rag/ semantic_index.json or reference dir missing"}
+    try:
+        sem = json.loads(sem_fp.read_text(encoding="utf-8"))
+    except Exception as e:
+        return {"ok": False, "detail": f"semantic_index.json unreadable: {str(e)[:200]}"}
+    topics = sem
+    if isinstance(sem, dict) and isinstance(sem.get("semantic_index"), dict):
+        topics = sem["semantic_index"].get("topics", sem["semantic_index"])
+    pointed = {str(t.get("reference_file", "")).replace(".md", "").strip()
+               for t in topics.values()
+               if isinstance(t, dict) and str(t.get("reference_file", "")).strip()}
+    md = sorted(p.stem for p in ref_dir.glob("*.md"))
+    uncovered = [f for f in md if f not in pointed]
+    if uncovered:
+        return {"ok": False, "detail": f"{len(uncovered)}/{len(md)} reference files have no "
+                                       f"topic pointer (Tier-1 header-luck only): {uncovered[:8]}"}
+    return {"ok": True, "detail": f"topic coverage complete: {len(md)}/{len(md)} reference "
+                                  "files reachable via a topic pointer"}
+
+
+def check_knowledge_root_canonical(ctx):
+    # K.3: scout's default RAG_ROOT must resolve to the repo rag/ tree, not the
+    # legacy G:\HOUDINI21_RAG_SYSTEM store (whose corpus/ entries lack
+    # searchable_text — a session defaulted there loads hollow). Source-pattern
+    # check, matching the discipline R-track's deps_isolated/hot_reload_gated
+    # checks already use for config-shape assertions.
+    wt = Path(ctx["wt"])
+    fp = wt / "python" / "synapse" / "cognitive" / "tools" / "scout.py"
+    if not fp.is_file():
+        return {"ok": False, "detail": "scout.py not found"}
+    import re
+    src = fp.read_text(encoding="utf-8")
+    m = re.search(r'^RAG_ROOT\s*=\s*Path\(os\.environ\.get\("SYNAPSE_RAG_ROOT",\s*(.+?)\)\)', src, re.MULTILINE)
+    if not m:
+        return {"ok": False, "detail": "RAG_ROOT default assignment not found in expected form — "
+                                       "ADAPT this check if scout.py's config seam changed shape"}
+    default_expr = m.group(1)
+    if "HOUDINI21_RAG_SYSTEM" in default_expr:
+        return {"ok": False, "detail": f"RAG_ROOT still defaults to the legacy G:\\ store: {default_expr}"}
+    return {"ok": True, "detail": f"RAG_ROOT default is canonical: {default_expr}"}
 
 
 DISPATCH = {
@@ -1680,6 +2242,24 @@ DISPATCH = {
     "eval_backbone": check_eval_backbone,
     "farm_headless": check_farm_headless,
     "studio_readiness_review": check_studio_readiness_review,
+    # R — release-readiness (H22 RC) track
+    "mutation_fail_closed": check_mutation_fail_closed,
+    "runtime_owns_heartbeat": check_runtime_owns_heartbeat,
+    "hot_reload_gated": check_hot_reload_gated,
+    "deps_isolated": check_deps_isolated,
+    "installer_host_targeted": check_installer_host_targeted,
+    "ci_covers_shipping_surface": check_ci_covers_shipping_surface,
+    "shelf_current": check_shelf_current,
+    "tool_metadata_single_source": check_tool_metadata_single_source,
+    "process_bridge_armed": check_process_bridge_armed,
+    "auth_fail_closed": check_auth_fail_closed,
+    "packaging_self_contained": check_packaging_self_contained,
+    "release_readiness_review": check_release_readiness_review,
+    # K — knowledge/corpus-freshness track
+    "knowledge_baseline_fresh": check_knowledge_baseline_fresh,
+    "semantic_index_built": check_semantic_index_built,
+    "knowledge_topic_coverage": check_knowledge_topic_coverage,
+    "knowledge_root_canonical": check_knowledge_root_canonical,
 }
 
 def main():

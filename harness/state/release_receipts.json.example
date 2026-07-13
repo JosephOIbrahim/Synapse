@@ -1,0 +1,39 @@
+{
+  "_doc": "Human-authored attestation of the LIVE release gates no machine check can decide (spec-R-release-readiness.md §2). Copy to harness/state/release_receipts.json (runtime state, untracked, peer of drop.json) and fill each key AFTER actually performing the drill on a real machine — the harness NEVER writes this file, and an absent/failed/missing key is honestly PENDING in the R.R verdict, never faked. result must be the literal \"pass\" to count.",
+  "g1_clean_install": {
+    "result": "pass|fail",
+    "build": "22.0.xxx",
+    "date": "2026-07-15",
+    "notes": "fresh Windows account, install from the release ZIP (not the dev checkout): panel + shelf appear after restart"
+  },
+  "g5_lifecycle": {
+    "result": "pass|fail",
+    "build": "22.0.xxx",
+    "date": "",
+    "notes": "graphical session: open panel → start runtime → close EVERY panel → heartbeat continues; stall main thread → breaker + emergency path fire; reopen → reconnects to the same runtime"
+  },
+  "g6_core_smoke": {
+    "result": "pass|fail",
+    "build": "22.0.xxx",
+    "date": "",
+    "notes": "SOP creation, LOP light setup, COP operation, TOP cook — each passes or is explicitly capability-disabled"
+  },
+  "g7_reversibility": {
+    "result": "pass|fail",
+    "build": "22.0.xxx",
+    "date": "",
+    "notes": "an interactive mutation produces exactly ONE undo step and one integrity receipt; Ctrl+Z restores the scene"
+  },
+  "g8_restart": {
+    "result": "pass|fail",
+    "build": "22.0.xxx",
+    "date": "",
+    "notes": "save, quit Houdini, relaunch, reconnect — no duplicate threads, callbacks, or bridge instances"
+  },
+  "g9_rollback": {
+    "result": "pass|fail",
+    "build": "22.0.xxx",
+    "date": "",
+    "notes": "the prior H21-compatible release restored with ONE documented operation"
+  }
+}

@@ -55,8 +55,10 @@ def corpus_root() -> Path:
 
 def source_files(rag_root: Path) -> list[Path]:
     """Exactly the rag/ inputs that determine corpus content — what
-    ``_entries_from_knowledge`` consumes: the reference .md tree plus the
-    semantic_index enrichment metadata. Digesting these *and only these* means
+    ``_entries_from_knowledge`` + ``_entries_from_corpus_dir`` consume: the
+    reference .md tree, the semantic_index enrichment metadata, and any
+    pre-built corpus/*.json|*.jsonl entry files (K.3 — e.g. migrated
+    SideFXLabs param-schema entries). Digesting these *and only these* means
     mutating a real source file drifts the corpus, while touching an unrelated
     file under rag/ never raises a false-stale."""
     files: list[Path] = []
@@ -66,6 +68,10 @@ def source_files(rag_root: Path) -> list[Path]:
     sem = rag_root / "documentation" / "_metadata" / "semantic_index.json"
     if sem.is_file():
         files.append(sem)
+    corpus_dir = rag_root / "corpus"
+    if corpus_dir.is_dir():
+        files.extend(sorted(corpus_dir.glob("*.json")))
+        files.extend(sorted(corpus_dir.glob("*.jsonl")))
     return files
 
 
@@ -117,6 +123,60 @@ def _entries_from_knowledge(rag_root: Path) -> list[dict]:
     return entries
 
 
+def _entries_from_corpus_dir(rag_root: Path) -> list[dict]:
+    """Read any pre-built corpus/*.json|*.jsonl entry files under rag_root (K.3 —
+    e.g. the migrated SideFXLabs param-schema entries, previously orphaned at
+    G:\\HOUDINI21_RAG_SYSTEM\\semantic_index\\ where scout's loader never looked).
+
+    Parses the same way scout.py's own _load_corpus does (list, or dict with an
+    "entries" key) so a file written for one is readable by the other. Entries
+    missing 'id' or 'searchable_text' are skipped, not fatal — a malformed extra
+    corpus file must not take down the whole build (mirrors the malformed-
+    semantic_index tolerance in build_corpus)."""
+    corpus_dir = rag_root / "corpus"
+    if not corpus_dir.is_dir():
+        return []
+
+    entries: list[dict] = []
+    for fp in sorted(corpus_dir.glob("*.jsonl")) + sorted(corpus_dir.glob("*.json")):
+        try:
+            if fp.suffix == ".jsonl":
+                raw = [json.loads(line) for line in fp.read_text(encoding="utf-8").splitlines() if line.strip()]
+            else:
+                obj = json.loads(fp.read_text(encoding="utf-8"))
+                raw = obj if isinstance(obj, list) else obj.get("entries", [])
+        except (json.JSONDecodeError, OSError):
+            continue
+        for e in raw:
+            if isinstance(e, dict) and e.get("id") and e.get("searchable_text"):
+                entries.append(e)
+    return entries
+
+
+def _copy_semantic_index(rag_root: Path, sem_dir: Path) -> None:
+    """Copy a pre-built semantic index (manifest.json + meta.jsonl + embeddings.npy
+    and/or *.faiss) from ``rag_root/semantic_index/`` into the ephemeral store, if
+    present. Built offline by ``scripts/build_semantic_index.py`` and committed to
+    the repo — end users never need sentence-transformers installed just to GET a
+    hybrid-mode corpus, only to query one that's already built. Absent source ->
+    no-op, sem_dir stays empty, scout reports mode="lexical_only" (unchanged prior
+    behavior; this function adds capability, it never removes the fallback)."""
+    src = rag_root / "semantic_index"
+    manifest = src / "manifest.json"
+    if not manifest.is_file():
+        return
+    import shutil
+    for name in ("manifest.json", "meta.jsonl"):
+        fp = src / name
+        if fp.is_file():
+            shutil.copy2(fp, sem_dir / name)
+    for fp in src.glob("*.faiss"):
+        shutil.copy2(fp, sem_dir / fp.name)
+    npy = src / "embeddings.npy"
+    if npy.is_file():
+        shutil.copy2(npy, sem_dir / "embeddings.npy")
+
+
 def build_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None) -> dict:
     """Materialize the scout corpus from rag_root → out_root/corpus/entries.jsonl.
 
@@ -125,7 +185,7 @@ def build_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None)
     src = Path(rag_root) if rag_root else rag_source()
     out = Path(out_root) if out_root else corpus_root()
 
-    entries = _entries_from_knowledge(src)
+    entries = _entries_from_knowledge(src) + _entries_from_corpus_dir(src)
     if not entries:
         raise RuntimeError(
             f"[scout_ingest] no entries from {src} — expected "
@@ -135,7 +195,9 @@ def build_corpus(rag_root: Optional[str] = None, out_root: Optional[str] = None)
 
     corpus_dir = out / "corpus"
     corpus_dir.mkdir(parents=True, exist_ok=True)
-    (out / "semantic_index").mkdir(parents=True, exist_ok=True)  # empty → lexical_only
+    sem_dir = out / "semantic_index"
+    sem_dir.mkdir(parents=True, exist_ok=True)  # empty → lexical_only unless populated below
+    _copy_semantic_index(src, sem_dir)
 
     out_fp = corpus_dir / "entries.jsonl"
     out_fp.write_text(

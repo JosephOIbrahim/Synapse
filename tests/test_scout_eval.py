@@ -151,7 +151,10 @@ def test_gate6_false_phantom_zero_on_live_runtime_table(monkeypatch):
       * false_phantom_rate must stay 0   (no real API told it's fake), and
       * true_phantom_recall must stay 1  (no phantom resurrected).
     conceptual_topk_hitrate is a sanity check — the membership fix doesn't touch
-    retrieval, so it must NOT have moved off its 0.333 baseline.
+    retrieval, so conceptual recall must not REGRESS below its lexical 0.333
+    baseline. (K.1 added the offline semantic index, so when it's present hybrid
+    retrieval now EXCEEDS that baseline; the invariant is "no regression", not a
+    frozen number — hence >= rather than ==.)
     """
     from pathlib import Path
     from synapse.cognitive.tools import scout_ingest
@@ -170,8 +173,9 @@ def test_gate6_false_phantom_zero_on_live_runtime_table(monkeypatch):
     assert card.true_phantom_recall == 1.0          # nothing fake resurrected
     assert card.phantom_leaked == ()
     assert card.release_blocking is False
-    # retrieval untouched by the membership fix — conceptual recall unchanged.
-    assert card.conceptual_topk_hitrate == round(2 / 6, 4)
+    # retrieval must not regress; K.1's semantic index lifts conceptual recall
+    # above the old lexical-only 0.333 baseline when the index is present.
+    assert card.conceptual_topk_hitrate >= round(2 / 6, 4)
 
 
 def test_scorecard_to_dict_schema(tmp_path, monkeypatch):

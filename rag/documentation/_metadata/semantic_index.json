@@ -1,7 +1,18 @@
 {
   "pipeline_preferences": {
     "description": "Studio pipeline defaults. Material binding: prefer the materiallinker LOP over assignmaterial in Solaris (collection-based binding). Karma CPU production preset for diffuse-dominant hero surfaces: bucket mode, 256 pixel / 512 path-traced samples, indirect guiding on, variance AA 0.005. AMD asset library path is pending capture.",
-    "keywords": ["materiallinker", "assignmaterial", "material binding", "preference", "pipeline", "karma cpu", "preset", "render settings", "production", "amd"],
+    "keywords": [
+      "materiallinker",
+      "assignmaterial",
+      "material binding",
+      "preference",
+      "pipeline",
+      "karma cpu",
+      "preset",
+      "render settings",
+      "production",
+      "amd"
+    ],
     "summary": "Pipeline preferences: materiallinker over assignmaterial; Karma CPU preset",
     "reference_file": "pipeline_preferences"
   },
@@ -94,7 +105,8 @@
       "copy",
       "width"
     ],
-    "summary": "Standard Houdini geometry attributes and their types"
+    "summary": "Standard Houdini geometry attributes and their types",
+    "reference_file": "common_attributes"
   },
   "common_errors": {
     "description": "Node/path errors: matlib cook error (cook first), node not found (check context), node type not found (check spelling). Parameter errors: parm not found on USD (use encoded names), keyframe won't set (delete expression first), parm tuple mismatch (use parmTuple). Render errors: black render (camera prim path), fireflies (intensity>1 violation, roughness=0), slow render (too many bounces). VEX errors: syntax error (semicolons), read-only attribute, wrong run-over mode, pcfind empty. Simulation errors: explosion on frame 1, pyro container clips, drift/instability. File errors: cache missing frames ($F4 padding), USD reference not found.",
@@ -138,7 +150,8 @@
       "cop2net",
       "cop network"
     ],
-    "summary": "COPs 2D compositing nodes and workflows"
+    "summary": "COPs 2D compositing nodes and workflows",
+    "reference_file": "cops_compositing"
   },
   "copernicus_opencl_reference": {
     "description": "Complete OpenCL kernel reference for Houdini 21 Copernicus. #bind syntax for layers (src?, !dst, mask?, feedback?), parameters (float/int/float2/float3/float4), ramps (float/float4), volumes, VDBs, geometry attributes. @KERNEL macro, resolution variables (@xres/@yres/@ixres/@iyres), position variables (@ix/@iy/@x/@y). Kernel patterns: color correction (brightness/contrast/saturation with rec709 luminance), Sobel edge detection (3x3), Jump Flooding Algorithm for SDF generation, GPU-friendly hash noise + FBM, Gaussian blur (separable), threshold with smooth falloff, 2D rotation transform. Border modes: constant/clamp/reflect/wrap. Performance: native_sin/cos/sqrt (2x faster), minimize global memory reads, avoid divergent branching (use mix/smoothstep). Debugging: visual debug output, grid overlay, heatmap visualization. Common errors: compilation failed, all-black output, wrong resolution, NaN artifacts.",
@@ -376,7 +389,8 @@
       "viscosity",
       "ocean"
     ],
-    "summary": "FLIP fluid simulation setup in SOPs"
+    "summary": "FLIP fluid simulation setup in SOPs",
+    "reference_file": "flip_simulation"
   },
   "hapi": {
     "description": "HAPI is the C API for embedding Houdini in external applications (game engines, DCC tools). Session management: HAPI_Initialize (call once before any HAPI functions, takes cook_options, threading config, search paths), HAPI_Cleanup (frees all resources), HAPI_IsInitialized. Asset loading: HAPI_LoadAssetLibraryFromFile (loads HDA, returns library_id), HAPI_GetAvailableAssetCount, HAPI_CreateNode (creates node under parent, optional cook_on_creation). Geometry access: HAPI_GetGeoInfo, HAPI_GetPartInfo, HAPI_GetAttributeInfo (takes owner: VERTEX/POINT/PRIM/DETAIL), HAPI_GetAttributeFloatData / HAPI_SetAttributeFloatData (strided array access), HAPI_CommitGeo (must call after setting attributes). Cooking: HAPI_CookNode, HAPI_GetStatus (CALL_RESULT/COOK_RESULT/COOK_STATE). Storage types: INT, INT64, FLOAT, FLOAT64, STRING.",
@@ -437,7 +451,8 @@
       "time",
       "ramp"
     ],
-    "summary": "HScript expressions, variables, and channel references"
+    "summary": "HScript expressions, variables, and channel references",
+    "reference_file": "expressions"
   },
   "houdini_sop_basics": {
     "description": "SOP sphere: 'radx/rady/radz' (not 'rad'), 'scale', 'rows', 'cols'. SOP box: 'sizex/y/z', 'tx/ty/tz'. scatter: 'npts'. attribwrangle: 'snippet', 'class' (point/prim/vertex/detail). copytopoints: reads @P, @orient, @N+@up, @pscale, @scale from target points. Groups: groupcreate, groupexpression, grouprange. VDB workflow: mesh -> vdbfrompolygons -> vdbcombine -> convertVDB (reliable booleans). For-each: foreach_begin/end (by pieces, count, feedback). SOP vs LOP parm names differ.",
@@ -456,7 +471,8 @@
       "copy",
       "foreach"
     ],
-    "summary": "Common SOP node types, groups, VDB workflow, and parameter names"
+    "summary": "Common SOP node types, groups, VDB workflow, and parameter names",
+    "reference_file": "sop_basics"
   },
   "hydra_delegates": {
     "description": "Hydra is Pixar's rendering framework in USD. Architecture: USD Stage -> UsdImagingDelegate -> HdRenderIndex -> HdRenderDelegate (your renderer) with HdRenderPass, HdRenderBuffer, and Rprim/Sprim/Bprim scene primitives. Core classes: HdRendererPlugin (entry point, discovered via plugInfo.json with bases=['HdRendererPlugin']), HdRenderDelegate (renderer core -- GetSupportedRprimTypes, CreateRprim/Sprim/Bprim, CreateRenderPass, GetRenderSettingDescriptors), HdRenderPass (_Execute called per frame), HdRenderBuffer (Allocate, Map/Unmap, Resolve). Prim categories: Rprim (Mesh, BasisCurves, Points, Volume), Sprim (Camera, Light, Material), Bprim (RenderBuffer). Karma pattern: hdKarma (delegate DLL) + usdKarma (schema resource). Lifecycle: Houdini start -> PXR_PLUGINPATH scan -> plugInfo discovery -> user selects renderer -> CreateRenderDelegate -> per-frame _Execute -> DeleteRenderDelegate.",
@@ -785,7 +801,8 @@
       "image",
       "picture"
     ],
-    "summary": "Karma render engine configuration and ROP setup"
+    "summary": "Karma render engine configuration and ROP setup",
+    "reference_file": "rendering"
   },
   "kinefx_rigging": {
     "description": "KineFX operates in SOPs: skeleton = points (joints) + polylines (bones) + @name + @transform attributes. Creation: skeleton SOP or kinefx_characterunpack (from FBX/USD). Retargeting: mappoints -> retargetbiped transfers animation between different skeletons. Full-body IK: rigfullbodyik with joint targets. Motion clips: motionclip (create), motionclipblend (crossfade), motionclipsequence (chain clips). Skinning: bonecapture (compute weights) -> bonedeform (apply animation to mesh). VEX works directly on skeletons since they're just points.",
@@ -803,7 +820,8 @@
       "ik",
       "fbx"
     ],
-    "summary": "KineFX SOP-based rigging, retargeting, and motion clips"
+    "summary": "KineFX SOP-based rigging, retargeting, and motion clips",
+    "reference_file": "kinefx_rigging"
   },
   "lighting_setup": {
     "description": "Solaris light types: domelight (environment/HDRI), distantlight (sun/directional), rectlight (area light), disklight (disk area), cylinderlight (tube light), spherelight (point light). LIGHTING LAW: intensity ALWAYS 1.0, brightness controlled by EXPOSURE (logarithmic, in stops). Encoded parm names: intensity='xn__inputsintensity_i0a' (always 1.0), color='xn__inputscolor_zta' (vec3), exposure='xn__inputsexposure_vya', exposure control='xn__inputsexposure_control_wcb' (set to 'set' to enable). Dome light texture: 'xn__inputstexturefile_r3ah'. Key:fill ratio math: fill_exposure = key_exposure - log2(ratio). Standard 3-point: key=5.0, fill=3.0 (4:1), rim=4.5, dome=0.0.",
@@ -1420,7 +1438,8 @@
       "sea",
       "fluid"
     ],
-    "summary": "Ocean spectrum, FLIP interaction, and whitewater setup"
+    "summary": "Ocean spectrum, FLIP interaction, and whitewater setup",
+    "reference_file": "ocean_fx"
   },
   "pipeline_integration": {
     "description": "Studio pipeline integration patterns. File conventions: $HIP/$JOB paths, _v001 versioning, $F4 frame padding, .bgeo.sc/.vdb/.exr formats. ShotGrid/Ftrack: project/sequence/shot/asset/task/version hierarchy, publishing workflow, status tracking (wtg/ip/rev/apr). Render farm: Deadline (chunk 1 for sims, 5-10 for renders), HQueue, Tractor. ACES color management: ACEScg working space, sRGB input for textures, Raw for data maps, EXR linear output. Asset management: USD references for assets, variant sets for LOD, lowercase_underscores naming. Cache workflow: filecache SOP with $HIP/cache paths.",
@@ -1445,7 +1464,8 @@
       "convention",
       "naming"
     ],
-    "summary": "VFX studio pipeline: ShotGrid, file conventions, render farm, ACES, review tools"
+    "summary": "VFX studio pipeline: ShotGrid, file conventions, render farm, ACES, review tools",
+    "reference_file": "pipeline_integration"
   },
   "pxr_plugin_discovery": {
     "description": "USD plugin discovery in Houdini via PXR_PLUGINPATH_NAME environment variable. Discovery mechanism: PlugRegistry scans each directory, finds plugInfo.json, follows Includes patterns (e.g., '*/resources/' for one-level subdirectory scan -- NOT recursive), registers Types based on bases declarations, lazy-loads libraries on demand. Houdini's built-in paths: $HFS/houdini/dso/usd_plugins/ (Karma, Storm), $HOUDINI_USER_PREF_DIR/dso/usd/ (user plugins). Package system: JSON files in houdini21.0/packages/ that set env vars with method='append'/'prepend'/'set'. Dual-location deployment: source (git-tracked, via prepend) + runtime (dso/usd/, via append). Root field in plugInfo.json: '.' = dir containing plugInfo, '..' = parent dir. Path priority (highest first): PXR_PLUGINPATH_NAME prepend -> append -> $HFS built-in -> user prefs auto-scan. Verification: hython with Plug.Registry().GetAllPlugins().",
@@ -1483,7 +1503,8 @@
       "temperature",
       "flame"
     ],
-    "summary": "Pyro (fire/smoke) simulation setup in SOPs"
+    "summary": "Pyro (fire/smoke) simulation setup in SOPs",
+    "reference_file": "pyro_fx"
   },
   "rbd_simulation": {
     "description": "RBD in modern Houdini: geometry -> rbdmaterialfracture (Voronoi fracture) -> assemble (pack primitives) -> rigidsolver SOP. Constraint types: Glue (break on impact), Hard (unbreakable), Hinge (rotate), Cone Twist (limited rotation), Soft (spring). Setup: rbdconstraintsfromrules -> rbdconstraintproperties -> solver constraint input. For progressive destruction: vary strength by height or group. Impact data: f@impulse for collision force. Secondary effects: debris via POP solver, dust via pyro at impact points.",
@@ -1500,7 +1521,8 @@
       "glue",
       "impact"
     ],
-    "summary": "RBD (rigid body dynamics) simulation setup"
+    "summary": "RBD (rigid body dynamics) simulation setup",
+    "reference_file": "rbd_simulation"
   },
   "render_analysis": {
     "description": "Exposure analysis: check overall brightness, key:fill ratio, highlight clipping, shadow detail. Adjust via exposure stops (never intensity). Noise types: general (increase samples), shadow (increase min samples), specular/fireflies (clamp, check roughness), volume (increase step rate). Lighting check: key light dominant, fill 1.5-3 stops below, rim separates from background. Material check: roughness 0.001 minimum (not 0.0), metalness 0 or 1 (not between), base color appropriate. Iteration: 640x360 at 16 samples for layout, 1280x720 at 64 for lookdev, full res at 256+ for final.",
@@ -1516,7 +1538,8 @@
       "feedback",
       "review"
     ],
-    "summary": "Analyzing render quality: exposure, noise, lighting, materials"
+    "summary": "Analyzing render quality: exposure, noise, lighting, materials",
+    "reference_file": "render_analysis"
   },
   "scene_assembly": {
     "description": "Import external USD files using 'reference' LOP (adds content under a prim path, good for assets) or 'sublayer' LOP (merges layer stack, good for environments). Reference vs Payload: references always load, payloads defer loading until requested. Reference LOP parms: 'filepath1', 'primpath', 'reftype' (Reference or Payload). Layer stacking: anim.usd -> layout.usd -> lighting.usd -> final.usd (later sublayers are stronger).",
@@ -1659,7 +1682,8 @@
       "frame",
       "procedural"
     ],
-    "summary": "SOP Solver feedback loops and custom simulation"
+    "summary": "SOP Solver feedback loops and custom simulation",
+    "reference_file": "sop_solver_loops"
   },
   "terrain_heightfields": {
     "description": "Heightfield system uses 2D volume grids. Chain: heightfield -> heightfield_noise -> heightfield_erode -> heightfield_scatter. Key parms: gridspacing (resolution, 1.0 default), sizex/sizey (terrain dimensions). Erosion types: hydraulic (water carving channels) and thermal (material sliding down slopes). Erosion parms: iterations (50+), rainamount, eroderate, bankangle. Layers: height, mask, bedrock, debris, sediment, water. Use layers to drive material assignment (height=snow, debris=dirt, slope=cliff). Convert to polygon mesh via heightfield_convert for rendering. Scatter vegetation/rocks using heightfield_scatter with density masks.",
@@ -1675,7 +1699,8 @@
       "noise",
       "environment"
     ],
-    "summary": "Terrain creation with heightfields, erosion, and scatter"
+    "summary": "Terrain creation with heightfields, erosion, and scatter",
+    "reference_file": "terrain_heightfields"
   },
   "tops_wedging": {
     "description": "TOPs (Task Operator Network) enables parameter wedging. Create a topnet at /obj level. Inside: wedge TOP (generates parameter variations) -> ropfetch TOP (renders each variation). Wedge node: 'wedgecount' sets number of variations, 'wedgeattribs' defines which attributes to vary. Types: Range (linear sweep), Random (exploration), Specific Values (A/B). Schedulers: localscheduler, hqueuescheduler, deadline. For GPU renders (Karma XPU), set maxproccount=1. Use waitforall -> imagemagick for contact sheet comparisons.",
@@ -1691,7 +1716,8 @@
       "scheduler",
       "contact sheet"
     ],
-    "summary": "TOPs/PDG wedging for parameter variation"
+    "summary": "TOPs/PDG wedging for parameter variation",
+    "reference_file": "tops_wedging"
   },
   "usd_composition_reference": {
     "description": "Comprehensive USD stage composition reference. LIVRPS strength ordering: Local > Inherits > VariantSets > References > Payloads > Sublayers. Multi-department layer stacking (shot_final > fx > lighting > anim > layout > asset). Standard prim hierarchy: /World/cameras, /World/lights, /World/geo, /World/materials. 18 common prim types (Xform, Mesh, BasisCurves, Points, DomeLight, DistantLight, RectLight, Camera, Material, etc.). Transform stack: xformOp:translate, xformOp:rotateXYZ, xformOp:scale with right-to-left execution. VariantSets for switchable configurations. PointInstancer for many copies, native instancing for shared subtrees. Visibility (inherited/invisible) and purpose (default/render/proxy/guide). Material binding patterns: direct, collection-based, GeomSubset face-level. 14 Houdini LOP nodes: sopimport, reference, sublayer, edit, material_library, assign_material, light, camera, render_settings, usdrender, prune, configure_layer, graft, collection.",
@@ -1755,7 +1781,8 @@
       "livrps",
       "composition"
     ],
-    "summary": "USD stage operations, composition arcs (LIVRPS), and prim manipulation"
+    "summary": "USD stage operations, composition arcs (LIVRPS), and prim manipulation",
+    "reference_file": "usd_operations"
   },
   "uv_workflows": {
     "description": "UV attribute: v@uv (vector3, typically on vertices for seam support). Creation: uvunwrap (automatic), uvflatten (production, seam-based), uvproject (planar/cylindrical/spherical). Layout: uvlayout packs islands efficiently with padding. UDIM: tiles for multi-texture assets (1001=body, 1002=head, etc). Transfer: attribtransfer or uvtransfer between different topology meshes. Quality check: uvquickshade applies checker pattern (uniform squares = good UVs). Tips: vertex UVs for production, padding 0.005+ for mip bleeding, transfer UVs early before topology changes.",
@@ -1771,7 +1798,8 @@
       "mapping",
       "coordinates"
     ],
-    "summary": "UV unwrapping, layout, UDIM, and texturing workflows"
+    "summary": "UV unwrapping, layout, UDIM, and texturing workflows",
+    "reference_file": "uv_workflows"
   },
   "vellum_simulation": {
     "description": "Vellum is Houdini's unified SOP-based solver. Chain: source -> vellumconfigure* -> vellumsolver. Types: vellumcloth (fabric), vellumhair (cables/hair), vellumgrains (sand/snow), vellumsoftbody (jelly/rubber), vellumballoon (inflatable). Configure nodes have TWO outputs: geometry (solver input 1) and constraints (solver input 3). Key cloth parms: stretchstiffness (10000), bendstiffness (0.001), thickness (0.01). Draping: vellumdrape pre-settles garments. Collision: vellumcollider for external objects. Pin: i@stopped=1 on constrained points. Substrate guidelines: 5 substeps for cloth, 1-3 for grains.",
@@ -1789,7 +1817,8 @@
       "stiffness",
       "collision"
     ],
-    "summary": "Vellum cloth, hair, grain, and soft body simulation"
+    "summary": "Vellum cloth, hair, grain, and soft body simulation",
+    "reference_file": "vellum_simulation"
   },
   "vex_attributes": {
     "description": "VEX attribute access patterns. Built-in point attributes: @P (position), @N (normal), @Cd (color), @v (velocity), @pscale, @orient, @id, @age, @life, @rest, @uv, @Alpha, @width. Context variables: @ptnum, @numpt, @primnum, @numprim, @vtxnum, @elemnum. Globals: @Time, @Frame, @TimeInc. Reading: @-shorthand for current element (fastest), point()/prim()/vertex()/detail() for any element/input. Writing: @attr creates if missing, setpointattrib/setprimattrib/setdetailattrib with mode (set/add/min/max/mult). Groups: i@group_name = 1/0, inpointgroup(), inprimgroup(). Intrinsics: primintrinsic(0, 'measuredarea', @primnum). Promotion patterns: point-to-detail via loops, detail-to-point broadcast, nearest-point transfer via nearpoint/pcfind, distance-weighted blend.",
@@ -2732,186 +2761,732 @@
       "chain",
       "string"
     ],
-    "summary": "Wire, cable, rope, and strand dynamics simulation"
+    "summary": "Wire, cable, rope, and strand dynamics simulation",
+    "reference_file": "wire_dynamics"
   },
   "rag_material_binding_strength": {
     "description": "Material binding strength override in Solaris. Covers Assign Material LOP bindingstrength parameter, weakerThanDescendants vs strongerThanDescendants, when materials don't apply due to existing bindings, Unassign Material for clearing bindings.",
-    "keywords": ["material binding", "binding strength", "material override", "material not working", "material not applying", "default material", "stronger than descendants", "weaker than descendants", "unassign material", "clear material"],
+    "keywords": [
+      "material binding",
+      "binding strength",
+      "material override",
+      "material not working",
+      "material not applying",
+      "default material",
+      "stronger than descendants",
+      "weaker than descendants",
+      "unassign material",
+      "clear material"
+    ],
     "reference_file": "rag_material_binding_strength",
     "summary": "Material binding strength and override patterns in Solaris LOPs"
   },
   "rag_material_library_setup": {
     "description": "Creating materials inside Material Library LOP. CRITICAL: matlib.cook(force=True) BEFORE createNode() on shader children. Multiple material subnets, geopath assignment directly in matlib, wiring order.",
-    "keywords": ["material library", "matlib", "create material", "material subnet", "matlib cook", "multiple materials", "material scope", "matlib setup", "geopath"],
+    "keywords": [
+      "material library",
+      "matlib",
+      "create material",
+      "material subnet",
+      "matlib cook",
+      "multiple materials",
+      "material scope",
+      "matlib setup",
+      "geopath"
+    ],
     "reference_file": "rag_material_library_setup",
     "summary": "Material Library LOP creation, cooking requirement, and multi-material setup"
   },
   "rag_material_vexpression": {
     "description": "Dynamic material assignment using VEXpressions in LOPs. CRITICAL: LOPs use @elemnum not @ptnum. Conditional material assignment, attribute-driven assignment via primvars.",
-    "keywords": ["vexpression material", "dynamic material", "conditional material", "elemnum", "ptnum", "attribute driven material", "material per prim", "lop vexpression"],
+    "keywords": [
+      "vexpression material",
+      "dynamic material",
+      "conditional material",
+      "elemnum",
+      "ptnum",
+      "attribute driven material",
+      "material per prim",
+      "lop vexpression"
+    ],
     "reference_file": "rag_material_vexpression",
     "summary": "VEXpression-based dynamic material assignment in LOPs (@elemnum, not @ptnum)"
   },
   "rag_material_mtlx_encoding": {
     "description": "MaterialX as USD prims workflow. How MaterialX nodes become USD shader prims, mtlx: namespace, reading/writing MaterialX parameters through USD API, Sdf.ValueTypeNames, the _shader suffix issue.",
-    "keywords": ["materialx usd", "mtlx encoding", "materialx prim", "shader prim", "mtlx namespace", "materialx usd api", "material shader suffix", "sdf value types"],
+    "keywords": [
+      "materialx usd",
+      "mtlx encoding",
+      "materialx prim",
+      "shader prim",
+      "mtlx namespace",
+      "materialx usd api",
+      "material shader suffix",
+      "sdf value types"
+    ],
     "reference_file": "rag_material_mtlx_encoding",
     "summary": "MaterialX shader encoding as USD prims with Sdf value types"
   },
   "rag_material_primvar_driven": {
     "description": "shop_materialpath and primvar-driven material assignment. SOP-level attribute propagation to LOPs, primvar readers in MaterialX, using geometry attributes to drive shader parameters.",
-    "keywords": ["shop_materialpath", "primvar material", "attribute driven material", "geometry material", "sop material", "material attribute", "primvar reader"],
+    "keywords": [
+      "shop_materialpath",
+      "primvar material",
+      "attribute driven material",
+      "geometry material",
+      "sop material",
+      "material attribute",
+      "primvar reader"
+    ],
     "reference_file": "rag_material_primvar_driven",
     "summary": "SOP-to-LOP material assignment via shop_materialpath and primvar-driven shading"
   },
   "rag_material_karma_xpu": {
     "description": "Karma XPU material constraints. XPU supports MaterialX ONLY (no VEX shaders), checking renderer compatibility, XPU-unsupported features (custom AOVs, some SSS modes), fallback to CPU.",
-    "keywords": ["karma xpu", "xpu material", "xpu limitation", "materialx only", "xpu shader", "xpu compatibility", "gpu render", "xpu vs cpu"],
+    "keywords": [
+      "karma xpu",
+      "xpu material",
+      "xpu limitation",
+      "materialx only",
+      "xpu shader",
+      "xpu compatibility",
+      "gpu render",
+      "xpu vs cpu"
+    ],
     "reference_file": "rag_material_karma_xpu",
     "summary": "Karma XPU material constraints — MaterialX only, no VEX shaders"
   },
   "rag_material_path_expressions": {
     "description": "USD path expressions vs Houdini prim patterns for material assignment. Exact prim paths required for bindings, wildcard patterns for targeting, collection-based targeting.",
-    "keywords": ["usd path expression", "prim pattern", "material path", "prim selection", "wildcard prim", "collection target", "exact prim path", "glob pattern lop"],
+    "keywords": [
+      "usd path expression",
+      "prim pattern",
+      "material path",
+      "prim selection",
+      "wildcard prim",
+      "collection target",
+      "exact prim path",
+      "glob pattern lop"
+    ],
     "reference_file": "rag_material_path_expressions",
     "summary": "USD path expressions vs Houdini glob patterns — exact paths required for material bindings"
   },
   "rag_material_collect_vop": {
     "description": "Multi-renderer material switching. Collect VOP pattern for multi-output materials across Karma CPU, XPU, and other delegates. USD material purpose outputs.",
-    "keywords": ["collect vop", "multi renderer", "material switching", "renderer specific", "karma cpu xpu material", "render delegate material", "universal material"],
+    "keywords": [
+      "collect vop",
+      "multi renderer",
+      "material switching",
+      "renderer specific",
+      "karma cpu xpu material",
+      "render delegate material",
+      "universal material"
+    ],
     "reference_file": "rag_material_collect_vop",
     "summary": "Multi-renderer material switching with Collect VOP and USD material outputs"
   },
   "rag_material_texture_override": {
     "description": "Texture parameter overrides in Karma. Per-prim texture variation via Edit Properties LOP, UDIM setup, CPU vs XPU texture handling differences.",
-    "keywords": ["texture override", "texture parameter", "per-prim texture", "edit properties material", "texture path", "instanced material", "udim", "texture streaming"],
+    "keywords": [
+      "texture override",
+      "texture parameter",
+      "per-prim texture",
+      "edit properties material",
+      "texture path",
+      "instanced material",
+      "udim",
+      "texture streaming"
+    ],
     "reference_file": "rag_material_texture_override",
     "summary": "Texture overrides, UDIM setup, and CPU vs XPU texture handling"
   },
   "rag_material_common_errors": {
     "description": "Consolidated material error patterns. Grey/default shader (binding didn't take), material not visible (check binding strength), matlib cook error, wrong prim path, @ptnum vs @elemnum, scope mismatch.",
-    "keywords": ["material error", "grey shader", "default material", "material not visible", "material debug", "material troubleshoot", "matlib error", "material assignment failed"],
+    "keywords": [
+      "material error",
+      "grey shader",
+      "default material",
+      "material not visible",
+      "material debug",
+      "material troubleshoot",
+      "matlib error",
+      "material assignment failed"
+    ],
     "reference_file": "rag_material_common_errors",
     "summary": "Material error diagnostics: grey shader, invisible material, matlib cook, path mismatch"
   },
   "rag_dop_wiring_order": {
     "description": "DOP node wiring conventions. DOPs use merge-based connections (NOT SOP-style direct wiring). Objects first, then forces, then solvers via merge nodes. enforceWiringOrder, findOrCreateMergeInput pattern.",
-    "keywords": ["dop wiring", "dop merge", "dop connection", "enforceWiringOrder", "merge input", "dop node order", "dop network wiring", "connect dop nodes"],
+    "keywords": [
+      "dop wiring",
+      "dop merge",
+      "dop connection",
+      "enforceWiringOrder",
+      "merge input",
+      "dop node order",
+      "dop network wiring",
+      "connect dop nodes"
+    ],
     "reference_file": "rag_dop_wiring_order",
     "summary": "DOP merge-based wiring conventions: objects → forces → solver via merge"
   },
   "rag_dop_simulation_guard": {
     "description": "ALWAYS wrap DOP network creation/modification in simulation-enabled guard. hou.setSimulationEnabled(False) try/finally pattern prevents crashes and incorrect initial state.",
-    "keywords": ["simulation guard", "setSimulationEnabled", "disable simulation", "simulation during edit", "dop crash", "safe dop editing", "simulation enabled"],
+    "keywords": [
+      "simulation guard",
+      "setSimulationEnabled",
+      "disable simulation",
+      "simulation during edit",
+      "dop crash",
+      "safe dop editing",
+      "simulation enabled"
+    ],
     "reference_file": "rag_dop_simulation_guard",
     "summary": "Simulation-enabled guard pattern for safe DOP network editing"
   },
   "rag_dop_solver_creation": {
     "description": "Creating solvers in DOP networks. Bullet RBD, Pyro, FLIP, Vellum solver setup. Substep guidelines, solver wiring from merge output, solver configuration.",
-    "keywords": ["dop solver", "create solver", "bullet solver", "pyro solver", "flip solver", "vellum solver", "mpm solver", "solver substeps"],
+    "keywords": [
+      "dop solver",
+      "create solver",
+      "bullet solver",
+      "pyro solver",
+      "flip solver",
+      "vellum solver",
+      "mpm solver",
+      "solver substeps"
+    ],
     "reference_file": "rag_dop_solver_creation",
     "summary": "DOP solver creation: Bullet, Pyro, FLIP, Vellum with substep guidelines"
   },
   "rag_dop_data_tree": {
     "description": "DopData hierarchy navigation. Simulation → objects → subdata (geometry, forces, solver). freeze() for extracting geometry, DOP records for metadata, recursive subdata listing.",
-    "keywords": ["dop data", "DopData", "dop hierarchy", "dop subdata", "freeze", "extract geometry dop", "dop records", "simulation data"],
+    "keywords": [
+      "dop data",
+      "DopData",
+      "dop hierarchy",
+      "dop subdata",
+      "freeze",
+      "extract geometry dop",
+      "dop records",
+      "simulation data"
+    ],
     "reference_file": "rag_dop_data_tree",
     "summary": "DOP data tree navigation, freeze() pattern, and record access"
   },
   "rag_dop_rbd_setup": {
     "description": "Complete RBD simulation setup via Python. Packed Object workflow, Bullet solver, constraint networks, collision geometry, activation/deactivation, ground plane.",
-    "keywords": ["rbd", "rigid body", "rbd packed", "rbd object", "fracture simulation", "bullet solver", "rbd constraint", "rbd collision", "rbd activation"],
+    "keywords": [
+      "rbd",
+      "rigid body",
+      "rbd packed",
+      "rbd object",
+      "fracture simulation",
+      "bullet solver",
+      "rbd constraint",
+      "rbd collision",
+      "rbd activation"
+    ],
     "reference_file": "rag_dop_rbd_setup",
     "summary": "RBD packed object setup: fracture, constraints, Bullet solver, collision"
   },
   "rag_dop_checkpoint": {
     "description": "DOP checkpoint and recovery. .sim file caching, checkpoint intervals, resume from checkpoints, File Cache SOP for geometry output, disk space management.",
-    "keywords": ["dop checkpoint", "simulation cache", "sim file", "resume simulation", "checkpoint interval", "cache simulation", "simulation recovery"],
+    "keywords": [
+      "dop checkpoint",
+      "simulation cache",
+      "sim file",
+      "resume simulation",
+      "checkpoint interval",
+      "cache simulation",
+      "simulation recovery"
+    ],
     "reference_file": "rag_dop_checkpoint",
     "summary": "DOP checkpoint configuration, .sim caching, and simulation recovery"
   },
   "rag_dop_python_pattern": {
     "description": "Complete end-to-end DOP network creation pattern. Source geometry verification, DOP network creation, objects, forces, constraints, solver, output, caching. Master pattern tying all DOP RAG entries together.",
-    "keywords": ["dop python", "create dop network", "build simulation", "full dop setup", "dop from scratch", "simulation python", "dop template", "automated simulation"],
+    "keywords": [
+      "dop python",
+      "create dop network",
+      "build simulation",
+      "full dop setup",
+      "dop from scratch",
+      "simulation python",
+      "dop template",
+      "automated simulation"
+    ],
     "reference_file": "rag_dop_python_pattern",
     "summary": "Master DOP creation pattern: end-to-end RBD network via Python"
   },
   "rag_dop_common_errors": {
     "description": "Consolidated DOP error patterns. Frame-1 explosion, fall-through, no-object-to-solve, unexpected reset, freeze requirement, substep instability. Diagnostic functions for each.",
-    "keywords": ["dop error", "simulation error", "simulation explode", "objects fall through", "no object to solve", "simulation crash", "dop not working", "dop troubleshoot"],
+    "keywords": [
+      "dop error",
+      "simulation error",
+      "simulation explode",
+      "objects fall through",
+      "no object to solve",
+      "simulation crash",
+      "dop not working",
+      "dop troubleshoot"
+    ],
     "reference_file": "rag_dop_common_errors",
     "summary": "DOP error diagnostics: explosion, fall-through, missing objects, instability"
   },
   "rag_render_usd_pipeline": {
     "description": "USD render pipeline hierarchy: RenderSettings → RenderProduct → RenderVar. How to traverse and read these prims. How Karma LOP creates them automatically under /Render.",
-    "keywords": ["render pipeline", "RenderSettings", "RenderProduct", "RenderVar", "render prim", "render hierarchy", "USD render", "render configuration"],
+    "keywords": [
+      "render pipeline",
+      "RenderSettings",
+      "RenderProduct",
+      "RenderVar",
+      "render prim",
+      "render hierarchy",
+      "USD render",
+      "render configuration"
+    ],
     "reference_file": "rag_render_usd_pipeline",
     "summary": "USD render pipeline: RenderSettings → RenderProduct → RenderVar hierarchy"
   },
   "rag_render_karma_lop": {
     "description": "Karma LOP as unified render configuration. Creates RenderSettings + RenderProduct + camera binding. Key parms: resolutionx/y, camera (USD prim path), picture, samplesperpixel. CPU vs XPU differences.",
-    "keywords": ["karma lop", "karma node", "karma settings", "karma render node", "karma cpu", "karma xpu", "render settings lop", "karma configuration"],
+    "keywords": [
+      "karma lop",
+      "karma node",
+      "karma settings",
+      "karma render node",
+      "karma cpu",
+      "karma xpu",
+      "render settings lop",
+      "karma configuration"
+    ],
     "reference_file": "rag_render_karma_lop",
     "summary": "Karma LOP unified render configuration: resolution, camera, output, samples"
   },
   "rag_render_output_path": {
     "description": "Render output path configuration. Set path on BOTH Karma LOP (picture) AND usdrender ROP (outputimage). soho_foreground=1 for synchronous rendering. Output directory creation and verification.",
-    "keywords": ["render output", "output path", "render file", "picture parm", "outputimage", "render to file", "soho_foreground", "synchronous render"],
+    "keywords": [
+      "render output",
+      "output path",
+      "render file",
+      "picture parm",
+      "outputimage",
+      "render to file",
+      "soho_foreground",
+      "synchronous render"
+    ],
     "reference_file": "rag_render_output_path",
     "summary": "Render output path: Karma LOP picture + ROP outputimage, soho_foreground"
   },
   "rag_render_frame_tokens": {
     "description": "CRITICAL: Three different frame token systems. Houdini: $F4. husk CLI: <F4>. USD timeSamples: explicit per-frame. Using the wrong format causes silent failures.",
-    "keywords": ["frame token", "$F4", "F4", "frame padding", "render sequence", "output path sequence", "husk output", "timeSamples render"],
+    "keywords": [
+      "frame token",
+      "$F4",
+      "F4",
+      "frame padding",
+      "render sequence",
+      "output path sequence",
+      "husk output",
+      "timeSamples render"
+    ],
     "reference_file": "rag_render_frame_tokens",
     "summary": "Frame token disambiguation: $F4 (Houdini) vs <F4> (husk) vs USD timeSamples"
   },
   "rag_render_branch_convention": {
     "description": "USD /Render scene graph branch convention. All render configuration under /Render/. renderSettingsPrimPath stage metadata. Multiple render configs. Karma LOP auto-follows convention.",
-    "keywords": ["/Render", "render branch", "render prim location", "renderSettingsPrimPath", "render scene graph", "render configuration location"],
+    "keywords": [
+      "/Render",
+      "render branch",
+      "render prim location",
+      "renderSettingsPrimPath",
+      "render scene graph",
+      "render configuration location"
+    ],
     "reference_file": "rag_render_branch_convention",
     "summary": "USD /Render branch convention and renderSettingsPrimPath metadata"
   },
   "rag_render_karma_namespace": {
     "description": "Karma property namespaces for per-prim render control. karma:object: (visibility, matte, phantom), karma:light: properties. USD-encoded parameter names. Edit Properties LOP integration.",
-    "keywords": ["karma namespace", "karma:object", "karma:light", "per-prim render", "render visibility", "matte object", "phantom object", "karma property"],
+    "keywords": [
+      "karma namespace",
+      "karma:object",
+      "karma:light",
+      "per-prim render",
+      "render visibility",
+      "matte object",
+      "phantom object",
+      "karma property"
+    ],
     "reference_file": "rag_render_karma_namespace",
     "summary": "Karma property namespaces: karma:object: visibility/matte/phantom per-prim control"
   },
   "rag_render_delegate_detection": {
     "description": "Render delegate detection via Hydra registry. Query available delegates, check AOV support, validate material compatibility per delegate. BRAY_HdKarma vs BRAY_HdKarmaXPU capabilities.",
-    "keywords": ["render delegate", "hydra delegate", "available renderers", "renderer compatibility", "BRAY_HdKarma", "render plugin", "AOV support"],
+    "keywords": [
+      "render delegate",
+      "hydra delegate",
+      "available renderers",
+      "renderer compatibility",
+      "BRAY_HdKarma",
+      "render plugin",
+      "AOV support"
+    ],
     "reference_file": "rag_render_delegate_detection",
     "summary": "Render delegate detection, capabilities, and material compatibility checking"
   },
   "rag_render_husk_cli": {
     "description": "husk standalone USD renderer at $HFS/bin/husk. Key flags: --renderer, --frame, --frame-range, --output (<F4> tokens), --res, --pixel-samples. iconvert for EXR-to-JPEG conversion.",
-    "keywords": ["husk", "command line render", "headless render", "batch render", "husk cli", "standalone render", "husk flags", "iconvert"],
+    "keywords": [
+      "husk",
+      "command line render",
+      "headless render",
+      "batch render",
+      "husk cli",
+      "standalone render",
+      "husk flags",
+      "iconvert"
+    ],
     "reference_file": "rag_render_husk_cli",
     "summary": "husk CLI rendering: flags, frame tokens, EXR output, iconvert preview pipeline"
   },
   "solaris_instancing": {
     "description": "Point Instancer setup in Solaris: prototype configuration, SOP-to-instancer workflow, RBD-to-instancer pipeline, light instancing (reference mode for Karma), variant instancing workaround (Duplicate + Set Variant), Retime Instancer for animated prototypes, SOP attribute mapping (Cd -> inputs:color, primvars array indexing), instanceable flag via Configure Primitive, Karma XPU nesting limits.",
-    "keywords": ["instancer", "point instancer", "instance", "prototype", "scatter", "RBD instance", "light instance", "retime", "copy to points lop", "instanceable", "instanceable flag", "prototype index", "protoIndices", "instance positions", "instance orientations", "scatter and align", "instancer lop", "light instancing", "reference mode", "RBD to instance", "prototype paths", "instance transform", "Cd to color", "primvar mapping", "retime instancer", "animated prototype", "variant instancing", "instance id", "random instance", "scatter density", "pscale instance", "configure primitive instanceable", "nested instancer", "instance material", "per-instance override", "point instancer karma"],
+    "keywords": [
+      "instancer",
+      "point instancer",
+      "instance",
+      "prototype",
+      "scatter",
+      "RBD instance",
+      "light instance",
+      "retime",
+      "copy to points lop",
+      "instanceable",
+      "instanceable flag",
+      "prototype index",
+      "protoIndices",
+      "instance positions",
+      "instance orientations",
+      "scatter and align",
+      "instancer lop",
+      "light instancing",
+      "reference mode",
+      "RBD to instance",
+      "prototype paths",
+      "instance transform",
+      "Cd to color",
+      "primvar mapping",
+      "retime instancer",
+      "animated prototype",
+      "variant instancing",
+      "instance id",
+      "random instance",
+      "scatter density",
+      "pscale instance",
+      "configure primitive instanceable",
+      "nested instancer",
+      "instance material",
+      "per-instance override",
+      "point instancer karma"
+    ],
     "reference_file": "solaris_instancing",
     "summary": "Solaris instancing: Point Instancer setup, SOP/RBD workflows, light instancing, variant workaround, animated prototypes, instanceable flag"
   },
   "solaris_variants": {
     "description": "USD variant creation and selection in Solaris: Add Variant LOP (Begin/End block), Set Variant LOP, variant naming, clean variant setup via chained Grafts, LOD variants, material/look variants, variant precedence in LIVRPS, variant selection in Python, Component Output export with variants, variant composition rules.",
-    "keywords": ["variant", "variant set", "set variant", "variant lop", "switchable", "option", "toggle variant", "variant selection", "add variant", "variant block", "variant begin", "variant end", "variant graft", "base variant", "alternate variant", "variant naming", "clean variant", "lod variant", "level of detail", "look variant", "shading variant", "material variant", "geo variant", "variant default", "variant python", "variant LIVRPS", "variant strength", "graft variant", "component builder variant", "variant export", "select variant", "variant composition", "variant override"],
+    "keywords": [
+      "variant",
+      "variant set",
+      "set variant",
+      "variant lop",
+      "switchable",
+      "option",
+      "toggle variant",
+      "variant selection",
+      "add variant",
+      "variant block",
+      "variant begin",
+      "variant end",
+      "variant graft",
+      "base variant",
+      "alternate variant",
+      "variant naming",
+      "clean variant",
+      "lod variant",
+      "level of detail",
+      "look variant",
+      "shading variant",
+      "material variant",
+      "geo variant",
+      "variant default",
+      "variant python",
+      "variant LIVRPS",
+      "variant strength",
+      "graft variant",
+      "component builder variant",
+      "variant export",
+      "select variant",
+      "variant composition",
+      "variant override"
+    ],
     "reference_file": "solaris_variants",
     "summary": "USD variants in Solaris: Add/Set Variant LOPs, clean Graft workflows, LOD/look patterns, LIVRPS precedence, export"
   },
   "solaris_vex_wrangle": {
     "description": "LOPs Wrangle VEX patterns: setting displayColor (array syntax), xformOp translate/rotate/scale with xformOpOrder, material assignment via usd_setrelationshiptargets, texture path manipulation, cross-stage reads (op: prefix), primpath expressions ({usd_istype}, {s@info:id}), random instance orientations, array attribute editing. Fundamentally different from SOP VEX — no @P/@N/@Cd, everything via usd_setattrib/usd_getattrib.",
-    "keywords": ["lops wrangle", "lop vex", "usd wrangle", "primpath expression", "xformOp", "displayColor lop", "usd_setrelationshiptargets", "material assignment vex", "usd_addrotate", "lops attribute", "attribwrangle lop", "vex solaris", "usd vex", "xformOpOrder", "usd_addtranslate", "usd_addscale", "usd_setattrib", "usd_getattrib", "usd_istype", "primpath pattern", "usd_flattenedxform", "usd_worldtransform", "usd_localtransform", "primvar lop", "usd_setrelationship", "material binding vex", "texture path vex", "op: prefix", "cross-stage read", "usd_addrotateXYZ", "wrangle collection", "lop attribute wrangle", "solaris wrangle node", "edit properties vex"],
+    "keywords": [
+      "lops wrangle",
+      "lop vex",
+      "usd wrangle",
+      "primpath expression",
+      "xformOp",
+      "displayColor lop",
+      "usd_setrelationshiptargets",
+      "material assignment vex",
+      "usd_addrotate",
+      "lops attribute",
+      "attribwrangle lop",
+      "vex solaris",
+      "usd vex",
+      "xformOpOrder",
+      "usd_addtranslate",
+      "usd_addscale",
+      "usd_setattrib",
+      "usd_getattrib",
+      "usd_istype",
+      "primpath pattern",
+      "usd_flattenedxform",
+      "usd_worldtransform",
+      "usd_localtransform",
+      "primvar lop",
+      "usd_setrelationship",
+      "material binding vex",
+      "texture path vex",
+      "op: prefix",
+      "cross-stage read",
+      "usd_addrotateXYZ",
+      "wrangle collection",
+      "lop attribute wrangle",
+      "solaris wrangle node",
+      "edit properties vex"
+    ],
     "reference_file": "solaris_vex_wrangle",
     "summary": "LOPs VEX wrangle: displayColor arrays, xformOps, material binding, cross-stage reads, primpath selectors, USD attribute functions"
   },
   "solaris_caching_layers": {
     "description": "Solaris caching and layer management: layer concepts (active layer, layer stack, layer break), save path configuration, Cache LOP file caching, USD ROP per-frame export, Value Clip LOP for animated sequences, Geometry Clip Sequence (H21), VDB sequence looping, UsdConfigure SOP static/dynamic optimization (170MB->30MB), UsdStitch/UsdStitchClips CLI, layered cache strategy (static + animation separation), Scene Graph debugging (blue=static, green=dynamic), flatten and prune, layer muting.",
-    "keywords": ["layer", "cache", "value clip", "geometry clip sequence", "usd stitch", "optimize cache", "static attribute", "usd configure", "layer save path", "vdb loop", "inspect layer", "scene graph layers", "cache lop", "layer break", "save layer", "flatten layer", "configure layer", "active layer", "layer stack", "usd rop cache", "per-frame export", "static vs dynamic", "deformation cache", "animation cache", "geometry cache solaris", "vdb sequence", "value clip lop", "clip manifest", "usd stitch clips", "file cache lop", "scene graph details", "blue static", "green dynamic", "inspect active layer", "layer muting", "mute layer", "prune", "anonymous layer"],
+    "keywords": [
+      "layer",
+      "cache",
+      "value clip",
+      "geometry clip sequence",
+      "usd stitch",
+      "optimize cache",
+      "static attribute",
+      "usd configure",
+      "layer save path",
+      "vdb loop",
+      "inspect layer",
+      "scene graph layers",
+      "cache lop",
+      "layer break",
+      "save layer",
+      "flatten layer",
+      "configure layer",
+      "active layer",
+      "layer stack",
+      "usd rop cache",
+      "per-frame export",
+      "static vs dynamic",
+      "deformation cache",
+      "animation cache",
+      "geometry cache solaris",
+      "vdb sequence",
+      "value clip lop",
+      "clip manifest",
+      "usd stitch clips",
+      "file cache lop",
+      "scene graph details",
+      "blue static",
+      "green dynamic",
+      "inspect active layer",
+      "layer muting",
+      "mute layer",
+      "prune",
+      "anonymous layer"
+    ],
     "reference_file": "solaris_caching_layers",
     "summary": "Solaris caching/layers: layer stack management, Value Clips, Geometry Clip Sequences, static/dynamic optimization, scene graph debugging"
+  },
+  "aces_color_management": {
+    "description": "Covers setting up an ACES pipeline in Houdini 21 through OpenColorIO: check_ocio_config() verifies the OCIO env var and lists ACEScg/ACES2065-1/sRGB/Raw color spaces via PyOpenColorIO. COLOR_SPACE_RULES maps color textures (albedo, base_color, emission) to srgb_texture and data textures (normal, roughness, metalness, displacement) to Raw, applied to MaterialX mtlximage nodes via the 'colorspace' parm. configure_aces_render_output() keeps the Karma beauty EXR in ACEScg (linear) with no baked display transform, while exr_to_jpeg_aces() uses iconvert to apply the OCIO display transform for previews. Flags common mistakes like applying ACES transforms to data maps, double-converting sRGB (washed-out/oversaturated), and viewing linear EXRs flat/dark without a view transform.",
+    "keywords": [
+      "aces",
+      "color management",
+      "ocio",
+      "opencolorio",
+      "color space",
+      "acescg",
+      "linear workflow",
+      "srgb texture",
+      "washed out colors",
+      "normal map raw colorspace",
+      "display transform",
+      "view transform",
+      "hdri exposure",
+      "flat dark render"
+    ],
+    "reference_file": "aces_color_management",
+    "summary": "ACES/OCIO color management pipeline for Houdini 21 (texture color spaces, Karma ACEScg output, display transforms)"
+  },
+  "camera_sensor_database": {
+    "description": "Provides a CAMERA_SENSORS dictionary mapping production camera bodies (ARRI Alexa 35 / Mini LF, RED V-Raptor X and Komodo-X, Sony Venice 2 and FX6, Blackmagic URSA 12K, Canon C500 II) to their sensor_mm dimensions, max_res, format, color science, and gate_fit. apply_camera_sensor() and create_matched_camera() build a Solaris camera LOP setting horizontalAperture, verticalAperture, focalLength, and fStop; set_camera_sensor_usd() does the same via UsdGeom.Camera on an open USD stage. Helpers calculate_fov (HFOV = 2*atan(hAperture/(2*focal))), calculate_crop_factor, and calculate_equivalent_focal_length cover FOV and full-frame-equivalent math, alongside a GATE_FIT_MODES reference. Key gotcha: camera parms use plain USD names (horizontalAperture, focalLength) directly, NOT the xn__ light-style encoding.",
+    "keywords": [
+      "camera sensor size",
+      "arri alexa sensor",
+      "red komodo raptor camera",
+      "sony venice fx6",
+      "blackmagic ursa canon cinema",
+      "crop factor",
+      "field of view fov",
+      "full frame equivalent focal length",
+      "horizontal vertical aperture",
+      "gate fit horizontal fill",
+      "match render camera to real camera body",
+      "sensor dimensions mm",
+      "focal length lens"
+    ],
+    "reference_file": "camera_sensor_database",
+    "summary": "Real camera-body sensor database mapped to USD/Solaris camera parameters for accurate FOV matching"
+  },
+  "copernicus_compositing": {
+    "description": "Builds a Copernicus GPU comp network inside /img using a cop2net with cop:-prefixed nodes: loads beauty and utility AOVs via cop:file, rebuilds beauty by summing light passes (direct/indirect diffuse, specular, emission, sss) through cop:layer_comp set to \"add\", then chains cop:grade (lift/gamma/gain, saturation), cop:exposure, cop:saturation, cop:ocio_transform (ACEScg to sRGB), and cop:tonemap (aces) before writing EXR via cop:rop_comp. Also covers cop:crypto_extract for selective Cryptomatte grading, cop:denoise with oidn/optix and albedo/normal aux AOVs, plus cop:depth_effects fog, cop:motion_blur (2D from motion vectors), and cop:glow bloom. Includes a GPU VRAM budget table (4K/8K vs AOV count) and the rule to work in linear and apply display transforms only at output. Legacy cop2net syntax here; see copernicus_python_api.md for the modern copnet pattern.",
+    "keywords": [
+      "compositing",
+      "comp render passes",
+      "copernicus",
+      "denoise render",
+      "cryptomatte matte",
+      "color grade",
+      "tonemap ACES",
+      "AOV beauty rebuild",
+      "bloom glow",
+      "2d motion blur",
+      "depth fog",
+      "OCIO color space",
+      "GPU comp",
+      "cop2net"
+    ],
+    "reference_file": "copernicus_compositing",
+    "summary": "GPU compositing in Copernicus (Houdini 21's COP replacement): AOV beauty rebuild, grade, tonemap, denoise, and cryptomatte via Python."
+  },
+  "mpm_production_workflows": {
+    "description": "Covers eight production MPM scenarios from the SideFX H21 Masterclass driven by the MPM solver and mpmobject DOP with presets (rubber, water, metal, clay) and type surface vs solid fill. Core techniques include using the Jp plastic-deformation attribute to detect fracture zones, the close_gaps VEX wrangle blending point-based vs piece-based deformation, and a 100x scale-up workflow that compensates by multiplying timescale and dividing gravity for sub-centimeter sims. Solver tuning covers surfacetension_method (point), minsubsteps/substeps for tension stability, sleepthreshold auto-sleep for snow, compressionhardening for metal tearing, and a two-pass multi-resolution setup (particlesep 0.11 lo-res vs 0.06 hi-res). Also includes narrow-band render-cloud erosion via VDB dilate/smooth/erode, the freeze-deleted-particles pattern for stable point indices during retargeting, and disabling \"Assume Unchanging Material Properties\" for staggered mid-sim projectile emission.",
+    "keywords": [
+      "MPM",
+      "material point method",
+      "MPM solver",
+      "destruction simulation",
+      "tearing metal",
+      "snow footprints",
+      "slow motion impact",
+      "building collapse",
+      "structural destruction",
+      "fracture",
+      "surface tension",
+      "raindrops on car",
+      "debris",
+      "pumpkin smash",
+      "mpmobject preset",
+      "particle count optimization"
+    ],
+    "reference_file": "mpm_production_workflows",
+    "summary": "Production MPM (Material Point Method) destruction and effects workflows in DOPs"
+  },
+  "mpm_solver": {
+    "description": "Builds an MPM sim via the SOP chain source_geo -> mpmconfigure -> mpmsource -> mpmcollider -> mpmsolver -> post-sim nodes. mpmconfigure exposes materialpreset (0=Water, 1=Snow, 2=Sand, 3=Soil, 4=Rubber, 5=Metal, 6=Concrete) plus particlesep, stiffness, density, viscosity, and friction; mpmsolver controls minsubsteps/maxsubsteps, materialcondition, gravity, and the assumeunchanging toggle that must be OFF when emitting mixed materials mid-sim. Covers H21 features: surfacetension (point vs grid method, strength, multiphase phaseid), autosleep (velocity threshold, sleepdelay), and per-voxel collider friction/stickiness via createvdbfromattrib. Post-sim nodes mpmsurface (SDF/Density VDB/Polygon Mesh, NPS models), mpmdebrissource, mpmpostfracture (Jp-based reverse fracture), and mpmdeformpieces handle meshing, debris, and destruction.",
+    "keywords": [
+      "material point method",
+      "mpm sim",
+      "snow simulation",
+      "sand simulation",
+      "mud slurry sim",
+      "granular material sim",
+      "metal tearing fracture",
+      "concrete destruction",
+      "rubber soft body sim",
+      "surface tension droplets",
+      "viscous fluid sim",
+      "sim explodes blows up",
+      "particle solver",
+      "snow sand mud rubber metal"
+    ],
+    "reference_file": "mpm_solver",
+    "summary": "Material Point Method (MPM) simulation setup in SOPs for snow, sand, mud, rubber, metal, and concrete"
+  },
+  "render_farm": {
+    "description": "A Synapse render-farm orchestrator that renders a frame range through a usdrender ROP (soho_foreground=1 for synchronous writes) driving a Karma LOP, then validates each EXR with oiiotool --stats for black_frame, nan_check, clipping, underexposure, and firefly saturation. classify_scene() tags the USD stage and warmup_render_settings() pulls known-good karma_samples/maxpathdepth/pixelfilterclamp from memory; apply_fix() retries by bumping samples or nudging exposure via xn__inputsexposure_vya under the Lighting Law (intensity always 1.0, brightness only via exposure stops). build_tops_render_farm() wires a ropfetch to a localscheduler or hqueuescheduler for distributed rendering, and generate_report() writes a Markdown report with a Windows toast.",
+    "keywords": [
+      "render farm",
+      "batch render",
+      "render sequence",
+      "distributed rendering",
+      "PDG render",
+      "TOPs render farm",
+      "HQueue scheduler",
+      "render orchestrator",
+      "black frames",
+      "fireflies",
+      "NaN pixels",
+      "blown out highlights",
+      "auto-fix render",
+      "render report"
+    ],
+    "reference_file": "render_farm",
+    "summary": "Local render-farm orchestrator for sequence rendering with per-frame OIIO validation, auto-fix, and PDG/TOPs distribution"
+  },
+  "temporal_coherence": {
+    "description": "A diagnostic-and-fix workflow for temporal coherence in Karma LOP animation. diagnose_temporal_artifacts() plus a VEX Wrangle snippet audit for missing rest/velocity attributes and adaptive subdivision; configure_karma_denoiser() locks vm_denoiser to one engine (OIDN=1 or OptiX=2) at vm_samples>=64 with albedo/normal aux passes only; configure_motion_blur() sets vm_xformsamples, vm_geosamples, and vm_shutter with optional vm_velblur; configure_volume_stability() pins vm_volumesteprate to 0.25. A rest-position Point Wrangle bakes v@rest = @P so procedural noise stops swimming, and render_validation_range()/compare_frame_luminance() render a low-res 3-to-10 frame window and measure per-pixel luminance delta to quantify flicker before farm dispatch.",
+    "keywords": [
+      "flickering render",
+      "why is my animation flickering",
+      "texture swimming",
+      "geometry popping between frames",
+      "fireflies in render",
+      "denoiser smearing",
+      "motion blur samples",
+      "shadow flicker",
+      "volume flicker",
+      "render looks different each frame",
+      "frame to frame consistency",
+      "OIDN vs OptiX",
+      "rest position noise",
+      "flicker free animation"
+    ],
+    "reference_file": "temporal_coherence",
+    "summary": "Fixing frame-to-frame flicker in Karma animation renders — denoiser, motion blur, volume step rate, and rest position."
+  },
+  "tops_advanced": {
+    "description": "Covers advanced TOPS/PDG using pythonprocessor generateTasks/cookTask callbacks with item_holder.addWorkItem and setStringAttrib/setIntAttrib for dynamic (non-wedge) work-item generation from upstream JSON, databases, or directory scans. Details feedbackbegin/feedbackend iterative loops with a Python \"Stop Condition\" expression, plus partitioners (partitionbyattribute, pythonpartitioner, waitforall, partitionbycombination) and configuring local, HQueue, and Deadline schedulers via maxproccount, topscheduler, jobpriority, and env_ attributes. Includes error handling with pdg.CookError and maxretries/errorcondition, checkpoint/resume through pdg_checkpointfile and node.dirtyAll, and full Python-built pipelines chaining filepattern to ropfetch to waitforall to ffmpegencodevideo. Also documents monitoring via getPDGGraphContext, pdg.workItemState, and cookAsynchronous, with a Common Issues section for stuck, failed, or out-of-order work items.",
+    "keywords": [
+      "render farm",
+      "deadline scheduler",
+      "hqueue",
+      "distributed rendering",
+      "batch render",
+      "work items",
+      "task orchestration",
+      "resume failed render",
+      "retry failed frames",
+      "why did all my work items fail",
+      "feedback loop iteration",
+      "partition renders by shot",
+      "checkpoint resume",
+      "pipeline automation"
+    ],
+    "reference_file": "tops_advanced",
+    "summary": "Advanced TOPS/PDG production pipeline patterns — dynamic work items, farm schedulers, feedback loops, and checkpoint/resume"
   }
 }

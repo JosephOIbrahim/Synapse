@@ -62,7 +62,23 @@
     "eval_backbone",
     "farm_headless",
     "studio_readiness_review",
-    "suite_baseline"
+    "mutation_fail_closed",
+    "runtime_owns_heartbeat",
+    "hot_reload_gated",
+    "deps_isolated",
+    "installer_host_targeted",
+    "ci_covers_shipping_surface",
+    "shelf_current",
+    "tool_metadata_single_source",
+    "process_bridge_armed",
+    "auth_fail_closed",
+    "packaging_self_contained",
+    "release_readiness_review",
+    "suite_baseline",
+    "knowledge_baseline_fresh",
+    "semantic_index_built",
+    "knowledge_topic_coverage",
+    "knowledge_root_canonical"
   ],
   "guardrails": {
     "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger, and no newly-introduced phantom hou.* API (dir()-symbol-table-gated). PLUS the green ratchet (suite_baseline): the full `pytest tests/` result must not regress vs the committed floor in harness/verify/suite_baseline.json — failures only DOWN, passes only UP — so no Generator round can green its target while reddening other tests.",
@@ -1050,6 +1066,299 @@
         "tops_path_untouched"
       ],
       "note": "CROWN finding #2 (ODFORCE O.3). Consumes Mile 1's event-callback symbols ONLY if confirmed; otherwise degrades to expression-evaluation diagnosis and says so — the truth contract: never claim capture it didn't perform."
+    },
+    {
+      "id": "R.1",
+      "phase": "release",
+      "mode": "A",
+      "blocked_on": "release_ratified",
+      "crit": true,
+      "layer": "safety",
+      "title": "Release track — mutations fail CLOSED when the integrity bridge is unavailable: remove all three direct-dispatch fallbacks (P0.2, the review's #1 code finding)",
+      "refs": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        "python/synapse/panel/tool_executor.py",
+        "python/synapse/mcp/tools.py",
+        "python/synapse/panel/bridge_adapter.py",
+        "python/synapse/server/handlers.py"
+      ],
+      "verify": [
+        "mutation_fail_closed"
+      ],
+      "note": "THREE sites (sweep found one more than the review): tool_executor + mcp/tools `except ImportError → handler.handle`, and bridge_adapter's `bridge is None → direct dispatch` (the live path). Read-only tools may degrade gracefully; mutations return a failed SynapseResponse naming the missing safety subsystem. Classification must come from an import-independent source (handlers._READ_ONLY_COMMANDS). The mcp/server.py resources lookalike is NOT a defect — leave it. Add a regression test: mutating tool errors (never dispatches) when _BRIDGE_AVAILABLE is False."
+    },
+    {
+      "id": "R.2",
+      "phase": "release",
+      "mode": "A",
+      "blocked_on": "release_ratified",
+      "crit": true,
+      "layer": "survival",
+      "title": "Release track — move the freeze heartbeat out of the panel widget into a process-lifetime beat owner (P0.3)",
+      "refs": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        "python/synapse/panel/synapse_panel.py",
+        "python/synapse/server/freeze_chain.py",
+        "python/synapse/server/resilience.py"
+      ],
+      "verify": [
+        "runtime_owns_heartbeat"
+      ],
+      "note": "Worse than lost coverage (sweep refinement): after >=1 beat + panel close, the surviving Watchdog reads the dead beat source as a freeze and ~35s later force-opens the breaker + emergency halt on a HEALTHY session. The new owner (mark it `# RUNTIME_BEAT_SOURCE`, or def ensure_beat_started, under python/synapse/server/) must outlive panels AND handle deliberate beat-source detach. Panel demotes to displaying runtime state / calling the idempotent ensure_started."
+    },
+    {
+      "id": "R.3",
+      "phase": "release",
+      "mode": "A",
+      "blocked_on": "release_ratified",
+      "crit": true,
+      "layer": "survival",
+      "title": "Release track — gate the production sys.modules purge behind SYNAPSE_DEV_HOT_RELOAD in BOTH .pypanel loaders (P0.4)",
+      "refs": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        "houdini/python_panels/synapse_panel.pypanel",
+        "python/synapse/panel/synapse_chat.pypanel"
+      ],
+      "verify": [
+        "hot_reload_gated"
+      ],
+      "note": "Both loaders purge synapse.* unconditionally at module scope — production reopen splits singletons (duplicate bridges, stale callbacks, threads holding old class identities). Wrap in `if os.environ.get(\"SYNAPSE_DEV_HOT_RELOAD\") == \"1\":` (os already imported in both) or delete outright; production reopen imports normally and reconnects to the existing runtime."
+    },
+    {
+      "id": "R.4",
+      "phase": "release",
+      "mode": "A",
+      "blocked_on": "release_ratified",
+      "crit": true,
+      "layer": "survival",
+      "title": "Release track — dependency isolation across Python minors: versioned vendor roots now, sidecar per gate-0.1's decided direction (P0.1)",
+      "refs": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        "python/synapse/__init__.py",
+        "python/synapse/host/daemon.py",
+        "docs/studio/UPGRADE.md",
+        "docs/studio/DROP_DAY.md"
+      ],
+      "verify": [
+        "deps_isolated"
+      ],
+      "note": "NOT a human gate — gate-0.1 is DECIDED (sidecar, DROP_DAY.md 2026-07-10, built first post-release). The gate greens on EITHER mechanism: versioned vendor roots selected from sys.version_info (drop-window minimum; cp312/cp313 payloads pre-staged at harness/state/wheel_cache/) replacing the strict `== (3, 11)` equality, or the sidecar implementation landing under host/. Never depend on global/user site-packages. tests/test_vendored_deps.py's VENDOR_PY pin needs updating in the same commit."
+    },
+    {
+      "id": "R.5",
+      "phase": "release",
+      "mode": "A",
+      "blocked_on": "release_ratified",
+      "crit": true,
+      "layer": "survival",
+      "title": "Release track — host-targeted installer: --houdini-exe derivation + post-install host verification (P0.5)",
+      "refs": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        "scripts/install_synapse_package.py",
+        "install.py",
+        "tests/test_install_package.py"
+      ],
+      "verify": [
+        "installer_host_targeted"
+      ],
+      "note": "Auto-detect globs only EXISTING pref dirs — a fresh H22 pref dir (created on first launch) is silently omitted; explicit $HOUDINI_USER_PREF_DIR set-but-uncreated is also dropped. Derive pref dir + hython from --houdini-exe, mkdir when absent, then verify from the host side (package parses, SYNAPSE_ROOT correct, synapse importable, pypanel + shelf discoverable). FIX_IS_REAL_PROBE: extend tests/test_install_package.py with a behavioral verify-step case — the check is presence-gated, the test is the proof. GitHub issue #3 gets answered with the verified process (human follow-up, Phase 2 of the review)."
+    },
+    {
+      "id": "R.6",
+      "phase": "release",
+      "mode": "A",
+      "blocked_on": "release_ratified",
+      "crit": true,
+      "layer": "eval",
+      "title": "Release track — CI covers the shipping surface: windows-latest lane + vendored-wheel LOAD probe (P0.6)",
+      "refs": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        ".github/workflows/ci.yml",
+        "tests/test_vendored_deps.py"
+      ],
+      "verify": [
+        "ci_covers_shipping_surface"
+      ],
+      "note": "The shipping platform (Windows — the only place the vendored cp311 binaries can even load) is never exercised; the wheel is asserted by FILENAME, never imported; four panel modules skip-exit-0 without PySide (the documented goalpost trap). Hosted-runner scope only: windows lane + a step that IMPORTS pydantic_core. Licensed hython/graphical lanes are receipts territory (G6) — never fake them in hosted CI."
+    },
+    {
+      "id": "R.7",
+      "phase": "release",
+      "mode": "A",
+      "blocked_on": "release_ratified",
+      "crit": true,
+      "layer": "hygiene",
+      "title": "Release track — shelf currency: PySide6-first clipboard + current installer message (P1, review Phase-1 item 5)",
+      "refs": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        "houdini/scripts/python/synapse_shelf.py"
+      ],
+      "verify": [
+        "shelf_current"
+      ],
+      "note": "H21 ships PySide6 only, so the PySide2-only clipboard ALWAYS silently returns False on the target platform; the missing-panel message names the wrong installer (`python install.py` — a different, legacy mechanism). Two one-liners: PySide6-first-with-PySide2-fallback (chat_panel.py:31-36 is the repo idiom) + point at scripts/install_synapse_package.py and say 'restart Houdini'."
+    },
+    {
+      "id": "R.8",
+      "phase": "release",
+      "mode": "A",
+      "blocked_on": "release_ratified",
+      "crit": false,
+      "layer": "safety",
+      "title": "Release track — unknown-tool metadata fails closed: kill the silent set_parameter→INFORM default (P1-metadata)",
+      "refs": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        "python/synapse/panel/bridge_adapter.py",
+        "shared/constants.py"
+      ],
+      "verify": [
+        "tool_metadata_single_source"
+      ],
+      "note": "NOT covered by S.1 (its fingerprint is shared/bridge.py's gate fallback; its taxonomy list omits bridge_adapter). An unknown tool name classifies as set_parameter → INFORM, the weakest gate — unknown capability executing with mere notification (the sibling `.get(tool_name, \"HANDS\")` agent default rides along). Fail closed: refuse, or classify REVIEW-or-higher; long-term the four hardcoded maps move into the S.1 single policy source."
+    },
+    {
+      "id": "R.9",
+      "phase": "release",
+      "mode": "A",
+      "blocked_on": "release_ratified",
+      "crit": false,
+      "layer": "safety",
+      "title": "Release track — fail-closed security defaults: arm the process bridge + fail-closed auth (P1-consent + P1-auth)",
+      "refs": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        "shared/bridge.py",
+        "python/synapse/server/auth.py",
+        "python/synapse/server/websocket.py",
+        "python/synapse/panel/bridge_adapter.py"
+      ],
+      "human_gate": {
+        "decision": "arm the process bridge's consent path (non-blocking approval surface) + fail-closed auth defaults",
+        "why": "Security-critical, human-authored, harness-gated (S.2/S.3 precedent). Closes the shared/bridge.py get_process_bridge disarm S.2 cannot see (`bridge._gate = None` + `consent_callback=lambda op: True`) and the entirely-ungated auth surface (no key ⇒ every token passes; empty Origin ⇒ allow; handshake skipped without a key). Under the declared solo posture these stay accepted, NAMED trade-offs; the gates keep them visible and regression-proof, and they snap to blockers under studio/farm."
+      },
+      "verify": [
+        "process_bridge_armed",
+        "auth_fail_closed"
+      ],
+      "note": "'User typed a prompt' is not consent for every exact tool call: keep the non-blocking UX (never HumanGate's blocking poll on the GUI thread — that deadlocks), but route delete / execute_python / disk writes / expensive renders through async approval cards. Auth: mutating endpoints require a token unless an explicit insecure-local flag is set; generate + persist ~/.synapse/auth.key on first run."
+    },
+    {
+      "id": "R.10",
+      "phase": "release",
+      "mode": "A",
+      "blocked_on": "release_ratified",
+      "crit": false,
+      "layer": "hygiene",
+      "title": "Release track — packaging self-containment: move shared/ into the installable package (P1, POST-stabilization by the review's own sequencing)",
+      "refs": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        "scripts/install_synapse_package.py",
+        "packages/synapse.json",
+        "python/synapse/server/integrity_envelope.py",
+        "pyproject.toml",
+        "tests/test_install_package.py"
+      ],
+      "verify": [
+        "packaging_self_contained"
+      ],
+      "note": "Do NOT do this inside the drop window (the review is explicit). 19 top-level `from shared...` sites under python/synapse, dual-path PYTHONPATH in BOTH package writers, plus integrity_envelope.py's import-time repo-root climb (a third site the review missed). Relocate shared/ under python/ so the wheel picks it up, rewrite imports, single-entry PYTHONPATH, update tests/test_install_package.py's dual-path pin. Non-blocking hygiene in the capstone."
+    },
+    {
+      "id": "R.R",
+      "phase": "release",
+      "mode": "A",
+      "blocked_on": "release_ratified",
+      "crit": true,
+      "layer": "review",
+      "title": "Release track — capstone release-readiness review: aggregate every R-check + human receipts + posture into the G1–G10 map and the honest release label",
+      "refs": [
+        "harness/notes/spec-R-release-readiness.md",
+        "docs/reviews/synapse-h22-readiness-2026-07-10.md",
+        "harness/state/release_receipts.json.example",
+        "harness/state/release_readiness_verdict.json"
+      ],
+      "verify": [
+        "release_readiness_review"
+      ],
+      "note": "The review's binary gates, executable. STABLE-READY only when: 7 machine gates green (P0.1–P0.6 + shelf), security legs green-or-posture-accepted, all six live receipts pass (g1 install / g5 lifecycle / g6 smoke / g7 undo / g8 restart / g9 rollback — human-authored release_receipts.json, never harness-written), host truth stamped (mode B symbol table), and G10 (README's claim never outruns the receipts). Anything less = honest 'RC — …' with blockers named. ok:true ONLY on STABLE-READY: this task is the stable-promotion gate, un-bankable until the drop is verified — by design. Verdict computable on demand regardless of the ratification hold: python harness/verify/checks.py --task R.R --worktree . --mode A"
+    },
+    {
+      "id": "K.0",
+      "phase": "knowledge",
+      "mode": "A",
+      "crit": false,
+      "layer": "utility",
+      "title": "Knowledge track — baseline probe: snapshot corpus stats (reference-file count, lexical + semantic entry counts, retrieval mode, canonical-root check) to harness/notes/knowledge_baseline.json",
+      "refs": [
+        "scripts/knowledge_baseline.py",
+        "python/synapse/cognitive/tools/scout_ingest.py",
+        "harness/notes/knowledge_baseline.json"
+      ],
+      "verify": [
+        "knowledge_baseline_fresh"
+      ],
+      "note": "Read-only, no hython dependency — corpus stats aren't Houdini-build-specific. Re-run scripts/knowledge_baseline.py any time to refresh; each run overwrites with a freshly-computed blake2b digest. Not gated behind anything, produces its own artifact — same shape as C.0."
+    },
+    {
+      "id": "K.1",
+      "phase": "knowledge",
+      "mode": "A",
+      "crit": false,
+      "layer": "build",
+      "title": "Knowledge track — build the offline semantic (embedding) index over rag/ so scout's already-coded dense-retrieval path activates (mode lexical_only -> hybrid). Fixes: retrieval was 100% BM25/keyword matching with zero paraphrase tolerance",
+      "refs": [
+        "scripts/build_semantic_index.py",
+        "python/synapse/cognitive/tools/scout.py",
+        "python/synapse/cognitive/tools/scout_ingest.py",
+        "rag/semantic_index/manifest.json"
+      ],
+      "verify": [
+        "semantic_index_built"
+      ],
+      "note": "sentence-transformers is an optional extra (pyproject.toml [semantic]) — absent, scout silently stays lexical_only, no new fail-open surface. Index is built offline and committed so end users never need the embedding model installed just to GET hybrid retrieval, only to (re)build one. Known MVP limit: whole-file embedding granularity, not sub-file chunking. Acceptance: a query sharing zero literal tokens with its target doc (e.g. 'smoke sim is slow' -> pyro_fx.md) must surface that doc — verified live 2026-07-13, first hit score 1.0."
+    },
+    {
+      "id": "K.2",
+      "phase": "knowledge",
+      "mode": "A",
+      "crit": false,
+      "layer": "build",
+      "title": "Knowledge track — close the Tier-1 topic-coverage gap: every reference .md file gets a semantic_index topic + reference_file pointer (was 90/117; the 27 gaps were the highest-traffic files — pyro, flip, vellum, sop_basics, rendering)",
+      "refs": [
+        "rag/documentation/_metadata/semantic_index.json",
+        "rag/documentation/_metadata/agent_relevance_map.json",
+        "python/synapse/routing/knowledge.py"
+      ],
+      "verify": [
+        "knowledge_topic_coverage"
+      ],
+      "note": "Data-only fix — NO change to KnowledgeIndex matching logic (a keyword-tokenization experiment was tried and reverted: it regressed precise fast-path queries like 'water sim' to gain symptom-phrasing recall that K.1's semantic path already provides — clean division of labor is Tier-1=precise keyword, K.1=paraphrase recall). 14 same-named topics relinked deterministically; 13 judgment cases decided by a 13-agent team reading each file (5 relinks to same-subject topics, 8 fresh entries with 13-16 artist-phrased keywords each). Coverage 90/117 -> 117/117, verified 2026-07-13. Root cause was topic<->file disconnection: topics like pyro_simulation existed with great keywords but never carried a reference_file to pyro_fx.md."
+    },
+    {
+      "id": "K.3",
+      "phase": "knowledge",
+      "mode": "A",
+      "crit": false,
+      "layer": "build",
+      "title": "Knowledge track — retire G:\\HOUDINI21_RAG_SYSTEM as scout's default RAG root (flip default to repo rag/, matching KnowledgeIndex), migrate its 803 orphaned SideFXLabs entries into rag/corpus/, archive root-level noise",
+      "refs": [
+        "python/synapse/cognitive/tools/scout.py",
+        "python/synapse/cognitive/tools/scout_ingest.py",
+        "rag/corpus/sidefxlabs_entries.json"
+      ],
+      "verify": [
+        "knowledge_root_canonical"
+      ],
+      "note": "The G: store's corpus/ entries had no searchable_text field -- a session defaulted there loaded hollow (confirmed by adversarial verification 2026-07-13). The 803 sidefxlabs_entries.json rows already matched scout's corpus schema verbatim; they were orphaned only because scout's loader scans <root>/corpus/, never <root>/semantic_index/ where they physically sat. Migrated, not regenerated. G:\\HOUDINI21_RAG_SYSTEM\\_raw_documentation\" + garbled cp-artifact directory (embedded newline in the dirname, from a historical botched cp command) left untouched -- contains real nested sample content (FullSourceSamples, Dev_HDA_Test HDAs), not junk; needs manual handling, not a scripted move."
     }
   ]
 }
