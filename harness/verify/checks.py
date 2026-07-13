@@ -2131,6 +2131,31 @@ def check_semantic_index_built(ctx):
     return {"ok": True, "detail": f"semantic index sound ({n_meta} embedded entries, model={manifest.get('model')})"}
 
 
+def check_rewire_assessed(ctx):
+    # K.6 Phase 1: the vex-corpus re-wire question is answered by MEASUREMENT, not
+    # debate — this verifies the assessment scorecard exists and is well-formed (schema
+    # rewire_assessment/v1), and surfaces its usable-entries number. Decision-support,
+    # not a pass/fail gate on the number itself: the re-wire call is the maintainer's,
+    # informed by the scorecard. Read-only, no hython. Mirrors check_knowledge_baseline_fresh.
+    wt = Path(ctx["wt"])
+    fp = wt / "harness" / "notes" / "rewire_assessment.json"
+    if not fp.exists():
+        return {"ok": False, "detail": "harness/notes/rewire_assessment.json missing — "
+                                       "run scripts/rewire_assess.py (K.6 Phase 1)"}
+    try:
+        d = json.loads(fp.read_text(encoding="utf-8"))
+    except Exception as e:
+        return {"ok": False, "detail": f"assessment unreadable: {str(e)[:200]}"}
+    if d.get("schema") != "rewire_assessment/v1":
+        return {"ok": False, "detail": f"schema={d.get('schema')} != rewire_assessment/v1"}
+    for k in ("raw_code_blocks", "unique_snippets", "usable_entries_estimate"):
+        if k not in d:
+            return {"ok": False, "detail": f"assessment missing required field '{k}'"}
+    return {"ok": True, "detail": f"re-wire assessed: {d['raw_code_blocks']} raw blocks -> "
+                                  f"{d['usable_entries_estimate']} usable-entry estimate "
+                                  f"({d.get('usable_rate_vs_raw_pct')}% ; vcc={d.get('vcc_available')})"}
+
+
 def check_semantic_index_fresh(ctx):
     # K.5: the committed embedding index must match the CURRENT rag/ content it
     # claims to represent. build_semantic_index stamps manifest.json with a
@@ -2308,6 +2333,7 @@ DISPATCH = {
     "semantic_index_fresh": check_semantic_index_fresh,
     "knowledge_topic_coverage": check_knowledge_topic_coverage,
     "knowledge_root_canonical": check_knowledge_root_canonical,
+    "rewire_assessed": check_rewire_assessed,
 }
 
 def main():

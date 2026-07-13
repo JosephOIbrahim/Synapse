@@ -79,7 +79,8 @@
     "semantic_index_built",
     "semantic_index_fresh",
     "knowledge_topic_coverage",
-    "knowledge_root_canonical"
+    "knowledge_root_canonical",
+    "rewire_assessed"
   ],
   "guardrails": {
     "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger, and no newly-introduced phantom hou.* API (dir()-symbol-table-gated). PLUS the green ratchet (suite_baseline): the full `pytest tests/` result must not regress vs the committed floor in harness/verify/suite_baseline.json — failures only DOWN, passes only UP — so no Generator round can green its target while reddening other tests.",
@@ -1391,7 +1392,24 @@
         "python/synapse/cognitive/tools/scout_ingest.py"
       ],
       "verify": [],
-      "note": "DECIDED (close-the-loop 2026-07-13, agent-investigated + spot-verified): the premise 'should we wire vex-corpus' is overtaken — vex-corpus/scripts/sync_to_synapse.py already ran and wrote 14 vex_corpus_*.md into rag/skills/houdini21-reference/ (tracked in HEAD, ~2079 chunks per .vex_corpus_manifest.json). They are live in scout (embedded 1-per-file). VERIFIED low quality: vex_corpus_point_cloud_ops.md is 5639 lines, line 1102 is broken VEX 'vector pts = pts[];', line 7 is mojibake '### Exercises a~'; ~65% of source is joy-of-vex (already cleanly in rag/ as joy_of_vex_*.md via vex_rag_pipeline) so it's largely redundant AND noisier; whole-file embedding (build_semantic_index MVP) can't represent a 5639-line file and it out-term-frequencies clean files on common VEX queries = active pollution. vex-corpus's real output is a FINE-TUNING corpus (intake.py to_training_pair), unvetted Ollama explanations, not curated retrieval. RECOMMENDATION: prune the 14 files + their semantic_index.json/agent_relevance_map.json entries, then scripts/refresh_knowledge.py (K.5 gate makes this a clean prune->red->refresh->green loop). NOT done unilaterally — pre-existing user content, a Houdini-expert quality call. Re-WIRE condition: vex-corpus grows dedup + VEX-syntax validation + section-level chunking so only net-new verified patterns remain. No H22 dependency."
+      "note": "DECIDED (close-the-loop 2026-07-13, agent-investigated + spot-verified): the premise 'should we wire vex-corpus' is overtaken — vex-corpus/scripts/sync_to_synapse.py already ran and wrote 14 vex_corpus_*.md into rag/skills/houdini21-reference/ (tracked in HEAD, ~2079 chunks per .vex_corpus_manifest.json). They are live in scout (embedded 1-per-file). VERIFIED low quality: vex_corpus_point_cloud_ops.md is 5639 lines, line 1102 is broken VEX 'vector pts = pts[];', line 7 is mojibake '### Exercises a~'; ~65% of source is joy-of-vex (already cleanly in rag/ as joy_of_vex_*.md via vex_rag_pipeline) so it's largely redundant AND noisier; whole-file embedding (build_semantic_index MVP) can't represent a 5639-line file and it out-term-frequencies clean files on common VEX queries = active pollution. vex-corpus's real output is a FINE-TUNING corpus (intake.py to_training_pair), unvetted Ollama explanations, not curated retrieval. RECOMMENDATION: prune the 14 files + their semantic_index.json/agent_relevance_map.json entries, then scripts/refresh_knowledge.py (K.5 gate makes this a clean prune->red->refresh->green loop). NOT done unilaterally — pre-existing user content, a Houdini-expert quality call. Re-WIRE condition: vex-corpus grows dedup + VEX-syntax validation + section-level chunking so only net-new verified patterns remain. No H22 dependency. The re-wire condition is now MEASURABLE via K.6 (see harness/notes/spec-K6-rewire-admission.md + scripts/rewire_assess.py) — the answer is rewire_assessment.json's usable_entries_estimate, not a standing debate."
+    },
+    {
+      "id": "K.6",
+      "phase": "knowledge",
+      "mode": "A",
+      "crit": false,
+      "layer": "build",
+      "title": "Knowledge track — the vex-corpus re-wire ADMISSION harness (Phase 1: go/no-go scorecard). Turns K.4's standing 'should we ever re-wire' into a computable per-batch verdict via a vcc compile-gate + dedup + redundancy-flag",
+      "refs": [
+        "harness/notes/spec-K6-rewire-admission.md",
+        "scripts/rewire_assess.py",
+        "harness/notes/rewire_assessment.json"
+      ],
+      "verify": [
+        "rewire_assessed"
+      ],
+      "note": "Phase 1 = decision-first MVP: scripts/rewire_assess.py reads vex-corpus/output/corpus/merged_corpus.jsonl (2513 chunks, 2083 with code), chunks to atomic code_blocks, VALIDATES each with the real vcc.exe (Houdini 21.0.671, headless/license-free — the 'dir() is a hard gate' analog for VEX; deterministically rejects the shipped 'vector pts = pts[];' -> Error 1019), exact-dedups, flags redundancy vs existing rag/ embeddings, and writes harness/notes/rewire_assessment.json. Read-only — writes NOTHING to rag/. check_rewire_assessed confirms the scorecard exists + is well-formed and surfaces usable_entries_estimate; it does NOT gate on the number (the re-wire call is the maintainer's, informed by it). Phases 2 (quarantine + flywheel_queue ratify + promote->K.5-refresh) and 3 (section-level embeddings -> redundancy becomes a gate) build only if Phase 1's number justifies it. Two-axis risk posture: validity=strict (vcc deterministic, reject freely), redundancy=admit-then-flag (whole-file cosine measured max 0.901 among distinct files, so a hard reject <=0.90 would nuke net-new content — asymmetric cost). Full contract: spec-K6."
     }
   ]
 }

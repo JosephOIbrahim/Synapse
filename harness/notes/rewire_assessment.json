@@ -1,0 +1,199 @@
+{
+  "schema": "rewire_assessment/v1",
+  "corpus": "C:\\Users\\User\\vex-corpus\\output\\corpus\\merged_corpus.jsonl",
+  "vcc_available": true,
+  "raw_code_blocks": 4248,
+  "unique_snippets": 2718,
+  "duplication_rate_pct": 36.0,
+  "compile_valid": 1437,
+  "compile_rejected": 1197,
+  "wrap_limited": 84,
+  "valid_rate_pct": 52.9,
+  "net_new": 1437,
+  "likely_redundant": 0,
+  "redundancy_threshold": 0.85,
+  "usable_entries_estimate": 1437,
+  "usable_rate_vs_raw_pct": 33.8,
+  "top_reject_errors": [
+    [
+      "Error 1067",
+      597
+    ],
+    [
+      "Error 1088",
+      224
+    ],
+    [
+      "Error 1093",
+      182
+    ],
+    [
+      "Error 1066",
+      135
+    ],
+    [
+      "Error 1074",
+      22
+    ],
+    [
+      "Error 1023",
+      15
+    ],
+    [
+      "Error 1019",
+      12
+    ],
+    [
+      "Error 1042",
+      3
+    ]
+  ],
+  "sample_rejects": [
+    {
+      "id": "joy_of_vex_ep01_105#0.2",
+      "code": "@Cd = float(@ptnum)/ch();",
+      "why": "Error 1066: No matching function for float ch(). Candidates are: float ch(int; int; int), fl"
+    },
+    {
+      "id": "joy_of_vex_ep01_174#0.0",
+      "code": "vector pos = @P * chv('fancyscale');\nvector center = chv('center');\nfloat d = le",
+      "why": "Error 1066: No matching function for float length(vector; vector). Candidates are: float len"
+    },
+    {
+      "id": "joy_of_vex_ep01_184#0.0",
+      "code": "vector pos = @P * chv('fancyscale');\nvector center = chv('center');\nfloat d = di",
+      "why": "Error 1067: Reference to undefined variable: s"
+    },
+    {
+      "id": "joy_of_vex_ep01_188#0.0",
+      "code": "vector pos = @P + chv('fancyscale');\nvector center = chv('center');\n@Cd = length",
+      "why": "Error 1066: No matching function for vector length(vector; vector). Candidates are: float le"
+    },
+    {
+      "id": "joy_of_vex_ep01_201#0.0",
+      "code": "vector pos = @P * chv('fancyscale');\nvector center = chv('center');\nfloat d = di",
+      "why": "Error 1066: No matching function for vector fit(float). Candidates are: float fit(float; flo"
+    },
+    {
+      "id": "joy_of_vex_ep01_227#0.1",
+      "code": "foo = foo * 5;\nfoo *= 5;",
+      "why": "Error 1067: Reference to undefined variable: foo"
+    },
+    {
+      "id": "joy_of_vex_ep01_227#0.2",
+      "code": "foo = foo * 3 + 1 / @Cd.x * @N.y;",
+      "why": "Error 1067: Reference to undefined variable: foo"
+    },
+    {
+      "id": "joy_of_vex_ep01_227#0.3",
+      "code": "foo *= 1; // set range\nfoo += 1; // make sure values never get below 0\nfoo /= @C",
+      "why": "Error 1067: Reference to undefined variable: foo"
+    },
+    {
+      "id": "joy_of_vex_ep01_227#0.4",
+      "code": "foo *= 1; // set range\nfoo += 1; // make sure values never get below 0",
+      "why": "Error 1067: Reference to undefined variable: foo"
+    },
+    {
+      "id": "joy_of_vex_ep01_228#0.1",
+      "code": "foo *= 5;",
+      "why": "Error 1067: Reference to undefined variable: foo"
+    }
+  ],
+  "sample_net_new": [
+    {
+      "id": "joy_of_vex_ep01_001#0.0",
+      "code": "@Cd = @N;",
+      "max_sim": 0.224
+    },
+    {
+      "id": "joy_of_vex_ep01_002#0.0",
+      "code": "@Cd = @P;",
+      "max_sim": 0.224
+    },
+    {
+      "id": "joy_of_vex_ep01_004#0.2",
+      "code": "@Cd = @P.x;",
+      "max_sim": 0.235
+    },
+    {
+      "id": "joy_of_vex_ep01_011#0.2",
+      "code": "@Cd = @N.x;",
+      "max_sim": 0.246
+    },
+    {
+      "id": "joy_of_vex_ep01_027#0.3",
+      "code": "@Cd = @N.y;",
+      "max_sim": 0.253
+    },
+    {
+      "id": "joy_of_vex_ep01_049#0.1",
+      "code": "@Cd = @P.y;",
+      "max_sim": 0.24
+    },
+    {
+      "id": "joy_of_vex_ep01_057#0.1",
+      "code": "@Cd = @P.x + 1;",
+      "max_sim": 0.264
+    },
+    {
+      "id": "joy_of_vex_ep01_057#0.2",
+      "code": "@Cd = @P.x - 0;",
+      "max_sim": 0.284
+    },
+    {
+      "id": "joy_of_vex_ep01_057#0.3",
+      "code": "@Cd = @P.x * 0 * 0.1;",
+      "max_sim": 0.274
+    },
+    {
+      "id": "joy_of_vex_ep01_060#0.3",
+      "code": "@Cd = (@P.x - 0) * 0.1;",
+      "max_sim": 0.292
+    }
+  ],
+  "most_duplicated": [
+    {
+      "code": "@orient = quaternion(axis);",
+      "count": 66
+    },
+    {
+      "code": "@orient = quaternion(angle, axis);",
+      "count": 40
+    },
+    {
+      "code": "vector offset, pos; int pr, pt; float stepsize;",
+      "count": 39
+    },
+    {
+      "code": "vector pos, col; int pts[]; int pt; float d;",
+      "count": 35
+    },
+    {
+      "code": "vector uv;",
+      "count": 32
+    },
+    {
+      "code": "pts = nearpoints(1, @P, 40); @Cd = 0;",
+      "count": 30
+    },
+    {
+      "code": "@orient = slerp(base, target, blend);",
+      "count": 29
+    },
+    {
+      "code": "vector N, up; vector4 extrarot, headshake, wobble;",
+      "count": 27
+    }
+  ],
+  "redundancy_reliable": false,
+  "redundancy_note": "Phase 1 uses WHOLE-FILE embeddings; a snippet cannot match its own source file, so 0-redundant is BLINDNESS not cleanliness. True net-new << compile_valid (K.4 recon: ~65% is Joy-of-VEX already in rag/). Needs Phase 3 section-level embeddings to measure.",
+  "usable_entries_note": "UPPER BOUND only  -  = compile-valid unique, NOT redundancy-filtered. Also includes trivial one-liners + tutorial fragments too atomic/context-bound to be useful standalone RAG entries.",
+  "verdict": "DO_NOT_REWIRE_AS_IS",
+  "verdict_reasons": [
+    "36.0% exact duplication (higher with alpha-rename)",
+    "only 52.9% compile standalone  -  dominated by context-dependent teaching fragments (vars from prior lines), not self-contained patterns",
+    "redundancy vs existing rag/ is UNMEASURED (whole-file embedding blind at snippet granularity); known-high Joy-of-VEX overlap unfiltered"
+  ],
+  "structural_finding": "vex-corpus output is a chopped TUTORIAL TRANSCRIPT (sequential fragments that reference vars/context from prior lines  -  Error 1067 the plurality of rejects), NOT a library of standalone VEX patterns. Re-wiring needs vex-corpus to emit self-contained patterns first."
+}
