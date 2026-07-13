@@ -1,15 +1,15 @@
 {
   "schema": "knowledge_baseline/v1",
   "stats": {
-    "reference_files": 117,
-    "corpus_entries_from_markdown": 117,
+    "reference_files": 103,
+    "corpus_entries_from_markdown": 103,
     "corpus_entries_from_extra_sources": 803,
-    "corpus_entries": 920,
-    "lexical_topic_map_size": 140,
+    "corpus_entries": 906,
+    "lexical_topic_map_size": 126,
     "semantic_index_built": true,
     "semantic_index_model": "all-MiniLM-L6-v2",
     "retrieval_mode": "hybrid",
     "rag_root_default_canonical": true
   },
-  "blake2b": "caab218854a2755d2af3e190aafe79e7"
+  "blake2b": "b6cd28844576694f7bdd89aa01b74031"
 }
