@@ -15,6 +15,13 @@ ROLES (not just sizes), MOTION tokens, and one STATUS grammar.
 import os
 from typing import Dict, Tuple, Any
 
+# The ONE seam to the live host theme. Historically the Houdini Color Scheme
+# read (the hou Qt color accessor -> the .hcs / UIDark.hcs greys) lived inline
+# here; it now lives behind theme_source so an H22 QML Theme-Editor backend can
+# be swapped in without touching this table. The 'hcs' backend is active +
+# byte-identical to the former inline read.
+from . import theme_source
+
 # ─────────────────────────────────────────────────────────────
 # 1. COLOR — canonical palette (preserved verbatim for back-compat)
 # ─────────────────────────────────────────────────────────────
@@ -93,26 +100,10 @@ def _grey_for_contrast(bg_hex, ratio, lighter):
     v = _lin_to_ch(lt)
     return "#%02X%02X%02X" % (v, v, v)
 
-def _host_surface_rgb():
-    """The host pane-background as (r, g, b), or None when headless/unavailable.
-    ADAPT: 'PaneEmptyApp' is a placeholder color-scheme role — tune it to the
-    exact .hcs entry that reads your build's pane grey (CRUCIBLE can cross-check
-    hou.qt.color() live). Any failure -> None -> the hardcoded fallback below."""
-    try:
-        import hou
-        c = hou.qt.color("PaneEmptyApp")
-    except Exception:
-        return None
-    if c is None:
-        return None
-    try:
-        return (int(c.red()), int(c.green()), int(c.blue()))
-    except Exception:
-        try:
-            r, g, b = c.getRgb()[:3]
-            return (int(r), int(g), int(b))
-        except Exception:
-            return None
+# The host color-scheme read (the hou Qt color accessor -> the .hcs / UIDark.hcs
+# greys) now lives in theme_source.host_surface_rgb() — see the import note at
+# the top of this module. Nothing in tokens.py reads the host theme directly
+# anymore; the single seam owns it so an H22 QML backend can replace it.
 
 # Houdini-native dark pane grey (verified vs UIDark.hcs) — the HEADLESS surface
 # anchor. The text ramp is no longer a fixed table; it is solved from these by
@@ -168,8 +159,9 @@ def _derive_palette(r, g, b):
 
 def _seed_palette():
     """(surface, text) from the live host pane color, or the headless fallback —
-    both routed through the one contrast-aware _derive_palette path."""
-    return _derive_palette(*(_host_surface_rgb() or _FALLBACK_RGB))
+    both routed through the one contrast-aware _derive_palette path. The host
+    read goes through theme_source (the single .hcs / theme seam)."""
+    return _derive_palette(*(theme_source.host_surface_rgb() or _FALLBACK_RGB))
 
 _SURF, _TXT = _seed_palette()
 
