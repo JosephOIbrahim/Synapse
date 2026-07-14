@@ -2,6 +2,24 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.24.0 — the H22 drop-harness, reconciled · five Phase-0 hardening gaps
+
+*One arc, 2026-07-14: a new dispatch blueprint (`SYNAPSE_H22_DROP_HARNESS v1.0`) arrived describing a fresh "Phase 0" — but it was authored **above the code**: ~90% of what it specified had already shipped in Leg 0, and two of its instructions would have broken the working gate. It was **reconciled, not executed** — every task mapped to disk, the conflicts resolved, and only the genuinely-missing pieces built. **No artist-facing behavior changed.** **4,275 tests passing, 0 failures** (**+48 new here**; the ratchet floor — stale at 4,118 since it was never advanced for the interim K-track RAG work — is re-derived to the real green count) · tool count unchanged at 115 · Houdini 21.0.671 · **MODE A still holds**.*
+
+**RECONCILE, DON'T EXECUTE (`docs/H22_PHASE0_RECONCILIATION.md`):**
+- The blueprint re-specified work Leg 0 already shipped as paper (`PREFLIGHT_GATE`, `BENCHMARK_DESIGN`, `PORT_WAVE_MANIFEST`, `SCENE_GROUNDING_CONTRACT`) plus scaffolding. A read-only reconnaissance mapped every P0 task to disk **before a single write**.
+- **Two conflicts caught before they landed:** (1) the blueprint's *"commit a `mode:A` `drop.json` at repo root"* fights the tested gate — `run.ts` decides MODE by the **existence** of `harness/state/drop.json` (no `mode` field, never committed); committing one would have false-armed the post-drop pipeline. Kept the tested gate; added a read-only `assert_mode_b` guard instead. (2) the blueprint named `check_no_rigging_drift` as a candidate node-name scanner — it is an **allowlist** checker, and no candidate-scan existed anywhere. Built the scan correctly rather than mis-targeting the wrong function.
+- **Two items already settled, not re-opened:** Gate 0.1 was ruled **Sidecar** (2026-07-10); the G6 benchmark is designed and gated behind its own human-merge — building the meter now would jump that gate.
+
+**FIVE PHASE-0 HARDENING GAPS (each with an adversarial test; +48 tests):**
+- 🚦 **Mode guard** — `harness/verify/mode_gate.py::assert_mode_b`, a read-only Python mirror of `run.ts`'s existence-gate; validates the real `drop.json` schema and refuses MODE-B work until H22 actually ships. It **never writes `drop.json`** — that stays the human trigger.
+- 🧭 **U.1 H22 re-sweep spec** — `harness/notes/SYNAPSE_U1_H22_RESWEEP.md`: the one thing the existing drop probes can't see. They are seeded from node types SYNAPSE already emits, so brand-new H22 families (splats, sparse fluids) are invisible; the spec adds a full-category inventory diff, feeding `flywheel_queue` as `ratified:false` candidates — human-gated like every cycle.
+- 🚧 **Scope fence, hardened** — `check_no_rigging_drift` now also scans emitted node types for H22 rigging **phrases** (Rig Builder, ML Deformer, Muscle Transfer, splat rig/capture, …) with word-boundary matching, so splat **geometry** stays in scope while splat **rig/capture** stays out. The guardrail name is test-frozen; the extension is additive and its list is kept separate from the exact-token allowlist.
+- 🎨 **Theme-source adapter** — `python/synapse/panel/designsystem/theme_source.py`: one seam for the host color-scheme read, so H22's new Theme Editor can be swapped in behind it without touching the token table. The `hcs` backend is **byte-identical** to the former inline read (13/13 pinned hexes match); `qml_theme` is a stub that raises until H22 introspection.
+- 📸 **Perception baseline capture** — `host/capture_perception_baseline.py` + a pure `build_perception_baseline()` envelope over the PDG event channel: the "before photo" that writes a well-formed **empty** baseline headless, so the post-drop perception diff has a clean left side. Zero `hou` at import; the cognitive/host boundary stays intact.
+
+**HONEST ABOUT WHAT'S NOT DONE:** the three human gates remain — the merge (done this release), the `drop.json` write (H22 drop day), and the counsel placement of the IP evidentiary entry (drafted in the reconciliation memo, **never self-authored** into the repo). **MODE A holds; nothing H22-live was built.**
+
 ## v5.23.0 — one Moneta · honest claims · the H22 blueprint harness
 
 *One arc, 2026-07-12: a documentation-integrity + H22-prep release — **no product code changed**; the public claim surface got more honest and the H22 gap-closure blueprint got its executor harness. **4,118 tests passing** (the badge stopped overstating) · tool count unchanged at 115 · Houdini 21.0.671.*

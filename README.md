@@ -11,8 +11,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4118%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.23.0-1e293b.svg" alt="Changelog"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4275%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.24.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 > ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it's all recorded (receipts, not magic). Five engines, 115 tools. **Install ↓ in ~5 min.**
@@ -38,7 +38,7 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 | You want… | Read… |
 |---|---|
 | **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
-| **What's new in v5.23.0** | *New in v5.23.0* — honest claims (one Moneta · real test count) + the H22 blueprint harness |
+| **What's new in v5.24.0** | *New in v5.24.0* — the H22 drop-harness reconciled + five Phase-0 hardening gaps |
 | **How AI network-building stays safe** | *Propose → validate → build* |
 | **To install it** | *Install — 5 minutes* |
 | **The architecture** | *How it works — inside-out* |
@@ -80,13 +80,13 @@ flowchart LR
 
 ---
 
-## ✦ New in v5.23.0 — a truth-and-prep release
+## ✦ New in v5.24.0 — the H22 drop-harness, reconciled
 
-**No product code changed this release. What changed: the public claims got more honest, and the H22 gap-closure blueprint got the harness that runs it.**
+**A new drop-day blueprint arrived describing a fresh "Phase 0." It was authored above the code — most of it already shipped, and two of its steps would have broken the working gate. So it was reconciled, not run: mapped to reality, conflicts resolved, and only the genuinely-missing pieces built. No artist-facing behavior changed.**
 
-- 🎯 **One Moneta** — Moneta *is* SYNAPSE's memory substrate (it always was, in the code); an earlier internal doc rider wrongly implied otherwise. Corrected everywhere, so the docs match the code. → [the ruling](docs/reviews/h22-c3-moneta-decision.md)
-- 🧾 **Honest numbers, stated plainly** — the test badge now reads the real green-floor count (**4,118**, replacing a stale 4,186), and the MCP surface states its **local-first, single-user** security posture out loud (Origin / DNS-rebinding checks, Bearer auth, `SYNAPSE_DEPLOY_MODE=local`).
-- 🧭 **The H22 blueprint runs itself** *(dev-facing)* — the H22 gap blueprint (now v2.1) is committed with a one-command orchestrator (`h22-relay`) that drives it end-to-end and **stops at every human gate**. It ran its own acceptance pass green (`MODE_A_VERIFIED`) and caught + closed four of its own doc-drift items. → [the harness spec](harness/SPEC.md)
+- 🧭 **Reconciled, not executed** — a read-only sweep mapped every task to disk first ([the record](docs/H22_PHASE0_RECONCILIATION.md)). Two conflicts caught before any write: the blueprint's repo-root `drop.json` would have *false-armed* the H22 pipeline (the real gate keys on a file's **existence** at `harness/state/`), and it mis-named the scope guard. Both fixed the right way instead of the literal way.
+- 🚦 **Five Phase-0 hardening gaps, each adversarially tested** — a read-only **mode guard** that refuses drop-day work until H22 actually ships; the **re-sweep spec** that catches brand-new H22 node families the existing probes can't see; the **scope fence** extended to H22 rigging names (splat *geometry* stays in, splat *rig* stays out); a **theme-source seam** so H22's Theme Editor swaps in behind one file; and the perception **"before photo"** for the post-drop diff.
+- 🔒 **Honest about the gaps** — the three human gates stay human: the merge, the `drop.json` write on drop day, and the counsel placement of the IP note. **4,275 tests passing** (+48, zero failures) · **MODE A still holds**.
 
 > *The last **product-feature** release is **v5.22.0** (in the table below). Houdini 22 ships **2026-07-15** — see [H22-ready before H22 ships](#-h22-ready-before-h22-ships).*
 
@@ -109,7 +109,7 @@ flowchart LR
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
-    A["MODE A · now (H21)<br/>de-risk: probe · flywheel · panel · clean-install"]:::hou -->|"human writes drop.json<br/>python · usd · pyside"| G{{"Drop day"}}:::side
+    A["MODE A · now (H21)<br/>de-risk: probe · flywheel · panel · clean-install<br/>+ Phase-0 hardening: mode guard · scope fence · theme seam · re-sweep spec"]:::hou -->|"assert_mode_b holds<br/>until a human writes drop.json<br/>python · usd · pyside"| G{{"Drop day"}}:::side
     G --> B["MODE B · H22<br/>pipeline arms — verify, not surgery"]:::panel
     classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
     classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
@@ -134,7 +134,7 @@ flowchart LR
     EXP["EXPLORE<br/>probe-verified ground truth<br/>live probe · or probe-checked corpus"]:::hou -->|"committed, integrity-checked catalog"| REV["REVIEW<br/>sweep the code vs the catalog<br/>0 critical"]:::bridge
     REV -->|"findings → fixes"| SCAF["SCAFFOLD<br/>truth into the live path<br/>wire_by_label · validator P3e + LOP · test pins"]:::panel
     SCAF -->|"new truth classes"| NEXT["Queue<br/>human ratifies each new cycle"]:::side
-    NEXT -->|"cycle N+1 · so far: ① wiring · ② Solaris context · ③ diagnostic (cook truth)"| EXP
+    NEXT -->|"cycle N+1 · so far: ① wiring · ② Solaris context · ③ diagnostic (cook truth) · queued: H22 discovery re-sweep"| EXP
     classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
     classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
     classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
@@ -183,6 +183,7 @@ flowchart LR
 
 | Release | Headline |
 |---|---|
+| **v5.23.0** | **One Moneta · honest claims · the H22 blueprint harness** — the docs realigned to the code (Moneta *is* the memory substrate), the test badge dropped to its real green-floor, the local-first security posture stated plainly, and the H22 gap-closure blueprint got a one-command orchestrator that stops at every human gate. A documentation-integrity + H22-prep release; no product code changed. |
 | **v5.22.0** | **The honest envelope + evidence-based anchors + the drop-day runbook** — receipts on *both* roads into Houdini (the audited `/mcp` bridge **and** the live panel path, recorded honestly, never faked); integrity flags now derived from runtime evidence instead of self-report (fidelity 1.0 = *verified*); composition validation extended to `payload` / `inherit` / `specialize` arcs; and the H22 drop compressed to one ordered, human-gated page. |
 | **v5.21.0** | **Diagnostic truth + the self-protecting harness + the readiness verdict** — the scene interrogated live (dirty-propagation / recook / time-dependence cataloged per context — the truth class no external LLM can hold), the harness that guards its own green (full-suite ratchet, posture-scoped red-driver, fix-is-real probes), and an honest **READY (solo posture)** verdict with the trade-offs named instead of hidden. |
 | **v5.20.0** | **H22 drop-day machine + utility flywheel + panel v9/v9.1** — the API-delta probe (proven empty on H21, caught 15 phantom spellings in our own emitters), the self-improving probe→review→wire loop, and the five-engine panel: **Claude · Gemini · NVIDIA Nemotron · Ollama · Custom**, the author token, one CHAT surface where **consent auto-surfaces** (v9.1), bundled Space Grotesk/Mono, a token-only meter. |
@@ -282,7 +283,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.23.0):**
+**Shipping (v5.24.0):**
 
 - 🎛️ **Artist panel v9.1** — five engines, undo-safe, 115 tools, a single **CHAT** surface where the review + consent gate auto-surface, live observability + latency instrumentation (WCAG/usability **G3-audited**).
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
@@ -292,6 +293,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 - 🌀 **Diagnostic-truth catalogs** — live dirty-propagation / recook / time-dependence trials per context, golden-reproducible; the recook-explainer + callback-debugger handlers staged on them.
 - 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint, a posture-scoped red-driver, fix-is-real behavioral probes, and a **READY (solo posture)** studio-readiness verdict with the trade-offs named.
 - 🚀 **H22 drop-day machine** — API-delta probe + dual-build test axis, proven empty against H21; cook-behavior diffs on day one.
+- 🧭 **H22 drop-harness, reconciled** *(v5.24.0)* — the drop-day blueprint mapped to disk (not run literally), its two gate-breaking conflicts caught, and five Phase-0 hardening gaps landed — a read-only mode guard, the new-family re-sweep spec, the scope fence extended to H22 rigging names, a theme-source seam, and the perception "before photo." MODE A still holds; all three human gates intact.
 - ⚙️ **In-process substrate** — two-tier provenance (audit write off the hot path), freeze-safety, bounded autonomy + a kill switch.
 - 🎬 **Live-grounded Solaris / USD** parameter names + the ratified APEX-MCP coexistence boundary.
 
@@ -345,7 +347,7 @@ python/synapse/
 
 host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols · cook API · cook-truth perturbation trials)
 scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_{wiring,lop}.py · mine_lop_knowledge.py
-tests/                          # 4,118 passing (Moneta-gated tests skip on a clean clone)
+tests/                          # 4,275 passing (Moneta-gated tests skip on a clean clone)
 harness/                        # the self-verifying loop — five tracks (H22 · v6 · context · studio · diagnostic), boundary guardrails, the full-suite green ratchet, the readiness verdict
 docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
