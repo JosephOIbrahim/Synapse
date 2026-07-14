@@ -330,6 +330,31 @@ def check_no_rigging_drift(ctx):
     allow = wt / "python" / "synapse" / "server" / "authoring_domains.json"
     in_scope = {"cop", "cops", "lop", "lops", "sop", "sops", "karma", "usd", "solaris", "mat", "obj"}
     drift_terms = {"apex", "rig", "rigging", "kinefx", "muscle", "cfx"}
+    # --- NEW (H22 dead-zone): scan emitted node types for multi-word rigging PHRASES. Kept
+    # SEPARATE from drift_terms (which is exact set-intersection over declared domains). Each
+    # phrase is matched with word boundaries so bare 'rig'/'splat'/'capture'/'deform'/'template'/
+    # 'builder'/'script'/'transfer'/'sculpt' never fire on their own — splat GEOMETRY, rigid,
+    # bridge, trigger etc. stay in scope. Runs IN ADDITION to the allowlist clause below; a
+    # missing or malformed emitted_node_types.json is a no-op (never crashes), so every existing
+    # allowlist return (ok:None when authoring_domains.json is absent, etc.) is preserved.
+    emitted = wt / "python" / "synapse" / "cognitive" / "tools" / "data" / "emitted_node_types.json"
+    if emitted.exists():
+        import re
+        dead_phrases = ["rig builder", "rig template", "biped retargeting", "mixamo retarget",
+                        "apex script", "ml deformer", "muscle transfer", "ragdoll",
+                        "splat rig", "splat capture", "guide deform", "short sculpt"]
+        try:
+            entries = json.loads(emitted.read_text()).get("entries", [])
+            for entry in entries:
+                name = entry.get("type_name", "") or ""
+                text = name if not entry.get("label") else f"{name} {entry['label']}"
+                low = text.lower()
+                for phrase in dead_phrases:
+                    if re.search(rf"\b{re.escape(phrase)}\b", low):
+                        return {"ok": False,
+                                "detail": f"{phrase} in emitted node-type {name} - H22 rigging drift"}
+        except Exception:
+            pass  # malformed emitted file must not crash the allowlist clause below
     if allow.exists():
         try:
             decl = {d.lower() for d in json.loads(allow.read_text()).get("domains", [])}
