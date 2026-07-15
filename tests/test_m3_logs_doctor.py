@@ -371,10 +371,28 @@ def test_symbol_table_check_prefers_running_major(tmp_path, monkeypatch):
 
 def test_symbol_table_check_h22_without_table_fails_loud(tmp_path, monkeypatch):
     """No h22 table committed -> fall back to h21 and FAIL the stamp compare
-    (gate down is the honest verdict; same as scout's stale path)."""
+    (gate down is the honest verdict; same as scout's stale path).
+
+    Constructs the no-h22-table world explicitly in tmp_path — the real repo
+    committed data/h22_symbol_table.json on H22 drop day (2026-07-15), so this
+    test must not depend on repo state (it used to, and broke on the drop)."""
+    import json as _json
     import sys
     import types
 
+    import synapse
+
+    data = tmp_path / "pkg" / "cognitive" / "tools" / "data"
+    data.mkdir(parents=True)
+    (tmp_path / "pkg" / "__init__.py").write_text("", encoding="utf-8")
+    # ONLY the h21 table exists in this world.
+    (data / "h21_symbol_table.json").write_text(
+        _json.dumps({"houdini_version": "21.0.671", "symbol_count": 1,
+                     "blake2b": "fake21"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(synapse, "__file__",
+                        str(tmp_path / "pkg" / "__init__.py"))
     fake_hou = types.SimpleNamespace(
         applicationVersionString=lambda: "22.0.100")
     monkeypatch.setitem(sys.modules, "hou", fake_hou)
@@ -383,3 +401,35 @@ def test_symbol_table_check_h22_without_table_fails_loud(tmp_path, monkeypatch):
     assert check["status"] == "fail"
     assert "regenerate" in check["detail"]
     assert "21.0.671" in check["detail"]    # the h21 fallback was described
+
+
+def test_symbol_table_check_h22_stamp_mismatch_fails_loud(tmp_path, monkeypatch):
+    """The current-world sibling: an h22 table IS committed but its stamp
+    doesn't match the running build -> fail loud with the regenerate hint
+    (this is exactly what doctor correctly reported on drop day when the
+    22.0.368 table met a faked 22.0.100 runtime)."""
+    import json as _json
+    import sys
+    import types
+
+    import synapse
+
+    data = tmp_path / "pkg" / "cognitive" / "tools" / "data"
+    data.mkdir(parents=True)
+    (tmp_path / "pkg" / "__init__.py").write_text("", encoding="utf-8")
+    for major, stamp in (("21", "21.0.671"), ("22", "22.0.368")):
+        (data / f"h{major}_symbol_table.json").write_text(
+            _json.dumps({"houdini_version": stamp, "symbol_count": 1,
+                         "blake2b": f"fake{major}"}),
+            encoding="utf-8",
+        )
+    monkeypatch.setattr(synapse, "__file__",
+                        str(tmp_path / "pkg" / "__init__.py"))
+    fake_hou = types.SimpleNamespace(
+        applicationVersionString=lambda: "22.0.999")
+    monkeypatch.setitem(sys.modules, "hou", fake_hou)
+
+    check = doctor._check_symbol_table()
+    assert check["status"] == "fail"
+    assert "regenerate" in check["detail"]
+    assert "22.0.368" in check["detail"]    # the h22 table was selected + described
