@@ -1,7 +1,8 @@
 {
     "name": "synapse",
     "enable": true,
-    "comment": "SYNAPSE Houdini package. Portable: paths derive from $HOUDINI_PACKAGE_PATH (the dir of THIS file = <repo>/packages), so nothing is hard-coded per user. Install by adding <repo>/packages to HOUDINI_PACKAGE_DIR, or run scripts/install_synapse_package.py to deploy a resolved copy into your Houdini prefs. See README 'Install'.",
+    "load_package_once": true,
+    "comment": "SYNAPSE Houdini package. Portable: paths derive from $HOUDINI_PACKAGE_PATH (the dir of THIS file = <repo>/packages), so nothing is hard-coded per user. Install by adding <repo>/packages to HOUDINI_PACKAGE_DIR, or run scripts/install_synapse_package.py to deploy a resolved copy into your Houdini prefs. See README 'Install'. Uses hpath (the H22 HOUDINI_PATH keyword; path is deprecated) and load_package_once to guard against a double-load when both the deployed copy and HOUDINI_PACKAGE_DIR point here.",
     "env": [
         {
             "var": "SYNAPSE_ROOT",
