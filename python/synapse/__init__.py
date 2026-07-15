@@ -31,16 +31,23 @@ Version: 5.23.0
 # anthropic — otherwise an older copy on sys.path wins and the vendor path
 # never gets consulted. Hence: top of module, before everything else.
 #
-# ABI lock (Python 3.11 win_amd64): _vendor/pydantic_core carries a
-# ``.cp311-win_amd64.pyd`` binary. Prepending _vendor on a non-3.11
-# interpreter would break imports (stock Python 3.14 in particular — the
-# 2684-test suite runs there and resolves pydantic from the user site,
-# untouched by this vendoring). The gate below keeps the vendor active
-# only for Python 3.11 *on Windows*, which covers every current Houdini
-# point release. On non-Windows platforms (Linux CI, macOS) the vendored
-# native binary is unloadable, so we fall through to whatever real
-# pydantic the consumer has installed (pyproject.toml lists it as a
-# hard dependency, so pip install -e installs it cleanly).
+# ABI lock (win_amd64): _vendor/pydantic_core + jiter each carry native
+# ``.pyd`` binaries built per Houdini Python line. As of the H22 drop
+# (2026-07-15) BOTH ABIs ship side by side at the SAME package versions
+# (pydantic_core 2.46.3, jiter 0.14.0): ``.cp311-win_amd64.pyd`` covers
+# H20.5/21.0/21.5 and ``.cp313-win_amd64.pyd`` covers H22 — the running
+# interpreter loads whichever matches. Prepending _vendor on an interpreter
+# with NO matching binary would break imports (stock Python 3.14 in
+# particular — the test suite runs there and resolves pydantic from the user
+# site, untouched by this vendoring). The gate below keeps the vendor active
+# only for a vendored ABI *on Windows*. On non-Windows platforms (Linux CI,
+# macOS) the vendored native binary is unloadable, so we fall through to
+# whatever real pydantic the consumer has installed (pyproject.toml lists it
+# as a hard dependency, so pip install -e installs it cleanly).
+#
+# Widen ``_VENDOR_PYS`` — and its lockstep test (tests/conftest.py
+# ``VENDOR_PYS``) — in the SAME commit that adds a new ABI's .pyd. See
+# docs/studio/UPGRADE.md Step 2a + python/synapse/_vendor/README.md.
 import os as _synapse_os
 import sys as _synapse_sys
 
@@ -48,8 +55,12 @@ _vendor_path: str = _synapse_os.path.join(
     _synapse_os.path.dirname(__file__), "_vendor"
 )
 
+# (major, minor) interpreter lines for which a matching native .pyd is
+# vendored. Keep in lockstep with the actual _vendor/*/*.pyd ABI tags.
+_VENDOR_PYS = frozenset({(3, 11), (3, 13)})
+
 if (
-    _synapse_sys.version_info[:2] == (3, 11)
+    _synapse_sys.version_info[:2] in _VENDOR_PYS
     and _synapse_sys.platform.startswith("win")
     and _synapse_os.path.isdir(_vendor_path)
     and _vendor_path not in _synapse_sys.path
@@ -60,25 +71,25 @@ if (
 # ---------------------------------------------------------------------------
 # Vendored-SDK ABI risk detection (H22 / Python 3.12+ legibility)
 # ---------------------------------------------------------------------------
-# The block above prepends _vendor ONLY on Python 3.11 + Windows, because the
-# bundled native wheels (pydantic_core, jiter) are cp311-win_amd64. On a newer
-# Houdini (H22 = Python 3.12+ on Windows) the equality is False, _vendor is
-# skipped, and SYNAPSE silently falls back to whatever real pydantic/anthropic
-# the interpreter has installed. That fallback is CORRECT when a real install
-# exists (the test suite is green on stock Python 3.14 precisely because it
-# resolves a pip-installed pydantic) — so we must NOT widen the gate and must
-# NOT hard-raise here.
+# The block above prepends _vendor only when the interpreter's ABI is one we
+# vendored a .pyd for (``_VENDOR_PYS`` — cp311 + cp313 as of the H22 drop). On
+# an interpreter OUTSIDE that set (e.g. stock Python 3.14, or a future Houdini
+# line we haven't re-vendored yet) the vendor is skipped and SYNAPSE silently
+# falls back to whatever real pydantic/anthropic the interpreter has installed.
+# That fallback is CORRECT when a real install exists (the test suite is green
+# on stock Python 3.14 precisely because it resolves a pip-installed pydantic)
+# — so we must NOT hard-raise here.
 #
-# What we DO: when we're on Windows with a non-3.11 interpreter and the (always
-# committed) _vendor tree is present, flag the configuration as RISKY and emit
-# one prominent, actionable warning. The vendored binaries can't be loaded by
-# this interpreter; if no real pydantic/anthropic is installed, the eventual
+# What we DO: when we're on Windows with an interpreter OUTSIDE _VENDOR_PYS and
+# the (always committed) _vendor tree is present, flag the configuration as
+# RISKY and emit one prominent, actionable warning. No vendored binary can load
+# on this interpreter; if no real pydantic/anthropic is installed, the eventual
 # failure would be a cryptic deep ImportError far from here. The flag below
 # lets doctor/diagnostics surface the risk early; the warning points the
-# operator at the two known remediations (re-vendor, or the sidecar).
+# operator at the two known remediations (re-vendor for this ABI, or the sidecar).
 _VENDOR_ABI_RISK: bool = (
     _synapse_sys.platform.startswith("win")
-    and _synapse_sys.version_info[:2] != (3, 11)
+    and _synapse_sys.version_info[:2] not in _VENDOR_PYS
     and _synapse_os.path.isdir(_vendor_path)
 )
 
@@ -91,9 +102,10 @@ if _VENDOR_ABI_RISK:
         f"{_synapse_sys.version_info.micro}"
     )
     _synapse_warnings.warn(
-        "SYNAPSE vendored-SDK ABI mismatch: the bundled wheels under "
-        f"{_vendor_path} are cp311-win_amd64, but this interpreter is "
-        f"Python {_py} on Windows. The vendor tree is INACTIVE on this "
+        "SYNAPSE vendored-SDK ABI mismatch: the bundled native wheels under "
+        f"{_vendor_path} ship cp311 + cp313 win_amd64 binaries, but this "
+        f"interpreter is Python {_py} on Windows (no matching ABI). The "
+        "vendor tree is INACTIVE on this "
         "Python, so SYNAPSE will rely on a real pip-installed "
         "pydantic/anthropic. If those are absent, the brain (agent loop) "
         "will fail later with a cryptic deep ImportError. Remediate by "

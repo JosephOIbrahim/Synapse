@@ -32,7 +32,7 @@ from pathlib import Path
 import pytest
 
 import synapse
-from conftest import VENDOR_ABI_TAG, VENDOR_PY
+from conftest import VENDOR_ABI_TAG, VENDOR_ABI_TAGS, VENDOR_PY, VENDOR_PYS
 
 
 # ---------------------------------------------------------------------------
@@ -68,23 +68,30 @@ class TestVendorLayout:
         init_file = pkg_path / "__init__.py"
         assert init_file.is_file(), f"{pkg!r} missing __init__.py"
 
-    def test_pydantic_core_has_cp311_binary(self):
-        """The vendored binary must match Python 3.11 + win_amd64."""
-        pydantic_core_dir = Path(synapse._vendor_path) / "pydantic_core"
-        binaries = list(pydantic_core_dir.glob("_pydantic_core.*.pyd"))
+    @pytest.mark.parametrize("pkg,stem", [
+        ("pydantic_core", "_pydantic_core"),
+        ("jiter", "jiter"),
+    ])
+    def test_native_package_has_all_vendored_abis(self, pkg: str, stem: str):
+        """Each native package ships a .pyd for EVERY vendored ABI tag.
+
+        As of the H22 drop (2026-07-15) the tree carries both cp311
+        (H20.5/21.0/21.5) and cp313 (H22) binaries side by side at the same
+        package versions. Re-vendoring a new Houdini Python line adds its tag
+        to conftest ``VENDOR_ABI_TAGS`` and drops the matching .pyd here in
+        the same commit (docs/studio/UPGRADE.md Step 2a).
+        """
+        pkg_dir = Path(synapse._vendor_path) / pkg
+        binaries = [b.name for b in pkg_dir.glob(f"{stem}.*.pyd")]
         assert binaries, (
-            "No compiled pydantic_core binary in vendor tree — "
+            f"No compiled {pkg} binary in vendor tree — "
             "pip install dropped source but not the .pyd?"
         )
-        # We pin the ABI explicitly; if Houdini ever ships Python 3.12
-        # we re-vendor with a matching binary.
-        names = [b.name for b in binaries]
-        assert any(VENDOR_ABI_TAG in n for n in names), (
-            f"Expected {VENDOR_ABI_TAG} binary in vendor tree, "
-            f"got: {names}. Refresh via: "
-            f"PYTHONNOUSERSITE=1 hython -m pip install --target "
-            f"{synapse._vendor_path} --upgrade anthropic"
-        )
+        for tag in VENDOR_ABI_TAGS:
+            assert any(tag in n for n in binaries), (
+                f"Expected a {tag} {pkg} binary in the vendor tree, got: "
+                f"{binaries}. Re-vendor per docs/studio/UPGRADE.md Step 2a."
+            )
 
     def test_pycache_under_vendor_is_gitignored(self):
         """Guard the .gitignore rule — no Python build artefacts tracked.
@@ -153,32 +160,32 @@ class TestVendorPathActivation:
         assert synapse._vendor_path.startswith(package_dir)
         assert synapse._vendor_path.endswith("_vendor")
 
-    def test_activation_gated_by_python_311_and_windows(self):
-        """The vendor path is prepended on Python 3.11 + Windows only.
+    def test_activation_gated_by_vendored_abi_and_windows(self):
+        """The vendor path is prepended on a vendored ABI + Windows only.
 
-        Per ``python/synapse/__init__.py`` (post-c02202a): the vendor
-        tree carries a ``.cp311-win_amd64.pyd`` binary, so the gate
-        checks both Python version AND platform. On Python 3.11 +
-        Windows the prepend fires; on Python 3.11 + Linux/macOS the
-        gate skips (vendored native binary is unloadable, real
-        pydantic from pip resolves via site-packages instead); on
-        any other Python version the gate also skips.
+        Per ``python/synapse/__init__.py``: the vendor tree carries a
+        native ``.pyd`` for each ABI in ``_VENDOR_PYS`` (cp311 + cp313 as
+        of the H22 drop), so the gate checks both Python version AND
+        platform. On a vendored Python line + Windows the prepend fires;
+        on a vendored line + Linux/macOS the gate skips (vendored native
+        binary is win_amd64-only, real pydantic from pip resolves via
+        site-packages instead); on any Python line OUTSIDE the set the
+        gate also skips.
 
-        The 2684-test suite runs on Python 3.14 stock; this test
-        asserts the passive-on-3.14 behaviour so the suite keeps
-        resolving pydantic from the user site. Linux CI runs on
-        Python 3.11 but the gate skips there too — this test pins
-        that branch explicitly.
+        The test suite runs on Python 3.14 stock (outside the set); this
+        test asserts the passive-on-3.14 behaviour so the suite keeps
+        resolving pydantic from the user site. Linux CI runs on a vendored
+        line but the gate skips there too — this test pins that branch
+        explicitly.
         """
         on_path = synapse._vendor_path in sys.path
-        is_vendor_py = sys.version_info[:2] == VENDOR_PY
+        is_vendor_py = sys.version_info[:2] in VENDOR_PYS
         is_windows = sys.platform.startswith("win")
 
         if is_vendor_py and is_windows:
             assert on_path, (
-                "Python 3.11 + Windows detected but vendor path is "
-                "not on sys.path — import synapse should have "
-                "prepended it"
+                "A vendored Python line + Windows detected but vendor path "
+                "is not on sys.path — import synapse should have prepended it"
             )
         else:
             reason = (
@@ -186,8 +193,8 @@ class TestVendorPathActivation:
                 if is_vendor_py
                 else (
                     f"Python {sys.version_info.major}."
-                    f"{sys.version_info.minor} (vendored binaries "
-                    f"are CP311 ABI-specific)"
+                    f"{sys.version_info.minor} (outside the vendored ABI set "
+                    f"{sorted(VENDOR_PYS)})"
                 )
             )
             assert not on_path, (
@@ -226,21 +233,21 @@ class TestVendorPathActivation:
 
 
 @pytest.mark.skipif(
-    sys.version_info[:2] != VENDOR_PY or not sys.platform.startswith("win"),
+    sys.version_info[:2] not in VENDOR_PYS or not sys.platform.startswith("win"),
     reason=(
-        "Vendored binaries require Python 3.11 + Windows ABI "
+        "Vendored binaries require a vendored ABI (cp311/cp313) + Windows "
         "(see python/synapse/__init__.py vendor gate). On Linux/macOS "
         "the gate skips and pydantic / anthropic resolve from pip; "
         "these resolution tests are Windows-only by design."
     ),
 )
 class TestVendorResolution:
-    """On Python 3.11 + Windows, imports must actually resolve into _vendor/.
+    """On a vendored ABI + Windows, imports must actually resolve into _vendor/.
 
-    These tests only run under Python 3.11 + Windows (hython, plus
-    Windows local dev). Under the Python 3.14 test runner OR Linux
-    CI they skip cleanly — the vendor is inactive on those platforms
-    by design (see ``python/synapse/__init__.py`` gate).
+    These tests only run under a vendored Python line + Windows (hython on
+    H21 cp311 / H22 cp313, plus Windows local dev). Under the Python 3.14
+    test runner OR Linux CI they skip cleanly — the vendor is inactive on
+    those platforms by design (see ``python/synapse/__init__.py`` gate).
     """
 
     def test_anthropic_resolves_to_vendor(self):

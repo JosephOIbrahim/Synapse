@@ -22,40 +22,56 @@ This mirrors Spike 0 Bootstrap Lock #3:
 
 ## ABI lock
 
-**Python 3.11 + win_amd64.** The `pydantic_core` package ships a
-native binary extension (`_pydantic_core.cp311-win_amd64.pyd`); that
-binary's ABI is pinned to:
+**win_amd64, cp311 + cp313 (dual-ABI as of the H22 drop, 2026-07-15).**
+The `pydantic_core` and `jiter` packages each ship native binary
+extensions. Both ABIs now live side by side at the SAME package versions
+(`pydantic_core` 2.46.3, `jiter` 0.14.0), so the pure-Python layer serves
+either binary:
 
-- CPython 3.11 (`cp311` in the filename)
-- Windows x86-64 (`win_amd64`)
+- `_pydantic_core.cp311-win_amd64.pyd` + `jiter.cp311-win_amd64.pyd` — CPython 3.11
+- `_pydantic_core.cp313-win_amd64.pyd` + `jiter.cp313-win_amd64.pyd` — CPython 3.13
+
+The running interpreter loads whichever matches its ABI.
 
 Valid for:
 
-- Houdini 20.5.x
-- Houdini 21.0.x (631, 671, etc. — every current point release)
-- Houdini 21.5.x (ships Python 3.11)
+- Houdini 20.5.x / 21.0.x (631, 671, …) / 21.5.x — Python **3.11** → cp311
+- Houdini 22.0.x — Python **3.13** → cp313
 
 Runs where it doesn't belong:
 
-- Stock Python 3.14 on the same machine will fail to load
-  `_pydantic_core.cp311-win_amd64.pyd` (wrong ABI). The prepend in
-  `synapse/__init__.py` is gated by `sys.version_info[:2] == (3, 11)`
-  so stock-Python 3.14 test runs stay passive — system pydantic
-  continues to resolve normally.
+- Stock Python 3.14 on the same machine will load NEITHER binary (no cp314
+  in the tree). The prepend in `synapse/__init__.py` is gated by
+  `sys.version_info[:2] in _VENDOR_PYS` (`{(3, 11), (3, 13)}`), so
+  stock-Python 3.14 test runs stay passive — system pydantic continues to
+  resolve normally, and `_VENDOR_ABI_RISK` flags the fallback.
 
 ## Future cliff
 
-When SideFX ships a Houdini release on Python 3.12 (or 3.13 / 3.14):
+**H22 (cp313) was handled this way on 2026-07-15** — see the drop-day
+note below. When SideFX ships a Houdini release on a further Python line:
 
-1. Re-vendor with the matching binary via the refresh command below.
-2. Bump the ABI lock in `synapse/__init__.py` to include the new
-   version. Simplest: widen the check to
-   `sys.version_info[:2] in {(3, 11), (3, 12)}` so both old and new
-   Houdini point releases resolve the vendor cleanly during the
-   transition window.
+1. Re-vendor with the matching binary. **Match the vendored versions
+   EXACTLY** (`pydantic_core` 2.46.3, `jiter` 0.14.0) — a version bump
+   breaks the pure-Python layer (`pydantic` pins `pydantic_core` hard:
+   2.13.3 requires exactly 2.46.3). Pull the right wheel:
+   `pip download pydantic-core==2.46.3 jiter==0.14.0 --python-version <XYZ>
+   --platform win_amd64 --only-binary=:all: --no-deps -d <dir>`, then copy
+   only the `.pyd`s into `_vendor/pydantic_core/` and `_vendor/jiter/`
+   (keep the pure-Python tree unchanged).
+2. Widen `_VENDOR_PYS` in `synapse/__init__.py` to include the new line.
 3. Update this document with the new supported versions.
-4. The `tests/test_vendored_deps.py::test_pydantic_core_has_cp311_binary`
-   test pins the expected ABI; update it in lockstep.
+4. `tests/conftest.py` `VENDOR_PYS` / `VENDOR_ABI_TAGS` +
+   `tests/test_vendored_deps.py::test_native_package_has_all_vendored_abis`
+   pin the expected ABIs; update them in lockstep, same commit.
+
+> **Drop-day note (2026-07-15).** H22.0.368 shipped CPython 3.13. Executed
+> steps 1–4 above: added cp313 `.pyd`s for pydantic_core 2.46.3 + jiter
+> 0.14.0. **Gotcha found:** the pre-staged `harness/state/wheel_cache/cp313/`
+> held pydantic_core **2.47.0**, which `pydantic` 2.13.3 rejects
+> (`SystemError: incompatible ... requires 2.46.3`). Always pull the
+> version-matched wheel, not "latest". Verified under H22 hython:
+> `import synapse; import anthropic` clean, vendor active, no ABI warning.
 
 ## Refresh procedure
 
