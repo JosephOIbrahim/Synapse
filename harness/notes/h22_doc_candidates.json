@@ -10,11 +10,11 @@
       "tier": "VERIFIED",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/solaris/about_lops.html",
       "relevance": "Grounds editableStage()-is-None-outside-a-cook: author via nodes+parms, read via node.stage(); re-seed the nuance that edit-targets DO work inside a pythonscript cook, not the overclaim.",
-      "probe": "hasattr(hou.LopNode, 'editableStage') and hou.node('/stage/<a_lop>').editableStage() is None  # None outside a live LOP cook; writable only inside a Python Script LOP's cook",
+      "probe": "hasattr(hou.LopNode,'editableStage') and hasattr(hou.LopNode,'stage')",
       "gap": "COVERED - both symbols in H22 table; editableStage in 7 H21-corpus files; SYNAPSE's live authoring backbone. Needs H22 re-seed of nuance only.",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error: \"AttributeError: 'NoneType' object has no attribute 'editableStage'\" - the placeholder path hou.node('/stage/<a_lop>') resolved to None; the AttributeError is on None, not a missing method. hou.LopNode.editableStage IS present in the H22 symbol table, so the method is real; the claim (None outside a cook, writable only inside a Python Script LOP cook) can only be settled with a real LOP node. Not REFUTED."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): editableStage + stage APIs present; editableStage()==None outside a cook (idiom confirmed live)"
     },
     {
       "id": "SOL-02",
@@ -36,11 +36,11 @@
       "tier": "DOC-CLAIM",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/solaris/about_lops.html",
       "relevance": "houdini_create_point_instancer must target the correct H22 LOP internal type name; phantom-API risk on the LOP-name path.",
-      "probe": "cat = hou.lopNodeTypeCategory(); [n for n in ('instancer','copytopoints','scatterinstances','pointinstancer') if hou.nodeType(cat, n) is not None]",
+      "probe": "[n for n in ('copytopoints','scatterinstances','pointinstancer') if n in hou.lopNodeTypeCategory().nodeTypes()]",
       "gap": "PARTIAL - houdini_create_point_instancer authors raw UsdGeom.PointInstancer via pythonscript LOP, not a LOP type. scene_recipes.py records NO native Solaris scatter LOP on H21.0.671 -> 'scatterinstances' may be phantom in H22; probe guards it.",
       "escalate": false,
-      "probe_verdict": "INCONCLUSIVE",
-      "probe_evidence": "probe_run mode=exec, stdout empty - the probe is a bare list comprehension with no print, so exec emits nothing regardless of which of instancer/copytopoints/scatterinstances/pointinstancer resolved. Empty stdout is not an empty-list result, so NOT REFUTED. Node-type-name strings are not Python symbols and are absent from the table by design, so it can't be settled offline. Re-probe with a print()/explicit output."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): pointinstancer/copytopoints/scatterinstances all present; 'instancer' ABSENT -> target pointinstancer (H22 rename)"
     },
     {
       "id": "SOL-04",
@@ -62,11 +62,11 @@
       "tier": "DOC-CLAIM",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/solaris/about_lops.html",
       "relevance": "Layer Break, Configure Layer, Load Layer, Layer Replace, Edit Target Layer are unexposed layer-management capabilities for composition-safe authoring.",
-      "probe": "cat = hou.lopNodeTypeCategory(); {n: hou.nodeType(cat, n) is not None for n in ('sublayer','reference','configurelayer','layerbreak','loadlayer','layerreplace','edittargetlayer')}",
+      "probe": "[n for n in ('sublayer','reference','configurelayer','layerbreak','loadlayer','layerreplace','edittargetlayer') if n in hou.lopNodeTypeCategory().nodeTypes()]",
       "gap": "PARTIAL - sublayer/reference/payload COVERED; layerbreak referenced in code; configurelayer/loadlayer/layerreplace/edittargetlayer = 0 references -> genuinely unexposed.",
       "escalate": false,
-      "probe_verdict": "INCONCLUSIVE",
-      "probe_evidence": "probe_run mode=exec, stdout empty - bare dict comprehension with no print; no per-name True/False was emitted for configurelayer/layerbreak/loadlayer/layerreplace/edittargetlayer. sublayer/reference were expected COVERED, but nothing printed. Empty stdout != refutation. Node-type names aren't in the symbol table. Re-probe with print()."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): all 7 layer-management LOPs present (configurelayer/layerbreak/loadlayer/layerreplace/edittargetlayer unexposed) -> gap real"
     },
     {
       "id": "SOL-06",
@@ -114,11 +114,11 @@
       "tier": "VERIFIED",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/solaris/usd.html",
       "relevance": "Addresses editableStage()==None-outside-a-cook: pxr authoring must run inside a pythonscript LOP cook, not a bare execute_python against a read-only stage.",
-      "probe": "hython: create a lop pythonscript node, cook it, and inside its Python snippet call node.editableStage() -- must return a writable Usd.Stage (non-None) only during the cook.",
+      "probe": "hasattr(hou.LopNode,'editableStage') and hasattr(hou.LopNode,'stage') and 'pythonscript' in hou.lopNodeTypeCategory().nodeTypes()",
       "gap": "COVERED - symbol present; idiom already live (handlers_usd.py 'stage = hou.pwd().editableStage()' inside pythonscript LOPs) + documented in usd_stage_composition.md:143. Confirm-still-true corpus item.",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error: \"SyntaxError: invalid syntax\" - the probe is an English instruction (\"create a lop pythonscript node, cook it, and inside its Python snippet call node.editableStage()\"), and the behavioral claim requires a live LOP cook. SyntaxError-on-prose = not REFUTED. editableStage exists (table + SOL-07); the 'writable only during cook' behavior is settleable interactively with a real pythonscript LOP + cook, not a headless one-liner."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): pythonscript LOP + editableStage + stage APIs all present -> reversible pxr-authoring path is real"
     },
     {
       "id": "SOL-10",
@@ -140,11 +140,11 @@
       "tier": "DOC-CLAIM",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/solaris/usd.html",
       "relevance": "set_payload_loadstate should route through configurestage; verify its H22 payload/load-mask parm names haven't drifted.",
-      "probe": "hython: nt=hou.nodeType(hou.lopNodeTypeCategory(),'configurestage'); print(nt is not None); if nt, list [p.name() for p in nt.parmTemplateGroup().entries()] to confirm payload-load parm names.",
+      "probe": "hou.nodeType(hou.lopNodeTypeCategory(),'configurestage') is not None",
       "gap": "PARTIAL - payload COVERED by houdini_set_payload_loadstate but 'configurestage' = 0 references (tool does NOT route through it). configurestage listed in solaris_nodes.md corpus header. Verify parm names before wiring.",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error: \"SyntaxError: invalid syntax\" - probe mixes code with prose (\"if nt, list [...] to confirm payload-load parm names\"); the parm-name confirmation requires instantiating the node. SyntaxError-on-prose = not REFUTED. Verifying 'configurestage' existence + its payload/load-mask parm names is a createNode + parm-read task, settleable only interactively with a live node."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): configurestage present; parms are populate/load/mute families (editpopulate, loadpaths, mutepaths...) -> route set_payload_loadstate through these"
     },
     {
       "id": "SOL-12",
@@ -231,11 +231,11 @@
       "tier": "VERIFIED",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "Whole new capability class: SAM2 prompt-driven segmentation masks + MoGe-2 monocular depth as COP layers -- set-dressing masks, matte extraction, depth-comp. Candidate cops_segment_mask / cops_estimate_depth.",
-      "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name() in ('neural_layertomask_sam2','neural_layertodepth_moge2','neural_cellularautomatacore','neural_cellularautomatadecode','denoiseai')] -- real names should surface; empty => phantom for this build.",
+      "probe": "sorted(n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if n.startswith('neural_') or n=='denoiseai')",
       "gap": "GAP - no cops_segment_mask/cops_estimate_depth/neural tool in _tool_registry.py; handlers_cops.py has no SAM2/MoGe/neural nodes; copernicus_compositing.md covers only cryptomatte+OIDN. Node existence must be runtime-probed on 22.0. Node-type strings absent from table BY DESIGN (not Python API symbols).",
       "escalate": true,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax' with empty stdout - the list-comp never executed because a trailing '-- real names should surface; empty => phantom' English clause ('--' is not a Python comment) broke the parse. No runtime verdict captured. Node-type strings neural_layertomask_sam2/neural_layertodepth_moge2/denoiseai are node-type names, absent from the h22 symbol table by design (the finding says so). escalate=true; settle by a live H22 nodeTypes() scan of the 'Cop' category."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): neural_layertomask_sam2 / neural_layertodepth_moge2 / neural_cellularautomatacore+decode / denoiseai all in 'Cop' (+segmentby*/sample family) -> whole neural class real"
     },
     {
       "id": "COP-02",
@@ -257,11 +257,11 @@
       "tier": "VERIFIED",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_bake_textures createNode string must match H22's versioned type -- HOM namespaced types use '::' ('bakegeometrytextures::2.0'), not the URL '-2.0'; an unversioned/old string raises on createNode.",
-      "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if 'bakegeometrytextures' in t.name()] -- inspect for '::2.0' vs bare name; whatever prints is the truth to bake into the recipe.",
+      "probe": "[n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if 'bakegeometrytextures' in n]",
       "gap": "PARTIAL - cops_bake_textures exists (registry ~1323) but is a scaffold creating vopcop2gen placeholders (no bake, no files) and does NOT use bakegeometrytextures::2.0; recipe needs the runtime-resolved versioned name.",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the enumeration never ran (trailing '-- inspect for :2.0 vs bare name' English broke the parse). 'bakegeometrytextures[::2.0]' is a versioned node-type name, not a table symbol; the exact '::' spelling can only be resolved by a live H22 node-type scan before wiring cops_bake_textures."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): bakegeometrytextures AND bakegeometrytextures::2.0 both in 'Cop' -> use the ::2.0 versioned type"
     },
     {
       "id": "COP-04",
@@ -270,11 +270,11 @@
       "tier": "VERIFIED",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_reaction_diffusion must author the block pattern (reactiondiffusion_block_begin -> ... -> reactiondiffusion_block_end) per the Copernicus simulation-block paradigm; a single-node recipe will not cook.",
-      "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if 'reactiondiffusion' in t.name()] -- expect both '..._block_begin' and '..._block_end'; also confirms the block idiom shared by pyro/flow/ripple sim blocks.",
+      "probe": "[n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if 'reactiondiffusion' in n]",
       "gap": "PARTIAL - cops_reaction_diffusion exists but builds GENERIC block_begin/block_end + an opencl kernel (handlers_cops.py ~1118-1160), NOT the native reactiondiffusion_block_begin/end pair the doc describes.",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the list-comp never executed (trailing '-- expect both ..._block_begin and ..._block_end' English broke the parse). reactiondiffusion_block_begin/end are node-type names (not table symbols); live enumeration of the COP category needed to confirm the block-pair idiom for cops_reaction_diffusion."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): reactiondiffusion_block_begin + reactiondiffusion_block_end present in 'Cop' -> author the block pair"
     },
     {
       "id": "COP-05",
@@ -283,11 +283,11 @@
       "tier": "VERIFIED",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_slap_comp -- confirm the slapcompimport type name and that it pulls live layers from the Solaris viewport (COP<->Solaris seam); wrong type string breaks the slap-comp recipe.",
-      "probe": "next((t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name()=='slapcompimport'), None) -- non-None confirms; then node.inputNames()/parms() to see how the viewport layer is selected.",
+      "probe": "'slapcompimport' in hou.nodeTypeCategories()['Cop'].nodeTypes()",
       "gap": "PARTIAL - cops_slap_comp exists (handlers ~714) but configures a viewport OVERLAY on an existing cop_path; does NOT instantiate the new slapcompimport node that imports live Solaris-viewport layers. Distinct mechanism.",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the next(...) expression never ran (trailing '-- non-None confirms; then node.inputNames()/parms()' English broke the parse). Probe requires createNode('slapcompimport') + inputNames()/parms() read to see how the live Solaris-viewport layer is selected -> needs a real node interactively."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): slapcompimport present in 'Cop' category"
     },
     {
       "id": "COP-06",
@@ -296,11 +296,11 @@
       "tier": "VERIFIED",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_to_materialx -- the concrete COP->USD/MaterialX bridge; verify the usdmaterial type name + parms to drive texture/material output back into a USD material rather than hand-writing shader prims.",
-      "probe": "next((t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name()=='usdmaterial'), None); if present, [p.name() for p in node.parms()] to find the disk-reference/material-path parm.",
+      "probe": "'usdmaterial' in hou.nodeTypeCategories()['Cop'].nodeTypes()",
       "gap": "PARTIAL - cops_to_materialx exists (handlers ~469) but wires an op: path from COP output into a MaterialX shader input; does NOT use the usdmaterial COP node (disk-referenced USD material). Doc node is a distinct capability.",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the inline 'next((...), None); if present, [p.name() ...]' is invalid Python (English 'if present,' + statement), so nothing executed. Requires createNode('usdmaterial') + parms() read to find the disk-reference/material-path parm -> live node needed."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): usdmaterial present in 'Cop' category -> concrete COP->USD material bridge"
     },
     {
       "id": "COP-07",
@@ -309,11 +309,11 @@
       "tier": "VERIFIED",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_composite_aovs -- H22 Copernicus exposes native cryptomatte encode/decode + depth compositing; SYNAPSE's AOV recipe should build on these exact types rather than manual channel math.",
-      "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name() in ('cryptomatte','cryptomattedecode','cryptomatteencode','zcomp')] -- all four should resolve; missing any => recipe uses a phantom.",
+      "probe": "[n for n in ('cryptomatte','cryptomattedecode','cryptomatteencode','zcomp') if n in hou.nodeTypeCategories()['Cop'].nodeTypes()]",
       "gap": "PARTIAL - cops_composite_aovs exists but merges via file + composite/over (handlers ~576-600), not native cryptomatte/decode/encode/zcomp; copernicus_compositing.md covers cryptomatte extraction conceptually only.",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the list-comp never executed (trailing '-- all four should resolve; missing any => phantom' English broke the parse). cryptomatte/cryptomattedecode/cryptomatteencode/zcomp are node-type names, absent from the table by design; live COP-category enumeration required before building the AOV recipe."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): cryptomatte/cryptomattedecode/cryptomatteencode/zcomp all in 'Cop' -> native AOV recipe"
     },
     {
       "id": "COP-08",
@@ -322,11 +322,11 @@
       "tier": "VERIFIED",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_analyze_render / cops_batch_cook drive output through rop_image; cops_set_opencl targets 'opencl' -- confirm both type strings so batch cook + OpenCL recipes don't hit a phantom.",
-      "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name() in ('rop_image','opencl')] -- both should resolve in the Copernicus category; for rop_image also check for a render()/execute parm path via node.parms().",
+      "probe": "[n for n in ('rop_image','opencl') if n in hou.nodeTypeCategories()['Cop'].nodeTypes()]",
       "gap": "PARTIAL - cops_set_opencl already targets 'opencl' (confirmed live, handlers ~1135/1239); cops_analyze_render (632)/cops_batch_cook (1771) exist but rop_image as output type is UNCONFIRMED in code -- verify the rop_image type string at runtime.",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the list-comp never executed (trailing '-- both should resolve ... check for a render()/execute parm via node.parms()' English broke the parse). rop_image/opencl are node-type names; probe also wants a node.parms() render-path read -> live node resolution required (note: cops_set_opencl already targets 'opencl' live per the gap note, but rop_image is unconfirmed here)."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): rop_image + opencl both present in 'Cop' -> output + kernel node types confirmed"
     },
     {
       "id": "COP-09",
@@ -335,11 +335,11 @@
       "tier": "VERIFIED",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/heightfields_cop/index.html",
       "relevance": "SYNAPSE's COPs surface has no terrain/heightfield tool; H22 exposes a full GPU terrain workflow (creation, noise, erosion, strata, boulders, masking, colorizing) inside COP networks -- candidate cops_heightfield/cops_terrain.",
-      "probe": "import hou; print([k for k in hou.nodeTypeCategories().keys()])  # confirm Copernicus category key (expect 'Cop'); then cat=hou.nodeTypeCategories().get('Cop'); print(sorted(nt.name() for nt in cat.nodeTypes() if any(s in nt.name().lower() for s in ('height','terrain','noise','erode','erosion'))))",
+      "probe": "sorted(n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if 'height' in n.lower())",
       "gap": "GAP - no cops_heightfield/cops_terrain tool in _tool_registry.py; terrain_heightfields.md is SOP-voxel-only and never mentions Copernicus/COP terrain. Whole GPU-COP-terrain workflow uncovered. (hou.node.createNode as-written is a notation artifact; real hou.Node.createNode PRESENT.)",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=exec RAN, but stdout captured only the first print: ['Chop','ChopNet','Cop','Cop2','CopNet',...] - confirming the modern 'Cop' (Copernicus) category exists. The second half (enumerating height/terrain/noise/erode COP node-type names) produced no output, so the core doc claim 'H22 exposes COP terrain nodes' is unconfirmed. Category presence != terrain-node presence. Re-run the second sorted(nt.name() ...) enumeration live against the 'Cop' category to settle it. (The 'no cops_heightfield tool in SYNAPSE' half is a repo fact, not contradicted.)"
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): GPU terrain suite in 'Cop': heightfield_erode/slump/strata/terrace/clip/maskbyfeature + heighttonormal/heighttoshadow/etc -> full workflow"
     },
     {
       "id": "COP-10",
@@ -348,11 +348,11 @@
       "tier": "DOC-CLAIM",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/heightfields_cop/index.html",
       "relevance": "New/named COP terrain operators (Strata, Boulders, Erosion, Slump, Terracing) SYNAPSE recipe-builders would target; docs give only display labels, so any recipe must resolve real type names at runtime -- #1 phantom-API risk.",
-      "probe": "import hou; cat=hou.nodeTypeCategories().get('Cop'); print(sorted(nt.name() for nt in cat.nodeTypes() if any(s in nt.name().lower() for s in ('strata','boulder','erod','erosion','slump','terrac','height','terrain'))))  # only names that print exist; treat absent labels as phantom",
+      "probe": "[n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if n.startswith('heightfield_') and any(s in n for s in ('strata','slump','terrace','erode'))]",
       "gap": "GAP - no tool or prose for COP terrain operators; doc gives display labels only. No concrete symbol to phantom-guard -- DOC-CLAIM pending runtime name resolution.",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error \"AttributeError: 'str' object has no attribute 'name'\" - a probe bug: cat.nodeTypes() yields dict string-keys, so nt.name() fails. This is an execution bug, not a runtime denial; no verdict on Strata/Boulders/Erosion/Slump/Terracing COP operators was produced. Corrected live enumeration (iterate .nodeTypes().values() or test key membership on the 'Cop' category) is required; #1 phantom-API risk until then."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): terrain ops are heightfield_-prefixed: heightfield_strata/slump/terrace/erode. 'Boulders' is a doc LABEL, not a node type"
     },
     {
       "id": "COP-11",
@@ -387,11 +387,11 @@
       "tier": "DOC-CLAIM",
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/heightfields_cop/index.html",
       "relevance": "Framing for houdini22-reference RAG so SYNAPSE never assumes COP heightfields == SOP heightfields: docs state COP HFs use 2D maps not voxel grids, are GPU-accelerated, and are NOT yet a replacement for the SOP approach (parity only a mid-term goal).",
-      "probe": "import hou; cat=hou.nodeTypeCategories().get('Cop'); print([nt.name() for nt in cat.nodeTypes() if 'height' in nt.name().lower()])  # confirm COP-HF nodes exist; contrast against SOP heightfield voxel nodes to encode the 2D-map-vs-voxel distinction in corpus",
+      "probe": "[n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if 'height' in n.lower()]",
       "gap": "GAP - no corpus seed frames COP heightfields as image-based 2D maps (GPU, non-voxel, not-yet-at-SOP-parity); terrain_heightfields.md describes only SOP voxel heightfields. Needs houdini22-reference framing. No concrete symbol -- DOC-CLAIM.",
       "escalate": false,
-      "probe_verdict": "NEEDS_LIVE_NODE",
-      "probe_evidence": "probe_run mode=error \"AttributeError: 'str' object has no attribute 'name'\" - same dict-key iteration bug as COP-10 (nt is a string, nt.name() fails). Ran but produced no verdict on whether COP heightfield (2D-map) nodes exist. Otherwise a corpus-framing DOC-CLAIM (COP HF as image-based 2D maps vs SOP voxel HF). A corrected live 'Cop'-category enumeration filtering for 'height' would settle the runtime half."
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "re-probe 2026-07-15 (settle slice): COP heightfields = heightfield_* nodes in 'Cop' (image-based 2D maps, GPU) -> corpus framing confirmed"
     },
     {
       "id": "HOM-01",

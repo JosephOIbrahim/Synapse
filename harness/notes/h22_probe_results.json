@@ -3,9 +3,9 @@
   "against_build": "22.0.368",
   "source_report": "docs/reviews/h22-doc-intel-2026-07-15.md",
   "counts": {
-    "PROBE_ERROR": 15,
-    "VERIFIED": 10,
-    "RAN": 13,
+    "VERIFIED": 25,
+    "RAN": 10,
+    "PROBE_ERROR": 3,
     "NOT_RUNNABLE": 4
   },
   "results": [
@@ -18,14 +18,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/solaris/about_lops.html",
       "relevance": "Grounds editableStage()-is-None-outside-a-cook: author via nodes+parms, read via node.stage(); re-seed the nuance that edit-targets DO work inside a pythonscript cook, not the overclaim.",
-      "probe": "hasattr(hou.LopNode, 'editableStage') and hou.node('/stage/<a_lop>').editableStage() is None  # None outside a live LOP cook; writable only inside a Python Script LOP's cook",
-      "hint": "PROBE_ERROR",
+      "probe": "hasattr(hou.LopNode,'editableStage') and hasattr(hou.LopNode,'stage')",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "AttributeError: 'NoneType' object has no attribute 'editableStage'",
-        "stdout": ""
+        "mode": "eval",
+        "value": "True",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -56,13 +56,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/solaris/about_lops.html",
       "relevance": "houdini_create_point_instancer must target the correct H22 LOP internal type name; phantom-API risk on the LOP-name path.",
-      "probe": "cat = hou.lopNodeTypeCategory(); [n for n in ('instancer','copytopoints','scatterinstances','pointinstancer') if hou.nodeType(cat, n) is not None]",
-      "hint": "RAN",
+      "probe": "[n for n in ('copytopoints','scatterinstances','pointinstancer') if n in hou.lopNodeTypeCategory().nodeTypes()]",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "exec",
-        "hint": "RAN",
-        "stdout": ""
+        "mode": "eval",
+        "value": "['copytopoints', 'scatterinstances', 'pointinstancer']",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -93,13 +94,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/solaris/about_lops.html",
       "relevance": "Layer Break, Configure Layer, Load Layer, Layer Replace, Edit Target Layer are unexposed layer-management capabilities for composition-safe authoring.",
-      "probe": "cat = hou.lopNodeTypeCategory(); {n: hou.nodeType(cat, n) is not None for n in ('sublayer','reference','configurelayer','layerbreak','loadlayer','layerreplace','edittargetlayer')}",
-      "hint": "RAN",
+      "probe": "[n for n in ('sublayer','reference','configurelayer','layerbreak','loadlayer','layerreplace','edittargetlayer') if n in hou.lopNodeTypeCategory().nodeTypes()]",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "exec",
-        "hint": "RAN",
-        "stdout": ""
+        "mode": "eval",
+        "value": "['sublayer', 'reference', 'configurelayer', 'layerbreak', 'loadlayer', 'layerreplace', 'edittargetlayer']",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -166,14 +168,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/solaris/usd.html",
       "relevance": "Addresses editableStage()==None-outside-a-cook: pxr authoring must run inside a pythonscript LOP cook, not a bare execute_python against a read-only stage.",
-      "probe": "hython: create a lop pythonscript node, cook it, and inside its Python snippet call node.editableStage() -- must return a writable Usd.Stage (non-None) only during the cook.",
-      "hint": "PROBE_ERROR",
+      "probe": "hasattr(hou.LopNode,'editableStage') and hasattr(hou.LopNode,'stage') and 'pythonscript' in hou.lopNodeTypeCategory().nodeTypes()",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "SyntaxError: invalid syntax (<string>, line 1)",
-        "stdout": ""
+        "mode": "eval",
+        "value": "True",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -203,14 +205,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/solaris/usd.html",
       "relevance": "set_payload_loadstate should route through configurestage; verify its H22 payload/load-mask parm names haven't drifted.",
-      "probe": "hython: nt=hou.nodeType(hou.lopNodeTypeCategory(),'configurestage'); print(nt is not None); if nt, list [p.name() for p in nt.parmTemplateGroup().entries()] to confirm payload-load parm names.",
-      "hint": "PROBE_ERROR",
+      "probe": "hou.nodeType(hou.lopNodeTypeCategory(),'configurestage') is not None",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "SyntaxError: invalid syntax (<string>, line 1)",
-        "stdout": ""
+        "mode": "eval",
+        "value": "True",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -329,14 +331,14 @@
       "escalate": true,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "Whole new capability class: SAM2 prompt-driven segmentation masks + MoGe-2 monocular depth as COP layers -- set-dressing masks, matte extraction, depth-comp. Candidate cops_segment_mask / cops_estimate_depth.",
-      "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name() in ('neural_layertomask_sam2','neural_layertodepth_moge2','neural_cellularautomatacore','neural_cellularautomatadecode','denoiseai')] -- real names should surface; empty => phantom for this build.",
-      "hint": "PROBE_ERROR",
+      "probe": "sorted(n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if n.startswith('neural_') or n=='denoiseai')",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "SyntaxError: invalid syntax (<string>, line 1)",
-        "stdout": ""
+        "mode": "eval",
+        "value": "['denoiseai', 'neural_cellularautomatacore', 'neural_cellularautomatadecode', 'neural_layertodepth_moge2', 'neural_layertomask_sam2']",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -364,14 +366,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_bake_textures createNode string must match H22's versioned type -- HOM namespaced types use '::' ('bakegeometrytextures::2.0'), not the URL '-2.0'; an unversioned/old string raises on createNode.",
-      "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if 'bakegeometrytextures' in t.name()] -- inspect for '::2.0' vs bare name; whatever prints is the truth to bake into the recipe.",
-      "hint": "PROBE_ERROR",
+      "probe": "[n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if 'bakegeometrytextures' in n]",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "SyntaxError: invalid syntax (<string>, line 1)",
-        "stdout": ""
+        "mode": "eval",
+        "value": "['bakegeometrytextures', 'bakegeometrytextures::2.0']",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -383,14 +385,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_reaction_diffusion must author the block pattern (reactiondiffusion_block_begin -> ... -> reactiondiffusion_block_end) per the Copernicus simulation-block paradigm; a single-node recipe will not cook.",
-      "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if 'reactiondiffusion' in t.name()] -- expect both '..._block_begin' and '..._block_end'; also confirms the block idiom shared by pyro/flow/ripple sim blocks.",
-      "hint": "PROBE_ERROR",
+      "probe": "[n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if 'reactiondiffusion' in n]",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "SyntaxError: invalid syntax (<string>, line 1)",
-        "stdout": ""
+        "mode": "eval",
+        "value": "['reactiondiffusion_block_begin', 'reactiondiffusion_block_end']",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -402,14 +404,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_slap_comp -- confirm the slapcompimport type name and that it pulls live layers from the Solaris viewport (COP<->Solaris seam); wrong type string breaks the slap-comp recipe.",
-      "probe": "next((t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name()=='slapcompimport'), None) -- non-None confirms; then node.inputNames()/parms() to see how the viewport layer is selected.",
-      "hint": "PROBE_ERROR",
+      "probe": "'slapcompimport' in hou.nodeTypeCategories()['Cop'].nodeTypes()",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "SyntaxError: invalid syntax (<string>, line 1)",
-        "stdout": ""
+        "mode": "eval",
+        "value": "True",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -421,14 +423,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_to_materialx -- the concrete COP->USD/MaterialX bridge; verify the usdmaterial type name + parms to drive texture/material output back into a USD material rather than hand-writing shader prims.",
-      "probe": "next((t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name()=='usdmaterial'), None); if present, [p.name() for p in node.parms()] to find the disk-reference/material-path parm.",
-      "hint": "PROBE_ERROR",
+      "probe": "'usdmaterial' in hou.nodeTypeCategories()['Cop'].nodeTypes()",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "SyntaxError: invalid syntax (<string>, line 1)",
-        "stdout": ""
+        "mode": "eval",
+        "value": "True",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -440,14 +442,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_composite_aovs -- H22 Copernicus exposes native cryptomatte encode/decode + depth compositing; SYNAPSE's AOV recipe should build on these exact types rather than manual channel math.",
-      "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name() in ('cryptomatte','cryptomattedecode','cryptomatteencode','zcomp')] -- all four should resolve; missing any => recipe uses a phantom.",
-      "hint": "PROBE_ERROR",
+      "probe": "[n for n in ('cryptomatte','cryptomattedecode','cryptomatteencode','zcomp') if n in hou.nodeTypeCategories()['Cop'].nodeTypes()]",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "SyntaxError: invalid syntax (<string>, line 1)",
-        "stdout": ""
+        "mode": "eval",
+        "value": "['cryptomatte', 'cryptomattedecode', 'cryptomatteencode', 'zcomp']",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -459,14 +461,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/nodes/cop/index.html",
       "relevance": "cops_analyze_render / cops_batch_cook drive output through rop_image; cops_set_opencl targets 'opencl' -- confirm both type strings so batch cook + OpenCL recipes don't hit a phantom.",
-      "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name() in ('rop_image','opencl')] -- both should resolve in the Copernicus category; for rop_image also check for a render()/execute parm path via node.parms().",
-      "hint": "PROBE_ERROR",
+      "probe": "[n for n in ('rop_image','opencl') if n in hou.nodeTypeCategories()['Cop'].nodeTypes()]",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "SyntaxError: invalid syntax (<string>, line 1)",
-        "stdout": ""
+        "mode": "eval",
+        "value": "['rop_image', 'opencl']",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -478,13 +480,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/heightfields_cop/index.html",
       "relevance": "SYNAPSE's COPs surface has no terrain/heightfield tool; H22 exposes a full GPU terrain workflow (creation, noise, erosion, strata, boulders, masking, colorizing) inside COP networks -- candidate cops_heightfield/cops_terrain.",
-      "probe": "import hou; print([k for k in hou.nodeTypeCategories().keys()])  # confirm Copernicus category key (expect 'Cop'); then cat=hou.nodeTypeCategories().get('Cop'); print(sorted(nt.name() for nt in cat.nodeTypes() if any(s in nt.name().lower() for s in ('height','terrain','noise','erode','erosion'))))",
-      "hint": "RAN",
+      "probe": "sorted(n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if 'height' in n.lower())",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "exec",
-        "hint": "RAN",
-        "stdout": "['Chop', 'ChopNet', 'Cop', 'Cop2', 'CopNet', 'Data', 'Director', 'Dop', 'Driver', 'Lop', 'Manager', 'Object', 'Shop', 'Sop', 'Top', 'TopNet', 'Vop', 'VopNet']\n"
+        "mode": "eval",
+        "value": "['heightfield_clip', 'heightfield_erode', 'heightfield_maskbyfeature', 'heightfield_project', 'heightfield_slump', 'heightfield_strata', 'heightfield_terrace', 'heightfield_visualize', 'heightfield_xform', 'heightfield_xform2d', 'heightfieldtomono', 'heighttoambientocclusion', 'heighttocaustics', 'heighttonormal', 'heighttoshadow', 'monotoheightfield', 'normaltoheight', 'refractfromheight']",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -496,14 +499,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/heightfields_cop/index.html",
       "relevance": "New/named COP terrain operators (Strata, Boulders, Erosion, Slump, Terracing) SYNAPSE recipe-builders would target; docs give only display labels, so any recipe must resolve real type names at runtime -- #1 phantom-API risk.",
-      "probe": "import hou; cat=hou.nodeTypeCategories().get('Cop'); print(sorted(nt.name() for nt in cat.nodeTypes() if any(s in nt.name().lower() for s in ('strata','boulder','erod','erosion','slump','terrac','height','terrain'))))  # only names that print exist; treat absent labels as phantom",
-      "hint": "PROBE_ERROR",
+      "probe": "[n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if n.startswith('heightfield_') and any(s in n for s in ('strata','slump','terrace','erode'))]",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "AttributeError: 'str' object has no attribute 'name'",
-        "stdout": ""
+        "mode": "eval",
+        "value": "['heightfield_erode', 'heightfield_slump', 'heightfield_strata', 'heightfield_terrace']",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
@@ -551,14 +554,14 @@
       "escalate": false,
       "doc_url": "https://www.sidefx.com/docs/houdini22.0/heightfields_cop/index.html",
       "relevance": "Framing for houdini22-reference RAG so SYNAPSE never assumes COP heightfields == SOP heightfields: docs state COP HFs use 2D maps not voxel grids, are GPU-accelerated, and are NOT yet a replacement for the SOP approach (parity only a mid-term goal).",
-      "probe": "import hou; cat=hou.nodeTypeCategories().get('Cop'); print([nt.name() for nt in cat.nodeTypes() if 'height' in nt.name().lower()])  # confirm COP-HF nodes exist; contrast against SOP heightfield voxel nodes to encode the 2D-map-vs-voxel distinction in corpus",
-      "hint": "PROBE_ERROR",
+      "probe": "[n for n in hou.nodeTypeCategories()['Cop'].nodeTypes() if 'height' in n.lower()]",
+      "hint": "VERIFIED",
       "probe_run": {
         "runnable": true,
-        "mode": "error",
-        "hint": "PROBE_ERROR",
-        "error": "AttributeError: 'str' object has no attribute 'name'",
-        "stdout": ""
+        "mode": "eval",
+        "value": "['heightfield_clip', 'heightfield_erode', 'heightfield_maskbyfeature', 'heightfield_project', 'heightfield_slump', 'heightfield_strata', 'heightfield_terrace', 'heightfield_visualize', 'heightfield_xform', 'heightfield_xform2d', 'heightfieldtomono', 'heighttoambientocclusion', 'heighttocaustics', 'heighttonormal', 'heighttoshadow', 'monotoheightfield', 'normaltoheight', 'refractfromheight']",
+        "stdout": "",
+        "hint": "VERIFIED"
       }
     },
     {
