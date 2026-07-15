@@ -12,7 +12,9 @@
       "relevance": "Grounds editableStage()-is-None-outside-a-cook: author via nodes+parms, read via node.stage(); re-seed the nuance that edit-targets DO work inside a pythonscript cook, not the overclaim.",
       "probe": "hasattr(hou.LopNode, 'editableStage') and hou.node('/stage/<a_lop>').editableStage() is None  # None outside a live LOP cook; writable only inside a Python Script LOP's cook",
       "gap": "COVERED - both symbols in H22 table; editableStage in 7 H21-corpus files; SYNAPSE's live authoring backbone. Needs H22 re-seed of nuance only.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error: \"AttributeError: 'NoneType' object has no attribute 'editableStage'\" - the placeholder path hou.node('/stage/<a_lop>') resolved to None; the AttributeError is on None, not a missing method. hou.LopNode.editableStage IS present in the H22 symbol table, so the method is real; the claim (None outside a cook, writable only inside a Python Script LOP cook) can only be settled with a real LOP node. Not REFUTED."
     },
     {
       "id": "SOL-02",
@@ -23,7 +25,9 @@
       "relevance": "Reversible-by-construction prim deactivation as an alternative to hard USD prim deletion in set-dressing.",
       "probe": "hou.nodeType(hou.lopNodeTypeCategory(), 'prune') is not None",
       "gap": "PARTIAL - 'prune' recognized in handlers_solaris_assemble.py ordering (key 290) + 5 corpus files, but NO dedicated prune MCP tool. Genuine tool gap.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=eval value=True for hou.nodeType(hou.lopNodeTypeCategory(),'prune') is not None. The 'prune' LOP type exists in H22 22.0.368. Reversible prim deactivation node is real; genuine MCP tool gap stands."
     },
     {
       "id": "SOL-03",
@@ -34,7 +38,9 @@
       "relevance": "houdini_create_point_instancer must target the correct H22 LOP internal type name; phantom-API risk on the LOP-name path.",
       "probe": "cat = hou.lopNodeTypeCategory(); [n for n in ('instancer','copytopoints','scatterinstances','pointinstancer') if hou.nodeType(cat, n) is not None]",
       "gap": "PARTIAL - houdini_create_point_instancer authors raw UsdGeom.PointInstancer via pythonscript LOP, not a LOP type. scene_recipes.py records NO native Solaris scatter LOP on H21.0.671 -> 'scatterinstances' may be phantom in H22; probe guards it.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "INCONCLUSIVE",
+      "probe_evidence": "probe_run mode=exec, stdout empty - the probe is a bare list comprehension with no print, so exec emits nothing regardless of which of instancer/copytopoints/scatterinstances/pointinstancer resolved. Empty stdout is not an empty-list result, so NOT REFUTED. Node-type-name strings are not Python symbols and are absent from the table by design, so it can't be settled offline. Re-probe with a print()/explicit output."
     },
     {
       "id": "SOL-04",
@@ -45,7 +51,9 @@
       "relevance": "A bridge-reversible, undo-wrapped alternative to ungated houdini_execute_python for direct pxr.Usd authoring inside a LOP layer.",
       "probe": "hou.nodeType(hou.lopNodeTypeCategory(), 'pythonscript') is not None  # then inside its cook: type(node.editableStage()).__module__.startswith('pxr')",
       "gap": "PARTIAL - both symbols present. SYNAPSE already uses pythonscript-LOP+editableStage internally (handlers_usd.py, handlers_render.py) but NOT exposed as a general-purpose reversible pxr-authoring MCP tool distinct from execute_python.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=eval value=True for hou.nodeType(hou.lopNodeTypeCategory(),'pythonscript') is not None. The 'pythonscript' LOP exists in H22. Combined with SOL-07/SOL-09, the pythonscript-LOP + editableStage reversible-authoring path is real."
     },
     {
       "id": "SOL-05",
@@ -56,7 +64,9 @@
       "relevance": "Layer Break, Configure Layer, Load Layer, Layer Replace, Edit Target Layer are unexposed layer-management capabilities for composition-safe authoring.",
       "probe": "cat = hou.lopNodeTypeCategory(); {n: hou.nodeType(cat, n) is not None for n in ('sublayer','reference','configurelayer','layerbreak','loadlayer','layerreplace','edittargetlayer')}",
       "gap": "PARTIAL - sublayer/reference/payload COVERED; layerbreak referenced in code; configurelayer/loadlayer/layerreplace/edittargetlayer = 0 references -> genuinely unexposed.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "INCONCLUSIVE",
+      "probe_evidence": "probe_run mode=exec, stdout empty - bare dict comprehension with no print; no per-name True/False was emitted for configurelayer/layerbreak/loadlayer/layerreplace/edittargetlayer. sublayer/reference were expected COVERED, but nothing printed. Empty stdout != refutation. Node-type names aren't in the symbol table. Re-probe with print()."
     },
     {
       "id": "SOL-06",
@@ -67,7 +77,9 @@
       "relevance": "Spreadsheet-style bulk referencer/layout node; one reversible op to assemble many asset references + xforms.",
       "probe": "hou.nodeType(hou.lopNodeTypeCategory(), 'stagemanager') is not None",
       "gap": "PARTIAL - 'stagemanager' recognized in handlers_solaris_assemble.py ordering (key 5) but NO bulk-reference tool and ZERO corpus coverage. Tool + corpus both absent.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=eval value=True for hou.nodeType(hou.lopNodeTypeCategory(),'stagemanager') is not None. The 'stagemanager' LOP type exists in H22 (see also SOL-10). Bulk-referencer node is real; tool + corpus gap stands."
     },
     {
       "id": "SOL-07",
@@ -78,7 +90,9 @@
       "relevance": "Canonical H22 read idiom that inspect_stage/query_prims/get_usd_attribute all depend on.",
       "probe": "hython -c \"import hou; print(hasattr(hou.LopNode,'stage'), hasattr(hou.LopNode,'editableStage'))\" -- both must be True; confirms the read-path signature is unchanged in H22.",
       "gap": "COVERED - both symbols present; backbone of synapse_inspect_stage / houdini_query_prims / houdini_get_usd_attribute; editableStage in 7 corpus files. Signature confirmed unchanged.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec stdout=\"True True\" for hasattr(hou.LopNode,'stage'), hasattr(hou.LopNode,'editableStage'). Corroborated by the H22 symbol table (hou.LopNode.stage and hou.LopNode.editableStage both present). Canonical read-path signature unchanged in H22."
     },
     {
       "id": "SOL-08",
@@ -89,7 +103,9 @@
       "relevance": "An inlineusd-backed tool would let SYNAPSE inject arbitrary .usda text as a first-class, undoable set-dressing op.",
       "probe": "hython -c \"import hou; print(hou.nodeType(hou.lopNodeTypeCategory(),'inlineusd'))\" -- non-None confirms the LOP type name; then inspect parmTemplateGroup() for the USDA text parm.",
       "gap": "GAP - 'inlineusd' in ZERO code files and ZERO corpus files. Genuine unexposed capability; probe the LOP type name before emitting createNode.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec stdout=\"<hou.OpNodeType for Lop inlineusd>\" - hou.nodeType(...,'inlineusd') returned a real OpNodeType (non-None). The 'inlineusd' LOP type exists in H22. Genuinely unexposed capability (zero code/corpus refs); safe to build the type-name path."
     },
     {
       "id": "SOL-09",
@@ -100,7 +116,9 @@
       "relevance": "Addresses editableStage()==None-outside-a-cook: pxr authoring must run inside a pythonscript LOP cook, not a bare execute_python against a read-only stage.",
       "probe": "hython: create a lop pythonscript node, cook it, and inside its Python snippet call node.editableStage() -- must return a writable Usd.Stage (non-None) only during the cook.",
       "gap": "COVERED - symbol present; idiom already live (handlers_usd.py 'stage = hou.pwd().editableStage()' inside pythonscript LOPs) + documented in usd_stage_composition.md:143. Confirm-still-true corpus item.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error: \"SyntaxError: invalid syntax\" - the probe is an English instruction (\"create a lop pythonscript node, cook it, and inside its Python snippet call node.editableStage()\"), and the behavioral claim requires a live LOP cook. SyntaxError-on-prose = not REFUTED. editableStage exists (table + SOL-07); the 'writable only during cook' behavior is settleable interactively with a real pythonscript LOP + cook, not a headless one-liner."
     },
     {
       "id": "SOL-10",
@@ -111,7 +129,9 @@
       "relevance": "houdini_reference_usd handles one asset at a time; a stagemanager batch-reference tool matches 'assemble a shot from N assets' with constant node count.",
       "probe": "hython -c \"import hou; print(hou.nodeType(hou.lopNodeTypeCategory(),'stagemanager'))\" -- non-None confirms the type; enumerate its multiparm for the per-asset reference rows.",
       "gap": "PARTIAL - duplicate angle of Stage Manager finding: 'stagemanager' known to assemble ordering only; no batch-reference tool, no corpus. houdini_reference_usd covers single-asset.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec stdout=\"<hou.OpNodeType for Lop stagemanager>\" - hou.nodeType(...,'stagemanager') returned a real OpNodeType. Confirms the same type as SOL-06 via the print form. stagemanager batch-reference type name is real; per-asset multiparm enumeration still needs a live node but existence is verified."
     },
     {
       "id": "SOL-11",
@@ -122,7 +142,9 @@
       "relevance": "set_payload_loadstate should route through configurestage; verify its H22 payload/load-mask parm names haven't drifted.",
       "probe": "hython: nt=hou.nodeType(hou.lopNodeTypeCategory(),'configurestage'); print(nt is not None); if nt, list [p.name() for p in nt.parmTemplateGroup().entries()] to confirm payload-load parm names.",
       "gap": "PARTIAL - payload COVERED by houdini_set_payload_loadstate but 'configurestage' = 0 references (tool does NOT route through it). configurestage listed in solaris_nodes.md corpus header. Verify parm names before wiring.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error: \"SyntaxError: invalid syntax\" - probe mixes code with prose (\"if nt, list [...] to confirm payload-load parm names\"); the parm-name confirmation requires instantiating the node. SyntaxError-on-prose = not REFUTED. Verifying 'configurestage' existence + its payload/load-mask parm names is a createNode + parm-read task, settleable only interactively with a live node."
     },
     {
       "id": "SOL-12",
@@ -133,7 +155,9 @@
       "relevance": "Auto-LOD capability SYNAPSE does not expose; LOP type names are summarizer-derived and MUST be probed (phantom risk).",
       "probe": "hython -c \"import hou; c=hou.lopNodeTypeCategory(); print(hou.nodeType(c,'createlod'), hou.nodeType(c,'autoselectlod'))\" -- any None means the name is a phantom as-spelled; search c.nodeTypes() keys for 'lod'.",
       "gap": "GAP - 'createlod'/'autoselectlod' = 0 references in code AND corpus. Summarizer-derived names; treat as unverified until runtime probe resolves real type names before any createNode.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec stdout=\"<hou.OpNodeType for Lop createlod> <hou.OpNodeType for Lop autoselectlod>\" - both hou.nodeType calls returned real OpNodeTypes (non-None). Doc flagged these as summarizer-derived / phantom-risk; the runtime confirms both 'createlod' and 'autoselectlod' are real LOP types in H22. Phantom concern refuted; capability gap stands."
     },
     {
       "id": "SOL-13",
@@ -144,7 +168,9 @@
       "relevance": "Core USD composition semantics (LIVRPS: Local>Inherits>Variants>References>Payloads>Specializes) grounding stage-authoring + composition-validation reasoning.",
       "probe": "Corpus prose, no runtime symbol; sanity-check by authoring an over on a referenced prim and confirming the local opinion wins in node.stage() after cook.",
       "gap": "COVERED - LIVRPS documented in 5 corpus files incl. full strength table in usd_stage_composition.md. Prose-only; needs H22 re-seed (no houdini22-reference corpus yet), content not a gap.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NOT_RUNNABLE",
+      "probe_evidence": "probe self-labels \"Corpus prose, no runtime symbol\" and probe_run mode=error \"SyntaxError: invalid syntax\" from feeding the English sentence to the interpreter. LIVRPS composition-strength ordering is documentation semantics with no SYNAPSE symbol/type to verify (same 'prose (no runtime symbol)' class as SOL-17). Corpus-seed content, not a runtime gap; an optional live over-authoring sanity-check could confirm USD's documented behavior but is not required."
     },
     {
       "id": "SOL-14",
@@ -155,7 +181,9 @@
       "relevance": "Core set-dressing workflow (reusable USD component asset) has no single wrapper; houdini_build_component could orchestrate componentgeometry->materiallibrary->componentmaterial->componentoutput.",
       "probe": "python: import hou; cat=hou.lopNodeTypeCategory(); [print(n, hou.nodeType(cat,n) is not None) for n in ['componentgeometry','materiallibrary','componentmaterial','componentoutput','componentgeometryvariants']]  # each must be True in H22 runtime before emitting createNode",
       "gap": "PARTIAL - hou.lopNodeTypeCategory + hou.nodeType present (VERIFIED); node-type-name strings need runtime probe. assemble has a 'component_builder' chain template + recognizes all 5; scene_recipes.py has a partial recipe -- but NO single dedicated build_component MCP tool.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec stdout=\"componentgeometry True\\nmateriallibrary True\\ncomponentmaterial True\\ncomponentoutput True\\ncomponentgeometryvariants True\" - all five nodeType checks True. All five Component Builder LOP type names resolve in H22. The build_component orchestration chain (componentgeometry->materiallibrary->componentmaterial->componentoutput) targets real types; single-tool gap stands."
     },
     {
       "id": "SOL-15",
@@ -166,7 +194,9 @@
       "relevance": "A component-write recipe must set Root Prim/Name/Filename/Location + Export Options and trigger Save to Disk; internal parm names must be introspected, not guessed.",
       "probe": "python: import hou; n=hou.node('/stage').createNode('componentoutput'); print(sorted(p.name() for p in n.parms())); n.destroy()  # confirm real internal names behind labels Root Prim/Name/Filename/Location and the Save-to-Disk button parm before authoring a write recipe",
       "gap": "GAP - 'componentoutput' is a node-type-name (not table-verifiable -> DOC-ONLY). Instantiated as bare createNode in scene_recipes.py + assemble ordering but NO code drives its write/Save-to-Disk parms. Write-recipe genuinely unwired; introspect parm names first.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec: hou.node('/stage').createNode('componentoutput') succeeded and printed real internal parm names (filename, execute, executebackground, loadfromdisk, assetname, assetversion, kind, geolayer, extralayer, ...). Live createNode + parm enumeration succeeded - node exists and its introspected names (e.g. 'filename', 'execute' = Save-to-Disk, 'loadfromdisk') are the real ones to wire the write recipe against; do not guess from the UI labels."
     },
     {
       "id": "SOL-16",
@@ -177,7 +207,9 @@
       "relevance": "houdini_manage_variant_set covers generic variants, but Component Builder authors geo/material variant sets through dedicated nodes (default set names 'geo' and 'mtl') -- a component-native variant path is distinct.",
       "probe": "python: import hou; c=hou.lopNodeTypeCategory(); [print(n, hou.nodeType(c,n) is not None) for n in ['componentgeometryvariants','componentmaterial']]; # then instantiate componentmaterial and confirm a variant-set-name parm defaults to 'mtl' and componentgeometryvariants defaults to 'geo' via .parms()",
       "gap": "PARTIAL - node-type-name symbols (not table-verifiable -> DOC-ONLY). Generic variants COVERED by houdini_manage_variant_set; componentgeometryvariants/componentmaterial recognized in assemble ordering + solaris_variants.md, but component-native variant path not wired as a tool.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec stdout=\"componentgeometryvariants True\\ncomponentmaterial True\" - both nodeType checks True. Both component-native variant LOP types exist in H22. The default-set-name check ('geo'/'mtl') was prose and not executed - that sub-claim needs a live node - but the node existence claim is verified."
     },
     {
       "id": "SOL-17",
@@ -188,7 +220,9 @@
       "relevance": "The payload/geo/mtl/extra layer split + composition structure of a Component Builder asset, as prose for the houdini22-reference RAG skill. (NOTE: finding truncated in input; reconstructed.)",
       "probe": "Corpus prose, no runtime symbol; cross-check against H21 corpus (solaris_network_blueprint.md, solaris_variants.md) which already document Component Builder asset layer structure -- re-seed for H22.",
       "gap": "COVERED - component asset structure documented in solaris_network_blueprint.md + solaris_variants.md; componentoutput in 3 corpus files. No houdini22-reference corpus yet, so H22 re-seed is genuine; concept not a gap.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NOT_RUNNABLE",
+      "probe_evidence": "probe_run runnable=false, reason=\"prose (no runtime symbol)\", hint=NOT_RUNNABLE - the harness did not attempt execution. Component-asset layer-structure prose for the houdini22-reference RAG corpus; no runtime symbol to verify. Corpus-seed re-seed item, not a code gap."
     },
     {
       "id": "COP-01",
@@ -199,7 +233,9 @@
       "relevance": "Whole new capability class: SAM2 prompt-driven segmentation masks + MoGe-2 monocular depth as COP layers -- set-dressing masks, matte extraction, depth-comp. Candidate cops_segment_mask / cops_estimate_depth.",
       "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name() in ('neural_layertomask_sam2','neural_layertodepth_moge2','neural_cellularautomatacore','neural_cellularautomatadecode','denoiseai')] -- real names should surface; empty => phantom for this build.",
       "gap": "GAP - no cops_segment_mask/cops_estimate_depth/neural tool in _tool_registry.py; handlers_cops.py has no SAM2/MoGe/neural nodes; copernicus_compositing.md covers only cryptomatte+OIDN. Node existence must be runtime-probed on 22.0. Node-type strings absent from table BY DESIGN (not Python API symbols).",
-      "escalate": true
+      "escalate": true,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax' with empty stdout - the list-comp never executed because a trailing '-- real names should surface; empty => phantom' English clause ('--' is not a Python comment) broke the parse. No runtime verdict captured. Node-type strings neural_layertomask_sam2/neural_layertodepth_moge2/denoiseai are node-type names, absent from the h22 symbol table by design (the finding says so). escalate=true; settle by a live H22 nodeTypes() scan of the 'Cop' category."
     },
     {
       "id": "COP-02",
@@ -210,7 +246,9 @@
       "relevance": "Operational truth before exposing any neural COP tool: nodes no-op until 'Download Models' runs post-install ($SHFS), and cook needs a GPU execution provider (CUDA/DirectML/CoreML) -- a recorded op can silently produce an empty mask on a fresh/CPU-only host.",
       "probe": "After creating a SAM2 node, read parms: [p.name() for p in node.parms() if any(k in p.name().lower() for k in ('model','provider','execution'))]; empty => signature differs from docs. Model presence is a $SHFS filesystem check, not a hou call.",
       "gap": "GAP - no corpus doc encodes neural-COP model-download / GPU-execution-provider precondition; copernicus_*.md silent on 'Download Models' + Execution Provider. Needs houdini22-reference corpus seed.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NOT_RUNNABLE",
+      "probe_evidence": "probe_run.runnable=false, reason='prose (no runtime symbol)'. The claim is an operational precondition (post-install 'Download Models' under $SHFS + a GPU execution provider) - a filesystem/doc check, not a hython symbol; the node.parms half would also need a live SAM2 node. CORPUS_SEED / DOC-ONLY; no hython verdict possible. Corpus documentation gap stands as prose."
     },
     {
       "id": "COP-03",
@@ -221,7 +259,9 @@
       "relevance": "cops_bake_textures createNode string must match H22's versioned type -- HOM namespaced types use '::' ('bakegeometrytextures::2.0'), not the URL '-2.0'; an unversioned/old string raises on createNode.",
       "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if 'bakegeometrytextures' in t.name()] -- inspect for '::2.0' vs bare name; whatever prints is the truth to bake into the recipe.",
       "gap": "PARTIAL - cops_bake_textures exists (registry ~1323) but is a scaffold creating vopcop2gen placeholders (no bake, no files) and does NOT use bakegeometrytextures::2.0; recipe needs the runtime-resolved versioned name.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the enumeration never ran (trailing '-- inspect for :2.0 vs bare name' English broke the parse). 'bakegeometrytextures[::2.0]' is a versioned node-type name, not a table symbol; the exact '::' spelling can only be resolved by a live H22 node-type scan before wiring cops_bake_textures."
     },
     {
       "id": "COP-04",
@@ -232,7 +272,9 @@
       "relevance": "cops_reaction_diffusion must author the block pattern (reactiondiffusion_block_begin -> ... -> reactiondiffusion_block_end) per the Copernicus simulation-block paradigm; a single-node recipe will not cook.",
       "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if 'reactiondiffusion' in t.name()] -- expect both '..._block_begin' and '..._block_end'; also confirms the block idiom shared by pyro/flow/ripple sim blocks.",
       "gap": "PARTIAL - cops_reaction_diffusion exists but builds GENERIC block_begin/block_end + an opencl kernel (handlers_cops.py ~1118-1160), NOT the native reactiondiffusion_block_begin/end pair the doc describes.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the list-comp never executed (trailing '-- expect both ..._block_begin and ..._block_end' English broke the parse). reactiondiffusion_block_begin/end are node-type names (not table symbols); live enumeration of the COP category needed to confirm the block-pair idiom for cops_reaction_diffusion."
     },
     {
       "id": "COP-05",
@@ -243,7 +285,9 @@
       "relevance": "cops_slap_comp -- confirm the slapcompimport type name and that it pulls live layers from the Solaris viewport (COP<->Solaris seam); wrong type string breaks the slap-comp recipe.",
       "probe": "next((t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name()=='slapcompimport'), None) -- non-None confirms; then node.inputNames()/parms() to see how the viewport layer is selected.",
       "gap": "PARTIAL - cops_slap_comp exists (handlers ~714) but configures a viewport OVERLAY on an existing cop_path; does NOT instantiate the new slapcompimport node that imports live Solaris-viewport layers. Distinct mechanism.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the next(...) expression never ran (trailing '-- non-None confirms; then node.inputNames()/parms()' English broke the parse). Probe requires createNode('slapcompimport') + inputNames()/parms() read to see how the live Solaris-viewport layer is selected -> needs a real node interactively."
     },
     {
       "id": "COP-06",
@@ -254,7 +298,9 @@
       "relevance": "cops_to_materialx -- the concrete COP->USD/MaterialX bridge; verify the usdmaterial type name + parms to drive texture/material output back into a USD material rather than hand-writing shader prims.",
       "probe": "next((t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name()=='usdmaterial'), None); if present, [p.name() for p in node.parms()] to find the disk-reference/material-path parm.",
       "gap": "PARTIAL - cops_to_materialx exists (handlers ~469) but wires an op: path from COP output into a MaterialX shader input; does NOT use the usdmaterial COP node (disk-referenced USD material). Doc node is a distinct capability.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the inline 'next((...), None); if present, [p.name() ...]' is invalid Python (English 'if present,' + statement), so nothing executed. Requires createNode('usdmaterial') + parms() read to find the disk-reference/material-path parm -> live node needed."
     },
     {
       "id": "COP-07",
@@ -265,7 +311,9 @@
       "relevance": "cops_composite_aovs -- H22 Copernicus exposes native cryptomatte encode/decode + depth compositing; SYNAPSE's AOV recipe should build on these exact types rather than manual channel math.",
       "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name() in ('cryptomatte','cryptomattedecode','cryptomatteencode','zcomp')] -- all four should resolve; missing any => recipe uses a phantom.",
       "gap": "PARTIAL - cops_composite_aovs exists but merges via file + composite/over (handlers ~576-600), not native cryptomatte/decode/encode/zcomp; copernicus_compositing.md covers cryptomatte extraction conceptually only.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the list-comp never executed (trailing '-- all four should resolve; missing any => phantom' English broke the parse). cryptomatte/cryptomattedecode/cryptomatteencode/zcomp are node-type names, absent from the table by design; live COP-category enumeration required before building the AOV recipe."
     },
     {
       "id": "COP-08",
@@ -276,7 +324,9 @@
       "relevance": "cops_analyze_render / cops_batch_cook drive output through rop_image; cops_set_opencl targets 'opencl' -- confirm both type strings so batch cook + OpenCL recipes don't hit a phantom.",
       "probe": "[t.name() for cat in hou.nodeTypeCategories().values() for t in cat.nodeTypes() if t.name() in ('rop_image','opencl')] -- both should resolve in the Copernicus category; for rop_image also check for a render()/execute parm path via node.parms().",
       "gap": "PARTIAL - cops_set_opencl already targets 'opencl' (confirmed live, handlers ~1135/1239); cops_analyze_render (632)/cops_batch_cook (1771) exist but rop_image as output type is UNCONFIRMED in code -- verify the rop_image type string at runtime.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error 'SyntaxError: invalid syntax', empty stdout - the list-comp never executed (trailing '-- both should resolve ... check for a render()/execute parm via node.parms()' English broke the parse). rop_image/opencl are node-type names; probe also wants a node.parms() render-path read -> live node resolution required (note: cops_set_opencl already targets 'opencl' live per the gap note, but rop_image is unconfirmed here)."
     },
     {
       "id": "COP-09",
@@ -287,7 +337,9 @@
       "relevance": "SYNAPSE's COPs surface has no terrain/heightfield tool; H22 exposes a full GPU terrain workflow (creation, noise, erosion, strata, boulders, masking, colorizing) inside COP networks -- candidate cops_heightfield/cops_terrain.",
       "probe": "import hou; print([k for k in hou.nodeTypeCategories().keys()])  # confirm Copernicus category key (expect 'Cop'); then cat=hou.nodeTypeCategories().get('Cop'); print(sorted(nt.name() for nt in cat.nodeTypes() if any(s in nt.name().lower() for s in ('height','terrain','noise','erode','erosion'))))",
       "gap": "GAP - no cops_heightfield/cops_terrain tool in _tool_registry.py; terrain_heightfields.md is SOP-voxel-only and never mentions Copernicus/COP terrain. Whole GPU-COP-terrain workflow uncovered. (hou.node.createNode as-written is a notation artifact; real hou.Node.createNode PRESENT.)",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=exec RAN, but stdout captured only the first print: ['Chop','ChopNet','Cop','Cop2','CopNet',...] - confirming the modern 'Cop' (Copernicus) category exists. The second half (enumerating height/terrain/noise/erode COP node-type names) produced no output, so the core doc claim 'H22 exposes COP terrain nodes' is unconfirmed. Category presence != terrain-node presence. Re-run the second sorted(nt.name() ...) enumeration live against the 'Cop' category to settle it. (The 'no cops_heightfield tool in SYNAPSE' half is a repo fact, not contradicted.)"
     },
     {
       "id": "COP-10",
@@ -298,7 +350,9 @@
       "relevance": "New/named COP terrain operators (Strata, Boulders, Erosion, Slump, Terracing) SYNAPSE recipe-builders would target; docs give only display labels, so any recipe must resolve real type names at runtime -- #1 phantom-API risk.",
       "probe": "import hou; cat=hou.nodeTypeCategories().get('Cop'); print(sorted(nt.name() for nt in cat.nodeTypes() if any(s in nt.name().lower() for s in ('strata','boulder','erod','erosion','slump','terrac','height','terrain'))))  # only names that print exist; treat absent labels as phantom",
       "gap": "GAP - no tool or prose for COP terrain operators; doc gives display labels only. No concrete symbol to phantom-guard -- DOC-CLAIM pending runtime name resolution.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error \"AttributeError: 'str' object has no attribute 'name'\" - a probe bug: cat.nodeTypes() yields dict string-keys, so nt.name() fails. This is an execution bug, not a runtime denial; no verdict on Strata/Boulders/Erosion/Slump/Terracing COP operators was produced. Corrected live enumeration (iterate .nodeTypes().values() or test key membership on the 'Cop' category) is required; #1 phantom-API risk until then."
     },
     {
       "id": "COP-11",
@@ -309,7 +363,9 @@
       "relevance": "COP heightfields can be exported to SOP space (Convert HeightField SOP -> SOP Import LOP) -> a USD stage SYNAPSE already renders with Karma. Cross-domain COP->Solaris bridge spanning cops + houdini/solaris.",
       "probe": "import hou; sc=hou.sopNodeTypeCategory(); print('convertheightfield' in [n for n in sc.nodeTypes()]); lc=hou.lopNodeTypeCategory(); print('sopimport' in [n for n in lc.nodeTypes()]); print(sorted(n for n in sc.nodeTypes() if 'cop' in n.lower() or 'height' in n.lower()))",
       "gap": "PARTIAL - SOP-heightfield->USD/Solaris path IS covered (terrain_heightfields.md: sopimport terrain; houdini_ USD/Karma tools); the COP-HF origin leg (Convert HeightField SOP fed from a COP import) is not wired -- cross-domain bridge gap.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec RAN, stdout 'True\\nTrue\\n[... convertheightfield ... heightfield ... heightfield_erode ...]' - 'convertheightfield' in sopNodeTypeCategory = True and 'sopimport' in lopNodeTypeCategory = True. Symbol table confirms hou.sopNodeTypeCategory + hou.lopNodeTypeCategory both present. The COP-HF->Convert HeightField SOP->SOP Import LOP->USD bridge node types exist in H22. The finding's 'origin leg not wired in SYNAPSE' is a repo capability gap, not a runtime refutation."
     },
     {
       "id": "COP-12",
@@ -320,7 +376,9 @@
       "relevance": "New Copernicus terrain nodes live under a different category/network than legacy COP2. If cops_create_node/create_copnet target old 'Cop2'/'CopNet', they cannot reach H22 terrain nodes -- silent phantom-type breakage.",
       "probe": "import hou; print(sorted(hou.nodeTypeCategories().keys()))  # verify which key is the live Copernicus category ('Cop' vs legacy 'Cop2'/'CopNet'); then print(hasattr(hou,'copNodeTypeCategory'))",
       "gap": "COVERED - handlers_cops.py already distinguishes legacy vs modern (_LEGACY_COP_TYPES=('cop2net','vopcop2gen','copnet'); create_copnet targets modern 'copnet'; create_node passes type through). Both hou.copNodeTypeCategory + hou.cop2NodeTypeCategory present. Confirm live which key is Copernicus.",
-      "escalate": true
+      "escalate": true,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec RAN, stdout ['Chop','ChopNet','Cop','Cop2','CopNet',...] - modern Copernicus category 'Cop' is present and distinct from legacy 'Cop2'/'CopNet'. Symbol table confirms both hou.copNodeTypeCategory AND hou.cop2NodeTypeCategory present. API-migration claim holds: Copernicus lives under a distinct 'Cop' category vs legacy COP2. escalate=true resolved - 'Cop' is the live Copernicus key; create_copnet/create_node must target it, not 'Cop2'/'CopNet'."
     },
     {
       "id": "COP-13",
@@ -331,7 +389,9 @@
       "relevance": "Framing for houdini22-reference RAG so SYNAPSE never assumes COP heightfields == SOP heightfields: docs state COP HFs use 2D maps not voxel grids, are GPU-accelerated, and are NOT yet a replacement for the SOP approach (parity only a mid-term goal).",
       "probe": "import hou; cat=hou.nodeTypeCategories().get('Cop'); print([nt.name() for nt in cat.nodeTypes() if 'height' in nt.name().lower()])  # confirm COP-HF nodes exist; contrast against SOP heightfield voxel nodes to encode the 2D-map-vs-voxel distinction in corpus",
       "gap": "GAP - no corpus seed frames COP heightfields as image-based 2D maps (GPU, non-voxel, not-yet-at-SOP-parity); terrain_heightfields.md describes only SOP voxel heightfields. Needs houdini22-reference framing. No concrete symbol -- DOC-CLAIM.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NEEDS_LIVE_NODE",
+      "probe_evidence": "probe_run mode=error \"AttributeError: 'str' object has no attribute 'name'\" - same dict-key iteration bug as COP-10 (nt is a string, nt.name() fails). Ran but produced no verdict on whether COP heightfield (2D-map) nodes exist. Otherwise a corpus-framing DOC-CLAIM (COP HF as image-based 2D maps vs SOP voxel HF). A corrected live 'Cop'-category enumeration filtering for 'height' would settle the runtime half."
     },
     {
       "id": "HOM-01",
@@ -342,7 +402,9 @@
       "relevance": "Deterministic verb path for the ~20 cops_* recipe tools -- cook COP image ops standalone/undo-free without a live node graph (like SopVerb).",
       "probe": "python: 'CopVerb' in dir(hou) and hasattr(hou.CopNode,'verb') and hasattr(hou.CopNode,'hasVerb'); then n=hou.node('/img').createNode('copnet').createNode('null'); n.hasVerb(); type(n.verb()).__name__ == 'CopVerb' ",
       "gap": "GAP - all 8 symbols PRESENT in H22 table. ~20 cops_* tools exist (node-graph based) but NO verb/headless cook path; CopVerb + CopNode.verb()/hasVerb() are unused. Safe to implement.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "h22_symbol_table.json contains \"hou.CopVerb\" (+ .execute/.parms/.setParms/.loadParmsFromNode/.minNumInputs/.thisown), \"hou.CopNode.verb\", and \"hou.CopNode.hasVerb\" - all API symbols present; not a hou.lop/ui/qt/hipFile blind-spot. probe_run mode=error SyntaxError came from the malformed 'python:'+'then' prose string, NOT a runtime denial. The symbol-existence claim ('all 8 symbols present, CopVerb path safe to implement') is settled by the table. The tail behavioral check (a null COP node's hasVerb()/verb() returning a CopVerb instance) was never executed and would need a live node, but the API surface is confirmed present."
     },
     {
       "id": "HOM-02",
@@ -353,7 +415,9 @@
       "relevance": "How SYNAPSE must read COP output in H22 -- cops_read_layer_info/composite_aovs/analyze_render should pull CopNode.layer()/cable(). Old COP2 verbs absent AND SYNAPSE's current node.planes() reader is GONE in H22.",
       "probe": "python: assert hasattr(hou.CopNode,'layer') and hasattr(hou.CopNode,'cable') and hasattr(hou.CopNode,'inputCableStructure'); assert all(s in dir(hou) for s in ('CopCable','CopCableStructure','ImageLayer')); assert not hasattr(hou.CopNode,'saveImage') and not hasattr(hou.CopNode,'allImagePlanes') and not hasattr(hou.CopNode,'planes')",
       "gap": "PARTIAL/LIVE-BREAK - all 13 new symbols PRESENT. cops_read_layer_info/composite_aovs/analyze_render EXIST but read via node.planes() (handlers_cops.py:446,684). hou.CopNode.planes is ABSENT from H22's 301-method CopNode table => LIVE BREAK under H22; migrate to cable()/layer(). Old verbs saveImage/allImagePlanes/cookImage/imageLayers also absent (SYNAPSE never called them).",
-      "escalate": true
+      "escalate": true,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec, hint=VERIFIED, no error, empty stdout => every assert passed: hou.CopNode.layer/cable/inputCableStructure + hou.CopCable/CopCableStructure/ImageLayer present; hou.CopNode.saveImage/allImagePlanes/planes absent. Table corroborates (layer/cable/inputCableStructure/hasVerb/verb present; planes/saveImage not in table). Confirms the LIVE-BREAK: SYNAPSE's current node.planes() reader (handlers_cops.py:446,684) is GONE in H22 - migrate cops_read_layer_info/composite_aovs/analyze_render to CopNode.layer()/cable(). Finding VERIFIED (i.e., the migration is real and required)."
     },
     {
       "id": "HOM-03",
@@ -364,7 +428,9 @@
       "relevance": "Native programmatic recipe/preset substrate that could back synapse_list_recipes/propose_graph/instantiate_graph -- save/apply node-preset graphs + capture selected items as portable data.",
       "probe": "python: 'data' in dir(hou); d=dir(hou.data); assert all(f in d for f in ('saveNodePresetRecipe','applyNodePresetRecipe','itemsAsData','createItemsFromData','dataFromRecipe','dataFromParms'))",
       "gap": "GAP - all 10 symbols PRESENT (hou.data has 20 children fully introspected). synapse_list_recipes/propose_graph/instantiate_graph exist but use hand-built NodeManifest (shared/types.py); hou.data.* unreferenced anywhere in the repo.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec, hint=VERIFIED, no error => asserts passed: 'data' in dir(hou) and hou.data exposes saveNodePresetRecipe/applyNodePresetRecipe/itemsAsData/createItemsFromData/dataFromRecipe/dataFromParms. hou.data native recipe/preset substrate confirmed present in live runtime; safe to back synapse_list_recipes/propose_graph/instantiate_graph."
     },
     {
       "id": "HOM-04",
@@ -375,7 +441,9 @@
       "relevance": "Resolves open RFC D-3: SYNAPSE hand-rolls _safe_prim_name + evolution.py uses Tf.MakeValidIdentifier. Sanctioned single sanitizer for houdini_create_usd_prim / memory USD prim naming -- verify agreement before swap.",
       "probe": "python: assert hasattr(hou.lop,'makeValidPrimName') and hasattr(hou.lop,'makeValidPrimPath'); hou.lop.makeValidPrimName('my prim!23'); hou.lop.makeValidPrimPath('/A/b c', allow_relative=False)",
       "gap": "GAP - _safe_prim_name hand-rolled (agent_state.py:41) + evolution.py uses Tf.MakeValidIdentifier; open RFC D-3. NOT phantom: hou.lop 0-child coverage blind-spot (same class as hou.ui/hou.qt/hou.hipFile). Do NOT dismiss; runtime probe required before swap.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec, hint=VERIFIED, no error => asserts passed for hou.lop.makeValidPrimName and hou.lop.makeValidPrimPath (and the two calls raised nothing). hou.lop.* reads absent in the committed table (Tier C 0-child blind-spot, same class as hou.ui/qt/hipFile) but the LIVE probe RAN and passed - runtime is the authority, so VERIFIED not NEEDS_LIVE_NODE. Sanctioned single sanitizer for RFC D-3."
     },
     {
       "id": "HOM-05",
@@ -386,7 +454,9 @@
       "relevance": "Replaces hardcoded Karma/BRAY delegate ids with live-queried delegate metadata for houdini_render_settings / render engine selection.",
       "probe": "python: assert hasattr(hou.lop,'availableRendererNames'); hou.lop.availableRendererNames(); hou.lop.availableRendererLabels(); hou.lop.availableRendererInfo()",
       "gap": "GAP - no live delegate enumeration in repo; delegate ids reasoned about statically. NOT phantom: ABSENT is the hou.lop 0-child coverage blind-spot; probe live before wiring.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec, hint=VERIFIED, no error => assert hasattr(hou.lop,'availableRendererNames') passed and availableRendererNames/Labels/Info calls raised nothing. hou.lop.* table blind-spot resolved live -> present. Enables live delegate enumeration for houdini_render_settings."
     },
     {
       "id": "HOM-06",
@@ -397,7 +467,9 @@
       "relevance": "Native VOP-to-UsdShade authoring for houdini_create_material/create_textured_material/cops_to_materialx -- translateShader() writes a USD shader prim, shaderRenderContextName() gives the render context.",
       "probe": "python: assert all(hasattr(hou.lop,f) for f in ('translateShader','shaderTranslatorID','shaderRenderContextName','shaderNodeType')); # then on a VOP: hou.lop.shaderTranslatorID(vopnode)",
       "gap": "GAP - material handlers author shaders without translateShader; hou.lop.translateShader* unreferenced. NOT phantom: hou.lop coverage blind-spot; probe live.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec, hint=VERIFIED, no error => asserts passed for hou.lop.translateShader/shaderTranslatorID/shaderRenderContextName/shaderNodeType. hou.lop.* table blind-spot resolved live -> present. Native VOP->UsdShade authoring path confirmed."
     },
     {
       "id": "HOM-07",
@@ -408,7 +480,9 @@
       "relevance": "Cleaner alternative to R10's hand-rolled LopNetwork force-cook for viewport sync (reloadLayer); addLockedGeometry stages in-memory hou.Geometry as a USD layer without disk round-trips.",
       "probe": "python: assert all(hasattr(hou.lop,f) for f in ('reloadLayer','forceReloadAllFilesFromDisk','addLockedGeometry','removeLockedGeometry','mutingIdentifier'))",
       "gap": "GAP - R10 hand-rolls LopNetwork force-cook (evolution.py); these APIs unreferenced. NOT phantom: hou.lop coverage blind-spot; probe live.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec, hint=VERIFIED, no error => asserts passed for hou.lop.reloadLayer/forceReloadAllFilesFromDisk/addLockedGeometry/removeLockedGeometry/mutingIdentifier. hou.lop.* table blind-spot resolved live -> present. Cleaner replacement for R10's hand-rolled LopNetwork force-cook."
     },
     {
       "id": "HOM-08",
@@ -419,7 +493,9 @@
       "relevance": "Automates the Edit Properties workflow for houdini_modify_usd_prim/set_usd_attribute -- build ParmTemplateGroups from a USD property and push values back.",
       "probe": "python: assert hasattr(hou.lop,'createParmsForProperty') and hasattr(hou.lop,'setParmTupleFromProperty') and hasattr(hou.lop,'createConnectionParmsForProperty')",
       "gap": "GAP - houdini_modify_usd_prim/set_usd_attribute don't build parms from USD properties; unreferenced. NOT phantom: hou.lop coverage blind-spot; probe live.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec, hint=VERIFIED, no error => asserts passed for hou.lop.createParmsForProperty/setParmTupleFromProperty/createConnectionParmsForProperty. hou.lop.* table blind-spot resolved live -> present. Automates the Edit Properties workflow for houdini_modify_usd_prim/set_usd_attribute."
     },
     {
       "id": "HOM-09",
@@ -430,7 +506,9 @@
       "relevance": "Cached/locked-stage + viewport-override handles relevant to stage-read pain (editableStage() None outside a cook) and viewport-capture set-dressing.",
       "probe": "python: [s for s in ('LopLockedStage','LopViewportOverrides','LopPostLayer','LopViewportLoadMasks','LopViewportOverridesLayer') if s in dir(hou)]; then dir(hou.LopLockedStage)",
       "gap": "GAP - 4/5 concrete classes PRESENT (LopLockedStage, LopViewportOverrides, LopPostLayer, LopViewportLoadMasks); none wired. 5th 'hou.LopViewportOverridesLayer' (capital L) is ABSENT -- case-typo; real symbol is lowercase hou.lopViewportOverridesLayer (enum, PRESENT). Concept verified.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "h22_symbol_table.json contains hou.LopLockedStage, hou.LopViewportOverrides, hou.LopPostLayer, hou.LopViewportLoadMasks, and hou.lopViewportOverridesLayer (lowercase enum); the capital-L 'hou.LopViewportOverridesLayer' is absent. probe_run mode=error SyntaxError was the malformed 'python:'+'then' string, not a denial. Table settles it exactly as the gap note claims: 4/5 concrete classes present, the 5th is a case-typo (real symbol is the lowercase lopViewportOverridesLayer enum, present). Concept VERIFIED; wire the correctly-cased names."
     },
     {
       "id": "HOM-10",
@@ -441,7 +519,9 @@
       "relevance": "Reference prose for the embedded-browser control surface: HTML drives hou via a window.Python object (QWebChannel). Documents async-callback model, qwebchannel.js dependency, hard caveats (hou NOT auto-imported; NO error handling -- exceptions silently return empty-string/0).",
       "probe": "import os, hou; print(os.path.isfile(os.path.join(hou.expandString('$HHP'), 'bookish', 'static', 'js', 'qwebchannel.js')))  # window.Python is only inspectable from the embedded browser's JS console (typeof window.Python), NOT from hou",
       "gap": "GAP - no browser JS bridge in repo; corpus has ZERO window.Python/QWebChannel/browserpython coverage. window.Python.*/QWebChannel/qt.webChannelTransport are JS/browser-side, not hou symbols. hou.hipFile.save shows ABSENT but that's the hou.hipFile 0-child coverage gap (real API), NOT phantom. Prose/corpus-seed finding.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NOT_RUNNABLE",
+      "probe_evidence": "probe_run.runnable=false, reason='js/qt surface (not a hython probe)'. window.Python/QWebChannel/qt.webChannelTransport are browser-JS, inspectable only from the embedded browser console. Corpus-seed/prose finding. The hou.hipFile.save the finding cites reads absent only because of the hou.hipFile 0-child blind-spot (real API), NOT phantom - but there is no hython verdict to render here regardless."
     },
     {
       "id": "HOM-11",
@@ -452,7 +532,9 @@
       "relevance": "houdini_hda_set_help authors HDA help pages that render in the embedded browser; those pages could expose live controls triggering Python (SYNAPSE MCP actions) via window.Python.runStatements. SECURITY: any such call bypasses the bridge/gate audit layer -- raw statements, no consent gating.",
       "probe": "JS-side: load a page in Houdini's embedded browser, eval `typeof window.Python !== 'undefined'` in its console. hou-side: import hou; hasattr(hou, 'qt') and open an HDA help page to see whether the embedded browser injects the bridge.",
       "gap": "GAP - houdini_hda_set_help EXISTS (registry:979, handlers_hda.py:246) as the help-render path, but the window.Python control surface is NOT wired; corpus has no coverage. hou.hipFile.save ABSENT = hou.hipFile 0-child coverage gap (real API), NOT phantom; window.Python.runStatements is JS, not a hou symbol.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "NOT_RUNNABLE",
+      "probe_evidence": "probe_run.runnable=false, reason='js/qt surface (not a hython probe)'. window.Python.runStatements is a JS symbol; the probe is a JS-console/embedded-browser instruction. houdini_hda_set_help exists (registry:979) but the window.Python control surface is a browser-JS capability with no hython probe. SECURITY note in finding stands (raw runStatements bypasses the bridge/gate audit) but is not runtime-adjudicable."
     },
     {
       "id": "HOM-12",
@@ -463,7 +545,9 @@
       "relevance": "Two doc-staleness landmines: (1) the runStatements print-Hello example is Python-2 syntax -- a hard SyntaxError under H22's Python 3.14, silently swallowed by the bridge. (2) Prose calls the async model a 'Qt5' change; H22 ships Qt6/PySide6, so QWebChannel bridge semantics need re-verification against the Qt6 binding.",
       "probe": "import PySide6; print(PySide6.__version__)  # confirms H22 Qt6/PySide6 binding; do NOT trust the doc's Qt5/Python-2 claims",
       "gap": "GAP - doc-hygiene flag. No hou/pxr/pdg symbols cited (QWebChannel/window.Python/PySide6/PySide2 are JS/Qt) -> DOC-CLAIM per rule. Corpus has no window.Python/QWebChannel entries yet, so no stale claim to correct -- but any future seed must use Py3.14 syntax + Qt6/PySide6, never the doc's Python-2 print / Qt5 assertions.",
-      "escalate": false
+      "escalate": false,
+      "probe_verdict": "VERIFIED",
+      "probe_evidence": "probe_run mode=exec, hint=RAN, stdout='6.8.3\\n' => import PySide6; print(PySide6.__version__) yielded 6.8.3. Runtime confirms H22 ships PySide6 6.8.3 (Qt6), refuting the doc's stale Qt5/Python-2 assumptions. Doc-hygiene finding is correct: any future corpus seed must use Py3.14 + Qt6/PySide6."
     }
   ]
 }
