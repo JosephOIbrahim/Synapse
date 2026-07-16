@@ -132,8 +132,155 @@
         "harness/state/leg0_baselines.json",
         "harness/notes/spec-U1-wiring-flywheel.md"
       ],
+      "ratified": true,
+      "note": "Drop-week runbook step 4 output (blueprint §9.4), executed 2026-07-16 under GATE VERDICT: ALLOW (MODE B). Left side hash-verified against leg0_baselines.json (7d57c1a7…, match). Probe reused unmodified under H22.0.368 hython; 288 types / 269 instantiated / 0 probe errors; determinism pin holds (byte-identical re-run). Churn: +9 / -3 / 3 changed. HEADLINES for the ratifier: (1) Cop/light wiring surface 3→8 inputs — 'N'→'normal' rename, 'mask' index 2→7: live miswire class on H22; (2) SYNAPSE-emitted LOP spellings 'instancer' + 'layout' NO LONGER RESOLVE in H22 Solaris (createNode will fail); (3) Copernicus gained emitted-surface types (heightfield_erode, oceanspectrum, oceanevaluate, camera) — SOPs→COPs migration confirmed; (4) golden seeds (vellumsolver, rbdbulletsolver) unchanged. ML/ONNX + splat churn is structurally out of this sweep's scope (not on the emitted surface) — belongs to runbook step 9. If ratified, SCAFFOLD = regen packaged catalog as connectivity_22.json (scout per-major pattern) + re-run scripts/flywheel_review_wiring.py against it + fix the Cop/light + LOP-emit sites it flags. Sop/apex::* diff rows are probe-truth records only — rigging scope stays structurally REFUSED (§6.1). | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
+    },
+    {
+      "id": "W.1-H22-planes",
+      "title": "SB-1: migrate handlers_cops.py:446,684 off removed CopNode.planes() to cable()/layer()/CopCable/ImageLayer + fix corpus copernicus_python_api.md:315 (code/corpus both). Must merge before or with wave cops-1 (PORT-FREEZE).",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md",
+        "harness/notes/h22_doc_candidates_wave2.json",
+        "docs/reviews/h22-cop-audit-verification.md"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
+    },
+    {
+      "id": "W.4-H22-solverblocks",
+      "title": "SB-3: re-author COP solver-block class (create_solver/growth_propagation/reaction_diffusion/wetmap + stylize levels) — block_end lost method/blocktype/blockpath; limit→clamp; quantize levels absent. Fix shape decided by N-4 live-bridge behavioral probe. Before cops-1/cops-2 golden capture.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md",
+        "docs/reviews/h22-cop-audit-verification.md"
+      ],
+      "ratified": true,
+      "note": "BLOCKED_ON: N-4 PENDING-BEHAVIORAL probe (live bridge) | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
+    },
+    {
+      "id": "W.5-H22-karmarels",
+      "title": "SB-4: relationship-aware get/set_usd_attribute (karma/husk schemas migrated strings→relationships; handlers_usd.py:365/413 attribute-only). Scoped by N-3 identification probe. Before usd-1 golden capture.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md",
+        "harness/notes/h22_doc_candidates_wave2.json"
+      ],
+      "ratified": true,
+      "note": "BLOCKED_ON: N-3 identification probe (hython, runs 2026-07-16) | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
+    },
+    {
+      "id": "W.6-H22-corpusreseed",
+      "title": "Stale-corpus purge (houdini22-reference reseed): ACES 1.3 config (KAR-13, actively wrong), husk single-frame default framing (KAR-01), Pixel Filter Size recipe (KAR-02), planes() COP recipe (rides W.1). Probes N-7/N-9/N-10 sharpen seeds first.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md",
+        "harness/notes/h22_doc_candidates_wave2.json"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
+    },
+    {
+      "id": "W.3-H22-setdressing",
+      "title": "SB-5: instancer→pointinstancer rename + layout-successor repair, ALL emitting sites in one cycle (solaris_graph_templates.py:393, handlers_solaris_assemble.py:54,69, scene_recipes.py, test_setdressing_recipe.py, palette filters) + live create+cook test. Do NOT half-fix.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md",
+        "harness/notes/verified_connectivity_H22.json",
+        "docs/reviews/h22-drop-execution-2026-07-15.md"
+      ],
+      "ratified": true,
+      "note": "BLOCKED_ON: human gate 2: layout-successor ruling (N-5 catalog probe feeds it, runs 2026-07-16) | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
+    },
+    {
+      "id": "C.1-H22-imagelayer-stats",
+      "title": "NWS-04 hou.ImageLayer real pixel stats in cops_analyze_render (sequence with W.1 — same file)",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
       "ratified": false,
-      "note": "Drop-week runbook step 4 output (blueprint §9.4), executed 2026-07-16 under GATE VERDICT: ALLOW (MODE B). Left side hash-verified against leg0_baselines.json (7d57c1a7…, match). Probe reused unmodified under H22.0.368 hython; 288 types / 269 instantiated / 0 probe errors; determinism pin holds (byte-identical re-run). Churn: +9 / -3 / 3 changed. HEADLINES for the ratifier: (1) Cop/light wiring surface 3→8 inputs — 'N'→'normal' rename, 'mask' index 2→7: live miswire class on H22; (2) SYNAPSE-emitted LOP spellings 'instancer' + 'layout' NO LONGER RESOLVE in H22 Solaris (createNode will fail); (3) Copernicus gained emitted-surface types (heightfield_erode, oceanspectrum, oceanevaluate, camera) — SOPs→COPs migration confirmed; (4) golden seeds (vellumsolver, rbdbulletsolver) unchanged. ML/ONNX + splat churn is structurally out of this sweep's scope (not on the emitted surface) — belongs to runbook step 9. If ratified, SCAFFOLD = regen packaged catalog as connectivity_22.json (scout per-major pattern) + re-run scripts/flywheel_review_wiring.py against it + fix the Cop/light + LOP-emit sites it flags. Sop/apex::* diff rows are probe-truth records only — rigging scope stays structurally REFUSED (§6.1)."
+      "note": "deposited unratified (CTO hold: features wait — receipts first)"
+    },
+    {
+      "id": "C.2-H22-pxr-authoring",
+      "title": "SOL-04 reversible pxr-authoring tool (pythonscript LOP + editableStage), consent-gated USD authoring",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "deposited unratified (CTO hold: features wait — receipts first)"
+    },
+    {
+      "id": "C.3-H22-neural-cops",
+      "title": "COP-01 neural COP tools (SAM2 mask / MoGe-2 depth) WITH COP-02 model/GPU preflight honesty",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "deposited unratified (CTO hold: features wait — receipts first)"
+    },
+    {
+      "id": "C.4-H22-scaffold-rebuild",
+      "title": "COP scaffold rebuild cluster (procedural_texture/stamp_scatter/bake_textures/stylize) on modern Cop surface",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "deposited unratified (CTO hold: features wait — receipts first)"
+    },
+    {
+      "id": "C.5-H22-pdg-telemetry",
+      "title": "TOPS-02/05 per-work-item perception telemetry (percent/output-file/state events + supportedEventTypes gate)",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "deposited unratified (CTO hold: features wait — receipts first)"
+    },
+    {
+      "id": "C.6-H22-pdg-services",
+      "title": "TOPS-08 tops_manage_service: PDG Services warm-session lifecycle (pdg.ServiceManager) vs the ~2s cook floor",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "deposited unratified (CTO hold: features wait — receipts first)"
+    },
+    {
+      "id": "C.7-H22-prune-lop",
+      "title": "SOL-02 Prune-LOP tool: reversible-by-construction prim deactivation",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "deposited unratified (CTO hold: features wait — receipts first)"
+    },
+    {
+      "id": "C.8-H22-husk-resume",
+      "title": "KAR-05 husk resume controls (--skip-existing-frames etc.) into render_sequence/progressively",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "deposited unratified (CTO hold: features wait — receipts first)"
+    },
+    {
+      "id": "C.9-H22-renderpass",
+      "title": "KAR-04 UsdRender.Pass prims + husk --pass multi-pass rendering",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "deposited unratified (CTO hold: features wait — receipts first)"
     }
   ]
 }

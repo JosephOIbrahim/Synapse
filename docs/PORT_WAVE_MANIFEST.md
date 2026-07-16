@@ -12,6 +12,12 @@
 
 ## OPEN DECISIONS (human rules; the rest of this manifest is complete either way)
 
+> **RULED 2026-07-16** — human (Joe): "Gates are approved for Flip!" (/harness-architect close-the-loop);
+> the manifest's own recommendations adopted, recorded by Claude as instrument:
+> **OD-1 = (b)** sub-waves (scene-1…memory-2; `h22-port-wave` whenToUse updated — the wave arg was never
+> code-enforced, the gatewarden validates against this manifest) · **OD-2 = (a)** wrap, the WS handler stays
+> the execution primitive · **OD-3 = (b)** pass-through cognitive tools that keep the WS round-trip.
+
 **OD-1 — Wave granularity vs. the workflow's `wave` arg (naming + workflow scope).**
 The `h22-port-wave` workflow accepts `wave` ∈ {scene, usd, render, tops, cops, memory} and does **one forge dispatch + one atomic commit per family** (`.claude/workflows/h22-port-wave.js:8`, forge instruction ":24-29" — "one atomic commit in the worktree"). But the brief targets **10–15 tools per wave**, and five of six families exceed 15 (scene 22, usd 20, tops 18, cops 21, memory 21 — derived below). Options:
 - **(a) Family-sized waves.** Accept up to 22 tools in one commit; treat the ≤15 batches below as review checkpoints only. Zero workflow change. Cost: a 22-tool diff is hard to red-team in one crucible pass.

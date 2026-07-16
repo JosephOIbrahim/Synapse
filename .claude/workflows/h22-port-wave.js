@@ -1,7 +1,7 @@
 export const meta = {
   name: 'h22-port-wave',
   description: 'G1: one port wave — gatewarden admission → forge implements in a worktree → assayer probes changed symbols → crucible hostile pass → merge-ready report (merge itself is human)',
-  whenToUse: 'MODE B only (drop.json exists) and docs/PORT_WAVE_MANIFEST.md is merged. args: { wave: "scene"|"usd"|"render"|"tops"|"cops"|"memory" }.',
+  whenToUse: 'MODE B only (drop.json exists) and docs/PORT_WAVE_MANIFEST.md is merged. args: { wave: "scene-1"|"scene-2"|"usd-1"|"usd-2"|"render"|"tops-1"|"tops-2"|"cops-1"|"cops-2"|"memory-1"|"memory-2" } (OD-1(b) sub-waves, ruled 2026-07-16; family names remain valid per OD-1(a) fallback).',
   phases: [{ title: 'Gate' }, { title: 'Build' }, { title: 'Assay' }, { title: 'Attack' }],
 }
 
