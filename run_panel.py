@@ -90,6 +90,16 @@ class _Hou:
     def selectedNodes():
         return list(_Hou._selected)
 
+    @staticmethod
+    def isUIAvailable():
+        # Faithful to real headless hou: False. Under hython, hdefereval's
+        # top-level `if not hou.isUIAvailable(): raise ImportError` (H22.0.368
+        # python3.13libs/hdefereval.py:240; same in H21.0.773) then raises
+        # ImportError — which the shared/bridge.py import guard catches — not
+        # an AttributeError that escapes it. Without this the panel cannot
+        # boot under hython at all (G1 smoke, H22 drop-week step 6 finding).
+        return False
+
 
 sys.modules["hou"] = _Hou
 

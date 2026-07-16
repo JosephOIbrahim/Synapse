@@ -120,6 +120,20 @@
       ],
       "ratified": true,
       "note": "NEW cycle CLASS — DIAGNOSTIC truth (what the scene observably DOES when poked: dirty-propagation, recook triggers, time-dependence, callback runtime errors), a different axis from WIRING (U.1-U.4), CONTEXT (U.5), CAPABILITY (C.0), READINESS (S.0). Sourced from the ODFORCE scour's two CROWN findings (cook-graph explainer, callback debugger) — the only scour candidates whose moat is impossible without in-process truth. Phantom-first: every candidate hou.* symbol is UNVERIFIED until the §1 probe confirms it; absences auto-quarantine. TOPs dirty/cook surface is shipped and untouched (tops_path_untouched guard). Scope-safe under the declared allowlist AND under a future procedural-only narrowing — the track only reads and reverts. Queued per the anti-runaway anchor for the same human sign-off U.5 received."
+    },
+    {
+      "id": "U.1-H22",
+      "title": "Network-wiring truth, H22 re-run: 22.0.368 connectivity catalog diffed vs the frozen 21.0.671 left side (drop-week runbook step 4)",
+      "status": "candidate",
+      "evidence": [
+        "harness/notes/verified_connectivity_H22.json",
+        "harness/notes/verified_connectivity_22.0.368.json",
+        "harness/notes/verified_connectivity_21.0.671.json",
+        "harness/state/leg0_baselines.json",
+        "harness/notes/spec-U1-wiring-flywheel.md"
+      ],
+      "ratified": false,
+      "note": "Drop-week runbook step 4 output (blueprint §9.4), executed 2026-07-16 under GATE VERDICT: ALLOW (MODE B). Left side hash-verified against leg0_baselines.json (7d57c1a7…, match). Probe reused unmodified under H22.0.368 hython; 288 types / 269 instantiated / 0 probe errors; determinism pin holds (byte-identical re-run). Churn: +9 / -3 / 3 changed. HEADLINES for the ratifier: (1) Cop/light wiring surface 3→8 inputs — 'N'→'normal' rename, 'mask' index 2→7: live miswire class on H22; (2) SYNAPSE-emitted LOP spellings 'instancer' + 'layout' NO LONGER RESOLVE in H22 Solaris (createNode will fail); (3) Copernicus gained emitted-surface types (heightfield_erode, oceanspectrum, oceanevaluate, camera) — SOPs→COPs migration confirmed; (4) golden seeds (vellumsolver, rbdbulletsolver) unchanged. ML/ONNX + splat churn is structurally out of this sweep's scope (not on the emitted surface) — belongs to runbook step 9. If ratified, SCAFFOLD = regen packaged catalog as connectivity_22.json (scout per-major pattern) + re-run scripts/flywheel_review_wiring.py against it + fix the Cop/light + LOP-emit sites it flags. Sop/apex::* diff rows are probe-truth records only — rigging scope stays structurally REFUSED (§6.1)."
     }
   ]
 }
