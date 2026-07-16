@@ -138,14 +138,14 @@
     {
       "id": "W.1-H22-planes",
       "title": "SB-1: migrate handlers_cops.py:446,684 off removed CopNode.planes() to cable()/layer()/CopCable/ImageLayer + fix corpus copernicus_python_api.md:315 (code/corpus both). Must merge before or with wave cops-1 (PORT-FREEZE).",
-      "status": "candidate",
+      "status": "merged",
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md",
         "harness/notes/h22_doc_candidates_wave2.json",
         "docs/reviews/h22-cop-audit-verification.md"
       ],
       "ratified": true,
-      "note": "RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
+      "note": "RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument | MERGED to master 2026-07-16 (commit 3cae9bd, human-directed); suite 4285/0/87 re-verified post-merge."
     },
     {
       "id": "W.4-H22-solverblocks",
