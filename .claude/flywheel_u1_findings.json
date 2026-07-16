@@ -18,7 +18,7 @@
  "findings": [
   {
    "file": "python/synapse/core/wiring.py",
-   "line": 163,
+   "line": 212,
    "call": "setInput",
    "receiver": "node",
    "receiver_type": null,
@@ -31,7 +31,7 @@
   },
   {
    "file": "python/synapse/core/wiring.py",
-   "line": 166,
+   "line": 215,
    "call": "setInput",
    "receiver": "node",
    "receiver_type": null,
@@ -1579,7 +1579,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/scene_recipes.py",
-   "line": 392,
+   "line": 400,
    "call": "setInput",
    "receiver": "noise",
    "receiver_type": "heightfield_noise",
@@ -1595,7 +1595,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/scene_recipes.py",
-   "line": 397,
+   "line": 405,
    "call": "setInput",
    "receiver": "erode",
    "receiver_type": "heightfield_erode",
@@ -1613,7 +1613,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/scene_recipes.py",
-   "line": 400,
+   "line": 408,
    "call": "setInput",
    "receiver": "out",
    "receiver_type": "null",
@@ -1638,7 +1638,7 @@
   },
   {
    "file": "python/synapse/routing/recipes/scene_recipes.py",
-   "line": 593,
+   "line": 601,
    "call": "setInput",
    "receiver": "wrangle",
    "receiver_type": "attribwrangle",
@@ -1720,7 +1720,7 @@
   },
   {
    "file": "python/synapse/server/handlers.py",
-   "line": 1187,
+   "line": 1229,
    "call": "setInput",
    "receiver": "wrangle",
    "receiver_type": "attribwrangle",
@@ -1737,7 +1737,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 330,
+   "line": 483,
    "call": "setInput",
    "receiver": "target",
    "receiver_type": null,
@@ -1750,7 +1750,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 605,
+   "line": 808,
    "call": "setInput",
    "receiver": "merge_node",
    "receiver_type": "over",
@@ -1766,7 +1766,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 825,
+   "line": 1052,
    "call": "setInput",
    "receiver": "block_end",
    "receiver_type": "block_end",
@@ -1784,7 +1784,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1020,
+   "line": 1247,
    "call": "setInput",
    "receiver": "dilate",
    "receiver_type": "dilateerode",
@@ -1801,7 +1801,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1027,
+   "line": 1254,
    "call": "setInput",
    "receiver": "blur",
    "receiver_type": "blur",
@@ -1819,7 +1819,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1033,
+   "line": 1260,
    "call": "setInput",
    "receiver": "thresh",
    "receiver_type": "limit",
@@ -1836,7 +1836,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1040,
+   "line": 1267,
    "call": "setInput",
    "receiver": "block_end",
    "receiver_type": "block_end",
@@ -1854,7 +1854,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1046,
+   "line": 1273,
    "call": "setInput",
    "receiver": "block_begin",
    "receiver_type": "block_begin",
@@ -1872,7 +1872,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1142,
+   "line": 1369,
    "call": "setInput",
    "receiver": "opencl_node",
    "receiver_type": "vopcop2gen",
@@ -1888,7 +1888,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1161,
+   "line": 1388,
    "call": "setInput",
    "receiver": "block_end",
    "receiver_type": "block_end",
@@ -1906,7 +1906,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1249,
+   "line": 1476,
    "call": "setInput",
    "receiver": "sort_node",
    "receiver_type": "vopcop2gen",
@@ -1922,7 +1922,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1365,
+   "line": 1592,
    "call": "setInput",
    "receiver": "halftone",
    "receiver_type": "vopcop2gen",
@@ -1938,7 +1938,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1384,
+   "line": 1611,
    "call": "setInput",
    "receiver": "first_node",
    "receiver_type": null,
@@ -1951,7 +1951,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1479,
+   "line": 1706,
    "call": "setInput",
    "receiver": "blur_node",
    "receiver_type": "blur",
@@ -1969,7 +1969,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1494,
+   "line": 1721,
    "call": "setInput",
    "receiver": "decay_node",
    "receiver_type": "colorcorrect",
@@ -1986,7 +1986,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1497,
+   "line": 1724,
    "call": "setInput",
    "receiver": "block_end",
    "receiver_type": "block_end",
@@ -2004,7 +2004,7 @@
   },
   {
    "file": "python/synapse/server/handlers_cops.py",
-   "line": 1743,
+   "line": 1970,
    "call": "setInput",
    "receiver": "scatter_node",
    "receiver_type": null,
@@ -2125,7 +2125,7 @@
   },
   {
    "file": "python/synapse/server/handlers_solaris_assemble.py",
-   "line": 357,
+   "line": 364,
    "call": "setInput",
    "receiver": "node",
    "receiver_type": null,
@@ -2193,7 +2193,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 405,
+   "line": 432,
    "call": "setInput",
    "receiver": "py_lop",
    "receiver_type": "pythonscript",
@@ -2211,7 +2211,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 501,
+   "line": 546,
    "call": "setInput",
    "receiver": "py_lop",
    "receiver_type": "pythonscript",
@@ -2229,7 +2229,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 582,
+   "line": 627,
    "call": "setInput",
    "receiver": "py_lop",
    "receiver_type": "pythonscript",
@@ -2247,7 +2247,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 655,
+   "line": 700,
    "call": "setInput",
    "receiver": "py_lop",
    "receiver_type": "pythonscript",
@@ -2265,7 +2265,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 794,
+   "line": 839,
    "call": "setInput",
    "receiver": "node",
    "receiver_type": "reference",
@@ -2283,7 +2283,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 824,
+   "line": 869,
    "call": "setInput",
    "receiver": "kv_lop",
    "receiver_type": null,
@@ -2296,7 +2296,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 1059,
+   "line": 1104,
    "call": "setInput",
    "receiver": "py_lop",
    "receiver_type": "pythonscript",
@@ -2314,7 +2314,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 1111,
+   "line": 1156,
    "call": "setInput",
    "receiver": "py_lop",
    "receiver_type": "pythonscript",
@@ -2332,7 +2332,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 1257,
+   "line": 1302,
    "call": "setInput",
    "receiver": "py_lop",
    "receiver_type": "pythonscript",
@@ -2350,7 +2350,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 1334,
+   "line": 1379,
    "call": "setInput",
    "receiver": "py_lop",
    "receiver_type": "pythonscript",
@@ -2368,7 +2368,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 1442,
+   "line": 1487,
    "call": "setInput",
    "receiver": "py_lop",
    "receiver_type": "pythonscript",
@@ -2386,7 +2386,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 1757,
+   "line": 1802,
    "call": "setInput",
    "receiver": "py_lop",
    "receiver_type": "pythonscript",
@@ -2404,7 +2404,7 @@
   },
   {
    "file": "python/synapse/server/handlers_usd.py",
-   "line": 1848,
+   "line": 1893,
    "call": "setInput",
    "receiver": "py_lop",
    "receiver_type": "pythonscript",

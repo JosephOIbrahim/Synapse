@@ -6,8 +6,8 @@ Catalog: `harness/notes/verified_connectivity_21.0.671.json` (build 21.0.671, bl
 
 ## INFO (141)
 
-- `python/synapse/core/wiring.py:163` **unresolved-receiver** `node.setInput(index, ...)` type=None — receiver's node type not lexically resolvable (runtime object)
-- `python/synapse/core/wiring.py:166` **unresolved-receiver** `node.setInput(resolved, ...)` type=None — receiver's node type not lexically resolvable (runtime object)
+- `python/synapse/core/wiring.py:212` **unresolved-receiver** `node.setInput(index, ...)` type=None — receiver's node type not lexically resolvable (runtime object)
+- `python/synapse/core/wiring.py:215` **unresolved-receiver** `node.setInput(resolved, ...)` type=None — receiver's node type not lexically resolvable (runtime object)
 - `python/synapse/host/graph_builder.py:157` **unresolved-receiver** `tgt.setInput(e.target_input_index, ...)` type=None — receiver's node type not lexically resolvable (runtime object)
 - `python/synapse/panel/system_prompt.py:107` **unresolved-receiver** `node.setInput(0, ...)` type=None — receiver's node type not lexically resolvable (runtime object)
 - `python/synapse/panel/system_prompt.py:143` **unresolved-receiver** `new_node.setInput(0, ...)` type=None — receiver's node type not lexically resolvable (runtime object)

@@ -8,16 +8,24 @@ through ``node.setInput`` — so the code names the *intent* and the catalog
 supplies the index.
 
 The catalog is the packaged copy of the U.1 probe output
-(``python/synapse/cognitive/tools/data/connectivity_21.json`` — the scout
+(``python/synapse/cognitive/tools/data/connectivity_<major>.json`` — the scout
 symbol-table pattern: per-major committed authority, blake2b-stamped,
-byte-identical to ``harness/notes/verified_connectivity_21.0.671.json``).
+byte-identical to ``harness/notes/verified_connectivity_<build>.json``).
+Resolution is keyed on the RUNNING Houdini major (U.1-H22 fold, the validator
+half of W.3): ``hou`` importable -> ``connectivity_<major>.json``; standalone
+(stock python / CI) -> the H21 default, preserving the test-world truth. A
+missing per-major catalog FAILS LOUD — never a silent cross-major fallback,
+because a wrong-major catalog is exactly the miswire class this module exists
+to kill (H22 renamed the set-dressing LOPs and moved Cop/light's inputs).
 
 Fail-loud by design (``ScoutError``-style): an unknown type or label raises
 ``WiringError`` — never a silent index guess. Index fallback exists ONLY via
 the explicit ``allow_index=True`` escape hatch.
 
-Zero ``hou`` import — the node/source arguments are duck-typed (live
-``hou.Node`` in production, fakes in tests), so this module is pure Python.
+Zero ``hou`` import at module scope — the node/source arguments are duck-typed
+(live ``hou.Node`` in production, fakes in tests). The major resolver does a
+guarded LOCAL ``hou`` import (the doctor.py pattern), so importing this module
+stays pure Python.
 """
 
 from __future__ import annotations
@@ -31,7 +39,9 @@ from typing import Optional
 CATALOG_SCHEMA = "verified_connectivity/v2"
 
 # Committed package authority — travels to CI / headless / hython where the
-# harness notes may be absent. Per-major naming like h21_symbol_table.json.
+# harness notes may be absent. Per-major naming like h21_symbol_table.json;
+# _PKG_CATALOG is the STANDALONE default (no hou -> the H21 test-world truth),
+# the running-major file is resolved by _pkg_catalog_path().
 _PKG_CATALOG = (Path(__file__).resolve().parents[1] / "cognitive" / "tools"
                 / "data" / "connectivity_21.json")
 
@@ -53,14 +63,44 @@ def _strip_version(full_name: str) -> str:
     return full_name
 
 
+def _running_houdini_major() -> Optional[int]:
+    """The RUNNING Houdini major via ``hou.applicationVersion()[0]`` — the
+    scout/doctor ``h<major>_symbol_table.json`` selection pattern. Guarded
+    LOCAL import: the module stays zero-``hou`` at import time; standalone
+    (stock python / CI) returns ``None``. Anything non-int (test fakes,
+    residency-leaked MagicMocks) reads as unknown — never a guessed major."""
+    try:
+        import hou  # local + guarded on purpose (doctor.py pattern)
+        major = hou.applicationVersion()[0]
+    except Exception:
+        return None
+    return major if isinstance(major, int) else None
+
+
+def _pkg_catalog_path() -> Path:
+    """Per-major committed authority: ``connectivity_<major>.json`` for the
+    RUNNING major; no major known (standalone/tests) -> the H21 default,
+    preserving the test-world truth. NO existence check and NO cross-major
+    fallback here — a wrong-major catalog is the miswire class itself, so a
+    missing per-major file must fail in the loader, loudly."""
+    major = _running_houdini_major()
+    if major is None:
+        return _PKG_CATALOG
+    return _PKG_CATALOG.with_name(f"connectivity_{major}.json")
+
+
 def load_connectivity_catalog(path: Optional[Path] = None, *,
                               strict: bool = True) -> Optional[dict]:
     """Load + integrity-check the packaged catalog. ``strict=True`` raises
     :class:`WiringError` on any problem (the wire-time posture: a mutation
     must not proceed on a missing/corrupt catalog); ``strict=False`` returns
     ``None`` (the validator posture: no catalog -> the additive check skips,
-    the oracle-backed checks still run)."""
-    fp = Path(path) if path is not None else _PKG_CATALOG
+    the oracle-backed checks still run).
+
+    ``path=None`` resolves the packaged catalog for the RUNNING Houdini major
+    (see :func:`_pkg_catalog_path`); an explicit ``path`` is honored verbatim,
+    untouched by major resolution."""
+    fp = Path(path) if path is not None else _pkg_catalog_path()
     key = str(fp)
     if key in _CATALOG_CACHE:
         cached = _CATALOG_CACHE[key]
@@ -75,6 +115,15 @@ def load_connectivity_catalog(path: Optional[Path] = None, *,
         return None
 
     if not fp.is_file():
+        if path is None:
+            major = _running_houdini_major()
+            if major is not None:
+                # Rule (d) of the U.1-H22 fold: name the expected per-major
+                # file and NEVER silently fall back across majors.
+                return _fail(
+                    f"missing for running Houdini major {major} — probe the "
+                    f"build (host/introspect_connectivity.py) and package it "
+                    f"as {fp.name}; wiring never falls back across majors")
         return _fail("missing")
     try:
         data = json.loads(fp.read_text(encoding="utf-8"))
