@@ -385,6 +385,13 @@ copnet = hou.node("/obj/copnet1")
 block_begin = copnet.createNode("block_begin")
 block_end = copnet.createNode("block_end")
 
+# BIND the pair explicitly (H22.0.368, live-verified): blockpath lives on
+# block_begin, and binding is NOT implicit — an unbound pair raises
+# hou.OperationFailed on cook ("Cannot do simulate if the block doesn't
+# have a begin node at the same level"). Relative '../<name>' or absolute
+# both work; a bare name fails (node-ref parms resolve against children).
+block_begin.parm("blockpath").set("../" + block_end.name())
+
 # Processing node inside the block
 opencl = copnet.createNode("opencl")
 
@@ -393,8 +400,9 @@ block_begin.setInput(0, source_node)    # Primary input
 opencl.setInput(0, block_begin)         # Process feedback
 block_end.setInput(0, opencl)           # Close loop
 
-# Configure solver
-block_end.parm("method").set("feedback")   # Feedback loop mode
+# Configure solver — block_end is the sim/iteration driver on H22.
+# NOTE: block_end LOST method/blocktype/blockpath in H22 (writing them
+# silently no-ops); use the simulate toggle + iterations instead.
 block_end.parm("iterations").set(10)       # Sub-steps per frame
 block_end.parm("simulate").set(True)       # Frame-dependent
 

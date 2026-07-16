@@ -114,6 +114,69 @@ def _cop_missing_type_message(type_name: str) -> str:
     )
 
 
+def _bind_solver_block(block_begin, block_end) -> bool:
+    """Explicitly bind a Cop solver block pair via ``block_begin.blockpath``.
+
+    H22.0.368 truth (W.4/N-4 live-bridge probe, docs/reviews/
+    h22-live-reconfirm-2026-07-16.md §2.1): ``block_end`` LOST ``method``/
+    ``blocktype``/``blockpath`` -- ``blockpath`` now lives on ``block_begin``
+    -- and binding is NOT implicit: an unbound pair raises
+    ``hou.OperationFailed`` on cook ("Cannot do simulate if the block doesn't
+    have a begin node at the same level"). The relative ``../<end-name>`` form
+    is verified cooking live (a bare name fails -- node-ref parms resolve
+    against the node's own children).
+
+    Returns True when the pair was bound; False when ``block_begin`` has no
+    ``blockpath`` parm (stub/test surface, or the parm moved again). Callers
+    record the verdict in their result envelope -- an unbound block must
+    never be silent, because on H22 it fails only later, at cook time.
+    """
+    path_parm = block_begin.parm("blockpath")
+    if path_parm is None:
+        _LOG.warning(
+            "Solver block pair %s/%s left UNBOUND: block_begin has no "
+            "'blockpath' parm on this surface. On H22.0.368 an unbound "
+            "block pair raises hou.OperationFailed at cook time.",
+            block_begin.name(), block_end.name(),
+        )
+        return False
+    path_parm.set(f"../{block_end.name()}")
+    return True
+
+
+def _set_quantize_levels(node, levels) -> bool:
+    """Author quantization levels on the parm surface the node actually has.
+
+    H22.0.368 truth (COP audit tool #16 + live parm probe): the old
+    ``levels``/``steps`` names are ABSENT on BOTH quantize surfaces ->
+    writing them silently no-ops (toon/posterize did nothing). The live
+    replacements: the Copernicus (Cop) quantize counts levels via
+    ``method='segments'`` + ``segments`` (int); the legacy Cop2 quantize
+    quantizes by ``step`` size (float, "Pixel Step") -- N levels over a
+    normalized 0-1 range means ``step = 1/N``.
+
+    Returns True when levels were actually authored. Callers surface the
+    verdict (``levels_applied``) -- honest degradation, never a silent no-op.
+    """
+    seg = node.parm("segments")
+    if seg is not None:
+        mode = node.parm("method")
+        if mode is not None:
+            mode.set("segments")
+        seg.set(int(levels))
+        return True
+    step = node.parm("step")
+    if step is not None and levels > 0:
+        step.set(1.0 / float(levels))
+        return True
+    _LOG.warning(
+        "quantize node %s exposes neither 'segments' (Cop) nor 'step' (Cop2) "
+        "-- quantization levels NOT authored (surface drifted again?).",
+        node.name(),
+    )
+    return False
+
+
 def _uses_legacy_cop2_surface(node) -> bool:
     """True when ``node`` exposes the legacy COP2 read surface (planes/xRes/yRes/depth).
 
@@ -1011,9 +1074,12 @@ class CopsHandlerMixin:
             name (str): Solver name prefix (default: 'solver').
             iterations (int): Number of solver iterations (default: 10).
             method (str): Solver method - 'singlepass' or 'simulate' (default: 'singlepass').
+                On H22 this drives the block_end 'simulate' toggle -- the old
+                method/blocktype parms were REMOVED (22.0.368, live-verified).
 
         Returns:
-            Dict with block_begin, block_end paths and configuration.
+            Dict with block_begin, block_end paths and configuration,
+            including 'bound' (explicit block_begin.blockpath binding applied).
         """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
@@ -1051,21 +1117,22 @@ class CopsHandlerMixin:
                     # Wire Block End's feedback to Block Begin
                     block_end.setInput(0, block_begin)
 
-                    # Configure iterations
-                    iter_parm = block_end.parm("iterations") or block_end.parm("numiterations")
+                    # Configure iterations ('iterations' survives on H22 block_end)
+                    iter_parm = block_end.parm("iterations")
                     if iter_parm is not None:
                         iter_parm.set(iterations)
 
-                    # Configure method
-                    method_parm = block_end.parm("method") or block_end.parm("blocktype")
-                    if method_parm is not None:
-                        method_map = {"singlepass": 0, "simulate": 1}
-                        method_parm.set(method_map.get(method, 0))
+                    # Configure method via the H22 'simulate' toggle. block_end
+                    # LOST method/blocktype on 22.0.368 (live-verified) -- its
+                    # surviving surface is the sim/iteration driver.
+                    simulate = method == "simulate"
+                    sim_parm = block_end.parm("simulate")
+                    if sim_parm is not None:
+                        sim_parm.set(1 if simulate else 0)
 
-                    # Point block_end to block_begin
-                    path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
-                    if path_parm is not None:
-                        path_parm.set(block_begin.path())
+                    # Explicit binding: block_begin.blockpath -> paired block_end
+                    # (blockpath MOVED off block_end; implicit binding REFUTED-LIVE).
+                    bound = _bind_solver_block(block_begin, block_end)
 
                     block_begin.moveToGoodPosition()
                     block_end.moveToGoodPosition()
@@ -1088,6 +1155,8 @@ class CopsHandlerMixin:
                 "block_end": block_end.path(),
                 "iterations": iterations,
                 "method": method,
+                "simulate": simulate,
+                "bound": bound,
             }
 
         return run_on_main(_on_main)
@@ -1225,21 +1294,23 @@ class CopsHandlerMixin:
                     if block_begin is None or block_end is None:
                         raise RuntimeError("Couldn't create solver blocks")
 
-                    # Configure iterations
-                    iter_parm = block_end.parm("iterations") or block_end.parm("numiterations")
+                    # Configure iterations ('iterations' survives on H22 block_end)
+                    iter_parm = block_end.parm("iterations")
                     if iter_parm is not None:
                         iter_parm.set(iterations)
 
-                    path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
-                    if path_parm is not None:
-                        path_parm.set(block_begin.path())
+                    # Explicit binding: block_begin.blockpath -> paired block_end
+                    # (blockpath MOVED off block_end; implicit binding REFUTED-LIVE).
+                    bound = _bind_solver_block(block_begin, block_end)
 
-                    # Create processing chain inside solver: dilate -> blur -> threshold
+                    # Create processing chain inside solver: dilate -> blur -> threshold.
+                    # 'clamp' is the canonical H22 Cop spelling ('limit' only
+                    # resolves through the creation-time alias table).
                     dilate = parent.createNode("dilateerode", f"{name}_dilate")
                     created_any = True
                     blur = parent.createNode("blur", f"{name}_blur")
                     created_any = True
-                    thresh = parent.createNode("limit", f"{name}_threshold")
+                    thresh = parent.createNode("clamp", f"{name}_threshold")
                     created_any = True
 
                     # Wire: block_begin -> dilate -> blur -> threshold -> block_end
@@ -1258,8 +1329,14 @@ class CopsHandlerMixin:
 
                     if thresh is not None:
                         thresh.setInput(0, blur if blur else block_begin)
-                        tp = thresh.parm("max") or thresh.parm("high")
+                        # H22 clamp surface (live-probed 22.0.368): upperlimit
+                        # float + doupperlimit toggle. The old max/high names
+                        # are ABSENT -> writing them silently no-ops.
+                        tp = thresh.parm("upperlimit")
                         if tp is not None:
+                            do_upper = thresh.parm("doupperlimit")
+                            if do_upper is not None:
+                                do_upper.set(1)
                             tp.set(threshold_val)
 
                     # Wire final processing to block_end
@@ -1296,6 +1373,7 @@ class CopsHandlerMixin:
                 "threshold": thresh.path() if thresh else None,
                 "iterations": iterations,
                 "growth_rate": growth_rate,
+                "bound": bound,
             }
 
         return run_on_main(_on_main)
@@ -1350,13 +1428,13 @@ class CopsHandlerMixin:
                     if block_begin is None or block_end is None:
                         raise RuntimeError("Couldn't create solver blocks")
 
-                    iter_parm = block_end.parm("iterations") or block_end.parm("numiterations")
+                    iter_parm = block_end.parm("iterations")
                     if iter_parm is not None:
                         iter_parm.set(iterations)
 
-                    path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
-                    if path_parm is not None:
-                        path_parm.set(block_begin.path())
+                    # Explicit binding: block_begin.blockpath -> paired block_end
+                    # (blockpath MOVED off block_end; implicit binding REFUTED-LIVE).
+                    bound = _bind_solver_block(block_begin, block_end)
 
                     # Create OpenCL node for the R-D kernel
                     opencl_node = parent.createNode("opencl", f"{name}_kernel")
@@ -1406,6 +1484,7 @@ class CopsHandlerMixin:
             return {
                 "block_begin": block_begin.path(),
                 "block_end": block_end.path(),
+                "bound": bound,
                 "kernel_node": opencl_node.path() if opencl_node else None,
                 "feed_rate": feed_rate,
                 "kill_rate": kill_rate,
@@ -1549,6 +1628,7 @@ class CopsHandlerMixin:
                 raise ValueError(f"Couldn't find COP network '{parent_path}'")
 
             created_any = False
+            levels_applied = None  # None = levels not relevant for this style
             try:
                 with hou.undos.group("synapse_cops_stylize"):
                     nodes_created = []
@@ -1568,9 +1648,9 @@ class CopsHandlerMixin:
                         if node is None:
                             node = parent.createNode("limit", name)
                         if node is not None:
-                            lp = node.parm("levels") or node.parm("steps")
-                            if lp is not None:
-                                lp.set(levels)
+                            # H22: levels/steps are ABSENT on both quantize
+                            # surfaces -- author the live replacement parms.
+                            levels_applied = _set_quantize_levels(node, levels)
                     elif style_type == "risograph":
                         # Risograph: quantize + halftone-style chain.
                         # H21.0.671 has no 'halftone' COP in any category
@@ -1582,9 +1662,9 @@ class CopsHandlerMixin:
                         created_any = True
 
                         if quant is not None:
-                            lp = quant.parm("levels") or quant.parm("steps")
-                            if lp is not None:
-                                lp.set(levels)
+                            # H22: levels/steps are ABSENT on both quantize
+                            # surfaces -- author the live replacement parms.
+                            levels_applied = _set_quantize_levels(quant, levels)
                             nodes_created.append(quant)
 
                         if halftone is not None:
@@ -1634,6 +1714,10 @@ class CopsHandlerMixin:
                 "path": last.path() if last else None,
                 "style_type": style_type,
                 "levels": levels,
+                # True = authored on the live surface; False = surface had
+                # neither replacement parm (degraded, LOUD); None = style
+                # doesn't use levels.
+                "levels_applied": levels_applied,
                 "edge_width": edge_width,
                 "nodes": [n.path() for n in all_nodes if n is not None],
             }
@@ -1690,14 +1774,16 @@ class CopsHandlerMixin:
                     if block_begin is None or block_end is None:
                         raise RuntimeError("Couldn't create solver blocks for wetmap")
 
-                    # Set to simulate mode for frame-by-frame processing
-                    method_parm = block_end.parm("method") or block_end.parm("blocktype")
-                    if method_parm is not None:
-                        method_parm.set(1)  # simulate
+                    # Frame-by-frame temporal decay = the H22 'simulate' toggle.
+                    # block_end LOST method/blocktype on 22.0.368 (live-verified)
+                    # -- writing those silently no-opped and killed the decay.
+                    sim_parm = block_end.parm("simulate")
+                    if sim_parm is not None:
+                        sim_parm.set(1)
 
-                    path_parm = block_end.parm("blockpath") or block_end.parm("block_begin")
-                    if path_parm is not None:
-                        path_parm.set(block_begin.path())
+                    # Explicit binding: block_begin.blockpath -> paired block_end
+                    # (blockpath MOVED off block_end; implicit binding REFUTED-LIVE).
+                    bound = _bind_solver_block(block_begin, block_end)
 
                     # Create blur for spreading
                     blur_node = parent.createNode("blur", f"{name}_spread")
@@ -1742,6 +1828,7 @@ class CopsHandlerMixin:
             return {
                 "block_begin": block_begin.path(),
                 "block_end": block_end.path(),
+                "bound": bound,
                 "blur_node": blur_node.path() if blur_node else None,
                 "decay_node": decay_node.path() if decay_node else None,
                 "decay": decay,

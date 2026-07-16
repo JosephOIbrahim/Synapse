@@ -132,6 +132,12 @@ source.parm("filename1").set("$HIP/tex/seed_mask.exr")
 block_begin = copnet.createNode("block_begin")
 block_end = copnet.createNode("block_end")
 
+# BIND the pair explicitly (H22.0.368, live-verified): blockpath lives on
+# block_begin, and binding is NOT implicit — an unbound pair raises
+# hou.OperationFailed on cook ("Cannot do simulate if the block doesn't
+# have a begin node at the same level"). '../<name>' or absolute both work.
+block_begin.parm("blockpath").set("../" + block_end.name())
+
 # Processing node inside the solver
 opencl = copnet.createNode("opencl")
 opencl.parm("kernelcode").set(growth_kernel_code)
@@ -141,8 +147,9 @@ block_begin.setInput(0, source)       # Primary: initial state
 opencl.setInput(0, block_begin)       # Process feedback
 block_end.setInput(0, opencl)         # Close the loop
 
-# Configure solver behavior
-block_end.parm("method").set("feedback")    # Feedback loop mode
+# Configure solver behavior — block_end is the sim/iteration driver on H22.
+# NOTE: block_end LOST method/blocktype/blockpath in H22 (writing them
+# silently no-ops); use the simulate toggle + iterations instead.
 block_end.parm("iterations").set(10)        # Sub-steps per frame
 block_end.parm("simulate").set(True)        # Frame-dependent mode
 
@@ -172,6 +179,9 @@ seed = copnet.createNode("circle")   # or geometry mask
 # Create R-D solver
 block_begin = copnet.createNode("block_begin")
 block_end = copnet.createNode("block_end")
+
+# Explicit binding (H22: blockpath is on block_begin; unbound pairs fail to cook)
+block_begin.parm("blockpath").set("../" + block_end.name())
 
 rd_kernel = copnet.createNode("opencl")
 rd_kernel.parm("kernelcode").set(gray_scott_kernel)
