@@ -220,8 +220,8 @@
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md"
       ],
-      "ratified": false,
-      "note": "deposited unratified (CTO hold: features wait — receipts first)"
+      "ratified": true,
+      "note": "deposited unratified (CTO hold: features wait — receipts first) | RATIFIED: human (Joe) — 2026-07-16 Copernicus-expansion directive (\"address the level of Copernicus integration more completely\", naming C-3/C-4/heightfield explicitly); Copernicus-scoped C-cycles ratified by Claude as instrument (all other C.x cycles remain held) | SEQUENCING: builds start ONLY after W.4 merges (same-file handlers_cops.py) and the v5.26.0 push lands; the recon+spec pass runs now."
     },
     {
       "id": "C.4-H22-scaffold-rebuild",
@@ -230,8 +230,8 @@
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md"
       ],
-      "ratified": false,
-      "note": "deposited unratified (CTO hold: features wait — receipts first)"
+      "ratified": true,
+      "note": "deposited unratified (CTO hold: features wait — receipts first) | RATIFIED: human (Joe) — 2026-07-16 Copernicus-expansion directive (\"address the level of Copernicus integration more completely\", naming C-3/C-4/heightfield explicitly); Copernicus-scoped C-cycles ratified by Claude as instrument (all other C.x cycles remain held) | SEQUENCING: builds start ONLY after W.4 merges (same-file handlers_cops.py) and the v5.26.0 push lands; the recon+spec pass runs now."
     },
     {
       "id": "C.5-H22-pdg-telemetry",
@@ -392,6 +392,17 @@
       ],
       "ratified": false,
       "note": "Deposited from the W.7+W.8 crucible (MERGE_READY, 0 showstoppers). Not a current-posture blocker (auth is disabled by default); becomes load-bearing only if multi-user/auth is enabled. Human flip."
+    },
+    {
+      "id": "C.10-H22-terrain-exposure",
+      "title": "Heightfield/terrain exposure on the modern Cop surface: the SOPs->COPs migration is inventoried (18 height* + ocean* types confirmed live in the Cop category, 384-type audit) but SYNAPSE exposes no verb/recipe that emits them. Build the terrain emission surface: probe-verified recipes (base terrain -> erode -> mask/color chains) reachable via cops_create_node passthrough + a first-class terrain recipe/verb, palette-visible, with the same propose->validate->build discipline as Solaris recipes.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cop-audit-verification.md",
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": true,
+      "note": "Deposited + RATIFIED: human (Joe) — 2026-07-16 Copernicus-expansion directive (\"address the level of Copernicus integration more completely\", naming C-3/C-4/heightfield explicitly); Copernicus-scoped C-cycles ratified by Claude as instrument (all other C.x cycles remain held) (terrain named explicitly in the directive). Recon probes first; build after W.4/push."
     }
   ]
 }
