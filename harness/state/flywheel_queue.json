@@ -286,12 +286,12 @@
     {
       "id": "W.1b-H22-planes-followups",
       "title": "W.1 crucible follow-ups (sev-3 pair): (1) make _copernicus_image_info API-drift LOUD (warn-once log or api_drift entry in analyze_render issues[]) instead of blanket except-pass — the silent-degrade pattern that masked planes() is reproduced; (2) legacy Cop2Node.depth() requires a plane arg on 22.0.368 — call depth(plane) per-plane or drop data_type honestly + fix the H21-signature mock in test_read_layer_info_legacy_cop2_path_preserved; (3) exercise the isinstance branches of _uses_legacy_cop2_surface in the suite + freeze a golden envelope key list for both handlers.",
-      "status": "candidate",
+      "status": "needs_repair",
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md"
       ],
       "ratified": true,
-      "note": "Deposited from the W.1-H22-planes crucible boundedWeaknesses (MERGE_READY verdict, 0 showstoppers) — deliberately NOT folded into W.1 (verbatim-preservation was the ratified scope). Human flip required. | RATIFIED: human (Joe) — standing \"Gates are approved for Flip!\" + 2026-07-16 3x-loop directive (\"refine, review, enhance... nail down the update to H22\"); crucible-mandated REPAIRS to already-approved work, ratified by Claude as instrument (C.x feature cycles remain held)"
+      "note": "Deposited from the W.1-H22-planes crucible boundedWeaknesses (MERGE_READY verdict, 0 showstoppers) — deliberately NOT folded into W.1 (verbatim-preservation was the ratified scope). Human flip required. | RATIFIED: human (Joe) — standing \"Gates are approved for Flip!\" + 2026-07-16 3x-loop directive (\"refine, review, enhance... nail down the update to H22\"); crucible-mandated REPAIRS to already-approved work, ratified by Claude as instrument (C.x feature cycles remain held) | NEEDS_REPAIR 2026-07-16 (worktree commit c590629): crucible caught the loud-drift feature 1/3 implemented — 4 of 6 read symbols passed as BOUND METHODS so AttributeError fires OUTSIDE _read_or_drift try (crash, not drift entry); analyze_render unguarded fails whole command; read_layer_info discards _drift; the _per_symbol test only covered wireNames. Pass-3 repair re-dispatched (h22-loop2b-w1b-repair): wrap all 6 derefs inside the guard, surface _drift in read_layer_info, real per-symbol test, corpus sign/interleave hedges honest."
     },
     {
       "id": "W.7-H22-timeout-budget",
