@@ -124,7 +124,7 @@
     {
       "id": "U.1-H22",
       "title": "Network-wiring truth, H22 re-run: 22.0.368 connectivity catalog diffed vs the frozen 21.0.671 left side (drop-week runbook step 4)",
-      "status": "candidate",
+      "status": "merged",
       "evidence": [
         "harness/notes/verified_connectivity_H22.json",
         "harness/notes/verified_connectivity_22.0.368.json",
@@ -133,7 +133,7 @@
         "harness/notes/spec-U1-wiring-flywheel.md"
       ],
       "ratified": true,
-      "note": "Drop-week runbook step 4 output (blueprint §9.4), executed 2026-07-16 under GATE VERDICT: ALLOW (MODE B). Left side hash-verified against leg0_baselines.json (7d57c1a7…, match). Probe reused unmodified under H22.0.368 hython; 288 types / 269 instantiated / 0 probe errors; determinism pin holds (byte-identical re-run). Churn: +9 / -3 / 3 changed. HEADLINES for the ratifier: (1) Cop/light wiring surface 3→8 inputs — 'N'→'normal' rename, 'mask' index 2→7: live miswire class on H22; (2) SYNAPSE-emitted LOP spellings 'instancer' + 'layout' NO LONGER RESOLVE in H22 Solaris (createNode will fail); (3) Copernicus gained emitted-surface types (heightfield_erode, oceanspectrum, oceanevaluate, camera) — SOPs→COPs migration confirmed; (4) golden seeds (vellumsolver, rbdbulletsolver) unchanged. ML/ONNX + splat churn is structurally out of this sweep's scope (not on the emitted surface) — belongs to runbook step 9. If ratified, SCAFFOLD = regen packaged catalog as connectivity_22.json (scout per-major pattern) + re-run scripts/flywheel_review_wiring.py against it + fix the Cop/light + LOP-emit sites it flags. Sop/apex::* diff rows are probe-truth records only — rigging scope stays structurally REFUSED (§6.1). | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument | SCAFFOLD fold IN FLIGHT 2026-07-16 (h22-u1-fold workflow): connectivity_22.json + major-aware wiring.py resolver."
+      "note": "Drop-week runbook step 4 output (blueprint §9.4), executed 2026-07-16 under GATE VERDICT: ALLOW (MODE B). Left side hash-verified against leg0_baselines.json (7d57c1a7…, match). Probe reused unmodified under H22.0.368 hython; 288 types / 269 instantiated / 0 probe errors; determinism pin holds (byte-identical re-run). Churn: +9 / -3 / 3 changed. HEADLINES for the ratifier: (1) Cop/light wiring surface 3→8 inputs — 'N'→'normal' rename, 'mask' index 2→7: live miswire class on H22; (2) SYNAPSE-emitted LOP spellings 'instancer' + 'layout' NO LONGER RESOLVE in H22 Solaris (createNode will fail); (3) Copernicus gained emitted-surface types (heightfield_erode, oceanspectrum, oceanevaluate, camera) — SOPs→COPs migration confirmed; (4) golden seeds (vellumsolver, rbdbulletsolver) unchanged. ML/ONNX + splat churn is structurally out of this sweep's scope (not on the emitted surface) — belongs to runbook step 9. If ratified, SCAFFOLD = regen packaged catalog as connectivity_22.json (scout per-major pattern) + re-run scripts/flywheel_review_wiring.py against it + fix the Cop/light + LOP-emit sites it flags. Sop/apex::* diff rows are probe-truth records only — rigging scope stays structurally REFUSED (§6.1). | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument | SCAFFOLD fold IN FLIGHT 2026-07-16 (h22-u1-fold workflow): connectivity_22.json + major-aware wiring.py resolver. | SCAFFOLD MERGED to master 2026-07-16 (commit 9b36b4d, pre-approval); crucible verified the resolver LIVE on both majors (H22 hython->22 catalog mask@7; H21.0.773 hython->21 catalog mask@2/WiringError); suite 4371/0/92. OWED: the full artist-bridge demo-network E2E was scene-busy at run — run directly post-W.4."
     },
     {
       "id": "W.1-H22-planes",
@@ -403,6 +403,26 @@
       ],
       "ratified": true,
       "note": "Deposited + RATIFIED: human (Joe) — 2026-07-16 Copernicus-expansion directive (\"address the level of Copernicus integration more completely\", naming C-3/C-4/heightfield explicitly); Copernicus-scoped C-cycles ratified by Claude as instrument (all other C.x cycles remain held) (terrain named explicitly in the directive). Recon probes first; build after W.4/push."
+    },
+    {
+      "id": "U.5-H22-lop-knowledge-fold",
+      "title": "Crucible-found twin of U.1-H22 (sev-2): python/synapse/core/lop_knowledge.py hardcodes lop_solaris_knowledge_21.json with NO major resolution — GraphValidator's LOP ordering/advisory phase advises from H21 Solaris truth on an H22 host (advisory-only, never blocks, but H22-renamed LOPs fail to match). Apply the same major-aware resolver pattern U.1-H22 just shipped for the connectivity catalog. Probe/regen the H22 LOP-Solaris knowledge first.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the U.1-H22 fold crucible (0 showstoppers). Same class as U.1, different file. Human flip."
+    },
+    {
+      "id": "U.1b-H22-resolver-hardening",
+      "title": "U.1-H22 fold crucible forward-notes (sev-2 pair): (1) _running_houdini_major() collapses \"hou importable but version unreadable\" to major=None -> silently serves H21 in a real H22 host; reserve the H21 default for ImportError ONLY, any other exception with hou resident should fail loud. (2) major-granularity: applicationVersion()[0] cannot distinguish .5/minor builds — add an optional load-time stamp-vs-live warn (the HYTHON-gated freshness check catches it but not the runtime resolver). (3) conftest fake-hou hardcodes applicationVersion=(21,0,671) — pin this coupling intentionally so a future version-follower wave flipping it to 22 does not silently flip the whole standalone suite's default catalog.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the U.1-H22 fold crucible. All theoretical/forward (loader is lazy, callers post-boot); none blocked the merge. Human flip."
     }
   ]
 }
