@@ -349,6 +349,16 @@ try:
 except ImportError:
     _INSPECTOR_AVAILABLE = False
 
+# Port-wave passthrough transport (ws_passthrough) — zero-`hou`, so importing it
+# here is residency-safe. Moved here from test_port_wave_scene1.py's autouse
+# fixture (W.8) so EVERY wave test file inherits the reset and can't leak the
+# module-level transport or the loop-bound Dispatcher singleton into the next.
+try:
+    from synapse.cognitive.tools import ws_passthrough as _ws_passthrough
+    _WS_PASSTHROUGH_AVAILABLE = True
+except ImportError:
+    _WS_PASSTHROUGH_AVAILABLE = False
+
 # Fixture file paths — resolved relative to this conftest.py
 _INSPECTOR_FIXTURES_DIR = _InspectorPath(__file__).parent / "fixtures"
 _INSPECTOR_GOLDEN_JSON_PATH = (
@@ -374,6 +384,41 @@ if _INSPECTOR_AVAILABLE:
         _inspector_reset_transport()
         yield
         _inspector_reset_transport()
+
+
+if _WS_PASSTHROUGH_AVAILABLE:
+    def _reset_ws_passthrough_state():
+        """Clear the port-wave transport + the loop-bound Dispatcher singleton.
+
+        Resetting the singleton only when mcp_server is already imported avoids
+        forcing that heavy import onto the whole suite: a test that never
+        touches the port path never imports mcp_server, so there is no singleton
+        to clear; wave test files import it at collection time, so by the time
+        this runs the singleton is resettable.
+        """
+        _ws_passthrough.reset_transport()
+        _mcp = sys.modules.get("mcp_server")
+        if _mcp is not None:
+            _mcp._ported_dispatcher = None
+
+    @pytest.fixture(autouse=True)
+    def _ws_passthrough_cleanup_transport():
+        """Reset port-wave passthrough state before/after every test.
+
+        ws_passthrough.configure_transport() mutates module-level state and the
+        port-wave Dispatcher singleton (mcp_server._ported_dispatcher) captures
+        the event loop it was built on. Every wave test runs in a fresh
+        asyncio.run loop, so without this reset a stale transport or a
+        dead-loop-bound singleton would leak across wave test files — the
+        stale-loop leakage this fixture (moved here from test_port_wave_scene1.py
+        per W.8) prevents for ALL wave test files.
+
+        No-op for tests that don't touch the port path: reset_transport() is
+        idempotent and the singleton reset is skipped when unimported.
+        """
+        _reset_ws_passthrough_state()
+        yield
+        _reset_ws_passthrough_state()
 
 
 @pytest.fixture

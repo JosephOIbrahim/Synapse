@@ -95,17 +95,9 @@ PARITY_CASES = [
 # Fixtures / helpers
 # ---------------------------------------------------------------------------
 
-@pytest.fixture(autouse=True)
-def _reset_port_state():
-    """The ported Dispatcher singleton binds the event loop it was built on;
-    every test runs in a fresh asyncio.run loop, so reset it (and the injected
-    transport) around each test — same hygiene as the Inspector's
-    _inspector_cleanup_transport fixture."""
-    mcp_server._ported_dispatcher = None
-    ws_passthrough.reset_transport()
-    yield
-    mcp_server._ported_dispatcher = None
-    ws_passthrough.reset_transport()
+# Port-wave reset hygiene (dispatcher singleton + ws_passthrough transport) is
+# now the autouse `_ws_passthrough_cleanup_transport` fixture in
+# tests/conftest.py (moved there per W.8 so every wave test file inherits it).
 
 
 class _RecordingSend:
