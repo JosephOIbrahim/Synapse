@@ -161,13 +161,13 @@
     {
       "id": "W.5-H22-karmarels",
       "title": "SB-4: relationship-aware get/set_usd_attribute (karma/husk schemas migrated strings→relationships; handlers_usd.py:365/413 attribute-only). Scoped by N-3 identification probe. Before usd-1 golden capture.",
-      "status": "candidate",
+      "status": "merge_ready",
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md",
         "harness/notes/h22_doc_candidates_wave2.json"
       ],
       "ratified": true,
-      "note": "BLOCKED_ON: N-3 identification probe (hython, runs 2026-07-16) | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
+      "note": "BLOCKED_ON: N-3 identification probe (hython, runs 2026-07-16) | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument | MERGE_READY 2026-07-16 (commit ebca369, worktree wf_03bbdaf1-198-2): assayer LIVE round-trip on H22.0.368 PASS — read returns rel targets (was raising), write round-trips (was silent no-op); 13/13 pxr symbols VERIFIED; suite 4327/0/88 with synapse.__file__ worktree-resolved. Crucible 0 showstoppers."
     },
     {
       "id": "W.6-H22-corpusreseed",
@@ -372,6 +372,16 @@
       ],
       "ratified": false,
       "note": "Deposited from the sidefx-cto lens first pass (read-only advisory; agent proposed the spec, human ratifies). Full reasoning + tier in docs/reviews/h22-sidefx-cto-lens-2026-07-16.md."
+    },
+    {
+      "id": "W.5b-H22-write-property-kind",
+      "title": "W.5 crucible follow-ups (sev-3 + sev-2): (BW-1, the important one) the write routing predicate is value-shape-only — a custom string[] attribute name that is neither a valid attribute nor an existing relationship, holding /-rooted path strings, gets SILENTLY authored as a relationship; converts a prior no-op into a possibly-wrong author, and the write envelope carries no property_kind (asymmetric with the read path) so the caller cannot tell which was authored. Fix: add property_kind to the WRITE envelope + advisory when CreateRelationship fires on a name not already a known relationship. (BW-2) the miss-both error text changed attribute->property + appended a relationships clause (safe: zero consumer pins, ValueError shape unchanged) — document as intentional. SHOULD land before usd-1 golden-pins the write path.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the W.5-H22-karmarels crucible (MERGE_READY, 0 showstoppers). BW-1 is a NEW silent-wrongness edge in W.5's own added code (not a regression — prior was no-op), same repair-to-approved-work class as W.1b. Human flip; recommend ratifying before the usd-1 wave."
     }
   ]
 }
