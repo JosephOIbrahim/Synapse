@@ -150,13 +150,13 @@
     {
       "id": "W.4-H22-solverblocks",
       "title": "SB-3: re-author COP solver-block class (create_solver/growth_propagation/reaction_diffusion/wetmap + stylize levels) — block_end lost method/blocktype/blockpath; limit→clamp; quantize levels absent. Fix shape decided by N-4 live-bridge behavioral probe. Before cops-1/cops-2 golden capture.",
-      "status": "candidate",
+      "status": "merged",
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md",
         "docs/reviews/h22-cop-audit-verification.md"
       ],
       "ratified": true,
-      "note": "N-4 RESOLVED-LIVE 2026-07-16 (docs/reviews/h22-live-reconfirm-2026-07-16.md) | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument | FIX SHAPE DECIDED BY LIVE PROBE: implicit binding REFUTED-LIVE (unbound pair -> hou.OperationFailed \"Cannot do simulate if the block doesn't have a begin node at the same level\"); blockpath MOVED to block_begin (relative ../<end> and absolute both verified cooking); block_end surface = sim/iteration driver (simulate/iterations/startframe/cacheenabled...), method/blocktype/blockpath REMOVED-LIVE. CODE SEAM: _handle_cops_create_solver + 3 siblings write block_end.parm(\"blockpath\") which is None on H22 -> silent unbound-block cook failure. Fix = re-author to set block_begin.blockpath -> paired block_end + the rest of the SB-3 class (limit->clamp, quantize levels)."
+      "note": "N-4 RESOLVED-LIVE 2026-07-16 (docs/reviews/h22-live-reconfirm-2026-07-16.md) | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument | FIX SHAPE DECIDED BY LIVE PROBE: implicit binding REFUTED-LIVE (unbound pair -> hou.OperationFailed \"Cannot do simulate if the block doesn't have a begin node at the same level\"); blockpath MOVED to block_begin (relative ../<end> and absolute both verified cooking); block_end surface = sim/iteration driver (simulate/iterations/startframe/cacheenabled...), method/blocktype/blockpath REMOVED-LIVE. CODE SEAM: _handle_cops_create_solver + 3 siblings write block_end.parm(\"blockpath\") which is None on H22 -> silent unbound-block cook failure. Fix = re-author to set block_begin.blockpath -> paired block_end + the rest of the SB-3 class (limit->clamp, quantize levels). | MERGED to master 2026-07-16 (commit 34f41f7, pre-approval); assayer LIVE on bridge — bound solver cooks/unbound raises/clamp lands; live test 5/5; post-merge suite 4387/0/97."
     },
     {
       "id": "W.5-H22-karmarels",
@@ -423,6 +423,16 @@
       ],
       "ratified": false,
       "note": "Deposited from the U.1-H22 fold crucible. All theoretical/forward (loader is lazy, callers post-boot); none blocked the merge. Human flip."
+    },
+    {
+      "id": "W.4b-H22-solver-followups",
+      "title": "W.4 crucible follow-ups (all bounded, non-blocking): (1) a live Cop2 \"step\" quantize probe is owed (the fallback leg is grounded in the H21 catalog + honest-degrades if the parm is gone, but unproven on H22); (2) honesty-flag coverage is inconsistent — guard-skipped simulate (create_solver/wetmap) + upperlimit/doupperlimit (growth) sites have no applied-verdict, so future parm drift would be silent while the envelope echoes the request (today live-verified, drift-only risk); (3) dead createNode(\"limit\") fallback at handlers_cops.py:1649 (toon branch) un-reauthored — unreachable live but keeps the non-canonical \"limit\" literal in emitted_node_types.json alongside the new canonical \"clamp\".",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the W.4-H22-solverblocks crucible (MERGE_READY, 0 showstoppers). Human flip."
     }
   ]
 }
