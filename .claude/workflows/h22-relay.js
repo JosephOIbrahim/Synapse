@@ -62,7 +62,7 @@ const LEG0_DRIFT_TARGETS = [
     priorBlockers: ['_benchmark_api.py / _benchmark_latency.py still present at root to extend', 'the Shot-010 scenario + the G6b sidecar-boundary sentence are intact', 'no vector store is proposed for cognitive state'] },
   { file: 'README.md', label: 'g7-surface',
     priorBlockers: [
-      'the test-count badge matches the ratchet floor in harness/verify/suite_baseline.json (currently 4118), not a stale release-era number (e.g. 4186)',
+      'the test-count badge matches the ratchet floor in harness/verify/suite_baseline.json (currently 4275), not a stale release-era number (e.g. 4186)',
       'a loopback-only ingress/security sentence is present on the MCP/WS surface',
       'C3 (RULED: one Moneta) — Moneta IS the memory substrate; the Nuke host is a separate, differently-named product. Flag only misuse of "Moneta" as a host label, or any description of cognitive STATE as vector-similarity-recalled. Do NOT deny Moneta is the memory backend.',
     ] },

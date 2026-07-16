@@ -57,20 +57,34 @@ def build_package(repo_root: Path) -> dict:
     return {
         "name": "synapse",
         "enable": True,
+        # Guard against a double-load if both this deployed copy AND
+        # HOUDINI_PACKAGE_DIR point at the repo (would double-prepend PYTHONPATH).
+        "load_package_once": True,
         "env": env,
-        "path": (repo_root / "houdini").as_posix(),
+        # hpath = the HOUDINI_PATH keyword ("path" is deprecated as of H22);
+        # points Houdini at <repo>/houdini (shelves, python panels, scripts).
+        "hpath": (repo_root / "houdini").as_posix(),
     }
 
 
 def candidate_pref_dirs() -> list[Path]:
     """Houdini user pref dirs to install into. $HOUDINI_USER_PREF_DIR wins,
-    then any ``houdini2*`` under the home dir and (Windows) ~/Documents."""
+    then any ``houdini2*`` under the home dir, ~/Documents, and the OneDrive
+    Documents root. The last one matters on Windows: H22's pref dir is
+    ``~/OneDrive/Documents/houdini22.0`` when Documents is redirected to
+    OneDrive (a Windows known-folder default), which the plain ~/Documents
+    glob would miss — bare auto-detect then silently installs into a stale
+    non-OneDrive dir H22 never scans."""
     found: list[Path] = []
     env = os.environ.get("HOUDINI_USER_PREF_DIR")
     if env:
         found.append(Path(env))
     home = Path.home()
-    for root in (home, home / "Documents"):
+    roots = [home, home / "Documents", home / "OneDrive" / "Documents"]
+    onedrive = os.environ.get("OneDrive")
+    if onedrive:
+        roots.append(Path(onedrive) / "Documents")
+    for root in roots:
         if root.is_dir():
             found.extend(sorted(root.glob("houdini2*"), reverse=True))
     seen: set = set()

@@ -41,7 +41,11 @@ def test_build_package_uses_absolute_repo_paths(tmp_path):
     assert pp == [(repo / "python").as_posix(), repo.as_posix()]
     assert repo.as_posix() in pp  # the root is the load-bearing addition
     assert env["PYTHONPATH"]["method"] == "prepend"
-    assert pkg["path"] == (repo / "houdini").as_posix()
+    # hpath (the H22 HOUDINI_PATH keyword; "path" is deprecated) + a
+    # double-load guard.
+    assert pkg["hpath"] == (repo / "houdini").as_posix()
+    assert "path" not in pkg, "emit hpath, not the deprecated path keyword"
+    assert pkg["load_package_once"] is True
 
 
 def test_moneta_src_included_only_when_sibling_exists(tmp_path):
@@ -82,6 +86,21 @@ def test_pref_dir_detection_honors_env(tmp_path, monkeypatch):
     monkeypatch.setenv("HOUDINI_USER_PREF_DIR", str(pref))
     cands = inst.candidate_pref_dirs()
     assert pref.resolve() in [c.resolve() for c in cands]
+
+
+def test_pref_dir_detection_finds_onedrive_documents(tmp_path, monkeypatch):
+    # H22's pref dir lands under ~/OneDrive/Documents/houdini22.0 when Documents
+    # is redirected to OneDrive (a Windows known-folder default). The $OneDrive
+    # root must be scanned — otherwise bare auto-detect misses H22 and installs
+    # into a stale non-OneDrive dir H22 never reads. Regression guard for the
+    # 2026-07-15 drop-day trap.
+    monkeypatch.delenv("HOUDINI_USER_PREF_DIR", raising=False)
+    onedrive = tmp_path / "OneDrive"
+    h22 = onedrive / "Documents" / "houdini22.0"
+    h22.mkdir(parents=True)
+    monkeypatch.setenv("OneDrive", str(onedrive))
+    cands = inst.candidate_pref_dirs()
+    assert h22.resolve() in [c.resolve() for c in cands]
 
 
 def test_main_dry_run_against_explicit_pref(tmp_path, capsys):

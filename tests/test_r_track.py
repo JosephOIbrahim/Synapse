@@ -597,12 +597,24 @@ def test_capstone_hygiene_never_blocks(tmp_path, monkeypatch):
 # ---------------- live-tree honesty: the gates must read RED today ----------------
 
 def test_live_tree_gates_read_red_now():
-    """Fingerprint honesty (spec 'Ground truth'): against the REAL repo every P0 gate fires
-    RED today — a gate that greens on the live defect is mis-located, not lenient."""
+    """Fingerprint honesty (spec 'Ground truth'): against the REAL repo every
+    UNRESOLVED P0 gate fires RED today — a gate that greens on the live defect
+    is mis-located, not lenient.
+
+    Exception (2026-07-15, H22 drop): deps_isolated (R.4 / P0.1) is now GREEN.
+    The cp313 re-vendor replaced the strict ``== (3, 11)`` boot-cliff gate in
+    python/synapse/__init__.py with an ABI-set membership test (_VENDOR_PYS) —
+    exactly the remediation R.4 tracks. It is asserted GREEN below; the rest
+    still read RED."""
     ctx = _ctx(_REPO)
     for name in ("mutation_fail_closed", "runtime_owns_heartbeat", "hot_reload_gated",
-                 "deps_isolated", "installer_host_targeted", "ci_covers_shipping_surface",
+                 "installer_host_targeted", "ci_covers_shipping_surface",
                  "shelf_current", "tool_metadata_single_source", "process_bridge_armed",
                  "auth_fail_closed", "packaging_self_contained"):
         res = _run(name, ctx)
         assert res["ok"] is False, f"{name} reads GREEN on the live tree — mis-located fingerprint?"
+    # deps_isolated resolved by the H22 cp313 re-vendor — the boot-cliff gate is gone.
+    assert _run("deps_isolated", ctx)["ok"] is True, (
+        "deps_isolated should read GREEN — the cp313 re-vendor replaced the strict "
+        "cp311 equality gate (R.4/P0.1). If this reads RED the re-vendor regressed."
+    )

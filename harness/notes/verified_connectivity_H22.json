@@ -1,0 +1,99 @@
+{
+ "schema": "h22_drop_week_step4_sweep_diff/v1",
+ "_doc": "Drop-week runbook step 4 artifact (docs/SYNAPSE_H22_GAP_BLUEPRINT.md §9.4): connectivity sweep re-run against live H22.0.368, diffed against the frozen H21.0.671 left side. The H22 CATALOG itself is harness/notes/verified_connectivity_22.0.368.json (written by the reused probe, native build-stamped name, schema verified_connectivity/v2); THIS file is the diff + adjudication record. Nothing here updates the packaged catalog (python/synapse/cognitive/tools/data/connectivity_21.json) or any python/synapse source — that is the U.1-H22 cycle's SCAFFOLD phase, gated behind human ratification (runbook step 10).",
+ "runbook_step": 4,
+ "executed": "2026-07-16",
+ "gate": "GATE VERDICT: ALLOW (h22-gatewarden, MODE B, this session) carried in dispatch",
+
+ "baseline_hash_check": {
+  "_what": "leg0_baselines.json consumers[] contract: hash-check the left side BEFORE trusting any diff.",
+  "left_path": "harness/notes/verified_connectivity_21.0.671.json",
+  "expected_sha256": "7d57c1a73cb154fc77b6f729e593d343e2b04cb3d1ee8f3e5dec7cc514e3eba3",
+  "actual_sha256": "7d57c1a73cb154fc77b6f729e593d343e2b04cb3d1ee8f3e5dec7cc514e3eba3",
+  "match": true,
+  "source_of_expected": "harness/state/leg0_baselines.json → baselines.connectivity_catalog.sha256 (frozen_at_commit 314acd6)"
+ },
+
+ "probe_provenance": {
+  "tool": "host/introspect_connectivity.py",
+  "reused_unmodified": true,
+  "interpreter": "C:/Program Files/Side Effects Software/Houdini 22.0.368/bin/hython.exe",
+  "runs": 3,
+  "determinism": "byte-identical across consecutive runs on 22.0.368 (U.1 determinism pin holds on H22)",
+  "probe_errors": 0,
+  "stdout_summary": "CONNECTIVITY: build=22.0.368 types=288 instantiated=269 with_input_labels=228 probe_errors=0 blake2b=e43720dbfa83",
+  "v1_preserved_note": "H22 catalog carries v1_preserved=null — correct by design: the fold only carries a prior file matching the CURRENT build's name, and H21's dir()-membership facts do not transfer across a major."
+ },
+
+ "left": {
+  "path": "harness/notes/verified_connectivity_21.0.671.json",
+  "houdini_version": "21.0.671",
+  "entry_count": 282,
+  "blake2b": "c213570959156138a7cda52936fcd2c1",
+  "sha256": "7d57c1a73cb154fc77b6f729e593d343e2b04cb3d1ee8f3e5dec7cc514e3eba3"
+ },
+ "right": {
+  "path": "harness/notes/verified_connectivity_22.0.368.json",
+  "houdini_version": "22.0.368",
+  "entry_count": 288,
+  "blake2b": "e43720dbfa83e0531e6c0183b6795822",
+  "sha256": "a8aaf17eaeb3a30d524f736d0fb4c7c60705bb7ebc9b596a1d1d70897239871d"
+ },
+
+ "diff": {
+  "added": [
+   {"key": "Cop/camera", "sources": ["emitted:camera"]},
+   {"key": "Cop/heightfield_erode", "sources": ["emitted:heightfield_erode"]},
+   {"key": "Cop/oceanevaluate", "sources": ["emitted:oceanevaluate"]},
+   {"key": "Cop/oceanspectrum", "sources": ["emitted:oceanspectrum"]},
+   {"key": "Data/sidefx::recipe::cop/convolve3::blur", "sources": ["emitted:blur"]},
+   {"key": "Sop/apex::controlextract::2.0", "sources": ["emitted:apex::controlextract"]},
+   {"key": "Sop/apex::scenemerge", "sources": ["sop_pattern"]},
+   {"key": "Sop/camera", "sources": ["emitted:camera"]},
+   {"key": "Sop/rbdmaterialfracture::4.0", "sources": ["emitted:rbdmaterialfracture"]}
+  ],
+  "removed": [
+   {"key": "Data/cop/convolve3::sidefx::blur", "sources": ["emitted:blur"], "note": "recipe namespace reorganized — replaced by Data/sidefx::recipe::cop/convolve3::blur (see added)"},
+   {"key": "Lop/instancer", "sources": ["emitted:instancer"], "note": "SYNAPSE-EMITTED spelling no longer resolves in H22 Solaris (version-stripped matching included — no instancer::N.0 either). createNode('instancer') in a LOP net will fail on H22."},
+   {"key": "Lop/layout", "sources": ["emitted:layout"], "note": "SYNAPSE-EMITTED spelling no longer resolves in H22 Solaris. createNode('layout') in a LOP net will fail on H22."}
+  ],
+  "changed": {
+   "Cop/file": {
+    "max_inputs": {"h21": 0, "h22": 1},
+    "input_labels": {"h21": [], "h22": ["size_ref"]}
+   },
+   "Cop/light": {
+    "max_inputs": {"h21": 3, "h22": 8},
+    "input_labels": {
+     "h21": ["source", "N", "mask"],
+     "h22": ["source", "normal", "pos", "metallic", "vieworigin", "points", "envmap", "mask"]
+    },
+    "note": "MISWIRE CLASS: 'N' renamed to 'normal'; 'mask' moved index 2 → 7. Any setInput wiring Cop light by remembered H21 index is silently wrong on H22 — exactly the drift U.1 exists to catch."
+   },
+   "Sop/apex::controlextract": {
+    "output_labels": {
+     "h21": ["Control Constraint Graph", "Control Skeleton"],
+     "h22": ["Scene/Character/Rig", "Control Skeleton"]
+    }
+   }
+  }
+ },
+
+ "expected_churn_adjudication": {
+  "_what": "The four churn classes the blueprint told step 4 to look for, adjudicated against this sweep's actual scope (emitted surface + Sop solver|merge|switch|blend pattern).",
+  "copernicus_heightfield_set": "CONFIRMED IN-SCOPE. heightfield_erode, oceanspectrum, oceanevaluate, camera now ALSO resolve in the Cop category (SOPs→COPs migration visible on the emitted surface). Cop/file + Cop/light wiring surfaces changed (see diff.changed).",
+  "solaris_procedurals": "CONFIRMED IN-SCOPE (as removals): Lop/instancer + Lop/layout — both SYNAPSE-emitted — are gone from H22. Replacement spelling unknown from this probe; needs a nodetype-catalog follow-up before any planner emit path touches them on H22.",
+  "ml_onnx": "OUT OF THIS SWEEP'S SCOPE — no ML/ONNX type is in SYNAPSE's emitted surface and none matches the Sop solver|merge|switch|blend pattern, so this catalog is structurally blind to them. Belongs to runbook step 9 (new-symbol probes) / the nodetype catalog regen.",
+  "splat_nodes": "OUT OF THIS SWEEP'S SCOPE — same reason as ml_onnx. Belongs to runbook step 9 / nodetype catalog regen."
+ },
+
+ "golden_seeds": {
+  "_what": "The two known-true U.1 regression seeds, re-verified on H22.",
+  "Sop/vellumsolver": {"unchanged": true, "input_labels": ["Vellum Geometry", "Constraint Geometry", "Collision Geometry"], "min_inputs": 2, "max_inputs": 3, "output_count": 3},
+  "Sop/rbdbulletsolver": {"unchanged": true, "constraint_geometry_index": 1, "input_labels": ["Geometry", "Constraint Geometry", "Proxy Geometry", "Collision Geometry", "Guide Sim"], "min_inputs": 1, "max_inputs": 5, "output_count": 4}
+ },
+
+ "rigging_scope_note": "Sop/apex::* rows above are PROBE TRUTH RECORDS ONLY (the probe found them because emitted_node_types.json carries apex::controlextract and 'scenemerge' matches the Sop pattern). Rigging/KineFX/APEX build work remains structurally REFUSED per blueprint §6.1 — no follow-up cycle may scaffold against these entries.",
+
+ "follow_up_feeds": "harness/state/flywheel_queue.json cycle U.1-H22 (status candidate, ratified false — ratification is human, runbook step 10)"
+}

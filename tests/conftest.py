@@ -25,9 +25,16 @@ HOUDINI_BUILD = os.environ.get("SYNAPSE_TEST_HOUDINI_BUILD", "21.0.671")
 HOUDINI_BUILD_TUPLE = tuple(int(p) for p in HOUDINI_BUILD.split("."))
 
 # Vendored-dependency ABI (python/synapse/_vendor) — tracks the committed
-# .pyd binary, NOT the running build; update these when re-vendoring.
+# .pyd binaries, NOT the running build; update these when re-vendoring.
+# As of the H22 drop (2026-07-15) BOTH cp311 (H20.5/21.0/21.5) and cp313
+# (H22) binaries ship side by side at the same package versions. VENDOR_PY /
+# VENDOR_ABI_TAG keep the cp311 primary for existing single-ABI assertions;
+# VENDOR_PYS / VENDOR_ABI_TAGS are the full vendored set (keep in lockstep
+# with python/synapse/__init__.py's _VENDOR_PYS and the actual _vendor .pyds).
 VENDOR_PY = (3, 11)
 VENDOR_ABI_TAG = "cp311-win_amd64"
+VENDOR_PYS = frozenset({(3, 11), (3, 13)})
+VENDOR_ABI_TAGS = ("cp311-win_amd64", "cp313-win_amd64")
 
 
 # ---------------------------------------------------------------------------
