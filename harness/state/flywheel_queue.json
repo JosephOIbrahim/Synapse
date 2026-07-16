@@ -187,10 +187,11 @@
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md",
         "harness/notes/verified_connectivity_H22.json",
-        "docs/reviews/h22-drop-execution-2026-07-15.md"
+        "docs/reviews/h22-drop-execution-2026-07-15.md",
+        "docs/reviews/h22-now-probes-2026-07-16.md"
       ],
       "ratified": true,
-      "note": "BLOCKED_ON: human gate 2: layout-successor ruling (N-5 catalog probe feeds it, runs 2026-07-16) | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
+      "note": "GATE-2 RESOLVED BY EVIDENCE 2026-07-16 (N-5, docs/reviews/h22-now-probes-2026-07-16.md): layout -> paintinstances (official whats-new 22/solaris.txt L137 + shipped opalias; 41/42 parms, sole drop = method) AND instancer -> copytopoints (L143; 39/41, drops allowmissingprototypes) — SOL-03 pointinstancer identification was WRONG (pointinstancer is a NEW H22 node, not the rename). Emit canonical spellings, never lean on the alias table. | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
     },
     {
       "id": "C.1-H22-imagelayer-stats",
