@@ -287,9 +287,12 @@ height_to_normal_kernel = '''
 node = hou.node("/obj/copnet1/grade1")
 node.cook(force=True)
 
-# Get resolution
-width = node.xRes()
-height = node.yRes()
+# Get resolution (H22 Copernicus: xRes()/yRes() were REMOVED from hou.CopNode —
+# read via cable()/ImageLayer instead; verified live on 22.0.368)
+cable = node.cable()                       # hou.CopCable for output 0
+if cable.wireCount() > 0:
+    layer = cable.layerByIndex(0)          # hou.ImageLayer
+    width, height = layer.bufferResolution()  # e.g. (1024, 1024)
 
 # Export via ROP COP Output
 rop = copnet.createNode("rop_comp")
@@ -307,22 +310,40 @@ rop.render()
 
 ## Layer Data Access
 
+⚠ **H22 split this surface in two (verified live on 22.0.368).** `hou.CopNode`
+(Copernicus, category `Cop`) REMOVED `planes()`, `xRes()`, `yRes()`, `depth()`,
+`allPixels()`, and `setPixelsOfCookingPlane()`. Read Copernicus image data via
+`cable()` → `hou.CopCable` → `hou.ImageLayer`. The legacy methods survive ONLY
+on `hou.Cop2Node` (legacy `cop2net`, category `Cop2`).
+
 ```python
-# Read pixel data from a COP node
+# Read image data from a Copernicus COP node (hou.CopNode, H22)
 node = hou.node("/obj/copnet1/grade1")
+node.cook(force=True)
 
-# Get all planes (layers)
-planes = node.planes()  # e.g., ['C', 'A'] for color + alpha
+# Get all layers (H22 equivalent of plane names): cable wire names
+cable = node.cable()               # hou.CopCable for output 0
+layer_names = cable.wireNames()    # e.g. ('ramp',) — empty until cooked/loaded
 
-# Get plane resolution
-xres = node.xRes()
-yres = node.yRes()
+# Get layer resolution + storage type
+if cable.wireCount() > 0:
+    layer = cable.layerByIndex(0)          # hou.ImageLayer (also: node.layer(0))
+    xres, yres = layer.bufferResolution()  # e.g. (1024, 1024)
+    channels = layer.channelCount()        # e.g. 3
+    storage = layer.storageType()          # e.g. imageLayerStorageType.Float32
+    dtype = cable.wireDataTypeByIndex(0)   # e.g. RGB
 
-# Read pixel values (returns tuple of floats)
-# allPixels(plane_name) -> flat array of pixel values
+    # Read/write pixel values (replaces allPixels/setPixelsOfCookingPlane)
+    pixels = layer.allBufferElements()
+    # layer.setAllBufferElements(values)
+```
+
+```python
+# LEGACY ONLY — hou.Cop2Node (cop2net children) keeps the old surface in H22
+node = hou.node("/obj/cop2net1/file1")
+planes = node.planes()        # e.g. ['C', 'A'] for color + alpha
+xres, yres = node.xRes(), node.yRes()
 pixels = node.allPixels("C")  # Color plane
-
-# Set pixel values
 # node.setPixelsOfCookingPlane(plane_name, values, ...)
 ```
 
