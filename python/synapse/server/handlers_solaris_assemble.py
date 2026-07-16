@@ -50,8 +50,12 @@ _SOLARIS_NODE_ORDER: Dict[str, int] = {
     "collection": 280,              # USD collection for light linking / grouping
     "prune": 290,                   # Prune prims from stage (deactivate)
     # --- Instancing ---
-    "pointinstancer": 300,          # USD native point instancing
-    "instancer": 310,               # Legacy instancer
+    "pointinstancer": 300,          # USD native point instancing (new H22 create+edit node)
+    # W.3 (H22): `instancer` was renamed `copytopoints` (whats-new 22/solaris.txt
+    # L143). Canonical spelling only — never the opalias. Dropped parms vs H21:
+    # allowmissingprototypes / protooptionsgroup (successor: handlemissingprototypes);
+    # nothing in SYNAPSE ever set them.
+    "copytopoints": 310,            # Copy to Points (formerly `instancer`)
     # --- Cameras ---
     "camera": 400,
     # --- Lighting ---
@@ -66,7 +70,10 @@ _SOLARIS_NODE_ORDER: Dict[str, int] = {
     "karmaphysicalsky": 610,        # Pattern 1: physical sky lighting
     "lightmixer": 620,              # Aggregate / edit multiple lights
     # --- Layout + Physics (Pattern 8) ---
-    "layout": 650,                  # Instanceable Reference mode for physics
+    # W.3 (H22): `layout` was renamed `paintinstances` (whats-new 22/solaris.txt
+    # L137). Canonical spelling only — never the opalias. Sole dropped parm vs
+    # H21: `method`; nothing in SYNAPSE ever set it.
+    "paintinstances": 650,          # Paint Instances (formerly `layout`); Instanceable Reference mode
     "edit": 660,                    # Add Physics + Use Physics
     # --- Variants (Pattern 5) ---
     "explorevariants": 670,         # Preview variants interactively

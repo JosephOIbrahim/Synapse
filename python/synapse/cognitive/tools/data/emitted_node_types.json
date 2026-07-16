@@ -1,6 +1,6 @@
 {
   "schema": "emitted_node_types/v1",
-  "generated_from_commit": "ddf85354125309ccb7a4fbbbfd61916c5ba2e56a",
+  "generated_from_commit": "b02bf8b9cf93d91322c0a6b6fc19adb2864b0baa",
   "entries": [
     {
       "category": "apex_seed",
@@ -187,6 +187,13 @@
       ]
     },
     {
+      "category": "setdressing_verified",
+      "type_name": "copytopoints",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
       "category": "createNode_literal",
       "type_name": "debrissource",
       "source_files": [
@@ -318,13 +325,6 @@
       ]
     },
     {
-      "category": "setdressing_verified",
-      "type_name": "instancer",
-      "source_files": [
-        "tests/test_setdressing_recipe.py"
-      ]
-    },
-    {
       "category": "createNode_literal",
       "type_name": "karma",
       "source_files": [
@@ -360,13 +360,6 @@
       "type_name": "kinefx::twoboneik",
       "source_files": [
         "python/synapse/science/apex_probes.py"
-      ]
-    },
-    {
-      "category": "setdressing_verified",
-      "type_name": "layout",
-      "source_files": [
-        "tests/test_setdressing_recipe.py"
       ]
     },
     {
@@ -497,10 +490,24 @@
       ]
     },
     {
+      "category": "setdressing_verified",
+      "type_name": "paintinstances",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
+      ]
+    },
+    {
       "category": "createNode_literal",
       "type_name": "partitionbyattribute",
       "source_files": [
         "python/synapse/server/handlers_tops/render_sequence.py"
+      ]
+    },
+    {
+      "category": "setdressing_verified",
+      "type_name": "pointinstancer",
+      "source_files": [
+        "tests/test_setdressing_recipe.py"
       ]
     },
     {

@@ -1,20 +1,31 @@
 """Pin the Solaris set-dressing recipe to live-verified node types + RAW USD names.
 
-The 2026-06-26 live probe on Houdini 21.0.671 established the set-dressing
-ground truth this recipe is built on:
+The 2026-07-16 live probe on Houdini 22.0.368 (W.3-H22-setdressing; ruling
+evidence N-5 in docs/reviews/h22-now-probes-2026-07-16.md) re-established the
+set-dressing ground truth this recipe is built on:
 
-  * The set-dressing LOP types that EXIST: instancer, layout, duplicate,
-    componentgeometry, componentoutput, extractinstances, mergepointinstancers,
-    modifypointinstances, splitpointinstancers. There is NO native Solaris
-    scatter LOP -- scatter is SOP-side, brought in via sopimport.
+  * H22 renames (canonical spellings ONLY — never the shipped opalias):
+    ``instancer`` -> ``copytopoints`` (whats-new 22/solaris.txt L143; dropped
+    parms: allowmissingprototypes/protooptionsgroup) and ``layout`` ->
+    ``paintinstances`` (L137; dropped parm: method). ``pointinstancer`` is a
+    NEW H22 node, NOT the rename target.
+  * The set-dressing LOP types verified to EXIST on 22.0.368 (per-name
+    hou.nodeType probe): copytopoints, paintinstances, pointinstancer,
+    duplicate, componentgeometry, componentoutput, extractinstances,
+    mergepointinstancers, modifypointinstances, splitpointinstancers. There
+    is still NO native Solaris scatter LOP -- scatter is SOP-side, brought
+    in via sopimport.
   * set_usd_attribute authors the RAW USD attribute name (prim.GetAttribute
     (name).Set under an `if attr:` guard). A punycode (xn__) name resolves to
     an INVALID attribute and SILENTLY NO-OPS. Raw schema names (protoIndices,
-    positions, inputs:*) are stable across Houdini/USD builds -> H22-safe.
+    positions, inputs:*) are stable across Houdini/USD builds -> verified
+    unchanged on H22.0.368.
 
 These tests assert the ``solaris_scatter_instances`` recipe registers, that
-every ``create_node`` type it emits is in the verified-existing set, and that
-no USD attribute name is a punycode (xn__) spelling.
+every ``create_node`` type it emits is in the verified-existing set, that the
+recipe never emits a removed legacy spelling, and that no USD attribute name
+is a punycode (xn__) spelling. The live create+cook side of this pin runs in
+tests/test_h22_setdressing_live.py (real hython only).
 
 NO Houdini import -- pure data checks on the recipe templates.
 """
@@ -37,12 +48,15 @@ from synapse.routing.recipes.scene_recipes import (  # noqa: E402
 
 RECIPE_NAME = "solaris_scatter_instances"
 
-# Node-type spellings verified present in the live H21.0.671 catalog for
-# Solaris set-dressing, plus the generic stage-composition LOP `merge`. Every
-# create_node type the recipe emits must be a member of this set.
+# Node-type spellings verified present in the live H22.0.368 catalog for
+# Solaris set-dressing (W.3 per-name hou.nodeType probe, 2026-07-16), plus the
+# generic stage-composition LOP `merge`. Every create_node type the recipe
+# emits must be a member of this set. Canonical H22 spellings only — the
+# removed `instancer`/`layout` names verified ABSENT from type lookup.
 VERIFIED_NODE_TYPES = {
-    "instancer",
-    "layout",
+    "copytopoints",       # H22 rename of `instancer` (whats-new 22/solaris.txt L143)
+    "paintinstances",     # H22 rename of `layout` (L137)
+    "pointinstancer",     # NEW H22 create+edit node (L141) — not the rename target
     "duplicate",
     "componentgeometry",
     "componentoutput",
@@ -53,6 +67,11 @@ VERIFIED_NODE_TYPES = {
     "sopimport",
     "merge",
 }
+
+# Removed-on-H22 legacy spellings: hou.nodeType(lop, name) -> None on 22.0.368.
+# createNode() still resolves them via the shipped opalias, but SYNAPSE emits
+# canonical names only (W.3 ruling: never lean on the alias table).
+REMOVED_LEGACY_SPELLINGS = {"instancer", "layout"}
 
 # RAW USD names the recipe is allowed to author. Punycode (xn__) is forbidden.
 ALLOWED_USD_ATTRIBUTES = {"protoIndices", "positions"}
@@ -114,6 +133,18 @@ def test_all_create_node_types_are_verified():
             f"{RECIPE_NAME}: create_node type {node_type!r} is not a "
             f"live-verified set-dressing/LOP type"
         )
+
+
+def test_no_removed_legacy_spellings_emitted():
+    # W.3 (H22): `instancer`/`layout` are gone from type lookup on 22.0.368.
+    # The opalias would silently rescue createNode(), but SYNAPSE must emit
+    # canonical spellings — a legacy emission here is a regression.
+    recipe = _get_recipe(_scene_registry())
+    legacy = set(_create_node_types(recipe)) & REMOVED_LEGACY_SPELLINGS
+    assert not legacy, (
+        f"{RECIPE_NAME}: emits removed H21 spellings {sorted(legacy)} — "
+        f"use copytopoints/paintinstances (canonical H22 names)"
+    )
 
 
 def test_no_native_solaris_scatter_lop():

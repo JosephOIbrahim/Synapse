@@ -1597,7 +1597,7 @@
     "summary": "Key Solaris/LOP parameter naming conventions"
   },
   "solaris_nodes": {
-    "description": "Python reference for creating and configuring Solaris (LOP) nodes via hou.node('/stage').createNode() + parm().set(). Covers stage management (merge, switch, null, configurestage), geometry import (sopcreate/sopimport), materials (materiallibrary, assignmaterial, materiallinker), all light types (domelight, distantlight, rectlight, disklight, cylinderlight, spherelight), cameras, render settings (karmarenderproperties, usdrender_rop), and layout/instancer nodes. All LOP nodes live in /stage. Lighting Law: intensity ALWAYS 1.0; brightness via exposure (stops). Light parms use punycode-encoded names (e.g. exposure='xn__inputsexposure_vya'); see solaris_parameters for the encoding table.",
+    "description": "Python reference for creating and configuring Solaris (LOP) nodes via hou.node('/stage').createNode() + parm().set(). Covers stage management (merge, switch, null, configurestage), geometry import (sopcreate/sopimport), materials (materiallibrary, assignmaterial, materiallinker), all light types (domelight, distantlight, rectlight, disklight, cylinderlight, spherelight), cameras, render settings (karmarenderproperties, usdrender_rop), and instancing nodes — H22 (22.0.368) renamed the `instancer` LOP to `copytopoints` and the `layout` LOP to `paintinstances` (old spellings gone from type lookup; emit canonical names only; `pointinstancer` is a NEW H22 node, not the rename). All LOP nodes live in /stage. Lighting Law: intensity ALWAYS 1.0; brightness via exposure (stops). Light parms use punycode-encoded names (e.g. exposure='xn__inputsexposure_vya'); see solaris_parameters for the encoding table.",
     "keywords": [
       "solaris",
       "lop",
@@ -1616,7 +1616,9 @@
       "sublayer",
       "payload",
       "layer stack",
-      "composition arc"
+      "composition arc",
+      "copytopoints",
+      "paintinstances"
     ],
     "summary": "Solaris/LOP node creation and configuration reference (stage, geometry, materials, lights, cameras, render settings)",
     "reference_file": "solaris_nodes"
@@ -2354,7 +2356,7 @@
     "summary": "husk CLI rendering: flags, frame tokens, EXR output, iconvert preview pipeline"
   },
   "solaris_instancing": {
-    "description": "Point Instancer setup in Solaris: prototype configuration, SOP-to-instancer workflow, RBD-to-instancer pipeline, light instancing (reference mode for Karma), variant instancing workaround (Duplicate + Set Variant), Retime Instancer for animated prototypes, SOP attribute mapping (Cd -> inputs:color, primvars array indexing), instanceable flag via Configure Primitive, Karma XPU nesting limits.",
+    "description": "Point Instancer setup in Solaris via the `copytopoints` LOP (H22 canonical rename of the H21 `instancer` LOP; `layout` is now `paintinstances` — emit canonical spellings only): prototype configuration, SOP-to-instancer workflow (transformsourcemode='extsop' + pointsoppath on H22), RBD-to-instancer pipeline, light instancing (reference mode for Karma), variant instancing workaround (Duplicate + Set Variant), Retime Instancer for animated prototypes, SOP attribute mapping (Cd -> inputs:color, primvars array indexing), instanceable flag via Configure Primitive, Karma XPU nesting limits.",
     "keywords": [
       "instancer",
       "point instancer",
@@ -2391,10 +2393,14 @@
       "nested instancer",
       "instance material",
       "per-instance override",
-      "point instancer karma"
+      "point instancer karma",
+      "copytopoints",
+      "paintinstances",
+      "copytopoints lop",
+      "paint instances lop"
     ],
     "reference_file": "solaris_instancing",
-    "summary": "Solaris instancing: Point Instancer setup, SOP/RBD workflows, light instancing, variant workaround, animated prototypes, instanceable flag"
+    "summary": "Solaris instancing: Point Instancer setup (H22: copytopoints, ex-instancer), SOP/RBD workflows, light instancing, variant workaround, animated prototypes, instanceable flag"
   },
   "solaris_variants": {
     "description": "USD variant creation and selection in Solaris: Add Variant LOP (Begin/End block), Set Variant LOP, variant naming, clean variant setup via chained Grafts, LOD variants, material/look variants, variant precedence in LIVRPS, variant selection in Python, Component Output export with variants, variant composition rules.",

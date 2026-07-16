@@ -358,11 +358,18 @@ def instanceable_assets(
     include_lights: bool = True,
     include_render: bool = True,
 ) -> Dict[str, Any]:
-    """N asset references → layout (instanceable) → render tail.
+    """N asset references → paintinstances (instanceable) → render tail.
 
     Creates a populated scene from multiple referenced assets using USD
     native instancing. Each asset is loaded via a reference node, then
-    a layout node arranges instances with Instanceable Reference mode.
+    a Paint Instances node arranges instances with Instanceable Reference
+    mode.
+
+    H22 rename (W.3, N-5 probe 2026-07-16): ``Lop/layout`` is now
+    ``Lop/paintinstances`` (whats-new 22/solaris.txt L137). We emit the
+    canonical spelling — never the shipped ``opalias``. The sole parm the
+    rename dropped is ``method`` (41/42 survive); this template never set
+    it, so no parm guard is needed.
 
     Args:
         asset_count: Number of distinct assets to reference (default: 3).
@@ -389,13 +396,17 @@ def instanceable_assets(
     for i in range(asset_count):
         connections.append({"from": f"asset_{i}", "to": "merge", "input": i})
 
-    # Layout node for instanced scattering
-    nodes.append({"id": "layout", "type": "layout", "name": "scatter_layout"})
-    connections.append({"from": "merge", "to": "layout", "input": 0})
+    # Paint Instances node for instanced scattering (H22 canonical spelling
+    # of the former `layout` LOP — live-verified create+cook on 22.0.368).
+    nodes.append({
+        "id": "paintinstances", "type": "paintinstances",
+        "name": "scatter_instances",
+    })
+    connections.append({"from": "merge", "to": "paintinstances", "input": 0})
 
     # Canonical render tail
     display = _build_render_tail(
-        nodes, connections, "layout",
+        nodes, connections, "paintinstances",
         include_camera=include_camera,
         include_lights=include_lights,
         include_render=include_render,

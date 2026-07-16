@@ -76,7 +76,15 @@ def register_scene_recipes(registry):
     # (GetAttribute returns invalid -> the `if attr:` no-op). Binding the
     # prototype + writing the real per-point positions/protoIndices arrays is a
     # follow-up (execute_python with CreateRelationship/Vt arrays, or wiring the
-    # `instancer` LOP). This template seeds a single-instance placeholder.
+    # `copytopoints` LOP — the H22 canonical rename of the H21 `instancer` LOP
+    # (W.3, whats-new 22/solaris.txt L143; emit canonical, never the opalias)).
+    # This template seeds a single-instance placeholder.
+    #
+    # H22.0.368 re-verification (W.3 probe 2026-07-16): every create_node type
+    # this recipe emits (componentgeometry, componentoutput, sopimport, merge)
+    # still resolves via hou.nodeType(lop, name); the raw-USD-schema authoring
+    # path is unchanged. The renamed set-dressing LOPs are pinned in
+    # tests/test_setdressing_recipe.py + tests/test_h22_setdressing_live.py.
     registry.register(Recipe(
         name="solaris_scatter_instances",
         description=(

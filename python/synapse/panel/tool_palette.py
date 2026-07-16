@@ -78,8 +78,12 @@ def _domain(name):
             return "Render"
         return "Orchestration & Knowledge"
     if name.startswith("houdini_"):
+        # "instancer" matches the point_instancer tool family (USD
+        # PointInstancer prim — live H22 vocabulary, NOT the removed
+        # Lop/instancer); H22 canonical LOP renames listed explicitly (W.3).
         if any(k in name for k in ("usd", "prim", "stage", "solaris", "reference",
-                                   "payload", "variant", "collection", "instancer", "light")):
+                                   "payload", "variant", "collection", "instancer",
+                                   "copytopoints", "paintinstances", "light")):
             return "USD / Solaris"
         if any(k in name for k in ("material", "mtlx")):
             return "Materials"
