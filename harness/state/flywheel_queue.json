@@ -183,7 +183,7 @@
     {
       "id": "W.3-H22-setdressing",
       "title": "SB-5: instancer→pointinstancer rename + layout-successor repair, ALL emitting sites in one cycle (solaris_graph_templates.py:393, handlers_solaris_assemble.py:54,69, scene_recipes.py, test_setdressing_recipe.py, palette filters) + live create+cook test. Do NOT half-fix.",
-      "status": "merge_ready",
+      "status": "merged",
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md",
         "harness/notes/verified_connectivity_H22.json",
@@ -191,7 +191,7 @@
         "docs/reviews/h22-now-probes-2026-07-16.md"
       ],
       "ratified": true,
-      "note": "GATE-2 RESOLVED BY EVIDENCE 2026-07-16 (N-5, docs/reviews/h22-now-probes-2026-07-16.md): layout -> paintinstances (official whats-new 22/solaris.txt L137 + shipped opalias; 41/42 parms, sole drop = method) AND instancer -> copytopoints (L143; 39/41, drops allowmissingprototypes) — SOL-03 pointinstancer identification was WRONG (pointinstancer is a NEW H22 node, not the rename). Emit canonical spellings, never lean on the alias table. | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument | MERGE_READY 2026-07-16 (commit 7c76110, worktree wf_37f79fb2-cfe-2): code PROVEN correct (direct worktree import + live H22 create+cook of paintinstances/copytopoints, 13/13 assayer PASS provisional-headless). CRUCIBLE MERGE-CONDITION: the worktree pytest validated MASTER not the branch (editable-install .pth shadowing) — the 2 in-worktree \"failures\" were the branch ratchet correctly firing on master's stale layout emission; MUST re-run full suite with branch code resident (i.e. post-merge) to confirm green. Standard post-merge re-verify resolves it."
+      "note": "GATE-2 RESOLVED BY EVIDENCE 2026-07-16 (N-5, docs/reviews/h22-now-probes-2026-07-16.md): layout -> paintinstances (official whats-new 22/solaris.txt L137 + shipped opalias; 41/42 parms, sole drop = method) AND instancer -> copytopoints (L143; 39/41, drops allowmissingprototypes) — SOL-03 pointinstancer identification was WRONG (pointinstancer is a NEW H22 node, not the rename). Emit canonical spellings, never lean on the alias table. | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument | MERGE_READY 2026-07-16 (commit 7c76110, worktree wf_37f79fb2-cfe-2): code PROVEN correct (direct worktree import + live H22 create+cook of paintinstances/copytopoints, 13/13 assayer PASS provisional-headless). CRUCIBLE MERGE-CONDITION: the worktree pytest validated MASTER not the branch (editable-install .pth shadowing) — the 2 in-worktree \"failures\" were the branch ratchet correctly firing on master's stale layout emission; MUST re-run full suite with branch code resident (i.e. post-merge) to confirm green. Standard post-merge re-verify resolves it. | MERGED to master 2026-07-16 (commit b5570f8, human-directed); post-merge suite 4316/0/91 re-verified with synapse.__file__ confirmed main-checkout-resident (crucible merge-condition RESOLVED — the 2 shadowed-worktree \"failures\" pass on master)."
     },
     {
       "id": "C.1-H22-imagelayer-stats",
@@ -322,6 +322,56 @@
       ],
       "ratified": false,
       "note": "Deposited from the W.3-H22-setdressing crucible (MERGE_READY, 0 showstoppers). Small, W.6-corpus-class. Human flip required."
+    },
+    {
+      "id": "CTO-01-memory-usd-roundtrip",
+      "title": "[P1 NOW-probe] agent.usd / memory-evolution USD round-trip probe on H22.0.368: run shared/evolution.py end-to-end under HYTHON on a >=5-item fixture to trip a real Charmander->Charmeleon evolve; assert VERIFY-stage fidelity==1.0. The moat's ONLY in-process exact-equality gate against live pxr, never re-probed on H22 despite USD 0.26.5 module reorg (pxr.Ndr removed, ZipFile relocated Usd->Sdf). A <1.0 result is a memory-1/memory-2 wave merge blocker.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-sidefx-cto-lens-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the sidefx-cto lens first pass (read-only advisory; agent proposed the spec, human ratifies). Full reasoning + tier in docs/reviews/h22-sidefx-cto-lens-2026-07-16.md."
+    },
+    {
+      "id": "CTO-02-opalias-enumeration",
+      "title": "[P1 NOW-probe] opalias-dependency enumeration + alias-aware U.1 membership: grep $HFS/houdini/OPcustomize for every opalias, cross-ref emitted_node_types.json, list every SYNAPSE emit that resolves ONLY via a courtesy alias (works now, expires next major). Generalizes N-5's layout correction; feeds the gate-2 correction of verified_connectivity_H22.json diff.removed notes.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-sidefx-cto-lens-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the sidefx-cto lens first pass (read-only advisory; agent proposed the spec, human ratifies). Full reasoning + tier in docs/reviews/h22-sidefx-cto-lens-2026-07-16.md."
+    },
+    {
+      "id": "CTO-03-instancing-intent-successor",
+      "title": "[P1 WAVE-COUPLED extends W-3] instancing-reorg-aware successor selection: map by INTENT for the headless-agent context — deterministic scatter -> copytopoints; render-time generative -> scatterinstances (#since 22.0). Do NOT default-adopt the paintinstances alias (brush/GUI successor, method parm dropped). Refines the already-merged W.3.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-sidefx-cto-lens-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the sidefx-cto lens first pass (read-only advisory; agent proposed the spec, human ratifies). Full reasoning + tier in docs/reviews/h22-sidefx-cto-lens-2026-07-16.md."
+    },
+    {
+      "id": "CTO-04-cop2net-sunset-register",
+      "title": "[P2 NEW-CAPABILITY extends C-4] legacy \"COP Network - Old\" (cop2net/vopcop2gen) dependency register: 6 tools structurally pinned to the vendor-sunset surface (26 refs in handlers_cops.py). Trajectory-driven migration target, not silent-no-op cleanup. Widen C-4 to include create_network + composite_aovs. Contingency has NOT fired on 22.0.368 — naming the deadline, not an emergency.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-sidefx-cto-lens-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the sidefx-cto lens first pass (read-only advisory; agent proposed the spec, human ratifies). Full reasoning + tier in docs/reviews/h22-sidefx-cto-lens-2026-07-16.md."
+    },
+    {
+      "id": "CTO-05-guarded-degradation-honesty",
+      "title": "[P2 NEW-CAPABILITY, pairs with W.1b] guarded-degradation -> surfaced provenance warning: make load-bearing try/except(AttributeError)/None-guard degradations emit a fidelity<1.0 IntegrityBlock note (\"symbol X absent on this build\") instead of a clean empty envelope. Fixes the CLASS behind SB-1..SB-5. Acceptance note: numeric receipts need tolerance-based hython fixtures, not mock-hou equality goldens (backend-precision axis).",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-sidefx-cto-lens-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the sidefx-cto lens first pass (read-only advisory; agent proposed the spec, human ratifies). Full reasoning + tier in docs/reviews/h22-sidefx-cto-lens-2026-07-16.md."
     }
   ]
 }
