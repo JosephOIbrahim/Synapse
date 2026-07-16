@@ -178,7 +178,7 @@
         "harness/notes/h22_doc_candidates_wave2.json"
       ],
       "ratified": true,
-      "note": "RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
+      "note": "RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument | SCOPE ADDED by W.1 crucible 2026-07-16: (a) rag/skills/houdini21-reference/cops_compositing.md ~389-560 still teaches allPixels/xRes/yRes with no Cop2/Copernicus split; (b) rag/documentation/_metadata/semantic_index.json copernicus enrichment summary still baits xRes/allPixels into searchable_text — regenerate in the same pass; (c) add numpy.frombuffer reinterpretation note to the new allBufferElements recipe (raw byte buffer, not float tuples)."
     },
     {
       "id": "W.3-H22-setdressing",
@@ -282,6 +282,16 @@
       ],
       "ratified": false,
       "note": "deposited unratified (CTO hold: features wait — receipts first)"
+    },
+    {
+      "id": "W.1b-H22-planes-followups",
+      "title": "W.1 crucible follow-ups (sev-3 pair): (1) make _copernicus_image_info API-drift LOUD (warn-once log or api_drift entry in analyze_render issues[]) instead of blanket except-pass — the silent-degrade pattern that masked planes() is reproduced; (2) legacy Cop2Node.depth() requires a plane arg on 22.0.368 — call depth(plane) per-plane or drop data_type honestly + fix the H21-signature mock in test_read_layer_info_legacy_cop2_path_preserved; (3) exercise the isinstance branches of _uses_legacy_cop2_surface in the suite + freeze a golden envelope key list for both handlers.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the W.1-H22-planes crucible boundedWeaknesses (MERGE_READY verdict, 0 showstoppers) — deliberately NOT folded into W.1 (verbatim-preservation was the ratified scope). Human flip required."
     }
   ]
 }
