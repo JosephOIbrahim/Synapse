@@ -151,6 +151,55 @@ def _make_cop_node(path="/obj/cop2net1/blur1", type_name="blur",
     return node
 
 
+def _make_copernicus_node(path="/img/copnet1/ramp1", type_name="ramp",
+                          wire_names=("ramp",), resolution=(1024, 1024),
+                          storage="imageLayerStorageType.Float32", channels=3,
+                          parms=None, errors=None, warnings=None):
+    """Create a mock H22 Copernicus COP node (category ``Cop``).
+
+    H22 REMOVED planes()/xRes()/yRes()/depth() from hou.CopNode (NWS-03) --
+    the attrs are deleted so any leftover legacy-surface call raises
+    AttributeError instead of silently returning mock data. Reads go through
+    the verified replacement surface: cable() -> CopCable -> ImageLayer.
+    """
+    node = MagicMock()
+    node.path.return_value = path
+    node.name.return_value = path.rsplit("/", 1)[-1]
+    node.type.return_value = _MockNodeType(type_name, category="Cop")
+    node.cook = MagicMock()
+    node.errors.return_value = errors or []
+    node.warnings.return_value = warnings or []
+
+    del node.planes
+    del node.xRes
+    del node.yRes
+    del node.depth
+
+    layer = MagicMock()
+    layer.bufferResolution.return_value = tuple(resolution) if resolution else None
+    layer.channelCount.return_value = channels
+    layer.storageType.return_value = storage
+
+    cable = MagicMock()
+    cable.wireNames.return_value = list(wire_names)
+    cable.wireCount.return_value = len(wire_names)
+    cable.layerByIndex.return_value = layer
+    node.cable.return_value = cable
+
+    _parms = parms or {}
+    def _parm(name):
+        if name in _parms:
+            p = MagicMock()
+            p.eval.return_value = _parms[name]
+            p.name.return_value = name
+            return p
+        return None
+    node.parm = _parm
+    node.parmTuple = MagicMock(return_value=None)
+
+    return node
+
+
 def _make_network_node(path="/obj/cop2net1", children=None):
     """Create a mock COP2 network node."""
     net = MagicMock()
@@ -375,6 +424,67 @@ class TestCopsReadLayerInfo:
             ))
         assert not result.success
 
+    def test_read_layer_info_legacy_cop2_path_preserved(self, handler):
+        """Legacy Cop2 nodes (category Cop2) still read via planes()/xRes()/depth()."""
+        node = _make_cop_node("/obj/cop2net1/file1", "file")
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_read_layer_info",
+                id="test-15b",
+                payload={"node": "/obj/cop2net1/file1"},
+            ))
+        assert result.success
+        assert result.data["planes"] == ["C", "A"]
+        assert result.data["resolution"] == [1024, 1024]
+        assert result.data["data_type"] == "float32"
+
+    def test_read_layer_info_copernicus_surface(self, handler):
+        """H22 Copernicus nodes read via cable()/ImageLayer -- planes truthfully
+        populated from wire names instead of silently degrading to []."""
+        node = _make_copernicus_node("/img/copnet1/ramp1", "ramp",
+                                     wire_names=("ramp",))
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_read_layer_info",
+                id="test-15c",
+                payload={"node": "/img/copnet1/ramp1"},
+            ))
+        assert result.success
+        assert result.data["planes"] == ["ramp"]
+        assert result.data["resolution"] == [1024, 1024]
+        assert result.data["data_type"] == "imageLayerStorageType.Float32"
+
+    def test_read_layer_info_copernicus_envelope_matches_legacy(self, handler):
+        """Response envelope shape is identical across both surfaces (same keys)."""
+        legacy = _make_cop_node("/obj/cop2net1/file1", "file")
+        modern = _make_copernicus_node("/img/copnet1/ramp1", "ramp")
+        results = {}
+        for name, node in [("legacy", legacy), ("modern", modern)]:
+            with patch.object(_handlers_hou, "node", return_value=node):
+                results[name] = handler.handle(handlers_mod.SynapseCommand(
+                    type="cops_read_layer_info",
+                    id=f"test-15d-{name}",
+                    payload={"node": node.path()},
+                ))
+        assert results["legacy"].success and results["modern"].success
+        assert set(results["legacy"].data.keys()) == set(results["modern"].data.keys())
+
+    def test_read_layer_info_copernicus_empty_cable(self, handler):
+        """Un-cooked/unloaded Copernicus node: zero wires -> honest empty planes,
+        resolution falls back to resx/resy parms."""
+        node = _make_copernicus_node("/img/copnet1/file1", "file",
+                                     wire_names=(),
+                                     parms={"resx": 512, "resy": 512})
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_read_layer_info",
+                id="test-15e",
+                payload={"node": "/img/copnet1/file1"},
+            ))
+        assert result.success
+        assert result.data["planes"] == []
+        assert result.data["resolution"] == [512, 512]
+
 
 # ---------------------------------------------------------------------------
 # Phase 2: Pipeline Integration Tests
@@ -444,6 +554,51 @@ class TestCopsAnalyzeRender:
             ))
         assert result.success
         assert result.data["overall_quality"] == "fail"
+
+    def test_analyze_render_legacy_planes_preserved(self, handler):
+        """Legacy Cop2 nodes still report planes via planes()."""
+        node = _make_cop_node("/obj/cop2net1/file1", "file")
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_analyze_render",
+                id="test-19b",
+                payload={"node": "/obj/cop2net1/file1"},
+            ))
+        assert result.success
+        assert result.data["planes"] == ["C", "A"]
+        assert result.data["pixel_count"] == 1024 * 1024
+
+    def test_analyze_render_copernicus_surface(self, handler):
+        """H22 Copernicus nodes: resolution/planes read via cable()/ImageLayer --
+        report truthfully populated instead of resolution:None + planes:[]."""
+        node = _make_copernicus_node("/img/copnet1/ramp1", "ramp",
+                                     wire_names=("ramp",))
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_analyze_render",
+                id="test-19c",
+                payload={"node": "/img/copnet1/ramp1"},
+            ))
+        assert result.success
+        assert result.data["overall_quality"] == "pass"
+        assert result.data["resolution"] == [1024, 1024]
+        assert result.data["pixel_count"] == 1024 * 1024
+        assert result.data["planes"] == ["ramp"]
+
+    def test_analyze_render_copernicus_empty_cable(self, handler):
+        """Zero wires on a Copernicus node -> resolution None (preserved envelope),
+        honest empty planes, no pixel_count key."""
+        node = _make_copernicus_node("/img/copnet1/file1", "file", wire_names=())
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_analyze_render",
+                id="test-19d",
+                payload={"node": "/img/copnet1/file1"},
+            ))
+        assert result.success
+        assert result.data["resolution"] is None
+        assert result.data["planes"] == []
+        assert "pixel_count" not in result.data
 
 
 class TestCopsSlapComp:

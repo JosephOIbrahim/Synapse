@@ -74,6 +74,78 @@ def _cop_missing_type_message(type_name: str) -> str:
     )
 
 
+def _uses_legacy_cop2_surface(node) -> bool:
+    """True when ``node`` exposes the legacy COP2 read surface (planes/xRes/yRes/depth).
+
+    H22 split the image-read API in two (NWS-03 / HOM-02, verified live on 22.0.368):
+    legacy ``hou.Cop2Node`` keeps ``planes()``/``xRes()``/``yRes()``/``depth()``, while
+    Copernicus ``hou.CopNode`` lost all four and reads via ``cable()``/``ImageLayer``.
+    Class identity is checked first (authoritative on a real runtime); when neither
+    class check is conclusive (stub/test environments) we fall back to the node-type
+    category name -- Copernicus is category ``Cop``, legacy is ``Cop2``. If nothing is
+    provable we default to the legacy path: an inability to prove the node is
+    Copernicus must never break the previously-working read.
+    """
+    cop2_cls = getattr(hou, "Cop2Node", None)
+    if isinstance(cop2_cls, type):
+        try:
+            if isinstance(node, cop2_cls):
+                return True
+        except TypeError:
+            pass
+    cop_cls = getattr(hou, "CopNode", None)
+    if isinstance(cop_cls, type):
+        try:
+            if isinstance(node, cop_cls):
+                return False
+        except TypeError:
+            pass
+    try:
+        return node.type().category().name() != "Cop"
+    except Exception:
+        return True
+
+
+def _copernicus_image_info(node) -> Dict:
+    """Best-effort image metadata read for a Copernicus (``hou.CopNode``) node.
+
+    Uses the verified H22 replacement surface for the removed ``planes()``/
+    ``xRes()``/``yRes()``/``depth()`` quartet: ``node.cable()`` -> ``hou.CopCable``
+    (``wireNames()`` are the H22 equivalent of plane names) -> ``layerByIndex(0)``
+    -> ``hou.ImageLayer`` (``bufferResolution()`` / ``storageType()``). Every read
+    is individually guarded so one missing piece never kills the rest; an
+    un-cooked/unloaded node simply has zero wires. Returns a dict with any of
+    ``planes`` / ``resolution`` / ``data_type`` that could be read.
+    """
+    info: Dict = {}
+    try:
+        cable = node.cable()
+    except Exception:
+        return info
+    if cable is None:
+        return info
+    try:
+        info["planes"] = [str(name) for name in cable.wireNames()]
+    except Exception:
+        pass
+    try:
+        if cable.wireCount() > 0:
+            layer = cable.layerByIndex(0)
+            if layer is not None:
+                try:
+                    width, height = layer.bufferResolution()
+                    info["resolution"] = [int(width), int(height)]
+                except Exception:
+                    pass
+                try:
+                    info["data_type"] = str(layer.storageType())
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    return info
+
+
 def _create_cop_node(parent, type_name, node_name=None):
     """``createNode`` wrapper that fails legibly when a COP type isn't registered.
 
@@ -422,31 +494,57 @@ class CopsHandlerMixin:
                 "type": node.type().name(),
             }
 
-            # Query resolution via xRes/yRes methods or parms
-            try:
-                result["resolution"] = [node.xRes(), node.yRes()]
-            except (AttributeError, Exception):
-                for rx, ry in [("resx", "resy"), ("res_x", "res_y")]:
-                    px = node.parm(rx)
-                    py = node.parm(ry)
-                    if px is not None and py is not None:
-                        result["resolution"] = [px.eval(), py.eval()]
-                        break
+            if _uses_legacy_cop2_surface(node):
+                # Legacy COP2 surface -- planes()/xRes()/yRes()/depth() survive
+                # on hou.Cop2Node in H22 (verified 22.0.368); path unchanged.
+                # Query resolution via xRes/yRes methods or parms
+                try:
+                    result["resolution"] = [node.xRes(), node.yRes()]
+                except (AttributeError, Exception):
+                    for rx, ry in [("resx", "resy"), ("res_x", "res_y")]:
+                        px = node.parm(rx)
+                        py = node.parm(ry)
+                        if px is not None and py is not None:
+                            result["resolution"] = [px.eval(), py.eval()]
+                            break
 
-            # Query data type / depth
-            try:
-                result["data_type"] = str(node.depth())
-            except (AttributeError, Exception):
-                dp = node.parm("depth") or node.parm("data_type")
-                if dp is not None:
-                    result["data_type"] = str(dp.eval())
+                # Query data type / depth
+                try:
+                    result["data_type"] = str(node.depth())
+                except (AttributeError, Exception):
+                    dp = node.parm("depth") or node.parm("data_type")
+                    if dp is not None:
+                        result["data_type"] = str(dp.eval())
 
-            # Query planes/channels
-            try:
-                planes = node.planes()
-                result["planes"] = [str(p) for p in planes] if planes else []
-            except (AttributeError, Exception):
-                result["planes"] = []
+                # Query planes/channels
+                try:
+                    planes = node.planes()
+                    result["planes"] = [str(p) for p in planes] if planes else []
+                except (AttributeError, Exception):
+                    result["planes"] = []
+            else:
+                # Copernicus surface -- H22 removed planes()/xRes()/yRes()/depth()
+                # from hou.CopNode (NWS-03); read via cable()/ImageLayer instead.
+                info = _copernicus_image_info(node)
+
+                if "resolution" in info:
+                    result["resolution"] = info["resolution"]
+                else:
+                    for rx, ry in [("resx", "resy"), ("res_x", "res_y")]:
+                        px = node.parm(rx)
+                        py = node.parm(ry)
+                        if px is not None and py is not None:
+                            result["resolution"] = [px.eval(), py.eval()]
+                            break
+
+                if "data_type" in info:
+                    result["data_type"] = info["data_type"]
+                else:
+                    dp = node.parm("depth") or node.parm("data_type")
+                    if dp is not None:
+                        result["data_type"] = str(dp.eval())
+
+                result["planes"] = info.get("planes", [])
 
             # Cook status
             try:
@@ -671,20 +769,38 @@ class CopsHandlerMixin:
                 "overall_quality": "unknown",
             }
 
-            # Resolution check
-            try:
-                w, h = node.xRes(), node.yRes()
-                report["resolution"] = [w, h]
-                report["pixel_count"] = w * h
-            except (AttributeError, Exception):
-                report["resolution"] = None
+            if _uses_legacy_cop2_surface(node):
+                # Legacy COP2 surface -- planes()/xRes()/yRes() survive on
+                # hou.Cop2Node in H22 (verified 22.0.368); path unchanged.
+                # Resolution check
+                try:
+                    w, h = node.xRes(), node.yRes()
+                    report["resolution"] = [w, h]
+                    report["pixel_count"] = w * h
+                except (AttributeError, Exception):
+                    report["resolution"] = None
 
-            # Plane/channel info
-            try:
-                planes = node.planes()
-                report["planes"] = [str(p) for p in planes] if planes else []
-            except (AttributeError, Exception):
-                report["planes"] = []
+                # Plane/channel info
+                try:
+                    planes = node.planes()
+                    report["planes"] = [str(p) for p in planes] if planes else []
+                except (AttributeError, Exception):
+                    report["planes"] = []
+            else:
+                # Copernicus surface -- H22 removed planes()/xRes()/yRes() from
+                # hou.CopNode (NWS-03); read via cable()/ImageLayer instead.
+                info = _copernicus_image_info(node)
+
+                # Resolution check
+                if "resolution" in info:
+                    w, h = info["resolution"]
+                    report["resolution"] = [w, h]
+                    report["pixel_count"] = w * h
+                else:
+                    report["resolution"] = None
+
+                # Plane/channel info (wire names are the H22 plane names)
+                report["planes"] = info.get("planes", [])
 
             # Error state
             try:
