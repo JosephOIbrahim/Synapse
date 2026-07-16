@@ -339,66 +339,76 @@ async def send_command(cmd_type: str, payload: dict | None = None) -> dict:
     cmd_timeout = _SLOW_COMMANDS.get(cmd_type, COMMAND_TIMEOUT)
     last_err = None
 
-    for _attempt in range(2):  # One transparent retry on connection failure
-        ws = await _get_connection()
+    try:
+        for _attempt in range(2):  # One transparent retry on connection failure
+            ws = await _get_connection()
 
-        # Register a future for this command's response
-        loop = asyncio.get_running_loop()
-        future: asyncio.Future = loop.create_future()
-        _pending[command_id] = future
+            # Register a future for this command's response
+            loop = asyncio.get_running_loop()
+            future: asyncio.Future = loop.create_future()
+            _pending[command_id] = future
 
-        try:
-            await ws.send(_dumps_str(command))
+            try:
+                await ws.send(_dumps_str(command))
 
-            # Direct wait on future set -- avoids asyncio.wait_for's internal task overhead
-            done, _ = await asyncio.wait({future}, timeout=cmd_timeout)
-            if not done:
-                # Timeout -- future still pending
+                # Direct wait on future set -- avoids asyncio.wait_for's internal task overhead
+                done, _ = await asyncio.wait({future}, timeout=cmd_timeout)
+                if not done:
+                    # Timeout -- future still pending
+                    _pending.pop(command_id, None)
+                    future.cancel()
+                    raise asyncio.TimeoutError()
+                response = future.result()
+                break  # Success
+
+            except asyncio.TimeoutError:
                 _pending.pop(command_id, None)
-                future.cancel()
-                raise asyncio.TimeoutError()
-            response = future.result()
-            break  # Success
-
-        except asyncio.TimeoutError:
-            _pending.pop(command_id, None)
-            # Close stale connection on timeout
-            global _ws_connection
-            try:
-                if ws:
-                    await ws.close()
-            except Exception:
-                pass
-            _ws_connection = None
-            raise TimeoutError(
-                f"The {cmd_type} command took too long to respond \u2014 "
-                "Houdini may be busy with a heavy operation"
+                # Close stale connection on timeout
+                global _ws_connection
+                try:
+                    if ws:
+                        await ws.close()
+                except Exception:
+                    pass
+                _ws_connection = None
+                raise TimeoutError(
+                    f"The {cmd_type} command took too long to respond \u2014 "
+                    "Houdini may be busy with a heavy operation"
+                )
+            except ConnectionError:
+                # Future was signaled by _recv_loop disconnect
+                _pending.pop(command_id, None)
+                try:
+                    if ws:
+                        await ws.close()
+                except Exception:
+                    pass
+                _ws_connection = None
+                last_err = ConnectionError(f"Connection lost during {cmd_type}")
+                logger.warning("Connection lost during %s, reconnecting...", cmd_type)
+            except Exception as e:
+                _pending.pop(command_id, None)
+                try:
+                    if ws:
+                        await ws.close()
+                except Exception:
+                    pass
+                _ws_connection = None
+                last_err = e
+                logger.warning("Connection lost during %s, reconnecting... (%s)", cmd_type, e)
+        else:
+            raise ConnectionError(
+                f"Lost connection while sending {cmd_type} and couldn't reconnect: {last_err}"
             )
-        except ConnectionError:
-            # Future was signaled by _recv_loop disconnect
-            _pending.pop(command_id, None)
-            try:
-                if ws:
-                    await ws.close()
-            except Exception:
-                pass
-            _ws_connection = None
-            last_err = ConnectionError(f"Connection lost during {cmd_type}")
-            logger.warning("Connection lost during %s, reconnecting...", cmd_type)
-        except Exception as e:
-            _pending.pop(command_id, None)
-            try:
-                if ws:
-                    await ws.close()
-            except Exception:
-                pass
-            _ws_connection = None
-            last_err = e
-            logger.warning("Connection lost during %s, reconnecting... (%s)", cmd_type, e)
-    else:
-        raise ConnectionError(
-            f"Lost connection while sending {cmd_type} and couldn't reconnect: {last_err}"
-        )
+    finally:
+        # An externally-injected cancellation \u2014 the port-wave transport watchdog
+        # cancelling this coroutine's run_coroutine_threadsafe future on outer
+        # timeout \u2014 raises CancelledError, a BaseException the except branches
+        # above do NOT catch, bypassing per-attempt cleanup. Popping here makes
+        # the _pending entry impossible to leak. Idempotent: on the success path
+        # _recv_loop already consumed it; on the retry/timeout paths the except
+        # branch already popped it; this default-None pop is then a no-op.
+        _pending.pop(command_id, None)
 
     if not response.get("success", False):
         error_msg = response.get("error", "Something went wrong on the Synapse side")
@@ -456,7 +466,11 @@ from synapse.mcp._tool_registry import (
 # C7: the per-command timeout table, single-sourced so the panel client budgets
 # the SAME numbers (it used to hardcode 30/35s against 120-600s tools and
 # re-dispatch on timeout).
-from synapse.core.timeouts import COMMAND_TIMEOUT, SLOW_COMMANDS as _SLOW_COMMANDS
+from synapse.core.timeouts import (
+    COMMAND_TIMEOUT,
+    SLOW_COMMANDS as _SLOW_COMMANDS,
+    transport_outer_budget as _transport_outer_budget,
+)
 
 # ---------------------------------------------------------------------------
 # Inspector tool wiring (Sprint 2 Week 1 / Sprint 3 Spike 1 — tool #44)
@@ -792,11 +806,15 @@ def _get_ported_dispatcher() -> _Dispatcher:
         fut = asyncio.run_coroutine_threadsafe(
             send_command(cmd_type, payload), loop,
         )
-        # send_command bounds itself per-command (COMMAND_TIMEOUT /
-        # _SLOW_COMMANDS); the legacy path had no outer timeout. The +60s cap
-        # is pure hang insurance for a wedged event loop — a state where the
-        # legacy path would block forever.
-        outer = _SLOW_COMMANDS.get(cmd_type, COMMAND_TIMEOUT) + 60.0
+        # send_command bounds each attempt per-command (COMMAND_TIMEOUT /
+        # _SLOW_COMMANDS) and retries once on connection failure, so its true
+        # worst case is ~2x the per-command budget plus reconnect. The outer
+        # watchdog is pure hang insurance for a wedged event loop — a state
+        # where the legacy path would block forever — so it must sit ABOVE that
+        # worst case (single-sourced in synapse.core.timeouts). The old
+        # cmd_timeout+60 dropped below 2x above 60s (render/tops/sequence),
+        # pre-empting the retry and cancelling a would-be success mid-flight.
+        outer = _transport_outer_budget(cmd_type)
         try:
             return fut.result(timeout=outer)
         except TimeoutError:

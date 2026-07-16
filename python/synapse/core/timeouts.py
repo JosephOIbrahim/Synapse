@@ -89,3 +89,31 @@ def timeout_for(name: str, default: float = COMMAND_TIMEOUT) -> float:
             if stripped in SLOW_COMMANDS:
                 return SLOW_COMMANDS[stripped]
     return default
+
+
+# The stdio client's send_command (mcp_server.py) retries ONCE transparently on
+# connection failure, so its true worst case is ~2x the per-command budget plus
+# a reconnect window. The port-wave sync transport wraps send_command in an
+# outer watchdog (hang insurance for a wedged event loop). That watchdog MUST
+# sit above send_command's own worst case, or it races the retry: it cancels a
+# legitimately-reconnecting command mid-flight, misreports the connection
+# failure as a generic timeout, and (via CancelledError) leaks the in-flight
+# _pending entry. The single-sourced budget below is the fix for that under-
+# budgeting (was cmd_timeout + 60, which drops below 2x for cmd_timeout > 60s:
+# render 120, tops_batch_cook 300, render_sequence 600).
+SEND_COMMAND_MAX_ATTEMPTS = 2
+_RECONNECT_BUDGET = 75.0  # reconnect/backoff slack + margin over the 2x worst case
+
+
+def transport_outer_budget(name: str, default: float = COMMAND_TIMEOUT) -> float:
+    """Outer-watchdog budget for the port-wave WS transport.
+
+    ``send_command`` bounds each attempt by :func:`timeout_for` and retries once
+    on connection failure, so its worst case is
+    ``SEND_COMMAND_MAX_ATTEMPTS * timeout_for(name)`` plus reconnect overhead.
+    The watchdog that wraps it must exceed that, so it only fires on a genuinely
+    wedged event loop and never pre-empts send_command's own retry/timeout.
+
+    Keyed identically to :func:`timeout_for` (command type OR MCP tool name).
+    """
+    return SEND_COMMAND_MAX_ATTEMPTS * timeout_for(name, default) + _RECONNECT_BUDGET

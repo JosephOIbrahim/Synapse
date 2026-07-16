@@ -53,7 +53,15 @@ def configure_transport(fn: TransportFn) -> None:
 
 
 def reset_transport() -> None:
-    """Clear the injected transport (test isolation — see tests/conftest.py)."""
+    """Clear the injected transport (test isolation).
+
+    The autouse ``_ws_passthrough_cleanup_transport`` fixture in
+    ``tests/conftest.py`` calls this before and after every test, so the
+    module-level transport (and the port-wave Dispatcher singleton that binds an
+    event loop) can't leak stale state across wave test files. Kept in conftest
+    rather than any single test module so future wave test files inherit the
+    isolation automatically.
+    """
     global _transport
     _transport = None
 
