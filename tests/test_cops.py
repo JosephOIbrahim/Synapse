@@ -1130,6 +1130,363 @@ class TestCopsWetmap:
         assert result.data["blur"] == 4.0
 
 
+# ---------------------------------------------------------------------------
+# W.4-H22-solverblocks (SB-3): solver-block binding + alias no-op re-authoring
+#
+# Ground truth (live bridge + hython parm probes, 22.0.368 -- docs/reviews/
+# h22-live-reconfirm-2026-07-16.md §2.1 + h22-cop-audit-verification.md
+# tools #11/#13/#14/#16/#17):
+#   * block_end LOST method/blocktype/blockpath; blockpath MOVED to
+#     block_begin; binding is NOT implicit (unbound pair -> hou.OperationFailed
+#     on cook). Surviving block_end surface = sim/iteration driver
+#     (simulate/iterations/startframe/cacheenabled/...).
+#   * 'limit' resolves to 'clamp' whose surface is upperlimit/doupperlimit
+#     (+lower pair) -- max/high are ABSENT.
+#   * quantize lost levels/steps on BOTH surfaces; live replacements:
+#     Cop method='segments'+segments (int), Cop2 step (float, 1/levels).
+#
+# Two mock flavors below:
+#   * RESTRICTED -- parm() resolves ONLY live-probed names (positive pins:
+#     the emitted writes land on the real H22 surface);
+#   * PERMISSIVE -- every parm name resolves and records (negative pins:
+#     even a fake surface that resurrects a removed parm must not be written).
+# ---------------------------------------------------------------------------
+
+# Live-probed per-type parm surfaces (hython 22.0.368, W.4 SB-3 probe).
+_H22_COP_SURFACE = {
+    "block_begin": {"blockpath", "cablerenamebylabel", "ports"},
+    "block_end": {
+        "cablerenamebylabel", "cachedframes", "cacheenabled", "checkpointframes",
+        "continuouscook", "continuouscook_tick", "continuouscook_toggle",
+        "docompile", "firstpassvar", "iterations", "iterationvar", "ports",
+        "resimulate", "simulate", "slapcomp", "slapcompaddaovs",
+        "slapcompcameraspace", "startframe", "timescale", "totalitervar",
+    },
+    "clamp": {
+        "computerange", "dolowerlimit", "doupperlimit", "lowerlimit", "mask",
+        "method", "scopergba", "softclipdir", "softcliprange", "upperlimit",
+    },
+    "dilateerode": {"radius"},
+    "blur": {"size"},
+    "bright": {"bright"},
+    "opencl": {"kernelcode", "kernelname"},
+    "quantize": {
+        "clampabove", "clampbelow", "computerange", "mask", "maxval", "method",
+        "minval", "offset", "round", "roundoffset", "segments", "signature",
+        "width",
+    },
+    "vopcop2gen": set(),  # audit tool #12: every probed parm alt ABSENT
+}
+
+# The block_end parms REMOVED on 22.0.368 (plus the never-existed block_begin
+# guess) that the pre-fix builders wrote -- must never be written again.
+_REMOVED_BLOCK_END_PARMS = ("blockpath", "block_begin", "method", "blocktype")
+
+
+def _make_recording_cop_node(path, type_name, allowed=None):
+    """Mock Cop node whose parm() returns a RECORDING parm mock per name.
+
+    ``allowed=None`` -> permissive (every name resolves); a set -> only those
+    names resolve (the live-probed surface), everything else is None exactly
+    like the real runtime. Writes are inspected via ``node.recorded_parms``.
+    """
+    node = MagicMock()
+    node.path.return_value = path
+    node.name.return_value = path.rsplit("/", 1)[-1]
+    node.type.return_value = _MockNodeType(type_name, category="Cop")
+    node.errors.return_value = []
+    node.warnings.return_value = []
+    recorded = {}
+
+    def _parm(name):
+        if allowed is not None and name not in allowed:
+            return None
+        if name not in recorded:
+            p = MagicMock()
+            p.name.return_value = name
+            recorded[name] = p
+        return recorded[name]
+
+    node.parm = _parm
+    node.parmTuple = MagicMock(return_value=None)
+    node.recorded_parms = recorded
+    return node
+
+
+def _make_recording_network(path="/img/copnet1", restricted=True):
+    """Mock copnet whose children record parm writes; ``net.created`` maps
+    child name -> node. ``restricted=True`` limits every child to its
+    live-probed H22 parm surface."""
+    net = MagicMock()
+    net.path.return_value = path
+    net.name.return_value = path.rsplit("/", 1)[-1]
+    net.children.return_value = []
+    created = {}
+
+    def _create(node_type, name=None):
+        child_name = name or node_type
+        allowed = _H22_COP_SURFACE.get(node_type) if restricted else None
+        child = _make_recording_cop_node(
+            f"{path}/{child_name}", node_type, allowed=allowed)
+        created[child_name] = child
+        return child
+
+    net.createNode = MagicMock(side_effect=_create)
+    net.created = created
+    return net
+
+
+def _assert_never_set(node, parm_name):
+    parm = node.recorded_parms.get(parm_name)
+    assert parm is None or not parm.set.called, (
+        f"{node.name()}: parm '{parm_name}' was WRITTEN -- removed on "
+        "22.0.368, the write is a silent no-op on the live build"
+    )
+
+
+class TestW4SolverBlockBinding:
+    """The four solver builders bind explicitly on block_begin.blockpath."""
+
+    def test_create_solver_binds_on_live_surface(self, handler):
+        net = _make_recording_network()
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_create_solver",
+                id="w4-1",
+                payload={"parent": "/img/copnet1", "iterations": 12},
+            ))
+        assert result.success
+        begin = net.created["solver_begin"]
+        end = net.created["solver_end"]
+        begin.recorded_parms["blockpath"].set.assert_called_once_with("../solver_end")
+        end.recorded_parms["iterations"].set.assert_called_once_with(12)
+        # default method 'singlepass' -> simulate toggle OFF
+        end.recorded_parms["simulate"].set.assert_called_once_with(0)
+        assert result.data["bound"] is True
+        assert result.data["simulate"] is False
+
+    def test_create_solver_simulate_method(self, handler):
+        net = _make_recording_network()
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_create_solver",
+                id="w4-2",
+                payload={"parent": "/img/copnet1", "method": "simulate"},
+            ))
+        assert result.success
+        end = net.created["solver_end"]
+        end.recorded_parms["simulate"].set.assert_called_once_with(1)
+        assert result.data["simulate"] is True
+
+    def test_growth_binds_and_authors_clamp_threshold(self, handler):
+        net = _make_recording_network()
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_growth_propagation",
+                id="w4-3",
+                payload={"parent": "/img/copnet1", "threshold": 0.7},
+            ))
+        assert result.success
+        # canonical H22 spelling emitted -- never the 'limit' alias
+        emitted_types = [c.args[0] for c in net.createNode.call_args_list]
+        assert "clamp" in emitted_types
+        assert "limit" not in emitted_types
+        thresh = net.created["growth_threshold"]
+        thresh.recorded_parms["doupperlimit"].set.assert_called_once_with(1)
+        thresh.recorded_parms["upperlimit"].set.assert_called_once_with(0.7)
+        _assert_never_set(thresh, "max")
+        _assert_never_set(thresh, "high")
+        # surviving fallbacks land on the live names
+        net.created["growth_dilate"].recorded_parms["radius"].set.assert_called_once_with(0.5)
+        net.created["growth_blur"].recorded_parms["size"].set.assert_called_once_with(1.0)
+        net.created["growth_begin"].recorded_parms["blockpath"].set.assert_called_once_with("../growth_end")
+        assert result.data["bound"] is True
+
+    def test_reaction_diffusion_binds(self, handler):
+        net = _make_recording_network()
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_reaction_diffusion",
+                id="w4-4",
+                payload={"parent": "/img/copnet1"},
+            ))
+        assert result.success
+        begin = net.created["reaction_diffusion_begin"]
+        end = net.created["reaction_diffusion_end"]
+        begin.recorded_parms["blockpath"].set.assert_called_once_with(
+            "../reaction_diffusion_end")
+        end.recorded_parms["iterations"].set.assert_called_once_with(100)
+        assert result.data["bound"] is True
+
+    def test_wetmap_simulate_toggle_and_binding(self, handler):
+        """Tool #17: temporal decay = the simulate toggle + explicit binding."""
+        net = _make_recording_network()
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_wetmap",
+                id="w4-5",
+                payload={"parent": "/img/copnet1"},
+            ))
+        assert result.success
+        end = net.created["wetmap_end"]
+        end.recorded_parms["simulate"].set.assert_called_once_with(1)
+        net.created["wetmap_begin"].recorded_parms["blockpath"].set.assert_called_once_with(
+            "../wetmap_end")
+        net.created["wetmap_decay"].recorded_parms["bright"].set.assert_called_once_with(0.95)
+        assert result.data["bound"] is True
+
+    @pytest.mark.parametrize("command,begin_name,end_name", [
+        ("cops_create_solver", "solver_begin", "solver_end"),
+        ("cops_growth_propagation", "growth_begin", "growth_end"),
+        ("cops_reaction_diffusion", "reaction_diffusion_begin", "reaction_diffusion_end"),
+        ("cops_wetmap", "wetmap_begin", "wetmap_end"),
+    ])
+    def test_no_builder_writes_removed_block_end_parms(
+            self, handler, command, begin_name, end_name):
+        """PERMISSIVE surface: even when a fake parm surface resurrects the
+        removed block_end parms, no builder may write them."""
+        net = _make_recording_network(restricted=False)
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type=command,
+                id=f"w4-neg-{command}",
+                payload={"parent": "/img/copnet1"},
+            ))
+        assert result.success
+        end = net.created[end_name]
+        for removed in _REMOVED_BLOCK_END_PARMS:
+            _assert_never_set(end, removed)
+        begin = net.created[begin_name]
+        begin.recorded_parms["blockpath"].set.assert_called_once_with(
+            f"../{end_name}")
+        assert result.data["bound"] is True
+
+    def test_unbound_pair_reported_honestly(self, handler):
+        """A surface with no block_begin.blockpath (drift/stub) must surface
+        bound=False in the envelope -- never a silent skip."""
+        net = _make_recording_network()
+        # strip blockpath from the begin surface for this test
+        orig_create = net.createNode.side_effect
+
+        def _create_no_blockpath(node_type, name=None):
+            child = orig_create(node_type, name)
+            if node_type == "block_begin":
+                child.parm = lambda _n: None
+                child.recorded_parms = {}
+            return child
+
+        net.createNode.side_effect = _create_no_blockpath
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_create_solver",
+                id="w4-6",
+                payload={"parent": "/img/copnet1"},
+            ))
+        assert result.success
+        assert result.data["bound"] is False
+
+
+class TestW4StylizeQuantizeSurface:
+    """Tool #16: quantize levels re-authored to the live H22 parm surfaces."""
+
+    def test_toon_authors_segments_on_cop_surface(self, handler):
+        net = _make_recording_network()
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_stylize",
+                id="w4-7",
+                payload={"parent": "/img/copnet1", "style_type": "toon", "levels": 4},
+            ))
+        assert result.success
+        node = net.created["stylize"]
+        node.recorded_parms["method"].set.assert_called_once_with("segments")
+        node.recorded_parms["segments"].set.assert_called_once_with(4)
+        assert result.data["levels_applied"] is True
+
+    def test_toon_falls_back_to_cop2_step(self, handler):
+        """Legacy Cop2 quantize surface: step = 1/levels (Pixel Step float)."""
+        net = _make_recording_network(restricted=False)
+
+        def _create_cop2_quantize(node_type, name=None):
+            child = _make_recording_cop_node(
+                f"/obj/cop2net1/{name or node_type}", node_type,
+                allowed={"quantize", "step", "offset"})
+            net.created[name or node_type] = child
+            return child
+
+        net.createNode.side_effect = _create_cop2_quantize
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_stylize",
+                id="w4-8",
+                payload={"parent": "/obj/cop2net1", "style_type": "posterize", "levels": 4},
+            ))
+        assert result.success
+        node = net.created["stylize"]
+        node.recorded_parms["step"].set.assert_called_once_with(pytest.approx(0.25))
+        assert result.data["levels_applied"] is True
+
+    def test_toon_degrades_loud_when_no_surface(self, handler):
+        """Neither segments nor step -> levels_applied False, never silent."""
+        net = _make_recording_network(restricted=False)
+
+        def _create_bare(node_type, name=None):
+            child = _make_recording_cop_node(
+                f"/img/copnet1/{name or node_type}", node_type, allowed=set())
+            net.created[name or node_type] = child
+            return child
+
+        net.createNode.side_effect = _create_bare
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_stylize",
+                id="w4-9",
+                payload={"parent": "/img/copnet1", "style_type": "toon"},
+            ))
+        assert result.success
+        assert result.data["levels_applied"] is False
+
+    def test_levels_never_written_via_removed_names(self, handler):
+        """PERMISSIVE surface: levels/steps must not be written even when a
+        fake surface resurrects them."""
+        net = _make_recording_network(restricted=False)
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_stylize",
+                id="w4-10",
+                payload={"parent": "/img/copnet1", "style_type": "toon", "levels": 5},
+            ))
+        assert result.success
+        node = net.created["stylize"]
+        _assert_never_set(node, "levels")
+        _assert_never_set(node, "steps")
+        node.recorded_parms["segments"].set.assert_called_once_with(5)
+
+    def test_risograph_authors_segments(self, handler):
+        net = _make_recording_network()
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_stylize",
+                id="w4-11",
+                payload={"parent": "/img/copnet1", "style_type": "risograph", "levels": 3},
+            ))
+        assert result.success
+        quant = net.created["stylize_quant"]
+        quant.recorded_parms["segments"].set.assert_called_once_with(3)
+        assert result.data["levels_applied"] is True
+
+    def test_edge_detect_levels_not_relevant(self, handler):
+        net = _make_recording_network(restricted=False)
+        with patch.object(_handlers_hou, "node", return_value=net):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_stylize",
+                id="w4-12",
+                payload={"parent": "/img/copnet1", "style_type": "edge_detect"},
+            ))
+        assert result.success
+        assert result.data["levels_applied"] is None
+
+
 class TestCopsBakeTextures:
     def test_bake_basic(self, handler):
         net = _make_network_node("/obj/cop2net1")

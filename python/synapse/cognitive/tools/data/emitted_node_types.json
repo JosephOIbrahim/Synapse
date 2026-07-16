@@ -1,6 +1,6 @@
 {
   "schema": "emitted_node_types/v1",
-  "generated_from_commit": "b02bf8b9cf93d91322c0a6b6fc19adb2864b0baa",
+  "generated_from_commit": "ab4ac7a26133f8ea2c686a19ce6b99385c3051d9",
   "entries": [
     {
       "category": "apex_seed",
@@ -148,6 +148,13 @@
         "python/synapse/routing/planner.py",
         "python/synapse/routing/recipes/pipeline_recipes.py",
         "python/synapse/routing/recipes/render_recipes.py"
+      ]
+    },
+    {
+      "category": "createNode_literal",
+      "type_name": "clamp",
+      "source_files": [
+        "python/synapse/server/handlers_cops.py"
       ]
     },
     {
