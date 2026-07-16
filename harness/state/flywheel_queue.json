@@ -290,8 +290,8 @@
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md"
       ],
-      "ratified": false,
-      "note": "Deposited from the W.1-H22-planes crucible boundedWeaknesses (MERGE_READY verdict, 0 showstoppers) — deliberately NOT folded into W.1 (verbatim-preservation was the ratified scope). Human flip required."
+      "ratified": true,
+      "note": "Deposited from the W.1-H22-planes crucible boundedWeaknesses (MERGE_READY verdict, 0 showstoppers) — deliberately NOT folded into W.1 (verbatim-preservation was the ratified scope). Human flip required. | RATIFIED: human (Joe) — standing \"Gates are approved for Flip!\" + 2026-07-16 3x-loop directive (\"refine, review, enhance... nail down the update to H22\"); crucible-mandated REPAIRS to already-approved work, ratified by Claude as instrument (C.x feature cycles remain held)"
     },
     {
       "id": "W.7-H22-timeout-budget",
@@ -300,8 +300,8 @@
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md"
       ],
-      "ratified": false,
-      "note": "Deposited from scene-1 port-wave crucible (mergeReady:true, 0 showstoppers — this is forward risk not a scene-1 blocker). BLOCKING for wave render and wave tops-2 (render_sequence/multi_shot) — must land before those waves dispatch. Human flip required."
+      "ratified": true,
+      "note": "Deposited from scene-1 port-wave crucible (mergeReady:true, 0 showstoppers — this is forward risk not a scene-1 blocker). BLOCKING for wave render and wave tops-2 (render_sequence/multi_shot) — must land before those waves dispatch. Human flip required. | RATIFIED: human (Joe) — standing \"Gates are approved for Flip!\" + 2026-07-16 3x-loop directive (\"refine, review, enhance... nail down the update to H22\"); crucible-mandated REPAIRS to already-approved work, ratified by Claude as instrument (C.x feature cycles remain held)"
     },
     {
       "id": "W.8-H22-passthrough-hygiene",
@@ -310,8 +310,8 @@
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md"
       ],
-      "ratified": false,
-      "note": "Deposited from scene-1 port-wave crucible (0 showstoppers). Should land before/with scene-2 (which also needs BW-4 re-audit for execute_python/execute_vex consent envelope)."
+      "ratified": true,
+      "note": "Deposited from scene-1 port-wave crucible (0 showstoppers). Should land before/with scene-2 (which also needs BW-4 re-audit for execute_python/execute_vex consent envelope). | RATIFIED: human (Joe) — standing \"Gates are approved for Flip!\" + 2026-07-16 3x-loop directive (\"refine, review, enhance... nail down the update to H22\"); crucible-mandated REPAIRS to already-approved work, ratified by Claude as instrument (C.x feature cycles remain held)"
     }
   ]
 }
