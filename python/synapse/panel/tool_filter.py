@@ -77,8 +77,13 @@ _CONTEXT_KEYWORDS = {
               "temporal_analysis"),
     "Karma": ("karma", "husk", "mtlx", "materialx", "material", "light", "render",
               "farm", "flipbook", "aov", "frame"),
+    # "instancer" is kept for the point_instancer tool family (the USD
+    # PointInstancer prim is live H22 vocabulary — NOT the removed
+    # Lop/instancer); the H22 canonical LOP renames are listed explicitly
+    # (W.3: copytopoints ex-instancer, paintinstances ex-layout).
     "USD":   ("usd", "prim", "stage", "sublayer", "payload", "variant",
-              "collection", "reference", "instancer"),
+              "collection", "reference", "instancer", "copytopoints",
+              "paintinstances"),
     "LOP":   ("solaris", "lop"),
     "SOP":   ("sop", "scatter", "vex", "wrangle", "deform"),
 }

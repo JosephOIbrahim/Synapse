@@ -2,7 +2,8 @@
 
 ## Triggers
 instancer, point instancer, instance, prototype, scatter, RBD instance, light instance,
-retime, copy to points lop, instanceable, instanceable flag, prototype index, protoIndices,
+retime, copy to points lop, copytopoints, paintinstances, paint instances lop,
+instanceable, instanceable flag, prototype index, protoIndices,
 instance positions, instance orientations, scatter and align, sop scatter lop, instancer lop,
 light instancing, reference mode, RBD to instance, sop import instancer, point instancer lop,
 prototype container, prototype paths, instance transform, instance scale, Cd to color mapping,
@@ -19,9 +20,30 @@ multi prototype, prototype selection, instance offset, instance animation
 
 ## Context
 Point Instancer is Solaris's native GPU-efficient instancing system, creating thousands
-of copies from prototypes without duplicating geometry data. Houdini 21 uses the `instancer`
-LOP which reads SOP scatter points and maps them to USD prototypes. All instance transforms
+of copies from prototypes without duplicating geometry data. All instance transforms
 come from point attributes (P, orient, pscale, N+up) -- same convention as SOP Copy to Points.
+
+### H22 RENAME (W.3 ruling, live-verified on 22.0.368 — emit CANONICAL names only)
+- The H21 `instancer` LOP is now **`copytopoints`** ("Copy to Points",
+  whats-new 22/solaris.txt L143). The H21 `layout` LOP is now
+  **`paintinstances`** ("Paint Instances", L137). `hou.nodeType(lop, "instancer")`
+  and `..."layout"` return **None** on H22 — only a shipped `opalias` rescues
+  `createNode()`. NEVER emit the old spellings.
+- `pointinstancer` is a NEW H22 create+edit node (L141) — it is NOT the rename
+  target of either node.
+- Probe-verified parm deltas on `copytopoints` (22.0.368):
+  - `soppath` is GONE → point source is `pointsoppath` AND requires
+    `transformsourcemode` = `'extsop'` (default is `'intsop'`, an internal SOP
+    network; tokens: intsop/extsop/prims/points).
+  - `allowmissingprototypes` + `protooptionsgroup` are GONE → successor is
+    `handlemissingprototypes` (default `'error'`).
+  - `protosource`/`protopath1..N`/`usealiasattribs` do NOT appear in the H22
+    parm list → nearest H22 names are `protosourcemode` (string menu, default
+    `'second'`), `protopattern`, `protouseroot`, `attribs`. PROBE before
+    setting any of these — numeric-index recipes below are H21-era.
+- `paintinstances` dropped exactly one parm vs the H21 `layout`: `method`.
+- The H21-era parm recipes in the examples below are annotated where they are
+  NOT yet re-verified on H22 — probe-generate parm names, never guess.
 
 ## Code
 
@@ -49,17 +71,21 @@ proto_import = stage.createNode("sopimport", "tree_prototype")
 proto_import.parm("soppath").set("/obj/tree_geo/OUT")
 proto_import.parm("primpath").set("/World/Prototypes/tree")
 
-# --- Step 3: Create the instancer LOP ---
-instancer = stage.createNode("instancer", "tree_scatter")
+# --- Step 3: Create the Copy to Points LOP (H22 canonical name of the
+# --- former `instancer` LOP — never emit the old spelling) ---
+instancer = stage.createNode("copytopoints", "tree_scatter")
 
-# Source of scatter points (SOP path)
-instancer.parm("soppath").set("/obj/scatter_points/OUT")
+# Source of scatter points: external SOP (H22: `soppath` is gone; use
+# transformsourcemode='extsop' + pointsoppath — probe-verified 22.0.368)
+instancer.parm("transformsourcemode").set("extsop")
+instancer.parm("pointsoppath").set("/obj/scatter_points/OUT")
 
 # Where the PointInstancer prim lives in USD
 instancer.parm("primpath").set("/World/Instances/trees")
 
-# Prototype source: reference existing prims on the stage
-instancer.parm("protosource").set(1)  # 1 = "Second Input Primitives"
+# Prototype source: second input is the default on H22
+# (protosourcemode default token = 'second'; the H21 numeric `protosource`
+# parm does not exist on copytopoints)
 
 # --- Step 4: Wire the network ---
 # Input 0: stage context (ground, lights, etc.)
@@ -146,27 +172,32 @@ out.setDisplayFlag(True)
 out.setRenderFlag(True)
 geo.layoutChildren()
 
-# --- Solaris side: instancer with attribute mapping ---
+# --- Solaris side: Copy to Points (H22 name of `instancer`) with
+# --- attribute mapping ---
 stage = hou.node("/stage")
 
-instancer = stage.createNode("instancer", "foliage_instances")
-instancer.parm("soppath").set(f"{geo.path()}/OUT")
+instancer = stage.createNode("copytopoints", "foliage_instances")
+instancer.parm("transformsourcemode").set("extsop")   # H22: soppath is gone
+instancer.parm("pointsoppath").set(f"{geo.path()}/OUT")
 instancer.parm("primpath").set("/World/Instances/foliage")
 
 # Attribute mapping: SOP Cd -> USD primvar displayColor
-# The instancer automatically maps:
+# The node automatically maps:
 #   P          -> positions
 #   orient     -> orientations (quaternion)
 #   pscale     -> scales (uniform)
 #   protoindex -> protoIndices
-# For Cd -> displayColor primvar, use the "Point Attributes" section:
-instancer.parm("usealiasattribs").set(True)
-
-# Prototype source: specify paths explicitly
-instancer.parm("protosource").set(0)  # 0 = "Prototype Primitives"
-instancer.parm("protopath1").set("/World/Prototypes/tree_pine")
-instancer.parm("protopath2").set("/World/Prototypes/tree_oak")
-instancer.parm("protopath3").set("/World/Prototypes/bush")
+# H22-UNVERIFIED parm recipe: the H21 `usealiasattribs` /
+# `protosource` / `protopath1..3` parms do NOT exist on copytopoints
+# (22.0.368 parm list). Nearest H22 names: `attribs`, `protosourcemode`
+# (string menu, default 'second'), `protopattern`. PROBE the live node
+# before setting these — do not copy the H21 lines below verbatim.
+# H21-era (kept for porting reference only):
+#   instancer.parm("usealiasattribs").set(True)
+#   instancer.parm("protosource").set(0)  # 0 = "Prototype Primitives"
+#   instancer.parm("protopath1").set("/World/Prototypes/tree_pine")
+#   instancer.parm("protopath2").set("/World/Prototypes/tree_oak")
+#   instancer.parm("protopath3").set("/World/Prototypes/bush")
 
 stage.layoutChildren()
 print(f"Multi-prototype instancer: {instancer.path()}")
@@ -195,13 +226,14 @@ proto_import.parm("primpath").set("/World/Prototypes/fracture")
 # Use hierarchy import to preserve piece names as child prims
 proto_import.parm("pathattr").set("name")
 
-# Step 2: Create instancer from sim output
-instancer = stage.createNode("instancer", "rbd_instances")
-instancer.parm("soppath").set("/obj/rbd_sim/OUT")
+# Step 2: Create Copy to Points (H22 name of `instancer`) from sim output
+instancer = stage.createNode("copytopoints", "rbd_instances")
+instancer.parm("transformsourcemode").set("extsop")   # H22: soppath is gone
+instancer.parm("pointsoppath").set("/obj/rbd_sim/OUT")
 instancer.parm("primpath").set("/World/Instances/debris")
 
-# Prototype source: second input
-instancer.parm("protosource").set(1)
+# Prototype source: second input (H22 default — protosourcemode='second';
+# the H21 numeric `protosource` parm does not exist on copytopoints)
 instancer.setInput(1, proto_import)
 
 # The instancer reads packed prim transforms automatically:
@@ -239,18 +271,21 @@ light_proto.parm("xn__inputsexposure_control_wcb").set("set")
 # (Assume SOP with light positions at /obj/light_positions/OUT)
 # Each point = one light instance
 
-# --- Step 3: Create instancer for lights ---
-light_instancer = stage.createNode("instancer", "light_array")
-light_instancer.parm("soppath").set("/obj/light_positions/OUT")
+# --- Step 3: Create Copy to Points (H22 name of `instancer`) for lights ---
+light_instancer = stage.createNode("copytopoints", "light_array")
+light_instancer.parm("transformsourcemode").set("extsop")  # H22: soppath gone
+light_instancer.parm("pointsoppath").set("/obj/light_positions/OUT")
 light_instancer.parm("primpath").set("/World/Instances/lights")
 
-# CRITICAL: Set to reference mode for Karma compatibility
-# Native instancing mode will NOT render lights in Karma
-light_instancer.parm("lightinstancing").set(1)  # 1 = reference mode
+# CRITICAL: Karma needs reference mode for light instances.
+# H22-UNVERIFIED parm recipe: the H21 `lightinstancing` toggle is not in the
+# 22.0.368 copytopoints parm list — the nearest H22 parm is `protoreftype`
+# (reference type). PROBE the live node for the reference-mode control
+# before relying on it. H21-era line (porting reference only):
+#   light_instancer.parm("lightinstancing").set(1)  # 1 = reference mode
 
-# Prototype source: second input
+# Prototype source: second input (H22 default — protosourcemode='second')
 light_instancer.setInput(1, light_proto)
-light_instancer.parm("protosource").set(1)
 
 light_instancer.setDisplayFlag(True)
 stage.layoutChildren()
@@ -380,16 +415,19 @@ node, proto_paths = create_variant_prototypes(
     proto_root="/World/Prototypes/trees"
 )
 
-# Step 2: Feed variant prototypes to instancer
-instancer = stage.createNode("instancer", "variant_scatter")
-instancer.parm("soppath").set("/obj/scatter_points/OUT")
+# Step 2: Feed variant prototypes to Copy to Points (H22 name of `instancer`)
+instancer = stage.createNode("copytopoints", "variant_scatter")
+instancer.parm("transformsourcemode").set("extsop")   # H22: soppath is gone
+instancer.parm("pointsoppath").set("/obj/scatter_points/OUT")
 instancer.parm("primpath").set("/World/Instances/forest")
 
-# Set prototype paths from variant copies
-for i, path in enumerate(proto_paths):
-    instancer.parm(f"protopath{i + 1}").set(path)
-
-instancer.parm("protosource").set(0)  # Prototype Primitives
+# H22-UNVERIFIED parm recipe: `protosource`/`protopath1..N` do not exist on
+# copytopoints (22.0.368 parm list) — the H22 prototype-by-pattern surface is
+# `protosourcemode` + `protopattern`. PROBE before use. H21-era lines
+# (porting reference only):
+#   for i, path in enumerate(proto_paths):
+#       instancer.parm(f"protopath{i + 1}").set(path)
+#   instancer.parm("protosource").set(0)  # Prototype Primitives
 if node:
     instancer.setInput(0, node)
 
@@ -530,11 +568,12 @@ proto_merge = stage.createNode("merge", "merge_prototypes")
 for i, p in enumerate(protos):
     proto_merge.setInput(i, p)
 
-# Create instancer
-instancer = stage.createNode("instancer", "rock_instances")
-instancer.parm("soppath").set(f"{scatter_geo.path()}/OUT")
+# Create Copy to Points (H22 canonical name of the former `instancer` LOP)
+instancer = stage.createNode("copytopoints", "rock_instances")
+instancer.parm("transformsourcemode").set("extsop")   # H22: soppath is gone
+instancer.parm("pointsoppath").set(f"{scatter_geo.path()}/OUT")
 instancer.parm("primpath").set("/World/Instances/rocks")
-instancer.parm("protosource").set(1)  # Second input primitives
+# Prototype source: second input (H22 default — protosourcemode='second')
 instancer.setInput(0, terrain_import)
 instancer.setInput(1, proto_merge)
 
@@ -585,7 +624,14 @@ print("Prototypes marked instanceable for Karma memory efficiency")
 
 # 7. Karma light instancing requires reference mode
 #    Native point instancer mode does NOT render instanced lights in Karma.
-#    Always set lightinstancing = 1 (reference mode) for light arrays.
+#    H21: lightinstancing = 1 (reference mode). H22: that toggle is not in
+#    the copytopoints parm list — probe `protoreftype` on the live node for
+#    the reference-mode control before relying on it.
+
+# 8. H22 renames (live-verified 22.0.368): `instancer` -> `copytopoints`,
+#    `layout` -> `paintinstances`. hou.nodeType() of the old names returns
+#    None; only the shipped opalias rescues createNode(). Emit canonical
+#    spellings only. `pointinstancer` is a NEW H22 node, not the rename.
 
 # 8. Large instance counts and viewport performance
 #    >100k instances can slow the viewport. Use:

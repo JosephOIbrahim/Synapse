@@ -1,10 +1,10 @@
 # Solaris/LOP Node Types Reference
 
 ## Triggers
-solaris, lop, lops, stage, usd, sopimport, sublayer, reference, merge, edit, camera, light, domelight, rectlight, spherelight, distantlight, disklight, cylinderlight, materiallibrary, assignmaterial, karmarenderproperties, karmarendersettings, usdrender, render settings, render properties, configureprimitive, componentoutput, switch, null, configurestage, sceneimport, sopcreate, instancer, layout, renderproduct, rendersettings, rendergeometrysettings, mtlxstandard_surface, materiallinker, create node lop, lop node python, solaris python, stage node
+solaris, lop, lops, stage, usd, sopimport, sublayer, reference, merge, edit, camera, light, domelight, rectlight, spherelight, distantlight, disklight, cylinderlight, materiallibrary, assignmaterial, karmarenderproperties, karmarendersettings, usdrender, render settings, render properties, configureprimitive, componentoutput, switch, null, configurestage, sceneimport, sopcreate, instancer, layout, copytopoints, paintinstances, renderproduct, rendersettings, rendergeometrysettings, mtlxstandard_surface, materiallinker, create node lop, lop node python, solaris python, stage node
 
 ## Context
-Comprehensive Python reference for creating and configuring Solaris (LOP) nodes in Houdini 21 via `hou.node().createNode()` and `parm().set()`. Covers stage management, geometry import, materials, all light types, cameras, render settings, and layout nodes. Lighting Law: intensity is ALWAYS 1.0; brightness is controlled exclusively by exposure (logarithmic, in stops).
+Comprehensive Python reference for creating and configuring Solaris (LOP) nodes via `hou.node().createNode()` and `parm().set()`. Covers stage management, geometry import, materials, all light types, cameras, render settings, and instancing nodes. H22 renames (W.3, live-verified 22.0.368): the `instancer` LOP is now `copytopoints` and the `layout` LOP is now `paintinstances` — the old spellings are gone from type lookup, emit canonical names only (`pointinstancer` is a NEW H22 node, not the rename). Lighting Law: intensity is ALWAYS 1.0; brightness is controlled exclusively by exposure (logarithmic, in stops).
 
 ## Code
 
@@ -609,27 +609,36 @@ sub2 = stage.createNode("sublayer", "pig_asset")
 sub2.parm("filepath1").set(pig_path)
 ```
 
-### Instancer (USD PointInstancer for scatter)
+### Copy to Points (USD PointInstancer for scatter — H22 name of `instancer`)
 
 ```python
 import hou
 
 stage = hou.node("/stage")
 
-# instancer: scatter thousands of instances from a SOP point cloud
-inst = stage.createNode("instancer", "tree_scatter")
+# H22 RENAME (W.3, live-verified 22.0.368): the H21 `instancer` LOP is now
+# `copytopoints`; the H21 `layout` LOP is now `paintinstances`. The old names
+# are gone from hou.nodeType() lookup (only an opalias rescues createNode) —
+# emit the canonical spellings ONLY. `pointinstancer` is a NEW H22 node,
+# not the rename target.
 
-# Point source: SOP or LOP providing instance points
-inst.parm("pointsource").set("/obj/scatter_geo/OUT")
+# copytopoints: scatter thousands of instances from a SOP point cloud
+inst = stage.createNode("copytopoints", "tree_scatter")
 
-# Prototype: which USD prim to instance at each point
-inst.parm("protosource").set("lop")       # "lop" = from LOP stage
-inst.parm("protopath1").set("/World/tree_asset")
+# Point source: external SOP (probe-verified 22.0.368 — the H21 soppath /
+# pointsource spellings are gone; extsop mode + pointsoppath is the pair)
+inst.parm("transformsourcemode").set("extsop")
+inst.parm("pointsoppath").set("/obj/scatter_geo/OUT")
+
+# Prototype: second input is the default source (protosourcemode='second').
+# H22-UNVERIFIED: the H21 `protosource`/`protopath1` parms do not exist on
+# copytopoints — the H22 pattern surface is `protosourcemode` + `protopattern`;
+# PROBE the live node before setting them.
 
 # SOP point attributes control per-instance transforms automatically:
 #   'orient'     → rotation quaternion
 #   'scale'/'pscale' → uniform scale
-#   'instanceId' → which prototype to use (for multiple prototypes)
+#   'protoindex' → which prototype to use (for multiple prototypes)
 ```
 
 ### Full Scene Setup (Minimal Karma Scene, End-to-End)

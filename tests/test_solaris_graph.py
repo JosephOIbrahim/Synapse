@@ -718,7 +718,9 @@ class TestInstanceableAssets:
         assert "asset_1" in node_ids
         assert "asset_2" in node_ids
         assert "merge" in node_ids
-        assert "layout" in node_ids
+        # W.3 (H22): the scatter node is `paintinstances` — the canonical
+        # rename of the removed `layout` LOP (whats-new 22/solaris.txt L137).
+        assert "paintinstances" in node_ids
 
     def test_custom_asset_count(self):
         result = instanceable_assets(asset_count=5)
@@ -750,6 +752,30 @@ class TestInstanceableAssets:
         node_types = {n["type"] for n in result["nodes"]}
         assert "camera" not in node_types
         assert "domelight" not in node_types
+
+
+# =============================================================================
+# H22 canonical-spelling ratchet — no template may emit a removed LOP name
+# =============================================================================
+
+
+class TestNoRemovedH22Spellings:
+    """W.3 (H22.0.368): `Lop/instancer` and `Lop/layout` were renamed
+    (copytopoints / paintinstances — whats-new 22/solaris.txt L143/L137).
+    hou.nodeType lookup of the old names returns None; only the opalias
+    rescues createNode(). SYNAPSE emits canonical spellings — a legacy
+    type in ANY template is a regression this ratchet catches."""
+
+    REMOVED = {"instancer", "layout"}
+
+    def test_no_template_emits_removed_spellings(self):
+        for name, fn in TEMPLATES.items():
+            result = fn()
+            legacy = {n["type"] for n in result["nodes"]} & self.REMOVED
+            assert not legacy, (
+                f"template {name!r} emits removed H21 spellings "
+                f"{sorted(legacy)} — use copytopoints/paintinstances"
+            )
 
 
 # =============================================================================
