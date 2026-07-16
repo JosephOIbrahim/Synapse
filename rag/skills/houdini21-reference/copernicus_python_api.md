@@ -344,43 +344,56 @@ if cable is not None and cable.wireCount() > 0:
     import numpy as np
     raw = layer.allBufferElements()        # hou.BinaryString (raw bytes)
 
-    # storageType -> numpy dtype. Byte widths are HDK-pinned (PXLformatDepth):
+    # storageType -> numpy dtype. The HDK (PXLformatDepth) pins byte WIDTHS ONLY:
     #   Float32 -> 4B, Float16 -> 2B, Int32 -> 4B, Int16 -> 2B, Int8 -> 1B.
+    # SIGN is NOT pinned by the HDK. The integer entries below assume UNSIGNED
+    # (Houdini's 8/16-bit image data is conventionally unsigned-normalized), kept
+    # CONSISTENT across all three widths so the map doesn't silently mix int32 with
+    # uint8/uint16. Treat the sign as an UNVERIFIED CONVENTION, not an HDK fact:
+    # confirm signedness against a live probe before trusting integer reads.
     _NP_DTYPE = {
         "Float32": np.float32, "Float16": np.float16,
-        "Int32": np.int32, "Int16": np.uint16, "Int8": np.uint8,
+        # int widths HDK-pinned; sign below is convention, verify-on-live-probe:
+        "Int32": np.uint32, "Int16": np.uint16, "Int8": np.uint8,
     }
     np_dtype = _NP_DTYPE.get(str(storage).split(".")[-1], np.float32)
 
     arr = np.frombuffer(raw, dtype=np_dtype)
-    # Channels are INTERLEAVED (RGBRGBRGB), row-major, bottom-left origin.
-    # bufferResolution() is (X, Y), so reshape rows-first as (Y, X, channels):
+    # bufferResolution() is (X, Y), so reshape rows-first as (Y, X, channels).
+    # HEDGE: this reshape is correct ONLY for INTERLEAVED layers (PXL_Packing
+    # PACK_RGB/RGBA -> RGBRGBRGB, row-major). A PLANAR layer (the _NI packings ->
+    # RRR...GGG...BBB) would reshape WRONG here; check PXL_Packing / probe the buffer
+    # stride on a live build before assuming interleaved. verify-on-live-probe.
     arr = arr.reshape(yres, xres, channels)
     arr = np.flipud(arr)                   # bottom-left -> top-left display convention
     # layer.setAllBufferElements(values)
 ```
 
-> **`allBufferElements()` reinterpretation — HDK-grounded (verified 2026-07-16).**
+> **`allBufferElements()` reinterpretation — HDK-grounded (doc cross-check 2026-07-16).**
 > `hou.ImageLayer.allBufferElements()` returns a `hou.BinaryString` that SideFX's own
 > HOM docs describe as *"efficiently re-interpreted and handled by numpy or tensor
 > packages"* — a raw byte buffer, not pixel tuples. The reinterpretation parameters
 > are pinned by the HDK, not guessed:
-> - **dtype** ← `storageType()`. The HDK `PXL_Common.h` format enum (`PXL_FLOAT32 /
+> - **dtype width** ← `storageType()`. The HDK `PXL_Common.h` format enum (`PXL_FLOAT32 /
 >   FLOAT16 / INT8 / INT16 / INT32`) plus `PXLformatDepth()` (bytes-per-component)
 >   give the exact byte widths: Float32/Int32 = 4 B, Float16/Int16 = 2 B, Int8 = 1 B.
+>   The HDK pins WIDTHS only — integer **signedness is NOT pinned**; the map above
+>   assumes unsigned by convention and stays verify-on-live-probe.
 > - **shape** ← `bufferResolution()` (X, Y) × `channelCount()`. `HDK_image` states the
 >   data is *"interleaved and left at the native raster depth"* (`PXL_Packing`
 >   `PACK_RGB/RGBA`; the `_NI` packings are the planar variants), row-major — so
 >   C-order `(yres, xres, channels)` with the channel as the fastest-varying axis.
+>   That reshape holds ONLY for the interleaved packings; a planar (`_NI`) layer
+>   would reshape wrong — verify PXL_Packing on a live build.
 > - **row origin** ← bottom-left. `HDK_image`: *"the (0,0) pixel is in the bottom left
 >   corner"* — Houdini rasters are bottom-to-top, hence the `np.flipud` when displaying
 >   under a top-left-origin convention.
 >
-> Corroborated by the live probe arithmetic: Float32 × 3 ch × 1024×1024 =
-> 4 × 3 × 1,048,576 = **12,582,912 bytes**, matching the probed buffer length to the
-> byte. (The HDK `_h_d_k__changes.html` changelog still publishes no Houdini 22 entry,
-> so the interleaved / bottom-left layout above is taken from the stable `IMG_File`
-> raster-I/O and `PXL_Common` HDK pages, not an H22-specific note.)
+> The byte math is ARITHMETIC ONLY (not a live-verified behavioral probe): a Float32
+> × 3 ch × 1024×1024 buffer would be 4 × 3 × 1,048,576 = **12,582,912 bytes**. (The
+> HDK `_h_d_k__changes.html` changelog still publishes no Houdini 22 entry, so the
+> interleaved / bottom-left layout above is taken from the stable `IMG_File` raster-I/O
+> and `PXL_Common` HDK pages, not an H22-specific note, and remains verify-on-live-probe.)
 
 ```python
 # LEGACY ONLY — hou.Cop2Node (cop2net children) keeps the old surface in H22

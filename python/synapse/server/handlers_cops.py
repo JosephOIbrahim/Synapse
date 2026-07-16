@@ -155,6 +155,13 @@ def _read_or_drift(read, symbol: str, drift: List[Dict], default=None):
     False (and ``value`` is ``default``) in both failure cases. Centralizing the
     two-tier guard keeps the six read sites from hand-duplicating the symbol string
     and the except-pair -- a mistyped drift symbol would otherwise be a silent bug.
+
+    CONTRACT: ``read`` must be a *zero-arg callable that performs the attribute
+    lookup itself* (e.g. ``lambda: node.cable()``), NOT a pre-bound method
+    (``node.cable``). Passing a bound method makes the ``AttributeError`` for a
+    vanished symbol fire at *argument evaluation* -- outside this ``try`` -- so it
+    propagates uncaught instead of becoming a drift entry. All six call sites below
+    wrap their deref in a lambda for exactly this reason.
     """
     try:
         return True, read()
@@ -177,7 +184,10 @@ def _copernicus_image_info(node) -> Tuple[Dict, List[Dict]]:
     Returns ``(info, drift)``. ``info`` carries any of ``planes`` / ``resolution``
     / ``data_type`` that could be read. ``drift`` is a list of ``api_drift`` entries
     -- one per replacement-surface symbol that raised ``AttributeError`` (i.e. the
-    method vanished on this build). AttributeError is LOUD (warn-once + drift entry)
+    method vanished on this build). All six derefs (cable / wireNames / wireCount /
+    layerByIndex / bufferResolution / storageType) go through ``_read_or_drift`` as
+    zero-arg lambdas, so an AttributeError on ANY of them is caught and turned into
+    a warn-once + drift entry -- none can crash the caller. AttributeError is LOUD
     because a silently-empty read is the exact class that masked the planes() break.
     Non-AttributeError exceptions stay defensive -- an un-cooked/unloaded node
     legitimately has no cable/wires -- but are logged at debug so they are never
@@ -186,7 +196,7 @@ def _copernicus_image_info(node) -> Tuple[Dict, List[Dict]]:
     info: Dict = {}
     drift: List[Dict] = []
 
-    ok, cable = _read_or_drift(node.cable, "hou.CopNode.cable", drift)
+    ok, cable = _read_or_drift(lambda: node.cable(), "hou.CopNode.cable", drift)
     if not ok or cable is None:
         return info, drift
 
@@ -195,7 +205,7 @@ def _copernicus_image_info(node) -> Tuple[Dict, List[Dict]]:
     if ok:
         info["planes"] = planes
 
-    ok, count = _read_or_drift(cable.wireCount, "hou.CopCable.wireCount", drift, default=0)
+    ok, count = _read_or_drift(lambda: cable.wireCount(), "hou.CopCable.wireCount", drift, default=0)
     if not ok or count <= 0:
         return info, drift
 
@@ -203,14 +213,14 @@ def _copernicus_image_info(node) -> Tuple[Dict, List[Dict]]:
     if not ok or layer is None:
         return info, drift
 
-    ok, res = _read_or_drift(layer.bufferResolution, "hou.ImageLayer.bufferResolution", drift)
+    ok, res = _read_or_drift(lambda: layer.bufferResolution(), "hou.ImageLayer.bufferResolution", drift)
     if ok and res is not None:
         try:
             info["resolution"] = [int(res[0]), int(res[1])]
         except (TypeError, IndexError, ValueError):
             pass  # malformed resolution tuple -- omit honestly, not a symbol-drift
 
-    ok, storage = _read_or_drift(layer.storageType, "hou.ImageLayer.storageType", drift)
+    ok, storage = _read_or_drift(lambda: layer.storageType(), "hou.ImageLayer.storageType", drift)
     if ok:
         info["data_type"] = str(storage)
 
@@ -608,10 +618,13 @@ class CopsHandlerMixin:
             else:
                 # Copernicus surface -- H22 removed planes()/xRes()/yRes()/depth()
                 # from hou.CopNode (NWS-03); read via cable()/ImageLayer instead.
-                # AttributeError drift is warned-once inside the helper; read_layer_info
-                # has no issues[] channel, so the log IS the loud signal here (the
-                # response envelope shape stays frozen -- see the golden key test).
-                info, _drift = _copernicus_image_info(node)
+                # AttributeError drift is warned-once inside the helper AND surfaced
+                # below as an additive api_drift key -- read_layer_info has no issues[]
+                # channel, so a warn-once log alone goes silent after call #1 and a
+                # persistently-drifted node would be indistinguishable from an
+                # un-cooked one. The key is present ONLY on drift, so the healthy-node
+                # golden envelope stays frozen (see the golden key test).
+                info, drift = _copernicus_image_info(node)
 
                 if "resolution" in info:
                     result["resolution"] = info["resolution"]
@@ -631,6 +644,12 @@ class CopsHandlerMixin:
                         result["data_type"] = str(dp.eval())
 
                 result["planes"] = info.get("planes", [])
+
+                # LOUD API drift: additive key (only present when a replacement-surface
+                # symbol vanished) so a persistently-drifted node is never mistaken for
+                # an un-cooked one. Same shape as analyze_render's issues[] entries.
+                if drift:
+                    result["api_drift"] = drift
 
             # Cook status
             try:

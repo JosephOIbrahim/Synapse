@@ -269,6 +269,71 @@ def _make_drifted_copernicus_node(path="/img/copnet1/drift1", type_name="ramp"):
     return node
 
 
+# The six Copernicus replacement-surface symbols _copernicus_image_info reads, each
+# mapped (by owner) into the cable() -> CopCable -> ImageLayer chain. Deleting any ONE
+# makes exactly that deref raise AttributeError while every upstream read still
+# resolves -> exactly one drift entry. cable/wireCount/bufferResolution/storageType
+# were the four sites that (pre-repair) were passed to _read_or_drift as BOUND METHODS,
+# so their AttributeError fired at argument evaluation -- outside the guard -- and
+# crashed the whole command instead of drifting. Wrapping all six in lambdas fixed it;
+# _make_symbol_drifted_copernicus_node + the per-symbol test below now pin every site.
+_COP_DRIFT_SYMBOLS = (
+    "hou.CopNode.cable",
+    "hou.CopCable.wireNames",
+    "hou.CopCable.wireCount",
+    "hou.CopCable.layerByIndex",
+    "hou.ImageLayer.bufferResolution",
+    "hou.ImageLayer.storageType",
+)
+
+
+def _make_symbol_drifted_copernicus_node(drift_symbol, path="/img/copnet1/symdrift"):
+    """A Copernicus node healthy on every replacement-surface symbol EXCEPT one.
+
+    ``drift_symbol`` (a ``_COP_DRIFT_SYMBOLS`` entry) is deleted from wherever it lives
+    in the cable() -> CopCable -> ImageLayer chain, so that single deref raises
+    AttributeError and everything upstream of it still resolves.
+    """
+    node = MagicMock()
+    node.path.return_value = path
+    node.name.return_value = path.rsplit("/", 1)[-1]
+    node.type.return_value = _MockNodeType("ramp", category="Cop")
+    node.cook = MagicMock()
+    node.errors.return_value = []
+    node.warnings.return_value = []
+
+    del node.planes
+    del node.xRes
+    del node.yRes
+    del node.depth
+
+    layer = MagicMock()
+    layer.bufferResolution.return_value = (1024, 1024)
+    layer.channelCount.return_value = 3
+    layer.storageType.return_value = "imageLayerStorageType.Float32"
+
+    cable = MagicMock()
+    cable.wireNames.return_value = ["ramp"]
+    cable.wireCount.return_value = 1
+    cable.layerByIndex.return_value = layer
+    node.cable.return_value = cable
+
+    node.parm = lambda name: None
+    node.parmTuple = MagicMock(return_value=None)
+
+    # Delete exactly the drifted method from its owner so that deref raises.
+    _owner = {
+        "hou.CopNode.cable": node,
+        "hou.CopCable.wireNames": cable,
+        "hou.CopCable.wireCount": cable,
+        "hou.CopCable.layerByIndex": cable,
+        "hou.ImageLayer.bufferResolution": layer,
+        "hou.ImageLayer.storageType": layer,
+    }[drift_symbol]
+    delattr(_owner, drift_symbol.rsplit(".", 1)[-1])
+    return node
+
+
 # Sentinel classes standing in for hou.Cop2Node / hou.CopNode. The test hou stub is
 # a bare ModuleType with no such classes, so _uses_legacy_cop2_surface's isinstance
 # branches are normally skipped -- planting these exercises them (W.1b task 3).
@@ -727,9 +792,12 @@ class TestCopsSurfaceGoldensAndDrift:
         assert result.data["planes"] == []
         assert result.data["resolution"] == [1024, 1024]
 
-    def test_read_layer_info_drift_warns_once_envelope_frozen(self, handler, caplog):
-        """read_layer_info has no issues[] channel, so the loud signal is the
-        warn-once log; the response envelope shape stays frozen."""
+    def test_read_layer_info_drift_surfaces_log_and_api_drift_key(self, handler, caplog):
+        """read_layer_info has no issues[] channel, so drift surfaces TWO ways: the
+        warn-once log AND an additive ``api_drift`` key. The key is present ONLY on
+        drift, so the healthy-node golden envelope stays frozen -- but a persistently
+        drifted node is never indistinguishable from an un-cooked one (the warn-once
+        log alone goes silent after call #1)."""
         _hc._WARNED_COP_DRIFT.clear()
         node = _make_drifted_copernicus_node("/img/copnet1/drift_rli")
         with patch.object(_handlers_hou, "node", return_value=node):
@@ -743,18 +811,37 @@ class TestCopsSurfaceGoldensAndDrift:
         assert "API drift" in caplog.text
         assert "wireNames" in caplog.text
         assert result.data["planes"] == []
-        assert set(result.data.keys()) == _READ_LAYER_INFO_GOLDEN_KEYS
-        assert "api_drift" not in result.data
+        # Additive: golden keys PLUS the api_drift key on a drifted node.
+        assert set(result.data.keys()) == _READ_LAYER_INFO_GOLDEN_KEYS | {"api_drift"}
+        drift = result.data["api_drift"]
+        assert [d["symbol"] for d in drift] == ["hou.CopCable.wireNames"]
+        assert drift[0]["check"] == "api_drift"
 
-    def test_cop_drift_entry_every_call_warn_once_per_symbol(self):
-        """The api_drift entry is emitted on EVERY call (so callers always see it),
-        but the warning is logged once per symbol per process."""
-        _hc._WARNED_COP_DRIFT.clear()
-        _info1, drift1 = _hc._copernicus_image_info(_make_drifted_copernicus_node("/img/copnet1/d1"))
-        _info2, drift2 = _hc._copernicus_image_info(_make_drifted_copernicus_node("/img/copnet1/d2"))
-        assert any(d["symbol"] == "hou.CopCable.wireNames" for d in drift1)
-        assert any(d["symbol"] == "hou.CopCable.wireNames" for d in drift2)
-        assert "hou.CopCable.wireNames" in _hc._WARNED_COP_DRIFT
+    def test_cop_drift_entry_every_call_warn_once_per_symbol(self, caplog):
+        """For EACH of the six replacement-surface symbols, a vanished method yields
+        exactly one api_drift entry on EVERY call (callers always see it) and is
+        warned exactly once per process. This genuinely exercises all six sites --
+        cable/wireCount/bufferResolution/storageType used to raise an *uncaught*
+        AttributeError at argument evaluation (bound methods) and crash the read;
+        deleting any one now must degrade loud, never crash."""
+        for symbol in _COP_DRIFT_SYMBOLS:
+            _hc._WARNED_COP_DRIFT.clear()
+            with caplog.at_level(logging.WARNING, logger="synapse.server.handlers_cops"):
+                caplog.clear()
+                # Call twice: drift entry emitted every call, warning logged once.
+                _i1, drift1 = _hc._copernicus_image_info(
+                    _make_symbol_drifted_copernicus_node(symbol, "/img/copnet1/d1"))
+                _i2, drift2 = _hc._copernicus_image_info(
+                    _make_symbol_drifted_copernicus_node(symbol, "/img/copnet1/d2"))
+
+            assert [d["symbol"] for d in drift1] == [symbol], (
+                f"{symbol}: expected exactly one drift entry, got {[d['symbol'] for d in drift1]}")
+            assert [d["symbol"] for d in drift2] == [symbol], (
+                f"{symbol}: drift entry must fire on EVERY call, got {[d['symbol'] for d in drift2]}")
+            assert symbol in _hc._WARNED_COP_DRIFT
+            warns = [r for r in caplog.records
+                     if r.levelno == logging.WARNING and symbol in r.getMessage()]
+            assert len(warns) == 1, f"{symbol}: expected one warn across two calls, got {len(warns)}"
 
     def test_uses_legacy_cop2_surface_isinstance_branches(self):
         with patch.object(_hc.hou, "Cop2Node", _Cop2NodeSentinel, create=True), \
