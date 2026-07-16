@@ -11,6 +11,7 @@ Mock-based -- no Houdini required.
 """
 
 import importlib.util
+import logging
 import sys
 import types
 from pathlib import Path
@@ -85,6 +86,7 @@ handlers_mod = sys.modules["synapse.server.handlers"]
 protocol_mod = sys.modules["synapse.core.protocol"]
 
 # Get the hou reference from handlers_cops.py
+import synapse.server.handlers_cops as _hc  # noqa: E402  (bootstrapped above)
 _cops_mod = sys.modules.get("synapse.server.handlers_cops")
 _handlers_hou = _cops_mod.hou if _cops_mod else handlers_mod.hou
 
@@ -133,8 +135,19 @@ def _make_cop_node(path="/obj/cop2net1/blur1", type_name="blur",
     # Resolution methods
     node.xRes.return_value = 1024
     node.yRes.return_value = 1024
-    node.depth.return_value = "float32"
     node.planes.return_value = ["C", "A"]
+
+    # Real H22 signature: hou.Cop2Node.depth(plane) REQUIRES a plane-name arg on
+    # 22.0.368 -- a bare depth() TypeErrors. The mock enforces that so the handler
+    # can no longer green-light a dead bare depth() call (W.1b sev-3).
+    def _depth(*args):
+        if not args:
+            raise TypeError(
+                "depth() missing 1 required positional argument: 'plane' "
+                "(hou.Cop2Node.depth needs a plane name on 22.0.368)"
+            )
+        return "float32"
+    node.depth.side_effect = _depth
 
     # Parm mock
     _parms = parms or {}
@@ -217,6 +230,54 @@ def _make_network_node(path="/obj/cop2net1", children=None):
     net.createNode = MagicMock(side_effect=_create_node)
 
     return net
+
+
+def _make_drifted_copernicus_node(path="/img/copnet1/drift1", type_name="ramp"):
+    """A Copernicus node whose H22 replacement surface has DRIFTED further.
+
+    ``cable().wireNames()`` has vanished (raises AttributeError) -- the exact
+    silent-degrade class W.1 fixed for ``planes()``. wireCount/layer still resolve,
+    so resolution is still readable: this proves the plane read degrades LOUD (drift
+    entry + warn) while the rest of the read survives.
+    """
+    node = MagicMock()
+    node.path.return_value = path
+    node.name.return_value = path.rsplit("/", 1)[-1]
+    node.type.return_value = _MockNodeType(type_name, category="Cop")
+    node.cook = MagicMock()
+    node.errors.return_value = []
+    node.warnings.return_value = []
+
+    del node.planes
+    del node.xRes
+    del node.yRes
+    del node.depth
+
+    layer = MagicMock()
+    layer.bufferResolution.return_value = (1024, 1024)
+    layer.channelCount.return_value = 3
+    layer.storageType.return_value = "imageLayerStorageType.Float32"
+
+    cable = MagicMock()
+    del cable.wireNames  # DRIFT: the H22 plane-name reader vanished on this build
+    cable.wireCount.return_value = 1
+    cable.layerByIndex.return_value = layer
+    node.cable.return_value = cable
+
+    node.parm = lambda name: None
+    node.parmTuple = MagicMock(return_value=None)
+    return node
+
+
+# Sentinel classes standing in for hou.Cop2Node / hou.CopNode. The test hou stub is
+# a bare ModuleType with no such classes, so _uses_legacy_cop2_surface's isinstance
+# branches are normally skipped -- planting these exercises them (W.1b task 3).
+class _Cop2NodeSentinel:
+    pass
+
+
+class _CopNodeSentinel:
+    pass
 
 
 def _make_parent_node(path="/obj"):
@@ -599,6 +660,109 @@ class TestCopsAnalyzeRender:
         assert result.data["resolution"] is None
         assert result.data["planes"] == []
         assert "pixel_count" not in result.data
+
+
+# Golden envelope key freezes (W.1b task 3): the exact key set each handler returns
+# on a healthy node. Pins the response contract so a future silent addition/removal
+# on EITHER the legacy or the Copernicus read path fails loud in CI.
+_READ_LAYER_INFO_GOLDEN_KEYS = {
+    "node", "type", "resolution", "data_type", "planes",
+    "cook_status", "errors", "warnings",
+}
+_ANALYZE_RENDER_GOLDEN_KEYS = {
+    "node", "checks_run", "issues", "overall_quality",
+    "resolution", "pixel_count", "planes",
+}
+
+
+class TestCopsSurfaceGoldensAndDrift:
+    """W.1b follow-ups: golden envelope keys, loud Copernicus API drift, and the
+    isinstance branches of ``_uses_legacy_cop2_surface`` (normally skipped because
+    the test hou stub has no Cop2Node/CopNode classes)."""
+
+    def test_read_layer_info_golden_envelope_keys(self, handler):
+        legacy = _make_cop_node("/obj/cop2net1/file1", "file")
+        modern = _make_copernicus_node("/img/copnet1/ramp1", "ramp")
+        for node in (legacy, modern):
+            with patch.object(_handlers_hou, "node", return_value=node):
+                result = handler.handle(handlers_mod.SynapseCommand(
+                    type="cops_read_layer_info",
+                    id="test-w1b-rli-golden",
+                    payload={"node": node.path()},
+                ))
+            assert result.success
+            assert set(result.data.keys()) == _READ_LAYER_INFO_GOLDEN_KEYS
+
+    def test_analyze_render_golden_envelope_keys(self, handler):
+        legacy = _make_cop_node("/obj/cop2net1/file1", "file")
+        modern = _make_copernicus_node("/img/copnet1/ramp1", "ramp")
+        for node in (legacy, modern):
+            with patch.object(_handlers_hou, "node", return_value=node):
+                result = handler.handle(handlers_mod.SynapseCommand(
+                    type="cops_analyze_render",
+                    id="test-w1b-ar-golden",
+                    payload={"node": node.path()},
+                ))
+            assert result.success
+            assert set(result.data.keys()) == _ANALYZE_RENDER_GOLDEN_KEYS
+
+    def test_analyze_render_copernicus_drift_is_loud(self, handler):
+        """A vanished replacement-surface symbol surfaces an api_drift issue and
+        flips overall_quality -- it can no longer masquerade as a clean pass."""
+        _hc._WARNED_COP_DRIFT.clear()
+        node = _make_drifted_copernicus_node("/img/copnet1/drift_ar")
+        with patch.object(_handlers_hou, "node", return_value=node):
+            result = handler.handle(handlers_mod.SynapseCommand(
+                type="cops_analyze_render",
+                id="test-w1b-ar-drift",
+                payload={"node": node.path()},
+            ))
+        assert result.success
+        drift = [i for i in result.data["issues"] if i.get("check") == "api_drift"]
+        assert len(drift) == 1
+        assert "wireNames" in drift[0]["symbol"]
+        assert drift[0]["severity"] == "warning"
+        assert result.data["overall_quality"] == "warning"
+        # Plane read degraded honestly; unaffected reads still succeed.
+        assert result.data["planes"] == []
+        assert result.data["resolution"] == [1024, 1024]
+
+    def test_read_layer_info_drift_warns_once_envelope_frozen(self, handler, caplog):
+        """read_layer_info has no issues[] channel, so the loud signal is the
+        warn-once log; the response envelope shape stays frozen."""
+        _hc._WARNED_COP_DRIFT.clear()
+        node = _make_drifted_copernicus_node("/img/copnet1/drift_rli")
+        with patch.object(_handlers_hou, "node", return_value=node):
+            with caplog.at_level(logging.WARNING, logger="synapse.server.handlers_cops"):
+                result = handler.handle(handlers_mod.SynapseCommand(
+                    type="cops_read_layer_info",
+                    id="test-w1b-rli-drift",
+                    payload={"node": node.path()},
+                ))
+        assert result.success
+        assert "API drift" in caplog.text
+        assert "wireNames" in caplog.text
+        assert result.data["planes"] == []
+        assert set(result.data.keys()) == _READ_LAYER_INFO_GOLDEN_KEYS
+        assert "api_drift" not in result.data
+
+    def test_cop_drift_entry_every_call_warn_once_per_symbol(self):
+        """The api_drift entry is emitted on EVERY call (so callers always see it),
+        but the warning is logged once per symbol per process."""
+        _hc._WARNED_COP_DRIFT.clear()
+        _info1, drift1 = _hc._copernicus_image_info(_make_drifted_copernicus_node("/img/copnet1/d1"))
+        _info2, drift2 = _hc._copernicus_image_info(_make_drifted_copernicus_node("/img/copnet1/d2"))
+        assert any(d["symbol"] == "hou.CopCable.wireNames" for d in drift1)
+        assert any(d["symbol"] == "hou.CopCable.wireNames" for d in drift2)
+        assert "hou.CopCable.wireNames" in _hc._WARNED_COP_DRIFT
+
+    def test_uses_legacy_cop2_surface_isinstance_branches(self):
+        with patch.object(_hc.hou, "Cop2Node", _Cop2NodeSentinel, create=True), \
+             patch.object(_hc.hou, "CopNode", _CopNodeSentinel, create=True):
+            # First isinstance branch: a Cop2Node instance -> legacy surface (True).
+            assert _hc._uses_legacy_cop2_surface(_Cop2NodeSentinel()) is True
+            # Second isinstance branch: a CopNode instance -> Copernicus surface (False).
+            assert _hc._uses_legacy_cop2_surface(_CopNodeSentinel()) is False
 
 
 class TestCopsSlapComp:

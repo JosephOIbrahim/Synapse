@@ -13,7 +13,8 @@ solvers, procedural textures, motion design, and batch processing.
   - Advanced: wetmap, bake_textures, temporal_analysis, stamp_scatter, batch_cook
 """
 
-from typing import Dict
+import logging
+from typing import Dict, List, Tuple
 
 try:
     import hou
@@ -23,6 +24,45 @@ except ImportError:
 
 from ..core.aliases import resolve_param, resolve_param_with_default
 from .handler_helpers import _HOUDINI_UNAVAILABLE
+
+_LOG = logging.getLogger(__name__)
+
+# Copernicus image-read API-drift tracking. The H22 migration handed us a
+# replacement surface (cable() -> CopCable -> ImageLayer) for the removed
+# planes()/xRes()/yRes()/depth() quartet. If THAT surface drifts the same way --
+# a method quietly disappearing on a future build -- the old blanket except-pass
+# would silently degrade the read to empty, reproducing the exact failure class
+# that hid the planes() break (W.1 crucible sev-3). So an AttributeError on any
+# replacement-surface symbol is now LOUD: warn-once here + a structured api_drift
+# entry the caller can surface (analyze_render appends it to issues[]).
+_WARNED_COP_DRIFT: set = set()
+
+
+def _warn_cop_drift_once(symbol: str, exc: Exception) -> None:
+    """Log a Copernicus-surface AttributeError exactly once per process per symbol."""
+    if symbol in _WARNED_COP_DRIFT:
+        return
+    _WARNED_COP_DRIFT.add(symbol)
+    _LOG.warning(
+        "Copernicus image-read API drift: %s raised AttributeError (%s). The H22 "
+        "replacement surface changed again -- image metadata is degraded, not "
+        "wrong-but-silent. Re-probe the Cop cable/ImageLayer API against the live "
+        "build.", symbol, exc,
+    )
+
+
+def _cop_drift_issue(symbol: str, exc: Exception) -> Dict:
+    """Structured api_drift entry for the analyze_render ``issues[]`` list."""
+    return {
+        "check": "api_drift",
+        "severity": "warning",
+        "message": (
+            f"Copernicus image-read API drift: {symbol} raised AttributeError "
+            "-- image metadata degraded (replacement surface changed since 22.0.368)"
+        ),
+        "symbol": symbol,
+        "details": str(exc),
+    }
 
 
 # Legacy COP2 node types most exposed by the Houdini 22 Copernicus migration.
@@ -106,44 +146,75 @@ def _uses_legacy_cop2_surface(node) -> bool:
         return True
 
 
-def _copernicus_image_info(node) -> Dict:
+def _read_or_drift(read, symbol: str, drift: List[Dict], default=None):
+    """Invoke ``read()`` guarding one Copernicus replacement-surface symbol.
+
+    Returns ``(ok, value)``. An ``AttributeError`` means ``symbol`` vanished on this
+    build -> LOUD (warn-once + a drift entry appended to ``drift``). Any other
+    exception is a transient/un-cooked read -> defensive (debug log only). ``ok`` is
+    False (and ``value`` is ``default``) in both failure cases. Centralizing the
+    two-tier guard keeps the six read sites from hand-duplicating the symbol string
+    and the except-pair -- a mistyped drift symbol would otherwise be a silent bug.
+    """
+    try:
+        return True, read()
+    except AttributeError as exc:
+        _warn_cop_drift_once(symbol, exc)
+        drift.append(_cop_drift_issue(symbol, exc))
+    except Exception as exc:
+        _LOG.debug("Copernicus %s read failed (defensive): %s", symbol, exc)
+    return False, default
+
+
+def _copernicus_image_info(node) -> Tuple[Dict, List[Dict]]:
     """Best-effort image metadata read for a Copernicus (``hou.CopNode``) node.
 
     Uses the verified H22 replacement surface for the removed ``planes()``/
     ``xRes()``/``yRes()``/``depth()`` quartet: ``node.cable()`` -> ``hou.CopCable``
     (``wireNames()`` are the H22 equivalent of plane names) -> ``layerByIndex(0)``
-    -> ``hou.ImageLayer`` (``bufferResolution()`` / ``storageType()``). Every read
-    is individually guarded so one missing piece never kills the rest; an
-    un-cooked/unloaded node simply has zero wires. Returns a dict with any of
-    ``planes`` / ``resolution`` / ``data_type`` that could be read.
+    -> ``hou.ImageLayer`` (``bufferResolution()`` / ``storageType()``).
+
+    Returns ``(info, drift)``. ``info`` carries any of ``planes`` / ``resolution``
+    / ``data_type`` that could be read. ``drift`` is a list of ``api_drift`` entries
+    -- one per replacement-surface symbol that raised ``AttributeError`` (i.e. the
+    method vanished on this build). AttributeError is LOUD (warn-once + drift entry)
+    because a silently-empty read is the exact class that masked the planes() break.
+    Non-AttributeError exceptions stay defensive -- an un-cooked/unloaded node
+    legitimately has no cable/wires -- but are logged at debug so they are never
+    fully invisible.
     """
     info: Dict = {}
-    try:
-        cable = node.cable()
-    except Exception:
-        return info
-    if cable is None:
-        return info
-    try:
-        info["planes"] = [str(name) for name in cable.wireNames()]
-    except Exception:
-        pass
-    try:
-        if cable.wireCount() > 0:
-            layer = cable.layerByIndex(0)
-            if layer is not None:
-                try:
-                    width, height = layer.bufferResolution()
-                    info["resolution"] = [int(width), int(height)]
-                except Exception:
-                    pass
-                try:
-                    info["data_type"] = str(layer.storageType())
-                except Exception:
-                    pass
-    except Exception:
-        pass
-    return info
+    drift: List[Dict] = []
+
+    ok, cable = _read_or_drift(node.cable, "hou.CopNode.cable", drift)
+    if not ok or cable is None:
+        return info, drift
+
+    ok, planes = _read_or_drift(
+        lambda: [str(name) for name in cable.wireNames()], "hou.CopCable.wireNames", drift)
+    if ok:
+        info["planes"] = planes
+
+    ok, count = _read_or_drift(cable.wireCount, "hou.CopCable.wireCount", drift, default=0)
+    if not ok or count <= 0:
+        return info, drift
+
+    ok, layer = _read_or_drift(lambda: cable.layerByIndex(0), "hou.CopCable.layerByIndex", drift)
+    if not ok or layer is None:
+        return info, drift
+
+    ok, res = _read_or_drift(layer.bufferResolution, "hou.ImageLayer.bufferResolution", drift)
+    if ok and res is not None:
+        try:
+            info["resolution"] = [int(res[0]), int(res[1])]
+        except (TypeError, IndexError, ValueError):
+            pass  # malformed resolution tuple -- omit honestly, not a symbol-drift
+
+    ok, storage = _read_or_drift(layer.storageType, "hou.ImageLayer.storageType", drift)
+    if ok:
+        info["data_type"] = str(storage)
+
+    return info, drift
 
 
 def _create_cop_node(parent, type_name, node_name=None):
@@ -508,24 +579,39 @@ class CopsHandlerMixin:
                             result["resolution"] = [px.eval(), py.eval()]
                             break
 
-                # Query data type / depth
-                try:
-                    result["data_type"] = str(node.depth())
-                except (AttributeError, Exception):
-                    dp = node.parm("depth") or node.parm("data_type")
-                    if dp is not None:
-                        result["data_type"] = str(dp.eval())
-
-                # Query planes/channels
+                # Query planes/channels FIRST -- H22 Cop2Node.depth() needs a plane
+                # name argument, so we must know a plane before probing the depth.
                 try:
                     planes = node.planes()
                     result["planes"] = [str(p) for p in planes] if planes else []
                 except (AttributeError, Exception):
                     result["planes"] = []
+
+                # Query data type / depth. On 22.0.368 hou.Cop2Node.depth(plane)
+                # REQUIRES a plane arg -- a bare depth() TypeErrors and the old broad
+                # except silently dropped data_type. Probe the first plane's depth;
+                # fall back to a depth/data_type parm; omit the field honestly when
+                # there is nothing to probe.
+                data_type = None
+                plane_for_depth = result["planes"][0] if result["planes"] else None
+                if plane_for_depth is not None:
+                    try:
+                        data_type = str(node.depth(plane_for_depth))
+                    except (AttributeError, Exception):
+                        data_type = None
+                if data_type is None:
+                    dp = node.parm("depth") or node.parm("data_type")
+                    if dp is not None:
+                        data_type = str(dp.eval())
+                if data_type is not None:
+                    result["data_type"] = data_type
             else:
                 # Copernicus surface -- H22 removed planes()/xRes()/yRes()/depth()
                 # from hou.CopNode (NWS-03); read via cable()/ImageLayer instead.
-                info = _copernicus_image_info(node)
+                # AttributeError drift is warned-once inside the helper; read_layer_info
+                # has no issues[] channel, so the log IS the loud signal here (the
+                # response envelope shape stays frozen -- see the golden key test).
+                info, _drift = _copernicus_image_info(node)
 
                 if "resolution" in info:
                     result["resolution"] = info["resolution"]
@@ -789,7 +875,13 @@ class CopsHandlerMixin:
             else:
                 # Copernicus surface -- H22 removed planes()/xRes()/yRes() from
                 # hou.CopNode (NWS-03); read via cable()/ImageLayer instead.
-                info = _copernicus_image_info(node)
+                info, drift = _copernicus_image_info(node)
+
+                # LOUD API drift: if a replacement-surface symbol vanished, surface
+                # it as an api_drift issue (additive content on the existing issues[]
+                # list -- no envelope-shape change) so a silently-degraded read can
+                # no longer masquerade as a clean "pass".
+                report["issues"].extend(drift)
 
                 # Resolution check
                 if "resolution" in info:
