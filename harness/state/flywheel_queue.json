@@ -292,6 +292,26 @@
       ],
       "ratified": false,
       "note": "Deposited from the W.1-H22-planes crucible boundedWeaknesses (MERGE_READY verdict, 0 showstoppers) — deliberately NOT folded into W.1 (verbatim-preservation was the ratified scope). Human flip required."
+    },
+    {
+      "id": "W.7-H22-timeout-budget",
+      "title": "Port-wave crucible BW-1 (scene-1, sev-3, MUST-FIX-BEFORE render/tops): ws_passthrough outer timeout under-budgets send_command 2-attempt retry above ~cmd_timeout 72s. Breaches at render (120s), tops_batch_cook (300s), render_sequence (600s) — cancels a legacy transparent-retry-success mid-flight, misreports as generic timeout, leaks _pending[command_id] (CancelledError bypasses cleanup). Fix: outer=2*cmd_timeout+75 or single-source retry budget in timeouts.py; pop _pending in finally; add >72s parity test.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from scene-1 port-wave crucible (mergeReady:true, 0 showstoppers — this is forward risk not a scene-1 blocker). BLOCKING for wave render and wave tops-2 (render_sequence/multi_shot) — must land before those waves dispatch. Human flip required."
+    },
+    {
+      "id": "W.8-H22-passthrough-hygiene",
+      "title": "Port-wave crucible BW-2/BW-3 (scene-1, sev-2 pair): (1) _ported_error_text resolves exception class by NAME not isinstance — unpinned invariant on send_command raise surface; add conformance test or custom-subclass parity case. (2) ws_passthrough.reset_transport docstring points at conftest.py but the reset only lives in test_port_wave_scene1.py — move to conftest.py before scene-2 to avoid cross-test stale-loop leakage.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from scene-1 port-wave crucible (0 showstoppers). Should land before/with scene-2 (which also needs BW-4 re-audit for execute_python/execute_vex consent envelope)."
     }
   ]
 }
