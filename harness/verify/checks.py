@@ -544,44 +544,53 @@ def check_scout_no_apex_corpus(ctx):
     return {"ok": None, "detail": "no APEX corpus found; scout source-registry not wired yet (python/synapse/server/scout_sources.json missing)"}
 
 def check_connectivity_catalog_fresh(ctx):
-    # U.1: the packaged connectivity catalog (the wire_by_label / P3e authority) must be
+    # U.1 (+ U.1-H22 fold): EVERY packaged per-major connectivity catalog
+    # (the wire_by_label / P3e authority — wiring.py resolves connectivity_<major>.json
+    # per RUNNING major, never falling back across majors) must be
     # (a) internally sound — schema v2 + blake2b recomputes over its entries,
     # (b) byte-identical to the harness probe artifact it claims to be a copy of, and
-    # (c) stamped with the live build when hython is available (stamp==build or the check
-    #     FAILS explicitly — a stale catalog is a phantom-wiring vector, never silent).
+    # (c) the LIVE build's major must have a catalog stamped with that exact build when
+    #     hython is available (stamp==build or the check FAILS explicitly — a stale or
+    #     absent live-major catalog is a phantom-wiring vector, never silent).
     wt = Path(ctx["wt"])
-    pkg = wt / "python/synapse/cognitive/tools/data/connectivity_21.json"
-    if not pkg.exists():
-        return {"ok": False, "detail": "packaged connectivity_21.json missing"}
-    try:
-        import hashlib
-        data = json.loads(pkg.read_text(encoding="utf-8"))
-        if data.get("schema") != "verified_connectivity/v2":
-            return {"ok": False, "detail": f"schema={data.get('schema')} != verified_connectivity/v2"}
-        digest = hashlib.blake2b(
-            json.dumps(data.get("entries", {}), sort_keys=True, ensure_ascii=False).encode("utf-8"),
-            digest_size=16).hexdigest()
-        if digest != data.get("blake2b"):
-            return {"ok": False, "detail": "packaged catalog blake2b mismatch (corrupt/hand-edited)"}
-        stamp = data.get("houdini_version", "")
-        harness_fp = wt / "harness" / "notes" / f"verified_connectivity_{stamp}.json"
-        if not harness_fp.exists() or harness_fp.read_bytes() != pkg.read_bytes():
-            return {"ok": False, "detail": f"packaged copy != {harness_fp.name} (re-run "
-                                           "host/introspect_connectivity.py + re-copy)"}
-    except Exception as e:
-        return {"ok": False, "detail": f"catalog unreadable: {str(e)[:300]}"}
+    catalogs = sorted((wt / "python/synapse/cognitive/tools/data").glob("connectivity_*.json"))
+    if not catalogs:
+        return {"ok": False, "detail": "no packaged connectivity_<major>.json present"}
+    import hashlib
+    stamps = {}
+    for pkg in catalogs:
+        try:
+            data = json.loads(pkg.read_text(encoding="utf-8"))
+            if data.get("schema") != "verified_connectivity/v2":
+                return {"ok": False, "detail": f"{pkg.name}: schema={data.get('schema')} != verified_connectivity/v2"}
+            digest = hashlib.blake2b(
+                json.dumps(data.get("entries", {}), sort_keys=True, ensure_ascii=False).encode("utf-8"),
+                digest_size=16).hexdigest()
+            if digest != data.get("blake2b"):
+                return {"ok": False, "detail": f"{pkg.name}: blake2b mismatch (corrupt/hand-edited)"}
+            stamp = data.get("houdini_version", "")
+            harness_fp = wt / "harness" / "notes" / f"verified_connectivity_{stamp}.json"
+            if not harness_fp.exists() or harness_fp.read_bytes() != pkg.read_bytes():
+                return {"ok": False, "detail": f"{pkg.name} != {harness_fp.name} (re-run "
+                                               "host/introspect_connectivity.py + re-copy)"}
+            stamps[pkg.name] = stamp
+        except Exception as e:
+            return {"ok": False, "detail": f"{pkg.name} unreadable: {str(e)[:300]}"}
     if ctx["hython"]:
         code = "import hou\nprint('BUILD', hou.applicationVersionString())"
         rc, out, err = hython(ctx["hython"], code, ctx["wt"])
         live = next((l.split(" ", 1)[1] for l in out.splitlines() if l.startswith("BUILD ")), None)
         if live is None:
             return {"ok": False, "detail": f"could not read live build: {(err or out).strip()[:200]}"}
-        if live != stamp:
-            return {"ok": False, "detail": f"catalog stamp {stamp} != live build {live} — STALE; "
-                                           "regenerate via host/introspect_connectivity.py"}
-        return {"ok": True, "detail": f"catalog sound, byte-matched, stamp==live build {live}"}
-    return {"ok": True, "detail": f"catalog sound + byte-matched (stamp {stamp}; live-build "
-                                  "comparison skipped — HYTHON unset)"}
+        expected = f"connectivity_{live.split('.', 1)[0]}.json"
+        if stamps.get(expected) != live:
+            return {"ok": False, "detail": (f"live build {live} needs {expected} stamped {live}, "
+                                            f"have {stamps} — STALE/absent; regenerate via "
+                                            "host/introspect_connectivity.py")}
+        return {"ok": True, "detail": (f"{len(stamps)} catalog(s) sound + byte-matched; "
+                                       f"{expected} stamp == live build {live}")}
+    return {"ok": True, "detail": (f"{len(stamps)} catalog(s) sound + byte-matched ({stamps}); "
+                                   "live-build comparison skipped — HYTHON unset")}
 
 def check_wiring_conformance(ctx):
     # U.1: the REVIEW sweep re-runs clean — scripts/flywheel_review_wiring.py exits 0 with
