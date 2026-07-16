@@ -720,6 +720,153 @@ async def _scout_call_tool(arguments: dict) -> list:
 
 
 # ---------------------------------------------------------------------------
+# G1 port waves -- legacy WS registry tools routed through the cognitive
+# Dispatcher (Strangler Fig, docs/PORT_WAVE_MANIFEST.md OD-2 = (a) "wrap").
+#
+# Each ported tool is a thin passthrough built from the SAME registry entry
+# the legacy TOOL_DISPATCH fallback used: same command_type, same payload
+# builder, same WS round-trip into the Houdini process (the WS command
+# handler stays the execution primitive). Only the dispatch mechanism moves:
+# call_tool() -> Dispatcher -> injected transport -> send_command.
+#
+# Envelope contract (byte-for-byte, per the Inspector precedent): success
+# returns _dumps_str(data) for ANY data shape; failures map back onto the
+# exact legacy strings ("Couldn't reach Synapse -- ...", "Synapse hit a
+# snag: ...", "Something unexpected happened: ..."). The Dispatcher never
+# raises -- tool exceptions come back as AgentToolError carrying the
+# ORIGINAL exception class name, which _ported_error_text() resolves against
+# builtins to reproduce the legacy except-clause routing (ConnectionError
+# subclasses / RuntimeError subclasses / everything else).
+# ---------------------------------------------------------------------------
+import builtins as _builtins
+from synapse.cognitive.tools.ws_passthrough import (
+    configure_transport as _ws_passthrough_configure_transport,
+    make_passthrough_tool as _make_ws_passthrough_tool,
+    unwrap_ws_data as _unwrap_ws_data,
+)
+
+# Wave scene-1 (pilot): utility + read/introspect (11). Waves append here as
+# they merge; when all 115 registry tools are listed, the TOOL_DISPATCH
+# fallback in call_tool() retires per PORT_WAVE_MANIFEST "Adapter retirement".
+_PORTED_WAVE_TOOLS: frozenset = frozenset({
+    # -- scene-1 --
+    "synapse_ping",
+    "synapse_health",
+    "synapse_doctor",
+    "houdini_scene_info",
+    "houdini_get_selection",
+    "houdini_get_parm",
+    "synapse_inspect_selection",
+    "synapse_inspect_scene",
+    "synapse_inspect_node",
+    "houdini_network_explain",
+    "synapse_write_report",
+})
+
+_ported_dispatcher: _Dispatcher | None = None
+
+
+def _get_ported_dispatcher() -> _Dispatcher:
+    """Build the port-wave Dispatcher singleton on first use.
+
+    Must be called from within a running asyncio event loop (i.e. from an
+    async handler): the sync transport closure captures the loop to marshal
+    send_command back onto it via ``run_coroutine_threadsafe`` — same
+    lifecycle as the Inspector/Scout dispatchers above.
+    """
+    global _ported_dispatcher
+    if _ported_dispatcher is not None:
+        return _ported_dispatcher
+
+    loop = asyncio.get_running_loop()
+
+    def _sync_transport(cmd_type: str, payload: dict):
+        """Port-wave transport: runs on a worker thread; posts the WS command
+        onto the MCP event loop and returns the raw response data.
+
+        Exceptions from send_command (ConnectionError / RuntimeError /
+        TimeoutError) propagate UNWRAPPED so the error envelope mapping in
+        _ported_error_text() sees the original class, exactly as the legacy
+        try/except in call_tool() did.
+        """
+        fut = asyncio.run_coroutine_threadsafe(
+            send_command(cmd_type, payload), loop,
+        )
+        # send_command bounds itself per-command (COMMAND_TIMEOUT /
+        # _SLOW_COMMANDS); the legacy path had no outer timeout. The +60s cap
+        # is pure hang insurance for a wedged event loop — a state where the
+        # legacy path would block forever.
+        outer = _SLOW_COMMANDS.get(cmd_type, COMMAND_TIMEOUT) + 60.0
+        try:
+            return fut.result(timeout=outer)
+        except TimeoutError:
+            if fut.done():
+                raise  # send_command's own TimeoutError — pass through as-is
+            fut.cancel()
+            raise TimeoutError(
+                f"The {cmd_type} command took too long to respond — "
+                "Houdini may be busy with a heavy operation"
+            )
+
+    _ws_passthrough_configure_transport(_sync_transport)
+    tools = {}
+    for _name in _PORTED_WAVE_TOOLS:
+        _cmd_type, _build_payload = TOOL_DISPATCH[_name]
+        tools[_name] = _make_ws_passthrough_tool(_name, _cmd_type, _build_payload)
+    _ported_dispatcher = _Dispatcher(is_testing=True, tools=tools)
+    return _ported_dispatcher
+
+
+def _ported_error_text(err: _AgentToolError) -> str:
+    """Map an AgentToolError back onto the legacy call_tool() error envelope.
+
+    Reproduces the legacy except-clause routing by resolving the recorded
+    exception class name against builtins and re-applying the same
+    isinstance semantics (ConnectionError first, then RuntimeError, then the
+    generic catch-all). Non-builtin exception types fall through to the
+    generic branch — identical to the legacy path, where they matched
+    neither ConnectionError nor RuntimeError.
+    """
+    exc_type = getattr(_builtins, err.error_type, None)
+    if isinstance(exc_type, type) and issubclass(exc_type, BaseException):
+        if issubclass(exc_type, ConnectionError):
+            return f"Couldn't reach Synapse — {err.error_message}"
+        if issubclass(exc_type, RuntimeError):
+            return f"Synapse hit a snag: {err.error_message}"
+    return f"Something unexpected happened: {err.error_message}"
+
+
+async def _ported_call_tool(name: str, arguments: dict) -> list:
+    """Handle a port-wave tool via the cognitive Dispatcher.
+
+    Same shape as _inspector_call_tool: asyncio.to_thread runs the dispatch
+    off the event loop; the transport closure posts the WS round-trip back
+    onto it. Dispatcher never raises — failures return as AgentToolError and
+    are mapped onto the legacy error envelope.
+    """
+    try:
+        dispatcher = _get_ported_dispatcher()
+        result = await asyncio.to_thread(dispatcher.execute, name, arguments)
+        if isinstance(result, _AgentToolError):
+            text = _ported_error_text(result)
+            if text.startswith("Something unexpected"):
+                # Legacy generic branch logged the traceback; keep that signal.
+                logger.error(
+                    "Unexpected error in tool %s: %s: %s\n%s",
+                    name, result.error_type, result.error_message,
+                    result.traceback_str,
+                )
+            return [TextContent(type="text", text=text)]
+        return [TextContent(type="text", text=_dumps_str(_unwrap_ws_data(result)))]
+    except Exception as e:
+        # Defensive only: dispatcher.execute never raises; this guards the
+        # surrounding plumbing (singleton build, unwrap). Same generic
+        # envelope as the legacy catch-all.
+        logger.exception("Unexpected error in tool %s", name)
+        return [TextContent(type="text", text=f"Something unexpected happened: {e}")]
+
+
+# ---------------------------------------------------------------------------
 # Graph synthesis: BOTH halves (synapse_propose_graph + synapse_instantiate_graph)
 # are HOST tools in the canonical registry, routed over the WS path to command
 # handlers that run IN the Houdini process (command_type propose_graph /
@@ -803,6 +950,13 @@ async def call_tool(name: str, arguments: dict):
     # Scout tool -- pure-Python federated retrieval + phantom-API grounding.
     if name == _SCOUT_TOOL_NAME:
         return await _scout_call_tool(arguments)
+
+    # G1 port waves -- ported registry tools route through the cognitive
+    # Dispatcher (Strangler Fig). Same command_type + payload + response
+    # envelope as the TOOL_DISPATCH fallback below; the WS handler stays the
+    # execution primitive (PORT_WAVE_MANIFEST OD-2(a)).
+    if name in _PORTED_WAVE_TOOLS:
+        return await _ported_call_tool(name, arguments)
 
     if name not in TOOL_DISPATCH:
         return [TextContent(type="text", text=f"I don't recognize the tool '{name}' \u2014 check the available tools list")]
