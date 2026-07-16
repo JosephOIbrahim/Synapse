@@ -363,23 +363,50 @@ class UsdHandlerMixin:
                 )
 
             attr = prim.GetAttribute(attr_name)
-            if not attr.IsValid():
-                # List available attributes to help the caller
-                attrs = [a.GetName() for a in prim.GetAttributes()][:30]
-                raise ValueError(
-                    f"That attribute name didn't match ('{attr_name}') on {prim_path}. "
-                    f"Available attributes: {', '.join(attrs)}"
-                )
+            if attr.IsValid():
+                value = attr.Get()
+                return {
+                    "node": node.path(),
+                    "prim_path": prim_path,
+                    "attribute": attr_name,
+                    "value": _usd_to_json(value),
+                    "type_name": str(attr.GetTypeName()),
+                    "property_kind": "attribute",
+                }
 
-            value = attr.Get()
+            # Not an attribute -- fall back to a USD relationship before we can
+            # honestly say the property is missing. karma/husk (and stock
+            # UsdRender/UsdLux) author several properties as relationships, not
+            # attributes -- camera, products, orderedVars, husk:orderedImageFilters,
+            # light:filters, the collection:* includes/excludes, proxyPrim.
+            # GetAttribute returns an invalid handle for those (N-3 seam test:
+            # GetAttribute('light:filters').IsValid() is False even with a
+            # populated target). (N-3 / W.5-H22-karmarels)
+            rel = prim.GetRelationship(attr_name)
+            if rel.IsValid():
+                targets = [str(t) for t in rel.GetTargets()]
+                return {
+                    "node": node.path(),
+                    "prim_path": prim_path,
+                    "attribute": attr_name,
+                    "value": targets,
+                    "type_name": "relationship",
+                    "property_kind": "relationship",
+                }
 
-            return {
-                "node": node.path(),
-                "prim_path": prim_path,
-                "attribute": attr_name,
-                "value": _usd_to_json(value),
-                "type_name": str(attr.GetTypeName()),
-            }
+            # Neither an attribute nor a relationship -- list BOTH so the hint
+            # can name the relationship the caller actually asked for. The old
+            # attribute-only hint actively implied migrated relationships don't
+            # exist (N-3 finding: the line-368 hint could never list them).
+            attrs = [a.GetName() for a in prim.GetAttributes()][:30]
+            rels = [r.GetName() for r in prim.GetRelationships()][:30]
+            hint = f"Available attributes: {', '.join(attrs)}"
+            if rels:
+                hint += f". Available relationships: {', '.join(rels)}"
+            raise ValueError(
+                f"That property name didn't match ('{attr_name}') on {prim_path}. "
+                f"{hint}"
+            )
 
         return run_on_main(_on_main)
 
@@ -413,6 +440,24 @@ class UsdHandlerMixin:
                     f"    attr = prim.GetAttribute({repr(attr_name)})\n"
                     "    if attr:\n"
                     f"        attr.Set({repr(value)})\n"
+                    # Relationship fallback (N-3 / W.5-H22-karmarels): karma/husk
+                    # migrated several string properties to USD relationships,
+                    # which GetAttribute cannot see, so `if attr:` above silently
+                    # no-ops on them. Author via SetTargets when the relationship
+                    # already exists (schema-defined or authored); only
+                    # CreateRelationship when the value is unambiguously a list of
+                    # prim paths, so a scalar set on an unknown name stays the
+                    # same no-op it was before this change.
+                    "    else:\n"
+                    f"        rel = prim.GetRelationship({repr(attr_name)})\n"
+                    f"        _v = {repr(value)}\n"
+                    "        if rel:\n"
+                    "            _t = _v if isinstance(_v, (list, tuple)) else [_v]\n"
+                    "            rel.SetTargets([Sdf.Path(str(x)) for x in _t])\n"
+                    "        elif isinstance(_v, (list, tuple)) and _v and all(\n"
+                    "                isinstance(x, str) and x.startswith('/') for x in _v):\n"
+                    f"            rel = prim.CreateRelationship({repr(attr_name)})\n"
+                    "            rel.SetTargets([Sdf.Path(str(x)) for x in _v])\n"
                 )
                 py_lop.parm("python").set(code)
 
