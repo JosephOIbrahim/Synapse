@@ -11,8 +11,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4314%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.25.0-1e293b.svg" alt="Changelog"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4387%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.26.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 > ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it's all recorded (receipts, not magic). Five engines, 115 tools. **Install ↓ in ~5 min.**
@@ -38,7 +38,7 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 | You want… | Read… |
 |---|---|
 | **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
-| **What's new in v5.25.0** | *New in v5.25.0* — H22 has landed: drop-week runbook, CTO roadmap, first two waves merged |
+| **What's new in v5.26.0** | *New in v5.26.0* — H22 live-verified: the whole transition proven against a running Houdini |
 | **How AI network-building stays safe** | *Propose → validate → build* |
 | **To install it** | *Install — 5 minutes* |
 | **The architecture** | *How it works — inside-out* |
@@ -55,7 +55,7 @@ A docked **SYNAPSE panel** inside Houdini. You type what you want — *"make a b
 - 🔌 **Multi-provider** — pick **Claude · Gemini · NVIDIA Nemotron · Ollama · Custom** right in the panel; swap engines mid-session.
 - 🎬 **Built for the work** — SOPs, **Solaris / USD, Karma, COPs, PDG / TOPs, MaterialX** — 115 tools.
 
-> ✅ *"make a box" → a real geo node, confirmed in graphical Houdini 21.0.671.*
+> ✅ *"make a box" → a real geo node, confirmed on graphical Houdini 22.0.368 (H21.0.671 dual-build supported).*
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
@@ -80,46 +80,46 @@ flowchart LR
 
 ---
 
-## ✦ New in v5.25.0 — H22 has landed
+## ✦ New in v5.26.0 — H22 live-verified
 
-**Houdini 22.0.368 dropped, was installed, and — for the first time — SYNAPSE ran its own port machinery against it and merged real product code. H21 is uninstalled; H22 is now the only live target.**
+**The live SYNAPSE bridge came up on your running Houdini 22.0.368, and everything verified headless all day got re-proven against the real interpreter — plus the last two silent breaks landed. This is the release where "should work on H22" became "confirmed working on H22."**
 
-- 🎯 **The drop, verified before anything moved** — the H22 symbol table regenerated (35,903 symbols); an API-delta probe against SYNAPSE's own emitters found **zero removed symbols still referenced anywhere**; the vendor tree gained a cp313 ABI so the brain's dependencies import clean under H22's own Python.
-- 📋 **The nine-step drop-week runbook, every artifact produced** — ABI verdict, phantom re-pin (all four H21 quarantine calls confirmed still absent), a 288-type connectivity sweep (+9/−3/3 changed, including a silent Cop-input reshuffle), a 21-tool COP audit (0 gone), a Qt/panel smoke on PySide 6.8.3, a release-notes adjudication, and a PDG event-bridge re-audit (all four hard-won H21 truths hold unchanged).
-- 🧭 **The CTO roadmap** ([the record](docs/reviews/h22-cto-roadmap-2026-07-16.md)) — a three-lens judge panel plus a completeness critic turned 77 doc-scouted candidates and every runtime finding into one prioritized plan. **The thesis:** the port machinery byte-pins a tool's *current* behavior as its contract, so a silent break left unfixed becomes permanent spec — five fix cycles were ratified ahead of the waves that would otherwise freeze them.
-- 🎨 **A layout ruling resolved by evidence, not memory** — `Lop/layout` renamed to `Lop/paintinstances`, `Lop/instancer` renamed to `Lop/copytopoints` (both confirmed via SideFX's own alias table, not removed as first suspected). The long-standing "Houdini Indie silently no-ops `husk`" trap is **refuted** on H22 — Indie renders for real now, as a licensed tier.
-- 🩹 **Two fix/port cycles built, verified, and merged** — `cops_read_layer_info`/`cops_analyze_render` no longer silently return an empty layer list on Copernicus nodes (the removed `CopNode.planes()` call is replaced; the legacy path is untouched); and the first 11 tools moved off the legacy WS-dispatch path onto the in-process Dispatcher, wrapping — not reimplementing — the existing handlers.
-- 🛑 **A real risk caught before it spread** — the pilot port's hostile-review pass found a timeout-budget gap that's harmless for read-only tools today but would break the first long-running tool ported through the same pattern. Ratified as its own fix, gating every wave that follows.
-- 🔒 **Honest about what's still open** — every probe above ran with the live bridge down (headless-only); one live-bridge session still owes a final reconfirmation pass. **4,314 tests passing** (+39, zero failures).
+- 🔬 **32 verdicts flipped from provisional to verified-live** — an orchestrated live-bridge session drove the real running Houdini (read-only probes in parallel, scene-mutating probes strictly one-at-a-time and self-cleaning). Every merged cycle's critical behavior, re-confirmed against the actual interpreter instead of a headless stand-in.
+- 🧠 **The memory moat holds on H22** — SYNAPSE's one exact-equality integrity gate (the memory-evolution USD round-trip) returns **fidelity = 1.0** on USD 0.26.5 through the native path, even though H22 reorganized the USD library underneath it. This was flagged by a new agent as never-tested-on-H22; now it's proven.
+- 🩹 **The last silent break, closed** — Copernicus solver tools were silently failing to cook on H22 (a parameter moved between nodes). Re-authored to the live-verified binding, with honesty flags so nothing no-ops in silence again. The assayer built a solver on your live Houdini and confirmed it cooks.
+- 🧩 **Solaris network-building now works on H22** — the validator learned H22's wiring. SYNAPSE already emitted the renamed H22 node names (`paintinstances`, `copytopoints`); now the wiring layer resolves them instead of erroring, and stops trusting stale input indices (a light node went 3→8 inputs). Verified live on **both** Houdini majors. This is the "Solaris working deeply" piece for a live demo.
+- 🕵️ **A new vendor-architect lens** — the `sidefx-cto` agent reads a Houdini release the way SideFX's own architect would, hunting the non-obvious second-order changes the domain scouts miss (deprecation trajectory, rename intent, cross-domain blast radius, fragile-success). Its first pass caught the memory-gate gap above.
+- 🛡️ **An external "engineering memo" adjudicated, not obeyed** — a document addressed directly at the agent, instructing catalog rebuilds, was run through the intake protocol instead. Four of five claims were refuted against SYNAPSE's own live evidence and three official SideFX doc surfaces. Receipts beat authority, even authoritative-sounding authority.
+- 🟢 **4,387 tests passing** (+73 over v5.25.0, zero failures) — every merged cycle post-merge suite-re-verified with the branch code confirmed resident.
 
-> *The full arc — drop-week runbook, doc-scout waves, the roadmap, both merged cycles — is [in CHANGELOG.md](CHANGELOG.md) (top entry).*
+> *The full arc — the 32 flips, the live proofs, the adjudication, the Copernicus expansion spec — is [in CHANGELOG.md](CHANGELOG.md) (top entry).*
 
 ---
 
-## ✦ H22 — dropped, running, porting
+## ✦ H22 — running, verified, expanding
 
-**Houdini 22 is no longer a future date on a calendar — it's the build SYNAPSE runs on, right now.**
+**Houdini 22 isn't a milestone SYNAPSE is approaching — it's the build SYNAPSE runs on, with the core transition proven live and the generative expansion spec'd next.**
 
-- 🎯 **Drop-day probe** — `scripts/h22_api_delta.py` diffs the running build's symbol table, node-type catalog, and punycode parm encodings against committed baselines. Run against H22.0.368, SYNAPSE's own emitters show **zero broken references** — the pre-drop de-risking paid off.
-- 📋 **The port-wave plan** ([`docs/PORT_WAVE_MANIFEST.md`](docs/PORT_WAVE_MANIFEST.md)) — all 115 registry tools mapped into 11 sub-waves, each gated: gatewarden admits → forge builds in an isolated worktree → an assayer probes every new symbol against the live build → a hostile crucible pass hunts for behavior drift → a human merges. **2 of 11 sub-waves merged so far**, each independently suite-reverified post-merge.
-- 🗂️ **Per-major symbol tables** — scout + doctor key on the running Houdini major; the H21 table stays frozen as the historical left side for every diff.
-- 🧪 **Dual-build test axis** — `SYNAPSE_TEST_HOUDINI_BUILD` still points the suite at either build, for exactly this kind of before/after diff.
-- 🤝 **APEX MCP boundary contract** — Houdini 22 keynote-announced a rigging-scoped first-party MCP preview (not shipped in 22.0). The ratified boundary ([`docs/SYNAPSE_H22_BOUNDARY.md`](docs/SYNAPSE_H22_BOUNDARY.md)) holds: SYNAPSE never competes with it, and its own differentiators — in-process perception, undo-wrapped mutation, provenance, substrate memory — remain unclaimed by anything SideFX has shipped.
-- 🔒 **Multi-client hardening** — hash-guarded rollback that never pops a foreign undo block, plus `external_change_detected` attribution when someone else moved the scene.
+- 🔬 **Verified against a running Houdini, not just headless** — the live-bridge reconfirm converted the whole drop cycle from provisional to confirmed on the real 22.0.368 interpreter: every merged fix, the memory integrity gate, the PDG event surface, the quarantine re-pins.
+- 🧩 **The Solaris wiring layer is H22-native** — a major-aware connectivity catalog (mirroring the per-major symbol-table pattern) means `wire_by_label` and the graph validator resolve H22 truth on H22 and H21 truth on H21, so proposed networks validate against the build you're actually running.
+- 📋 **The port-wave plan** ([`docs/PORT_WAVE_MANIFEST.md`](docs/PORT_WAVE_MANIFEST.md)) — all 115 registry tools mapped into 11 sub-waves, each gated: gatewarden admits → forge builds in an isolated worktree → an assayer probes every symbol against the live build → a hostile crucible pass hunts for behavior drift → a human merges. The pilot wave is merged; the rest are unblocked and sequenced.
+- 🌋 **The Copernicus expansion, spec'd and ratified** ([`docs/SYNAPSE_COPERNICUS_EXPANSION.md`](docs/SYNAPSE_COPERNICUS_EXPANSION.md)) — the read/analysis and node-API layers are deep and live-verified; the generative frontier (scaffold rebuilds, heightfield/terrain emission, neural COP nodes with model/GPU preflight honesty) is now a live-probed build spec, the next cycle's work.
+- 🤝 **APEX MCP boundary contract** — Houdini 22 keynote-announced a rigging-scoped first-party MCP preview (not shipped in 22.0). The ratified boundary ([`docs/SYNAPSE_H22_BOUNDARY.md`](docs/SYNAPSE_H22_BOUNDARY.md)) holds: SYNAPSE never competes with it; its differentiators — in-process perception, undo-wrapped mutation, provenance, substrate memory — remain unclaimed by anything SideFX shipped.
 - 🌀 **Cook-behavior diffs, live** — the diagnostic-truth catalogs are build-stamped and major-agnostic; on H22 they re-probed with zero code edits, turning *how H22 changed cook behavior* into a diffable artifact instead of forum anecdotes.
 
-**How the drop stayed boring:** everything was de-risked on H21 well before the date, so drop day was verification, not surgery — and the same discipline now governs the port itself: nothing ships past a wave's hostile review, and a silent break gets fixed *before* its wave freezes it, never after.
+**The discipline that got here:** nothing merged on any agent's self-report — forge builds, a hostile crucible pass attacks what it didn't build, and every cycle is post-merge suite-re-verified. When a "loud-error" fix was caught only ⅓-implemented, it looped to a Pass-3 rather than shipping. Receipts, not vibes — including the agent's own.
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
 flowchart LR
-    DROP["Drop day<br/>H22.0.368 installed · symbol table + probes"]:::hou --> RUN["Drop-week runbook<br/>9 steps · ABI · quarantine · sweep · COP · Qt · PDG"]:::bridge
-    RUN --> MAP["CTO roadmap<br/>3-lens judge panel · silent-break register"]:::panel
-    MAP --> GATE{{"Human gates<br/>ratify · rule · merge"}}:::side
-    GATE --> WAVE["Port wave<br/>gatewarden → forge (worktree) → assayer → crucible"]:::bridge
-    WAVE -->|"2 of 11 merged"| MERGED[("master<br/>suite re-verified each merge")]:::hou
-    WAVE -.hostile pass finds a risk.-> FIX["New fix cycle<br/>ratified · gates the next wave"]:::side
-    FIX -.-> WAVE
+    DROP["Drop + drop-week<br/>9 runbook artifacts"]:::hou --> ROADMAP["CTO roadmap<br/>silent-break register"]:::panel
+    ROADMAP --> FIX["Fix cycles<br/>forge → assay → crucible"]:::bridge
+    FIX -->|"merged + suite-reverified"| MERGED[("master<br/>4,387 / 0")]:::hou
+    MERGED --> LIVE["Live-bridge reconfirm<br/>32 verdicts → VERIFIED-LIVE"]:::bridge
+    LIVE -->|"proven on running 22.0.368"| DEMO[("H22-native<br/>Solaris · COP · memory")]:::hou
+    LIVE -.hostile pass finds a risk.-> NEXT["New fix cycle<br/>ratified · gated"]:::side
+    NEXT -.-> FIX
+    DEMO -.next.-> EXPAND["Copernicus expansion<br/>scaffold · terrain · neural (spec'd)"]:::side
     classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
     classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
     classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
@@ -167,7 +167,7 @@ flowchart LR
 
 It also wires **Solaris the way production expects** — live-probed against 21.0.671: the **Component Builder** pattern for assets, the proper **`rendersettings` → render** terminal, **layered** scene assembly, the real H21 light nodes (the per-shape light names don't exist), and the actual merge/sublayer strength rule (**higher input index wins**).
 
-Verified end-to-end on **live Houdini 21.0.671** — build, single-undo revert, TOCTOU halt, and forced-failure rollback all pass.
+Verified end-to-end on **live Houdini 22.0.368** (originally proven on 21.0.671) — build, single-undo revert, TOCTOU halt, and forced-failure rollback all pass; the wiring catalog is now major-aware, so validation resolves against whichever build you run.
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
@@ -193,6 +193,7 @@ flowchart LR
 
 | Release | Headline |
 |---|---|
+| **v5.25.0** | **H22 has landed** — Houdini 22.0.368 dropped and SYNAPSE ran its own port machinery against it for the first time: the nine-step drop-week runbook complete, a three-lens CTO roadmap over 77 doc-scouted candidates, and the first two cycles merged (the Copernicus `planes()` silent-data-loss fix + the pilot Dispatcher port wave). H21 uninstalled; H22 the only live target. |
 | **v5.24.0** | **The H22 drop-harness, reconciled** — a fresh drop-day blueprint arrived describing work that mostly already shipped; it was reconciled against reality (two gate-breaking conflicts caught before any write) rather than executed literally, and five genuinely-missing Phase-0 hardening gaps were built: a read-only mode guard, a new-family re-sweep spec, the scope fence extended to H22 rigging names, a theme-source seam, and the perception "before photo." No artist-facing behavior changed. |
 | **v5.23.0** | **One Moneta · honest claims · the H22 blueprint harness** — the docs realigned to the code (Moneta *is* the memory substrate), the test badge dropped to its real green-floor, the local-first security posture stated plainly, and the H22 gap-closure blueprint got a one-command orchestrator that stops at every human gate. A documentation-integrity + H22-prep release; no product code changed. |
 | **v5.22.0** | **The honest envelope + evidence-based anchors + the drop-day runbook** — receipts on *both* roads into Houdini (the audited `/mcp` bridge **and** the live panel path, recorded honestly, never faked); integrity flags now derived from runtime evidence instead of self-report (fidelity 1.0 = *verified*); composition validation extended to `payload` / `inherit` / `specialize` arcs; and the H22 drop compressed to one ordered, human-gated page. |
@@ -294,19 +295,19 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.25.0):**
+**Shipping (v5.26.0):**
 
 - 🎛️ **Artist panel v9.1** — five engines, undo-safe, 115 tools, a single **CHAT** surface where the review + consent gate auto-surface, live observability + latency instrumentation (WCAG/usability **G3-audited on H22's Qt 6.8.3**).
+- 🔬 **H22 live-verified** — the whole transition proven against a running Houdini 22.0.368: 32 verdicts flipped provisional→verified-live, the memory integrity gate confirmed at fidelity 1.0 on the reorganized USD, the PDG event surface and quarantine re-pins re-confirmed on the real interpreter.
+- 🧩 **H22-native network building** — a major-aware connectivity catalog: `wire_by_label` + graph validator resolve H22 wiring on H22 and H21 wiring on H21, so proposed Solaris/COP networks validate against the build you're running (the demo-critical set-dressing path, live-verified on both majors).
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
 - 🧾 **The honest envelope** — both roads into Houdini leave `IntegrityBlock` receipts: the audited `/mcp` bridge, and path-qualified, never-faked live-path records the self-tuning advisor can see.
-- 🔬 **Evidence-based anchors** — the undo + main-thread integrity flags come from runtime evidence, not self-report (fidelity 1.0 = *verified*); composition validation covers `reference`, `payload`, `inherit`, and `specialize` arcs.
-- 🔁 **Utility flywheel** — three ratified cycles (wiring · Solaris context · **diagnostic cook-truth**), self-improving on a human-ratified loop, with capability + readiness catalogs behind them.
-- 🌀 **Diagnostic-truth catalogs** — live dirty-propagation / recook / time-dependence trials per context, golden-reproducible; the recook-explainer + callback-debugger handlers staged on them.
-- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint, a posture-scoped red-driver, fix-is-real behavioral probes, and a **READY (solo posture)** studio-readiness verdict with the trade-offs named.
-- 🚀 **H22 dropped and running** *(v5.25.0)* — the drop-week runbook complete (9 artifacts), a three-lens CTO roadmap prioritizing every finding, and the **port-wave machinery live**: 2 of 11 sub-waves merged to master, each independently suite-reverified. A silent Copernicus data-loss break fixed in the same cycle.
+- 🔁 **Utility flywheel** — ratified cycles across wiring · Solaris context · diagnostic cook-truth · the H22 connectivity re-fold, self-improving on a human-ratified loop.
+- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint (**4,387 / 0**), a posture-scoped red-driver, fix-is-real behavioral probes, and forge-builds-crucible-attacks separation that caught a ⅓-implemented "loud-error" fix before it shipped.
+- 🕵️ **Vendor-architect lens** — the `sidefx-cto` agent surfaces the non-obvious second-order changes a major brings; its first pass caught the memory-gate gap this release then closed live.
+- 🌋 **Copernicus expansion, spec'd** — read/analysis + node-API layers deep and live-verified; the generative frontier (scaffold rebuilds, terrain emission, neural COP nodes with preflight honesty) is a live-probed build spec, next up.
 - 🤝 **APEX MCP boundary held** — Houdini 22 keynote-announced a rigging-scoped MCP preview (not shipped); the ratified non-competing boundary stands unchanged.
 - ⚙️ **In-process substrate** — two-tier provenance (audit write off the hot path), freeze-safety, bounded autonomy + a kill switch.
-- 🎬 **Live-grounded Solaris / USD** parameter names, including two H22 LOP renames (`layout`→`paintinstances`, `instancer`→`copytopoints`) resolved by evidence rather than guesswork.
 
 SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success. The per-tool capability audit + full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
 
@@ -359,7 +360,7 @@ python/synapse/
 
 host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols · cook API · cook-truth perturbation trials)
 scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_{wiring,lop}.py · mine_lop_knowledge.py
-tests/                          # 4,314 passing (Moneta-gated tests skip on a clean clone)
+tests/                          # 4,387 passing (Moneta-gated tests skip on a clean clone)
 harness/                        # the self-verifying loop — five tracks (H22 · v6 · context · studio · diagnostic), boundary guardrails, the full-suite green ratchet, the readiness verdict
 docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
