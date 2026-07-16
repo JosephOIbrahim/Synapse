@@ -183,7 +183,7 @@
     {
       "id": "W.3-H22-setdressing",
       "title": "SB-5: instancer→pointinstancer rename + layout-successor repair, ALL emitting sites in one cycle (solaris_graph_templates.py:393, handlers_solaris_assemble.py:54,69, scene_recipes.py, test_setdressing_recipe.py, palette filters) + live create+cook test. Do NOT half-fix.",
-      "status": "candidate",
+      "status": "merge_ready",
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md",
         "harness/notes/verified_connectivity_H22.json",
@@ -191,7 +191,7 @@
         "docs/reviews/h22-now-probes-2026-07-16.md"
       ],
       "ratified": true,
-      "note": "GATE-2 RESOLVED BY EVIDENCE 2026-07-16 (N-5, docs/reviews/h22-now-probes-2026-07-16.md): layout -> paintinstances (official whats-new 22/solaris.txt L137 + shipped opalias; 41/42 parms, sole drop = method) AND instancer -> copytopoints (L143; 39/41, drops allowmissingprototypes) — SOL-03 pointinstancer identification was WRONG (pointinstancer is a NEW H22 node, not the rename). Emit canonical spellings, never lean on the alias table. | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument"
+      "note": "GATE-2 RESOLVED BY EVIDENCE 2026-07-16 (N-5, docs/reviews/h22-now-probes-2026-07-16.md): layout -> paintinstances (official whats-new 22/solaris.txt L137 + shipped opalias; 41/42 parms, sole drop = method) AND instancer -> copytopoints (L143; 39/41, drops allowmissingprototypes) — SOL-03 pointinstancer identification was WRONG (pointinstancer is a NEW H22 node, not the rename). Emit canonical spellings, never lean on the alias table. | RATIFIED: human (Joe) — \"Gates are approved for Flip!\" 2026-07-16, /harness-architect close-the-loop; edits executed by Claude as instrument | MERGE_READY 2026-07-16 (commit 7c76110, worktree wf_37f79fb2-cfe-2): code PROVEN correct (direct worktree import + live H22 create+cook of paintinstances/copytopoints, 13/13 assayer PASS provisional-headless). CRUCIBLE MERGE-CONDITION: the worktree pytest validated MASTER not the branch (editable-install .pth shadowing) — the 2 in-worktree \"failures\" were the branch ratchet correctly firing on master's stale layout emission; MUST re-run full suite with branch code resident (i.e. post-merge) to confirm green. Standard post-merge re-verify resolves it."
     },
     {
       "id": "C.1-H22-imagelayer-stats",
@@ -312,6 +312,16 @@
       ],
       "ratified": true,
       "note": "Deposited from scene-1 port-wave crucible (0 showstoppers). Should land before/with scene-2 (which also needs BW-4 re-audit for execute_python/execute_vex consent envelope). | RATIFIED: human (Joe) — standing \"Gates are approved for Flip!\" + 2026-07-16 3x-loop directive (\"refine, review, enhance... nail down the update to H22\"); crucible-mandated REPAIRS to already-approved work, ratified by Claude as instrument (C.x feature cycles remain held)"
+    },
+    {
+      "id": "W.3b-H22-nodeflow-corpus",
+      "title": "W.3 crucible follow-up (sev-2, code/corpus-divergence): synapse/forge/corpus/nodeflow/pattern_08_layout_physics.json node_sequence[0].type == \"layout\" — no python/synapse consumer today, but forge/extractors/ingest_relay_solaris.py:279 reads node_sequence, so a future corpus regen could re-teach the legacy \"layout\" spelling back into rag/. Annotate or rename to paintinstances at source.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-cto-roadmap-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the W.3-H22-setdressing crucible (MERGE_READY, 0 showstoppers). Small, W.6-corpus-class. Human flip required."
     }
   ]
 }
