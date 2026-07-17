@@ -387,8 +387,8 @@ class SynapsePanel(QtWidgets.QWidget):
         w = self._section()
         w.setObjectName("DsHeader")          # flat PANEL + 1px HAIR bottom rule
         col = QtWidgets.QVBoxLayout(w)
-        # Comp row-1 padding: 16 / 26 / 14 (the confident header air).
-        col.setContentsMargins(26, 16, 26, 14)
+        # Comp row-1 padding: 16 / GUTTER / 14 (the confident header air).
+        col.setContentsMargins(t.GUTTER, 16, t.GUTTER, 14)
         col.setSpacing(t.SPACE_SM)
 
         # line 1 — identity + selection + state (comp order):
@@ -689,7 +689,7 @@ class SynapsePanel(QtWidgets.QWidget):
         w = self._section()
         w.setObjectName("DsTabRow")
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(26, 20, 26, 0)
+        lay.setContentsMargins(t.GUTTER, 24, t.GUTTER, 0)
         lay.setSpacing(28)
         self._face_pills = {}
         pill = c.Pill("CHAT")
@@ -720,11 +720,11 @@ class SynapsePanel(QtWidgets.QWidget):
 
     def _build_direct_face(self):
         """Direct — converse + quick actions + input. The artist's surface.
-        The face carries the comp's 26/20 content padding; inner rows are
+        The face carries the comp's GUTTER/24 content padding; inner rows are
         flush (their old horizontal margins would double it)."""
         page = self._section()
         col = QtWidgets.QVBoxLayout(page)
-        col.setContentsMargins(26, 20, 26, 20)
+        col.setContentsMargins(t.GUTTER, 24, t.GUTTER, 24)
         col.setSpacing(0)
         col.addWidget(self._build_converse(), 1)   # chat | Build-HDA inner stack
         col.addWidget(self._build_act())
@@ -1297,7 +1297,7 @@ class SynapsePanel(QtWidgets.QWidget):
     def _build_act(self):
         w = self._section()
         lay = QtWidgets.QHBoxLayout(w)
-        lay.setContentsMargins(0, t.SPACE_SM, 0, t.SPACE_SM)  # face carries 26/20
+        lay.setContentsMargins(0, t.SPACE_SM, 0, t.SPACE_SM)  # face carries GUTTER/24
         lay.setSpacing(t.SPACE_MD)
         for label_text, prompt in _QUICK_ACTIONS:
             lay.addWidget(self._verb(
@@ -1317,7 +1317,7 @@ class SynapsePanel(QtWidgets.QWidget):
     def _build_input(self):
         w = self._section()
         col = QtWidgets.QVBoxLayout(w)
-        col.setContentsMargins(0, 0, 0, 0)   # the Direct face carries the 26/20
+        col.setContentsMargins(0, 0, 0, 0)   # the Direct face carries the GUTTER/24
         col.setSpacing(t.SPACE_XS)
         self._input = _GrowingInput()
         # The prompt scales with the Aa content scale via a widget-level sheet

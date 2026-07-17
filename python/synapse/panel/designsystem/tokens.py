@@ -393,7 +393,8 @@ GATE_LEVELS = {
 
 PANEL_MIN_WIDTH  = 280
 PANEL_PREF_WIDTH = 340
-PANEL_MIN_HEIGHT = 400
+PANEL_MIN_HEIGHT = 420  # was 400; raised for Mile-1b vertical body air (Joe's ruling 2026-07-17). test_docking reads this token, so the enforced floor tracks the spec.
+GUTTER = 30  # panel edge gutter — one dial replacing the scattered 26px literals (rail/mode-bar/direct-face). Value is the Design Director's call; 26–36 is safe on a 280px-min panel.
 
 # ─────────────────────────────────────────────────────────────
 # Helpers
