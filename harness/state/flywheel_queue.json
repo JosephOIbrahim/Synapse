@@ -537,14 +537,14 @@
     {
       "id": "MTLX-volume-fix",
       "title": "C-MTLX (proof-leg Mile 1, blueprint §G1b): kill the mtlxstandard_volume phantom. Probe-verify a substitute (mtlxvolume / mtlxvolumematerial, both in the N-6 dump) on 22.0.368, swap the one call site render_recipes.py:701, drop/repoint MTLX_STANDARD_VOLUME (mtlx_types.py:25,33). Standalone small cycle (recommended over waiting for usd-2); if usd-2 later re-touches the surface its goldens capture the fixed truth.",
-      "status": "candidate",
+      "status": "merged",
       "evidence": [
         "docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md",
         "docs/reviews/h22-per-context-postmortem-2026-07-17.md",
         "docs/reviews/proof-leg-grounding-2026-07-17.md"
       ],
       "ratified": true,
-      "note": "Deposited by harness-architect (FORGE) 2026-07-17 from the proof-leg SPEC dispatch table (Mile 1, C-MTLX). Grounding pass CLEAN 2026-07-17. Governing spec: blueprint §G1b + SPEC.md C-MTLX row. Substitute MUST be probe-verified before emission; conformance fixture updated; suite >= floor; commit note: standalone-before-usd-2, goldens capture fixed truth later. gate=ratify — FORGE waits for Joe's flip. ratified:false (resting state). | RATIFIED: human (Joe) — 2026-07-17 \"everything is pre-ratified\" (Claude as instrument). C-MTLX FORGE not yet dispatched: substitute (mtlxvolume/mtlxvolumematerial) is VERIFIED-ARTIFACT (N-6 dump) so the swap is buildable next; a live re-verify is owed on bridge-up before the merge-ready claim."
+      "note": "Deposited by harness-architect (FORGE) 2026-07-17 from the proof-leg SPEC dispatch table (Mile 1, C-MTLX). Grounding pass CLEAN 2026-07-17. Governing spec: blueprint §G1b + SPEC.md C-MTLX row. Substitute MUST be probe-verified before emission; conformance fixture updated; suite >= floor; commit note: standalone-before-usd-2, goldens capture fixed truth later. gate=ratify — FORGE waits for Joe's flip. ratified:false (resting state). | RATIFIED: human (Joe) — 2026-07-17 \"everything is pre-ratified\" (Claude as instrument). C-MTLX FORGE not yet dispatched: substitute (mtlxvolume/mtlxvolumematerial) is VERIFIED-ARTIFACT (N-6 dump) so the swap is buildable next; a live re-verify is owed on bridge-up before the merge-ready claim. | MERGED 2026-07-17 (Fable, crucible HONEST 0 showstoppers): substitute = mtlxvolume (probe-DECIDED: parms vdf/edf = the volume-shader analog of mtlxstandard_surface; mtlxvolumematerial is a binder [volumeshader] — wrong role; 3x independently probe-confirmed V1-HEADLESS on 22.0.368 hython). MTLX_STANDARD_VOLUME dropped -> MTLX_VOLUME; call site render_recipes.py dust_shader swapped; NEW conformance fixture tests/test_mtlx_conformance.py (6 pins, revert-simulation-proven to bite; frozen 5-spelling set). Suite 4450/0/97. rag/ corpus clean both spellings (no divergence). Live re-verify of the emitted surface owed at S-LIVE (V1-HEADLESS is install-determined, so low-risk). PL-M1 second twin (C-U5) still open."
     }
   ]
 }

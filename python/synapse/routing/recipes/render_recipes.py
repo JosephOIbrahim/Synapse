@@ -8,7 +8,7 @@ from .base import Recipe, RecipeStep
 from ...core.gates import GateLevel
 # MaterialX node-type names — single-sourced from synapse.core.mtlx_types so
 # the embedded recipe code can't drift from the H22 survival-probed set.
-from ...core.mtlx_types import MTLX_STANDARD_SURFACE, MTLX_STANDARD_VOLUME
+from ...core.mtlx_types import MTLX_STANDARD_SURFACE, MTLX_VOLUME
 # Names single-sourced from synapse.core.usd_punycode so they can never drift
 # from the live-probed 21.0.671 values. TWO name-spaces, picked PER STEP by its
 # action:
@@ -698,7 +698,7 @@ def register_render_recipes(registry):
                         "dust = matlib.createNode('subnet', "
                         "'dust_mtl')\n"
                         "dust_vol = dust.createNode("
-                        f"'{MTLX_STANDARD_VOLUME}', 'dust_shader')\n"
+                        f"'{MTLX_VOLUME}', 'dust_shader')\n"
                         "\n"
                         "# --- Merge all FX layers ---\n"
                         "merge = stage.createNode('merge', "

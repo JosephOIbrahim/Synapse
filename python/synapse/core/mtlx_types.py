@@ -10,9 +10,17 @@ whole set, and one edit fixes every call site.
 All strings are the literal Houdini VOP node-type names used inside a
 ``materiallibrary`` LOP (MaterialX shader nodes are VOPs).
 
-RAG-undocumented (higher H22-break risk — verify first on any H22 upgrade):
-    * ``mtlxgeompropvalue``   — used in-repo, absent from the H21 RAG corpus
-    * ``mtlxstandard_volume`` — used in-repo, absent from the H21 RAG corpus
+RAG-undocumented (higher break risk on a major bump — verify first):
+    * ``mtlxgeompropvalue`` — used in-repo, absent from the H21 RAG corpus
+    * ``mtlxvolume``        — used in-repo, absent from the RAG corpus
+
+H22 history: ``mtlxstandard_volume`` (the pre-1.39 standard_volume shader) is
+ABSENT on 22.0.368 — probe-confirmed twice (N-6 dump, `h22-now-probes-2026-07-16.md:149`;
+re-confirmed on 22.0.368 hython at the C-MTLX fix). Its slot repointed to
+``mtlxvolume`` (the MaterialX 1.39 volume *shader*: parms ``vdf``/``edf`` —
+the shader analog of ``mtlxstandard_surface``, NOT ``mtlxvolumematerial``,
+which is a material binder with a single ``volumeshader`` parm).
+Pinned by ``tests/test_mtlx_conformance.py``.
 """
 
 # --- MaterialX VOP node-type names (single source of truth) ---------------
@@ -20,9 +28,10 @@ MTLX_STANDARD_SURFACE = "mtlxstandard_surface"
 MTLX_IMAGE = "mtlximage"
 MTLX_NORMALMAP = "mtlxnormalmap"
 
-# RAG-undocumented on H21 — flagged for priority re-verification under H22.
-MTLX_GEOMPROPVALUE = "mtlxgeompropvalue"      # RAG-undocumented
-MTLX_STANDARD_VOLUME = "mtlxstandard_volume"  # RAG-undocumented
+# RAG-undocumented — flagged for priority re-verification on any major bump.
+MTLX_GEOMPROPVALUE = "mtlxgeompropvalue"  # RAG-undocumented
+MTLX_VOLUME = "mtlxvolume"                # RAG-undocumented; H22 successor of the
+                                          # removed mtlxstandard_volume (C-MTLX)
 
 # Every MaterialX node type the repo emits, in one tuple.
 MTLX_TYPES = (
@@ -30,13 +39,13 @@ MTLX_TYPES = (
     MTLX_IMAGE,
     MTLX_NORMALMAP,
     MTLX_GEOMPROPVALUE,
-    MTLX_STANDARD_VOLUME,
+    MTLX_VOLUME,
 )
 
-# Subset that is undocumented in the H21 RAG corpus (elevated H22-break risk).
+# Subset that is undocumented in the RAG corpus (elevated break risk).
 MTLX_TYPES_RAG_UNDOCUMENTED = (
     MTLX_GEOMPROPVALUE,
-    MTLX_STANDARD_VOLUME,
+    MTLX_VOLUME,
 )
 
 # Houdini API — survival probe only. No-op when hou is absent (CI/standalone).
