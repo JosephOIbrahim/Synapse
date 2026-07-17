@@ -11,8 +11,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4387%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.26.0-1e293b.svg" alt="Changelog"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4389%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.27.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 > ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it's all recorded (receipts, not magic). Five engines, 115 tools. **Install ↓ in ~5 min.**
@@ -38,7 +38,7 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 | You want… | Read… |
 |---|---|
 | **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
-| **What's new in v5.26.0** | *New in v5.26.0* — H22 live-verified: the whole transition proven against a running Houdini |
+| **What's new in v5.27.0** | *New in v5.27.0* — RETINA: the render receipt begins (the frame itself gets a receipt) |
 | **How AI network-building stays safe** | *Propose → validate → build* |
 | **To install it** | *Install — 5 minutes* |
 | **The architecture** | *How it works — inside-out* |
@@ -80,19 +80,18 @@ flowchart LR
 
 ---
 
-## ✦ New in v5.26.0 — H22 live-verified
+## ✦ New in v5.27.0 — RETINA: the render receipt begins
 
-**The live SYNAPSE bridge came up on your running Houdini 22.0.368, and everything verified headless all day got re-proven against the real interpreter — plus the last two silent breaks landed. This is the release where "should work on H22" became "confirmed working on H22."**
+**SYNAPSE already keeps receipts on every mutation and every cook event. The one thing it couldn't prove yet was what the work *looks like* — the frame itself. RETINA is the organ that notarizes it. This release commits the governing design and lays the foundation; the first working tier is landing now.**
 
-- 🔬 **32 verdicts flipped from provisional to verified-live** — an orchestrated live-bridge session drove the real running Houdini (read-only probes in parallel, scene-mutating probes strictly one-at-a-time and self-cleaning). Every merged cycle's critical behavior, re-confirmed against the actual interpreter instead of a headless stand-in.
-- 🧠 **The memory moat holds on H22** — SYNAPSE's one exact-equality integrity gate (the memory-evolution USD round-trip) returns **fidelity = 1.0** on USD 0.26.5 through the native path, even though H22 reorganized the USD library underneath it. This was flagged by a new agent as never-tested-on-H22; now it's proven.
-- 🩹 **The last silent break, closed** — Copernicus solver tools were silently failing to cook on H22 (a parameter moved between nodes). Re-authored to the live-verified binding, with honesty flags so nothing no-ops in silence again. The assayer built a solver on your live Houdini and confirmed it cooks.
-- 🧩 **Solaris network-building now works on H22** — the validator learned H22's wiring. SYNAPSE already emitted the renamed H22 node names (`paintinstances`, `copytopoints`); now the wiring layer resolves them instead of erroring, and stops trusting stale input indices (a light node went 3→8 inputs). Verified live on **both** Houdini majors. This is the "Solaris working deeply" piece for a live demo.
-- 🕵️ **A new vendor-architect lens** — the `sidefx-cto` agent reads a Houdini release the way SideFX's own architect would, hunting the non-obvious second-order changes the domain scouts miss (deprecation trajectory, rename intent, cross-domain blast radius, fragile-success). Its first pass caught the memory-gate gap above.
-- 🛡️ **An external "engineering memo" adjudicated, not obeyed** — a document addressed directly at the agent, instructing catalog rebuilds, was run through the intake protocol instead. Four of five claims were refuted against SYNAPSE's own live evidence and three official SideFX doc surfaces. Receipts beat authority, even authoritative-sounding authority.
-- 🟢 **4,387 tests passing** (+73 over v5.25.0, zero failures) — every merged cycle post-merge suite-re-verified with the branch code confirmed resident.
+- 👁️ **The idea in one sentence** — *"SYNAPSE swapped the crystal to Dark_Glass — and proved that the only pixels that changed belong to the crystal."* That's the flagship primitive: verify an AI's change did what it said **and nothing else**, by intersecting the before/after pixel-change mask with the target object's ID matte. Deterministic, milliseconds, zero AI tokens.
+- 🪜 **A judgment ladder, not a model** — most render checks are arithmetic, few need models, almost none need an LLM. T0 file-truth (did anything render, right resolution, right AOVs) → T1 deterministic OpenCV (did the *right* pixels change) → T2 learned local (is it perceptually right) → T3 escalate to a vision model (does it *read* correctly), cheap-first, escalate only on inconclusive.
+- 🧪 **The blueprint reconciled clean** — unlike two earlier external documents this cycle, it survived contact with the repo intact. One inference corrected, two closed for free by today's live evidence, and the abi3 OpenCV worker wheel re-verified live on PyPI by exact filename.
+- 🛡️ **A boundary pin *before* any perception code** — a collection-time test enforcing **zero OpenCV imports in the Houdini host process, ever** (the eye never destabilizes the hand), mirroring the existing zero-`hou` cognitive-boundary lint from the opposite direction.
+- 📐 **Two official-doc cross-references, both with teeth** — a HDK pass caught a real design flaw *on paper*: SideFX's own docs say the render-done script fires *before* the pixels are written, so the receipt's file-truth tier would have lied — corrected to the right hook before a line of code existed. A HAPI pass turned a vendor ask from "please invent this" into "please port the contract you already ship."
+- 🟢 **4,389 tests passing** (+2, the boundary pin; zero failures) — a governing-document + foundation release, no perception code shipped by design (that starts at the next mile).
 
-> *The full arc — the 32 flips, the live proofs, the adjudication, the Copernicus expansion spec — is [in CHANGELOG.md](CHANGELOG.md) (top entry).*
+> *The full picture — the tier ladder, the scoped-delta proof, the two cross-references, the six gated miles — is [in CHANGELOG.md](CHANGELOG.md) (top entry) and `docs/SYNAPSE_RETINA_BLUEPRINT.md`.*
 
 ---
 
@@ -193,6 +192,7 @@ flowchart LR
 
 | Release | Headline |
 |---|---|
+| **v5.26.0** | **H22 live-verified** — the whole transition proven against a *running* Houdini 22.0.368: 32 verdicts flipped provisional→verified-live, the memory integrity gate confirmed at fidelity 1.0 on the reorganized USD, and the last two silent breaks closed (Copernicus solver blocks + the major-aware wiring fold that makes Solaris network-building H22-native). A new `sidefx-cto` vendor-architect lens; an external "engineering memo" adjudicated-not-obeyed. |
 | **v5.25.0** | **H22 has landed** — Houdini 22.0.368 dropped and SYNAPSE ran its own port machinery against it for the first time: the nine-step drop-week runbook complete, a three-lens CTO roadmap over 77 doc-scouted candidates, and the first two cycles merged (the Copernicus `planes()` silent-data-loss fix + the pilot Dispatcher port wave). H21 uninstalled; H22 the only live target. |
 | **v5.24.0** | **The H22 drop-harness, reconciled** — a fresh drop-day blueprint arrived describing work that mostly already shipped; it was reconciled against reality (two gate-breaking conflicts caught before any write) rather than executed literally, and five genuinely-missing Phase-0 hardening gaps were built: a read-only mode guard, a new-family re-sweep spec, the scope fence extended to H22 rigging names, a theme-source seam, and the perception "before photo." No artist-facing behavior changed. |
 | **v5.23.0** | **One Moneta · honest claims · the H22 blueprint harness** — the docs realigned to the code (Moneta *is* the memory substrate), the test badge dropped to its real green-floor, the local-first security posture stated plainly, and the H22 gap-closure blueprint got a one-command orchestrator that stops at every human gate. A documentation-integrity + H22-prep release; no product code changed. |
@@ -295,15 +295,16 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.26.0):**
+**Shipping (v5.27.0):**
 
 - 🎛️ **Artist panel v9.1** — five engines, undo-safe, 115 tools, a single **CHAT** surface where the review + consent gate auto-surface, live observability + latency instrumentation (WCAG/usability **G3-audited on H22's Qt 6.8.3**).
+- 👁️ **RETINA — the render receipt (foundation)** — the governing blueprint for perception truth (truth cycle ⑤) committed and reconciled clean; a zero-cv2 host boundary pin live before any perception code; two official-doc cross-references (HDK/HAPI) that caught a design flaw on paper. The T0 file-truth tier is landing now.
 - 🔬 **H22 live-verified** — the whole transition proven against a running Houdini 22.0.368: 32 verdicts flipped provisional→verified-live, the memory integrity gate confirmed at fidelity 1.0 on the reorganized USD, the PDG event surface and quarantine re-pins re-confirmed on the real interpreter.
 - 🧩 **H22-native network building** — a major-aware connectivity catalog: `wire_by_label` + graph validator resolve H22 wiring on H22 and H21 wiring on H21, so proposed Solaris/COP networks validate against the build you're running (the demo-critical set-dressing path, live-verified on both majors).
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
 - 🧾 **The honest envelope** — both roads into Houdini leave `IntegrityBlock` receipts: the audited `/mcp` bridge, and path-qualified, never-faked live-path records the self-tuning advisor can see.
 - 🔁 **Utility flywheel** — ratified cycles across wiring · Solaris context · diagnostic cook-truth · the H22 connectivity re-fold, self-improving on a human-ratified loop.
-- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint (**4,387 / 0**), a posture-scoped red-driver, fix-is-real behavioral probes, and forge-builds-crucible-attacks separation that caught a ⅓-implemented "loud-error" fix before it shipped.
+- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint (**4,389 / 0**), a posture-scoped red-driver, fix-is-real behavioral probes, and forge-builds-crucible-attacks separation that caught a ⅓-implemented "loud-error" fix before it shipped.
 - 🕵️ **Vendor-architect lens** — the `sidefx-cto` agent surfaces the non-obvious second-order changes a major brings; its first pass caught the memory-gate gap this release then closed live.
 - 🌋 **Copernicus expansion, spec'd** — read/analysis + node-API layers deep and live-verified; the generative frontier (scaffold rebuilds, terrain emission, neural COP nodes with preflight honesty) is a live-probed build spec, next up.
 - 🤝 **APEX MCP boundary held** — Houdini 22 keynote-announced a rigging-scoped MCP preview (not shipped); the ratified non-competing boundary stands unchanged.
@@ -360,7 +361,7 @@ python/synapse/
 
 host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols · cook API · cook-truth perturbation trials)
 scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_{wiring,lop}.py · mine_lop_knowledge.py
-tests/                          # 4,387 passing (Moneta-gated tests skip on a clean clone)
+tests/                          # 4,389 passing (Moneta-gated tests skip on a clean clone)
 harness/                        # the self-verifying loop — five tracks (H22 · v6 · context · studio · diagnostic), boundary guardrails, the full-suite green ratchet, the readiness verdict
 docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
