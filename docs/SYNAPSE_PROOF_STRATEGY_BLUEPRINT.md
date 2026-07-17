@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Doc ID** | `SYNAPSE_PROOF_STRATEGY_BLUEPRINT` v1.0 |
-| **Status** | **RATIFIED 2026-07-17** (Joe green-light). Adopted: R1 (strategy layer), R2 (PS-S ladder), R3 (the three §3 seams — deposited ratified in `flywheel_queue.json` as `PS-Q1-log-integrity`/`PS-Q2-verify-emit`/`PS-Q3-undo-wrap`), R5 (triage flips). **Still Joe's, unruled:** R4 (SCOUTMASTER debris — needs the live scene), R6 (public-surface policy), R7 (SPEC §11 append — pending). Per-cycle human merge unchanged. |
+| **Status** | ARCHITECT output — **DRAFT until Joe ratifies** (§9 block). Paper only: this document mutates no code and no state file. |
 | **Date** | 2026-07-17 |
 | **Baseline** | HEAD `d441738` (`master`, verified this dispatch: `git log -1`) — two commits past tag `v5.28.0` (`72de5f1`): **C-MTLX** (PL-M1 G1b) + **C-U5** (PL-M1 G1a, = HEAD subject "major-aware Solaris CONTEXT truth"). Houdini **22.0.368** live (`harness/state/drop.json`: py 3.13.10 / USD 0.26.5 / PySide 6.8.3, verified this dispatch). |
 | **Position update this doc carries** | The PL blueprint was authored at `72de5f1`; both **PL-M1 twins have since merged** (C-MTLX + C-U5). **The leg now genuinely stands at PL-M2 — the live session.** Session 1 below starts exactly where the work stands. |
