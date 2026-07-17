@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 
 import pytest
 
@@ -175,8 +176,9 @@ def test_configure_sentinel_wires_husk_postframe_and_receipt(tmp_path):
     assert node.parm("husk_metadata_value").eval() == "rm1deadbeef"
     # env carrier set
     assert os.environ[rm.MANIFEST_ENV_VAR] == "/r/m.json"
-    # every set was recorded for restore-in-finally (WP4)
-    assert len(restore) == 3  # postframe + metadata key + value
+    # every set was recorded for restore-in-finally (WP4): the env carrier
+    # restorer + postframe + metadata key + value.
+    assert len(restore) == 4
 
 
 def test_configure_sentinel_rejects_spaced_script_path():
@@ -216,6 +218,40 @@ def test_configure_sentinel_missing_params_are_honest(tmp_path):
     assert report["receipt_wired"] is False
     assert "done_sentinel" in honesty
     assert "fingerprint_receipt" in honesty
+
+
+def test_configure_sentinel_env_carrier_restores_to_unset(tmp_path):
+    # repair (4): the process-global SYNAPSE_RETINA_MANIFEST carrier must ride the
+    # SAME restore list the ROP parms do, so applying the handler's finally returns
+    # the process env byte-identical. Prior here is UNSET (autouse fixture cleared
+    # it) -> restore must POP it back to unset, not leave it set.
+    node = _sentinel_node()
+    restore, honesty = [], {}
+    assert os.environ.get(rm.MANIFEST_ENV_VAR) is None
+    rm.configure_husk_sentinel(
+        node, manifest_path="/r/m.json", fingerprint="rm1x",
+        sentinel_script=str(tmp_path / "s.py"), restore=restore, honesty=honesty,
+    )
+    assert os.environ[rm.MANIFEST_ENV_VAR] == "/r/m.json"  # set during render
+    # apply the restore list exactly as handlers_render's finally does
+    for _p, _raw in reversed(restore):
+        _p.set(_raw)
+    assert os.environ.get(rm.MANIFEST_ENV_VAR) is None  # byte-identical: back to unset
+
+
+def test_configure_sentinel_env_carrier_restores_prior_value(tmp_path):
+    # repair (4): a non-None prior value must be restored verbatim, not popped.
+    node = _sentinel_node()
+    restore, honesty = [], {}
+    os.environ[rm.MANIFEST_ENV_VAR] = "/prior/manifest.json"
+    rm.configure_husk_sentinel(
+        node, manifest_path="/r/new.json", fingerprint="rm1x",
+        sentinel_script=str(tmp_path / "s.py"), restore=restore, honesty=honesty,
+    )
+    assert os.environ[rm.MANIFEST_ENV_VAR] == "/r/new.json"
+    for _p, _raw in reversed(restore):
+        _p.set(_raw)
+    assert os.environ[rm.MANIFEST_ENV_VAR] == "/prior/manifest.json"
 
 
 # --------------------------------------------------------------------------
@@ -345,6 +381,60 @@ def test_sentinel_drops_done_for_each_product(tmp_path):
         body = json.loads(done.read_text(encoding="utf-8"))
         assert body["status"] == "rendered"
         assert body["fingerprint"] == "rm1abc"
+
+
+def test_sentinel_fires_under_husk_exec_namespace(tmp_path):
+    """repair (1)/(2) — the dead-sentinel showstopper.
+
+    husk execs its ``--postframe-script`` FILE (it does not import it) with a
+    globals dict whose ``__name__ == "builtins"`` — NOT ``"__main__"``. This test
+    reproduces husk's invocation faithfully: it exec-s the sentinel's own source
+    in a fresh globals dict with ``__name__ == "builtins"`` (not a ``run()`` call,
+    not an import) and asserts a ``.done`` drops. It FAILS against the old
+    ``if __name__ == "__main__"`` guard (no ``.done`` ever dropped on a real
+    render) and PASSES after the fix.
+    """
+    from synapse.host import retina_sentinel_postframe as sentinel
+
+    product = tmp_path / "beauty.0001.exr"
+    product.write_bytes(b"exr")
+    manifest = tmp_path / "beauty.retina_manifest.json"
+    manifest.write_text(json.dumps({
+        "products": [str(product)], "fingerprint": "rm1husk",
+    }), encoding="utf-8")
+    os.environ[rm.MANIFEST_ENV_VAR] = str(manifest)
+
+    # Faithful husk reproduction: run the file's OWN source in a globals dict whose
+    # __name__ == "builtins" (the assayer-proved husk exec namespace).
+    source = Path(sentinel.__file__).read_text(encoding="utf-8")
+    husk_globals = {"__name__": "builtins", "__file__": sentinel.__file__}
+    exec(compile(source, sentinel.__file__, "exec"), husk_globals)
+
+    done = tmp_path / "beauty.0001.exr.done"
+    assert done.exists(), "husk-exec surface (__name__=='builtins') must drop .done"
+    body = json.loads(done.read_text(encoding="utf-8"))
+    assert body["status"] == "rendered"
+    assert body["fingerprint"] == "rm1husk"
+
+
+def test_sentinel_plain_import_has_no_side_effect(tmp_path):
+    """The flip side of repair (1): a normal ``import`` must NOT fire run() — the
+    guard fires only on the ``__main__``/``builtins`` execution surfaces, so the
+    module stays importable by tests with zero side effect."""
+    import importlib
+
+    # Point the carrier at a manifest with a product whose .done would be visible
+    # if a mere import fired run().
+    product = tmp_path / "should_not.0001.exr"
+    product.write_bytes(b"exr")
+    manifest = tmp_path / "should_not.retina_manifest.json"
+    manifest.write_text(json.dumps({"products": [str(product)]}), encoding="utf-8")
+    os.environ[rm.MANIFEST_ENV_VAR] = str(manifest)
+
+    import synapse.host.retina_sentinel_postframe as sentinel
+    importlib.reload(sentinel)  # re-exec the module body via the import machinery
+
+    assert not (tmp_path / "should_not.0001.exr.done").exists()
 
 
 def test_sentinel_no_env_is_honest_not_silent(tmp_path):

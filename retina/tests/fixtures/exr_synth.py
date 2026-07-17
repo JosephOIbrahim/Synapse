@@ -69,11 +69,13 @@ def _header_body(
     part_type: Optional[str] = None,
     compression: int = 3,  # zips, per the probe
     string_attrs: Optional[Dict[str, str]] = None,
+    include_data_window: bool = True,
 ) -> bytes:
     body = b""
     body += _attr("channels", "chlist", _chlist(channels))
     body += _attr("compression", "compression", bytes([compression]))
-    body += _attr("dataWindow", "box2i", _box2i(0, 0, width - 1, height - 1))
+    if include_data_window:
+        body += _attr("dataWindow", "box2i", _box2i(0, 0, width - 1, height - 1))
     body += _attr("displayWindow", "box2i", _box2i(0, 0, width - 1, height - 1))
     body += _attr("lineOrder", "lineOrder", bytes([0]))
     if part_name is not None:
@@ -134,6 +136,31 @@ def multipart_exr_bytes(
         part_type="scanlineimage",
     )
     out += b"\x00"  # extra NUL terminating the multi-part header list
+    return out
+
+
+def single_part_exr_bytes_no_data_window(
+    *,
+    channels: Sequence[Tuple[str, str]] = (("R", "half"), ("G", "half"), ("B", "half")),
+    string_attrs: Optional[Dict[str, str]] = None,
+) -> bytes:
+    """A single-part EXR header with a real channel list (and optional string
+    attrs) but NO ``dataWindow`` attribute.
+
+    The reader parses it cleanly — valid magic, real ``chlist`` — yet cannot
+    derive a resolution (``part.resolution is None``). This is the pathological
+    fixture for T0's honesty rule: a resolution check that cannot read the data
+    window must resolve to INCONCLUSIVE, never a silent pass (blueprint §7).
+    """
+    out = struct.pack("<i", _EXR_MAGIC)
+    out += struct.pack("<i", 2)  # version 2, single-part
+    out += _header_body(
+        channels=channels,
+        width=1,
+        height=1,
+        string_attrs=string_attrs,
+        include_data_window=False,
+    )
     return out
 
 

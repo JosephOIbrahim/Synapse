@@ -190,7 +190,14 @@ def check_manifest_against_disk(
                     got = part.resolution
                     break
             if got is None:
+                # Readable header, but no data window => the resolution cannot be
+                # read for this product. A check that CANNOT run must be
+                # inconclusive, never a silent pass (blueprint §7 — the RETINA
+                # thesis). Never bump a hard fail (False) back up to None: fail
+                # dominates inconclusive in the roll-up.
                 res_results.append(f"{Path(product).name}: no data window")
+                if res_pass is not False:
+                    res_pass = None
             elif [int(got[0]), int(got[1])] == [int(declared_res[0]), int(declared_res[1])]:
                 res_results.append(f"{Path(product).name}: {got[0]}x{got[1]} ok")
             else:

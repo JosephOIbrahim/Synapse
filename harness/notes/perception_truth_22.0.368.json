@@ -1,0 +1,105 @@
+{
+  "catalog": "perception_truth",
+  "cycle": "RETINA.M1",
+  "build_stamp": "22.0.368",
+  "build_source": "hou.applicationVersionString() live in hython process",
+  "python": "3.13.10",
+  "usd": "0.26.5",
+  "numpy": "2.3.2",
+  "license": "licenseCategoryType.Indie",
+  "host": "DESKTOP-B2MBQRI / Threadripper PRO 7965WX / RTX 4090",
+  "probe_transport": "hython-headless (Houdini 22.0.368/bin/hython.exe)",
+  "probe_timestamp_utc": "2026-07-17T01:30:49.731899+00:00",
+  "provisional_note": "PROVISIONAL per ASSAYER protocol: probed via headless hython, NOT the live WS bridge (only Read+Bash tools available; no ToolSearch/MCP surface). hython build 22.0.368 is byte-identical to the drop record and the build the bridge would hit, so NO build mismatch. Only caveat is transport: GUI-only surfaces (item 5) are GUI-OWED; all render/COP legs are engine-real and live-verified headless including Karma XPU (2 devices). Reconfirm item-5 GUI legs on the live bridge before coding against them.",
+  "key_finding_indie": "H21-era Indie-silently-no-ops-headless-husk does NOT hold on 22.0.368: husk wrote real multi-part EXRs headless on Indie, CPU and XPU.",
+  "items": {
+    "1_karma_object_id_aov": {
+      "title": "Karma integer object-ID render var (CPU and XPU)",
+      "verdict": "VERIFIED-LIVE (CPU + XPU parity)",
+      "mechanism": "karmarendersettings.primid=1 toggle (parms primid, primidfilter, primidprecision) auto-generates the object-ID AOV from Karma ray attr source ray:primid. A bare rendervar (sourceType=raw; sourceName primId/primid/id/instanceId/elementId) WITHOUT the toggle produced NO ID buffer (only C). Toggle required; rendervar redundant. instanceId/elementId did not resolve on non-instanced geo (INCONCLUSIVE - needs instanced scene).",
+      "aov_in_exr": "subimage part primid, channel primid.id, pixel type float32, colorspace Raw",
+      "cpu_xpu_parity_output": "CPU engine=cpu xpu_device_count=0 aov name=primid source=ray:primid ; XPU engine=xpu xpu_device_count=2 aov name=primid source=ray:primid - IDENTICAL on both engines",
+      "nonfatal_warning": "Pixel filter minmax Mode idcover requires PrimId channel (1 error; EXR + primid AOV still written)",
+      "crypto_fallback": "VERIFIED-PRESENT (not render-tested): node type karmacryptomatte exists; rendervar has cryptomatte parms; docs name Cryptomatte Object Name / Cryptomatte Material Name. primid preferred per blueprint s5.",
+      "rendervar_sourceType_menu": [
+        "raw",
+        "primvar",
+        "lpe",
+        "intrinsic"
+      ],
+      "karma_engine_menu": [
+        "cpu",
+        "xpu"
+      ]
+    },
+    "2_rop_scripts_and_timing_trap": {
+      "title": "ROP pre/post-render script params + timing trap",
+      "verdict": "VERIFIED-LIVE",
+      "rop_level_params": [
+        "prerender/tprerender/lprerender",
+        "preframe",
+        "postframe",
+        "postrender/tpostrender/lpostrender (l*=hscript|python)"
+      ],
+      "husk_level_params": [
+        "husk_prerender",
+        "husk_preframe",
+        "husk_presnapshot",
+        "husk_postsnapshot",
+        "husk_postframe",
+        "husk_postrender",
+        "husk_postload (husk_t*=ENABLE toggle not language)"
+      ],
+      "timing_output": "EXR mtime=118.897 ; husk_postframe t=118.902 (+5ms) ; husk_postrender t=118.904 (+7ms) ; ROP-level postrender t=119.109 (+212ms, in calling process after husk exit)",
+      "design_conclusion": ".done sentinel MUST ride husk-level husk_postframe/husk_postrender (-> husk --postframe-script/--postrender-script), firing within ~5ms of pixels. ROP-level postrender is USD-gen/lifecycle-scoped (docs: fires at USD-gen time not husk-finish), process-dependent - do NOT use for pixel-done sentinel.",
+      "gotcha": "husk-level scripts pass on husk command line and MUST be FILE PATHS (space-free). Inline multi-line code triggers husk: too many positional options. ROP-level scripts accept inline."
+    },
+    "3_husk_callback_surface": {
+      "title": "Husk callback surface (one CLI session)",
+      "verdict": "VERIFIED-LIVE (flags) / PARTIAL (verbose-callback end-mode live JSON not isolated)",
+      "husk_version": "husk.exe version 22.0.368",
+      "flags_verbatim": {
+        "--prerender-script": "present",
+        "--preframe-script": "Python script to edit the stage before each frame is rendered",
+        "--postframe-script": "Python script to edit the stage after each frame is rendered",
+        "--postrender-script": "Python script to edit the stage after all frames are rendered",
+        "--presnapshot-script": "present",
+        "--postsnapshot-script": "present",
+        "--snapshot (=-1)": "Snapshot partial image after this many seconds",
+        "--snapshot-path": "present",
+        "--snapshot-suffix (=_part)": "present",
+        "--snapshot-save-mode (=off)": "present",
+        "-V/--verbose": "Render verbosity (e.g. -Va2)",
+        "--verbose-callback": "Override the verbose Python callback defined in UsdRenderers.json",
+        "--verbose-callback-interval (=-1)": "Override the verbose callback interval defined in UsdRenderers.json"
+      },
+      "metadata_flag": "ROP husk_metadata_key/husk_metadata_value -> husk --extra-metadata KEY VALUE (confirmed on live husk command line)",
+      "windows_note": "SIGUSR1 absent on Windows; interval --snapshot <sec> (default -1) is the portable checkpoint form. Flag present, default-verified.",
+      "verbose_callback_smoke": "OWED-LIVE: standalone --verbose-callback wiring with confirmed end-mode JSON stats not isolated. Equivalent JSON stats ARE auto-embedded in every EXR as husk:render_stats (item 6) - a filesystem-embedded second stats surface."
+    },
+    "4_copernicus_buffer_numpy_readback": {
+      "title": "Copernicus buffer -> numpy readback",
+      "verdict": "VERIFIED-LIVE",
+      "path": "hou.node(/obj).createNode(copnet) -> generator (constant/ramp/... Cop category) -> gen.cook(force=True) -> gen.layer() returns hou.ImageLayer",
+      "imagelayer_api": "bufferResolution()->(w,h); channelCount(); storageType()->hou.imageLayerStorageType.Float32; storesIntegers()->False; dataWindow()/displayWindow()->[0,0,w,h]; allBufferElements()->bytes",
+      "roundtrip_output": "constant COP: res=(1024,1024) ch=1 storage=Float32 ; allBufferElements bytes len=4194304 = 1024*1024*1*4 ; np.frombuffer(bytes(raw),float32).size=1048576 == w*h*ch (exact) ; reshape (h,w,ch) OK",
+      "dtype_from_storage": "imageLayerStorageType.Float32 -> np.float32 (4 bytes/elem), confirmed by exact byte-length match. hou.imageLayerStorageType enum exists for the general map.",
+      "row_origin_output": "vertical ramp COP (rampType menu horizontal/vertical/radial/concentric): row0=0.0005 (pos0=bottom) -> rowLast=0.9995 (pos1=top), monotonic increasing with buffer row index => buffer row 0 == image BOTTOM == BOTTOM-LEFT origin (corroborates HDK IMG-layer + W.1b). T1 numpy arrays are bottom-up; flip to match OIIO/top-down."
+    },
+    "5_flipbook_viewport_grab": {
+      "title": "Flipbook / viewport-grab symbols (GUI convenience only)",
+      "verdict": "VERIFIED-PRESENT (symbols) / GUI-OWED (execution) - GUI-ONLY-NEVER-FARM per blueprint s6",
+      "symbols_present": "hou.SceneViewer.flipbook (True), hou.SceneViewer.flipbookSettings (True), hou.FlipbookSettings (True)",
+      "headless_state": "hou.ui present = False (headless hython). Require a live GUI SceneViewer to execute - reconfirm on the live bridge/GUI session; never use on the farm path."
+    },
+    "6_exr_header_and_free_receipt": {
+      "title": "EXR header ground truth + the free receipt",
+      "verdict": "VERIFIED-LIVE",
+      "multipart": "YES - husk writes multi-subimage EXR. Probe produced 2 subimages: part C(R,G,B,A) + part primid(primid.id). oiio:subimages=2. T0 header checks MUST be multi-part-aware.",
+      "channel_naming": "per-part subimage; beauty part C channels R,G,B,A; AOV part primid single channel primid.id (convention part.channel)",
+      "per_aov_pixel_types": "DATA-DRIVEN: beauty C = 16-bit float (half); primid = float32. NEVER assume half-float - read type from header. Storage=scanline, compression=zips, chunkCount=225. Colorspace lin_rec709 (C) / Raw (primid).",
+      "free_receipt_output": "husk_metadata_key=synapse_retina_fingerprint value=rm1deadbeef -> EXR header carries synapse_retina_fingerprint (type string) = rm1deadbeef. CONFIRMED - manifest fingerprint travels INSIDE the artifact (T0 upgrade). Mechanism: husk_metadata_* -> husk --extra-metadata -> EXR metadata.",
+      "bonus_auto_provenance": "husk auto-stamps every EXR: husk:render_stats (full JSON incl per-AOV aov_buffers+source, world_to_camera/world_to_raster/world_to_ndc matrices, engine, xpu_device_count, geometry_counts, resolution, render_camera), husk:command, husk:usd_file, husk:usd_file_stats, worldToCamera/worldToNDC (m44f+m44d), Software=Karma (cpu|xpu) 22.0.368. Substantial scene-truth already free in every husk frame."
+    }
+  }
+}

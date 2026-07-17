@@ -108,6 +108,35 @@ def test_no_declared_resolution_is_inconclusive_not_pass(tmp_path):
     assert event["verdict"] == "inconclusive"
 
 
+def test_no_data_window_resolution_is_inconclusive_not_pass(tmp_path):
+    # A valid-magic EXR whose header has real channels + a fingerprint receipt but
+    # NO dataWindow: the reader parses it, yet the resolution cannot be derived.
+    # A resolution check that CANNOT read the window must be INCONCLUSIVE, never a
+    # silent pass (blueprint §7 — the whole RETINA thesis). Declaring an AOV +
+    # receipt that DO verify isolates resolution as the only non-green check, so
+    # the pre-fix bug rolled the whole event up to a false "pass".
+    fp = "rm1nowindow000000"
+    product = tmp_path / "nowindow.0001.exr"
+    exr_synth.write_bytes(
+        product,
+        exr_synth.single_part_exr_bytes_no_data_window(
+            channels=(("R", "half"), ("G", "half"), ("B", "half")),
+            string_attrs={"synapse_retina_fingerprint": fp},
+        ),
+    )
+    exr_synth.write_done(product)
+    manifest = _manifest([str(product)], resolution=[960, 540], aovs=["R"], fingerprint=fp)
+    event = check_manifest_against_disk(manifest, now=NOW)
+    res = _named_check(event, "resolution")
+    assert res["pass"] is None                      # inconclusive, NOT True
+    assert "no data window" in res["detail"]
+    # the AOV + receipt were readable and correct, so resolution is the ONLY
+    # non-green check — the event must be inconclusive, never a vacuous pass.
+    assert _named_check(event, "aovs")["pass"] is True
+    assert _named_check(event, "fingerprint_receipt")["pass"] is True
+    assert event["verdict"] == "inconclusive"
+
+
 def test_unreadable_product_makes_header_checks_inconclusive(tmp_path):
     # A present, non-empty, but non-EXR product: existence/size/done pass, but the
     # header-derived checks cannot run -> inconclusive, never a silent pass.

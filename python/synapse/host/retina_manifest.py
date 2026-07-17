@@ -59,6 +59,30 @@ MANIFEST_ENV_VAR = "SYNAPSE_RETINA_MANIFEST"
 FINGERPRINT_METADATA_KEY = "synapse_retina_fingerprint"
 
 
+class _EnvRestorer:
+    """A restore-list entry (duck-typed like ``hou.Parm``'s ``.set``) that returns
+    an environment variable to its prior value — ``None`` prior means *unset*, so
+    restore pops it.
+
+    ``configure_husk_sentinel`` sets a process-global env carrier
+    (``SYNAPSE_RETINA_MANIFEST``); registering this on the SAME ``restore`` list
+    the ROP parms use lets the handler's existing restore-in-``finally`` return
+    the process env byte-identical after the render — the render port wave golden-
+    pins this path (reconciliation §4.1), so a leaked carrier would drift it.
+    """
+
+    __slots__ = ("_key",)
+
+    def __init__(self, key: str):
+        self._key = key
+
+    def set(self, value: Any) -> None:
+        if value is None:
+            os.environ.pop(self._key, None)
+        else:
+            os.environ[self._key] = value
+
+
 # ---------------------------------------------------------------------------
 # Pure assembly (zero hou, zero I/O) — testable in isolation
 # ---------------------------------------------------------------------------
@@ -283,6 +307,13 @@ def configure_husk_sentinel(
     ``husk_postframe`` (per-frame, fires after that frame's pixels). Evidence:
     item 2 ``timing_output`` (EXR mtime=118.897; husk_postframe t=118.902).
 
+    MECHANISM (how the script actually fires): husk **execs** the sentinel FILE at
+    that +5ms mark with a globals dict whose ``__name__ == "builtins"`` (assayer-
+    proved live), NOT ``"__main__"``. The sentinel's module-foot guard fires
+    ``run()`` on that ``"builtins"`` surface, so the ``.done`` genuinely drops on a
+    real render — the M1 build's ``if __name__ == "__main__"`` guard never did
+    (dead-sentinel showstopper, fixed in ``retina_sentinel_postframe``).
+
     GOTCHA (item 2): husk-level script params pass on the husk command line and
     MUST be a bare, **space-free FILE PATH** (inline code triggers
     ``husk: too many positional options``). So we point ``husk_postframe`` at the
@@ -310,6 +341,11 @@ def configure_husk_sentinel(
         return report
 
     # Carrier: husk (background render) inherits this env; the sentinel reads it.
+    # Register a restore of the PRIOR value on the SAME restore list the ROP parms
+    # use (WP4), so the handler's finally returns the process env byte-identical
+    # after the render — a leaked carrier would drift the golden-pinned render
+    # path (reconciliation §4.1).
+    restore.append((_EnvRestorer(MANIFEST_ENV_VAR), os.environ.get(MANIFEST_ENV_VAR)))
     os.environ[MANIFEST_ENV_VAR] = manifest_path
 
     # .done sentinel — prefer per-frame husk_postframe; fall back to husk_postrender.

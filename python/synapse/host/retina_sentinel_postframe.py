@@ -1,11 +1,17 @@
 """RETINA ``.done`` sentinel — the husk post-frame hook script.
 
 husk runs THIS file as its ``--postframe-script`` (wired onto the ROP's
-``husk_postframe`` param by ``retina_manifest.configure_husk_sentinel``). It fires
-~5ms **after** the frame's EXR is written (perception_truth_22.0.368.json item 2),
-which is the whole point: it is the pixels-landed signal the out-of-process worker
-waits on. The ROP-level post-render script fires at USD-generation time, before
-pixels — this rides the husk level instead, deliberately.
+``husk_postframe`` param by ``retina_manifest.configure_husk_sentinel``). husk
+**execs the file** — it does not import it — with a globals dict whose
+``__name__ == "builtins"`` (assayer-proved live on 22.0.368), NOT ``"__main__"``.
+So the module-foot guard fires ``run()`` on that husk-exec surface (see the guard
+at the bottom of this file); a plain ``import`` leaves ``__name__`` as the dotted
+module path and fires nothing, keeping the sentinel importable by tests with no
+side effect. husk invokes the script ~5ms **after** the frame's EXR is written
+(perception_truth_22.0.368.json item 2), which is the whole point: it is the
+pixels-landed signal the out-of-process worker waits on. The ROP-level post-render
+script fires at USD-generation time, before pixels — this rides the husk level
+instead, deliberately.
 
 Constraints this file lives under (all from catalog item 2):
 
@@ -125,5 +131,13 @@ def _fallback(now: float, *, reason: str) -> int:
     return 1 if _write_done(fallback, payload) else 0
 
 
-if __name__ == "__main__":
+# husk execs this file as its --postframe-script with a globals dict whose
+# __name__ == "builtins" (assayer-verified live on 22.0.368); a bare CLI run sets
+# __name__ == "__main__". BOTH are execution surfaces → fire the receipt. A normal
+# `import` sets __name__ to this module's dotted path → stay silent (no side
+# effect), so tests can import the module and drive run() directly. The prior
+# `if __name__ == "__main__"` guard NEVER fired under husk (the M1 dead-sentinel
+# showstopper): husk's __name__ is "builtins", so no .done ever dropped on a real
+# render and T0's done_sentinels check false-failed every good frame.
+if __name__ in ("__main__", "builtins"):
     run()
