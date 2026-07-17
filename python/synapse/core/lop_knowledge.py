@@ -8,10 +8,23 @@ materiallibrary upstream), and the types the corpus marks affirmatively absent
 (no ``grid``/``plane`` LOP).
 
 Same integrity posture as ``core/wiring.py``: the packaged copy
-(``python/synapse/cognitive/tools/data/lop_solaris_knowledge_21.json``) is the
-per-major committed authority; blake2b is stamped over the ``content`` payload;
-``strict=True`` raises on any problem (a wire-time posture) while ``strict=False``
-returns ``None`` so an additive validator phase simply skips. Zero ``hou`` import.
+(``python/synapse/cognitive/tools/data/lop_solaris_knowledge_<major>.json``) is
+the per-major committed authority; blake2b is stamped over the ``content``
+payload; ``strict=True`` raises on any problem (a wire-time posture) while
+``strict=False`` returns ``None`` so an additive validator phase simply skips.
+
+Resolution is keyed on the RUNNING Houdini major (C-U5, the twin of the
+U.1-H22 wiring fold): ``hou`` importable -> ``lop_solaris_knowledge_<major>.json``;
+standalone (stock python / CI) -> the H21 default, preserving the test-world
+truth. A missing per-major catalog FAILS LOUD in strict mode — never a silent
+cross-major fallback, because wrong-major CONTEXT truth is exactly the stale-
+advice class this fold exists to kill (H22 renamed the instancer LOPs and
+consolidated the per-shape lights). ``strict=False`` still returns ``None``:
+GraphValidator's LOP phase skips honestly instead of advising from H21 truth.
+
+Zero ``hou`` import at module scope — the major resolver
+(:func:`synapse.core.wiring._running_houdini_major`, shared on purpose so
+U.1b hardening lands in ONE place) does a guarded LOCAL ``hou`` import.
 """
 from __future__ import annotations
 
@@ -20,8 +33,13 @@ import json
 from pathlib import Path
 from typing import Optional
 
+from .wiring import _running_houdini_major
+
 CATALOG_SCHEMA = "lop_solaris_knowledge/v1"
 
+# Committed package authority — per-major naming like connectivity_<major>.json;
+# _PKG is the STANDALONE default (no hou -> the H21 test-world truth), the
+# running-major file is resolved by _pkg_catalog_path().
 _PKG = (Path(__file__).resolve().parents[1] / "cognitive" / "tools"
         / "data" / "lop_solaris_knowledge_21.json")
 
@@ -33,12 +51,28 @@ class LopKnowledgeError(RuntimeError):
     callers surface it; nothing here degrades to a guessed fact."""
 
 
+def _pkg_catalog_path() -> Path:
+    """Per-major committed authority: ``lop_solaris_knowledge_<major>.json`` for
+    the RUNNING major; no major known (standalone/tests) -> the H21 default,
+    preserving the test-world truth. NO existence check and NO cross-major
+    fallback here — wrong-major CONTEXT truth is the stale-advice class itself,
+    so a missing per-major file must fail in the loader, loudly."""
+    major = _running_houdini_major()
+    if major is None:
+        return _PKG
+    return _PKG.with_name(f"lop_solaris_knowledge_{major}.json")
+
+
 def load_lop_catalog(path: Optional[Path] = None, *,
                      strict: bool = True) -> Optional[dict]:
     """Load + integrity-check the packaged LOP knowledge catalog. ``strict=True``
     raises :class:`LopKnowledgeError` on any problem; ``strict=False`` returns
-    ``None`` (the validator posture: no catalog -> the additive LOP phase skips)."""
-    fp = Path(path) if path is not None else _PKG
+    ``None`` (the validator posture: no catalog -> the additive LOP phase skips).
+
+    ``path=None`` resolves the packaged catalog for the RUNNING Houdini major
+    (see :func:`_pkg_catalog_path`); an explicit ``path`` is honored verbatim,
+    untouched by major resolution."""
+    fp = Path(path) if path is not None else _pkg_catalog_path()
     key = str(fp)
     if key in _CACHE:
         cached = _CACHE[key]
@@ -53,6 +87,16 @@ def load_lop_catalog(path: Optional[Path] = None, *,
         return None
 
     if not fp.is_file():
+        if path is None:
+            major = _running_houdini_major()
+            if major is not None:
+                # Rule (d) of the U.1-H22 fold, mirrored: name the expected
+                # per-major file and NEVER silently fall back across majors.
+                return _fail(
+                    f"missing for running Houdini major {major} — probe the "
+                    f"build (scripts/author_lop_knowledge_22.py pattern) and "
+                    f"package it as {fp.name}; LOP knowledge never falls back "
+                    f"across majors")
         return _fail("missing")
     try:
         data = json.loads(fp.read_text(encoding="utf-8"))

@@ -7,11 +7,14 @@ Pure Python + the two committed catalogs — no ``hou``, no ``G:\\`` corpus (whe
 hython, the optional Ledger deposit stamps the live build).
 
 Where U.1's review swept ``setInput(`` call sites against WIRING truth, this grounds the
-authored LOP/Solaris CONTEXT catalog against PROBE truth — the standing "probe truth >
-authored prose" rule — using only committed artifacts:
+authored LOP/Solaris CONTEXT catalogs against PROBE truth — the standing "probe truth >
+authored prose" rule — using only committed artifacts. Majorized by C-U5: EVERY packaged
+``lop_solaris_knowledge_<major>.json`` is swept against its SAME-major
+``connectivity_<major>.json`` (never cross-major — wrong-major truth is the stale-advice
+class the per-major resolver exists to kill):
 
-  * python/synapse/cognitive/tools/data/lop_solaris_knowledge_21.json  (the authored catalog)
-  * python/synapse/cognitive/tools/data/connectivity_21.json           (the U.1 live probe)
+  * python/synapse/cognitive/tools/data/lop_solaris_knowledge_<major>.json  (authored catalogs)
+  * python/synapse/cognitive/tools/data/connectivity_<major>.json           (the U.1 live probes)
 
 Checks (CRITICAL fails the ``lop_review_clean`` verb; INFO is informational):
 
@@ -42,15 +45,22 @@ import time
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parents[1]
-CATALOG_PATH = (_REPO / "python" / "synapse" / "cognitive" / "tools"
-                / "data" / "lop_solaris_knowledge_21.json")
-CONNECTIVITY_PATH = (_REPO / "python" / "synapse" / "cognitive" / "tools"
-                     / "data" / "connectivity_21.json")
+_DATA_DIR = _REPO / "python" / "synapse" / "cognitive" / "tools" / "data"
 FINDINGS_JSON = _REPO / ".claude" / "flywheel_u5_findings.json"
 FINDINGS_MD = _REPO / ".claude" / "flywheel_u5_findings.md"
 
 SEVERITY_RANK = {"CRITICAL": 0, "INFO": 1}
 SCHEMA = "lop_solaris_knowledge/v1"
+
+
+def discover_pairs() -> list:
+    """[(catalog_path, connectivity_path), ...] — each packaged knowledge catalog
+    paired with its SAME-major connectivity probe, sorted by filename."""
+    pairs = []
+    for pkg in sorted(_DATA_DIR.glob("lop_solaris_knowledge_*.json")):
+        major = pkg.stem.rsplit("_", 1)[-1]
+        pairs.append((pkg, _DATA_DIR / f"connectivity_{major}.json"))
+    return pairs
 
 
 def _blake(obj) -> str:
@@ -60,14 +70,14 @@ def _blake(obj) -> str:
     ).hexdigest()
 
 
-def load_catalog(path: Path = CATALOG_PATH) -> dict:
+def load_catalog(path: Path) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
     if data.get("schema") != SCHEMA:
         raise SystemExit(f"catalog at {path} is not {SCHEMA}")
     return data
 
 
-def connectivity_lop_types(path: Path = CONNECTIVITY_PATH) -> set:
+def connectivity_lop_types(path: Path) -> set:
     """The Lop type names the U.1 live connectivity probe recorded (the cross-check)."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -82,7 +92,7 @@ def _f(severity: str, kind: str, detail: str, **extra) -> dict:
     return {"severity": severity, "kind": kind, "detail": detail, **extra}
 
 
-def run_review(catalog: dict, conn_lop: set) -> list:
+def run_review(catalog: dict, conn_lop: set, conn_label: str = "connectivity probe") -> list:
     content = catalog.get("content", {})
     entries = content.get("entries", {})
     known_absent = content.get("known_absent", {})
@@ -139,7 +149,7 @@ def run_review(catalog: dict, conn_lop: set) -> list:
                                    "subset — expected for un-probed types)", type_name=name))
     else:
         findings.append(_f("INFO", "probe-cross-check-skipped",
-                           "connectivity_21.json unreadable — probe cross-check skipped"))
+                           f"{conn_label} unreadable — probe cross-check skipped"))
 
     findings.sort(key=lambda f: (SEVERITY_RANK[f["severity"]], f["kind"],
                                  f.get("type_name", "")))
@@ -157,14 +167,16 @@ def summarize(findings: list) -> dict:
     }
 
 
-def write_findings(catalog: dict, findings: list) -> dict:
+def write_findings(catalogs: list, findings: list) -> dict:
+    """catalogs: [(path, catalog_dict), ...] — every swept per-major catalog."""
     summary = summarize(findings)
+    cat_meta = [{"path": str(p.relative_to(_REPO)).replace("\\", "/"),
+                 "houdini_version": c.get("houdini_version"),
+                 "blake2b": c.get("blake2b")} for p, c in catalogs]
     payload = {
         "schema": "flywheel_findings/v1",
         "task": "U.5",
-        "catalog": {"path": str(CATALOG_PATH.relative_to(_REPO)).replace("\\", "/"),
-                    "houdini_version": catalog.get("houdini_version"),
-                    "blake2b": catalog.get("blake2b")},
+        "catalogs": cat_meta,
         "summary": summary,
         "findings": findings,
     }
@@ -172,11 +184,13 @@ def write_findings(catalog: dict, findings: list) -> dict:
     FINDINGS_JSON.write_text(json.dumps(payload, indent=1, ensure_ascii=False) + "\n",
                              encoding="utf-8", newline="\n")
 
-    md = ["# U.5 LOP/Solaris knowledge review — findings (severity-ranked)", "",
-          f"Catalog: `{payload['catalog']['path']}` (build "
-          f"{catalog.get('houdini_version')}, blake2b `{str(catalog.get('blake2b'))[:12]}`)", "",
-          f"**{summary['critical']} CRITICAL** of {summary['total']} checks. "
-          f"By kind: " + ", ".join(f"{k}={v}" for k, v in summary["by_kind"].items()), ""]
+    md = ["# U.5 LOP/Solaris knowledge review — findings (severity-ranked)", ""]
+    for m in cat_meta:
+        md.append(f"Catalog: `{m['path']}` (build {m['houdini_version']}, "
+                  f"blake2b `{str(m['blake2b'])[:12]}`)")
+    md += ["",
+           f"**{summary['critical']} CRITICAL** of {summary['total']} checks. "
+           f"By kind: " + ", ".join(f"{k}={v}" for k, v in summary["by_kind"].items()), ""]
     for sev in ("CRITICAL", "INFO"):
         group = [f for f in findings if f["severity"] == sev]
         if not group:
@@ -195,14 +209,17 @@ def write_findings(catalog: dict, findings: list) -> dict:
 
 # --- Ledger deposit (opt-in; run under hython POST-MERGE — mirrors U.1) ---------
 
-def deposit_review_classes(catalog: dict, summary: dict) -> tuple:
-    """One Confirmation/DeadEnd per verified check CLASS via the §7.2 deposit seam."""
+def deposit_review_classes(catalogs: list, summary: dict) -> tuple:
+    """One Confirmation/DeadEnd per verified check CLASS via the §7.2 deposit seam.
+    The class verdicts aggregate over EVERY swept per-major catalog (a violation
+    in any major fails the class); the detail names the swept builds."""
     sys.path.insert(0, str(_REPO / "python"))
     from synapse.science.deposit import LedgerDeposit  # noqa: PLC0415 — after path fix
 
     sink = LedgerDeposit()
     now = int(time.time())
     artifact = str(FINDINGS_JSON.relative_to(_REPO)).replace("\\", "/")
+    builds = ", ".join(str(c.get("houdini_version")) for _, c in catalogs)
     bk = summary["by_kind"]
     integrity_bad = bk.get("integrity-blake2b", 0)
     structural_bad = (bk.get("structural-known-absent-is-entry", 0)
@@ -210,30 +227,31 @@ def deposit_review_classes(catalog: dict, summary: dict) -> tuple:
     drift_bad = bk.get("probe-confirmed-drift", 0)
     contradiction_bad = bk.get("known-absent-contradiction", 0)
     n_confirmed = bk.get("probe-confirmed", 0)
-    n_absent = len(catalog.get("content", {}).get("known_absent", {}))
+    n_absent = sum(len(c.get("content", {}).get("known_absent", {})) for _, c in catalogs)
 
     sink({
         "surface": "lop_knowledge/catalog-integrity-and-structure",
         "status": "champion" if (integrity_bad == 0 and structural_bad == 0) else "dead_end",
-        "detail": (f"catalog blake2b recomputes over `content`; known_absent disjoint from "
-                   f"entries; ordering rules reference real entries. "
-                   f"{integrity_bad + structural_bad} violation(s). Artifact: {artifact}"),
+        "detail": (f"per-major catalogs ({builds}): blake2b recomputes over `content`; "
+                   f"known_absent disjoint from entries; ordering rules reference real "
+                   f"entries. {integrity_bad + structural_bad} violation(s). "
+                   f"Artifact: {artifact}"),
         "timestamp": now, "kind": "lop_review", "context": "flywheel U.5 REVIEW",
     })
     sink({
         "surface": "lop_knowledge/probe-confirmed-types-grounded-in-live-probe",
         "status": "champion" if drift_bad == 0 else "dead_end",
-        "detail": (f"{n_confirmed} authored entries are present in the U.1 live connectivity "
-                   f"probe (probe truth > authored prose); {drift_bad} drifted. "
-                   f"Artifact: {artifact}"),
+        "detail": (f"{n_confirmed} authored entries are present in their same-major live "
+                   f"connectivity probe ({builds}; probe truth > authored prose); "
+                   f"{drift_bad} drifted. Artifact: {artifact}"),
         "timestamp": now, "kind": "lop_review", "context": "flywheel U.5 REVIEW",
     })
     sink({
         "surface": "lop_knowledge/known-absent-types-absent-from-live-probe",
         "status": "champion" if contradiction_bad == 0 else "dead_end",
-        "detail": (f"{n_absent} known_absent type(s) (grid/plane) do not appear in the live "
-                   f"probe Lop set (no contradiction); {contradiction_bad} contradiction(s). "
-                   f"Artifact: {artifact}"),
+        "detail": (f"{n_absent} known_absent type(s) across {builds} do not appear in their "
+                   f"same-major live probe Lop set (no contradiction); "
+                   f"{contradiction_bad} contradiction(s). Artifact: {artifact}"),
         "timestamp": now, "kind": "lop_review", "context": "flywheel U.5 REVIEW",
     })
     return sink.deposited, sink.failures
@@ -245,19 +263,29 @@ def main(argv=None) -> int:
                     help="deposit per-class Ledger records (opt-in; run under hython post-merge)")
     a = ap.parse_args(argv)
 
-    catalog = load_catalog()
-    conn_lop = connectivity_lop_types()
-    findings = run_review(catalog, conn_lop)
-    summary = write_findings(catalog, findings)
-    print(f"LOP REVIEW: {summary['total']} checks, {summary['critical']} CRITICAL "
-          f"-> {FINDINGS_JSON}")
+    pairs = discover_pairs()
+    if not pairs:
+        print("no packaged lop_solaris_knowledge_<major>.json found", file=sys.stderr)
+        return 1
+    catalogs, findings = [], []
+    for pkg_path, conn_path in pairs:
+        catalog = load_catalog(pkg_path)
+        conn_lop = connectivity_lop_types(conn_path)
+        for f in run_review(catalog, conn_lop, conn_label=conn_path.name):
+            f["catalog"] = pkg_path.name
+            findings.append(f)
+        catalogs.append((pkg_path, catalog))
+        if not conn_lop:
+            print(f"  NOTE: {conn_path.name} unreadable — probe cross-check skipped "
+                  f"for {pkg_path.name}")
+    summary = write_findings(catalogs, findings)
+    print(f"LOP REVIEW: {len(catalogs)} catalog(s), {summary['total']} checks, "
+          f"{summary['critical']} CRITICAL -> {FINDINGS_JSON}")
     for k, v in summary["by_kind"].items():
         print(f"  {k}: {v}")
-    if not conn_lop:
-        print("  NOTE: connectivity probe catalog unreadable — probe cross-check skipped")
 
     if a.deposit:
-        deposited, failures = deposit_review_classes(catalog, summary)
+        deposited, failures = deposit_review_classes(catalogs, summary)
         print(f"  ledger: deposited={deposited} failures={len(failures)}")
         for f in failures:
             print(f"  DEPOSIT-FAIL: {f}")

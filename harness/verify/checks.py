@@ -623,33 +623,42 @@ def check_validator_catches_miswire(ctx):
 
 
 def check_lop_knowledge_fresh(ctx):
-    # U.5: the packaged LOP/Solaris knowledge catalog (the validator's CONTEXT authority)
-    # must be (a) schema lop_solaris_knowledge/v1 + blake2b recomputes over `content`, and
-    # (b) byte-identical to the harness artifact it claims to copy (a hand-edit fails loud).
-    # Corpus-authored (not a live probe), so there is no live-build stamp comparison — the
-    # per-build re-mine duty is enforced by the byte-identical + source_digest gate in the miner.
+    # U.5 (majorized by C-U5): EVERY packaged LOP/Solaris knowledge catalog (the validator's
+    # per-major CONTEXT authority, lop_solaris_knowledge_<major>.json) must be (a) schema
+    # lop_solaris_knowledge/v1 + blake2b recomputes over `content`, and (b) byte-identical to
+    # the harness artifact its houdini_version stamp names (a hand-edit fails loud). Authored
+    # (not a live probe), so there is no live-build stamp comparison — the per-build re-author
+    # duty is enforced by the byte-identical + source_digest gate in the authoring scripts
+    # (scripts/mine_lop_knowledge.py for 21, scripts/author_lop_knowledge_22.py for 22).
     wt = Path(ctx["wt"])
-    pkg = wt / "python/synapse/cognitive/tools/data/lop_solaris_knowledge_21.json"
-    if not pkg.exists():
-        return {"ok": False, "detail": "packaged lop_solaris_knowledge_21.json missing"}
-    try:
-        import hashlib
-        data = json.loads(pkg.read_text(encoding="utf-8"))
-        if data.get("schema") != "lop_solaris_knowledge/v1":
-            return {"ok": False, "detail": f"schema={data.get('schema')} != lop_solaris_knowledge/v1"}
-        digest = hashlib.blake2b(
-            json.dumps(data.get("content", {}), sort_keys=True, ensure_ascii=False).encode("utf-8"),
-            digest_size=16).hexdigest()
-        if digest != data.get("blake2b"):
-            return {"ok": False, "detail": "packaged catalog blake2b mismatch (corrupt/hand-edited)"}
-        stamp = data.get("houdini_version", "")
-        harness_fp = wt / "harness" / "notes" / f"verified_lop_solaris_knowledge_{stamp}.json"
-        if not harness_fp.exists() or harness_fp.read_bytes() != pkg.read_bytes():
-            return {"ok": False, "detail": f"packaged copy != {harness_fp.name} (re-run "
-                                           "scripts/mine_lop_knowledge.py)"}
-    except Exception as e:
-        return {"ok": False, "detail": f"catalog unreadable: {str(e)[:300]}"}
-    return {"ok": True, "detail": f"LOP catalog sound + byte-matched (schema v1, stamp {stamp})"}
+    import hashlib
+    pkgs = sorted((wt / "python/synapse/cognitive/tools/data").glob(
+        "lop_solaris_knowledge_*.json"))
+    if not pkgs:
+        return {"ok": False, "detail": "no packaged lop_solaris_knowledge_<major>.json found"}
+    stamps = []
+    for pkg in pkgs:
+        try:
+            data = json.loads(pkg.read_text(encoding="utf-8"))
+            if data.get("schema") != "lop_solaris_knowledge/v1":
+                return {"ok": False,
+                        "detail": f"{pkg.name}: schema={data.get('schema')} != lop_solaris_knowledge/v1"}
+            digest = hashlib.blake2b(
+                json.dumps(data.get("content", {}), sort_keys=True, ensure_ascii=False).encode("utf-8"),
+                digest_size=16).hexdigest()
+            if digest != data.get("blake2b"):
+                return {"ok": False,
+                        "detail": f"{pkg.name}: blake2b mismatch (corrupt/hand-edited)"}
+            stamp = data.get("houdini_version", "")
+            harness_fp = wt / "harness" / "notes" / f"verified_lop_solaris_knowledge_{stamp}.json"
+            if not harness_fp.exists() or harness_fp.read_bytes() != pkg.read_bytes():
+                return {"ok": False, "detail": f"{pkg.name} != {harness_fp.name} (re-run the "
+                                               "matching authoring script)"}
+            stamps.append(stamp)
+        except Exception as e:
+            return {"ok": False, "detail": f"{pkg.name} unreadable: {str(e)[:300]}"}
+    return {"ok": True, "detail": f"{len(pkgs)} LOP catalog(s) sound + byte-matched "
+                                  f"(schema v1, stamps {', '.join(stamps)})"}
 
 def check_lop_review_clean(ctx):
     # U.5: the REVIEW grounding sweep re-runs clean — scripts/flywheel_review_lop.py exits 0

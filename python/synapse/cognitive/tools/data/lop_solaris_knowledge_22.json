@@ -1,0 +1,447 @@
+{
+  "blake2b": "3f88cdf088eb80bb0ed026feea5b5b70",
+  "content": {
+    "authored": {
+      "_provenance": "authored from the banked hython probe harness/notes/lop_solaris_probe_22.0.368_2026-07-17.json on H22.0.368 (probe truth — no H22 solaris_reference corpus exists, so the H21 miner's corpus grounding does not transfer); carried verbatim, NOT re-derived by this script; re-author on source_digest mismatch. source_digest = blake2b over connectivity_22.json's blake2b stamp + the probe artifact's sha256. Tier notes: usd_type is semantic USD-schema knowledge carried at authored tier (the probe records node types + parm templates, not USD prim classes); key_parms use TEMPLATE spellings (t/r/s tuple parms cover tx..sz components; multiparm templates carry '#', runtime instance 1 is '1'); materiallibrary's cook(force=True) gotcha is H21-era operational knowledge carried NOT re-proved by this template-walk probe."
+    },
+    "composition": {
+      "reference": {
+        "key_parms": [
+          "filepath#",
+          "primpath",
+          "reftype"
+        ],
+        "strength": "stronger-overridable",
+        "use": "import assets under a prim path; per-instance overrides"
+      },
+      "sublayer": {
+        "key_parms": [
+          "filepath#",
+          "positionindex",
+          "positiontype"
+        ],
+        "strength": "strongest-direct-edit",
+        "use": "merge a full layer (environments, lighting rigs, base layers)"
+      }
+    },
+    "entries": {
+      "assignmaterial": {
+        "category": "Lop",
+        "gotchas": [
+          "primpattern#/matspecpath# are multiparm TEMPLATES on 22.0.368 — the H21 catalog carried the instance spellings primpattern1/matspecpath1, which have no parm template; created nodes expose instance 1 as primpattern1/matspecpath1."
+        ],
+        "key_parms": [
+          "matspecpath#",
+          "primpattern#"
+        ],
+        "role": "material",
+        "type_name": "assignmaterial",
+        "usd_type": null
+      },
+      "camera": {
+        "category": "Lop",
+        "gotchas": [
+          "Transform templates are the t/r tuple parms on 22.0.368 — component spellings (tx..rz) are not template names."
+        ],
+        "key_parms": [
+          "fStop",
+          "focalLength",
+          "r",
+          "t"
+        ],
+        "role": "camera",
+        "type_name": "camera",
+        "usd_type": "Camera"
+      },
+      "copytopoints": {
+        "category": "Lop",
+        "gotchas": [
+          "The H21-era 'instancer' spelling is gone from the 22.0.368 type table; createNode('instancer') silently aliases here — author the canonical 'copytopoints' spelling."
+        ],
+        "key_parms": [
+          "method",
+          "pointsoppath",
+          "protoindexsrc",
+          "seed"
+        ],
+        "role": "geometry",
+        "type_name": "copytopoints",
+        "usd_type": null
+      },
+      "cube": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "size",
+          "t"
+        ],
+        "role": "geometry",
+        "type_name": "cube",
+        "usd_type": "Cube"
+      },
+      "distantlight": {
+        "category": "Lop",
+        "gotchas": [
+          "createNode('distantlight') resolves to distantlight::2.0 on 22.0.368 — UsdLux inputs are punycode-namespaced (xn__inputs*); plain intensity/exposure live only on the legacy unversioned template."
+        ],
+        "key_parms": [
+          "primpath",
+          "xn__inputsangle_zta",
+          "xn__inputsexposure_vya",
+          "xn__inputsintensity_i0a"
+        ],
+        "role": "light",
+        "type_name": "distantlight",
+        "usd_type": "DistantLight"
+      },
+      "domelight": {
+        "category": "Lop",
+        "gotchas": [
+          "createNode('domelight') resolves to domelight::3.0 on 22.0.368 — its UsdLux inputs are punycode-namespaced (xn__inputs*); plain intensity/exposure/xn__texturefile_0ta spellings live only on the legacy unversioned template."
+        ],
+        "key_parms": [
+          "primpath",
+          "xn__inputsexposure_vya",
+          "xn__inputsintensity_i0a",
+          "xn__inputstexturefile_r3ah"
+        ],
+        "role": "light",
+        "type_name": "domelight",
+        "usd_type": "DomeLight"
+      },
+      "edit": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "primpattern",
+          "r",
+          "s",
+          "t"
+        ],
+        "role": "scene",
+        "type_name": "edit",
+        "usd_type": null
+      },
+      "extractinstances": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "instances",
+          "method",
+          "primpath",
+          "prototypepath"
+        ],
+        "role": "scene",
+        "type_name": "extractinstances",
+        "usd_type": null
+      },
+      "karmarenderproperties": {
+        "category": "Lop",
+        "gotchas": [
+          "DEPRECATED on 22.0.368 (nodeType deprecation flag) — still resolves; prefer karmarendersettings."
+        ],
+        "key_parms": [
+          "engine"
+        ],
+        "role": "render",
+        "type_name": "karmarenderproperties",
+        "usd_type": null
+      },
+      "karmarendersettings": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "engine",
+          "primpath"
+        ],
+        "role": "render",
+        "type_name": "karmarendersettings",
+        "usd_type": null
+      },
+      "light": {
+        "category": "Lop",
+        "gotchas": [
+          "The consolidated light LOP supersedes the H21-era per-shape lights (sphere/rect/disk/cylinder) — shape via the lighttype parm, so usd_type varies with it. createNode('light') resolves to light::2.0, whose UsdLux inputs are punycode-namespaced (xn__inputs*): per-shape dims at xn__inputsradius_mva / xn__inputswidth_zta / xn__inputsheight_mva / xn__inputslength_mva."
+        ],
+        "key_parms": [
+          "lighttype",
+          "primpath",
+          "xn__inputsexposure_vya",
+          "xn__inputsintensity_i0a"
+        ],
+        "role": "light",
+        "type_name": "light",
+        "usd_type": null
+      },
+      "materiallibrary": {
+        "category": "Lop",
+        "gotchas": [
+          "After creating materiallibrary, call matlib.cook(force=True) before creating child shader nodes, else createNode() returns None. (H21-era operational knowledge; NOT re-proved by the 22.0.368 template-walk probe.)"
+        ],
+        "key_parms": [
+          "matnode#",
+          "matpath#"
+        ],
+        "role": "material",
+        "type_name": "materiallibrary",
+        "usd_type": null
+      },
+      "merge": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [],
+        "role": "scene",
+        "type_name": "merge",
+        "usd_type": null
+      },
+      "mergepointinstancers": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "instances",
+          "primpath"
+        ],
+        "role": "scene",
+        "type_name": "mergepointinstancers",
+        "usd_type": null
+      },
+      "modifypointinstances": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "instances",
+          "prunemethod",
+          "soppath"
+        ],
+        "role": "scene",
+        "type_name": "modifypointinstances",
+        "usd_type": null
+      },
+      "mtlxstandard_surface": {
+        "category": "Vop",
+        "gotchas": [
+          "NOT a Lop type on 22.0.368 — resolves only in the Vop category (creation at /stage fails 'Invalid node type name'); create it INSIDE a materiallibrary as a child shader node."
+        ],
+        "key_parms": [],
+        "role": "material",
+        "type_name": "mtlxstandard_surface",
+        "usd_type": null
+      },
+      "null": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [],
+        "role": "geometry",
+        "type_name": "null",
+        "usd_type": null
+      },
+      "paintinstances": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "primpattern",
+          "protopattern"
+        ],
+        "role": "scene",
+        "type_name": "paintinstances",
+        "usd_type": null
+      },
+      "plane": {
+        "category": "Lop",
+        "gotchas": [
+          "NEW on 22.0.368 — the H21 catalog marked plane known_absent; it is now a real LOP type."
+        ],
+        "key_parms": [
+          "axis",
+          "length",
+          "width",
+          "t"
+        ],
+        "role": "geometry",
+        "type_name": "plane",
+        "usd_type": "Plane"
+      },
+      "pointinstancer": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "primpath",
+          "protopattern",
+          "protoreftype",
+          "soppath"
+        ],
+        "role": "geometry",
+        "type_name": "pointinstancer",
+        "usd_type": "PointInstancer"
+      },
+      "reference": {
+        "category": "Lop",
+        "gotchas": [
+          "filepath# is a multiparm template — created nodes expose instance 1 as filepath1."
+        ],
+        "key_parms": [
+          "filepath#",
+          "primpath",
+          "reftype"
+        ],
+        "role": "scene",
+        "type_name": "reference",
+        "usd_type": null
+      },
+      "retimeinstances": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "instances",
+          "retimemethod",
+          "soppath"
+        ],
+        "role": "scene",
+        "type_name": "retimeinstances",
+        "usd_type": null
+      },
+      "scatterinstances": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "protopattern",
+          "scattercount",
+          "scatterdensity",
+          "scatterseed"
+        ],
+        "role": "scene",
+        "type_name": "scatterinstances",
+        "usd_type": null
+      },
+      "sopimport": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "soppath"
+        ],
+        "role": "geometry",
+        "type_name": "sopimport",
+        "usd_type": null
+      },
+      "sphere": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "radius",
+          "t"
+        ],
+        "role": "geometry",
+        "type_name": "sphere",
+        "usd_type": "Sphere"
+      },
+      "splitpointinstancers": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "attribute",
+          "instancers",
+          "splitmethod"
+        ],
+        "role": "scene",
+        "type_name": "splitpointinstancers",
+        "usd_type": null
+      },
+      "sublayer": {
+        "category": "Lop",
+        "gotchas": [
+          "The H21-era 'position' parm is gone on 22.0.368 — use positionindex/positiontype; filepath# is a multiparm template (instance 1 is filepath1)."
+        ],
+        "key_parms": [
+          "filepath#",
+          "positionindex",
+          "positiontype"
+        ],
+        "role": "scene",
+        "type_name": "sublayer",
+        "usd_type": null
+      },
+      "usdrender_rop": {
+        "category": "Lop",
+        "gotchas": [],
+        "key_parms": [
+          "loppath",
+          "outputimage"
+        ],
+        "role": "render",
+        "type_name": "usdrender_rop",
+        "usd_type": null
+      }
+    },
+    "known_absent": {
+      "cylinderlight": {
+        "remediation": "no cylinderlight LOP on 22.0.368 (creation fails) — use the consolidated light LOP (createNode('light') -> light::2.0) and set its lighttype parm to the cylinder shape"
+      },
+      "disklight": {
+        "remediation": "no disklight LOP on 22.0.368 (creation fails) — use the consolidated light LOP (createNode('light') -> light::2.0) and set its lighttype parm to the disk shape"
+      },
+      "grid": {
+        "remediation": "there is NO grid LOP on 22.0.368 (grid is a Sop type) — use the plane LOP (a real LOP type on 22.0.368) or a cube scaled flat"
+      },
+      "instancer": {
+        "remediation": "gone from the 22.0.368 type table — createNode('instancer') silently aliases to copytopoints (a silent-success trap); author the canonical copytopoints (or pointinstancer for PointInstancer prims) instead"
+      },
+      "rectlight": {
+        "remediation": "no rectlight LOP on 22.0.368 (creation fails) — use the consolidated light LOP (createNode('light') -> light::2.0) and set its lighttype parm to the rectangle shape"
+      },
+      "spherelight": {
+        "remediation": "no spherelight LOP on 22.0.368 (creation fails) — use the consolidated light LOP (createNode('light') -> light::2.0) and set its lighttype parm to the sphere shape"
+      }
+    },
+    "ordering_rules": [
+      {
+        "detail": "assignmaterial binds material prims that must be authored upstream — usually by a materiallibrary (cook it, matlib.cook(force=True), before its shaders resolve), or brought in by a reference/sublayer composition arc; materials may also already exist in a pre-composed stage.",
+        "id": "assignmaterial_requires_material_source",
+        "on_type": "assignmaterial",
+        "relation": "upstream",
+        "requires_type": "materiallibrary",
+        "satisfied_by": [
+          "reference",
+          "sublayer"
+        ]
+      }
+    ],
+    "recipes": [
+      {
+        "name": "solaris_render_scene",
+        "note": "geo -> matlib (+child shader, cooked) -> assignmaterial -> camera -> light -> karmarendersettings (karmarenderproperties is deprecated on 22.0.368) -> OUTPUT null",
+        "sequence": [
+          "sphere",
+          "materiallibrary",
+          "assignmaterial",
+          "camera",
+          "domelight",
+          "karmarendersettings",
+          "null"
+        ]
+      }
+    ]
+  },
+  "houdini_version": "22.0.368",
+  "probe_confirmed_types": [
+    "assignmaterial",
+    "camera",
+    "copytopoints",
+    "domelight",
+    "extractinstances",
+    "karmarenderproperties",
+    "light",
+    "materiallibrary",
+    "merge",
+    "mergepointinstancers",
+    "modifypointinstances",
+    "null",
+    "paintinstances",
+    "pointinstancer",
+    "reference",
+    "sopimport",
+    "splitpointinstancers",
+    "sublayer"
+  ],
+  "schema": "lop_solaris_knowledge/v1",
+  "source_digest": "c6808219f54c721373c66f1020c83e80"
+}

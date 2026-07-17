@@ -1,17 +1,24 @@
 {
  "schema": "flywheel_findings/v1",
  "task": "U.5",
- "catalog": {
-  "path": "python/synapse/cognitive/tools/data/lop_solaris_knowledge_21.json",
-  "houdini_version": "21.0.671",
-  "blake2b": "685ced35bb371bcc9973215345d126a8"
- },
+ "catalogs": [
+  {
+   "path": "python/synapse/cognitive/tools/data/lop_solaris_knowledge_21.json",
+   "houdini_version": "21.0.671",
+   "blake2b": "685ced35bb371bcc9973215345d126a8"
+  },
+  {
+   "path": "python/synapse/cognitive/tools/data/lop_solaris_knowledge_22.json",
+   "houdini_version": "22.0.368",
+   "blake2b": "3f88cdf088eb80bb0ed026feea5b5b70"
+  }
+ ],
  "summary": {
-  "total": 20,
+  "total": 48,
   "critical": 0,
   "by_kind": {
-   "authored-only": 10,
-   "probe-confirmed": 10
+   "authored-only": 20,
+   "probe-confirmed": 28
   }
  },
  "findings": [
@@ -19,121 +26,337 @@
    "severity": "INFO",
    "kind": "authored-only",
    "detail": "'cube' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
-   "type_name": "cube"
+   "type_name": "cube",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "authored-only",
    "detail": "'cylinderlight' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
-   "type_name": "cylinderlight"
+   "type_name": "cylinderlight",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "authored-only",
    "detail": "'disklight' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
-   "type_name": "disklight"
+   "type_name": "disklight",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "authored-only",
    "detail": "'distantlight' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
-   "type_name": "distantlight"
+   "type_name": "distantlight",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "authored-only",
    "detail": "'edit' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
-   "type_name": "edit"
+   "type_name": "edit",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "authored-only",
    "detail": "'mtlxstandard_surface' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
-   "type_name": "mtlxstandard_surface"
+   "type_name": "mtlxstandard_surface",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "authored-only",
    "detail": "'rectlight' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
-   "type_name": "rectlight"
+   "type_name": "rectlight",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "authored-only",
    "detail": "'sphere' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
-   "type_name": "sphere"
+   "type_name": "sphere",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "authored-only",
    "detail": "'spherelight' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
-   "type_name": "spherelight"
+   "type_name": "spherelight",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "authored-only",
    "detail": "'usdrender_rop' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
-   "type_name": "usdrender_rop"
+   "type_name": "usdrender_rop",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "probe-confirmed",
    "detail": "'assignmaterial' authored entry is also present in the live probe",
-   "type_name": "assignmaterial"
+   "type_name": "assignmaterial",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "probe-confirmed",
    "detail": "'camera' authored entry is also present in the live probe",
-   "type_name": "camera"
+   "type_name": "camera",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "probe-confirmed",
    "detail": "'domelight' authored entry is also present in the live probe",
-   "type_name": "domelight"
+   "type_name": "domelight",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "probe-confirmed",
    "detail": "'karmarenderproperties' authored entry is also present in the live probe",
-   "type_name": "karmarenderproperties"
+   "type_name": "karmarenderproperties",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "probe-confirmed",
    "detail": "'materiallibrary' authored entry is also present in the live probe",
-   "type_name": "materiallibrary"
+   "type_name": "materiallibrary",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "probe-confirmed",
    "detail": "'merge' authored entry is also present in the live probe",
-   "type_name": "merge"
+   "type_name": "merge",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "probe-confirmed",
    "detail": "'null' authored entry is also present in the live probe",
-   "type_name": "null"
+   "type_name": "null",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "probe-confirmed",
    "detail": "'reference' authored entry is also present in the live probe",
-   "type_name": "reference"
+   "type_name": "reference",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "probe-confirmed",
    "detail": "'sopimport' authored entry is also present in the live probe",
-   "type_name": "sopimport"
+   "type_name": "sopimport",
+   "catalog": "lop_solaris_knowledge_21.json"
   },
   {
    "severity": "INFO",
    "kind": "probe-confirmed",
    "detail": "'sublayer' authored entry is also present in the live probe",
-   "type_name": "sublayer"
+   "type_name": "sublayer",
+   "catalog": "lop_solaris_knowledge_21.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'cube' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "cube",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'distantlight' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "distantlight",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'edit' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "edit",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'karmarendersettings' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "karmarendersettings",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'mtlxstandard_surface' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "mtlxstandard_surface",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'plane' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "plane",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'retimeinstances' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "retimeinstances",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'scatterinstances' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "scatterinstances",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'sphere' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "sphere",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "authored-only",
+   "detail": "'usdrender_rop' authored from corpus prose (not in the U.1 probe subset — expected for un-probed types)",
+   "type_name": "usdrender_rop",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'assignmaterial' authored entry is also present in the live probe",
+   "type_name": "assignmaterial",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'camera' authored entry is also present in the live probe",
+   "type_name": "camera",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'copytopoints' authored entry is also present in the live probe",
+   "type_name": "copytopoints",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'domelight' authored entry is also present in the live probe",
+   "type_name": "domelight",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'extractinstances' authored entry is also present in the live probe",
+   "type_name": "extractinstances",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'karmarenderproperties' authored entry is also present in the live probe",
+   "type_name": "karmarenderproperties",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'light' authored entry is also present in the live probe",
+   "type_name": "light",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'materiallibrary' authored entry is also present in the live probe",
+   "type_name": "materiallibrary",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'merge' authored entry is also present in the live probe",
+   "type_name": "merge",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'mergepointinstancers' authored entry is also present in the live probe",
+   "type_name": "mergepointinstancers",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'modifypointinstances' authored entry is also present in the live probe",
+   "type_name": "modifypointinstances",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'null' authored entry is also present in the live probe",
+   "type_name": "null",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'paintinstances' authored entry is also present in the live probe",
+   "type_name": "paintinstances",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'pointinstancer' authored entry is also present in the live probe",
+   "type_name": "pointinstancer",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'reference' authored entry is also present in the live probe",
+   "type_name": "reference",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'sopimport' authored entry is also present in the live probe",
+   "type_name": "sopimport",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'splitpointinstancers' authored entry is also present in the live probe",
+   "type_name": "splitpointinstancers",
+   "catalog": "lop_solaris_knowledge_22.json"
+  },
+  {
+   "severity": "INFO",
+   "kind": "probe-confirmed",
+   "detail": "'sublayer' authored entry is also present in the live probe",
+   "type_name": "sublayer",
+   "catalog": "lop_solaris_knowledge_22.json"
   }
  ]
 }
