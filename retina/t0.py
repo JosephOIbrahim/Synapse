@@ -32,27 +32,22 @@ T0 imports zero ``hou`` and (at M1) zero ``cv2`` — it reads bytes, not pixels.
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
-from . import EVENT_VERSION, PERCEPTION_CHANNEL
+from .events import (
+    CheckVerdict,
+    emit_verdict,  # re-exported: retina.t0.emit_verdict stays a valid import
+    make_check as _check,
+    make_event,
+)
 from .exr_header import ExrHeader, ExrHeaderError, read_exr_header
 
 TIER = 0
 
-# A check verdict: pass True/False, or None for honest "could not run".
-CheckVerdict = Optional[bool]
-
 # Signature of the EXR reader (injectable for tests / future OIIO swap).
 ExrReader = Callable[[str], ExrHeader]
-
-
-def _check(name: str, passed: CheckVerdict, detail: str, **extra: Any) -> Dict[str, Any]:
-    d: Dict[str, Any] = {"name": name, "pass": passed, "detail": detail}
-    d.update(extra)
-    return d
 
 
 def _declared_products(manifest: Dict[str, Any]) -> List[str]:
@@ -307,47 +302,19 @@ def _aov_present(aov: str, present: set) -> bool:
     return False
 
 
-def _roll_up(checks: List[Dict[str, Any]]) -> str:
-    """fail > inconclusive > pass — a single red fails the frame; an inconclusive
-    never masquerades as green."""
-    verdicts = [c["pass"] for c in checks]
-    if any(v is False for v in verdicts):
-        return "fail"
-    if any(v is None for v in verdicts):
-        return "inconclusive"
-    return "pass"
-
-
 def _event(manifest: Dict[str, Any], checks: List[Dict[str, Any]], now: str) -> Dict[str, Any]:
+    # T0's proof is the receipt trail itself: the manifest + the first product on
+    # disk. Higher tiers (T1+) attach rendered proof images. Envelope shape +
+    # roll-up come from the shared event layer so T0/T1 stay siblings by
+    # construction.
     products = _declared_products(manifest)
-    return {
-        "ch": PERCEPTION_CHANNEL,
-        "v": EVENT_VERSION,
-        "tier": TIER,
-        "claim": manifest.get("claim", "render:file_truth"),
-        "checks": checks,
-        "verdict": _roll_up(checks),
-        # T0's proof is the receipt trail itself: the manifest + the first
-        # product on disk. Higher tiers (T1+) attach rendered proof images.
-        "proof": manifest.get("manifest_path") or (products[0] if products else None),
-        "at": now,
-    }
-
-
-def emit_verdict(event: Dict[str, Any], jsonl_path: str | Path) -> None:
-    """Append one verdict event as a line to the sidecar JSONL (blueprint §7:
-    sidecar JSONL persistence until the customData RFC lands — NO USD writes).
-
-    Append-only by construction, so a partial line is the worst failure mode; we
-    write the whole JSON in one ``write`` call under a single open handle to keep
-    each record atomic at the line level.
-    """
-    p = Path(jsonl_path)
-    if p.parent and not p.parent.exists():
-        p.parent.mkdir(parents=True, exist_ok=True)
-    line = json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n"
-    with p.open("a", encoding="utf-8") as fh:
-        fh.write(line)
+    return make_event(
+        tier=TIER,
+        claim=manifest.get("claim", "render:file_truth"),
+        checks=checks,
+        proof=manifest.get("manifest_path") or (products[0] if products else None),
+        now=now,
+    )
 
 
 def verify_and_emit(

@@ -1,0 +1,43 @@
+# RETINA worker venv — the perception co-processor's OWN interpreter.
+#
+# The worker runs OUT OF PROCESS in its own venv, host-ABI-independent by
+# construction (blueprint P5): "The eye never destabilizes the hand. Zero cv2
+# imports host-side, ever." Never install these into Houdini's Python — the
+# zero-cv2 host lint (tests/test_retina_boundary.py) forbids cv2 in host scope.
+#
+# CREATE IT (never commit it — retina/.venv is .gitignored):
+#   python retina/setup_venv.py            # portable
+#   pwsh   retina/setup_venv.ps1           # Windows
+# then:
+#   retina/.venv/Scripts/python -m pytest tests/test_retina_t1.py
+#
+# The abi3 wheel spans cp37+ (one wheel for cp311/cp313/3.14), so ANY local
+# interpreter can seed the venv — host Houdini Python is 3.13.10 (never assume
+# cp311), local dev is 3.14, CI is 3.11/3.14. win_amd64 is the verified platform;
+# CI (ubuntu/macos) never creates this venv.
+
+# --- OpenCV: the T1 classical metric engine -------------------------------
+# Blueprint §3 pin (abi3 — one wheel, all ABIs; VERIFIED on PyPI as
+# opencv_python_headless-5.0.0.93-cp37-abi3-win_amd64.whl, 43.8 MB, Jul 2 2026).
+# headless: NO Qt/GUI deps — this is a compute worker, not a viewer.
+# FALLBACK (blueprint §3/§8, verbatim): "4.13.x is the API-stable fallback for
+# every op named in this doc." Every cv2 op T1 uses (GaussianBlur, absdiff,
+# threshold, morphologyEx, dilate, getStructuringElement) is stable across both.
+# If 5.0.0.93 becomes uninstallable on your platform, the sanctioned substitute
+# is:  opencv-python-headless>=4.13,<5
+opencv-python-headless==5.0.0.93
+
+# --- OpenImageIO: the EXR ingest path -------------------------------------
+# Blueprint §3: "OpenImageIO for ingest ... cv2.imread is explicitly not the EXR
+# path (CVE-gated, color-blind)." The blueprint names OIIO but pins no version;
+# FORGE pins the installable wheel here. OIIO's PyPI wheel availability is
+# platform/interpreter-dependent — where no wheel resolves, the worker still runs
+# every cv2 T1 metric (they operate on numpy arrays); only the EXR file-read leg
+# is OIIO-owed on that platform. Houdini ships OIIO natively, so a hython-seeded
+# venv brings its own (pin ignored there — inherited from the DCC).
+# Build-time-resolved wheel (FORGE, verified installable on this build):
+#   openimageio-3.1.15.0-cp314-cp314-win_amd64.whl  (Python 3.14, win_amd64)
+OpenImageIO==3.1.15.0
+
+# --- test runner: run the real cv2/OIIO tests inside the venv --------------
+pytest>=8

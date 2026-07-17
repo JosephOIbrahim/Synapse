@@ -1,0 +1,52 @@
+# RETINA T1 tolerance profiles — verification governance (blueprint §7).
+#
+# WHY THIS FILE EXISTS
+#   GPU renders are not bit-stable. QC compares like-for-like on denoiser policy
+#   and asserts THRESHOLDS, never equality. Tolerances are versioned in-repo and
+#   ratified on the U.1 pattern (a change here is a ratified change, not a silent
+#   tuning knob).
+#
+# COMMANDMENT 7 EXTENDS TO THRESHOLDS
+#   A threshold is a test assertion. It is NEVER loosened to green a verdict; a
+#   red verdict is fixed forward in the scene or the contract. The worker reads
+#   these values statically and never relaxes one at runtime.
+#
+# ALTITUDE
+#   The values below are the blueprint's own ILLUSTRATIVE defaults (§3 event
+#   shape prints leak_px/eps=32 and ssim_min=0.995; §5 prints 960×540) — starting
+#   points at the document's public altitude, NOT tuned production thresholds.
+#   Real per-renderer tuning is ratified before any QC gating goes live.
+#
+# LAYOUT
+#   [default] holds every knob. A [<renderer>.<denoiser_policy>.<sample_tier>]
+#   table overrides only the knobs that differ; resolve_profile() merges it over
+#   [default]. Missing renderer/policy/tier → [default] unchanged.
+
+schema = "retina_qc_profiles/v1"
+
+[default]
+# change mask (§5 step 2): linear-plane abs-diff floor + morphological cleanup
+diff_threshold = 0.02
+morph_radius = 1
+# containment (§5 step 4): leak-pixel epsilon + AA-edge matte dilation
+leak_eps = 32
+matte_dilation = 1
+# SSIM (metric 5 + ssim_outside): structural-similarity floor + data range
+ssim_min = 0.995
+ssim_data_range = 1.0
+# exposure / clip / firefly census
+black_threshold = 0.001
+blown_threshold = 0.999
+black_ratio = 0.95
+clip_ratio = 0.05
+firefly_std_devs = 10.0
+
+# Karma XPU, denoised, low sample tier: denoiser smear + GPU noise widen the
+# floor. Like-for-like: QC cooks compare denoised-vs-denoised only.
+[karma_xpu.denoised.low]
+ssim_min = 0.990
+diff_threshold = 0.03
+
+# Karma CPU, raw (no denoiser), high sample tier: tightest floor.
+[karma_cpu.raw.high]
+ssim_min = 0.997
