@@ -30,7 +30,30 @@ provenance — is SCRIBE's, and its load-bearing claims were verified in this di
 
 ---
 
-## OPEN DECISIONS (human-only rulings — options stated, no ruling invented)
+## OPEN DECISIONS — RESOLVED 2026-07-17
+
+These scope/naming calls were surfaced by the analysts and **ruled by Joe on 2026-07-17**
+(harness-architect debt pass). Rulings:
+
+1. **CHOP scope → NON-GOAL.** Documented out-of-scope; the 11 byproduct rows are not partial
+   coverage. Reversible in one line if audio-reactive / motion-graphics demand appears.
+2. **DOP / MPM / sim → SCOPED RECON, then FREEZE.** Non-goal for *new* sim capability — with one
+   exception: a single recon probe over the 4 SOP solvers the shipped `fx_recipes.py` already
+   emits (`mpmsolver`/`vellumsolver`/`pyrosolver`/`rbdbulletsolver`) — parms + wiring + one smoke
+   cook each — to ground the existing recipe surface and answer the MPM question with real data.
+   Hard stop after; not a frontier commitment. (Queued ratified in `harness/state/flywheel_queue.json`.)
+3. **Copernicus → RULED.** Verb name = **`cops_terrain_setup`** (OD-C — confirms the spec's
+   provisional name, no rename). Ride-alongs locked: OD-A = the new tools fold into a `cops-3`
+   addendum wave (count 115→118 is test-forced); OD-B = reaction-diffusion rides C.4 (title 4→5
+   tools); OD-D = C.4 subsumes the W.4b(3) dead-code cleanup. All recorded in
+   `docs/SYNAPSE_COPERNICUS_EXPANSION.md`.
+4. **OpenPBR posture → ADDITIVE, PROBE-GATED.** Add `mtlxopen_pbr_surface` as an available surface
+   behind a live wiring probe; keep `mtlxstandard_surface` the default until proven; flip the
+   default later in its own cycle. (Probe queued ratified in `harness/state/flywheel_queue.json`.)
+
+The original decision framing + the options the analysts surfaced are preserved below for the record.
+
+### Original decision framing (as surfaced)
 
 These are scope/naming calls the analysts surfaced that only the human can make. The roadmap
 below assumes nothing about their outcome.
