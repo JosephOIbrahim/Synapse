@@ -411,8 +411,8 @@
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md"
       ],
-      "ratified": false,
-      "note": "Deposited from the U.1-H22 fold crucible (0 showstoppers). Same class as U.1, different file. Human flip. | C-U5 (proof-leg) 2026-07-17: this IS the blueprint §G1a 'U.5-H22 context fold' / SPEC C-U5 Mile-1 cycle — queue ID wins, no duplicate created. Governing spec: docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md §G1a + SPEC.md dispatch row. Scope: give lop_knowledge.py the _running_houdini_major()/_pkg_catalog_path() resolver pattern (mirror wiring.py) + hython re-probe -> lop_solaris_knowledge_22.json (roles/USD types/key parms/ordering/known_absent; renamed instancers in, stale per-shape lights out) + fail-loud on missing per-major file; P3 rider: extend _SOLARIS_NODE_ORDER to the new instancing family. Grounding CLEAN (docs/reviews/proof-leg-grounding-2026-07-17.md). gate=ratify; ratified:false unchanged — FORGE waits for Joe's flip."
+      "ratified": true,
+      "note": "Deposited from the U.1-H22 fold crucible (0 showstoppers). Same class as U.1, different file. Human flip. | C-U5 (proof-leg) 2026-07-17: this IS the blueprint §G1a 'U.5-H22 context fold' / SPEC C-U5 Mile-1 cycle — queue ID wins, no duplicate created. Governing spec: docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md §G1a + SPEC.md dispatch row. Scope: give lop_knowledge.py the _running_houdini_major()/_pkg_catalog_path() resolver pattern (mirror wiring.py) + hython re-probe -> lop_solaris_knowledge_22.json (roles/USD types/key parms/ordering/known_absent; renamed instancers in, stale per-shape lights out) + fail-loud on missing per-major file; P3 rider: extend _SOLARIS_NODE_ORDER to the new instancing family. Grounding CLEAN (docs/reviews/proof-leg-grounding-2026-07-17.md). gate=ratify; ratified:false unchanged — FORGE waits for Joe's flip. | RATIFIED: human (Joe) — 2026-07-17 \"everything is pre-ratified\" (Claude as instrument). C-U5 FORGE not yet dispatched: the major-aware resolver (mirror wiring.py) is pure-Python buildable, but lop_solaris_knowledge_22.json needs an H22 hython re-probe (probe-gated, not ratification-gated)."
     },
     {
       "id": "U.1b-H22-resolver-hardening",
@@ -503,13 +503,13 @@
     {
       "id": "RETINA.M1b-t0-sibling-honesty",
       "title": "RETINA.M1 crucible follow-up (sev-2, one line): T0 sibling honesty gap in retina/t0.py — when ALL declared products are missing (existing==[]), the resolution (~L239-249) and fingerprint_receipt (~L274-283) per-checks report pass=True (detail string is honest \"no readable product to check...\" but the BOOLEAN is wrong) while aovs correctly returns None. Root cause: the \"if not res_results and unreadable\" guard cannot fire when unreadable is also empty; aovs has the correct \"if not existing\" guard, resolution/fingerprint do not. The exact RETINA thesis violation (\"a check must not claim what it couldnt verify\") the M1 repair targeted, relocated to the all-missing edge. BOUNDED: event-level verdict is still \"fail\" (products_exist=False dominates) so no false event GREEN ships — but the dishonest per-check boolean persists in the receipt JSONL, and the receipt IS the product. Fix: add \"if not existing: res_pass = None\" (+ fp equivalent), mirroring the aovs guard.",
-      "status": "candidate",
+      "status": "merged",
       "evidence": [
         "docs/SYNAPSE_RETINA_BLUEPRINT.md",
         "docs/reviews/retina-reconciliation-2026-07-16.md"
       ],
-      "ratified": false,
-      "note": "Deposited from the RETINA.M1 Pass-2 crucible (MERGE_READY, 0 showstoppers — the independent reviewer ruled it bounded because no false event-level verdict ships). Human flip; one-line fix worth landing before M2 builds on T0."
+      "ratified": true,
+      "note": "Deposited from the RETINA.M1 Pass-2 crucible (MERGE_READY, 0 showstoppers — the independent reviewer ruled it bounded because no false event-level verdict ships). Human flip; one-line fix worth landing before M2 builds on T0. | RATIFIED: human (Joe) — 2026-07-17 \"everything is pre-ratified\" (Claude as instrument). BUILT + regression-tested + merged this session (Opus): retina/t0.py all-missing guard now mirrors the aovs `not existing` guard (resolution + fingerprint_receipt return None, not a vacuous True, when every product is missing); tests/test_retina_t0.py::test_all_products_missing_header_checks_inconclusive_not_pass pins it. T0 receipt honesty closed — M2 may build on it."
     },
     {
       "id": "M.DOP-recon-2026-07-17",
@@ -543,8 +543,8 @@
         "docs/reviews/h22-per-context-postmortem-2026-07-17.md",
         "docs/reviews/proof-leg-grounding-2026-07-17.md"
       ],
-      "ratified": false,
-      "note": "Deposited by harness-architect (FORGE) 2026-07-17 from the proof-leg SPEC dispatch table (Mile 1, C-MTLX). Grounding pass CLEAN 2026-07-17. Governing spec: blueprint §G1b + SPEC.md C-MTLX row. Substitute MUST be probe-verified before emission; conformance fixture updated; suite >= floor; commit note: standalone-before-usd-2, goldens capture fixed truth later. gate=ratify — FORGE waits for Joe's flip. ratified:false (resting state)."
+      "ratified": true,
+      "note": "Deposited by harness-architect (FORGE) 2026-07-17 from the proof-leg SPEC dispatch table (Mile 1, C-MTLX). Grounding pass CLEAN 2026-07-17. Governing spec: blueprint §G1b + SPEC.md C-MTLX row. Substitute MUST be probe-verified before emission; conformance fixture updated; suite >= floor; commit note: standalone-before-usd-2, goldens capture fixed truth later. gate=ratify — FORGE waits for Joe's flip. ratified:false (resting state). | RATIFIED: human (Joe) — 2026-07-17 \"everything is pre-ratified\" (Claude as instrument). C-MTLX FORGE not yet dispatched: substitute (mtlxvolume/mtlxvolumematerial) is VERIFIED-ARTIFACT (N-6 dump) so the swap is buildable next; a live re-verify is owed on bridge-up before the merge-ready claim."
     }
   ]
 }

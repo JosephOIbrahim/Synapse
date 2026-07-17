@@ -237,7 +237,11 @@ def check_manifest_against_disk(
     # If no product was readable, header-derived checks are inconclusive, never
     # pass — even when a resolution/AOV list was declared.
     if declared_res:
-        if not res_results and unreadable:
+        # No product readable — or none present at all — means resolution was
+        # never verified; report inconclusive, never a silent pass (M1b: mirror
+        # the aovs `not existing` guard; the receipt must not claim what it
+        # could not check).
+        if not existing or (not res_results and unreadable):
             res_pass = None
         checks.append(
             _check(
@@ -272,7 +276,9 @@ def check_manifest_against_disk(
         checks.append(_check("aovs", None, "manifest declared no AOVs"))
 
     if declared_fp:
-        if not fp_detail_bits and unreadable:
+        # Same M1b guard: no readable product (or none at all) => the fingerprint
+        # receipt was never checked; inconclusive, not a pass.
+        if not existing or (not fp_detail_bits and unreadable):
             fp_pass = None
         checks.append(
             _check(

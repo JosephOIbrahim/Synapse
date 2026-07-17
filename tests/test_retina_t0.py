@@ -64,6 +64,26 @@ def test_missing_product_fails(tmp_path):
     assert _named_check(event, "products_exist")["pass"] is False
 
 
+def test_all_products_missing_header_checks_inconclusive_not_pass(tmp_path):
+    """M1b regression: when EVERY declared product is missing, the header-derived
+    checks (resolution / aovs / fingerprint_receipt) were never verified — they
+    must report inconclusive (``pass is None``), never a vacuous ``True``. The
+    event still fails (products_exist dominates), but the receipt JSONL must not
+    carry a dishonest per-check pass. Before the fix, resolution + fingerprint
+    reported True here — only aovs guarded ``not existing``."""
+    missing = str(tmp_path / "never_rendered.exr")
+    manifest = _manifest([missing], resolution=[960, 540], aovs=["primid"],
+                         fingerprint="rm1abc123abc123ab")
+    event = check_manifest_against_disk(manifest, now=NOW)
+
+    assert event["verdict"] == "fail"
+    assert _named_check(event, "products_exist")["pass"] is False
+    # the receipt must NOT claim a per-check pass it never verified:
+    assert _named_check(event, "resolution")["pass"] is None
+    assert _named_check(event, "aovs")["pass"] is None
+    assert _named_check(event, "fingerprint_receipt")["pass"] is None
+
+
 def test_empty_product_fails(tmp_path):
     product = tmp_path / "black.0001.exr"
     product.write_bytes(b"")  # 0 bytes
