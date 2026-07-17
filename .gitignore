@@ -118,3 +118,12 @@ harness/notes/_prov_live.json
 .claude/probe_delta.md
 .claude/mcp_surface_delta.json
 harness/state/wheel_cache/
+
+# harness/state local runtime — the *.example templates ARE tracked; these real
+# files are per-machine, not shared project truth. drop = local H22 capture
+# (harness/CLAUDE.md designs for its absence -> live fallback); posture = local
+# deployment posture; *_readiness_verdict = generated check output.
+harness/state/drop.json
+harness/state/posture.json
+harness/state/release_readiness_verdict.json
+harness/state/studio_readiness_verdict.json
