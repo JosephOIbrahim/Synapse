@@ -20,7 +20,10 @@ Contract
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
+
+if TYPE_CHECKING:
+    from synapse.cognitive.interfaces import IToolProvider
 
 
 class ProviderError(RuntimeError):
@@ -38,8 +41,12 @@ def register(provider_id: str, factory: Callable[[], Any]) -> None:
     _INSTANCES.pop(provider_id, None)
 
 
-def get(provider_id: str) -> Any:
-    """Resolve a provider, constructing (and caching) it on first use."""
+def get(provider_id: str) -> IToolProvider:
+    """Resolve a provider, constructing (and caching) it on first use.
+
+    Return type is the D-H22-1 provider contract (cognitive.interfaces.
+    IToolProvider); the annotation is lazy (``from __future__ import
+    annotations``) so no runtime import of cognitive is taken here."""
     if provider_id in _INSTANCES:
         return _INSTANCES[provider_id]
     factory = _FACTORIES.get(provider_id)

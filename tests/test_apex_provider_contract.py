@@ -11,6 +11,7 @@ import json
 import pytest
 
 import synapse.providers as providers
+from synapse.cognitive.interfaces import IToolProvider
 from synapse.providers import ProviderError
 from synapse.providers.apex_mcp import (
     ApexMCPProvider,
@@ -136,3 +137,37 @@ def test_mock_serves_the_recorded_surface(registry):
 def test_mock_unknown_tool_fails_loud(registry):
     with pytest.raises(ProviderError):
         registry.get("apex_mcp").call_tool("mutate_scene", {})
+
+
+# ── IToolProvider contract (M1 — the provider seam, typed) ───────────────────
+# docs/SYNAPSE_MCP_SEAM_HARNESS_v1.md: ApexMCPProvider satisfies IToolProvider
+# UNMODIFIED. Typed from the observed shape (id / list_tools / call_tool), never
+# the blueprint sketch — the class attribute is `id`, not `provider_id`.
+
+
+def test_apex_provider_satisfies_itoolprovider_unmodified(registry):
+    """The M1 deliverable: ApexMCPProvider honours the typed contract with NO
+    change to the provider itself."""
+    assert isinstance(registry.get("apex_mcp"), IToolProvider)
+
+
+def test_itoolprovider_static_binding():
+    """Belt-and-suspenders against signature drift: this assignment type-checks
+    (under a static checker) iff ApexMCPProvider structurally matches the Protocol."""
+    _p: IToolProvider = ApexMCPProvider()
+    assert _p.id == "apex_mcp"
+
+
+class _NotAProvider:
+    """Has ``id`` + ``list_tools`` but NO ``call_tool`` — deliberately non-conforming."""
+
+    id = "broken"
+
+    def list_tools(self):
+        return []
+
+
+def test_itoolprovider_rejects_non_conforming_stub():
+    """The Protocol must BITE: a provider missing ``call_tool`` is not an
+    IToolProvider. If this passed, the contract would be decorative (harness Leg 3)."""
+    assert not isinstance(_NotAProvider(), IToolProvider)
