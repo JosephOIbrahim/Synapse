@@ -448,13 +448,13 @@
     {
       "id": "RETINA.M1",
       "title": "M1: perception-truth EXPLORE probe -> committed perception truth catalog (Karma integer object-ID render var CPU+XPU; ROP pre/post-render script params; husk callback surface; Copernicus buffer<->numpy readback; flipbook/viewport-grab GUI-only symbols) + manifest writer + .done sentinel + T0 file-truth live (kills the BL-007 blind-spot class). Gate: assayer on 22.0.368.",
-      "status": "needs_repair",
+      "status": "merged",
       "evidence": [
         "docs/SYNAPSE_RETINA_BLUEPRINT.md",
         "docs/reviews/retina-reconciliation-2026-07-16.md"
       ],
       "ratified": true,
-      "note": "RATIFIED: human (Joe) — 2026-07-16 \"Administer this blueprint\" directive (SYNAPSE_RETINA_BLUEPRINT v1.0); RETINA miles ratified by Claude as instrument, gated per blueprint §9 (port-wave discipline end-to-end) | SEQUENCING RULING DUE AT DISPATCH (reconciliation §4.1): M1 hooks touch the render-submit path the queued render port wave will golden-pin — land hooks BEFORE that wave (fix-before-freeze) or ride a post-wave cycle. HDK/HAPI cross-ref agent findings (reconciliation §5) aim the probes; the live catalog decides. NOTHING in the blueprint INFERENCE column is coded against until it appears in the catalog. | NEEDS_REPAIR 2026-07-16 (worktree commit a28570c): crucible SHOWSTOPPER — the .done sentinel is DEAD on the live husk path (runs only under if __name__==\"__main__\" but husk execs --postframe-script files with __name__==\"builtins\") so no .done drops and T0 permanently FALSE-FAILS good renders (the render receipt lying about honest renders) + docstrings falsely claim it fires; plus T0 resolution returns pass=True on no-dataWindow (should be inconclusive), an env-restore leak, and test-theater (sentinel tests never exercise the husk namespace). Catalog perception_truth_22.0.368.json also left untracked (owed per blueprint §6). Pass-2 repair dispatched (retina-m1-repair): fire run() under husk namespace + real husk-surface test + T0 inconclusive-on-no-dataWindow + env restore + commit the catalog."
+      "note": "RATIFIED: human (Joe) — 2026-07-16 \"Administer this blueprint\" directive (SYNAPSE_RETINA_BLUEPRINT v1.0); RETINA miles ratified by Claude as instrument, gated per blueprint §9 (port-wave discipline end-to-end) | SEQUENCING RULING DUE AT DISPATCH (reconciliation §4.1): M1 hooks touch the render-submit path the queued render port wave will golden-pin — land hooks BEFORE that wave (fix-before-freeze) or ride a post-wave cycle. HDK/HAPI cross-ref agent findings (reconciliation §5) aim the probes; the live catalog decides. NOTHING in the blueprint INFERENCE column is coded against until it appears in the catalog. | NEEDS_REPAIR 2026-07-16 (worktree commit a28570c): crucible SHOWSTOPPER — the .done sentinel is DEAD on the live husk path (runs only under if __name__==\"__main__\" but husk execs --postframe-script files with __name__==\"builtins\") so no .done drops and T0 permanently FALSE-FAILS good renders (the render receipt lying about honest renders) + docstrings falsely claim it fires; plus T0 resolution returns pass=True on no-dataWindow (should be inconclusive), an env-restore leak, and test-theater (sentinel tests never exercise the husk namespace). Catalog perception_truth_22.0.368.json also left untracked (owed per blueprint §6). Pass-2 repair dispatched (retina-m1-repair): fire run() under husk namespace + real husk-surface test + T0 inconclusive-on-no-dataWindow + env restore + commit the catalog. | MERGED to master 2026-07-16 (Pass-2 commit 7dea6b0 via merge f9032e4, pre-approval); Pass-1 correctly REJECTED (dead husk sentinel), Pass-2 assayer live-proved the .done drops on a real render + T0 three-way honesty + receipt round-trip; post-merge suite 4436/0/97."
     },
     {
       "id": "RETINA.M2",
@@ -499,6 +499,17 @@
       ],
       "ratified": true,
       "note": "RATIFIED: human (Joe) — 2026-07-16 \"Administer this blueprint\" directive (SYNAPSE_RETINA_BLUEPRINT v1.0); RETINA miles ratified by Claude as instrument, gated per blueprint §9 (port-wave discipline end-to-end)"
+    },
+    {
+      "id": "RETINA.M1b-t0-sibling-honesty",
+      "title": "RETINA.M1 crucible follow-up (sev-2, one line): T0 sibling honesty gap in retina/t0.py — when ALL declared products are missing (existing==[]), the resolution (~L239-249) and fingerprint_receipt (~L274-283) per-checks report pass=True (detail string is honest \"no readable product to check...\" but the BOOLEAN is wrong) while aovs correctly returns None. Root cause: the \"if not res_results and unreadable\" guard cannot fire when unreadable is also empty; aovs has the correct \"if not existing\" guard, resolution/fingerprint do not. The exact RETINA thesis violation (\"a check must not claim what it couldnt verify\") the M1 repair targeted, relocated to the all-missing edge. BOUNDED: event-level verdict is still \"fail\" (products_exist=False dominates) so no false event GREEN ships — but the dishonest per-check boolean persists in the receipt JSONL, and the receipt IS the product. Fix: add \"if not existing: res_pass = None\" (+ fp equivalent), mirroring the aovs guard.",
+      "status": "candidate",
+      "evidence": [
+        "docs/SYNAPSE_RETINA_BLUEPRINT.md",
+        "docs/reviews/retina-reconciliation-2026-07-16.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the RETINA.M1 Pass-2 crucible (MERGE_READY, 0 showstoppers — the independent reviewer ruled it bounded because no false event-level verdict ships). Human flip; one-line fix worth landing before M2 builds on T0."
     }
   ]
 }
