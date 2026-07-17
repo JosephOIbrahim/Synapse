@@ -433,6 +433,72 @@
       ],
       "ratified": false,
       "note": "Deposited from the W.4-H22-solverblocks crucible (MERGE_READY, 0 showstoppers). Human flip."
+    },
+    {
+      "id": "RETINA.M0",
+      "title": "M0: blueprint committed verbatim + reconciliation record + the zero-cv2 host pin (tests/test_retina_boundary.py). DONE this administration.",
+      "status": "merged",
+      "evidence": [
+        "docs/SYNAPSE_RETINA_BLUEPRINT.md",
+        "docs/reviews/retina-reconciliation-2026-07-16.md"
+      ],
+      "ratified": true,
+      "note": "COMPLETED 2026-07-16 (commit 8be91ad, suite 4389/0/97). RATIFIED: human (Joe) — 2026-07-16 \"Administer this blueprint\" directive (SYNAPSE_RETINA_BLUEPRINT v1.0); RETINA miles ratified by Claude as instrument, gated per blueprint §9 (port-wave discipline end-to-end)"
+    },
+    {
+      "id": "RETINA.M1",
+      "title": "M1: perception-truth EXPLORE probe -> committed perception truth catalog (Karma integer object-ID render var CPU+XPU; ROP pre/post-render script params; husk callback surface; Copernicus buffer<->numpy readback; flipbook/viewport-grab GUI-only symbols) + manifest writer + .done sentinel + T0 file-truth live (kills the BL-007 blind-spot class). Gate: assayer on 22.0.368.",
+      "status": "candidate",
+      "evidence": [
+        "docs/SYNAPSE_RETINA_BLUEPRINT.md",
+        "docs/reviews/retina-reconciliation-2026-07-16.md"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — 2026-07-16 \"Administer this blueprint\" directive (SYNAPSE_RETINA_BLUEPRINT v1.0); RETINA miles ratified by Claude as instrument, gated per blueprint §9 (port-wave discipline end-to-end) | SEQUENCING RULING DUE AT DISPATCH (reconciliation §4.1): M1 hooks touch the render-submit path the queued render port wave will golden-pin — land hooks BEFORE that wave (fix-before-freeze) or ride a post-wave cycle. HDK/HAPI cross-ref agent findings (reconciliation §5) aim the probes; the live catalog decides. NOTHING in the blueprint INFERENCE column is coded against until it appears in the catalog."
+    },
+    {
+      "id": "RETINA.M2",
+      "title": "M2: RETINA worker skeleton in its own venv (opencv-python-headless==5.0.0.93 abi3 VERIFIED; 4.13.x fallback) + OIIO/OCIO ingest (linear float32 metrics, display 8-bit proxies; cv2.imread is NOT the EXR path) + T1 classical metric kit + verdict events on the existing perception channel. Gate: crucible hostile pass.",
+      "status": "candidate",
+      "evidence": [
+        "docs/SYNAPSE_RETINA_BLUEPRINT.md",
+        "docs/reviews/retina-reconciliation-2026-07-16.md"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — 2026-07-16 \"Administer this blueprint\" directive (SYNAPSE_RETINA_BLUEPRINT v1.0); RETINA miles ratified by Claude as instrument, gated per blueprint §9 (port-wave discipline end-to-end) | Worker tree lives OUTSIDE host scope (pin test enforces); zero hou imports in the worker; CRUCIBLE can feed synthetic manifests — testable without Houdini."
+    },
+    {
+      "id": "RETINA.M3",
+      "title": "M3: scoped-delta proof end-to-end on the Dark_Glass scenario — change mask x ID matte containment + SSIM-outside floor; PROOF line lands in the agent.usd receipt; consent gate carries a verdict. Gate: Joe at the GUI — THE DEMO.",
+      "status": "candidate",
+      "evidence": [
+        "docs/SYNAPSE_RETINA_BLUEPRINT.md",
+        "docs/reviews/retina-reconciliation-2026-07-16.md"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — 2026-07-16 \"Administer this blueprint\" directive (SYNAPSE_RETINA_BLUEPRINT v1.0); RETINA miles ratified by Claude as instrument, gated per blueprint §9 (port-wave discipline end-to-end) | Mechanism beyond blueprint SS5 is NDA-only; scoped-delta system claim queued for CIP review — no external mechanism-level discussion."
+    },
+    {
+      "id": "RETINA.M4",
+      "title": "M4: T2 ONNX (FLIP/seg) + agent-authored COP QC net + oracle cross-check (COP vs OpenCV within epsilon) + flood/malform/cancel crucible. Gate: paired with the Copernicus expansion cycle (C.3/C.4/C.10 — shared preflight-honesty rule + cops recipe surface).",
+      "status": "candidate",
+      "evidence": [
+        "docs/SYNAPSE_RETINA_BLUEPRINT.md",
+        "docs/reviews/retina-reconciliation-2026-07-16.md"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — 2026-07-16 \"Administer this blueprint\" directive (SYNAPSE_RETINA_BLUEPRINT v1.0); RETINA miles ratified by Claude as instrument, gated per blueprint §9 (port-wave discipline end-to-end) | Sequenced AFTER the Copernicus expansion builds (C.4->C.3->C.10) per the pairing."
+    },
+    {
+      "id": "RETINA.M5",
+      "title": "M5: T3 VLM escalation via provider tiers, cost-gated (512px display-referred proxy + T0-T2 evidence) + panel Review polish + verdicts-per-token counters (G6 finally gets its number). Gate: crucible + human.",
+      "status": "candidate",
+      "evidence": [
+        "docs/SYNAPSE_RETINA_BLUEPRINT.md",
+        "docs/reviews/retina-reconciliation-2026-07-16.md"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — 2026-07-16 \"Administer this blueprint\" directive (SYNAPSE_RETINA_BLUEPRINT v1.0); RETINA miles ratified by Claude as instrument, gated per blueprint §9 (port-wave discipline end-to-end)"
     }
   ]
 }
