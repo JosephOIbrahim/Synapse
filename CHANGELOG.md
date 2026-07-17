@@ -2,6 +2,24 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.28.0 — RETINA T0: the render receipt's first tier is live
+
+*One arc, 2026-07-16→17: the perception co-processor's foundation tier lands — the frame gets a file-level receipt, verified against a running Houdini. **4,436 tests passing, 0 failures** (+47 over v5.27.0) · Houdini 22.0.368 · the first working perception code, T0 file-truth.*
+
+**WHAT T0 DOES:** given a render SYNAPSE asked for, T0 answers "did the frame actually happen, as declared" — products written and non-zero, the `.done` completion sentinel present, product count matching, resolution and AOV list matching the manifest, and the expectation fingerprint round-tripped. It kills the BL-007 class (a render silently not written, missing AOVs, wrong resolution passing as success). The `retina/` worker tree lives at the repo root, **outside the host process** by construction — zero `hou`, zero `cv2` at M1 — with a pure-Python multi-part-aware EXR header reader; the whole tier is testable against synthetic manifests without Houdini running.
+
+**THE PERCEPTION TRUTH CATALOG (`harness/notes/perception_truth_22.0.368.json`) — truth cycle ⑤, live-probed:** the render/readback surface, verified on the running 22.0.368, not inferred:
+- **Karma object-ID AOV** — `karmarendersettings.primid=1` → source `ray:primid` → EXR part `primid`, channel `primid.id`, **float32**, with confirmed **CPU + XPU parity** (the flagship scoped-delta proof's matte source). Not a bare render-var — the probe found the real mechanism, which the HDK never documented.
+- **The sentinel timing, measured** — EXR pixels written → `husk_postframe` **+5ms** → `husk_postrender` +7ms → ROP-level postrender **+212ms** (at USD-generation time, before husk finishes). Confirms the HDK cross-reference's design correction: `.done` rides the husk-level param, never the ROP-level script.
+- **Copernicus buffer→numpy** round-trip verified (bottom-left row origin confirmed); **multi-part EXR** with data-driven per-AOV pixel types (beauty `C` = half, `primid` = float32 — never assume half); and the **free receipt** — `driver:parameters:` / `husk_metadata` attributes pass straight into EXR metadata, so the manifest fingerprint travels *inside the frame it notarizes* (`synapse_retina_fingerprint`).
+- **Bonus finding:** Houdini Indie headless-husk **writes real pixels** on 22.0.368 — the H21 "Indie silently no-ops husk" trap is stale for this build (independently corroborates the drop-week reconfirm).
+
+**THE CRUCIBLE EARNED ITS KEEP — A DEAD SENTINEL, CAUGHT:** M1's first build passed its own 4,431-test suite — and its `.done` sentinel was **dead on the live husk path.** It fired only under `__name__ == "__main__"`, but husk executes `--postframe-script` files with `__name__ == "builtins"` (the assayer live-proved it), so on a real render no `.done` ever dropped → T0 would have **false-failed every honest render**: the render receipt lying about real renders, the single most on-the-nose bug a receipt system could ship. The crucible caught it (the forge's own tests never exercised the husk invocation surface), forced a Pass-3, and the fix is live-proven: a real Karma render now drops a real `.done` with a fingerprint that round-trips through the EXR header. This is the third time in the H22 cycle the forge-builds/crucible-attacks separation stopped a plausible-looking lie before it merged (W.1b, and now M1).
+
+**HONESTY, AS THE POINT:** T0's rule is that a check must never claim what it couldn't verify — an unreadable resolution returns *inconclusive*, never *pass*. One bounded gap remains and ships disclosed, not hidden: when *all* products are missing, the resolution/fingerprint *per-check* booleans still report `pass=True` (the detail strings are honest — "no readable product to check…"; the event-level verdict correctly `fail`s, so no false GREEN ships), deposited as the ratified one-line follow-up `RETINA.M1b-t0-sibling-honesty`.
+
+**SEQUENCING:** the M1 host hooks (manifest writer + sentinel) are additive on the render-submit path and restore every ROP parm in the existing `finally` (ROP byte-identical after render), so they land safely before the queued render port wave golden-pins that path. M2 (the OpenCV worker venv + T1 deterministic pixels) is next.
+
 ## v5.27.0 — RETINA: the render receipt begins (blueprint administered, M0)
 
 *One arc, 2026-07-16 (late): the governing document for the perception co-processor committed, reconciled, and cross-referenced — the foundation mile of the render receipt. No perception code ships here by design (that starts at M1, T0 file-truth); M0 is the contract, the boundary pin, and the verified groundwork. **4,389 tests passing, 0 failures** (+2, the boundary pin) · Houdini 22.0.368 · a documentation-and-boundary release on the v5.23 pattern.*
