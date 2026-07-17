@@ -1,0 +1,11 @@
+{
+  "rulebook_version": "0.1.0",
+  "runtime_baseline": {
+    "houdini_graphical": "21.0.671",
+    "hython": "21.0.631",
+    "python": "3.11",
+    "platform": "win_amd64"
+  },
+  "contracts_checksum": "9b4cda88e09174532828c552e1086190bcb48b8d1cf391bd2227155a0d6c8d0b",
+  "sections": []
+}

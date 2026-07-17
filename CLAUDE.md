@@ -608,3 +608,12 @@ If any §16.2 API surface changes, the corresponding test above fails. The doc/c
 | agent.usd Schema | ✅ Built (SCHEMA_VERSION 2.0.0) · ⚠ provenance writers dormant | `python/synapse/memory/agent_state.py` | ~688 |
 | Routing Log Persistence | 🔶 Phase 5 | — | — |
 | E2E Pipeline Orchestrator | 🔶 Phase 6 | — | — |
+
+---
+
+## Rulebook discipline
+- `rulebook/` is law. Before touching any `hou.*` surface, check `surfaces/<build>/` and `phantoms.json`.
+- `ratified` rules bind; `draft` advises; `rfc-gated` blocks until the named RFC lands.
+- Never hand-edit `surfaces/` — regenerate via `scripts/rulebook_harvest.py`.
+- Every port: golden first, contract ratified, then code. Goldens are evidence; contracts are law.
+- Never reference a quarantined symbol; the phantom lint fails CI.

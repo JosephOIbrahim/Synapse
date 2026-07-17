@@ -5,6 +5,8 @@
 > **Status:** DRAFT → ratified on Joe's commit. **Blueprint version:** 0.1.0
 > **Roles:** ARCHITECT authored this document (design only, no mutation). FORGE implements per mile. CRUCIBLE writes hostile suites and never the implementation. Commandment 7 holds: tests are never weakened; fix forward.
 > **Provenance baseline:** repo `master` as publicly verified 2026-07-17 (README @ Sprint 3 Mile 4 closed, 1 tool through Dispatcher, 104 on WS path, 6 knowledge tools exempt). If local HEAD is ahead, FORGE re-verifies counts at Mile 0 and corrects this header in the same commit.
+>
+> **[CORRECTED · Mile 0 · 2026-07-17 · FORGE]** Local HEAD **is** ahead of the public mirror (by docs-only commits). Release tag **`v5.28.0`** (`72de5f1`); at HEAD the registry carries **115 registered tools** — verified `len(synapse.mcp._tool_registry.TOOL_DEFS) == 115` (`python/synapse/mcp/_tool_registry.py`), pinned by the `documented == actual` assert in `tests/test_phase0c_doc1_toolcount.py:42` (counter helper at :24-25), banner at `CLAUDE.md:3`, `pyproject.toml:8`. The `1 Dispatcher + 104 WS + 6 knowledge = 111` figures above are the **stale v5.5.0-era public-mirror snapshot** that this blueprint's own §G9 flags as public-mirror drift; the Dispatcher/WS/knowledge split is **not** re-derived at HEAD (not load-bearing for Mile 0) — the +4 tool delta since the snapshot is INFERENCE pending a later mile.
 
 ---
 
