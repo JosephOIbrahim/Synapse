@@ -459,13 +459,13 @@
     {
       "id": "RETINA.M2",
       "title": "M2: RETINA worker skeleton in its own venv (opencv-python-headless==5.0.0.93 abi3 VERIFIED; 4.13.x fallback) + OIIO/OCIO ingest (linear float32 metrics, display 8-bit proxies; cv2.imread is NOT the EXR path) + T1 classical metric kit + verdict events on the existing perception channel. Gate: crucible hostile pass.",
-      "status": "candidate",
+      "status": "merged",
       "evidence": [
         "docs/SYNAPSE_RETINA_BLUEPRINT.md",
         "docs/reviews/retina-reconciliation-2026-07-16.md"
       ],
       "ratified": true,
-      "note": "RATIFIED: human (Joe) — 2026-07-16 \"Administer this blueprint\" directive (SYNAPSE_RETINA_BLUEPRINT v1.0); RETINA miles ratified by Claude as instrument, gated per blueprint §9 (port-wave discipline end-to-end) | Worker tree lives OUTSIDE host scope (pin test enforces); zero hou imports in the worker; CRUCIBLE can feed synthetic manifests — testable without Houdini."
+      "note": "RATIFIED: human (Joe) — 2026-07-16 \"Administer this blueprint\" directive (SYNAPSE_RETINA_BLUEPRINT v1.0); RETINA miles ratified by Claude as instrument, gated per blueprint §9 (port-wave discipline end-to-end) | Worker tree lives OUTSIDE host scope (pin test enforces); zero hou imports in the worker; CRUCIBLE can feed synthetic manifests — testable without Houdini. | MERGED 2026-07-17 (Opus, Pass-3, commit 3cc392f): worker venv (cv2 5.0.0.93 abi3 + OIIO 3.1.15 EXACT pin) + retina/events.py sibling layer + ingest.py ($OCIO-protected OIIO read) + t1.py (7-metric kit + scoped-delta change_mask/id_matte/containment/ssim_outside) + qc_profiles + verdict events. assay PASS (T1 math reproduced: SSIM 1.0/0.88/0.08, containment localizes delta; schema-sibling with T0; zero cv2 host / zero hou retina). Crucible caught 1 latent MALFORM showstopper (T0 crash on garbage-typed fields) -> Pass-3 fix (type-tolerant, 2 regressions). Suite 4512/0/100. PL-M4 = M1b + M2 DONE; M3 (Dark_Glass demo, Joe-at-GUI) remains PL-M5."
     },
     {
       "id": "RETINA.M3",
@@ -567,6 +567,19 @@
       ],
       "ratified": false,
       "note": "Deposited from the C-U5 crucible. Same code/corpus-both class as W.6; the validator is now correct but the retrieval corpus still teaches the killed claim. Human flip; W-6-corpus-class."
+    },
+    {
+      "id": "RETINA.M3-worker-hardening",
+      "title": "RETINA M2 crucible bounded findings — rides M3's disk-outbox worker build. (1) JSONL verdict atomicity: emit_verdict claims line-atomic but a large line (84KB observed) exceeds PIPE_BUF; add fsync/tmp+replace + a malformed-trailing-line-tolerant resume reader (mirror ss16 RecommendationHistory.from_jsonl). (2) Path-containment guard: T0 can stat/read arbitrary files a manifest points at — add a within-manifest-dir guard before any less-trusted manifest source. (3) qc_profiles.resolve_profile is leaf-only merge (intermediate tables ignored) — document the semantics. (4) OIIO ingest leg unverified on the dev interp (OIIO absent) — live-verify in the worker/hython-seeded venv.",
+      "status": "candidate",
+      "evidence": [
+        "docs/SYNAPSE_RETINA_BLUEPRINT.md",
+        "retina/events.py",
+        "retina/ingest.py",
+        "retina/qc_profiles.py"
+      ],
+      "ratified": false,
+      "note": "Deposited from the RETINA M2 crucible (verdict FAIL on the MALFORM showstopper, now Pass-3-fixed + merged; these are the BOUNDED weaknesses, all M3-worker-scoped — no worker loop exists in M2). Human flip; land with or before the M3 disk-outbox worker."
     }
   ]
 }
