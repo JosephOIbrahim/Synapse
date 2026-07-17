@@ -34,6 +34,10 @@ try:
 except Exception:  # pragma: no cover
     HealthInfographic = None
 try:
+    from synapse.panel.integrity_readout import IntegrityReadout
+except Exception:  # pragma: no cover
+    IntegrityReadout = None
+try:
     from synapse.panel.routing_log import get_routing_log
 except Exception:  # pragma: no cover
     get_routing_log = None
@@ -209,6 +213,14 @@ class FaceWork(QtWidgets.QWidget):
             col.addWidget(self._health)
         else:
             self._health = None
+        # — IntegrityBlock / fidelity readout (Mile 4) — the "what changed"
+        # window that closes the core guarantee's visibility gap (audit A.2.2).
+        # Compact; the empty state is honest SLATE, never a fabricated green. —
+        if IntegrityReadout is not None:
+            self._integrity = IntegrityReadout(parent=self)
+            col.addWidget(self._integrity)
+        else:
+            self._integrity = None
         col.addStretch(1)
 
     # -- panel-facing API ------------------------------------------------
@@ -251,6 +263,11 @@ class FaceWork(QtWidgets.QWidget):
     def set_health(self, data):
         if self._health is not None:
             self._health.set_data(data)
+
+    def set_integrity(self, summary):
+        """Feed the fidelity readout a ``SessionIntegrityTracker.summary()``."""
+        if self._integrity is not None:
+            self._integrity.set_integrity(summary)
 
     def reset(self):
         self._steps = []
