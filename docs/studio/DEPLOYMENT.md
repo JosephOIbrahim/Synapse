@@ -124,6 +124,8 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_REDUCED_MOTION` | `1`/`true`/`yes`/`on` minimizes panel motion (accessibility) | off | `panel/designsystem/tokens.py` | Single-seat (accessibility) |
 | `SYNAPSE_REPORTS_DIR` | `synapse_write_report` output dir | `<repo>/docs` | `server/handlers.py` | Studio: show storage |
 | `SYNAPSE_RESILIENCE` | `"0"` disables rate-limiter + circuit-breaker (CI escape hatch only) | enabled | `mcp/server.py`, `server/websocket.py` | Studio: never set 0 |
+| `SYNAPSE_RETINA_DONE_FALLBACK` | RETINA sentinel fallback: when the manifest can't be resolved, the husk post-frame `.done` sentinel drops an `inconclusive` marker here instead of failing silently (blueprint §7 honesty) | unset | `host/retina_sentinel_postframe.py` | Both: leave unset (diagnostic only) |
+| `SYNAPSE_RETINA_MANIFEST` | Path to the RETINA perception manifest the host writer just wrote; the carrier the husk post-frame `.done` sentinel reads to locate products (husk-level scripts take no CLI args — perception catalog item 2), set per-render by the host hook | unset | `host/retina_manifest.py` (write), `host/retina_sentinel_postframe.py` (read) | Both: set automatically per render |
 | `SYNAPSE_ROOT` | Repo root for panel bootstrap + agent-health JSONL; set by `packages/synapse.json` in live Houdini | `C:\Users\User\SYNAPSE` (.pypanel) / `~` (agent_health) | `houdini/python_panels/synapse_panel.pypanel` (the shipped loader), `panel/agent_health.py` | Both |
 | `SYNAPSE_SCOUT_DRIFT_POLICY` | `warn` (default) / `refuse` on scout corpus drift | `warn` | `cognitive/tools/scout.py` | Studio: refuse |
 | `SYNAPSE_SHOW_CONFIG` | Path to a show.json config layer; precedence env > $HIP > $JOB > defaults | unset | `core/show_config.py` | Both |

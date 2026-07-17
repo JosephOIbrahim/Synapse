@@ -236,6 +236,11 @@ class RenderHandlerMixin:
         width = resolve_param_with_default(payload, "width", None)
         height = resolve_param_with_default(payload, "height", None)
 
+        # RETINA M1: filled on the main thread by the perception host hook
+        # (manifest + .done sentinel). Attached to the result under a new
+        # "retina" key — additive, never replaces an existing envelope field.
+        _retina_report: Dict = {}
+
         def _render_on_main():
             if rop_path:
                 node = hou.node(rop_path)
@@ -448,6 +453,47 @@ class RenderHandlerMixin:
                             _restore.append((_op, _parm_raw(_op)))
                             _op.set(render_path)
 
+                    # RETINA M1 (additive, best-effort, NEVER fails the render):
+                    # export the perception manifest alongside the products and
+                    # wire the husk-level .done sentinel + the in-EXR fingerprint
+                    # receipt, just before submit. Every parm the hook sets is
+                    # appended to _restore (WP4), so the ROP is byte-identical
+                    # after the render (the render port wave golden-pins this
+                    # path — reconciliation §4.1). The catalog rulings (husk-level
+                    # timing; husk_metadata receipt) live in retina_manifest.
+                    try:
+                        from datetime import datetime, timezone
+                        from ..host.retina_manifest import install_retina_hooks
+                        from ..host import retina_sentinel_postframe as _retina_sentinel
+                        try:
+                            _r_build = hou.applicationVersionString()
+                        except Exception:
+                            _r_build = "unknown"
+                        try:
+                            _r_hip = hou.hipFile.path()
+                        except Exception:
+                            _r_hip = None
+                        _retina_report.update(install_retina_hooks(
+                            node,
+                            product_path=render_path_resolved,
+                            frame=cur,
+                            engine=engine,
+                            node_type=node_type,
+                            resolution=(int(width), int(height))
+                            if (width and height) else None,
+                            restore=_restore,
+                            generated_at=datetime.now(timezone.utc).isoformat(),
+                            sentinel_script=_retina_sentinel.__file__,
+                            retina_payload=payload.get("retina"),
+                            houdini_build=_r_build,
+                            hip_path=_r_hip,
+                        ))
+                    except Exception as _r_exc:
+                        logger.warning(
+                            "SYNAPSE RETINA: manifest/sentinel hook degraded "
+                            "(non-blocking): %s", _r_exc,
+                        )
+
                     node.render(
                         frame_range=(cur, cur),
                         verbose=False,
@@ -640,6 +686,11 @@ class RenderHandlerMixin:
             result["preview_tool"] = conv["tool"]
             if conv["error"]:
                 result["preview_error"] = conv["error"]
+        # RETINA M1: attach the perception host-hook report (manifest path,
+        # fingerprint, sentinel wiring, honesty flags) as a NEW key. Additive —
+        # never overwrites an existing render-result field.
+        if _retina_report:
+            result["retina"] = _retina_report
         return result
 
     def _handle_set_keyframe(self, payload: Dict) -> Dict:
