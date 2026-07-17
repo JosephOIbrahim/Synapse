@@ -126,6 +126,9 @@ Order per brief: **scene → usd → render → tops → cops → memory.** Each
 
 **Wave total:** 11 + 11 + 10 + 10 + 13 + 9 + 9 + 11 + 10 + 11 + 10 = **115.** 11 sub-waves; every sub-wave ≤ 15; smallest 9 (tops tails).
 
+### Wave `cops-3` — Copernicus expansion addendum (deferred; +3 → 115→118) · [OD-A RULED (a), 2026-07-17]
+The frozen inventory above is the **115 legacy-WS tools**. The Copernicus expansion (`docs/SYNAPSE_COPERNICUS_EXPANSION.md`) adds **3 new tools born on the current path** — C.3 neural ×2 (`cops_segment_mask`, `cops_estimate_depth`) + C.10 terrain ×1 (`cops_terrain_setup`). Per **OD-A = (a)** (SSOT `docs/SYNAPSE_COPERNICUS_EXPANSION.md` §OPEN DECISIONS) they join a **`cops-3`** addendum wave and the registry count moves **115 → 118** *when they land* (each ships its own `tests/test_phase0c_doc1_toolcount.py` banner bump — the count is test-forced per tool). They are **not** part of the frozen-115 partition above; this records the ruled follow-through, not a present count change.
+
 ---
 
 ## DoD per deliverable (per wave)

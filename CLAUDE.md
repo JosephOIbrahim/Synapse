@@ -617,3 +617,8 @@ If any §16.2 API surface changes, the corresponding test above fails. The doc/c
 - Never hand-edit `surfaces/` — regenerate via `scripts/rulebook_harvest.py`.
 - Every port: golden first, contract ratified, then code. Goldens are evidence; contracts are law.
 - Never reference a quarantined symbol; the phantom lint fails CI.
+
+## Mile / ladder citation
+- Two governing docs each run a "six miles" ladder — disambiguate cross-doc. **`PL-M<n>`** = proof-leg (`docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md` + `SPEC.md`; miles 1–6, no Mile 0). **`RBK-M<n>`** = rulebook (`SYNAPSE_RULEBOOK.md` + `rulebook/RULEBOOK.md`; miles 0–5). `RBK-`, not `RB-` (that is the rule-ID namespace).
+- Bare "Mile N" is fine **inside** one doc (each doc is a single ladder). In commit subjects, flywheel notes, and any cross-doc reference, **qualify**: `proof-leg Mile N` / `rulebook Mile N`, or short `PL-M<n>` / `RBK-M<n>`.
+- RETINA's `M<n>` (e.g. `RETINA M3`) is a distinct label, not a "Mile" — no collision.

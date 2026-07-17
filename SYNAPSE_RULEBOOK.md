@@ -135,6 +135,8 @@ Five meta-tests, written at **Mile 0**, green forever after:
 
 ## 5 · Execution plan — six miles
 
+> **Ladder RBK** (rulebook) — miles **0–5**. Cite cross-doc as **`RBK-M<n>`** (e.g. `RBK-M0` = Charter). `RBK-`, not `RB-` (that is the rule-ID namespace `RB-<DOM>-NNN`, §3). The proof-leg runs a *different* ladder, **PL** (miles 1–6). Convention: CLAUDE.md → "Mile / ladder citation".
+
 MODE A note: Miles 0–2 are introspection + new files + tests — Phase-0 compatible. Mile 3 drives tools inside **synthetic throwaway scenes only** — never user files. Mile 4 mutates product code under G1, which is ranked sprint work on pinned H21 and is **not** `drop.json`-gated. Mile 5 is horizon; it runs when H22 exists and only after the H21 baseline is clean.
 
 | Mile | Name | Role | Runtime needed |

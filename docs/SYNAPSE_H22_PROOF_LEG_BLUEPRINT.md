@@ -142,6 +142,8 @@ The original G6 (token-frugality, architecturally sound, numerically unproven) r
 
 > Options stated, recommendations carried from the analysts' own text, **no ruling invented**. Nothing below is a mile; it's the gun. Items 1–7 unblock Miles 1–3 directly.
 
+> **RULED 2026-07-17 — the gun was fired.** Items **1–6 and 12 are RULED** (Joe's harness-architect debt pass): OD-A=(a) · OD-B=(a) · OD-C=`cops_terrain_setup` stands · OD-D=subsume · CHOP=non-goal · DOP/MPM=non-goal + scoped-recon-then-freeze · RETINA M2 ratified. **SSOTs (dispositions live here, not in the table below):** OD-A/B/C/D → `docs/SYNAPSE_COPERNICUS_EXPANSION.md` §OPEN DECISIONS; CHOP + DOP/MPM → `harness/state/flywheel_queue.json` (`M.DOP-recon-2026-07-17` note). Items **7–11 remain UNRULED** (SCOUTMASTER debris, panel sizing, public-surface policy, `hou._imagePlanes`, memory-section commission). The options table below is **preserved as the original ask** — it is the start line, not the current state.
+
 | # | Ruling | Options | Carried rec | Unblocks |
 |---|---|---|---|---|
 | 1 | **OD-A** — port-manifest absorbs the 3 new tools (115→118)? | (a) addendum to cops-2/cops-3 · (b) born-on-legacy-WS exception | **(a)** | C.3/C.10 merge |
@@ -162,6 +164,8 @@ Standing gates unchanged: **per-cycle human merge · `ratified:false` resting st
 ---
 
 ## §5 · The six miles
+
+> **Ladder PL** (proof-leg) — miles **1–6** (no Mile 0). Cite cross-doc as **`PL-M<n>`** (e.g. `PL-M1` = the twins). The rulebook runs a *different* ladder, **RBK** (miles 0–5). Convention: CLAUDE.md → "Mile / ladder citation".
 
 > Relay framing: two hurdles, then the anchor stretch. Miles 1 and 2 are parallel-legal (different surfaces); everything else serializes as shown. Each mile's gate is named; each cycle's full DoD lives in its spec or in SPEC.md.
 

@@ -31,6 +31,8 @@ The blueprint was authored off-repo. First act: re-derive every load-bearing pin
 
 ## Dispatch table
 
+> **Ladder PL** (proof-leg) — miles **1–6**. Cite cross-doc as **`PL-M<n>`**; the rulebook's ladder is **RBK** (miles 0–5), a different plan. Convention: CLAUDE.md → "Mile / ladder citation".
+
 > Roles: **gatewarden** admits · **ARCHITECT** designs (paper only — mostly discharged already) · **FORGE** builds in an isolated worktree · **ASSAYER** live-verifies every emitted symbol on the running build · **CRUCIBLE** attacks what it didn't build (never weakens; Commandment 7 + thresholds) · **SCRIBE** persists artifacts with file:line anchors · **human merges**. Cycle IDs below are proposals; the queue's own IDs win.
 
 | Mile | Cycle | Scope (spec of record) | Gate to dispatch | Merge-ready when |

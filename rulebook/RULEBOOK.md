@@ -79,6 +79,8 @@ Written at Mile 0, green forever after. Implemented in [`../tests/rulebook/test_
 
 ## Where the miles go
 
+> **Ladder RBK** (rulebook) — miles **0–5**, cross-doc **`RBK-M<n>`** (`RBK-M0` = Charter). `RBK-`, not `RB-` (the rule-ID namespace). Distinct from the proof-leg ladder **PL** (miles 1–6).
+
 Mile 0 (this charter) built the skeleton, the empty-but-valid `manifest.json`, and the meta-tests. Content arrives later, each mile gated (blueprint §5): Mile 1 harvests `surfaces/`, Mile 2 backfills the law (Joe ratifies), Mile 3 captures goldens + the `synapse_inspect_stage` keystone, Mile 4 pilots a port slice, Mile 5 is the H22 diff (horizon). **The discipline exists before any content does — that is Mile 0's whole purpose.**
 
 *The spec is durable. The agents are elastic. The runtime is the truth.*
