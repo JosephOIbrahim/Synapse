@@ -510,6 +510,29 @@
       ],
       "ratified": false,
       "note": "Deposited from the RETINA.M1 Pass-2 crucible (MERGE_READY, 0 showstoppers — the independent reviewer ruled it bounded because no false event-level verdict ships). Human flip; one-line fix worth landing before M2 builds on T0."
+    },
+    {
+      "id": "M.DOP-recon-2026-07-17",
+      "title": "Scoped sim-solver recon (debt ruling): probe the 4 SOP solvers the shipped fx_recipes.py already emits — mpmsolver/vellumsolver/pyrosolver/rbdbulletsolver — parm names + wire_by_label + one smoke cook each on 22.0.368, to ground the existing recipe surface and answer the MPM question with real data. DOP/MPM is a NON-GOAL for NEW sim capability beyond this single recon; hard freeze after. Not a frontier commitment.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-per-context-postmortem-2026-07-17.md",
+        "python/synapse/routing/recipes/fx_recipes.py",
+        "python/synapse/cognitive/tools/data/connectivity_22.json"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — 2026-07-17 harness-architect debt-ruling pass (post-mortem OPEN DECISION #2 -> 'scoped recon, then freeze'). SCOPE HARD-BOUNDED: one probe over the 4 already-emitted SOP solvers + MPM Sources/Colliders/Container wiring confirmed against a real cook (labels alone are already VERIFIED-ARTIFACT). Output = a dated harness/notes/ artifact + connectivity-catalog reconcile if labels drift. NON-GOAL ruling: dynamics/sim is out-of-scope for NEW capability; this recon exists ONLY to make the 7 shipped H21-era fx recipes honest on H22, NOT to open the sim frontier. A future C.0 context-capability ratification EXCLUDES DOP. Enthusiasm-creep guard: no new sim tool, no new recipe, no dopnet expansion rides this. SIBLING RULING same pass: CHOP (channels/motion) also NON-GOAL (post-mortem OPEN DECISION #1) — no queue entry because nothing proposes CHOP work; the 11 byproduct catalog rows are not partial coverage."
+    },
+    {
+      "id": "M.OPENPBR-probe-2026-07-17",
+      "title": "OpenPBR additive wiring probe (debt ruling): live-probe mtlxopen_pbr_surface on 22.0.368 (createNode resolves + parm surface + Karma render round-trip), then add it as an AVAILABLE surface in the mtlx plumbing — additive, NOT replacing the mtlxstandard_surface default. Default flip is a later, separate cycle.",
+      "status": "candidate",
+      "evidence": [
+        "docs/reviews/h22-per-context-postmortem-2026-07-17.md",
+        "python/synapse/core/mtlx_types.py"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — 2026-07-17 harness-architect debt-ruling pass (post-mortem OPEN DECISION #4 -> 'additive, probe-gated'). POSTURE: mtlxstandard_surface stays the default until OpenPBR is live-proven; OpenPBR joins as an option first. MaterialX 1.39.5 on H22; mtlxopen_pbr_surface presence is VERIFIED-ARTIFACT (in the 239-node set) but wiring is UNPROBED — the probe gates any emit. Shader-authoring remains a non-goal (SYNAPSE wires the graph, does not design parameter surfaces). Replace-the-default is the probable eventual destination but is explicitly a FUTURE cycle, tests-updated, never blind. Pairs with the VOP/MaterialX P2 (live-reconfirm the 4 emitted mtlx types) and is downstream of the P1 mtlxstandard_volume phantom fix (render_recipes.py:701, usd-2 wave)."
     }
   ]
 }

@@ -11,6 +11,8 @@
 
 ## OPEN DECISIONS (human rules; everything else in this spec is complete either way)
 
+> **RULED 2026-07-17 (Joe, harness-architect debt pass).** OD-A → **(a)** — the 3 new tools join a `cops-3` addendum wave (count 115→118 is test-forced, ships per-tool). OD-B → **(a)** — reaction-diffusion rides C.4 as D4.5 (title expands 4→5 tools). OD-C → **`cops_terrain_setup`** — the provisional name stands, no rename. OD-D → **subsume** — C.4 absorbs W.4b(3)'s dead `"limit"` cleanup (W.4b items 1–2 untouched). The per-OD rationale below is preserved.
+
 **OD-A — Port-manifest inventory drift from new tools.** `docs/PORT_WAVE_MANIFEST.md` freezes the port inventory at **115** registry tools ("Wave total: … = 115"), and `tests/test_phase0c_doc1_toolcount.py` binds the CLAUDE.md banner ("115 MCP tools registered") to `len(TOOL_DEFS)`. C.3 adds 2 tools and C.10 adds 1 → registry lands at **118**. The banner bump ships in the same commit as each tool (the test forces it). What the manifest does about the delta is a human call:
 - **(a)** one-line manifest addendum: the 3 new tools join `cops-2` (or a `cops-3` addendum wave) when the port reaches COPs;
 - **(b)** the new tools are declared born-on-legacy-WS permanently and excluded from the port DoD count (documented exception, like ⚑OD-3).
