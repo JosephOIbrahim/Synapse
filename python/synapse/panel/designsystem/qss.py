@@ -206,7 +206,7 @@ QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
 QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
 
 /* ---- menus --------------------------------------------------- */
-QMenu {{ background: {t.SURFACE}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.BORDER}; padding: {t.SPACE_XS}px; }}
-QMenu::item {{ padding: {t.SPACE_XS}px {t.SPACE_MD}px; border-radius: {t.RADIUS_SM}px; }}
+QMenu {{ background: {t.SURFACE}; color: {t.TEXT_PRIMARY}; border: 1px solid {t.BORDER}; padding: {t.SPACE_SM}px; }}
+QMenu::item {{ padding: {t.SPACE_SM}px {t.SPACE_MD}px; border-radius: {t.RADIUS_SM}px; }}
 QMenu::item:selected {{ background: {t.HOVER_BG}; color: {t.TEXT_ACCENT}; }}
 """
