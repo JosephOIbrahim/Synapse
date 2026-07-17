@@ -412,7 +412,7 @@
         "docs/reviews/h22-cto-roadmap-2026-07-16.md"
       ],
       "ratified": false,
-      "note": "Deposited from the U.1-H22 fold crucible (0 showstoppers). Same class as U.1, different file. Human flip."
+      "note": "Deposited from the U.1-H22 fold crucible (0 showstoppers). Same class as U.1, different file. Human flip. | C-U5 (proof-leg) 2026-07-17: this IS the blueprint §G1a 'U.5-H22 context fold' / SPEC C-U5 Mile-1 cycle — queue ID wins, no duplicate created. Governing spec: docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md §G1a + SPEC.md dispatch row. Scope: give lop_knowledge.py the _running_houdini_major()/_pkg_catalog_path() resolver pattern (mirror wiring.py) + hython re-probe -> lop_solaris_knowledge_22.json (roles/USD types/key parms/ordering/known_absent; renamed instancers in, stale per-shape lights out) + fail-loud on missing per-major file; P3 rider: extend _SOLARIS_NODE_ORDER to the new instancing family. Grounding CLEAN (docs/reviews/proof-leg-grounding-2026-07-17.md). gate=ratify; ratified:false unchanged — FORGE waits for Joe's flip."
     },
     {
       "id": "U.1b-H22-resolver-hardening",
@@ -533,6 +533,18 @@
       ],
       "ratified": true,
       "note": "RATIFIED: human (Joe) — 2026-07-17 harness-architect debt-ruling pass (post-mortem OPEN DECISION #4 -> 'additive, probe-gated'). POSTURE: mtlxstandard_surface stays the default until OpenPBR is live-proven; OpenPBR joins as an option first. MaterialX 1.39.5 on H22; mtlxopen_pbr_surface presence is VERIFIED-ARTIFACT (in the 239-node set) but wiring is UNPROBED — the probe gates any emit. Shader-authoring remains a non-goal (SYNAPSE wires the graph, does not design parameter surfaces). Replace-the-default is the probable eventual destination but is explicitly a FUTURE cycle, tests-updated, never blind. Pairs with the VOP/MaterialX P2 (live-reconfirm the 4 emitted mtlx types) and is downstream of the P1 mtlxstandard_volume phantom fix (render_recipes.py:701, usd-2 wave)."
+    },
+    {
+      "id": "MTLX-volume-fix",
+      "title": "C-MTLX (proof-leg Mile 1, blueprint §G1b): kill the mtlxstandard_volume phantom. Probe-verify a substitute (mtlxvolume / mtlxvolumematerial, both in the N-6 dump) on 22.0.368, swap the one call site render_recipes.py:701, drop/repoint MTLX_STANDARD_VOLUME (mtlx_types.py:25,33). Standalone small cycle (recommended over waiting for usd-2); if usd-2 later re-touches the surface its goldens capture the fixed truth.",
+      "status": "candidate",
+      "evidence": [
+        "docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md",
+        "docs/reviews/h22-per-context-postmortem-2026-07-17.md",
+        "docs/reviews/proof-leg-grounding-2026-07-17.md"
+      ],
+      "ratified": false,
+      "note": "Deposited by harness-architect (FORGE) 2026-07-17 from the proof-leg SPEC dispatch table (Mile 1, C-MTLX). Grounding pass CLEAN 2026-07-17. Governing spec: blueprint §G1b + SPEC.md C-MTLX row. Substitute MUST be probe-verified before emission; conformance fixture updated; suite >= floor; commit note: standalone-before-usd-2, goldens capture fixed truth later. gate=ratify — FORGE waits for Joe's flip. ratified:false (resting state)."
     }
   ]
 }
