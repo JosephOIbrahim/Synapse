@@ -407,12 +407,12 @@
     {
       "id": "U.5-H22-lop-knowledge-fold",
       "title": "Crucible-found twin of U.1-H22 (sev-2): python/synapse/core/lop_knowledge.py hardcodes lop_solaris_knowledge_21.json with NO major resolution — GraphValidator's LOP ordering/advisory phase advises from H21 Solaris truth on an H22 host (advisory-only, never blocks, but H22-renamed LOPs fail to match). Apply the same major-aware resolver pattern U.1-H22 just shipped for the connectivity catalog. Probe/regen the H22 LOP-Solaris knowledge first.",
-      "status": "candidate",
+      "status": "merged",
       "evidence": [
         "docs/reviews/h22-cto-roadmap-2026-07-16.md"
       ],
       "ratified": true,
-      "note": "Deposited from the U.1-H22 fold crucible (0 showstoppers). Same class as U.1, different file. Human flip. | C-U5 (proof-leg) 2026-07-17: this IS the blueprint §G1a 'U.5-H22 context fold' / SPEC C-U5 Mile-1 cycle — queue ID wins, no duplicate created. Governing spec: docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md §G1a + SPEC.md dispatch row. Scope: give lop_knowledge.py the _running_houdini_major()/_pkg_catalog_path() resolver pattern (mirror wiring.py) + hython re-probe -> lop_solaris_knowledge_22.json (roles/USD types/key parms/ordering/known_absent; renamed instancers in, stale per-shape lights out) + fail-loud on missing per-major file; P3 rider: extend _SOLARIS_NODE_ORDER to the new instancing family. Grounding CLEAN (docs/reviews/proof-leg-grounding-2026-07-17.md). gate=ratify; ratified:false unchanged — FORGE waits for Joe's flip. | RATIFIED: human (Joe) — 2026-07-17 \"everything is pre-ratified\" (Claude as instrument). C-U5 FORGE not yet dispatched: the major-aware resolver (mirror wiring.py) is pure-Python buildable, but lop_solaris_knowledge_22.json needs an H22 hython re-probe (probe-gated, not ratification-gated)."
+      "note": "Deposited from the U.1-H22 fold crucible (0 showstoppers). Same class as U.1, different file. Human flip. | C-U5 (proof-leg) 2026-07-17: this IS the blueprint §G1a 'U.5-H22 context fold' / SPEC C-U5 Mile-1 cycle — queue ID wins, no duplicate created. Governing spec: docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md §G1a + SPEC.md dispatch row. Scope: give lop_knowledge.py the _running_houdini_major()/_pkg_catalog_path() resolver pattern (mirror wiring.py) + hython re-probe -> lop_solaris_knowledge_22.json (roles/USD types/key parms/ordering/known_absent; renamed instancers in, stale per-shape lights out) + fail-loud on missing per-major file; P3 rider: extend _SOLARIS_NODE_ORDER to the new instancing family. Grounding CLEAN (docs/reviews/proof-leg-grounding-2026-07-17.md). gate=ratify; ratified:false unchanged — FORGE waits for Joe's flip. | RATIFIED: human (Joe) — 2026-07-17 \"everything is pre-ratified\" (Claude as instrument). C-U5 FORGE not yet dispatched: the major-aware resolver (mirror wiring.py) is pure-Python buildable, but lop_solaris_knowledge_22.json needs an H22 hython re-probe (probe-gated, not ratification-gated). | MERGED 2026-07-17 (Opus, FF d441738): major-aware resolver mirrors wiring.py, lop_solaris_knowledge_22.json (28 entries, blake2b 3f88cdf0, byte-coherent twin), fail-loud cross-major, renamed instancer family IN + per-shape lights OUT + plane now-exists, test_lop_major_resolution.py pins it. assay+crucible PASS 0 showstoppers, ALL live-probed on 22.0.368 hython (createNode alias traps + punycode light parms confirmed). Suite 4471/0/97 main-resident. PL-M1 (the twins) COMPLETE — C-MTLX + C-U5 both merged."
     },
     {
       "id": "U.1b-H22-resolver-hardening",
@@ -545,6 +545,28 @@
       ],
       "ratified": true,
       "note": "Deposited by harness-architect (FORGE) 2026-07-17 from the proof-leg SPEC dispatch table (Mile 1, C-MTLX). Grounding pass CLEAN 2026-07-17. Governing spec: blueprint §G1b + SPEC.md C-MTLX row. Substitute MUST be probe-verified before emission; conformance fixture updated; suite >= floor; commit note: standalone-before-usd-2, goldens capture fixed truth later. gate=ratify — FORGE waits for Joe's flip. ratified:false (resting state). | RATIFIED: human (Joe) — 2026-07-17 \"everything is pre-ratified\" (Claude as instrument). C-MTLX FORGE not yet dispatched: substitute (mtlxvolume/mtlxvolumematerial) is VERIFIED-ARTIFACT (N-6 dump) so the swap is buildable next; a live re-verify is owed on bridge-up before the merge-ready claim. | MERGED 2026-07-17 (Fable, crucible HONEST 0 showstoppers): substitute = mtlxvolume (probe-DECIDED: parms vdf/edf = the volume-shader analog of mtlxstandard_surface; mtlxvolumematerial is a binder [volumeshader] — wrong role; 3x independently probe-confirmed V1-HEADLESS on 22.0.368 hython). MTLX_STANDARD_VOLUME dropped -> MTLX_VOLUME; call site render_recipes.py dust_shader swapped; NEW conformance fixture tests/test_mtlx_conformance.py (6 pins, revert-simulation-proven to bite; frozen 5-spelling set). Suite 4450/0/97. rag/ corpus clean both spellings (no divergence). Live re-verify of the emitted surface owed at S-LIVE (V1-HEADLESS is install-determined, so low-risk). PL-M1 second twin (C-U5) still open."
+    },
+    {
+      "id": "U.5b-lop-freshness-warn",
+      "title": "C-U5 crucible follow-up (bounded, sev-3): check_lop_knowledge_fresh (harness/verify/checks.py:625) lacks the live-major-presence clause that check_connectivity_catalog_fresh clause (c) has — a future H23 drop is not forced LOUD to author lop_solaris_knowledge_23.json; the validator LOP phase silently (honestly) skips. Silent-ABSENT not silent-WRONG. Mirror clause (c) as a warn.",
+      "status": "candidate",
+      "evidence": [
+        "harness/verify/checks.py",
+        "docs/reviews/proof-leg-grounding-2026-07-17.md"
+      ],
+      "ratified": false,
+      "note": "Deposited from the C-U5 crucible (PASS, 0 showstoppers). Bounded freshness asymmetry — mirrors the connectivity-catalog freshness clause. Human flip."
+    },
+    {
+      "id": "W.6b-lop-corpus-staleness",
+      "title": "C-U5 crucible OUT-OF-SCOPE (code/corpus divergence class): rag/skills/houdini21-reference/solaris_nodes.md:768 still teaches 'No grid or plane LOP node' — knowledge_lookup/scout retrieval on H22 can re-serve the exact stale claim C-U5 killed in the validator (plane EXISTS on 22.0.368). H21-scoped dir; fold into the W-6 corpus reseed.",
+      "status": "candidate",
+      "evidence": [
+        "rag/skills/houdini21-reference/solaris_nodes.md",
+        "python/synapse/cognitive/tools/data/lop_solaris_knowledge_22.json"
+      ],
+      "ratified": false,
+      "note": "Deposited from the C-U5 crucible. Same code/corpus-both class as W.6; the validator is now correct but the retrieval corpus still teaches the killed claim. Human flip; W-6-corpus-class."
     }
   ]
 }
