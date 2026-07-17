@@ -5,14 +5,15 @@
     {
       "id": "U.1",
       "title": "Network-wiring truth: connectivity catalog -> review sweep -> wire_by_label + validator pin",
-      "status": "building",
+      "status": "done",
       "evidence": [
         "harness/notes/spec-U1-wiring-flywheel.md",
         "harness/notes/verified_connectivity_21.0.671.json",
         "python/synapse/routing/planner.py",
         "python/synapse/routing/recipes/fx_recipes.py"
       ],
-      "ratified": true
+      "ratified": true,
+      "note": "U.1 wiring flywheel | R5 (Joe green-light 2026-07-17): CLOSE-AS-DONE — shipped + superseded by U.1-H22."
     },
     {
       "id": "U.2",
@@ -326,12 +327,12 @@
     {
       "id": "CTO-01-memory-usd-roundtrip",
       "title": "[P1 NOW-probe] agent.usd / memory-evolution USD round-trip probe on H22.0.368: run shared/evolution.py end-to-end under HYTHON on a >=5-item fixture to trip a real Charmander->Charmeleon evolve; assert VERIFY-stage fidelity==1.0. The moat's ONLY in-process exact-equality gate against live pxr, never re-probed on H22 despite USD 0.26.5 module reorg (pxr.Ndr removed, ZipFile relocated Usd->Sdf). A <1.0 result is a memory-1/memory-2 wave merge blocker.",
-      "status": "candidate",
+      "status": "done",
       "evidence": [
         "docs/reviews/h22-sidefx-cto-lens-2026-07-16.md"
       ],
       "ratified": false,
-      "note": "Deposited from the sidefx-cto lens first pass (read-only advisory; agent proposed the spec, human ratifies). Full reasoning + tier in docs/reviews/h22-sidefx-cto-lens-2026-07-16.md."
+      "note": "Deposited from the sidefx-cto lens first pass (read-only advisory; agent proposed the spec, human ratifies). Full reasoning + tier in docs/reviews/h22-sidefx-cto-lens-2026-07-16.md. | R5 (Joe green-light 2026-07-17): CLOSE-AS-DONE — moat probe PASSED fidelity 1.0 (h22-live-reconfirm §3), not a delete."
     },
     {
       "id": "CTO-02-opalias-enumeration",
@@ -580,6 +581,39 @@
       ],
       "ratified": false,
       "note": "Deposited from the RETINA M2 crucible (verdict FAIL on the MALFORM showstopper, now Pass-3-fixed + merged; these are the BOUNDED weaknesses, all M3-worker-scoped — no worker loop exists in M2). Human flip; land with or before the M3 disk-outbox worker."
+    },
+    {
+      "id": "PS-Q2-verify-emit",
+      "title": "Q2 (did we get it): call retina.t0.verify_and_emit from the render-complete point so a finished render emits a T0 receipt. Anchor: retina/t0.py verify_and_emit + python/synapse/server/handlers_render.py render-complete (blueprint §3 Q2). Additive + hou-guarded; live-lift owed at S-LIVE.",
+      "status": "candidate",
+      "evidence": [
+        "docs/SYNAPSE_PROOF_STRATEGY_BLUEPRINT.md",
+        "docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — 2026-07-17 green-light (\"everything where the session leaves you is a green light... close-the-loop\", ratifies strategy blueprint §9 R3), Claude as instrument. gate=ratify(now recorded) + per-cycle human merge. Headless-buildable + fake-hou testable; live-lift owed at S-LIVE."
+    },
+    {
+      "id": "PS-Q1-log-integrity",
+      "title": "Q1 (what changed): pipe server/integrity_envelope.py record_live_block -> memory/agent_state.py log_integrity so the DORMANT USD provenance-ledger writer gets a live caller (durable per-scene trail). Anchor: blueprint §3 Q1. pxr/hou optional-import guarded.",
+      "status": "candidate",
+      "evidence": [
+        "docs/SYNAPSE_PROOF_STRATEGY_BLUEPRINT.md",
+        "docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — 2026-07-17 green-light (\"everything where the session leaves you is a green light... close-the-loop\", ratifies strategy blueprint §9 R3), Claude as instrument. gate=ratify(now recorded) + per-cycle human merge. Headless-buildable + fake-hou testable; live-lift owed at S-LIVE."
+    },
+    {
+      "id": "PS-Q3-undo-wrap",
+      "title": "Q3 (can we get back): wrap the four unwrapped mutating handlers (handlers_node.py create/set_parm/connect/delete + handlers.py) in hou.undos.group, mirroring the usd/material/cops handlers that already do. Anchor: blueprint §3 Q3 + CLAUDE.md Identity partial-undo drift note. Never double-wrap; honor run_on_main.",
+      "status": "candidate",
+      "evidence": [
+        "docs/SYNAPSE_PROOF_STRATEGY_BLUEPRINT.md",
+        "docs/SYNAPSE_H22_PROOF_LEG_BLUEPRINT.md"
+      ],
+      "ratified": true,
+      "note": "RATIFIED: human (Joe) — 2026-07-17 green-light (\"everything where the session leaves you is a green light... close-the-loop\", ratifies strategy blueprint §9 R3), Claude as instrument. gate=ratify(now recorded) + per-cycle human merge. Headless-buildable + fake-hou testable; live-lift owed at S-LIVE."
     }
   ]
 }
