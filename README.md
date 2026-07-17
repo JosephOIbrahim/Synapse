@@ -12,7 +12,7 @@
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
   <a href="tests"><img src="https://img.shields.io/badge/tests-4436%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.28.0-1e293b.svg" alt="Changelog"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.29.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 > ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it's all recorded (receipts, not magic). Five engines, 115 tools. **Install ↓ in ~5 min.**
@@ -38,7 +38,7 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 | You want… | Read… |
 |---|---|
 | **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
-| **What's new in v5.28.0** | *New in v5.28.0* — RETINA T0: the render receipt's first tier is live |
+| **What's new in v5.29.0** | *New in v5.29.0* — RETINA T1: the render receipt can now prove containment |
 | **How AI network-building stays safe** | *Propose → validate → build* |
 | **To install it** | *Install — 5 minutes* |
 | **The architecture** | *How it works — inside-out* |
@@ -80,15 +80,16 @@ flowchart LR
 
 ---
 
-## ✦ New in v5.28.0 — RETINA T0: the render receipt's first tier is live
+## ✦ New in v5.29.0 — RETINA T1: the render receipt can now prove containment
 
-**The frame now gets a receipt. Given a render SYNAPSE asked for, T0 answers "did it actually happen, as declared" — proven against your running Houdini, not inferred. The first working tier of the perception co-processor.**
+**T0 proved the frame *happened*. T1 proves you got *only what you asked for*. When SYNAPSE swaps the crystal to Dark_Glass, the receipt now shows the only pixels that changed belong to the crystal — measured, not eyeballed.**
 
-- 📄 **T0 file-truth, working** — products written and non-zero, the completion sentinel present, product count + resolution + AOV list matching what was asked, the expectation fingerprint round-tripped. It kills the class of bug where a render *silently doesn't happen* — missing AOVs, wrong resolution, an empty file — and passes as success.
-- 🔬 **A perception-truth catalog, live-probed** — the render surface verified on the running 22.0.368, not guessed: the Karma object-ID AOV (`float32`, **CPU + XPU parity** — the flagship scoped-delta proof's matte source), the sentinel timing (the `.done` marker fires **+5ms after pixels**, confirming the design correction the HDK pass caught on paper), multi-part EXR with per-AOV formats read from the header, and a **free receipt** — the fingerprint travels *inside the frame it notarizes*.
-- 🛑 **The crucible caught a receipt that would have lied** — the first build passed its own 4,431 tests, but its completion sentinel was *dead on the real render path* (wrong Python namespace), so it would have declared **every honest render a failure** — the single most on-the-nose bug a receipt system could ship. Caught before merge, fixed, and live-proven: a real render now drops a real receipt. Third time this cycle the "attack what you didn't build" separation stopped a plausible-looking lie.
-- 🧱 **Host-safe by construction** — the perception worker lives *outside* the Houdini process (zero `hou`, zero OpenCV in-host, enforced by a collection-time lint); the whole tier is testable without Houdini running. The host hooks restore every parameter after a render, so the render is byte-identical to an un-watched one.
-- 🟢 **4,436 tests passing** (+47, zero failures) — with one bounded honesty gap shipped *disclosed* (a per-check boolean edge when everything is missing; the overall verdict is still correct), deposited as a one-line ratified follow-up.
+- 🎯 **The scoped-delta proof, working** — a worker (its own venv: OpenCV-headless + OpenImageIO, exact-pinned) reads the before/after frames and intersects the *change mask* with the target's *ID matte*: it proves the change is **contained** to what you touched, and that everything outside stayed put (SSIM). SSIM 1.0 on identical frames, the change mask *localizing* a known edit, containment *failing* on a leak — verified on real pixels, not asserted.
+- 🔪 **Two silent lies, killed** — the last two places SYNAPSE was quietly wrong on H22, both proven on your running Houdini: a MaterialX volume shader that would **crash** the destruction recipe at `createNode` (repointed to the real `mtlxvolume`), and Solaris node-knowledge that still described H21 (now major-aware, re-probed on 22.0.368 — it even caught the live `instancer→copytopoints` rename trap).
+- 🧱 **Still host-safe** — the eye lives *outside* Houdini (zero OpenCV in-process, zero `hou` in the worker, both lint-enforced); testable without Houdini running. Same receipt shape as T0, one tier up.
+- 🛑 **The crucible caught a crash before it shipped** — M2's first build passed its own tests but crashed on a corrupted manifest instead of returning an honest verdict. Caught, fixed, regression-pinned — the *fourth* plausible-looking bug this cycle the "attack what you didn't build" pass stopped before merge.
+- 📏 **A Rulebook, chartered** — SYNAPSE's contract knowledge (scattered across audits, tests, commit messages) is becoming one CI-enforced spec: a rule with no passing test **fails the build**. "Runtime truth beats priors" becomes law, not a habit.
+- 🟢 **4,512 tests passing** (+76, zero failures).
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
@@ -96,8 +97,9 @@ flowchart LR
     ASK["Artist<br/>'swap the crystal to Dark_Glass'"]:::artist --> BUILD["SYNAPSE builds it<br/>undo-safe · recorded"]:::panel
     BUILD --> RENDER["Karma render<br/>beauty + object-ID AOV"]:::panel
     RENDER -->|"EXR + .done sentinel<br/>(husk_postframe, +5ms after pixels)"| T0["T0 · file truth ✓ LIVE<br/>rendered? right res/AOVs?<br/>fingerprint round-trips?"]:::hou
-    T0 -->|"pass / fail / inconclusive"| REC["agent.usd receipt<br/>DECISION · VIA · PROOF"]:::side
-    T0 -.next tiers.-> LADDER["T1 OpenCV · T2 ONNX · T3 VLM<br/>the scoped-delta proof lives at T1"]:::side
+    T0 -->|"pass / inconclusive"| T1["T1 · scoped-delta ✓ LIVE<br/>change-mask ∩ ID-matte<br/>containment + SSIM-outside"]:::hou
+    T1 -->|"pass / fail / inconclusive"| REC["agent.usd receipt<br/>DECISION · VIA · PROOF"]:::side
+    T1 -.next tiers.-> LADDER["T2 ONNX · T3 VLM<br/>cost-gated escalation"]:::side
     REC -.-> ART2["Artist<br/>proof, not a screenshot"]:::artist
     classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
     classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
@@ -105,7 +107,7 @@ flowchart LR
     classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
 ```
 
-> *The full picture — the perception catalog, the dead-sentinel catch, the tier ladder, and what M2 (OpenCV + T1) brings next — is [in CHANGELOG.md](CHANGELOG.md) (top entry) and `docs/SYNAPSE_RETINA_BLUEPRINT.md`.*
+> *The full picture — the T1 metric kit, the scoped-delta primitives, the twins, the Rulebook, and the supervisor-layer seams that come next — is [in CHANGELOG.md](CHANGELOG.md) (top entry) and `docs/SYNAPSE_RETINA_BLUEPRINT.md`.*
 
 ---
 
