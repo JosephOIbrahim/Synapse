@@ -158,8 +158,24 @@ def check_manifest_against_disk(
     )
 
     # 5/6/7) header-derived checks need a readable EXR header per product.
+    # Manifest fields are UNTRUSTED — a corrupted or partially-written on-disk
+    # manifest (the M3 worker case) can carry garbage TYPES. Normalize with the
+    # same type-tolerance the products parse uses: a malformed field is
+    # unverifiable, so its check reports inconclusive (None) — never a vacuous
+    # pass, and never an unhandled TypeError that kills the worker loop
+    # (blueprint §8 MALFORM · Pass-3). resolution normalizes to [int,int] or None
+    # (guards both the len() and the int() crash on non-numeric entries).
     declared_res = manifest.get("resolution")
-    declared_aovs = [str(a) for a in (manifest.get("aovs") or [])]
+    try:
+        declared_res = (
+            [int(declared_res[0]), int(declared_res[1])]
+            if isinstance(declared_res, (list, tuple)) and len(declared_res) == 2
+            else None
+        )
+    except (TypeError, ValueError):
+        declared_res = None
+    _aovs = manifest.get("aovs")
+    declared_aovs = [str(a) for a in _aovs] if isinstance(_aovs, (list, tuple)) else []
     declared_fp = manifest.get("fingerprint")
 
     res_results: List[str] = []

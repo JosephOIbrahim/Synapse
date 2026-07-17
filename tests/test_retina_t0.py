@@ -84,6 +84,33 @@ def test_all_products_missing_header_checks_inconclusive_not_pass(tmp_path):
     assert _named_check(event, "fingerprint_receipt")["pass"] is None
 
 
+def test_garbage_typed_manifest_fields_are_honest_not_a_crash(tmp_path):
+    """M2 crucible Pass-3: garbage-TYPED manifest fields (resolution/aovs as a
+    non-sized / non-iterable int) must yield an honest verdict event, NEVER an
+    unhandled TypeError that would kill the M3 worker loop draining a corrupted
+    on-disk manifest (blueprint §8 MALFORM). A malformed field is unverifiable ->
+    its check is inconclusive (None), never a vacuous pass. Before the fix, both
+    sites raised: aovs -> 'int not iterable', resolution -> 'int has no len()'."""
+    product = _write_product(tmp_path)  # a real, readable product on disk
+    manifest = _manifest([product], resolution=5, aovs=5, fingerprint=5)  # all garbage-typed
+    event = check_manifest_against_disk(manifest, now=NOW)  # must NOT raise
+
+    assert event["verdict"] in ("pass", "fail", "inconclusive")
+    assert _named_check(event, "products_exist")["pass"] is True  # the product is there
+    # the malformed fields are unverifiable -> inconclusive, NOT a vacuous True:
+    assert _named_check(event, "resolution")["pass"] is None
+    assert _named_check(event, "aovs")["pass"] is None
+
+
+def test_non_numeric_resolution_list_does_not_crash(tmp_path):
+    """A 2-element resolution with non-numeric entries must not crash the int()
+    comparison either — normalized to inconclusive (Pass-3)."""
+    product = _write_product(tmp_path)
+    manifest = _manifest([product], resolution=["wide", "tall"])
+    event = check_manifest_against_disk(manifest, now=NOW)  # must NOT raise
+    assert _named_check(event, "resolution")["pass"] is None
+
+
 def test_empty_product_fails(tmp_path):
     product = tmp_path / "black.0001.exr"
     product.write_bytes(b"")  # 0 bytes
