@@ -2,6 +2,16 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.30.0 — the provider seam, typed (IToolProvider)
+
+*2026-07-17: the MCP provider seam gets its contract written down. SYNAPSE has always had a mount point for tool sources — its own 115 tools today, foreign Houdini MCPs tomorrow — but `providers.get()` returned `Any`. Now the contract is typed and tested. **4,515 tests passing, 0 failures** (+3) · Houdini 22.0.368 · a foundation release, zero behavior change.*
+
+**M1 — TYPE THE PROVIDER CONTRACT (`cognitive/interfaces.py`, `providers/__init__.py`):** the seam existed and was already honored (`ApexMCPProvider` implements `list_tools`/`call_tool`); it was simply never written down. Adds `@runtime_checkable IToolProvider` — `id` + `list_tools() -> list[ToolDef]` + `call_tool(name, args) -> Envelope` — typed from the **observed shape of the real implementation**, not a sketch (the sketch guessed `provider_id`; the class actually uses `id` — runtime truth beats priors, caught before a line was bent). `get()` narrows `Any -> IToolProvider`, annotation-only (lazy via `__future__` + `TYPE_CHECKING`, no runtime import, no behavior change). The provider satisfies it **unmodified** — asserted by a contract test that *bites*: a non-conforming stub is rejected, not decorative.
+
+**THE FOUNDATION, NOT THE MOUNTING.** This is M1 of a six-move plan (`docs/SYNAPSE_MCP_SEAM_BLUEPRINT.md`). It does **not** mount foreign MCPs or retire native tools yet (M2–M6) — it makes those possible without a rewrite: the day a better tool ships, it becomes a provider and a precedence table decides, on evidence. A cross-check of the shipped H22.0.368 install confirmed there is **no first-party MCP surface yet** — so the real APEX-MCP endpoint stays mocked (`endpoint="mock"`) until SideFX actually ships it (task 1.7 stays shut).
+
+**LANDED UNDER GOVERNANCE:** built on an isolated branch (master untouched until merge), verified across three independent lenses — an admissibility gate (scope confined to 5 files, zero state writes, `apex_mcp.py` unmodified), an adversarial crucible (full suite green, the Protocol proven to bite, zero `hou` in the cognitive layer, `get()` annotation-only), and a local-install cross-reference — then merged only on an explicit human gate. Ratified nothing beyond M1; M2–M6 / task 1.7 / gate-0.1 untouched.
+
 ## v5.29.0 — RETINA T1: the scoped-delta proof engine is live
 
 *One arc, 2026-07-17: the perception co-processor's classical-CV tier lands — the render receipt can now **prove containment**, not just confirm a frame exists. Plus the two silent-wrong H22 twins killed and the Rulebook's charter. **4,512 tests passing, 0 failures** (+76 over v5.28.0) · Houdini 22.0.368 · the proof engine for "only the crystal's pixels changed."*

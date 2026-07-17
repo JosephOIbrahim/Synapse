@@ -11,8 +11,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4436%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.29.0-1e293b.svg" alt="Changelog"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4515%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.30.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 > ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it's all recorded (receipts, not magic). Five engines, 115 tools. **Install ↓ in ~5 min.**
@@ -38,7 +38,7 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 | You want… | Read… |
 |---|---|
 | **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
-| **What's new in v5.29.0** | *New in v5.29.0* — RETINA T1: the render receipt can now prove containment |
+| **What's new in v5.30.0** | *New in v5.30.0* — the provider seam is typed: the foundation for "best tool wins" |
 | **How AI network-building stays safe** | *Propose → validate → build* |
 | **To install it** | *Install — 5 minutes* |
 | **The architecture** | *How it works — inside-out* |
@@ -80,16 +80,15 @@ flowchart LR
 
 ---
 
-## ✦ New in v5.29.0 — RETINA T1: the render receipt can now prove containment
+## ✦ New in v5.30.0 — the provider seam is typed (foundation for "best tool wins")
 
-**T0 proved the frame *happened*. T1 proves you got *only what you asked for*. When SYNAPSE swaps the crystal to Dark_Glass, the receipt now shows the only pixels that changed belong to the crystal — measured, not eyeballed.**
+**SYNAPSE has always had a mount point for tool sources — its own 115 tools, and one day foreign Houdini MCPs — but the contract was never written down. Now it is. This is the *foundation* for mounting a better tool the day it ships and retiring SYNAPSE's own on evidence — not the mounting itself, the thing that makes it possible without a rewrite.**
 
-- 🎯 **The scoped-delta proof, working** — a worker (its own venv: OpenCV-headless + OpenImageIO, exact-pinned) reads the before/after frames and intersects the *change mask* with the target's *ID matte*: it proves the change is **contained** to what you touched, and that everything outside stayed put (SSIM). SSIM 1.0 on identical frames, the change mask *localizing* a known edit, containment *failing* on a leak — verified on real pixels, not asserted.
-- 🔪 **Two silent lies, killed** — the last two places SYNAPSE was quietly wrong on H22, both proven on your running Houdini: a MaterialX volume shader that would **crash** the destruction recipe at `createNode` (repointed to the real `mtlxvolume`), and Solaris node-knowledge that still described H21 (now major-aware, re-probed on 22.0.368 — it even caught the live `instancer→copytopoints` rename trap).
-- 🧱 **Still host-safe** — the eye lives *outside* Houdini (zero OpenCV in-process, zero `hou` in the worker, both lint-enforced); testable without Houdini running. Same receipt shape as T0, one tier up.
-- 🛑 **The crucible caught a crash before it shipped** — M2's first build passed its own tests but crashed on a corrupted manifest instead of returning an honest verdict. Caught, fixed, regression-pinned — the *fourth* plausible-looking bug this cycle the "attack what you didn't build" pass stopped before merge.
-- 📏 **A Rulebook, chartered** — SYNAPSE's contract knowledge (scattered across audits, tests, commit messages) is becoming one CI-enforced spec: a rule with no passing test **fails the build**. "Runtime truth beats priors" becomes law, not a habit.
-- 🟢 **4,512 tests passing** (+76, zero failures).
+- 🔌 **The provider contract, written down** — `IToolProvider`: a source of tools that answers `list_tools` / `call_tool`. The existing provider already honored it; now it's typed and a test *proves* it bites — a non-conforming provider is rejected, not waved through. Zero behavior change.
+- 🧭 **Grounded, not guessed** — typed from the *observed* shape of the real code, not a blueprint sketch (which guessed the wrong attribute name). Runtime truth beats priors, again.
+- 🧱 **The foundation, honestly scoped** — this is move 1 of 6. It does **not** mount foreign MCPs or retire native tools yet; it makes that possible on evidence instead of a rewrite. A sweep of the shipped H22.0.368 install confirmed there's no first-party MCP surface to point at yet — so nothing is overclaimed.
+- 🔒 **Landed under governance** — built on an isolated branch, verified by an independent admissibility gate + an adversarial crucible + a shipped-install cross-check, and merged only on an explicit human gate.
+- 🟢 **4,515 tests passing** (+3, zero failures).
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
