@@ -55,6 +55,9 @@ class ClaudeWorker(QThread):
         stream_error(str):    Error message on failure.
         tool_requested(object): Emits a ToolRequest for main-thread execution.
         tool_status(str, str, str):  (tool_name, status, summary) -- status is "running"/"done"/"error".
+        render_receipt(object): RETINA T0 perception event for a render tool
+            (or None — an honest 'no receipt'). Computed here on the worker
+            thread, where the manifest + EXR-header file I/O belongs.
     """
 
     token_received = Signal(str)
@@ -62,6 +65,7 @@ class ClaudeWorker(QThread):
     stream_error = Signal(str)
     tool_requested = Signal(object)
     tool_status = Signal(str, str, str)
+    render_receipt = Signal(object)
 
     def __init__(
         self,
@@ -247,6 +251,10 @@ class ClaudeWorker(QThread):
             if mcp_result is not None:
                 # Extract integrity block if present in result
                 self._track_integrity(mcp_result)
+                # RETINA T0: run the render's file-truth receipt off the Qt
+                # thread (this IS the worker thread — correct place for the
+                # manifest + EXR-header file I/O).
+                self._emit_render_receipt(tool_name, mcp_result)
                 self.tool_status.emit(tool_name, "done", summary)
                 content_str = json.dumps(mcp_result, default=str)
                 return {
@@ -295,6 +303,8 @@ class ClaudeWorker(QThread):
             self.tool_status.emit(tool_name, "done", summary)
             if isinstance(request.result, dict):
                 self._track_integrity(request.result)
+                # RETINA T0 receipt on the fallback (Qt executor) path too.
+                self._emit_render_receipt(tool_name, request.result)
                 content_str = json.dumps(request.result, default=str)
             elif request.result is not None:
                 content_str = str(request.result)
@@ -346,3 +356,31 @@ class ClaudeWorker(QThread):
                     )
         except Exception:
             pass  # Never break tool dispatch for integrity tracking
+
+    # ------------------------------------------------------------------
+    # RETINA render receipt (best-effort, worker-thread compute)
+    # ------------------------------------------------------------------
+
+    def _emit_render_receipt(self, tool_name: str, result) -> None:
+        """Compute the render's RETINA T0 (file-truth) receipt on THIS worker
+        thread — where the manifest + EXR-header file I/O belongs — and emit it
+        to the panel.
+
+        Only render tools emit at all, so a non-render tool never disturbs a
+        prior receipt. A render whose result carries a written manifest emits the
+        real perception event; a render with no ``retina``/manifest emits
+        ``None`` (an honest 'no receipt'), never a faked pass. Read-only: the
+        panel path NEVER writes the sidecar (no ``emit_verdict``), and a receipt
+        failure never breaks the tool result."""
+        if "render" not in (tool_name or "").lower():
+            return
+        event = None
+        try:
+            from synapse.panel.render_receipt import compute_receipt
+            event = compute_receipt(tool_name, result)
+        except Exception:
+            event = None
+        try:
+            self.render_receipt.emit(event)
+        except Exception:
+            pass

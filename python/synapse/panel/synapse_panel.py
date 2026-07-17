@@ -60,10 +60,9 @@ try:
 except Exception:  # pragma: no cover
     FaceWork = None
 try:
-    from synapse.panel.face_review import FaceReview, detect_render_flags
+    from synapse.panel.face_review import FaceReview
 except Exception:  # pragma: no cover
     FaceReview = None
-    detect_render_flags = None
 
 _VERSION = "9.1.0"  # v9 re-layout: 2 tabs (Review folded into Work), bundled type; 9.1: honest Stop + freeze-chain heartbeat (v5.12.0)
 
@@ -1133,6 +1132,20 @@ class SynapsePanel(QtWidgets.QWidget):
         rf.set_signed(self._author_token())
         rf.refresh_provenance()
 
+    def _on_render_receipt(self, event):
+        """The RETINA T0 receipt, computed off the Qt thread by the worker
+        (``render_receipt`` signal → here on the main thread). ``event`` is the
+        perception-event envelope, or ``None`` for a render with no perception
+        wired. Surface it in the Review face — this is the real render receipt
+        that replaces the retired hardwired BL-007 flag."""
+        rf = getattr(self, "_review_face", None)
+        if rf is None:
+            return
+        try:
+            rf.set_receipt(event)
+        except Exception:
+            pass
+
     def _on_accept(self):
         try:
             self._chat.append_system_message("Accepted — keeping the result.")
@@ -1617,6 +1630,7 @@ class SynapsePanel(QtWidgets.QWidget):
         if self._tool_executor is not None:
             self._worker.tool_requested.connect(self._tool_executor.execute_tool)
         self._worker.tool_status.connect(self._on_tool_status)
+        self._worker.render_receipt.connect(self._on_render_receipt)
         self._worker.start()
 
     def _on_token(self, tok):
@@ -1679,14 +1693,10 @@ class SynapsePanel(QtWidgets.QWidget):
         wf = getattr(self, "_work_face", None)
         if wf is not None:
             wf.set_tool_status(name, verb, _detail)   # feed the plan-with-progress
-        # a render finishing → refresh the Review face's quality flags (BL-007/008)
-        rf = getattr(self, "_review_face", None)
-        if (rf is not None and detect_render_flags is not None
-                and "render" in name.lower() and phase in ("done", "error")):
-            try:
-                rf.set_flags(detect_render_flags())
-            except Exception:
-                pass
+        # A render's TRUTH is no longer guessed here: the RETINA T0 receipt flows
+        # from the worker via render_receipt → _on_render_receipt. The old argless
+        # quality-flag path is gone — it hardwired a BL-007 FAIL (empty output
+        # path) beside a good render.
         # No auto-switch (same-pane law): a live tool feeds the Work face's plan
         # + the rail mark; the artist switches to Work to watch when they choose.
 

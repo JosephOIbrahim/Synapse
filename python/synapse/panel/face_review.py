@@ -46,6 +46,23 @@ _FLAG_COLOR = {
     "fail": t.NO_SOFT, "no": t.NO_SOFT,
 }
 
+# RETINA receipt roll-up verdict → badge color, the same QUIET SOFT trio the
+# quality-flag dots use (roll-up is fail > inconclusive > pass; §events.roll_up).
+_RECEIPT_VERDICT_COLOR = {
+    "pass": t.OK_SOFT, "inconclusive": t.HOT_SOFT, "fail": t.NO_SOFT,
+}
+
+
+def _receipt_dot_color(passed):
+    """Tri-state check dot: ``True`` → OK_SOFT (pass), ``False`` → NO_SOFT
+    (fail), ``None``/anything else → HOT_SOFT (inconclusive). An inconclusive
+    check (``pass=None``) MUST NOT render as a pass — the honesty rule."""
+    if passed is True:
+        return t.OK_SOFT
+    if passed is False:
+        return t.NO_SOFT
+    return t.HOT_SOFT
+
 
 def bl007_flag(output_path):
     """BL-007 (silent no-output): a render is only real if a file landed at the
@@ -249,6 +266,20 @@ class FaceReview(QtWidgets.QWidget):
         self._flags_box.setSpacing(1)
         col.addLayout(self._flags_box)
 
+        # — RETINA render receipt (T0 file-truth): the real perception verdict,
+        # fed by set_receipt from the worker's off-thread compute. Hidden at rest
+        # (zero height until a render lands — protects the 400px docking floor);
+        # never shows a faked pass. —
+        self._receipt_wrap = QtWidgets.QWidget()
+        self._receipt_wrap.setObjectName("DsSection")
+        self._receipt_wrap.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self._receipt_wrap.setMaximumWidth(440)   # reading measure (WIDE DOCKS rule)
+        self._receipt_box = QtWidgets.QVBoxLayout(self._receipt_wrap)
+        self._receipt_box.setContentsMargins(0, 0, 0, 0)
+        self._receipt_box.setSpacing(1)
+        self._receipt_wrap.setVisible(False)
+        col.addWidget(self._receipt_wrap, 0, Qt.AlignmentFlag.AlignLeft)
+
         # — expandable detail: VIA provenance + touched paths, collapsed by
         # default (simplified synthesis keeps the headline taut) —
         self._detail_btn = _verb("▸ detail", lambda _=False: self._toggle_detail())
@@ -417,6 +448,62 @@ class FaceReview(QtWidgets.QWidget):
                 '<span style="color:%s;">%s</span>' % (color, t.TEXT_SECONDARY, text)
             )
             self._flags_box.addWidget(row)
+
+    def set_receipt(self, event):
+        """The RETINA T0 (file-truth) render receipt.
+
+        ``event`` is a perception-event envelope (``retina.events`` shape) or
+        ``None``. ``None`` → an honest, QUIET 'no receipt' row (SLATE, never
+        green): perception was not wired for this render. An envelope → a claim
+        line + a rolled-up verdict badge + one tri-state dot-row per check. The
+        badge uses ``event["verdict"]`` (fail > inconclusive > pass); an
+        inconclusive check (``pass=None``) never renders as a pass.
+        """
+        self._clear(self._receipt_box)
+        if not event or not isinstance(event, dict):
+            self._receipt_box.addWidget(self._receipt_row(
+                t.SLATE, "no receipt yet — perception not wired for this render"))
+            self._receipt_wrap.setVisible(True)
+            return
+        verdict = str(event.get("verdict", "inconclusive"))
+        claim = str(event.get("claim", "render:file_truth"))
+        self._receipt_box.addWidget(self._receipt_header(claim, verdict))
+        for chk in event.get("checks", []) or []:
+            name = str(chk.get("name", "?")) if isinstance(chk, dict) else str(chk)
+            passed = chk.get("pass") if isinstance(chk, dict) else None
+            self._receipt_box.addWidget(
+                self._receipt_row(_receipt_dot_color(passed), name))
+        self._receipt_wrap.setVisible(True)
+
+    def _receipt_header(self, claim, verdict):
+        """Receipt header: a RECEIPT key + the claim + a rolled-up verdict badge
+        (dot + verdict word, colored by the SOFT trio). LABEL_SM mono, quiet."""
+        color = _RECEIPT_VERDICT_COLOR.get(verdict, t.HOT_SOFT)
+        row = QtWidgets.QLabel()
+        row.setTextFormat(Qt.TextFormat.RichText)
+        row.setWordWrap(True)
+        row.setFont(fontload.tracked_font("LABEL_SM", 10, mono=True))
+        row.setText(
+            '<span style="color:%s; letter-spacing:1px;">RECEIPT </span>'
+            '<span style="color:%s;">%s</span>  '
+            '<span style="color:%s;">&#9679; %s</span>' % (
+                t.TEXT_TERTIARY, t.TEXT_SECONDARY, claim,
+                color, verdict.upper())
+        )
+        return row
+
+    def _receipt_row(self, color, text):
+        """One receipt dot-row — the same RichText dot idiom as the quality
+        flags (10px mono, TEXT_SECONDARY body)."""
+        row = QtWidgets.QLabel()
+        row.setTextFormat(Qt.TextFormat.RichText)
+        row.setWordWrap(True)
+        row.setFont(fontload.tracked_font("DATA", 10, mono=True))
+        row.setText(
+            '<span style="color:%s;">&#9679;</span> '
+            '<span style="color:%s;">%s</span>' % (color, t.TEXT_SECONDARY, text)
+        )
+        return row
 
     def set_paths(self, paths):
         if paths:
