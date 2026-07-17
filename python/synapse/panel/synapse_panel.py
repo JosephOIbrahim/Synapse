@@ -1146,6 +1146,20 @@ class SynapsePanel(QtWidgets.QWidget):
         except Exception:
             pass
 
+    def _on_integrity(self, summary):
+        """The session IntegrityBlock roll-up (fidelity/verified/violations),
+        emitted by the worker after each tracked result. Paint it in the Work
+        face's telemetry cluster — the "what changed" window that closes the
+        core guarantee's visibility gap (audit A.2.2). Best-effort; the empty
+        state is honest SLATE, never a fabricated green."""
+        wf = getattr(self, "_work_face", None)
+        if wf is None:
+            return
+        try:
+            wf.set_integrity(summary)
+        except Exception:
+            pass
+
     def _on_accept(self):
         try:
             self._chat.append_system_message("Accepted — keeping the result.")
@@ -1631,6 +1645,7 @@ class SynapsePanel(QtWidgets.QWidget):
             self._worker.tool_requested.connect(self._tool_executor.execute_tool)
         self._worker.tool_status.connect(self._on_tool_status)
         self._worker.render_receipt.connect(self._on_render_receipt)
+        self._worker.integrity_updated.connect(self._on_integrity)
         self._worker.start()
 
     def _on_token(self, tok):

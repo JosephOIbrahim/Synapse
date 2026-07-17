@@ -58,6 +58,9 @@ class ClaudeWorker(QThread):
         render_receipt(object): RETINA T0 perception event for a render tool
             (or None — an honest 'no receipt'). Computed here on the worker
             thread, where the manifest + EXR-header file I/O belongs.
+        integrity_updated(object): The session IntegrityBlock roll-up
+            (``SessionIntegrityTracker.summary()`` dict) after each tracked
+            result — the panel's "what changed" / fidelity readout (Mile 4).
     """
 
     token_received = Signal(str)
@@ -66,6 +69,7 @@ class ClaudeWorker(QThread):
     tool_requested = Signal(object)
     tool_status = Signal(str, str, str)
     render_receipt = Signal(object)
+    integrity_updated = Signal(object)
 
     def __init__(
         self,
@@ -345,7 +349,15 @@ class ClaudeWorker(QThread):
 
             if integrity and isinstance(integrity, dict):
                 from synapse.panel.session_integrity import get_tracker
-                get_tracker().record(integrity)
+                tracker = get_tracker()
+                tracker.record(integrity)
+
+                # Surface the roll-up to the panel's fidelity readout (Mile 4).
+                # Best-effort: a failing emit must never break the tool result.
+                try:
+                    self.integrity_updated.emit(tracker.summary())
+                except Exception:
+                    pass
 
                 # Warn on low fidelity
                 fidelity = integrity.get("fidelity", 1.0)

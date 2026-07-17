@@ -90,6 +90,27 @@ class SessionIntegrityTracker:
         """True if 3+ integrity violations occurred."""
         return self._violations >= 3
 
+    def summary(self) -> dict:
+        """Qt-free aggregation for the panel's fidelity readout.
+
+        THE LOAD-BEARING GUARD is ``has_data``: ``session_fidelity`` returns a
+        clean 1.0 when ``total == 0`` (nothing has run), so a widget that only
+        read ``fidelity`` would paint a green 100% before a single operation --
+        a lie. ``has_data`` (``total > 0``) is how the widget knows to render
+        "no operations yet" instead. ``verified`` is ``total - violations``.
+
+        This method stays ``hou``-free / Qt-free so the honesty-critical
+        aggregation is testable under stock CPython.
+        """
+        return {
+            "total": self._total,
+            "verified": self._total - self._violations,
+            "violations": self._violations,
+            "fidelity": self.session_fidelity,
+            "has_data": self._total > 0,
+            "should_warn": self.should_warn(),
+        }
+
     def should_evolve(self, login_data: dict | None = None) -> bool:
         """Check if memory evolution should be recommended.
 
