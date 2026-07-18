@@ -214,6 +214,14 @@ _READ_ONLY_COMMANDS = frozenset({
     # -- and the WS resilience layer (read-only fast path). Audit is written
     # in-handler (handlers_render._handle_render_farm_cancel).
     "render_farm_cancel",
+    # render_farm_status: same rationale as render_farm_cancel (fix pass
+    # 2026-07-18) -- a pure Python-side registry read (farm status + render
+    # session summary, zero scene mutation). Mutating-classified it took the
+    # C5 lock off-main, so during a farm render holding that lock the status
+    # polls the WS stall-exemption (crucible F2) expects to "keep answering"
+    # blocked anyway. Its polls stay OUT of the read ledger via
+    # read_ledger.INFRA_READ_COMMANDS (identical-payload liveness traffic).
+    "render_farm_status",
     # cops_temporal_analysis is NOT read-only: it moves the global playhead
     # (hou.setFrame loop) and force-cooks — it must take the C5 mutation lock
     # and leave audit + Floor provenance records.
@@ -440,12 +448,24 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 # kill switch is read at call time both here (skips the
                 # submission outright — handler behavior observably
                 # unchanged when off) and inside record_read.
+                #
+                # Fix pass 2026-07-18: gate on _READ_ONLY_COMMANDS
+                # membership, NOT on `not _mutating` — the crucible-F3 poll
+                # override above flips _mutating for render polls, whose
+                # byte-identical {"poll": token} payloads would masquerade
+                # as re-reads and flood the FIFO cap. record_read itself
+                # additionally drops liveness/control-plane traffic
+                # (INFRA_READ_COMMANDS). self._session_id carries the
+                # per-connection identity the re-read metric is priced in
+                # (audit's process-lifetime id is only the fallback).
                 try:
                     from . import read_ledger as _read_ledger
-                    if _read_ledger.read_ledger_enabled():
+                    if (cmd_type in _READ_ONLY_COMMANDS
+                            and _read_ledger.read_ledger_enabled()):
                         _log_executor.submit(
                             _read_ledger.record_read,
-                            cmd_type, command.payload, result)
+                            cmd_type, command.payload, result,
+                            self._session_id)
                 except Exception:
                     _log.debug("read ledger submit failed", exc_info=True)
 

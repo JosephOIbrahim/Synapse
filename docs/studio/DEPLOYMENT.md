@@ -134,6 +134,7 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_SHOW_CONFIG` | Path to a show.json config layer; precedence env > $HIP > $JOB > defaults | unset | `core/show_config.py` | Both |
 | `SYNAPSE_TELEMETRY_FLUSH_S` | Periodic telemetry.json flush interval, seconds; <=0 disables | `60.0` | `server/telemetry_dump.py` | Both |
 | `SYNAPSE_TOPS_MAX_PROCS` | maxprocs for auto-created TOPs localscheduler | cpu_count-2 (min 1) | `server/handlers_tops/_common.py` | Both |
+| `SYNAPSE_TURNS_LEDGER` | `"0"`/`"false"`/`"off"` disables the turns-per-send ledger (`turns.jsonl`, the U2 instrument); read at call time | on | `panel/turns_ledger.py` | Both: leave on during the baseline soak window |
 | `SYNAPSE_TURNS_LEDGER_MAX_RECORDS` | Turns-per-send ledger (`turns.jsonl`, the U2 instrument) FIFO cap; <=0 or unparseable disables rotation | `5000` | `panel/turns_ledger.py` | Both |
 | `SYNAPSE_VEX_ROOT` | Scout VEX store root | == `SYNAPSE_RAG_ROOT` | `cognitive/tools/scout.py` | Dev |
 | `SYNAPSE_WORKER_TOOL_MODE` | Autonomous-worker tool policy: `strict` / `standard` / `unrestricted` | `standard` | `panel/worker_policy.py` | Studio: standard or strict |

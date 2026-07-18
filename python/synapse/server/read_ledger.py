@@ -8,32 +8,51 @@ a number instead of a hunch.
 
 Record shape (one JSON object per line)::
 
-    {"ts": iso8601-utc, "session_id": str, "cmd_type": str,
+    {"ts": iso8601-utc, "session_id": str,
+     "session_scope": "connection" | "process",
+     "cmd_type": str,
      "args_hash": sha256(canonical-sorted-JSON payload)[:16],
      "result_bytes": int}
 
-Disciplines (all inherited from existing repo idioms):
+Session identity (fix pass 2026-07-18): the PRIMARY id is the handler's
+per-connection ``_session_id`` (set via ``set_session_id`` by the WS/
+hwebserver adapters) — the same identity FloorGate provenance uses, and the
+one the Mile-1 transcript-mine baseline is priced in (one transcript ≈ one
+connection). Only when the handler has none does the record fall back to the
+audit trail's process-lifetime id. ``session_scope`` records which was used,
+honestly — the two have different re-read semantics (a days-open Houdini
+process spans many conversations; merging them inflates the re-read rate).
+
+What is deliberately NOT recorded (fix pass 2026-07-18):
+
+* **Liveness/control-plane traffic** (:data:`INFRA_READ_COMMANDS`): ping,
+  heartbeats, health/metrics/status polls, static catalog reads. Their
+  payloads are empty-or-identical by design, so every one after the first
+  would masquerade as a "re-read" while saying nothing about scene state —
+  and they'd flood the FIFO cap, evicting genuine observations.
+* **Render polls** (``render`` + ``{"poll": token}``): the handlers hook
+  gates on ``_READ_ONLY_COMMANDS`` membership, which ``render`` fails — the
+  crucible-F3 poll override never reaches this ledger.
+* **``batch_commands`` sub-reads**: sub-ops dispatch through
+  ``registry.invoke()`` and bypass ``handle()`` where the hook lives — the
+  same documented seam as the integrity envelope's one-block-per-batch.
+  The baseline therefore UNDERCOUNTS reads issued inside batches; the
+  report script states this exclusion.
+
+Disciplines (mechanics shared with ``panel/turns_ledger.py`` via
+``core.jsonl_ledger.BoundedJsonlLedger``):
 
 * **Zero ``hou``.** Pure stdlib + intra-package imports only.
-* **Never fails a command.** Every exception is swallowed after a ONE-TIME
-  warning (the ``integrity_envelope._infra_warned`` idiom) — a broken disk
-  must not make reads observably slower or louder than once.
+* **Never fails a command.** Every exception swallowed after a ONE-TIME
+  warning; a successful append returns True even if the post-append
+  rotation failed.
 * **Kill switch read at CALL TIME** (``SYNAPSE_READ_LEDGER=0`` — the
-  ``integrity_envelope._envelope_enabled`` idiom): a toggle takes effect
-  without re-import.
-* **Bounded on disk** (the FloorGate max-records idiom): cap resolved
-  lazily from ``SYNAPSE_READ_LEDGER_MAX_RECORDS`` (default 5000, ``<= 0``
-  or unparseable disables rotation — an explicit opt-out), reconciled from
-  disk once per path per process, oldest lines FIFO-evicted via atomic
-  ``.tmp + os.replace`` rewrite.
+  ``integrity_envelope._envelope_enabled`` idiom).
+* **Bounded on disk** (FloorGate max-records idiom + trim hysteresis):
+  ``SYNAPSE_READ_LEDGER_MAX_RECORDS`` (default 5000, ``<= 0`` or
+  unparseable disables rotation).
 * **Thread-safe append** — called from the handlers ``_log_executor``
-  worker threads; a module lock serializes append + rotation.
-* **Session identity is REUSED, not invented**: the same
-  ``AuditLog._current_session`` the audit trail stamps on every entry.
-
-Multi-process caveat (same class as ``logfile.py``'s RotatingFileHandler
-note): two processes appending to the same file may lose lines across a
-concurrent rotation rewrite. Acceptable for a measurement instrument.
+  worker threads.
 """
 
 from __future__ import annotations
@@ -42,9 +61,10 @@ import hashlib
 import json
 import logging
 import os
-import threading
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Optional, Tuple
+
+from ..core.jsonl_ledger import BoundedJsonlLedger
 
 _log = logging.getLogger(__name__)
 
@@ -54,12 +74,14 @@ DEFAULT_MAX_RECORDS = 5000
 _ENV_ENABLE = "SYNAPSE_READ_LEDGER"
 _ENV_MAX_RECORDS = "SYNAPSE_READ_LEDGER_MAX_RECORDS"
 
-# One lock guards append + rotation + the per-path count cache.
-_lock = threading.Lock()
-# path -> known line count. Reconciled from disk ONCE per path per process
-# (the FloorGate ``_reconciled`` idiom), incremented per append after that.
-_counts: Dict[str, int] = {}
-_write_warned = False
+#: Liveness/control-plane commands NEVER recorded (see module docstring).
+#: Every member must also be in ``handlers._READ_ONLY_COMMANDS`` (pinned by
+#: test_read_ledger) and the report script carries a conformance-pinned copy.
+INFRA_READ_COMMANDS = frozenset({
+    "ping", "heartbeat", "get_health", "get_help",
+    "get_metrics", "get_live_metrics", "router_stats", "list_recipes",
+    "render_farm_status", "render_farm_cancel",
+})
 
 
 def read_ledger_enabled() -> bool:
@@ -90,15 +112,16 @@ def resolve_max_records() -> int:
         return 0  # unparseable => rotation disabled
 
 
-def ledger_path() -> str:
-    """Resolve the ledger file path under the shared logs dir.
+_LEDGER = BoundedJsonlLedger(
+    LEDGER_FILENAME, resolve_max_records,
+    logger=_log, warn_label="read ledger",
+)
 
-    Reuses ``core.logfile.log_dir()`` (``$SYNAPSE_LOG_DIR`` else
-    ``~/.synapse/logs``) — called at append time so an env change (tests,
-    operator) takes effect without re-import.
-    """
-    from ..core.logfile import log_dir
-    return os.path.join(log_dir(), LEDGER_FILENAME)
+
+def ledger_path() -> str:
+    """Resolve the ledger file path under the shared logs dir
+    (``core.logfile.log_dir()``, resolved at call time)."""
+    return _LEDGER.path()
 
 
 def args_hash(payload: Any) -> str:
@@ -114,18 +137,17 @@ def args_hash(payload: Any) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
 
 
-def _session_id() -> str:
-    """The audit trail's session identity — REUSED, never a second scheme.
-
-    ``AuditLog._current_session`` is the id stamped on every audit entry
-    (core/audit.py). Falls back to ``"unknown"`` only if the audit
-    singleton itself is broken — a fallback constant, not a new mechanism.
-    """
+def _resolve_session(session_id: Optional[str]) -> Tuple[str, str]:
+    """(id, scope): the caller's per-connection id when given, else the
+    audit trail's process-lifetime id (public accessor — never a second
+    identity scheme). ``"unknown"``/``"process"`` only if audit is broken."""
+    if session_id:
+        return str(session_id), "connection"
     try:
         from ..core.audit import audit_log
-        return audit_log()._current_session
+        return audit_log().current_session_id(), "process"
     except Exception:
-        return "unknown"
+        return "unknown", "process"
 
 
 def _result_bytes(result: Any) -> int:
@@ -135,75 +157,42 @@ def _result_bytes(result: Any) -> int:
     ).encode("utf-8"))
 
 
-def record_read(cmd_type: str, payload: Any, result: Any) -> bool:
+def record_read(
+    cmd_type: str, payload: Any, result: Any,
+    session_id: Optional[str] = None,
+) -> bool:
     """Append one READ observation. NEVER raises.
 
-    Returns True when a row was written (test/diagnostic convenience),
-    False when disabled or on any (once-warned) failure. Runs on the
-    handlers ``_log_executor`` worker threads — thread-safe by module lock.
+    ``session_id`` is the handler's per-connection identity (PASS IT —
+    the process-lifetime audit id is only a fallback; see docstring).
+    Returns True when a row was written, False when disabled, when
+    *cmd_type* is infra traffic (:data:`INFRA_READ_COMMANDS`), or on any
+    (once-warned) failure. Runs on the handlers ``_log_executor`` worker
+    threads — thread-safe via the shared ledger lock.
     """
-    global _write_warned
     try:
         if not read_ledger_enabled():
             return False
+        if cmd_type in INFRA_READ_COMMANDS:
+            return False
+        sid, scope = _resolve_session(session_id)
         record = {
             "ts": datetime.now(timezone.utc).isoformat(),
-            "session_id": _session_id(),
+            "session_id": sid,
+            "session_scope": scope,
             "cmd_type": cmd_type,
             "args_hash": args_hash(payload),
             "result_bytes": _result_bytes(result),
         }
-        line = json.dumps(record, sort_keys=True, separators=(",", ":"))
-        path = ledger_path()
-        with _lock:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "a", encoding="utf-8", newline="\n") as fh:
-                fh.write(line + "\n")
-            _bump_and_rotate_locked(path)
-        return True
+        return _LEDGER.append(record)
     except Exception:
-        if not _write_warned:
-            _write_warned = True
-            _log.warning(
-                "read ledger: append failed -- read observations will be "
-                "missing until this is fixed",
-                exc_info=True,
-            )
+        _LEDGER.warn_once(
+            "record failed -- read observations will be missing until "
+            "this is fixed")
         return False
-
-
-def _bump_and_rotate_locked(path: str) -> None:
-    """Track the line count for *path* and FIFO-trim past the cap.
-
-    Caller holds ``_lock``. First touch of a path reconciles the count
-    from disk (cap survives process restarts — FloorGate idiom); later
-    appends increment. Over-cap: rewrite keeping the NEWEST ``cap`` lines
-    via atomic ``.tmp + os.replace`` (the RecommendationHistory idiom).
-    """
-    if path in _counts:
-        _counts[path] += 1
-    else:
-        with open(path, "r", encoding="utf-8") as fh:
-            _counts[path] = sum(1 for _ in fh)
-
-    cap = resolve_max_records()
-    if cap <= 0 or _counts[path] <= cap:
-        return
-
-    with open(path, "r", encoding="utf-8") as fh:
-        lines = fh.readlines()
-    keep = lines[-cap:]
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
-        fh.writelines(keep)
-    os.replace(tmp, path)
-    _counts[path] = len(keep)
 
 
 def reset_ledger_state() -> None:
     """Test/diagnostic helper (the ``logfile.reset_file_logging`` idiom):
     drop the per-path count cache and re-arm the one-time warning."""
-    global _write_warned
-    with _lock:
-        _counts.clear()
-        _write_warned = False
+    _LEDGER.reset_state()

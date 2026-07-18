@@ -183,7 +183,12 @@ class AuditLog:
         self._entries: List[AuditEntry] = []
         self._log_dir = log_dir or Path.home() / ".synapse" / "audit"
         self._log_dir.mkdir(parents=True, exist_ok=True)
-        self._current_session = deterministic_uuid(f"session:{id(self)}:{threading.current_thread().ident}", "session")
+        # time_ns in the seed: deterministic_uuid has NO entropy of its own
+        # (same content => same UUID by design), and id(self)/thread idents
+        # recycle across process restarts — without a time component two
+        # different Houdini runs can mint the SAME session id, silently
+        # merging sessions in every consumer keyed on it (fix pass 2026-07-18).
+        self._current_session = deterministic_uuid(f"session:{id(self)}:{threading.current_thread().ident}:{time.time_ns()}", "session")
         self._last_hash = "genesis"
         self._write_lock = threading.Lock()
 
@@ -207,6 +212,14 @@ class AuditLog:
         """Reset singleton (for testing)"""
         with cls._lock:
             cls._instance = None
+
+    def current_session_id(self) -> str:
+        """Public accessor for the PROCESS-LIFETIME session id stamped on
+        every audit entry. One id per AuditLog singleton — a days-open
+        Houdini is one "session" here, shared by every connected client.
+        Consumers needing per-connection identity must use the handler's
+        ``_session_id`` (set via ``set_session_id``), not this."""
+        return self._current_session
 
     def add_callback(self, callback: Callable[[AuditEntry], None]) -> None:
         """Add callback for real-time log monitoring"""

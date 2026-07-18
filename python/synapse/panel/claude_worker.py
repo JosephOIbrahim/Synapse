@@ -150,76 +150,94 @@ class ClaudeWorker(QThread):
           3. If stop_reason is "end_turn" or "max_tokens", return.
         """
         tool_calls_total = 0   # L9: tool calls across the whole turn-loop
-        for iteration in range(_MAX_TOOL_ITERATIONS):
-            if self._abort:
-                return
+        turns_done = 0         # API round trips COMPLETED (streams returned)
+        # Outcome for the U2 record. Every exit path is captured (fix pass
+        # 2026-07-18 — recording only completion/cap gave the distribution
+        # survivorship bias: the Stop button exists precisely to kill
+        # runaway imperative loops, so aborted sends skew LONG and were
+        # exactly the tail this instrument was built to measure). "error"
+        # is the default so an exception from provider.stream records
+        # honestly via the finally below before propagating to run().
+        outcome = "error"
+        try:
+            for iteration in range(_MAX_TOOL_ITERATIONS):
+                if self._abort:
+                    outcome = "aborted"
+                    return
 
-            stop_reason, content_blocks = self._provider.stream(
-                messages=self._messages,
-                tools=self._tools,
-                system=self._system,
-                api_key=api_key,
-                emit_token=self.token_received.emit,
-                should_abort=lambda: self._abort,
-            )
+                stop_reason, content_blocks = self._provider.stream(
+                    messages=self._messages,
+                    tools=self._tools,
+                    system=self._system,
+                    api_key=api_key,
+                    emit_token=self.token_received.emit,
+                    should_abort=lambda: self._abort,
+                )
+                turns_done = iteration + 1
 
-            if self._abort:
-                return
+                if self._abort:
+                    outcome = "aborted"
+                    return
 
-            if stop_reason == "tool_use":
-                # Append the assistant message with all content blocks
-                self._messages.append({
-                    "role": "assistant",
-                    "content": content_blocks,
-                })
-
-                # Process every tool_use block, collect results
-                tool_results: list[dict] = []
-                for block in content_blocks:
-                    if block.get("type") != "tool_use":
-                        continue
-
-                    if self._abort:
-                        return
-
-                    result_msg = self._execute_tool_block(block)
-                    tool_results.append(result_msg)
-                    tool_calls_total += 1
-
-                # Append all tool results in a single user message
-                if tool_results:
+                if stop_reason == "tool_use":
+                    # Append the assistant message with all content blocks
                     self._messages.append({
-                        "role": "user",
-                        "content": tool_results,
+                        "role": "assistant",
+                        "content": content_blocks,
                     })
 
-            else:
-                # end_turn, max_tokens, or anything else -- we're done.
-                # L9: record the sequential-turn count (the dominant latency
-                # term) so an imperative build (many turns) vs a one-shot
-                # declarative call (1 turn) is measurable on disk.
-                logger.info(
-                    "Conversation complete: %d turns, %d tool calls",
-                    iteration + 1, tool_calls_total,
-                )
-                self._record_turns(iteration + 1, tool_calls_total,
-                                   hit_cap=False)
-                return
+                    # Process every tool_use block, collect results
+                    tool_results: list[dict] = []
+                    for block in content_blocks:
+                        if block.get("type") != "tool_use":
+                            continue
 
-        logger.warning(
-            "Hit max tool-use iterations (%d) with %d tool calls, stopping -- "
-            "likely an imperative build that should have been one declarative "
-            "synapse_solaris_build_graph call",
-            _MAX_TOOL_ITERATIONS, tool_calls_total,
-        )
-        self._record_turns(_MAX_TOOL_ITERATIONS, tool_calls_total,
-                           hit_cap=True)
+                        if self._abort:
+                            outcome = "aborted"
+                            return
 
-    def _record_turns(self, turns: int, tool_calls: int, hit_cap: bool) -> None:
+                        result_msg = self._execute_tool_block(block)
+                        tool_results.append(result_msg)
+                        tool_calls_total += 1
+
+                    # Append all tool results in a single user message
+                    if tool_results:
+                        self._messages.append({
+                            "role": "user",
+                            "content": tool_results,
+                        })
+
+                else:
+                    # end_turn, max_tokens, or anything else -- we're done.
+                    # L9: the sequential-turn count (the dominant latency
+                    # term) so an imperative build (many turns) vs a one-
+                    # shot declarative call (1 turn) is measurable on disk.
+                    logger.info(
+                        "Conversation complete: %d turns, %d tool calls",
+                        turns_done, tool_calls_total,
+                    )
+                    outcome = "completed"
+                    return
+
+            logger.warning(
+                "Hit max tool-use iterations (%d) with %d tool calls, "
+                "stopping -- likely an imperative build that should have "
+                "been one declarative synapse_solaris_build_graph call",
+                _MAX_TOOL_ITERATIONS, tool_calls_total,
+            )
+            outcome = "cap"
+        finally:
+            self._record_turns(turns_done, tool_calls_total,
+                               hit_cap=(outcome == "cap"), outcome=outcome)
+
+    def _record_turns(self, turns: int, tool_calls: int, hit_cap: bool,
+                      outcome: str = "completed") -> None:
         """U2 instrument (scene-model Mile 0): persist the turns-per-send
         record the L9 log line above only *logs*. Lazy import + broad
         except — zero behavior change on any failure, worker-thread safe
-        (turns_ledger serializes with its own module lock)."""
+        (turns_ledger serializes with its own module lock). ``model`` is
+        the CTO-gate 6b confound control (mid-window model updates must be
+        visible in the baseline)."""
         try:
             from .turns_ledger import append_turn_record
             append_turn_record(
@@ -227,6 +245,8 @@ class ClaudeWorker(QThread):
                 turns=turns,
                 tool_calls=tool_calls,
                 hit_cap=hit_cap,
+                outcome=outcome,
+                model=getattr(self._provider, "model_identity", None),
             )
         except Exception:
             logger.debug("turns ledger record failed", exc_info=True)
