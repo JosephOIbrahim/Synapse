@@ -87,7 +87,7 @@ flowchart LR
 - 🧾 **The render receipt is real** — the Review face used to show a fake "verdict" (a chat line + a FAIL hardwired to fire on every render). Now it runs the perception check against your actual rendered pixels and shows an honest pass / fail / inconclusive — green *only* when the pixels really landed. Missing frame → red. Couldn't tell → amber. Never a fake green.
 - 📊 **Session fidelity, visible** — the integrity data ("did every action stay reversible and true?") was recorded and shown to no one. The Work face now surfaces it: clean → green, any violation → amber, trouble → red, nothing-yet → an honest "no operations tracked yet" (not a smug 100%).
 - 🔒 **Honesty you can't edit away** — both readouts are pinned by tests that **fail the build** if anyone ever makes them show green on a bad result. The panel's own thesis — receipts, not claims — now applies to the panel itself.
-- 🟢 **4,537 tests passing** (+22, zero failures). Verified offscreen; a live-in-Houdini look is the natural next step.
+- 🟢 **4,537 tests passing** (+22, zero failures). Verified offscreen **and live in H22** — the honesty logic + the receipt's compute confirmed in a running session against 182 real render manifests (green only on a genuine landing); the one-glance panel look is the artist's.
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
