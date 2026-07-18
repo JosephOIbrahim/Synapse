@@ -11,8 +11,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4537%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.31.0-1e293b.svg" alt="Changelog"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4571%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.32.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
 > ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it's all recorded (receipts, not magic). Five engines, 115 tools. **Install ↓ in ~5 min.**
@@ -38,7 +38,7 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 | You want… | Read… |
 |---|---|
 | **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
-| **What's new in v5.31.0** | *New in v5.31.0* — the supervisor surface is real: the panel now shows honest render receipts + session fidelity |
+| **What's new in v5.32.0** | *New in v5.32.0* — the render path is bounded: renders no longer freeze the UI, and crashed sessions leave a recovery capsule |
 | **How AI network-building stays safe** | *Propose → validate → build* |
 | **To install it** | *Install — 5 minutes* |
 | **The architecture** | *How it works — inside-out* |
@@ -80,14 +80,14 @@ flowchart LR
 
 ---
 
-## ✦ New in v5.31.0 — the supervisor surface is real
+## ✦ New in v5.32.0 — the render path is bounded
 
-**The panel now tells you the truth about its own work. Two windows that were missing or faked — did the render actually happen, and did anything go wrong — are live, and neither can flatter the result.**
+**Rendering no longer freezes Houdini, and a crashed session no longer loses its mind.**
 
-- 🧾 **The render receipt is real** — the Review face used to show a fake "verdict" (a chat line + a FAIL hardwired to fire on every render). Now it runs the perception check against your actual rendered pixels and shows an honest pass / fail / inconclusive — green *only* when the pixels really landed. Missing frame → red. Couldn't tell → amber. Never a fake green.
-- 📊 **Session fidelity, visible** — the integrity data ("did every action stay reversible and true?") was recorded and shown to no one. The Work face now surfaces it: clean → green, any violation → amber, trouble → red, nothing-yet → an honest "no operations tracked yet" (not a smug 100%).
-- 🔒 **Honesty you can't edit away** — both readouts are pinned by tests that **fail the build** if anyone ever makes them show green on a bad result. The panel's own thesis — receipts, not claims — now applies to the panel itself.
-- 🟢 **4,537 tests passing** (+22, zero failures). Verified offscreen **and live in H22** — the honesty logic + the receipt's compute confirmed in a running session against 182 real render manifests (green only on a genuine landing); the one-glance panel look is the artist's.
+- 🎬 **The render freeze is closed** — every render tool used to funnel through one unbounded main-thread block: kick a render, lose the UI until it finished. The WS path now renders through a bounded session flow — single-flight, pollable status, a 60s token cadence — so the app stays yours while the frame cooks.
+- 🧊 **Cold-cache guard** — the worst freezes were XPU renders hitting a cold OptiX shader cache. A foreground guard now refuses to launch that render inline until the cache is warm (with a prewarm script to warm it on your schedule).
+- 📦 **BLACKBOX** — when a session dies silently, it now leaves a capsule of everything that was in flight, and the next session detects it on startup and offers recovery. Plus `render_watch.ps1`, an external watcher that spots a stuck render from outside the process.
+- 🟢 **4,571 tests passing** (+34). Root cause confirmed by a 4-agent grounding pass + adversarial crucible (F1–F8 applied); post-fix gates closed same day.
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%

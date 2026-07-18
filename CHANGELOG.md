@@ -2,6 +2,14 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.32.0 — the render path is bounded
+
+*2026-07-18: the render freeze is closed. The confirmed chokepoint — every render tool funneling through `_handle_render` → `executeInMainThreadWithResult` (no timeout) → `node.render()`, freezing the whole UI for the length of the render — is now bounded on the WS path, and the BLACKBOX crash-recovery harness ships alongside it. **4,571 tests passing** (+34; 4 known local-only `test_bridge_endpoint` live-sidecar isolation failures tracked separately, CI green) · Houdini 22.0.368.*
+
+**THE BOUNDED RENDER PATH (`server/render_session.py`, `_handle_render_bounded` in `handlers_render.py`):** the WS path renders through a session registry — single-flight tokens, poll-based status, a 60s token flow — instead of an unbounded main-thread block. **`server/foreground_guard.py`** adds the XPU foreground guard: an OptiX cache-warmth gate that refuses to launch a cold-cache XPU render inline (a cold OptiX cache is what turns a bounded render into a multi-minute freeze). Panel + `/mcp` paths are guard-only by design. The husk offload alternative was REFUTED live on Indie (`Unable to load render plugin: karma` — architecture proven, license blocks pixels). External watcher: `scripts/render_watch.ps1` (tested). Operator card: `docs/render-freeze-operator-card.md`. CRUCIBLE findings F1–F8 applied; post-fix gates closed 2026-07-18 (Gate 1: 168✓).
+
+**BLACKBOX (`scripts/blackbox_recover.py`, `blackbox_mine.py`):** crash-recovery harness for silent Claude-CLI deaths — capsules everything in-flight at death, with `--detect` wired as a SessionStart hook so the next session opens knowing what the last one was doing. Local capsules (`harness/state/recovery/`) stay untracked. Operator card: `docs/blackbox-operator-card.md`.
+
 ## v5.31.0 — the supervisor surface is real
 
 *2026-07-17: the panel Joe runs now tells the truth about its own work. Two audit windows that were previously missing or fake — the render receipt and the session-fidelity readout — are live and honesty-guarded. **4,537 tests passing, 0 failures** (+22) · Houdini 22.0.368 · verified offscreen (hython), live end-to-end owed.*
