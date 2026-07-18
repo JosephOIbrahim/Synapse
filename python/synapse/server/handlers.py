@@ -385,6 +385,14 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             # thread — already serialized there, and locking would deadlock
             # run_on_main). Read-only commands never contend.
             _mutating = cmd_type not in _READ_ONLY_COMMANDS
+            # A render POLL is a registry read riding the "render" command
+            # name (crucible F3): treat it as read-only so it skips the C5
+            # lock AND the live integrity envelope — during an active render
+            # each envelope scene-hash capture would block against the busy
+            # main thread and log a phantom "LIVE mutation" block per poll.
+            if (cmd_type == "render" and isinstance(command.payload, dict)
+                    and command.payload.get("poll")):
+                _mutating = False
             _serialize = (_mutating
                           and threading.current_thread() is not threading.main_thread())
             _lock_cm = _MUTATION_LOCK if _serialize else contextlib.nullcontext()
@@ -543,7 +551,10 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
         # Viewport / Render
         reg.register("capture_viewport", self._handle_capture_viewport)
-        reg.register("render", self._handle_render)
+        # Tool-level renders go through the guarded/bounded wrapper (Indie
+        # fix): foreground guard + single-flight + wait_budget_s token flow.
+        # Internal orchestrators still call _handle_render directly.
+        reg.register("render", self._handle_render_bounded)
 
         # TOPs / PDG wedging
         reg.register("wedge", self._handle_wedge)

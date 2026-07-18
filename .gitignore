@@ -127,3 +127,4 @@ harness/state/drop.json
 harness/state/posture.json
 harness/state/release_readiness_verdict.json
 harness/state/studio_readiness_verdict.json
+harness/state/recovery/

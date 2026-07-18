@@ -49,6 +49,13 @@ from .handler_helpers import (
     _convert_preview,
 )
 
+# Bounded-wait budget (seconds) for the WS/bridge thread on a tool-level
+# render (_handle_render_bounded). Warm renders finish well inside it; a cold
+# Karma XPU kernel compile (documented up to ~2 minutes) times out into a
+# render_in_progress token instead of jamming the bridge's serial message
+# loop. Payload wait_budget_s overrides per call; 0 = return immediately.
+_RENDER_WAIT_BUDGET_S = 60.0
+
 
 def _find_render_rop():
     """Auto-discover a render ROP node. Searches /stage then /out."""
@@ -216,6 +223,234 @@ class RenderHandlerMixin:
         }
         result.update(_show_advisory)
         return result
+
+    def _handle_render_bounded(self, payload: Dict) -> Dict:
+        """Guarded, bounded entry for the tool-level ``render`` command.
+
+        The render itself is _handle_render — unchanged, all WP4/C11/RETINA
+        invariants intact — and still runs in-process on Houdini's main
+        thread: on Indie the out-of-process husk path cannot load the Karma
+        delegate (verified live 2026-07-17, ``Unable to load render plugin:
+        karma`` with zero output, ``--indie`` flag included). What this
+        wrapper adds is survivability:
+
+        * poll — payload ``{"poll": token}`` reads an in-flight or finished
+          render session instead of starting a new render.
+        * single-flight — a second render while one is active returns the
+          active token; it never queues another render behind the busy main
+          thread. ``force_new=true`` overrides.
+        * foreground guard — refuses accidental heavy foreground renders; a
+          COLD Karma XPU kernel cache is refused regardless of size (fixed
+          compile cost, documented up to ~2 minutes at any resolution).
+          ``force_foreground=true`` downgrades refusal to a carried warning.
+        * bounded wait — the WS/bridge caller waits at most ``wait_budget_s``
+          (default 60, 0 = return immediately), then gets
+          ``{"status": "render_in_progress", "render_token": ...}`` while the
+          render continues; the bridge's serial message loop stays free for
+          ping/status/cancel. The Houdini UI itself still freezes for the
+          render's duration — that is the in-process ceiling on Indie:
+          bounded and survivable, not removed.
+
+        Internal orchestrators (safe_render, render_progressively, the render
+        farm) keep calling _handle_render directly: they own their own pacing
+        and retries and need completed-result semantics per frame.
+        """
+        if not HOU_AVAILABLE:
+            raise RuntimeError(_HOUDINI_UNAVAILABLE)
+
+        import threading as _threading
+
+        from . import render_session as _sessions
+        from .foreground_guard import assess_foreground_render
+
+        poll_token = payload.get("poll")
+        if poll_token:
+            sess = _sessions.get_session(str(poll_token))
+            if sess is None:
+                raise ValueError(
+                    "No render session %r — it may have been evicted (only "
+                    "recent sessions are kept) or never started" % poll_token
+                )
+            return _sessions.as_status_payload(sess)
+
+        # Benign check-then-act window (crucible F5): two off-main callers can
+        # both pass this check inside the guard-probe window and start two
+        # sessions — the outcome is two serialized main-thread renders with
+        # two consistent tokens, identical to an explicit force_new. Every
+        # registry mutation itself is lock-safe.
+        active = _sessions.active_session()
+        if active is not None and not payload.get("force_new"):
+            tok, meta = active
+            return {
+                "status": "render_in_progress",
+                "render_token": tok,
+                "active_since": meta.get("started_at"),
+                "note": (
+                    "A render is already holding Houdini's main thread — not "
+                    "starting another behind it. Poll with "
+                    '{"poll": "%s"} or pass force_new=true to queue anyway.'
+                    % tok
+                ),
+            }
+
+        rop_path = resolve_param(payload, "node", required=False)
+        width = resolve_param_with_default(payload, "width", None)
+        height = resolve_param_with_default(payload, "height", None)
+
+        from .main_thread import run_on_main
+
+        def _guard_probe():
+            """Cheap main-thread read: engine + configured res/samples.
+
+            The engine decides the guard's budget table, and for Karma it
+            lives on the settings LOP ('engine' parm on H22), not the ROP —
+            _detect_karma_engine alone reads generic or delegate-flavored
+            'karma*' ids for usdrender ROPs (the renderer parm evals to
+            Hydra delegate ids like BRAY_HdKarma → "karma_bray_hdkarma"),
+            which would skip the XPU cold-cache gate."""
+            node = hou.node(rop_path) if rop_path else _find_render_rop()
+            if node is None:
+                raise ValueError(
+                    "Couldn't find a render ROP at %s — double-check the "
+                    "path to your ROP node" % rop_path
+                )
+            node_type = node.type().name()
+            engine = _detect_karma_engine(node, node_type)
+            if engine.startswith("karma") and engine not in (
+                    "karma_xpu", "karma_cpu"):
+                cands = [node]
+                lp = node.parm("loppath")
+                if lp is not None and lp.eval():
+                    lop = hou.node(lp.eval())
+                    if lop is not None:
+                        cands.append(lop)
+                        if lop.type().name() != "karmarendersettings":
+                            try:
+                                cands.extend(
+                                    c for c in lop.parent().children()
+                                    if c.type().name() == "karmarendersettings"
+                                )
+                            except Exception:
+                                pass
+                for cand in cands:
+                    p = cand.parm("engine")
+                    if p is not None:
+                        try:
+                            val = str(p.eval()).lower()
+                        except Exception:
+                            break
+                        if "xpu" in val:
+                            engine = "karma_xpu"
+                        elif "cpu" in val:
+                            engine = "karma_cpu"
+                        break
+            w = h = None
+            for rx, ry in (("resolutionx", "resolutiony"),
+                           ("res_user1", "res_user2")):
+                px, py = node.parm(rx), node.parm(ry)
+                if px is not None and py is not None:
+                    try:
+                        w, h = int(px.eval()), int(py.eval())
+                    except Exception:
+                        pass
+                    break
+            samples = None
+            for sp in ("pathtracedsamples", "samplesperpixel", "vm_samplesx"):
+                p = node.parm(sp)
+                if p is not None:
+                    try:
+                        samples = int(p.eval())
+                    except Exception:
+                        pass
+                    break
+            return engine, w, h, samples
+
+        # A busy main thread fails this probe fast (run_on_main timeout) —
+        # correct: never queue a render behind an already-stuck main thread.
+        engine, rop_w, rop_h, rop_samples = run_on_main(_guard_probe, timeout=5.0)
+
+        eff_w = int(width) if width else rop_w
+        eff_h = int(height) if height else rop_h
+        verdict = assess_foreground_render(
+            engine,
+            width=eff_w,
+            height=eff_h,
+            samples=rop_samples,
+            force=bool(payload.get("force_foreground")),
+        )
+        if not verdict["allow"]:
+            raise RuntimeError(
+                "Foreground render refused: %s %s"
+                % (verdict["reason"], verdict["suggestion"])
+            )
+        guard_advisory = verdict if verdict["level"] != "allow" else None
+
+        def _attach_advisory(res):
+            if guard_advisory and isinstance(res, dict):
+                res.setdefault("foreground_guard", guard_advisory)
+            return res
+
+        # Panel-inline path: the caller IS Houdini's main thread (Qt slot).
+        # A bounded wait is impossible — the render must run on this very
+        # thread — so the guard above is the only protection here.
+        if _threading.current_thread().ident == _threading.main_thread().ident:
+            return _attach_advisory(self._handle_render(payload))
+
+        wait_budget = payload.get("wait_budget_s")
+        if wait_budget is None:
+            wait_budget = _RENDER_WAIT_BUDGET_S
+        wait_budget = float(wait_budget)
+
+        token = _sessions.start_session({
+            "rop": rop_path or "",
+            "engine": engine,
+            "frame": resolve_param_with_default(payload, "frame", None),
+            "width": eff_w,
+            "height": eff_h,
+        })
+
+        # Local outcome holder (crucible F4): the bounded caller reads the
+        # job's result from HERE, never back from the registry — a concurrent
+        # start_session could evict this just-finished session between
+        # join() returning and a registry read. It also carries the exception
+        # OBJECT for a faithful re-raise; the registry keeps only the message
+        # + type name (F6).
+        outcome: Dict = {}
+
+        def _job():
+            try:
+                res = self._handle_render(payload)
+                outcome["result"] = res
+                _sessions.complete_session(token, res)
+            except BaseException as exc:  # noqa: BLE001 — surfaced below / via poll
+                outcome["error"] = exc
+                _sessions.fail_session(token, exc)
+
+        worker = _threading.Thread(
+            target=_job,
+            name="synapse.render.session.%s" % token,
+            daemon=True,
+        )
+        worker.start()
+        if wait_budget > 0:
+            worker.join(timeout=wait_budget)
+
+        if "result" in outcome:
+            return _attach_advisory(dict(outcome["result"]))
+        if "error" in outcome:
+            raise outcome["error"]
+        return {
+            "status": "render_in_progress",
+            "render_token": token,
+            "engine": engine,
+            "note": (
+                "The render is holding Houdini's main thread and did not "
+                "finish within %.0fs — the bridge stays responsive while it "
+                'continues. Poll with {"poll": "%s"}; a cold Karma XPU '
+                "kernel compile alone can take up to ~2 minutes."
+                % (wait_budget, token)
+            ),
+        }
 
     def _handle_render(self, payload: Dict) -> Dict:
         """Render a frame via Karma, Mantra, or any ROP node.
@@ -1143,17 +1378,31 @@ class RenderHandlerMixin:
         return report.to_dict()
 
     def _handle_render_farm_status(self, payload: Dict) -> Dict:
-        """Get the current render farm status."""
+        """Get the current render farm status.
+
+        Also surfaces bounded single-render sessions (render_sessions) when
+        any exist — the poll surface for renders released with a
+        render_in_progress token. Attached only when non-empty so the
+        no-farm/no-session result shape is unchanged."""
+        from . import render_session as _sessions
+
         if hasattr(self, '_render_farm') and self._render_farm is not None:
-            return self._render_farm.get_status()
-        return {"running": False, "cancelled": False, "scene_tags": []}
+            result = dict(self._render_farm.get_status())
+        else:
+            result = {"running": False, "cancelled": False, "scene_tags": []}
+        sessions = _sessions.summary()
+        if sessions:
+            result["render_sessions"] = sessions
+        return result
 
     def _handle_render_farm_cancel(self, payload: Dict) -> Dict:
         """Kill switch: cancel the running farm sequence and/or autonomous driver.
 
         Classified read-only so it bypasses the C5 mutation lock (a running
-        render holds that lock for its entire sequence) -- so audit is written
-        here explicitly. Signal semantics: the in-flight frame finishes first.
+        farm SEQUENCE holds that lock for its duration; a bounded single
+        render releases it at the token return while the render continues) --
+        so audit is written here explicitly. Signal semantics: the in-flight
+        frame finishes first.
         """
         from ..core.audit import audit_log, AuditLevel, AuditCategory
 

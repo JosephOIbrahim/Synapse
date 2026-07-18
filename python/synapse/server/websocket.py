@@ -656,13 +656,24 @@ class SynapseServer:
             # H3: while stalled, one bounded (<=2s) probe first — success
             # resets the stall counter and the command proceeds, so recovery
             # no longer depends on incidental read-only traffic.
+            # Registry-only reads are EXEMPT (crucible F2): a bounded render
+            # saturating the main thread is exactly when {"poll": token} and
+            # render_farm_status must keep answering — neither touches the
+            # main thread, so the stall gate must not eat them.
+            _stall_exempt = (
+                command.type == "render_farm_status"
+                or (command.type == "render"
+                    and isinstance(command.payload, dict)
+                    and bool(command.payload.get("poll")))
+            )
             try:
                 from synapse.server.main_thread import (
                     is_main_thread_stalled,
                     probe_main_thread,
                     stall_state,
                 )
-                if is_main_thread_stalled() and not probe_main_thread():
+                if (not _stall_exempt) and is_main_thread_stalled() \
+                        and not probe_main_thread():
                     if self._circuit_breaker:
                         self._circuit_breaker.record_failure()
                     n = stall_state()["consecutive_timeouts"]

@@ -115,6 +115,7 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_MEMORY_BACKEND` | `jsonl` (default) / `moneta` / `shadow`; unknown values fall back to jsonl with a warning; `sqlite` is NOT live (dormant factory only) | `jsonl` | `memory/store.py` | Both |
 | `SYNAPSE_METRICS_INTERVAL` | Live-metrics sample interval, seconds (floor 0.5) | `2.0` | `server/live_metrics.py` | Both |
 | `SYNAPSE_MONITOR_EVENT_CAP` | Max buffered events per TOPs monitor stream | `5000` | `server/handlers_tops/_common.py` | Both |
+| `SYNAPSE_OPTIX_CACHE_DIR` | Override the Karma XPU OptiX kernel-cache directory the foreground-render guard probes for warmth; empty dir = cold cache = expect the fixed first-render OptiX compile stall, so foreground renders are refused | `%LOCALAPPDATA%/NVIDIA/OptixCache/Houdini<major>` | `server/foreground_guard.py` | Both: leave unset on a standard install; tests + non-standard installs override |
 | `SYNAPSE_PATH` | Bridge WS path | `/synapse` | `mcp_server.py`, `panel/ws_bridge.py`, `panel/chat_panel.py` | Both |
 | `SYNAPSE_PORT` | Bridge WS port fallback (sidecar wins) | `9999` | `mcp_server.py`, `server/bridge_endpoint.py`, `server/start_hwebserver.py`, panel | Both |
 | `SYNAPSE_PROVENANCE_DIR` | Floor provenance records | `<repo>/.synapse/provenance` | `core/floor_gate.py` | Studio: audited storage |

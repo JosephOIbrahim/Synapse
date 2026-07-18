@@ -41,6 +41,12 @@
             "type": "command",
             "command": "python C:/Users/User/SYNAPSE/.claude/hooks/synapse_hooks_bridge.py",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python C:/Users/User/SYNAPSE/scripts/blackbox_recover.py --detect",
+            "timeout": 15,
+            "statusMessage": "Checking for crashed sessions..."
           }
         ]
       }
