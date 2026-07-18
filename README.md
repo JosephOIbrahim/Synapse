@@ -58,7 +58,7 @@ A docked **SYNAPSE panel** inside Houdini. You type what you want — *"make a b
 > ✅ *"make a box" → a real geo node, confirmed on graphical Houdini 22.0.368 (H21.0.671 dual-build supported).*
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
 flowchart LR
     ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>rail · CHAT · author token"]:::panel
     PANEL -->|"Claude · Gemini · Nemotron · Ollama · Custom"| LOOP["Agent loop<br/>chosen engine + 115 tools"]:::panel
@@ -69,11 +69,11 @@ flowchart LR
     BR -.timing.-> METRICS["Latency metrics<br/>histograms → Prometheus"]:::side
     BR -.needs approval.-> GATE["Consent gate<br/>auto-surfaces in CHAT · accept / revert"]:::bridge
     GATE -.hands back.-> ART
-    classDef artist fill:#EFB98A,stroke:#8A5A2B,color:#1A1208
-    classDef panel fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
-    classDef bridge fill:#F7DDC2,stroke:#C77B3F,color:#1A1208
-    classDef hou fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
-    classDef side fill:#FBEBD9,stroke:#B08968,color:#1A1208
+    classDef artist fill:#DE8425,stroke:#7A4310,color:#1A1208
+    classDef panel fill:#E8963B,stroke:#9C5A10,color:#1A1208
+    classDef bridge fill:#EEA958,stroke:#9C5A10,color:#1A1208
+    classDef hou fill:#DE8425,stroke:#6B3A0C,color:#1A1208
+    classDef side fill:#F2BC77,stroke:#B37A33,color:#1A1208
 ```
 
 **The panel, briefly (v9.1):**
@@ -96,7 +96,7 @@ flowchart LR
 - 🟢 **4,571 tests passing** (+34). Root cause confirmed by a 4-agent grounding pass + adversarial crucible (F1–F8 applied); post-fix gates closed same day.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
 flowchart LR
     ASK["Artist<br/>'swap the crystal to Dark_Glass'"]:::artist --> BUILD["SYNAPSE builds it<br/>undo-safe · recorded"]:::panel
     BUILD --> RENDER["Karma render<br/>beauty + object-ID AOV"]:::panel
@@ -105,10 +105,10 @@ flowchart LR
     T1 -->|"pass / fail / inconclusive"| REC["agent.usd receipt<br/>DECISION · VIA · PROOF"]:::side
     T1 -.next tiers.-> LADDER["T2 ONNX · T3 VLM<br/>cost-gated escalation"]:::side
     REC -.-> ART2["Artist<br/>proof, not a screenshot"]:::artist
-    classDef artist fill:#EFB98A,stroke:#8A5A2B,color:#1A1208
-    classDef panel fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
-    classDef hou fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
-    classDef side fill:#FBEBD9,stroke:#B08968,color:#1A1208
+    classDef artist fill:#DE8425,stroke:#7A4310,color:#1A1208
+    classDef panel fill:#E8963B,stroke:#9C5A10,color:#1A1208
+    classDef hou fill:#DE8425,stroke:#6B3A0C,color:#1A1208
+    classDef side fill:#F2BC77,stroke:#B37A33,color:#1A1208
 ```
 
 > *The full picture — the T1 metric kit, the scoped-delta primitives, the twins, the Rulebook, and the supervisor-layer seams that come next — is [in CHANGELOG.md](CHANGELOG.md) (top entry) and `docs/SYNAPSE_RETINA_BLUEPRINT.md`.*
@@ -129,7 +129,7 @@ flowchart LR
 **The discipline that got here:** nothing merged on any agent's self-report — forge builds, a hostile crucible pass attacks what it didn't build, and every cycle is post-merge suite-re-verified. When a "loud-error" fix was caught only ⅓-implemented, it looped to a Pass-3 rather than shipping. Receipts, not vibes — including the agent's own.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
 flowchart LR
     DROP["Drop + drop-week<br/>9 runbook artifacts"]:::hou --> ROADMAP["CTO roadmap<br/>silent-break register"]:::panel
     ROADMAP --> FIX["Fix cycles<br/>forge → assay → crucible"]:::bridge
@@ -139,10 +139,10 @@ flowchart LR
     LIVE -.hostile pass finds a risk.-> NEXT["New fix cycle<br/>ratified · gated"]:::side
     NEXT -.-> FIX
     DEMO -.next.-> EXPAND["Copernicus expansion<br/>scaffold · terrain · neural (spec'd)"]:::side
-    classDef panel fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
-    classDef bridge fill:#F7DDC2,stroke:#C77B3F,color:#1A1208
-    classDef hou fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
-    classDef side fill:#FBEBD9,stroke:#B08968,color:#1A1208
+    classDef panel fill:#E8963B,stroke:#9C5A10,color:#1A1208
+    classDef bridge fill:#EEA958,stroke:#9C5A10,color:#1A1208
+    classDef hou fill:#DE8425,stroke:#6B3A0C,color:#1A1208
+    classDef side fill:#F2BC77,stroke:#B37A33,color:#1A1208
 ```
 
 ---
@@ -171,16 +171,16 @@ flowchart LR
   - *Staged next: `synapse_explain_recook` — ask "why did this recook?" and get an answer cited to a probe trial.*
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
 flowchart LR
     EXP["EXPLORE<br/>probe-verified ground truth<br/>live probe · or probe-checked corpus"]:::hou -->|"committed, integrity-checked catalog"| REV["REVIEW<br/>sweep the code vs the catalog<br/>0 critical"]:::bridge
     REV -->|"findings → fixes"| SCAF["SCAFFOLD<br/>truth into the live path<br/>wire_by_label · validator P3e + LOP · test pins"]:::panel
     SCAF -->|"new truth classes"| NEXT["Queue<br/>human ratifies each new cycle"]:::side
     NEXT -->|"cycle N+1 · so far: ① wiring · ② Solaris context · ③ diagnostic (cook truth) · ④ H22 discovery re-sweep (ran — 77 candidates) · queued: the port-wave fix cycles"| EXP
-    classDef panel fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
-    classDef bridge fill:#F7DDC2,stroke:#C77B3F,color:#1A1208
-    classDef hou fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
-    classDef side fill:#FBEBD9,stroke:#B08968,color:#1A1208
+    classDef panel fill:#E8963B,stroke:#9C5A10,color:#1A1208
+    classDef bridge fill:#EEA958,stroke:#9C5A10,color:#1A1208
+    classDef hou fill:#DE8425,stroke:#6B3A0C,color:#1A1208
+    classDef side fill:#F2BC77,stroke:#B37A33,color:#1A1208
 ```
 
 ---
@@ -202,7 +202,7 @@ It also wires **Solaris the way production expects** — live-probed against 21.
 Verified end-to-end on **live Houdini 22.0.368** (originally proven on 21.0.671) — build, single-undo revert, TOCTOU halt, and forced-failure rollback all pass; the wiring catalog is now major-aware, so validation resolves against whichever build you run.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
 flowchart LR
     ASK["Artist<br/>'build a karma setup'"]:::artist --> PROP["Propose<br/>nodes + wires, on paper"]:::panel
     PROP --> VAL["Validate<br/>vs your live scene · vs the wiring catalog (P3e) · vs the Solaris knowledge catalog<br/>inputs · wire types · slot labels · phantom LOP types · material-source ordering · occupied inputs"]:::bridge
@@ -210,11 +210,11 @@ flowchart LR
     VAL -.->|"something's off"| STOP["Stop · nothing touched"]:::side
     BUILD --> NODES[("Real nodes<br/>single Ctrl+Z reverts")]:::hou
     BUILD -.provenance.-> REC["agent.usd receipt<br/>decision · reasoning · revert"]:::side
-    classDef artist fill:#EFB98A,stroke:#8A5A2B,color:#1A1208
-    classDef panel fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
-    classDef bridge fill:#F7DDC2,stroke:#C77B3F,color:#1A1208
-    classDef hou fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
-    classDef side fill:#FBEBD9,stroke:#B08968,color:#1A1208
+    classDef artist fill:#DE8425,stroke:#7A4310,color:#1A1208
+    classDef panel fill:#E8963B,stroke:#9C5A10,color:#1A1208
+    classDef bridge fill:#EEA958,stroke:#9C5A10,color:#1A1208
+    classDef hou fill:#DE8425,stroke:#6B3A0C,color:#1A1208
+    classDef side fill:#F2BC77,stroke:#B37A33,color:#1A1208
 ```
 
 ---
@@ -247,14 +247,14 @@ flowchart LR
 Tested on **Windows 11 + Houdini 22.0.368** (H21.0.671 dual-build supported). macOS / Linux: same steps, different slashes.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
 flowchart LR
     DL["1 · Download<br/>the SYNAPSE folder"]:::step --> REG["2 · Run the installer<br/>(once)"]:::step
     REG --> KEY["3 · Add your API key<br/>to the .env"]:::step
     KEY --> OPEN["4 · Restart Houdini,<br/>open the panel"]:::step
     OPEN --> CHAT["Type 'make a box'<br/>→ it builds"]:::done
-    classDef step fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
-    classDef done fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
+    classDef step fill:#E8963B,stroke:#9C5A10,color:#1A1208
+    classDef done fill:#DE8425,stroke:#6B3A0C,color:#1A1208
 ```
 
 **1 · Get the files** *(~1 min)* — green **Code ▸ Download ZIP**, unzip somewhere stable (e.g. `C:\Users\<you>\SYNAPSE`).
@@ -304,7 +304,7 @@ That's the whole loop — **start to chatting in ~5 minutes.** Everything is an 
 Most AI-for-DCC tools run the agent in a **separate process** and reach in through a bridge — every call a round-trip, every tool a marshalling problem. **SYNAPSE inverts that:** the agent loop runs *inside* Houdini's own interpreter, dispatching tools as direct in-process calls against `hou`. The same pattern composes across the portfolio (a **Nuke** host, **Octavius**, the **Cognitive Bridge**).
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
 flowchart LR
     subgraph OUT ["Outside-in — the standard pattern"]
         direction LR
