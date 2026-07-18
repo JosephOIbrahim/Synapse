@@ -202,6 +202,8 @@ class ClaudeWorker(QThread):
                     "Conversation complete: %d turns, %d tool calls",
                     iteration + 1, tool_calls_total,
                 )
+                self._record_turns(iteration + 1, tool_calls_total,
+                                   hit_cap=False)
                 return
 
         logger.warning(
@@ -210,6 +212,24 @@ class ClaudeWorker(QThread):
             "synapse_solaris_build_graph call",
             _MAX_TOOL_ITERATIONS, tool_calls_total,
         )
+        self._record_turns(_MAX_TOOL_ITERATIONS, tool_calls_total,
+                           hit_cap=True)
+
+    def _record_turns(self, turns: int, tool_calls: int, hit_cap: bool) -> None:
+        """U2 instrument (scene-model Mile 0): persist the turns-per-send
+        record the L9 log line above only *logs*. Lazy import + broad
+        except — zero behavior change on any failure, worker-thread safe
+        (turns_ledger serializes with its own module lock)."""
+        try:
+            from .turns_ledger import append_turn_record
+            append_turn_record(
+                provider_id=getattr(self._provider, "id", "unknown"),
+                turns=turns,
+                tool_calls=tool_calls,
+                hit_cap=hit_cap,
+            )
+        except Exception:
+            logger.debug("turns ledger record failed", exc_info=True)
 
     # ------------------------------------------------------------------
     # Single tool execution

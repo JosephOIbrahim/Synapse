@@ -432,6 +432,22 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                                   hash_before=_hash_before,
                                   hash_after=_hash_after,
                                   enveloped=_enveloped)
+            else:
+                # Scene-model Mile 0 measurement slice: READ-class
+                # observation ledger. Fire-and-forget on the same executor
+                # as the mutating logs; lazy import + broad except so the
+                # ledger can NEVER fail a command. The SYNAPSE_READ_LEDGER=0
+                # kill switch is read at call time both here (skips the
+                # submission outright — handler behavior observably
+                # unchanged when off) and inside record_read.
+                try:
+                    from . import read_ledger as _read_ledger
+                    if _read_ledger.read_ledger_enabled():
+                        _log_executor.submit(
+                            _read_ledger.record_read,
+                            cmd_type, command.payload, result)
+                except Exception:
+                    _log.debug("read ledger submit failed", exc_info=True)
 
             return SynapseResponse(
                 id=command.id,

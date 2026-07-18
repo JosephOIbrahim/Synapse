@@ -122,6 +122,8 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_PROVENANCE_MAX_RECORDS` | Provenance FIFO cap; <=0 or unparseable disables rotation | `5000` | `core/floor_gate.py` | Studio |
 | `SYNAPSE_RAG_ROOT` | TWO meanings — see note below table | `<repo>/rag` (recall) / `G:\HOUDINI21_RAG_SYSTEM` (scout, dev-only) | `server/handlers.py`, `cognitive/tools/scout.py` | Both; if set, ONLY to a repo-rag tree |
 | `SYNAPSE_RATE_LIMITER` | `"1"` enables the WS rate limiter, `"0"` disables | `1` (on) | `server/start_hwebserver.py` | Studio: never disable |
+| `SYNAPSE_READ_LEDGER` | `"0"`/`"false"`/`"off"` disables the scene-model Mile 0 READ-class observation ledger (`read_ledger.jsonl`); read at call time | on | `server/read_ledger.py`, `server/handlers.py` | Both: leave on during the baseline soak window |
+| `SYNAPSE_READ_LEDGER_MAX_RECORDS` | Read-ledger FIFO cap; <=0 or unparseable disables rotation | `5000` | `server/read_ledger.py` | Both |
 | `SYNAPSE_REDUCED_MOTION` | `1`/`true`/`yes`/`on` minimizes panel motion (accessibility) | off | `panel/designsystem/tokens.py` | Single-seat (accessibility) |
 | `SYNAPSE_REPORTS_DIR` | `synapse_write_report` output dir | `<repo>/docs` | `server/handlers.py` | Studio: show storage |
 | `SYNAPSE_RESILIENCE` | `"0"` disables rate-limiter + circuit-breaker (CI escape hatch only) | enabled | `mcp/server.py`, `server/websocket.py` | Studio: never set 0 |
@@ -132,6 +134,7 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_SHOW_CONFIG` | Path to a show.json config layer; precedence env > $HIP > $JOB > defaults | unset | `core/show_config.py` | Both |
 | `SYNAPSE_TELEMETRY_FLUSH_S` | Periodic telemetry.json flush interval, seconds; <=0 disables | `60.0` | `server/telemetry_dump.py` | Both |
 | `SYNAPSE_TOPS_MAX_PROCS` | maxprocs for auto-created TOPs localscheduler | cpu_count-2 (min 1) | `server/handlers_tops/_common.py` | Both |
+| `SYNAPSE_TURNS_LEDGER_MAX_RECORDS` | Turns-per-send ledger (`turns.jsonl`, the U2 instrument) FIFO cap; <=0 or unparseable disables rotation | `5000` | `panel/turns_ledger.py` | Both |
 | `SYNAPSE_VEX_ROOT` | Scout VEX store root | == `SYNAPSE_RAG_ROOT` | `cognitive/tools/scout.py` | Dev |
 | `SYNAPSE_WORKER_TOOL_MODE` | Autonomous-worker tool policy: `strict` / `standard` / `unrestricted` | `standard` | `panel/worker_policy.py` | Studio: standard or strict |
 
