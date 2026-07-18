@@ -58,7 +58,7 @@ A docked **SYNAPSE panel** inside Houdini. You type what you want — *"make a b
 > ✅ *"make a box" → a real geo node, confirmed on graphical Houdini 22.0.368 (H21.0.671 dual-build supported).*
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
 flowchart LR
     ART["Artist<br/>'make a box'"]:::artist --> PANEL["SYNAPSE panel<br/>rail · CHAT · author token"]:::panel
     PANEL -->|"Claude · Gemini · Nemotron · Ollama · Custom"| LOOP["Agent loop<br/>chosen engine + 115 tools"]:::panel
@@ -69,14 +69,20 @@ flowchart LR
     BR -.timing.-> METRICS["Latency metrics<br/>histograms → Prometheus"]:::side
     BR -.needs approval.-> GATE["Consent gate<br/>auto-surfaces in CHAT · accept / revert"]:::bridge
     GATE -.hands back.-> ART
-    classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
-    classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
+    classDef artist fill:#EFB98A,stroke:#8A5A2B,color:#1A1208
+    classDef panel fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
+    classDef bridge fill:#F7DDC2,stroke:#C77B3F,color:#1A1208
+    classDef hou fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
+    classDef side fill:#FBEBD9,stroke:#B08968,color:#1A1208
 ```
 
-**The panel, briefly (v9.1):** a persistent rail (live state + a real **Stop**), one **CHAT** surface where the build review + **consent gate auto-surface** when a build needs approval — consent comes to you, then hands back on accept/revert — the **author token** (engine + model in one rail control), an **`Aa`** control that scales only what you *read*, a bundled **Space Grotesk / Space Mono** type system, a token-only meter, and a **`/`** command palette over every tool.
+**The panel, briefly (v9.1):**
+
+- **One CHAT surface** — the build review + **consent gate auto-surface** when a build needs approval. Consent comes to *you*, then hands back on accept/revert.
+- **A persistent rail** — live state + a real **Stop**.
+- **The author token** — engine + model in one rail control.
+- **`Aa`** scales only what you *read* · **`/`** opens a command palette over every tool · a token-only meter.
+- Bundled **Space Grotesk / Space Mono** type system.
 
 ---
 
@@ -90,7 +96,7 @@ flowchart LR
 - 🟢 **4,571 tests passing** (+34). Root cause confirmed by a 4-agent grounding pass + adversarial crucible (F1–F8 applied); post-fix gates closed same day.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
 flowchart LR
     ASK["Artist<br/>'swap the crystal to Dark_Glass'"]:::artist --> BUILD["SYNAPSE builds it<br/>undo-safe · recorded"]:::panel
     BUILD --> RENDER["Karma render<br/>beauty + object-ID AOV"]:::panel
@@ -99,10 +105,10 @@ flowchart LR
     T1 -->|"pass / fail / inconclusive"| REC["agent.usd receipt<br/>DECISION · VIA · PROOF"]:::side
     T1 -.next tiers.-> LADDER["T2 ONNX · T3 VLM<br/>cost-gated escalation"]:::side
     REC -.-> ART2["Artist<br/>proof, not a screenshot"]:::artist
-    classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
-    classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
+    classDef artist fill:#EFB98A,stroke:#8A5A2B,color:#1A1208
+    classDef panel fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
+    classDef hou fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
+    classDef side fill:#FBEBD9,stroke:#B08968,color:#1A1208
 ```
 
 > *The full picture — the T1 metric kit, the scoped-delta primitives, the twins, the Rulebook, and the supervisor-layer seams that come next — is [in CHANGELOG.md](CHANGELOG.md) (top entry) and `docs/SYNAPSE_RETINA_BLUEPRINT.md`.*
@@ -123,7 +129,7 @@ flowchart LR
 **The discipline that got here:** nothing merged on any agent's self-report — forge builds, a hostile crucible pass attacks what it didn't build, and every cycle is post-merge suite-re-verified. When a "loud-error" fix was caught only ⅓-implemented, it looped to a Pass-3 rather than shipping. Receipts, not vibes — including the agent's own.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
 flowchart LR
     DROP["Drop + drop-week<br/>9 runbook artifacts"]:::hou --> ROADMAP["CTO roadmap<br/>silent-break register"]:::panel
     ROADMAP --> FIX["Fix cycles<br/>forge → assay → crucible"]:::bridge
@@ -133,10 +139,10 @@ flowchart LR
     LIVE -.hostile pass finds a risk.-> NEXT["New fix cycle<br/>ratified · gated"]:::side
     NEXT -.-> FIX
     DEMO -.next.-> EXPAND["Copernicus expansion<br/>scaffold · terrain · neural (spec'd)"]:::side
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
-    classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
+    classDef panel fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
+    classDef bridge fill:#F7DDC2,stroke:#C77B3F,color:#1A1208
+    classDef hou fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
+    classDef side fill:#FBEBD9,stroke:#B08968,color:#1A1208
 ```
 
 ---
@@ -147,21 +153,34 @@ flowchart LR
 
 **Three cycles have shipped — three kinds of truth** (with capability + readiness catalogs behind them):
 
-- 🔌 **① Wiring truth — *how* nodes connect.** `host/introspect_connectivity.py` instantiates **282 node types** headless and records their real input/output counts + slot labels → a committed, integrity-checked catalog. `wire_by_label()` (`python/synapse/core/wiring.py`) then resolves inputs by **probed label, never remembered index** (fail-loud on an unknown label/type), and the validator's **slot-semantic checks (P3e)** reject an edge into an input the type doesn't have. *Receipts: the review sweep ran **141 sites, 0 critical**; the cycle fixed **2 known miswires** (swapped solver inputs).*
-- 🧭 **② Solaris context truth — *what* the nodes are.** A corpus-authored, probe-cross-checked **LOP / Solaris knowledge catalog** teaches the validator the semantics wiring truth can't see. It **hard-rejects phantom LOP types** the model reaches for out of SOP habit — there is no `grid` or `plane` LOP (use a `cube`) — and **advises** when an `assignmaterial` has no material source upstream (a `materiallibrary`, *or* a `reference`/`sublayer` layer that already authors the materials). *Receipts: **20 checks, 0 critical**; the ordering rule was hardened from a hard error to an advisory after adversarial review caught it would false-reject valid reference/sublayer material graphs.*
-- 🌀 **③ Diagnostic truth — what the scene *does* when poked** *(new in v5.21.0)*. Perturbation probes catalog live **dirty-propagation, recook triggers, and time-dependence** per context (SOP/LOP/COP/DOP) — the one truth class no external LLM can hold, because it only exists as live cook-state. *Receipts: the API probe caught the track's own spec citing **H18-era phantom spellings** (the cook surface lives on `hou.OpNode`, not `hou.Node`); the catalog's first run captured a real divergence — **a COP rewire dirties upstream nodes SOP semantics say it shouldn't**. Staged next on this catalog: `synapse_explain_recook` — ask "why did this recook?" and get an answer cited to a probe trial.*
+- 🔌 **① Wiring truth — *how* nodes connect.**
+  - `host/introspect_connectivity.py` instantiates **282 node types** headless and records their real input/output counts + slot labels → a committed, integrity-checked catalog.
+  - `wire_by_label()` (`python/synapse/core/wiring.py`) resolves inputs by **probed label, never remembered index** — fail-loud on an unknown label/type.
+  - The validator's **slot-semantic checks (P3e)** reject an edge into an input the type doesn't have.
+  - *Receipts: the review sweep ran **141 sites, 0 critical**; the cycle fixed **2 known miswires** (swapped solver inputs).*
+
+- 🧭 **② Solaris context truth — *what* the nodes are.**
+  - A corpus-authored, probe-cross-checked **LOP / Solaris knowledge catalog** teaches the validator the semantics wiring truth can't see.
+  - It **hard-rejects phantom LOP types** the model reaches for out of SOP habit — there is no `grid` or `plane` LOP (use a `cube`).
+  - It **advises** when an `assignmaterial` has no material source upstream (a `materiallibrary`, *or* a `reference`/`sublayer` layer that already authors the materials).
+  - *Receipts: **20 checks, 0 critical**; the ordering rule was softened from a hard error to an advisory after adversarial review caught it would false-reject valid reference/sublayer material graphs.*
+
+- 🌀 **③ Diagnostic truth — what the scene *does* when poked** *(new in v5.21.0)*.
+  - Perturbation probes catalog live **dirty-propagation, recook triggers, and time-dependence** per context (SOP/LOP/COP/DOP) — the one truth class no external LLM can hold, because it only exists as live cook-state.
+  - *Receipts: the API probe caught the track's own spec citing **H18-era phantom spellings** (the cook surface lives on `hou.OpNode`, not `hou.Node`); the catalog's first run captured a real divergence — **a COP rewire dirties upstream nodes SOP semantics say it shouldn't**.*
+  - *Staged next: `synapse_explain_recook` — ask "why did this recook?" and get an answer cited to a probe trial.*
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
 flowchart LR
     EXP["EXPLORE<br/>probe-verified ground truth<br/>live probe · or probe-checked corpus"]:::hou -->|"committed, integrity-checked catalog"| REV["REVIEW<br/>sweep the code vs the catalog<br/>0 critical"]:::bridge
     REV -->|"findings → fixes"| SCAF["SCAFFOLD<br/>truth into the live path<br/>wire_by_label · validator P3e + LOP · test pins"]:::panel
     SCAF -->|"new truth classes"| NEXT["Queue<br/>human ratifies each new cycle"]:::side
     NEXT -->|"cycle N+1 · so far: ① wiring · ② Solaris context · ③ diagnostic (cook truth) · ④ H22 discovery re-sweep (ran — 77 candidates) · queued: the port-wave fix cycles"| EXP
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
-    classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
+    classDef panel fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
+    classDef bridge fill:#F7DDC2,stroke:#C77B3F,color:#1A1208
+    classDef hou fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
+    classDef side fill:#FBEBD9,stroke:#B08968,color:#1A1208
 ```
 
 ---
@@ -183,7 +202,7 @@ It also wires **Solaris the way production expects** — live-probed against 21.
 Verified end-to-end on **live Houdini 22.0.368** (originally proven on 21.0.671) — build, single-undo revert, TOCTOU halt, and forced-failure rollback all pass; the wiring catalog is now major-aware, so validation resolves against whichever build you run.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
 flowchart LR
     ASK["Artist<br/>'build a karma setup'"]:::artist --> PROP["Propose<br/>nodes + wires, on paper"]:::panel
     PROP --> VAL["Validate<br/>vs your live scene · vs the wiring catalog (P3e) · vs the Solaris knowledge catalog<br/>inputs · wire types · slot labels · phantom LOP types · material-source ordering · occupied inputs"]:::bridge
@@ -191,11 +210,11 @@ flowchart LR
     VAL -.->|"something's off"| STOP["Stop · nothing touched"]:::side
     BUILD --> NODES[("Real nodes<br/>single Ctrl+Z reverts")]:::hou
     BUILD -.provenance.-> REC["agent.usd receipt<br/>decision · reasoning · revert"]:::side
-    classDef artist fill:#334155,stroke:#f59e0b,color:#f1f5f9
-    classDef panel fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef bridge fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-    classDef hou fill:#334155,stroke:#22c55e,color:#f1f5f9
-    classDef side fill:#1e293b,stroke:#64748b,color:#cbd5e1
+    classDef artist fill:#EFB98A,stroke:#8A5A2B,color:#1A1208
+    classDef panel fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
+    classDef bridge fill:#F7DDC2,stroke:#C77B3F,color:#1A1208
+    classDef hou fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
+    classDef side fill:#FBEBD9,stroke:#B08968,color:#1A1208
 ```
 
 ---
@@ -228,14 +247,14 @@ flowchart LR
 Tested on **Windows 11 + Houdini 22.0.368** (H21.0.671 dual-build supported). macOS / Linux: same steps, different slashes.
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
 flowchart LR
     DL["1 · Download<br/>the SYNAPSE folder"]:::step --> REG["2 · Run the installer<br/>(once)"]:::step
     REG --> KEY["3 · Add your API key<br/>to the .env"]:::step
     KEY --> OPEN["4 · Restart Houdini,<br/>open the panel"]:::step
     OPEN --> CHAT["Type 'make a box'<br/>→ it builds"]:::done
-    classDef step fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    classDef done fill:#334155,stroke:#22c55e,color:#f1f5f9
+    classDef step fill:#F2C7A0,stroke:#C77B3F,color:#1A1208
+    classDef done fill:#EFB98A,stroke:#7A4A1F,color:#1A1208
 ```
 
 **1 · Get the files** *(~1 min)* — green **Code ▸ Download ZIP**, unzip somewhere stable (e.g. `C:\Users\<you>\SYNAPSE`).
@@ -285,7 +304,7 @@ That's the whole loop — **start to chatting in ~5 minutes.** Everything is an 
 Most AI-for-DCC tools run the agent in a **separate process** and reach in through a bridge — every call a round-trip, every tool a marshalling problem. **SYNAPSE inverts that:** the agent loop runs *inside* Houdini's own interpreter, dispatching tools as direct in-process calls against `hou`. The same pattern composes across the portfolio (a **Nuke** host, **Octavius**, the **Cognitive Bridge**).
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e293b','primaryTextColor':'#f1f5f9','primaryBorderColor':'#0f172a','lineColor':'#f59e0b','secondaryColor':'#334155','tertiaryColor':'#475569'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F2C7A0','primaryTextColor':'#1A1208','primaryBorderColor':'#C77B3F','lineColor':'#8A5A2B','secondaryColor':'#F7DDC2','tertiaryColor':'#FBEBD9','edgeLabelBackground':'#F7DDC2','clusterBkg':'#FBEBD9','clusterBorder':'#C77B3F'}}}%%
 flowchart LR
     subgraph OUT ["Outside-in — the standard pattern"]
         direction LR
