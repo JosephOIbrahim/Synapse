@@ -128,3 +128,6 @@ harness/state/posture.json
 harness/state/release_readiness_verdict.json
 harness/state/studio_readiness_verdict.json
 harness/state/recovery/
+
+# Release-week demo captures (Leg 1) — raw screen recordings, never tracked
+demo/captures/
