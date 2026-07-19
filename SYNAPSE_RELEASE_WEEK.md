@@ -37,7 +37,7 @@ That sentence is the release. Every task below serves it. Nothing else ships.
 | Leg | Day | Name | Lane | State | Anchor |
 |-----|-----|------|------|-------|--------|
 | 0 | Sat | Freeze prep (this rewrite + reconciliations) | DISPATCH | DONE | this file's landing commit = **F3 freeze marker** |
-| 1 | Sat | Freeze + the demo | HUMAN (+dispatch support) | PENDING | — |
+| 1 | Sat | Freeze + the demo | HUMAN (+dispatch support) | IN-FLIGHT | dispatch support DONE (script refresh + 7-agent verify, 2026-07-19); HUMAN recording pending |
 | 2 | Sun | The numbers | DISPATCH | PENDING | — |
 | 3 | Mon | The front door | DISPATCH | PENDING | — |
 | 4 | Tue | The keys | DISPATCH | PENDING | — |
@@ -75,9 +75,9 @@ States: `PENDING · IN-FLIGHT · BLOCKED · DONE`. A leg is DONE only when its *
 - [ ] Run it a second time from the same script — repeatability is the point.
 
 **DISPATCH (support only):**
-- [ ] **Refresh `DEMO_SCRIPT.md` first** — the current file is dated 2026-02-08 and describes a 23-tool / 376-test product (today: 115 tools, ~4,571 tests). Rewrite to H22 reality without redesigning the demo's shape. `run_demo_builder.py` is retired from the critical path (H21-era, machine-specific OneDrive paths — `run_demo_builder.py:8-11`); the demo entry is `demo/synapse_demo.hip`.
-- [ ] Pre-flight the refreshed script: verify paths, node names, and every `hou.*` symbol against the **22.0.368 connectivity catalog** + the committed `h22_symbol_table.json` (35,903 symbols). Phantom discipline applies (§8). Fix-forward any breakage found.
-- [ ] Confirm the demo scene builds headlessly where possible; flag any GUI-only step so Joe isn't surprised mid-record.
+- [x] **Refresh `DEMO_SCRIPT.md` first** — the current file is dated 2026-02-08 and describes a 23-tool / 376-test product (today: 115 tools, ~4,571 tests). Rewrite to H22 reality without redesigning the demo's shape. `run_demo_builder.py` is retired from the critical path (H21-era, machine-specific OneDrive paths — `run_demo_builder.py:8-11`); the demo entry is `demo/synapse_demo.hip`. *(Done 2026-07-19: 3 truth-mappers grounded the rewrite — 115 tools per the DOC-1 method, real artist flow incl. footer-Connect + OCIO + task 0.5, bounded-render Act 3 with the Indie in-process truth; 19 stale claims dropped, all listed in the workflow record.)*
+- [x] Pre-flight the refreshed script: verify paths, node names, and every `hou.*` symbol against the **22.0.368 connectivity catalog** + the committed `h22_symbol_table.json` (35,903 symbols). Phantom discipline applies (§8). Fix-forward any breakage found. *(Phantom-check CLEAN — the script's only `hou.*` cite is `hou.lopNetworks` used deliberately AS the phantom example, correctly absent; all 10 cited tools registered; all referenced paths exist. Crucible passed with 3 minor fixes applied: phantom-count claim re-anchored, watcher labels matched to `render_watch.ps1` output, menu-independent XPU prewarm fallback.)*
+- [x] Confirm the demo scene builds headlessly where possible; flag any GUI-only step so Joe isn't surprised mid-record. *(hython 22.0.368: `demo/synapse_demo.hip` loads clean — `/stage` present, child `demo_base`, zero warnings/errors. GUI-only steps flagged `[GUI]` throughout the script.)*
 
 **Done when:** the demo runs twice in a row from one script, and both captures are on disk.
 
@@ -196,6 +196,7 @@ The plan is allowed to be wrong. It is not allowed to be silently wrong.
 *(append-only)*
 
 - **2026-07-19** · Legs 0–1 · Joe turned the freeze key ("key", 2026-07-18); Leg 0 reconciliations executed (VERSION 5.31.0→5.32.0, stash inspected+dropped, 11 worktrees+branches pruned, `demo/captures/` created+ignored) and this file landed on master = **F3 freeze marker**. Leg 1 demo-preflight dispatch queued next. No blockers. *(Calendar note: Leg 0/1 ran Sun not Sat — one day behind the printed calendar; parallelism rule applies, gating order intact.)*
+- **2026-07-19 (later)** · Leg 1 · Dispatch support DONE: `DEMO_SCRIPT.md` refreshed via 7-agent workflow (3 mappers → forge → phantom-check CLEAN + headless hip ✓ + crucible survives w/ 3 minors fixed); CI green on the freeze commit. Leg 1 → IN-FLIGHT; the recording is Joe's. Patch release v5.32.1 cut (freeze + demo preflight + canonical-VERSION heal).
 
 ---
 
