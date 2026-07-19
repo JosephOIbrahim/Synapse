@@ -271,6 +271,18 @@ The installer **auto-detects your Houdini prefs directory** and writes a package
 *No Python on PATH? Use Houdini's:* `& "C:\Program Files\Side Effects Software\Houdini 22.0.368\bin\hython.exe" scripts/install_synapse_package.py` *(match your installed build/version.)*
 > ✅ **You should see** a success line ending in the wired `python/` path — and **no** traceback.
 
+**2b · Check it took** *(~10 sec — optional, but it's the whole install on one screen):*
+
+```powershell
+python scripts/install_synapse_package.py --verify
+```
+
+Read-only — it writes nothing, anywhere. It re-checks each condition from *state on disk*, so it still works long after the install output scrolled away.
+
+> ✅ **You should see** every row `PASS` and a closing `All programmatic checks pass.`
+> **If you see** a `FAIL` row, it names the fix — an unwired pref dir means re-run step 2 without `--dry-run`; a missing key means finish step 3.
+> The three `MANUAL` rows are the checks nothing outside Houdini can honestly make (the menu entry, "make a box", the Connect button). They're never counted as passing — you confirm those yourself in step 4.
+
 **3 · Add your Claude key** *(~2 min)* — make one at **console.anthropic.com** (`sk-ant-…`), then put it in a **`.env` at the repo root** (gitignored, auto-loaded). This keeps the key **scoped to SYNAPSE** — it is *not* set as a system-wide `ANTHROPIC_API_KEY`, so it can't collide with or bill other Anthropic tools on your machine.
 *Other engines* go in the same `.env`. **Ollama needs no key** (it's your local server), and **Custom** is configured right in the panel (base URL · model · key).
 
@@ -280,8 +292,8 @@ GEMINI_API_KEY=AIza...
 NVIDIA_API_KEY=nvapi-...
 ```
 
-**4 · Restart Houdini** *(~1 min)* → **New Pane Tab ▸ SYNAPSE** → type **"make a box."**
-> ✅ **You should see** the **SYNAPSE** entry in the New Pane Tab menu, and *"make a box"* create a real geo node you can **Ctrl+Z**.
+**4 · Restart Houdini** *(~1 min)* → **New Pane Tab ▸ Synapse** → type **"make a box."**
+> ✅ **You should see** the **Synapse** entry in the New Pane Tab menu *(title-case — scan for `Synapse`, not `SYNAPSE`)*, and *"make a box"* create a real geo node you can **Ctrl+Z**.
 
 That's the whole loop — **start to chatting in ~5 minutes.** Everything is an ordinary Houdini action — **Ctrl+Z undoes it**.
 
@@ -290,10 +302,10 @@ That's the whole loop — **start to chatting in ~5 minutes.** Everything is an 
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| **SYNAPSE isn't in the Pane Tab menu** | Houdini loads packages only at launch | Fully restart Houdini; confirm the installer reported success. |
-| **"No API key" / won't connect** | The key line is missing from the repo-root `.env`, or Houdini was already open when you added it | Confirm the `ANTHROPIC_API_KEY` (and any `GEMINI_API_KEY` / `NVIDIA_API_KEY`) line in the `.env` at the repo root, then **relaunch Houdini from scratch** — the `.env` loads at startup. Verify in Houdini's Python Shell: `from synapse.host import auth; import os; print(bool(os.environ.get('ANTHROPIC_API_KEY')))` → `True`. |
-| **`ModuleNotFoundError: No module named 'synapse'`** | The package path wasn't wired, or Houdini wasn't restarted | The installer prints the path it wired — confirm it points at the repo's `python/` directory, then restart Houdini. |
-| **Panel loads but says it can't reach Houdini** | The in-process bridge server isn't up yet | Click **Connect** in the panel rail (one click force-starts it). |
+| **`Synapse` isn't in the Pane Tab menu** | Houdini loads packages only at launch | Fully restart Houdini, then run `python scripts/install_synapse_package.py --verify` — it confirms from disk which pref dirs are wired, so you don't need the original install output. |
+| **"No API key" / won't connect** | The key line is missing from the repo-root `.env`, or Houdini was already open when you added it | Confirm the `ANTHROPIC_API_KEY` (and any `GEMINI_API_KEY` / `NVIDIA_API_KEY`) line in the `.env` at the repo root, then **relaunch Houdini from scratch** — the `.env` loads at startup. Fastest check: `--verify` (step 2b) reports the key as present or absent, and which source wins. To confirm it landed *inside* Houdini, in its Python Shell: `from synapse.host import auth; import os; print(bool(os.environ.get('ANTHROPIC_API_KEY')))` → `True`. |
+| **`ModuleNotFoundError: No module named 'synapse'`** | The package path wasn't wired, or Houdini wasn't restarted | Run `--verify` (step 2b) — the `package file` row shows whether a pref dir points at this repo's `python/` directory. Fix, then restart Houdini. |
+| **Panel loads but says it can't reach Houdini** | The bridge server isn't up — it never auto-starts | Click **Connect** in the panel **footer** strip (one click force-starts it; it then reads **Bridge ✓**). Only needed for external / MCP tools — ordinary chat runs in-process. |
 
 </details>
 
@@ -329,7 +341,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.28.0):**
+**Shipping (v5.32.1):**
 
 - 🎛️ **Artist panel v9.1** — five engines, undo-safe, 115 tools, a single **CHAT** surface where the review + consent gate auto-surface, live observability + latency instrumentation (WCAG/usability **G3-audited on H22's Qt 6.8.3**).
 - 👁️ **RETINA — the render receipt (T0 live)** — the perception co-processor's first working tier: T0 file-truth verifies a render actually happened as declared (products, resolution, AOVs, completion sentinel, fingerprint), against a live-probed perception-truth catalog (truth cycle ⑤). The worker lives outside the Houdini process (zero `hou`, zero OpenCV in-host). The dead-`.done`-sentinel bug the crucible caught pre-merge is the receipt-honesty thesis proving itself.
@@ -338,7 +350,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
 - 🧾 **The honest envelope** — both roads into Houdini leave `IntegrityBlock` receipts: the audited `/mcp` bridge, and path-qualified, never-faked live-path records the self-tuning advisor can see.
 - 🔁 **Utility flywheel** — ratified cycles across wiring · Solaris context · diagnostic cook-truth · the H22 connectivity re-fold, self-improving on a human-ratified loop.
-- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint (**4,436 / 0**), a posture-scoped red-driver, fix-is-real behavioral probes, and forge-builds-crucible-attacks separation that caught a ⅓-implemented "loud-error" fix before it shipped.
+- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint (**4,571 / 0**), a posture-scoped red-driver, fix-is-real behavioral probes, and forge-builds-crucible-attacks separation that caught a ⅓-implemented "loud-error" fix before it shipped.
 - 🕵️ **Vendor-architect lens** — the `sidefx-cto` agent surfaces the non-obvious second-order changes a major brings; its first pass caught the memory-gate gap this release then closed live.
 - 🌋 **Copernicus expansion, spec'd** — read/analysis + node-API layers deep and live-verified; the generative frontier (scaffold rebuilds, terrain emission, neural COP nodes with preflight honesty) is a live-probed build spec, next up.
 - 🤝 **APEX MCP boundary held** — Houdini 22 keynote-announced a rigging-scoped MCP preview (not shipped); the ratified non-competing boundary stands unchanged.
@@ -350,7 +362,9 @@ SYNAPSE is honest about its gaps — scaffolds self-report instead of faking suc
 
 ## ✦ Dependencies
 
-**Core — works standalone.** A clean clone runs without anything exotic. Memory persists to a plain **JSONL** file (the live default), and the **Anthropic SDK is vendored** into the repo (`python/synapse/_vendor/`) — no `pip install anthropic` required. Add a provider key and go.
+**Core — works standalone.** A clean clone runs without anything exotic. Memory persists to a plain **JSONL** file (the live default), and the **Anthropic SDK is vendored** into the repo (`python/synapse/_vendor/`) — so **inside Houdini, no `pip install` is needed at all.** The vendored natives ship **cp311 + cp313 win_amd64**, which covers H22's embedded Python 3.13 and H20.5/21.x's 3.11. Add a provider key and go.
+
+*Two paths do need pip, and neither is on the artist route:* the **external stdio MCP bridge** (`mcp_server.py`, run in your own Python) needs `pip install mcp websockets`, and the **developer test suite** needs `pip install -e ".[dev]"`. Outside Houdini, on a Python with no matching vendored ABI, the vendor tree goes inactive and a real pip-installed SDK is used instead (`synapse._VENDOR_ABI_RISK` reports this).
 
 **Optional — Moneta.** Moneta is a private, encrypted memory substrate (repo `JosephOIbrahim/Moneta`). It's **built but default-OFF** — JSONL stays the default until you opt in:
 
@@ -391,11 +405,11 @@ python/synapse/
 │   ├── solaris_graph_templates.py  # one-call render-ready Solaris topologies
 │   └── handlers*.py            # command handlers — inline undo, cross-client mutation lock
 ├── core/                       # canonical tables — timeouts.py (per-tool budgets) · wiring.py (wire_by_label vs the probed catalog)
-└── _vendor/                    # anthropic + deps, CP311 win_amd64
+└── _vendor/                    # anthropic + deps — dual-ABI cp311 + cp313 win_amd64 (H22's py3.13 covered)
 
 host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols · cook API · cook-truth perturbation trials)
 scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_{wiring,lop}.py · mine_lop_knowledge.py
-tests/                          # 4,436 passing (Moneta-gated tests skip on a clean clone)
+tests/                          # 4,571 passing (Moneta-gated + Houdini-gated tests skip on a clean clone)
 harness/                        # the self-verifying loop — five tracks (H22 · v6 · context · studio · diagnostic), boundary guardrails, the full-suite green ratchet, the readiness verdict
 docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
@@ -404,6 +418,8 @@ mcp_server.py                   # WebSocket adapter for external MCP clients
 </details>
 
 > **Security posture — local-first, single-user.** The MCP surface (`mcp_server.py` / the in-Houdini `hwebserver` `/mcp` handler in `python/synapse/mcp/server.py`) enforces Origin validation (DNS-rebinding protection) and supports Bearer-token auth, with `SYNAPSE_DEPLOY_MODE` defaulting to `local`. The design target is a single artist on localhost; a handler-layer consent gate is the documented prerequisite before any multi-user or studio deployment.
+>
+> **Be precise about the blast radius:** the bridge serves **both** surfaces — WebSocket `/synapse` and HTTP `/mcp` — from **one** `hwebserver` on **one port (default 9999)**. There is no configuration that publishes `/mcp` while keeping `/synapse` private, and on the live `/synapse` handler path `execute_python` / `execute_vex` run **ungated**. Exposing that single port to an untrusted network exposes arbitrary code execution inside your Houdini. Keep it on localhost. Full detail: [`docs/mcp/SETUP.md`](docs/mcp/SETUP.md#authentication).
 
 ---
 

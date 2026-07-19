@@ -135,7 +135,7 @@ Same bounded render semantics as Act 3 — warm cache now, so it's the fast path
 SYNAPSE panel (in Houdini · v9.1 single-CHAT · Ctrl+K tool palette)
 Claude Code / Claude Desktop
     ↓ MCP — stdio (.mcp.json → python mcp_server.py)  or  Streamable HTTP /mcp
-hwebserver  (started by the panel's Connect button · port 9999 default, self-healing)
+hwebserver  (started by the panel's Connect button · port 9999, published to ~/.synapse/bridge.json)
     ├── ws://localhost:9999/synapse   (live WS handlers)
     └── /mcp                          (Lossless Execution Bridge — audited path)
     ↓ main-thread marshalling (hdefereval / run_on_main)
@@ -148,7 +148,7 @@ USD Stage / Solaris / Karma CPU·XPU
 - **One tool registry** — 115 tools served from a single source (`TOOL_DEFS`), doc-count pinned by test
 - **Bounded render** — foreground guard + single-flight session registry + 60s wait budget + poll token
 - **Path-qualified integrity** — the `/mcp` path is undo-wrapped, consent-gated, scene-hashed; the live WS path is RBAC-guarded with main-thread safety and observe-only integrity envelopes
-- **Self-healing port** — prefers 9999, fails over on conflict and publishes the actual endpoint
+- **Discoverable endpoint** — hwebserver binds the requested port (9999 by default) and publishes the real bound port to `~/.synapse/bridge.json` for clients to find. Note: it does **not** fail over on conflict (`hwebserver_adapter.py:357-358`) — automatic failover exists only on the legacy `websocket.py` path (`:101`), which the panel does not use
 - **5 engines** behind one panel — Claude, Gemini, Nemotron, Ollama, Custom
 
 ---
@@ -159,7 +159,7 @@ USD Stage / Solaris / Karma CPU·XPU
 - **"Foreground render refused":** cold XPU cache or over-budget resolution. Prewarm (checklist #9), drop to 512×512, switch `engine=cpu`, or pass `force_foreground=true` (downgrades refusal to a carried warning).
 - **Render looks hung:** read the watcher line. **FROZEN/GPU-BUSY** = XPU rendering, keep talking. **FROZEN/IDLE** = real hang. From Claude Code: `{"poll": token}` or `synapse_render_farm_status`.
 - **Preview is a viewport flipbook:** result carries `flipbook_fallback=true` — the usdrender ROP wrote nothing (husk can't load Karma on Indie). The in-process render path is the working one; check the ROP/engine.
-- **Port taken:** the server self-heals to another port and publishes the real endpoint — don't debug a hardcoded 9999.
+- **Port taken:** the hwebserver does **not** fail over — Connect will fail. Free 9999 (or set `SYNAPSE_PORT`), then Connect again. The bound port is published to `~/.synapse/bridge.json`.
 
 ---
 
@@ -170,7 +170,7 @@ USD Stage / Solaris / Karma CPU·XPU
 - **v5.32.0** on **Houdini 22.0.368** (embedded Python **3.13.10** — not the dev-box 3.14)
 - **60s** default render wait budget; **~2 min** cold-XPU kernel compile (the trap the guard exists for — the original freeze incident was a 64×64 sphere)
 - **5 engines** in one panel — Claude · Gemini · Nemotron · Ollama · Custom
-- **Port 9999** default, self-healing failover
+- **Port 9999** default; bound port published to `~/.synapse/bridge.json` (no failover on the hwebserver path — free the port first)
 
 ---
 

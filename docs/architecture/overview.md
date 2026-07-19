@@ -5,14 +5,22 @@
 ```
 Claude Desktop/Code
     |  stdio / JSON-RPC
-mcp_server.py  (87 tools, concurrent dispatch)
+mcp_server.py  (all 115 registry tools, concurrent dispatch)
     |  WebSocket: ws://localhost:9999/synapse
-SynapseServer  (daemon thread inside Houdini)
+hwebserver  (Houdini's built-in server, started by the panel's Connect button)
     |  CommandHandlerRegistry
 hou.* Python API
     |
 Houdini USD Stage / Solaris / Karma
 ```
+
+An external MCP client can skip the stdio bridge and POST directly to
+`http://localhost:9999/mcp` — the **same** hwebserver instance registers both
+`/synapse` (WebSocket) and `/mcp` (HTTP). One server, one port.
+
+The artist path is shorter than either: the agent loop runs **inside** Houdini's
+own interpreter and dispatches tools as direct in-process `hou` calls, with no
+transport in the middle.
 
 ## Package Layout
 

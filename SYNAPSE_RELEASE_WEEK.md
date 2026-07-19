@@ -39,7 +39,7 @@ That sentence is the release. Every task below serves it. Nothing else ships.
 | 0 | Sat | Freeze prep (this rewrite + reconciliations) | DISPATCH | DONE | this file's landing commit = **F3 freeze marker** |
 | 1 | Sat | Freeze + the demo | HUMAN (+dispatch support) | IN-FLIGHT | dispatch support DONE (script refresh + 7-agent verify, 2026-07-19); HUMAN recording pending |
 | 2 | Sun | The numbers | DISPATCH | PENDING | — |
-| 3 | Mon | The front door | DISPATCH | PENDING | — |
+| 3 | Mon | The front door | DISPATCH | IN-FLIGHT | installer `--verify` + 7 blocker doc-fixes landed 2026-07-19; stranger found 12 honesty items (0 blockers) → next increment |
 | 4 | Tue | The keys | DISPATCH | PENDING | — |
 | 5 | Wed | The paper | DISPATCH | PENDING | — |
 | 6 | Thu | The kill test | HUMAN (+dispatch standby) | PENDING | — |
@@ -190,12 +190,15 @@ The plan is allowed to be wrong. It is not allowed to be silently wrong.
 
 | ID | Date | Leg | Finding (Verified anchor) | Proposed amendment |
 |----|------|-----|---------------------------|--------------------|
-| — | — | — | — | — |
+| D1 | 2026-07-19 | 3, 4 | **Wrong path cited.** This doc cites `host/auth.py` (§5 line 112, §6 lines 122/127). Root `host/` exists but holds only introspection scripts — the resolver is **`python/synapse/host/auth.py`**. Also: there is no key-*presence* probe today; `get_anthropic_api_key()` RETURNS the value, and importing that module triggers the vendor `sys.path` prepend (violating the installer's stock-python rule) — a probe must be import-free or subprocess-isolated. | Non-blocking citation fix; Leg 4 should read `python/synapse/host/auth.py` and add a `bool`-returning wrapper. Leg 3's `--verify` already implements an import-free presence probe. |
+| D2 | 2026-07-19 | 3 | **"Zero manual pip" is path-scoped, not universal.** `python/synapse/_vendor/` carries the Anthropic SDK stack only — **`websockets` and `mcp` are NOT vendored** (`mcp_server.py:22` says "Install: pip install mcp websockets"; both are pyproject extras). Zero-pip **HOLDS** for the demo path: `hwebserver_adapter.py` imports only stdlib and rides Houdini's built-in hwebserver. It does **not** hold for the legacy `SynapseServer` path or the external stdio MCP bridge. | Leg 3's objective stands **as scoped to the panel path**. Docs now lead with the panel path and state the pip requirement plainly for external MCP clients. No objective rewrite needed — but do not claim blanket zero-pip anywhere. |
+| D3 | 2026-07-19 | 1, 3 | **Port failover claim was wrong.** The orchestrator briefed "9999, self-healing failover"; `hwebserver_adapter.py:357-358` states in-code that **hwebserver binds the requested port (no failover)**. Automatic failover exists only on the legacy `websocket.py` path (`:101`), which the panel does not use. Caught by the docs forge as a disputed brief item — the error was kept out of `docs/`, and the three occurrences it had already reached in `DEMO_SCRIPT.md` (shipped `8f34297`) are corrected in this commit. | None needed. Logged because an orchestrator-authored "canonical fact" propagated into a shipped doc before verification — the dispute channel worked; the briefing discipline did not. |
 
 ### Day stamps
 *(append-only)*
 
 - **2026-07-19** · Legs 0–1 · Joe turned the freeze key ("key", 2026-07-18); Leg 0 reconciliations executed (VERSION 5.31.0→5.32.0, stash inspected+dropped, 11 worktrees+branches pruned, `demo/captures/` created+ignored) and this file landed on master = **F3 freeze marker**. Leg 1 demo-preflight dispatch queued next. No blockers. *(Calendar note: Leg 0/1 ran Sun not Sat — one day behind the printed calendar; parallelism rule applies, gating order intact.)*
+- **2026-07-19 (close)** · Leg 3 · Front-door increment 1 landed: installer `--verify` (10 rows — 7 programmatic, 3 MANUAL-never-faked; 22 new tests) + 7 blocker and 9 major doc-fixes across 7 files. Full suite **4,611 passed / 0 failed / 100 skipped**, exit 0 (floor 4275 — no new failures, and the 4 known `test_bridge_endpoint` debt items did not fire this run). Stranger verdict: **reaches a working install**; 12 honesty findings (0 blockers) queued as increment 2. Drift D1–D3 logged. Leg 3 stays IN-FLIGHT — its exit gate (a clean scratch-environment run) is unmet, and final proof is Leg 6 by design.
 - **2026-07-19 (later)** · Leg 1 · Dispatch support DONE: `DEMO_SCRIPT.md` refreshed via 7-agent workflow (3 mappers → forge → phantom-check CLEAN + headless hip ✓ + crucible survives w/ 3 minors fixed); CI green on the freeze commit. Leg 1 → IN-FLIGHT; the recording is Joe's. Patch release v5.32.1 cut (freeze + demo preflight + canonical-VERSION heal).
 
 ---

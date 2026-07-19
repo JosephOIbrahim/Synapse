@@ -1,49 +1,73 @@
 # Quick Start
 
-## 1. Start the Synapse Server
+**The short version:** install the package, add your key, restart Houdini, open the panel, type "make a box". No command line beyond one copy-paste, no `pip install`, no MCP client.
 
-Inside Houdini's Python Shell:
+> Not installed yet? Do [README ▸ Install](../../README.md#-install--5-minutes) first (~5 minutes), then come back here.
 
-```python
-from synapse.server import SynapseServer
-server = SynapseServer(port=9999)
-server.start()
+---
+
+## 1. Open the panel
+
+In Houdini: **New Pane Tab ▸ Synapse**.
+
+*(The shelf tool does the same thing -- it opens the panel. It does **not** start any server.)*
+
+> ✅ **You should see** the SYNAPSE panel dock, with a chat field, a rail across the top, and a connection strip along the footer.
+> **If you see** no `Synapse` entry in the menu -- Houdini loads packages only at launch. Fully restart Houdini, then run `python scripts/install_synapse_package.py --verify` to confirm the package is wired.
+
+## 2. Type what you want
+
+```
+make a box
 ```
 
-Or use the Synapse shelf tool in Houdini.
+> ✅ **You should see** a real `box` geo node appear in your scene -- and **Ctrl+Z** takes it back. Everything the panel does is an ordinary Houdini action.
 
-## 2. Connect via MCP
+That's the whole loop. The agent runs **inside** Houdini's own Python, so tools are direct `hou.*` calls -- there is no bridge to start and nothing to connect for normal chat use.
 
-Add to your Claude Desktop config (`claude_desktop_config.json`):
+Try a bigger one:
 
-```json
-{
-  "mcpServers": {
-    "synapse": {
-      "command": "python",
-      "args": ["-m", "synapse.mcp_server"]
-    }
-  }
-}
+```
+create a solaris network ending with rendersettings using karma xpu
 ```
 
-## 3. Use Tools
+The panel proposes the network, validates it against your live scene *and* against probe-verified wiring truth, then builds it in a single undo group.
 
-Once connected, Claude can use Synapse tools:
+## 3. Pick your engine (optional)
 
-- **Scene**: `houdini_scene_info`, `houdini_get_selection`
-- **Nodes**: `houdini_create_node`, `houdini_delete_node`, `houdini_connect_nodes`
-- **Parameters**: `houdini_get_parm`, `houdini_set_parm`
-- **USD**: `houdini_create_usd_prim`, `houdini_set_usd_attribute`, `houdini_get_usd_attribute`
-- **Materials**: `houdini_create_material`, `houdini_assign_material`, `houdini_read_material`
-- **Render**: `houdini_render`, `houdini_capture_viewport`, `houdini_render_settings`
-- **Memory**: `synapse_context`, `synapse_search`, `synapse_add_memory`, `synapse_decide`
-- **Knowledge**: `synapse_knowledge_lookup`
-- **Inspection**: `synapse_inspect_scene`, `synapse_inspect_node`, `synapse_inspect_selection`
+The rail's **author token** switches between **Claude · Gemini · NVIDIA Nemotron · Ollama (local) · Custom**. Keys for the first three go in the repo-root `.env`; Ollama needs no key; Custom is configured in the panel (base URL · model · key).
 
-## 4. Authentication (Optional)
+```
+ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=AIza...
+NVIDIA_API_KEY=nvapi-...
+```
 
-Set an API key via environment variable:
+> The `.env` is read **at Houdini startup**. Add a key to a Houdini that's already open and it won't be seen -- relaunch from scratch.
+
+---
+
+## Connecting an external client (optional)
+
+Everything above runs in-process and needs no server. You only need the bridge if you want **an outside tool** -- Claude Code, Cursor, a custom agent -- to drive Houdini.
+
+**Start it:** click **Connect** in the SYNAPSE panel footer. It never starts automatically. Once up, the button reads **Bridge ✓**.
+
+That one server serves both surfaces on **one port (default 9999)**: a WebSocket at `/synapse` and an HTTP MCP endpoint at `/mcp`. The real bound port is published to `~/.synapse/bridge.json` -- read that rather than assuming.
+
+**Then point your client at it.** Full configuration for Claude Code, Cursor, VS Code and custom agents: [`docs/mcp/SETUP.md`](../mcp/SETUP.md).
+
+> ⚠️ The repo also ships a **stdio** bridge at [`.mcp.json`](../../.mcp.json) (`python mcp_server.py` from the repo root). That path runs in *your* Python, not Houdini's, and needs `pip install mcp websockets` -- neither is vendored. The in-Houdini panel path needs neither.
+
+## Tools
+
+SYNAPSE registers **115 tools** -- 40 `houdini_*`, 37 `synapse_*`, 21 `cops_*`, 17 `tops_*` -- spanning scene and node ops, USD/Solaris, materials, Copernicus, PDG/TOPs, render orchestration and project memory.
+
+Call `tools/list` for the authoritative list with schemas, or read [`docs/tools.md`](../tools.md).
+
+## Authentication (optional)
+
+Bearer-token auth for the bridge is opt-in. Set an API key via environment variable:
 
 ```bash
 export SYNAPSE_API_KEY="your-secret-key"
@@ -56,4 +80,6 @@ Or create `~/.synapse/auth.key`:
 your-secret-key
 ```
 
-When enabled, the first WebSocket message must be an `authenticate` command.
+When enabled, the first WebSocket message must be an `authenticate` command, and `/mcp` requires an `Authorization: Bearer <token>` header.
+
+> **Security posture — local-first, single-user.** On the live `/synapse` handler path, `execute_python` / `execute_vex` run **ungated** — no per-command permission check. Keeping both surfaces on a single-user local machine is what contains arbitrary code execution. Because both ride one port, exposing that port exposes **both**. Do not put either on an untrusted network; a multi-user deployment needs a handler-layer auth gate that is not yet shipped. Details in [`docs/mcp/SETUP.md`](../mcp/SETUP.md#authentication).
