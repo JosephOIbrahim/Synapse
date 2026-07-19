@@ -2,6 +2,10 @@
 
 The full version-by-version history and per-tool capability detail. The [README](README.md) keeps the artist-facing essentials; this is the deep record.
 
+## v5.32.1 — the freeze is honest (release-week patch)
+
+*2026-07-19: docs-and-metadata patch — no feature changes from v5.32.0. Feature freeze **F3** declared for release week: `SYNAPSE_RELEASE_WEEK.md` lands on master (commit `963d715`) and that commit is the freeze marker. The canonical root `VERSION` file — missed by the v5.32.0 release, still reading 5.31.0 — is reconciled (the reason this patch tag exists: the v5.32.0 tag's tree carries the wrong `VERSION`). `DEMO_SCRIPT.md` refreshed from its Feb-era 23-tool/376-test text to H22.0.368 / 115-tool / bounded-render reality via a 7-agent verified workflow: 3 truth-mappers grounded the rewrite, phantom-check CLEAN (the script's only `hou.*` cite is the deliberate `hou.lopNetworks` phantom example), `demo/synapse_demo.hip` loads clean on hython 22.0.368, crucible passed with 3 minor fixes applied. Release ops: superseded render-WIP stash dropped, 11 stale workflow worktrees pruned, `demo/captures/` created (gitignored).*
+
 ## v5.32.0 — the render path is bounded
 
 *2026-07-18: the render freeze is closed. The confirmed chokepoint — every render tool funneling through `_handle_render` → `executeInMainThreadWithResult` (no timeout) → `node.render()`, freezing the whole UI for the length of the render — is now bounded on the WS path, and the BLACKBOX crash-recovery harness ships alongside it. **4,571 tests passing** (+34; 4 known local-only `test_bridge_endpoint` live-sidecar isolation failures tracked separately, CI green) · Houdini 22.0.368.*
