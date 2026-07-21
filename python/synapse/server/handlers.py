@@ -232,6 +232,101 @@ _READ_ONLY_COMMANDS = frozenset({
 _MUTATION_LOCK = threading.Lock()
 
 
+# ---------------------------------------------------------------------------
+# Inline-overrun observability (marshal-guard coordination)
+# ---------------------------------------------------------------------------
+#
+# run_on_main has two main-thread fast paths: reentrant (main_thread.py:230) and
+# caller-is-already-main (main_thread.py:240). Both invoke fn() INLINE and, by
+# construction, DISCARD the ``timeout`` argument -- you cannot bound synchronous
+# work on the thread you are standing on. That is correct and load-bearing: it is
+# exactly why a main-thread caller executes instead of self-deadlocking in
+# hdefereval's blocking primitive. But it means the /mcp dispatch path (which is
+# already on the main thread) runs arbitrarily long payloads under a nominal
+# budget that is silently a no-op. Not a deadlock -- unbounded main-thread
+# capture. Today it is completely INVISIBLE.
+#
+# We do NOT fake a timeout. We make the overrun OBSERVABLE. Behaviour for
+# off-main callers is byte-for-byte unchanged (they do not even enter the timed
+# branch); the only addition is a telemetry record when an INLINE payload blows
+# past the nominal budget its own handler declared.
+#
+# COORDINATION: the sink is owned by the marshal-guard owner and lives in
+# server/marshal_guard.py::note_main_thread_inline_overrun, whose docstring
+# pins a STABLE POSITIONAL signature ``(where, elapsed_s, budget_s, **extra)``
+# and names ``handlers_*`` as an expected co-caller. We call it by that exact
+# contract and implement no sink of our own.
+#
+# run_on_main's fast path 2 ALSO reports, as
+# ``main_thread.run_on_main:fast_path_2`` against the guard's global
+# ``inline_budget_s()``. That record answers "the main thread was captured";
+# ours answers "by WHICH handler, against the budget that handler asked for" --
+# information the central site cannot recover, since by then the caller's
+# ``timeout`` argument has been discarded. Distinct ``where`` values, so the two
+# records are separable rather than conflated (see risks: they do both increment
+# the shared ``inline_overruns`` counter).
+def _would_run_inline_on_main() -> bool:
+    """True when a run_on_main call from here would take a main-thread fast path.
+
+    Must be evaluated BEFORE the call: run_on_main sets/clears ``_tls.on_main``
+    around fn() on the worker path, so sampling afterwards would misread it.
+    Defensive by design -- any failure reports False, which only means we skip
+    the extra telemetry. It can never affect execution.
+    """
+    try:
+        from . import main_thread as _mt
+        if getattr(_mt._tls, "on_main", False):
+            return True                                    # fast path 1
+        return threading.current_thread().ident == _mt._MAIN_THREAD_ID  # fast path 2
+    except Exception:
+        return False
+
+
+def _note_inline_overrun(label: str, elapsed_s: float, budget_s: float) -> None:
+    """Report an inline (unbounded) main-thread payload that blew its budget.
+
+    Reports THROUGH the marshal-guard sink using its pinned positional contract
+    ``(where, elapsed_s, budget_s)``. No local log line: the guard already logs
+    at WARNING, and a second one here would double-report the same event. If the
+    guard module is absent (older tree), we stay silent rather than invent a
+    parallel channel -- run_on_main's own fast-path-2 report still covers the
+    "main thread was captured" fact.
+    """
+    try:
+        from .marshal_guard import note_main_thread_inline_overrun
+    except Exception:
+        return
+    try:
+        note_main_thread_inline_overrun(label, elapsed_s, budget_s)
+    except Exception as e:  # pragma: no cover - telemetry is never fatal
+        _log.debug("inline-overrun hook failed: %s", e)
+
+
+def run_on_main_observed(fn, timeout, label):
+    """run_on_main, plus inline-overrun telemetry when the budget is a no-op.
+
+    Off-main callers get run_on_main verbatim: same timeout enforcement, same C4
+    abandoned-flag zombie kill, same C6 dispatch-wait sample. Only the inline
+    main-thread path is instrumented, and only on the way out -- so a payload's
+    result and any exception it raises propagate completely unchanged.
+
+    ``label`` is the stable ``where`` identifier for the guard sink; use the
+    command name, prefixed so it never collides with the central report.
+    """
+    from .main_thread import run_on_main
+
+    if not _would_run_inline_on_main():
+        return run_on_main(fn, timeout=timeout)
+
+    _t0 = time.perf_counter()
+    try:
+        return run_on_main(fn, timeout=timeout)
+    finally:
+        _elapsed = time.perf_counter() - _t0
+        if _elapsed > timeout:
+            _note_inline_overrun(f"handlers.{label}:inline", _elapsed, timeout)
+
+
 # =============================================================================
 # COMMAND HANDLER REGISTRY
 # =============================================================================
@@ -821,7 +916,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             session=self._session_id, origin="batch", parent=batch_op_id,
         )
 
-        from .main_thread import run_on_main, _SLOW_TIMEOUT
+        from .main_thread import _SLOW_TIMEOUT
 
         def _on_main():
             results: list = []
@@ -871,7 +966,14 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 "errors": errors,
             }
 
-        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+        # TIMEOUT CHOICE: _SLOW_TIMEOUT (30s), UNCHANGED. A batch is an unbounded
+        # fan-out of sub-handlers, so 30s is already a compromise -- but it is the
+        # shipped budget for off-main callers and tightening or loosening it here
+        # would change working behaviour. Off-main: identical. Inline (/mcp, panel):
+        # the budget was always a no-op; it is now logged instead of silent.
+        return run_on_main_observed(
+            _on_main, timeout=_SLOW_TIMEOUT, label="batch_commands",
+        )
 
     # =========================================================================
     # PARAMETER HANDLERS
@@ -1109,7 +1211,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
             pass
         exec_locals: dict = {}
 
-        from .main_thread import run_on_main, _SLOW_TIMEOUT
+        from .main_thread import _SLOW_TIMEOUT
 
         def _on_main():
             # Execute inside undo group with smart rollback:
@@ -1147,7 +1249,15 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 "result": str(result) if result else "executed",
             }
 
-        return run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+        # TIMEOUT CHOICE: _SLOW_TIMEOUT (30s), UNCHANGED -- this is the shipped
+        # budget for arbitrary user code and off-main behaviour must not change.
+        # This is the site called out as unbounded main-thread capture: on the
+        # /mcp path dispatch is ALREADY on the main thread, so run_on_main takes
+        # fast path 2 and this 30s is discarded. We cannot bound work on our own
+        # thread and refuse to fake it -- instead the overrun is now reported.
+        return run_on_main_observed(
+            _on_main, timeout=_SLOW_TIMEOUT, label="execute_python",
+        )
 
     def _handle_write_report(self, payload: Dict) -> Dict:
         """Write a report/file to a confined local dir — OFF the main thread.
@@ -1208,7 +1318,7 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
                 for d in lint_issues
             ]
 
-        from .main_thread import run_on_main, _SLOW_TIMEOUT
+        from .main_thread import _SLOW_TIMEOUT
 
         def _on_main():
             # Find or create a working SOP context
@@ -1294,7 +1404,12 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
 
             return result
 
-        result = run_on_main(_on_main, timeout=_SLOW_TIMEOUT)
+        # TIMEOUT CHOICE: _SLOW_TIMEOUT (30s), UNCHANGED. A wrangle cook is
+        # arbitrarily long; 30s is the shipped off-main budget and changing it
+        # would break working VEX. Same inline-discard story as execute_python.
+        result = run_on_main_observed(
+            _on_main, timeout=_SLOW_TIMEOUT, label="execute_vex",
+        )
 
         # Mile 6: capture successful, non-trivial wrangles as recall-able
         # session memory. Best-effort and off the Houdini main thread -- a

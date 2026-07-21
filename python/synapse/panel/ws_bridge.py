@@ -4,14 +4,24 @@ Connects to ws://localhost:9999/synapse (configurable via SYNAPSE_PORT
 and SYNAPSE_PATH env vars). Sends chat messages with auto-gathered
 scene context. Emits Qt signals on response/status change.
 
-IMPORTANT: The ``hou`` module is NOT thread-safe. All ``hou.*`` calls
-must happen on the main thread via ``hdefereval.executeInMainThreadWithResult()``.
-WebSocket I/O runs on the QThread.
+IMPORTANT: The ``hou`` module is NOT thread-safe. All ``hou.*`` calls must
+happen on the main thread. Marshal them with
+``synapse.server.main_thread.run_on_main`` -- NEVER with
+``hdefereval.executeInMainThreadWithResult``. The latter is a blocking
+primitive with no thread test: called from the main thread it enqueues work
+for the main thread and then parks in ``_condition.wait()``, which only the
+main thread's own event loop could ever notify. That is a permanent,
+unrecoverable self-deadlock, and panel code runs on the Qt main thread most
+of the time. ``run_on_main`` detects a main-thread caller and executes
+directly instead. WebSocket I/O runs on the QThread.
 """
 
 import json
+import logging
 import os
 import threading
+
+logger = logging.getLogger(__name__)
 
 try:
     from PySide6.QtCore import QThread, Signal, Slot, QMetaObject, Qt, Q_ARG
@@ -44,18 +54,28 @@ def _get_ws_url():
     return "ws://{host}:{port}{path}".format(host=host, port=port, path=path)
 
 
+def _empty_context():
+    """The neutral context dict.
+
+    Single source for the "we could not read the scene" value, so the
+    unreachable-hou path inside the payload and the main-thread-timeout path
+    in ``gather_context`` return the same shape.
+    """
+    return {
+        "selected_nodes": [],
+        "current_network": "",
+        "scene_file": "",
+        "frame": 1.0,
+    }
+
+
 def _gather_context_on_main_thread():
     """Gather Houdini scene context. MUST run on the main thread.
 
     Returns a dict with keys: selected_nodes, current_network,
     scene_file, frame.
     """
-    context = {
-        "selected_nodes": [],
-        "current_network": "",
-        "scene_file": "",
-        "frame": 1.0,
-    }
+    context = _empty_context()
     try:
         import hou
 
@@ -343,25 +363,80 @@ class SynapseWSBridge(QThread):
     def gather_context(self):
         """Auto-gather current Houdini state for context.
 
-        Runs on the MAIN THREAD via hdefereval. Returns the context dict
-        and also emits context_updated signal.
+        Marshals the read onto Houdini's MAIN THREAD via
+        ``synapse.server.main_thread.run_on_main``. Returns the context dict
+        and also emits the context_updated signal.
+
+        Previously this called ``hdefereval.executeInMainThreadWithResult``
+        directly with no thread test. Because this is panel code -- reachable
+        from a Qt slot, i.e. already on the main thread -- that was a live
+        permanent self-deadlock: the main thread would enqueue the payload for
+        itself and then park forever in hdefereval's ``_condition.wait()``.
+        ``run_on_main`` short-circuits a main-thread caller and runs the
+        payload directly, so that freeze is structurally impossible now.
 
         Returns
         -------
         dict
             Scene context with selected_nodes, current_network,
-            scene_file, frame.
+            scene_file, frame. On a main-thread timeout, the neutral
+            ``_empty_context()`` value (same shape the payload itself returns
+            when ``hou`` is unreachable) and no context_updated emission.
         """
+        # Import boundary: verified OK. synapse.panel already imports from
+        # synapse.server in this same module (``..server.bridge_endpoint``
+        # in _get_ws_url), and synapse.server.main_thread imports only
+        # threading/time/logging at module scope -- hdefereval is imported
+        # lazily inside the off-main path only. Guarded anyway so a panel
+        # running against a trimmed install degrades instead of failing.
         try:
-            import hdefereval
+            from ..server.main_thread import run_on_main
+        except Exception:
+            run_on_main = None
 
-            ctx = hdefereval.executeInMainThreadWithResult(
-                _gather_context_on_main_thread
-            )
+        if run_on_main is None:
+            return self._emit_context(_gather_context_on_main_thread())
+
+        try:
+            # TIMEOUT CHOICE: 10.0s, explicit.
+            #
+            # This site was previously UNBOUNDED. It is NOT a long-running
+            # operation, so the "generous budget" rule for renders/captures
+            # /flipbooks does not apply here: the payload is four cheap scene
+            # reads (hou.selectedNodes, hou.ui.paneTabs, hou.hipFile.path,
+            # hou.frame). That is exactly the "scene queries, parm reads"
+            # class run_on_main sizes its 10s _DEFAULT_TIMEOUT for, so 10.0s
+            # is stated explicitly rather than inherited -- if the default
+            # ever moves for another reason, this read keeps its own budget.
+            # Ten seconds to answer "what is selected" already means the main
+            # thread is wedged; waiting longer buys the panel nothing.
+            #
+            # record_stall is left at its default (True) deliberately. This is
+            # a user-triggered foreground read, not a background poll, so it
+            # cannot spam the 2-strike stall detector, and a timeout here is
+            # honest evidence that the main thread is genuinely unresponsive.
+            ctx = run_on_main(_gather_context_on_main_thread, timeout=10.0)
         except ImportError:
-            # Outside Houdini (e.g., testing) -- return empty context
+            # Off the main thread AND no hdefereval -- i.e. outside Houdini
+            # (tests). Preserves the pre-migration ImportError fallback
+            # exactly: read directly, since there is no main thread to
+            # marshal to and no real hou to be unsafe with.
             ctx = _gather_context_on_main_thread()
+        except RuntimeError:
+            # run_on_main timed out. Do NOT fall back to a direct call: that
+            # would touch hou off the main thread, trading a bounded failure
+            # for a thread-safety violation. Return the neutral value and
+            # stay quiet on context_updated -- nothing fresh was read.
+            logger.warning(
+                "gather_context: Houdini's main thread didn't respond within "
+                "10s; returning empty scene context."
+            )
+            return _empty_context()
 
+        return self._emit_context(ctx)
+
+    def _emit_context(self, ctx):
+        """Emit context_updated for a freshly-read context and return it."""
         if ctx:
             self.context_updated.emit(ctx)
         return ctx

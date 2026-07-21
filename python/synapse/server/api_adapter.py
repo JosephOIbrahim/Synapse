@@ -93,14 +93,67 @@ def _log_action(cmd_type: str):
         ).start()
 
 
+# Marshal budget for the apiFunction node create/delete paths.
+#
+# Deliberately the same 10 s as ``main_thread._DEFAULT_TIMEOUT`` (and therefore
+# as the four ``run_on_main`` sites in ``handlers_node.py``, which marshal the
+# EXACT same operations: createNode / destroy / setInput / parm set). These are
+# bounded scene mutations, not renders or flipbooks, so the generous-budget
+# carve-out the lint warns about does not apply here. Stated as a local literal
+# rather than importing the private ``_DEFAULT_TIMEOUT`` so the choice is a
+# reviewed decision at this call site instead of an inherited accident; if the
+# handler budget ever moves, this one should be re-argued, not silently dragged.
+_MAIN_THREAD_TIMEOUT = 10.0
+
+
 def _on_main_thread(fn):
     """Run fn on Houdini's main thread and return result.
 
-    Most hou.* calls work from worker threads in H21, but node
-    creation/deletion can stall.  Use this for those operations.
+    Most hou.* calls work from worker threads, but node creation/deletion
+    can stall. Use this for those operations.
+
+    Routed through ``synapse.server.main_thread.run_on_main`` rather than
+    ``hdefereval.executeInMainThreadWithResult``. The vendor blocking
+    primitive (H22.0.368 ``hdefereval.py:43`` -> ``_queueDeferred(block=True)``
+    -> ``_condition.wait()`` at ``:93``) has TWO defects this site was exposed
+    to:
+
+    1. **Unbounded park.** ``_condition.wait()`` takes no timeout. An
+       hwebserver worker that marshalled here while the main thread was
+       cooking had no way back — the request hung until Houdini went idle,
+       with no error and no upper bound.
+    2. **Module-global result race.** ``_queueDeferred`` reads its result out
+       of ``_last_result`` / ``_last_exc_info``, which are MODULE GLOBALS.
+       Any other blocking marshal in flight anywhere in the process could
+       hand its result back to us — so ``create_node`` could report the wrong
+       node path to the client. Silent wrong data, not a hang.
+
+    ``run_on_main`` closes both by construction: a per-call result holder (no
+    globals), the non-blocking ``executeDeferred`` plus its own Event and
+    timeout, and the C4 abandoned-flag zombie-kill so a payload whose caller
+    already timed out cannot mutate the scene late.
+
+    NOT claimed here: a main-thread self-deadlock. These callers are
+    hwebserver worker threads; the prior crucible could not confirm any
+    main-thread entry to this function, and neither can this change. The two
+    defects above are confirmed and are closed regardless of caller thread.
+    ``run_on_main``'s fast path 2 also makes a main-thread caller safe if one
+    ever appears, but that is insurance, not the justification.
+
+    On timeout ``run_on_main`` raises ``RuntimeError``. It is deliberately
+    allowed to propagate to hwebserver rather than being reshaped into an
+    ``APIError``: an honest error is a strict improvement over the previous
+    behaviour (an unbounded hang that returned nothing at all), and
+    translating it here would risk masking a genuine failure.
+
+    Standalone (no Houdini): ``hdefereval`` is absent, so ``run_on_main``'s
+    off-main branch would fail on its lazy ``import hdefereval``. The
+    ``HDEFEREVAL_AVAILABLE`` guard is retained so this module keeps working
+    outside Houdini per CLAUDE.md section 12 dual-mode.
     """
     if HDEFEREVAL_AVAILABLE:
-        return hdefereval.executeInMainThreadWithResult(fn)
+        from .main_thread import run_on_main
+        return run_on_main(fn, timeout=_MAIN_THREAD_TIMEOUT)
     return fn()
 
 

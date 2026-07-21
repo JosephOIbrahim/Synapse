@@ -59,6 +59,155 @@ except ImportError:
     hou = None  # type: ignore[assignment]
     hdefereval = None  # type: ignore[assignment]
 
+# ── Safe Main-Thread Marshal Import Guard ──────────────────────
+# run_on_main is the ONE correct main-thread primitive in this codebase.
+# It must be REUSED, never re-implemented:
+#   * caller already on the main thread  -> calls fn() directly, so a
+#     main-thread caller can never self-deadlock (the vendor's
+#     hdefereval._queueDeferred(block=True) parks in _condition.wait()
+#     forever in that case — the wait can only be released by the main
+#     thread returning to its own event loop);
+#   * off-main -> hdefereval.executeDeferred (the NON-blocking post) plus a
+#     per-call result holder (no module-global result race), an explicit
+#     timeout, and the C4 'abandoned' zombie-kill flag so a timed-out
+#     payload cannot mutate the scene after the caller gave up.
+# Resolved LAZILY, never at module level. A module-level
+# `from synapse.server.main_thread import run_on_main` creates an IMPORT CYCLE:
+# synapse.server.integrity_envelope imports `shared.bridge`, so shared.bridge
+# importing back into the synapse.server package leaves that package partially
+# initialized and integrity_envelope's own guarded import raises ImportError —
+# which it swallows, silently setting _ENVELOPE_AVAILABLE=False and switching
+# the ENTIRE live integrity envelope off. Verified: it breaks 10 tests in
+# tests/test_live_integrity_envelope.py. Lazy import keeps the cycle unformed.
+_run_on_main_cached = None
+
+
+def _resolve_run_on_main():
+    """Return the safe main-thread marshal, or None if unimportable.
+
+    Lazy + cached (see the import-cycle note above). Callers MUST treat None as
+    "refuse to marshal" — never as license to fall back to the vendor's
+    blocking primitive.
+    """
+    global _run_on_main_cached
+    if _run_on_main_cached is None:
+        try:
+            from synapse.server.main_thread import run_on_main as _rom
+        except ImportError:
+            return None
+        _run_on_main_cached = _rom
+    return _run_on_main_cached
+
+
+def _vendor_hdefereval():
+    """The ``hdefereval`` module ``run_on_main`` will import, or None.
+
+    run_on_main performs its OWN unconditional ``import hdefereval``
+    (python/synapse/server/main_thread.py:275) resolved through sys.modules —
+    it never consults THIS module's import-guarded ``hdefereval`` name. This
+    helper reproduces exactly that resolution so ``_resolve_marshal`` can tell
+    whether delegating would land on the same object our guard at :56 admitted.
+    """
+    try:
+        import hdefereval as _vendor
+    except ImportError:
+        return None
+    return _vendor
+
+
+def _resolve_marshal():
+    """Return ``callable(fn, timeout=...)`` running *fn* on Houdini's main
+    thread, or None when no marshal exists at all.
+
+    WHY THIS EXISTS (dual-mode contract, CLAUDE.md §12). run_on_main is the ONE
+    correct primitive whenever a real Houdini is in the process, and it is
+    always preferred there. But it resolves hdefereval by that unconditional
+    import of its own, which BYPASSES this module's import guard. Delegating to
+    it unconditionally therefore breaks the standalone/CI half of the contract:
+    bridge.py must degrade gracefully with no Houdini present, and the marshal
+    must stay interceptable through THIS module's ``hdefereval`` name (the
+    documented seam — see the fake-residency note: substituting the module
+    attribute, never sys.modules).
+
+    So the choice is made on IDENTITY, not mere availability: run_on_main is
+    used only when the module it will import IS the object our guard admitted.
+    The module-level ``hdefereval`` name therefore stays the SEAM — it selects
+    the branch. Substitute it (the documented interception style: patch the
+    module attribute, never sys.modules) and this module degrades to the
+    standalone path; leave the real module in place and every marshal goes
+    through run_on_main, keeping fast path 2, the C4 zombie-kill flag and the
+    C6 histograms exactly as the sprint intended.
+
+    WHAT THE STANDALONE BRANCH DOES, and why it is not a marshal. It calls
+    ``fn()`` directly — the "graceful fallback to synchronous execution" the
+    import guard above has always promised. It deliberately does NOT invoke a
+    substituted module's own dispatch methods, because the only two spellings a
+    stand-in can offer are both forbidden repo-wide: the blocking
+    ``executeInMainThreadWithResult`` (banned by tests/test_marshal_lint.py with
+    an empty allowlist — it is the self-deadlocking primitive this whole sprint
+    exists to remove) and ``executeInMainThread`` (a phantom that does not exist
+    on H22.0.368 at all). Calling straight through is both the honest
+    degradation and the only spelling that keeps the ban intact.
+
+    Stated plainly, because it is the point of the migration: the vendor's
+    blocking marshal is not reachable from here at all. This branch is taken
+    only when the object is provably not the vendor module, and it does not
+    dispatch through that object regardless — so neither vendor defect (the
+    untimed, thread-unchecked ``_condition.wait()`` in
+    ``_queueDeferred(block=True)``, and the ``_last_result`` module-global
+    result race) has a path into this module.
+
+    ``timeout`` is honoured on the run_on_main path only. The standalone branch
+    is an ordinary in-thread call this module cannot interrupt, so bounding it
+    here would be a lie — the same reasoning main_thread.py applies to its own
+    fast path 2.
+    """
+    _rom = _resolve_run_on_main()
+    if (_rom is not None
+            and hdefereval is not None
+            and hdefereval is _vendor_hdefereval()):
+        def _safe(fn, timeout):
+            return _rom(fn, timeout=timeout)
+        # Marks the marshal as one that REQUIRES an off-main caller — see
+        # _marshal_await. run_on_main's fast path 2 short-circuits a
+        # main-thread caller to a direct inline call, so the executor hop is
+        # what makes the deferred post (and its C4 bound) the path taken.
+        _safe.deferred = True
+        return _safe
+    if hdefereval is None:
+        return None
+
+    def _standin(fn, timeout):
+        return fn()
+    _standin.deferred = False
+    return _standin
+
+
+async def _marshal_await(marshal, fn, timeout):
+    """Await *fn* marshalled onto the main thread without blocking the loop.
+
+    ``marshal.deferred`` decides whether the caller must first hop off the main
+    thread, and the distinction is load-bearing in BOTH directions:
+
+    * run_on_main (deferred=True) — hop to an executor. This coroutine runs on
+      the FastMCP loop, which is the main thread; calling run_on_main from here
+      would hit its fast path 2 and run the payload INLINE, blocking the loop
+      and never exercising the deferred post, its timeout, or the C4
+      zombie-kill flag. The hop is what guarantees the off-main path.
+
+    * stand-in (deferred=False) — do NOT hop. The stand-in is an ordinary
+      synchronous call with no deferral, so an executor hop buys nothing and
+      actively FALSIFIES the thread anchor: ``_on_main_thread()`` inside the
+      payload would measure a worker thread and record
+      ``main_thread_executed=False`` for a frame that in production runs on
+      main. Standalone degradation is synchronous by design (guard at :50).
+    """
+    if getattr(marshal, "deferred", False):
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, lambda: marshal(fn, timeout=timeout))
+    return marshal(fn, timeout=timeout)
+
+
 # ── Gate System Import Guard ───────────────────────────────────
 # Production: synapse.core.gates provides HumanGate with full proposal lifecycle
 # Standalone/test: falls back to auto-approve or injected callback
@@ -1259,17 +1408,56 @@ class LosslessExecutionBridge:
                 return self._fail_with_integrity(integrity, msg, "execution_error")
 
         # ── Dispatch to main thread without blocking FastMCP ──
-        # Timeout prevents indefinite hang if Houdini main thread stalls.
+        # Was: hdefereval.executeInMainThreadWithResult(_sync_payload). That is
+        # the vendor's BLOCKING marshal, and it carries the second vendor defect:
+        # it reads its result back out of hdefereval MODULE GLOBALS
+        # (`result = _last_result`), so two concurrent blocking marshals from
+        # different threads can hand each other's results back — silent
+        # cross-thread corruption of a scene mutation's return value and of the
+        # IntegrityBlock built from it. The executor thread is never the main
+        # thread, so this site could not self-deadlock, but the result race and
+        # the un-cancellable payload were both live.
+        #
+        # run_on_main removes both: a per-call result holder (no globals) and the
+        # C4 'abandoned' zombie-kill flag, so a payload that comes back after the
+        # 120s budget can no longer mutate the scene behind a reported failure —
+        # asyncio.wait_for alone never prevented that, because cancelling the
+        # await does NOT stop the executor thread.
+        #
+        # TIMEOUT 120.0s — the EXISTING budget, preserved exactly, not the ~10s
+        # default. This path carries arbitrary agent operations including heavy
+        # cooks. The outer wait_for is kept at 125s purely as a backstop for a
+        # starved executor; run_on_main's own 120s bound is the one that should
+        # fire, since it is the one that kills the zombie.
+        #
+        # Resolved through _resolve_marshal, not _resolve_run_on_main directly:
+        # run_on_main's own unconditional `import hdefereval` bypasses this
+        # module's import guard, so delegating blind breaks the §12 dual-mode
+        # contract and the module-level hdefereval seam. With a real Houdini in
+        # the process the identity check holds and this IS run_on_main.
+        _rom = _resolve_marshal()
+        if _rom is None:
+            return self._fail_with_integrity(
+                integrity,
+                "no main-thread marshal available (neither "
+                "synapse.server.main_thread.run_on_main nor an hdefereval "
+                "module) — refusing to fall back to the blocking vendor "
+                "marshal (module-global result race, no zombie kill)",
+                "missing_dependency",
+            )
         loop = asyncio.get_running_loop()
         try:
             return await asyncio.wait_for(
                 loop.run_in_executor(
                     None,
-                    lambda: hdefereval.executeInMainThreadWithResult(_sync_payload)
+                    lambda: _rom(_sync_payload, timeout=120.0)
                 ),
-                timeout=120.0,
+                timeout=125.0,
             )
-        except asyncio.TimeoutError:
+        # RuntimeError = run_on_main's own timeout. _sync_payload never raises
+        # (it converts every failure into an ExecutionResult), so a RuntimeError
+        # arriving here is the marshal timing out, not the operation.
+        except (asyncio.TimeoutError, RuntimeError):
             integrity.delta_hash = "timeout"
             return self._fail_with_integrity(
                 integrity,
@@ -1304,6 +1492,26 @@ class LosslessExecutionBridge:
             integrity.undo_group_active = True
             integrity.delta_hash = "pdg_test_cook"
             return self._finalize(operation, integrity, {"pdg": "test_cook_ok"})
+
+        # Every main-thread marshal on this path goes through run_on_main when a
+        # real Houdini is present — never the phantom executeInMainThread this
+        # path used to call, and never the blocking vendor marshal. Resolution
+        # goes through _resolve_marshal because run_on_main imports hdefereval
+        # unconditionally, bypassing this module's guard: delegating blind broke
+        # the §12 dual-mode contract (standalone/CI raised "No module named
+        # 'hdefereval'" from inside run_on_main, so the cook, the timeout-cancel
+        # and the dirtyAllTasks rollback below all failed). If no marshal exists
+        # at all we refuse rather than mutate off-thread.
+        _rom = _resolve_marshal()
+        if _rom is None:
+            return self._fail_with_integrity(
+                integrity,
+                "no main-thread marshal available (neither "
+                "synapse.server.main_thread.run_on_main nor an hdefereval "
+                "module) — refusing to marshal a PDG cook onto the main "
+                "thread without a safe primitive",
+                "missing_dependency",
+            )
 
         # F1 parity — no self-attested anchors on the PDG path:
         #   undo: PDG cooks are NOT undo-wrapped (failure recovery is
@@ -1398,7 +1606,28 @@ class LosslessExecutionBridge:
                     cook_error[0] = str(e)
                     cook_complete.set()
 
-            hdefereval.executeInMainThread(_exec_graph_safe)
+            # PHANTOM-API FIX. hdefereval.executeInMainThread DOES NOT EXIST on
+            # H22.0.368 — the module's only public marshals are executeDeferred,
+            # executeDeferredAfterWaiting and executeInMainThreadWithResult
+            # (verified by reading the vendor source). This call therefore
+            # raised AttributeError straight into the enclosing `except
+            # Exception as e` below, which reported it as "PDG callback error".
+            # Net effect: executeGraph() NEVER RAN and every bridge-routed
+            # cook_pdg_chain failed at the trigger under a misleading label.
+            #
+            # TIMEOUT 60.0s — chosen explicitly, NOT the ~10s default. This wait
+            # covers only the main thread PICKING UP the trigger:
+            # executeGraph(block=False) kicks the cook and returns, and the cook
+            # itself is bounded separately by cook_timeout in the poll below. 60s
+            # absorbs a main thread busy with an unrelated cook so a slow pickup
+            # does not become a spurious PDG failure. run_in_executor keeps the
+            # FastMCP loop responsive (the R8 contract) and guarantees the
+            # caller is off-main, so run_on_main takes its deferred-post path.
+            # _marshal_await performs the executor hop for the run_on_main
+            # marshal and skips it for a stand-in (which has no deferral to
+            # reach, and whose payload must stay on this thread for the
+            # main-thread anchor evidence above to be honest).
+            await _marshal_await(_rom, _exec_graph_safe, 60.0)
 
             # Poll the threading.Event from the async loop so FastMCP stays
             # responsive. 250ms poll interval matches gate polling cadence.
@@ -1421,15 +1650,33 @@ class LosslessExecutionBridge:
                 await asyncio.sleep(0.25)
 
             if timed_out:
+                # PHANTOM-API FIX + SILENT-FAILURE FIX. This was
+                # hdefereval.executeInMainThread (nonexistent — see above)
+                # under a bare `except Exception: pass`, so the AttributeError
+                # was SWALLOWED: the cook was never actually cancelled, yet the
+                # message below still told the artist "-- cancelled". Silent
+                # failure plus a false statement in the operation trail.
+                #
+                # TIMEOUT 30.0s — explicit, matching main_thread._SLOW_TIMEOUT.
+                # We are already on the failure path and the main thread may be
+                # the very thing that is stuck, so the cancel must be bounded.
+                # The outcome is now recorded and reported honestly instead of
+                # asserted; run_on_main's C4 abandoned-flag guarantees a
+                # timed-out cancel cannot fire late against a recovered graph.
+                cancelled = False
+                cancel_note = ""
                 try:
-                    hdefereval.executeInMainThread(
-                        lambda: graph_context.cancelCook()
-                    )
-                except Exception:
-                    pass
+                    await _marshal_await(_rom, graph_context.cancelCook, 30.0)
+                    cancelled = True
+                except Exception as _cancel_exc:
+                    cancel_note = f" Cancel attempt failed: {_cancel_exc}."
                 cook_error[0] = (
                     f"PDG cook timed out after {cook_timeout:.0f}s on "
-                    f"{node_path} -- cancelled. The cook fired neither "
+                    f"{node_path} -- "
+                    + ("cancelled." if cancelled
+                       else f"CANCEL NOT CONFIRMED, the cook may still be "
+                            f"running.{cancel_note}")
+                    + " The cook fired neither "
                     "CookComplete nor CookError (stuck work item, scheduler "
                     "stall, or a graph already cooking from another trigger)."
                 )
@@ -1452,17 +1699,39 @@ class LosslessExecutionBridge:
             # nodes/artists may still depend on). On-disk removal is opt-in per
             # operation (single-user local scratch), never the default.
             remove_files = bool(operation.kwargs.get("remove_generated_files", False))
+            # PHANTOM-API FIX + SILENT-FAILURE FIX. Same nonexistent
+            # executeInMainThread under a bare `except Exception: pass`, so the
+            # ROLLBACK NEVER HAPPENED: tasks were never dirtied, yet the failure
+            # message told the artist the caches were handled. A retry then
+            # recooked against stale, undirtied work items.
+            #
+            # TIMEOUT 30.0s — explicit, matching main_thread._SLOW_TIMEOUT.
+            # dirtyAllTasks is a bounded graph-side operation, not a cook; this
+            # is the failure path, so it must not hang the loop waiting on a
+            # main thread that may already be wedged. The rollback outcome is
+            # now reported honestly rather than assumed.
+            dirtied = False
+            rollback_note = ""
             try:
-                hdefereval.executeInMainThread(
-                    lambda: top_node.dirtyAllTasks(remove_files=remove_files)
+                await _marshal_await(
+                    _rom,
+                    lambda: top_node.dirtyAllTasks(remove_files=remove_files),
+                    30.0,
                 )
-            except Exception:
-                pass
+                dirtied = True
+            except Exception as _rb_exc:
+                rollback_note = f" Rollback (dirtyAllTasks) failed: {_rb_exc}."
             integrity.delta_hash = "pdg_timeout" if timed_out else "pdg_rolled_back"
             disposition = "removed from disk" if remove_files else "preserved on disk"
+            rollback_state = (
+                f"Tasks dirtied for recook; generated caches {disposition}."
+                if dirtied else
+                f"TASKS NOT DIRTIED — a retry may recook against stale work "
+                f"items; generated caches {disposition}.{rollback_note}"
+            )
             return self._fail_with_integrity(
                 integrity,
-                f"PDG cook failed on farm. Generated caches {disposition}. {cook_error[0]}",
+                f"PDG cook failed on farm. {rollback_state} {cook_error[0]}",
                 "pdg_error",
             )
 
@@ -1583,7 +1852,31 @@ class LosslessExecutionBridge:
         return True
 
     def _wait_for_decision(self, proposal, timeout: float = GATE_TIMEOUT_APPROVE) -> bool:
-        """Poll for artist decision on APPROVE/CRITICAL-level proposals."""
+        """Poll for artist decision on APPROVE/CRITICAL-level proposals.
+
+        ⚠ MAIN-THREAD HAZARD — currently UNREACHABLE, and that is load-bearing.
+        This is a blocking time.sleep poll bounded only by GATE_TIMEOUT_APPROVE
+        (120s) / GATE_TIMEOUT_CRITICAL (300s). The sync execute() path IS
+        reachable on Houdini's main thread (panel: tool_executor ->
+        bridge_adapter.execute_through_bridge -> bridge.execute, run INLINE on
+        the Qt/main thread). If this poll ever ran there it would be a
+        self-deadlock, not merely a freeze: the main thread would sleep up to
+        five minutes waiting for a decision that only the frozen GUI can
+        deliver, then time out into a spurious rejection. That exact freeze was
+        confirmed live 2026-06-01.
+
+        It is dead today ONLY because _check_consent prefers self._gate, and no
+        production path ever sets one: get_process_bridge() (the single
+        non-test constructor) builds gate-less with an auto-approve callback,
+        and bridge_adapter.get_bridge() re-asserts `_gate = None` plus the
+        non-blocking `_panel_consent`. Pinned by
+        tests/test_panel_consent_no_freeze.py.
+
+        Anyone wiring a real HumanGate onto a bridge instance reachable from the
+        main thread re-arms this deadlock. The fix would be to make the panel's
+        dispatch non-blocking (panel-side, not this file) — do NOT paper over it
+        by shortening the timeout here.
+        """
         import time as _time
         deadline = _time.monotonic() + timeout
         while _time.monotonic() < deadline:

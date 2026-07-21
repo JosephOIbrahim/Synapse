@@ -242,7 +242,35 @@ def run_on_main(fn, timeout=_DEFAULT_TIMEOUT, record_stall=True, record_wait=Tru
         try:
             return fn()
         finally:
-            _record_main_thread_direct((time.perf_counter() - _t_direct) * 1000.0)
+            _elapsed_ms = (time.perf_counter() - _t_direct) * 1000.0
+            # C6 first and unconditionally — the histogram's semantics are
+            # unchanged and must not depend on the guard being importable.
+            _record_main_thread_direct(_elapsed_ms)
+            # Starvation telemetry (L8). Fast path 2 is where a migrated
+            # marshal now RUNS inline instead of deadlocking — strictly better,
+            # but a long inline payload still freezes the GUI for its duration.
+            # This is the only place that residual is observable, so record it.
+            # NO bounding is applied here: the caller is the main thread, and
+            # there is no mechanism by which Python can interrupt it. Any
+            # "timeout" on this path would be a lie. Pure observation.
+            # Off-main behaviour below is untouched (C4 zombie-kill and the C6
+            # dispatch-wait sample keep their exact prior semantics).
+            try:
+                from .marshal_guard import (
+                    note_main_thread_inline_overrun,
+                    inline_budget_s,
+                )
+                _budget_s = inline_budget_s()
+                if _elapsed_ms / 1000.0 > _budget_s:
+                    note_main_thread_inline_overrun(
+                        "main_thread.run_on_main:fast_path_2",
+                        _elapsed_ms / 1000.0,
+                        _budget_s,
+                    )
+            except Exception:
+                # Telemetry must never break the payload's return or its
+                # exception propagation. Swallow deliberately.
+                pass
 
     import hdefereval
 

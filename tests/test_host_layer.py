@@ -281,28 +281,147 @@ class TestMainThreadExecutor:
         mte.main_thread_exec(lambda: {"ok": True}, {})
         sentinel.executeInMainThreadWithResult.assert_not_called()
 
-    def test_gui_mode_routes_through_hdefereval(self, monkeypatch):
+    def test_gui_mode_offmain_caller_routes_through_execute_deferred(
+        self, monkeypatch
+    ):
+        """GUI mode marshals an OFF-MAIN caller onto the main thread.
+
+        Invariant (unchanged since this test was written): in GUI mode the
+        payload does NOT run on whatever arbitrary thread called us — it is
+        handed to Houdini's event loop and runs there.
+
+        Re-anchored (marshal-deadlock migration) onto the primitive
+        ``_exec_gui`` actually uses now: the NON-blocking
+        ``hdefereval.executeDeferred`` + our own Event
+        (main_thread_executor.py:244). The blocking
+        ``executeInMainThreadWithResult`` is deliberately unreachable here —
+        it self-deadlocks on a main-thread caller and reads results out of
+        module globals — so the fake below fails loud if anything reaches
+        for it.
+        """
         from synapse.host import main_thread_executor as mte
 
         fake_hou = types.ModuleType("hou")
         fake_hou.isUIAvailable = lambda: True  # type: ignore[attr-defined]
         monkeypatch.setitem(sys.modules, "hou", fake_hou)
 
-        captured: list = []
+        posted: list = []
+        loop_threads: list = []
 
-        def _fake_execute(callable_arg):
-            captured.append("called")
-            return callable_arg()
+        def _fake_execute_deferred(callable_arg):
+            """Stand-in for Houdini's event loop: non-blocking post, the
+            payload runs on the loop's OWN thread, not the caller's."""
+            posted.append(callable_arg)
+            t = threading.Thread(target=callable_arg, name="fake-houdini-main")
+            loop_threads.append(t)
+            t.start()
+
+        def _must_not_be_used(*_a, **_k):
+            raise AssertionError(
+                "executeInMainThreadWithResult is the self-deadlocking "
+                "blocking primitive — _exec_gui must not use it"
+            )
 
         fake_hdefereval = types.SimpleNamespace(
-            executeInMainThreadWithResult=_fake_execute
+            executeDeferred=_fake_execute_deferred,
+            executeInMainThreadWithResult=_must_not_be_used,
         )
         monkeypatch.setattr(mte, "hdefereval", fake_hdefereval)
         monkeypatch.setattr(mte, "_HDEFEREVAL_AVAILABLE", True)
 
-        result = mte.main_thread_exec(lambda: {"via": "hdefereval"}, {})
-        assert result == {"via": "hdefereval"}
-        assert captured == ["called"]
+        payload_thread: list = []
+
+        def _probe():
+            payload_thread.append(threading.current_thread().name)
+            return {"via": "hdefereval"}
+
+        # The caller must NOT be the main thread, or the fast path below
+        # (its own test) legitimately short-circuits the marshal.
+        outcome: dict = {}
+
+        def _caller():
+            try:
+                outcome["result"] = mte.main_thread_exec(_probe, {})
+            except BaseException as exc:  # noqa: BLE001 - surfaced below
+                outcome["error"] = exc
+
+        caller = threading.Thread(target=_caller, name="fake-ws-worker")
+        caller.start()
+        caller.join(timeout=10)
+        for t in loop_threads:
+            t.join(timeout=10)
+
+        assert not caller.is_alive(), "off-main GUI marshal never returned"
+        assert "error" not in outcome, outcome.get("error")
+        assert outcome["result"] == {"via": "hdefereval"}
+        # The marshal actually happened (guards against a vacuous pass).
+        assert len(posted) == 1
+        # ...and it ran on the event loop's thread, not the caller's.
+        assert payload_thread == ["fake-houdini-main"]
+
+    def test_gui_mode_main_thread_caller_runs_inline_without_deadlock(
+        self, monkeypatch
+    ):
+        """GUI mode + main-thread caller: run inline, never post-and-wait.
+
+        This is the deadlock fix itself (main_thread_executor.py:215). A
+        main-thread caller that posted and then waited would be blocking the
+        very event loop that has to run the payload — it would stall for the
+        whole timeout and then fail, despite the main thread being free to do
+        the work right now.
+
+        The fake event loop here NEVER drains its queue, which is exactly the
+        real situation: the main thread is sitting inside main_thread_exec.
+        So a regression that drops the fast path does not merely post — it
+        raises MainThreadTimeoutError, and this test goes red.
+        """
+        from synapse.host import main_thread_executor as mte
+
+        assert threading.current_thread() is threading.main_thread(), (
+            "this test must run on the main thread to exercise the fast path"
+        )
+
+        fake_hou = types.ModuleType("hou")
+        fake_hou.isUIAvailable = lambda: True  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "hou", fake_hou)
+
+        posted: list = []
+
+        def _fake_execute_deferred(callable_arg):
+            # Queue it and never run it — the main thread is busy (in here).
+            posted.append(callable_arg)
+
+        def _must_not_be_used(*_a, **_k):
+            raise AssertionError(
+                "executeInMainThreadWithResult on a main-thread caller is "
+                "the permanent self-deadlock this fast path exists to avoid"
+            )
+
+        fake_hdefereval = types.SimpleNamespace(
+            executeDeferred=_fake_execute_deferred,
+            executeInMainThreadWithResult=_must_not_be_used,
+        )
+        monkeypatch.setattr(mte, "hdefereval", fake_hdefereval)
+        monkeypatch.setattr(mte, "_HDEFEREVAL_AVAILABLE", True)
+
+        caller_thread = threading.current_thread().ident
+        seen_threads: list = []
+
+        def _probe(value):
+            seen_threads.append(threading.current_thread().ident)
+            return {"got": value}
+
+        started = time.perf_counter()
+        result = mte.main_thread_exec(_probe, {"value": "hi"}, timeout=1.0)
+        elapsed = time.perf_counter() - started
+
+        assert result == {"got": "hi"}
+        # Ran inline, on the caller's (main) thread.
+        assert seen_threads == [caller_thread]
+        # Nothing was deferred to an event loop that cannot run.
+        assert posted == []
+        # And it did not burn the timeout budget waiting on itself.
+        assert elapsed < 1.0
 
     def test_gui_mode_raises_if_hdefereval_missing(self, monkeypatch):
         """Defensive: UI=True + hdefereval unavailable is inconsistent."""
