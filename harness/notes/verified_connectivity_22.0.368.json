@@ -1,5 +1,5 @@
 {
- "blake2b": "05d50ba2346a3d967b4f5c46b92a19af",
+ "blake2b": "63c72a9eaa1669ff672a16b4ce4983fd",
  "entries": {
   "Chop/cop2net": {
    "category": "Chop",
@@ -235,6 +235,26 @@
     "emitted:camera"
    ],
    "type_name": "camera"
+  },
+  "Cop/clamp": {
+   "category": "Cop",
+   "input_labels": [
+    "source",
+    "lower",
+    "upper",
+    "mask"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "clamp"
+   ],
+   "sources": [
+    "emitted:clamp"
+   ],
+   "type_name": "clamp"
   },
   "Cop/colorcorrect": {
    "category": "Cop",
@@ -1472,6 +1492,110 @@
    ],
    "type_name": "wedge"
   },
+  "Lop/Labs::biome_plant_scatter_import::1.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "Labs::biome_plant_scatter_import::1.0"
+  },
+  "Lop/additionalrendervars": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "additionalrendervars"
+  },
+  "Lop/addvariant": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Copy Into Variant"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "addvariant"
+  },
+  "Lop/apexanimate": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "apexanimate"
+  },
+  "Lop/apexsoprigbuilder": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Input Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "apexsoprigbuilder"
+  },
+  "Lop/assetreference": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Reference from LOP Node"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "assetreference"
+  },
   "Lop/assignmaterial": {
    "category": "Lop",
    "input_labels": [
@@ -1485,9 +1609,48 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:assignmaterial"
+    "emitted:assignmaterial",
+    "lop_sweep"
    ],
    "type_name": "assignmaterial"
+  },
+  "Lop/assignprototypes": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Stage Containing Prototype (optional)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "assignprototypes"
+  },
+  "Lop/attribvop": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Possible Reference Data",
+    "Possible Reference Data",
+    "Possible Reference Data"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "attribvop"
   },
   "Lop/attribwrangle": {
    "category": "Lop",
@@ -1505,9 +1668,199 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:attribwrangle"
+    "emitted:attribwrangle",
+    "lop_sweep"
    ],
    "type_name": "attribwrangle"
+  },
+  "Lop/autoselectlod": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "autoselectlod"
+  },
+  "Lop/backgroundplate": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 2,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "backgroundplate"
+  },
+  "Lop/backgroundplate::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 2,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "backgroundplate::2.0"
+  },
+  "Lop/bakeapexscene": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "bakeapexscene"
+  },
+  "Lop/bakeskinning": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "bakeskinning"
+  },
+  "Lop/basiscurves": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "basiscurves"
+  },
+  "Lop/begincontextoptionsblock": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "begincontextoptionsblock"
+  },
+  "Lop/blend": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Blend Towards This Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "blend"
+  },
+  "Lop/blendconstraint": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Input Targets"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "blendconstraint"
+  },
+  "Lop/cache": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "cache"
+  },
+  "Lop/cache::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "cache::2.0"
   },
   "Lop/camera": {
    "category": "Lop",
@@ -1522,9 +1875,91 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:camera"
+    "emitted:camera",
+    "lop_sweep"
    ],
    "type_name": "camera"
+  },
+  "Lop/capsule": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "capsule"
+  },
+  "Lop/capsule::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "capsule::2.0"
+  },
+  "Lop/chopnet": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "chopnet"
+  },
+  "Lop/collection": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "collection"
+  },
+  "Lop/collection::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "collection::2.0"
   },
   "Lop/componentgeometry": {
    "category": "Lop",
@@ -1537,9 +1972,143 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:componentgeometry"
+    "emitted:componentgeometry",
+    "lop_sweep"
    ],
    "type_name": "componentgeometry"
+  },
+  "Lop/componentgeometryvariants": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Input 2",
+    "Input 3",
+    "Input 4",
+    "Input #5",
+    "Input #6",
+    "Input #7",
+    "Input #8",
+    "Input #9",
+    "Input #10",
+    "Input #11",
+    "Input #12",
+    "Input #13",
+    "Input #14",
+    "Input #15",
+    "Input #16",
+    "Input #17",
+    "Input #18",
+    "Input #19",
+    "Input #20",
+    "Input #21",
+    "Input #22",
+    "Input #23",
+    "Input #24",
+    "Input #25",
+    "Input #26",
+    "Input #27",
+    "Input #28",
+    "Input #29",
+    "Input #30",
+    "Input #31",
+    "Input #32",
+    "Input #33",
+    "Input #34",
+    "Input #35",
+    "Input #36",
+    "Input #37",
+    "Input #38",
+    "Input #39",
+    "Input #40",
+    "Input #41",
+    "Input #42",
+    "Input #43",
+    "Input #44",
+    "Input #45",
+    "Input #46",
+    "Input #47",
+    "Input #48",
+    "Input #49",
+    "Input #50",
+    "Input #51",
+    "Input #52",
+    "Input #53",
+    "Input #54",
+    "Input #55",
+    "Input #56",
+    "Input #57",
+    "Input #58",
+    "Input #59",
+    "Input #60",
+    "Input #61",
+    "Input #62",
+    "Input #63",
+    "Input #64",
+    "Input #65",
+    "Input #66",
+    "Input #67",
+    "Input #68",
+    "Input #69",
+    "Input #70",
+    "Input #71",
+    "Input #72",
+    "Input #73",
+    "Input #74",
+    "Input #75",
+    "Input #76",
+    "Input #77",
+    "Input #78",
+    "Input #79",
+    "Input #80",
+    "Input #81",
+    "Input #82",
+    "Input #83",
+    "Input #84",
+    "Input #85",
+    "Input #86",
+    "Input #87",
+    "Input #88",
+    "Input #89",
+    "Input #90",
+    "Input #91",
+    "Input #92",
+    "Input #93",
+    "Input #94",
+    "Input #95",
+    "Input #96",
+    "Input #97",
+    "Input #98",
+    "Input #99"
+   ],
+   "instantiated": true,
+   "max_inputs": 99,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "componentgeometryvariants"
+  },
+  "Lop/componentmaterial": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Materials"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "componentmaterial"
   },
   "Lop/componentoutput": {
    "category": "Lop",
@@ -1555,9 +2124,146 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:componentoutput"
+    "emitted:componentoutput",
+    "lop_sweep"
    ],
    "type_name": "componentoutput"
+  },
+  "Lop/cone": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "cone"
+  },
+  "Lop/configureapexrig": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "configureapexrig"
+  },
+  "Lop/configureguidedeform": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "configureguidedeform"
+  },
+  "Lop/configurelayer": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "configurelayer"
+  },
+  "Lop/configureprimitive": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "configureprimitive"
+  },
+  "Lop/configureproperty": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "configureproperty"
+  },
+  "Lop/configurestage": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "configurestage"
+  },
+  "Lop/coordsys": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "coordsys"
   },
   "Lop/cop2net": {
    "category": "Lop",
@@ -1568,9 +2274,53 @@
    "output_count": 0,
    "output_labels": [],
    "sources": [
-    "emitted:cop2net"
+    "emitted:cop2net",
+    "lop_sweep"
    ],
    "type_name": "cop2net"
+  },
+  "Lop/copnet": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "copnet"
+  },
+  "Lop/copnet_filterlist": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "copnet_filterlist"
+  },
+  "Lop/copyproperty": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "copyproperty"
   },
   "Lop/copytopoints": {
    "category": "Lop",
@@ -1586,9 +2336,129 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:copytopoints"
+    "emitted:copytopoints",
+    "lop_sweep"
    ],
    "type_name": "copytopoints"
+  },
+  "Lop/createlod": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "createlod"
+  },
+  "Lop/createxform": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "createxform"
+  },
+  "Lop/cube": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "cube"
+  },
+  "Lop/cylinder": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "cylinder"
+  },
+  "Lop/cylinder::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "cylinder::2.0"
+  },
+  "Lop/distantlight": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "distantlight"
+  },
+  "Lop/distantlight::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "distantlight::2.0"
   },
   "Lop/domelight": {
    "category": "Lop",
@@ -1603,7 +2473,8 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:domelight"
+    "emitted:domelight",
+    "lop_sweep"
    ],
    "type_name": "domelight"
   },
@@ -1620,7 +2491,8 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:domelight"
+    "emitted:domelight",
+    "lop_sweep"
    ],
    "type_name": "domelight::2.0"
   },
@@ -1637,7 +2509,8 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:domelight"
+    "emitted:domelight",
+    "lop_sweep"
    ],
    "type_name": "domelight::3.0"
   },
@@ -1650,9 +2523,45 @@
    "output_count": 0,
    "output_labels": [],
    "sources": [
-    "emitted:dopnet"
+    "emitted:dopnet",
+    "lop_sweep"
    ],
    "type_name": "dopnet"
+  },
+  "Lop/drawmode": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Additional Inputs for Render"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "drawmode"
+  },
+  "Lop/drop": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "drop"
   },
   "Lop/duplicate": {
    "category": "Lop",
@@ -1667,9 +2576,231 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:duplicate"
+    "emitted:duplicate",
+    "lop_sweep"
    ],
    "type_name": "duplicate"
+  },
+  "Lop/edit": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "edit"
+  },
+  "Lop/editcontextoptions": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "editcontextoptions"
+  },
+  "Lop/editlayer_begin": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "editlayer_begin"
+  },
+  "Lop/editlayer_end": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "editlayer_end"
+  },
+  "Lop/editmaterial": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "editmaterial"
+  },
+  "Lop/editmaterialproperties": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "editmaterialproperties"
+  },
+  "Lop/editproperties": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "editproperties"
+  },
+  "Lop/editpropertiesfromnode": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "editpropertiesfromnode"
+  },
+  "Lop/editprototypes": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "editprototypes"
+  },
+  "Lop/edittargetlayer": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "edittargetlayer"
+  },
+  "Lop/error": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "error"
+  },
+  "Lop/explorevariants": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "explorevariants"
+  },
+  "Lop/explorevariants::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "explorevariants::2.0"
   },
   "Lop/extractinstances": {
    "category": "Lop",
@@ -1684,9 +2815,25 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:extractinstances"
+    "emitted:extractinstances",
+    "lop_sweep"
    ],
    "type_name": "extractinstances"
+  },
+  "Lop/fetch": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "fetch"
   },
   "Lop/filecache": {
    "category": "Lop",
@@ -1701,9 +2848,393 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:filecache"
+    "emitted:filecache",
+    "lop_sweep"
    ],
    "type_name": "filecache"
+  },
+  "Lop/followpathconstraint": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Stage Containing Target Primitives (optional)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "followpathconstraint"
+  },
+  "Lop/foreach": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Possible Iteration Data",
+    "Iterate On This Input"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "foreach"
+  },
+  "Lop/geoclipsequence": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Input 2"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "geoclipsequence"
+  },
+  "Lop/geometrycolor": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "geometrycolor"
+  },
+  "Lop/geometrylight": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "geometrylight"
+  },
+  "Lop/geometrysequence": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "geometrysequence"
+  },
+  "Lop/geometrysubsetvop": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Input 2",
+    "Input 3",
+    "Input 4"
+   ],
+   "instantiated": true,
+   "max_inputs": 4,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "geometrysubsetvop"
+  },
+  "Lop/graftbranches": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Source for Grafting"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "graftbranches"
+  },
+  "Lop/graftstages": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Copy Into Scene Graph"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "graftstages"
+  },
+  "Lop/hdadynamicpayload": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "hdadynamicpayload"
+  },
+  "Lop/hermitecurves": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "hermitecurves"
+  },
+  "Lop/houdinicrowdprocedural": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "houdinicrowdprocedural"
+  },
+  "Lop/houdinifeatherprocedural": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "houdinifeatherprocedural"
+  },
+  "Lop/houdinihairprocedural": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "houdinihairprocedural"
+  },
+  "Lop/houdinioceanprocedural": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "houdinioceanprocedural"
+  },
+  "Lop/houdinipreviewprocedurals": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "houdinipreviewprocedurals"
+  },
+  "Lop/houdinirbdprocedural": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "houdinirbdprocedural"
+  },
+  "Lop/huskimagemetadata": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "huskimagemetadata"
+  },
+  "Lop/imagefilter": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "imagefilter"
+  },
+  "Lop/inlineusd": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "inlineusd"
+  },
+  "Lop/insertionpoint": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "insertionpoint"
+  },
+  "Lop/isolatescene": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "isolatescene"
   },
   "Lop/karma": {
    "category": "Lop",
@@ -1719,9 +3250,146 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:karma"
+    "emitted:karma",
+    "lop_sweep"
    ],
    "type_name": "karma"
+  },
+  "Lop/karmablockerlightfilter": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmablockerlightfilter"
+  },
+  "Lop/karmacryptomatte": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmacryptomatte"
+  },
+  "Lop/karmafogbox": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmafogbox"
+  },
+  "Lop/karmaocean": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmaocean"
+  },
+  "Lop/karmaphysicalsky": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmaphysicalsky"
+  },
+  "Lop/karmaprocedural": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmaprocedural"
+  },
+  "Lop/karmarenderproducts": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmarenderproducts"
+  },
+  "Lop/karmarenderproducts::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmarenderproducts::2.0"
   },
   "Lop/karmarenderproperties": {
    "category": "Lop",
@@ -1737,9 +3405,147 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:karmarenderproperties"
+    "emitted:karmarenderproperties",
+    "lop_sweep"
    ],
    "type_name": "karmarenderproperties"
+  },
+  "Lop/karmarendersettings": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Additional Render Vars"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmarendersettings"
+  },
+  "Lop/karmaskyatmosphere": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmaskyatmosphere"
+  },
+  "Lop/karmaskydomelight": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmaskydomelight"
+  },
+  "Lop/karmastandardrendervars": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmastandardrendervars"
+  },
+  "Lop/karmastandardrendervars::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmastandardrendervars::2.0"
+  },
+  "Lop/karmatexturebaker": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmatexturebaker"
+  },
+  "Lop/karmatoonshading": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "karmatoonshading"
+  },
+  "Lop/kinefx::sopcharacterimport": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "kinefx::sopcharacterimport"
   },
   "Lop/labs::karma::1.0": {
    "category": "Lop",
@@ -1755,7 +3561,8 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:karma"
+    "emitted:karma",
+    "lop_sweep"
    ],
    "type_name": "labs::karma::1.0"
   },
@@ -1773,9 +3580,147 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:karma"
+    "emitted:karma",
+    "lop_sweep"
    ],
    "type_name": "labs::karma::2.0"
+  },
+  "Lop/labs::karma_aovs_for_prman_denoiser::1.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "labs::karma_aovs_for_prman_denoiser::1.0"
+  },
+  "Lop/labs::ml_cv_directory_variant::1.0": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "labs::ml_cv_directory_variant::1.0"
+  },
+  "Lop/labs::ml_cv_dome_camera::1.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Focus Object",
+    "Template Camera"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 2,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "labs::ml_cv_dome_camera::1.0"
+  },
+  "Lop/labs::ml_cv_synthetics_karma_rop::1.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "labs::ml_cv_synthetics_karma_rop::1.0"
+  },
+  "Lop/labs::ml_cv_synthetics_karma_rop::1.1": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Custom ID"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "labs::ml_cv_synthetics_karma_rop::1.1"
+  },
+  "Lop/labs::zibravdb_import::1.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "labs::zibravdb_import::1.0"
+  },
+  "Lop/layerbreak": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "layerbreak"
+  },
+  "Lop/layerreplace": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Replace Layer With Flattened Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "layerreplace"
   },
   "Lop/light": {
    "category": "Lop",
@@ -1790,7 +3735,8 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:light"
+    "emitted:light",
+    "lop_sweep"
    ],
    "type_name": "light"
   },
@@ -1807,9 +3753,128 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:light"
+    "emitted:light",
+    "lop_sweep"
    ],
    "type_name": "light::2.0"
+  },
+  "Lop/lightfilterlibrary": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "lightfilterlibrary"
+  },
+  "Lop/lightlinker": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "lightlinker"
+  },
+  "Lop/lightmixer": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "lightmixer"
+  },
+  "Lop/liverender": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "liverender"
+  },
+  "Lop/loadlayer": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "loadlayer"
+  },
+  "Lop/loftpayloadinfo": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "loftpayloadinfo"
+  },
+  "Lop/lookatconstraint": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Stage Containing Target Primitives (optional)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "lookatconstraint"
   },
   "Lop/lopnet": {
    "category": "Lop",
@@ -1820,9 +3885,63 @@
    "output_count": 0,
    "output_labels": [],
    "sources": [
-    "emitted:lopnet"
+    "emitted:lopnet",
+    "lop_sweep"
    ],
    "type_name": "lopnet"
+  },
+  "Lop/lpetag": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "lpetag"
+  },
+  "Lop/maskfrombounds": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Stage Containing Bounding Primitives (optional)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "maskfrombounds"
+  },
+  "Lop/matchsize": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Input Target"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "matchsize"
   },
   "Lop/materiallibrary": {
    "category": "Lop",
@@ -1837,9 +3956,57 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:materiallibrary"
+    "emitted:materiallibrary",
+    "lop_sweep"
    ],
    "type_name": "materiallibrary"
+  },
+  "Lop/materiallinker": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "materiallinker"
+  },
+  "Lop/materialvariation": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "materialvariation"
+  },
+  "Lop/matnet": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "matnet"
   },
   "Lop/merge": {
    "category": "Lop",
@@ -1854,7 +4021,8 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:merge"
+    "emitted:merge",
+    "lop_sweep"
    ],
    "type_name": "merge"
   },
@@ -1871,9 +4039,44 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:mergepointinstancers"
+    "emitted:mergepointinstancers",
+    "lop_sweep"
    ],
    "type_name": "mergepointinstancers"
+  },
+  "Lop/mesh": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "mesh"
+  },
+  "Lop/modifypaths": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "modifypaths"
   },
   "Lop/modifypointinstances": {
    "category": "Lop",
@@ -1888,9 +4091,27 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:modifypointinstances"
+    "emitted:modifypointinstances",
+    "lop_sweep"
    ],
    "type_name": "modifypointinstances"
+  },
+  "Lop/motionblur": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "motionblur"
   },
   "Lop/null": {
    "category": "Lop",
@@ -1905,9 +4126,23 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:null"
+    "emitted:null",
+    "lop_sweep"
    ],
    "type_name": "null"
+  },
+  "Lop/objnet": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "objnet"
   },
   "Lop/output": {
    "category": "Lop",
@@ -1922,7 +4157,8 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:output"
+    "emitted:output",
+    "lop_sweep"
    ],
    "type_name": "output"
   },
@@ -1939,9 +4175,45 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:paintinstances"
+    "emitted:paintinstances",
+    "lop_sweep"
    ],
    "type_name": "paintinstances"
+  },
+  "Lop/parentconstraint": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Stage Containing Target Primitives (optional)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "parentconstraint"
+  },
+  "Lop/plane": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "plane"
   },
   "Lop/pointinstancer": {
    "category": "Lop",
@@ -1957,9 +4229,113 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:pointinstancer"
+    "emitted:pointinstancer",
+    "lop_sweep"
    ],
    "type_name": "pointinstancer"
+  },
+  "Lop/points": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "points"
+  },
+  "Lop/pointsconstraint": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Stage Containing Target Primitives (optional)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "pointsconstraint"
+  },
+  "Lop/pointxform": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "pointxform"
+  },
+  "Lop/portallight": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "portallight"
+  },
+  "Lop/primitive": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "primitive"
+  },
+  "Lop/prune": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "prune"
   },
   "Lop/pythonscript": {
    "category": "Lop",
@@ -1974,9 +4350,27 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:pythonscript"
+    "emitted:pythonscript",
+    "lop_sweep"
    ],
    "type_name": "pythonscript"
+  },
+  "Lop/rbddestruction": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "rbddestruction"
   },
   "Lop/reference": {
    "category": "Lop",
@@ -1992,7 +4386,8 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:reference"
+    "emitted:reference",
+    "lop_sweep"
    ],
    "type_name": "reference"
   },
@@ -2010,9 +4405,475 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:reference"
+    "emitted:reference",
+    "lop_sweep"
    ],
    "type_name": "reference::2.0"
+  },
+  "Lop/relocate": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "relocate"
+  },
+  "Lop/rendergeometrysettings": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "rendergeometrysettings"
+  },
+  "Lop/renderpass": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "renderpass"
+  },
+  "Lop/renderproduct": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "renderproduct"
+  },
+  "Lop/rendersettings": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "rendersettings"
+  },
+  "Lop/rendervar": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "rendervar"
+  },
+  "Lop/rendervar::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "rendervar::2.0"
+  },
+  "Lop/resampletransforms": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "resampletransforms"
+  },
+  "Lop/restructurescenegraph": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "restructurescenegraph"
+  },
+  "Lop/retimeinstances": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "retimeinstances"
+  },
+  "Lop/ropnet": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "ropnet"
+  },
+  "Lop/scatterinstances": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Prototypes (optional)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "scatterinstances"
+  },
+  "Lop/scenedoctor": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "scenedoctor"
+  },
+  "Lop/sceneimport": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "sceneimport"
+  },
+  "Lop/sceneimport::2.0": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "sceneimport::2.0"
+  },
+  "Lop/scope": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "scope"
+  },
+  "Lop/setextents": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "setextents"
+  },
+  "Lop/setvariant": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "setvariant"
+  },
+  "Lop/shadowcatcher": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "shadowcatcher"
+  },
+  "Lop/shopnet": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "shopnet"
+  },
+  "Lop/shotlayeredit": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "shotlayeredit"
+  },
+  "Lop/shotload": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "shotload"
+  },
+  "Lop/shotoutput": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "shotoutput"
+  },
+  "Lop/shotsplit": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 30,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "shotsplit"
+  },
+  "Lop/shotswitch": {
+   "category": "Lop",
+   "input_labels": [
+    "Possible Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "shotswitch"
+  },
+  "Lop/simulationproxy": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "simulationproxy"
+  },
+  "Lop/sopcreate": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "sopcreate"
+  },
+  "Lop/sopcrowdimport": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "sopcrowdimport"
   },
   "Lop/sopimport": {
    "category": "Lop",
@@ -2027,9 +4888,74 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:sopimport"
+    "emitted:sopimport",
+    "lop_sweep"
    ],
    "type_name": "sopimport"
+  },
+  "Lop/sopimportapexscene": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "sopimportapexscene"
+  },
+  "Lop/sopmodify": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "sopmodify"
+  },
+  "Lop/sopnet": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "sopnet"
+  },
+  "Lop/sphere": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "sphere"
   },
   "Lop/splitpointinstancers": {
    "category": "Lop",
@@ -2044,9 +4970,79 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:splitpointinstancers"
+    "emitted:splitpointinstancers",
+    "lop_sweep"
    ],
    "type_name": "splitpointinstancers"
+  },
+  "Lop/splitprimitive": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "splitprimitive"
+  },
+  "Lop/splitscene": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 2,
+   "output_labels": [
+    "Output Stage",
+    "Output 2"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "splitscene"
+  },
+  "Lop/stagemanager": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "stagemanager"
+  },
+  "Lop/storeparametervalues": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "storeparametervalues"
   },
   "Lop/sublayer": {
    "category": "Lop",
@@ -2062,7 +5058,8 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:sublayer"
+    "emitted:sublayer",
+    "lop_sweep"
    ],
    "type_name": "sublayer"
   },
@@ -2082,9 +5079,79 @@
     "Output Stage"
    ],
    "sources": [
-    "emitted:subnet"
+    "emitted:subnet",
+    "lop_sweep"
    ],
    "type_name": "subnet"
+  },
+  "Lop/surfaceconstraint": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage",
+    "Stage Containing Target Primitives (optional)"
+   ],
+   "instantiated": true,
+   "max_inputs": 2,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "surfaceconstraint"
+  },
+  "Lop/switch": {
+   "category": "Lop",
+   "input_labels": [
+    "Possible Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 9999,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "switch"
+  },
+  "Lop/texturemateriallibrary": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "texturemateriallibrary"
+  },
+  "Lop/timeshift": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "timeshift"
   },
   "Lop/topnet": {
    "category": "Lop",
@@ -2095,9 +5162,155 @@
    "output_count": 0,
    "output_labels": [],
    "sources": [
-    "emitted:topnet"
+    "emitted:topnet",
+    "lop_sweep"
    ],
    "type_name": "topnet"
+  },
+  "Lop/transformuv": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "transformuv"
+  },
+  "Lop/unassignmaterial": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "unassignmaterial"
+  },
+  "Lop/usd_rop": {
+   "category": "Lop",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "usd_rop"
+  },
+  "Lop/usdrender_rop": {
+   "category": "Lop",
+   "input_labels": [
+    "Input 1"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "usdrender_rop"
+  },
+  "Lop/valueclip": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "valueclip"
+  },
+  "Lop/varymaterialassignment": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "varymaterialassignment"
+  },
+  "Lop/volume": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "volume"
+  },
+  "Lop/vopnet": {
+   "category": "Lop",
+   "input_labels": [],
+   "instantiated": true,
+   "max_inputs": 0,
+   "min_inputs": 0,
+   "output_count": 0,
+   "output_labels": [],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "vopnet"
+  },
+  "Lop/xform": {
+   "category": "Lop",
+   "input_labels": [
+    "Input Stage"
+   ],
+   "instantiated": true,
+   "max_inputs": 1,
+   "min_inputs": 1,
+   "output_count": 1,
+   "output_labels": [
+    "Output Stage"
+   ],
+   "sources": [
+    "lop_sweep"
+   ],
+   "type_name": "xform"
   },
   "Object/cam": {
    "category": "Object",
@@ -4931,6 +8144,25 @@
     "emitted:block_end"
    ],
    "type_name": "block_end"
+  },
+  "Vop/clamp": {
+   "category": "Vop",
+   "input_labels": [
+    "Input Value",
+    "Minimum Value",
+    "Maximum Value"
+   ],
+   "instantiated": true,
+   "max_inputs": 3,
+   "min_inputs": 0,
+   "output_count": 1,
+   "output_labels": [
+    "Clamped Value"
+   ],
+   "sources": [
+    "emitted:clamp"
+   ],
+   "type_name": "clamp"
   },
   "Vop/composite": {
    "category": "Vop",

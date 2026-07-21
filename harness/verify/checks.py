@@ -660,6 +660,50 @@ def check_lop_knowledge_fresh(ctx):
     return {"ok": True, "detail": f"{len(pkgs)} LOP catalog(s) sound + byte-matched "
                                   f"(schema v1, stamps {', '.join(stamps)})"}
 
+def check_lop_catalog_fresh(ctx):
+    # The full-surface LOP recognition artifact (scripts/harvest_lop_catalog.py ->
+    # harness/notes/h<major>_lop_catalog_live_<build>.json). Every LOP type the build
+    # actually has, with the arity that decides how it may legally be wired.
+    # It must be (a) present and tracked -- it was untracked for a while and one
+    # `git clean` would have destroyed the only full-surface artifact in the repo,
+    # (b) schema-sound with a blake2b that recomputes over `types`, and (c) stamped
+    # with the LIVE build when hython is available. A stale catalog silently
+    # under-reports the recognition surface, which is the exact failure it exists
+    # to prevent, so a mismatch FAILS rather than warns.
+    wt = Path(ctx["wt"])
+    cats = sorted((wt / "harness" / "notes").glob("h*_lop_catalog_live_*.json"))
+    if not cats:
+        return {"ok": False, "detail": "no h<major>_lop_catalog_live_<build>.json — run "
+                                       "scripts/harvest_lop_catalog.py under hython"}
+    import hashlib
+    stamps = {}
+    for fp in cats:
+        try:
+            data = json.loads(fp.read_text(encoding="utf-8"))
+            if data.get("schema") != "lop_catalog_live/v1":
+                return {"ok": False, "detail": f"{fp.name}: schema={data.get('schema')} != lop_catalog_live/v1"}
+            types = data.get("types", {})
+            digest = hashlib.blake2b(
+                json.dumps(types, sort_keys=True, ensure_ascii=False).encode("utf-8"),
+                digest_size=16).hexdigest()
+            if digest != data.get("blake2b"):
+                return {"ok": False, "detail": f"{fp.name}: blake2b mismatch (corrupt/hand-edited)"}
+            if data.get("count") != len(types):
+                return {"ok": False, "detail": f"{fp.name}: count={data.get('count')} != {len(types)} entries"}
+            stamps[fp.name] = data.get("build", "")
+        except Exception as e:
+            return {"ok": False, "detail": f"{fp.name} unreadable: {str(e)[:300]}"}
+    if ctx["hython"]:
+        code = "import hou\nprint('BUILD', hou.applicationVersionString())"
+        rc, out, err = hython(ctx["hython"], code, ctx["wt"])
+        live = next((l.split(" ", 1)[1] for l in out.splitlines() if l.startswith("BUILD ")), None)
+        if live is None:
+            return {"ok": False, "detail": f"could not read live build: {(err or out).strip()[:200]}"}
+        if live not in stamps.values():
+            return {"ok": False, "detail": (f"live build {live} has no LOP catalog (have {stamps}) — "
+                                            "regenerate via scripts/harvest_lop_catalog.py")}
+    return {"ok": True, "detail": f"{len(cats)} LOP catalog(s) sound (stamps {stamps})"}
+
 def check_lop_review_clean(ctx):
     # U.5: the REVIEW grounding sweep re-runs clean — scripts/flywheel_review_lop.py exits 0
     # with zero CRITICAL (integrity / structural / probe-confirmed-drift / known-absent-
@@ -2321,6 +2365,7 @@ DISPATCH = {
     "validator_catches_miswire": check_validator_catches_miswire,
     # U.5 — utility flywheel: LOP/Solaris knowledge (context truth)
     "lop_knowledge_fresh": check_lop_knowledge_fresh,
+    "lop_catalog_fresh": check_lop_catalog_fresh,
     "lop_review_clean": check_lop_review_clean,
     "validator_lop_conformance": check_validator_lop_conformance,
     # v6 — blueprint-armed track (V.1–V.7)

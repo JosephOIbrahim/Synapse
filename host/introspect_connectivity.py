@@ -241,6 +241,19 @@ def _collect_targets(hou, emitted_path: Path, errors: list) -> dict:
                 add("Sop", full_name, node_type, "sop_pattern")
     else:  # pragma: no cover — a Houdini without SOPs
         errors.append("no Sop category in this build")
+
+    # Full Lop sweep. Seeding Solaris coverage from the emitted list alone made
+    # the catalog circular: it could only describe wiring for node types SYNAPSE
+    # already built, so it could never learn one it had not already shipped
+    # (37 of 218 on 22.0.368). Solaris is the wiring surface artists drive, so
+    # the whole category is swept — same posture as the Sop pattern expansion
+    # above, widened from a name pattern to the category.
+    lop_cat = cats.get("Lop")
+    if lop_cat is not None:
+        for full_name, node_type in lop_cat.nodeTypes().items():
+            add("Lop", full_name, node_type, "lop_sweep")
+    else:  # pragma: no cover — a Houdini without LOPs
+        errors.append("no Lop category in this build")
     return targets
 
 

@@ -646,9 +646,24 @@ class TestSystemPromptGuidance:
         assert "sublayer_stack" in _SOLARIS_CONTEXT_GUIDANCE
 
     def test_contains_merge_ordering(self):
-        """Guidance explains merge input ordering."""
+        """Guidance explains merge input ordering -- and states the DIRECTION.
+
+        The prior assertion accepted either polarity ("opinion strength" OR
+        "input 0" appearing anywhere), so it stayed green while the prompt
+        taught the inverted rule. Ground truth is SideFX's own shipped doc,
+        houdini/help/nodes.zip -> lop/merge.txt: "Layers in earlier inputs are
+        weaker than layers in later inputs" (and lop/sublayer.txt: "weaker to
+        stronger, from left to right"). The handlers already encode this
+        correctly (handlers_solaris_graph.py:196,233,239); the prompt did not.
+        """
         from synapse.panel.system_prompt import _SOLARIS_CONTEXT_GUIDANCE
-        assert "opinion strength" in _SOLARIS_CONTEXT_GUIDANCE or "input 0" in _SOLARIS_CONTEXT_GUIDANCE
+        g = _SOLARIS_CONTEXT_GUIDANCE
+        assert "HIGHER input index = STRONGER" in g, (
+            "merge guidance must state the direction explicitly")
+        assert "input 0 is the WEAKEST" in g
+        # The inverted claim must not reappear, in any casing.
+        assert "0 has highest opinion" not in g.lower()
+        assert "input 0 is the strongest" not in g.lower()
 
 
 # =============================================================================

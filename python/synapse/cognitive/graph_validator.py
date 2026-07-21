@@ -309,7 +309,10 @@ class GraphValidator:
         #       stage, so a hard error would false-reject valid graphs.
         # Returns errors; appends advisories in place. Never weakens the oracle phases.
         cat = self._lop_catalog
-        if not isinstance(cat, dict) or p.network_type != "SOLARIS":
+        # .upper() matches the P4 normalization at :435 -- without it a proposal
+        # carrying network_type="solaris" passed the category check there and
+        # silently skipped this entire LOP ordering phase.
+        if not isinstance(cat, dict) or p.network_type.upper() != "SOLARIS":
             return []
         # Shape-coerce every field: the checksum-gated load path can only yield a
         # well-formed catalog or None, but the lop_catalog= injection seam is not

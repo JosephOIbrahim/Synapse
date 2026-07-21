@@ -118,7 +118,8 @@ SOPCreate → MaterialLibrary → AssignMaterial → Camera → Lights → Rende
 network inside the LOP node.
 - **sublayer** to bring existing geometry into the stage (not assetreference \
 -- assetreference is invisible to Karma).
-- Wire order in merge: geometry first, then lights, then referenced assets.
+- Wire order in merge: geometry first, then lights, then referenced assets \
+(later inputs are STRONGER, so the last one wired wins a conflict).
 - **Material library** with multiple subnets preferred over separate \
 matlib + assign nodes. Assign geo paths directly in matlib (geopath1, \
 geopath2) -- no separate assign nodes needed.
@@ -174,8 +175,12 @@ and display-flagged in ONE call and ONE cook. This is the right tool for \
 create nodes. Use it to tidy a network you already built, never to build one.
 - Why one call beats per-node chaining or execute_python: far fewer \
 round-trips (latency), one terminal cook, and no phantom-node-type risk.
-- Merge input ordering matters: input 0 has highest opinion strength in USD \
-composition. Wire geometry first, lights second, referenced assets last.
+- Merge input ordering matters: HIGHER input index = STRONGER opinion in USD \
+composition -- input 0 is the WEAKEST. (This is the opposite of a raw USD \
+subLayerPaths list, where earlier == stronger; the merge/sublayer LOPs invert \
+it. SideFX lop/merge.txt: "Layers in earlier inputs are weaker than layers in \
+later inputs.") Wire geometry first, lights second, referenced assets last -- \
+so later, more-specific opinions win.
 - Templates: multi_asset_merge, sublayer_stack, render_pass_split, \
 lighting_rig, hdri_lighting, instanceable_assets, variant_selector.
 - **Ground before you build (Safety Rule 15):** before issuing \

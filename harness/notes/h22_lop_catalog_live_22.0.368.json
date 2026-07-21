@@ -1,0 +1,1975 @@
+{
+ "blake2b": "a319eb4ea98d178b954c7b5a33963b8c",
+ "build": "22.0.368",
+ "count": 218,
+ "generated": {
+  "by": "scripts/harvest_lop_catalog.py",
+  "note": "deterministic: no wall-clock stamp -- a second run on the same build must be byte-identical"
+ },
+ "probe_errors": [],
+ "schema": "lop_catalog_live/v1",
+ "types": {
+  "Labs::biome_plant_scatter_import::1.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Labs Biome Plant Scatter Import",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "additionalrendervars": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Additional Render Vars",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "addvariant": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Add Variant",
+   "max_inputs": 9999,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "apexanimate": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "APEX Animate (Beta)",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "apexsoprigbuilder": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "APEX SOP Rig Builder (Beta)",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "assetreference": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Asset Reference",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "assignmaterial": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Assign Material",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "assignprototypes": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Assign Prototypes",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "attribvop": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Attribute VOP",
+   "max_inputs": 4,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "attribwrangle": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Attribute Wrangle",
+   "max_inputs": 4,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "autoselectlod": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Auto Select LOD",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "backgroundplate": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Karma Background Plate",
+   "max_inputs": 1,
+   "max_outputs": 2,
+   "min_inputs": 1
+  },
+  "backgroundplate::2.0": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Karma Background Plate",
+   "max_inputs": 1,
+   "max_outputs": 2,
+   "min_inputs": 1
+  },
+  "bakeapexscene": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Bake APEX Scene (Beta)",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "bakeskinning": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Bake UsdSkel Skinning",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "basiscurves": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Basis Curves",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "begincontextoptionsblock": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Begin Context Options Block",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "blend": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Blend",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "blendconstraint": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Blend Constraint",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 2
+  },
+  "cache": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Cache",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "cache::2.0": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Cache",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "camera": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Camera",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "capsule": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Capsule",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "capsule::2.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Capsule",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "chopnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "CHOP Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "collection": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Collection",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "collection::2.0": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Collection",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "componentgeometry": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Component Geometry",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "componentgeometryvariants": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Component Geometry Variants",
+   "max_inputs": 99,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "componentmaterial": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Component Material",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "componentoutput": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Component Output",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "cone": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Cone",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "configureapexrig": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Configure APEX Rig (Beta)",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "configureguidedeform": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Configure Guide Deform",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "configurelayer": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Configure Layer",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "configureprimitive": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Configure Primitive",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "configureproperty": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Configure Property",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "configurestage": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Configure Stage",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "coordsys": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Coordinate System",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "cop2net": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "COP Network - Old",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "copnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "COP Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "copnet_filterlist": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "COP Image Filter List",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "copyproperty": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Copy Property",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "copytopoints": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Copy to Points",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "createlod": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Create LOD",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "createxform": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Xform",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "cube": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Cube",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "cylinder": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Cylinder",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "cylinder::2.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Cylinder",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "distantlight": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Distant Light",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "distantlight::2.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Distant Light",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "domelight": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Dome Light",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "domelight::2.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Dome Light",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "domelight::3.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Dome Light",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "dopnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "DOP Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "drawmode": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Draw Mode",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "drop": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Drop",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "duplicate": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Duplicate",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "edit": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Edit",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "editcontextoptions": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Edit Context Options",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "editlayer_begin": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Edit Layer Begin",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "editlayer_end": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Edit Layer End",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "editmaterial": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Edit Material Network",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "editmaterialproperties": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Edit Material Properties",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "editproperties": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Edit Properties",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "editpropertiesfromnode": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Edit Properties From Node",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "editprototypes": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Edit Prototypes",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "edittargetlayer": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Edit Target Layer",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "error": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Error",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "explorevariants": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Explore Variants",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "explorevariants::2.0": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Explore Variants",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "extractinstances": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Extract Instances",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "fetch": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Fetch",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "filecache": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "File Cache",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "followpathconstraint": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Follow Path Constraint",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "foreach": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "For Each",
+   "max_inputs": 3,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "geoclipsequence": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Geometry Clip Sequence",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "geometrycolor": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Geometry Color",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "geometrylight": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Geometry Light",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "geometrysequence": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Geometry Sequence",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "geometrysubsetvop": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Geometry Subset VOP",
+   "max_inputs": 4,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "graftbranches": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Graft Branches",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "graftstages": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Graft Stages",
+   "max_inputs": 9999,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "hdadynamicpayload": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "HDA Dynamic Payload",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "hermitecurves": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Hermite Curves",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "houdinicrowdprocedural": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Houdini Procedural: Crowd",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "houdinifeatherprocedural": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Houdini Procedural: Feather",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "houdinihairprocedural": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Houdini Procedural: Hair",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "houdinioceanprocedural": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Houdini Procedural: Ocean",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "houdinipreviewprocedurals": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Preview Houdini Procedurals",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "houdinirbdprocedural": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Houdini Procedural: RBD",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "huskimagemetadata": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Husk Image Metadata",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "imagefilter": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Image Filter",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "inlineusd": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Inline USD",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "insertionpoint": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Insertion Point",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "isolatescene": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Isolate Scene",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "karma": {
+   "deprecated": true,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Karma",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "karmablockerlightfilter": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Blocker Light Filter",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmacryptomatte": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Cryptomatte",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmafogbox": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Fog Box",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmaocean": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Ocean",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmaphysicalsky": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Physical Sky",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmaprocedural": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Procedural",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmarenderproducts": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Karma Render Products",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "karmarenderproducts::2.0": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Karma Render Products",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "karmarenderproperties": {
+   "deprecated": true,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Render Settings",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmarendersettings": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Render Settings",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmaskyatmosphere": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Sky Atmosphere",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmaskydomelight": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Sky Dome Light",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmastandardrendervars": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Standard Render Vars",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmastandardrendervars::2.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Standard Render Vars",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmatexturebaker": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Texture Baker",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "karmatoonshading": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Karma Toon Shading",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "kinefx::sopcharacterimport": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "SOP Import UsdSkel Character",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "labs::karma::1.0": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Labs Karma",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "labs::karma::2.0": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Labs Karma",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "labs::karma_aovs_for_prman_denoiser::1.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Labs Karma AOVs for RenderMan Denoiser",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "labs::ml_cv_directory_variant::1.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Labs ML CV Directory Variant",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "labs::ml_cv_dome_camera::1.0": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Labs ML CV Dome Camera",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 2
+  },
+  "labs::ml_cv_synthetics_karma_rop::1.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Labs ML CV Synthetics Karma ROP",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "labs::ml_cv_synthetics_karma_rop::1.1": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Labs ML CV Synthetics Karma ROP",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "labs::zibravdb_import::1.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Labs ZibraVDB Import",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "layerbreak": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Layer Break",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "layerreplace": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Layer Replace",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "light": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Light",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "light::2.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Light",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "lightfilterlibrary": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Light Filter Library",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "lightlinker": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Light Linker",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "lightmixer": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Light Mixer",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "liverender": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Live Render",
+   "max_inputs": 1,
+   "max_outputs": 0,
+   "min_inputs": 1
+  },
+  "loadlayer": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Load Layer For Editing",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "loftpayloadinfo": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Loft Payload Info",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "lookatconstraint": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Look At Constraint",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "lopnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "LOP Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "lpetag": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "LPE Tag",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "maskfrombounds": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Mask from Bounds",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "matchsize": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Match Size",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "materiallibrary": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Material Library",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "materiallinker": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Material Linker",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "materialvariation": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Material Variation",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "matnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "Material Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "merge": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Merge",
+   "max_inputs": 9999,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "mergepointinstancers": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Merge PointInstancers",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "mesh": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Mesh",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "modifypaths": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Modify Paths",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "modifypointinstances": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Modify Point Instances",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "motionblur": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Motion Blur",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "null": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Null",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "objnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "Object Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "output": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Output",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "paintinstances": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Paint Instances",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "parentconstraint": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Parent Constraint",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "plane": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Plane",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "pointinstancer": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "PointInstancer",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "points": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Points",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "pointsconstraint": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Points Constraint",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "pointxform": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Transform by SOP Points",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "portallight": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Portal Light",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "primitive": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Primitive",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "prune": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Prune",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "pythonscript": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Python Script",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "rbddestruction": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "RBD Destruction",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "reference": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Reference",
+   "max_inputs": 9999,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "reference::2.0": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Reference",
+   "max_inputs": 9999,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "relocate": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Relocate",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "rendergeometrysettings": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Render Geometry Settings",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "renderpass": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Render Pass",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "renderproduct": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Render Product",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "rendersettings": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Render Settings",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "rendervar": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Render Var",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "rendervar::2.0": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Render Var",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "resampletransforms": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Resample Transforms",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "restructurescenegraph": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Restructure Scene Graph",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "retimeinstances": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Retime Instances",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "ropnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "ROP Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "scatterinstances": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Scatter Instances",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "scenedoctor": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Scene Doctor",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "sceneimport": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Scene Import",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "sceneimport::2.0": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Scene Import",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "scope": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Scope",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "setextents": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Set Extents",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "setvariant": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Set Variant",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "shadowcatcher": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Karma Shadow Catcher",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "shopnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "SHOP Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "shotlayeredit": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Shot Layer Edit (Beta)",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "shotload": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Shot Load (Beta)",
+   "max_inputs": 0,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "shotoutput": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Shot Output (Beta)",
+   "max_inputs": 1,
+   "max_outputs": 0,
+   "min_inputs": 1
+  },
+  "shotsplit": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Shot Split (Beta)",
+   "max_inputs": 1,
+   "max_outputs": 30,
+   "min_inputs": 1
+  },
+  "shotswitch": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Shot Switch (Beta)",
+   "max_inputs": 9999,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "simulationproxy": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Simulation Proxy",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "sopcreate": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "SOP Create",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "sopcrowdimport": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "SOP Import Crowd",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "sopimport": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "SOP Import",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "sopimportapexscene": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "SOP Import APEX Scene (Beta)",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "sopmodify": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "SOP Modify",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "sopnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "SOP Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "sphere": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Sphere",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "splitpointinstancers": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Split PointInstancers",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "splitprimitive": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Split Primitive",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "splitscene": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Split Scene",
+   "max_inputs": 1,
+   "max_outputs": 2,
+   "min_inputs": 1
+  },
+  "stagemanager": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Stage Manager",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "storeparametervalues": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Store Parameter Values",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "sublayer": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "SubLayer",
+   "max_inputs": 9999,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "subnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": false,
+   "label": "Subnetwork",
+   "max_inputs": 4,
+   "max_outputs": 10,
+   "min_inputs": 0
+  },
+  "surfaceconstraint": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Surface Constraint",
+   "max_inputs": 2,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "switch": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Switch",
+   "max_inputs": 9999,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "texturemateriallibrary": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Texture Material Library",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "timeshift": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "TimeShift",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "topnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "TOP Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "transformuv": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Transform UV",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "unassignmaterial": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Unassign Material",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "usd_rop": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "USD ROP",
+   "max_inputs": 1,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "usdrender_rop": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "USD Render ROP",
+   "max_inputs": 1,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "valueclip": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Value Clip",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "varymaterialassignment": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Vary Material Assignment",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  },
+  "volume": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Volume",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 0
+  },
+  "vopnet": {
+   "deprecated": false,
+   "is_generator": true,
+   "is_manager": true,
+   "label": "VOP Network",
+   "max_inputs": 0,
+   "max_outputs": 0,
+   "min_inputs": 0
+  },
+  "xform": {
+   "deprecated": false,
+   "is_generator": false,
+   "is_manager": false,
+   "label": "Transform",
+   "max_inputs": 1,
+   "max_outputs": 1,
+   "min_inputs": 1
+  }
+ }
+}
