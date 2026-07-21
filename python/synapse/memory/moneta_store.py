@@ -217,10 +217,30 @@ class MonetaBackedStore:
             embedding_dim=embedder.dim,
             quota_override=protected_quota,
             snapshot_path=snapshot_path,
+            # wal_path is configured but INERT under SYNAPSE: Moneta's only WAL
+            # writer is signal_attention, which SYNAPSE never calls. Durability
+            # therefore rests entirely on snapshots (save() + the atexit hook in
+            # from_storage_dir), NOT on this log. Kept so an upstream deposit-WAL
+            # can light it up without a config change -- do not read it as
+            # "deposits are journalled today," because they are not.
             wal_path=base / "wal.log",
         )
         handle = mr.Moneta(cfg)
-        return cls(handle, embedder, protected_floor=protected_floor)
+        store = cls(handle, embedder, protected_floor=protected_floor)
+        # Durability (Moneta audit, reachable-bug #1): deposit() writes to the
+        # in-memory ECS and returns. There is no per-deposit save, the snapshot
+        # daemon is deliberately NOT started (it races the single-writer ECS,
+        # see the from_storage_dir docstring), and the WAL is inert because
+        # SYNAPSE never calls signal_attention. So without this, a clean process
+        # exit dropped every deposit since the last manual sleep pass. Mirror
+        # MemoryStore's own atexit flush (store.py) so a normal shutdown snapshots.
+        # NOTE: this covers clean exit only -- not kill -9 or a native crash
+        # (this repo keeps a crash harness precisely because those happen). Full
+        # coverage would need a per-deposit save or an upstream deposit-WAL;
+        # that bound is recorded, not silently assumed closed.
+        import atexit
+        atexit.register(store.close)
+        return store
 
     _SNAPSHOT_REQUIRED_KEYS = (
         "entity_id", "payload", "semantic_vector", "utility",
@@ -410,7 +430,13 @@ class MonetaBackedStore:
         return audit
 
     def close(self) -> None:
+        # Idempotent: registered with atexit AND callable explicitly, so a
+        # normal `close()` followed by interpreter shutdown must not double-close
+        # the handle (Moneta's URI lock release is not re-entrant).
         with self._lock:
+            if getattr(self, "_closed", False):
+                return
+            self._closed = True
             self.save()
             close = getattr(self._handle, "close", None)
             if callable(close):

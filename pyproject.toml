@@ -74,6 +74,18 @@ semantic = [
     # the semantic index is (re)built or queried in hybrid mode.
     "sentence-transformers>=2.2",
 ]
+moneta = [
+    # Optional alternate memory backend (SYNAPSE_MEMORY_BACKEND=moneta|shadow).
+    # Default backend is jsonl; without this extra, moneta is never imported and
+    # SYNAPSE runs unchanged. PINNED to a tag on purpose: moneta exposes no
+    # __version__ and importlib.metadata cannot tell rc1/rc2/rc2+N apart, so an
+    # unpinned install is a silently-moving dependency the ratchet baseline is
+    # measured against. Private repo (License: Proprietary, not on PyPI) and
+    # Requires-Python >=3.11, so this extra only resolves with repo credentials
+    # on 3.11+; on 3.9/3.10 pip correctly refuses it. Keep in lockstep with
+    # .github/workflows/ci.yml's checkout ref.
+    "moneta @ git+https://github.com/JosephOIbrahim/Moneta.git@v1.2.0-rc2",
+]
 
 [project.urls]
 Homepage = "https://github.com/JosephOIbrahim/Synapse"

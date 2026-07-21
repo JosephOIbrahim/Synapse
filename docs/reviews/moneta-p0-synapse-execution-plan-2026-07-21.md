@@ -3,12 +3,33 @@ SYNAPSE actually imports. 2026-07-21, 14-agent read-only workflow, 0 errors,
 1.35M subagent tokens. All 7 audit findings + P0-6 CONFIRMED on the installed
 copy; ZERO refutations. Headline: none of them are reachable on a stock SYNAPSE
 install, because SYNAPSE_MEMORY_BACKEND defaults to jsonl and the moneta package
-is never imported. See section 7 C1 -- an unresolved hard contradiction that
-blocks execution item 5. Process caveat: the audit document itself is not on
-disk in either repo; its claims were verified as relayed, not as written. -->
+is never imported. Process caveat: the audit document itself is not on disk in
+either repo; its claims were verified as relayed, not as written.
+
+RESOLUTION APPENDED 2026-07-21 (below the plan): C1 is settled and items 1-6
+executed. C1 -- classify() is the only staging path; there is no second one, so
+P0-6's mechanism is real but its SYNAPSE impact is nil. Shipped on
+feat/solaris-wiring-hardening. -->
 
 # MONETA AUDIT → SYNAPSE EXECUTION PLAN
 **Synthesis of 13 independent verifications · installed copy `C:/Python314/Lib/site-packages/moneta` (moneta 1.2.0rc1) · SYNAPSE master `da4475d` (v5.33.0)**
+
+> **EXECUTION RESOLUTION — 2026-07-21.** C1 resolved by first-hand read of the
+> installed `consolidation.py`: `classify()` (:99-120) is the sole staging
+> classifier; `should_run()` (:89) is a *trigger* (run-a-pass-or-not), not a
+> second staging path. The contested probes differed only in the row's
+> `attended_count` (staging requires `>= 3`; the pruned/staged split is
+> otherwise deterministic). P0-6's mechanism holds — a `0.9` protected floor
+> sits above both the prune (`0.1`) and stage (`0.3`) thresholds, so protected
+> memories never stage — but the SYNAPSE impact is nil: it never reads the cold
+> USD tier, the target is always `MockUsdTarget`, and keeping pinned memories
+> hot is the goal. Items 1-6 executed (pin dep + CI, `atexit` durability, loud
+> drift split, inert-WAL doc, threshold-coupling pin). Item 5's assertion was
+> corrected: the plan's `floor < STAGE` is `0.9 < 0.3` (false); the pinned
+> invariants are `floor > PRUNE` and `floor >= STAGE`, which catch the dangerous
+> upgrade (a threshold rising above `0.9` would make pinned memories evictable).
+> The F5 cosine clamp and all other upstream items remain filed for the Moneta
+> repo, unshipped here by design.
 
 ---
 

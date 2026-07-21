@@ -134,3 +134,100 @@ def test_durable_reload_across_owners(tmp_path):
         assert s2.get_by_type(MemoryType.DECISION)[0].content == "persist across restart"
     finally:
         s2.close()
+
+
+# The subprocess body for the atexit durability tests. Deposits ONE memory and
+# leaves -- deliberately WITHOUT calling save() or close(), exactly as the
+# production SynapseMemory path does. How it exits is the variable.
+_DEPOSIT_THEN_EXIT = """
+import sys
+sys.path.insert(0, {root!r})
+from synapse.memory.moneta_store import MonetaBackedStore
+from synapse.memory.models import Memory, MemoryType
+s = MonetaBackedStore.from_storage_dir({proj!r})
+s.add(Memory(content="deposited, never explicitly saved", memory_type=MemoryType.DECISION))
+{exit_call}
+"""
+
+
+def _run_deposit_subprocess(tmp_path, exit_call):
+    import subprocess
+    proj = str(tmp_path / "proj")
+    code = _DEPOSIT_THEN_EXIT.format(
+        root=str(_ROOT / "python"), proj=proj, exit_call=exit_call)
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    return proj
+
+
+def test_atexit_snapshots_deposits_on_clean_exit(tmp_path):
+    """The reachable Moneta bug: deposit() writes only the in-memory ECS, and
+    the production path never calls save(). A clean interpreter exit must still
+    persist the deposit -- via the atexit hook registered in from_storage_dir.
+
+    Unlike test_durable_reload_across_owners above, this NEVER calls save() or
+    close() in the writer: `sys.exit(0)` runs interpreter shutdown, which fires
+    atexit. That is the exact production condition (a normal shutdown), and it
+    failed before the hook existed.
+    """
+    from synapse.memory.moneta_store import MonetaBackedStore
+    proj = _run_deposit_subprocess(tmp_path, "sys.exit(0)")
+
+    s = MonetaBackedStore.from_storage_dir(proj)
+    try:
+        assert s.count() == 1, "clean-exit deposit was lost -- atexit did not fire"
+        assert s.get_by_type(MemoryType.DECISION)[0].content == (
+            "deposited, never explicitly saved")
+    finally:
+        s.close()
+
+
+def test_hard_exit_loses_the_deposit(tmp_path):
+    """FIX_IS_REAL companion: os._exit(0) bypasses atexit, so the deposit is
+    lost. This proves the test above is not vacuous -- persistence there comes
+    from the hook, not from some incidental save -- and documents the bound the
+    atexit fix does NOT close (kill -9 / native crash, the crash-harness class).
+    """
+    from synapse.memory.moneta_store import MonetaBackedStore
+    proj = _run_deposit_subprocess(tmp_path, "import os; os._exit(0)")
+
+    s = MonetaBackedStore.from_storage_dir(proj)
+    try:
+        assert s.count() == 0, (
+            "hard exit unexpectedly persisted -- the durability of the clean-exit "
+            "test cannot be attributed to atexit")
+    finally:
+        s.close()
+
+
+def test_protected_floor_thresholds_pin_consolidation_coupling():
+    """P0-6 / C1 pin. Resolved against the installed consolidation.py: classify()
+    is the ONLY staging path (should_run at :89 is a trigger, not a classifier),
+    so the audit's "second staging path" does not exist -- the contested probe
+    differed only in attended_count.
+
+    What genuinely matters is the coupling between SYNAPSE's protected_floor and
+    Moneta's thresholds, which live in a SEPARATE repo on a SEPARATE release
+    train. This asserts the two invariants SYNAPSE relies on, so a moneta upgrade
+    that moves either threshold fails loud instead of silently changing whether
+    a "protected" memory can be evicted:
+
+      * floor > PRUNE_UTILITY_THRESHOLD  -> protected memories are never pruned
+        (the dangerous one: if a future threshold rose above 0.9, pinned
+        memories would become deletable).
+      * floor >= STAGE_UTILITY_THRESHOLD -> protected memories never stage to the
+        cold tier. For SYNAPSE that is intended, not a bug: it never reads the
+        cold USD tier (MockUsdTarget), and keeping pinned memories hot is the
+        goal. The "stall" is real as a mechanism and inert as an impact.
+    """
+    from synapse.memory.moneta_store import _DEFAULT_PROTECTED_FLOOR
+    from moneta.consolidation import (
+        PRUNE_UTILITY_THRESHOLD, STAGE_UTILITY_THRESHOLD,
+    )
+    assert _DEFAULT_PROTECTED_FLOOR > PRUNE_UTILITY_THRESHOLD, (
+        "protected memories must never fall in the prunable band -- a moneta "
+        "upgrade moved PRUNE_UTILITY_THRESHOLD above %.3f"
+        % _DEFAULT_PROTECTED_FLOOR)
+    assert _DEFAULT_PROTECTED_FLOOR >= STAGE_UTILITY_THRESHOLD, (
+        "protected-floor/stage-threshold coupling changed upstream -- re-verify "
+        "the consolidation posture")

@@ -71,6 +71,32 @@ def import_error() -> Optional[str]:
     return _MONETA_IMPORT_ERROR
 
 
+def moneta_provenance() -> dict:
+    """Which Moneta actually loaded, for diagnostics + drift detection.
+
+    SYNAPSE declares no moneta dependency and imports whatever is installed,
+    and the package exposes no ``__version__``. Worse, ``importlib.metadata``
+    reports the same ``1.2.0rc1`` for rc1, rc2, and rc2+N commits, so the
+    version string cannot discriminate builds. The resolved ``file`` path is
+    the load-bearing field -- it names exactly which copy is on ``sys.path``.
+    """
+    prov: dict = {"available": _MONETA_AVAILABLE, "version": None,
+                  "file": None, "import_error": _MONETA_IMPORT_ERROR}
+    if not _MONETA_AVAILABLE:
+        return prov
+    try:
+        import importlib.metadata as _md
+        prov["version"] = _md.version("moneta")
+    except Exception:  # noqa: BLE001 -- best-effort
+        pass
+    try:
+        import moneta as _m
+        prov["file"] = getattr(_m, "__file__", None)
+    except Exception:  # noqa: BLE001
+        pass
+    return prov
+
+
 def make_ephemeral(embedding_dim: Optional[int] = None, **overrides: Any):
     """Construct an ephemeral, pxr-free Moneta handle (``MockUsdTarget``-backed).
 
