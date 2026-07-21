@@ -1,7 +1,7 @@
 # SYNAPSE Agent Team — Lossless MOE Orchestrator
 
-> **Target:** Houdini 22.0.368 (dual-build with H21 artifacts) · SYNAPSE v5.32.1 · Python 3.14 · 115 MCP tools registered
-> **All revisions verified live** — zero hallucinated APIs remaining.
+> **Target:** Houdini 22.0.368 (dual-build with H21 artifacts) · SYNAPSE v5.33.0 · Python 3.14 · 115 MCP tools registered
+> Revisions in §15 were verified live on their own build, not on H22.
 
 ## Identity
 
@@ -57,7 +57,7 @@ These are structural, not configurable, **for operations routed through the brid
 
 **Structural disk-write override (R4):** Any operation with `touches_disk=True` is automatically elevated to APPROVE. CRITICAL operations cannot be downgraded — R4 respects the higher gate.
 
-> **⚠ Live-path reality (Phase 0b · D1 · 2026-06-05, verified V1 on H21.0.631).** The gate levels above govern operations routed through `LosslessExecutionBridge`. The live `/synapse` WS transport calls the `handlers.py` command handlers **directly and does not route through the bridge** — so `execute_python`/`execute_vex` run **ungated**: full `__builtins__`, no consent, no import filter, no length cap. This is the deliberate posture for **single-user localhost** (auto-approve). A real handler-layer gate is a prerequisite for any multi-user/studio deployment (D1-a). Pinned by `tests/test_phase0b_consent_posture.py`; tracked as `DocConformance` in `docs/SCIENCE_HARNESS_LEDGER.md`.
+> **⚠ Live-path reality (Phase 0b · D1 · 2026-06-05, verified V1 on H21.0.631 — historical build, uninstalled).** The gate levels above govern operations routed through `LosslessExecutionBridge`. The live `/synapse` WS transport calls the `handlers.py` command handlers **directly and does not route through the bridge** — so `execute_python`/`execute_vex` run **ungated**: full `__builtins__`, no consent, no import filter, no length cap. This is the deliberate posture for **single-user localhost** (auto-approve). A real handler-layer gate is a prerequisite for any multi-user/studio deployment (D1-a). Pinned by `tests/test_phase0b_consent_posture.py`; tracked as `DocConformance` in `docs/SCIENCE_HARNESS_LEDGER.md`.
 
 ### 1.2.1 Consent Wiring
 
@@ -470,7 +470,7 @@ Track across the session:
 12. **Never trust LLM boundary flags** — blast radius inferred from dependency graph (R7)
 13. **PDG cooks don't block FastMCP** — `pdg.PyEventHandler` bridge keeps server responsive (R8)
 14. **Evolved memory syncs viewport** — LOP nodes referencing USD force-cooked via LopNetwork walk (R10)
-15. **Verify before you write an unfamiliar API** — before emitting any `hou.*` / `pdg.*` / `pxr.*` call or VEX function you are not certain exists in H21.0.671, call the `synapse_scout` tool first. It returns real reference snippets AND, per dotted symbol in the query, whether it exists in the live H21.0.671 runtime (`exists_in_runtime=false` ⇒ phantom — do **not** emit it; `null` ⇒ the gate is down (stale/missing table — `unverified_reason` says why): treat as unverified, regen per docs/studio/UPGRADE.md; `documented` is a secondary corpus hint, not the verdict). Membership is decided by an **introspected `dir()` symbol table** (Spike 2.5: `host/introspect_runtime.py` → `python/synapse/cognitive/tools/data/h21_symbol_table.json`, the committed authority), NOT by substring-matching the corpus — that demotion drove the eval's false-phantom rate 0.667 → 0. This is the runtime form of the "`dir()` is a hard gate" rule and the front-line defense against SYNAPSE's #1 failure class (phantom APIs: `hou.pdg.*`, `hou.secure`, `hou.lopNetworks()`, `hou.updateGraphTick()`). Scout reads the repo `rag/` corpus (materialized lazily on first call) for retrieval, not the thin `G:\` store. Pure-Python, zero-`hou`; wired in `mcp_server.py` via the cognitive Dispatcher. CRUCIBLE still verifies after the fact — scout shrinks how often it has to.
+15. **Verify before you write an unfamiliar API** — before emitting any `hou.*` / `pdg.*` / `pxr.*` call or VEX function you are not certain exists in H22.0.368, call the `synapse_scout` tool first. It returns reference snippets AND, per dotted symbol, whether it exists in the live H22.0.368 runtime (`exists_in_runtime=false` ⇒ phantom — do **not** emit it; `null` ⇒ the gate is down (stale/missing table — `unverified_reason` says why): treat as unverified, regen per docs/studio/UPGRADE.md; `documented` is a secondary corpus hint, not the verdict). Membership is decided by an **introspected `dir()` symbol table** (Spike 2.5: `host/introspect_runtime.py` → `python/synapse/cognitive/tools/data/h<major>_symbol_table.json`, per running major), NOT by substring-matching the corpus — that demotion drove the eval's false-phantom rate 0.667 → 0. It is the front-line defense against SYNAPSE's #1 failure class (phantom APIs: `hou.pdg.*`, `hou.secure`, `hou.lopNetworks()`, `hou.updateGraphTick()`). Scout reads the repo `rag/` corpus (materialized lazily) for retrieval, not the thin `G:\` store. Pure-Python, zero-`hou`; wired in `mcp_server.py` via the cognitive Dispatcher. CRUCIBLE still verifies after the fact — scout shrinks how often it has to.
 
 ---
 
@@ -480,7 +480,7 @@ All production code uses try/except import guards with `*_AVAILABLE` flags: `hou
 
 All modules must work in both modes:
 
-- **Production (inside Houdini 21):** full `hou` API, `hdefereval` main-thread dispatch, `pdg` for PDG events, `pxr` native USD with `Tf.MakeValidIdentifier`, real topological hashing via `cookCount`/`sessionId`/intrinsics, SOP→LOP dependency tracing, consent gates via `synapse.core.gates.HumanGate`, viewport force-cook via LopNetwork walk.
+- **Production (inside Houdini 22):** full `hou` API, `hdefereval` main-thread dispatch, `pdg` for PDG events, `pxr` native USD with `Tf.MakeValidIdentifier`, real topological hashing via `cookCount`/`sessionId`/intrinsics, SOP→LOP dependency tracing, consent gates via `synapse.core.gates.HumanGate`, viewport force-cook via LopNetwork walk.
 - **Standalone (testing/CI):** direct execution, timestamp-based hashes, string-template USD fallback, auto-approve consent, R7/R8/R10 no-op gracefully.
 
 ---
@@ -535,7 +535,7 @@ synapse-agents/
 
 ## 15. Revision Manifest
 
-All revisions verified live on Houdini 21.0.596 / SYNAPSE v5.8.0.
+Historical — verified live on Houdini 21.0.596 / SYNAPSE v5.8.0. Not a current-build claim; the target is H22.0.368.
 
 | Rev | What Changed | Where | H21 API | Commit |
 |---|---|---|---|---|

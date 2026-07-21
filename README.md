@@ -11,11 +11,11 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4571%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.32.1-1e293b.svg" alt="Changelog"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4642%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.33.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
-> ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it's all recorded (receipts, not magic). Five engines, 115 tools. **Install ↓ in ~5 min.**
+> ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it keeps receipts, not magic. Five engines, 115 tools. **Install ↓ in ~5 min.**
 
 > 🧪 **The moat, in one line:** every other Houdini copilot reasons from docs and memory — SYNAPSE **probes the running Houdini and commits what it finds** (six truth catalogs and counting: wiring, Solaris context, capability, readiness, live cook behavior, and now **perception truth — the render receipt**). Docs drift. Probes don't.
 
@@ -27,7 +27,7 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 
 - 🧠 **It works inside Houdini, not off to the side** — the assistant runs in Houdini itself, so there's no separate app to launch and nothing to wait on; it answers right where you're working.
 - 🔁 **Your words become real nodes** — every request is just a normal Houdini action. Don't like it? **Ctrl+Z** takes it back.
-- 🧾 **It keeps the receipts** — every change is undo-safe *and* recorded, so you can always see what it did and why. That's the differentiator — not magic, receipts.
+- 🧾 **It keeps the receipts** — changes are ordinary Houdini actions you can undo, and the audited `/mcp` path records a receipt for every one, so you can see what it did and why. That's the differentiator — not magic, receipts.
 - 🔌 **Pick your AI · 115 tools** — choose **Claude · Gemini · NVIDIA Nemotron · Ollama (local) · Custom** in the panel and switch whenever you like.
 - 📜 **Free to use (MIT license)** ([LICENSE](LICENSE)) with **patent-pending methods** ([PATENTS](PATENTS)) — the license covers the code, not the patents.
 
@@ -38,7 +38,9 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 | You want… | Read… |
 |---|---|
 | **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
-| **What's new in v5.32.0** | *New in v5.32.0* — the render path is bounded: renders no longer freeze the UI, and crashed sessions leave a recovery capsule |
+| **What's new in v5.33.0** | *New in v5.33.0* — the main thread never waits on itself: a whole class of permanent Houdini freeze removed, lint-enforced, live-verified |
+| **What still holds the UI (and why)** | *The honest limits* — inside the v5.33.0 section |
+| **What a render actually proves** | *The render receipt* |
 | **How AI network-building stays safe** | *Propose → validate → build* |
 | **To install it** | *Install — 5 minutes* |
 | **The architecture** | *How it works — inside-out* |
@@ -51,11 +53,11 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 A docked **SYNAPSE panel** inside Houdini. You type what you want — *"make a box"*, *"create a solaris network ending with rendersettings using karma xpu"* — and it **builds it in your live scene.** Chat in, real nodes out.
 
 - ⚡ **In-process** — the agent runs in Houdini's own Python; tools are direct `hou.*` calls, not a slow round-trip bridge.
-- ↩️ **Undo-safe** — everything it does is an ordinary Houdini action. **Ctrl+Z undoes it.** Every mutation leaves a provenance record.
+- ↩️ **Undo-safe** — everything it does is an ordinary Houdini action. **Ctrl+Z undoes it.** On the audited `/mcp` path every mutation leaves a provenance record; the live WebSocket path records observe-only envelopes.
 - 🔌 **Multi-provider** — pick **Claude · Gemini · NVIDIA Nemotron · Ollama · Custom** right in the panel; swap engines mid-session.
 - 🎬 **Built for the work** — SOPs, **Solaris / USD, Karma, COPs, PDG / TOPs, MaterialX** — 115 tools.
 
-> ✅ *"make a box" → a real geo node, confirmed on graphical Houdini 22.0.368 (H21.0.671 dual-build supported).*
+> ✅ *"make a box" → a real geo node, confirmed on graphical Houdini 22.0.368. (H21 code paths are retained and major-aware, but H21 is no longer installed here, so H22.0.368 is the only live-tested build.)*
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
@@ -79,21 +81,104 @@ flowchart LR
 **The panel, briefly (v9.1):**
 
 - **One CHAT surface** — the build review + **consent gate auto-surface** when a build needs approval. Consent comes to *you*, then hands back on accept/revert.
-- **A persistent rail** — live state + a real **Stop**.
+- **A persistent rail** — live state + a **Stop** that ends the agent loop. *It stops the next step; it cannot claw back a Houdini operation already running.*
 - **The author token** — engine + model in one rail control.
 - **`Aa`** scales only what you *read* · **`/`** opens a command palette over every tool · a token-only meter.
 - Bundled **Space Grotesk / Space Mono** type system.
 
 ---
 
-## ✦ New in v5.32.0 — the render path is bounded
+## ✦ New in v5.33.0 — the main thread never waits on itself
 
-**Rendering no longer freezes Houdini, and a crashed session no longer loses its mind.**
+**One class of permanent Houdini freeze is gone: the main thread waiting on itself.** That specific class — not freezing in general — was **structurally removed** rather than made rarer, and a source lint keeps it from coming back. Everything still capable of holding the UI is listed under *The honest limits* below.
 
-- 🎬 **The render freeze is closed** — every render tool used to funnel through one unbounded main-thread block: kick a render, lose the UI until it finished. The WS path now renders through a bounded session flow — single-flight, pollable status, a 60s token cadence — so the app stays yours while the frame cooks.
-- 🧊 **Cold-cache guard** — the worst freezes were XPU renders hitting a cold OptiX shader cache. A foreground guard now refuses to launch that render inline until the cache is warm (with a prewarm script to warm it on your schedule).
-- 📦 **BLACKBOX** — when a session dies silently, it now leaves a capsule of everything that was in flight, and the next session detects it on startup and offers recovery. Plus `render_watch.ps1`, an external watcher that spots a stuck render from outside the process.
-- 🟢 **4,571 tests passing** (+34). Root cause confirmed by a 4-agent grounding pass + adversarial crucible (F1–F8 applied); post-fix gates closed same day.
+### The defect, in plain terms
+
+Houdini has exactly **one** thread allowed to touch the scene: the main thread. Everything else has to hand work to it and wait.
+
+The vendor helper SYNAPSE used for that handoff — `hdefereval.executeInMainThreadWithResult` — **never checks who is calling it.** Called from a background thread it works correctly. Called from the main thread, it puts work in a queue that *only the main thread can empty*, then parks the main thread waiting for that work.
+
+**Houdini waits for itself, forever.** No error, no timeout, no recovery — you kill the process. This is vendor-level behavior on Houdini 22.0.368, and it happens **every time**, not as a race.
+
+SYNAPSE reached that helper from the main thread by **two confirmed routes**.
+
+### What the fix actually was
+
+**Nothing new was built.** The codebase already had the right primitive — `server/main_thread.py::run_on_main`, which was immune from the start:
+
+| Caller | What `run_on_main` does |
+|---|---|
+| **Off the main thread** | Posts the work **non-blocking**, then waits on a **per-call** result holder with a real timeout |
+| **On the main thread** | Short-circuits to a **direct call** — never queues, so it can never wait on itself |
+
+The fix was **deleting the nine call sites that bypassed it.** A line-scoped source lint (`tests/test_marshal_lint.py`) now fails the build if the unsafe helper reappears anywhere.
+
+> 👻 **A finding inside the finding:** three of those nine called `hdefereval.executeInMainThread` — a function that **does not exist on H22.0.368**. Confirmed against the live runtime. They had been **failing silently**.
+
+### Verified on a running Houdini, not a stub
+
+Live session: **H22.0.368, PID 64396**, identity-probed *before* any repro was attempted, so the results can't be a stale-code false pass.
+
+| Check | Result |
+|---|---|
+| `run_on_main` called **from the main thread** | **0.014 ms**, inline, returned — the identical shape used to park forever |
+| `houdini_capture_viewport` over `/mcp` *(a confirmed pre-fix deadlock path)* | Returned **twice**; `Responding=True` throughout; bridge served the next turn |
+| Deliberate **6-second** main-thread hold | Telemetry fired with exact attribution (`fast_path_2`, 6.0004 s vs a 5.0 s budget) · violations **0** · next turn served **22 µs** later |
+| **~25-call soak** — 5 concurrent read-only, 4 concurrent mutating | Every call returned **its own** payload (no result swapping) · violations **0** · stack dumps **0** · **zero freezes** |
+
+That last row closes a second, quieter bug: the vendor helper stored results in **module globals**, so two concurrent blocking handoffs could hand each other's results back — silently wrong data, no error. No SYNAPSE code path calls that helper any more, and the source lint keeps it out.
+
+- 🟢 **4,642 tests passing · 0 failed · 100 skipped.** Against the **previous release** (v5.32.1, 4,571): **+71.** Against the **ratchet floor** (`harness/verify/suite_baseline.json`, 4,275): **+367.** Both figures are correct against their own baseline — neither is a bare delta. **Zero tests weakened:** two test files changed and both were flagged — one pinned the deliberately-removed primitive, and one had gone **vacuous** (passing while pinning nothing). Both re-anchored and proven able to fail.
+
+### The honest limits — read this part
+
+This release removed a *specific* failure: **the main thread waiting on itself.** It did not make Houdini un-freezable, and the following are still true:
+
+- 🎬 **A render that runs on Houdini's main thread still holds the UI for its duration — and that is the panel path *and* `/mcp`, not the panel alone.**
+  - **Panel** — the Qt slot *is* the main thread, so the render runs inline there.
+  - **`/mcp`** — `mcp/server.py` marshals the whole dispatch onto the main thread first, so by the time the render handler runs it detects a main-thread caller and renders **inline too** (`python/synapse/server/handlers_render.py:517`, and the caller-path note at `:96-107`). **No session or token flow applies on `/mcp`** — the XPU foreground guard is the only protection there. Budget your `/mcp` renders accordingly.
+  - **WS `/synapse`** — the one path that is off-main, and the only one that gets the bounded session flow (poll-based status, a 60s token cadence).
+  - On the main thread a render can't be made invisible — only made to **finish**. What changed is real and it is the whole point: a **permanent, unrecoverable freeze became a stall bounded by the render's own duration, which completes.** Watch your cores or GPU to confirm it's doing real work.
+- 🛑 **Cancel does not interrupt an operation that is already running.** The WebSocket loop reads messages **one at a time**, so your `cancel` queues up behind the very handler you're trying to cancel. Out-of-band only — `scripts/render_watch.ps1`, or kill the process. **This is the #1 known follow-up and it is not fixed.**
+- 🐕 **The watchdog reports and degrades — it cannot un-wedge a stuck main thread.** Nothing running inside the process can. Its job is diagnosis plus graceful degradation, never rescue.
+- ⏱️ **On `/mcp`, a long frame can report failure while the render keeps going** and writes its file. Check for the output before re-running, or you'll render it twice.
+
+*Operator card (start/stop, healthy vs degraded turn signatures, the two env knobs, four failure modes with recovery): [`docs/sprint_freeze/OPERATOR_CARD.md`](docs/sprint_freeze/OPERATOR_CARD.md). The full evidence chain — every blocking wait mapped per thread, the gate log, the eight-item sign-off — is in [`docs/sprint_freeze/`](docs/sprint_freeze/).*
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
+flowchart TB
+    subgraph NOW ["Now — one marshal, run_on_main"]
+        direction LR
+        OFF["Off-main caller<br/>WS · server pool · worker"]:::panel -->|"posts, never blocks main"| POST["Non-blocking enqueue<br/>executeDeferred"]:::bridge
+        POST --> MAIN1[("Main thread<br/>drains when idle<br/>runs hou.*")]:::hou
+        MAIN1 -->|"per-call result holder<br/>bounded wait · timeout is real"| BACK["Caller resumes<br/>with its OWN payload"]:::panel
+        ONMAIN["Main-thread caller"]:::artist -->|"fast path · thread identity checked"| DIRECT["Direct call — inline<br/>0.014 ms · nothing queued"]:::hou
+    end
+    subgraph GONE ["Removed — the 9 bypasses · lint-guarded"]
+        direction LR
+        LINT["Source lint<br/>this call can't come back"]:::bridge -.blocks.-> MB
+        MB["Main thread"]:::artist -->|"executeInMainThreadWithResult<br/>NO caller-thread check"| QUEUE["Queue only MAIN can drain"]:::side
+        QUEUE -.->|"main is now parked,<br/>so it never drains it"| MB
+        MB -.-> DEAD["Permanent freeze<br/>no error · no timeout · kill the process"]:::side
+    end
+    NOW ~~~ GONE
+    classDef artist fill:#DE8425,stroke:#7A4310,color:#1A1208
+    classDef panel fill:#E8963B,stroke:#9C5A10,color:#1A1208
+    classDef bridge fill:#EEA958,stroke:#9C5A10,color:#1A1208
+    classDef hou fill:#DE8425,stroke:#6B3A0C,color:#1A1208
+    classDef side fill:#F2BC77,stroke:#B37A33,color:#1A1208
+```
+
+---
+
+## ✦ The render receipt — proof, not a screenshot
+
+**When SYNAPSE says it rendered your frame, it can show you why it believes that.** RETINA is the perception tier: a render doesn't count as done because the tool returned — it counts when the **file on disk** says so, and then when the **pixels that changed** are the ones that were supposed to change.
+
+- 🎯 **T0 · file truth (live)** — did the render actually happen as declared? Products, resolution, AOVs, a completion sentinel written *after* the pixels, a fingerprint that round-trips.
+- 🔍 **T1 · scoped delta (live)** — the change-mask intersected with the object-ID matte: did the change land **inside** the thing you asked about, and stay **out** of everything else.
+- 🧾 **The receipt is tri-state** — pass · fail · **inconclusive**. It cannot fake green: no manifest reads "no receipt yet" in grey, never a green 100%.
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
@@ -111,7 +196,7 @@ flowchart LR
     classDef side fill:#F2BC77,stroke:#B37A33,color:#1A1208
 ```
 
-> *The full picture — the T1 metric kit, the scoped-delta primitives, the twins, the Rulebook, and the supervisor-layer seams that come next — is [in CHANGELOG.md](CHANGELOG.md) (top entry) and `docs/SYNAPSE_RETINA_BLUEPRINT.md`.*
+> *The full picture — the T1 metric kit, the scoped-delta primitives, the twins, the Rulebook, and the supervisor-layer seams that come next — lives in the **v5.29.0–v5.31.0 entries** of [CHANGELOG.md](CHANGELOG.md) and in `docs/SYNAPSE_RETINA_BLUEPRINT.md`.*
 
 ---
 
@@ -133,7 +218,7 @@ flowchart LR
 flowchart LR
     DROP["Drop + drop-week<br/>9 runbook artifacts"]:::hou --> ROADMAP["CTO roadmap<br/>silent-break register"]:::panel
     ROADMAP --> FIX["Fix cycles<br/>forge → assay → crucible"]:::bridge
-    FIX -->|"merged + suite-reverified"| MERGED[("master<br/>4,387 / 0")]:::hou
+    FIX -->|"merged + suite-reverified"| MERGED[("master<br/>4,642 / 0")]:::hou
     MERGED --> LIVE["Live-bridge reconfirm<br/>32 verdicts → VERIFIED-LIVE"]:::bridge
     LIVE -->|"proven on running 22.0.368"| DEMO[("H22-native<br/>Solaris · COP · memory")]:::hou
     LIVE -.hostile pass finds a risk.-> NEXT["New fix cycle<br/>ratified · gated"]:::side
@@ -197,7 +282,9 @@ flowchart LR
 - 🛟 **Rollback on failure** — if the build trips mid-way, it destroys the partial nodes inside the undo group. Zero net mutation, a structured `FAILED` result, no orphan nodes.
 - 🧾 **Receipts** — every build writes an `agent.usd` record: decision, reasoning, revert path.
 
-It also wires **Solaris the way production expects** — live-probed against 21.0.671: the **Component Builder** pattern for assets, the proper **`rendersettings` → render** terminal, **layered** scene assembly, the real H21 light nodes (the per-shape light names don't exist), and the actual merge/sublayer strength rule (**higher input index wins**).
+It also wires **Solaris the way production expects** — the **Component Builder** pattern for assets, the proper **`rendersettings` → render** terminal, **layered** scene assembly, and the actual merge/sublayer strength rule (**higher input index wins**).
+
+> 🕰️ **Historical note on that probe.** The production-wiring correction was *originally* live-probed on **21.0.671** — a build **no longer installed here**, so nothing in this release is verified against it. The Solaris knowledge catalog has since been **re-probed on 22.0.368 and made major-aware** (v5.29.0, C-U5): light names and the drifted `assignmaterial` parm resolve against the build you are actually running, and the stale H21 per-shape light entries were removed rather than carried forward.
 
 Verified end-to-end on **live Houdini 22.0.368** (originally proven on 21.0.671) — build, single-undo revert, TOCTOU halt, and forced-failure rollback all pass; the wiring catalog is now major-aware, so validation resolves against whichever build you run.
 
@@ -225,6 +312,7 @@ flowchart LR
 
 | Release | Headline |
 |---|---|
+| **v5.32.x** | **The render path is bounded** — every render tool used to funnel through one unbounded main-thread block. The WS path now renders through a bounded session flow (single-flight tokens, pollable status, a 60s cadence), and an XPU **foreground guard** refuses to launch a render inline against a cold OptiX shader cache — the condition that turned a bounded render into a multi-minute stall. Plus **BLACKBOX**: a session that dies silently leaves a capsule of everything in flight, and the next session detects it on startup; `render_watch.ps1` watches a stuck render from *outside* the process. (v5.32.1 reconciled the release metadata and refreshed the demo script to H22 reality.) |
 | **v5.27.0** | **RETINA: the render receipt begins (M0)** — the governing blueprint for perception truth (truth cycle ⑤) committed and reconciled clean; a zero-cv2 host boundary pin *before* any perception code; two official-doc cross-references (HDK/HAPI) that caught a `.done`-sentinel design flaw on paper. A documentation-and-boundary foundation release. |
 | **v5.26.0** | **H22 live-verified** — the whole transition proven against a *running* Houdini 22.0.368: 32 verdicts flipped provisional→verified-live, the memory integrity gate confirmed at fidelity 1.0 on the reorganized USD, and the last two silent breaks closed (Copernicus solver blocks + the major-aware wiring fold that makes Solaris network-building H22-native). A new `sidefx-cto` vendor-architect lens; an external "engineering memo" adjudicated-not-obeyed. |
 | **v5.25.0** | **H22 has landed** — Houdini 22.0.368 dropped and SYNAPSE ran its own port machinery against it for the first time: the nine-step drop-week runbook complete, a three-lens CTO roadmap over 77 doc-scouted candidates, and the first two cycles merged (the Copernicus `planes()` silent-data-loss fix + the pilot Dispatcher port wave). H21 uninstalled; H22 the only live target. |
@@ -244,7 +332,7 @@ flowchart LR
 
 *Artists:* the steps below get you chatting — no command line beyond a copy-paste. *Developers* who want the editable install + test suite: [`docs/getting-started/installation.md`](docs/getting-started/installation.md).
 
-Tested on **Windows 11 + Houdini 22.0.368** (H21.0.671 dual-build supported). macOS / Linux: same steps, different slashes.
+Tested on **Windows 11 + Houdini 22.0.368** — the only build currently live-tested here. *(H21 code paths are retained and major-aware, but H21 is no longer installed on this machine.)* macOS / Linux: same steps, different slashes.
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
@@ -333,7 +421,14 @@ flowchart LR
     OUT ~~~ IN
 ```
 
-The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `host/` is the Houdini-specific layer that swaps per DCC. Every mutation is undo-wrapped, main-thread-safe, and leaves a provenance receipt.
+The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `host/` is the Houdini-specific layer that swaps per DCC.
+
+**The two roads in are not equally guarded — be precise about which one you're on:**
+
+| Path | What it gets |
+|---|---|
+| **`/mcp` bridge** *(audited)* | The full anchor set — undo-wrapped, main-thread-safe, consent-gated, `IntegrityBlock` per operation |
+| **Live `/synapse` handlers** *(RBAC-guarded)* | Main-thread-safe, and a path-qualified `IntegrityBlock` recorded honestly. **Undo-wrapping is partial** — the node create / set-parm / connect / delete handlers carry no `hou.undos.group`. `execute_python` / `execute_vex` run **ungated**. |
 
 **Deeper dive + the full per-version history:** **[CHANGELOG.md](CHANGELOG.md)**.
 
@@ -341,20 +436,21 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 
 ## ✦ Project status
 
-**Shipping (v5.32.1):**
+**Shipping (v5.33.0):**
 
+- 🧵 **The marshal boundary** — the main thread never waits on itself: nine bypasses of the safe primitive deleted, a source lint keeping them out, live-verified on H22.0.368 across a ~25-call concurrent soak. *What it did **not** do: a render that runs on the main thread — the panel path **and** `/mcp` — still holds the UI while it runs, and cancel still can't interrupt an operation already running. Both stated plainly [above](#-new-in-v5330--the-main-thread-never-waits-on-itself).*
 - 🎛️ **Artist panel v9.1** — five engines, undo-safe, 115 tools, a single **CHAT** surface where the review + consent gate auto-surface, live observability + latency instrumentation (WCAG/usability **G3-audited on H22's Qt 6.8.3**).
 - 👁️ **RETINA — the render receipt (T0 live)** — the perception co-processor's first working tier: T0 file-truth verifies a render actually happened as declared (products, resolution, AOVs, completion sentinel, fingerprint), against a live-probed perception-truth catalog (truth cycle ⑤). The worker lives outside the Houdini process (zero `hou`, zero OpenCV in-host). The dead-`.done`-sentinel bug the crucible caught pre-merge is the receipt-honesty thesis proving itself.
 - 🔬 **H22 live-verified** — the whole transition proven against a running Houdini 22.0.368: 32 verdicts flipped provisional→verified-live, the memory integrity gate confirmed at fidelity 1.0 on the reorganized USD, the PDG event surface and quarantine re-pins re-confirmed on the real interpreter.
-- 🧩 **H22-native network building** — a major-aware connectivity catalog: `wire_by_label` + graph validator resolve H22 wiring on H22 and H21 wiring on H21, so proposed Solaris/COP networks validate against the build you're running (the demo-critical set-dressing path, live-verified on both majors).
+- 🧩 **H22-native network building** — a major-aware connectivity catalog: `wire_by_label` + graph validator resolve H22 wiring on H22 and H21 wiring on H21, so proposed Solaris/COP networks validate against the build you're running (the demo-critical set-dressing path; verified live on H22.0.368, with H21 wiring from that build's last live probe — H21.0.671 is uninstalled and is not re-verified).
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
 - 🧾 **The honest envelope** — both roads into Houdini leave `IntegrityBlock` receipts: the audited `/mcp` bridge, and path-qualified, never-faked live-path records the self-tuning advisor can see.
 - 🔁 **Utility flywheel** — ratified cycles across wiring · Solaris context · diagnostic cook-truth · the H22 connectivity re-fold, self-improving on a human-ratified loop.
-- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint (**4,571 / 0**), a posture-scoped red-driver, fix-is-real behavioral probes, and forge-builds-crucible-attacks separation that caught a ⅓-implemented "loud-error" fix before it shipped.
+- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint (**4,642 / 0**, floor 4,275), a posture-scoped red-driver, fix-is-real behavioral probes, and forge-builds-crucible-attacks separation that caught a ⅓-implemented "loud-error" fix before it shipped.
 - 🕵️ **Vendor-architect lens** — the `sidefx-cto` agent surfaces the non-obvious second-order changes a major brings; its first pass caught the memory-gate gap this release then closed live.
 - 🌋 **Copernicus expansion, spec'd** — read/analysis + node-API layers deep and live-verified; the generative frontier (scaffold rebuilds, terrain emission, neural COP nodes with preflight honesty) is a live-probed build spec, next up.
 - 🤝 **APEX MCP boundary held** — Houdini 22 keynote-announced a rigging-scoped MCP preview (not shipped); the ratified non-competing boundary stands unchanged.
-- ⚙️ **In-process substrate** — two-tier provenance (audit write off the hot path), freeze-safety, bounded autonomy + a kill switch.
+- ⚙️ **In-process substrate** — two-tier provenance (audit write off the hot path), freeze **detection and degradation** (it reports and steps down; nothing in-process can un-wedge a parked main thread), bounded autonomy + a kill switch that stops the *next* step rather than one already running.
 
 SYNAPSE is honest about its gaps — scaffolds self-report instead of faking success. The per-tool capability audit + full version record live in **[CHANGELOG.md](CHANGELOG.md)**.
 
@@ -362,9 +458,22 @@ SYNAPSE is honest about its gaps — scaffolds self-report instead of faking suc
 
 ## ✦ Dependencies
 
-**Core — works standalone.** A clean clone runs without anything exotic. Memory persists to a plain **JSONL** file (the live default), and the **Anthropic SDK is vendored** into the repo (`python/synapse/_vendor/`) — so **inside Houdini, no `pip install` is needed at all.** The vendored natives ship **cp311 + cp313 win_amd64**, which covers H22's embedded Python 3.13 and H20.5/21.x's 3.11. Add a provider key and go.
+**Core — works standalone.** A clean clone runs without anything exotic:
 
-*Two paths do need pip, and neither is on the artist route:* the **external stdio MCP bridge** (`mcp_server.py`, run in your own Python) needs `pip install mcp websockets`, and the **developer test suite** needs `pip install -e ".[dev]"`. Outside Houdini, on a Python with no matching vendored ABI, the vendor tree goes inactive and a real pip-installed SDK is used instead (`synapse._VENDOR_ABI_RISK` reports this).
+- 💾 **Memory** persists to a plain **JSONL** file (the live default).
+- 📦 **The Anthropic SDK is vendored** into the repo (`python/synapse/_vendor/`) — so **inside Houdini, no `pip install` is needed at all.**
+- 🧬 **The vendored natives ship cp311 + cp313 win_amd64**, covering H22's embedded Python 3.13 and H20.5/21.x's 3.11.
+
+Add a provider key and go.
+
+**Two paths *do* need pip — neither is on the artist route:**
+
+| Path | Needs |
+|---|---|
+| **External stdio MCP bridge** (`mcp_server.py`, run in your own Python) | `pip install mcp websockets` |
+| **Developer test suite** | `pip install -e ".[dev]"` |
+
+*Outside Houdini, on a Python with no matching vendored ABI, the vendor tree goes inactive and a real pip-installed SDK is used instead (`synapse._VENDOR_ABI_RISK` reports this).*
 
 **Optional — Moneta.** Moneta is a private, encrypted memory substrate (repo `JosephOIbrahim/Moneta`). It's **built but default-OFF** — JSONL stays the default until you opt in:
 
@@ -401,7 +510,9 @@ python/synapse/
 │   ├── tool_executor.py        # main-thread tool dispatch (per-tool timeouts)
 │   └── designsystem/           # vendored tokens / qss / components + bundled Space Grotesk/Mono
 ├── server/                     # live transport + safety wiring
-│   ├── freeze_chain.py         # process-wide watchdog: 5s detect → 30s escalate → halt
+│   ├── main_thread.py          # THE marshal — off-main posts + bounded wait, on-main short-circuits to a direct call
+│   ├── marshal_guard.py        # typed errors + inline-overrun telemetry for main-thread work
+│   ├── freeze_chain.py         # process-wide watchdog: 5s detect → 30s escalate → halt (reports + degrades; cannot un-wedge main)
 │   ├── solaris_graph_templates.py  # one-call render-ready Solaris topologies
 │   └── handlers*.py            # command handlers — inline undo, cross-client mutation lock
 ├── core/                       # canonical tables — timeouts.py (per-tool budgets) · wiring.py (wire_by_label vs the probed catalog)
@@ -409,7 +520,9 @@ python/synapse/
 
 host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols · cook API · cook-truth perturbation trials)
 scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_{wiring,lop}.py · mine_lop_knowledge.py
-tests/                          # 4,571 passing (Moneta-gated + Houdini-gated tests skip on a clean clone)
+tests/                          # 4,642 passing (Moneta-gated + Houdini-gated tests skip on a clean clone)
+                                #   test_marshal_lint.py    bans the unsafe main-thread primitive repo-wide
+                                #   test_marshal_hostile.py adversarial suite for the marshal boundary
 harness/                        # the self-verifying loop — five tracks (H22 · v6 · context · studio · diagnostic), boundary guardrails, the full-suite green ratchet, the readiness verdict
 docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients
@@ -419,7 +532,13 @@ mcp_server.py                   # WebSocket adapter for external MCP clients
 
 > **Security posture — local-first, single-user.** The MCP surface (`mcp_server.py` / the in-Houdini `hwebserver` `/mcp` handler in `python/synapse/mcp/server.py`) enforces Origin validation (DNS-rebinding protection) and supports Bearer-token auth, with `SYNAPSE_DEPLOY_MODE` defaulting to `local`. The design target is a single artist on localhost; a handler-layer consent gate is the documented prerequisite before any multi-user or studio deployment.
 >
-> **Be precise about the blast radius:** the bridge serves **both** surfaces — WebSocket `/synapse` and HTTP `/mcp` — from **one** `hwebserver` on **one port (default 9999)**. There is no configuration that publishes `/mcp` while keeping `/synapse` private, and on the live `/synapse` handler path `execute_python` / `execute_vex` run **ungated**. Exposing that single port to an untrusted network exposes arbitrary code execution inside your Houdini. Keep it on localhost. Full detail: [`docs/mcp/SETUP.md`](docs/mcp/SETUP.md#authentication).
+> **Be precise about the blast radius:**
+>
+> - **One server, one port.** The bridge serves **both** surfaces — WebSocket `/synapse` and HTTP `/mcp` — from **one** `hwebserver` on **one port (default 9999)**.
+> - **They cannot be separated.** There is no configuration that publishes `/mcp` while keeping `/synapse` private.
+> - **`execute_python` / `execute_vex` run ungated** on the live `/synapse` handler path.
+>
+> **Therefore: exposing that single port to an untrusted network exposes arbitrary code execution inside your Houdini. Keep it on localhost.** Full detail: [`docs/mcp/SETUP.md`](docs/mcp/SETUP.md#authentication).
 
 ---
 

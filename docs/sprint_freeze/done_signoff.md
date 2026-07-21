@@ -1,6 +1,7 @@
 # Definition of Done — Sign-off
 
-Branch `fix/marshal-deadlock-class` · commit `607fc73` + live verification
+Signed on branch `fix/marshal-deadlock-class` at commit `607fc73` + live verification.
+Subsequently merged to master as `73304bf`; ships in the v5.33.0 line (untagged).
 Live session: Houdini 22.0.368, PID 64396, Python 3.13.10, Indie, UI available.
 
 **7 GREEN · 1 PARTIAL (ruled).**
@@ -38,7 +39,7 @@ Three marshals were failing silently.
 
 ---
 
-## D2 — Main provably never blocks on a turn result · **GREEN**
+## D2 — Main never blocks waiting on its own marshal result · **GREEN**
 
 Enforced in code, not by convention, and demonstrated on the live build:
 
@@ -52,9 +53,16 @@ run_on_main called FROM the main thread
 
 The identical call shape on the old primitive parks forever. 14µs instead.
 
-Enforcement: `tests/test_marshal_lint.py` bans the unsafe primitive repo-wide with
-a LINE-scoped allowlist that fails loudly when stale;
-`server/marshal_guard.py::forbid_main_thread_block` fails fast at the call site.
+Enforcement, and its exact reach: `tests/test_marshal_lint.py` bans the unsafe
+primitive repo-wide — both allowlists are currently EMPTY, and a LINE-scoped entry
+would have to be written and justified to add one; stale entries fail loudly. That
+lint is the hard guarantee, and it is static: it proves no SYNAPSE source *calls*
+the self-parking primitive. It does not prove main never blocks for some other
+reason. `server/marshal_guard.py::forbid_main_thread_block` covers that residue,
+but only as **telemetry by default** — it ships on `SYNAPSE_MARSHAL_GUARD=warn`,
+which records a blocking wait on main and changes no behaviour. It fails fast only
+when explicitly flipped to `raise`, which the operator card advises against inside
+a release freeze.
 
 ---
 
@@ -102,11 +110,21 @@ where the fix landed.
 ## D5 — Full suite green, zero tests weakened · **GREEN**
 
 ```
-4642 passed · 0 failed · 100 skipped · 87.70s
-floor (harness/verify/suite_baseline.json): 4275 passed / 0 failed / 87 skipped
+this sprint                                    4,642 passed ·    0 failed · 100 skipped · 87.70s
+prior release  v5.32.1                         4,571 passed                                        → +71
+ratchet floor  harness/verify/suite_baseline.json
+                                               4,275 passed ·    0 failed ·  87 skipped            → +367
 ```
 
-+367 passing, zero failures. One headless run, no live bridge — per gate_log R9,
+**Baseline rule — never quote a bare delta.** Both deltas above are correct
+*against their own baseline* and wrong against the other. `+71` is the
+release-over-release figure (v5.32.1 → this sprint) and is the one to use when
+comparing releases. `+367` is the distance above the ratchet floor, which is a
+human-promoted green *floor*, not the previous release — it last moved at
+v5.24.0. Any artefact citing one of these numbers must name which baseline it
+means in the same sentence; `+367 over v5.32.x` is a false statement.
+
+Zero failures on either baseline. One headless run, no live bridge — per gate_log R9,
 concurrent per-agent subsets are not a gate under the known module-level
 `sys.modules` hou-fake residency trap.
 
@@ -191,3 +209,7 @@ files safe to touch, and the honest limit.
 sprint appears in no leg of `SYNAPSE_RELEASE_WEEK.md`. CTO authority over the
 blueprint's gates is not authority over the governing document. The work stays on
 `fix/marshal-deadlock-class` until Joe decides. See gate_log DRIFT-01 and R3.
+
+*Resolved after signing:* Joe merged it to master as `73304bf`. The scope question
+above was answered by the person who owned it — it was not withdrawn, and nothing
+in the seven GREEN items or the honest limits changed on merge.

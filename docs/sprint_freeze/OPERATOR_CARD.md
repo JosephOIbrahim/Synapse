@@ -1,6 +1,7 @@
 # MARSHAL BOUNDARY — OPERATOR CARD
 
-*Houdini 22.0.368 · SYNAPSE v5.32.1 · branch `fix/marshal-deadlock-class`*
+*Houdini 22.0.368 · SYNAPSE v5.33.0 · merged to master as `73304bf`*
+*(version line declared; no `v5.33.0` tag published yet — tagging is a §8 human gate.)*
 
 ---
 
@@ -64,8 +65,12 @@ RuntimeError: main thread
 marshal_guard warning            a blocking wait ran on main — telemetry only
 ```
 
-**Silent hang with no log line** — should now be impossible. If you see one, that
-is the bug returning; capture the stack dump and reopen this sprint.
+**Silent hang with no log line** — the *self-deadlock* route to one is closed and
+lint-enforced, so it should not come from main marshalling itself. It is not the
+only way to park a main thread: a native modal loop or a vendor condition wait
+entered elsewhere presents identically, and nothing in-process can report from
+inside one. If you see a silent hang, capture what you can and reopen this sprint —
+either the class is back, or it is a route this sprint never covered.
 
 ---
 
@@ -95,9 +100,12 @@ _FLIPBOOK_FALLBACK_TIMEOUT_S 120s   single-frame grab on an already-failed path
 ## FAILURE MODES
 
 **1 · UI frozen, no log, no recovery**
-The old deadlock. Should be unreachable. Capture the dump, then restart Houdini —
+The old self-deadlock. That class is eliminated and lint-enforced, so this should
+be unreachable *by that route* — a main thread parked some other way looks the
+same from outside. Capture the dump, then restart Houdini —
 a thread parked in `hdefereval._condition.wait()` cannot be un-wedged in-process.
-*Recovery: restart. Then file it — this is a regression.*
+*Recovery: restart. Then file it — either the class is back, or it is a route
+this sprint never covered. Both are worth knowing; the dump tells them apart.*
 
 **2 · "Main thread didn't respond in time" but the render finished anyway**
 Known and accepted. On `/mcp`, a 120s budget wraps the whole dispatch; a longer
