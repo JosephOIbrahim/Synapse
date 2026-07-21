@@ -107,6 +107,69 @@ _READ_ONLY_TOOLS: frozenset = frozenset(
     if defn.get("annotations", {}).get("readOnlyHint", False)
 )
 
+# ── Read-only reconciliation: TWO sets, not one ──────────────────────────
+# _READ_ONLY_TOOLS (above) is the MCP *transport* annotation set — every tool
+# whose registry entry carries annotations.readOnlyHint=true (38 tools).
+#
+# dispatch_tool gates on a DIFFERENT set: synapse.panel.bridge_adapter's own
+# _READ_ONLY_TOOLS, consulted via is_read_only() (mcp/tools.py:123). A tool that
+# is NOT read-only there routes to execute_through_bridge → bridge.execute →
+# _execute_houdini (shared/bridge.py), which calls hou.undos.group() and the R1
+# topological scene hash DIRECTLY on the calling thread — that function assumes
+# it is already on the main thread.
+#
+# The two sets are not equal. As of this writing the bridge set is 35 tools; the
+# three that are read-only to the transport but MUTATING to the bridge are:
+#     cops_temporal_analysis, synapse_propose_graph, synapse_validate_frame
+# Letting those take the transport fast path (which no longer marshals) ran
+# hou.* on an hwebserver worker thread → main_thread_executed=False →
+# anchors_hold False → fidelity 0.0 → "Integrity check failed" on 100% of calls.
+#
+# So the fast path requires read-only under BOTH sets. This is DERIVED from the
+# two live definitions, never a third hand-maintained list — a hand-maintained
+# list is exactly what produced the divergence.
+
+
+def _bridge_is_read_only(tool_name: str) -> bool:
+    """Whether bridge_adapter also treats ``tool_name`` as read-only.
+
+    When bridge_adapter is unimportable, dispatch_tool cannot route through the
+    bridge at all (mcp/tools.py:127 ImportError fallback → handler.handle()), so
+    nothing calls hou.* off-main on our behalf and the transport annotation is
+    authoritative on its own. CLAUDE.md §12 dual-mode: no hou/hdefereval needed.
+    """
+    try:
+        from synapse.panel.bridge_adapter import is_read_only
+    except Exception:
+        return True
+    return is_read_only(tool_name)
+
+
+def is_transport_fast_path(tool_name: str) -> bool:
+    """True iff ``tool_name`` is read-only under BOTH gating sets.
+
+    The transport may only skip its outer main-thread marshal when dispatch_tool
+    will also decline to route the call through LosslessExecutionBridge.
+    """
+    return tool_name in _READ_ONLY_TOOLS and _bridge_is_read_only(tool_name)
+
+
+def read_only_set_divergence() -> frozenset:
+    """Tools annotated readOnlyHint=true that the bridge considers MUTATING.
+
+    Test-visible reconciliation surface: these are precisely the tools that must
+    NOT take the transport fast path. A test can pin the expected membership so
+    the two sets cannot silently diverge again. Returns an empty set when
+    bridge_adapter is unimportable (no bridge ⇒ no divergence to reconcile).
+    """
+    try:
+        from synapse.panel.bridge_adapter import (
+            _READ_ONLY_TOOLS as _BRIDGE_READ_ONLY_TOOLS,
+        )
+    except Exception:
+        return frozenset()
+    return frozenset(_READ_ONLY_TOOLS - _BRIDGE_READ_ONLY_TOOLS)
+
 # Synapse version — read from package metadata if available, else hardcoded
 try:
     from synapse import __version__ as _SYNAPSE_VERSION
@@ -362,13 +425,23 @@ class MCPServer:
         if session is not None:
             try:
                 handler = self._get_handler()
-                try:
-                    import hdefereval
-                    result = hdefereval.executeInMainThreadWithResult(
-                        dispatch_tool, handler, "synapse_project_setup", {}
-                    )
-                except ImportError:
-                    result = dispatch_tool(handler, "synapse_project_setup", {})
+                # L8: dispatch on the CALLING thread. This used to call
+                # hdefereval.executeInMainThreadWithResult, which is
+                # _queueDeferred(block=True) — it enqueues work for the main
+                # thread and then parks in _condition.wait(). That condition is
+                # only notified from the main thread's own event-loop callback,
+                # so a MAIN-THREAD caller (panel-initiated initialize, hython,
+                # a Qt slot) self-deadlocks permanently.
+                # No outer marshal is needed: project_setup's only hou.* surface
+                # is handlers_memory._scene_paths, which marshals itself via
+                # run_on_main (handlers_memory.py:38-50) at the standard 10s
+                # budget. TIMEOUT: none chosen here on purpose — the handler
+                # owns its own bound, so this is strictly tighter than the
+                # previous unbounded blocking wait, and the handshake can no
+                # longer hang forever on a busy main thread. Matches the live WS
+                # path, which calls handler.handle() straight off the worker
+                # thread (hwebserver_adapter.py:208/234).
+                result = dispatch_tool(handler, "synapse_project_setup", {})
                 if not result.get("isError"):
                     session.project_context = result
             except Exception:
@@ -412,9 +485,12 @@ class MCPServer:
     def _handle_tools_call(self, params: dict, session_id: Optional[str] = None) -> dict:
         """Dispatch a tool call with resilience checks.
 
-        Tool calls go through hdefereval.executeInMainThreadWithResult()
-        because hwebserver @urlHandler callbacks run on worker threads,
-        but hou.* calls require the main thread.
+        hwebserver @urlHandler callbacks run on worker threads and hou.* calls
+        require the main thread, but this layer does NOT marshal the whole
+        dispatch: every handler that touches hou.* marshals its own critical
+        section through server.main_thread.run_on_main at its own budget.
+        Mutating dispatches are additionally bounded here at the per-tool
+        transport budget (timeout_for).
 
         Resilience gates (rate limiter, circuit breaker, stall detection)
         match the WebSocket server's behavior so both transports have the
@@ -431,15 +507,48 @@ class MCPServer:
         arguments = params.get("arguments", {})
         handler = self._get_handler()
 
-        # Read-only tools bypass resilience (cheap reads can't cause cascading failures)
-        if tool_name in _READ_ONLY_TOOLS:
-            try:
-                import hdefereval
-                result = hdefereval.executeInMainThreadWithResult(
-                    dispatch_tool, handler, tool_name, arguments
-                )
-            except ImportError:
-                result = dispatch_tool(handler, tool_name, arguments)
+        # Read-only tools bypass resilience (cheap reads can't cause cascading
+        # failures). "Read-only" here means read-only under BOTH gating sets —
+        # see the reconciliation block near _READ_ONLY_TOOLS. Gating on the
+        # transport annotation alone sent cops_temporal_analysis /
+        # synapse_propose_graph / synapse_validate_frame down this unmarshalled
+        # branch even though dispatch_tool routes them through the bridge, whose
+        # _execute_houdini calls hou.* on the calling thread.
+        if is_transport_fast_path(tool_name):
+            # L8 LAYERING FIX — this branch used to marshal the ENTIRE
+            # dispatch_tool onto the main thread with
+            # hdefereval.executeInMainThreadWithResult (the blocking
+            # _queueDeferred(block=True) primitive). Two defects came out of
+            # that:
+            #   1. SELF-DEADLOCK. Any read-only handler that does its own
+            #      blocking marshal then ran that marshal FROM the main thread
+            #      and parked forever in _condition.wait() — nothing but the
+            #      main thread's own event loop can notify it. Live route:
+            #      houdini_capture_viewport (readOnlyHint=true) →
+            #      handlers_render.py:208 executeInMainThreadWithResult.
+            #   2. It pinned an hwebserver worker AND the main thread for the
+            #      whole call, for tools that never touch hou at all
+            #      (synapse_recall, synapse_metrics, synapse_search, ...).
+            # Fix: dispatch on the calling thread, exactly as the live WS
+            # transport already does (hwebserver_adapter.py:208/234 calls
+            # handler.handle() straight off the worker thread). Read-only
+            # dispatch_tool goes to handler.handle() with no hou.* surface of
+            # its own (mcp/tools.py:126), and every read-only handler that
+            # touches hou.* marshals its own critical section via run_on_main —
+            # verified for the readOnlyHint tools that also reach handler.handle()
+            # directly (handlers.py, handlers_usd/_node/_material/_hda/_cops;
+            # handlers_tops via handlers_tops/_common). The three readOnlyHint
+            # tools that dispatch_tool sends through the BRIDGE instead do not
+            # reach this branch at all — is_transport_fast_path excludes them so
+            # they keep the run_on_main marshal on the path below.
+            # TIMEOUT: deliberately none added at this layer. Each handler
+            # already owns the right budget (10s reads, 30s inspect/capture,
+            # 60s tops cold-start). Imposing a transport budget here would
+            # either duplicate them or — because a nested run_on_main from
+            # inside a run_on_main callback short-circuits to a direct call —
+            # silently REPLACE them, converting a slow-but-working viewport
+            # capture into a spurious failure.
+            result = dispatch_tool(handler, tool_name, arguments)
             # Propagate tool errors to the JSON-RPC layer here too — read-only
             # tools skip resilience, but a handler failure must still surface as
             # a JSON-RPC error rather than a success result with isError buried
@@ -596,13 +705,17 @@ class MCPServer:
             payload=payload,
         )
 
-        try:
-            import hdefereval
-            response = hdefereval.executeInMainThreadWithResult(
-                handler.handle, command
-            )
-        except ImportError:
-            response = handler.handle(command)
+        # L8: dispatch on the calling thread — same layering as the read-only
+        # tools/call branch above and as the live WS transport
+        # (hwebserver_adapter.py:208/234). The previous
+        # executeInMainThreadWithResult here self-deadlocked for any
+        # main-thread caller, and every handler reachable from a resource URI
+        # (get_scene_info, inspect_scene, get_stage_info, project_setup,
+        # inspect_node, get_metrics, tops_*) marshals its own hou.* section via
+        # run_on_main. TIMEOUT: none at this layer for the same reason as the
+        # read-only branch — the handlers own their budgets; this only removes
+        # an unbounded blocking wait.
+        response = handler.handle(command)
 
         if response.success:
             import json as _json

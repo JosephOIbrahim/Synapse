@@ -56,6 +56,95 @@ from .handler_helpers import (
 # loop. Payload wait_budget_s overrides per call; 0 = return immediately.
 _RENDER_WAIT_BUDGET_S = 60.0
 
+# --- Main-thread marshal budgets (hdefereval self-deadlock fix) --------------
+# Every hou.* leg in this module marshals via server.main_thread.run_on_main,
+# NOT hdefereval.executeInMainThreadWithResult. The vendor primitive
+# (houdini/python3.13libs/hdefereval.py::_queueDeferred, block=True) enqueues
+# work and then parks in _condition.wait() with NO thread check — and that
+# condition is only ever notified from _processDeferred(), which runs ON THE
+# MAIN THREAD. A main-thread caller therefore waits forever for itself:
+# permanent, unrecoverable self-deadlock (this is the render freeze). It also
+# reads its result back out of module globals, so two concurrent blocking
+# marshals can swap results. run_on_main has neither defect: a main-thread
+# caller short-circuits to a direct fn() call (fast path 2), and off-main
+# callers get a per-call result holder, a timeout, and the C4 zombie-kill flag.
+#
+# The budgets below are deliberate, NOT the run_on_main defaults (10s/30s).
+# These legs were previously UNBOUNDED; stapling a 10s default onto them would
+# convert working renders into spurious failures — a worse bug than the freeze.
+# They are ceilings that only a genuinely wedged main thread can hit.
+
+# A full frame render (node.render()) held on Houdini's main thread. Was
+# unbounded. Production frames legitimately run minutes-to-hours, and a cold
+# Karma XPU kernel compile alone is documented at ~2 minutes, so any budget
+# tight enough to be "responsive" would false-fail real work. One hour is an
+# is-it-alive ceiling, not a latency target: responsiveness is delivered by
+# _handle_render_bounded's token flow (which releases the WS caller at 60s
+# while the render continues), never by cutting this marshal short.
+#
+# ⚠ THIS NUMBER IS NOT THE EFFECTIVE BUDGET ON EVERY PATH. It is the budget of
+# ONE marshal, and two of the three caller paths never let that marshal own the
+# timeout at all. Verified on this tree; per path:
+#
+#   /synapse WS  — the handler thread is OFF-main, so run_on_main takes the
+#       real deferred path and 3600s IS the effective marshal ceiling. The
+#       artist-visible latency is still _RENDER_WAIT_BUDGET_S (60s), after
+#       which _handle_render_bounded returns a render_in_progress token and
+#       the render continues in its session worker. This is the only path the
+#       "one hour" figure describes.
+#
+#   /mcp         — EFFECTIVE BUDGET IS 120s, NOT 3600s. mcp/server.py already
+#       wraps the entire mutating dispatch in
+#       `run_on_main(lambda: dispatch_tool(...), timeout=timeout_for(tool_name))`
+#       (cited by symbol, not line — that file moves); timeout_for
+#       ("houdini_render") strips the prefix to "render" → SLOW_COMMANDS
+#       ["render"] = 120.0 (core/timeouts.py ~22). That outer marshal puts the
+#       dispatch ON the main thread, so by the time _handle_render runs,
+#       run_on_main's FAST PATH 1 (reentrant, _tls.on_main is set) short-
+#       circuits to a direct fn() call and DISCARDS the 3600s below. The outer
+#       120s governs. (_handle_render_bounded also detects main-thread identity
+#       and renders inline — see the branch at ~470 — so no session/token flow
+#       exists here either: the foreground guard is the only protection.)
+#
+#   panel-inline — the Qt slot IS the main thread, so run_on_main takes FAST
+#       PATH 2 and again discards this timeout; the payload runs inline with NO
+#       bound of any kind. That is honest by construction: nothing in Python
+#       can interrupt the main thread from the main thread, so any number here
+#       would be a lie. The panel freezes for the render's duration.
+#
+# ⚠ ABANDON-THEN-CONTINUE HAZARD (/mcp, renders longer than 120s).
+# When the outer 120s expires, run_on_main sets its C4 `abandoned` flag and
+# raises "Houdini's main thread didn't respond in time". C4 can only stop a
+# payload that has NOT yet entered fn() — a render already inside fn() is the
+# documented accepted residual race. So on a 200s frame the transport reports
+# FAILURE while the render keeps going and writes the frame. An operator (or an
+# agent) who retries then double-renders. Symptom to recognise: a main-thread
+# timeout error accompanied by a frame that appears on disk ~80s later.
+# Mitigation today is observational, not preventive — the inline branch at ~470
+# records a marshal_guard inline-overrun entry naming this exact window, so the
+# ledger explains the contradiction. Preventing the double-render needs the
+# inline path to register a render_session (see residual note there).
+# This is NOT a regression from the run_on_main migration: this path previously
+# self-deadlocked in hdefereval, which is strictly worse.
+#
+# Do NOT "fix" the hazard by retuning either number. 120s is the transport's
+# deliberate responsiveness budget and 3600s is a deliberate is-it-alive
+# ceiling; both are correct for what they actually bound.
+_RENDER_MAIN_TIMEOUT_S = 3600.0
+
+# Single-frame GL viewport flipbook for houdini_capture_viewport. Bounded by
+# the caller's own budget: core/timeouts.py SLOW_COMMANDS["capture_viewport"]
+# is 30.0s, so every client already gives up at 30s. Preserving that exact
+# budget here means the marshal can never outlive the caller waiting on it.
+_CAPTURE_MAIN_TIMEOUT_S = 30.0
+
+# Last-ditch GL flipbook fallback inside _handle_render, taken only when the
+# renderer wrote nothing. Was unbounded. A one-frame viewport grab that has not
+# returned in two minutes is wedged, not slow — and unlike the render above,
+# nothing downstream needs its result to be correct (failure degrades to the
+# honest "the renderer wrote nothing" error).
+_FLIPBOOK_FALLBACK_TIMEOUT_S = 120.0
+
 
 def _find_render_rop():
     """Auto-discover a render ROP node. Searches /stage then /out."""
@@ -141,7 +230,9 @@ class RenderHandlerMixin:
 
         Uses Houdini's flipbook API for a single-frame capture. This correctly
         reads the OpenGL framebuffer (QWidget.grab() returns black for GL surfaces).
-        Must run on the main thread via hdefereval.executeInMainThreadWithResult().
+        Must run on Houdini's main thread — marshalled via run_on_main, which
+        runs it directly when the caller is already the main thread (the /mcp
+        read-only dispatch and the panel) and defers it otherwise.
         """
         if not HOU_AVAILABLE:
             raise RuntimeError(_HOUDINI_UNAVAILABLE)
@@ -204,9 +295,17 @@ class RenderHandlerMixin:
             actual = _expand_frame_tokens(out_pattern, cur)
             return actual
 
-        import hdefereval
-        actual_path = hdefereval.executeInMainThreadWithResult(
-            _flipbook_on_main_thread
+        # CONFIRMED self-deadlock before this migration, and reachable in
+        # normal use: houdini_capture_viewport carries readOnlyHint=True
+        # (mcp/_tool_registry.py:305-312, read_only field of the spec tuple),
+        # so mcp/server.py:435-440 marshals the WHOLE dispatch onto the main
+        # thread for read-only tools — and this handler then self-marshalled
+        # from main and parked forever. run_on_main's fast path 2 now runs it
+        # directly on that caller. Off-main (WS) callers keep the identical
+        # deferred-execution behaviour, now with the caller's own 30s budget.
+        from .main_thread import run_on_main
+        actual_path = run_on_main(
+            _flipbook_on_main_thread, timeout=_CAPTURE_MAIN_TIMEOUT_S
         )
 
         if not Path(actual_path).exists():
@@ -390,11 +489,79 @@ class RenderHandlerMixin:
                 res.setdefault("foreground_guard", guard_advisory)
             return res
 
-        # Panel-inline path: the caller IS Houdini's main thread (Qt slot).
-        # A bounded wait is impossible — the render must run on this very
-        # thread — so the guard above is the only protection here.
-        if _threading.current_thread().ident == _threading.main_thread().ident:
-            return _attach_advisory(self._handle_render(payload))
+        # Panel-inline / /mcp path: the caller IS Houdini's main thread (Qt
+        # slot, or the read-only main-thread dispatch in mcp/server.py). A
+        # bounded wait is impossible — the render must run on this very thread
+        # — so the foreground guard above is the only protection here.
+        #
+        # This branch used to route the caller straight into a permanent
+        # deadlock: _handle_render marshalled via
+        # hdefereval.executeInMainThreadWithResult, so a main-thread caller
+        # enqueued the render for itself and parked forever. The deadlock lived
+        # in that marshal, which now goes through run_on_main (fast path 2 runs
+        # it inline), so dispatching here is safe.
+        #
+        # The BRANCH itself is still load-bearing and is deliberately kept: it
+        # decides *topology*, not thread safety. Deleting it would send a
+        # main-thread caller down the session path below, where this thread
+        # would block in worker.join() while the worker's run_on_main waited on
+        # a deferred callback that only this thread can pump — trading a hard
+        # deadlock for a 60s stall and a token for a render that had not
+        # started. Pinned by test_render_bounded.py::test_main_thread_caller_
+        # renders_inline.
+        #
+        # Identity comes from main_thread._MAIN_THREAD_ID — the same value
+        # run_on_main's fast path 2 tests — so the two cannot disagree about
+        # who "main" is and re-open the deadlock through a seam.
+        from .main_thread import _MAIN_THREAD_ID
+        if _threading.current_thread().ident == _MAIN_THREAD_ID:
+            # Abandon-then-continue instrumentation (see the ⚠ block on
+            # _RENDER_MAIN_TIMEOUT_S). On /mcp this render is already inside
+            # an outer run_on_main(timeout=120); if it runs longer, that outer
+            # marshal has ALREADY raised "main thread didn't respond in time"
+            # at the transport while this call keeps rendering and writes the
+            # frame. Nothing here can prevent that — C4 cannot interrupt a
+            # payload already inside fn(), and this thread IS main — but the
+            # contradiction must not be silent, so name the window explicitly.
+            # run_on_main's fast-path-2 note fires too, against the generic 5s
+            # inline budget; that one says "the GUI froze", this one says "a
+            # caller was told this failed and it wasn't". Pure telemetry.
+            #
+            # RESIDUAL (deliberately not done here): registering a
+            # render_session around this inline call would ALSO make the
+            # retry-after-false-timeout safe — the single-flight check at ~331
+            # would hand the retry the active token instead of starting a
+            # second render, and render_farm_status would surface the
+            # in-flight render. It is not done because
+            # tests/test_render_bounded.py::test_main_thread_caller_renders_
+            # inline pins `rs.summary() == []` ("no session on the inline
+            # path") as a deliberate invariant. Changing behaviour pinned by a
+            # passing test is a decision for that test's owner, not a silent
+            # edit here.
+            _t_inline = time.perf_counter()
+            try:
+                return _attach_advisory(self._handle_render(payload))
+            finally:
+                try:
+                    from ..core.timeouts import timeout_for
+                    from .marshal_guard import note_main_thread_inline_overrun
+                    _elapsed_s = time.perf_counter() - _t_inline
+                    _transport_budget_s = timeout_for("houdini_render")
+                    if _elapsed_s > _transport_budget_s:
+                        note_main_thread_inline_overrun(
+                            "handlers_render._handle_render_bounded:"
+                            "inline_abandoned_window",
+                            _elapsed_s,
+                            _transport_budget_s,
+                            hazard="mcp_transport_already_reported_failure",
+                            rop=rop_path or "",
+                        )
+                except Exception:
+                    # Telemetry must never alter the render's result or mask
+                    # its exception. Swallow deliberately (§12 dual-mode: the
+                    # imports are zero-hou, but a trimmed embedding that lacks
+                    # them still renders fine).
+                    pass
 
         wait_budget = payload.get("wait_budget_s")
         if wait_budget is None:
@@ -455,8 +622,8 @@ class RenderHandlerMixin:
     def _handle_render(self, payload: Dict) -> Dict:
         """Render a frame via Karma, Mantra, or any ROP node.
 
-        Uses hdefereval.executeInMainThreadWithResult() since hou.RopNode.render()
-        must run on Houdini's main thread. Writes render output to disk (EXR or
+        Marshals via run_on_main since hou.RopNode.render() must run on
+        Houdini's main thread. Writes render output to disk (EXR or
         artist-configured format) AND generates a JPEG preview for AI consumption.
 
         Supports Karma XPU (GPU+CPU hybrid), Karma CPU, and Mantra ROPs.
@@ -747,7 +914,18 @@ class RenderHandlerMixin:
             # C11: ONLY hou.* work stays on the main thread. The output-file
             # poll (up to ~15s of sleep) and the iconvert subprocess used to run
             # right here, freezing the UI and the whole run_on_main pipeline for
-            # the flush window — they now run on the WS handler thread below.
+            # the flush window — they now run OUTSIDE this closure, below.
+            #
+            # Correction (deadlock migration): the old wording claimed that work
+            # runs "on the WS handler thread". That is true ONLY when the caller
+            # is off-main. On the /mcp path and the panel-inline path the caller
+            # IS Houdini's main thread, run_on_main takes fast path 2, and this
+            # whole function — closure AND the poll/iconvert leg after it — runs
+            # inline on the main thread. C11 still buys real separation there:
+            # the sleep/subprocess leg is outside the undo group and outside any
+            # marshal, so it never blocks a *second* caller's dispatch. It does
+            # not make the main thread free during that window.
+            #
             # $HFS resolves here (the one hou call the iconvert leg needs).
             hfs = hou.text.expandString("$HFS")
             # M2-G: color.* show-config keys resolve HERE -- get_show_config
@@ -765,10 +943,19 @@ class RenderHandlerMixin:
                     preview_path, hfs, show_cfg_advisory, artist_output_raw,
                     color_cfg)
 
-        import hdefereval
+        # THE freeze. executeInMainThreadWithResult here meant every
+        # main-thread caller (panel Qt slot, /mcp read-only dispatch, any
+        # reentrant handler) enqueued the render for itself and then parked in
+        # the vendor's _condition.wait() forever. run_on_main runs it directly
+        # on such a caller instead (fast path 2) — the ONLY behaviour that
+        # changes is that those callers now execute rather than deadlock.
+        # Off-main callers keep deferred execution unchanged, bounded by the
+        # deliberately generous _RENDER_MAIN_TIMEOUT_S (see its definition:
+        # 10s would false-fail real renders).
+        from .main_thread import run_on_main
         (used_rop, used_type, engine, cur, render_path_resolved, preview_path,
-         hfs, show_cfg_advisory, artist_output_raw, color_cfg) = (
-            hdefereval.executeInMainThreadWithResult(_render_on_main)
+         hfs, show_cfg_advisory, artist_output_raw, color_cfg) = run_on_main(
+            _render_on_main, timeout=_RENDER_MAIN_TIMEOUT_S
         )
 
         # -- Off-main from here (pure file IO / subprocess, zero hou) ---------
@@ -862,7 +1049,22 @@ class RenderHandlerMixin:
                     )
                 return False, None
 
-            fb_ok, fb_path = hdefereval.executeInMainThreadWithResult(_flipbook_on_main)
+            # Same self-deadlock class as the render marshal above. _flipbook_on_main
+            # already swallows every internal failure into (False, None), so a
+            # wedged main thread is folded into that same outcome: the artist then
+            # gets the accurate PRIMARY diagnostic below ("the renderer wrote
+            # nothing") instead of a secondary marshal error about a fallback they
+            # never asked for. No working path changes — only a stuck one.
+            try:
+                fb_ok, fb_path = run_on_main(
+                    _flipbook_on_main, timeout=_FLIPBOOK_FALLBACK_TIMEOUT_S
+                )
+            except RuntimeError as _fb_marshal_exc:
+                logger.warning(
+                    "Flipbook fallback could not reach the main thread: %s",
+                    _fb_marshal_exc,
+                )
+                fb_ok, fb_path = False, None
             if fb_ok:
                 used_flipbook = True
                 out_path = fb_path

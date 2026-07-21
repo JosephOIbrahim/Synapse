@@ -112,6 +112,8 @@ row here fails CI; a stale row fails CI).
 | `SYNAPSE_LEDGER_DIR` | agent.usd ledger records | `<repo>/.synapse/ledger` | `memory/ledger.py` | Studio: shared storage |
 | `SYNAPSE_LIVE_ENVELOPE` | `"0"`/`"false"`/`"off"` disables live-path IntegrityBlock envelope captures + blocks (latency escape hatch for the unresolved C6/T1 wake-floor hypothesis) | on | `server/integrity_envelope.py` | Both: leave on unless live latency demands shedding it |
 | `SYNAPSE_LOG_DIR` | Directory for synapse.log + telemetry.json + freeze dumps | `~/.synapse/logs` | `core/logfile.py`, `server/doctor.py` | Both |
+| `SYNAPSE_MAIN_INLINE_BUDGET_S` | Seconds a payload may run INLINE on the main thread (run_on_main fast path 2) before the overrun is logged at WARNING and appended to the guard ledger. Float; unparseable or non-numeric values silently fall back to the default. **Telemetry threshold only** — it never raises, never blocks, never changes control flow, so tuning it cannot break a render. Default `5.0` is the `freeze_chain` detection threshold (`resilience.Watchdog.freeze_threshold`): an inline payload that outruns the freeze detector *is* the freeze. Lower it to catch shorter GUI stalls; raise it on a box with legitimately slow cooks to quiet the log | `5.0` | `server/marshal_guard.py` | Both: leave unset |
+| `SYNAPSE_MARSHAL_GUARD` | Mode of the main-thread starvation guard (`forbid_main_thread_block`). Exactly three accepted values: `warn` (**default**) logs at ERROR with a full stack, writes a `freeze_stacks_*.txt` thread dump, records a ledger entry, and **does not raise**; `raise` does all of that and additionally raises `MainThreadStarvationError`; `off` records the ledger entry only — no log, no dump, no raise. Case-insensitive and whitespace-stripped; any other value degrades to `warn`. Read per call, not cached, so a live session can be flipped without a restart | `warn` | `server/marshal_guard.py` | Both: ship on `warn`; see the warn-vs-raise note below before flipping |
 | `SYNAPSE_MEMORY_BACKEND` | `jsonl` (default) / `moneta` / `shadow`; unknown values fall back to jsonl with a warning; `sqlite` is NOT live (dormant factory only) | `jsonl` | `memory/store.py` | Both |
 | `SYNAPSE_METRICS_INTERVAL` | Live-metrics sample interval, seconds (floor 0.5) | `2.0` | `server/live_metrics.py` | Both |
 | `SYNAPSE_MONITOR_EVENT_CAP` | Max buffered events per TOPs monitor stream | `5000` | `server/handlers_tops/_common.py` | Both |
@@ -144,6 +146,41 @@ Read only by the test suite — never by production code:
 | `SYNAPSE_INTEGRATION` | Enables integration tests | `tests/test_e2e_tops.py`, `tests/test_phase1_rungs.py` |
 | `SYNAPSE_LOAD_TEST` | Enables the load test | `tests/test_load.py` |
 | `SYNAPSE_INSPECTOR_LIVE_TRANSPORT_MODULE` | Live Inspector transport for tests | `tests/test_inspect_live.py` |
+
+#### SYNAPSE_MARSHAL_GUARD: why `warn` is the default
+
+`warn` is a deliberate choice, not an unfinished one. The guard is an
+instrument shipping during a release freeze, and `raise` converts a path that
+currently *works* into a hard failure the first time the guard's scoping rule
+proves imperfect. A false positive in `raise` mode breaks a render; a false
+positive in `warn` mode writes a log line. That asymmetry decides the default.
+
+The value `warn` produces is the ledger (`guard_events()` / `guard_stats()`,
+surfaced through the doctor and `telemetry_dump`). Two questions have to be
+answered from real traffic before escalation is justified:
+
+1. **Is the guard quiet on healthy sessions?** A non-zero `violations` count
+   under normal single-seat and `/mcp` use means the scoping rule is still
+   over-firing, and flipping to `raise` would break working paths.
+2. **Does every recorded violation name a genuine main-thread marshal?** Each
+   ledger entry carries its `where` call-site id and a `freeze_stacks_*.txt`
+   dump; a real starvation shows a MAIN frame stack ending in
+   `hdefereval._queueDeferred` → `threading.Condition.wait`.
+
+Flip to `raise` only once (1) holds across a representative sample and (2) is
+true of every entry that did fire. This is the same two-stage ratchet the repo
+uses for the suite baseline: ship the instrument, collect evidence, then raise
+the bar on human-reviewed evidence — never on the instrument's own say-so.
+
+`off` exists for the case where the guard itself is suspected of causing
+trouble in the field. It keeps the ledger (so the incident stays diagnosable)
+while silencing every side effect. It is not the recommended steady state.
+
+**What no mode can do:** none of these unfreeze a main thread already parked in
+`hdefereval._condition.wait()`. That condition is notified only by the main
+thread's own event-loop callback, so no other thread can release it and no
+timeout parameter exists. The guard detects and captures evidence *before* the
+park; it is not a recovery mechanism.
 
 #### SYNAPSE_RAG_ROOT: one name, two layouts
 
