@@ -835,3 +835,88 @@ class TestVariantSelector:
     def test_display_node_is_output(self):
         result = variant_selector()
         assert result["display_node"] == "output"
+
+
+# =============================================================================
+# B4 / B5 -- idempotency and pre-flight recognition
+# =============================================================================
+
+class _B4Type:
+    def __init__(self, name):
+        self._name = name
+
+    def name(self):
+        return self._name
+
+
+class _B4Node:
+    def __init__(self, name, type_name, parent_path="/stage"):
+        self._name = name
+        self._type = _B4Type(type_name)
+        self._path = "%s/%s" % (parent_path, name)
+
+    def type(self):
+        return self._type
+
+    def path(self):
+        return self._path
+
+
+class _B4Parent:
+    """Records createNode calls so a duplicate is visible in the assertion."""
+
+    def __init__(self, existing=None):
+        self._children = dict(existing or {})
+        self.created = []
+
+    def node(self, name):
+        return self._children.get(name)
+
+    def createNode(self, node_type, node_name):
+        self.created.append((node_type, node_name))
+        n = _B4Node(node_name, node_type)
+        self._children[node_name] = n
+        return n
+
+
+class TestEnsureNodeIdempotency:
+    """B4: build_graph used a raw createNode. Houdini auto-uniquifies a
+    colliding name, so an identical second build produced a whole second
+    network drawn on top of the first (OUTPUT -> OUTPUT1) and moved the display
+    flag to it, while reporting status='created' with no warnings."""
+
+    def test_creates_when_absent(self):
+        from synapse.server.handlers_solaris_graph import _ensure_node
+        parent = _B4Parent()
+        node, created = _ensure_node(parent, "materiallibrary", "matlib")
+        assert created is True
+        assert parent.created == [("materiallibrary", "matlib")]
+
+    def test_reuses_when_name_and_type_match(self):
+        from synapse.server.handlers_solaris_graph import _ensure_node
+        parent = _B4Parent({"matlib": _B4Node("matlib", "materiallibrary")})
+        node, created = _ensure_node(parent, "materiallibrary", "matlib")
+        assert created is False
+        assert parent.created == [], "must not create a duplicate"
+
+    def test_reuse_tolerates_a_versioned_existing_type(self):
+        """Houdini resolves a bare name to the newest version, so a node asked
+        for as `domelight` reports `domelight::3.0`. Matching on the full name
+        would miss and duplicate."""
+        from synapse.server.handlers_solaris_graph import _ensure_node
+        parent = _B4Parent({"key": _B4Node("key", "domelight::3.0")})
+        node, created = _ensure_node(parent, "domelight", "key")
+        assert created is False
+        assert parent.created == []
+
+    def test_name_collision_across_types_is_raised_not_papered_over(self):
+        """guards.ensure_node matches on NAME alone and would hand back a
+        `null` when a `merge` was asked for. That is a real conflict."""
+        from synapse.server.handlers_solaris_graph import _ensure_node
+        from synapse.core.errors import SynapseUserError
+        parent = _B4Parent({"OUTPUT": _B4Node("OUTPUT", "null")})
+        with pytest.raises(SynapseUserError) as exc:
+            _ensure_node(parent, "merge", "OUTPUT")
+        assert "null" in str(exc.value) and "merge" in str(exc.value)
+        assert parent.created == []
+        assert exc.value.suggestion, "must carry a remediation"

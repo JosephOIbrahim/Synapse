@@ -23,6 +23,142 @@ from .handler_helpers import _layout_dag_vertical, _layout_vertical_chain
 logger = logging.getLogger(__name__)
 
 
+# ── Recognition (B5) ─────────────────────────────────────────────────────
+# The live creation path performed ZERO node-type validation: every recognition
+# authority SYNAPSE owns was unreachable from the code an artist actually hits
+# (grep known_absent|lop_knowledge|node_type_exists over server/ was empty).
+# A single bad type therefore surfaced as a bare hou.OperationFailed raised
+# mid-build, rolling back every other node in the graph -- while the catalog
+# already held the exact remediation for it.
+
+
+def _absent_type_remediation(type_name: str) -> Optional[str]:
+    """The catalog's fix-it string for a known-absent LOP type, if any.
+
+    Never raises: a missing/corrupt catalog degrades to None and the caller
+    still rejects the type, just without the extra guidance.
+    """
+    try:
+        from ..core.lop_knowledge import load_lop_catalog
+        catalog = load_lop_catalog(strict=False)
+        if not isinstance(catalog, dict):
+            return None
+        content = catalog.get("content")
+        if not isinstance(content, dict):
+            return None
+        entry = (content.get("known_absent") or {}).get(type_name)
+        if isinstance(entry, dict):
+            return entry.get("remediation")
+    except Exception:  # noqa: BLE001 -- guidance is best-effort, never fatal
+        return None
+    return None
+
+
+def _validate_node_types(parent_node, node_map: Dict[str, Dict]) -> None:
+    """Reject unknown node types BEFORE the undo group opens.
+
+    Collects every bad type in one pass so the caller sees all of them at once
+    rather than discovering them one failed build at a time -- the same posture
+    GraphValidator's symbol phase already takes on the /mcp path.
+    """
+    try:
+        category = parent_node.childTypeCategory()
+    except Exception:  # noqa: BLE001 -- unknown container: skip, never false-reject
+        return
+
+    bad: List[str] = []
+    for spec in node_map.values():
+        type_name = spec.get("type")
+        if not type_name or not isinstance(type_name, str):
+            continue
+        try:
+            exists = hou.nodeType(category, type_name) is not None
+        except Exception:  # noqa: BLE001
+            continue
+        if exists:
+            continue
+        remediation = _absent_type_remediation(type_name)
+        bad.append("'%s'%s" % (type_name,
+                               (" -- " + remediation) if remediation else ""))
+
+    if bad:
+        raise SynapseUserError(
+            "unknown %s node type(s): %s"
+            % (category.name(), "; ".join(sorted(set(bad)))),
+            suggestion=("Nothing was created. Fix the node type(s) and re-run "
+                        "-- synapse_scout will confirm what exists on this build."),
+        )
+
+
+def _set_parm(node, parm_name: str, value) -> bool:
+    """Set ``parm_name`` on ``node``, resolving USD punycode + tuples.
+
+    Returns True if the value actually landed. The literal name is tried first
+    so an exact match always wins; only then the punycode encoding, then the
+    tuple form. Anything still unset is the caller's to report -- never
+    silently dropped (M4).
+    """
+    for candidate in (parm_name, _punycode_encoded(parm_name)):
+        if not candidate:
+            continue
+        p = node.parm(candidate)
+        if p is not None:
+            try:
+                p.set(value)
+                return True
+            except Exception:  # noqa: BLE001 -- wrong type/shape: report it
+                return False
+        tup = node.parmTuple(candidate)
+        if tup is not None:
+            try:
+                tup.set(value)
+                return True
+            except Exception:  # noqa: BLE001
+                return False
+    return False
+
+
+def _punycode_encoded(alias: str) -> Optional[str]:
+    """The punycode-encoded LOP parm name for a friendly USD alias, or None."""
+    try:
+        from ..core.usd_punycode import encoded
+        return encoded(alias)
+    except Exception:  # noqa: BLE001 -- resolution is best-effort
+        return None
+
+
+def _ensure_node(parent_node, node_type: str, node_name: str) -> Tuple[Any, bool]:
+    """Create ``node_name`` under ``parent_node``, or reuse it if it already
+    matches. Returns ``(node, created)``.
+
+    B4: this was a raw ``createNode``. Houdini auto-uniquifies a colliding name,
+    so running an identical build twice produced a SECOND complete network drawn
+    on top of the first (OUTPUT -> OUTPUT1) and moved the display flag to it,
+    reporting status='created' with no warnings. Build -> look -> rebuild is the
+    core artist loop, which made the tool unsafe to point at a populated shot.
+
+    Reuse requires the TYPE to match as well as the name -- guards.ensure_node
+    matches on name alone, which would silently hand back a `null` when a
+    `merge` was asked for. A name collision across types is a real conflict and
+    is raised rather than papered over.
+    """
+    existing = parent_node.node(node_name)
+    if existing is None:
+        return parent_node.createNode(node_type, node_name), True
+
+    existing_base = existing.type().name().split("::")[0]
+    wanted_base = node_type.split("::")[0]
+    if existing_base == wanted_base:
+        return existing, False
+
+    raise SynapseUserError(
+        "'%s' already exists at %s as a '%s', but the graph asks for a '%s'"
+        % (node_name, existing.path(), existing_base, wanted_base),
+        suggestion=("Rename the node in the graph, or delete the existing one "
+                    "first. Nothing was created."),
+    )
+
+
 # ── Validation (pure Python, no hou) ─────────────────────────────────────
 
 
@@ -413,7 +549,13 @@ class SolarisGraphMixin:
 
             id_to_hou = {}
             nodes_created = []
+            nodes_reused = []
+            parms_missed = []
             connections_made = []
+
+            # B5: reject unknown types BEFORE opening the undo group, so a bad
+            # type costs nothing instead of rolling back a whole graph.
+            _validate_node_types(parent_node, node_map)
 
             try:
                 with hou.undos.group("SYNAPSE: build_graph"):
@@ -422,9 +564,14 @@ class SolarisGraphMixin:
                         spec = node_map[nid]
                         node_type = spec["type"]
                         node_name = spec.get("name", nid) or nid
-                        node = parent_node.createNode(node_type, node_name)
+                        node, created = _ensure_node(
+                            parent_node, node_type, node_name)
                         id_to_hou[nid] = node
-                        nodes_created.append({"id": nid, "path": node.path()})
+                        entry = {"id": nid, "path": node.path()}
+                        if created:
+                            nodes_created.append(entry)
+                        else:
+                            nodes_reused.append(entry)
 
                     # 2. Set parameters
                     for nid in sorted_ids:
@@ -432,9 +579,21 @@ class SolarisGraphMixin:
                         parms = spec.get("parms", {})
                         node = id_to_hou[nid]
                         for parm_name, parm_value in parms.items():
-                            p = node.parm(parm_name)
-                            if p is not None:
-                                p.set(parm_value)
+                            # M4: this was a bare `if p is not None` -- an
+                            # unresolvable name was dropped and success still
+                            # returned, so a light rig reported as dialed in
+                            # sat at its defaults. USD light parms carry
+                            # punycode-encoded names on the LOP interface
+                            # (`intensity` -> `xn__inputsintensity_i0a`), which
+                            # is exactly the case that silently vanished.
+                            # Resolve, then parmTuple, then REPORT the miss.
+                            if _set_parm(node, parm_name, parm_value):
+                                continue
+                            parms_missed.append({
+                                "node": node.path(),
+                                "parm": parm_name,
+                                "value": repr(parm_value)[:80],
+                            })
 
                     # 3. Wire connections
                     for conn in raw_connections:
@@ -493,9 +652,32 @@ class SolarisGraphMixin:
                     )
                 raise
 
+            # B4: a rebuild that reused everything is not a "created" -- saying
+            # so is the same lie the duplicate network told, pointed the other
+            # way. The status names what actually happened.
+            if nodes_reused and not nodes_created:
+                status = "unchanged"
+            elif nodes_reused:
+                status = "updated"
+            else:
+                status = "created"
+            # Mutate rather than rebind: `warnings` is the enclosing function's
+            # list (bound at validate_graph), and rebinding it here would make
+            # it local to _on_main and break every earlier read.
+            if nodes_reused:
+                warnings.append(
+                    "reused %d existing node(s) by name+type instead of "
+                    "duplicating them" % len(nodes_reused))
+            if parms_missed:
+                warnings.append(
+                    "%d parameter(s) could not be set and were NOT applied -- "
+                    "see parms_missed" % len(parms_missed))
+
             return {
-                "status": "created",
+                "status": status,
                 "nodes_created": nodes_created,
+                "nodes_reused": nodes_reused,
+                "parms_missed": parms_missed,
                 "connections_made": connections_made,
                 "display_node": display_hou.path(),
                 "topology": topology,
