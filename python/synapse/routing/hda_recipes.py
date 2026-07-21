@@ -190,7 +190,7 @@ HDA_RECIPES = {
         ),
         "node_graph": [
             {
-                "type": "karmarenderproperties",
+                "type": "karmarendersettings",
                 "name": "render_settings",
                 "parms": {
                     "karma:global:pathtracedsamples": 64,

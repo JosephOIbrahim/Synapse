@@ -32,7 +32,7 @@ def _build_render_tail(
 
     Order follows FORGE Pattern 1:
       [tail] → materiallibrary → camera → domelight →
-      karmarenderproperties → usdrender_rop → OUTPUT null
+      karmarendersettings → usdrender_rop → OUTPUT null
 
     Returns the final tail node id.
     """
@@ -53,7 +53,7 @@ def _build_render_tail(
 
     if include_render:
         nodes.append({
-            "id": "karma_settings", "type": "karmarenderproperties",
+            "id": "karma_settings", "type": "karmarendersettings",
             "name": "karma_settings",
         })
         connections.append({"from": tail, "to": "karma_settings", "input": 0})
@@ -65,7 +65,7 @@ def _build_render_tail(
 
     if include_render:
         # usdrender_rop is a RopNode (terminal, zero outputs) — it branches
-        # off karmarenderproperties, it does NOT continue the chain.
+        # off karmarendersettings, it does NOT continue the chain.
         nodes.append({
             "id": "rop", "type": "usdrender_rop", "name": "render",
         })
@@ -186,7 +186,7 @@ def render_pass_split(
     """Assembled scene → N karma settings → N ROPs for multi-pass rendering.
 
     The source is a null node (connect your assembled scene to it).
-    Each pass gets its own karmarenderproperties → usdrender_rop chain
+    Each pass gets its own karmarendersettings → usdrender_rop chain
     so you can configure different quality/AOV settings per pass.
 
     Args:
@@ -212,7 +212,7 @@ def render_pass_split(
         rop_id = f"rop_{name}"
         nodes.append({
             "id": settings_id,
-            "type": "karmarenderproperties",
+            "type": "karmarendersettings",
             "name": f"karma_{name}",
         })
         nodes.append({
@@ -269,7 +269,7 @@ def lighting_rig(
 
     if include_render:
         nodes.append({
-            "id": "karma_settings", "type": "karmarenderproperties",
+            "id": "karma_settings", "type": "karmarendersettings",
             "name": "karma_settings",
         })
         connections.append({"from": tail, "to": "karma_settings", "input": 0})
@@ -297,7 +297,7 @@ def hdri_lighting(
 
     Produces a photorealistic outdoor lighting setup:
       SCENE_INPUT → domelight → karmaphysicalsky → [distantlight] →
-      karmarenderproperties → OUTPUT
+      karmarendersettings → OUTPUT
 
     The domelight provides image-based environment lighting, the physical
     sky adds atmospheric scattering, and the optional distant light acts
@@ -334,7 +334,7 @@ def hdri_lighting(
 
     if include_render:
         nodes.append({
-            "id": "karma_settings", "type": "karmarenderproperties",
+            "id": "karma_settings", "type": "karmarendersettings",
             "name": "karma_settings",
         })
         connections.append({"from": tail, "to": "karma_settings", "input": 0})

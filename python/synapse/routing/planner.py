@@ -515,7 +515,7 @@ def _build_render_pipeline(
         cmds.append(_cmd("execute_python", {
             "code": (
                 "# Scaffolded step: this plan does NOT enable the denoiser.\n"
-                "# Denoiser parms live on a karmarenderproperties node, not the\n"
+                "# Denoiser parms live on a karmarendersettings node, not the\n"
                 "# usdrender_rop -- use the render_settings tool with\n"
                 "# advanced_karma={'enable_denoiser': True}.\n"
                 "result = {'denoise': 'scaffolded', 'configured': False,\n"
@@ -697,7 +697,7 @@ def _build_solaris_scene_pipeline(
         lines += [
             "",
             "# --- Render Settings ---",
-            "rs = stage.createNode('karmarenderproperties', 'render_settings')",
+            "rs = stage.createNode('karmarendersettings', 'render_settings')",
             "rs.setInput(0, prev)",
             "prev = rs",
             "karma = stage.createNode('karma', 'karma')",

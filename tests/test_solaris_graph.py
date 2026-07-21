@@ -473,9 +473,12 @@ class TestTemplates:
             chain.append(id_to_type[current])
 
         # Main chain: matlib → camera → domelight → karma → null
+        # B9: templates now emit karmarendersettings (karmarenderproperties is
+        # deprecated on 22.0.368 -- vendor deprecationInfo: "Use
+        # karmarendersettings instead"; near-superset parm interface, 330 vs 293).
         assert chain == [
             "materiallibrary", "camera", "domelight",
-            "karmarenderproperties", "null",
+            "karmarendersettings", "null",
         ], f"Wrong canonical order: {chain}"
 
         # ROP must branch off karma_settings (not in main chain)
@@ -611,12 +614,13 @@ class TestTemplates:
                 continue
             result = fn()
             node_types = {n["type"] for n in result["nodes"]}
+            # B9: templates emit the non-deprecated karmarendersettings.
             if name == "render_pass_split":
                 # render_pass_split has per-pass render settings
-                assert "karmarenderproperties" in node_types
+                assert "karmarendersettings" in node_types
             else:
-                assert "karmarenderproperties" in node_types, \
-                    f"Template '{name}' missing karmarenderproperties"
+                assert "karmarendersettings" in node_types, \
+                    f"Template '{name}' missing karmarendersettings"
                 assert "usdrender_rop" in node_types, \
                     f"Template '{name}' missing usdrender_rop"
 
@@ -920,3 +924,51 @@ class TestEnsureNodeIdempotency:
         assert "null" in str(exc.value) and "merge" in str(exc.value)
         assert parent.created == []
         assert exc.value.suggestion, "must carry a remediation"
+
+
+# =============================================================================
+# B9 -- templates must not emit a type deprecated on the target build
+# =============================================================================
+
+class TestNoDeprecatedTypesEmitted:
+    """karmarenderproperties was deprecated in Houdini 21.0 (vendor
+    deprecationInfo: "Use karmarendersettings instead") yet SYNAPSE emitted it
+    from every render template. It still creates and renders -- deprecated is
+    not phantom -- so this never failed loudly; it just shipped tomorrow's
+    breakage today. This pins every template's node types against the committed
+    live catalog's `deprecated` flag, so the NEXT deprecation is caught on the
+    build that introduces it rather than by a future audit.
+    """
+
+    def _deprecated_types(self):
+        import json
+        import pathlib
+        fp = (pathlib.Path(__file__).resolve().parents[1]
+              / "harness" / "notes" / "h22_lop_catalog_live_22.0.368.json")
+        if not fp.exists():
+            return None
+        types = json.loads(fp.read_text(encoding="utf-8"))["types"]
+        return {n for n, r in types.items() if r.get("deprecated")}
+
+    def test_catalog_marks_the_expected_pair_deprecated(self):
+        dep = self._deprecated_types()
+        if dep is None:
+            pytest.skip("no 22.0.368 catalog in this tree")
+        # Guards the guard: if the catalog stopped marking these, the sweep
+        # below would pass vacuously.
+        assert "karmarenderproperties" in dep
+        assert "karma" in dep
+        assert "karmarendersettings" not in dep
+
+    def test_no_template_emits_a_deprecated_type(self):
+        dep = self._deprecated_types()
+        if dep is None:
+            pytest.skip("no 22.0.368 catalog in this tree")
+        offenders = {}
+        for name, fn in TEMPLATES.items():
+            result = fn()
+            bad = sorted({n["type"] for n in result["nodes"]
+                          if n["type"].split("::")[0] in dep})
+            if bad:
+                offenders[name] = bad
+        assert not offenders, "templates emit deprecated LOP types: %s" % offenders

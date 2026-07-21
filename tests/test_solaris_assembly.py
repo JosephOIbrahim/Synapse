@@ -325,7 +325,8 @@ class TestSolarisScenePipeline:
         result = _build_solaris_scene_pipeline({}, {"add_render"})
         code = result[0].payload["code"]
         assert "# --- Render Settings ---" in code
-        assert "karmarenderproperties" in code
+        # B9: emit the non-deprecated karmarendersettings.
+        assert "karmarendersettings" in code
         assert "karma" in code
 
     def test_all_modifiers_full_chain(self):
