@@ -603,11 +603,40 @@ class SolarisGraphMixin:
                             })
 
                     # 3. Wire connections
+                    #
+                    # B4 seam: reuse-by-name is safe for a true rebuild (the
+                    # reused node's inputs already match the spec, so setInput is
+                    # a no-op), but it must NOT silently clobber a DIFFERENT
+                    # existing connection. Two independent networks in one /stage
+                    # that happen to share a node name (every template has an
+                    # "OUTPUT" null) would otherwise cross-wire: building the
+                    # second silently rewired the first. Refuse on a real
+                    # conflict -- the undo group rolls this build back, leaving
+                    # the existing network intact.
+                    reused_ids = {e["id"] for e in nodes_reused}
                     for conn in raw_connections:
                         source = id_to_hou[conn["from"]]
                         target = id_to_hou[conn["to"]]
                         input_idx = conn.get("input", 0)
                         output_idx = conn.get("output", 0)
+                        if conn["to"] in reused_ids:
+                            cur = target.inputs()
+                            occupied = (cur[input_idx]
+                                        if input_idx < len(cur) else None)
+                            if occupied is not None and occupied != source:
+                                raise SynapseUserError(
+                                    "'%s' already exists wired to '%s' on input "
+                                    "%d, but this build wires it to '%s' -- a "
+                                    "name collision with a different network."
+                                    % (target.name(), occupied.name(),
+                                       input_idx, source.name()),
+                                    suggestion=(
+                                        "Nothing was changed. Rename the node in "
+                                        "your graph, or build into a fresh LOP "
+                                        "network -- build_graph reuses a node of "
+                                        "the same name+type, so two networks in "
+                                        "one /stage must not share node names."),
+                                )
                         target.setInput(input_idx, source, output_idx)
                         connections_made.append({
                             "from": source.path(),

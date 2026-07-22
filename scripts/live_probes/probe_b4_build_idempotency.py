@@ -101,12 +101,40 @@ def main():
     except Exception as e:
         failures.append("B5: wrong error type %s: %s" % (type(e).__name__, e))
 
+    # Cross-network seam (found by the loop-close fleet): a DIFFERENT network
+    # sharing a node name must NOT silently reuse+rewire the first one.
+    print()
+    for c in list(hou.node("/stage").children()):
+        c.destroy()
+    h._handle_solaris_build_graph({
+        "parent": "/stage",
+        "nodes": [{"id": "g", "type": "sopcreate", "name": "geoA"},
+                  {"id": "o", "type": "null", "name": "OUTPUT"}],
+        "connections": [{"from": "g", "to": "o", "input": 0}],
+        "display_node": "o"})
+    a_wire = hou.node("/stage/OUTPUT").inputs()[0].name()
+    try:
+        h._handle_solaris_build_graph({
+            "parent": "/stage",
+            "nodes": [{"id": "g", "type": "sopcreate", "name": "geoB"},
+                      {"id": "o", "type": "null", "name": "OUTPUT"}],
+            "connections": [{"from": "g", "to": "o", "input": 0}],
+            "display_node": "o"})
+        failures.append("cross-network: 2nd net with colliding name was NOT refused")
+    except SynapseUserError as e:
+        print("cross-network refused:", str(e)[:90])
+        if hou.node("/stage/OUTPUT").inputs()[0].name() != a_wire:
+            failures.append("cross-network: first network was clobbered")
+        if hou.node("/stage/geoB") is not None:
+            failures.append("cross-network: refused build left orphan geoB")
+
     print()
     if failures:
         for f in failures:
             print("FAIL:", f)
         return 1
-    print("PASS: identical rebuild converges; unknown type rejected clean")
+    print("PASS: rebuild converges; unknown type rejected; cross-network "
+          "collision refused without clobbering the first network")
     return 0
 
 

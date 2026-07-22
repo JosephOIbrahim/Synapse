@@ -789,6 +789,13 @@ def _apply_section_boxes(parent_node, id_to_hou: Dict[str, Any],
     duplicates. Best-effort throughout -- sectioning is cosmetic and must never
     fail a build, so every hou call is guarded and a failure just skips that
     box. Returns the names of the boxes actually drawn.
+
+    KNOWN LIMITATION (multi-network, documented fast-follow): the box names are
+    stage-global, so building a SECOND independent network into the same /stage
+    sweeps the first network's section boxes and draws only the second's. The
+    nodes and wiring of both networks are untouched -- only the first's visual
+    grouping is lost. The common case is one network per /stage; per-network box
+    identity (namespacing by display_node) is deferred.
     """
     if not _HOU_AVAILABLE or parent_node is None:
         return []
