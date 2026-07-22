@@ -20,7 +20,12 @@ from ..core.errors import NodeNotFoundError, HoudiniUnavailableError, SynapseUse
 from .solaris_graph_templates import expand_template, TEMPLATES
 from .handler_helpers import (
     _layout_dag_vertical, _layout_vertical_chain, _free_origin,
+    _apply_section_boxes,
 )
+# Rank table is the single source of truth for both wiring order (assemble) and
+# the M10 section bands here -- imported, never duplicated. Sibling data import,
+# no cycle (assemble -> handler_helpers, graph -> handler_helpers + assemble).
+from .handlers_solaris_assemble import _SOLARIS_NODE_ORDER, _UNRANKED_RANK
 
 logger = logging.getLogger(__name__)
 
@@ -598,11 +603,40 @@ class SolarisGraphMixin:
                             })
 
                     # 3. Wire connections
+                    #
+                    # B4 seam: reuse-by-name is safe for a true rebuild (the
+                    # reused node's inputs already match the spec, so setInput is
+                    # a no-op), but it must NOT silently clobber a DIFFERENT
+                    # existing connection. Two independent networks in one /stage
+                    # that happen to share a node name (every template has an
+                    # "OUTPUT" null) would otherwise cross-wire: building the
+                    # second silently rewired the first. Refuse on a real
+                    # conflict -- the undo group rolls this build back, leaving
+                    # the existing network intact.
+                    reused_ids = {e["id"] for e in nodes_reused}
                     for conn in raw_connections:
                         source = id_to_hou[conn["from"]]
                         target = id_to_hou[conn["to"]]
                         input_idx = conn.get("input", 0)
                         output_idx = conn.get("output", 0)
+                        if conn["to"] in reused_ids:
+                            cur = target.inputs()
+                            occupied = (cur[input_idx]
+                                        if input_idx < len(cur) else None)
+                            if occupied is not None and occupied != source:
+                                raise SynapseUserError(
+                                    "'%s' already exists wired to '%s' on input "
+                                    "%d, but this build wires it to '%s' -- a "
+                                    "name collision with a different network."
+                                    % (target.name(), occupied.name(),
+                                       input_idx, source.name()),
+                                    suggestion=(
+                                        "Nothing was changed. Rename the node in "
+                                        "your graph, or build into a fresh LOP "
+                                        "network -- build_graph reuses a node of "
+                                        "the same name+type, so two networks in "
+                                        "one /stage must not share node names."),
+                                )
                         target.setInput(input_idx, source, output_idx)
                         connections_made.append({
                             "from": source.path(),
@@ -637,6 +671,19 @@ class SolarisGraphMixin:
                             sorted_ids, raw_connections, id_to_hou,
                             start_x=ox, start_y=oy,
                         )
+
+                    # 5b. Section boxes (M10) — after layout so fitAroundContents
+                    # reads final positions; idempotent so a rebuild refreshes
+                    # rather than stacks. Cosmetic + best-effort: never fails the
+                    # build. Ranks come from the same table assemble_chain wires by.
+                    node_ranks = {
+                        nid: _SOLARIS_NODE_ORDER.get(
+                            str(node_map[nid]["type"]).split("::")[0].lower(),
+                            _UNRANKED_RANK)
+                        for nid in id_to_hou
+                    }
+                    sections = _apply_section_boxes(
+                        parent_node, id_to_hou, node_ranks)
 
                     # 6. Display flag AFTER layout — now the cook triggered
                     # by setDisplayFlag runs on a fully-laid-out, wired
@@ -686,6 +733,7 @@ class SolarisGraphMixin:
                 "status": status,
                 "nodes_created": nodes_created,
                 "nodes_reused": nodes_reused,
+                "sections": sections,
                 "parms_missed": parms_missed,
                 "connections_made": connections_made,
                 "display_node": display_hou.path(),
