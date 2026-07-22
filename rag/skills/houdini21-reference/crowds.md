@@ -543,7 +543,7 @@ matlib.cook(force=True)                       # MUST cook matlib before adding s
 assign = stage_context.createNode("assignmaterial", "assign_crowd")
 assign.setInput(0, matlib)
 
-karma = stage_context.createNode("karma", "karma_render")
+karma = stage_context.createNode("karmarendersettings", "karma_render")
 karma.setInput(0, assign)
 
 # Karma settings optimized for crowd background rendering

@@ -27,7 +27,23 @@ class SynapseUserError(SynapseError):
     """User-caused errors (bad input, missing resources).
 
     These do NOT trip the circuit breaker.
+
+    ``suggestion`` carries the remediation the raiser already knows -- e.g. the
+    LOP catalog's ``known_absent`` entry for 'grid' is "use the plane LOP".
+    Several call sites (handlers_solaris_graph.py, handlers_solaris_compose.py)
+    were already passing it; without an ``__init__`` accepting it, every one of
+    those raises died as ``TypeError: takes no keyword arguments`` inside a bare
+    ``except``, so the designed diagnostic surfaced as internal Python noise.
+    Positional use (``SynapseUserError("msg")``) is unchanged.
     """
+
+    def __init__(self, *args, suggestion: str | None = None):
+        super().__init__(*args)
+        self.suggestion = suggestion
+
+    def __str__(self) -> str:
+        base = super().__str__()
+        return f"{base} -- {self.suggestion}" if self.suggestion else base
 
 
 class SynapseServiceError(SynapseError):

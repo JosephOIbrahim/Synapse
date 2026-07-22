@@ -1,7 +1,7 @@
 # Solaris/LOP Node Types Reference
 
 ## Triggers
-solaris, lop, lops, stage, usd, sopimport, sublayer, reference, merge, edit, camera, light, domelight, rectlight, spherelight, distantlight, disklight, cylinderlight, materiallibrary, assignmaterial, karmarenderproperties, karmarendersettings, usdrender, render settings, render properties, configureprimitive, componentoutput, switch, null, configurestage, sceneimport, sopcreate, instancer, layout, copytopoints, paintinstances, renderproduct, rendersettings, rendergeometrysettings, mtlxstandard_surface, materiallinker, create node lop, lop node python, solaris python, stage node
+solaris, lop, lops, stage, usd, sopimport, sublayer, reference, merge, edit, camera, light, domelight, rectlight, spherelight, distantlight, disklight, cylinderlight, materiallibrary, assignmaterial, karmarendersettings, karmarendersettings, usdrender, render settings, render properties, configureprimitive, componentoutput, switch, null, configurestage, sceneimport, sopcreate, instancer, layout, copytopoints, paintinstances, renderproduct, rendersettings, rendergeometrysettings, mtlxstandard_surface, materiallinker, create node lop, lop node python, solaris python, stage node
 
 ## Context
 Comprehensive Python reference for creating and configuring Solaris (LOP) nodes via `hou.node().createNode()` and `parm().set()`. Covers stage management, geometry import, materials, all light types, cameras, render settings, and instancing nodes. H22 renames (W.3, live-verified 22.0.368): the `instancer` LOP is now `copytopoints` and the `layout` LOP is now `paintinstances` — the old spellings are gone from type lookup, emit canonical names only (`pointinstancer` is a NEW H22 node, not the rename). Lighting Law: intensity is ALWAYS 1.0; brightness is controlled exclusively by exposure (logarithmic, in stops).
@@ -427,8 +427,8 @@ import hou
 
 stage = hou.node("/stage")
 
-# karmarenderproperties: sets Karma-specific quality on the USD stage
-krp = stage.createNode("karmarenderproperties", "karma_settings")
+# karmarendersettings: sets Karma-specific quality on the USD stage
+krp = stage.createNode("karmarendersettings", "karma_settings")
 
 # --- Sample counts ---
 # Preview: 16-32 samples. Production: 128-256.
@@ -695,7 +695,7 @@ cam.parm("rx").set(-10.0)
 cam_path = cam.parm("primpath").eval()
 
 # 7. Karma render settings (preview quality)
-krp = stage.createNode("karmarenderproperties", "karma")
+krp = stage.createNode("karmarendersettings", "karma")
 krp.parm("karma:global:pathtracedsamples").set(32)
 krp.parm("karma:global:pixeloracle").set("uniform")
 krp.parm("karma:global:diffuselimit").set(2)

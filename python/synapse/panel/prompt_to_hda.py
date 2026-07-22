@@ -235,7 +235,7 @@ Use these as starting points when the request matches:
   Exposure controls brightness -- NEVER set intensity above 1.0.
 - **Material setup**: materiallibrary -> assignmaterial -> OUT
   Promote: material paths, geometry assignments
-- **Render setup**: karmarenderproperties -> OUT
+- **Render setup**: karmarendersettings -> OUT
   Promote: pixel samples, convergence mode
 
 ### Parameter Promotion Rules

@@ -38,7 +38,7 @@ materiallibrary ───┘(input 1)
               + rendergeometrysettings for per-prim render overrides
 ```
 
-- The production render terminal is `rendersettings` / `renderproduct` / `usdrender_rop` (or `karmarendersettings`). Do **not** terminate on `karmarenderproperties`.
+- The production render terminal is `usdrender_rop`. Do **not** terminate the visible chain on the settings node (`karmarendersettings`) — it branches to the ROP, it is not the tail. NOTE: author `karmarendersettings`; the older `karmarenderproperties` spelling is deprecated (Houdini 21.0, "Use karmarendersettings instead").
 - `usdrender` is NOT a valid node type in 21.0.671 — use `usdrender_rop`.
 
 ### 3. Shot assembly — layered, NOT a single linear chain
@@ -132,7 +132,7 @@ key.parm("xn__inputsenableColorTemperature_omb").set(True)
 key.parm("xn__inputscolorTemperature_wcb").set(5500)  # Daylight
 
 # 6. Render Properties
-render_props = stage.createNode("karmarenderproperties", "render_settings")
+render_props = stage.createNode("karmarendersettings", "render_settings")
 render_props.setInput(0, key)
 # render_props.parm("camera").set("/shot_cam")       # explicit camera path
 # render_props.parm("resolutionx").set(1920)
@@ -190,7 +190,7 @@ key.parm("xn__inputsintensity_i0a").set(1.0)
 key.parm("xn__inputsexposure_vya").set(1.0)
 
 # --- Render settings ---
-render_props = stage.createNode("karmarenderproperties", "render_settings")
+render_props = stage.createNode("karmarendersettings", "render_settings")
 render_props.setInput(0, key)
 
 # --- Output ---
@@ -209,9 +209,12 @@ import hou
 # After building the Solaris chain in /stage:
 # Karma LOP feeds usdrender ROP in /out
 
-# Karma LOP (inside /stage, before OUTPUT null)
+# Karma render-settings LOP (inside /stage, before OUTPUT null).
+# NOTE: the old monolithic `karma` LOP is deprecated (Houdini 21.0, "Replaced
+# by Karma Render Settings and USD Render") -- author karmarendersettings for
+# the settings/output prims and let a usdrender_rop execute them.
 stage = hou.node("/stage")
-karma = stage.createNode("karma", "karma_render")
+karma = stage.createNode("karmarendersettings", "karma_render")
 karma.parm("camera").set("/shot_cam")
 karma.parm("picture").set("$HIP/render/$HIPNAME.$OS.$F4.exr")
 # Wire karma before output
@@ -266,7 +269,7 @@ camera               400   (camera)
 rectlight            500   (area light)
 distantlight         500   (distant light)
 domelight            600   (environment)
-karmarenderproperties 700  (render settings)
+karmarendersettings 700  (render settings)
 null                 900   (OUTPUT)
 ```
 

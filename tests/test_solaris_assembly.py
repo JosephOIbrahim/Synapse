@@ -24,8 +24,13 @@ sys.path.insert(0, python_dir)
 
 from synapse.server.handlers_solaris_assemble import (
     _SOLARIS_NODE_ORDER,
+    _UNRANKED_RANK,
+    _UNBOUNDED_INPUT_TYPES,
     _get_sort_key,
+    _is_unranked,
     _merge_chain_order,
+    _next_free_input,
+    _reconstruct_chain,
 )
 from synapse.routing.planner import _build_solaris_scene_pipeline
 from synapse.panel.system_prompt import _SOLARIS_CONTEXT_GUIDANCE
@@ -104,9 +109,19 @@ class TestSolarisNodeOrder:
         # Sits with the geometry-import tier (~100-150).
         assert _SOLARIS_NODE_ORDER["reference"] <= _SOLARIS_NODE_ORDER["sceneimport"]
 
-    def test_unknown_type_gets_default(self):
-        """Unknown node types get default sort key 800 via _get_sort_key."""
-        # _get_sort_key expects a mock node with type().name()
+    def test_unknown_type_sorts_upstream_of_the_render_tier(self):
+        """B1: an unranked type must never tie with, or follow, the render ROP.
+
+        This test previously asserted the default WAS 800 -- byte-identical to
+        usdrender_rop's own rank. Because _merge_chain_order only inserts before
+        a node whose key is strictly greater, that tie meant every unranked type
+        was appended AFTER the render output: wired, reported, laid out, and
+        contributing nothing to the render. 184 of the build's 218 LOP types
+        took that path, `plane` and `shadowcatcher` among them.
+
+        The invariant is asserted as a relationship rather than a literal, so
+        re-tuning the tiers cannot silently reintroduce the tie.
+        """
         class _MockType:
             def name(self):
                 return "some_unknown_node"
@@ -115,7 +130,27 @@ class TestSolarisNodeOrder:
             def type(self):
                 return _MockType()
 
-        assert _get_sort_key(_MockNode()) == 800
+        default = _get_sort_key(_MockNode())
+        assert default == _UNRANKED_RANK
+        assert default < _SOLARIS_NODE_ORDER["usdrender_rop"], (
+            "an unranked type must sort strictly upstream of the render ROP")
+        assert default < _SOLARIS_NODE_ORDER["karmarendersettings"], (
+            "an unranked type must sort upstream of the whole render tier")
+        assert default > _SOLARIS_NODE_ORDER["materiallibrary"], (
+            "but downstream of scene content, so it does not jump the spine")
+
+    def test_ground_plane_and_shadow_catcher_are_ranked(self):
+        """B1 regression: the two types the recon predicted would land after
+        the ROP. Both verified present on 22.0.368; both were unranked."""
+        for type_name in ("plane", "shadowcatcher", "backgroundplate"):
+            assert type_name in _SOLARIS_NODE_ORDER, f"{type_name} unranked"
+            assert (_SOLARIS_NODE_ORDER[type_name]
+                    < _SOLARIS_NODE_ORDER["usdrender_rop"])
+
+    def test_payload_phantom_is_not_in_the_rank_table(self):
+        """`payload` is absent from the 22.0.368 LOP catalog -- it carried rank
+        155 since H21 and could never have matched a real node."""
+        assert "payload" not in _SOLARIS_NODE_ORDER
 
     def test_known_type_via_get_sort_key(self):
         """Known node types return their table value via _get_sort_key."""
@@ -290,7 +325,8 @@ class TestSolarisScenePipeline:
         result = _build_solaris_scene_pipeline({}, {"add_render"})
         code = result[0].payload["code"]
         assert "# --- Render Settings ---" in code
-        assert "karmarenderproperties" in code
+        # B9: emit the non-deprecated karmarendersettings.
+        assert "karmarendersettings" in code
         assert "karma" in code
 
     def test_all_modifiers_full_chain(self):
@@ -343,3 +379,123 @@ class TestSystemPromptWiring:
         """Guidance is a non-empty string."""
         assert isinstance(_SOLARIS_CONTEXT_GUIDANCE, str)
         assert len(_SOLARIS_CONTEXT_GUIDANCE) > 100
+
+
+# =============================================================================
+# B3 -- merge-DAG awareness and non-destructive wiring
+# =============================================================================
+
+class _B3FakeType:
+    def __init__(self, name, max_inputs=1):
+        self._name = name
+        self._max = max_inputs
+
+    def name(self):
+        return self._name
+
+    def maxNumInputs(self):
+        return self._max
+
+
+class _B3FakeNode:
+    """Minimal hou.Node stand-in: inputs() returns the connected list, with
+    None for unoccupied slots, exactly as Houdini does."""
+
+    def __init__(self, name, type_name="null", max_inputs=1, path=None):
+        self.name = name
+        self._type = _B3FakeType(type_name, max_inputs)
+        self._inputs = []
+        self._path = path or "/stage/%s" % name
+
+    def type(self):
+        return self._type
+
+    def inputs(self):
+        return tuple(self._inputs)
+
+    def outputs(self):
+        return ()
+
+    def path(self):
+        return self._path
+
+    def connect(self, index, upstream):
+        while len(self._inputs) <= index:
+            self._inputs.append(None)
+        self._inputs[index] = upstream
+        return self
+
+
+class TestReconstructChainSeesBranches:
+    """_reconstruct_chain followed input 0 only, so a merge DAG was flattened
+    into a line and every other branch became invisible -- eligible to be wired
+    over, and absent from the response. Merge input index IS USD opinion
+    strength, so a lost branch changes which opinion wins."""
+
+    def test_linear_chain_has_no_branches(self):
+        root = _B3FakeNode("root")
+        mid = _B3FakeNode("mid").connect(0, root)
+        tail = _B3FakeNode("tail").connect(0, mid)
+        spine, branches = _reconstruct_chain(tail)
+        assert [n.name for n in spine] == ["root", "mid", "tail"]
+        assert branches == []
+
+    def test_merge_branches_are_reported_not_swallowed(self):
+        geo_a = _B3FakeNode("geo_a")
+        geo_b = _B3FakeNode("geo_b")
+        geo_c = _B3FakeNode("geo_c")
+        merge = _B3FakeNode("merge1", "merge", max_inputs=9999)
+        merge.connect(0, geo_a).connect(1, geo_b).connect(2, geo_c)
+        rop = _B3FakeNode("rop", "usdrender_rop").connect(0, merge)
+
+        spine, branches = _reconstruct_chain(rop)
+        # The spine still walks input 0 -- linear ordering of a DAG is not
+        # meaningful -- but the other two assets are no longer invisible.
+        assert [n.name for n in spine] == ["geo_a", "merge1", "rop"]
+        assert sorted(n.name for n in branches) == ["geo_b", "geo_c"]
+
+
+class TestUnboundedInputsPreserveStrength:
+    def test_the_frozen_set_matches_the_live_catalog(self):
+        """Every name in _UNBOUNDED_INPUT_TYPES must be variadic on the build
+        the committed catalog was harvested from."""
+        import json
+        import pathlib
+        fp = (pathlib.Path(__file__).resolve().parents[1]
+              / "harness" / "notes" / "h22_lop_catalog_live_22.0.368.json")
+        if not fp.exists():          # catalog is build-stamped; skip elsewhere
+            pytest.skip("no 22.0.368 catalog in this tree")
+        types = json.loads(fp.read_text(encoding="utf-8"))["types"]
+        for name in _UNBOUNDED_INPUT_TYPES:
+            assert name in types, f"{name} absent from the live catalog"
+            assert types[name]["max_inputs"] >= 9999, (
+                f"{name} is not variadic on 22.0.368")
+
+    def test_next_free_input_skips_occupied_slots(self):
+        merge = _B3FakeNode("merge1", "merge", max_inputs=9999)
+        merge.connect(0, _B3FakeNode("a")).connect(1, _B3FakeNode("b"))
+        assert _next_free_input(merge) == 2
+
+    def test_next_free_input_reuses_a_hole(self):
+        merge = _B3FakeNode("merge1", "merge", max_inputs=9999)
+        merge.connect(0, _B3FakeNode("a")).connect(2, _B3FakeNode("c"))
+        assert _next_free_input(merge) == 1
+
+    def test_empty_node_takes_input_zero(self):
+        assert _next_free_input(_B3FakeNode("fresh")) == 0
+
+
+class TestUnrankedDetection:
+    def test_known_type_is_not_unranked(self):
+        assert not _is_unranked(_B3FakeNode("m", "materiallibrary"))
+
+    def test_unknown_type_is_unranked(self):
+        assert _is_unranked(_B3FakeNode("x", "some_unknown_node"))
+
+    def test_versioned_name_resolves_to_its_base_rank(self):
+        """Houdini resolves a bare name to the newest version, so a node asked
+        for as `domelight` reports `domelight::3.0`. A lookup that does not
+        strip the version silently misses and the node lands unranked."""
+        versioned = _B3FakeNode("d", "domelight::3.0")
+        assert not _is_unranked(versioned)
+        assert _get_sort_key(versioned) == _SOLARIS_NODE_ORDER["domelight"]

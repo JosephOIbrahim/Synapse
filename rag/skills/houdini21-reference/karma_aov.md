@@ -94,7 +94,7 @@ def setup_production_aovs(karma_node_path):
                 type_parm.set(dtype)
         print(f"Configured {count} AOVs for production")
 
-setup_production_aovs("/stage/karmarenderproperties1")
+setup_production_aovs("/stage/karmarendersettings1")
 ```
 
 ```python
@@ -155,7 +155,7 @@ def setup_denoising(karma_props_path, denoiser="oidn"):
     print(f"Auxiliary AOVs: {denoise_aovs}")
     print("Rule: denoise beauty only, NOT utility AOVs")
 
-setup_denoising("/stage/karmarenderproperties1", denoiser="oidn")
+setup_denoising("/stage/karmarendersettings1", denoiser="oidn")
 ```
 
 ```python
@@ -249,7 +249,7 @@ def configure_deep_output(karma_props_path, output_path="$HIP/render/deep/shot.$
 
     print(f"Deep output: {output_path}")
 
-configure_deep_output("/stage/karmarenderproperties1")
+configure_deep_output("/stage/karmarendersettings1")
 ```
 
 ```python

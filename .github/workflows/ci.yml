@@ -27,7 +27,12 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: JosephOIbrahim/Moneta
-          ref: main
+          # PINNED (was `main`): tracking the branch tip made CI and every
+          # developer workstation disagree about what "moneta" means on any
+          # given day, and the ratchet suite baseline (harness/verify/
+          # suite_baseline.json) is measured against it. Keep in lockstep with
+          # the moneta extra in pyproject.toml.
+          ref: v1.2.0-rc2
           ssh-key: ${{ secrets.MONETA_DEPLOY_KEY }}
           path: _moneta
 

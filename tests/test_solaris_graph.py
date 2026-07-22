@@ -473,9 +473,12 @@ class TestTemplates:
             chain.append(id_to_type[current])
 
         # Main chain: matlib → camera → domelight → karma → null
+        # B9: templates now emit karmarendersettings (karmarenderproperties is
+        # deprecated on 22.0.368 -- vendor deprecationInfo: "Use
+        # karmarendersettings instead"; near-superset parm interface, 330 vs 293).
         assert chain == [
             "materiallibrary", "camera", "domelight",
-            "karmarenderproperties", "null",
+            "karmarendersettings", "null",
         ], f"Wrong canonical order: {chain}"
 
         # ROP must branch off karma_settings (not in main chain)
@@ -611,12 +614,13 @@ class TestTemplates:
                 continue
             result = fn()
             node_types = {n["type"] for n in result["nodes"]}
+            # B9: templates emit the non-deprecated karmarendersettings.
             if name == "render_pass_split":
                 # render_pass_split has per-pass render settings
-                assert "karmarenderproperties" in node_types
+                assert "karmarendersettings" in node_types
             else:
-                assert "karmarenderproperties" in node_types, \
-                    f"Template '{name}' missing karmarenderproperties"
+                assert "karmarendersettings" in node_types, \
+                    f"Template '{name}' missing karmarendersettings"
                 assert "usdrender_rop" in node_types, \
                     f"Template '{name}' missing usdrender_rop"
 
@@ -646,9 +650,24 @@ class TestSystemPromptGuidance:
         assert "sublayer_stack" in _SOLARIS_CONTEXT_GUIDANCE
 
     def test_contains_merge_ordering(self):
-        """Guidance explains merge input ordering."""
+        """Guidance explains merge input ordering -- and states the DIRECTION.
+
+        The prior assertion accepted either polarity ("opinion strength" OR
+        "input 0" appearing anywhere), so it stayed green while the prompt
+        taught the inverted rule. Ground truth is SideFX's own shipped doc,
+        houdini/help/nodes.zip -> lop/merge.txt: "Layers in earlier inputs are
+        weaker than layers in later inputs" (and lop/sublayer.txt: "weaker to
+        stronger, from left to right"). The handlers already encode this
+        correctly (handlers_solaris_graph.py:196,233,239); the prompt did not.
+        """
         from synapse.panel.system_prompt import _SOLARIS_CONTEXT_GUIDANCE
-        assert "opinion strength" in _SOLARIS_CONTEXT_GUIDANCE or "input 0" in _SOLARIS_CONTEXT_GUIDANCE
+        g = _SOLARIS_CONTEXT_GUIDANCE
+        assert "HIGHER input index = STRONGER" in g, (
+            "merge guidance must state the direction explicitly")
+        assert "input 0 is the WEAKEST" in g
+        # The inverted claim must not reappear, in any casing.
+        assert "0 has highest opinion" not in g.lower()
+        assert "input 0 is the strongest" not in g.lower()
 
 
 # =============================================================================
@@ -820,3 +839,136 @@ class TestVariantSelector:
     def test_display_node_is_output(self):
         result = variant_selector()
         assert result["display_node"] == "output"
+
+
+# =============================================================================
+# B4 / B5 -- idempotency and pre-flight recognition
+# =============================================================================
+
+class _B4Type:
+    def __init__(self, name):
+        self._name = name
+
+    def name(self):
+        return self._name
+
+
+class _B4Node:
+    def __init__(self, name, type_name, parent_path="/stage"):
+        self._name = name
+        self._type = _B4Type(type_name)
+        self._path = "%s/%s" % (parent_path, name)
+
+    def type(self):
+        return self._type
+
+    def path(self):
+        return self._path
+
+
+class _B4Parent:
+    """Records createNode calls so a duplicate is visible in the assertion."""
+
+    def __init__(self, existing=None):
+        self._children = dict(existing or {})
+        self.created = []
+
+    def node(self, name):
+        return self._children.get(name)
+
+    def createNode(self, node_type, node_name):
+        self.created.append((node_type, node_name))
+        n = _B4Node(node_name, node_type)
+        self._children[node_name] = n
+        return n
+
+
+class TestEnsureNodeIdempotency:
+    """B4: build_graph used a raw createNode. Houdini auto-uniquifies a
+    colliding name, so an identical second build produced a whole second
+    network drawn on top of the first (OUTPUT -> OUTPUT1) and moved the display
+    flag to it, while reporting status='created' with no warnings."""
+
+    def test_creates_when_absent(self):
+        from synapse.server.handlers_solaris_graph import _ensure_node
+        parent = _B4Parent()
+        node, created = _ensure_node(parent, "materiallibrary", "matlib")
+        assert created is True
+        assert parent.created == [("materiallibrary", "matlib")]
+
+    def test_reuses_when_name_and_type_match(self):
+        from synapse.server.handlers_solaris_graph import _ensure_node
+        parent = _B4Parent({"matlib": _B4Node("matlib", "materiallibrary")})
+        node, created = _ensure_node(parent, "materiallibrary", "matlib")
+        assert created is False
+        assert parent.created == [], "must not create a duplicate"
+
+    def test_reuse_tolerates_a_versioned_existing_type(self):
+        """Houdini resolves a bare name to the newest version, so a node asked
+        for as `domelight` reports `domelight::3.0`. Matching on the full name
+        would miss and duplicate."""
+        from synapse.server.handlers_solaris_graph import _ensure_node
+        parent = _B4Parent({"key": _B4Node("key", "domelight::3.0")})
+        node, created = _ensure_node(parent, "domelight", "key")
+        assert created is False
+        assert parent.created == []
+
+    def test_name_collision_across_types_is_raised_not_papered_over(self):
+        """guards.ensure_node matches on NAME alone and would hand back a
+        `null` when a `merge` was asked for. That is a real conflict."""
+        from synapse.server.handlers_solaris_graph import _ensure_node
+        from synapse.core.errors import SynapseUserError
+        parent = _B4Parent({"OUTPUT": _B4Node("OUTPUT", "null")})
+        with pytest.raises(SynapseUserError) as exc:
+            _ensure_node(parent, "merge", "OUTPUT")
+        assert "null" in str(exc.value) and "merge" in str(exc.value)
+        assert parent.created == []
+        assert exc.value.suggestion, "must carry a remediation"
+
+
+# =============================================================================
+# B9 -- templates must not emit a type deprecated on the target build
+# =============================================================================
+
+class TestNoDeprecatedTypesEmitted:
+    """karmarenderproperties was deprecated in Houdini 21.0 (vendor
+    deprecationInfo: "Use karmarendersettings instead") yet SYNAPSE emitted it
+    from every render template. It still creates and renders -- deprecated is
+    not phantom -- so this never failed loudly; it just shipped tomorrow's
+    breakage today. This pins every template's node types against the committed
+    live catalog's `deprecated` flag, so the NEXT deprecation is caught on the
+    build that introduces it rather than by a future audit.
+    """
+
+    def _deprecated_types(self):
+        import json
+        import pathlib
+        fp = (pathlib.Path(__file__).resolve().parents[1]
+              / "harness" / "notes" / "h22_lop_catalog_live_22.0.368.json")
+        if not fp.exists():
+            return None
+        types = json.loads(fp.read_text(encoding="utf-8"))["types"]
+        return {n for n, r in types.items() if r.get("deprecated")}
+
+    def test_catalog_marks_the_expected_pair_deprecated(self):
+        dep = self._deprecated_types()
+        if dep is None:
+            pytest.skip("no 22.0.368 catalog in this tree")
+        # Guards the guard: if the catalog stopped marking these, the sweep
+        # below would pass vacuously.
+        assert "karmarenderproperties" in dep
+        assert "karma" in dep
+        assert "karmarendersettings" not in dep
+
+    def test_no_template_emits_a_deprecated_type(self):
+        dep = self._deprecated_types()
+        if dep is None:
+            pytest.skip("no 22.0.368 catalog in this tree")
+        offenders = {}
+        for name, fn in TEMPLATES.items():
+            result = fn()
+            bad = sorted({n["type"] for n in result["nodes"]
+                          if n["type"].split("::")[0] in dep})
+            if bad:
+                offenders[name] = bad
+        assert not offenders, "templates emit deprecated LOP types: %s" % offenders

@@ -1470,9 +1470,13 @@ class RenderHandlerMixin:
         Orchestrates multi-frame renders through the RenderFarmOrchestrator,
         which handles validation, diagnostics, and automatic re-renders.
 
-        Auto-fix remedies target the Karma Render Properties LOP (where the
+        Auto-fix remedies target the Karma Render Settings LOP (where the
         real quality parms live), not the usdrender ROP itself. Discovery:
-        ROP.loppath -> walk LOP children for 'karmarenderproperties' type.
+        ROP.loppath -> walk LOP children for the karma render-settings type.
+        Matches both the current 'karmarendersettings' and the deprecated
+        'karmarenderproperties' (B9): SYNAPSE now emits the former, but a scene
+        authored earlier -- or by hand -- carries the latter, and the reader
+        must find either or auto-fix silently no-ops on real shots.
         """
         from .render_farm import RenderFarmOrchestrator, RenderCallbacks
 
@@ -1483,9 +1487,10 @@ class RenderHandlerMixin:
         auto_fix = resolve_param_with_default(payload, "auto_fix", True)
         max_retries = int(resolve_param_with_default(payload, "max_retries", 3))
 
-        # Discover the Karma Render Properties LOP where quality parms live.
+        # Discover the Karma render-settings LOP where quality parms live.
         # The ROP's loppath parm points to the LOP network; we walk its
-        # children looking for a karmarenderproperties node.
+        # children for the settings node -- current OR deprecated spelling.
+        _KARMA_SETTINGS_TYPES = ("karmarendersettings", "karmarenderproperties")
         karma_lop_path = None
         if HOU_AVAILABLE and rop:
             try:
@@ -1500,7 +1505,11 @@ class RenderHandlerMixin:
                                 # Walk up to the parent LOP network
                                 lop_net = lop_node.parent() if lop_node.parent() else lop_node
                                 for child in lop_net.children():
-                                    if child.type().name() == "karmarenderproperties":
+                                    # base name -- karmarendersettings has no
+                                    # versioned sibling on 22.0.368, but strip
+                                    # defensively in case one ships later.
+                                    if (child.type().name().split("::")[0]
+                                            in _KARMA_SETTINGS_TYPES):
                                         karma_lop_path = child.path()
                                         break
             except Exception as exc:

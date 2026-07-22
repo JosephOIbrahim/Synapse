@@ -814,10 +814,25 @@ class SynapseMemory:
                 store = MonetaBackedStore.from_storage_dir(storage_dir)
                 logger.info("Memory backend: moneta (%s)", store.embedder_id)
                 return store
-            except Exception as exc:
+            except ImportError as exc:
+                # Intended path: moneta not installed -> quiet jsonl fallback.
                 logger.warning(
-                    "SYNAPSE_MEMORY_BACKEND=moneta unavailable (%s); "
+                    "SYNAPSE_MEMORY_BACKEND=moneta not installed (%s); "
                     "falling back to jsonl.", exc,
+                )
+            except Exception as exc:
+                # NOT the intended path: moneta IS installed but constructing
+                # the store failed -- an API drift (unpinned, undeclared dep) or
+                # a real defect. A blanket warning here read identically to
+                # "not installed" and silently served jsonl while the operator
+                # believed moneta was active. Name the resolved copy and raise
+                # the level so an upgrade that breaks the adapter is loud.
+                from . import moneta_runtime as _mr
+                logger.error(
+                    "SYNAPSE_MEMORY_BACKEND=moneta is installed but failed to "
+                    "initialize (%s: %s); provenance=%s. Serving jsonl. This is "
+                    "an API-drift or defect, not a missing dependency.",
+                    type(exc).__name__, exc, _mr.moneta_provenance(),
                 )
         elif backend == "shadow":
             try:

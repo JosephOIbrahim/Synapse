@@ -15,7 +15,9 @@ except ImportError:
 
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.errors import NodeNotFoundError, HoudiniUnavailableError
-from .handler_helpers import _HOUDINI_UNAVAILABLE, _layout_vertical_chain
+from .handler_helpers import (
+    _HOUDINI_UNAVAILABLE, _layout_vertical_chain, VERTICAL_SPACING,
+)
 
 
 # Canonical Solaris chain ordering.  Lower number = earlier in chain.
@@ -40,15 +42,39 @@ _SOLARIS_NODE_ORDER: Dict[str, int] = {
     "componentgeometryvariants": 115,  # Pattern 5: merge geometry variants
     "componentmaterial": 120,       # Auto-assigns materials to geometry
     "componentoutput": 130,         # Export: name, path, thumbnail
+    # --- Scene content (B1): these were UNRANKED and therefore defaulted into
+    # the render tier. `plane` and `shadowcatcher` are the exact pair the recon
+    # predicted would land downstream of usdrender_rop and render nothing.
+    # All verified present on 22.0.368 (h22_lop_catalog_live_22.0.368.json).
+    "cube": 106, "sphere": 106, "cylinder": 106, "cone": 106,
+    "capsule": 106, "basiscurves": 106,
+    "backgroundplate": 107,         # Background plate card
+    "plane": 108,                   # Ground plane (NOT `grid` -- absent on H22)
+    "shadowcatcher": 109,           # Shadow catcher surface
+    "sopmodify": 101,               # Round-trip stage geometry through SOPs
+    "assetreference": 103,          # Reference a published asset
     # --- Layer composition ---
+    # `payload` REMOVED: phantom on 22.0.368 -- verified absent from the live
+    # catalog. It had rank 155 since H21 and could never have matched a node.
+    "graftstages": 140,             # Graft branches onto the stage
+    "merge": 145,                   # Combine branches (input index == strength)
     "sublayer": 150,                # USD sublayer composition
-    "payload": 155,                 # Deferred USD payload loading
+    "layerbreak": 158,              # Discard everything authored upstream
+    "configurelayer": 160,
+    "configurestage": 162,
+    "configureprimitive": 165,
+    "configureproperty": 166,
     # --- Materials ---
     "materiallibrary": 200,
+    "editmaterial": 210,
     "assignmaterial": 220,
-    # --- Collections & pruning ---
+    "materialvariation": 230,
+    # --- Collections, transforms & pruning ---
     "collection": 280,              # USD collection for light linking / grouping
+    "duplicate": 270,
+    "xform": 275,                   # Transform prims
     "prune": 290,                   # Prune prims from stage (deactivate)
+    "cache": 295,                   # Stage cache point
     # --- Instancing ---
     "pointinstancer": 300,          # USD native point instancing (new H22 create+edit node)
     # W.3 (H22): `instancer` was renamed `copytopoints` (whats-new 22/solaris.txt
@@ -80,7 +106,8 @@ _SOLARIS_NODE_ORDER: Dict[str, int] = {
     "setvariant": 675,              # Commit variant selection
     # --- Render (Pattern 1: Canonical LOP Chain) ---
     "karmarendersettings": 700,
-    "karmarenderproperties": 700,
+    "karmarenderproperties": 700,   # DEPRECATED on 22.0.368 -- see B9
+    "rendervar": 705,               # USD RenderVar (AOV) prim
     "rendergeometrysettings": 710,  # Per-prim render settings
     "rendersettings": 720,          # USD RenderSettings prim
     "usdrender_rop": 800,           # Final render output
@@ -88,6 +115,33 @@ _SOLARIS_NODE_ORDER: Dict[str, int] = {
     "null": 900,
     "output": 900,                  # Named output node
 }
+
+# B1 -- the rank an unlisted type receives.
+#
+# This was 800, byte-identical to `usdrender_rop`. Because _merge_chain_order
+# only inserts before an existing node whose key is STRICTLY greater, an
+# unranked node tied with the ROP and was therefore appended AFTER it: wired
+# downstream of the render output, reported as `wired`, laid out cleanly, and
+# contributing nothing to the render. 184 of the build's 218 LOP types hit this
+# path, including `plane` and `shadowcatcher`.
+#
+# 690 places an unknown type at the end of the scene-content region and
+# strictly upstream of the whole render tier (karmarendersettings:700 onward),
+# which is the safe direction to be wrong in: a node that should have been
+# later still renders, whereas a node placed after the ROP never can.
+# Unranked placements are also REPORTED (result["unranked"]), because a guess
+# the artist cannot see is indistinguishable from a decision.
+_UNRANKED_RANK = 690
+
+# Types whose maxNumInputs is variadic on 22.0.368 (verified:
+# h22_lop_catalog_live_22.0.368.json -- 8 of 218). For these the input INDEX
+# carries USD opinion strength (higher index == stronger; SideFX lop/merge.txt),
+# so overwriting input 0 silently changes which opinion wins. The wiring loop
+# appends to the next free input on these instead of clobbering.
+_UNBOUNDED_INPUT_TYPES = frozenset({
+    "addvariant", "graftstages", "merge", "reference",
+    "shotswitch", "sublayer", "switch",
+})
 
 # Named chain templates for multi-node tool creation (RELAY-SOLARIS Phase 2)
 _SOLARIS_CHAIN_TEMPLATES: Dict[str, List[str]] = {
@@ -118,10 +172,47 @@ _SOLARIS_CHAIN_TEMPLATES: Dict[str, List[str]] = {
 }
 
 
+def _base_type_name(node) -> str:
+    """Version-stripped, lowercased type name.
+
+    Houdini resolves a bare name to the NEWEST version at creation, so a node
+    asked for as `domelight` reports `domelight::3.0`. Every lookup keyed on the
+    requested spelling must strip the version or it silently misses.
+    """
+    return node.type().name().split("::")[0].lower()
+
+
 def _get_sort_key(node) -> int:
-    """Return canonical sort key for a LOP node type."""
-    type_name = node.type().name().split("::")[0].lower()
-    return _SOLARIS_NODE_ORDER.get(type_name, 800)
+    """Return canonical sort key for a LOP node type.
+
+    Unlisted types receive _UNRANKED_RANK (upstream of the render tier), not the
+    render ROP's own rank -- see the _UNRANKED_RANK note.
+    """
+    return _SOLARIS_NODE_ORDER.get(_base_type_name(node), _UNRANKED_RANK)
+
+
+def _is_unranked(node) -> bool:
+    """True if this node's placement was a fallback guess rather than a rule."""
+    return _base_type_name(node) not in _SOLARIS_NODE_ORDER
+
+
+def _takes_unbounded_inputs(node) -> bool:
+    """True if input INDEX carries USD opinion strength on this node."""
+    if _base_type_name(node) in _UNBOUNDED_INPUT_TYPES:
+        return True
+    try:                                    # live truth beats the static set
+        return node.type().maxNumInputs() > 4
+    except Exception:                       # noqa: BLE001
+        return False
+
+
+def _next_free_input(node) -> int:
+    """Lowest unoccupied input index on ``node`` (variadic-safe)."""
+    inputs = node.inputs()
+    for i, connected in enumerate(inputs):
+        if connected is None:
+            return i
+    return len(inputs)
 
 
 def _is_unwired(node) -> bool:
@@ -134,23 +225,54 @@ def _is_chain_end(node) -> bool:
     return len(node.inputs()) > 0 and len(node.outputs()) == 0
 
 
-def _reconstruct_chain(tail) -> List:
-    """Walk backwards from a chain tail along input 0, returning the existing
-    linear chain in root → ... → tail order.
+def _reconstruct_chain(tail) -> Tuple[List, List]:
+    """Walk backwards from a chain tail, returning ``(spine, branch_roots)``.
 
-    Used by FIX 3: to insert new targets at their CANONICAL position we need
-    the full existing chain, not just its tail anchor.
+    ``spine`` is the input-0 walk in root → ... → tail order -- the linear
+    backbone the canonical ordering is expressed against.
+
+    ``branch_roots`` (B3) is every node feeding a spine node through an input
+    OTHER than 0. Following input 0 alone silently flattened a merge DAG into a
+    line, so a three-asset merge looked like a one-asset chain and the other two
+    branches became invisible: eligible to be "re-wired" over, and absent from
+    every report. Merge input index IS USD opinion strength, so losing a branch
+    is not cosmetic -- it changes which opinion wins.
+
+    The spine stays the ordering axis (linear ordering of a DAG is not
+    meaningful), but callers can now see what the spine does not cover and must
+    not disturb.
     """
-    chain: List = []
+    spine: List = []
+    branch_roots: List = []
     seen = set()
     cursor = tail
     while cursor is not None and id(cursor) not in seen:
-        chain.append(cursor)
+        spine.append(cursor)
         seen.add(id(cursor))
-        inps = cursor.inputs()
-        cursor = inps[0] if inps else None
-    chain.reverse()
-    return chain
+        inputs = cursor.inputs()
+        for extra in inputs[1:]:
+            if extra is not None and id(extra) not in seen:
+                branch_roots.append(extra)
+        cursor = inputs[0] if inputs else None
+    spine.reverse()
+    return spine, branch_roots
+
+
+def _upstream_closure(node, limit: int = 512) -> set:
+    """ids of every node reachable upstream through ANY input.
+
+    Guards the wiring loop against treating a node that already feeds the chain
+    through a non-zero input as a free target (M15/B3).
+    """
+    out: set = set()
+    stack = [node]
+    while stack and len(out) < limit:
+        cur = stack.pop()
+        for upstream in cur.inputs():
+            if upstream is not None and id(upstream) not in out:
+                out.add(id(upstream))
+                stack.append(upstream)
+    return out
 
 
 def _merge_chain_order(existing_chain: List, targets: List, sort_key) -> List:
@@ -233,8 +355,10 @@ class SolarisAssembleMixin:
                     suggestion="Check that /stage exists in this scene",
                 )
 
-            wired: List[Dict[str, str]] = []
+            wired: List[Dict] = []
             skipped: List[Dict[str, str]] = []
+            overwritten: List[Dict] = []      # B3 -- links this call replaced
+            branch_paths: List[str] = []      # B3 -- non-input-0 feeders seen
 
             # -----------------------------------------------------------
             # Collect target nodes depending on mode
@@ -259,6 +383,22 @@ class SolarisAssembleMixin:
                     n = hou.node(np)
                     if n is None:
                         skipped.append({"node": np, "reason": "not found"})
+                    elif not _is_unwired(n):
+                        # M15: mode 'all' has always screened with _is_unwired;
+                        # 'nodes'/'after' did not, so naming an already-wired
+                        # node yanked it out of its chain, left its former
+                        # upstream dangling, and reported the theft under
+                        # `wired` as a clean addition. This tool wires unwired
+                        # nodes -- rewiring a live node is a different, explicit
+                        # operation.
+                        skipped.append({
+                            "node": np,
+                            "reason": ("already wired (%d in, %d out) -- "
+                                       "assemble_chain only wires unwired "
+                                       "nodes; disconnect it first to move it"
+                                       % (len([i for i in n.inputs() if i]),
+                                          len(n.outputs()))),
+                        })
                     else:
                         targets.append(n)
                 if sort_nodes:
@@ -279,6 +419,22 @@ class SolarisAssembleMixin:
                     n = hou.node(np)
                     if n is None:
                         skipped.append({"node": np, "reason": "not found"})
+                    elif not _is_unwired(n):
+                        # M15: mode 'all' has always screened with _is_unwired;
+                        # 'nodes'/'after' did not, so naming an already-wired
+                        # node yanked it out of its chain, left its former
+                        # upstream dangling, and reported the theft under
+                        # `wired` as a clean addition. This tool wires unwired
+                        # nodes -- rewiring a live node is a different, explicit
+                        # operation.
+                        skipped.append({
+                            "node": np,
+                            "reason": ("already wired (%d in, %d out) -- "
+                                       "assemble_chain only wires unwired "
+                                       "nodes; disconnect it first to move it"
+                                       % (len([i for i in n.inputs() if i]),
+                                          len(n.outputs()))),
+                        })
                     else:
                         targets.append(n)
                 if sort_nodes:
@@ -332,7 +488,24 @@ class SolarisAssembleMixin:
             target_ids = {id(t) for t in targets}
 
             if mode == "all" and anchor is not None:
-                existing_chain = _reconstruct_chain(anchor)
+                existing_chain, branch_roots = _reconstruct_chain(anchor)
+                # B3: branches feeding the spine through a non-zero input are
+                # part of the network but not part of the ordering axis. Record
+                # them so a merge with three assets stops looking like a
+                # one-asset chain in the response.
+                branch_paths = [b.path() for b in branch_roots]
+                protected = _upstream_closure(anchor)
+                reclaimed = [t for t in targets if id(t) in protected]
+                if reclaimed:
+                    for t in reclaimed:
+                        skipped.append({
+                            "node": t.path(),
+                            "reason": ("already feeds this chain through a "
+                                       "non-zero input -- rewiring it would "
+                                       "change USD opinion strength"),
+                        })
+                    targets = [t for t in targets if id(t) not in protected]
+                    target_ids = {id(t) for t in targets}
                 ordered = _merge_chain_order(
                     existing_chain, targets, _get_sort_key
                 )
@@ -342,55 +515,136 @@ class SolarisAssembleMixin:
             # -----------------------------------------------------------
             # Wire the chain
             # -----------------------------------------------------------
-            prev = None
             chain_paths: List[str] = []
 
-            for node in ordered:
-                if prev is not None:
-                    current_inputs = node.inputs()
-                    if current_inputs and current_inputs[0] == prev:
-                        # Already wired correctly. Only report it as a skipped
-                        # target — pre-existing internal chain links stay quiet.
-                        if id(node) in target_ids:
-                            skipped.append({
+            def _wire_and_layout() -> None:
+                prev = None
+                for node in ordered:
+                    if prev is not None:
+                        current_inputs = node.inputs()
+                        if current_inputs and current_inputs[0] == prev:
+                            # Already wired correctly. Only report it as a
+                            # skipped target — pre-existing internal chain
+                            # links stay quiet.
+                            if id(node) in target_ids:
+                                skipped.append({
+                                    "node": node.path(),
+                                    "reason": "already wired to predecessor",
+                                })
+                            chain_paths.append(node.path())
+                            prev = node
+                            continue
+
+                        # B3: decide the input index BEFORE mutating, and never
+                        # clobber an existing connection silently.
+                        #
+                        # On a variadic node (merge/sublayer/switch/...) the
+                        # input index IS the USD opinion strength, so
+                        # overwriting input 0 rewrites which layer wins while
+                        # reporting nothing but a tidy new connection. Append to
+                        # the next free input there instead. Anywhere else an
+                        # occupied input 0 is still someone's deliberate wiring,
+                        # so the displaced link is recorded rather than lost.
+                        target_index = 0
+                        displaced = (
+                            current_inputs[0]
+                            if current_inputs and current_inputs[0] is not None
+                            else None
+                        )
+                        if displaced is not None and _takes_unbounded_inputs(node):
+                            target_index = _next_free_input(node)
+                            displaced = None      # nothing is being replaced
+
+                        if not dry_run:
+                            node.setInput(target_index, prev)
+
+                        link = {
+                            "from": prev.path(),
+                            "to": node.path(),
+                            "input": target_index,
+                        }
+                        if displaced is not None:
+                            link["replaced"] = displaced.path()
+                            overwritten.append({
                                 "node": node.path(),
-                                "reason": "already wired to predecessor",
+                                "input": target_index,
+                                "was": displaced.path(),
+                                "now": prev.path(),
+                                "reason": (
+                                    "input 0 was already connected; this node "
+                                    "type's input index does not carry USD "
+                                    "opinion strength, so it was replaced"),
                             })
-                        chain_paths.append(node.path())
-                        prev = node
-                        continue
+                        wired.append(link)
 
-                    if not dry_run:
-                        node.setInput(0, prev)
-                    wired.append({
-                        "from": prev.path(),
-                        "to": node.path(),
-                    })
+                    chain_paths.append(node.path())
+                    prev = node
 
-                chain_paths.append(node.path())
-                prev = node
-
-            # Layout: position all chain nodes in a clean vertical column.
-            # Professional VFX artists wire Solaris networks top-to-bottom
-            # in a single column — this replaces layoutChildren() which
-            # produces unpredictable arrangements.
-            if not dry_run and wired:
-                # Collect ordered chain nodes for positioning
+                # Layout: one clean vertical column, top to bottom.
+                #
+                # M18: start_y must be chosen so the ANCHOR keeps the position
+                # it already has. Passing the anchor's own y put the chain ROOT
+                # there instead, sliding the artist's entire existing chain down
+                # by (anchor index x spacing) every time this ran.
+                if dry_run or not wired:
+                    return
                 chain_hou_nodes = []
                 for path in chain_paths:
                     n = hou.node(path)
                     if n is not None:
                         chain_hou_nodes.append(n)
-                # Anchor position: if we have an anchor node, start from
-                # its position. Otherwise start at origin.
+                if not chain_hou_nodes:
+                    return
+                start_x, start_y = 0.0, 0.0
                 if anchor is not None:
                     anchor_pos = anchor.position()
+                    anchor_index = 0
+                    for i, n in enumerate(chain_hou_nodes):
+                        if n == anchor:
+                            anchor_index = i
+                            break
                     start_x = anchor_pos[0]
-                    start_y = anchor_pos[1]
-                else:
-                    start_x = 0.0
-                    start_y = 0.0
+                    start_y = anchor_pos[1] + anchor_index * VERTICAL_SPACING
                 _layout_vertical_chain(chain_hou_nodes, start_x, start_y)
+
+            # B2: assemble_chain rewires nodes the artist already owns, and did
+            # it with NO undo group at all (grep -c undos -> 0). A failure
+            # part-way through the loop left a half-rewired network with no
+            # single Ctrl+Z and no record of which links had changed — strictly
+            # worse than build_graph, which at least only creates.
+            #
+            # M14: performUndo() must not fire unless there is evidence a group
+            # actually opened, or it pops the artist's OWN last action. Both
+            # hou.undos.areEnabled and hou.undos.undoLabels verified present on
+            # 22.0.368 by live probe (the symbol table omits the hou.undos
+            # submodule entirely, so its silence is not evidence of absence).
+            if dry_run:
+                _wire_and_layout()
+            else:
+                undo_enabled = False
+                labels_before: Tuple = ()
+                try:
+                    undo_enabled = bool(hou.undos.areEnabled())
+                    labels_before = tuple(hou.undos.undoLabels())
+                except Exception:  # noqa: BLE001 — evidence is best-effort
+                    undo_enabled = False
+                try:
+                    with hou.undos.group("SYNAPSE: assemble_chain"):
+                        _wire_and_layout()
+                except Exception:
+                    # The C++ undo layer for LOP nodes carrying USD stage data
+                    # can itself throw on __exit__, so roll back explicitly —
+                    # but only with evidence that something was recorded.
+                    if undo_enabled:
+                        try:
+                            if tuple(hou.undos.undoLabels()) != labels_before:
+                                hou.undos.performUndo()
+                        except Exception as undo_exc:  # noqa: BLE001
+                            import logging
+                            logging.getLogger(__name__).warning(
+                                "assemble_chain: undo rollback failed: %s",
+                                undo_exc)
+                    raise
 
             result = {
                 "wired": wired,
@@ -398,6 +652,29 @@ class SolarisAssembleMixin:
                 "chain": chain_paths,
                 "dry_run": dry_run,
             }
+
+            # B1: surface every node whose position was a fallback guess rather
+            # than a canonical rule, so "SYNAPSE placed this" is distinguishable
+            # from "SYNAPSE knows where this goes".
+            unranked = sorted({
+                _base_type_name(n) for n in ordered if _is_unranked(n)
+            })
+            if unranked:
+                result["unranked"] = unranked
+                result["unranked_note"] = (
+                    "no canonical rank for these types; placed upstream of the "
+                    "render tier (rank %d) as a safe default -- verify their "
+                    "position" % _UNRANKED_RANK
+                )
+            # B3: what this call replaced, and what it deliberately left alone.
+            if overwritten:
+                result["overwritten"] = overwritten
+            if branch_paths:
+                result["branches"] = branch_paths
+                result["branches_note"] = (
+                    "these feed the chain through a non-zero input; they are "
+                    "part of the network but not of the linear ordering axis"
+                )
 
             # Auto-configure render passes if requested
             if aov_passes and not dry_run:

@@ -151,8 +151,8 @@ def apply_quality_preset(karma_props_path, preset_name):
             p.set(value)
     print(f"Applied '{preset_name}' preset")
 
-diagnose_noise("/stage/karmarenderproperties1")
-apply_quality_preset("/stage/karmarenderproperties1", "lookdev")
+diagnose_noise("/stage/karmarendersettings1")
+apply_quality_preset("/stage/karmarendersettings1", "lookdev")
 ```
 
 ```python
@@ -296,7 +296,7 @@ def configure_iteration_stage(rop_path, karma_props_path, stage_name):
     print(f"  Check: {', '.join(stage['check'])}")
 
 
-configure_iteration_stage("/out/karma_render", "/stage/karmarenderproperties1", "lookdev")
+configure_iteration_stage("/out/karma_render", "/stage/karmarendersettings1", "lookdev")
 ```
 
 ## Common Mistakes
