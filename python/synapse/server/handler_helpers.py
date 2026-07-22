@@ -781,7 +781,8 @@ def _bands_are_rank_monotonic(bands: List[Dict[str, Any]],
 
 
 def _apply_section_boxes(parent_node, id_to_hou: Dict[str, Any],
-                         node_ranks: Dict[str, int]) -> List[str]:
+                         node_ranks: Dict[str, int],
+                         namespace: str = "") -> List[str]:
     """Idempotently draw one network box per populated section band.
 
     Destroy-then-recreate keyed on a fixed namespaced name per band: a rebuild
@@ -790,25 +791,56 @@ def _apply_section_boxes(parent_node, id_to_hou: Dict[str, Any],
     fail a build, so every hou call is guarded and a failure just skips that
     box. Returns the names of the boxes actually drawn.
 
-    KNOWN LIMITATION (multi-network, documented fast-follow): the box names are
-    stage-global, so building a SECOND independent network into the same /stage
-    sweeps the first network's section boxes and draws only the second's. The
-    nodes and wiring of both networks are untouched -- only the first's visual
-    grouping is lost. The common case is one network per /stage; per-network box
-    identity (namespacing by display_node) is deferred.
+    PER-NETWORK IDENTITY: the box names are namespaced by ``namespace`` (the
+    build's display-node name), so each network into the same /stage keeps its
+    own three boxes -- a second, differently-named network no longer sweeps the
+    first's. The sweep clears ONLY this namespace; the _SECTION_BOX_PREFIX guard
+    still means an artist's own boxes are never touched. An empty namespace
+    falls back to the legacy stage-global names (single-network back-compat).
     """
     if not _HOU_AVAILABLE or parent_node is None:
         return []
 
-    # 1. UNCONDITIONAL SWEEP FIRST. Remove every prior SYNAPSE section box before
-    #    deciding anything. This is what makes the feature honest across every
-    #    rebuild: a network that shrank, changed, or became non-rank-monotonic
-    #    must not keep a stale/ghost box, and clearing by PREFIX also catches any
-    #    auto-suffixed duplicate (createNetworkBox suffixes on collision). Member
-    #    NODES survive box.destroy() (verified live), so this is purely visual.
+    # Per-network namespace, derived from the build's display-node name. The box
+    # names become synapse_sec_<ns>_<band>, so a second network into the same
+    # /stage keeps its own boxes. _safe_node_name keeps the name Houdini-legal;
+    # an empty namespace falls back to the legacy stage-global names.
+    ns = _safe_node_name(namespace) if namespace else ""
+    ns_prefix = (_SECTION_BOX_PREFIX + ns + "_") if ns else _SECTION_BOX_PREFIX
+    # ALL possible band names for THIS namespace (not just the populated ones):
+    # a network that shrank from 3 bands to 2 must still lose its 3rd box.
+    ns_bases = [name.replace(_SECTION_BOX_PREFIX, ns_prefix, 1)
+                for name, _c, _col, _p in _SECTION_BANDS]
+
+    # 1. UNCONDITIONAL SWEEP FIRST. Remove every prior box in THIS network's
+    #    namespace before deciding anything. This is what makes the feature
+    #    honest across every rebuild: a network that shrank, changed, or became
+    #    non-rank-monotonic must not keep a stale/ghost box, and matching each
+    #    band base (name == base OR startswith) also catches any auto-suffixed
+    #    duplicate (createNetworkBox suffixes on collision). Clearing by
+    #    namespace leaves OTHER networks' boxes intact -- and every ns_base is
+    #    still under _SECTION_BOX_PREFIX, so artist boxes are never touched.
+    #    Member NODES survive box.destroy() (verified live) -- purely visual.
+    # Membership identity (seam fix): a network's display node can CHANGE between
+    # rebuilds (a new terminal, or an explicit display_node swap), which changes
+    # the namespace -- so a namespace-only sweep would orphan the prior boxes and
+    # stack duplicates. A prior box that still contains THIS build's nodes is this
+    # same network under a different name; sweep it too. A genuinely disjoint
+    # second network shares no members, so its boxes survive (per-network identity).
+    my_nodes = set(id_to_hou.values())
     try:
         for box in list(parent_node.networkBoxes()):
-            if box.name().startswith(_SECTION_BOX_PREFIX):
+            bn = box.name()
+            if not bn.startswith(_SECTION_BOX_PREFIX):
+                continue                    # never touch an artist's own box
+            ns_match = any(bn == b or bn.startswith(b) for b in ns_bases)
+            member_match = False
+            if my_nodes:
+                try:
+                    member_match = any(n in my_nodes for n in box.nodes())
+                except Exception:  # noqa: BLE001
+                    member_match = False
+            if ns_match or member_match:
                 box.destroy()
     except Exception:  # noqa: BLE001
         pass
@@ -835,7 +867,8 @@ def _apply_section_boxes(parent_node, id_to_hou: Dict[str, Any],
     drawn: List[str] = []
     for band in bands:
         try:
-            box = parent_node.createNetworkBox(band["name"])
+            box = parent_node.createNetworkBox(
+                band["name"].replace(_SECTION_BOX_PREFIX, ns_prefix, 1))
             for nid in band["node_ids"]:
                 node = id_to_hou.get(nid)
                 if node is not None:
@@ -843,7 +876,7 @@ def _apply_section_boxes(parent_node, id_to_hou: Dict[str, Any],
             box.setComment(band["comment"])
             box.setColor(hou.Color(band["color"]))
             box.fitAroundContents()
-            drawn.append(band["name"])
+            drawn.append(box.name())
         except Exception:  # noqa: BLE001 -- cosmetic; never break the build
             continue
     return drawn

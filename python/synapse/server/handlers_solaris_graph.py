@@ -25,7 +25,9 @@ from .handler_helpers import (
 # Rank table is the single source of truth for both wiring order (assemble) and
 # the M10 section bands here -- imported, never duplicated. Sibling data import,
 # no cycle (assemble -> handler_helpers, graph -> handler_helpers + assemble).
-from .handlers_solaris_assemble import _SOLARIS_NODE_ORDER, _UNRANKED_RANK
+from .handlers_solaris_assemble import (
+    _SOLARIS_NODE_ORDER, _UNRANKED_RANK, _next_free_input,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +77,8 @@ def _validate_node_types(parent_node, node_map: Dict[str, Dict]) -> None:
 
     bad: List[str] = []
     for spec in node_map.values():
+        if spec.get("existing"):
+            continue  # resolved live, not created -- no type to validate
         type_name = spec.get("type")
         if not type_name or not isinstance(type_name, str):
             continue
@@ -97,13 +101,19 @@ def _validate_node_types(parent_node, node_map: Dict[str, Dict]) -> None:
         )
 
 
-def _set_parm(node, parm_name: str, value) -> bool:
+def _set_parm(node, parm_name: str, value) -> Tuple[bool, bool]:
     """Set ``parm_name`` on ``node``, resolving USD punycode + tuples.
 
-    Returns True if the value actually landed. The literal name is tried first
-    so an exact match always wins; only then the punycode encoding, then the
-    tuple form. Anything still unset is the caller's to report -- never
-    silently dropped (M4).
+    Returns ``(landed, changed)``. ``landed`` is True if the value actually
+    landed; ``changed`` is True only if the post-set value DIFFERED from the
+    parm's prior value. Comparing the post-set eval to the prior eval (rather
+    than the raw incoming value) is coercion-proof: an int written to a float
+    parm reports changed only when it genuinely moved the parm. The literal
+    name is tried first so an exact match always wins; only then the punycode
+    encoding, then the tuple form. Anything still unset is the caller's to
+    report -- never silently dropped (M4). ``changed`` only matters for a
+    reused node -- it is what turns a full-reuse rebuild from 'unchanged' into
+    'updated' when a parm value actually moved.
     """
     for candidate in (parm_name, _punycode_encoded(parm_name)):
         if not candidate:
@@ -111,18 +121,20 @@ def _set_parm(node, parm_name: str, value) -> bool:
         p = node.parm(candidate)
         if p is not None:
             try:
+                prior = p.eval()
                 p.set(value)
-                return True
+                return True, (p.eval() != prior)
             except Exception:  # noqa: BLE001 -- wrong type/shape: report it
-                return False
+                return False, False
         tup = node.parmTuple(candidate)
         if tup is not None:
             try:
+                prior = tuple(tup.eval())
                 tup.set(value)
-                return True
+                return True, (tuple(tup.eval()) != prior)
             except Exception:  # noqa: BLE001
-                return False
-    return False
+                return False, False
+    return False, False
 
 
 def _punycode_encoded(alias: str) -> Optional[str]:
@@ -166,6 +178,36 @@ def _ensure_node(parent_node, node_type: str, node_name: str) -> Tuple[Any, bool
     )
 
 
+def _resolve_existing_node(parent_node, spec: Dict) -> Any:
+    """Resolve a node marked ``existing: true`` to the live node it names.
+
+    An existing spec references a node the artist already built -- build_graph
+    wires INTO it (e.g. append an asset to a merge) but never creates, moves,
+    stamps, or sections it. Resolution is by ``path`` (absolute, or relative to
+    ``parent_node``) or by ``name`` (a child of ``parent_node``). Absence is a
+    hard, clear failure -- wiring a graph against a node that is not there is
+    never what the artist meant.
+    """
+    path = spec.get("path")
+    name = spec.get("name")
+    node = None
+    if path:
+        node = (hou.node(path) if str(path).startswith("/")
+                else parent_node.node(path))
+    elif name:
+        node = parent_node.node(name)
+    if node is None:
+        ref = path or name or spec.get("id")
+        raise SynapseUserError(
+            "existing node '%s' was not found under %s"
+            % (ref, parent_node.path()),
+            suggestion=("Mark a node 'existing' only if it is already in the "
+                        "network. Check the name/path, or drop 'existing' to "
+                        "create it. Nothing was changed."),
+        )
+    return node
+
+
 # ── Validation (pure Python, no hou) ─────────────────────────────────────
 
 
@@ -194,6 +236,15 @@ def validate_graph(
         seen.add(nid)
 
     node_id_set = set(node_ids)
+
+    # Existing-node specs must name the live node they reference. Caught here
+    # (pure, before any hou) so a typo fails loud instead of at wiring time.
+    for n in nodes:
+        if n.get("existing") and not (n.get("name") or n.get("path")):
+            errors.append(
+                f"Existing node '{n['id']}' must give a 'name' or 'path' to "
+                "resolve the live node"
+            )
 
     # Check connection references
     for conn in connections:
@@ -555,9 +606,12 @@ class SolarisGraphMixin:
                 )
 
             id_to_hou = {}
+            existing_nids: set = set()   # ids resolved live, never mutated
             nodes_created = []
             nodes_reused = []
             parms_missed = []
+            parms_changed = False
+            connections_changed = False   # did any wire actually move this build?
             connections_made = []
 
             # B5: reject unknown types BEFORE opening the undo group, so a bad
@@ -569,6 +623,13 @@ class SolarisGraphMixin:
                     # 1. Create all nodes in topo order
                     for nid in sorted_ids:
                         spec = node_map[nid]
+                        if spec.get("existing"):
+                            # Resolve the artist's live node -- never create,
+                            # and exclude it from stamp/layout/section below.
+                            node = _resolve_existing_node(parent_node, spec)
+                            id_to_hou[nid] = node
+                            existing_nids.add(nid)
+                            continue
                         node_type = spec["type"]
                         node_name = spec.get("name", nid) or nid
                         node, created = _ensure_node(
@@ -580,8 +641,11 @@ class SolarisGraphMixin:
                         else:
                             nodes_reused.append(entry)
 
-                    # 2. Set parameters
+                    # 2. Set parameters (new nodes only -- an existing node's
+                    # parms are the artist's; build_graph never touches them).
                     for nid in sorted_ids:
+                        if nid in existing_nids:
+                            continue
                         spec = node_map[nid]
                         parms = spec.get("parms", {})
                         node = id_to_hou[nid]
@@ -594,7 +658,10 @@ class SolarisGraphMixin:
                             # (`intensity` -> `xn__inputsintensity_i0a`), which
                             # is exactly the case that silently vanished.
                             # Resolve, then parmTuple, then REPORT the miss.
-                            if _set_parm(node, parm_name, parm_value):
+                            landed, changed = _set_parm(node, parm_name, parm_value)
+                            if landed:
+                                if changed:
+                                    parms_changed = True
                                 continue
                             parms_missed.append({
                                 "node": node.path(),
@@ -617,9 +684,37 @@ class SolarisGraphMixin:
                     for conn in raw_connections:
                         source = id_to_hou[conn["from"]]
                         target = id_to_hou[conn["to"]]
-                        input_idx = conn.get("input", 0)
+                        to_id = conn["to"]
                         output_idx = conn.get("output", 0)
-                        if conn["to"] in reused_ids:
+                        explicit_input = conn.get("input")   # None if omitted
+
+                        # Wiring a NEW source into a node the artist already owns
+                        # must APPEND to the next free input, never clobber
+                        # input 0. Reuse assemble's _next_free_input. An EXPLICIT
+                        # index is honoured verbatim and guarded just below.
+                        # Live-verified on 22.0.368: merge[a,b] + asset_c at the
+                        # next free index 2 -> [a,b,c], first two untouched.
+                        if to_id in existing_nids and explicit_input is None:
+                            # IDEMPOTENT APPEND (seam fix): if this source already
+                            # feeds the target, do NOT re-append it on a rebuild.
+                            # Without this, build->look->rebuild grows the merge
+                            # unboundedly ([a,b,c] -> [a,b,c,c] -> ...), corrupting
+                            # the artist's network -- the exact loop item 2 exists
+                            # to make safe. _next_free_input always returns a fresh
+                            # index, so the guard must live here.
+                            if source in target.inputs():
+                                connections_made.append({
+                                    "from": source.path(),
+                                    "to": target.path(),
+                                    "input": list(target.inputs()).index(source),
+                                })
+                                continue                 # already wired -- no-op
+                            input_idx = _next_free_input(target)
+                        else:
+                            input_idx = (explicit_input
+                                         if explicit_input is not None else 0)
+
+                        if to_id in reused_ids:
                             cur = target.inputs()
                             occupied = (cur[input_idx]
                                         if input_idx < len(cur) else None)
@@ -637,6 +732,41 @@ class SolarisGraphMixin:
                                         "the same name+type, so two networks in "
                                         "one /stage must not share node names."),
                                 )
+
+                        # An EXPLICIT index into an artist-owned existing node
+                        # that would overwrite a DIFFERENT source is refused
+                        # (append never trips this -- _next_free_input returns an
+                        # unoccupied index; same-source is an idempotent no-op).
+                        if to_id in existing_nids and explicit_input is not None:
+                            cur = target.inputs()
+                            occupied = (cur[input_idx]
+                                        if input_idx < len(cur) else None)
+                            if occupied is not None and occupied != source:
+                                raise SynapseUserError(
+                                    "existing node '%s' already has '%s' on input "
+                                    "%d, but this build wires '%s' there -- "
+                                    "refusing to overwrite the artist's wiring."
+                                    % (target.name(), occupied.name(),
+                                       input_idx, source.name()),
+                                    suggestion=(
+                                        "Nothing was changed. Drop the explicit "
+                                        "'input' to append to the next free "
+                                        "input, or choose an unused index."),
+                                )
+                        # A wire is only a CHANGE if the slot did not already
+                        # hold this exact source -- so a true rebuild (re-setting
+                        # identical connections) stays 'unchanged', while an added
+                        # or rewired input flips status to 'updated' (seam fix:
+                        # status must not report 'unchanged' after a topology
+                        # change).
+                        cur = target.inputs()
+                        prior = cur[input_idx] if input_idx < len(cur) else None
+                        # `!=`, not `is not`: two hou.Node wrappers for the SAME
+                        # node fail identity but compare equal, so an identical
+                        # rebuild (re-setting the same connection) must read as
+                        # NO change -- otherwise it falsely reports 'updated'.
+                        if prior != source:
+                            connections_changed = True
                         target.setInput(input_idx, source, output_idx)
                         connections_made.append({
                             "from": source.path(),
@@ -644,8 +774,11 @@ class SolarisGraphMixin:
                             "input": input_idx,
                         })
 
-                    # 4. Stamp provenance
-                    for node in id_to_hou.values():
+                    # 4. Stamp provenance -- new nodes only; an existing node is
+                    # the artist's and must not be re-commented or re-flagged.
+                    for nid, node in id_to_hou.items():
+                        if nid in existing_nids:
+                            continue
                         node.setComment("SYNAPSE: build_graph")
                         node.setGenericFlag(hou.nodeFlag.DisplayComment, True)
 
@@ -659,16 +792,28 @@ class SolarisGraphMixin:
                     # populated stage reads as its own column instead of landing
                     # on top of what's already there. New nodes are excluded so
                     # only pre-existing children move the origin.
-                    new_paths = {n.path() for n in id_to_hou.values()}
+                    # Existing (artist-owned) nodes are resolved for wiring
+                    # only: never moved, and never counted as this build's
+                    # content. Everything below operates on the NEW nodes.
+                    new_id_to_hou = {nid: n for nid, n in id_to_hou.items()
+                                     if nid not in existing_nids}
+                    new_sorted_ids = [nid for nid in sorted_ids
+                                      if nid not in existing_nids]
+                    new_paths = {n.path() for n in new_id_to_hou.values()}
                     ox, oy = _free_origin(parent_node, new_paths)
                     if topology == "linear":
                         # Simple vertical column for linear chains
-                        ordered_nodes = [id_to_hou[nid] for nid in sorted_ids]
+                        ordered_nodes = [new_id_to_hou[nid]
+                                         for nid in new_sorted_ids]
                         _layout_vertical_chain(ordered_nodes, ox, oy)
                     else:
-                        # Layered vertical DAG for merge/fan-out topologies
+                        # Layered vertical DAG for merge/fan-out topologies.
+                        # raw_connections may reference existing ids; the DAG
+                        # layout only positions ids present in new_id_to_hou, so
+                        # an edge into an existing node leaves that node untouched
+                        # (_compute_dag_positions filters parents not in depth).
                         _layout_dag_vertical(
-                            sorted_ids, raw_connections, id_to_hou,
+                            new_sorted_ids, raw_connections, new_id_to_hou,
                             start_x=ox, start_y=oy,
                         )
 
@@ -676,20 +821,32 @@ class SolarisGraphMixin:
                     # reads final positions; idempotent so a rebuild refreshes
                     # rather than stacks. Cosmetic + best-effort: never fails the
                     # build. Ranks come from the same table assemble_chain wires by.
+                    # New nodes only. node_map has no 'type' for existing specs,
+                    # so keying ranks off new_id_to_hou also avoids a KeyError,
+                    # and an existing node keeps whatever box the artist gave it.
+                    # Namespace the boxes by the build's display-node name so a
+                    # second network into the same /stage keeps its own boxes
+                    # (per-network identity; M10 fast-follow).
                     node_ranks = {
                         nid: _SOLARIS_NODE_ORDER.get(
                             str(node_map[nid]["type"]).split("::")[0].lower(),
                             _UNRANKED_RANK)
-                        for nid in id_to_hou
+                        for nid in new_id_to_hou
                     }
                     sections = _apply_section_boxes(
-                        parent_node, id_to_hou, node_ranks)
+                        parent_node, new_id_to_hou, node_ranks,
+                        namespace=id_to_hou[display_node_id].name())
 
                     # 6. Display flag AFTER layout — now the cook triggered
                     # by setDisplayFlag runs on a fully-laid-out, wired
                     # network with no concurrent layout evaluation.
                     display_hou = id_to_hou[display_node_id]
-                    if hasattr(display_hou, "setDisplayFlag"):
+                    # Never move the display flag onto an existing (artist-owned)
+                    # node -- it may already sit upstream of its own downstream
+                    # chain (merge -> rendersettings -> rop), and stealing the
+                    # flag would blank the viewport/export the artist set up.
+                    if (display_node_id not in existing_nids
+                            and hasattr(display_hou, "setDisplayFlag")):
                         try:
                             display_hou.setDisplayFlag(True)
                         except AttributeError:
@@ -711,10 +868,16 @@ class SolarisGraphMixin:
             # B4: a rebuild that reused everything is not a "created" -- saying
             # so is the same lie the duplicate network told, pointed the other
             # way. The status names what actually happened.
-            if nodes_reused and not nodes_created:
-                status = "unchanged"
-            elif nodes_reused:
-                status = "updated"
+            # 'created' when new nodes were made; 'updated' when only pre-existing
+            # nodes (reused-by-name or artist-owned 'existing') were touched but
+            # a parm or a wire actually moved; 'unchanged' when a rebuild was a
+            # genuine no-op. A build that only references existing nodes (an
+            # extend that appends nothing new) must never read 'created'.
+            _touched = parms_changed or connections_changed
+            if nodes_created:
+                status = "updated" if nodes_reused else "created"
+            elif nodes_reused or existing_nids:
+                status = "updated" if _touched else "unchanged"
             else:
                 status = "created"
             # Mutate rather than rebind: `warnings` is the enclosing function's
@@ -733,6 +896,10 @@ class SolarisGraphMixin:
                 "status": status,
                 "nodes_created": nodes_created,
                 "nodes_reused": nodes_reused,
+                "existing_nodes": [
+                    {"id": nid, "path": id_to_hou[nid].path()}
+                    for nid in sorted(existing_nids)
+                ],
                 "sections": sections,
                 "parms_missed": parms_missed,
                 "connections_made": connections_made,

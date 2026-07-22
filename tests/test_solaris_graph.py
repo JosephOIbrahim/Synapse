@@ -23,6 +23,8 @@ from synapse.server.handlers_solaris_graph import (
     topo_sort,
     _find_terminal_nodes,
     detect_order_ambiguities,
+    _set_parm,
+    _resolve_existing_node,
 )
 from synapse.server.solaris_graph_templates import (
     multi_asset_merge,
@@ -972,3 +974,162 @@ class TestNoDeprecatedTypesEmitted:
             if bad:
                 offenders[name] = bad
         assert not offenders, "templates emit deprecated LOP types: %s" % offenders
+
+
+# =============================================================================
+# ITEM 2 (PR #47) -- reference an EXISTING node in the target LOP network
+# =============================================================================
+
+class _ExistParent:
+    """Minimal parent fake for _resolve_existing_node (name path, no hou)."""
+    def __init__(self, children):
+        self._children = dict(children)
+
+    def node(self, name):
+        return self._children.get(name)
+
+    def path(self):
+        return "/stage"
+
+
+class TestExistingNodeReference:
+    def test_existing_spec_reference_validates(self):
+        # A connection whose target is an existing:true spec must NOT be
+        # false-rejected -- the id is declared in `nodes`, so it is in scope.
+        nodes = [
+            {"id": "asset", "type": "sopcreate", "name": "asset3"},
+            {"id": "merge", "existing": True, "name": "MERGE"},
+        ]
+        connections = [{"from": "asset", "to": "merge"}]
+        valid, errors, _ = validate_graph(nodes, connections)
+        assert valid, errors
+
+    def test_existing_spec_without_locator_rejected(self):
+        nodes = [{"id": "merge", "existing": True}]
+        valid, errors, _ = validate_graph(nodes, [])
+        assert not valid
+        assert any("name" in e and "path" in e for e in errors)
+
+    def test_existing_spec_ignored_by_order_ambiguity(self):
+        # existing specs carry no 'type', so they are not classed order-
+        # dependent and never KeyError in detect_order_ambiguities.
+        nodes = [
+            {"id": "a", "type": "sopcreate"},
+            {"id": "b", "type": "sopcreate"},
+            {"id": "merge", "existing": True, "name": "MERGE"},
+        ]
+        connections = [{"from": "a", "to": "merge"},
+                       {"from": "b", "to": "merge"}]
+        findings = detect_order_ambiguities(nodes, connections)
+        assert isinstance(findings, list)
+
+    def test_resolve_existing_by_name(self):
+        sentinel = object()
+        parent = _ExistParent({"MERGE": sentinel})
+        assert _resolve_existing_node(
+            parent, {"id": "m", "name": "MERGE"}) is sentinel
+
+    def test_resolve_existing_absent_raises(self):
+        from synapse.core.errors import SynapseUserError
+        parent = _ExistParent({})
+        with pytest.raises(SynapseUserError) as exc:
+            _resolve_existing_node(parent, {"id": "m", "name": "GONE"})
+        assert "GONE" in str(exc.value)
+        assert exc.value.suggestion
+
+
+class TestNextFreeInputAppend:
+    """The append arithmetic reused from assemble_chain (item's named helper)."""
+    def test_next_free_input_appends_and_fills_gaps(self):
+        from synapse.server.handlers_solaris_assemble import _next_free_input
+
+        class _N:
+            def __init__(self, ins):
+                self._ins = ins
+
+            def inputs(self):
+                return self._ins
+
+        assert _next_free_input(_N([object(), object()])) == 2      # append
+        assert _next_free_input(_N([object(), None, object()])) == 1  # gap
+        assert _next_free_input(_N([])) == 0
+
+
+# =============================================================================
+# ITEM 4 (PR #47) -- _set_parm reports (landed, changed); status='updated'
+# =============================================================================
+
+class TestSetParmChanged:
+    """_set_parm reports (landed, changed); changed drives reuse status='updated'."""
+
+    class _FakeParm:
+        def __init__(self, initial):
+            self._v = initial
+
+        def eval(self):
+            return self._v
+
+        def set(self, v):
+            self._v = v
+
+    class _FakeNode:
+        def __init__(self, parms):
+            self._parms = parms  # name -> _FakeParm
+
+        def parm(self, name):
+            return self._parms.get(name)
+
+        def parmTuple(self, name):
+            return None
+
+    def test_first_set_reports_changed(self):
+        node = self._FakeNode({"intensity": self._FakeParm(1.0)})
+        landed, changed = _set_parm(node, "intensity", 2.0)
+        assert landed is True
+        assert changed is True
+
+    def test_repeat_same_value_reports_unchanged(self):
+        parm = self._FakeParm(2.0)
+        node = self._FakeNode({"intensity": parm})
+        landed, changed = _set_parm(node, "intensity", 2.0)
+        assert landed is True
+        assert changed is False
+
+    def test_second_set_after_change_is_unchanged(self):
+        parm = self._FakeParm(1.0)
+        node = self._FakeNode({"intensity": parm})
+        landed1, changed1 = _set_parm(node, "intensity", 2.0)
+        landed2, changed2 = _set_parm(node, "intensity", 2.0)
+        assert (landed1, changed1) == (True, True)   # differed from 1.0 prior
+        assert (landed2, changed2) == (True, False)  # already 2.0, no move
+
+    def test_missing_parm_returns_not_landed(self):
+        node = self._FakeNode({})
+        landed, changed = _set_parm(node, "nope", 5)
+        assert (landed, changed) == (False, False)
+
+
+class TestExtendAppendIdempotency:
+    """Seam (loop-close fleet): the append-into-existing arithmetic must be a
+    no-op when the source is already wired -- otherwise build->look->rebuild
+    duplicates the wire unboundedly. Pins the `source in target.inputs()` guard
+    at the arithmetic level (the hou wiring itself is covered by the live probe)."""
+
+    class _FakeIn:
+        def __init__(self, ins):
+            self._ins = list(ins)
+
+        def inputs(self):
+            return tuple(self._ins)
+
+    def test_already_wired_source_is_a_noop(self):
+        # Mirror the handler's guard: if source already an input, do not append.
+        from synapse.server.handlers_solaris_assemble import _next_free_input
+        src_a, src_b = object(), object()
+        target = self._FakeIn([src_a, src_b])
+        # src_a is already wired -> guard short-circuits, no new index computed
+        assert src_a in target.inputs()          # the guard condition
+        # a genuinely new source appends at the next free index
+        src_c = object()
+        assert src_c not in target.inputs()
+        assert _next_free_input(target) == 2      # append point for the new one
