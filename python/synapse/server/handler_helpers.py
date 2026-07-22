@@ -470,6 +470,157 @@ def _render_diagnostic_checklist(node):
 VERTICAL_SPACING = 1.2
 # Horizontal distance between parallel streams in a DAG
 HORIZONTAL_SPACING = 3.5
+# M55 (grid snap) was evaluated and DROPPED. The measured LOP tile on 22.0.368
+# is 1.1296 x 0.2824 units, but snapping x to the tile grid fights the two fixes
+# that actually matter: it perturbs a merge off its parents' exact barycenter
+# (M9) and pulls swept siblings below the exact min separation (M8). And it buys
+# nothing here -- a linear spine already yields a pixel-perfect vertical column
+# because every node inherits its single parent's exact x, and branch nodes sit
+# at the exact mean of their parents. Left as None; the barycenter math is exact.
+_GRID_SNAP_X = None
+
+
+def _free_origin(parent_node, new_ids, v_spacing: float = VERTICAL_SPACING):
+    """A layout origin that does not collide with existing content (M7).
+
+    build_graph laid every network out at absolute (0, 0) with no awareness of
+    what was already in the stage, so a second build -- or any build into a
+    populated shot -- landed exactly on top of the first (measured: 4/4 node
+    pairs at dx=dy=0). This returns an origin just BELOW the lowest existing
+    node that is not part of this build, so the new network reads as a separate
+    column instead of an overlap. Best-effort: any failure returns (0, 0), the
+    prior behavior. Only nodes NOT in ``new_ids`` count as existing.
+    """
+    if not _HOU_AVAILABLE or parent_node is None:
+        return 0.0, 0.0
+    new = set(new_ids or ())
+    lowest_y = None
+    center_x = 0.0
+    seen = 0
+    try:
+        for child in parent_node.children():
+            if child.path() in new or child in new:
+                continue
+            pos = child.position()
+            seen += 1
+            center_x += pos[0]
+            if lowest_y is None or pos[1] < lowest_y:
+                lowest_y = pos[1]
+    except Exception:  # noqa: BLE001 -- origin is best-effort
+        return 0.0, 0.0
+    if lowest_y is None:
+        return 0.0, 0.0
+    # One clear row-gap below the existing content, at its horizontal center.
+    return (center_x / seen if seen else 0.0), lowest_y - v_spacing * 2.0
+
+
+def _compute_dag_positions(
+    sorted_ids: List[str],
+    connections: List[Dict[str, Any]],
+    start_x: float = 0.0,
+    start_y: float = 0.0,
+    v_spacing: float = VERTICAL_SPACING,
+    h_spacing: float = HORIZONTAL_SPACING,
+) -> Dict[str, tuple]:
+    """Pure layered-DAG placement -> {node_id: (x, y)}. No ``hou`` (testable).
+
+    Fixes three artist-visible defects the old center-every-layer version had:
+
+    * M8 -- within-layer order followed the topological id order (effectively
+      alphabetical), so the nodes feeding a merge's inputs 0/1/2 could be drawn
+      in any order and the wires crossed. Nodes sharing a child are now ordered
+      by the input index they occupy on that child, so merge inputs read
+      left-to-right in wire order.
+    * M9 -- every layer was centered on start_x regardless of where its parents
+      sat, so a child could land at x=0 while its only parent was at x=+3.5.
+      Each node is now placed at the barycenter (mean x) of its already-placed
+      parents, with a left-to-right sweep enforcing min separation.
+    * M55 -- x is snapped to a fraction of the measured tile width so columns
+      align cleanly instead of on raw averaged floats.
+    """
+    if not sorted_ids:
+        return {}
+
+    children_of: Dict[str, List[str]] = defaultdict(list)
+    parents_of: Dict[str, List[str]] = defaultdict(list)
+    # input index each edge occupies on its target, for wire-order ordering.
+    edge_input: Dict[tuple, int] = {}
+    for conn in connections:
+        f, t = conn["from"], conn["to"]
+        children_of[f].append(t)
+        parents_of[t].append(f)
+        edge_input[(f, t)] = conn.get("input", 0)
+
+    # Longest-path depth (unchanged: correct, avoids naive-BFS diamond squash).
+    depth: Dict[str, int] = {}
+    for nid in sorted_ids:
+        pd = [depth[p] for p in parents_of[nid] if p in depth]
+        depth[nid] = (max(pd) + 1) if pd else 0
+
+    layers: Dict[int, List[str]] = defaultdict(list)
+    for nid in sorted_ids:
+        layers[depth[nid]].append(nid)
+
+    def _primary_child_key(nid):
+        # The closest downstream child; among a node's edges, the input index it
+        # feeds. Roots feeding one merge thus sort by that merge's input index.
+        kids = children_of.get(nid, [])
+        if not kids:
+            return (10 ** 9, "", 0)
+        best = min(kids, key=lambda c: (depth.get(c, 10 ** 9), str(c)))
+        return (depth.get(best, 10 ** 9), str(best), edge_input.get((nid, best), 0))
+
+    pos: Dict[str, tuple] = {}
+    if _GRID_SNAP_X:
+        snap = lambda x: round(x / _GRID_SNAP_X) * _GRID_SNAP_X
+        # Effective spacing is a WHOLE number of grid steps, rounded UP, so
+        # snapping a swept position can never pull two nodes closer than the
+        # nominal h_spacing (my own M55 snap otherwise violated min separation).
+        steps = int(h_spacing / _GRID_SNAP_X)
+        if steps * _GRID_SNAP_X < h_spacing:
+            steps += 1
+        h_eff = steps * _GRID_SNAP_X
+    else:
+        snap = lambda x: x
+        h_eff = h_spacing
+
+    for d in sorted(layers):
+        nodes = layers[d]
+        if d == 0:
+            # Roots: order by the child+input they feed, so a fan-in reads in
+            # wire order from the very top.
+            nodes = sorted(nodes, key=lambda n: (_primary_child_key(n), str(n)))
+            ideal = [start_x + (i - (len(nodes) - 1) / 2.0) * h_eff
+                     for i in range(len(nodes))]
+        else:
+            # Order by parent barycenter (parents already placed), tie-break by
+            # the input index into the shared child (fixes the merge case).
+            def _bary(n):
+                px = [pos[p][0] for p in parents_of[n] if p in pos]
+                return sum(px) / len(px) if px else start_x
+            nodes = sorted(nodes, key=lambda n: (_bary(n), _primary_child_key(n), str(n)))
+            ideal = [_bary(n) for n in nodes]
+
+        # Left-to-right sweep on the grid: snap each ideal, then honor order and
+        # enforce a grid-aligned min gap. prev is on-grid and h_eff is on-grid,
+        # so every result stays on-grid with exact separation.
+        y = start_y - d * v_spacing
+        xs: List[float] = []
+        for i, n in enumerate(nodes):
+            want = snap(ideal[i])
+            if i > 0:
+                want = max(want, xs[i - 1] + h_eff)
+            xs.append(want)
+        for n, x in zip(nodes, xs):
+            pos[n] = (x, y)
+
+    # Recenter so the bbox centers on start_x (keeps barycenter-relative
+    # alignment, removes rightward drift). Shift is grid-snapped to stay on-grid.
+    all_x = [p[0] for p in pos.values()]
+    if all_x:
+        shift = snap(start_x - (min(all_x) + max(all_x)) / 2.0)
+        pos = {n: (x + shift, y) for n, (x, y) in pos.items()}
+    return pos
 
 
 def _layout_vertical_chain(
@@ -522,37 +673,9 @@ def _layout_dag_vertical(
     """
     if not _HOU_AVAILABLE or not sorted_ids:
         return
-
-    # Build parent→children adjacency
-    children_of: Dict[str, List[str]] = defaultdict(list)
-    parents_of: Dict[str, List[str]] = defaultdict(list)
-    for conn in connections:
-        children_of[conn["from"]].append(conn["to"])
-        parents_of[conn["to"]].append(conn["from"])
-
-    # Assign depth: each node's depth = max(parent depths) + 1
-    # Roots (no parents) get depth 0. This stretches the graph vertically
-    # so connections flow cleanly downward without crossing.
-    depth: Dict[str, int] = {}
-    for nid in sorted_ids:
-        parent_depths = [depth[p] for p in parents_of[nid] if p in depth]
-        depth[nid] = (max(parent_depths) + 1) if parent_depths else 0
-
-    # Group nodes by depth layer
-    layers: Dict[int, List[str]] = defaultdict(list)
-    for nid in sorted_ids:
-        layers[depth[nid]].append(nid)
-
-    # Position each layer
-    max_depth = max(layers.keys()) if layers else 0
-    for d in range(max_depth + 1):
-        layer_nodes = layers[d]
-        n = len(layer_nodes)
-        # Center the layer horizontally around start_x
-        layer_width = (n - 1) * h_spacing
-        left_x = start_x - layer_width / 2.0
-        y = start_y - d * v_spacing
-        for i, nid in enumerate(layer_nodes):
-            if nid in id_to_hou:
-                x = left_x + i * h_spacing
-                id_to_hou[nid].setPosition(hou.Vector2(x, y))
+    positions = _compute_dag_positions(
+        sorted_ids, connections, start_x, start_y, v_spacing, h_spacing)
+    for nid, (x, y) in positions.items():
+        node = id_to_hou.get(nid)
+        if node is not None:
+            node.setPosition(hou.Vector2(x, y))

@@ -18,7 +18,9 @@ except ImportError:
 from ..core.aliases import resolve_param, resolve_param_with_default
 from ..core.errors import NodeNotFoundError, HoudiniUnavailableError, SynapseUserError
 from .solaris_graph_templates import expand_template, TEMPLATES
-from .handler_helpers import _layout_dag_vertical, _layout_vertical_chain
+from .handler_helpers import (
+    _layout_dag_vertical, _layout_vertical_chain, _free_origin,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -619,14 +621,21 @@ class SolarisGraphMixin:
                     # bottom vertical chains. This also avoids the GPU context
                     # init race condition that layoutChildren() can trigger
                     # with Karma nodes (CUDA double-init → segfault).
+                    # M7: origin below existing content so a build into a
+                    # populated stage reads as its own column instead of landing
+                    # on top of what's already there. New nodes are excluded so
+                    # only pre-existing children move the origin.
+                    new_paths = {n.path() for n in id_to_hou.values()}
+                    ox, oy = _free_origin(parent_node, new_paths)
                     if topology == "linear":
                         # Simple vertical column for linear chains
                         ordered_nodes = [id_to_hou[nid] for nid in sorted_ids]
-                        _layout_vertical_chain(ordered_nodes)
+                        _layout_vertical_chain(ordered_nodes, ox, oy)
                     else:
                         # Layered vertical DAG for merge/fan-out topologies
                         _layout_dag_vertical(
-                            sorted_ids, raw_connections, id_to_hou
+                            sorted_ids, raw_connections, id_to_hou,
+                            start_x=ox, start_y=oy,
                         )
 
                     # 6. Display flag AFTER layout — now the cook triggered
