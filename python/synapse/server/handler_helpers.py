@@ -679,3 +679,164 @@ def _layout_dag_vertical(
         node = id_to_hou.get(nid)
         if node is not None:
             node.setPosition(hou.Vector2(x, y))
+
+
+# ── Section boxes (M10) ────────────────────────────────────────────────────
+#
+# Section a built Solaris network into a few labelled, colored network boxes so
+# a 40-node shot reads at a glance. Design: "Tri-Band Minimal" -- SCENE /
+# LIGHTING / RENDER, chosen by a TD judge panel over minimal/tier/branch lenses.
+# Because the Phase-3 layout stacks nodes strictly top-to-bottom by rank, these
+# rank cuts are CONTIGUOUS vertical bands that never interleave, so a
+# fit-around-contents box per band can never swallow a neighbouring band's node.
+#
+# Every hou call below was live-verified on 22.0.368 (createNetworkBox / addNode
+# / setComment / setColor / fitAroundContents / findNetworkBox / destroy) plus
+# two behaviours that would otherwise bite: createNetworkBox AUTO-SUFFIXES on a
+# name collision (so a blind re-create stacks duplicate boxes every rebuild --
+# hence find-first), and box.destroy() does NOT delete member nodes (so
+# destroy-then-recreate is a safe way to guarantee fresh membership).
+
+# (name, comment, (r,g,b) 0..1, rank predicate). Muted low-value hues: a band
+# tint behind default-grey LOP nodes, distinguished by hue not intensity.
+_SECTION_BANDS = (
+    ("synapse_sec_scene",
+     "SCENE  ·  geo → materials → layout",
+     (0.24, 0.29, 0.36), lambda r: r < 400),
+    ("synapse_sec_lighting",
+     "LIGHTING  ·  camera → lights",
+     (0.38, 0.32, 0.19), lambda r: 400 <= r < 700),
+    ("synapse_sec_render",
+     "RENDER  ·  settings → rop → output",
+     (0.22, 0.31, 0.28), lambda r: r >= 700),
+)
+# Below this, sectioning is noise, not help.
+_MIN_NODES_FOR_SECTIONS = 4
+# Namespace for every SYNAPSE-authored section box. The unconditional sweep
+# clears by this prefix, so an artist's own boxes are never touched and any
+# auto-suffixed duplicate (createNetworkBox suffixes on collision) is caught.
+_SECTION_BOX_PREFIX = "synapse_sec_"
+
+
+def _compute_section_bands(node_ranks: Dict[str, int]) -> List[Dict[str, Any]]:
+    """{node_id: rank} -> [{name, comment, color, node_ids}] for populated bands.
+
+    Pure logic (no ``hou``) so the banding is unit-tested directly. Returns an
+    EMPTY list when boxes would add noise instead of clarity: a network below
+    the size floor, or one whose nodes all fall in a single band (a net that
+    lives in one tier needs no sectioning).
+    """
+    if len(node_ranks) < _MIN_NODES_FOR_SECTIONS:
+        return []
+    bands: List[Dict[str, Any]] = []
+    for name, comment, color, pred in _SECTION_BANDS:
+        ids = sorted(nid for nid, r in node_ranks.items() if pred(r))
+        if ids:
+            bands.append({"name": name, "comment": comment,
+                          "color": color, "node_ids": ids})
+    if len(bands) < 2:
+        return []
+    return bands
+
+
+def _bands_are_rank_monotonic(bands: List[Dict[str, Any]],
+                              node_y: Dict[str, float]) -> bool:
+    """True iff the bands occupy DISJOINT vertical slabs, top-to-bottom in band
+    order — the precondition that makes a fit-around-contents box per band safe.
+
+    The layout (``_compute_dag_positions``) positions nodes by longest-path DAG
+    DEPTH, not by rank. When the caller wired the graph in pipeline order the two
+    coincide and the bands are clean contiguous slabs. When they do NOT (e.g. a
+    light wired as a root feeding geometry), a rank band would span a Y range
+    that overlaps a neighbour's or swallows a foreign node, and a box drawn
+    around it would be visually wrong. This gate detects that and lets the caller
+    suppress the boxes rather than draw a misleading one. (Adversarial finding,
+    netbox design workflow: "layout is depth-keyed, not rank-keyed".)
+
+    Bands arrive in _SECTION_BANDS order = decreasing rank = top-to-bottom, i.e.
+    strictly DECREASING network-editor Y (Y increases upward). Requires each
+    band's whole Y-slab to sit strictly above the next band's, and no node to
+    fall inside a slab it does not belong to.
+    """
+    slabs = []
+    for band in bands:
+        ys = [node_y[nid] for nid in band["node_ids"] if nid in node_y]
+        if not ys:
+            return False
+        slabs.append((min(ys), max(ys), set(band["node_ids"])))
+    # Adjacent slabs must not overlap: earlier band (higher rank tier, lower on
+    # screen? no — SCENE is first and sits at TOP = highest Y). SCENE band is
+    # first with the HIGHEST Y; each subsequent band must sit strictly below.
+    for (hi_min, hi_max, _), (lo_min, lo_max, _) in zip(slabs, slabs[1:]):
+        if hi_min <= lo_max:            # upper band dips into/through the lower
+            return False
+    # No foreign node inside another band's slab.
+    for i, (lo, hi, members) in enumerate(slabs):
+        for nid, y in node_y.items():
+            if nid in members:
+                continue
+            if lo <= y <= hi and any(nid in b["node_ids"] for b in bands):
+                return False
+    return True
+
+
+def _apply_section_boxes(parent_node, id_to_hou: Dict[str, Any],
+                         node_ranks: Dict[str, int]) -> List[str]:
+    """Idempotently draw one network box per populated section band.
+
+    Destroy-then-recreate keyed on a fixed namespaced name per band: a rebuild
+    reflects the CURRENT network with no stale members and no stacked
+    duplicates. Best-effort throughout -- sectioning is cosmetic and must never
+    fail a build, so every hou call is guarded and a failure just skips that
+    box. Returns the names of the boxes actually drawn.
+    """
+    if not _HOU_AVAILABLE or parent_node is None:
+        return []
+
+    # 1. UNCONDITIONAL SWEEP FIRST. Remove every prior SYNAPSE section box before
+    #    deciding anything. This is what makes the feature honest across every
+    #    rebuild: a network that shrank, changed, or became non-rank-monotonic
+    #    must not keep a stale/ghost box, and clearing by PREFIX also catches any
+    #    auto-suffixed duplicate (createNetworkBox suffixes on collision). Member
+    #    NODES survive box.destroy() (verified live), so this is purely visual.
+    try:
+        for box in list(parent_node.networkBoxes()):
+            if box.name().startswith(_SECTION_BOX_PREFIX):
+                box.destroy()
+    except Exception:  # noqa: BLE001
+        pass
+
+    # 2. Compute the bands and gate them on rank-monotonicity.
+    try:
+        bands = _compute_section_bands(node_ranks)
+        if not bands:
+            return []
+        # The layout is depth-keyed, so rank bands are only safe to box when they
+        # occupy disjoint vertical slabs. Read live Y and suppress if they don't
+        # -- a missing box is honest, an overlapping one is a lie.
+        node_y = {}
+        for nid in node_ranks:
+            n = id_to_hou.get(nid)
+            if n is not None:
+                node_y[nid] = n.position()[1]
+        if not _bands_are_rank_monotonic(bands, node_y):
+            return []
+    except Exception:  # noqa: BLE001
+        return []
+
+    # 3. Create fresh. Names are free (swept above), so no auto-suffix risk.
+    drawn: List[str] = []
+    for band in bands:
+        try:
+            box = parent_node.createNetworkBox(band["name"])
+            for nid in band["node_ids"]:
+                node = id_to_hou.get(nid)
+                if node is not None:
+                    box.addNode(node)
+            box.setComment(band["comment"])
+            box.setColor(hou.Color(band["color"]))
+            box.fitAroundContents()
+            drawn.append(band["name"])
+        except Exception:  # noqa: BLE001 -- cosmetic; never break the build
+            continue
+    return drawn

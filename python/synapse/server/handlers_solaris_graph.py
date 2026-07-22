@@ -20,7 +20,12 @@ from ..core.errors import NodeNotFoundError, HoudiniUnavailableError, SynapseUse
 from .solaris_graph_templates import expand_template, TEMPLATES
 from .handler_helpers import (
     _layout_dag_vertical, _layout_vertical_chain, _free_origin,
+    _apply_section_boxes,
 )
+# Rank table is the single source of truth for both wiring order (assemble) and
+# the M10 section bands here -- imported, never duplicated. Sibling data import,
+# no cycle (assemble -> handler_helpers, graph -> handler_helpers + assemble).
+from .handlers_solaris_assemble import _SOLARIS_NODE_ORDER, _UNRANKED_RANK
 
 logger = logging.getLogger(__name__)
 
@@ -638,6 +643,19 @@ class SolarisGraphMixin:
                             start_x=ox, start_y=oy,
                         )
 
+                    # 5b. Section boxes (M10) — after layout so fitAroundContents
+                    # reads final positions; idempotent so a rebuild refreshes
+                    # rather than stacks. Cosmetic + best-effort: never fails the
+                    # build. Ranks come from the same table assemble_chain wires by.
+                    node_ranks = {
+                        nid: _SOLARIS_NODE_ORDER.get(
+                            str(node_map[nid]["type"]).split("::")[0].lower(),
+                            _UNRANKED_RANK)
+                        for nid in id_to_hou
+                    }
+                    sections = _apply_section_boxes(
+                        parent_node, id_to_hou, node_ranks)
+
                     # 6. Display flag AFTER layout — now the cook triggered
                     # by setDisplayFlag runs on a fully-laid-out, wired
                     # network with no concurrent layout evaluation.
@@ -686,6 +704,7 @@ class SolarisGraphMixin:
                 "status": status,
                 "nodes_created": nodes_created,
                 "nodes_reused": nodes_reused,
+                "sections": sections,
                 "parms_missed": parms_missed,
                 "connections_made": connections_made,
                 "display_node": display_hou.path(),
