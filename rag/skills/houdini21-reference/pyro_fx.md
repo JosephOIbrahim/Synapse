@@ -234,8 +234,8 @@ def import_pyro_to_solaris(cache_path, stage_path="/stage"):
     sop_import.parm("soppath").set(cache_path)
 
     # Karma volume rendering settings
-    # karmarenderproperties node for volume quality
-    render_props = stage.node("karmarenderproperties1")
+    # karmarendersettings node for volume quality
+    render_props = stage.node("karmarendersettings1")
     if render_props:
         # Volume step rate: 0.25 (fast) to 1.0 (production)
         if render_props.parm("karma_volumesteprate"):

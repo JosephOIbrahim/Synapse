@@ -31,7 +31,7 @@ for prim in stage.Traverse():
 #   /materials/mat1   <- materiallibrary LOP
 #   /lights/dome      <- domelight LOP
 #   /cameras/camera1  <- camera LOP
-#   /Render/          <- karmarenderproperties LOP
+#   /Render/          <- karmarendersettings LOP
 
 # --- Recommended scene hierarchy (enforce via scene_import or manual merge) ---
 # /World/

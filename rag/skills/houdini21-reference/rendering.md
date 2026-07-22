@@ -82,7 +82,7 @@ def select_karma_engine(karma_props_path, engine="xpu"):
         node.parm("engine").set(engine)
     print(f"Karma engine: {engine}")
 
-select_karma_engine("/stage/karmarenderproperties1", "xpu")
+select_karma_engine("/stage/karmarendersettings1", "xpu")
 ```
 
 ```python
@@ -139,7 +139,7 @@ def apply_karma_preset(karma_props_path, preset_name):
             p.set(value)
     print(f"Applied '{preset_name}' preset to {karma_props_path}")
 
-apply_karma_preset("/stage/karmarenderproperties1", "lighting")
+apply_karma_preset("/stage/karmarendersettings1", "lighting")
 ```
 
 ```python
@@ -163,7 +163,7 @@ def configure_denoiser(karma_props_path, enable=True, method="oidn"):
 
     print(f"Denoiser: {'enabled' if enable else 'disabled'} ({method})")
 
-configure_denoiser("/stage/karmarenderproperties1", enable=True, method="oidn")
+configure_denoiser("/stage/karmarendersettings1", enable=True, method="oidn")
 ```
 
 ```python
@@ -196,7 +196,7 @@ def configure_motion_blur(karma_props_path, enable=True, shutter_open=-0.25, shu
 
     print(f"Motion blur: {'on' if enable else 'off'}, shutter=[{shutter_open}, {shutter_close}]")
 
-configure_motion_blur("/stage/karmarenderproperties1")
+configure_motion_blur("/stage/karmarendersettings1")
 ```
 
 ```python

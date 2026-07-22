@@ -146,7 +146,7 @@ def configure_motion_blur(
     print(f"Motion blur: shutter=[{shutter_open}, {shutter_close}]")
     print(f"  xform samples={xform_samples}, geo samples={geo_samples}")
 
-configure_motion_blur("/stage/karmarenderproperties1")
+configure_motion_blur("/stage/karmarendersettings1")
 ```
 
 ```python
