@@ -49,10 +49,12 @@ SHOT = {
     "display_node": "out",
 }
 
+# Section boxes are namespaced by the display node's name (per-network identity,
+# M10 fast-follow). The SHOT's display_node "out" is the null named OUTPUT.
 _EXPECT = {
-    "synapse_sec_scene": {"asset", "matlib"},
-    "synapse_sec_lighting": {"shotcam", "key", "env"},
-    "synapse_sec_render": {"rendersettings", "render", "OUTPUT"},
+    "synapse_sec_OUTPUT_scene": {"asset", "matlib"},
+    "synapse_sec_OUTPUT_lighting": {"shotcam", "key", "env"},
+    "synapse_sec_OUTPUT_render": {"rendersettings", "render", "OUTPUT"},
 }
 
 

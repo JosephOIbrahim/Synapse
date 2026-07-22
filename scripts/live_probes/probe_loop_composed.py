@@ -108,7 +108,10 @@ def main():
         f.append("M10 SEAM: boxes FALSELY SUPPRESSED on a normal branching "
                  "shot (monotonicity gate too strict)")
     else:
-        for want in ("synapse_sec_scene", "synapse_sec_lighting", "synapse_sec_render"):
+        # Boxes are namespaced by the display node's name (SHOT display "out" ->
+        # null "OUTPUT"); per-network identity (M10 fast-follow).
+        for want in ("synapse_sec_OUTPUT_scene", "synapse_sec_OUTPUT_lighting",
+                     "synapse_sec_OUTPUT_render"):
             if want not in boxes:
                 f.append("M10: missing %s" % want)
 

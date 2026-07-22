@@ -227,3 +227,140 @@ class TestSectionMonotonicityGate:
         # 'stray' (LIGHTING) sits at y=-1.5, inside the SCENE slab [-2.4, 0].
         y = {"geo": 0.0, "mat": -2.4, "stray": -1.5, "cam": -3.6, "rs": -4.8, "rop": -6.0}
         assert _bands_are_rank_monotonic(self._bands(ranks), y) is False
+
+
+# =============================================================================
+# ITEM 1 (PR #47) -- per-network section-box identity (namespacing)
+# =============================================================================
+
+class TestSectionBoxNamespacing:
+    """M10 fast-follow: boxes are namespaced by the display node, so a second
+    network into the same /stage keeps its own boxes (no cross-sweep), a rebuild
+    refreshes in place (no stacking), and artist boxes are untouched."""
+
+    class _Box:
+        def __init__(self, name, parent):
+            self._name, self._p = name, parent
+            self.members, self.comment, self.color = [], "", None
+
+        def name(self):
+            return self._name
+
+        def destroy(self):
+            self._p._boxes.remove(self)
+
+        def addNode(self, n):
+            self.members.append(n)
+
+        def nodes(self):
+            return list(self.members)
+
+        def setComment(self, c):
+            self.comment = c
+
+        def setColor(self, c):
+            self.color = c
+
+        def fitAroundContents(self):
+            pass
+
+    class _Parent:
+        def __init__(self):
+            self._boxes = []
+
+        def networkBoxes(self):
+            return list(self._boxes)
+
+        def createNetworkBox(self, name):
+            existing = {b.name() for b in self._boxes}
+            final, i = name, 1
+            while final in existing:      # emulate Houdini auto-suffix on collision
+                final, i = f"{name}{i}", i + 1
+            b = TestSectionBoxNamespacing._Box(final, self)
+            self._boxes.append(b)
+            return b
+
+    class _Node:
+        def __init__(self, y):
+            self._y = y
+
+        def position(self):
+            return (0.0, self._y)
+
+    def _apply(self, monkeypatch, parent, namespace):
+        import types
+        from synapse.server import handler_helpers as hh
+        monkeypatch.setattr(hh, "_HOU_AVAILABLE", True)
+        monkeypatch.setattr(hh, "hou", types.SimpleNamespace(Color=lambda c: c))
+        # full monotonic shot: 3 bands, Y strictly descending by rank
+        ranks = {"geo": 100, "mat": 200, "cam": 400, "light": 500, "rs": 700, "rop": 800}
+        ys = {"geo": 0.0, "mat": -1.0, "cam": -2.0, "light": -3.0, "rs": -4.0, "rop": -5.0}
+        ith = {nid: self._Node(ys[nid]) for nid in ranks}
+        return hh._apply_section_boxes(parent, ith, ranks, namespace=namespace)
+
+    def _sec(self, parent):
+        return sorted(b.name() for b in parent.networkBoxes()
+                      if b.name().startswith("synapse_sec_"))
+
+    def test_two_networks_each_keep_three_boxes(self, monkeypatch):
+        p = self._Parent()
+        a = self._apply(monkeypatch, p, "OUT_A")
+        assert set(a) == {"synapse_sec_OUT_A_scene", "synapse_sec_OUT_A_lighting",
+                          "synapse_sec_OUT_A_render"}
+        self._apply(monkeypatch, p, "OUT_B")
+        assert len(self._sec(p)) == 6            # both networks kept their 3
+
+    def test_rebuild_same_network_does_not_stack(self, monkeypatch):
+        p = self._Parent()
+        self._apply(monkeypatch, p, "OUT_A")
+        self._apply(monkeypatch, p, "OUT_B")
+        before = self._sec(p)
+        self._apply(monkeypatch, p, "OUT_A")     # rebuild A
+        assert self._sec(p) == before            # 6, identical names, no suffix
+
+    def test_sweep_touches_only_this_namespace(self, monkeypatch):
+        p = self._Parent()
+        self._apply(monkeypatch, p, "OUT_A")
+        self._apply(monkeypatch, p, "OUT_B")
+        self._apply(monkeypatch, p, "OUT_A")     # rebuild A must not sweep B
+        assert any(b.name().startswith("synapse_sec_OUT_B_")
+                   for b in p.networkBoxes())
+
+    def test_artist_boxes_never_touched(self, monkeypatch):
+        p = self._Parent()
+        p.createNetworkBox("artist_keepme")
+        self._apply(monkeypatch, p, "OUT_A")
+        self._apply(monkeypatch, p, "OUT_A")
+        assert any(b.name() == "artist_keepme" for b in p.networkBoxes())
+
+    def test_dirty_namespace_is_sanitised(self, monkeypatch):
+        p = self._Parent()
+        drawn = self._apply(monkeypatch, p, "OUT-A!")   # illegal chars sanitised
+        assert all(d.startswith("synapse_sec_OUT") for d in drawn)
+        assert all("!" not in d and "-" not in d for d in drawn)
+
+    def test_empty_namespace_is_legacy_global(self, monkeypatch):
+        p = self._Parent()
+        drawn = self._apply(monkeypatch, p, "")
+        assert set(drawn) == {"synapse_sec_scene", "synapse_sec_lighting",
+                              "synapse_sec_render"}
+
+    def test_display_node_change_does_not_stack(self, monkeypatch):
+        """Seam fix: the SAME network rebuilt with a changed display node (=>
+        changed namespace) must sweep its prior boxes by MEMBERSHIP, not stack
+        a fresh namespaced set. Reuses the SAME node objects across rebuilds."""
+        import types
+        from synapse.server import handler_helpers as hh
+        monkeypatch.setattr(hh, "_HOU_AVAILABLE", True)
+        monkeypatch.setattr(hh, "hou", types.SimpleNamespace(Color=lambda c: c))
+        ranks = {"geo": 100, "mat": 200, "cam": 400, "light": 500,
+                 "rs": 700, "rop": 800}
+        ys = {"geo": 0.0, "mat": -1.0, "cam": -2.0, "light": -3.0,
+              "rs": -4.0, "rop": -5.0}
+        shared = {nid: self._Node(ys[nid]) for nid in ranks}   # SAME nodes reused
+        p = self._Parent()
+        hh._apply_section_boxes(p, shared, ranks, namespace="rop")
+        hh._apply_section_boxes(p, shared, ranks, namespace="rs")   # display changed
+        hh._apply_section_boxes(p, shared, ranks, namespace="cam")  # again
+        assert len(self._sec(p)) == 3, (
+            "display-node change stacked boxes: %s" % self._sec(p))
