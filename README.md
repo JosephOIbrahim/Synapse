@@ -11,7 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
   <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4642%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4712%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.33.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
@@ -218,7 +218,7 @@ flowchart LR
 flowchart LR
     DROP["Drop + drop-week<br/>9 runbook artifacts"]:::hou --> ROADMAP["CTO roadmap<br/>silent-break register"]:::panel
     ROADMAP --> FIX["Fix cycles<br/>forge → assay → crucible"]:::bridge
-    FIX -->|"merged + suite-reverified"| MERGED[("master<br/>4,642 / 0")]:::hou
+    FIX -->|"merged + suite-reverified"| MERGED[("master<br/>4,712 / 0")]:::hou
     MERGED --> LIVE["Live-bridge reconfirm<br/>32 verdicts → VERIFIED-LIVE"]:::bridge
     LIVE -->|"proven on running 22.0.368"| DEMO[("H22-native<br/>Solaris · COP · memory")]:::hou
     LIVE -.hostile pass finds a risk.-> NEXT["New fix cycle<br/>ratified · gated"]:::side
@@ -239,14 +239,14 @@ flowchart LR
 **Three cycles have shipped — three kinds of truth** (with capability + readiness catalogs behind them):
 
 - 🔌 **① Wiring truth — *how* nodes connect.**
-  - `host/introspect_connectivity.py` instantiates **282 node types** headless and records their real input/output counts + slot labels → a committed, integrity-checked catalog.
+  - `host/introspect_connectivity.py` instantiates **457 node types** headless (the **full LOP category** plus every emitted type) and records their real input/output counts + slot labels → a committed, integrity-checked catalog. *(The Solaris sweep widened it from an emit-seeded 37 LOP types to all 218 on 22.0.368 — see the hardening pass below.)*
   - `wire_by_label()` (`python/synapse/core/wiring.py`) resolves inputs by **probed label, never remembered index** — fail-loud on an unknown label/type.
   - The validator's **slot-semantic checks (P3e)** reject an edge into an input the type doesn't have.
   - *Receipts: the review sweep ran **141 sites, 0 critical**; the cycle fixed **2 known miswires** (swapped solver inputs).*
 
 - 🧭 **② Solaris context truth — *what* the nodes are.**
   - A corpus-authored, probe-cross-checked **LOP / Solaris knowledge catalog** teaches the validator the semantics wiring truth can't see.
-  - It **hard-rejects phantom LOP types** the model reaches for out of SOP habit — there is no `grid` or `plane` LOP (use a `cube`).
+  - It **hard-rejects phantom LOP types** the model reaches for out of SOP habit — there is no `grid` LOP on 22.0.368 (`grid` is a *SOP* type), so it points you at the real `plane` LOP or a scaled-flat `cube`.
   - It **advises** when an `assignmaterial` has no material source upstream (a `materiallibrary`, *or* a `reference`/`sublayer` layer that already authors the materials).
   - *Receipts: **20 checks, 0 critical**; the ordering rule was softened from a hard error to an advisory after adversarial review caught it would false-reject valid reference/sublayer material graphs.*
 
@@ -277,7 +277,7 @@ flowchart LR
 - 📝 **Propose** — the model lays the whole network out first: every node, every wire, on paper.
 - 🔎 **Validate against your live scene** — every input exists, every wire fits its input type, the parent network and every referenced node are really there, the plan is a DAG, and names don't collide. If a wire would land on an input you've *already* connected, validation **halts** — it never quietly severs your work.
 - 📐 **Validate against probed truth (P3e)** — the wiring catalog rejects an edge into an input index the node type doesn't have, and a slot label that resolves to a different index. Memory doesn't get a vote; the probe does.
-- 🧭 **Validate against Solaris knowledge** — a corpus-authored, probe-cross-checked catalog rejects **phantom LOP types** (there is no `grid`/`plane` LOP — use a `cube`) and flags a missing material source upstream of `assignmaterial`. Context the wiring truth can't see.
+- 🧭 **Validate against Solaris knowledge** — a corpus-authored, probe-cross-checked catalog rejects **phantom LOP types** (there is no `grid` LOP — it's a SOP; use the real `plane` LOP or a `cube`) and flags a missing material source upstream of `assignmaterial`. Context the wiring truth can't see.
 - 🔨 **Build — one undo group** — an unconditional TOCTOU re-validate first (a node deleted since propose halts with zero mutation), then create → set parms → wire → read back, all inside a single `hou.undos.group`. **One Ctrl+Z reverts the whole build.**
 - 🛟 **Rollback on failure** — if the build trips mid-way, it destroys the partial nodes inside the undo group. Zero net mutation, a structured `FAILED` result, no orphan nodes.
 - 🧾 **Receipts** — every build writes an `agent.usd` record: decision, reasoning, revert path.
@@ -303,6 +303,41 @@ flowchart LR
     classDef hou fill:#DE8425,stroke:#6B3A0C,color:#1A1208
     classDef side fill:#F2BC77,stroke:#B37A33,color:#1A1208
 ```
+
+---
+
+## ✦ Solaris, hardened end-to-end — and a harness that keeps it that way
+
+**Ask for a Solaris network and you get one that's *correct*, not just connected — laid out the way a TD would lay it out.** A hardening pass took the builder from "the demo works" to "an artist can rely on it," grounded on a live-probed catalog of all **218 LOP types** on 22.0.368 (recognition went from an emit-seeded 17% to complete):
+
+- 🎯 **Recognition is complete** — every LOP type the build actually has is known, so a request resolves to a real node or is rejected *before* anything is built, with the fix named (ask for a `grid`, get pointed at the `plane` LOP).
+- 🔀 **Wiring is correct** — a ground plane and shadow catcher land **upstream of the render ROP** (they used to wire past it and render nothing); merge input order is preserved as USD opinion strength; nothing silently clobbers an existing connection.
+- 📐 **Layout reads like a TD's** — nodes sit in barycentered vertical columns, fan-in inputs run left-to-right in wire order (no crossed wires), and the network is auto-sectioned into labelled **SCENE / LIGHTING / RENDER** boxes so a 60-node shot scans at a glance.
+- ➕ **Extend, don't clobber** — reference a node you already built (`{"existing": true}`) and new sources **append to its next free input**, idempotently: build → look → rebuild never duplicates a wire.
+
+**And it stays hardened.** The pipeline that did this is now a durable, invocable harness — because four times over, code that passed every isolated test hid a *composed* regression an independent adversary caught, twice a data-corruption bug on the second action (the rebuild, the second network). So that adversary is codified:
+
+- 🛡️ **`seam-hunter`** — an agent that attacks a just-integrated change on the **live** build, hunting the regression isolated tests hide; read-only, finds and never fixes. On its first run it returned GO on 13 attacks *and* caught a real residual the unit tests missed.
+- 🧪 **`run_live_probes.py`** — the probe battery, enforcing that a probe claiming "the fix works" also proves the fix is *real*.
+- 🧭 **the `solaris-harden` skill** — the spine that coordinates the loop and halts at every human gate, reusing the existing catalog gates rather than rebuilding them.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
+flowchart LR
+    GATE["Entry gate<br/>catalog fresh · phantom-clean<br/>refuse on stale truth"]:::bridge --> MAP["Map + spec<br/>live-grounded contracts<br/>(read-only agents)"]:::panel
+    MAP --> INT["Integrate<br/>◇ human / CTO"]:::artist
+    INT --> SEAM["Seam-gate ★<br/>seam-hunter attacks the<br/>COMPOSED change, live<br/>build→rebuild · 2nd network"]:::hou
+    SEAM -->|"GO"| VER["Verify<br/>probe battery + suite<br/>+ ratchet floor"]:::panel
+    SEAM -.->|"NO-GO · a real regression"| INT
+    VER --> LAND["Land<br/>◇ human · never self-merge"]:::artist
+    classDef artist fill:#DE8425,stroke:#7A4310,color:#1A1208
+    classDef panel fill:#E8963B,stroke:#9C5A10,color:#1A1208
+    classDef bridge fill:#EEA958,stroke:#9C5A10,color:#1A1208
+    classDef hou fill:#DE8425,stroke:#6B3A0C,color:#1A1208
+    classDef side fill:#F2BC77,stroke:#B37A33,color:#1A1208
+```
+
+> *The one lesson, codified: a unit test and a build-once probe are necessary, not sufficient — the regression lives in the **second** action. The seam-gate and a build→rebuild probe are where it dies.*
 
 ---
 
@@ -446,7 +481,7 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
 - 🧾 **The honest envelope** — both roads into Houdini leave `IntegrityBlock` receipts: the audited `/mcp` bridge, and path-qualified, never-faked live-path records the self-tuning advisor can see.
 - 🔁 **Utility flywheel** — ratified cycles across wiring · Solaris context · diagnostic cook-truth · the H22 connectivity re-fold, self-improving on a human-ratified loop.
-- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint (**4,642 / 0**, floor 4,275), a posture-scoped red-driver, fix-is-real behavioral probes, and forge-builds-crucible-attacks separation that caught a ⅓-implemented "loud-error" fix before it shipped.
+- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint (**4,712 / 0**, floor 4,275), a posture-scoped red-driver, fix-is-real behavioral probes, and a codified **seam-gate** (`seam-hunter`) that attacks a just-integrated change on the live build and has caught a composed regression — twice a corruption bug — every time isolated tests went green.
 - 🕵️ **Vendor-architect lens** — the `sidefx-cto` agent surfaces the non-obvious second-order changes a major brings; its first pass caught the memory-gate gap this release then closed live.
 - 🌋 **Copernicus expansion, spec'd** — read/analysis + node-API layers deep and live-verified; the generative frontier (scaffold rebuilds, terrain emission, neural COP nodes with preflight honesty) is a live-probed build spec, next up.
 - 🤝 **APEX MCP boundary held** — Houdini 22 keynote-announced a rigging-scoped MCP preview (not shipped); the ratified non-competing boundary stands unchanged.
@@ -520,9 +555,14 @@ python/synapse/
 
 host/                           # repo-root live-introspection probes (nodetypes · connectivity · runtime symbols · cook API · cook-truth perturbation trials)
 scripts/                        # installer · h22_api_delta.py drop-day probe · flywheel_review_{wiring,lop}.py · mine_lop_knowledge.py
-tests/                          # 4,642 passing (Moneta-gated + Houdini-gated tests skip on a clean clone)
+                                #   harvest_lop_catalog.py  live full-LOP-catalog producer (218 types on H22)
+                                #   run_live_probes.py      the seam-gate VERIFY stage — probe battery + negative-control check
+                                #   live_probes/            build→rebuild probes, each with a fix-is-real companion
+tests/                          # 4,712 passing (Moneta-gated + Houdini-gated tests skip on a clean clone)
                                 #   test_marshal_lint.py    bans the unsafe main-thread primitive repo-wide
                                 #   test_marshal_hostile.py adversarial suite for the marshal boundary
+.claude/agents/seam-hunter.md   # the adversarial composition gate — attacks a composed change on the live build
+.claude/skills/solaris-harden/  # the hardening-pipeline spine — ground → spec → seam-gate → verify → land
 harness/                        # the self-verifying loop — five tracks (H22 · v6 · context · studio · diagnostic), boundary guardrails, the full-suite green ratchet, the readiness verdict
 docs/                           # installation · upgrade · boundary contract · coexistence · reviews
 mcp_server.py                   # WebSocket adapter for external MCP clients

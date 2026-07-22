@@ -25,7 +25,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Multimedia :: Graphics :: 3D Modeling",
 ]
-keywords = ["houdini", "vfx", "ai-copilot", "claude", "anthropic", "agent", "mcp", "websocket", "usd", "solaris", "kinefx", "apex", "materialx", "copernicus", "pdg", "rigging", "procedural", "memory", "provenance", "audit", "security", "resilience", "automation", "synapse", "gemini", "nvidia", "nemotron", "multi-provider", "openai-compatible", "ollama", "local-llm", "flywheel", "self-improving", "knowledge-grounding", "graph-validation", "consent", "human-in-the-loop"]
+keywords = ["houdini", "vfx", "ai-copilot", "claude", "anthropic", "agent", "mcp", "websocket", "usd", "solaris", "kinefx", "apex", "materialx", "copernicus", "pdg", "rigging", "procedural", "memory", "provenance", "audit", "security", "resilience", "automation", "synapse", "gemini", "nvidia", "nemotron", "multi-provider", "openai-compatible", "ollama", "local-llm", "flywheel", "self-improving", "knowledge-grounding", "graph-validation", "node-recognition", "network-layout", "adversarial-testing", "seam-gate", "consent", "human-in-the-loop"]
 dependencies = [
     "pydantic>=2.0",
 ]
