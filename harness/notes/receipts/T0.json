@@ -1,0 +1,75 @@
+{
+  "schema": "receipt/v1",
+  "task": "T.0",
+  "title": "Token baseline probe - preloaded tool-definition cost across all emitting surfaces",
+  "executed_by": "claude-code (headless); receipt reconstructed post-hoc from artifacts + logs",
+  "receipt_written": "2026-07-23",
+
+  "commit_before": "7e5cc7d",
+  "commit_after": "d92bb4b",
+
+  "files_touched": [
+    "scripts/token_baseline.py",
+    "harness/notes/token_baseline.json",
+    "harness/verify/checks.py",
+    "harness/notes/spec-T-tool-surface.md",
+    "harness/verify/token_ceiling.json",
+    "harness/tasks.json",
+    "harness/agent-settings.json",
+    "harness/run.ts"
+  ],
+
+  "tests_before": { "passed": 4708, "failed": 4, "skipped": 100 },
+  "tests_after":  { "passed": 4708, "failed": 4, "skipped": 100 },
+  "test_delta": 0,
+  "commandment_7": "held - T.0 is a read-only probe and added no tests; the 4 failures are pre-existing and NOT caused by this leg (see drift D3)",
+
+  "check_verdict": "check_token_baseline_fresh -> ok:true - 'preload_tokens_total: mcp_http=17310, mcp_stdio=13901, panel=14380, panel_worker=10264 [tiktoken/cl100k_base (proxy BPE, not Claude's tokenizer)] - surfaced, not judged'",
+
+  "method": "tiktoken/cl100k_base - proxy BPE, explicitly NOT Claude's tokenizer, labelled as such in the artifact",
+  "preload_tokens_total": {
+    "mcp_http": 17310,
+    "mcp_stdio": 13901,
+    "panel": 14380,
+    "panel_worker": 10264
+  },
+  "ceiling": 2000,
+  "worst_surface_ratio": 8.66,
+  "re_rank_verdict": "T.1 CONFIRMED, not demoted. spec-T's contract ('a small number demotes T.1 and that is the probe working') is satisfied in the other direction. Do not re-litigate.",
+
+  "drift": [
+    {
+      "id": "D1",
+      "severity": "process",
+      "note": "No receipt was written by the executing agent. The baton required harness/notes/receipts/T0.json at completion; the work landed and the return baton did not. This file is a post-hoc reconstruction, which is strictly weaker than one emitted at execution time.",
+      "correction": "Receipts must be a side effect of the RUNNER (run.ts), not an instruction to the agent. run.ts already knows commit before/after, exit codes, and files touched. An agent asked in prose for a JSON shape returns whatever it likes - observed twice this session."
+    },
+    {
+      "id": "D2",
+      "severity": "accuracy",
+      "note": "The mcp_stdio row is a Tool() shape RECONSTRUCTED from shared TOOL_DEFS, not the payload mcp_server.py::list_tools() actually emits. The artifact's own 'source' field says so honestly. list_tools() additionally appends 6 synapse_group_* tools, the inspector tool, and the scout tool - none in TOOL_DEFS, none counted in 13901.",
+      "correction": "stdio is under-reported by at least 8 tools. Re-measure by serialising list_tools() directly (import is side-effect-free, __main__ guard at mcp_server.py:1073) before the number is quoted externally."
+    },
+    {
+      "id": "D3",
+      "severity": "resolved",
+      "note": "The suite was RED during T.0 (4 failed vs a 0-failure floor), all in tests/test_bridge_endpoint.py. Initially hypothesised as a Python 3.14 artifact. That hypothesis was WRONG.",
+      "correction": "Root cause was bridge_endpoint._pid_alive calling os.kill(pid, 0) on Windows, where CPython implements os.kill via TerminateProcess with the signal as exit code - it killed the process it probed, including the pytest runner at item 24. Platform-specific, not version-specific. Fixed in 0d78515; floor now 4716 passed / 0 failed."
+    },
+    {
+      "id": "D4",
+      "severity": "architecture-surface",
+      "note": "The authoring surface asserted in a governing document that mcp_stdio and mcp_http were byte-identical. It had measured the http surface twice and mislabelled one instance. Retracted in the baton before dispatch.",
+      "correction": "The evidence ladder needs a VERIFIED-DERIVED rung between STATIC and UNVERIFIED. A claim inferred from a probe is not a probe, and it wore a probe's label here."
+    },
+    {
+      "id": "D5",
+      "severity": "environment",
+      "note": "All suite runs used system Python 3.14.2, where the vendored cp311+cp313 tree is ABI-INACTIVE (warning emitted on every run). drop.json declares the supported runtime as H22 Python 3.13.10.",
+      "correction": "H22's bundled python313 cannot currently run the suite - 54 collection errors from missing test dependencies. Provisioning that environment is a prerequisite before the supported interpreter can be the canonical runner."
+    }
+  ],
+
+  "ratified": false,
+  "ratification_note": "ratified:false is the correct resting state. The flip is human-only. This receipt records what happened; it does not sanction what happens next."
+}
