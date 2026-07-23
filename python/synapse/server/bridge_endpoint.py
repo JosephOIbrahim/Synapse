@@ -95,16 +95,50 @@ def _pid_alive(pid: Optional[int]) -> bool:
     if pid <= 0:
         return False
     if os.name == "nt":
-        # Windows: os.kill(pid, 0) raises for a dead pid; a live pid returns
-        # cleanly. PermissionError means the process exists but we can't
-        # signal it — still alive.
+        # Windows has NO signal delivery. CPython implements os.kill() on nt
+        # via TerminateProcess(), passing the signal number as the process
+        # EXIT CODE — so os.kill(pid, 0) does not probe liveness, it KILLS
+        # pid with exit code 0. The previous implementation did exactly that
+        # to whatever process the sidecar named, including a live Houdini,
+        # and self-terminated the pytest runner in tests/test_bridge_endpoint.py.
+        # Probe with OpenProcess/GetExitCodeProcess. Never signal on nt.
         try:
-            os.kill(pid, 0)
-            return True
-        except PermissionError:
-            return True
-        except (OSError, ProcessLookupError):
-            return False
+            import ctypes
+            from ctypes import wintypes
+
+            PROCESS_QUERY_LIMITED_INFORMATION = 0x1000  # Vista+
+            STILL_ACTIVE = 259
+            ERROR_ACCESS_DENIED = 5
+
+            k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            # restype MUST be HANDLE — the default c_int truncates on 64-bit.
+            k32.OpenProcess.restype = wintypes.HANDLE
+            k32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+            k32.GetExitCodeProcess.restype = wintypes.BOOL
+            k32.GetExitCodeProcess.argtypes = (
+                wintypes.HANDLE,
+                ctypes.POINTER(wintypes.DWORD),
+            )
+            k32.CloseHandle.restype = wintypes.BOOL
+            k32.CloseHandle.argtypes = (wintypes.HANDLE,)
+
+            handle = k32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+            if not handle:
+                # ACCESS_DENIED => the process exists, we just cannot query it
+                # => alive. Anything else (typically ERROR_INVALID_PARAMETER)
+                # => no such pid => dead.
+                return ctypes.get_last_error() == ERROR_ACCESS_DENIED
+            try:
+                code = wintypes.DWORD()
+                if not k32.GetExitCodeProcess(handle, ctypes.byref(code)):
+                    # Cannot determine — do not strand a valid sidecar.
+                    return True
+                # Known caveat: a process that legitimately exited with code
+                # 259 reads as alive. That direction matches this function's
+                # documented contract (unknown => treat as alive).
+                return code.value == STILL_ACTIVE
+            finally:
+                k32.CloseHandle(handle)
         except Exception:
             return True
     else:
