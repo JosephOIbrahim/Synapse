@@ -128,6 +128,14 @@ harness/state/posture.json
 harness/state/release_readiness_verdict.json
 harness/state/studio_readiness_verdict.json
 harness/state/recovery/
+# transient per-run stderr logs (torch/pynvml warnings, harness probe output)
+harness/state/*.err
+
+# docs/ research + debug scratch — scraped page dumps and node-diagnostic debris,
+# never shared project truth
+docs/nca_*
+docs/debug.txt
+docs/cop_diag.txt
 
 # Release-week demo captures (Leg 1) — raw screen recordings, never tracked
 demo/captures/
