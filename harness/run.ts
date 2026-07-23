@@ -238,7 +238,29 @@ function runAgent(systemPrompt: string, userMsg: string, cwd: string): string {
   try {
     const r = spawnSync(
       CLAUDE_BIN,
-      ["--settings", AGENT_SETTINGS, "-p", "--permission-mode", "acceptEdits", "--append-system-prompt-file", sysFile.replace(/\\/g, "/")],
+      [
+      "--settings", AGENT_SETTINGS, "-p", "--permission-mode", "acceptEdits",
+      // Opt-in only: unset env => argv is byte-identical to the pre-T-track loop.
+      // EFFORT  - claude 2.1.218 exposes `--effort <level>`; confirm the level is
+      //           valid before a long run (`claude --effort <lvl> -p ok`).
+      // BUDGET  - hard spend ceiling per agent invocation. An unattended loop with
+      //           MAX_ROUNDS repair rounds has no natural floor; SYNAPSE_ANTHROPIC_KEY
+      //           isolation protects the ACCOUNT, not the AMOUNT.
+      ...(process.env.EFFORT ? ["--effort", process.env.EFFORT] : []),
+      ...(process.env.BUDGET ? ["--max-budget-usd", process.env.BUDGET] : []),
+      // SUBAGENTS - forward subagent reasoning into the captured transcript. In an
+      //           UNATTENDED run the log is the only witness; without this, a failure
+      //           three hours in loses the trace of whichever .claude/agents/* actually
+      //           made the call. Env-gated because it inflates stdout against the 64MB
+      //           maxBuffer below - recommended ON for long runs, off for single --task.
+      ...(process.env.SUBAGENTS ? ["--forward-subagent-text"] : []),
+      // MODEL   - pin it. The CLI default (Fable 5) meters against usage credits,
+      //           which are empty; an unpinned default fails at spawn with a
+      //           BILLING error that looks nothing like its cause. Verified
+      //           2026-07-23: opus and sonnet answer on the Max 20x pool.
+      "--model", process.env.MODEL ?? "opus",
+      "--append-system-prompt-file", sysFile.replace(/\\/g, "/"),
+    ],
       {
         cwd,
         encoding: "utf8",

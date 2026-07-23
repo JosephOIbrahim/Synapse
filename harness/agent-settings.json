@@ -11,6 +11,7 @@
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Edit(python/synapse/**)",
+      "Edit(mcp_server.py)",
       "Edit(pyproject.toml)",
       "Edit(DEMO_SCRIPT.md)",
       "Edit(.claude/**)",
@@ -30,7 +31,8 @@
       "Edit(harness/run.ts)",
       "Edit(harness/daily.ts)",
       "Edit(harness/state/**)",
-      "Edit(harness/verify/suite_baseline.json)"
+      "Edit(harness/verify/suite_baseline.json)",
+      "Edit(harness/verify/token_ceiling.json)"
     ]
   },
   "env": {

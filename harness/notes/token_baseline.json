@@ -1,0 +1,55 @@
+{
+  "schema": "token_baseline/v1",
+  "stats": {
+    "method": "tiktoken/cl100k_base (proxy BPE, not Claude's tokenizer)",
+    "surfaces": {
+      "mcp_http": {
+        "tools": 115,
+        "bytes": 77994,
+        "chars": 77992,
+        "preload_tokens": 17310,
+        "source": "synapse.mcp.protocol.jsonrpc_result(id, {'tools': tools.get_tools()})"
+      },
+      "mcp_stdio": {
+        "tools": 115,
+        "bytes": 62989,
+        "chars": 62987,
+        "preload_tokens": 13901,
+        "source": "mcp_server.py Tool() shape rebuilt from shared TOOL_DEFS (annotations dropped)"
+      },
+      "panel": {
+        "tools": 121,
+        "bytes": 65054,
+        "chars": 65052,
+        "preload_tokens": 14380,
+        "source": "synapse.panel.tool_bridge.get_anthropic_tools()"
+      },
+      "panel_worker": {
+        "tools": 93,
+        "bytes": 46319,
+        "chars": 46317,
+        "preload_tokens": 10264,
+        "source": "synapse.panel.tool_bridge.get_anthropic_tools_for_worker()"
+      }
+    },
+    "preload_tokens_total": {
+      "mcp_http": 17310,
+      "mcp_stdio": 13901,
+      "panel": 14380,
+      "panel_worker": 10264
+    },
+    "registry_tools": 115,
+    "group_only_tools": [
+      "synapse_group_cops",
+      "synapse_group_memory",
+      "synapse_group_render",
+      "synapse_group_scene",
+      "synapse_group_tops",
+      "synapse_group_usd"
+    ],
+    "group_only_count": 6,
+    "boundary": "MCP surfaces carry the 115 registry tools. The panel additionally carries the 6 synapse_group_* knowledge tools (121). panel_worker is the RBAC-narrowed subset and is reported for contrast, not as a fourth surface.",
+    "registry_blake2b": "c0cd3db16c293e38a3f18a35ed51870f"
+  },
+  "blake2b": "ef713526284022cd649276ffffe93127"
+}

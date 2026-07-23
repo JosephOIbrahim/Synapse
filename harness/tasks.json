@@ -80,7 +80,12 @@
     "semantic_index_fresh",
     "knowledge_topic_coverage",
     "knowledge_root_canonical",
-    "rewire_assessed"
+    "rewire_assessed",
+    "token_baseline_fresh",
+    "tool_surface_deferred",
+    "tool_surface_parity",
+    "code_mode_undo_wrapped",
+    "agent_eval_backbone"
   ],
   "guardrails": {
     "_comment": "Run on EVERY sprint by checks.py, in addition to the task's own verify list. A guardrail with ok:false ⇒ deterministic FAIL (run.ts short-circuits before the Evaluator and writes a repair ticket). A guardrail with ok:null ⇒ not yet wired ⇒ WARN, never blocks. These enforce SYNAPSE_H22_BOUNDARY.md's non-goals so no Generator round can silently erode the moat: no APEX corpus in scout, no rigging-authoring drift, no mutation that bypasses the ledger, and no newly-introduced phantom hou.* API (dir()-symbol-table-gated). PLUS the green ratchet (suite_baseline): the full `pytest tests/` result must not regress vs the committed floor in harness/verify/suite_baseline.json — failures only DOWN, passes only UP — so no Generator round can green its target while reddening other tests.",
@@ -1410,6 +1415,110 @@
         "rewire_assessed"
       ],
       "note": "Phase 1 = decision-first MVP: scripts/rewire_assess.py reads vex-corpus/output/corpus/merged_corpus.jsonl (2513 chunks, 2083 with code), chunks to atomic code_blocks, VALIDATES each with the real vcc.exe (Houdini 21.0.671, headless/license-free — the 'dir() is a hard gate' analog for VEX; deterministically rejects the shipped 'vector pts = pts[];' -> Error 1019), exact-dedups, flags redundancy vs existing rag/ embeddings, and writes harness/notes/rewire_assessment.json. Read-only — writes NOTHING to rag/. check_rewire_assessed confirms the scorecard exists + is well-formed and surfaces usable_entries_estimate; it does NOT gate on the number (the re-wire call is the maintainer's, informed by it). Phases 2 (quarantine + flywheel_queue ratify + promote->K.5-refresh) and 3 (section-level embeddings -> redundancy becomes a gate) build only if Phase 1's number justifies it. Two-axis risk posture: validity=strict (vcc deterministic, reject freely), redundancy=admit-then-flag (whole-file cosine measured max 0.901 among distinct files, so a hard reject <=0.90 would nuke net-new content — asymmetric cost). Full contract: spec-K6."
+    },
+    {
+      "id": "T.0",
+      "phase": "toolsurface",
+      "mode": "A",
+      "crit": false,
+      "layer": "utility",
+      "title": "Tool-surface track - token baseline probe: measure the PRELOADED tool-definition cost on all three surfaces (mcp stdio / mcp http / panel), deposit harness/notes/token_baseline.json",
+      "refs": [
+        "harness/notes/spec-T-tool-surface.md",
+        "scripts/token_baseline.py",
+        "python/synapse/mcp/_tool_registry.py",
+        "mcp_server.py",
+        "harness/notes/token_baseline.json"
+      ],
+      "verify": [
+        "token_baseline_fresh"
+      ],
+      "note": "C.0/K.0-shaped arming task: read-only, produces its own artifact, gates on NOTHING numeric. Serialize tool definitions exactly as each surface puts them on the wire and count them - do not estimate from source, count the emitted payload. Schema token_baseline/v1, blake2b over the stats block, plus a digest of _tool_registry.py so staleness is loud (copy check_knowledge_baseline_fresh verbatim). check_token_baseline_fresh confirms the artifact exists and is sound and SURFACES preload_tokens_total; it does not judge it (check_rewire_assessed precedent). THE NUMBER RE-RANKS T.1-T.3 - C.0's catalog re-ranks C.1-C.6 and the 1.4 probe re-ranks V.5-V.7, same contract. A small number demotes T.1 and that is the probe working, not failing. This deposit is the public artifact: it turns 'we are token-frugal' from architecture prose into a quotable fact, or kills the claim."
+    },
+    {
+      "id": "T.1",
+      "phase": "toolsurface",
+      "mode": "A",
+      "crit": true,
+      "layer": "build",
+      "title": "Tool-surface track - deferred tool surface: three in-context verbs (tool_search / tool_describe / tool_execute) over an OFF-CONTEXT registry; parity gated so no tool is lost buying the token win",
+      "refs": [
+        "harness/notes/spec-T-tool-surface.md",
+        "python/synapse/mcp/_tool_registry.py",
+        "python/synapse/mcp/tools.py",
+        "python/synapse/mcp/server.py",
+        "mcp_server.py",
+        "harness/verify/token_ceiling.json",
+        "tests/test_tool_surface.py"
+      ],
+      "verify": [
+        "tool_surface_deferred",
+        "tool_surface_parity",
+        "mcp_registered",
+        "mcp_truth_contract"
+      ],
+      "note": "A search layer IN FRONT of _tool_registry.py - NOT a rewrite of it (one dispatch spine, N front doors: swappability is a property of Protocol contracts, not package structure). tool_surface_deferred reads the committed ceiling in harness/verify/token_ceiling.json (max_preload_tokens 2000), which is deny-listed like suite_baseline.json so a sprint cannot raise its own bar; the ceiling is a REQUIRED ceiling set by ruling, not an observed floor, which is why T.0->T.1 needs no human promotion. tool_surface_parity is the load-bearing gate and the likeliest quiet failure of this whole track: EVERY tool reachable through the flat registry must remain reachable through search->execute, reach count strictly increases or holds. Commandment 7 in a different coat - a token reduction that drops a tool is a regression wearing a win's clothes. Fix forward, never soften the parity set. Once this lands, tool_surface_parity is promoted into the standing guardrails (it reports ok:null -> WARN until then, per the wired/not-wired mechanism)."
+    },
+    {
+      "id": "T.2",
+      "phase": "toolsurface",
+      "mode": "A",
+      "crit": true,
+      "layer": "build",
+      "title": "Tool-surface track - code mode: typed in-process API the agent writes code against, on the SHARED dispatch path (undo + consent + ledger + RBAC). Architecture RULED 2026-07-23; this task executes the ruling, it does not make it",
+      "refs": [
+        "harness/notes/spec-T-tool-surface.md",
+        "python/synapse/server/handlers.py",
+        "python/synapse/panel/bridge_adapter.py",
+        "shared/bridge.py",
+        "python/synapse/core/gates.py",
+        "tests/test_code_mode.py"
+      ],
+      "verify": [
+        "code_mode_undo_wrapped",
+        "mutation_fail_closed",
+        "ledger"
+      ],
+      "note": "NOT a human gate - RULED (spec-T S2/T.2, 2026-07-23): SHARED DISPATCH PATH, no parallel code path. Same shape as R.4, where gate-0.1 stopped being a gate once the direction was committed to DROP_DAY.md; run.ts does not decide architecture, and here it does not have to - the decision predates the run. Rationale on the gate-0.1 pattern: the shared path's cost is milliseconds against a ~2s Houdini cook floor so cost does not discriminate the arms; a parallel path degenerates into execute_python with better ergonomics, splits the safety story across two boundaries, and forfeits the single property a bridged competitor structurally cannot replicate. The gate is the PROPERTY not the mechanism: code_mode_undo_wrapped must show a code-mode mutation traversing the same undo group, consent gate, ledger write and RBAC boundary as tool dispatch. mutation_fail_closed and ledger are inherited unchanged - code mode gets no exemption from R.1's fail-closed rule. If the shared path cannot be made to work, that is a FINDING that returns to the human, never a quiet fallback to a second path."
+    },
+    {
+      "id": "T.3",
+      "phase": "toolsurface",
+      "mode": "A",
+      "crit": false,
+      "layer": "eval",
+      "title": "Tool-surface track - agent OUTCOME evals: promote graph_validator's probe-verified scoring into a frozen, ratcheted eval set. Distinct axis from the 4,275 code tests",
+      "refs": [
+        "harness/notes/spec-T-tool-surface.md",
+        "python/synapse/cognitive/graph_validator.py",
+        "harness/verify/checks.py",
+        "tests/test_agent_evals.py"
+      ],
+      "verify": [
+        "agent_eval_backbone",
+        "eval_backbone"
+      ],
+      "note": "loop-gradable, and S.5-shaped (improves the harness's OWN evaluation, which then better verifies everything else - touching harness/verify/checks.py here is deliberate self-improvement, allowed). The gap is orthogonal, not incremental: 4,275 green tests prove the CODE works; nothing proves the AGENT produces correct Houdini outcomes. graph_validator.py already scores proposed node-graphs against probe-verified truth (the flywheel's core) - it is an eval harness that was never promoted. Freeze a scored set, commit a pass-floor, ratchet it like suite_baseline (floor moves UP only, human-promoted). Reuse the C-track golden discipline: deterministic and render-free (Indie husk no-ops headless, renders never golden). Do NOT duplicate S.5's eval_backbone - extend it; both verifies run so a regression in either fails the sprint."
+    },
+    {
+      "id": "T.4",
+      "phase": "toolsurface",
+      "mode": "A",
+      "blocked_on": "product_call",
+      "crit": false,
+      "layer": "bounded-decision",
+      "title": "Tool-surface track - the panel ruling: product or reference implementation. FROZEN meanwhile - no new feature surface during T",
+      "refs": [
+        "harness/notes/spec-T-tool-surface.md",
+        "python/synapse/panel/"
+      ],
+      "human_gate": {
+        "decision": "product | reference implementation",
+        "recommended": "defer until T.1 + T.2 are merged",
+        "why": "PARTIALLY RULED 2026-07-23: FREEZE, DO NOT DECIDE. panel/ is 23,365 lines across 71 files - the largest first-party package, larger than server/ - and takes no new feature surface during the T-track, bugfix only. The product-vs-reference call is deliberately NOT ruled because T.1 and T.2 change what the panel IS: when the tool surface collapses to three verbs and code mode lands, the panel stops being a tool launcher and becomes a review-and-consent surface. Ruling now would rule on a shape about to change. Re-enters as decidable once T.1 + T.2 are merged to main."
+      },
+      "verify": [],
+      "note": "Filtered out of the queue until a human writes the product call - same trigger class as K.4. The operative half (the freeze) is in force from 2026-07-23 and needs no gate; this entry exists so the deferred half cannot be silently forgotten."
     }
   ]
 }

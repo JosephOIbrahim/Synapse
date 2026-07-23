@@ -1,0 +1,10 @@
+{
+  "_comment": "Preloaded tool-definition budget for the deferred tool surface (T.1), enforced by checks.py::check_tool_surface_deferred. Peer of suite_baseline.json and governed identically: this file is in agent-settings.json's deny-list so a sprint CANNOT raise its own ceiling, and the ratchet runs DOWN only - a human-promoted commit may lower it, nothing may raise it. NOTE the difference from suite_baseline: that file records an OBSERVED floor, this one declares a REQUIRED ceiling. It is therefore set in advance by ruling, not derived from measurement, which is why T.0 -> T.1 needs no human promotion step. T.0's measured number lands in harness/notes/token_baseline.json and is the BEFORE; this is the AFTER the sprint must reach.",
+  "schema": "token_ceiling/v1",
+  "max_preload_tokens": 2000,
+  "measured_surfaces": ["mcp_stdio", "mcp_http", "panel"],
+  "rationale": "Three in-context verbs (tool_search / tool_describe / tool_execute) with descriptions good enough to route 115 tools. Calibrated against published 2026 implementations: Cloudflare Code Mode reaches 2,500+ endpoints through 2 tools in ~1,000 tokens; Speakeasy's search/describe/execute triad reports up to 160x reduction. 2,000 leaves headroom for Houdini-specific routing hints in the search description without drifting back toward a catalog.",
+  "ratchet": "down-only, human-promoted",
+  "set_by": "CTO ruling 2026-07-23 (spec-T-tool-surface.md S2/T.1)",
+  "generated": "2026-07-23"
+}

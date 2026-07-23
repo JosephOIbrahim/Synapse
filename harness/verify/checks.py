@@ -2341,6 +2341,49 @@ def check_knowledge_root_canonical(ctx):
     return {"ok": True, "detail": f"RAG_ROOT default is canonical: {default_expr}"}
 
 
+def check_token_baseline_fresh(ctx):
+    # T.0: the preload-cost snapshot must exist and be internally consistent -
+    # schema v1 + blake2b recompute over the stats block, plus a digest of
+    # _tool_registry.py so a baseline taken against a drifted registry is loud.
+    # SURFACES preload_tokens_total; it does not judge it (check_rewire_assessed
+    # precedent). The number re-ranks T.1-T.3 - a small number demotes T.1 and
+    # that is the probe working, not failing.
+    wt = Path(ctx["wt"])
+    fp = wt / "harness" / "notes" / "token_baseline.json"
+    if not fp.exists():
+        return {"ok": False, "detail": "harness/notes/token_baseline.json missing - run T.0 first "
+                                       "(python scripts/token_baseline.py)"}
+    try:
+        import hashlib
+        data = json.loads(fp.read_text(encoding="utf-8"))
+        if data.get("schema") != "token_baseline/v1":
+            return {"ok": False, "detail": f"schema={data.get('schema')} != token_baseline/v1"}
+        stats = data.get("stats", {})
+        digest = hashlib.blake2b(
+            json.dumps(stats, sort_keys=True, ensure_ascii=False).encode("utf-8"),
+            digest_size=16).hexdigest()
+        if digest != data.get("blake2b"):
+            return {"ok": False, "detail": "baseline blake2b mismatch (corrupt/hand-edited)"}
+    except Exception as e:
+        return {"ok": False, "detail": f"baseline unreadable: {str(e)[:300]}"}
+
+    registry_fp = wt / "python" / "synapse" / "mcp" / "_tool_registry.py"
+    if registry_fp.is_file():
+        import hashlib
+        live = hashlib.blake2b(registry_fp.read_bytes(), digest_size=16).hexdigest()
+        if live != stats.get("registry_blake2b"):
+            return {"ok": False, "detail": "baseline is STALE - _tool_registry.py changed since "
+                                           "the snapshot; re-run scripts/token_baseline.py"}
+
+    totals = stats.get("preload_tokens_total", {})
+    if not totals:
+        return {"ok": False, "detail": "stats.preload_tokens_total empty - nothing measured"}
+    shown = ", ".join(f"{k}={v}" for k, v in sorted(totals.items()))
+    return {"ok": True, "detail": f"preload_tokens_total: {shown} "
+                                  f"[{stats.get('method', 'method unrecorded')}] "
+                                  f"- surfaced, not judged"}
+
+
 DISPATCH = {
     "import_panel": check_import_panel, "brain_answers": check_brain_answers,
     "doctor": check_doctor, "probe_runs": check_probe_runs, "probe_clean": check_probe_clean,
@@ -2417,6 +2460,8 @@ DISPATCH = {
     "release_readiness_review": check_release_readiness_review,
     # K — knowledge/corpus-freshness track
     "knowledge_baseline_fresh": check_knowledge_baseline_fresh,
+    # T-track — tool surface & token truth
+    "token_baseline_fresh": check_token_baseline_fresh,
     "semantic_index_built": check_semantic_index_built,
     "semantic_index_fresh": check_semantic_index_fresh,
     "knowledge_topic_coverage": check_knowledge_topic_coverage,
