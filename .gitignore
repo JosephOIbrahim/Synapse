@@ -134,8 +134,10 @@ harness/state/*.err
 # docs/ research + debug scratch â€” scraped page dumps and node-diagnostic debris,
 # never shared project truth
 docs/*.txt
+docs/nca_*
 # (was an enumeration losing a race: nca_*, debug.txt, cop_diag.txt, and 15 more.
-#  Zero docs/*.txt are tracked, so a blanket rule is safe. L0.F12.)
+#  Zero docs/*.txt
+docs/nca_* are tracked, so a blanket rule is safe. L0.F12.)
 
 # Release-week demo captures (Leg 1) â€” raw screen recordings, never tracked
 demo/captures/
