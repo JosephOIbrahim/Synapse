@@ -19,5 +19,5 @@
             "value": "$SYNAPSE_ROOT/../Moneta/src"
         }
     ],
-    "path": "$SYNAPSE_ROOT/houdini"
+    "hpath": "$SYNAPSE_ROOT/houdini"
 }
