@@ -412,3 +412,50 @@ the code is not the problem, the out-of-box experience is.
 **Ruled:** amend the public claim now. "Five swappable engines" is simultaneously true and
 misleading, and the honest version costs one paragraph. The code waits for T.1, which will change
 what a provider is.
+
+---
+
+# ADDENDUM — REPO HYGIENE
+
+## RULING 24 — The repo does not comply with its own line-ending policy.
+
+**Found** 2026-07-25, by creating the first fresh checkout this repo has had in a long time.
+
+`.gitattributes` declares `* text=auto eol=lf` plus explicit `eol=lf` for fourteen text types.
+Its own comment states the stakes precisely:
+
+> risks a CRLF round-trip on the byte-identical drift-guarded catalogs that
+> `harness/verify/checks.py` compares byte-for-byte against their harness notes
+
+**The blobs in HEAD carry CRLF.** The policy landed in PR #47 (SOLARIS_FAST_FOLLOWS item 3) and
+**the renormalization commit was never run.** The main working tree looks clean only because it
+has never been re-checked-out — its files have sat on disk, byte-matching the CRLF blobs, since
+before the policy existed.
+
+Creating `.claude/worktrees/solaris-repair` forced a fresh checkout and surfaced it immediately:
+**63 files, 29,885 insertions, 29,885 deletions — exactly equal.** `git diff --ignore-cr-at-eol`
+returns empty. Pure line-ending noise, zero content change.
+
+**Severity is higher than it looks.** This is not cosmetic:
+1. Any teammate cloning this repo gets 63 dirty files before typing anything.
+2. `checks.py` byte-compares drift-guarded catalogs. A CRLF round-trip on
+   `h22_lop_catalog_live_22.0.368.json` or `verified_connectivity_*.json` would fail a drift
+   guard for a reason that has nothing to do with drift — a false positive in the one mechanism
+   built to catch false negatives.
+3. It makes any agent's diff unreviewable. Commandment 7 cannot be verified by inspection
+   inside 30,000 lines of noise.
+
+**Ruled:**
+- `git add --renormalize .` plus a single commit titled as such, **on a quiet branch, with no
+  agent running**. Not now — SOLARIS-REPAIR-01 is mid-flight and a 63-file rewrite under a live
+  agent is a race.
+- Until then, review agent diffs with `git diff --ignore-cr-at-eol` or `-w`. Recorded so the
+  next reviewer does not mistake noise for work.
+- Add a check: assert `git diff --ignore-cr-at-eol` is empty on a fresh checkout. **This is a
+  Law 1 check** — state the failure condition first: it fails when the tree and the policy
+  disagree. That condition is true today, which is how you know the check is real.
+
+**Note on method.** This was not found by reading code. It was found because creating a worktree
+did something nobody had done recently — a fresh checkout — and the environment disagreed with
+the repository. Constitution Law 5 says write from the tree, not from memory. This is the
+corollary: **the tree only tells you what it has been asked. Ask it something new.**
