@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -91,7 +91,7 @@ claude/
 # ---------------------------------------------------------------------------
 # python/synapse/_vendor/ holds pip-installed anthropic + transitive deps
 # (pydantic-core with its .pyd, httpx, httpcore, etc.). The outer rules
-# above ignore *.pyd, *.py[cod], *.so, and _*.py — all of which would
+# above ignore *.pyd, *.py[cod], *.so, and _*.py â€” all of which would
 # catch vendor contents. Whitelist the whole vendor tree explicitly and
 # then re-ignore only the build artefacts we never want committed.
 !python/synapse/_vendor/
@@ -108,7 +108,7 @@ python/synapse/_vendor/**/*.pyc
 # close-the-loop harness run artifacts
 .close-the-loop/
 
-# H22 prep harness — bundle archives + transient check-debug dumps (never tracked)
+# H22 prep harness â€” bundle archives + transient check-debug dumps (never tracked)
 /H22_prep_harness.zip
 /houdini22prepareHarness_v2.zip
 .claude/checks_debug_*.txt
@@ -119,7 +119,7 @@ harness/notes/_prov_live.json
 .claude/mcp_surface_delta.json
 harness/state/wheel_cache/
 
-# harness/state local runtime — the *.example templates ARE tracked; these real
+# harness/state local runtime â€” the *.example templates ARE tracked; these real
 # files are per-machine, not shared project truth. drop = local H22 capture
 # (harness/CLAUDE.md designs for its absence -> live fallback); posture = local
 # deployment posture; *_readiness_verdict = generated check output.
@@ -131,11 +131,11 @@ harness/state/recovery/
 # transient per-run stderr logs (torch/pynvml warnings, harness probe output)
 harness/state/*.err
 
-# docs/ research + debug scratch — scraped page dumps and node-diagnostic debris,
+# docs/ research + debug scratch â€” scraped page dumps and node-diagnostic debris,
 # never shared project truth
-docs/nca_*
-docs/debug.txt
-docs/cop_diag.txt
+docs/*.txt
+# (was an enumeration losing a race: nca_*, debug.txt, cop_diag.txt, and 15 more.
+#  Zero docs/*.txt are tracked, so a blanket rule is safe. L0.F12.)
 
-# Release-week demo captures (Leg 1) — raw screen recordings, never tracked
+# Release-week demo captures (Leg 1) â€” raw screen recordings, never tracked
 demo/captures/
