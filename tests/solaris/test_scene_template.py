@@ -3,11 +3,9 @@ Tests for synapse_solaris_scene_template — RELAY-SOLARIS Phase 3
 """
 
 import pytest
-from unittest.mock import MagicMock, patch
 
-import sys; st_mod = sys.modules["synapse.mcp.tools.solaris.scene_template"]
-from synapse.mcp.tools.solaris.scene_template import (
-    validate, plan, execute, _SOURCE_PATTERN, _TOOL_NAME, _PATH_TEMPLATES,
+from synapse.mcp.tool_impls.solaris.scene_template import (
+    validate, plan, _SOURCE_PATTERN, _TOOL_NAME, _PATH_TEMPLATES,
 )
 
 
@@ -111,49 +109,44 @@ class TestSceneTemplatePlan:
         assert "primitive" in wire[0]["sequence"]
         assert "usdrender_rop" in wire[0]["sequence"]
 
+class TestF8ParentPathConvergence:
+    """F8/Ruling 15 — `parent_path` is the convergent key and unknown keys are
+    loud. Host-free because the defect is parameter resolution, not wiring.
+    Live counterpart: `test_f8_scene_template_honours_parent_path_live`.
+    """
 
-class TestSceneTemplateExecute:
+    def test_parent_path_is_the_convergent_key(self):
+        from synapse.mcp.tool_impls.solaris.scene_template import _resolve_parent_path
+        assert _resolve_parent_path({"parent_path": "/stage/lopnet1"}) == "/stage/lopnet1"
 
-    def test_idempotent(self, mock_stage, mock_hou):
+    def test_parent_remains_an_accepted_alias(self):
+        from synapse.mcp.tool_impls.solaris.scene_template import _resolve_parent_path
+        assert _resolve_parent_path({"parent": "/stage/lopnet2"}) == "/stage/lopnet2"
 
-        mock_stage.createNode("primitive", "primitive_shot")
+    def test_parent_path_wins_over_the_alias(self):
+        from synapse.mcp.tool_impls.solaris.scene_template import _resolve_parent_path
+        assert _resolve_parent_path({"parent": "/a", "parent_path": "/b"}) == "/b"
 
-        with patch.object(st_mod, "hou", mock_hou):
-            with patch.object(st_mod, "HOU_AVAILABLE", True):
-                mock_hou.node.side_effect = lambda p: mock_stage if p == "/stage" else None
-                result = execute({})
+    def test_defaults_to_stage_when_absent(self):
+        from synapse.mcp.tool_impls.solaris.scene_template import _resolve_parent_path
+        assert _resolve_parent_path({}) == "/stage"
 
-        assert result["status"] == "already_exists"
+    def test_unknown_key_raises_instead_of_defaulting(self):
+        with pytest.raises(Exception, match="unknown parameter"):
+            validate({"parnet_path": "/stage/lopnet1"})
 
-    def test_creates_full_chain(self, mock_stage, mock_hou):
+    def test_known_keys_are_accepted(self):
+        validate({
+            "scene_name": "shot",
+            "parent_path": "/stage",
+            "sop_paths": ["/obj/a"],
+            "render_engine": "karma_cpu",
+            "resolution": [640, 480],
+            "output_path": "$HIP/x.png",
+        })
 
-        with patch.object(st_mod, "hou", mock_hou):
-            with patch.object(st_mod, "HOU_AVAILABLE", True):
-                mock_hou.node.side_effect = lambda p: mock_stage if p == "/stage" else None
-                mock_hou.undos.group.return_value = MagicMock(__enter__=MagicMock(), __exit__=MagicMock(return_value=False))
-                result = execute({})
 
-        assert result["status"] == "created"
-        assert result["hierarchy_root"] == "/shot"
-        assert len(result["chain"]) >= 5  # primitive, cam, matlib, sky, rs, rop
-        assert result["render_rop"] is not None
-
-    def test_sop_imports_wired_sequentially(self, mock_stage, mock_hou):
-        """Verify SOP imports are chained, not merged."""
-
-        with patch.object(st_mod, "hou", mock_hou):
-            with patch.object(st_mod, "HOU_AVAILABLE", True):
-                mock_hou.node.side_effect = lambda p: mock_stage if p == "/stage" else None
-                mock_hou.undos.group.return_value = MagicMock(__enter__=MagicMock(), __exit__=MagicMock(return_value=False))
-                result = execute({"sop_paths": ["/obj/geo1", "/obj/geo2"]})
-
-        # Find geo nodes in the chain
-        geo_nodes = [p for p in result["chain"] if "geo_" in p]
-        assert len(geo_nodes) == 2
-
-        # Verify sequential wiring: geo_1's input should be geo_0
-        geo_0 = mock_stage._children.get("geo_0")
-        geo_1 = mock_stage._children.get("geo_1")
-        assert geo_0 is not None
-        assert geo_1 is not None
-        assert geo_1.inputs()[0] == geo_0  # geo_1 wired AFTER geo_0
+# SR1 M3: the mock-`hou` execute tests that stood here are DELETED per
+# Constitution Law 1 / Ruling 12 item 3. Host-behaviour assertions for this
+# tool now live in `tests/solaris/test_live_wiring.py`, gated on a real
+# `import hou` and executed under hython 22.0.368.

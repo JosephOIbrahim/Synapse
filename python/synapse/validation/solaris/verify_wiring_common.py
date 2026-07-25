@@ -56,15 +56,20 @@ NON_LOP_TYPES = frozenset({
 })
 
 
-#: The five tools live in the orphan ``synapse/mcp/tools/solaris/`` tree, which
-#: is NOT inside the installable ``python/synapse/`` package (see FINDING F1).
-#: They therefore have to be loaded by path, exactly as that tree's own
-#: conftest does.
-TOOLS_DIR = _REPO / "synapse" / "mcp" / "tools" / "solaris"
+#: SR1 M1: the five tools moved from the orphan ``synapse/mcp/tools/solaris/``
+#: tree (FINDING F1) into the installable package at
+#: ``python/synapse/mcp/tool_impls/solaris/``. Named ``tool_impls`` rather than
+#: ``tools`` because a regular ``mcp/tools/`` package shadows the existing
+#: ``python/synapse/mcp/tools.py`` HTTP-transport module.
+#:
+#: The path-import below is retained deliberately: these verifiers must be able
+#: to read a tool's source-level structure without the import side effects of
+#: the package ``__init__``, and the path is the thing under test.
+TOOLS_DIR = Path(__file__).resolve().parents[2] / "mcp" / "tool_impls" / "solaris"
 
 
 def load_tool(module_name: str):
-    """Path-import one Solaris tool module from the orphan tree."""
+    """Path-import one Solaris tool module."""
     import importlib.util
 
     path = TOOLS_DIR / f"{module_name}.py"

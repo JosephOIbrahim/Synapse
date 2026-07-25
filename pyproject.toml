@@ -99,6 +99,12 @@ where = ["python"]
 "" = "python"
 
 [tool.pytest.ini_options]
+# SR1 M2: `synapse` is editable-installed pointing at the PRIMARY checkout
+# (C:\Users\User\Synapse\python via a .pth). Without this, a git worktree's
+# tests import the primary checkout's package and silently verify the wrong
+# tree — Constitution Law 1, a check that cannot see what it claims to check.
+# pytest prepends these to sys.path, so the local tree wins.
+pythonpath = ["python"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"

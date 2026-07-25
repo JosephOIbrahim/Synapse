@@ -3,10 +3,8 @@ Tests for synapse_solaris_import_megascans — RELAY-SOLARIS Phase 3
 """
 
 import pytest
-from unittest.mock import MagicMock, patch
 
-import sys; ms_mod = sys.modules["synapse.mcp.tools.solaris.import_megascans"]
-from synapse.mcp.tools.solaris.import_megascans import validate, plan, execute, _SOURCE_PATTERN, _TOOL_NAME
+from synapse.mcp.tool_impls.solaris.import_megascans import validate, plan, _SOURCE_PATTERN, _TOOL_NAME
 
 
 class TestImportMegascansValidation:
@@ -104,28 +102,41 @@ class TestImportMegascansPlan:
         assert len(prov) == 1
         assert prov[0]["source_pattern"] == _SOURCE_PATTERN
 
+class TestParentKeyConvergence:
+    """SR1 crucible S2 / F8 / Ruling 15 — `parent_path` is the convergent key."""
 
-class TestImportMegascansExecute:
+    def test_parent_path_is_the_convergent_key(self):
+        from synapse.mcp.tool_impls.solaris.import_megascans import _resolve_parent_path
+        assert _resolve_parent_path({"parent_path": "/stage/lopnet1"}) == "/stage/lopnet1"
 
-    def test_idempotent(self, mock_stage, mock_hou):
+    def test_parent_remains_an_accepted_alias(self):
+        from synapse.mcp.tool_impls.solaris.import_megascans import _resolve_parent_path
+        assert _resolve_parent_path({"parent": "/stage/lopnet2"}) == "/stage/lopnet2"
 
-        mock_stage.createNode("subnet", "component_rock")
+    def test_parent_path_wins_over_the_alias(self):
+        from synapse.mcp.tool_impls.solaris.import_megascans import _resolve_parent_path
+        assert _resolve_parent_path({"parent": "/a", "parent_path": "/b"}) == "/b"
 
-        with patch.object(ms_mod, "hou", mock_hou):
-            with patch.object(ms_mod, "HOU_AVAILABLE", True):
-                mock_hou.node.side_effect = lambda p: mock_stage if p == "/stage" else None
-                result = execute({"usdc_path": "/tmp/rock.usdc", "asset_name": "rock"})
+    def test_defaults_to_stage_when_absent(self):
+        from synapse.mcp.tool_impls.solaris.import_megascans import _resolve_parent_path
+        assert _resolve_parent_path({}) == "/stage"
 
-        assert result["status"] == "already_exists"
+    def test_unknown_key_raises_instead_of_defaulting(self):
+        with pytest.raises(Exception, match="unknown parameter"):
+            validate({"usdc_path": "/tmp/r.usdc", "asset_name": "rock",
+                      "parnet_path": "/stage/lopnet1"})
 
-    def test_creates_sop_chain(self, mock_stage, mock_hou):
+    def test_known_keys_are_accepted(self):
+        validate({
+            "usdc_path": "/tmp/r.usdc", "asset_name": "rock",
+            "parent_path": "/stage", "parent": "/stage", "scale_factor": 0.01,
+            "ground_asset": True, "rotation_correction": [0, 0, 0],
+            "proxy_reduction": 0.05, "import_materials": True,
+            "export_path": "/tmp/x.usd",
+        })
 
-        with patch.object(ms_mod, "hou", mock_hou):
-            with patch.object(ms_mod, "HOU_AVAILABLE", True):
-                mock_hou.node.side_effect = lambda p: mock_stage if p == "/stage" else None
-                mock_hou.undos.group.return_value = MagicMock(__enter__=MagicMock(), __exit__=MagicMock(return_value=False))
-                result = execute({"usdc_path": "/tmp/rock.usdc", "asset_name": "rock"})
 
-        assert result["status"] == "created"
-        assert len(result["geometry_nodes"]) >= 3  # import, xform, matchsize, polyreduce
-        assert result["material_reference"] is not None
+# SR1 M3: the mock-`hou` execute tests that stood here are DELETED per
+# Constitution Law 1 / Ruling 12 item 3. Host-behaviour assertions for this
+# tool now live in `tests/solaris/test_live_wiring.py`, gated on a real
+# `import hou` and executed under hython 22.0.368.

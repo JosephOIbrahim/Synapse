@@ -725,6 +725,143 @@ TOOL_DEFS: list[tuple] = [
      }, "required": []},
      False, False, True),
 
+    # ---------------------------------------------------------------------
+    # Solaris NodeFlow tool family (RELAY-SOLARIS Phase 3; registered SR1 M1)
+    # Implementations: python/synapse/mcp/tool_impls/solaris/
+    # Handlers:        python/synapse/server/handlers_solaris_tools.py
+    # Schemas below are derived from each tool's schema_<name>.py TOOL_SCHEMA
+    # reconciled with its validate()/execute() parameter reads.
+    #
+    # SR1 M5 — `synapse_solaris_import_megascans` is now REGISTERED. The
+    # Ruling 13 gate (F9 locked-asset target + F3 orphaned material reference
+    # LOP) is discharged: both repairs are proven by live 22.0.368 oracles in
+    # tests/solaris/ (mutation-checked -- reinstating the `filepath` phantom
+    # reddens the real-geometry ingest test; dropping `setInput(1, ref_lop)`
+    # reddens F3). PENDING_TOOL_DEFS is now empty by design.
+    # ---------------------------------------------------------------------
+
+    ("synapse_solaris_component_builder", "solaris_component_builder", _identity,
+     "Create a complete USD Component Builder for a production asset. "
+     "Sets up Component Geometry with render/proxy/simproxy purpose outputs, "
+     "Material Library with Karma Material Builders, Component Material for "
+     "auto-assignment, and Component Output for export. Supports the full "
+     "export -> reference round-trip workflow.",
+     {"type": "object", "properties": {
+         "asset_name": {"type": "string",
+                        "description": "Name for the asset (e.g. 'hero_chair'). Letters, digits and underscores only; must not start with a digit."},
+         "geometry_source": {"type": "string",
+                             "description": "SOP path (e.g. '/obj/geo1') or file path for the geometry source."},
+         "proxy_reduction": {"type": "number", "minimum": 0.0, "maximum": 1.0,
+                             "description": "PolyReduce percentage for proxy geometry (0.0-1.0, default: 0.05)"},
+         "materials": {"type": "array", "items": {"type": "object", "properties": {
+             "name": {"type": "string", "description": "Material name (e.g. 'wood', 'red')"},
+             "type": {"type": "string",
+                      "enum": ["principled", "standard_surface", "karma_material_builder"],
+                      "description": "Material shader type (default: karma_material_builder)"},
+             "params": {"type": "object", "description": "Shader parameter overrides"},
+         }, "required": ["name"]},
+             "description": "Materials to create inside the Material Library."},
+         "export_path": {"type": "string",
+                         "description": "File path for the exported .usd asset. If omitted, sets up the node but doesn't export."},
+         "generate_thumbnail": {"type": "boolean",
+                                "description": "Generate a thumbnail image for the asset (default: true)"},
+         "purposes": {"type": "array",
+                      "items": {"type": "string", "enum": ["render", "proxy", "simproxy"]},
+                      "description": "Which purpose outputs to create (default: ['render', 'proxy'])"},
+         "parent_path": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "parent": {"type": "string", "description": "Alias for parent_path (accepted; parent_path wins)."},
+     }, "required": ["asset_name"]},
+     False, False, False),
+
+    ("synapse_solaris_scene_template", "solaris_scene_template", _identity,
+     "Create a full canonical Solaris scene skeleton with proper USD hierarchy. "
+     "Builds the complete chain: Primitive (Xform/Group hierarchy) -> SOP imports "
+     "(chained, never merged) -> Camera -> Material Library -> Karma Physical Sky "
+     "-> Karma Render Settings -> USD Render ROP. Follows the NodeFlow canonical "
+     "LOP chain pattern with /shot/{geo,LGT,MTL,cam}/$OS path conventions.",
+     {"type": "object", "properties": {
+         "scene_name": {"type": "string",
+                        "description": "Root primitive name (default: 'shot'). Becomes /shot in the hierarchy."},
+         # `hierarchy` was advertised here but scene_template.KNOWN_PARAMS never
+         # accepted it -- validate() raised `unknown parameter(s): hierarchy` on
+         # any caller who believed the schema. Removed rather than accepted:
+         # the impl has no hierarchy code path to honour it.
+         "sop_paths": {"type": "array", "items": {"type": "string"},
+                       "description": "SOP geometry paths to import. Each creates a chained SOP Import node (sequential, never merged)."},
+         "render_engine": {"type": "string", "enum": ["karma_xpu", "karma_cpu"],
+                           "description": "Karma rendering engine (default: karma_xpu)"},
+         "resolution": {"type": "array", "items": {"type": "integer"},
+                        "minItems": 2, "maxItems": 2,
+                        "description": "Render resolution [width, height] (default: [1920, 1080])"},
+         "output_path": {"type": "string",
+                         "description": "Render output path (default: '$HIP/render/$HIPNAME.png')"},
+         "parent_path": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "parent": {"type": "string", "description": "Alias for parent_path (accepted; parent_path wins)."},
+     }, "required": []},
+     False, False, False),
+
+    ("synapse_solaris_create_variants", "solaris_create_variants", _identity,
+     "Create material and/or geometry variants on a USD Component Builder asset. "
+     "Material variants duplicate Component Material nodes with different Karma "
+     "Material Builders. Geometry variants duplicate Component Geometry and merge "
+     "via Component Geometry Variants node. Use Explore Variants to preview.",
+     {"type": "object", "properties": {
+         "component_path": {"type": "string", "description": "Path to the Component Builder subnet."},
+         "variant_type": {"type": "string", "enum": ["material", "geometry"],
+                          "description": "Type of variant to create."},
+         "variants": {"type": "array", "items": {"type": "object", "properties": {
+             "name": {"type": "string", "description": "Variant name (e.g. 'red', 'blue')"},
+             "material": {"type": "object",
+                          "description": "Material parameters (variant_type='material' only)"},
+             "geometry_source": {"type": "string",
+                                 "description": "SOP path or file path (variant_type='geometry' only)"},
+         }, "required": ["name"]},
+             "description": "List of variants to create. At least 2 are required."},
+         "add_explore_node": {"type": "boolean",
+                              "description": "Add an Explore Variants node after the component (default: true)"},
+     }, "required": ["component_path", "variant_type", "variants"]},
+     False, False, False),
+
+    ("synapse_solaris_set_purpose", "solaris_set_purpose", _identity,
+     "Set the USD purpose on geometry within a Component Builder. "
+     "Purpose controls visibility: 'render' for full-res at render time, "
+     "'proxy' for low-poly in viewport, 'simproxy' for physics/collision.",
+     {"type": "object", "properties": {
+         "component_path": {"type": "string",
+                            "description": "Path to the Component Builder subnet or Component Geometry node."},
+         "geometry_name": {"type": "string",
+                           "description": "Which geometry output to configure ('default', 'proxy', 'sim proxy'). Omit to use the first Component Geometry found."},
+         "purpose": {"type": "string", "enum": ["render", "proxy", "simproxy"],
+                     "description": "USD purpose to assign."},
+     }, "required": ["component_path", "purpose"]},
+     False, False, True),
+
+    ("synapse_solaris_import_megascans", "solaris_import_megascans", _identity,
+     "Import a Megascans/Fab .usdc asset into a Component Builder with proper "
+     "unit scaling, grounding, proxy generation, and material extraction. "
+     "Scale 0.01 converts Unreal centimeters to Houdini meters.",
+     {"type": "object", "properties": {
+         "usdc_path": {"type": "string", "description": "Path to the downloaded .usdc file from Fab/Megascans."},
+         "asset_name": {"type": "string",
+                        "description": "Name for the imported asset (e.g. 'book_01'). Letters, digits and underscores only."},
+         "scale_factor": {"type": "number", "exclusiveMinimum": 0,
+                          "description": "Uniform scale factor (default: 0.01 -- Unreal cm to Houdini m)"},
+         "ground_asset": {"type": "boolean",
+                          "description": "Apply Match Size with Justify Y: Minimum to ground the asset (default: true)"},
+         "rotation_correction": {"type": "array", "items": {"type": "number"},
+                                 "minItems": 3, "maxItems": 3,
+                                 "description": "Optional rotation correction [rx, ry, rz] in degrees, applied after scale."},
+         "proxy_reduction": {"type": "number", "minimum": 0.0, "maximum": 1.0,
+                             "description": "PolyReduce percentage for proxy/simproxy (0.0-1.0, default: 0.05)"},
+         "import_materials": {"type": "boolean",
+                              "description": "Import materials via Reference LOP /materials/* trick (default: true)"},
+         "export_path": {"type": "string",
+                         "description": "File path for the exported .usd asset. If omitted, sets up but doesn't export."},
+         "parent_path": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "parent": {"type": "string", "description": "Alias for parent_path (accepted; parent_path wins)."},
+     }, "required": ["usdc_path", "asset_name"]},
+     False, False, False),
+
     ("houdini_configure_light_linking", "configure_light_linking", _identity,
      "Configure light linking between lights and geometry via USD collections. "
      "Control which geometry a light illuminates or casts shadows on. "
@@ -1364,6 +1501,29 @@ TOOL_DEFS: list[tuple] = [
      }, "required": ["nodes"]},
      False, True, False),
 ]
+
+
+# =========================================================================
+# GATED tool definitions -- defined, deliberately NOT dispatchable
+# =========================================================================
+#
+# Same 8-tuple shape as TOOL_DEFS. Entries here are excluded from
+# TOOL_DISPATCH, TOOL_JSON, TOOLS_LIST_CACHE and TOOL_NAMES, so no transport
+# can advertise or invoke them. A later mile promotes an entry by MOVING the
+# tuple into TOOL_DEFS -- not by copying it, and not by relaxing the gate.
+#
+# SR1 M5: the list is EMPTY. `synapse_solaris_import_megascans` -- the only
+# entry it ever held (CTO Ruling 13 / L2 F9) -- was PROMOTED by moving its
+# tuple into TOOL_DEFS after F9 + F3 were repaired and live-proven on
+# 22.0.368. The mechanism stays for the next gated tool.
+
+PENDING_TOOL_DEFS: list[tuple] = []
+
+# tool_name -> the ruling/finding that holds it back. Machine-readable so a
+# check can assert WHY a name is gated, not merely that it is.
+PENDING_TOOL_REASONS: dict[str, str] = {}
+
+PENDING_TOOL_NAMES: list[str] = sorted(d[0] for d in PENDING_TOOL_DEFS)
 
 
 # =========================================================================

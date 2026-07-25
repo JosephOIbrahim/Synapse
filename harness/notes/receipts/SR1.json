@@ -1,0 +1,194 @@
+{
+  "schema": "receipt/v1",
+  "leg": "SR1",
+  "title": "SOLARIS REPAIR 01 — five Solaris tools made reachable, honestly tested, and repaired",
+  "date": "2026-07-25",
+  "branch": "feat/solaris-repair-01",
+  "worktree": ".claude/worktrees/solaris-repair",
+  "head": "9187f38",
+  "status": "green",
+  "status_rationale": "M1-M5 all landed with live oracles on Houdini 22.0.368. Two independent crucible passes; the first returned NO-GO and was looped back before any receipt was written. Final crucible verdict GO, with named residuals recorded below. Status is green because every milestone's oracle was met and independently reproduced — not because nothing is left; the residuals are real and enumerated.",
+
+  "commits": [
+    {"sha": "97b879d", "subject": "fix(solaris): M1+M2 one tree - relocate + register 4 of 5, collect tests", "note": "pre-existing, survived the crash"},
+    {"sha": "de53153", "subject": "fix(solaris): M4 F3-F10 defect repairs, live-proven on 22.0.368"},
+    {"sha": "aa04be5", "subject": "docs(harness): Gate 0.1b trace - crash is QT, not vendor", "note": "out-of-band leg, see for_ruling R-6"},
+    {"sha": "a54651b", "subject": "fix(solaris): SR1 seam findings - set_purpose idempotency, verifier catalog, variants input guard"},
+    {"sha": "1cb99a9", "subject": "fix(solaris): SR1 crucible findings - F4 premise refuted, F8 convergence, stamp identity"},
+    {"sha": "9187f38", "subject": "feat(solaris): M5 register import_megascans - F9+F3 live-proven, schema parent_path convergence"}
+  ],
+
+  "suite": {
+    "producer": "python -m pytest tests -q -p no:cacheprovider --basetemp=\"C:/Users/User/AppData/Local/Temp/claude/sr1_base\"",
+    "interpreter": "system Python 3.14.2 (synapse._VENDOR_ABI_RISK True — vendor tree INACTIVE; non-shipping interpreter per Ruling 1a)",
+    "before": {"passed": 4841, "skipped": 118, "failed": 0},
+    "after": {"passed": 4873, "skipped": 127, "failed": 0},
+    "delta": "+32 passed, +9 skipped, 0 failed",
+    "commandment_7": "SATISFIED — strictly increased. No test weakened, skipped, xfailed, or deleted.",
+    "baseline_caveat": "The 4841 baseline was measured by the orchestrator AFTER adding `pythonpath = [\"python\"]` to pyproject's pytest ini. Before that fix this worktree silently tested the PRIMARY checkout. Any SR1 count predating that change describes a different tree."
+  },
+
+  "live_tier": {
+    "producer": "\"C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\bin\\hython.exe\" tests/solaris/run_live.py",
+    "host": "hou.applicationVersionString() == 22.0.368 (VERIFIED-RUNTIME), Python 3.13.10",
+    "at_m3": {"passed": 13, "failed": 5, "skipped": 0, "note": "the 5 failures were F8, F7, F9, F3, F5 — the first honest signal this family ever produced, and the fail-before evidence for M4"},
+    "at_head": {"passed": 27, "failed": 0},
+    "off_host": "tests skip cleanly (18 skips at M3) — a skip is honest, a pass would be a lie"
+  },
+
+  "milestones": [
+    {
+      "id": "M1",
+      "name": "One tree",
+      "status": "DONE",
+      "evidence": "All five tools resolve through the registry. Producer output at 9187f38: component_builder / scene_template / create_variants / set_purpose / import_megascans each json=True list=True handler=True registered=True; PENDING empty.",
+      "drift": "Tools landed at python/synapse/mcp/tool_impls/solaris/, NOT the baton's python/synapse/mcp/tools/solaris/. A regular package at mcp/tools/ shadows the existing mcp/tools.py HTTP-transport module. Live-proven reason, recorded in tests/solaris/conftest.py:4-9.",
+      "tool_audit": "Excluded per F2 — Phase-2 design document, no validate/plan/execute, no implementation module. Not registered."
+    },
+    {
+      "id": "M2",
+      "name": "Collect the tests",
+      "status": "DONE",
+      "evidence": "96 solaris tests collect (python -m pytest tests/solaris --collect-only -q).",
+      "orchestrator_addition": "pyproject.toml [tool.pytest.ini_options] gained `pythonpath = [\"python\"]`. Root cause: `synapse` is editable-installed pointing at the PRIMARY checkout C:\\Users\\User\\Synapse\\python via a .pth, so every prior test run in this worktree verified a different tree. This was a Law 1 defect at harness level — a check that could not see what it claimed to check. Not in the baton; added because M2's oracle was otherwise theatre."
+    },
+    {
+      "id": "M3",
+      "name": "Delete the MagicMock hou fixture — the load-bearing move",
+      "status": "DONE",
+      "evidence": "grep MagicMock tests/solaris/ → zero hits (exit 1). 78 pure-Python passes, 18 live tests SKIPPED off-host, and those same 18 EXECUTE under hython 22.0.368 (13P/5F at the time). The mock is provably out of the loop: had it remained, the live tier would have passed rather than surfaced five real defects.",
+      "law": "Constitution Law 1 — mock-hou tests banned for host-behaviour assertions."
+    },
+    {
+      "id": "M4",
+      "name": "Repair F3-F10",
+      "status": "DONE",
+      "gate": "h22-gatewarden ALLOW, MODE B, all eight defects. The baton's 'M4 is BLOCKED until Houdini returns' was ruled a CONDITIONAL block whose condition (Houdini absent) is demonstrably false — synapse_ping returned pong and hou.applicationVersionString() == 22.0.368. The evidence standard survived the lift: every fix ships a live fail-before/pass-after probe."
+    },
+    {
+      "id": "M5",
+      "name": "Registration order",
+      "status": "DONE",
+      "evidence": "Ruling 13's condition met and independently verified: a read-only crucible personally mutation-tested both gates — reinstating the `filepath` phantom turned the F9 real-geometry ingest test RED; dropping setInput(1, ref_lop) turned F3 RED. It answered YES to 'may M5 open', conditional on C3, which was fixed in the same commit (9187f38) before registration."
+    }
+  ],
+
+  "defects": [
+    {"id": "F9", "severity": "CRITICAL", "status": "FIXED", "tier": "VERIFIED-RUNTIME", "anchor": "import_megascans.py:172 → retargeted to <componentgeometry>/sopnet/geo", "evidence": "componentgeometry.isLockedHDA() True; exhaustive descendant sweep found sopnet/geo the ONLY writable descendant. Asset never unlocked. Mutation-proven: reinstating the `filepath` phantom → RED.", "note": "The real-.usdc fixture exposed three FURTHER masked defects the zero-byte file hid: `filepath` and `unpacktopolygons` are PHANTOM parms on the 22.0.368 usdimport SOP (real: filepath1, unpack_geomtype), all masked by `if parm:` guards while status read 'created'. Fixed via _require_parm."},
+    {"id": "F3", "severity": "HIGH", "status": "FIXED (topologically)", "tier": "VERIFIED-RUNTIME", "anchor": "import_megascans.py — mat_node.setInput(1, ref_lop); componentmaterial input index 1 is named `input2`", "residual": "C2 — see residuals"},
+    {"id": "F4", "severity": "HIGH", "status": "RETIRED — PREMISE REFUTED-LIVE", "tier": "REFUTED-LIVE", "anchor": "create_variants.py:186-188", "evidence": "hou.copyNodesTo([mat], comp)[0].inputs() → ['/stage/f4probe/c/geo_base']. copyNodesTo DOES carry connections originating outside the copied set on 22.0.368. The BATON's F4 rationale, the commit message, and the test docstring were all FALSE on the pinned build. The 'fix' was a no-op and its oracle a decoration — caught by crucible mutation testing (deleting the fix left the live tier 22/22 green). Retired under Law 6: test re-aimed at the real host contract FIRST, confirmed falsifiable, then dead code removed."},
+    {"id": "F5", "severity": "HIGH", "status": "FIXED", "tier": "VERIFIED-RUNTIME", "anchor": "create_variants.py:204-219 — geo_variants consumes base geo + copies, then steals base geo's consumers", "evidence": "Exactly one real terminal LOP after variants, in both composition orders. Detection by zero-outputs() scan with the subnet's own output0 discounted — a method that discriminates (reported 2 terminals in intermediate states)."},
+    {"id": "F6", "severity": "MED", "status": "FIXED", "tier": "VERIFIED-STATIC", "anchor": "create_variants.py — both bare `except Exception: pass` removed", "law": "Law 3 — status describes what happened."},
+    {"id": "F7", "severity": "HIGH", "status": "FIXED", "tier": "VERIFIED-RUNTIME", "anchor": "set_purpose.py — authors via configureprimitive LOP (primpattern/setpurpose/purpose)", "probe": "REFUTED-LIVE: componentgeometry has NO parm named `purpose` (57 parms enumerated). `configureprimitives` (plural) is a PHANTOM type. VERIFIED-RUNTIME: `configureprimitive` (singular) authors it; confirmed end-to-end by UsdGeom.Imageable(prim).GetPurposeAttr() readback off the cooked stage returning 'proxy'. Tokens: default/render/proxy/guide, all three used mappings live-proven.", "law": "Ruling 14 — real mechanism probed live BEFORE writing against it. The trap was not walked into."},
+    {"id": "F8", "severity": "LOW", "status": "FIXED (all three tools)", "tier": "VERIFIED-RUNTIME", "anchor": "scene_template.py, component_builder.py, import_megascans.py — PARENT_KEYS/_resolve_parent_path/KNOWN_PARAMS + unknown-key raise", "note": "Initially fixed in ONE of three; crucible S2 caught the other two silently defaulting to /stage. Schema surface converged separately as C3."},
+    {"id": "F10", "severity": "MED", "status": "FIXED", "tier": "REFUTED-LIVE", "anchor": "component_builder.py — phantom documented at _has_native_componentbuilder, subnet fallback KEPT", "evidence": "`componentbuilder` is NOT among the 218 live LOP types. Component Builder is a shelf-built subnet of componentgeometry/componentgeometryvariants/componentmaterial/componentoutput."}
+  ],
+
+  "still_broken": [
+    {"id": "C1", "severity": "MED", "tier": "VERIFIED-RUNTIME", "anchor": "import_megascans.py:234-237", "finding": "The `.set(\"*\")` write on primpattern has NO failing oracle — dropping it leaves the live tier fully green at 27/27. The in-tree comment claiming primpattern 'defaults to EMPTY' was FALSE (real default on 22.0.368 is '/*') and has been corrected. The write is inert on this build and is kept as an explicit-over-implicit pin, labelled as having no oracle."},
+    {"id": "C2", "severity": "MED", "tier": "VERIFIED-STATIC", "anchor": "tests/solaris/test_live_wiring.py:404-405", "finding": "F3's oracle is TOPOLOGICAL ONLY — it asserts inputs[1] is not None. The fixture authors /materials/rock_mtl but nothing reads the sink stage to prove the material RESOLVES or BINDS. F3-as-stated is proven; 'the material composes' is not."},
+    {"id": "S4", "severity": "MED", "tier": "VERIFIED-STATIC", "anchor": "schema_set_purpose.py:71-74", "finding": "Schema enum is [set, already_set, not_found]; code returns set|updated|unchanged|noop|not_found and never already_set. Family inconsistent (already_exists elsewhere). The schemas have ZERO consumers — grep TOOL_RETURN outside the schema files finds none — so nothing failed on the drift. The schemas are themselves Law-1 decorations."},
+    {"id": "C4", "severity": "LOW", "tier": "VERIFIED-STATIC", "anchor": "set_purpose.py:82", "finding": "_stamp_identity hardcodes _TOOL_NAME, dropping the old info.get('tool', ...) override. No caller passes it. Log only."},
+    {"id": "S6", "severity": "LOW", "tier": "VERIFIED-STATIC", "anchor": "tests/solaris/test_live_wiring.py:213", "finding": "Conditional disjunction knowingly retained. Not vacuous today on 22.0.368 — it takes the asserting branch and does a live UsdGeom readback — but a regression that flips the status would make it silently vacuous rather than red."},
+    {"id": "SEAM-D", "severity": "MED", "tier": "UNVERIFIED", "anchor": "harness/notes/l2_mega_trace.py", "finding": "F9's sopnet/geo retarget was never run against a genuinely locked REAL Megascans HDA. A library exists at C:\\Users\\User\\OneDrive\\Documents\\Megascans Library but every asset is FBX+JPG/EXR with no .usdc, and import_megascans takes a usdc_path. F9 is now proven against a real pxr-authored .usdc with actual geometry, which closes the ingest gap — but not against a real vendor asset. No verdict claimed on what was not run."},
+    {"id": "PANEL-RED", "severity": "MED", "tier": "VERIFIED-RUNTIME", "anchor": "tests/panel/test_failure_trail.py:123,151", "finding": "Two panel tests are RED in isolation under hython3.13, independent of the Gate 0.1b crash and outside SR1's scope: a swallowed failure on _wire_gate leaves no debug trail (Codebase 1.4), and the 'open in render view' verb is shown while the render bridge is absent — a visible no-op (Design 2.5). Not touched by this leg."}
+  ],
+
+  "out_of_band": {
+    "leg": "Gate 0.1b diagnostic (Joe dispatched mid-run)",
+    "commit": "aa04be5",
+    "artifact": "harness/notes/GATE_01B_TRACE.md",
+    "verdict": "QT",
+    "finding": "The hython3.13 access violation is Qt, NOT the vendored tree. Crashing frame PySide6.QtWidgets.QApplication.font() at tests/panel/test_font_scale.py:65. ZERO frames under python/synapse/_vendor. On hython3.13 synapse._VENDOR_ABI_RISK is False — the vendor tree is ACTIVE and imports clean.",
+    "trigger": "Fake-Qt residency, not ABI. tests/test_hda_panel.py:172-175 plants sys.modules['PySide6'] stubs at MODULE level, unconditionally; pytest imports every test module during collection, so the stub is resident before any panel test runs. Minimal repro is 2 files: `tests/panel tests/test_hda_panel.py`. Isolated tests/panel/ passes 27/29 with no crash.",
+    "bearing": "Evidence only. Gate A is human (Article I). This is not evidence against the vendored tree.",
+    "note": "This commit is CTO-RELAY-01 subject matter sitting in the SR1 worktree — cosmetic drift, logged."
+  },
+
+  "drift": [
+    {"id": "D1", "severity": "structural-but-cosmetic", "finding": "harness/AGENT_CONSTITUTION.md does NOT exist on feat/solaris-repair-01. It landed at commit 6b41e1a on another branch. Every agent this leg read it from C:\\Users\\User\\SYNAPSE\\harness\\AGENT_CONSTITUTION.md. A document that binds every agent should not be absent from the branch those agents work on."},
+    {"id": "D2", "severity": "cosmetic", "finding": "Baton M1 says python/synapse/mcp/tools/solaris/; actual is python/synapse/mcp/tool_impls/solaris/. Live-proven reason: a package at mcp/tools/ shadows mcp/tools.py."},
+    {"id": "D3", "severity": "structural", "finding": "Baton RESUME (:138-142) prescribes an amber receipt with M4 deferred. That instruction is STALE — it was written while Houdini was down. The condition lifted; M4 and M5 both landed. Recorded rather than obeyed."},
+    {"id": "D4", "severity": "structural", "finding": "Ruling 15's stated premise — 'two of three already use parent_path' — is FALSE against the tree. Only scene_template did; component_builder.py:210 and import_megascans.py:140 both read params.get('parent', '/stage'). The ruling's DECISION (converge on parent_path) stands and was executed; only its premise was wrong. verify_scene_template.py:42 carried the same falsehood in a comment and was corrected."},
+    {"id": "D5", "severity": "cosmetic", "finding": "BATON M4 item 3's F4 rationale ('hou.copyNodesTo does not carry connections outside the copied set') is REFUTED-LIVE on 22.0.368. F4 was never a defect."},
+    {"id": "D6", "severity": "structural", "finding": "~68 files in this worktree show as modified but are pure CRLF/LF line-ending noise with zero content change (git diff --ignore-cr-at-eol is empty). Pre-existing, from another leg. Left untouched; no SR1 commit staged them."}
+  ],
+
+  "for_ruling": [
+    {
+      "id": "R-1",
+      "title": "The suite count has three producers and no agreement",
+      "detail": "4744 passed / 100 skipped (feat/cto-relay-01, system 3.14.2, regenerated twice with a command line); 4841→4873 passed (feat/solaris-repair-01, system 3.14.2, WITH the pythonpath fix); 4891 collected under hython3.13 in the worktree vs 4790 in the primary checkout. Three different roots, unreconciled. Law 2 says every number names its producer — these now do, but they still disagree, and no governing document says which is canonical.",
+      "ask": "Which tree and which interpreter defines the SYNAPSE suite baseline? Until that is ruled, `harness/verify/suite_baseline.json` pins a number whose meaning depends on where you stand."
+    },
+    {
+      "id": "R-2",
+      "title": "The worktree pythonpath defect is almost certainly not SR1-only",
+      "detail": "Every git worktree in this repo silently tests the PRIMARY checkout via the editable .pth at C:\\Users\\User\\Synapse\\python. I fixed it in pyproject on this branch only. Any prior leg that ran a suite from a worktree and reported green may have been verifying a different tree — including baselines now treated as floors.",
+      "ask": "Should the pythonpath fix be promoted to master ahead of Gate C, and should previously-banked worktree suite evidence be re-qualified?"
+    },
+    {
+      "id": "R-3",
+      "title": "Schemas are Law-1 decorations across the Solaris family",
+      "detail": "schema_*.py files have ZERO consumers (grep TOOL_RETURN outside the schema files finds none). The set_purpose enum drifted from [set, already_set, not_found] to code returning set|updated|unchanged|noop|not_found and nothing failed. M5 added test_schema_matches_implementation_contract for the parameter side only.",
+      "ask": "Either wire the schemas to something that can fail, or delete them. A schema nothing validates against is the exact defect class this leg exists to remove."
+    },
+    {
+      "id": "R-4",
+      "title": "F4 was repaired before it was verified to be a defect",
+      "detail": "The BATON named F4 as HIGH with a specific mechanism. That mechanism is REFUTED-LIVE on 22.0.368. A fix was written, shipped with a green test, and the test could not fail. It took adversarial mutation testing to catch. The finding that produced F4 (harness/notes/l2_wiring_findings.md) asserted host behaviour that was never probed.",
+      "ask": "Should F1-F11 as a set be re-qualified against the live build before any further work cites them? At least one of eleven was a phantom defect."
+    },
+    {
+      "id": "R-5",
+      "title": "git push is structurally denied — correctly — and that blocked an explicitly approved act",
+      "detail": "Joe approved pushing feat/cto-relay-01 and archive/root-scratch-2026-07-25 in writing. harness/relay-settings.json denies `git push`, and Article I's corollary rules that a ruling item, not something to route around. The agent refused, did not touch the settings file, and wrote C:\\Users\\User\\SYNAPSE\\.claude\\remediation_ticket.md. Nothing was pushed. Docs landed at 1d3ac69 and d9b8aa3 on feat/cto-relay-01, unpushed.",
+      "ask": "Joe runs the two push lines himself, OR a dispatch is issued under a profile that grants push. The fence held; it needs a human to open it."
+    },
+    {
+      "id": "R-6",
+      "title": "Gate 0.1b is decided by evidence, but the gate itself is Gate A",
+      "detail": "The one crash blocking 0.1b is Qt-side and residency-triggered, not the vendored tree. The vendor tree is ACTIVE and imports clean on hython3.13. See out_of_band above and harness/notes/GATE_01B_TRACE.md.",
+      "ask": "Gate A (sidecar vs abi3) is never automated. The evidence now points away from abi3 being the blocker. Joe's call."
+    },
+    {
+      "id": "R-7",
+      "title": "providers/ LOC is wrong in Ruling 23",
+      "detail": "Ruling 23 and R17 carry 136 and 1,506 LOC respectively; `find python/synapse/panel/providers -name '*.py' | xargs wc -l` reports 1,510 on feat/cto-relay-01. All five engines are implemented. The misleading part is the out-of-box experience, which is what the README claim was corrected to say.",
+      "ask": "Confirm the corrected framing, and correct Ruling 23's number."
+    },
+    {
+      "id": "R-8",
+      "title": "The constitution is absent from the branch it governs",
+      "detail": "Drift D1. Every agent this leg read harness/AGENT_CONSTITUTION.md from the primary checkout because it is not on feat/solaris-repair-01.",
+      "ask": "Should the constitution be cherry-picked onto every active branch, or is reading it from the primary checkout the intended pattern?"
+    }
+  ],
+
+  "agents_dispatched": [
+    {"role": "assayer", "purpose": "V1 hard gate — live dir() confirmation of every hou.* symbol M4 depends on", "verdict": "GATE OPEN; 22 claims — 15 VERIFIED-RUNTIME, 7 REFUTED-LIVE, 0 UNVERIFIED"},
+    {"role": "h22-gatewarden", "purpose": "ALLOW/REFUSE for M4 under the baton's Houdini-down block", "verdict": "ALLOW, MODE B — conditional block, condition demonstrably false"},
+    {"role": "h22-forge", "purpose": "M4 implementation", "verdict": "de53153"},
+    {"role": "seam-hunter", "purpose": "composed-regression attack on the integrated M4", "verdict": "NO-GO — set_purpose not idempotent, last call silently loses"},
+    {"role": "h22-forge", "purpose": "close seam findings", "verdict": "a54651b"},
+    {"role": "crucible", "purpose": "adversarial pass 1", "verdict": "NO-GO — S1 showstopper, F4 oracle green-by-accident under mutation"},
+    {"role": "h22-forge", "purpose": "close crucible findings", "verdict": "1cb99a9"},
+    {"role": "crucible", "purpose": "adversarial re-attack", "verdict": "GO — S1/S2/S3/S5/S6 CLOSED, F9 live-proven, M5 may open conditional on C3"},
+    {"role": "h22-forge", "purpose": "M5 registration + C3", "verdict": "9187f38"},
+    {"role": "h22-forge", "purpose": "out-of-band: Gate 0.1b trace + cto-relay docs", "verdict": "aa04be5; 1d3ac69 + d9b8aa3 on the other branch; push REFUSED by the fence"}
+  ],
+
+  "gates_untouched": {
+    "A": "architecture rulings — not touched; R-6 supplies evidence only",
+    "B": "drop.json MODE flip — not touched",
+    "C": "merge to main — NOT touched. Nothing pushed, nothing merged, no PR opened, no version tag created."
+  },
+
+  "resume_token": {
+    "skip": "M1, M2, M3, M4, M5 are all DONE and independently verified. Do not re-run them. Do not re-open Rulings 12-16, and do not re-litigate F4 — its premise is REFUTED-LIVE on 22.0.368.",
+    "state": "HEAD 9187f38 on feat/solaris-repair-01. Five Solaris tools relocated to python/synapse/mcp/tool_impls/solaris/, ALL FIVE registered and resolving. Suite 4873/127/0 on system 3.14.2. Live tier 27/0 on hython 22.0.368. Working tree carries ~68 files of pre-existing CRLF-only churn from another leg — do not stage them.",
+    "next": "Gate C is Joe's: review 97b879d..9187f38 and merge, or not. Before that, the eight for_ruling items want answers — R-1 (which suite count is canonical) and R-2 (worktree pythonpath defect is probably repo-wide) are the two that affect other legs' evidence, not just this one.",
+    "do_not": "Do not treat the residuals as cleanup. C2 (F3 proven topologically only) and SEAM-D (F9 never run against a real vendor asset) are honest gaps in the proof, not TODOs — closing them requires evidence, not edits.",
+    "struck_claim": "The Phase-2 claim that five Solaris tools were delivered may now be UNSTRUCK for reachability and testing: M1-M3 landed, all five resolve, and the family has honest oracles. It should NOT be restated as 'defect-free' — the residuals above are real."
+  }
+}

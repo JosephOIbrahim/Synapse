@@ -41,6 +41,23 @@ def _stamp_provenance(node, info: Dict[str, Any]) -> None:
         pass
 
 
+def _child_category_name(node) -> str:
+    """Name of the node category this node's children live in ('Lop', 'Sop'...)."""
+    try:
+        cat = node.childTypeCategory()
+    except Exception:
+        return "unknown"
+    try:
+        return cat.name() if cat is not None else "none"
+    except Exception:
+        return "unknown"
+
+
+def _is_lop_container(node) -> bool:
+    """True when ``node`` can hold LOP children (a LOP subnet / lopnet)."""
+    return _child_category_name(node) == "Lop"
+
+
 def validate(params: Dict) -> None:
     """Validate parameters."""
     component_path = params.get("component_path")
@@ -124,6 +141,18 @@ def execute(params: Dict) -> Dict:
     if comp is None:
         raise NodeNotFoundError(component_path, suggestion="Check component builder path")
 
+    # SR1 seam MINOR-3: a non-LOP component_path (e.g. an /obj SOP network) is a
+    # reachable, plausible mistake. Unguarded it surfaced as a bare
+    # `OperationFailed: ... Invalid node type name` from the first createNode --
+    # honest, but it names neither the offending path nor the real requirement.
+    if not _is_lop_container(comp):
+        raise ValidationError(
+            f"component_path {component_path!r} is not a LOP network: it is a "
+            f"{comp.type().name()!r} whose children are "
+            f"{_child_category_name(comp)!r} nodes, not Lop nodes. "
+            "Pass a Component Builder subnet inside a /stage lopnet."
+        )
+
     # Find the parent LOP network for the explore node
     parent = comp.parent()
 
@@ -150,6 +179,18 @@ def execute(params: Dict) -> Dict:
                         base_mat = child
                         break
 
+                # F4 REFUTED-LIVE (22.0.368, SR1 crucible): the premise
+                # "hou.copyNodesTo does not carry connections originating
+                # outside the copied set" is FALSE on this build. Direct probe:
+                #     hou.copyNodesTo([mat], comp)[0].inputs()
+                #     -> ['/stage/f4probe/c/geo_base']
+                # The copy arrives already wired to the outside source. The
+                # explicit re-`setInput` loop that used to sit here was a no-op
+                # -- deleting it in-tree left the live tier at 22 passed / 0
+                # failed, i.e. its oracle could not fail. Per Law 6 the test was
+                # re-aimed at the ACTUAL host contract
+                # (`test_copy_nodes_to_carries_outside_inputs_live`) before this
+                # dead code was removed. F4 is a non-defect, not a fix.
                 for v in variants:
                     vname = v["name"]
                     # Duplicate componentmaterial
@@ -184,26 +225,40 @@ def execute(params: Dict) -> Dict:
                         new_geo = comp.createNode("componentgeometry", f"geo_{vname}")
                     created.append(new_geo)
 
-                # Create Component Geometry Variants node to merge
-                try:
-                    geo_variants = comp.createNode("componentgeometryvariants", "geo_variants")
-                    # Wire all geometry variant nodes into it
-                    for i, geo_node in enumerate(created):
-                        geo_variants.setInput(i, geo_node)
-                    created.append(geo_variants)
-                except Exception:
-                    # componentgeometryvariants may not exist — log but don't fail
-                    pass
+                # Create Component Geometry Variants node to merge.
+                # F6: no bare `except: pass` here. If this cannot be built the
+                # call raises — a status of "created" must never describe a
+                # component whose variant merge silently never happened.
+                geo_variants = comp.createNode("componentgeometryvariants", "geo_variants")
+
+                # Wire the base geometry plus every variant copy into it.
+                merge_sources = ([base_geo] if base_geo is not None else []) + created
+                for i, geo_node in enumerate(merge_sources):
+                    geo_variants.setInput(i, geo_node)
+
+                # F5: the merge node must reach the terminal. Whatever used to
+                # consume the base geometry (componentmaterial, typically) now
+                # consumes the variant set instead, so the component presents
+                # ONE terminal LOP rather than two.
+                if base_geo is not None:
+                    gv_path = geo_variants.path()
+                    for consumer in base_geo.outputs():
+                        if consumer.path() == gv_path:
+                            continue
+                        for idx, src in enumerate(consumer.inputs()):
+                            if src is not None and src.path() == base_geo.path():
+                                consumer.setInput(idx, geo_variants)
+
+                created.append(geo_variants)
 
             # Add Explore Variants node (outside the component, in the parent)
+            # F6: failures propagate rather than being swallowed into a
+            # "created" status with an unbuilt node.
             explore_path = None
             if add_explore:
-                try:
-                    explore = parent.createNode("explorevariants", f"explore_{comp.name()}")
-                    explore.setInput(0, comp)
-                    explore_path = explore.path()
-                except Exception:
-                    pass
+                explore = parent.createNode("explorevariants", f"explore_{comp.name()}")
+                explore.setInput(0, comp)
+                explore_path = explore.path()
 
             comp.layoutChildren()
             if parent:

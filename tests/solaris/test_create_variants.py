@@ -3,9 +3,8 @@ Tests for synapse_solaris_create_variants — RELAY-SOLARIS Phase 3
 """
 
 import pytest
-from unittest.mock import MagicMock, patch
 
-from synapse.mcp.tools.solaris.create_variants import validate, plan, _SOURCE_PATTERN
+from synapse.mcp.tool_impls.solaris.create_variants import validate, plan, _SOURCE_PATTERN
 
 
 class TestCreateVariantsValidation:
@@ -102,3 +101,39 @@ class TestCreateVariantsPlan:
         })
         prov = [o for o in ops if o.get("op") == "stamp_provenance"]
         assert prov[0]["source_pattern"] == _SOURCE_PATTERN
+
+
+class TestF6HonestStatus:
+    """F6/Ruling 14 — source-level pin: no bare `except Exception: pass` may
+    stand between a failed build step and a status of "created".
+
+    This is a pure-Python assertion on purpose: the defect is a control-flow
+    shape, not a host behaviour, so it does not need Houdini to be falsifiable.
+    The live counterpart is
+    `test_live_wiring.py::test_f6_create_variants_status_is_honest_live`.
+    """
+
+    def _execute_source(self):
+        import ast
+        import inspect
+        import textwrap
+
+        from synapse.mcp.tool_impls.solaris import create_variants as mod
+
+        src = textwrap.dedent(inspect.getsource(mod.execute))
+        return ast.parse(src)
+
+    def test_execute_swallows_no_exception_silently(self):
+        import ast
+
+        tree = self._execute_source()
+        swallowed = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ExceptHandler)
+            and all(isinstance(stmt, ast.Pass) for stmt in node.body)
+        ]
+        assert not swallowed, (
+            "bare `except Exception: pass` in create_variants.execute — a "
+            "swallowed failure followed by status='created' is a lie (Law 3)"
+        )

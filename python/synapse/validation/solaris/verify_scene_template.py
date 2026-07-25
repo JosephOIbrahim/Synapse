@@ -39,9 +39,11 @@ def verify_static(catalog=None) -> Dict[str, Any]:
 
 def live_build(parent, scene_name: str = "l2_verify"):
     """Emit the network via the real tool and return the created nodes."""
-    # NOTE (F8): scene_template reads ``parent``, while import_megascans and
-    # component_builder read ``parent_path``. Both are passed so this verifier
-    # keeps working whichever way that inconsistency is later resolved.
+    # NOTE (F8, corrected SR1 crucible S2): the earlier claim here — that
+    # import_megascans and component_builder read ``parent_path`` — was FALSE;
+    # all three read ``parent`` only. All three now converge on ``parent_path``
+    # with ``parent`` as an accepted alias. Both keys are still passed so this
+    # verifier exercises the alias path.
     tool = common.load_tool("scene_template")
     before = set(parent.children())
     tool.execute({"parent": parent.path(), "parent_path": parent.path(),

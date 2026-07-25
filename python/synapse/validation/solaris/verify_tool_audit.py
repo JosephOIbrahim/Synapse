@@ -82,19 +82,60 @@ def verify_structure() -> Dict[str, Any]:
     return common.result(TOOL + ":structure", checks, tier="static")
 
 
+def _registry_tables() -> tuple[set, set, dict]:
+    """Live dispatch tables from the registry module.
+
+    SR1 M1: substring-searching the registry SOURCE was the original F1
+    measurement, and it is no longer sound -- a gated tool's name appears in
+    the file (in ``PENDING_TOOL_DEFS``) while being deliberately absent from
+    every dispatch table. Presence in text is not reachability. Read the
+    tables. The module is pure Python; it imports no ``hou``.
+    """
+    from synapse.mcp import _tool_registry as reg
+
+    return (
+        set(reg.TOOL_NAMES),
+        set(getattr(reg, "PENDING_TOOL_NAMES", ())),
+        dict(getattr(reg, "PENDING_TOOL_REASONS", {})),
+    )
+
+
 def verify_registration() -> Dict[str, Any]:
-    """Are the tools the audit claims actually registered? (F1 evidence.)"""
-    text = registry_text()
-    checks = [
-        common.Check(f"registered[{name}]", name in text,
-                     f"{name} {'found in' if name in text else 'ABSENT from'} "
-                     f"_tool_registry.py")
-        for name in claimed_new_tools()
-    ]
+    """Are the tools the audit claims actually reachable? (F1 evidence.)
+
+    Three outcomes per claimed tool, and only one of them is a failure:
+      reachable -- in TOOL_NAMES, dispatchable from both transports;
+      gated     -- in PENDING_TOOL_NAMES with a stated reason (Ruling 13);
+      absent    -- in neither. That is the F1 condition, and it FAILS.
+    """
+    active, pending, reasons = _registry_tables()
+    checks = []
+    for name in claimed_new_tools():
+        if name in active:
+            state = "reachable via TOOL_DISPATCH"
+        elif name in pending and reasons.get(name):
+            state = f"GATED, reason on record: {reasons[name][:80]}"
+        else:
+            state = "ABSENT from the registry -- no MCP path can reach it (F1)"
+        checks.append(common.Check(
+            f"registered[{name}]",
+            name in active or (name in pending and bool(reasons.get(name))),
+            f"{name}: {state}",
+        ))
     return common.result(TOOL + ":registration", checks, tier="static")
 
 
 def unregistered_tools() -> List[str]:
-    """The audit-claimed tools that no live MCP path can reach (F1)."""
-    text = registry_text()
-    return [n for n in claimed_new_tools() if n not in text]
+    """Audit-claimed tools that no live MCP path can reach AND that no gate
+    accounts for. A gated tool is unreachable on purpose and is reported by
+    :func:`gated_tools`, not here."""
+    active, pending, reasons = _registry_tables()
+    return [n for n in claimed_new_tools()
+            if n not in active and not (n in pending and reasons.get(n))]
+
+
+def gated_tools() -> List[str]:
+    """Audit-claimed tools deliberately held out of dispatch, with a reason."""
+    active, pending, reasons = _registry_tables()
+    return [n for n in claimed_new_tools()
+            if n not in active and n in pending and reasons.get(n)]
