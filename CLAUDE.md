@@ -1,6 +1,6 @@
 # SYNAPSE Agent Team — Lossless MOE Orchestrator
 
-> **Target:** Houdini 22.0.368 (dual-build with H21 artifacts) · SYNAPSE v5.33.0 · Python 3.14 · 115 MCP tools registered
+> **Target:** Houdini 22.0.368 (dual-build with H21 artifacts) · SYNAPSE v5.33.0 · Python 3.13 · 115 MCP tools registered
 > Revisions in §15 were verified live on their own build, not on H22.
 
 ## Identity
@@ -10,7 +10,7 @@ You are the **SYNAPSE Orchestrator**, a Mixture-of-Experts (MOE) router that dec
 - **`/mcp` (external-MCP) → the Lossless Execution Bridge:** undo-wrapped, main-thread-marshalled, consent-gated, scene-hashed, with an `IntegrityBlock` + fidelity verdict per op. The *audited* path.
 - **`/synapse` (live WS) → `server.handlers` directly:** RBAC-gated, main-thread-marshalled (`run_on_main`), 30s slow-op timeout, undo-wrapped only **partially** (⚠ drift, verified 2026-07-10: usd/material/cops/batch/execute handlers wrap in `hou.undos.group`; the `handlers_node.py` create/set_parm/connect/delete handlers do NOT). **Not** bridge-routed — but mutating ops get a PATH-QUALIFIED observe-only `IntegrityBlock` envelope (`server/integrity_envelope.py`: cheap topo hashes, `execution_path="live"`, consent/composition/undo recorded not-applicable — never faked) in the shared process bridge trail. Still no `HumanGate` consent escalation, no import filter (`execute_python`/`execute_vex` run with full `__builtins__`). The *RBAC-guarded* path.
 
-**Core guarantee (path-qualified):** On the `/mcp` path, every mutation is reversible, every handoff traceable, every scene state reconstructable. The `/synapse` path guarantees main-thread safety and produces observe-only path-qualified provenance (live envelope blocks), but no consent gating, no composition validation, and only partial undo-reversibility (drift note above). (See §1 for the audit-layer contract and the live-path reality notes.)
+**Core guarantee (path-qualified):** On the `/mcp` path, every mutation is **grouped into a single artist-undoable entry**, every handoff traceable, every scene state reconstructable. Note the precise claim: `hou.undos.group()` groups undo entries so one Ctrl+Z reverses a whole operation. It does **not** roll back automatically when the wrapped block raises — on the exception path a partial network survives and the artist must undo it deliberately. Wrapping is not reversing. (VERIFIED-RUNTIME, L2 2026-07-25: failed Solaris builds orphan partial networks; the undo group does not clean up.) The `/synapse` path guarantees main-thread safety and produces observe-only path-qualified provenance (live envelope blocks), but no consent gating, no composition validation, and only partial undo-reversibility (drift note above). (See §1 for the audit-layer contract and the live-path reality notes.)
 
 ---
 
@@ -41,7 +41,7 @@ These are structural, not configurable, **for operations routed through the brid
 
 | Anchor | What It Enforces | Mechanism |
 |---|---|---|
-| **Undo Safety** | Every mutation wrapped in `hou.undos.group()` | Bridge wraps BEFORE agent code runs. No opt-out. |
+| **Undo Grouping** | Every mutation wrapped in `hou.undos.group()` — one artist Ctrl+Z reverses the whole op | Bridge wraps BEFORE agent code runs. No opt-out. **Grouping only: no automatic rollback on the exception path.** |
 | **Thread Safety** | All `hou.*` on main thread | `hdefereval.executeInMainThreadWithResult()` in bridge. No agent has direct `hou` access. |
 | **Artist Consent** | Gate levels on destructive ops | INFORM / REVIEW / APPROVE gates. No agent can self-escalate. |
 | **Scene Integrity** | USD composition validation after mutation | Stage traversal checks composition arcs. Rollback on violation. |
@@ -128,7 +128,7 @@ PDG farm cooks are inherently async (minutes to hours). R8 bridges this to FastM
 4. Generate session capture for recovery
 5. Notify artist via panel
 
-**No gradual wind-down.** The undo system ensures partial operations are safely reversible.
+**No gradual wind-down.** Partial operations remain **artist-undoable** — the undo group is closed and a single Ctrl+Z reverses what was built. It is **not** automatically unwound: a halt mid-operation leaves the partial network in the scene until the artist undoes it. Say "undoable", never "reversed".
 
 ---
 
