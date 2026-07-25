@@ -623,3 +623,74 @@ anywhere will drift exactly that far, and nothing will report it.
 ruling, it failed on the control case, and the control case is what exposed it — a test that
 should trivially pass, failing, is worth more than one that fails as expected. The fix I was
 verifying is sound; the fact that I *could not verify it anywhere* is the finding.
+
+---
+
+## RULING 29 — Ruling 17 AMENDED. L3 was wrong about the halt, and the real gap is narrower and sharper.
+
+**L3.R2 claimed:** *"Emergency halt has no artist-reachable surface in the shipped panel — it
+exists only in the dead chat_panel tree."* I ruled on that at 12:20 and made it the highest
+priority in the relay.
+
+**Verified 2026-07-25, `synapse_panel.py:441-445, 1727-1740`:** that is not what the tree says.
+
+### What actually exists — and it is good work
+
+A **Stop** button lives in the persistent rail:
+
+```python
+self._stop_btn = c.Button("Stop", variant="danger")
+self._stop_btn.clicked.connect(self._on_stop)
+self._stop_btn.setVisible(busy)   # state-gated to working only
+```
+
+`_on_stop` is **honest in exactly the way Ruling 14 demands.** It aborts the worker loop and
+then explicitly refuses to claim idle:
+
+> *Honest Stop: abort the loop, but DO NOT claim idle — Houdini may still be finishing the
+> in-flight tool (abort is cooperative; it takes effect at the next tool/iteration boundary).*
+
+It sets the header to `Stopping — waiting on <tool>…` and waits for the worker to actually
+emit `stream_done`. That is a control reporting what happened rather than what was attempted,
+written before this relay existed. It should not be replaced.
+
+### The real gap, stated precisely
+
+Three distinct things were being conflated:
+
+| | Reachable? | Does what |
+|---|---|---|
+| **Stop** (`_on_stop`, live rail) | **yes**, while busy | aborts the agent loop, cooperatively |
+| **in-flight cook cancel** | **no** | `tops_cancel_cook` / render cancel — deferred by its own comment: *"must run off the UI thread against a live bridge"* |
+| **Emergency halt** (`_on_emergency_halt`, chat_panel) | **no** — ORPHAN tree | `EmergencyProtocol.trigger_emergency_halt`: cancel dispatches, `cancelCook()`, write emergency state to `agent.usd`, session capture |
+
+So an artist mid-Karma-render has a Stop that **will not stop the render**, and no reachable
+path to the one that would. That is a genuine safety gap — but it is not "there is no stop
+button," and building a second one would have made the panel worse.
+
+**Ruled, superseding R17:**
+
+1. **Keep `_on_stop` exactly as written.** Do not replace it, do not make it always-visible.
+   State-gating is correct: a Stop shown when nothing is running is the same lie as a consent
+   gate that does not gate.
+2. **Surface emergency halt as a distinct, second control** — not a rename of Stop. Different
+   verb, different consequence, different visual weight. It belongs in the rail's overflow
+   (`⋯`), not competing with Stop.
+3. **The cook-cancel gap is the load-bearing half** and it is not a panel problem. It needs
+   off-UI-thread dispatch against a live bridge. That is server work, and it is where the real
+   risk sits — a stop that cannot stop a 40-minute render is the case artists will actually hit.
+4. **Do not implement any of this blind.** Per R28 the panel has no working test surface on any
+   interpreter. Shipping an untested new safety control into an untested package is how the 17
+   ORPHANs got there.
+
+### Why this correction matters more than the fix would have
+
+I ruled R17 the highest-priority item in the relay on the strength of a receipt, without
+reading the file. The receipt was wrong. Had I implemented it, I would have added a second Stop
+button beside a working one, in a package that cannot be tested, and called it a safety
+improvement.
+
+Constitution Law 5 says write from the tree, not from memory. **A receipt is not the tree.**
+It is a model's summary of the tree, and it inherits every limit of the pass that produced it.
+Findings get verified at the anchor before they get acted on — including my own, and including
+ones I have already ruled on.

@@ -1,0 +1,64 @@
+{
+  "leg": "L5",
+  "name": "RULING",
+  "schema": "receipt/v1",
+  "started": "2026-07-25T16:40:00Z",
+  "ended": "2026-07-25T18:30:00Z",
+  "status": "amber",
+  "status_reason": "Ruling block delivered complete (18 items, 25,859 bytes). Receipt written after the fact by the orchestrator: a machine-level crash at ~12:50 local took the relay process, both watchers, the parallel Solaris team and Houdini simultaneously, after CTO_RELAY_01_RULING.md was written and before L5 could write this file. The crucible adversarial pass over the ruling block DID NOT RUN.",
+  "commit_at_run": "0d8bbd7",
+  "mode": "B",
+  "model": "UNVERIFIED - not recorded at run time; receipt/v1 gained the field only at R25, after this leg ran. Attribution to Opus 4.8 is VERIFIED-DERIVED from launch time, not observed.",
+  "settings_profile": "harness/relay-settings.json",
+  "agents": ["sidefx-cto"],
+  "agents_not_run": ["crucible"],
+  "suite": { "before": 4744, "after": 4744, "delta": 0, "failed": 0, "skipped": 100 },
+  "commits": ["0d8bbd7"],
+  "findings": [
+    {
+      "id": "L5.F1",
+      "severity": "blocker",
+      "truth": "VERIFIED-STATIC",
+      "claim": "The ruling block was never adversarially reviewed. Article IV assigns L5 to sidefx-cto followed by crucible; only the first ran. The 18 items are one model's unattacked judgement.",
+      "anchor": "harness/notes/CTO_RELAY_01_RULING.md"
+    },
+    {
+      "id": "L5.F2",
+      "severity": "blocker",
+      "truth": "REFUTED-LIVE",
+      "claim": "Ruling-block R11 ranks the WS bridge defect above the entire relay. That finding (L1.F1) is false - the bridge was healthy; the probe omitted the /synapse path and read nine HTTP 400 path rejections as nine transport failures. R11 must be re-ranked before the block is read.",
+      "anchor": "harness/notes/cto_relay_drift.md D-R10"
+    },
+    {
+      "id": "L5.F3",
+      "severity": "blocker",
+      "truth": "REFUTED-LIVE",
+      "claim": "Ruling-block item on emergency halt (from L3.R2) is wrong. A Stop button exists in the live rail at synapse_panel.py:441 and _on_stop is honest by Law 3. The real gap is narrower: in-flight cook cancel is deferred, and EmergencyProtocol is unreachable. See R29.",
+      "anchor": "python/synapse/panel/synapse_panel.py:441"
+    },
+    {
+      "id": "L5.F4",
+      "severity": "debt",
+      "truth": "VERIFIED-STATIC",
+      "claim": "Two ruling surfaces exist and were never reconciled: this relay's CTO_RELAY_01_RULING.md (18 items) and CTO_RULINGS_01.md (29 rulings, written concurrently by the orchestrator on the same branch). L4.F5 flagged the concurrent-commit condition as a blocker at the time.",
+      "anchor": "harness/notes/CTO_RULINGS_01.md"
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "L5.R1",
+      "question": "Three of the ruling block's 18 items are now known-wrong or re-ranked (R11 refuted, emergency halt refuted, plus the unsourced 39/218 corrected to a live 40/218). Re-run L5 with crucible, or annotate in place?",
+      "options": ["Re-run L5 end to end with crucible", "Annotate the three items in place and mark the block reviewed-by-orchestrator", "Leave as-is and rely on CTO_RULINGS_01.md"],
+      "recommendation": "Annotate in place. A re-run would regenerate 18 items from receipts that have themselves been partly refuted since - it would launder corrections into fresh-looking findings. Annotation preserves what was found, when, and by what evidence.",
+      "cost_of_delay": "High for trust. Anyone reading the block today reads three wrong rankings as current."
+    },
+    {
+      "id": "L5.R2",
+      "question": "Two ruling surfaces on one branch. Merge them, or declare one canonical?",
+      "options": ["Merge into one document", "CTO_RULINGS_01.md canonical, relay block becomes an appendix", "Keep both, cross-referenced"],
+      "recommendation": "CTO_RULINGS_01.md canonical. It carries the corrections and the later evidence; the relay block is the record of what the legs found and should be preserved unedited as that record.",
+      "cost_of_delay": "Medium. Two sources of truth is the F6 ID-collision failure mode wearing different clothes."
+    }
+  ],
+  "resume_token": "L5 COMPLETE, retroactively receipted. Ruling block at harness/notes/CTO_RELAY_01_RULING.md is delivered and unedited. crucible never ran - the block is unattacked. Three items known-wrong: R11 (bridge, refuted D-R10), emergency halt (refuted R29), LOP coverage (39/218 unsourced, live number is 40/218). Do NOT re-run L5 to fix these; annotate. Relay is 6/6. Gate C never touched, 37 commits on feat/cto-relay-01, pushed to origin."
+}
