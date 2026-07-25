@@ -38,7 +38,10 @@
                                       "Edit(harness/tasks.json)",
                                       "Edit(design/**)",
                                       "WebSearch",
-                                      "WebFetch(domain:www.sidefx.com)"
+                                      "WebFetch(domain:www.sidefx.com)",
+                                      "Bash(hython --offscreen:*)",
+                                      "Bash(*hython.exe*)",
+                                      "Bash(*husk.exe*)"
                                   ],
                         "deny":  [
                                      "Bash(git push:*)",

@@ -304,3 +304,111 @@ of F1–F11.
 tally, not a runner-reported number. Units mismatch, not a discrepancy — recorded so no future
 census hunts it. Same class as the relay's own "39 of 218": a number that travelled without its
 producer.
+
+---
+
+# ADDENDUM — L3 PANEL TRUTH RULINGS
+
+**Ruled** 2026-07-25. L3: 35 LIVE / 17 ORPHAN / 7 SILENT — 24 of 59 affordances broken, 41%.
+Two of these are safety findings and outrank every design decision in this relay.
+
+---
+
+## RULING 17 — Emergency halt ships as a persistent affordance. Highest priority in the relay.
+
+**L3.R2:** emergency halt has **no artist-reachable surface** in the shipped panel. It exists
+only in the dead `chat_panel` tree. CLAUDE.md Safety Rule 11 requires it.
+
+SYNAPSE mutates a live Houdini scene containing an artist's unsaved work. An agent with no
+reachable stop is not a tool, it is a hazard with a good UI.
+
+**Ruled:** restore it as a **persistent, always-visible affordance** — not a palette entry, not a
+slash command, not behind a menu. `panel-design-warden`'s own note is exactly right: *a stop
+button you have to search for is not a stop button.*
+
+This is the one ORPHAN worth reviving rather than deleting, and it ships **before** any Cohere
+styling. If L4 has to choose between the palette pass and this, it ships this.
+
+---
+
+## RULING 18 — An affordance that claims a safety gate it does not perform is a defect, not debt.
+
+**L3.R1:** three affordances lie about safety-critical operations. COMMIT-to-`/stage` claims
+consent-gate routing that never happens; the gate widget emits unconditionally where it should
+emit conditionally.
+
+This is Constitution Law 3 — *status describes what happened* — applied to the UI surface. A
+consent gate that does not gate is worse than no gate, because the artist stops watching. It is
+the same defect as `set_purpose` returning `status="set"`, and it is in the safety path.
+
+**Ruled:** fix the two gate paths by making the three lines of unconditional emit conditional —
+`panel-design-warden` scoped it as small and it is. **COMMIT-to-`/stage` loses its consent claim
+entirely** until the routing exists. An honest button that promises nothing beats a dishonest one
+that promises safety.
+
+---
+
+## RULING 19 — The 21 slash commands are removed, not wired.
+
+**L3.R3:** 21 slash commands send description prose to the LLM instead of dispatching, bypassing
+~7,500 LOC of implemented feature modules. The features exist. The menu never reaches them.
+
+**Ruled: remove them now; wire them later as scoped work.** A menu entry that silently does
+something other than what it says is the SILENT class at scale, and it teaches the artist that
+the panel is unreliable — which is more expensive than the missing feature.
+
+Removal is honest and cheap. Wiring 21 entries to 7,500 LOC is a real project and deserves to be
+one.
+
+---
+
+## RULING 20 — My L4 token oracle was uncheckable. Restated.
+
+**L3.R4:** I wrote *"every token name present in styles.py before is present after."* `styles.py`
+**defines zero tokens** — it consumes them. The oracle could never have run.
+
+That is Constitution Law 1 violated by the person who wrote Law 1, four hours later.
+
+**Ruled:** the oracle asserts against `harness/notes/panel_token_inventory_before.json`, which L3
+produced for exactly this purpose. Assertable, not eyeballed.
+
+---
+
+## RULING 21 — There is a THIRD token source, outside the repo.
+
+**L3.R5:** the accent token's third source is `~/.synapse/design/tokens.py` — **outside the
+repository**, injected onto `sys.path` by `tokens.py:15`. The panel's appearance depends on a
+file that is not version controlled and not on any teammate's machine.
+
+My L4 spec named two sources. There are three.
+
+**Ruled, in two parts:**
+- **For L4:** additive only. Do not sever the injection — it would break `test_hda_panel`, and
+  severing an out-of-repo `sys.path` injection mid-restyle is how a design pass becomes an
+  outage.
+- **Separately, and it is a real decision:** an out-of-repo token source means the shipped
+  product renders differently on a machine that lacks it. That is a reproducibility defect, not
+  a styling one. Deposit it.
+
+---
+
+## RULING 22 — Grant the hython-offscreen permission. L4 is shipping ungraded right now.
+
+**L3.R6:** two of five G3 slices have no baseline because the hython-offscreen invocation was
+permission-denied. L4 grades on three of five.
+
+**Ruled:** grant it. This is a permission line, not engineering work, and panel verification is
+hython-offscreen-only by standing convention. Granting mid-flight will not retro-grade the
+running L4 — that leg ships partially graded and the gap is recorded here honestly rather than
+papered over.
+
+---
+
+## RULING 23 — `providers/`: fix the claim today, the code after T.1.
+
+**L3.R7:** `providers/` is 136 LOC against a "five swappable engines" claim. L3's read is that
+the code is not the problem, the out-of-box experience is.
+
+**Ruled:** amend the public claim now. "Five swappable engines" is simultaneously true and
+misleading, and the honest version costs one paragraph. The code waits for T.1, which will change
+what a provider is.
