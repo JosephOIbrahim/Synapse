@@ -229,6 +229,28 @@ class _ProposalCard(QtWidgets.QWidget):
         color = t.ERROR if self._pulse_on else t.GRAPHITE
         self._apply_card_style(color)
 
+    def mark_gate_unreachable(self):
+        """The decision did NOT reach the gate. Say so, and stay undecided.
+
+        RULING 18. The card must not dim, must not read APPROVED or REJECTED, and must not
+        look settled — because nothing was settled. The proposal is still live and still
+        needs a decision that lands.
+        """
+        if hasattr(self, "_countdown_timer"):
+            self._countdown_timer.stop()
+        if hasattr(self, "_pulse_timer"):
+            self._pulse_timer.stop()
+
+        self.setStyleSheet(
+            "background: {bg}30; border: none; border-left: 4px solid {c}; "
+            "border-radius: 4px; margin: 2px 0;".format(bg=t.WARN, c=t.WARN)
+        )
+        if hasattr(self, "_countdown_label"):
+            self._countdown_label.setText("NOT RECORDED - GATE UNREACHABLE")
+            self._countdown_label.setStyleSheet(
+                "color: {c}; font-weight: bold;".format(c=t.WARN)
+            )
+
     def mark_decided(self, decision):
         """Visually mark the card as decided with triple feedback:
         1. Green/red flash on the card background
@@ -484,13 +506,25 @@ class GateWidget(QtWidgets.QWidget):
         self._update_header_text()
 
     def _on_approve(self, proposal_id):
-        """Handle approve button click."""
+        """Handle approve button click.
+
+        RULING 18 / Constitution Law 3: the UI announces what HAPPENED, never what was
+        attempted. If ``gate.decide`` raises, the decision did not land — the card is NOT
+        marked decided and ``decision_announced`` is NOT emitted. A consent gate that
+        reports success on a swallowed exception is worse than no gate, because the artist
+        stops watching.
+        """
         try:
             from synapse.core.gates import HumanGate, GateDecision
             gate = HumanGate.get_instance()
             gate.decide(proposal_id, GateDecision.APPROVED, "panel_artist")
         except Exception as exc:
             logger.error("Failed to approve proposal %s: %s", proposal_id, exc)
+            card = self._cards.get(proposal_id)
+            if card:
+                card.mark_gate_unreachable()
+            self._update_header_text()
+            return
 
         card = self._cards.get(proposal_id)
         if card:
@@ -503,13 +537,23 @@ class GateWidget(QtWidgets.QWidget):
         self._update_header_text()
 
     def _on_reject(self, proposal_id):
-        """Handle reject button click (or timeout auto-reject)."""
+        """Handle reject button click (or timeout auto-reject).
+
+        RULING 18: same contract as ``_on_approve``, and the stakes are higher — a reject
+        that never reached the gate has NOT blocked anything. Do not report it as though
+        it had.
+        """
         try:
             from synapse.core.gates import HumanGate, GateDecision
             gate = HumanGate.get_instance()
             gate.decide(proposal_id, GateDecision.REJECTED, "panel_artist")
         except Exception as exc:
             logger.error("Failed to reject proposal %s: %s", proposal_id, exc)
+            card = self._cards.get(proposal_id)
+            if card:
+                card.mark_gate_unreachable()
+            self._update_header_text()
+            return
 
         card = self._cards.get(proposal_id)
         if card:

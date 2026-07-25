@@ -581,3 +581,45 @@ that cannot complete would be choosing under exactly the conditions the gate exi
 the safe, obvious half of a split I was pleased with. It was wrong twice, and both errors were
 invisible from the tree — visible only from execution. Constitution Law 5 says write from the
 tree, not memory. The stronger form, earned here: **the tree is still a document. Run the thing.**
+
+---
+
+## RULING 28 — The panel has no working test surface on any interpreter.
+
+**Found** 2026-07-25 while writing the regression pin for Ruling 18.
+
+Two interpreters, two different reasons, one result:
+
+| Interpreter | PySide | Panel tests |
+|---|---|---|
+| system Python 3.14.2 (where 4,744 pass) | **absent** — `ModuleNotFoundError: PySide6` *and* `PySide2` | **skip** |
+| `hython3.13` (what artists run) | present, Houdini's own | **segfault** — access violation, R27 |
+
+`tests/panel/test_docking.py:80` already states the convention plainly:
+`pytestmark = pytest.mark.skip(reason="PySide unavailable - run via hython")`.
+
+So the panel's tests skip on the interpreter that runs the suite, and crash the interpreter
+they were written for. **`panel/` is 23,365 LOC across 71 files — larger than `server/` — and
+it is effectively untested in both directions.**
+
+This is not a new defect. It is the explanation for an existing one: L3 found **17 ORPHAN and
+7 SILENT affordances** in that package, 41% of the surface. A subsystem that cannot be tested
+anywhere will drift exactly that far, and nothing will report it.
+
+**Ruled:**
+
+1. The convention is correct and stays — `importorskip` / hython-gated. **A skip is honest, a
+   pass is a lie** (Law 1). Do not add PySide to the dev environment to make these tests
+   "run"; that would test a Qt build no artist has.
+2. **The segfault (R27) is now the single highest-value engineering item in the project.** It
+   is not a test-infrastructure annoyance. It is the reason a 23k-LOC user-facing package has
+   no verification, and it gates Gate 0.1b as well.
+3. Until it is fixed, **no panel claim may cite test evidence.** The panel's correctness is
+   currently asserted only by inspection.
+4. The three tests added for Ruling 18 (`tests/panel/test_gate_consent_honesty.py`) are
+   written to run the moment the segfault is fixed. They are pins waiting for a floor.
+
+**Note on method.** I did not go looking for this. I wrote a regression test for a different
+ruling, it failed on the control case, and the control case is what exposed it — a test that
+should trivially pass, failing, is worth more than one that fails as expected. The fix I was
+verifying is sound; the fact that I *could not verify it anywhere* is the finding.
