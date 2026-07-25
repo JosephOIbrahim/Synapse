@@ -1,0 +1,92 @@
+{
+  "leg": "L1",
+  "name": "CONTEXT (LOP and COP)",
+  "schema": "receipt/v1",
+  "started": "2026-07-25T00:35:00Z",
+  "ended": "2026-07-25T01:40:00Z",
+  "status": "amber",
+  "commit_at_run": "ea4c863",
+  "mode": "B",
+  "agents": ["cartographer", "prospector", "assayer"],
+  "agents_not_run": ["h22-forge"],
+  "scope_note": "Census-only. GATEWARDEN REFUSED the per-context capability rebuild and gap CLOSURE (flywheel_queue.json:80, C.0 ratified:false). h22-forge was therefore NOT dispatched. The relay's L1 work item 4 ('close the top 5') is gate-blocked, not skipped - see L1.R1.",
+
+  "suite": { "before": 4716, "after": 4716, "delta": 0, "failed": 0, "skipped": 100 },
+  "oracle": {
+    "closed_gaps_ship_a_failing_test": "N/A - zero gaps closed (gate REFUSE)",
+    "lop_emission_grounded": "CHECK DOES NOT EXIST. Real nearest: check_lop_catalog_fresh (checks.py:663). See drift D-R1.",
+    "no_phantom_api": "CHECK DOES NOT EXIST. Real nearest: check_phantom_clean (checks.py:450).",
+    "suite_delta": 0,
+    "verdict": "Oracle unrunnable as written; census oracle substituted - COP catalogue artifact exists, validates, blake2b-stamped, 0 probe errors."
+  },
+
+  "probe_environment": {
+    "build_probed": "22.0.368",
+    "route": "hython.exe (headless)",
+    "route_note": "PROVISIONAL-pending-live-reconfirm. The live WS bridge was NOT usable - see L1.F1. Nothing probed here touches GUI-lazy surfaces (hou.ui), so headless is sound for these results."
+  },
+
+  "artifacts": ["harness/notes/h22_cop_catalog_live_22.0.368.json"],
+  "commits": [],
+
+  "coverage": {
+    "LOP": {
+      "denominator": 218,
+      "D1_union": { "n": 218, "pct": 100.0, "verdict": "DEGENERATE BY CONSTRUCTION - carries zero information" },
+      "D2_literal_emission": { "n": 31, "pct": 14.2 },
+      "D3_semantic": { "n": 27, "pct": 12.4 },
+      "honest_number": { "n": 40, "pct": 18.3, "basis": "D2 union D3" }
+    },
+    "COP": {
+      "Cop": { "denominator": 384, "D1": 24, "D2": 24, "D3": 0, "pct_D2": 6.2 },
+      "Cop2": { "denominator": 169, "D1": 23, "D2": 23, "D3": 0, "pct_D2": 13.6 },
+      "note": "FIRST COP COVERAGE NUMBER IN THE PROJECT'S HISTORY. D1 == D2 because the connectivity artifact's Cop entries are themselves emission-derived - there is no independent COP grounding source. D3 == 0: no COP semantic artifact exists at all."
+    }
+  },
+
+  "dead_literal_verdicts": {
+    "grid": "present_other_category_only (sop)",
+    "font": "present_other_category_only (sop, cop, cop2)",
+    "merge": "present_lop",
+    "merge::2.0": "absent-on-this-install",
+    "graft": "absent-on-this-install",
+    "graft::2.0": "absent-on-this-install",
+    "switchif": "present_other_category_only (sop)",
+    "karma": "present_lop AND deprecated==true",
+    "karmarenderproperties": "present_lop AND deprecated==true",
+    "caveat": "hou.nodeType(cat,name) is None means ABSENT-ON-THIS-INSTALL, not phantom-in-Houdini. An unloaded HDA package is indistinguishable from a genuine phantom by this test. Adjacent live LOPs graftbranches/graftstages exist, consistent with graft being a rename - but that is inference, not probe."
+  },
+
+  "gap_ranking": {
+    "basis": "PROXY ONLY. No artist-usage frequency data exists in this repo - the ranking weight is repo literal-mention demand (PX-A), not measured live frequency.",
+    "ungrounded_against_D2_union_D3": 178,
+    "top_10": ["error(326)","scope(197)","sopcreate(63)","points(44)","copnet(38)","blend(32)","xform(31)","cache(24)","drop(24)","light::2.0(23)"],
+    "contamination_warning": "Ranks 1-2 (error, scope) and likely cache/points/blend/drop are inflated by generic English/JSON-key collisions. PX-A is unfiltered.",
+    "PX_C_inert": "The variadic-composer tie-break fired on 0 of 178 types - no live LOP reports max_inputs >= 9999. The catalogue's own UNBOUNDED convention is not populated for LOPs."
+  },
+
+  "findings": [
+    { "id": "L1.F1", "claim": "The live SYNAPSE WS bridge is NOT reachable, despite a fresh sidecar advertising it. ~/.synapse/bridge.json is current (pid 61208, port 9999, ts today) and port 9999 is open, but 9/9 WebSocket upgrade attempts returned `InvalidStatus: server rejected WebSocket connection: HTTP 400` and 4/4 plain HTTP paths returned 404. Something HTTP-ish holds the port and does not serve the SYNAPSE transport. The SessionStart hook reported 'bridge connected'.", "truth": "REFUTED-LIVE", "anchor": "~/.synapse/bridge.json", "severity": "blocker" },
+    { "id": "L1.F2", "claim": "D1-union LOP coverage is degenerate by construction: verified_connectivity_22.0.368.json holds all 218 live Lop types, so D1 = 218/218 = 100% and carries zero information. Any 'we are at 100% LOP coverage' claim sourced from D1 is vacuous.", "truth": "VERIFIED-RUNTIME", "anchor": "harness/notes/verified_connectivity_22.0.368.json", "severity": "blocker" },
+    { "id": "L1.F3", "claim": "The relay's '39 of 218 = 18%' has no producing script, no artifact and no U.6 record anywhere in the tree - the only two repo-wide occurrences are inside the relay document itself. The live-probed honest number is 40/218 = 18.3% (D2 union D3), so the prose was approximately right and entirely unsourced.", "truth": "VERIFIED-RUNTIME", "anchor": "harness/SYNAPSE_CTO_RELAY.md:172", "severity": "debt" },
+    { "id": "L1.F4", "claim": "COPs are effectively ungrounded: 6.2% of 384 live Cop types and 13.6% of 169 Cop2 types carry any emission grounding, and ZERO carry semantic grounding. H22's centre of mass moved into Copernicus and SYNAPSE's grounding did not follow.", "truth": "VERIFIED-RUNTIME", "anchor": "harness/notes/h22_cop_catalog_live_22.0.368.json", "severity": "blocker" },
+    { "id": "L1.F5", "claim": "Bare type-name emission is ambiguous for 42% of the corpus: 41 of 97 emitted names resolve in 2+ node categories; `null` and `subnet` resolve in all 10. The emission corpus records no category axis, so every coverage number computed from it before this leg was unfalsifiable.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/cognitive/tools/data/emitted_node_types.json", "severity": "blocker" },
+    { "id": "L1.F6", "claim": "SYNAPSE emits two DEPRECATED LOP types: `karma` and `karmarenderproperties` are both present_lop with deprecated()==true on 22.0.368 - the only 2 deprecated LOPs on the build - and karmarenderproperties is emitted in >=11 places. Not phantom; decaying.", "truth": "VERIFIED-RUNTIME", "anchor": "harness/notes/h22_lop_catalog_live_22.0.368.json", "severity": "debt" },
+    { "id": "L1.F7", "claim": "`mtlxstandard_surface` is present in the semantic knowledge artifact lop_solaris_knowledge_22.json but is NOT a live LOP type on 22.0.368 - one poisoned semantic entry.", "truth": "REFUTED-LIVE", "anchor": "python/synapse/cognitive/tools/data/lop_solaris_knowledge_22.json", "severity": "debt" },
+    { "id": "L1.F8", "claim": "The '37 vs 196' connectivity contest is a version artifact, and both figures are wrong for H22. H22 has 218 Lop entries (201 with input_labels); the 36-entry figure is the H21.0.671 artifact. Separately, verified_connectivity_H22.json is MALFORMED - it has no `entries` key at all (KeyError).", "truth": "VERIFIED-RUNTIME", "anchor": "harness/notes/verified_connectivity_22.0.368.json", "severity": "debt" },
+    { "id": "L1.F9", "claim": "No grounding/coverage check function exists for either context. The relay's named oracles `lop_emission_grounded` and `no_phantom_api` do not exist; emitted_node_types.json has exactly ONE consumer in checks.py (check_no_rigging_drift, :340) and it only phrase-scans for rigging drift - it never grounds types against a live catalogue.", "truth": "VERIFIED-STATIC", "anchor": "harness/verify/checks.py:340", "severity": "blocker" },
+    { "id": "L1.F10", "claim": "The 'four confirmed-dead createNode literals' are not substantiated as four literals. Two interpolated geo types are dead (grid, font - emitted via f-string at planner.py:648, invisible to the extractor by design); four ORDER-TABLE entries are dead (merge::2.0, graft, graft::2.0, switchif at handlers_usd.py:1599-1609) but those are frozenset members that never create anything - they mis-classify ordering.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/routing/planner.py:648", "severity": "debt" },
+    { "id": "L1.F11", "claim": "The RAG corpus carries 15 phantom light createNode sites (rectlight/spherelight/disk/cylinder - all absent from the 218) entirely outside the emission gate, re-teaching phantoms via knowledge_lookup and scout. Code/corpus divergence class.", "truth": "VERIFIED-STATIC", "anchor": "rag/skills/houdini21-reference/lighting.md:163", "severity": "debt" },
+    { "id": "L1.F12", "claim": "COP parm harvesting is fully instantiation-free: nt.parmTemplateGroup().entriesWithoutFolders() succeeded on all 553 types across both categories with zero fallbacks and zero probe errors.", "truth": "VERIFIED-RUNTIME", "anchor": "harness/notes/h22_cop_catalog_live_22.0.368.json", "severity": "cosmetic" }
+  ],
+
+  "for_ruling": [
+    { "id": "L1.R1", "question": "L1 delivered the census; gap CLOSURE is gate-REFUSED (C.0 ratified:false). Flip the gate now, or close gaps in a later run?", "options": ["Flip C.0 and close the top-5 in a follow-on leg", "Leave frozen - the census is the deliverable, closure is separate work", "Flip C.0 AND re-ratify the H21-vintage catalogues C.1-C.6 depend on"], "recommendation": "Option 3, but sequenced. The census now exists on H22 truth; C.1-C.6 are still armed off an H21 catalogue for an uninstalled build. Flipping C.0 alone would close gaps against a stale capability base. Re-ratify the catalogues first, then flip.", "cost_of_delay": "Medium. COPs are 6.2% grounded on the build where Copernicus is the centre of mass - every day of delay is a day the emission corpus mis-teaches COP work.", "unblocks": "harness/state/flywheel_queue.json:80" },
+    { "id": "L1.R2", "question": "Which grounded-coverage denominator is canonical? All three are now computed, not asserted.", "options": ["D2 literal-emission (31/218, 14.2%) - what SYNAPSE actually emits", "D3 semantic (27/218, 12.4%) - what SYNAPSE understands", "D2 union D3 (40/218, 18.3%) - the honest composite"], "recommendation": "D2 union D3 = 18.3%, and RETIRE D1 entirely. D1 is 100% by construction because the connectivity artifact contains the whole live catalogue - it is not a contested number, it is a vacuous one. Any doc quoting a single LOP coverage % should quote 18.3% with its basis named.", "cost_of_delay": "High for governance. Three defensible numbers currently circulate and the relay quoted a fourth with no producer.", "unblocks": "docs/reviews/solaris-wiring-gap-ledger-2026-07-21.md:198-210" },
+    { "id": "L1.R3", "question": "Which COP category is SYNAPSE's target surface? `Cop` has 384 types, `Cop2` has 169. Both are live on 22.0.368.", "options": ["Cop (384) - the Copernicus surface, H22's centre of mass", "Cop2 (169) - the legacy surface, where SYNAPSE's existing 17 handler literals mostly live", "Both, tracked separately"], "recommendation": "Cop as the target, Cop2 as maintenance-only. But this is genuinely a product call - it decides where the next year of COP work goes, and presumption is not a ruling.", "cost_of_delay": "High. It gates every COP gap-closure decision that follows from this census.", "unblocks": "the COP half of C.1-C.6" },
+    { "id": "L1.R4", "question": "SYNAPSE emits two DEPRECATED LOP types (karma, karmarenderproperties - the only two deprecated LOPs on the build), karmarenderproperties in >=11 places. Remediation is gap-closure, which this leg's gate REFUSES.", "options": ["Flip the gate and migrate the emissions now", "Deposit as a ratified:false candidate and migrate after the C.0 ruling", "Accept - deprecated is not removed, it still works"], "recommendation": "Deposit as a candidate. Deprecated-but-live is a decay clock, not a fire - but it is exactly the class of thing that becomes a phantom at the next major, and SYNAPSE has been burned by that before.", "cost_of_delay": "Low now, high at the next Houdini major." },
+    { "id": "L1.R5", "question": "There is no grounding CHECK function for either context - emitted_node_types.json's only consumer is a rigging phrase-scan. Should a real grounding gate be authored?", "options": ["Author check_lop_emission_grounded + check_cop_emission_grounded against the live catalogues", "Extend check_phantom_clean to cover emission types", "Leave ungated"], "recommendation": "Author both. The two halves already exist - harvest_lop_catalog.py is a one-symbol swap from a COP harvester, and the extractor is category-agnostic. The missing piece is only the intersection step, and without it every coverage number in this project is prose.", "cost_of_delay": "High. This is the machinery whose absence let an unsourced 18% sit in a CTO relay document." }
+  ],
+
+  "resume_token": "L1 COMPLETE (census scope). harness/notes/h22_cop_catalog_live_22.0.368.json is on disk, schema cop_catalog_live/v1, Cop=384 Cop2=169, 0 probe errors, blake2b-stamped. If re-entered: skip P1-P5, all five probes ran clean against a verified 22.0.368. Carry forward - the live WS bridge is DOWN (L1.F1) so any leg needing a live GUI session must re-establish it first; hython is the working route. D1 union coverage is retired as degenerate; the honest LOP number is 40/218 = 18.3%. Zero gaps closed by gate REFUSE, zero source commits, zero tests added (Commandment 7 held at 4716)."
+}
