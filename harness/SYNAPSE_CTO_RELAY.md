@@ -158,7 +158,7 @@ lives in the 80-task ledger and in root-directory entropy. Establish what is act
 **Oracle**
 ```
 pytest -q  â†’  failed == 0  AND  passed >= 4716
-python harness/verify/checks.py --all  â†’  no new red
+python harness/verify/checks.py --task <ID> --worktree . --mode B   ->  no new red
 git status --porcelain | wc -l  â†’  recorded, not asserted
 ```
 
@@ -188,8 +188,8 @@ mass moved into Copernicus; the port debt re-rank was ruled COP-first and never 
 **Oracle**
 ```
 every closed gap ships a test that FAILS on master and PASSES after
-python harness/verify/checks.py --check lop_emission_grounded  â†’  coverage strictly up
-python harness/verify/checks.py --check no_phantom_api  â†’  green
+python harness/verify/checks.py --task C.2 --worktree . --mode B    ->  lop coverage strictly up
+python harness/verify/checks.py --task C.3 --worktree . --mode B    ->  phantom-api green
 suite delta >= 0
 ```
 
@@ -416,3 +416,47 @@ its own leash, and must not try.
 
 `git push` and `git merge` are denied. The relay commits locally to `feat/cto-relay-01` and
 stops. Push and merge are GATE C, and GATE C is Joe.
+
+---
+
+## 8 · Amendments ledger
+
+**A1 — 2026-07-25 · Joe-authorized.** The Review surface is cut. The panel is two surfaces,
+Direct and Work. Accept and Revert are removed, not restyled — `hou.undos` owns revert. The
+render, verdict and decision credit collapse inline into Direct. Recorded in §4/L4.
+
+**A2 — 2026-07-25 · CTO.** L4's scope fence was wrong: it named `styles.py` only, but
+`styles.py` is a consumer — the values live in `panel/tokens.py` and
+`panel/designsystem/tokens.py`. Widened. Full spec at `design/cto_relay_01/L4_COHERE_SPEC.md`,
+which opens with the token-collision blocker.
+
+**A3 — 2026-07-25 · CTO, closing L0.R5.** The oracle commands in §4 cited a `checks.py` CLI
+that does not exist (`--all`, `--check X`). The real surface is
+`--task TASK --worktree WORKTREE [--hython] [--mode]`, confirmed at
+`harness/verify/checks.py` argparse block. Lines 161, 191, 192 corrected. **Ruling: amend the
+doc, do not add a second CLI surface** — the 80 check functions are reachable today, and
+inventing a CLI to match a prose error is the tail wagging the dog. This was my error, not the
+harness's.
+
+**A4 — 2026-07-25 · CTO, closing L0.R4.** `harness/state/done.json` — the completion ledger
+`run.ts:64` reads — has never existed. The harness has no completion memory; every run
+re-attempts settled work. **Ruling: promote `harness/notes/ledger_truth.json` to the durable
+ledger.** It is tracked, it is inside the write fence, and it carries a `file:line` anchor per
+verdict. An untracked ledger under `harness/state/` is precisely why the last one vanished.
+`run.ts` is deny-listed, so the read-path change is a separate human edit — logged, not
+performed.
+
+**A5 — 2026-07-25 · escalated to the ruling block.** Structural drift the relay could not
+self-resolve: L0.R1 (C.0 `ratified:false` gate-refuses L1 gap closure) and the H21-vintage
+catalog dependency behind it. Both require a human flip that the agent is fenced out of by
+design.
+
+### Standing correction to §4/L0
+
+`untitled.hip/` was listed as a root-hygiene deletion suspect. **It is not debris.** It holds
+`claude/agent.usd`, `claude/memory.md` and `.synapse/` — the live unsaved-scene memory store,
+previously flagged at `docs/SYNAPSE_CTO_REVIEW_2026-06-09.md:118`. Reclassified `live — never
+delete`. `_cto_recon.py` on the same suspect list does not exist and never did.
+
+The L0 rule that saved this — *classify only, delete nothing* — stays load-bearing for every
+future census. A suspect list authored away from the tree is a hypothesis, not a verdict.
