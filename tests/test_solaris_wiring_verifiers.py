@@ -1,0 +1,192 @@
+"""
+CTO-RELAY-01 L2 — tests for the Solaris wiring verifiers.
+
+These tests are EVIDENCE, not repair. Several of them assert that a verifier
+correctly REPORTS a defect in the Solaris tool tree. That is deliberate: the L2
+gate condition is "write verifiers, deposit findings, do not fix source". A
+test that pins a known defect keeps the defect visible and fails loudly the day
+someone fixes it -- at which point the pin is updated alongside the fix.
+
+Pure Python: no ``hou``, no Houdini. The live tier (stage composition, prim
+counts) runs under hython via ``harness/notes/l2_live_verify.py``; its recorded
+verdicts live in ``harness/notes/l2_wiring_findings.md``.
+"""
+
+import importlib
+
+import pytest
+
+common = importlib.import_module("synapse.validation.solaris.verify_wiring_common")
+v_scene = importlib.import_module("synapse.validation.solaris.verify_scene_template")
+v_mega = importlib.import_module("synapse.validation.solaris.verify_import_megascans")
+v_var = importlib.import_module("synapse.validation.solaris.verify_create_variants")
+v_purpose = importlib.import_module("synapse.validation.solaris.verify_set_purpose")
+v_audit = importlib.import_module("synapse.validation.solaris.verify_tool_audit")
+
+ALL_RESULTS = [
+    v_scene.verify_static,
+    v_mega.verify_static,
+    v_mega.verify_sop_chain,
+    v_var.verify_static_geometry,
+    v_var.verify_static_material,
+    v_var.verify_static_explore,
+    v_purpose.verify_static,
+    v_purpose.verify_purpose_map,
+    v_audit.verify_structure,
+    v_audit.verify_registration,
+]
+
+
+# ---------------------------------------------------------------- harness ---
+
+def test_catalog_is_the_pinned_live_build():
+    cat = common.load_catalog()
+    assert len(cat) == 218, "live LOP catalogue should carry 218 probed types"
+    assert cat["componentmaterial"]["min_inputs"] == 1
+    assert cat["componentgeometryvariants"]["max_inputs"] == 99
+
+
+def test_componentbuilder_is_absent_from_the_live_catalogue():
+    """component_builder's native path is a phantom on 22.0.368 (F10)."""
+    assert "componentbuilder" not in common.load_catalog()
+
+
+@pytest.mark.parametrize("fn", ALL_RESULTS, ids=lambda f: f.__qualname__)
+def test_every_verifier_honours_the_result_contract(fn):
+    res = fn()
+    assert res["contract"] == common.CONTRACT_VERSION
+    assert res["build"] == common.PINNED_BUILD
+    assert res["status"] in ("PASS", "FAIL")
+    assert isinstance(res["checks"], list) and res["checks"]
+    assert res["status"] == ("FAIL" if res["failures"] else "PASS")
+    for check in res["checks"]:
+        assert set(check) == {"name", "ok", "detail"}
+
+
+def test_check_connected_names_each_dead_end():
+    topo = [
+        {"name": "a", "type": "componentgeometry", "inputs": []},
+        {"name": "b", "type": "componentmaterial", "inputs": ["a"]},
+        {"name": "out", "type": "componentoutput", "inputs": ["b"]},
+        {"name": "loose", "type": "reference", "inputs": []},
+    ]
+    checks = {c.name: c for c in common.check_connected(topo)}
+    assert checks["single_terminal"].ok is False
+    assert checks["dead_end[loose]"].ok is False
+    assert checks["no_orphans"].ok is False
+    assert "loose" in checks["no_orphans"].detail
+
+
+def test_check_connected_passes_a_clean_chain():
+    topo = [
+        {"name": "a", "type": "componentgeometry", "inputs": []},
+        {"name": "out", "type": "componentoutput", "inputs": ["a"]},
+    ]
+    assert all(c.ok for c in common.check_connected(topo))
+    assert common.terminal_of(topo) == "out"
+
+
+def test_arity_violation_is_reported_against_the_live_catalogue():
+    topo = [{"name": "lonely", "type": "componentmaterial", "inputs": []}]
+    checks = {c.name: c for c in common.check_topology(topo)}
+    assert checks["lonely:min_inputs"].ok is False
+    assert checks["lonely:type_exists"].ok is True
+
+
+def test_unknown_type_fails_but_non_lop_types_are_exempt():
+    bogus = [{"name": "x", "type": "definitely_not_a_lop", "inputs": []}]
+    assert common.check_topology(bogus)[0].ok is False
+    sop = [{"name": "x", "type": "usdimport", "inputs": []}]
+    assert common.check_topology(sop)[0].ok is True
+
+
+# ------------------------------------------------------- scene_template ----
+
+def test_scene_template_topology_is_fully_wired():
+    """The one tool of the five whose emitted chain is correct end to end."""
+    res = v_scene.verify_static()
+    assert res["status"] == "PASS", res["failures"]
+    assert common.terminal_of(v_scene.EXPECTED_TOPOLOGY) == "render"
+
+
+def test_scene_template_emits_no_deprecated_types():
+    cat = common.load_catalog()
+    for node in v_scene.EXPECTED_TOPOLOGY:
+        assert cat[node["type"]]["deprecated"] is False, node
+
+
+# ------------------------------------------------------ import_megascans ---
+
+def test_megascans_material_reference_is_orphaned():
+    """FINDING F3: the material reference LOP is created and never wired."""
+    check = v_mega.material_orphan_check()
+    assert check.ok is False, "F3 appears fixed -- update this pin and the finding"
+    res = v_mega.verify_static()
+    assert res["status"] == "FAIL"
+    names = {f["name"] for f in res["failures"]}
+    assert "dead_end[mtl_ref_asset]" in names
+    assert "no_orphans" in names
+
+
+def test_megascans_sop_chain_is_connected():
+    res = v_mega.verify_sop_chain()
+    assert res["status"] == "PASS", res["failures"]
+
+
+# ------------------------------------------------------- create_variants ---
+
+def test_variant_materials_are_emitted_with_no_inputs():
+    """FINDING F4: copied componentmaterials violate min_inputs=1."""
+    assert v_var.unwired_variant_materials() == ["mat_red", "mat_blue"]
+    res = v_var.verify_static_material()
+    names = {f["name"] for f in res["failures"]}
+    assert {"mat_red:min_inputs", "mat_blue:min_inputs"} <= names
+
+
+def test_variant_set_never_reaches_the_terminal():
+    """FINDING F5: componentgeometryvariants is a dead end."""
+    res = v_var.verify_static_geometry()
+    assert res["status"] == "FAIL"
+    assert "dead_end[geo_variants]" in {f["name"] for f in res["failures"]}
+
+
+def test_explore_variants_branch_is_correctly_wired():
+    res = v_var.verify_static_explore()
+    assert res["status"] == "PASS", res["failures"]
+
+
+# ----------------------------------------------------------- set_purpose ---
+
+def test_set_purpose_host_chain_is_valid():
+    res = v_purpose.verify_static()
+    assert res["status"] == "PASS", res["failures"]
+
+
+def test_set_purpose_map_matches_the_tool():
+    res = v_purpose.verify_purpose_map()
+    assert res["status"] == "PASS", res["failures"]
+    assert set(v_purpose.EXPECTED_PURPOSE_MAP) == {"render", "proxy", "simproxy"}
+
+
+def test_set_purpose_cannot_distinguish_applied_from_skipped():
+    """FINDING F7: both return paths report status='set'."""
+    check = v_purpose.silent_fallback_check()
+    assert check.ok is False, "F7 appears fixed -- update this pin and the finding"
+
+
+# ------------------------------------------------------------ tool_audit ---
+
+def test_tool_audit_is_a_document_not_a_tool():
+    """FINDING F2."""
+    res = v_audit.verify_structure()
+    assert res["status"] == "PASS", res["failures"]
+    assert v_audit.HAS_IMPLEMENTATION is False
+
+
+def test_no_solaris_tool_the_audit_claims_is_actually_registered():
+    """FINDING F1: all five tools are unreachable from the live MCP registry."""
+    unregistered = v_audit.unregistered_tools()
+    assert unregistered == v_audit.claimed_new_tools()
+    assert len(unregistered) == 5
+    res = v_audit.verify_registration()
+    assert res["status"] == "FAIL"
