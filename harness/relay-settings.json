@@ -1,4 +1,4 @@
-﻿{
+{
     "_comment":  "CTO-RELAY-01 execution settings. Deliberately wider than agent-settings.json â€” the relay\u0027s oracles need pytest and the verify harness, which the headless-worktree profile does not allow. Everything irreversible stays denied: push, merge, PR creation, VERSION, the state dir, the baselines, the security bridge, and this harness\u0027s own governing doc. GATE C is Joe.",
     "env":  {
                 "ANTHROPIC_API_KEY":  ""

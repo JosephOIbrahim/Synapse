@@ -459,3 +459,47 @@ returns empty. Pure line-ending noise, zero content change.
 did something nobody had done recently — a fresh checkout — and the environment disagreed with
 the repository. Constitution Law 5 says write from the tree, not from memory. This is the
 corollary: **the tree only tells you what it has been asked. Ask it something new.**
+
+---
+
+## RULING 25 — Receipts must record the model. Provenance was incomplete and it just started to matter.
+
+**Found** 2026-07-25 13:10, when the Claude Code model was switched from Opus 4.8 to Opus 5
+mid-run.
+
+Every `receipt/v1` carries `commit_at_run`, `mode`, and `agents`. **None carries the model.**
+L0–L4 and SR1's M1–M3 are Opus 4.8 work; everything dispatched from here is Opus 5. The receipts
+cannot tell you which.
+
+That was harmless while one model ran the whole relay. It stopped being harmless the moment two
+did, and it undermines the evidence ladder directly: `VERIFIED-RUNTIME` means *observed on the
+live build* — but a **judgement** (severity, disposition, a `for_ruling` recommendation) is a
+model's output, not the build's. Two models can read the same tree and rank differently. Without
+the model recorded, a changed verdict is indistinguishable from changed reality.
+
+L1.F1 is the case in point: a `blocker` that was wrong. If Opus 5 re-runs L1 and does not
+reproduce it, there is currently no way to tell whether the finding was model-specific or the
+probe was simply fixed.
+
+**Ruled:**
+- `receipt/v1` gains a required `model` field: the CLI-reported model string at leg start.
+- It gains `settings_profile` — `agent-settings.json` or `relay-settings.json`. A leg run under
+  the narrow profile cannot claim suite evidence (Constitution Article V) and the receipt must
+  say which fence it ran behind.
+- **Do not pin a model in the settings files.** Pinning freezes the relay at whatever was current
+  when someone last edited a JSON file, which is a worse failure than not knowing — it is not
+  knowing plus a false sense of control. Record, do not constrain.
+- Legs already landed are annotated retroactively **as `VERIFIED-DERIVED`, not `VERIFIED-STATIC`** —
+  the attribution is inferred from launch time, not observed.
+
+## RULING 26 — `relay-settings.json` carried a UTF-8 BOM. Mine.
+
+`Set-Content -Encoding utf8` in PowerShell 5.1 writes a BOM. Python's `json.load` raises
+`Unexpected UTF-8 BOM` on it. Claude Code tolerated it — the fence held and no agent pushed — but
+every Python-side reader of that file was broken for three hours and nothing reported it.
+
+Stripped. `agent-settings.json` was clean; only the file I edited was affected.
+
+**Ruled:** add to the Law 1 check set — **assert every JSON under `harness/` parses with
+`json.load`.** It fails today if a BOM is reintroduced, which is the test that it is a real check
+and not a decoration. This is the same species as R24: a tool wrote bytes nobody read back.
