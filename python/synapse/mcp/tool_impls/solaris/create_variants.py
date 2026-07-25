@@ -41,6 +41,23 @@ def _stamp_provenance(node, info: Dict[str, Any]) -> None:
         pass
 
 
+def _child_category_name(node) -> str:
+    """Name of the node category this node's children live in ('Lop', 'Sop'...)."""
+    try:
+        cat = node.childTypeCategory()
+    except Exception:
+        return "unknown"
+    try:
+        return cat.name() if cat is not None else "none"
+    except Exception:
+        return "unknown"
+
+
+def _is_lop_container(node) -> bool:
+    """True when ``node`` can hold LOP children (a LOP subnet / lopnet)."""
+    return _child_category_name(node) == "Lop"
+
+
 def validate(params: Dict) -> None:
     """Validate parameters."""
     component_path = params.get("component_path")
@@ -123,6 +140,18 @@ def execute(params: Dict) -> Dict:
     comp = hou.node(component_path)
     if comp is None:
         raise NodeNotFoundError(component_path, suggestion="Check component builder path")
+
+    # SR1 seam MINOR-3: a non-LOP component_path (e.g. an /obj SOP network) is a
+    # reachable, plausible mistake. Unguarded it surfaced as a bare
+    # `OperationFailed: ... Invalid node type name` from the first createNode --
+    # honest, but it names neither the offending path nor the real requirement.
+    if not _is_lop_container(comp):
+        raise ValidationError(
+            f"component_path {component_path!r} is not a LOP network: it is a "
+            f"{comp.type().name()!r} whose children are "
+            f"{_child_category_name(comp)!r} nodes, not Lop nodes. "
+            "Pass a Component Builder subnet inside a /stage lopnet."
+        )
 
     # Find the parent LOP network for the explore node
     parent = comp.parent()

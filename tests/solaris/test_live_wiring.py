@@ -252,6 +252,81 @@ def test_f7_set_purpose_authors_a_real_usd_purpose_live(lopnet):
     assert UsdGeom.Imageable(prim).GetPurposeAttr().Get() == "proxy"
 
 
+def _purpose_component(lopnet, name):
+    comp = lopnet.createNode("subnet", name)
+    geo = comp.createNode("componentgeometry", "geo_" + name)
+    mat = comp.createNode("componentmaterial", "mat_" + name)
+    out = comp.createNode("componentoutput", "output_" + name)
+    out.parm("name").set(name)
+    mat.setInput(0, geo)
+    out.setInput(0, mat)
+    return comp
+
+
+def test_set_purpose_last_write_is_the_one_that_composes_live(lopnet):
+    """SR1 seam BLOCKER-1: the LAST requested purpose must be the live one.
+
+    Pre-fix each call created a NEW configureprimitive and inserted it at the
+    geometry end, i.e. UPSTREAM of the previous one, so the FIRST purpose ever
+    set composed to the terminal while the call reported status="set" with the
+    new value. A Law-3 lie and wrong USD.
+
+    Readback is off the cooked stage at the SINK'S INPUT — the downstream-most
+    node that still carries the authored purpose — not off the configure node
+    we just wrote, which would prove nothing about ordering.
+
+    (VERIFIED-RUNTIME 22.0.368: `componentoutput` itself restructures /ASSET
+    and does not carry `purpose` through. Separate finding, recorded not fixed
+    under the SR1 M4 grant; see harness/notes/sr1_seam_probe.py.)
+    """
+    from pxr import UsdGeom
+
+    comp = _purpose_component(lopnet, "spord")
+    r1 = sp_mod.execute({"component_path": comp.path(), "purpose": "proxy"})
+    r2 = sp_mod.execute({"component_path": comp.path(), "purpose": "render"})
+    assert r1["status"] == "set", r1
+    assert r2["status"] in ("set", "updated"), r2
+
+    tail = comp.node("output_spord").inputs()[0]
+    prim = tail.stage().GetPrimAtPath(r2["prim_path"])
+    assert prim and prim.IsValid(), f"{r2['prim_path']} absent downstream: {r2}"
+    assert UsdGeom.Imageable(prim).GetPurposeAttr().Get() == "render", (
+        "last write lost — an earlier purpose composes to the terminal"
+    )
+
+
+def test_set_purpose_is_idempotent_live(lopnet):
+    """SR1 seam BLOCKER-1: repeat calls must not stack nodes, and a true no-op
+    must say so. Pre-fix three calls left three configureprimitive nodes and
+    all three said status="set"."""
+    comp = _purpose_component(lopnet, "spidem")
+    sp_mod.execute({"component_path": comp.path(), "purpose": "proxy"})
+    sp_mod.execute({"component_path": comp.path(), "purpose": "render"})
+    r3 = sp_mod.execute({"component_path": comp.path(), "purpose": "render"})
+
+    cfgs = [c for c in comp.children()
+            if c.type().name() == "configureprimitive"]
+    assert len(cfgs) == 1, f"stacked purpose nodes: {[c.name() for c in cfgs]}"
+    assert r3["status"] == "unchanged", r3
+
+
+def test_create_variants_rejects_a_non_lop_path_live():
+    """SR1 seam MINOR-3: a wrong-network path is a designed error, not a bare
+    `OperationFailed: ... Invalid node type name` from deep inside the build."""
+    from synapse.core.errors import ValidationError
+
+    bad = hou.node("/obj").createNode("geo", "sr1_notalop")
+    try:
+        with pytest.raises(ValidationError) as exc:
+            cv_mod.execute({
+                "component_path": bad.path(), "variant_type": "geometry",
+                "variants": [{"name": "a"}, {"name": "b"}],
+            })
+        assert bad.path() in str(exc.value), exc.value
+    finally:
+        bad.destroy()
+
+
 # ---------------------------------------------------------------------------
 # import_megascans  (F9, F3)
 # ---------------------------------------------------------------------------

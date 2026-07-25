@@ -5,7 +5,15 @@ Sets USD purpose on geometry within a Component Builder.
 Maps purpose names to Component Geometry output connections.
 
 Source pattern: SOLARIS_P3_PURPOSE_SYSTEM
-Atomic: undo-wrapped. Idempotent: checks current purpose before setting.
+Atomic: undo-wrapped.
+
+Idempotent (SR1 seam fix): the tool keeps ONE `configureprimitive` per
+(component, prim_path), identified by its own provenance stamp plus its
+`primpattern`. A repeat call updates that node IN PLACE and reports
+``unchanged`` when the value does not move. Creation happens only when no
+stamped node exists, and the new node is inserted at the DOWNSTREAM end of the
+chain (directly upstream of the component's sink) so the last write is the one
+that composes.
 """
 
 from typing import Any, Dict, List, Optional
@@ -101,6 +109,70 @@ def _infer_prim_path(comp, geo_node) -> Optional[str]:
     return None
 
 
+def _stamped_configures(comp):
+    """Every ``configureprimitive`` inside ``comp`` that this tool authored.
+
+    Identity is *provenance*, not node name: names drift (Houdini uniquifies
+    ``purpose_render`` into ``purpose_render1``) and a name-based match is what
+    let three nodes stack up in the first place.
+    """
+    for child in comp.children():
+        try:
+            if (child.type().name() == "configureprimitive"
+                    and child.userData("synapse:tool") == _TOOL_NAME):
+                yield child
+        except Exception:
+            continue
+
+
+def _find_stamped_configure(comp, prim_path: str):
+    """This tool's existing configureprimitive targeting ``prim_path``, if any."""
+    for child in _stamped_configures(comp):
+        try:
+            pp = child.parm("primpattern")
+            if pp is not None and pp.evalAsString().strip() == prim_path:
+                return child
+        except Exception:
+            continue
+    return None
+
+
+def _insert_after(anchor, cfg) -> None:
+    """Splice ``cfg`` directly downstream of ``anchor``, stealing its consumers."""
+    cfg.setInput(0, anchor)
+    for consumer in anchor.outputs():
+        if consumer.path() == cfg.path():
+            continue
+        for idx, src in enumerate(consumer.inputs()):
+            if src is not None and src.path() == anchor.path():
+                consumer.setInput(idx, cfg)
+
+
+def _insert_downstream(comp, cfg, geo_node) -> None:
+    """Seat ``cfg`` downstream of every purpose node this tool already placed.
+
+    The pre-fix code always spliced at the geometry end, so each new node
+    landed UPSTREAM of the previous one and the FIRST purpose ever set was the
+    one that composed — while the call reported the new value. Anchoring on the
+    downstream-most stamped node instead makes the last write the winning one.
+
+    VERIFIED-RUNTIME 22.0.368 — why not simply splice directly above the
+    ``componentoutput`` sink: ``componentoutput`` restructures the asset
+    (``/ASSET`` -> ``/<rootprim>``) and does NOT carry the authored
+    ``purpose`` through, so a node seated there authors into a prim the sink
+    discards. The purpose must be authored upstream of the sink. That the sink
+    drops it at all is a SEPARATE finding, recorded not fixed here — see
+    ``harness/notes/sr1_seam_probe.py``.
+    """
+    others = [n for n in _stamped_configures(comp) if n.path() != cfg.path()]
+    if others:
+        consumed = {i.path() for n in others for i in n.inputs() if i is not None}
+        tail = next((n for n in others if n.path() not in consumed), others[-1])
+        _insert_after(tail, cfg)
+        return
+    _insert_after(geo_node, cfg)
+
+
 def validate(params: Dict) -> None:
     """Validate parameters."""
     component_path = params.get("component_path")
@@ -188,7 +260,9 @@ def execute(params: Dict) -> Dict:
     usd_token = PURPOSE_USD_TOKEN_MAP[purpose]
 
     with hou.undos.group(f"SYNAPSE: Set purpose '{purpose}'"):
-        cfg = comp.createNode("configureprimitive", f"purpose_{purpose}")
+        existing = _find_stamped_configure(comp, prim_path)
+        cfg = existing if existing is not None else comp.createNode(
+            "configureprimitive", f"purpose_{purpose}")
         pattern_parm = cfg.parm("primpattern")
         set_parm = cfg.parm("setpurpose")
         value_parm = cfg.parm("purpose")
@@ -198,18 +272,29 @@ def execute(params: Dict) -> Dict:
                 f"on this build ({hou.applicationVersionString()}) — "
                 "purpose cannot be authored"
             )
+        # Read BEFORE writing: "unchanged" has to be decided against the node's
+        # prior state, not against the value we are about to set (Law 1).
+        try:
+            was_enabled = bool(set_parm.eval())
+            was_token = value_parm.evalAsString()
+        except Exception:
+            was_enabled, was_token = False, None
+        already = existing is not None and was_enabled and was_token == usd_token
+
         pattern_parm.set(prim_path)
         set_parm.set(1)
         value_parm.set(usd_token)
 
-        # Wire it downstream of the geometry so it actually participates.
-        cfg.setInput(0, geo_node)
-        for consumer in geo_node.outputs():
-            if consumer.path() == cfg.path():
-                continue
-            for idx, src in enumerate(consumer.inputs()):
-                if src is not None and src.path() == geo_node.path():
-                    consumer.setInput(idx, cfg)
+        if existing is None:
+            # Wire it at the downstream end so the last write is the one that
+            # composes to the terminal.
+            _insert_downstream(comp, cfg, geo_node)
+        elif not already:
+            # Keep the node name describing what it now authors.
+            try:
+                cfg.setName(f"purpose_{purpose}", unique_name=True)
+            except Exception:
+                pass
 
         _stamp_provenance(cfg, {
             "tool": _TOOL_NAME,
@@ -221,7 +306,9 @@ def execute(params: Dict) -> Dict:
         })
 
         return {
-            "status": "set",
+            # Law 3: three distinct things happened, three distinct words.
+            "status": ("unchanged" if already
+                       else "updated" if existing is not None else "set"),
             "geometry_path": geo_node.path(),
             "configure_node": cfg.path(),
             "prim_path": prim_path,

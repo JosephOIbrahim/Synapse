@@ -135,19 +135,34 @@ def test_megascans_sop_chain_is_connected():
 
 # ------------------------------------------------------- create_variants ---
 
-def test_variant_materials_are_emitted_with_no_inputs():
-    """FINDING F4: copied componentmaterials violate min_inputs=1."""
-    assert v_var.unwired_variant_materials() == ["mat_red", "mat_blue"]
+def test_variant_materials_are_wired_statically():
+    """FINDING F4, repaired in SR1 M4 -- pin flipped by the SR1 seam pass.
+
+    The catalog literal it reads was captured pre-F4 and never updated, so it
+    asserted a defect the source no longer had: a check that could not fail
+    correctly (Law 1). It now declares the post-F4 topology (live-confirmed by
+    `harness/notes/sr1_seam_probe.py` LEG-2) and still fails if the base-input
+    replay at `create_variants.py:168-170` is reverted.
+    """
+    assert v_var.unwired_variant_materials() == []
     res = v_var.verify_static_material()
     names = {f["name"] for f in res["failures"]}
-    assert {"mat_red:min_inputs", "mat_blue:min_inputs"} <= names
-
-
-def test_variant_set_never_reaches_the_terminal():
-    """FINDING F5: componentgeometryvariants is a dead end."""
-    res = v_var.verify_static_geometry()
+    assert not {"mat_red:min_inputs", "mat_blue:min_inputs"} & names, res["failures"]
+    # RESIDUAL, recorded not fixed: nothing consumes the variant materials.
     assert res["status"] == "FAIL"
-    assert "dead_end[geo_variants]" in {f["name"] for f in res["failures"]}
+    assert {"dead_end[mat_red]", "dead_end[mat_blue]"} <= names
+
+
+def test_variant_set_reaches_the_terminal():
+    """FINDING F5, repaired in SR1 M4 -- pin flipped by the SR1 seam pass.
+
+    Same stale-literal story as F4 above. Post-fix the geometry branch is one
+    connected graph with a single terminal; the assertion still fails if the
+    consumer-steal at `create_variants.py:204-219` is reverted.
+    """
+    res = v_var.verify_static_geometry()
+    assert res["status"] == "PASS", res["failures"]
+    assert common.terminal_of(v_var.EXPECTED_TOPOLOGY_GEOMETRY) == "output_base"
 
 
 def test_explore_variants_branch_is_correctly_wired():
