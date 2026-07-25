@@ -105,9 +105,14 @@ class Badge(QtWidgets.QLabel):
 
 
 class StatusDot(QtWidgets.QWidget):
-    """A small filled dot in the status-grammar color (one status vocabulary)."""
+    """A small ring in the status-grammar color (one status vocabulary).
 
-    def __init__(self, status="idle", diameter=8, parent=None):
+    Monolinear: stroked at ``tokens.STROKE_PX``, no fill, no second tone. The
+    default diameter 8 is the 24px icon grid / 3, so it sits on the same rhythm
+    as every other drawn glyph.
+    """
+
+    def __init__(self, status="idle", diameter=t.ICON_GRID // 3, parent=None):
         super().__init__(parent)
         self._d = diameter
         self._color = t.STATUS.get(status, t.STATUS["idle"])[0]
@@ -120,9 +125,13 @@ class StatusDot(QtWidgets.QWidget):
     def paintEvent(self, _event):
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.Antialiasing)
-        p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QtGui.QColor(self._color))
-        p.drawEllipse(1, 1, self._d, self._d)
+        pen = QtGui.QPen(QtGui.QColor(self._color))
+        pen.setWidthF(t.STROKE_PX)
+        p.setPen(pen)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        inset = t.STROKE_PX / 2.0
+        p.drawEllipse(QtCore.QRectF(1 + inset, 1 + inset,
+                                    self._d - t.STROKE_PX, self._d - t.STROKE_PX))
         p.end()
 
 
@@ -173,25 +182,32 @@ class MarkDot(QtWidgets.QWidget):
         p.setRenderHint(QtGui.QPainter.Antialiasing)
         col = QtGui.QColor(t.WARM)
         m = 2
-        rect = QtCore.QRectF(m, m, self._d, self._d)
+        # Monolinear: ONE weight, ONE line, no fills and no dual-tone. State is
+        # carried by how much of the circle is drawn -- an open ring at rest, a
+        # sweeping half-arc while working, a closed ring when done -- never by a
+        # second tone or a heavier stroke. Diameter 16 = the 24px grid x 2/3.
+        pen = QtGui.QPen(col)
+        pen.setWidthF(t.STROKE_PX)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        inset = m + t.STROKE_PX / 2.0
+        rect = QtCore.QRectF(inset, inset,
+                             self._d - t.STROKE_PX, self._d - t.STROKE_PX)
         if self._state == "working":
-            faint = QtGui.QColor(t.WARM)
-            faint.setAlphaF(0.22)
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(faint)
-            p.drawEllipse(rect)                       # faint full ring behind
-            p.setBrush(col)
-            p.drawPie(rect, int(self._angle * 16), 180 * 16)  # sweeping half
+            p.drawArc(rect, int(self._angle * 16), 180 * 16)   # sweeping half-arc
         elif self._state == "done":
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(col)
-            p.drawEllipse(rect)                       # full disc
-        else:  # resting → ring
-            pen = QtGui.QPen(col)
-            pen.setWidthF(2.0)
-            p.setPen(pen)
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawEllipse(QtCore.QRectF(m + 1, m + 1, self._d - 2, self._d - 2))
+            p.drawEllipse(rect)                                # closed ring
+            # ...plus a check, drawn with the SAME pen: the completed sweep.
+            cx, cy, rr = rect.center().x(), rect.center().y(), rect.width() / 2.0
+            path = QtGui.QPainterPath()
+            path.moveTo(cx - rr * 0.42, cy + rr * 0.02)
+            path.lineTo(cx - rr * 0.10, cy + rr * 0.36)
+            path.lineTo(cx + rr * 0.46, cy - rr * 0.34)
+            p.drawPath(path)
+        else:
+            # at rest: an OPEN ring -- one gap, same line, nothing started yet.
+            p.drawArc(rect, 60 * 16, 300 * 16)
         p.end()
 
 
