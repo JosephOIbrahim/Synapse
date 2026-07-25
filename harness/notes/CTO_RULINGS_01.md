@@ -694,3 +694,77 @@ Constitution Law 5 says write from the tree, not from memory. **A receipt is not
 It is a model's summary of the tree, and it inherits every limit of the pass that produced it.
 Findings get verified at the anchor before they get acted on — including my own, and including
 ones I have already ruled on.
+
+---
+
+## RULING 30 — GATE 0.1b IS CLOSED. The vendored path stands. No sidecar on ABI grounds.
+
+**Open since drop week.** Brief written, decision never committed, re-opened repeatedly. Closed
+2026-07-25 on evidence, not preference.
+
+### The evidence
+
+`GATE_01B_TRACE.md`, VERIFIED-RUNTIME on hython3.13 / Python 3.13.10, build 22.0.368:
+
+```
+CRASHING FRAME  tests/panel/test_font_scale.py:65  ->  saved = app.font()
+                PySide6.QtWidgets.QApplication.font()
+
+Zero frames under python/synapse/_vendor anywhere in the faulthandler traceback.
+synapse._VENDOR_ABI_RISK == False   (vendor tree ACTIVE)
+import synapse                       clean
+```
+
+Isolation, with a positive control on both sides:
+
+```
+test_font_scale.py alone            ->  8 passed, no crash
+tests/panel/ alone                  ->  2 failed, 27 passed, no crash
+tests/panel/ + tests/test_hda_panel.py  ->  ACCESS VIOLATION
+```
+
+**Trigger:** `tests/test_hda_panel.py:172-175` plants `sys.modules["PySide6"]`, `.QtCore`,
+`.QtWidgets`, `.QtGui` stubs at **module level, unconditionally**. pytest imports every test
+module at collection, so the fake Qt is resident before the first panel test executes. The panel
+tests then run against a half-stubbed Qt and reach a native fault in `QApplication::font()`.
+
+**Ruled:**
+
+1. **The vendored/abi3 path stands.** The vendor tree is live and correct on the shipping
+   interpreter, and is not implicated in the only crash that was blocking this decision.
+2. **No sidecar is required on ABI grounds.** The sidecar remains available as an option for
+   *other* reasons — process isolation, crash containment, independent release cadence — and each
+   would need its own case. None of them is this one.
+3. **Gate 0.1 (task 0.1) closes.** It was task number one and has been open the longest.
+4. **The fake-Qt residency is a real defect and now has an owner.** Module-level `sys.modules`
+   stubbing is collection-order-dependent action at a distance. Make it fixture-scoped and
+   reverted, or move that test to its own session. Do not "fix" it by reordering tests — that
+   hides the coupling instead of removing it.
+
+### What this does to R27 and R28
+
+**R27 amended:** "the suite does not survive the shipping interpreter" was true as observed and
+wrong as diagnosed. It survives fine; one test file poisons `sys.modules` for the rest. The
+correction is small and local.
+
+**R28 amended and DOWNGRADED:** I ruled the panel had no working test surface on any interpreter
+and called the segfault the highest-value engineering item in the project. Both halves were
+wrong. `tests/panel/` runs under hython3.13 — 27 passed. The panel has a working test surface;
+it was being poisoned by a neighbour.
+
+That matters beyond the ruling: I attributed **41% broken affordances (17 ORPHAN, 7 SILENT)** to
+"a subsystem that cannot be tested anywhere will drift exactly that far." That causal story is
+now unsupported. The drift is real; my explanation for it was not. **A finding and its
+explanation are separate claims and need separate evidence.**
+
+### Method note — the third refutation today
+
+L1.F1 said the bridge was down; the probe had omitted a path.
+L3.R2 said there was no Stop; one existed in the live rail, well written.
+R27/R28 said the shipping interpreter could not run the panel; one file's import-time stub could.
+
+Each was a `blocker`, each survived into a governing document, and each dissolved on contact with
+a positive control. The pattern is not carelessness — every one of them was *reproducible*. It is
+that **a reproducible negative result still needs a positive control before it can be
+interpreted**, and all three were missing one. That corollary was adopted at D-R10 and has now
+paid for itself twice more.
