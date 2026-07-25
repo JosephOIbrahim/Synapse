@@ -130,6 +130,17 @@ class BucketGrid(QtWidgets.QWidget):
         live = QtGui.QColor(t.GROW); live.setAlpha(175)
         trail = 6
         p.setPen(Qt.PenStyle.NoPen)
+        # Cells, not boxes. A uniform grid of identical rectangles reads as a
+        # progress *widget*; irregular cell boundaries read as territory being
+        # claimed. Each cell keeps its slot in the grid but gets a small,
+        # DETERMINISTIC inset on each edge -- derived from the index, so it is
+        # stable frame to frame (no shimmer) and identical between runs, yet no
+        # two neighbouring cells share an edge. Total ink is unchanged.
+        def _cell_inset(idx, edge):
+            # cheap stable hash -> 0.0 .. 1.0, per (cell, edge)
+            v = (idx * 2654435761 + edge * 40503) & 0xFFFF
+            return (v / 65535.0)
+        jitter = min(w, h) * 0.22
         for i in range(self._n):
             r, col = divmod(i, self._cols)
             x = gap + col * (w + gap)
@@ -147,7 +158,13 @@ class BucketGrid(QtWidgets.QWidget):
                 elif dist < trail:
                     color = done
             p.setBrush(color)
-            p.drawRect(QtCore.QRectF(x, y, w, h))
+            dl = _cell_inset(i, 0) * jitter
+            dt = _cell_inset(i, 1) * jitter
+            dr = _cell_inset(i, 2) * jitter
+            db = _cell_inset(i, 3) * jitter
+            p.drawRect(QtCore.QRectF(x + dl, y + dt,
+                                     max(1.0, w - dl - dr),
+                                     max(1.0, h - dt - db)))
         p.end()
 
 

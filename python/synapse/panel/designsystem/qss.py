@@ -19,8 +19,14 @@ def stylesheet(scale: float = t.FONT_SCALE_DEFAULT) -> str:
    repaint-ghosting cause (transparent widgets never erase their backing store,
    so Houdini composites stale pixels). Every container is opaque instead.
    No font-family: inherit Houdini's app-level UI font (native). */
+/* Atmosphere, never dominant: the root is a gradient FIELD rather than a flat
+   fill -- PANEL +/- ATMOSPHERE_DELTA (4 of 255) top to bottom. At that
+   amplitude it is not a shape and not information; it just stops a tall pane
+   reading as dead vinyl, and it gives the content something to sit ON. Text
+   contrast moves by well under 1%, so the WCAG sweep still governs the ramp.
+   Sections stay flat so the field reads once, at the back, and never stacks. */
 QWidget#DsRoot {{
-    background: {t.PANEL};
+    background: {t.atmosphere(t.PANEL)};
     color: {t.TEXT_PRIMARY};
     font-size: {s(t.SIZE_BODY)}px;
 }}
@@ -117,13 +123,22 @@ QPushButton#DsVerb[tone="hot"]    {{ color: {t.HOT_SOFT}; }}
 QPushButton#DsVerb[tone="accent"] {{ color: {t.TEXT_ACCENT}; }}
 
 /* ---- two-axis palette chips (⌘K · DO × WHERE) ---------------- */
+/* Cells, not boxes: the chip is no longer a rounded rectangle floating in the
+   row. Selection is carried by a left edge-marker plus a flat wash that runs
+   to the type -- an irregular cell boundary (marked on one side, open on the
+   others) instead of a uniform pill. Radius drops to 0 so nothing reads as a
+   button; the asymmetric padding keeps the type optically centred. */
 QPushButton#DsChip {{
-    background: transparent; color: {t.TEXT_TERTIARY};
-    border: none; border-radius: {t.RADIUS_SM}px; padding: 3px 8px;
+    background: transparent; color: {t.MUSHROOM};
+    border: none; border-left: {t.STROKE_PX:.0f}px solid transparent;
+    border-radius: 0px; padding: 3px 8px 3px 7px;
     font-size: {s(10)}px;
 }}
 QPushButton#DsChip:hover {{ color: {t.TEXT_SECONDARY}; }}
-QPushButton#DsChip[active="true"] {{ background: {t.SIGNAL_TINT}; color: {t.TEXT_ACCENT}; }}
+QPushButton#DsChip[active="true"] {{
+    background: {t.SIGNAL_TINT}; color: {t.TEXT_ACCENT};
+    border-left: {t.STROKE_PX:.0f}px solid {t.SIGNAL};
+}}
 
 /* ---- command-palette list ------------------------------------ */
 QListWidget#DsList {{
