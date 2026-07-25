@@ -4,32 +4,111 @@
 
 <h3 align="center"><strong>Talk to Houdini in plain English — it builds in your live scene.</strong></h3>
 
-<p align="center"><em>An AI copilot that lives <strong>inside</strong> Houdini — say what you want and watch it build in your scene. Everything it makes is a normal Houdini action, so <strong>Ctrl+Z</strong> takes it back.</em></p>
+<p align="center"><em>An AI copilot that runs <strong>inside</strong> Houdini's own Python. What it builds are ordinary Houdini nodes, made inside a single undo group — so one <strong>Ctrl+Z</strong> reverses a completed build.</em></p>
 
 <p align="center">
   <a href="https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml"><img src="https://github.com/JosephOIbrahim/Synapse/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="python/synapse/panel/synapse_panel.py"><img src="https://img.shields.io/badge/artist%20panel-chat%20%E2%86%92%20build-22c55e.svg" alt="Artist panel"></a>
-  <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20%C2%B7%20Gemini%20%C2%B7%20Nemotron%20%C2%B7%20Ollama%20%C2%B7%20Custom-8b5cf6.svg" alt="Engines"></a>
-  <a href="tests"><img src="https://img.shields.io/badge/tests-4712%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="python/synapse/panel/providers"><img src="https://img.shields.io/badge/engines-Claude%20out--of--box%20%C2%B7%204%20more%20configurable-8b5cf6.svg" alt="Engines"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-4744%20passing%20(dev%20env)-brightgreen.svg" alt="Tests"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v5.33.0-1e293b.svg" alt="Changelog"></a>
 </p>
 
-> ⚡ **TL;DR** — an AI panel *inside* Houdini: type **"make a box,"** get a real node. Every action is ordinary Houdini, so **Ctrl+Z** takes it back — and it keeps receipts, not magic. Five engines, 115 tools. **Install ↓ in ~5 min.**
+---
+
+## ✦ What it is, in two sentences
+
+**SYNAPSE is an AI panel that docks inside Houdini and turns plain English into real nodes in your live scene.**
+
+It runs in Houdini's own Python — no separate app, no round-trip bridge — and it grounds what it builds in **probes of the running Houdini** rather than in what a language model remembers.
+
+---
+
+## ✦ What it does
+
+**Type what you want. Get real nodes.**
+
+*"make a box"* → a geo node. *"create a solaris network ending with rendersettings using karma xpu"* → a wired Solaris graph.
+
+**It checks before it builds.**
+
+Every plan is validated against your live scene *and* against probed ground truth before a single node is created. Bad plan, nothing touched.
+
+**It builds inside one undo group.**
+
+A completed build is reversed by a single **Ctrl+Z**. *(Read the precise scope of that in [Known limitations](#-known-limitations) — grouping is not a transaction.)*
+
+**It keeps receipts.**
+
+Each build writes an `agent.usd` record: decision, reasoning, revert path. The audited `/mcp` path records an `IntegrityBlock` per operation.
+
+**Pick your engine.**
+
+**Claude** works as soon as you add a key. **Gemini · NVIDIA Nemotron · Ollama · Custom** are implemented and need their own configuration.
+
+**115 tools** — SOPs, Solaris/USD, Karma, COPs, PDG/TOPs, MaterialX.
+*(Producer: `python -c "from synapse.mcp import _tool_registry as r; print(len(r.TOOL_NAMES))"` → 115, 2026-07-25.)*
+
+**MIT licensed** ([LICENSE](LICENSE)) with patent-pending methods ([PATENTS](PATENTS)) — the license covers the code, not the patents.
+
+---
 
 > 🧪 **The moat, in one line:** every other Houdini copilot reasons from docs and memory — SYNAPSE **probes the running Houdini and commits what it finds** (six truth catalogs and counting: wiring, Solaris context, capability, readiness, live cook behavior, and now **perception truth — the render receipt**). Docs drift. Probes don't.
 
 ---
 
-### ✦ The idea, in plain terms
+## ✦ Known limitations
 
-SYNAPSE lives **inside** Houdini and turns plain English into real work:
+**Read this before you trust a claim above.** Each item is measured, with the thing that produced it named.
 
-- 🧠 **It works inside Houdini, not off to the side** — the assistant runs in Houdini itself, so there's no separate app to launch and nothing to wait on; it answers right where you're working.
-- 🔁 **Your words become real nodes** — every request is just a normal Houdini action. Don't like it? **Ctrl+Z** takes it back.
-- 🧾 **It keeps the receipts** — changes are ordinary Houdini actions you can undo, and the audited `/mcp` path records a receipt for every one, so you can see what it did and why. That's the differentiator — not magic, receipts.
-- 🔌 **Pick your AI · 115 tools** — choose **Claude · Gemini · NVIDIA Nemotron · Ollama (local) · Custom** in the panel and switch whenever you like.
-- 📜 **Free to use (MIT license)** ([LICENSE](LICENSE)) with **patent-pending methods** ([PATENTS](PATENTS)) — the license covers the code, not the patents.
+### ↩️ "Undo-wrapped" is not "reversible"
+
+`hou.undos.group` **groups** undo entries so one **Ctrl+Z** reverses a completed operation. It is **not** a transaction — it does **not** roll back when the wrapped block raises.
+
+On the exception path, a handler can leave a **partial network on the graph**. The undo entry may or may not restore it.
+
+**One path does better.** `propose → validate → build` (`python/synapse/host/graph_builder.py:165-181`) carries explicit unwind bookkeeping: on a mid-build failure it destroys the nodes it created and returns a structured `FAILED`. That path nets to zero mutation. **The generic handler paths do not have this**, and generalising it is open work.
+
+### 🧪 The test count describes the development environment only
+
+**4744 passed · 100 skipped · 0 failed.**
+
+*Producer:* `python -m pytest tests -q -p no:cacheprovider` on branch `feat/cto-relay-01` @ `9b796a4`, **system Python 3.14.2**, 2026-07-25, 111.69s.
+
+**That is not the interpreter artists run.** Under `hython3.13` — Houdini's own shipping Python — **the suite does not complete.** It dies with a Windows access violation in `PySide6.QtWidgets.QApplication.font()` at `tests/panel/test_font_scale.py:65`.
+
+The trigger is **fake-Qt residency**, not the vendored tree: `tests/test_hda_panel.py:172-175` plants `sys.modules["PySide6"]` stubs at module level, resident before any panel test runs. Run in isolation, `tests/panel/` passes 27/29 with no crash — zero `_vendor` frames in the fault. *(Trace: `harness/notes/GATE_01B_TRACE.md`.)*
+
+**So: no release claim may cite the green suite as evidence about the shipping environment.**
+
+### 🔌 Five engines, one out of the box
+
+`python/synapse/panel/providers/` is **1,510 LOC** *(producer: `find python/synapse/panel/providers -name "*.py" | xargs wc -l`)* and all five engines are implemented.
+
+But only **Claude** works once you add a key. The other four need their own configuration. *"Five swappable engines"* was true and misleading at the same time — this is the honest version.
+
+### 🛑 Emergency halt is not on the shipped panel
+
+Safety Rule 11 says halt is immediate. The implementation exists only in `chat_panel.py`, **a tree whose loader is never installed**. `python/synapse/panel/synapse_panel.py` — the panel you actually get — has **no halt control**. *(Producer: `grep -n "HALT\|emergency_halt" python/synapse/panel/synapse_panel.py` → no matches.)*
+
+The rail's **Stop** ends the agent loop. It does not claw back a Houdini operation already running.
+
+### 📦 `websockets` and `mcp` are required but not vendored
+
+The vendor tree ships the Anthropic SDK and its dependencies. It does **not** ship `websockets` or `mcp` *(producer: `ls python/synapse/_vendor/` — neither is present)*.
+
+Both are pip-installed into the development Python and exist nowhere in the shipping environment. Three test modules cannot even collect under `hython3.13` for this reason.
+
+### 🌋 Copernicus grounding is at 6.2%
+
+**6.2% of 384 live `Cop` types**, 13.6% of 169 legacy `Cop2` types, **zero semantic grounding for either**.
+
+Worse than a coverage gap: `hou.CopNode` and `hou.Cop2Node` are **different data models**, not two versions of one API. Copernicus has no `planes()`, no pixel read, no `saveImage()`. Any SYNAPSE COP tool whose contract is *"read pixels / enumerate planes / save an image"* has **no Copernicus destination** and needs re-specification, not porting. COP work is held behind one probe.
+
+### 🎬 A main-thread render still holds the UI
+
+Both the panel path and `/mcp` render inline on the main thread. Cancel does not interrupt an operation already running. Full detail under *The honest limits* below.
 
 ---
 
@@ -37,7 +116,8 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 
 | You want… | Read… |
 |---|---|
-| **The 30-second pitch** | *The idea, in plain terms* (above) + *What it is* |
+| **The 30-second pitch** | *What it is, in two sentences* + *What it does* (above) |
+| **What is NOT true yet** | *Known limitations* — undo scope, suite scope, engines, halt, deps, COP coverage |
 | **What's new in v5.33.0** | *New in v5.33.0* — the main thread never waits on itself: a whole class of permanent Houdini freeze removed, lint-enforced, live-verified |
 | **What still holds the UI (and why)** | *The honest limits* — inside the v5.33.0 section |
 | **What a render actually proves** | *The render receipt* |
@@ -53,8 +133,8 @@ SYNAPSE lives **inside** Houdini and turns plain English into real work:
 A docked **SYNAPSE panel** inside Houdini. You type what you want — *"make a box"*, *"create a solaris network ending with rendersettings using karma xpu"* — and it **builds it in your live scene.** Chat in, real nodes out.
 
 - ⚡ **In-process** — the agent runs in Houdini's own Python; tools are direct `hou.*` calls, not a slow round-trip bridge.
-- ↩️ **Undo-safe** — everything it does is an ordinary Houdini action. **Ctrl+Z undoes it.** On the audited `/mcp` path every mutation leaves a provenance record; the live WebSocket path records observe-only envelopes.
-- 🔌 **Multi-provider** — pick **Claude · Gemini · NVIDIA Nemotron · Ollama · Custom** right in the panel; swap engines mid-session.
+- ↩️ **Undo-grouped** — everything it does is an ordinary Houdini action, made inside one undo group, so **one Ctrl+Z reverses a completed build.** Grouping is not a transaction: a build that *raises* mid-way is only cleaned up on the paths that carry explicit unwind ([Known limitations](#-known-limitations)). On the audited `/mcp` path every mutation leaves a provenance record; the live WebSocket path records observe-only envelopes.
+- 🔌 **Multi-provider** — pick **Claude · Gemini · NVIDIA Nemotron · Ollama · Custom** right in the panel; swap engines mid-session. **Claude is the only one that works on a key alone**; the other four need their own configuration.
 - 🎬 **Built for the work** — SOPs, **Solaris / USD, Karma, COPs, PDG / TOPs, MaterialX** — 115 tools.
 
 > ✅ *"make a box" → a real geo node, confirmed on graphical Houdini 22.0.368. (H21 code paths are retained and major-aware, but H21 is no longer installed here, so H22.0.368 is the only live-tested build.)*
@@ -81,7 +161,7 @@ flowchart LR
 **The panel, briefly (v9.1):**
 
 - **One CHAT surface** — the build review + **consent gate auto-surface** when a build needs approval. Consent comes to *you*, then hands back on accept/revert.
-- **A persistent rail** — live state + a **Stop** that ends the agent loop. *It stops the next step; it cannot claw back a Houdini operation already running.*
+- **A persistent rail** — live state + a **Stop** that ends the agent loop. *It stops the next step; it cannot claw back a Houdini operation already running.* **There is no emergency-halt control on the shipped panel** — see [Known limitations](#-known-limitations).
 - **The author token** — engine + model in one rail control.
 - **`Aa`** scales only what you *read* · **`/`** opens a command palette over every tool · a token-only meter.
 - Bundled **Space Grotesk / Space Mono** type system.
@@ -128,7 +208,7 @@ Live session: **H22.0.368, PID 64396**, identity-probed *before* any repro was a
 
 That last row closes a second, quieter bug: the vendor helper stored results in **module globals**, so two concurrent blocking handoffs could hand each other's results back — silently wrong data, no error. No SYNAPSE code path calls that helper any more, and the source lint keeps it out.
 
-- 🟢 **4,642 tests passing · 0 failed · 100 skipped.** Against the **previous release** (v5.32.1, 4,571): **+71.** Against the **ratchet floor** (`harness/verify/suite_baseline.json`, 4,275): **+367.** Both figures are correct against their own baseline — neither is a bare delta. **Zero tests weakened:** two test files changed and both were flagged — one pinned the deliberately-removed primitive, and one had gone **vacuous** (passing while pinning nothing). Both re-anchored and proven able to fail.
+- 🟢 **4,642 tests passing · 0 failed · 100 skipped** *(development environment — system Python; see [Known limitations](#-known-limitations))*. Against the **previous release** (v5.32.1, 4,571): **+71.** Against the **ratchet floor** (`harness/verify/suite_baseline.json`, 4,275): **+367.** Both figures are correct against their own baseline — neither is a bare delta. **Zero tests weakened:** two test files changed and both were flagged — one pinned the deliberately-removed primitive, and one had gone **vacuous** (passing while pinning nothing). Both re-anchored and proven able to fail.
 
 ### The honest limits — read this part
 
@@ -218,7 +298,7 @@ flowchart LR
 flowchart LR
     DROP["Drop + drop-week<br/>9 runbook artifacts"]:::hou --> ROADMAP["CTO roadmap<br/>silent-break register"]:::panel
     ROADMAP --> FIX["Fix cycles<br/>forge → assay → crucible"]:::bridge
-    FIX -->|"merged + suite-reverified"| MERGED[("master<br/>4,712 / 0")]:::hou
+    FIX -->|"merged + suite-reverified"| MERGED[("master<br/>4,744 / 0 · dev env")]:::hou
     MERGED --> LIVE["Live-bridge reconfirm<br/>32 verdicts → VERIFIED-LIVE"]:::bridge
     LIVE -->|"proven on running 22.0.368"| DEMO[("H22-native<br/>Solaris · COP · memory")]:::hou
     LIVE -.hostile pass finds a risk.-> NEXT["New fix cycle<br/>ratified · gated"]:::side
@@ -465,6 +545,38 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 | **`/mcp` bridge** *(audited)* | The full anchor set — undo-wrapped, main-thread-safe, consent-gated, `IntegrityBlock` per operation |
 | **Live `/synapse` handlers** *(RBAC-guarded)* | Main-thread-safe, and a path-qualified `IntegrityBlock` recorded honestly. **Undo-wrapping is partial** — the node create / set-parm / connect / delete handlers carry no `hou.undos.group`. `execute_python` / `execute_vex` run **ungated**. |
 
+*Producer for the partial-undo claim:* `grep -c "undos.group" python/synapse/server/handlers_node.py` → **0**, while `handlers_usd.py` → 11, `handlers_cops.py` → 17. Measured 2026-07-25 on `feat/cto-relay-01`.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8963B','primaryTextColor':'#1A1208','primaryBorderColor':'#9C5A10','lineColor':'#7A4310','secondaryColor':'#EEA958','tertiaryColor':'#F2BC77','edgeLabelBackground':'#F2BC77','clusterBkg':'#F2BC77','clusterBorder':'#9C5A10'}}}%%
+flowchart TB
+    CALLER["Caller"]:::artist --> SPLIT{"which road?"}:::panel
+
+    SPLIT -->|"HTTP /mcp"| BRIDGE["LosslessExecutionBridge<br/>the AUDITED path"]:::bridge
+    BRIDGE --> A1["undo-wrapped"]:::bridge
+    BRIDGE --> A2["main-thread marshalled"]:::bridge
+    BRIDGE --> A3["consent-gated<br/>HumanGate"]:::bridge
+    BRIDGE --> A4["USD composition validated<br/>IntegrityBlock per op"]:::bridge
+    A1 & A2 & A3 & A4 --> HOU[("hou.*")]:::hou
+
+    SPLIT -->|"WebSocket /synapse"| HANDLERS["server.handlers<br/>direct · RBAC-gated<br/>NOT bridge-routed"]:::panel
+    HANDLERS --> B2["main-thread marshalled<br/>run_on_main"]:::panel
+    HANDLERS --> B1["undo-wrapping PARTIAL<br/>usd 11 · cops 17 · node 0"]:::drift
+    HANDLERS --> B3["NO consent gate<br/>execute_python / execute_vex ungated"]:::drift
+    HANDLERS --> B4["observe-only IntegrityBlock<br/>N/A recorded honestly, never faked"]:::side
+    B1 & B2 & B3 & B4 --> HOU
+
+    NOTE["Both surfaces are served by ONE hwebserver on ONE port (9999).<br/>They cannot be separated. Keep it on localhost."]:::drift
+    HOU -.-> NOTE
+
+    classDef artist fill:#DE8425,stroke:#7A4310,color:#1A1208
+    classDef panel fill:#E8963B,stroke:#9C5A10,color:#1A1208
+    classDef bridge fill:#EEA958,stroke:#9C5A10,color:#1A1208
+    classDef hou fill:#DE8425,stroke:#6B3A0C,color:#1A1208
+    classDef side fill:#F2BC77,stroke:#B37A33,color:#1A1208
+    classDef drift fill:#C0392B,stroke:#7A1F14,color:#FFF3E8
+```
+
 **Deeper dive + the full per-version history:** **[CHANGELOG.md](CHANGELOG.md)**.
 
 ---
@@ -474,14 +586,14 @@ The `cognitive/` layer is **pure Python** (zero `hou` imports, lint-enforced); `
 **Shipping (v5.33.0):**
 
 - 🧵 **The marshal boundary** — the main thread never waits on itself: nine bypasses of the safe primitive deleted, a source lint keeping them out, live-verified on H22.0.368 across a ~25-call concurrent soak. *What it did **not** do: a render that runs on the main thread — the panel path **and** `/mcp` — still holds the UI while it runs, and cancel still can't interrupt an operation already running. Both stated plainly [above](#-new-in-v5330--the-main-thread-never-waits-on-itself).*
-- 🎛️ **Artist panel v9.1** — five engines, undo-safe, 115 tools, a single **CHAT** surface where the review + consent gate auto-surface, live observability + latency instrumentation (WCAG/usability **G3-audited on H22's Qt 6.8.3**).
+- 🎛️ **Artist panel v9.1** — five engines (one out of the box), undo-grouped, 115 tools, a single **CHAT** surface where the review + consent gate auto-surface, live observability + latency instrumentation (WCAG/usability **G3-audited on H22's Qt 6.8.3**).
 - 👁️ **RETINA — the render receipt (T0 live)** — the perception co-processor's first working tier: T0 file-truth verifies a render actually happened as declared (products, resolution, AOVs, completion sentinel, fingerprint), against a live-probed perception-truth catalog (truth cycle ⑤). The worker lives outside the Houdini process (zero `hou`, zero OpenCV in-host). The dead-`.done`-sentinel bug the crucible caught pre-merge is the receipt-honesty thesis proving itself.
 - 🔬 **H22 live-verified** — the whole transition proven against a running Houdini 22.0.368: 32 verdicts flipped provisional→verified-live, the memory integrity gate confirmed at fidelity 1.0 on the reorganized USD, the PDG event surface and quarantine re-pins re-confirmed on the real interpreter.
 - 🧩 **H22-native network building** — a major-aware connectivity catalog: `wire_by_label` + graph validator resolve H22 wiring on H22 and H21 wiring on H21, so proposed Solaris/COP networks validate against the build you're running (the demo-critical set-dressing path; verified live on H22.0.368, with H21 wiring from that build's last live probe — H21.0.671 is uninstalled and is not re-verified).
 - 🔨 **Propose → validate → build** — the full pipeline, gated on probed wiring truth.
 - 🧾 **The honest envelope** — both roads into Houdini leave `IntegrityBlock` receipts: the audited `/mcp` bridge, and path-qualified, never-faked live-path records the self-tuning advisor can see.
 - 🔁 **Utility flywheel** — ratified cycles across wiring · Solaris context · diagnostic cook-truth · the H22 connectivity re-fold, self-improving on a human-ratified loop.
-- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint (**4,712 / 0**, floor 4,275), a posture-scoped red-driver, fix-is-real behavioral probes, and a codified **seam-gate** (`seam-hunter`) that attacks a just-integrated change on the live build and has caught a composed regression — twice a corruption bug — every time isolated tests went green.
+- 🟢 **Self-protecting harness** — full-suite green ratchet on every sprint (**4,744 passed / 0 failed / 100 skipped**, floor 4,275 — *development environment only*, producer and shipping-interpreter caveat in [Known limitations](#-known-limitations)), a posture-scoped red-driver, fix-is-real behavioral probes, and a codified **seam-gate** (`seam-hunter`) that attacks a just-integrated change on the live build and has caught a composed regression — twice a corruption bug — every time isolated tests went green.
 - 🕵️ **Vendor-architect lens** — the `sidefx-cto` agent surfaces the non-obvious second-order changes a major brings; its first pass caught the memory-gate gap this release then closed live.
 - 🌋 **Copernicus expansion, spec'd** — read/analysis + node-API layers deep and live-verified; the generative frontier (scaffold rebuilds, terrain emission, neural COP nodes with preflight honesty) is a live-probed build spec, next up.
 - 🤝 **APEX MCP boundary held** — Houdini 22 keynote-announced a rigging-scoped MCP preview (not shipped); the ratified non-competing boundary stands unchanged.
@@ -558,7 +670,8 @@ scripts/                        # installer · h22_api_delta.py drop-day probe �
                                 #   harvest_lop_catalog.py  live full-LOP-catalog producer (218 types on H22)
                                 #   run_live_probes.py      the seam-gate VERIFY stage — probe battery + negative-control check
                                 #   live_probes/            build→rebuild probes, each with a fix-is-real companion
-tests/                          # 4,712 passing (Moneta-gated + Houdini-gated tests skip on a clean clone)
+tests/                          # 4,744 passing on system Python (Moneta-gated + Houdini-gated tests skip on a clean clone)
+                                #   NOT green under hython3.13 — see Known limitations
                                 #   test_marshal_lint.py    bans the unsafe main-thread primitive repo-wide
                                 #   test_marshal_hostile.py adversarial suite for the marshal boundary
 .claude/agents/seam-hunter.md   # the adversarial composition gate — attacks a composed change on the live build
