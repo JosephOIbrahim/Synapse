@@ -187,3 +187,120 @@ exact condition or it is not doing its job.
 - **`drop.json` MODE flips.** Yours by constitution.
 
 Nine of eleven ruling items are now decided. The two that remain open are open on purpose.
+
+---
+
+# ADDENDUM — L2 SOLARIS RULINGS
+
+**Ruled** 2026-07-25 · standing authority. L2 found two root causes and seven symptoms.
+Ruling on symptoms first would repair code nothing can reach, tested by tests that never run.
+
+---
+
+## RULING 12 — The Solaris tool family is ALIVE, but the claim is struck until it is reachable.
+
+**F1:** all five tools sit in `synapse/mcp/tools/solaris/` — a tree **outside** the installable
+`python/synapse/` package — and none appear in `_tool_registry.py`. No `/mcp` or `/synapse` path
+can invoke any of them. The tree's own conftest concedes it.
+
+**F11:** `pyproject.toml:102` sets `testpaths = ["tests"]`. The five Solaris test files live at
+`synapse/tests/solaris/` — outside that root. **They have never run in the gate suite.** They
+also drive a `MagicMock` `hou`, so collecting them would assert nothing about real Houdini.
+
+That is the causal chain, stated plainly: *tests that never run, and would prove nothing if they
+did, over code nothing can call.* F7 and F9 are not bad luck. They are what that arrangement
+produces.
+
+**Ruled — roots before symptoms, in this order:**
+
+1. **One tree.** Move `synapse/mcp/tools/solaris/` into `python/synapse/mcp/tools/solaris/` and
+   register all five in `_tool_registry.py`. Root-level `synapse/` is already flagged as a
+   namespace-package shadow (L0.F5); this removes the reason it exists.
+2. **Collect the tests.** Fix `testpaths` so they run in the gate suite.
+3. **Delete the MagicMock `hou` fixture.** This is the load-bearing one. A mock-`hou` test
+   asserts your assumptions back at you — it cannot fail when reality disagrees, which is
+   precisely how a tool that raises `PermissionError` on every invocation stayed green.
+   Replace with hython-gated live tests that **skip** without Houdini rather than pass.
+4. Only then repair F3–F10. They become visible, and provable, once 1–3 land.
+
+**Until 1–3 land, the Phase-2 claim that five Solaris tools were delivered is struck from every
+document.** They were built, not delivered. The distinction is the whole finding.
+
+**Anti-ruling:** do not quarantine and delete. `scene_template` composes 14 prims live with no
+node errors, and `set_purpose`'s host chain composes clean. The scaffolding works. What failed
+was the path to it and the proof of it.
+
+---
+
+## RULING 13 — F9 blocks `import_megascans` registration absolutely.
+
+`geo_node.createNode("usdimport", ...)` targets a `componentgeometry` — a locked HDA. Live:
+`hou.PermissionError: Cannot create a node inside a locked asset`. **The tool cannot complete on
+22.0.368 under any parameters.** Worse, it fails *inside* `hou.undos.group` after the subnet and
+componentgeometry already exist — it leaves partial state behind.
+
+**Ruled:** `import_megascans` registers last, after F9 and F3 are both fixed and proven by a live
+verifier. The correct target is the interior `sopnet/geo` subnet, which L2 already live-probed as
+writable. Fix the target, do not unlock the asset.
+
+The other four may register ahead of it. One broken tool must not hold the family.
+
+---
+
+## RULING 14 — Doctrine: a success status that set nothing is a lie. Binds beyond Solaris.
+
+**F7:** `set_purpose` writes `geo_node.parm("purpose")`. On 22.0.368 `componentgeometry` exposes
+no such parm — a live sweep finds no parm containing "purpose" at all. Every execution takes the
+fallback and returns `status="set"` with an advisory note. The caller cannot distinguish applied
+from not-applied.
+
+**Ruled, project-wide:** `status` describes what happened, never what was attempted. A path that
+changes nothing returns `"noop"` or raises. **An advisory note attached to a success status is
+never acceptable** — it puts the truth somewhere the caller is not required to read.
+
+This binds every tool in the codebase, not just Solaris. It is the fidelity-or-stop rule in
+CLAUDE.md §11.6 applied to return values.
+
+**Consequence for F6:** the bare `except Exception: pass` followed by `status="created"` in
+`create_variants.py:193-203` is the same defect wearing different clothes. Same ruling.
+
+**Separately:** `purpose` is a USD attribute (`UsdGeomImageable`), not a Houdini parm. Confirm
+the real mechanism by live probe before rewriting — do not substitute an assumed API for a
+refuted one. That is how a decay clock becomes a phantom.
+
+---
+
+## RULING 15 — `parent_path` wins. `parent` is retired.
+
+**F8:** `scene_template.execute` reads `params["parent"]`; `import_megascans` and
+`component_builder` read `params["parent_path"]`. A caller using the wrong one silently builds
+into `/stage` and no error is raised.
+
+**Ruled:** `parent_path` — two of three already use it, and it names a path rather than an
+object. `scene_template` converges. Silent-default-on-unknown-key is itself a defect: unknown
+parameters raise.
+
+---
+
+## RULING 16 — R1 negative control is debt with my name on it until reassigned.
+
+`probe_phase3_layout` has no paired negative control, so it cannot show the layout fix is real
+rather than vacuously true, and `run_live_probes.py --strict-companions` fails the gate today.
+
+**Ruled:** promoted to debt, accepted. `--strict-companions` becomes the default gate only after
+the control exists. A probe that cannot fail is the same species as a coverage metric that is
+100% by construction (Ruling 2) and a mock-`hou` test (Ruling 12) — three instances of the same
+error this relay has now found in three separate subsystems.
+
+**Standing observation, not a ruling:** that pattern is worth naming. Every one of them passed
+continuously while proving nothing. The seam gate itself reports 6/6 PASS today and grades none
+of F1–F11.
+
+---
+
+## Note on the "13/13 attacks" figure
+
+`run_live_probes.py` grades **6 probes**. The 13/13 in the PR #48 write-up is an assertion-level
+tally, not a runner-reported number. Units mismatch, not a discrepancy — recorded so no future
+census hunts it. Same class as the relay's own "39 of 218": a number that travelled without its
+producer.
