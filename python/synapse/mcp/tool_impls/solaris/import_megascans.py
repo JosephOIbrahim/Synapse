@@ -231,10 +231,16 @@ def execute(params: Dict) -> Dict:
             #     set no file.
             #   * `unpacktopolygons` is a PHANTOM parm -- the real one is
             #     `unpack_geomtype` (0=packedprims, 1=polygons).
-            #   * `primpattern` defaults to EMPTY, which imports zero prims
-            #     even with a valid file. It must be set.
-            # Sweep evidence: primpattern '' -> (0 points, 0 prims);
-            # '/rock' or '*' -> (1, 1) under every importtraversal value.
+            #   * `primpattern` -- CORRECTED (SR1 M5/C1). The earlier comment
+            #     here claimed the default is EMPTY. That is FALSE on
+            #     22.0.368: a live probe reads the default as `'/*'`, which
+            #     already imports the asset. The sweep evidence behind the old
+            #     claim was primpattern EXPLICITLY set to '' -> (0 points, 0
+            #     prims); '/rock' or '*' -> (1, 1) under every importtraversal
+            #     value. So the `.set("*")` below is INERT on this build --
+            #     it is kept as an explicit-over-implicit pin against a
+            #     default change, NOT as a repair, and it has no failing
+            #     oracle. Dropping it leaves the live tier fully green.
             usd_imp = sop_geo.createNode("usdimport", "import_usdc")
             _require_parm(usd_imp, ("filepath1", "filepath")).set(usdc_path)
             _require_parm(usd_imp, ("primpattern",)).set("*")

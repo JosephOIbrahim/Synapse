@@ -732,8 +732,12 @@ TOOL_DEFS: list[tuple] = [
     # Schemas below are derived from each tool's schema_<name>.py TOOL_SCHEMA
     # reconciled with its validate()/execute() parameter reads.
     #
-    # NOTE — `synapse_solaris_import_megascans` is deliberately NOT in this
-    # list. See PENDING_TOOL_DEFS below (CTO Ruling 13 / L2 finding F9).
+    # SR1 M5 — `synapse_solaris_import_megascans` is now REGISTERED. The
+    # Ruling 13 gate (F9 locked-asset target + F3 orphaned material reference
+    # LOP) is discharged: both repairs are proven by live 22.0.368 oracles in
+    # tests/solaris/ (mutation-checked -- reinstating the `filepath` phantom
+    # reddens the real-geometry ingest test; dropping `setInput(1, ref_lop)`
+    # reddens F3). PENDING_TOOL_DEFS is now empty by design.
     # ---------------------------------------------------------------------
 
     ("synapse_solaris_component_builder", "solaris_component_builder", _identity,
@@ -764,7 +768,8 @@ TOOL_DEFS: list[tuple] = [
          "purposes": {"type": "array",
                       "items": {"type": "string", "enum": ["render", "proxy", "simproxy"]},
                       "description": "Which purpose outputs to create (default: ['render', 'proxy'])"},
-         "parent": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "parent_path": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "parent": {"type": "string", "description": "Alias for parent_path (accepted; parent_path wins)."},
      }, "required": ["asset_name"]},
      False, False, False),
 
@@ -777,8 +782,10 @@ TOOL_DEFS: list[tuple] = [
      {"type": "object", "properties": {
          "scene_name": {"type": "string",
                         "description": "Root primitive name (default: 'shot'). Becomes /shot in the hierarchy."},
-         "hierarchy": {"type": "object",
-                       "description": "Scene hierarchy categories. Keys are category names (geo, LGT, MTL, cam), values are lists of names to create under each."},
+         # `hierarchy` was advertised here but scene_template.KNOWN_PARAMS never
+         # accepted it -- validate() raised `unknown parameter(s): hierarchy` on
+         # any caller who believed the schema. Removed rather than accepted:
+         # the impl has no hierarchy code path to honour it.
          "sop_paths": {"type": "array", "items": {"type": "string"},
                        "description": "SOP geometry paths to import. Each creates a chained SOP Import node (sequential, never merged)."},
          "render_engine": {"type": "string", "enum": ["karma_xpu", "karma_cpu"],
@@ -788,7 +795,8 @@ TOOL_DEFS: list[tuple] = [
                         "description": "Render resolution [width, height] (default: [1920, 1080])"},
          "output_path": {"type": "string",
                          "description": "Render output path (default: '$HIP/render/$HIPNAME.png')"},
-         "parent": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "parent_path": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "parent": {"type": "string", "description": "Alias for parent_path (accepted; parent_path wins)."},
      }, "required": []},
      False, False, False),
 
@@ -827,6 +835,32 @@ TOOL_DEFS: list[tuple] = [
                      "description": "USD purpose to assign."},
      }, "required": ["component_path", "purpose"]},
      False, False, True),
+
+    ("synapse_solaris_import_megascans", "solaris_import_megascans", _identity,
+     "Import a Megascans/Fab .usdc asset into a Component Builder with proper "
+     "unit scaling, grounding, proxy generation, and material extraction. "
+     "Scale 0.01 converts Unreal centimeters to Houdini meters.",
+     {"type": "object", "properties": {
+         "usdc_path": {"type": "string", "description": "Path to the downloaded .usdc file from Fab/Megascans."},
+         "asset_name": {"type": "string",
+                        "description": "Name for the imported asset (e.g. 'book_01'). Letters, digits and underscores only."},
+         "scale_factor": {"type": "number", "exclusiveMinimum": 0,
+                          "description": "Uniform scale factor (default: 0.01 -- Unreal cm to Houdini m)"},
+         "ground_asset": {"type": "boolean",
+                          "description": "Apply Match Size with Justify Y: Minimum to ground the asset (default: true)"},
+         "rotation_correction": {"type": "array", "items": {"type": "number"},
+                                 "minItems": 3, "maxItems": 3,
+                                 "description": "Optional rotation correction [rx, ry, rz] in degrees, applied after scale."},
+         "proxy_reduction": {"type": "number", "minimum": 0.0, "maximum": 1.0,
+                             "description": "PolyReduce percentage for proxy/simproxy (0.0-1.0, default: 0.05)"},
+         "import_materials": {"type": "boolean",
+                              "description": "Import materials via Reference LOP /materials/* trick (default: true)"},
+         "export_path": {"type": "string",
+                         "description": "File path for the exported .usd asset. If omitted, sets up but doesn't export."},
+         "parent_path": {"type": "string", "description": "LOP network path (default: /stage)"},
+         "parent": {"type": "string", "description": "Alias for parent_path (accepted; parent_path wins)."},
+     }, "required": ["usdc_path", "asset_name"]},
+     False, False, False),
 
     ("houdini_configure_light_linking", "configure_light_linking", _identity,
      "Configure light linking between lights and geometry via USD collections. "
@@ -1478,51 +1512,16 @@ TOOL_DEFS: list[tuple] = [
 # can advertise or invoke them. A later mile promotes an entry by MOVING the
 # tuple into TOOL_DEFS -- not by copying it, and not by relaxing the gate.
 #
-# synapse_solaris_import_megascans
-#   Gate: CTO Ruling 13, on L2 finding F9 (REFUTED-LIVE, 22.0.368).
-#   import_megascans.py calls createNode() on a `componentgeometry` -- a
-#   locked HDA -- and raises hou.PermissionError on EVERY invocation, after
-#   partial state has already been created inside the undo group. Registering
-#   it would advertise a tool that cannot complete under any parameters.
-#   Promotion condition: F9 (locked-asset target) AND F3 (orphaned material
-#   reference LOP) both repaired AND proven by a live 22.0.368 verifier.
-#   Gate is pinned by tests/test_solaris_tool_registration.py.
+# SR1 M5: the list is EMPTY. `synapse_solaris_import_megascans` -- the only
+# entry it ever held (CTO Ruling 13 / L2 F9) -- was PROMOTED by moving its
+# tuple into TOOL_DEFS after F9 + F3 were repaired and live-proven on
+# 22.0.368. The mechanism stays for the next gated tool.
 
-PENDING_TOOL_DEFS: list[tuple] = [
-    ("synapse_solaris_import_megascans", "solaris_import_megascans", _identity,
-     "Import a Megascans/Fab .usdc asset into a Component Builder with proper "
-     "unit scaling, grounding, proxy generation, and material extraction. "
-     "Scale 0.01 converts Unreal centimeters to Houdini meters.",
-     {"type": "object", "properties": {
-         "usdc_path": {"type": "string", "description": "Path to the downloaded .usdc file from Fab/Megascans."},
-         "asset_name": {"type": "string",
-                        "description": "Name for the imported asset (e.g. 'book_01'). Letters, digits and underscores only."},
-         "scale_factor": {"type": "number", "exclusiveMinimum": 0,
-                          "description": "Uniform scale factor (default: 0.01 -- Unreal cm to Houdini m)"},
-         "ground_asset": {"type": "boolean",
-                          "description": "Apply Match Size with Justify Y: Minimum to ground the asset (default: true)"},
-         "rotation_correction": {"type": "array", "items": {"type": "number"},
-                                 "minItems": 3, "maxItems": 3,
-                                 "description": "Optional rotation correction [rx, ry, rz] in degrees, applied after scale."},
-         "proxy_reduction": {"type": "number", "minimum": 0.0, "maximum": 1.0,
-                             "description": "PolyReduce percentage for proxy/simproxy (0.0-1.0, default: 0.05)"},
-         "import_materials": {"type": "boolean",
-                              "description": "Import materials via Reference LOP /materials/* trick (default: true)"},
-         "export_path": {"type": "string",
-                         "description": "File path for the exported .usd asset. If omitted, sets up but doesn't export."},
-         "parent": {"type": "string", "description": "LOP network path (default: /stage)"},
-     }, "required": ["usdc_path", "asset_name"]},
-     False, False, False),
-]
+PENDING_TOOL_DEFS: list[tuple] = []
 
 # tool_name -> the ruling/finding that holds it back. Machine-readable so a
 # check can assert WHY a name is gated, not merely that it is.
-PENDING_TOOL_REASONS: dict[str, str] = {
-    "synapse_solaris_import_megascans":
-        "CTO Ruling 13 / L2 F9: createNode() into a locked componentgeometry HDA "
-        "raises hou.PermissionError on every invocation (REFUTED-LIVE 22.0.368). "
-        "Promote only after F9 + F3 are repaired and live-verified.",
-}
+PENDING_TOOL_REASONS: dict[str, str] = {}
 
 PENDING_TOOL_NAMES: list[str] = sorted(d[0] for d in PENDING_TOOL_DEFS)
 

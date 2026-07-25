@@ -233,11 +233,15 @@ def test_every_tool_the_audit_claims_is_accounted_for():
     assert res["status"] == "PASS", res["failures"]
 
 
-def test_import_megascans_stays_gated_not_dispatchable():
-    """CTO Ruling 13 on FINDING F9 -- the tool raises hou.PermissionError on
-    every invocation on 22.0.368, so it must not be reachable.
+def test_import_megascans_is_dispatchable_and_nothing_is_gated():
+    """SR1 M5 -- CTO Ruling 13 discharged. F9 (locked componentgeometry HDA)
+    and F3 (orphaned material Reference LOP) are repaired and proven by live
+    22.0.368 oracles, so the tool is now reachable.
 
-    FAILS IF: import_megascans is promoted into the active registry before
-    F9 + F3 are repaired and live-verified.
+    FAILS IF: import_megascans falls back out of the active registry, or any
+    audit-claimed tool becomes gated without this test being revisited.
     """
-    assert v_audit.gated_tools() == ["synapse_solaris_import_megascans"]
+    assert v_audit.gated_tools() == []
+    assert "synapse_solaris_import_megascans" in set(
+        __import__("synapse.mcp._tool_registry", fromlist=["x"]).TOOL_NAMES
+    )

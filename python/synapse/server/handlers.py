@@ -118,6 +118,7 @@ _CMD_CATEGORY: Dict[str, AuditCategory] = {
     "solaris_scene_template": AuditCategory.PIPELINE,
     "solaris_create_variants": AuditCategory.PIPELINE,
     "solaris_set_purpose": AuditCategory.PIPELINE,
+    "solaris_import_megascans": AuditCategory.PIPELINE,
     "solaris_shotsetup_karma_xpu": AuditCategory.PIPELINE,
     "matlib_bind": AuditCategory.MATERIAL,
     "assess_render_ready": AuditCategory.RENDER,
@@ -705,16 +706,15 @@ class SynapseHandler(NodeHandlerMixin, UsdHandlerMixin, RenderHandlerMixin, Tops
         reg.register("solaris_assemble_chain", self._handle_solaris_assemble_chain)
         reg.register("solaris_build_graph", self._handle_solaris_build_graph)
 
-        # Solaris NodeFlow tool family (SR1 M1).
-        # `solaris_import_megascans` is deliberately absent -- CTO Ruling 13
-        # on finding F9: it raises hou.PermissionError on every invocation.
-        # Its handler exists in handlers_solaris_tools.py but stays unwired
-        # until F9 + F3 are repaired and live-verified. Pinned by
+        # Solaris NodeFlow tool family (SR1 M1; import_megascans added M5
+        # once Ruling 13's F9 + F3 conditions were repaired and live-proven
+        # on 22.0.368). All five resolve through the registry. Pinned by
         # tests/test_solaris_tool_registration.py.
         reg.register("solaris_component_builder", self._handle_solaris_component_builder)
         reg.register("solaris_scene_template", self._handle_solaris_scene_template)
         reg.register("solaris_create_variants", self._handle_solaris_create_variants)
         reg.register("solaris_set_purpose", self._handle_solaris_set_purpose)
+        reg.register("solaris_import_megascans", self._handle_solaris_import_megascans)
 
         # Solaris compose tier (PRD 7.1/7.2/7.3)
         reg.register("solaris_shotsetup_karma_xpu", self._handle_solaris_shotsetup_karma_xpu)
