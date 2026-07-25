@@ -301,11 +301,19 @@ SIZE_HERO   = 19   # panel title — present, not shouting
 SIZE_LABEL = SIZE_MICRO
 
 # Roles: (family_css, size_px, weight, letter_spacing_px) — components read these.
+#
+# Mono is for CODE, sans is for everything else. Mono earns its place where the
+# glyphs are data the eye has to align or scan character by character — node
+# paths, tool names, versions, token counts, VEX, the `code` and `status` roles.
+# It does NOT belong on prose-shaped chrome: a title and a UI label are read as
+# words, and setting them in a typewriter face made the panel read like a
+# terminal emulator rather than a tool. So `title` and `label` move to sans;
+# `code` and `status` stay mono, unchanged.
 TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
     "display": (FONT_SANS_CSS, SIZE_HERO,  600, 0.5),
-    "title":   (FONT_MONO_CSS, SIZE_TITLE, 600, 1.0),
+    "title":   (FONT_SANS_CSS, SIZE_TITLE, 600, 1.0),
     "body":    (FONT_SANS_CSS, SIZE_BODY,  400, 0.0),
-    "label":   (FONT_MONO_CSS, SIZE_UI,    500, 0.5),
+    "label":   (FONT_SANS_CSS, SIZE_UI,    500, 0.5),
     "code":    (FONT_MONO_CSS, SIZE_BODY,  400, 0.0),
     "caption": (FONT_SANS_CSS, SIZE_SMALL, 400, 0.0),
     "status":  (FONT_MONO_CSS, SIZE_SMALL, 500, 0.5),

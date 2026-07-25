@@ -369,10 +369,15 @@ def get_context_bar_path_stylesheet():
 
 
 def get_context_bar_dim_label_stylesheet():
-    """Context bar dim label: selection count, frame, connection text."""
+    """Context bar dim label: selection count, frame, connection text.
+
+    Inert metadata -> MUSHROOM. These are numbers and units the artist reads
+    without looking at; the warm note holds them a step back from the live text
+    ramp (t.TEXT_DIM) that carries actual copy. Falls back to TEXT_DIM if the
+    token is unavailable (older vendored token module)."""
     return (
         "color: {c}; font-size: {s}px; border: none;".format(
-            c=t.TEXT_DIM, s=t.SIZE_SMALL
+            c=getattr(_ds, "MUSHROOM", t.TEXT_DIM), s=t.SIZE_SMALL
         )
     )
 

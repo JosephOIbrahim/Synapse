@@ -179,7 +179,9 @@ class RenderHero(QtWidgets.QWidget):
         f.setPixelSize(10)
         f.setFamily("monospace")
         p.setFont(f)
-        p.setPen(QtGui.QColor("#97A3AD"))
+        # inert metadata over the frame — the warm mushroom note, not a cool
+        # grey literal, and not the live-text ramp (this is caption, not copy).
+        p.setPen(QtGui.QColor(t.MUSHROOM))
         p.drawText(QtCore.QRectF(r.left() + 10, r.bottom() - 20, r.width() - 20, 16),
                    int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter), self._meta)
 
