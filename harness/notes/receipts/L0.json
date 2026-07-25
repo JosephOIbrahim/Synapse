@@ -1,0 +1,83 @@
+{
+  "leg": "L0",
+  "name": "GROUND",
+  "schema": "receipt/v1",
+  "started": "2026-07-25T00:00:00Z",
+  "ended": "2026-07-25T00:34:00Z",
+  "status": "amber",
+  "commit_at_run": "25e0166",
+  "mode": "B",
+  "agents": ["h22-gatewarden", "cartographer"],
+
+  "suite": { "before": 4716, "after": 4716, "delta": 0, "failed": 0, "skipped": 100 },
+  "oracle": {
+    "pytest": "GREEN - 4716 passed, 0 failed, 100 skipped in 115.88s (floor is 4716/0)",
+    "checks_py": "NOT RUN AS SPECIFIED - relay doc cites `--all`, real CLI is `--task/--worktree`. See drift D-R1.",
+    "git_status_porcelain": 17
+  },
+
+  "commits": [],
+
+  "artifacts": [
+    "harness/notes/ledger_truth.json",
+    "harness/notes/cto_relay_drift.md",
+    "harness/notes/receipts/L0.json"
+  ],
+
+  "ledger_truth": {
+    "total": 80,
+    "done": 30,
+    "open": 44,
+    "stale": 0,
+    "superseded": 6,
+    "superseded_ids": ["0.7", "1.7", "2.7", "2.8", "3.3", "K.4"],
+    "note": "stale == 0. No task references a file that vanished without a successor; the four near-misses resolved to superseded."
+  },
+
+  "gate_verdicts": {
+    "L0": "ALLOW (classify-only)",
+    "L1_census": "ALLOW",
+    "L1_rebuild_and_gap_closure": "REFUSE - flywheel_queue.json:80 C.0 ratified:false",
+    "L2": "ALLOW (tests/evidence only; source repair deposits as unratified candidate)",
+    "L3": "ALLOW-PAPER-ONLY",
+    "L4": "ALLOW (chrome only; any product-identity framing becomes a T.4 decision and is REFUSED)",
+    "L5": "ALLOW-PAPER-ONLY",
+    "T4": "FROZEN - confirmed by three concordant sources"
+  },
+
+  "findings": [
+    { "id": "L0.F1", "claim": "harness/state/done.json does not exist - the run.ts completion ledger has no file. There is no machine-recorded completion claim for any of the 80 tasks; all 'done' verdicts are static reconstruction from git log + verdict files.", "truth": "VERIFIED-STATIC", "anchor": "harness/run.ts:64", "severity": "blocker" },
+    { "id": "L0.F2", "claim": "agent.usd provenance writers remain dormant - no live callers. The 'provenance or it didn't happen' non-negotiable is unmet on the live path.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/memory/agent_state.py:1", "severity": "blocker" },
+    { "id": "L0.F3", "claim": "GitHub issue #3 'Installation issues' does NOT reproduce on current master. Root cause was a missing HOUDINI_PATH/hpath entry pointing at <repo>/houdini, so the .pypanel was never discovered. Current master ships the fix three ways and --verify asserts it.", "truth": "VERIFIED-STATIC", "anchor": "scripts/install_synapse_package.py:243", "severity": "cosmetic" },
+    { "id": "L0.F4", "claim": "packages/synapse.json comment claims it uses `hpath` (the H22 keyword) but the file emits the deprecated `path`. The installer emits hpath correctly; the documented HOUDINI_PACKAGE_DIR route uses the deprecated key.", "truth": "VERIFIED-STATIC", "anchor": "packages/synapse.json:22", "severity": "debt" },
+    { "id": "L0.F5", "claim": "Root-level `synapse/` is a namespace-package shadow of the real python/synapse (no __init__.py). Harmless today - regular pkg beats namespace pkg - but packages/synapse.json:15 puts $SYNAPSE_ROOT on PYTHONPATH, so adding an __init__.py there would silently break every install.", "truth": "VERIFIED-RUNTIME", "anchor": "packages/synapse.json:15", "severity": "debt" },
+    { "id": "L0.F6", "claim": "C.3/C.4 ID collision across two ledgers: harness/tasks.json C.3/C.4 (COP/TOP context gaps, blocked) vs flywheel_queue.json C.3-H22-neural-cops / C.4-H22-scaffold-rebuild (ratified:true). Any automation joining these files by ID will mis-arm.", "truth": "VERIFIED-STATIC", "anchor": "harness/state/flywheel_queue.json:1", "severity": "debt" },
+    { "id": "L0.F7", "claim": "Both H21-vintage catalogs (context_capability_21.json, cook_truth_21.json) remain authoritative for armed tracks C.1-C.6 and D.3-D.5, on a Houdini build that is uninstalled.", "truth": "VERIFIED-STATIC", "anchor": "harness/notes/context_capability_21.json:1", "severity": "debt" },
+    { "id": "L0.F8", "claim": "R-track release readiness verdict is 15 days stale (generated 2026-07-10, predates release week and the cp313 re-vendor at 38b33b6). All 11 R.* 'false' checks are UNVERIFIED against the current tree.", "truth": "VERIFIED-STATIC", "anchor": "harness/state/release_readiness_verdict.json:1", "severity": "debt" },
+    { "id": "L0.F9", "claim": "Seven committed worktree-scratch directories at repo root carry duplicate blueprints: SYNAPSE-asm-* x4 are md5-identical, SYNAPSE-fx-* x3 are md5-identical. Zero inbound references.", "truth": "VERIFIED-STATIC", "anchor": "SYNAPSE-asm-handler/_ref/SOLARIS_ASSEMBLY_BLUEPRINT.md:812", "severity": "cosmetic" },
+    { "id": "L0.F10", "claim": "untitled.hip/ is NOT debris - it holds claude/agent.usd + memory.md + .synapse/, the live unsaved-scene memory store. The relay doc listed it as a deletion suspect. Reclassified live.", "truth": "VERIFIED-STATIC", "anchor": "docs/SYNAPSE_CTO_REVIEW_2026-06-09.md:118", "severity": "blocker" },
+    { "id": "L0.F11", "claim": "MagicMock/ is genuine filesystem debris - contains directories literally named `mock.eval()` and `mock.path()`, written by a test where a MagicMock leaked into a path join. Untracked, zero references.", "truth": "VERIFIED-STATIC", "anchor": "MagicMock/", "severity": "cosmetic" },
+    { "id": "L0.F12", "claim": "All 15 untracked docs/*.txt are transcript debris; 9 are 4-18 byte agent handshake markers, 2 are byte-identical 132KB help-cache dumps. Zero docs/*.txt files are tracked, so a blanket ignore rule cannot orphan anything.", "truth": "VERIFIED-STATIC", "anchor": ".gitignore:134", "severity": "cosmetic" }
+  ],
+
+  "root_census": {
+    "live": ["python/","tests/","shared/","harness/","scripts/","docs/","rag/","houdini/","packages/","design/","host/","rulebook/","retina/","agents/","demo/","assets/",".claude/",".github/",".synapse/",".scout/","forge/","untitled.hip/"],
+    "archive": ["agent/","synapse/ (root shadow)","FORGE_PRODUCTION/","synapse_labs_extraction_kit/","spikes/"],
+    "delete": ["_solaris_fix/","SYNAPSE-asm-handler/","SYNAPSE-asm-routing/","SYNAPSE-asm-tests/","SYNAPSE-asm-ui/","SYNAPSE-fx-cluster/","SYNAPSE-fx-crawler/","SYNAPSE-fx-ingest/","MagicMock/","dist/","site/","claude/","files/","__pycache__/",".mypy_cache/",".pytest_cache/",".benchmarks/",".forge/"],
+    "not_found": ["_cto_recon.py"],
+    "note": "CLASSIFY ONLY. Nothing was deleted in this leg."
+  },
+
+  "drift": ["D-R1","D-R2","D-R3","D-R4","D-R5"],
+
+  "for_ruling": [
+    { "id": "L0.R1", "question": "L1 gap-closure is gate-REFUSED: flywheel_queue.json C.0 is ratified:false, and that file sits inside the deny-list fence. Flip it, or let L1 stop at the census?", "options": ["Flip C.0 ratified:true, then L1 closes the top-5 gaps", "Leave frozen - L1 delivers census + ranked gap list only, closure is a later run", "Flip and also re-ratify the H21-vintage catalogs C.1-C.6 depend on"], "recommendation": "Leave frozen for this run. The census is the thing that does not exist yet; closure against an H21-vintage capability catalog would build on a stale base. Flip C.0 only after L1 delivers the H22 catalog.", "cost_of_delay": "Low. COP gets its first coverage number either way; only the closing code waits.", "unblocks": "one boolean at harness/state/flywheel_queue.json:80" },
+    { "id": "L0.R2", "question": "Issue #3 'Installation issues' - 88 days open, does not reproduce. Close or hold?", "options": ["Close now with an installer comment (python scripts/install_synapse_package.py --verify) and an H22-only note", "Hold until task 1.5 doctor-green lands"], "recommendation": "Close now. The reported defect is fixed, --verify catches the exact failure, and 1.5 is a separate receipt. An 88-day-old open install bug is the first thing a new user sees.", "cost_of_delay": "Public-facing. It is the only open public thread on the repo." },
+    { "id": "L0.R3", "question": "Root hygiene: delete the 8 delete-classed TRACKED dirs (_solaris_fix/, SYNAPSE-asm-* x4, SYNAPSE-fx-* x3 = 11 tracked files, all duplicates)?", "options": ["Archive branch, then delete from master", "Delete outright", "Keep"], "recommendation": "Archive branch, then delete - matches the relay's own R2 disposition. Note separately: untitled.hip/ must NOT be deleted despite appearing on the suspect list; it is the live unsaved-scene memory store.", "cost_of_delay": "Low, but they distort every root-level audit and every git grep." },
+    { "id": "L0.R4", "question": "The harness has no completion memory - harness/state/done.json does not exist. Rebuild it, or promote ledger_truth.json to the durable ledger?", "options": ["Seed done.json from the 30 done verdicts", "Track harness/notes/ledger_truth.json as the durable ledger and have run.ts read it", "Leave memoryless"], "recommendation": "Promote ledger_truth.json. An untracked ledger under harness/state/ is exactly why the last one vanished.", "cost_of_delay": "Every harness run re-attempts 30 banked tasks. Agent hours burned on settled work." },
+    { "id": "L0.R5", "question": "The relay doc's oracle commands for checks.py do not exist (`--all`, `--check X`); the real CLI is `--task/--worktree`. Fix the doc or add the CLI surface?", "options": ["Amend the relay doc to the real CLI", "Add --all/--check to checks.py", "Both"], "recommendation": "Amend the doc. checks.py's 80 check functions are reachable today; inventing a second CLI surface to match a prose error is the tail wagging the dog.", "cost_of_delay": "Three legs (L0/L1/L2) have literally-unrunnable acceptance criteria until this is settled.", "unblocks": "harness/SYNAPSE_CTO_RELAY.md:161,191,193" },
+    { "id": "L0.R6", "question": "docs/*.txt - 15 untracked scratch files, zero tracked. Remove and broaden the ignore rule?", "options": ["Remove all 15, change .gitignore to a blanket docs/*.txt", "Keep enumerating individual filenames", "Commit them as documentation"], "recommendation": "Remove and broaden. .gitignore:134-138 already opens this exact block and enumerates filenames one at a time - the enumeration is losing the race.", "cost_of_delay": "Cosmetic. They inflate git status on every leg." }
+  ],
+
+  "resume_token": "L0 COMPLETE. Suite floor confirmed 4716/0/100 at 25e0166. ledger_truth.json written (80 tasks: 30 done / 44 open / 0 stale / 6 superseded). Root census + issue #3 adjudication done, nothing deleted. If re-entered: skip the suite run and the ledger reconcile; both artifacts are on disk. Carry forward - L1 is census-only (gate REFUSE on closure), L2 runs against branch HEAD not e4b5916, and every checks.py oracle needs --task/--worktree."
+}

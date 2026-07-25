@@ -1,0 +1,739 @@
+{
+  "reconciled_at": "2026-07-25T15:08:28.244642+00:00",
+  "commit": "0b3e37791587a449e48653119a4e8800f9fe4425",
+  "method": "VERIFIED-STATIC. Working-tree file existence + git log --no-merges + harness/state verdict/queue/drop/posture files + harness/state/claude-progress.md LOG. No runtime execution, no pytest, no live Houdini.",
+  "caveats": [
+    "harness/state/done.json (the run.ts completion ledger, harness/run.ts:64) DOES NOT EXIST on this tree. No machine-claimed status exists for any task; claimed_status is the tasks.json gating field, not a completion claim.",
+    "harness/state/release_readiness_verdict.json is dated 2026-07-10 and predates release week; all R.* verdicts are VERIFIED-DERIVED from that snapshot and UNVERIFIED against the current tree.",
+    "tasks.json refs are inconsistently rooted (repo-relative vs python/synapse-relative); the python/synapse/ fallback was applied before calling any ref missing.",
+    "A ref that is a by-design arming trigger a human never wrote (docs/v6/BP00_manifest.md) is classified open, not stale."
+  ],
+  "tasks": [
+    {
+      "id": "0.1",
+      "title": "Split the cp311 vendored seam (sidecar vs abi3)",
+      "mode": "A",
+      "claimed_status": "human_gate",
+      "verdict": "open",
+      "anchor": "harness/notes/gate-0.1-sidecar-vs-abi3.md:1",
+      "note": "Brief written, decision never committed; re-opened at drop week."
+    },
+    {
+      "id": "0.2",
+      "title": "Build the H22 probe harness",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "harness/notes/spec-0.2-api-delta-probe.md:1",
+      "note": "progress log 2026-07-02 UNBLOCKED+DONE (PR #38); probe chain built."
+    },
+    {
+      "id": "0.3",
+      "title": "Single-source the version",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "VERSION:1",
+      "note": "progress log 2026-06-24 18:54 '0.3 PASS'."
+    },
+    {
+      "id": "0.4",
+      "title": "Fold the duplicate ui/ tree into panel/",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "open",
+      "anchor": "tests/test_v5_features.py:54",
+      "note": "Deliberately NOT done: legacy python/synapse/ui/ dead-but-test-pinned."
+    },
+    {
+      "id": "0.5",
+      "title": "Pre-stage the demo scaffold (.hip, shot, OCIO)",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "demo/synapse_demo.hip:1",
+      "note": "progress log 2026-06-24 '0.5 GREEN'; hip on disk."
+    },
+    {
+      "id": "0.6",
+      "title": "Lock the demo runsheet",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "DEMO_SCRIPT.md:1",
+      "note": "Mode-A standalone PASS 0.6 (progress log 2026-06-24)."
+    },
+    {
+      "id": "0.7",
+      "title": "Rehearse the clean-machine install on H21",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "superseded",
+      "anchor": "houdini/python_panels/synapse_panel.pypanel:1",
+      "note": "Ref 'synapse_panel.pypanel' root-relative, absent; file lives at houdini/python_panels/. Work landed (clean_install GREEN); H21 target itself void."
+    },
+    {
+      "id": "0.8",
+      "title": "Scaffold the external-MCP provider seam (truth-contract envelope) against a mock APEX MCP",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "python/synapse/providers/apex_mcp.py:1",
+      "note": "progress log 2026-07-02: mcp_registered + mcp_truth_contract TRUE."
+    },
+    {
+      "id": "0.9",
+      "title": "Wire scout to federate the (mock) APEX MCP \u00e2\u20ac\u201d consume, don't rebuild",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "python/synapse/server/scout_sources.json:1",
+      "note": "progress log 2026-07-02: scout_federates + scout_no_apex_corpus TRUE."
+    },
+    {
+      "id": "1.1",
+      "title": "Install H22 clean + Synapse via package",
+      "mode": "B",
+      "claimed_status": "human_gate",
+      "verdict": "done",
+      "anchor": "harness/state/drop.json:2",
+      "note": "drop.json written 2026-07-15 by human; build 22.0.368."
+    },
+    {
+      "id": "1.2",
+      "title": "Capture the three numbers: Python \u00c2\u00b7 USD \u00c2\u00b7 PySide",
+      "mode": "B",
+      "claimed_status": "human_gate",
+      "verdict": "done",
+      "anchor": "harness/state/drop.json:3",
+      "note": "py 3.13.10 / usd 0.26.5 / pyside 6.8.3 captured live in H22."
+    },
+    {
+      "id": "1.3",
+      "title": "Verify the cp311 fix holds on H22's Python",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "done",
+      "anchor": "harness/state/claude-progress.md:1",
+      "note": "Drop-week h22-abi-verdict: cp313 re-vendor executed @38b33b6."
+    },
+    {
+      "id": "1.4",
+      "title": "Fire the probe \u00e2\u2020\u2019 API delta report",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "done",
+      "anchor": "harness/notes/verified_connectivity_22.0.368.json:1",
+      "note": "Drop-week steps 1-9 complete; +9/-3/3-delta diff, 4/4 quarantine re-pin."
+    },
+    {
+      "id": "1.5",
+      "title": "synapse_doctor green on H22",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "open",
+      "anchor": "python/synapse/server/doctor.py:1",
+      "note": "No green H22 doctor receipt; drop-week verdicts PROVISIONAL-headless."
+    },
+    {
+      "id": "1.6",
+      "title": "Panel reads correctly in H22's new theme",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "done",
+      "anchor": "harness/state/claude-progress.md:1",
+      "note": "Drop-week h22-qt-smoke PASS (run_panel.py isUIAvailable fix)."
+    },
+    {
+      "id": "1.7",
+      "title": "Probe the SHIPPED native APEX MCP tool surface; quarantine absent/renamed endpoints (D-H22-4)",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "superseded",
+      "anchor": "harness/state/claude-progress.md:1",
+      "note": "APEX Script Comfort Package MCP announced-not-shipped (C2 CLOSED-with-rider). No surface to probe."
+    },
+    {
+      "id": "2.1",
+      "title": "Patch the probe deltas (promote probe truth over pinned constants)",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "done",
+      "anchor": "python/synapse/core/wiring.py:1",
+      "note": "U.1-H22 major-aware fold merged (2c17149); queue status=merged."
+    },
+    {
+      "id": "2.2",
+      "title": "COPs \u00e2\u20ac\u201d Ocean Spectrum / texture-synth from a prompt",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "open",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "C.3/C.4/C.10-H22 COPs cycles ratified:true but status 'candidate' -- spec'd, not built."
+    },
+    {
+      "id": "2.3",
+      "title": "Solaris \u00e2\u20ac\u201d scatter / set-dressing from a prompt",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "done",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "W.3-H22-setdressing status=merged; lop_knowledge.py major-aware."
+    },
+    {
+      "id": "2.4",
+      "title": "Wire both into the command palette (verb \u00c3\u2014 context)",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "open",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "Blocked by unbuilt 2.2; no palette registration commit."
+    },
+    {
+      "id": "2.5",
+      "title": "Provenance proof: both land in agent.usd",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "open",
+      "anchor": "python/synapse/memory/agent_state.py:1",
+      "note": "CLAUDE.md Phase 4: provenance writers have NO live callers. Schema built, wiring dormant."
+    },
+    {
+      "id": "2.6",
+      "title": "Karma XPU render the result on H22",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "open",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "RETINA.M3/M4/M5 status=candidate; no H22 XPU render receipt."
+    },
+    {
+      "id": "2.7",
+      "title": "Register the shipped APEX MCP as a first-class provider, truth-contract-wrapped, recorded in agent.usd (D-H22-1)",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "superseded",
+      "anchor": "python/synapse/providers/apex_mcp.py:1",
+      "note": "Same rider as 1.7; mock seam (0.8) is the surviving artifact."
+    },
+    {
+      "id": "2.8",
+      "title": "Scout federates the real APEX MCP; no APEX corpus (D-H22-2)",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "superseded",
+      "anchor": "python/synapse/cognitive/tools/scout.py:1",
+      "note": "Depends on 2.7; nothing real to federate."
+    },
+    {
+      "id": "3.1",
+      "title": "Dry-run the full runsheet, timed",
+      "mode": "B",
+      "claimed_status": "human_gate",
+      "verdict": "open",
+      "anchor": "DEMO_SCRIPT.md:1",
+      "note": "Human gate; no timed dry-run receipt."
+    },
+    {
+      "id": "3.2",
+      "title": "Record the demo",
+      "mode": "B",
+      "claimed_status": "human_gate",
+      "verdict": "open",
+      "anchor": "SYNAPSE_RELEASE_WEEK.md:1",
+      "note": "Human gate; demo recording x2 is the standing BLOCKING item."
+    },
+    {
+      "id": "3.3",
+      "title": "Demo beat \u00e2\u20ac\u201d Synapse orchestrating the native APEX MCP, with receipts",
+      "mode": "B",
+      "claimed_status": "blocked_on:drop",
+      "verdict": "superseded",
+      "anchor": "DEMO_SCRIPT.md:1",
+      "note": "Void by the 1.7/2.7 rider; no shipped provider to orchestrate."
+    },
+    {
+      "id": "3.4",
+      "title": "Capsule the ship state",
+      "mode": "B",
+      "claimed_status": "human_gate",
+      "verdict": "open",
+      "anchor": "harness/state/claude-progress.md:1",
+      "note": "Human gate; drop-week STEP 10 (ratify) logged still-human."
+    },
+    {
+      "id": "U.1",
+      "title": "Utility flywheel cycle 1 \u00e2\u20ac\u201d network-wiring truth (connectivity catalog -> review sweep -> wire_by_label + validator pin)",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "ratified:true; stages 1-4 committed (9efb1b9,a04cd49,f2dcc8b,d695bd9)."
+    },
+    {
+      "id": "U.5",
+      "title": "Utility flywheel cycle U.5 \u00e2\u20ac\u201d LOP/Solaris knowledge (context truth): corpus catalog -> consistency gate -> loader + additive validator advisory phase",
+      "mode": "A",
+      "claimed_status": "human_gate",
+      "verdict": "done",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "Human ratification 2026-07-03 (d451d35); U.5-H22 fold merged."
+    },
+    {
+      "id": "V.1",
+      "title": "v6 Session A \u00e2\u20ac\u201d scaffold the skeleton: stub every module in the BP00 manifest",
+      "mode": "A",
+      "claimed_status": "blocked_on:blueprints",
+      "verdict": "open",
+      "anchor": "docs/v6/INTAKE.md:1",
+      "note": "Arming trigger docs/v6/BP00_manifest.md never committed. By-design hold."
+    },
+    {
+      "id": "V.2",
+      "title": "v6 Session B \u00e2\u20ac\u201d write BP09 (Iteration Controller) at BP00\u00e2\u20ac\u201c08 fidelity",
+      "mode": "A",
+      "claimed_status": "blocked_on:blueprints",
+      "verdict": "open",
+      "anchor": "docs/v6/INTAKE.md:1",
+      "note": "Same uncommitted BP00 manifest; BP09 not authored."
+    },
+    {
+      "id": "V.3",
+      "title": "v6 Session C \u00e2\u20ac\u201d spec + BUILD BP10 (Global Knowledge Base): pure Python, zero hou",
+      "mode": "A",
+      "claimed_status": "blocked_on:blueprints",
+      "verdict": "open",
+      "anchor": "docs/v6/INTAKE.md:1",
+      "note": "python/synapse/v6/ does not exist; hold never lifted."
+    },
+    {
+      "id": "V.4",
+      "title": "v6 Session D \u00e2\u20ac\u201d pure-Python layers, test-first: gsplat_compare interpretation, scoring rubrics, meta-cognitive stats",
+      "mode": "A",
+      "claimed_status": "blocked_on:blueprints",
+      "verdict": "open",
+      "anchor": "docs/v6/INTAKE.md:1",
+      "note": "python/synapse/v6/ and tests/v6/ absent."
+    },
+    {
+      "id": "V.5",
+      "title": "v6 Miles 1\u00e2\u20ac\u201c2 \u00e2\u20ac\u201d BP01 Perception + BP02 G-Splat against shipped H22 (highest uncertainty first)",
+      "mode": "B",
+      "claimed_status": "blocked_on:blueprints",
+      "verdict": "open",
+      "anchor": "docs/v6/INTAKE.md:1",
+      "note": "Double hold: blueprints + Mode B."
+    },
+    {
+      "id": "V.6",
+      "title": "v6 Miles 3\u00e2\u20ac\u201c4 \u00e2\u20ac\u201d BP08 three-tier evaluator (keystone; 01+02 become the engine)",
+      "mode": "B",
+      "claimed_status": "blocked_on:blueprints",
+      "verdict": "open",
+      "anchor": "docs/v6/INTAKE.md:1",
+      "note": "Double hold: blueprints + Mode B."
+    },
+    {
+      "id": "V.7",
+      "title": "v6 Miles 5\u00e2\u20ac\u201c7 \u00e2\u20ac\u201d BP09+BP10 integration: first autonomous cycle, PYRO ONLY",
+      "mode": "B",
+      "claimed_status": "blocked_on:blueprints",
+      "verdict": "open",
+      "anchor": "docs/v6/INTAKE.md:1",
+      "note": "Double hold: blueprints + Mode B."
+    },
+    {
+      "id": "C.0",
+      "title": "Context track \u00e2\u20ac\u201d probe SYNAPSE's create-capability per Houdini context (SOP/LOP/COP/TOP/DOP/MAT), deposit the catalog + review sweep",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "harness/notes/context_capability_21.json:1",
+      "note": "Catalog deposited; cycle C.0 status=candidate ratified=false (sign-off owed)."
+    },
+    {
+      "id": "C.1",
+      "title": "Context track \u00e2\u20ac\u201d SOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "mode": "A",
+      "claimed_status": "blocked_on:catalog",
+      "verdict": "open",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "C.0 ratified:false -> catalog hold never lifted."
+    },
+    {
+      "id": "C.2",
+      "title": "Context track \u00e2\u20ac\u201d LOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "mode": "A",
+      "claimed_status": "blocked_on:catalog",
+      "verdict": "open",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "C.0 ratified:false; catalog is H21-vintage, stale vs H22 target."
+    },
+    {
+      "id": "C.3",
+      "title": "Context track \u00e2\u20ac\u201d COP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "mode": "A",
+      "claimed_status": "blocked_on:catalog",
+      "verdict": "open",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "C.0 ratified:false. NAMESPACE COLLISION: task C.3 (COP gap) is NOT cycle C.3-H22-neural-cops."
+    },
+    {
+      "id": "C.4",
+      "title": "Context track \u00e2\u20ac\u201d TOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "mode": "A",
+      "claimed_status": "blocked_on:catalog",
+      "verdict": "open",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "C.0 ratified:false. Same collision with C.4-H22-scaffold-rebuild."
+    },
+    {
+      "id": "C.5",
+      "title": "Context track \u00e2\u20ac\u201d DOP: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "mode": "A",
+      "claimed_status": "blocked_on:catalog",
+      "verdict": "open",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "C.0 ratified:false."
+    },
+    {
+      "id": "C.6",
+      "title": "Context track \u00e2\u20ac\u201d MAT: close the top create-gap the catalog surfaces; prove by golden + ratchet",
+      "mode": "A",
+      "claimed_status": "blocked_on:catalog",
+      "verdict": "open",
+      "anchor": "harness/state/flywheel_queue.json:1",
+      "note": "C.0 ratified:false."
+    },
+    {
+      "id": "S.0",
+      "title": "Studio track \u00e2\u20ac\u201d declare the deployment posture (mode + identity model) \u00e2\u2020\u2019 write harness/state/posture.json",
+      "mode": "A",
+      "claimed_status": "human_gate",
+      "verdict": "done",
+      "anchor": "harness/state/posture.json:2",
+      "note": "mode=solo, auto_approve=true, declared 2026-07-06."
+    },
+    {
+      "id": "S.1",
+      "title": "Studio track \u00e2\u20ac\u201d unify the policy layer: one authoritative capability/gate/read-only/disk table checked at the transport-agnostic dispatch boundary",
+      "mode": "A",
+      "claimed_status": "human_gate",
+      "verdict": "open",
+      "anchor": "harness/state/studio_readiness_verdict.json:3",
+      "note": "policy_single_source=false; in accepted_under_posture -- accepted != fixed."
+    },
+    {
+      "id": "S.2",
+      "title": "Studio track \u00e2\u20ac\u201d enforce consent at the dispatch boundary: /mcp + autonomous paths get a HumanGate-wired bridge (not the disarmed panel singleton); record the real consent source in the IntegrityBlock",
+      "mode": "A",
+      "claimed_status": "human_gate",
+      "verdict": "open",
+      "anchor": "harness/state/studio_readiness_verdict.json:3",
+      "note": "consent_enforced=false; accepted under solo posture only."
+    },
+    {
+      "id": "S.3",
+      "title": "Studio track \u00e2\u20ac\u201d per-user identity + RBAC through dispatch on all three transports; default-deny on unresolved role/session; end the shared-handler _user_id race",
+      "mode": "A",
+      "claimed_status": "human_gate",
+      "verdict": "open",
+      "anchor": "harness/state/studio_readiness_verdict.json:3",
+      "note": "rbac_at_dispatch=false; accepted under solo posture only."
+    },
+    {
+      "id": "S.4",
+      "title": "Studio track \u00e2\u20ac\u201d memory: one authoritative store + real provenance (source/author/tier) + recency & conflict in recall",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "harness/state/studio_readiness_verdict.json:3",
+      "note": "memory_provenance=true; dc2b5fa + 6d53a2d."
+    },
+    {
+      "id": "S.5",
+      "title": "Studio track \u00e2\u20ac\u201d eval backbone: wire the real validate_frame into the harness render check; guard the fake-hou sys.modules residency; pin permission boundaries as invariants",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "harness/state/studio_readiness_verdict.json:3",
+      "note": "eval_backbone=true; f047f4c + 5e01f09."
+    },
+    {
+      "id": "S.6",
+      "title": "Studio track \u00e2\u20ac\u201d farm-headless correctness: neutralize the latent PDG remove_files=True rollback; per-build the scout symbol table for mixed fleets; the TOP-headless + DOP-populate creation gaps (== C.4/C.5)",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "harness/state/studio_readiness_verdict.json:3",
+      "note": "farm_headless=true; 0330049."
+    },
+    {
+      "id": "S.R",
+      "title": "Studio track \u00e2\u20ac\u201d capstone studio-readiness review: aggregate every S-check, require the criticals green, emit the verdict; run the adversarial sweep",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "harness/state/studio_readiness_verdict.json:1",
+      "note": "verdict='READY (solo posture)', blockers=[]. Posture-conditional."
+    },
+    {
+      "id": "D.1",
+      "title": "Diagnostic track \u00e2\u20ac\u201d Mile 1: cook-API confirmation probe. Every hou.* symbol on D's critical path dir()-confirmed against live hython; absences auto-quarantine. Deposits harness/notes/verified_cook_api_<build>.json",
+      "mode": "A",
+      "claimed_status": "blocked_on:cook_ratified",
+      "verdict": "done",
+      "anchor": "harness/notes/verified_cook_api_21.0.671.json:1",
+      "note": "commit 8374f93; D.0 ratified 2026-07-07 (36dd561). H21-vintage deposit."
+    },
+    {
+      "id": "D.2",
+      "title": "Diagnostic track \u00e2\u20ac\u201d Mile 2: perturbation catalog. host/introspect_cook_truth.py (hython-only, zero-synapse-import) runs perturbation trials per context (sop/lop/cop/dop) and deposits harness/notes/cook_truth_21.json \u00e2\u20ac\u201d the D.3+ arming trigger",
+      "mode": "A",
+      "claimed_status": "blocked_on:cook_ratified",
+      "verdict": "done",
+      "anchor": "harness/notes/cook_truth_21.json:1",
+      "note": "commit 7643ba0. Same H21-vintage caveat."
+    },
+    {
+      "id": "D.3",
+      "title": "Diagnostic track \u00e2\u20ac\u201d Mile 3: review sweep + per-context goldens. scripts/flywheel_review_cook.py sweeps emitter/explainer claims against the catalog; one frozen perturbation trial per context reproduces its cataloged dirty-set exactly",
+      "mode": "A",
+      "claimed_status": "blocked_on:cook_truth",
+      "verdict": "open",
+      "anchor": "scripts/flywheel_review_context.py:1",
+      "note": "Named deliverable scripts/flywheel_review_cook.py does not exist."
+    },
+    {
+      "id": "D.4",
+      "title": "Diagnostic track \u00e2\u20ac\u201d Mile 4: synapse_explain_recook (read-only handler on the SynapseHandler seam): given a node path (+ optional hypothetical parm change), answer what will recook and WHY from catalog + live flags, citing the trial fingerprint",
+      "mode": "A",
+      "claimed_status": "blocked_on:cook_truth",
+      "verdict": "open",
+      "anchor": "python/synapse/server/handlers.py:1",
+      "note": "grep python/synapse/: zero hits for 'synapse_explain_recook'."
+    },
+    {
+      "id": "D.5",
+      "title": "Diagnostic track \u00e2\u20ac\u201d Mile 5 (staged D.1 of the scour): synapse_diagnose_callback \u00e2\u20ac\u201d replay an errored parm callback/expression under capture, return the dispatcher-style envelope (traceback_str seam) + cook-state before/after",
+      "mode": "A",
+      "claimed_status": "blocked_on:cook_truth",
+      "verdict": "open",
+      "anchor": "python/synapse/cognitive/dispatcher.py:1",
+      "note": "grep python/synapse/: zero hits for 'synapse_diagnos'."
+    },
+    {
+      "id": "R.1",
+      "title": "Release track \u00e2\u20ac\u201d mutations fail CLOSED when the integrity bridge is unavailable: remove all three direct-dispatch fallbacks (P0.2, the review's #1 code finding)",
+      "mode": "A",
+      "claimed_status": "blocked_on:release_ratified",
+      "verdict": "open",
+      "anchor": "harness/state/release_readiness_verdict.json:3",
+      "note": "mutation_fail_closed=false; R.0 ratified=false so the arm never armed."
+    },
+    {
+      "id": "R.2",
+      "title": "Release track \u00e2\u20ac\u201d move the freeze heartbeat out of the panel widget into a process-lifetime beat owner (P0.3)",
+      "mode": "A",
+      "claimed_status": "blocked_on:release_ratified",
+      "verdict": "open",
+      "anchor": "harness/state/release_readiness_verdict.json:3",
+      "note": "runtime_owns_heartbeat=false."
+    },
+    {
+      "id": "R.3",
+      "title": "Release track \u00e2\u20ac\u201d gate the production sys.modules purge behind SYNAPSE_DEV_HOT_RELOAD in BOTH .pypanel loaders (P0.4)",
+      "mode": "A",
+      "claimed_status": "blocked_on:release_ratified",
+      "verdict": "open",
+      "anchor": "harness/state/release_readiness_verdict.json:3",
+      "note": "hot_reload_gated=false."
+    },
+    {
+      "id": "R.4",
+      "title": "Release track \u00e2\u20ac\u201d dependency isolation across Python minors: versioned vendor roots now, sidecar per gate-0.1's decided direction (P0.1)",
+      "mode": "A",
+      "claimed_status": "blocked_on:release_ratified",
+      "verdict": "open",
+      "anchor": "harness/state/release_readiness_verdict.json:3",
+      "note": "deps_isolated=false. Partly overtaken by cp313 re-vendor @38b33b6; verdict predates it (UNVERIFIED)."
+    },
+    {
+      "id": "R.5",
+      "title": "Release track \u00e2\u20ac\u201d host-targeted installer: --houdini-exe derivation + post-install host verification (P0.5)",
+      "mode": "A",
+      "claimed_status": "blocked_on:release_ratified",
+      "verdict": "open",
+      "anchor": "harness/state/release_readiness_verdict.json:3",
+      "note": "installer_host_targeted=false; installer has --verify but no --houdini-exe derivation."
+    },
+    {
+      "id": "R.6",
+      "title": "Release track \u00e2\u20ac\u201d CI covers the shipping surface: windows-latest lane + vendored-wheel LOAD probe (P0.6)",
+      "mode": "A",
+      "claimed_status": "blocked_on:release_ratified",
+      "verdict": "open",
+      "anchor": "harness/state/release_readiness_verdict.json:3",
+      "note": "ci_covers_shipping_surface=false."
+    },
+    {
+      "id": "R.7",
+      "title": "Release track \u00e2\u20ac\u201d shelf currency: PySide6-first clipboard + current installer message (P1, review Phase-1 item 5)",
+      "mode": "A",
+      "claimed_status": "blocked_on:release_ratified",
+      "verdict": "open",
+      "anchor": "harness/state/release_readiness_verdict.json:3",
+      "note": "shelf_current=false."
+    },
+    {
+      "id": "R.8",
+      "title": "Release track \u00e2\u20ac\u201d unknown-tool metadata fails closed: kill the silent set_parameter\u00e2\u2020\u2019INFORM default (P1-metadata)",
+      "mode": "A",
+      "claimed_status": "blocked_on:release_ratified",
+      "verdict": "open",
+      "anchor": "harness/state/release_readiness_verdict.json:3",
+      "note": "tool_metadata_single_source=false."
+    },
+    {
+      "id": "R.9",
+      "title": "Release track \u00e2\u20ac\u201d fail-closed security defaults: arm the process bridge + fail-closed auth (P1-consent + P1-auth)",
+      "mode": "A",
+      "claimed_status": "human_gate",
+      "verdict": "open",
+      "anchor": "harness/state/release_readiness_verdict.json:3",
+      "note": "process_bridge_armed=false AND auth_fail_closed=false. Human security gate never taken."
+    },
+    {
+      "id": "R.10",
+      "title": "Release track \u00e2\u20ac\u201d packaging self-containment: move shared/ into the installable package (P1, POST-stabilization by the review's own sequencing)",
+      "mode": "A",
+      "claimed_status": "blocked_on:release_ratified",
+      "verdict": "open",
+      "anchor": "harness/state/release_readiness_verdict.json:3",
+      "note": "packaging_self_contained=false; shared/ still root-level, PYTHONPATH-injected (packages/synapse.json:15)."
+    },
+    {
+      "id": "R.R",
+      "title": "Release track \u00e2\u20ac\u201d capstone release-readiness review: aggregate every R-check + human receipts + posture into the G1\u00e2\u20ac\u201cG10 map and the honest release label",
+      "mode": "A",
+      "claimed_status": "blocked_on:release_ratified",
+      "verdict": "open",
+      "anchor": "harness/state/release_readiness_verdict.json:1",
+      "note": "11 machine blockers + 6 pending human receipts; no STABLE label."
+    },
+    {
+      "id": "K.0",
+      "title": "Knowledge track \u00e2\u20ac\u201d baseline probe: snapshot corpus stats (reference-file count, lexical + semantic entry counts, retrieval mode, canonical-root check) to harness/notes/knowledge_baseline.json",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "harness/notes/knowledge_baseline.json:1",
+      "note": "Baseline deposited."
+    },
+    {
+      "id": "K.1",
+      "title": "Knowledge track \u00e2\u20ac\u201d build the offline semantic (embedding) index over rag/ so scout's already-coded dense-retrieval path activates (mode lexical_only -> hybrid). Fixes: retrieval was 100% BM25/keyword matching with zero paraphrase tolerance",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "rag/semantic_index/embeddings.npy:1",
+      "note": "embeddings.npy + meta.jsonl + manifest.json present."
+    },
+    {
+      "id": "K.2",
+      "title": "Knowledge track \u00e2\u20ac\u201d close the Tier-1 topic-coverage gap: every reference .md file gets a semantic_index topic + reference_file pointer (was 90/117; the 27 gaps were the highest-traffic files \u00e2\u20ac\u201d pyro, flip, vellum, sop_basics, rendering)",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "rag/documentation/_metadata/agent_relevance_map.json:1",
+      "note": "semantic_index.json + agent_relevance_map.json present; efb6da7 merged HOUDINI21_RAG into Tier 1."
+    },
+    {
+      "id": "K.3",
+      "title": "Knowledge track \u00e2\u20ac\u201d retire G:\\HOUDINI21_RAG_SYSTEM as scout's default RAG root (flip default to repo rag/, matching KnowledgeIndex), migrate its 803 orphaned SideFXLabs entries into rag/corpus/, archive root-level noise",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "python/synapse/cognitive/tools/scout.py:105",
+      "note": "scout.py:50 calls the G: store thin/orphaned; :105 shows repo rag/ is default."
+    },
+    {
+      "id": "K.5",
+      "title": "Knowledge track \u00e2\u20ac\u201d the freshness gate + one-command refresh: stamp the embedding index with a content digest of its rag/ source and RED the gate when they drift. THE 'easy to update for H22' mechanism \u00e2\u20ac\u201d makes doc drift loud, not silent",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "scripts/refresh_knowledge.py:1",
+      "note": "commit 7f8c268 freshness gate + one-command refresh."
+    },
+    {
+      "id": "K.4",
+      "title": "Knowledge track \u00e2\u20ac\u201d vex-corpus -> rag/ integration: the sync ALREADY RAN and produced 14 low-quality vex_corpus_*.md files now polluting scout. DECISION: block further sync; RECOMMEND pruning the 14 (pending a human Houdini-expert call)",
+      "mode": "A",
+      "claimed_status": "blocked_on:product_call",
+      "verdict": "superseded",
+      "anchor": "rag/skills/houdini21-reference/joy_of_vex_pcopen.md:1",
+      "note": "Ref vex_corpus_point_cloud_ops.md ABSENT -- the 14 vex_corpus_*.md are gone; surviving corpus is joy_of_vex_*. Decision folded into 7f8c268, superseded by K.6."
+    },
+    {
+      "id": "K.6",
+      "title": "Knowledge track \u00e2\u20ac\u201d the vex-corpus re-wire ADMISSION harness (Phase 1: go/no-go scorecard). Turns K.4's standing 'should we ever re-wire' into a computable per-batch verdict via a vcc compile-gate + dedup + redundancy-flag",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "harness/notes/rewire_assessment.json:1",
+      "note": "commit 68b1cba Phase 1 scorecard + scripts/rewire_assess.py."
+    },
+    {
+      "id": "T.0",
+      "title": "Tool-surface track - token baseline probe: measure the PRELOADED tool-definition cost on all three surfaces (mcp stdio / mcp http / panel), deposit harness/notes/token_baseline.json",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "done",
+      "anchor": "harness/notes/token_baseline.json:1",
+      "note": "commit 69149a7 'T.0 receipt'."
+    },
+    {
+      "id": "T.1",
+      "title": "Tool-surface track - deferred tool surface: three in-context verbs (tool_search / tool_describe / tool_execute) over an OFF-CONTEXT registry; parity gated so no tool is lost buying the token win",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "open",
+      "anchor": "python/synapse/mcp/_tool_registry.py:1",
+      "note": "tests/test_tool_surface.py absent; no tool_search/describe/execute verbs (the 'deferred' hits at :561,:568 are USD payload strings)."
+    },
+    {
+      "id": "T.2",
+      "title": "Tool-surface track - code mode: typed in-process API the agent writes code against, on the SHARED dispatch path (undo + consent + ledger + RBAC). Architecture RULED 2026-07-23; this task executes the ruling, it does not make it",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "open",
+      "anchor": "python/synapse/server/handlers.py:1",
+      "note": "tests/test_code_mode.py absent; ruling made 2026-07-23, execution not started."
+    },
+    {
+      "id": "T.3",
+      "title": "Tool-surface track - agent OUTCOME evals: promote graph_validator's probe-verified scoring into a frozen, ratcheted eval set. Distinct axis from the 4,275 code tests",
+      "mode": "A",
+      "claimed_status": "queued",
+      "verdict": "open",
+      "anchor": "harness/verify/checks.py:1",
+      "note": "tests/test_agent_evals.py absent; graph_validator scoring not promoted."
+    },
+    {
+      "id": "T.4",
+      "title": "Tool-surface track - the panel ruling: product or reference implementation. FROZEN meanwhile - no new feature surface during T",
+      "mode": "A",
+      "claimed_status": "human_gate",
+      "verdict": "open",
+      "anchor": "harness/notes/spec-T-tool-surface.md:1",
+      "note": "Human gate, unruled. Freezes new panel feature surface by its own terms."
+    }
+  ],
+  "counts": {
+    "done": 30,
+    "open": 44,
+    "stale": 0,
+    "superseded": 6
+  }
+}
