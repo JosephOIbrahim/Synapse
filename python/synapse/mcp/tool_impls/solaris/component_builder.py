@@ -51,7 +51,20 @@ def _stamp_provenance(node, info: Dict[str, Any]) -> None:
 
 
 def _has_native_componentbuilder() -> bool:
-    """Check if 'componentbuilder' exists as a native LOP node type in this Houdini."""
+    """Check if 'componentbuilder' exists as a native LOP node type in this Houdini.
+
+    F10. REFUTED-LIVE on 22.0.368: `componentbuilder` is NOT among the 218 live
+    LOP types. "Component Builder" is a shelf tool that drops a subnet built
+    from four real types — componentgeometry, componentgeometryvariants,
+    componentmaterial, componentoutput — not a node type of its own. So this
+    probe returns False on every current build and Path A below is dead code
+    today. The subnet fallback (Path B) is the ONLY working strategy and is
+    deliberately retained; the probe stays so a future SideFX build that does
+    ship the type is picked up rather than assumed.
+
+    `tests/solaris/test_live_wiring.py::test_f10_componentbuilder_type_is_absent_on_this_build`
+    pins the absence and turns red the day it changes.
+    """
     # hou.nodeType(category, name) returns None if type doesn't exist
     try:
         cat = hou.lopNodeTypeCategory()

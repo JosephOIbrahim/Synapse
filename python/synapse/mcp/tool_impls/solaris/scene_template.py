@@ -52,8 +52,33 @@ def _stamp_provenance(node, info: Dict[str, Any]) -> None:
         pass
 
 
+# F8/Ruling 15: `parent_path` is the convergent key; `parent` stays a accepted
+# alias for the existing schema + callers. Anything else is a caller bug and
+# must be loud — silently defaulting an unrecognised key to /stage is how
+# `parent_path` was ignored outright.
+PARENT_KEYS = ("parent_path", "parent")
+
+KNOWN_PARAMS = frozenset({
+    "scene_name", "sop_paths", "render_engine", "resolution", "output_path",
+} | set(PARENT_KEYS))
+
+
+def _resolve_parent_path(params: Dict) -> str:
+    for key in PARENT_KEYS:
+        val = params.get(key)
+        if val:
+            return val
+    return "/stage"
+
+
 def validate(params: Dict) -> None:
     """Validate parameters."""
+    unknown = sorted(set(params) - KNOWN_PARAMS)
+    if unknown:
+        raise ValidationError(
+            f"unknown parameter(s): {', '.join(unknown)} — "
+            f"accepted: {', '.join(sorted(KNOWN_PARAMS))}"
+        )
     scene_name = params.get("scene_name", "shot")
     import re
     if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', scene_name):
@@ -163,7 +188,7 @@ def execute(params: Dict) -> Dict:
     validate(params)
 
     scene_name = params.get("scene_name", "shot")
-    parent_path = params.get("parent", "/stage")
+    parent_path = _resolve_parent_path(params)
     sop_paths = params.get("sop_paths", [])
     render_engine = params.get("render_engine", "karma_xpu")
     resolution = params.get("resolution", [1920, 1080])

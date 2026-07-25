@@ -164,12 +164,23 @@ def execute(params: Dict) -> Dict:
             # Component Geometry
             geo_node = comp.createNode("componentgeometry", f"geo_{asset_name}")
 
-            # Build SOP chain inside Component Geometry
-            # componentgeometry contains a SOP network — access it
+            # F9: `componentgeometry` is a LOCKED HDA on 22.0.368
+            # (isLockedHDA() is True) — createNode directly on it raises
+            # hou.PermissionError. The only writable descendant is the
+            # `sopnet/geo` subnet, which already carries the
+            # default/proxy/simproxy/alternative output nodes. Build there.
+            # Do NOT unlock the asset.
+            sop_geo = geo_node.node("sopnet/geo")
+            if sop_geo is None:
+                raise NodeNotFoundError(
+                    f"{geo_node.path()}/sopnet/geo",
+                    suggestion="componentgeometry's writable SOP subnet is missing",
+                )
+
             sop_nodes = []
 
             # USD Import
-            usd_imp = geo_node.createNode("usdimport", "import_usdc")
+            usd_imp = sop_geo.createNode("usdimport", "import_usdc")
             filepath_parm = usd_imp.parm("filepath")
             if filepath_parm:
                 filepath_parm.set(usdc_path)
@@ -180,7 +191,7 @@ def execute(params: Dict) -> Dict:
             sop_nodes.append(usd_imp)
 
             # Transform (scale 0.01)
-            xform_scale = geo_node.createNode("xform", "scale_to_houdini")
+            xform_scale = sop_geo.createNode("xform", "scale_to_houdini")
             scale_parm = xform_scale.parm("scale")
             if scale_parm:
                 scale_parm.set(scale_factor)
@@ -198,7 +209,7 @@ def execute(params: Dict) -> Dict:
 
             # Match Size (ground asset)
             if ground_asset:
-                matchsize = geo_node.createNode("matchsize", "ground_asset")
+                matchsize = sop_geo.createNode("matchsize", "ground_asset")
                 # Justify Y: Minimum — parm varies by H version
                 for pname in ("justify_y", "justifyy"):
                     p = matchsize.parm(pname)
@@ -211,7 +222,7 @@ def execute(params: Dict) -> Dict:
 
             # Optional rotation correction
             if rotation_correction and len(rotation_correction) == 3:
-                xform_rot = geo_node.createNode("xform", "rotation_fix")
+                xform_rot = sop_geo.createNode("xform", "rotation_fix")
                 for i, axis in enumerate(("rx", "ry", "rz")):
                     p = xform_rot.parm(axis)
                     if p:
@@ -221,21 +232,30 @@ def execute(params: Dict) -> Dict:
                 prev = xform_rot
 
             # PolyReduce for proxy
-            polyreduce = geo_node.createNode("polyreduce", "proxy_reduce")
+            polyreduce = sop_geo.createNode("polyreduce", "proxy_reduce")
             pct_parm = polyreduce.parm("percentage")
             if pct_parm:
                 pct_parm.set(proxy_reduction * 100)  # polyreduce uses 0-100
             polyreduce.setInput(0, prev)
             sop_nodes.append(polyreduce)
 
-            # Wire to default output (render) and proxy output
-            # The full-res chain connects to "default", polyreduce to "proxy"+"simproxy"
-            # This wiring depends on componentgeometry's internal output structure
+            # Wire to the componentgeometry purpose outputs that already live
+            # inside sopnet/geo: full-res chain -> `default` (render purpose),
+            # the reduced mesh -> `proxy` and `simproxy`.
+            for out_name, src in (
+                ("default", prev),
+                ("proxy", polyreduce),
+                ("simproxy", polyreduce),
+            ):
+                out_sop = sop_geo.node(out_name)
+                if out_sop is not None:
+                    out_sop.setInput(0, src)
 
-            geo_node.layoutChildren()
+            sop_geo.layoutChildren()
 
             # Material import via Reference LOP
             mat_ref_path = None
+            ref_lop = None
             if import_materials:
                 ref_lop = comp.createNode("reference", f"mtl_ref_{asset_name}")
                 fp = ref_lop.parm("filepath1")
@@ -252,6 +272,10 @@ def execute(params: Dict) -> Dict:
             # Component Material
             mat_node = comp.createNode("componentmaterial", f"mat_{asset_name}")
             mat_node.setInput(0, geo_node)
+            # F3: componentmaterial input 1 is named `input2` and is the
+            # material source. The reference LOP was created but never wired.
+            if ref_lop is not None:
+                mat_node.setInput(1, ref_lop)
 
             # Component Output
             out_node = comp.createNode("componentoutput", f"output_{asset_name}")

@@ -168,10 +168,21 @@ def test_set_purpose_map_matches_the_tool():
     assert set(v_purpose.EXPECTED_PURPOSE_MAP) == {"render", "proxy", "simproxy"}
 
 
-def test_set_purpose_cannot_distinguish_applied_from_skipped():
-    """FINDING F7: both return paths report status='set'."""
+def test_set_purpose_distinguishes_applied_from_skipped():
+    """FINDING F7, repaired in SR1 M4 -- pin flipped per this test's own
+    instruction ("F7 appears fixed -- update this pin and the finding").
+
+    This used to assert the defect: two return paths both said status="set",
+    so applied and not-applied were indistinguishable. M4 removed the dead
+    `componentgeometry.parm("purpose")` branch (REFUTED-LIVE on 22.0.368) and
+    authors through the `configureprimitive` LOP instead; the path that cannot
+    resolve a target prim now returns "noop". One "set" path remains, and it
+    is proven live by
+    `tests/solaris/test_live_wiring.py::test_f7_set_purpose_authors_a_real_usd_purpose_live`
+    via a UsdGeom readback off the cooked stage.
+    """
     check = v_purpose.silent_fallback_check()
-    assert check.ok is False, "F7 appears fixed -- update this pin and the finding"
+    assert check.ok is True, check.detail
 
 
 # ------------------------------------------------------------ tool_audit ---

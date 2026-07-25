@@ -150,6 +150,11 @@ def execute(params: Dict) -> Dict:
                         base_mat = child
                         break
 
+                # F4: hou.copyNodesTo does NOT carry connections that originate
+                # outside the copied set, so the duplicates land unwired.
+                # Capture the base node's inputs and re-establish them explicitly.
+                base_inputs = list(base_mat.inputs()) if base_mat else []
+
                 for v in variants:
                     vname = v["name"]
                     # Duplicate componentmaterial
@@ -158,6 +163,11 @@ def execute(params: Dict) -> Dict:
                         new_mat.setName(f"mat_{vname}", unique_name=True)
                     else:
                         new_mat = comp.createNode("componentmaterial", f"mat_{vname}")
+
+                    # F4: re-establish the connections the copy dropped.
+                    for idx, src in enumerate(base_inputs):
+                        if src is not None:
+                            new_mat.setInput(idx, src)
 
                     # Apply material params if provided
                     mat_params = v.get("material", {})
@@ -184,26 +194,40 @@ def execute(params: Dict) -> Dict:
                         new_geo = comp.createNode("componentgeometry", f"geo_{vname}")
                     created.append(new_geo)
 
-                # Create Component Geometry Variants node to merge
-                try:
-                    geo_variants = comp.createNode("componentgeometryvariants", "geo_variants")
-                    # Wire all geometry variant nodes into it
-                    for i, geo_node in enumerate(created):
-                        geo_variants.setInput(i, geo_node)
-                    created.append(geo_variants)
-                except Exception:
-                    # componentgeometryvariants may not exist — log but don't fail
-                    pass
+                # Create Component Geometry Variants node to merge.
+                # F6: no bare `except: pass` here. If this cannot be built the
+                # call raises — a status of "created" must never describe a
+                # component whose variant merge silently never happened.
+                geo_variants = comp.createNode("componentgeometryvariants", "geo_variants")
+
+                # Wire the base geometry plus every variant copy into it.
+                merge_sources = ([base_geo] if base_geo is not None else []) + created
+                for i, geo_node in enumerate(merge_sources):
+                    geo_variants.setInput(i, geo_node)
+
+                # F5: the merge node must reach the terminal. Whatever used to
+                # consume the base geometry (componentmaterial, typically) now
+                # consumes the variant set instead, so the component presents
+                # ONE terminal LOP rather than two.
+                if base_geo is not None:
+                    gv_path = geo_variants.path()
+                    for consumer in base_geo.outputs():
+                        if consumer.path() == gv_path:
+                            continue
+                        for idx, src in enumerate(consumer.inputs()):
+                            if src is not None and src.path() == base_geo.path():
+                                consumer.setInput(idx, geo_variants)
+
+                created.append(geo_variants)
 
             # Add Explore Variants node (outside the component, in the parent)
+            # F6: failures propagate rather than being swallowed into a
+            # "created" status with an unbuilt node.
             explore_path = None
             if add_explore:
-                try:
-                    explore = parent.createNode("explorevariants", f"explore_{comp.name()}")
-                    explore.setInput(0, comp)
-                    explore_path = explore.path()
-                except Exception:
-                    pass
+                explore = parent.createNode("explorevariants", f"explore_{comp.name()}")
+                explore.setInput(0, comp)
+                explore_path = explore.path()
 
             comp.layoutChildren()
             if parent:

@@ -1,18 +1,15 @@
 """
 Tests for synapse_solaris_component_builder — RELAY-SOLARIS Phase 3
 
-Tests validate, plan, and execute (with mock Houdini).
-No live Houdini required.
+Tests validate() and plan() — pure Python, no `hou`.
+Host-behaviour assertions live in test_live_wiring.py (hython-gated).
 """
 
 import pytest
-import sys
-from unittest.mock import MagicMock, patch
 
 # Import the tool module's validate/plan functions (pure Python, no hou)
 # We need to handle the relative import by adjusting sys.path or mocking
-import sys; cb_mod = sys.modules["synapse.mcp.tool_impls.solaris.component_builder"]
-from synapse.mcp.tool_impls.solaris.component_builder import validate, plan, execute, _SOURCE_PATTERN, _TOOL_NAME
+from synapse.mcp.tool_impls.solaris.component_builder import validate, plan, _SOURCE_PATTERN, _TOOL_NAME
 
 
 class TestComponentBuilderValidation:
@@ -128,50 +125,7 @@ class TestComponentBuilderPlan:
         assert len(geo_ops) == 1
         assert geo_ops[0]["source"] == "/obj/geo1"
 
-
-class TestComponentBuilderExecute:
-    """Execute tests with mock Houdini."""
-
-    def test_idempotent_returns_already_exists(self, mock_stage, mock_hou):
-        """Second call with same params returns already_exists."""
-
-        # Pre-create the component so it already exists
-        mock_stage.createNode("subnet", "component_test_asset")
-
-        with patch.object(cb_mod, "hou", mock_hou):
-            with patch.object(cb_mod, "HOU_AVAILABLE", True):
-                mock_hou.node.side_effect = lambda p: mock_stage if p == "/stage" else None
-                result = execute({"asset_name": "test_asset"})
-
-        assert result["status"] == "already_exists"
-
-    def test_creates_subnet_when_native_unavailable(self, mock_stage, mock_hou):
-        """When componentbuilder doesn't exist, creates subnet with internal wiring."""
-
-        with patch.object(cb_mod, "hou", mock_hou):
-            with patch.object(cb_mod, "HOU_AVAILABLE", True):
-                with patch.object(cb_mod, "_has_native_componentbuilder", return_value=False):
-                    mock_hou.node.side_effect = lambda p: mock_stage if p == "/stage" else None
-                    mock_hou.undos.group.return_value = MagicMock(__enter__=MagicMock(), __exit__=MagicMock(return_value=False))
-                    result = execute({"asset_name": "chair"})
-
-        assert result["status"] == "created"
-        assert result["strategy"] == "subnet"
-        assert "componentgeometry" in result["internal_nodes"]
-        assert "componentmaterial" in result["internal_nodes"]
-        assert "componentoutput" in result["internal_nodes"]
-
-    def test_stamps_provenance(self, mock_stage, mock_hou):
-        """Created nodes get provenance user data."""
-
-        with patch.object(cb_mod, "hou", mock_hou):
-            with patch.object(cb_mod, "HOU_AVAILABLE", True):
-                with patch.object(cb_mod, "_has_native_componentbuilder", return_value=False):
-                    mock_hou.node.side_effect = lambda p: mock_stage if p == "/stage" else None
-                    mock_hou.undos.group.return_value = MagicMock(__enter__=MagicMock(), __exit__=MagicMock(return_value=False))
-                    result = execute({"asset_name": "lamp"})
-
-        comp_node = mock_stage._children.get("component_lamp")
-        assert comp_node is not None
-        assert comp_node.userData("synapse:tool") == _TOOL_NAME
-        assert comp_node.userData("synapse:source_pattern") == _SOURCE_PATTERN
+# SR1 M3: the mock-`hou` execute tests that stood here are DELETED per
+# Constitution Law 1 / Ruling 12 item 3. Host-behaviour assertions for this
+# tool now live in `tests/solaris/test_live_wiring.py`, gated on a real
+# `import hou` and executed under hython 22.0.368.

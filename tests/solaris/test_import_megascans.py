@@ -3,10 +3,8 @@ Tests for synapse_solaris_import_megascans — RELAY-SOLARIS Phase 3
 """
 
 import pytest
-from unittest.mock import MagicMock, patch
 
-import sys; ms_mod = sys.modules["synapse.mcp.tool_impls.solaris.import_megascans"]
-from synapse.mcp.tool_impls.solaris.import_megascans import validate, plan, execute, _SOURCE_PATTERN, _TOOL_NAME
+from synapse.mcp.tool_impls.solaris.import_megascans import validate, plan, _SOURCE_PATTERN, _TOOL_NAME
 
 
 class TestImportMegascansValidation:
@@ -104,28 +102,7 @@ class TestImportMegascansPlan:
         assert len(prov) == 1
         assert prov[0]["source_pattern"] == _SOURCE_PATTERN
 
-
-class TestImportMegascansExecute:
-
-    def test_idempotent(self, mock_stage, mock_hou):
-
-        mock_stage.createNode("subnet", "component_rock")
-
-        with patch.object(ms_mod, "hou", mock_hou):
-            with patch.object(ms_mod, "HOU_AVAILABLE", True):
-                mock_hou.node.side_effect = lambda p: mock_stage if p == "/stage" else None
-                result = execute({"usdc_path": "/tmp/rock.usdc", "asset_name": "rock"})
-
-        assert result["status"] == "already_exists"
-
-    def test_creates_sop_chain(self, mock_stage, mock_hou):
-
-        with patch.object(ms_mod, "hou", mock_hou):
-            with patch.object(ms_mod, "HOU_AVAILABLE", True):
-                mock_hou.node.side_effect = lambda p: mock_stage if p == "/stage" else None
-                mock_hou.undos.group.return_value = MagicMock(__enter__=MagicMock(), __exit__=MagicMock(return_value=False))
-                result = execute({"usdc_path": "/tmp/rock.usdc", "asset_name": "rock"})
-
-        assert result["status"] == "created"
-        assert len(result["geometry_nodes"]) >= 3  # import, xform, matchsize, polyreduce
-        assert result["material_reference"] is not None
+# SR1 M3: the mock-`hou` execute tests that stood here are DELETED per
+# Constitution Law 1 / Ruling 12 item 3. Host-behaviour assertions for this
+# tool now live in `tests/solaris/test_live_wiring.py`, gated on a real
+# `import hou` and executed under hython 22.0.368.

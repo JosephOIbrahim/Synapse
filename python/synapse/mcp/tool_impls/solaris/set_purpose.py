@@ -37,6 +37,23 @@ PURPOSE_OUTPUT_MAP = {
     "simproxy": "sim proxy",
 }
 
+# F7. VERIFIED-RUNTIME on 22.0.368: `componentgeometry` exposes NO `purpose`
+# parm (57 parms enumerated, absent) — the old code's `geo_node.parm("purpose")`
+# branch was permanently dead and the fallback lied. The real authoring
+# mechanism is the `configureprimitive` LOP (singular; `configureprimitives` is
+# a PHANTOM type), which carries `setpurpose` + `purpose`. Readback via
+# UsdGeom.Imageable(prim).GetPurposeAttr() confirmed end-to-end.
+#
+# USD allows exactly these purpose tokens.
+USD_PURPOSE_TOKENS = ("default", "render", "proxy", "guide")
+
+# Our purpose vocabulary → the USD token authored on the prim.
+PURPOSE_USD_TOKEN_MAP = {
+    "render": "render",
+    "proxy": "proxy",
+    "simproxy": "guide",
+}
+
 
 def _stamp_provenance(node, info: Dict[str, Any]) -> None:
     try:
@@ -45,6 +62,43 @@ def _stamp_provenance(node, info: Dict[str, Any]) -> None:
         node.setUserData("synapse:reasoning", info.get("reasoning", ""))
     except Exception:
         pass
+
+
+def _infer_prim_path(comp, geo_node) -> Optional[str]:
+    """Best-effort target prim path, read off the geometry node's own stage.
+
+    Asking the geometry what it actually authored beats guessing from names.
+    VERIFIED-RUNTIME 22.0.368: a bare `componentgeometry` authors `/ASSET` and
+    `/ASSET/geo`, so the top-level prim is the right purpose target.
+
+    Falls back to the componentoutput's `rootprim`. Returns None when neither
+    resolves — the caller then reports `noop` rather than claiming a purpose it
+    never authored.
+    """
+    try:
+        stage = geo_node.stage()
+    except Exception:
+        stage = None
+    if stage is not None:
+        for prim in stage.GetPseudoRoot().GetChildren():
+            name = prim.GetName()
+            if name == "HoudiniLayerInfo":
+                continue
+            return str(prim.GetPath())
+
+    for child in comp.children():
+        if "componentoutput" not in child.type().name().lower():
+            continue
+        p = child.parm("rootprim")
+        if p is None:
+            continue
+        try:
+            val = p.evalAsString().strip()
+        except Exception:
+            continue
+        if val:
+            return val if val.startswith("/") else f"/{val}"
+    return None
 
 
 def validate(params: Dict) -> None:
@@ -116,44 +170,61 @@ def execute(params: Dict) -> Dict:
             "message": f"No componentgeometry node found in {component_path}",
         }
 
-    try:
-        with hou.undos.group(f"SYNAPSE: Set purpose '{purpose}'"):
-            # The purpose is controlled by which output of Component Geometry
-            # is connected. The geometry wired to the "default" output gets
-            # render purpose, "proxy" output gets proxy purpose, etc.
-            #
-            # For setting purpose on existing geometry, we look for the
-            # purpose-related parameters on the componentgeometry node.
-            # The actual mechanism varies by H version — try common parm names.
+    # Which prim are we authoring onto? Explicit beats guessing.
+    prim_path = params.get("prim_path") or _infer_prim_path(comp, geo_node)
+    if not prim_path:
+        # Law 3: nothing was authored, so nothing is claimed.
+        return {
+            "status": "noop",
+            "geometry_path": geo_node.path(),
+            "purpose": purpose,
+            "reason": (
+                "cannot determine the target prim path — pass `prim_path` "
+                "explicitly, or give the component a componentoutput node "
+                "with a 'name' parameter"
+            ),
+        }
 
-            purpose_parm = geo_node.parm("purpose")
-            if purpose_parm:
-                purpose_parm.set(purpose)
-                _stamp_provenance(geo_node, {
-                    "tool": _TOOL_NAME,
-                    "source_pattern": _SOURCE_PATTERN,
-                    "reasoning": f"Set purpose to '{purpose}' (output: {output_name})",
-                })
-                return {
-                    "status": "set",
-                    "geometry_path": geo_node.path(),
-                    "purpose": purpose,
-                }
+    usd_token = PURPOSE_USD_TOKEN_MAP[purpose]
 
-            # Fallback: try setting via USD attribute if direct parm doesn't exist
-            # This is a best-effort approach — may need live Houdini verification
-            _stamp_provenance(geo_node, {
-                "tool": _TOOL_NAME,
-                "source_pattern": _SOURCE_PATTERN,
-                "reasoning": f"Set purpose to '{purpose}' via output mapping",
-            })
+    with hou.undos.group(f"SYNAPSE: Set purpose '{purpose}'"):
+        cfg = comp.createNode("configureprimitive", f"purpose_{purpose}")
+        pattern_parm = cfg.parm("primpattern")
+        set_parm = cfg.parm("setpurpose")
+        value_parm = cfg.parm("purpose")
+        if pattern_parm is None or set_parm is None or value_parm is None:
+            raise ValidationError(
+                "configureprimitive is missing setpurpose/purpose/primpattern "
+                f"on this build ({hou.applicationVersionString()}) — "
+                "purpose cannot be authored"
+            )
+        pattern_parm.set(prim_path)
+        set_parm.set(1)
+        value_parm.set(usd_token)
 
-            return {
-                "status": "set",
-                "geometry_path": geo_node.path(),
-                "purpose": purpose,
-                "note": "Purpose set via output wiring convention, not direct parameter",
-            }
+        # Wire it downstream of the geometry so it actually participates.
+        cfg.setInput(0, geo_node)
+        for consumer in geo_node.outputs():
+            if consumer.path() == cfg.path():
+                continue
+            for idx, src in enumerate(consumer.inputs()):
+                if src is not None and src.path() == geo_node.path():
+                    consumer.setInput(idx, cfg)
 
-    except Exception:
-        raise
+        _stamp_provenance(cfg, {
+            "tool": _TOOL_NAME,
+            "source_pattern": _SOURCE_PATTERN,
+            "reasoning": (
+                f"Authored USD purpose '{usd_token}' on {prim_path} via "
+                f"configureprimitive (output convention: {output_name})"
+            ),
+        })
+
+        return {
+            "status": "set",
+            "geometry_path": geo_node.path(),
+            "configure_node": cfg.path(),
+            "prim_path": prim_path,
+            "purpose": purpose,
+            "usd_purpose": usd_token,
+        }
