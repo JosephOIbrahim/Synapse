@@ -1,4 +1,4 @@
-# CTO-RELAY-01 watcher. Toast on EACH leg landing, and on completion or death.
+﻿# CTO-RELAY-01 watcher. Toast on EACH leg landing, and on completion or death.
 param([int]$RelayPid = 62808, [int]$PollSeconds = 20, [int]$MaxHours = 6)
 
 $ErrorActionPreference = 'SilentlyContinue'
@@ -19,7 +19,11 @@ function Notify([string]$title, [string]$body) {
             [Windows.UI.Notifications.ToastNotification]::new($t))
     } catch {
         Add-Type -AssemblyName System.Windows.Forms
-        [System.Windows.Forms.MessageBox]::Show($body, $title) | Out-Null
+        $ni = New-Object System.Windows.Forms.NotifyIcon
+        $ni.Icon = [System.Drawing.SystemIcons]::Information
+        $ni.Visible = $true
+        $ni.ShowBalloonTip(8000, $title, $body, [System.Windows.Forms.ToolTipIcon]::Info)
+        Start-Sleep -Seconds 9; $ni.Dispose()
     }
     1..2 | ForEach-Object { [console]::beep(880, 160); Start-Sleep -Milliseconds 80 }
 }
@@ -44,7 +48,13 @@ while ((Get-Date) -lt $deadline) {
                 $failed = $j.suite.failed
             } catch { }
             $done = @($seen.Keys).Count
-            Notify "$k $($legs[$k]) - $status  ($done/6)" "$ruling ruling items. suite failed: $failed. Nothing pushed."
+$plain = switch ($status) {
+    'green' { 'clean' }
+    'amber' { 'passed, debt logged' }
+    'red'   { 'ORACLE FAILED - needs you' }
+    default { $status }
+}
+Notify "$k $($legs[$k]) - $plain  ($done/6)" "$ruling items for your ruling. Suite failures: $failed. Nothing pushed - Gate C is yours."
             Write-Host ("{0}  {1} landed [{2}]  {3}/6" -f (Get-Date -Format 'HH:mm:ss'), $k, $status, $done)
         }
     }
