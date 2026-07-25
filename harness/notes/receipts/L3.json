@@ -1,0 +1,141 @@
+{
+  "leg": "L3",
+  "name": "PANEL TRUTH",
+  "schema": "receipt/v1",
+  "started": "2026-07-25T03:25:00Z",
+  "ended": "2026-07-25T04:45:00Z",
+  "status": "amber",
+  "status_reason": "All three oracle clauses PASS: the matrix exists and is complete, every affordance carries a file:line anchor, and ORPHAN/SILENT are reported as integers. Amber because the audit surfaced two CRITICAL SILENT-class defects in the shipped tree and because 2 of 5 G3 slices have no baseline (hython-offscreen invocation was permission-denied).",
+  "commit_at_run": "1e135a2",
+  "mode": "B",
+  "agents": ["cartographer", "panel-design-warden"],
+  "t4": "NOT DECIDED. Both agents explicitly declined to make any product-identity assertion. T.4 remains frozen.",
+
+  "suite": { "before": 4744, "after": 4744, "delta": 0, "failed": 0, "skipped": 100 },
+  "commits": [],
+  "source_commits": 0,
+  "source_commits_note": "ZERO commits to source, as the leg requires. ARCHITECT does not mutate.",
+
+  "artifacts": ["harness/notes/panel_capability_matrix.json", "harness/notes/panel_token_inventory_before.json"],
+
+  "oracle": {
+    "matrix_exists_and_complete": "PASS - 59 affordances, 42.5 KB",
+    "every_affordance_anchored": "PASS",
+    "orphan_and_silent_as_integers": "PASS - ORPHAN 17, SILENT 7"
+  },
+
+  "counts": { "LIVE": 35, "ORPHAN": 17, "SILENT": 7, "total": 59 },
+  "panel_scale": { "loc": 27103, "modules": 71, "reachable_from_entrypoint": 41, "unreachable": 24 },
+
+  "orphans": {
+    "count": 17,
+    "all_in": "the chat_panel.py tree, unreachable from the shipped entrypoint",
+    "root_evidence": "install.py:37 ships only houdini/python_panels/synapse_panel.pypanel, which loads synapse.panel.synapse_panel.onCreateInterface. The only loader for SynapseChatPanel is python/synapse/panel/synapse_chat.pypanel:36 - NOT installed. chat_panel.py has zero non-test importers.",
+    "list": ["HALT emergency halt (chat_panel.py:595)","Connect toggle (:603)","Copy WS URL (:612)","Aa font size (:432)","Send (:439)","Mode Chat (:682)","Mode HDA (:692)","Chat context menu (:252)","Ctrl+L clear chat (:355)","focus-input shortcut (:360)","Esc shortcut (:365)","Quick action pills row (quick_actions.py:149)","Quick action chevron (quick_actions.py:127)","HDA Generate (hda_views.py:108)","HDA Cancel (hda_views.py:213)","HDA result actions (hda_views.py:337)","HDA New (hda_views.py:348)"],
+    "L4_constraint": "L4 is FORBIDDEN from restyling any of these. Removing them is a T.4-adjacent product call and T.4 is frozen - so L4 does neither. It leaves the dead tree alone."
+  },
+
+  "silent": {
+    "count": 7,
+    "note": "The dangerous class, and all 7 are in the SHIPPED tree. Same disease L2 found in Solaris set_purpose.",
+    "list": [
+      { "id": "S1", "label": "COMMIT TO /STAGE?", "anchor": "python/synapse/panel/synapse_panel.py:1180", "detail": "Announces 'Commit to /stage requested - routing through the consent gate', then calls only _set_work_substate('done'). No GateProposal is created, no /stage write is issued, nothing is queued. The chat message asserts a routing that does not occur.", "severity": "critical" },
+      { "id": "S2", "label": "Gate Approve", "anchor": "python/synapse/panel/gate_widget.py:486", "detail": "The except at :490 only LOGS; card.mark_decided('approved') and decision_announced.emit fire UNCONDITIONALLY. If HumanGate is absent or decide() raises, the artist sees an approval that never reached the gate.", "severity": "critical" },
+      { "id": "S3", "label": "Gate Reject", "anchor": "python/synapse/panel/gate_widget.py:505", "detail": "Same unconditional mark_decided after a swallowed exception. More dangerous direction than S2 - a rejection that never landed still reads as rejected.", "severity": "critical" },
+      { "id": "S4", "label": "ACCEPT", "anchor": "python/synapse/panel/synapse_panel.py:1163", "detail": "Prints 'Accepted - keeping the result' and switches face. No persist, no gate, no state write. tests/test_panel_faces.py:168 calls it and asserts only face state - the test PINS the no-op.", "severity": "debt" },
+      { "id": "S5", "label": "open render view", "anchor": "python/synapse/panel/synapse_panel.py:1192", "detail": "Imports hou, then bare return at :1206. Documented D1 halt. Button is enabled and gives zero feedback.", "severity": "debt" },
+      { "id": "S6", "label": "21 slash-command palette entries", "anchor": "python/synapse/panel/tool_palette.py:119", "detail": "The entry's `send` string is the DESCRIPTION TEXT, not a dispatch. Picking /diagnose sends prose to the LLM; scene_doctor.py (737 LOC) never runs. Applies to /diagnose /fix /explain /trace /journal /preflight /vex /apex x6 /scene /inspect /search /login /hda /recipes /help.", "severity": "blocker" },
+      { "id": "S7", "label": "Session token meter", "anchor": "python/synapse/panel/synapse_panel.py:507", "detail": "_note_usage has ZERO callers anywhere. Permanently-empty readout; the in-file comment admits it.", "severity": "debt" }
+    ]
+  },
+
+  "reverse_map": {
+    "count": 17,
+    "headline": "All 115 registry tools DO have a panel surface (Ctrl+K palette) and execute IN-PROCESS via ToolExecutor -> SynapseHandler - independent of the down WS bridge. The gap is not at the tool layer; it is at the panel-module layer.",
+    "notable": [
+      "Emergency halt has NO surface in the shipped panel - HALT lives only in the dead chat_panel tree. Safety Rule 11 has no live surface.",
+      "Stop cannot cancel an in-flight tool (synapse_panel.py:1722, deferred by comment).",
+      "~10,500 LOC of implemented feature modules have zero callers: scene_doctor 737, apex_explainer 873, apex_trace 819, explain_mode 599, network_trace 589, error_translator 532, dependency_map 530, save_shot 514, performance_profiler 500, cross_scene 480, shot_login 476, prompt_to_hda 433, session_journal 289, bookmarks 275, agent_prompts 199, hda_controller 180, image_prep 100, context_bar 662, quick_actions 208, hda_views 444, ws_bridge 472, theme_source 95."
+    ]
+  },
+
+  "ui_package": {
+    "verdict": "archive",
+    "loc": 1347,
+    "files": 8,
+    "evidence": "CLAUDE.md's 'the legacy ui/ tree is dead' is CONFIRMED by the import graph, not merely asserted. git grep synapse.ui returns 9 files; excluding self-references NONE is a functional import: pyproject.toml:128 is a mypy module override; panel/__init__.py:5 is a stale comment claiming imports are deferred to synapse.ui while __all__ is empty with zero code; synapse_chat.pypanel:30 is a comment in an uninstalled file; tests/test_v5_features.py:54 is an import-smoke test artificially keeping it alive.",
+    "note": "The brief's figure of 1,076 LOC is low; real is 1,347."
+  },
+
+  "providers": {
+    "claimed": 5,
+    "implemented": 5,
+    "usable_out_of_box": 1,
+    "real_loc": 1506,
+    "brief_claimed_loc": 136,
+    "loc_correction": "The relay's '136 LOC' is wrong by an order of magnitude. providers/ is 1,506 LOC across 9 files and all five engines ARE implemented. The honest deficiency is not 'the code is missing' - it is that only claude works without configuration.",
+    "engines": [
+      { "name": "claude", "status": "implemented, default, needs ANTHROPIC_API_KEY", "anchor": "python/synapse/panel/providers/anthropic_provider.py:31" },
+      { "name": "gemini", "status": "implemented, own StreamProvider + SSE parser", "anchor": "python/synapse/panel/providers/gemini_provider.py:31" },
+      { "name": "nemotron", "status": "implemented, OpenAI-compatible transport", "anchor": "python/synapse/panel/providers/nemotron_provider.py:216" },
+      { "name": "ollama", "status": "implemented, thin Nemotron subclass, local, no key", "anchor": "python/synapse/panel/providers/ollama_provider.py:56" },
+      { "name": "custom", "status": "implemented but UNCONFIGURED by default - models_for() returns empty until the 3-field dialog is filled", "anchor": "python/synapse/panel/providers/custom_provider.py:28" }
+    ]
+  },
+
+  "design_baseline": {
+    "g3_strict": { "verdict": "pass, 2 WARN", "exit_code": 0, "qualifier": "PARTIAL GREEN - contrast + type scale + sweep only. The two WARN are skipped slices: live offscreen build and v9 invariants." },
+    "seeded_contrast_sweep": { "result": "PASS all seeds", "worst_body_realistic": "5.3:1 at seed(95,surface), floor 4.5", "worst_body_any": "3.9:1 at seed(117,surface), floor 3.5", "worst_secondary": "3.9:1 at seed(117,surface), floor 3.0", "note": "The contrast-aware path IS exercised - audit_panel.py:127 binds _derive_palette and hard-fails if absent. Dense sweep: every grey 0..255 x 3 surface roles." },
+    "token_inventory": { "artifact": "harness/notes/panel_token_inventory_before.json", "count": 162, "breakdown": "tokens.py 40 + designsystem/tokens.py 86 + 36 names referenced by styles.py" },
+    "cyan_blue_gremlin": {
+      "sources": 3,
+      "detail": "designsystem/tokens.py:29 = #8FB3D9 (correct); tokens.py:39 = #00D4FF (legacy cyan headless fallback); ~/.synapse/design/tokens.py:21 = #00D4FF - OUT OF REPO, injected onto sys.path by tokens.py:15 and re-exported.",
+      "live_counts": "#00D4FF at 6 sites, #8FB3D9 at 2 sites, symbolic SIGNAL at 114 refs across 19 files",
+      "stale_note": "The prior '11 cyan vs 20 blue' note does NOT reproduce at these numbers. Treat it as stale.",
+      "warning": "Do NOT naively unify. _ds.SIGNAL was surgically threaded into styles.py:10 precisely to avoid touching the sources; naive unification breaks test_hda_panel."
+    },
+    "cohere_rules_before": {
+      "R1_title": "Wordmark is role='body' overridden by a QFont: synapse_panel.py:400 c.label('SYNAPSE', role='body'), tracked_font('BRAND',14,weight=500). TRACKING_EM['BRAND']=0.16 -> 2.24px, NOT the 2.5px the relay claims. Weight 500 confirmed. Target 400/~4px = BRAND -> 0.286em plus a weight drop; both single-line token edits.",
+      "R2_cells": "Bucket grid face_work.py:55 BucketGrid, drawRect at :150. Node chips tool_palette.py:226/:239/:257 plus styles.py:592 and context_bar.py:588. NETWORK PEEK DOES NOT EXIST - zero matches for Peek in panel/. L4 must not assume it.",
+      "R3_icons": "~6 distinct reachable dot/square definitions across 4 files: components.py:107 StatusDot (drawEllipse :125, d=8), :129 MarkDot (d=16, three passes), styles.py:332 get_status_dot_stylesheet, face_review.py:57 tri-state check dot, synapse_panel.py:397/460. Five more call sites are in the ORPHAN chat_panel tree and are out of scope.",
+      "R4_mono_vs_sans": "FONT_MONO in 9 files / 55 refs; FONT_SANS in 6 files / 26 refs. styles.py alone is mono 23 : sans 5. TYPE_ROLES is mono-dominant - 4 of 7 roles (title/label/code/status). The overreach is concentrated in title+label roles (~6 sites) and in context_bar.py (9 mono refs) and gate_widget.py (8), both metadata surfaces. Legit-mono that STAYS: code role, node paths, token counts.",
+      "R5_hairline": "The 0.5px hairline DOES NOT EXIST. HAIR is 1px (designsystem/tokens.py:184), used at qss.py:33 and :198. Gradients: exactly ONE, a QRadialGradient vignette at face_review.py:172. No qlineargradient in QSS. Also ~8 hardcoded border-radius:3px in styles.py bypass RADIUS_SM=4."
+    },
+    "palette": {
+      "greys": "Houdini UIDark.hcs IS the host constraint and is sourced live: designsystem/theme_source.py:37 _hcs_surface_rgb -> lazy hou.qt.color(role), ACTIVE_BACKEND='hcs'. Hardcoded hexes are the headless fallback ONLY - the old inversion is already fixed.",
+      "signal_blue": "#8FB3D9 CONFIRMED at designsystem/tokens.py:29 with a full ramp. In-file WCAG caveat: SIGNAL fails AA for small body text - labels/links/icons only.",
+      "warm_coral": "#FF7759 CONFIRMED at designsystem/tokens.py:226, 3 live sites.",
+      "muted_green_REFUTED": "The relay says 'add one muted green for verified/ok'. It ALREADY EXISTS: OK_SOFT #6FBF8E at designsystem/tokens.py:234, live in 4 files. L4 must REUSE OK_SOFT, not add a second green, or it recreates the 3-source gremlin in the status family.",
+      "mushroom_grey_CONFIRMED_ABSENT": "Zero matches for mushroom/taupe/INERT. The inert-metadata role today is SLATE / TEXT_TERTIARY. This is a genuine gap L4 fills."
+    }
+  },
+
+  "findings": [
+    { "id": "L3.F1", "claim": "COMMIT TO /STAGE tells the artist it is routing through the consent gate and does nothing of the kind - no GateProposal, no /stage write, no queue entry. It only sets a UI substate.", "truth": "REFUTED-STATIC", "anchor": "python/synapse/panel/synapse_panel.py:1180", "severity": "blocker" },
+    { "id": "L3.F2", "claim": "Gate Approve and Gate Reject are optimistic UI over a swallowed exception - mark_decided and decision_announced fire unconditionally even when HumanGate is absent or decide() raises. A rejection that never landed still reads as rejected. This is consent theatre.", "truth": "REFUTED-STATIC", "anchor": "python/synapse/panel/gate_widget.py:490", "severity": "blocker" },
+    { "id": "L3.F3", "claim": "The 21 slash commands do not invoke their implementations - the palette entry's send string is the description text, so /diagnose sends prose to the LLM and scene_doctor.py never runs. ~7,500 LOC of feature modules are bypassed this way.", "truth": "REFUTED-STATIC", "anchor": "python/synapse/panel/tool_palette.py:119", "severity": "blocker" },
+    { "id": "L3.F4", "claim": "Emergency halt has no surface in the shipped panel. HALT exists only in the unreachable chat_panel tree, so CLAUDE.md Safety Rule 11 ('emergency halt is immediate') has no artist-reachable trigger.", "truth": "REFUTED-STATIC", "anchor": "python/synapse/panel/chat_panel.py:595", "severity": "blocker" },
+    { "id": "L3.F5", "claim": "The panel has two entrypoints and only one ships. 24 of 71 modules are unreachable from the shipped entrypoint, including ~10,500 LOC of implemented feature modules with zero callers.", "truth": "REFUTED-STATIC", "anchor": "install.py:37", "severity": "blocker" },
+    { "id": "L3.F6", "claim": "Two tests pin dead or no-op behaviour as green: tests/test_panel_faces.py:168 asserts only face state for the ACCEPT no-op, and tests/test_v5_features.py:54 is an import-smoke test artificially keeping the dead ui/ package alive.", "truth": "VERIFIED-STATIC", "anchor": "tests/test_panel_faces.py:168", "severity": "debt" },
+    { "id": "L3.F7", "claim": "The panel does NOT need the WS bridge - it dispatches in-process via ToolExecutor -> SynapseHandler. The down bridge (L1.F1) does not gate panel capability. Load-bearing for L4.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/panel/tool_executor.py:312", "severity": "cosmetic" },
+    { "id": "L3.F8", "claim": "The accent token has a THIRD source outside the repository: ~/.synapse/design/tokens.py:21 = #00D4FF, injected onto sys.path by tokens.py:15 and re-exported. The panel's accent is machine-dependent - an in-repo token change can be silently overridden per-workstation.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/panel/tokens.py:15", "severity": "blocker" },
+    { "id": "L3.F9", "claim": "L4's stated token oracle is uncheckable as worded. styles.py is 822 LOC (not 705) and defines ZERO tokens - it is a stylesheet factory of 41 get_*_stylesheet() functions. The checkable form is the 36 token names it REFERENCES, recorded in the inventory artifact.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/panel/styles.py", "severity": "blocker" },
+    { "id": "L3.F10", "claim": "Two of five G3 slices have NO baseline: the hython-offscreen invocation was permission-denied four times (denied, not failed). The live offscreen build and the v9 invariants - the two most L4-relevant slices - are ungraded.", "truth": "VERIFIED-RUNTIME", "anchor": "audit_panel.py:157", "severity": "blocker" },
+    { "id": "L3.F11", "claim": "The relay's premise that a muted green must be ADDED is wrong - OK_SOFT #6FBF8E already exists and is live in 4 files. Adding a second green would recreate the 3-source token gremlin inside the status family.", "truth": "REFUTED-STATIC", "anchor": "python/synapse/panel/designsystem/tokens.py:234", "severity": "debt" },
+    { "id": "L3.F12", "claim": "Two raw-hex accent leaks bypass the token system in the shipped tree: message_formatter.py:39 hardcodes #8FB3D9 (right value, unlinked) and render_preflight.py:927 hardcodes #00D4FF inside an HTML string.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/panel/message_formatter.py:39", "severity": "debt" },
+    { "id": "L3.F13", "claim": "The relay's providers/ figure is wrong by an order of magnitude - it is 1,506 LOC, not 136, and all five engines are implemented. The real deficiency is that only one (claude) is usable without configuration.", "truth": "REFUTED-STATIC", "anchor": "python/synapse/panel/providers/", "severity": "cosmetic" },
+    { "id": "L3.F14", "claim": "Three of the relay's L4 design premises do not survive measurement: the 0.5px hairline does not exist (HAIR is 1px), no network-peek component exists at all, and the title tracking is 2.24px not 2.5px.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/panel/designsystem/tokens.py:184", "severity": "debt" }
+  ],
+
+  "for_ruling": [
+    { "id": "L3.R1", "question": "Three panel affordances lie to the artist about safety-critical operations: COMMIT-to-/stage claims consent-gate routing that never happens, and gate Approve/Reject report decisions that may never have reached HumanGate. Who lands the fix, and when?", "options": ["Fix now as a hotfix before any restyle - a lying consent surface is the worst class of defect in this repo", "Fold into the L2.R3 family-wide 'does a failure owe the caller truth' contract and fix together", "Defer to post-T.1"], "recommendation": "Option 1 for the two gate paths, option 2 for COMMIT. The gate widget is three lines of unconditional emit that should be conditional; that is a small, safe, high-value fix. COMMIT is a larger missing-implementation and belongs with the L2 doctrine ruling.", "cost_of_delay": "Highest in the relay. SYNAPSE's differentiator is receipts and reversibility; a consent surface that reports decisions it did not make attacks that differentiator directly.", "unblocks": "python/synapse/panel/gate_widget.py:490" },
+    { "id": "L3.R2", "question": "Emergency halt has no artist-reachable surface in the shipped panel - it exists only in the dead chat_panel tree. CLAUDE.md Safety Rule 11 says halt is immediate.", "options": ["Restore HALT to synapse_panel.py", "Accept LLM-mediated halt as sufficient", "Add halt to the Ctrl+K palette only"], "recommendation": "Restore it as a persistent affordance, not a palette entry. A stop button you have to search for is not a stop button. This is the one ORPHAN worth reviving on safety grounds alone, and reviving a single safety control is not a T.4 product-identity decision.", "cost_of_delay": "High. It is a stated safety rule with no implementation on the shipped surface." },
+    { "id": "L3.R3", "question": "The 21 slash commands send description prose to the LLM instead of dispatching, bypassing ~7,500 LOC of implemented feature modules (scene_doctor, apex_trace, explain_mode and 18 more).", "options": ["Wire the palette entries to real dispatch", "Remove the slash commands from the palette until they dispatch", "Leave"], "recommendation": "Option 2 now, option 1 later. Removing them is honest and cheap; wiring 21 entries is real work. A menu entry that silently does something other than its name is exactly what L4's scope fence calls 'how a panel lies'.", "cost_of_delay": "Medium-high. Every use is a silent capability failure the artist reads as an LLM shortcoming." },
+    { "id": "L3.R4", "question": "L4's token oracle is uncheckable as written (styles.py defines zero tokens). Restate it?", "options": ["Restate as: the 162 tokens in the inventory artifact, plus the 36 names styles.py references, must all survive", "Drop the oracle", "Keep the literal wording"], "recommendation": "Restate. The artifact harness/notes/panel_token_inventory_before.json exists precisely so this becomes assertable rather than eyeballed.", "cost_of_delay": "Blocks L4's acceptance criteria from being machine-checkable.", "unblocks": "harness/SYNAPSE_CTO_RELAY.md:313" },
+    { "id": "L3.R5", "question": "The accent token's third source is ~/.synapse/design/tokens.py - OUTSIDE the repo, injected onto sys.path by tokens.py:15. It makes the panel accent machine-dependent. Does L4 get authority to sever that re-export?", "options": ["Sever the sys.path re-export - in-repo tokens become authoritative", "Keep it as a user-override feature and document it", "Leave, and extend the _ds.SIGNAL pattern to the 6 cyan sites instead"], "recommendation": "Option 3 for L4 (additive, safe, does not break test_hda_panel), then option 1 as a separate decision. Severing an out-of-repo sys.path injection is not chrome work and should not ride inside a restyle commit.", "cost_of_delay": "Medium. Today a token fix can be silently overridden on any workstation with that directory." },
+    { "id": "L3.R6", "question": "Two of five G3 slices have no baseline because the hython-offscreen invocation was permission-denied. L4 would ship ungraded on live-build and v9-invariant checks.", "options": ["Grant the hython-offscreen invocation and re-baseline before L4 lands", "Let L4 ship on the 3 gradeable slices and note the gap", "Block L4"], "recommendation": "Option 1. It is a permission grant, not engineering work, and panel verification is hython-offscreen-only by standing convention - the other two slices are exactly the ones that catch interactive-target and same-pane-law regressions.", "cost_of_delay": "Direct: L4 lands unverifiable on 40% of its own gate.", "unblocks": "audit_panel.py:157" },
+    { "id": "L3.R7", "question": "The relay states providers/ is 136 LOC against a five-engine claim, and pre-seeds R4 as 'fix the claim now, the code after T.1'. Measurement refutes the premise - it is 1,506 LOC with all five implemented.", "options": ["Restate the public claim as 'five engines, one configured out of the box'", "Leave the claim as-is - it is technically accurate", "Reduce the claim to one engine"], "recommendation": "Option 1. The code is not the problem; the out-of-box experience is. 'Five swappable engines' is true and misleading at the same time, and the honest sentence is one line longer.", "cost_of_delay": "Low. Public-claim accuracy only." }
+  ],
+
+  "resume_token": "L3 COMPLETE. Both artifacts on disk: harness/notes/panel_capability_matrix.json (59 affordances, 35 LIVE / 17 ORPHAN / 7 SILENT, all anchored) and harness/notes/panel_token_inventory_before.json (162 tokens - the assertable set for L4's oracle). ZERO source commits, as required. T.4 untouched. If re-entered: skip both agents, the matrix and inventory are complete. Carry into L4 - all 17 ORPHANs are the unreachable chat_panel tree so L4 restyles NONE of them and removes none either (removal is T.4-adjacent); the muted green OK_SOFT ALREADY EXISTS (reuse, do not add); the 0.5px hairline does NOT exist (HAIR is 1px); network-peek does NOT exist; title tracking is 2.24px not 2.5px; do NOT unify the three SIGNAL sources - extend the _ds.SIGNAL pattern instead; and 2 of 5 G3 slices are ungraded pending a hython-offscreen permission grant."
+}

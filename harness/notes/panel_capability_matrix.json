@@ -1,0 +1,965 @@
+{
+  "schema": "panel_capability_matrix/v1",
+  "generated_at": "2026-07-25T12:09:41.106321-04:00",
+  "commit": "1e135a2",
+  "panel_loc": 27103,
+  "panel_files": 71,
+  "method": "AST import-reachability closure rooted at synapse.panel.synapse_panel (the shipped entrypoint per install.py:37 -> houdini/python_panels/synapse_panel.pypanel:45), plus manual call-chain resolution of every signal connection found by grep for clicked.connect / triggered.connect / QShortcut / addAction / customContextMenu across panel/.",
+  "note": "All 115 registry tools ARE panel-reachable via Ctrl+K (tool_palette.py:110) and execute IN-PROCESS through ToolExecutor -> SynapseHandler, independent of the down WS bridge. Reverse-map gaps below are panel-module capabilities with no live surface, plus emergency halt.",
+  "reachability": {
+    "panel_modules_total": 71,
+    "reachable_from_entrypoint": 41,
+    "unreachable": 30,
+    "unreachable_loc_excluding_providers_false_positives": 10500,
+    "caveat": "providers/* appear in the raw unreachable list only because registry.py uses RELATIVE imports; they ARE reachable (registry.py:155-180). Corrected unreachable count = 24 modules."
+  },
+  "affordances": [
+    {
+      "id": "kbd.ctrl_k",
+      "surface": "header/global",
+      "label": "Ctrl+K command palette",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:308",
+      "call_chain": [
+        "_open_palette",
+        "ToolPalette.command_selected",
+        "_on_tool_picked",
+        "_send"
+      ],
+      "terminus": "SynapsePanel._send",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1570",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "QShortcut bound :309; pick emits ready-to-send prompt. tests/test_panel_faces.py:642"
+    },
+    {
+      "id": "input.slash",
+      "surface": "input",
+      "label": "/ on empty prompt opens palette",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:87",
+      "call_chain": [
+        "_GrowingInput.slash",
+        "_open_palette"
+      ],
+      "terminus": "SynapsePanel._open_palette",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1504",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "Signal declared :87"
+    },
+    {
+      "id": "btn.send",
+      "surface": "input",
+      "label": "Send",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1374",
+      "call_chain": [
+        "_on_submit",
+        "_send",
+        "_start_worker"
+      ],
+      "terminus": "SynapsePanel._on_submit",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1564",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/test_panel_faces.py"
+    },
+    {
+      "id": "btn.attach",
+      "surface": "input",
+      "label": "Attach images/files",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1366",
+      "call_chain": [
+        "_on_attach",
+        "QFileDialog",
+        "_pending_context"
+      ],
+      "terminus": "SynapsePanel._on_attach",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1387",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "_pending_context consumed in _send :1576"
+    },
+    {
+      "id": "btn.stop",
+      "surface": "header",
+      "label": "Stop",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:441",
+      "call_chain": [
+        "_on_stop",
+        "ClaudeWorker.abort"
+      ],
+      "terminus": "ClaudeWorker.abort",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1718",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/test_panel_stop_honest.py. PARTIAL: cannot cancel in-flight Houdini tool, comment :1722-1725"
+    },
+    {
+      "id": "btn.connect",
+      "surface": "header",
+      "label": "Connect / Bridge",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:473",
+      "call_chain": [
+        "_on_connect",
+        "hwebserver_adapter.start_hwebserver"
+      ],
+      "terminus": "synapse.server.hwebserver_adapter.start_hwebserver",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:519",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/panel/test_font_scale.py:159"
+    },
+    {
+      "id": "btn.corpus",
+      "surface": "header",
+      "label": "Corpus",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:483",
+      "call_chain": [
+        "_on_corpus",
+        "scout_ingest.activate"
+      ],
+      "terminus": "synapse.cognitive.tools.scout_ingest.activate",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:571",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/test_corpus_activate.py:65 source-pin"
+    },
+    {
+      "id": "btn.author",
+      "surface": "header",
+      "label": "Author/model label -> engine menu",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:418",
+      "call_chain": [
+        "_open_author_menu"
+      ],
+      "terminus": "SynapsePanel._open_author_menu",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:920",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "Menu from providers.registry.PROVIDER_IDS :890"
+    },
+    {
+      "id": "menu.model",
+      "surface": "header",
+      "label": "Model menu entry",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:963",
+      "call_chain": [
+        "_set_model",
+        "settings.save_settings"
+      ],
+      "terminus": "SynapsePanel._set_model",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:973",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "persists per-provider pick"
+    },
+    {
+      "id": "menu.provider",
+      "surface": "header/overflow",
+      "label": "Engine -> provider pick",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1453",
+      "call_chain": [
+        "_set_provider",
+        "_make_provider",
+        "registry.build_provider"
+      ],
+      "terminus": "providers.registry.build_provider",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1029",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/test_providers_floor.py"
+    },
+    {
+      "id": "btn.overflow",
+      "surface": "header",
+      "label": "Overflow menu",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:438",
+      "call_chain": [
+        "_show_overflow"
+      ],
+      "terminus": "SynapsePanel._show_overflow",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1439",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "menu built :1439-1459"
+    },
+    {
+      "id": "menu.copy_conv",
+      "surface": "overflow",
+      "label": "Copy conversation",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1441",
+      "call_chain": [
+        "_copy_conversation",
+        "dnd.transcript_to_markdown"
+      ],
+      "terminus": "synapse.panel.dnd.transcript_to_markdown",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1876",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "body in try/except: pass :1883 - failure is silent, success path real"
+    },
+    {
+      "id": "menu.configure_custom",
+      "surface": "overflow/author",
+      "label": "Configure custom engine",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1457",
+      "call_chain": [
+        "_configure_custom",
+        "settings.save_settings"
+      ],
+      "terminus": "synapse.panel.settings.save_settings",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1058",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/test_panel_faces.py:529; tests/test_custom_provider.py"
+    },
+    {
+      "id": "menu.larger_text",
+      "surface": "overflow",
+      "label": "Larger text",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1457",
+      "call_chain": [
+        "_set_scale",
+        "_apply_content_scale"
+      ],
+      "terminus": "SynapsePanel._apply_content_scale",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1469",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/panel/test_font_scale.py"
+    },
+    {
+      "id": "menu.default_text",
+      "surface": "overflow",
+      "label": "Default text",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1458",
+      "call_chain": [
+        "_set_scale"
+      ],
+      "terminus": "SynapsePanel._apply_content_scale",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1469",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/panel/test_font_scale.py"
+    },
+    {
+      "id": "btn.aa",
+      "surface": "act bar",
+      "label": "Aa font cycle",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1337",
+      "call_chain": [
+        "_cycle_font_scale",
+        "_set_scale"
+      ],
+      "terminus": "SynapsePanel._cycle_font_scale",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1490",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/panel/test_font_scale.py"
+    },
+    {
+      "id": "verb.explain",
+      "surface": "act bar",
+      "label": "EXPLAIN",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1329",
+      "call_chain": [
+        "_send"
+      ],
+      "terminus": "SynapsePanel._send (prose to LLM)",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1570",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "_QUICK_ACTIONS[0] :72 - does NOT call explain_mode.py"
+    },
+    {
+      "id": "verb.fix",
+      "surface": "act bar",
+      "label": "FIX",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1329",
+      "call_chain": [
+        "_send"
+      ],
+      "terminus": "SynapsePanel._send (prose to LLM)",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1570",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "_QUICK_ACTIONS[1] :73 - does NOT call scene_doctor.py"
+    },
+    {
+      "id": "verb.optimize",
+      "surface": "act bar",
+      "label": "OPTIMIZE",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1329",
+      "call_chain": [
+        "_send"
+      ],
+      "terminus": "SynapsePanel._send (prose to LLM)",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1570",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "_QUICK_ACTIONS[2] :74 - does NOT call performance_profiler.py"
+    },
+    {
+      "id": "verb.build_hda",
+      "surface": "act bar",
+      "label": "BUILD HDA",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1336",
+      "call_chain": [
+        "_set_direct_view"
+      ],
+      "terminus": "SynapsePanel._set_direct_view",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1248",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": ""
+    },
+    {
+      "id": "btn.generate_hda",
+      "surface": "hda form",
+      "label": "Generate HDA",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1237",
+      "call_chain": [
+        "_on_build_hda",
+        "_send"
+      ],
+      "terminus": "SynapsePanel._on_build_hda",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1270",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "prompt names houdini_hda_package; tool present in TOOL_DISPATCH"
+    },
+    {
+      "id": "btn.hda_back",
+      "surface": "hda form",
+      "label": "Main menu (back)",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1243",
+      "call_chain": [
+        "_set_direct_view"
+      ],
+      "terminus": "SynapsePanel._set_direct_view",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1248",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": ""
+    },
+    {
+      "id": "pill.direct",
+      "surface": "face rail",
+      "label": "CHAT/direct face pill",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:697",
+      "call_chain": [
+        "_set_face"
+      ],
+      "terminus": "SynapsePanel._set_face",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1256",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/test_panel_faces.py"
+    },
+    {
+      "id": "review.accept",
+      "surface": "Review face",
+      "label": "ACCEPT",
+      "affordance_anchor": "python/synapse/panel/face_review.py:323",
+      "call_chain": [
+        "FaceReview.accepted",
+        "_on_accept",
+        "append_system_message",
+        "_set_face"
+      ],
+      "terminus": "SynapsePanel._on_accept",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1163",
+      "classification": "SILENT",
+      "tested": true,
+      "evidence": "Handler prints Accepted - keeping the result and switches face. Performs NO accept/commit/persist action (SP:1163-1168). tests/test_panel_faces.py:168 calls it and asserts only face state - the test PINS the no-op."
+    },
+    {
+      "id": "review.revert",
+      "surface": "Review face",
+      "label": "REVERT",
+      "affordance_anchor": "python/synapse/panel/face_review.py:324",
+      "call_chain": [
+        "FaceReview.reverted",
+        "_on_revert",
+        "_send"
+      ],
+      "terminus": "LLM-mediated houdini_undo tool call",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1170",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "Sends a natural-language instruction to use houdini_undo (:1176). Indirection is by design (:1171-1172) but execution depends on the model electing the tool."
+    },
+    {
+      "id": "review.commit",
+      "surface": "Review face",
+      "label": "COMMIT TO /STAGE?",
+      "affordance_anchor": "python/synapse/panel/face_review.py:329",
+      "call_chain": [
+        "FaceReview.committed",
+        "_on_commit",
+        "_set_work_substate"
+      ],
+      "terminus": "SynapsePanel._on_commit",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1180",
+      "classification": "SILENT",
+      "tested": false,
+      "evidence": "Announces Commit to /stage requested - routing through the consent gate, then only calls _set_work_substate(done) (:1190). No GateProposal is created, no /stage write is issued, nothing is queued. The message asserts a routing that does not occur."
+    },
+    {
+      "id": "review.open_render",
+      "surface": "Review face",
+      "label": "open render view",
+      "affordance_anchor": "python/synapse/panel/face_review.py:241",
+      "call_chain": [
+        "FaceReview.open_render_requested",
+        "_on_open_render"
+      ],
+      "terminus": "SynapsePanel._on_open_render",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1192",
+      "classification": "SILENT",
+      "tested": false,
+      "evidence": "Explicit no-op: imports hou then bare return (:1206-1208). Comment :1193-1200 documents the D1 halt. The button is enabled and gives the artist zero feedback."
+    },
+    {
+      "id": "review.detail",
+      "surface": "Review face",
+      "label": "detail expand/collapse",
+      "affordance_anchor": "python/synapse/panel/face_review.py:285",
+      "call_chain": [
+        "_toggle_detail"
+      ],
+      "terminus": "FaceReview._toggle_detail",
+      "terminus_anchor": "python/synapse/panel/face_review.py:434",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": ""
+    },
+    {
+      "id": "gate.approve",
+      "surface": "Gate widget",
+      "label": "Approve",
+      "affordance_anchor": "python/synapse/panel/gate_widget.py:161",
+      "call_chain": [
+        "_on_approve_clicked",
+        "approve_clicked",
+        "GateWidget._on_approve",
+        "HumanGate.decide"
+      ],
+      "terminus": "synapse.core.gates.HumanGate.decide",
+      "terminus_anchor": "python/synapse/panel/gate_widget.py:486",
+      "classification": "SILENT",
+      "tested": true,
+      "evidence": "Happy path is LIVE, but the except at :490-491 only LOGS; card.mark_decided(approved) and decision_announced fire UNCONDITIONALLY (:493-500). If HumanGate is absent or decide() raises, the artist sees an approval that never reached the gate."
+    },
+    {
+      "id": "gate.reject",
+      "surface": "Gate widget",
+      "label": "Reject",
+      "affordance_anchor": "python/synapse/panel/gate_widget.py:153",
+      "call_chain": [
+        "_emit_reject",
+        "reject_clicked",
+        "GateWidget._on_reject",
+        "HumanGate.decide"
+      ],
+      "terminus": "synapse.core.gates.HumanGate.decide",
+      "terminus_anchor": "python/synapse/panel/gate_widget.py:505",
+      "classification": "SILENT",
+      "tested": true,
+      "evidence": "Same unconditional mark_decided(rejected) after a swallowed exception (:509-518). A rejection that never reached the gate still reads as rejected - the more dangerous direction."
+    },
+    {
+      "id": "gate.collapse",
+      "surface": "Gate widget",
+      "label": "Header expand/collapse",
+      "affordance_anchor": "python/synapse/panel/gate_widget.py:331",
+      "call_chain": [
+        "_toggle"
+      ],
+      "terminus": "GateWidget._toggle",
+      "terminus_anchor": "python/synapse/panel/gate_widget.py:424",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": ""
+    },
+    {
+      "id": "palette.chip.verb",
+      "surface": "Palette",
+      "label": "verb filter chips",
+      "affordance_anchor": "python/synapse/panel/tool_palette.py:242",
+      "call_chain": [
+        "_set_axis",
+        "_refilter"
+      ],
+      "terminus": "ToolPalette._set_axis",
+      "terminus_anchor": "python/synapse/panel/tool_palette.py:250",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/test_panel_faces.py:642"
+    },
+    {
+      "id": "palette.chip.ctx",
+      "surface": "Palette",
+      "label": "context filter chips",
+      "affordance_anchor": "python/synapse/panel/tool_palette.py:242",
+      "call_chain": [
+        "_set_axis",
+        "_refilter"
+      ],
+      "terminus": "ToolPalette._set_axis",
+      "terminus_anchor": "python/synapse/panel/tool_palette.py:250",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "tests/test_panel_faces.py:646"
+    },
+    {
+      "id": "palette.registry_tools",
+      "surface": "Palette",
+      "label": "115 registry tool entries",
+      "affordance_anchor": "python/synapse/panel/tool_palette.py:110",
+      "call_chain": [
+        "_load_entries",
+        "command_selected",
+        "_on_tool_picked",
+        "_send",
+        "ToolExecutor.execute_tool",
+        "SynapseHandler"
+      ],
+      "terminus": "panel.tool_executor.ToolExecutor.execute_tool",
+      "terminus_anchor": "python/synapse/panel/tool_executor.py:369",
+      "classification": "LIVE",
+      "tested": true,
+      "evidence": "Every TOOL_DEFS row becomes an entry sending Use the X tool. Dispatch resolved via get_tool_dispatch and executed IN-PROCESS against SynapseHandler (tool_executor.py:312) - not the down WS bridge. TOOL_DEFS=115 verified by import."
+    },
+    {
+      "id": "palette.material_presets",
+      "surface": "Palette",
+      "label": "10 material preset entries",
+      "affordance_anchor": "python/synapse/panel/tool_palette.py:129",
+      "call_chain": [
+        "_send",
+        "houdini_create_material"
+      ],
+      "terminus": "registry tool houdini_create_material",
+      "terminus_anchor": "python/synapse/panel/tool_palette.py:132",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "named tool present in TOOL_DISPATCH"
+    },
+    {
+      "id": "palette.render_tiers",
+      "surface": "Palette",
+      "label": "3 render tier entries",
+      "affordance_anchor": "python/synapse/panel/tool_palette.py:137",
+      "call_chain": [
+        "_send",
+        "render_progressively"
+      ],
+      "terminus": "registry tool render_progressively",
+      "terminus_anchor": "python/synapse/panel/tool_palette.py:140",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "named tool present in TOOL_DISPATCH"
+    },
+    {
+      "id": "palette.slash_commands",
+      "surface": "Palette",
+      "label": "21 slash-command entries (/help /diagnose /fix /preflight /journal /explain /trace /vex /recipes /hda /login /apex x6 /scene /inspect /search)",
+      "affordance_anchor": "python/synapse/panel/command_palette.py:97",
+      "call_chain": [
+        "build_palette_entries",
+        "tool_palette._load_entries",
+        "_send"
+      ],
+      "terminus": "SynapsePanel._send (prose to LLM)",
+      "terminus_anchor": "python/synapse/panel/tool_palette.py:119",
+      "classification": "SILENT",
+      "tested": false,
+      "evidence": "The entry send string is the DESCRIPTION text (TP:119), not a command dispatch. The modules implementing these features - scene_doctor.py, explain_mode.py, network_trace.py, session_journal.py, apex_explainer.py, apex_trace.py, shot_login.py - have ZERO inbound callers from the live entrypoint (AST reachability closure from synapse_panel). Picking /diagnose yields an LLM paraphrase; the 737-line scene doctor never runs."
+    },
+    {
+      "id": "palette.recipes_apex_vex",
+      "surface": "Palette",
+      "label": "recipe / APEX / VEX entries",
+      "affordance_anchor": "python/synapse/panel/tool_palette.py:119",
+      "call_chain": [
+        "build_palette_entries",
+        "_send"
+      ],
+      "terminus": "SynapsePanel._send (prompt carries recipe data)",
+      "terminus_anchor": "python/synapse/panel/command_palette.py:143",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "Data-only consumption of recipe_book.RECIPES (CMP:145) and vex_tutor.VEX_REFERENCE (CMP:181)"
+    },
+    {
+      "id": "readout.token_meter",
+      "surface": "header",
+      "label": "session token meter",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:420",
+      "call_chain": [
+        "_note_usage"
+      ],
+      "terminus": "SynapsePanel._note_usage",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:507",
+      "classification": "SILENT",
+      "tested": false,
+      "evidence": "_note_usage has ZERO callers anywhere in the tree (grep). The meter is a permanently-empty readout. Comment :509-510 admits no provider surfaces usage."
+    },
+    {
+      "id": "dnd.drop",
+      "surface": "panel body",
+      "label": "drag-drop node/file onto panel",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1836",
+      "call_chain": [
+        "dnd module",
+        "_pending_context"
+      ],
+      "terminus": "synapse.panel.dnd",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1848",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": ""
+    },
+    {
+      "id": "link.node_click",
+      "surface": "chat display",
+      "label": "node link click -> select+frame",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1867",
+      "call_chain": [
+        "_on_node_clicked",
+        "dnd.place_in_network"
+      ],
+      "terminus": "synapse.panel.dnd.place_in_network",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1871",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": "body in try/except: pass :1874 - a failed frame is silent"
+    },
+    {
+      "id": "hook.selection",
+      "surface": "host",
+      "label": "Houdini selection callback",
+      "affordance_anchor": "python/synapse/panel/synapse_panel.py:1812",
+      "call_chain": [
+        "_on_selection_changed",
+        "_update_context"
+      ],
+      "terminus": "SynapsePanel._update_context",
+      "terminus_anchor": "python/synapse/panel/synapse_panel.py:1812",
+      "classification": "LIVE",
+      "tested": false,
+      "evidence": ""
+    },
+    {
+      "id": "dead.00",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "HALT (emergency halt)",
+      "affordance_anchor": "python/synapse/panel/chat_panel.py:595",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._on_emergency_halt",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:936",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.01",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "Connect toggle",
+      "affordance_anchor": "python/synapse/panel/chat_panel.py:603",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._on_connect_toggle",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:618",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.02",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "Copy WS URL",
+      "affordance_anchor": "python/synapse/panel/chat_panel.py:612",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._on_copy_ws_url",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:639",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.03",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "Aa font size",
+      "affordance_anchor": "python/synapse/panel/chat_panel.py:432",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._cycle_font_size",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:455",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.04",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "Send",
+      "affordance_anchor": "python/synapse/panel/chat_panel.py:439",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._send_message",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:439",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.05",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "Mode: Chat",
+      "affordance_anchor": "python/synapse/panel/chat_panel.py:682",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._set_mode",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:702",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.06",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "Mode: HDA",
+      "affordance_anchor": "python/synapse/panel/chat_panel.py:692",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._set_mode",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:702",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.07",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "Chat context menu (+ per-item actions)",
+      "affordance_anchor": "python/synapse/panel/chat_panel.py:252",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._show_context_menu / _on_context_menu_action",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:501",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.08",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "Ctrl+L clear chat",
+      "affordance_anchor": "python/synapse/panel/chat_panel.py:355",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._shortcut_clear_chat",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:374",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.09",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "focus-input shortcut",
+      "affordance_anchor": "python/synapse/panel/chat_panel.py:360",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._shortcut_focus_input",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:379",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.10",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "Esc shortcut",
+      "affordance_anchor": "python/synapse/panel/chat_panel.py:365",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._shortcut_escape",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:384",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.11",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "Quick action pills row",
+      "affordance_anchor": "python/synapse/panel/quick_actions.py:149",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ChatPanel._on_quick_action",
+      "terminus_anchor": "python/synapse/panel/chat_panel.py:882",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.12",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "Quick action chevron",
+      "affordance_anchor": "python/synapse/panel/quick_actions.py:127",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "QuickActionPills._toggle",
+      "terminus_anchor": "python/synapse/panel/quick_actions.py:187",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.13",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "HDA Generate",
+      "affordance_anchor": "python/synapse/panel/hda_views.py:108",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "DescribeView._on_generate",
+      "terminus_anchor": "python/synapse/panel/hda_views.py:108",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.14",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "HDA Cancel",
+      "affordance_anchor": "python/synapse/panel/hda_views.py:213",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "BuildingView.cancel_requested",
+      "terminus_anchor": "python/synapse/panel/hda_views.py:213",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.15",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "HDA result action buttons",
+      "affordance_anchor": "python/synapse/panel/hda_views.py:337",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ResultView action",
+      "terminus_anchor": "python/synapse/panel/hda_views.py:337",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    },
+    {
+      "id": "dead.16",
+      "surface": "chat_panel tree (NOT INSTALLED)",
+      "label": "HDA New",
+      "affordance_anchor": "python/synapse/panel/hda_views.py:348",
+      "call_chain": [
+        "SynapseChatPanel (unloaded)"
+      ],
+      "terminus": "ResultView new",
+      "terminus_anchor": "python/synapse/panel/hda_views.py:348",
+      "classification": "ORPHAN",
+      "tested": false,
+      "evidence": "Unreachable from the shipped entrypoint. install.py:37 ships ONLY houdini/python_panels/synapse_panel.pypanel, whose script imports synapse.panel.synapse_panel.onCreateInterface (that file:45). synapse_chat.pypanel - the only loader for SynapseChatPanel (line 36) - is NOT installed. chat_panel.py has zero non-test importers (git grep)."
+    }
+  ],
+  "counts": {
+    "LIVE": 35,
+    "ORPHAN": 17,
+    "SILENT": 7,
+    "total": 59
+  },
+  "reverse_map": {
+    "dispatch_reachable_no_panel_surface": [
+      "EmergencyProtocol.trigger_emergency_halt - the HALT button exists ONLY in the dead chat_panel tree (chat_panel.py:595); the shipped panel has NO emergency-halt affordance",
+      "tops_cancel_cook / render cancel - Stop cannot cancel an in-flight tool (synapse_panel.py:1722-1725, deferred by comment)",
+      "scene_doctor.py (737 LOC) - zero callers from the live entrypoint",
+      "explain_mode.py (599 LOC) - zero callers",
+      "network_trace.py (589 LOC) - zero callers",
+      "dependency_map.py (530 LOC) - zero callers",
+      "error_translator.py (532 LOC) - zero callers",
+      "save_shot.py (514 LOC) - zero callers",
+      "performance_profiler.py (500 LOC) - zero callers",
+      "cross_scene.py (480 LOC) - zero callers",
+      "shot_login.py (476 LOC) - zero callers",
+      "apex_explainer.py (873) + apex_trace.py (819) - zero callers (apex_recipes/recipe_book/vex_tutor consumed as DATA only)",
+      "prompt_to_hda.py (433) + hda_controller.py (180) + hda_views.py (444) - zero callers",
+      "session_journal.py (289) + bookmarks.py (275) + agent_prompts.py (199) + image_prep.py (100) - zero callers",
+      "context_bar.py (662) + quick_actions.py (208) - zero callers",
+      "ws_bridge.py (472) - panel WS client unused; the live panel dispatches IN-PROCESS via ToolExecutor -> SynapseHandler (tool_executor.py:312)",
+      "designsystem/theme_source.py (95) - zero callers"
+    ],
+    "count": 17,
+    "registry_tools_total": 115,
+    "registry_tools_with_palette_surface": 115
+  },
+  "ui_package": {
+    "verdict": "archive",
+    "inbound_imports": [
+      "pyproject.toml:128 - mypy module override, NOT an import",
+      "python/synapse/panel/__init__.py:5-6 - stale COMMENT claiming imports are deferred to synapse.ui; __all__ is empty, zero code",
+      "python/synapse/panel/synapse_chat.pypanel:30 - comment only, and that pypanel is itself not installed",
+      "tests/test_v5_features.py:54,80-82 - import-smoke test that artificially keeps the package alive"
+    ],
+    "evidence": "git grep synapse.ui across tracked .py/.pypanel/.json/.toml/.md returns 9 files; excluding python/synapse/ui/* self-references NONE is a functional import. install.py:37 ships only houdini/python_panels/synapse_panel.pypanel which at :45 imports synapse.panel.synapse_panel.onCreateInterface. CLAUDE.md claim that ui/ is dead is CONFIRMED by the import graph. 1347 LOC / 8 files."
+  },
+  "providers": {
+    "claimed": 5,
+    "real": 5,
+    "engines": [
+      {
+        "name": "claude",
+        "status": "implemented; default; needs ANTHROPIC_API_KEY",
+        "anchor": "python/synapse/panel/anthropic_provider.py:31"
+      },
+      {
+        "name": "gemini",
+        "status": "implemented; own StreamProvider subclass + SSE parser; needs key",
+        "anchor": "python/synapse/panel/gemini_provider.py:31"
+      },
+      {
+        "name": "nemotron",
+        "status": "implemented; OpenAI-compatible transport, shared base for ollama+custom; needs NVIDIA key",
+        "anchor": "python/synapse/panel/nemotron_provider.py:216"
+      },
+      {
+        "name": "ollama",
+        "status": "implemented; thin NemotronProvider subclass; local endpoint, no key; live tag fetch",
+        "anchor": "python/synapse/panel/ollama_provider.py:56"
+      },
+      {
+        "name": "custom",
+        "status": "implemented but UNCONFIGURED by default - models_for()/default_model() return empty until the 3-field dialog is filled; surfaced via resolve_key, never a silent Claude swap",
+        "anchor": "python/synapse/panel/custom_provider.py:28"
+      }
+    ],
+    "measured_loc": 1506,
+    "note": "Brief cited 136 LOC for providers/; MEASURED = 1506 LOC across 9 files (registry 186, nemotron 399, anthropic 295, gemini 184, gemini_translate 175, ollama 114, custom 82, base 67, __init__ 8). All five declare stream() + resolve_key(). base.py:45,67 raise NotImplementedError but every shipped provider overrides both."
+  }
+}
