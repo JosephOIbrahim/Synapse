@@ -205,6 +205,27 @@ TEXT_ACCENT    = SIGNAL     # links, accent labels (NOT body — see WCAG note)
 TEXT_DISABLED  = _TXT["disabled"]
 TEXT_ON_ACCENT = "#0F1F2B"  # text on a SIGNAL fill (comp --signal-ink; AA-safe)
 
+
+def _warm_bias(hex_str, amount=12):
+    """Warm a solved neutral grey without moving its luminance meaningfully.
+
+    R is pushed up and B down by the same amount; the WCAG luminance delta is
+    (0.2126 - 0.0722) x amount / 255 -- ~0.7% at the default 12, i.e. below any
+    contrast floor's resolution. This is how MUSHROOM stays exactly as legible
+    as the tertiary grey it is derived from: the contrast sweep still governs.
+    """
+    h = hex_str.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return _hexrgb(r + amount, g, b - amount)
+
+
+# The inert-metadata note. Timestamps, counts, units, "of", separators, ghosted
+# affordances -- the type that must be READ but never LOOKED AT. It is the
+# tertiary grey warmed just off-neutral, so it recedes from the cool signal blue
+# without becoming a third accent (SIGNAL + WARM remain the two-accent ceiling).
+# Derived, never a literal, so it tracks the host seed like the rest of the ramp.
+MUSHROOM = _warm_bias(_TXT["tertiary"])
+
 # WCAG note: SIGNAL (#8FB3D9) on PANEL passes AA for >=14px / bold, but FAILS
 # for small body text. Use TEXT_ACCENT for labels/links/icons only; never for
 # running body copy. Body uses TEXT_PRIMARY.
@@ -338,6 +359,36 @@ RADIUS_SM = 4
 RADIUS_MD = 8
 RADIUS_LG = 12
 RADIUS_PILL = 14
+
+# --- monolinear icon system ---------------------------------------------
+# ONE line weight, ONE grid. Every drawn glyph in the panel (status dots, the
+# mark, check dots, cell outlines) strokes at STROKE_PX and lays out on a
+# 24px grid or an even divisor of it (24 / 16 / 12 / 8). No fills, no
+# dual-tone, no second weight -- if a glyph needs emphasis it gets colour or
+# size, never a heavier line.
+ICON_GRID  = 24     # the icon layout grid
+STROKE_PX  = 1.5    # the one icon line weight, in device-independent px
+
+# --- atmosphere ----------------------------------------------------------
+# Texture is a field BEHIND content, never a border or a fill. The gradient
+# spans a few 8-bit levels either side of the surface it sits on -- enough to
+# stop a large flat pane reading as dead vinyl, far too little to become a
+# shape. Contrast against text is unchanged to within ~1%, so the WCAG sweep
+# still governs the ramp; this is atmosphere, not information.
+ATMOSPHERE_DELTA = 4   # 8-bit levels between the gradient's two stops
+
+
+def atmosphere(base_hex, delta=None, angle="x1:0, y1:0, x2:0, y2:1"):
+    """A QSS qlineargradient of ``base_hex`` +/- ``delta`` levels -- the
+    low-contrast field that sits behind a surface. Returns a plain CSS string
+    so QSS can consume it wherever a flat ``background:`` used to go."""
+    d = ATMOSPHERE_DELTA if delta is None else delta
+    h = base_hex.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    hi = _hexrgb(r + d, g + d, b + d)
+    lo = _hexrgb(r - d, g - d, b - d)
+    return ("qlineargradient(%s, stop:0 %s, stop:1 %s)" % (angle, hi, lo))
+
 
 # ─────────────────────────────────────────────────────────────
 # 7. MOTION — tokenized (Qt QSS has no transition; QPropertyAnimation uses these)
