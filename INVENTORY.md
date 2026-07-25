@@ -1,5 +1,6 @@
 > **ARCHIVED SNAPSHOT — v5.4.0-era (43 tools).** Kept for history; the numbers below are stale.
-> Current truth: **115 registry tools**, v5.22.0 — see [README.md](README.md) + [CHANGELOG.md](CHANGELOG.md).
+> Current truth: **115 registry tools**, v5.33.0 — see [README.md](README.md) + [CHANGELOG.md](CHANGELOG.md).
+> *Producers: tool count = `python -c "from synapse.mcp import _tool_registry as r; print(len(r.TOOL_NAMES))"` → 115; version = the `VERSION` file → 5.33.0. Both measured 2026-07-25.*
 
 # Synapse Codebase Inventory
 
