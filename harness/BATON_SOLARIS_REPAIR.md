@@ -96,3 +96,52 @@ Only now. Each fix ships with a test that **fails before and passes after** — 
 
 **Receipt** `harness/notes/receipts/SR1.json`, `receipt/v1` schema. Batch every decision into
 `for_ruling[]`. Do not ask Joe anything until the receipt.
+
+---
+
+# RESUME — SR1 after crash, 2026-07-25 13:00
+
+**What survived.** `97b879d fix(solaris): M1+M2 one tree - relocate + register 4 of 5, collect tests`.
+M1 and M2 are DONE. `import_megascans` correctly held back per Ruling 13. Tests now collect.
+
+**What killed it.** A machine-level crash took the relay, this team, both watchers, and Houdini
+(pid 61208) simultaneously at ~12:50. Not a leg failure. Nothing in the repair is suspect.
+
+**Houdini is DOWN.** This changes scope, and the change is not negotiable:
+
+## Resume at M3 ONLY. Do not attempt M4.
+
+**M3 — delete the MagicMock `hou` fixture.** This is the load-bearing move and it does **not**
+need a live Houdini:
+
+1. Remove every `MagicMock` `hou` from the relocated `synapse/tests/solaris/` conftest.
+2. Replace with hython-gated tests that **skip** when Houdini is absent. Use
+   `harness/notes/l2_live_verify.py` as the pattern.
+3. With Houdini down, those tests MUST report **skip**. A skip is honest. A pass would prove the
+   mock is still in the loop somewhere, and that is the exact defect being removed.
+
+**Oracle:** zero `MagicMock` references remain under the relocated solaris tests; `pytest -q`
+shows the new tests as skipped, not passed, not failed; suite count holds or rises.
+
+## M4 is BLOCKED until Houdini returns — by ruling, not by preference
+
+Every M4 repair needs live confirmation:
+- **F9** retarget to `sopnet/geo` — must be proven against a live locked HDA.
+- **F7** `purpose` is a `UsdGeomImageable` attribute, not a parm — **probe the real mechanism
+  live before writing against it.** Constitution Law 5. Substituting an assumed API for a
+  refuted one is how a decay clock becomes a phantom, and that is precisely the trap here.
+- **F3/F4/F5** wiring fixes — provable only by a composed stage with a prim count.
+
+Writing these blind and marking them green would produce exactly the class of defect this whole
+repair exists to remove. **Do not.** Deposit each as ready-to-execute with its probe named.
+
+## Write SR1.json when M3 lands
+
+`receipt/v1`. Status is `amber` at best — M4 is deferred, and the receipt must say so plainly in
+`resume_token`. Do not report the family as repaired. M1–M3 make it *reachable and honestly
+tested*; the defects are still there and still deposited.
+
+## Standing
+
+Commandment 7. Probes beat memory. Never push, never merge, never open a PR — Gate C is Joe's.
+Stay in this worktree; the main branch belongs to CTO-RELAY-01.
