@@ -288,9 +288,20 @@ all binding on this leg:
   L3 must report whether provenance is written to USD `customData` today. If it is not, that is a
   ruling item — the panel must not be the only place a decision's reasoning exists.
 
-**Scope fence.** DRAFTSMAN touches `python/synapse/panel/styles.py` and widget-level presentation
-only. No dispatch logic, no routing, no handler edits. Anything the L3 matrix marks `ORPHAN` is
-**removed from the surface, not restyled**. Restyling a dead affordance is how a panel lies.
+**Scope fence.** DRAFTSMAN touches `python/synapse/panel/tokens.py`,
+`python/synapse/panel/designsystem/tokens.py`, `python/synapse/panel/styles.py`, and
+widget-level presentation only. No dispatch logic, no routing, no handler edits. Anything the
+L3 matrix marks `ORPHAN` is **removed from the surface, not restyled**. Restyling a dead
+affordance is how a panel lies.
+
+**AMENDMENT A2 — 2026-07-25.** The full spec for this leg is
+`design/cto_relay_01/L4_COHERE_SPEC.md`, with `design/cto_relay_01/panel_L4_v2.html` as the
+visual reference. Read the spec first. It opens with a **BLOCKER**: `panel/tokens.py` and
+`panel/designsystem/tokens.py` declare the same token names with different values, and 11 call
+sites still render the legacy cyan `#00D4FF` against 20 on `#8FB3D9`. A palette pass on an
+unresolved collision produces a third state, not a fix. Resolve the collision before rule 02
+onward. The original scope fence said `styles.py` only — that was wrong; `styles.py` is a
+consumer, the values live in the two token modules.
 
 **The reference, reduced to five rules**
 
