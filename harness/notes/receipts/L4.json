@@ -1,0 +1,79 @@
+{
+  "leg": "L4",
+  "name": "PANEL SKIN",
+  "schema": "receipt/v1",
+  "started": "2026-07-25T04:50:00Z",
+  "ended": "2026-07-25T06:20:00Z",
+  "status": "amber",
+  "status_reason": "Every CHECKABLE oracle clause passes, and each was re-verified independently by the orchestrator: 0 bold hits on the title path, 0 routing/server imports added to panel/, all 162 tokens present, suite 4744 passed / 0 failed. Amber because 2 of 5 G3 slices remain UNGRADED - hython-offscreen was permission-denied for the entire leg - and no screenshots were produced. Nothing here has been seen rendering.",
+  "commit_at_run": "3354284",
+  "mode": "B",
+  "agents": ["panel-design-warden"],
+  "t4": "NOT DECIDED. No product-identity framing in any commit message or user-visible copy.",
+
+  "suite": { "before": 4744, "after": 4744, "delta": 0, "failed": 0, "skipped": 100 },
+  "commandment_7": "HELD. Independently re-verified by the orchestrator at 3354284: 4744 passed, 0 failed, 100 skipped. Panel slice: 186 passed, 67 skipped. Nothing weakened, skipped, xfailed or deleted.",
+
+  "commits": [
+    { "sha": "67ef8a1", "what": "chore(harness): L4 oracle - token-preservation assertion script" },
+    { "sha": "445ff2b", "what": "style(panel): Cohere rule 1 - the wordmark is not bold. COMMITTED ALONE, bisectable, as required." },
+    { "sha": "217f343", "what": "style(panel): add MUSHROOM inert-metadata grey + monolinear/atmosphere tokens" },
+    { "sha": "6ca0cac", "what": "style(panel): Cohere rule 3 - monolinear icons on the 24px grid" },
+    { "sha": "8411aad", "what": "style(panel): Cohere rules 2 + 5 - cells not boxes, and an atmosphere field" },
+    { "sha": "3354284", "what": "style(panel): Cohere rule 4 - mono for code, sans for everything else" }
+  ],
+  "foreign_commit_in_range": "aaf12fe (ruling(cto): R24) is NOT part of this leg. A concurrent process committed to feat/cto-relay-01 mid-run. See drift D-R6.",
+
+  "oracle": {
+    "no_bold_on_title_path": "PASS - grep -cE 'font.*[Bb]old|setBold\\(True\\)' on synapse_panel.py returns 0. Orchestrator-verified.",
+    "pytest_k_panel_failed_zero": "PASS - 186 passed, 67 skipped, 0 failed",
+    "full_suite": "PASS - 4744 passed, 0 failed, 100 skipped. Orchestrator-verified.",
+    "all_162_tokens_survive": "PASS - assert_panel_tokens.py: 'token inventory before: 162 names (commit 1e135a2) / names asserted: 162 (+40 re-exports) / missing after L4: 0 / RESULT: ALL 162 PRESENT'. Orchestrator-verified. This is an ASSERTION SCRIPT, not an eyeball - the artifact harness/notes/assert_panel_tokens.py is committed.",
+    "no_routing_or_server_import_added": "PASS - 0 matches. Orchestrator-verified.",
+    "g3_strict": "pass, 2 WARN, exit 0 - but see ungraded_slices. Same partial green as the L3 baseline; no floor was moved.",
+    "screenshots": "NOT PRODUCED. Could not drive an offscreen render - hython denied. design/cto_relay_01/ was not created. No fabricated images."
+  },
+
+  "ungraded_slices": {
+    "count": 2,
+    "of": 5,
+    "which": ["USABILITY - live offscreen build (interactive targets, fonts, tracking)", "v9 INVARIANTS - same-pane law + state-as-status"],
+    "reason": "Both need hython. Every hython.exe invocation was permission-denied for the whole leg, in both L3 and L4.",
+    "consequence": "The QSS actually parsing, the ring/arc/check glyphs actually rasterising, the sans flip's real metrics, and the gradient's rendered appearance are ALL unverified live. Static + full-suite + G3-static only."
+  },
+
+  "cohere_rules": {
+    "R1_title_not_bold": { "done": true, "change": "TRACKING_EM['BRAND'] 0.16 -> 0.286 (= 4.00px at 14px, was 2.24px); weight 500 -> 400. Size holds at 14px. fontload.tracked_font applies neither setBold nor setWeight below 500, so the QFont inherits host regular.", "anchors": ["python/synapse/panel/designsystem/tokens.py:306", "python/synapse/panel/synapse_panel.py:403"], "note": "audit_panel.py:382 and tests/test_panel_faces.py:413,445 read TRACKING_EM['BRAND'] dynamically - no floor was moved to accommodate the change." },
+    "R2_cells_not_boxes": { "done": true, "change": "BucketGrid.paintEvent drawRect now takes a per-edge inset from a STABLE INTEGER HASH of (cell index, edge) - deterministic, run-identical, no shimmer; max 22% of the smaller cell dim; every rect floored at 1px. QPushButton#DsChip radius 4 -> 0, selection moved to a left edge-marker over the existing SIGNAL_TINT wash, padding made asymmetric to absorb the border.", "anchors": ["python/synapse/panel/face_work.py:150", "python/synapse/panel/qss.py"], "not_done": "network-peek - it does not exist (L3-confirmed, zero matches for Peek in panel/)." },
+    "R3_monolinear_icons": { "done": true, "change": "StatusDot: filled ellipse -> unfilled ring at STROKE_PX, diameter ICON_GRID//3 (still 8). MarkDot: was THREE treatments (22%-alpha disc under a solid pie / solid disc / 2.0px ring) - now ONE PEN, THREE ARC LENGTHS: open 300-degree ring at rest, half-arc working, closed ring + same-pen check for done.", "anchors": ["python/synapse/panel/designsystem/components.py:107", "python/synapse/panel/designsystem/components.py:129"], "orphans_untouched": "chat_panel.py's 5 status-dot sites deliberately not touched." },
+    "R4_mono_for_code_sans_for_rest": { "done": true, "change": "TYPE_ROLES 'title' and 'label' -> FONT_SANS_CSS (family only; size/weight/tracking held). 'code' and 'status' stay mono.", "anchors": ["python/synapse/panel/tokens.py:285"], "deliberately_kept_mono": "context_bar.py and gate_widget.py - their mono carries node paths and versions, which is mono earning its place. This is a narrower change than the brief implied, and correctly so." },
+    "R5_gradient_atmospheres": { "done": true, "change": "New atmosphere() helper + ATMOSPHERE_DELTA=4. QWidget#DsRoot background goes flat PANEL -> qlineargradient PANEL +/-4/255. DsSection stays FLAT so the field reads once, at the back. This is the first qlineargradient in the QSS.", "anchors": ["python/synapse/panel/qss.py"] }
+  },
+
+  "palette": {
+    "added": "MUSHROOM = _warm_bias(_TXT['tertiary']) -> #92867A headless. DERIVED from the seeded ramp so it tracks the host .hcs - not a hardcoded literal. Wired to face_review.py:182 (replacing a hardcoded #97A3AD) and styles.py get_context_bar_dim_label_stylesheet via getattr(_ds,'MUSHROOM',t.TEXT_DIM) - an additive _ds. extension.",
+    "contrast_measured": "vs PANEL: tertiary 3.942 -> mushroom 4.042. Slightly BETTER, not worse.",
+    "green_reused_not_added": "OK_SOFT #6FBF8E reused as instructed. No second green was introduced, so the status family did not acquire its own token gremlin.",
+    "signal_sources_untouched": "The three SIGNAL sources were NOT unified. test_hda_borderline risk avoided."
+  },
+
+  "findings": [
+    { "id": "L4.F1", "claim": "The 0.5px hairline cannot exist in Qt QSS - border-width does not take fractional px. HAIR is a COLOUR token, not a width; the widths are literal 1px at qss.py:33 and qss.py:198. A true hairline would require replacing two QSS borders with painted QPainterPath widgets - structural, not skin. DELIBERATELY NOT DONE.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/panel/designsystem/tokens.py:184", "severity": "cosmetic" },
+    { "id": "L4.F2", "claim": "MarkDot was not monolinear before this leg: it carried a 22%-alpha disc under a solid drawPie plus a 2.0px ring - three weights, two fills, in one glyph. Fixed in 6ca0cac.", "truth": "REFUTED-STATIC", "anchor": "python/synapse/panel/designsystem/components.py:170", "severity": "debt" },
+    { "id": "L4.F3", "claim": "MUSHROOM is UNGATED by the contrast sweep. audit_panel.py sweeps only the `body` and `secondary` roles; a new text token is not swept. It was hand-measured at 4.042 (better than the 3.942 it replaces) but the gate does not enforce it. Widening the audit is an audit edit and outside the L4 fence - correctly not done.", "truth": "VERIFIED-STATIC", "anchor": "audit_panel.py", "severity": "debt" },
+    { "id": "L4.F4", "claim": "drawArc / drawPath / Qt.PenCapStyle.RoundCap are UNVERIFIED-LIVE on this host. QPainterPath has in-repo precedent (synapse_panel.py:212); the other three do not. They are Qt core API, but the hython probe was denied, so verification was not obtained and is not being claimed.", "truth": "UNVERIFIED", "anchor": "python/synapse/panel/designsystem/components.py:191", "severity": "debt" },
+    { "id": "L4.F5", "claim": "A concurrent process is committing to feat/cto-relay-01. Commit aaf12fe (ruling(cto): R24) plus 6b41e1a, 19dca4d and 5a88cee landed on the branch mid-leg, authored as Joseph Ibrahim, and one silently undid a `git reset --soft` the agent issued to split a commit. Consequence: Cohere rules 2 and 5 share one commit (8411aad) rather than being separate. Rule 1 stayed isolated, which is the one that had to be.", "truth": "VERIFIED-RUNTIME", "anchor": "aaf12fe", "severity": "blocker" },
+    { "id": "L4.F6", "claim": "MarkDot's `done` state now carries a check glyph, which is arguably a new affordance rather than pure skin. It was forced by banning fills while keeping `done` visually distinct from `at rest`.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/panel/designsystem/components.py:129", "severity": "cosmetic" },
+    { "id": "L4.F7", "claim": "The relay's instruction to REMOVE ORPHAN affordances from the surface was not executed, deliberately. All 17 ORPHANs are the chat_panel.py tree whose loader is never installed - they are already invisible to users. Restyling them would spend budget on pixels nobody sees; deleting the tree would decide what belongs on the product surface, which is T.4-adjacent, and T.4 is frozen. So neither was done.", "truth": "VERIFIED-DERIVED", "anchor": "harness/notes/panel_capability_matrix.json", "severity": "cosmetic" }
+  ],
+
+  "for_ruling": [
+    { "id": "L4.R1", "question": "Live verification is owed for the entire panel leg. hython-offscreen was permission-denied across BOTH L3 and L4, so nothing in the restyle has been seen rendering - QSS parsing, glyph rasterisation, real font metrics, gradient appearance all unverified.", "options": ["Grant the hython-offscreen invocation and re-run G3 + screenshots before L4 is called done", "Accept the leg on static + full-suite evidence and verify at next Houdini launch", "Revert L4"], "recommendation": "Option 1, and it is the single cheapest unblock in this whole relay - a permission grant, not engineering work. Panel verification is hython-offscreen-only by standing convention, and the two ungraded slices are precisely the ones that catch interactive-target and same-pane-law regressions. Do not revert: the suite is green, tokens are intact, and the changes are token-level and reversible.", "cost_of_delay": "L4 currently ships unverifiable on 40% of its own gate. Any rendering defect surfaces to Joe in the live panel rather than to the harness.", "unblocks": "audit_panel.py:157" },
+    { "id": "L4.R2", "question": "A concurrent process is committing to feat/cto-relay-01 while the relay runs, and it reverted a git operation mid-leg.", "options": ["Give each leg its own worktree (isolation: worktree)", "Serialise - no other process touches the branch during a relay run", "Accept the contention"], "recommendation": "Option 1. The relay's own premise is that subagents are a context-isolation device; branch isolation is the missing half. This already cost commit granularity in L4 and could have cost work.", "cost_of_delay": "Every future relay run risks losing an agent's commits to a concurrent reset.", "unblocks": "harness/run_relay.ps1" },
+    { "id": "L4.R3", "question": "The 0.5px hairline the relay asks to 'keep' does not exist and cannot exist in QSS - border-width takes no fractional px. Ship 1px, or authorise painted hairline widgets?", "options": ["Ship 1px as-is", "Authorise painted QPainterPath hairline widgets for the two rules", "Drop the hairline"], "recommendation": "Ship 1px. A painted-widget rewrite of two borders is structural work dressed as a design detail, and at typical Houdini panel DPI the visual difference is near-nil. Correct the relay's design language instead.", "cost_of_delay": "None. Cosmetic." },
+    { "id": "L4.R4", "question": "MUSHROOM is not covered by the contrast sweep - audit_panel.py sweeps only body and secondary roles. Extending it is an audit edit, outside the L4 fence.", "options": ["Extend the sweep to cover all text tokens", "Leave - MUSHROOM was hand-measured at 4.042", "Revert MUSHROOM"], "recommendation": "Extend the sweep. The seeded-contrast sweep is the single most load-bearing gate in the panel, and a text token outside it is exactly the blind spot that produced the original host-seeding bug. The agent was right not to widen an audit it was fixing against.", "cost_of_delay": "Low now; the gap grows with every new text token." },
+    { "id": "L4.R5", "question": "MarkDot's `done` state gained a check glyph, forced by banning fills while keeping done distinguishable from at-rest. Skin, or new affordance?", "options": ["Accept the check - it preserves the state distinction", "Let done collapse into the resting ring", "Use a different non-fill distinction"], "recommendation": "Accept it. Banning fills without adding a distinguishing mark would have made two states look identical, which is a legibility regression wearing a design rule's clothes.", "cost_of_delay": "None." }
+  ],
+
+  "resume_token": "L4 COMPLETE. Six commits 67ef8a1..3354284 on feat/cto-relay-01. All five Cohere rules implemented; rule 1 (the wordmark) is isolated at 445ff2b and bisectable as required. All four checkable oracle clauses independently re-verified by the orchestrator: bold 0, added routing/server imports 0, tokens 162/162 present via a committed assertion script, suite 4744 passed / 0 failed. If re-entered: do NOT redo the restyle. The open work is (a) the hython-offscreen permission grant, then re-run audit_panel.py --strict for the 2 ungraded slices and produce the screenshot diffs into design/cto_relay_01/, and (b) worktree isolation for the branch. ORPHANs were neither restyled nor removed, deliberately - removal is T.4-adjacent and T.4 is frozen."
+}

@@ -44,3 +44,37 @@ Reality contradicting `harness/SYNAPSE_CTO_RELAY.md`. Cosmetic ⇒ resume. Struc
 **Doc claim** `:153` lists `untitled.hip` as a hygiene suspect alongside `MagicMock/`.
 **Reality** `VERIFIED-STATIC` — it is a directory holding `claude/agent.usd` (6,220 B) + `claude/memory.md` + `.synapse/`: the live unsaved-scene memory store, previously flagged at `docs/SYNAPSE_CTO_REVIEW_2026-06-09.md:118`.
 **Disposition** Reclassified `live — do not delete`. Deleting it on the doc's suggestion would have destroyed the only copy of the unsaved-scene ledger.
+
+---
+
+## D-R6 · the branch is not exclusively the relay's — STRUCTURAL (process)
+
+**Leg** L4 (detected), affects all legs.
+**Reality** `VERIFIED-RUNTIME` — a concurrent process committed `6b41e1a`, `19dca4d`, `5a88cee` and `aaf12fe` to `feat/cto-relay-01` while the relay was mid-leg, authored as `Joseph Ibrahim`. One of them silently undid a `git reset --soft` the L4 agent issued to split a commit.
+**Impact** Cohere rules 2 and 5 share one commit (`8411aad`) instead of being separate. Rule 1 stayed isolated, which is the one that had to be. No work was lost — but only by luck.
+**Disposition** Resumed. Escalated to §5 as L4.R2: the relay's premise is that subagents are a context-isolation device; branch isolation is the missing half. Recommend per-leg worktrees.
+
+---
+
+## D-R7 · a parallel ruling file already exists — COSMETIC
+
+**Reality** `VERIFIED-STATIC` — `harness/notes/CTO_RULINGS_01.md` was created by the concurrent process and already carries rulings up to R24, including an L3 addendum (rulings 17–23) covering emergency halt and the consent gates.
+**Impact** The relay's §5 deliverable is `harness/notes/CTO_RELAY_01_RULING.md` — a different file. No collision, but two ruling surfaces now exist for one run.
+**Disposition** Resumed. `CTO_RELAY_01_RULING.md` is written as specified and cross-references the other file rather than merging into it. Reconciling the two is itself a ruling item.
+
+---
+
+## D-R8 · L4's ORPHAN-removal instruction was declined, deliberately — STRUCTURAL
+
+**Doc claim** `:277` — "Anything the L3 matrix marks `ORPHAN` is **removed from the surface, not restyled**."
+**Reality** `VERIFIED-DERIVED` — all 17 ORPHANs are the `chat_panel.py` tree, whose loader (`synapse_chat.pypanel`) is never installed. They are already invisible to users. Removing the tree decides what belongs on the product surface — a T.4-adjacent call — and T.4 is frozen by three concordant sources.
+**Impact** The instruction and the T.4 freeze are in direct tension. The freeze wins.
+**Disposition** Resumed; neither restyled nor removed. Escalated to §5.
+
+---
+
+## D-R9 · hython-offscreen denied for the whole panel arc — STRUCTURAL
+
+**Reality** `VERIFIED-RUNTIME` — every `hython.exe` invocation was refused by the permission system across L3 and L4 (observed 4× in L3, again throughout L4).
+**Impact** 2 of 5 G3 slices have no baseline and no after-state: the live offscreen build and the v9 invariants. No screenshots were produced. Nothing in the restyle has been seen rendering.
+**Disposition** Resumed with the gap reported honestly rather than papered over. Escalated to §5 as L4.R1 — the cheapest unblock in the relay, being a permission grant rather than engineering work.
