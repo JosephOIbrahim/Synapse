@@ -295,7 +295,9 @@ TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
 # Tracking lives on QFont (PercentageSpacing = 100 + em×100), NEVER in QSS
 # (Qt QSS has no letter-spacing). fontload.tracked_font() reads this.
 #   EYEBROW  +0.22  section labels (PLAN title, credit-section heads)
-#   BRAND    +0.16  wordmark
+#   BRAND    +0.286 wordmark — ~4px at the 14px wordmark size (0.286 × 14 =
+#                    4.00px). Widened from +0.16 (2.24px): at weight 400 the
+#                    word needs the air to hold its own without going bold.
 #   LABEL    +0.15  the CHAT pill (DIRECT/WORK tabs removed in v9.1)
 #   LABEL_SM +0.12  credit keys, acts verbs, tiny labels
 #   DATA     +0.03  author, meter, paths, cookline, ⌘K chip
@@ -303,7 +305,7 @@ TYPE_ROLES: Dict[str, Tuple[str, int, int, float]] = {
 #   DISPLAY  -0.015 verdict
 #   BODY      0     conversation, prompt
 TRACKING_EM: Dict[str, float] = {
-    "EYEBROW": 0.22, "BRAND": 0.16, "LABEL": 0.15, "LABEL_SM": 0.12,
+    "EYEBROW": 0.22, "BRAND": 0.286, "LABEL": 0.15, "LABEL_SM": 0.12,
     "DATA": 0.03, "SEND": 0.08, "DISPLAY": -0.015, "BODY": 0.0,
 }
 

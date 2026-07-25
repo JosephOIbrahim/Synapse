@@ -395,12 +395,14 @@ class SynapsePanel(QtWidgets.QWidget):
         top = QtWidgets.QHBoxLayout()
         top.setSpacing(t.SPACE_SM)
         self._mark = c.MarkDot("idle", diameter=16)
-        # brand word — demoted to 14px/500/TEXT_PRIMARY (comp .word); tracking
-        # lives on the QFont (Qt QSS has no letter-spacing), colour in the sheet.
+        # brand word — 14px/400/TEXT_PRIMARY (comp .word); tracking lives on the
+        # QFont (Qt QSS has no letter-spacing), colour in the sheet. Weight 400,
+        # not 500: hierarchy comes from the ~4px BRAND tracking and the position,
+        # never from weight. Size holds at 14px.
         word = c.label("SYNAPSE", role="body")
         word.setStyleSheet("color:%s;" % t.TEXT_PRIMARY)
         word.setFont(fontload.tracked_font("BRAND", 14, scale=self._chrome_scale,
-                                           weight=500))
+                                           weight=400))
         self._wordmark = word
         self._header_status = c.label("Standing by", role="caption", scale=self._chrome_scale)
         self._header_status.setStyleSheet("color:%s;" % t.TEXT_SECONDARY)
