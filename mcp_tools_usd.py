@@ -46,6 +46,12 @@ TOOL_NAMES = [
     "houdini_read_material",
     "synapse_solaris_assemble_chain",
     "synapse_solaris_build_graph",
+    # Solaris NodeFlow tool family (SR1 M1). `synapse_solaris_import_megascans`
+    # is absent on purpose -- CTO Ruling 13 / finding F9 holds it back.
+    "synapse_solaris_component_builder",
+    "synapse_solaris_scene_template",
+    "synapse_solaris_create_variants",
+    "synapse_solaris_set_purpose",
 ]
 
 # Dispatch entries for this group
@@ -70,4 +76,8 @@ DISPATCH_KEYS = {
     "houdini_read_material":        ("read_material",          "identity"),
     "synapse_solaris_assemble_chain": ("solaris_assemble_chain", "identity"),
     "synapse_solaris_build_graph":    ("solaris_build_graph",    "identity"),
+    "synapse_solaris_component_builder": ("solaris_component_builder", "identity"),
+    "synapse_solaris_scene_template":    ("solaris_scene_template",    "identity"),
+    "synapse_solaris_create_variants":   ("solaris_create_variants",   "identity"),
+    "synapse_solaris_set_purpose":       ("solaris_set_purpose",       "identity"),
 }

@@ -183,10 +183,35 @@ def test_tool_audit_is_a_document_not_a_tool():
     assert v_audit.HAS_IMPLEMENTATION is False
 
 
-def test_no_solaris_tool_the_audit_claims_is_actually_registered():
-    """FINDING F1: all five tools are unreachable from the live MCP registry."""
-    unregistered = v_audit.unregistered_tools()
-    assert unregistered == v_audit.claimed_new_tools()
-    assert len(unregistered) == 5
+def test_every_tool_the_audit_claims_is_accounted_for():
+    """FINDING F1, repaired in SR1 M1.
+
+    This test used to pin the defect -- "all five are unreachable". A test that
+    asserts a defect passes for as long as the defect survives and fails the
+    moment it is fixed, so it is rewritten to pin the BEHAVIOUR that matters
+    (CTO Ruling 9's pattern): every claimed tool is either dispatchable or
+    gated with a reason on record. Nothing is silently missing.
+
+    FAILS IF: a claimed tool is dropped from both the active registry and the
+    pending list, or a pending entry loses its stated reason.
+    """
+    assert v_audit.unregistered_tools() == [], (
+        "audit claims a tool that no MCP path can reach and no gate explains"
+    )
+    accounted = sorted(v_audit.gated_tools()
+                       + [n for n in v_audit.claimed_new_tools()
+                          if n not in v_audit.gated_tools()])
+    assert accounted == v_audit.claimed_new_tools()
+    assert len(v_audit.claimed_new_tools()) == 5
     res = v_audit.verify_registration()
-    assert res["status"] == "FAIL"
+    assert res["status"] == "PASS", res["failures"]
+
+
+def test_import_megascans_stays_gated_not_dispatchable():
+    """CTO Ruling 13 on FINDING F9 -- the tool raises hou.PermissionError on
+    every invocation on 22.0.368, so it must not be reachable.
+
+    FAILS IF: import_megascans is promoted into the active registry before
+    F9 + F3 are repaired and live-verified.
+    """
+    assert v_audit.gated_tools() == ["synapse_solaris_import_megascans"]

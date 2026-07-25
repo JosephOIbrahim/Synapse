@@ -1,48 +1,36 @@
 """
 Shared test fixtures for RELAY-SOLARIS tool tests.
 
-Provides mock Houdini objects and path-based imports for tool modules
-that live outside the installable python/synapse/ package tree.
+Provides mock Houdini objects for the Solaris tool modules.
+
+SR1 M1: the tools now live INSIDE the installable package at
+`python/synapse/mcp/tool_impls/solaris/` (NOT `mcp/tools/solaris/` — a
+regular package there shadows the existing `python/synapse/mcp/tools.py`
+HTTP-transport module; proven live, see the M1 report). The former path-based
+`importlib.util.spec_from_file_location` shim is gone — the test files
+import them as ordinary package modules. Importing here (rather than only
+in the test files) keeps the failure loud if the package move regresses.
+
+SR1 M2 note: the MagicMock `hou` fixtures below are banned by Constitution
+Law 1 for host-behaviour assertions and are deleted in M3. They are left
+untouched in this mile deliberately — the honest first signal from this
+family is the failures that collection produces, not a green run.
 """
 
 import pytest
-import sys
-import os
-import importlib.util
 from unittest.mock import MagicMock
-from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Path-based import helper — tools live in synapse/mcp/tools/solaris/
-# which is NOT inside the python/synapse/ package tree.
+# Package import — no path shim. If this raises, the M1 relocation is broken.
 # ---------------------------------------------------------------------------
 
-_TOOLS_DIR = Path(__file__).resolve().parents[2] / "mcp" / "tools" / "solaris"
-
-
-def _import_tool(module_name: str):
-    """Import a tool module by filename from synapse/mcp/tools/solaris/."""
-    spec = importlib.util.spec_from_file_location(
-        f"solaris_tools.{module_name}",
-        _TOOLS_DIR / f"{module_name}.py",
-    )
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-# Pre-import all tool modules and register them in sys.modules
-# so test files can use normal `from ... import ...` syntax.
-for _name in [
-    "component_builder", "import_megascans", "scene_template",
-    "create_variants", "set_purpose",
-]:
-    _key = f"synapse.mcp.tools.solaris.{_name}"
-    if _key not in sys.modules:
-        try:
-            sys.modules[_key] = _import_tool(_name)
-        except Exception:
-            pass
+from synapse.mcp.tool_impls.solaris import (  # noqa: F401
+    component_builder,
+    create_variants,
+    import_megascans,
+    scene_template,
+    set_purpose,
+)
 
 
 # ---------------------------------------------------------------------------

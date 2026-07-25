@@ -5,8 +5,8 @@ Tests for synapse_solaris_import_megascans — RELAY-SOLARIS Phase 3
 import pytest
 from unittest.mock import MagicMock, patch
 
-import sys; ms_mod = sys.modules["synapse.mcp.tools.solaris.import_megascans"]
-from synapse.mcp.tools.solaris.import_megascans import validate, plan, execute, _SOURCE_PATTERN, _TOOL_NAME
+import sys; ms_mod = sys.modules["synapse.mcp.tool_impls.solaris.import_megascans"]
+from synapse.mcp.tool_impls.solaris.import_megascans import validate, plan, execute, _SOURCE_PATTERN, _TOOL_NAME
 
 
 class TestImportMegascansValidation:

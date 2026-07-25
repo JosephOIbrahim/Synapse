@@ -5,7 +5,7 @@ Tests for synapse_solaris_set_purpose — RELAY-SOLARIS Phase 3
 import pytest
 from unittest.mock import MagicMock, patch
 
-from synapse.mcp.tools.solaris.set_purpose import (
+from synapse.mcp.tool_impls.solaris.set_purpose import (
     validate, plan, PURPOSE_OUTPUT_MAP, _SOURCE_PATTERN,
 )
 

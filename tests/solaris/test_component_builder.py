@@ -11,8 +11,8 @@ from unittest.mock import MagicMock, patch
 
 # Import the tool module's validate/plan functions (pure Python, no hou)
 # We need to handle the relative import by adjusting sys.path or mocking
-import sys; cb_mod = sys.modules["synapse.mcp.tools.solaris.component_builder"]
-from synapse.mcp.tools.solaris.component_builder import validate, plan, execute, _SOURCE_PATTERN, _TOOL_NAME
+import sys; cb_mod = sys.modules["synapse.mcp.tool_impls.solaris.component_builder"]
+from synapse.mcp.tool_impls.solaris.component_builder import validate, plan, execute, _SOURCE_PATTERN, _TOOL_NAME
 
 
 class TestComponentBuilderValidation:

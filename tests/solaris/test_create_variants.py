@@ -5,7 +5,7 @@ Tests for synapse_solaris_create_variants — RELAY-SOLARIS Phase 3
 import pytest
 from unittest.mock import MagicMock, patch
 
-from synapse.mcp.tools.solaris.create_variants import validate, plan, _SOURCE_PATTERN
+from synapse.mcp.tool_impls.solaris.create_variants import validate, plan, _SOURCE_PATTERN
 
 
 class TestCreateVariantsValidation:

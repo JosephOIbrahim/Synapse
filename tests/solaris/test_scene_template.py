@@ -5,8 +5,8 @@ Tests for synapse_solaris_scene_template — RELAY-SOLARIS Phase 3
 import pytest
 from unittest.mock import MagicMock, patch
 
-import sys; st_mod = sys.modules["synapse.mcp.tools.solaris.scene_template"]
-from synapse.mcp.tools.solaris.scene_template import (
+import sys; st_mod = sys.modules["synapse.mcp.tool_impls.solaris.scene_template"]
+from synapse.mcp.tool_impls.solaris.scene_template import (
     validate, plan, execute, _SOURCE_PATTERN, _TOOL_NAME, _PATH_TEMPLATES,
 )
 
