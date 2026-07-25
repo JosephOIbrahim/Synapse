@@ -272,6 +272,22 @@ count(ORPHAN) and count(SILENT) are reported as integers, not prose
 **Why.** The panel keeps the Pentagram idiom but moves from generic Swiss-minimal toward the
 specific logic of Pentagram's Cohere identity (Jody Hudson-Powell / Luke Powell, London).
 
+**AMENDMENT A1 — 2026-07-25, Joe-authorized. Commits before the work it amends.**
+**The Review surface is cut.** The panel is two surfaces: **Direct** and **Work**. Consequences,
+all binding on this leg:
+
+- The `Review` tab, its Accept control, and its Revert control are **removed, not restyled**.
+  Revert is `hou.undos` — Ctrl+Z, owned by the host. A panel button duplicating the host's undo
+  stack is precisely what in-process access parity makes unnecessary.
+- The render, the verdict line, and the decision credit collapse **inline into Direct**. They are
+  the agent's answer, not a separate mode.
+- `Commit to /stage` survives as an inline action on the result. It is a USD layer decision, not
+  a review action.
+- **Open question, routed to L3, not to be assumed here:** decision provenance ("Dark_Glass over
+  Diamond, closer to scene IOR") was the load-bearing content of Review. Inline, it scrolls away.
+  L3 must report whether provenance is written to USD `customData` today. If it is not, that is a
+  ruling item — the panel must not be the only place a decision's reasoning exists.
+
 **Scope fence.** DRAFTSMAN touches `python/synapse/panel/styles.py` and widget-level presentation
 only. No dispatch logic, no routing, no handler edits. Anything the L3 matrix marks `ORPHAN` is
 **removed from the surface, not restyled**. Restyling a dead affordance is how a panel lies.
