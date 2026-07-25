@@ -1,0 +1,97 @@
+{
+  "leg": "L2",
+  "name": "SOLARIS WIRING",
+  "schema": "receipt/v1",
+  "started": "2026-07-25T01:45:00Z",
+  "ended": "2026-07-25T03:20:00Z",
+  "status": "red",
+  "status_reason": "Oracle clause 3 FAILED: the attack ledger has 8 UNHANDLED attacks against a required 0. Clause 4 (suite delta >= +5) passed at +28 and clause 1 (6/6 verifiers) passed nominally, but the verifiers were then shown to be largely vacuous (N7/N8) and one new test pins a defect that does not exist (N6). Per receipt/v1 semantics a red leg blocks its own merge, not the relay. The relay continued to L3.",
+  "commit_at_run": "e4f0b00",
+  "mode": "B",
+  "agents": ["h22-forge", "seam-hunter"],
+
+  "suite": { "before": 4716, "after": 4744, "delta": 28, "failed": 0, "skipped": 100 },
+  "commandment_7": "HELD. Verified independently by the orchestrator with its own `python -m pytest tests/ -q` run at e4f0b00: 4744 passed, 0 failed, 100 skipped. Nothing was skipped, xfailed, weakened or deleted. NOTE: the +28 is a real count increase but N6 shows at least one of those tests asserts a false claim - green count and green meaning are not the same thing.",
+
+  "oracle": {
+    "six_verifiers_exist": "PASS nominally - five new + the pre-existing component_builder probe. Qualified: tool_audit has no implementation to verify (it is a dict in schema_tool_audit.py), and the pre-existing component_builder file is an H21-era node-EXISTENCE probe, not a wiring verifier.",
+    "seam_gate_acceptance": "GO - `python scripts/run_live_probes.py` at a66048d on hython 22.0.368 returned 6/6 passed, VERDICT: PASS.",
+    "crucible_ledger_zero_unhandled": "FAIL - 8 UNHANDLED of 26 attackable cells.",
+    "suite_delta_ge_5": "PASS - +28."
+  },
+
+  "commits": ["e4f0b00"],
+  "artifacts": ["harness/notes/l2_wiring_findings.md", "python/synapse/validation/solaris/verify_wiring_common.py", "python/synapse/validation/solaris/verify_scene_template.py", "python/synapse/validation/solaris/verify_import_megascans.py", "python/synapse/validation/solaris/verify_create_variants.py", "python/synapse/validation/solaris/verify_set_purpose.py", "python/synapse/validation/solaris/verify_tool_audit.py", "tests/test_solaris_wiring_verifiers.py"],
+
+  "seam_gate": {
+    "verdict": "GO",
+    "probes": "6/6 passed",
+    "note": "Attack count is 6 probes, not the 13 the relay cites. The runner has no notion of 13 - that figure is an assertion-level tally from the PR #48 write-up. Units mismatch, not a regression."
+  },
+
+  "residuals": {
+    "R1_probe_phase3_layout_no_negative_control": "PROMOTED to debt. Not cosmetic as the relay assumed - without a negative control the probe cannot show the layout fix is real rather than vacuously true, and --strict-companions fails the gate today. Needs an owner.",
+    "R2_mile2_loop_closure_stale_text": "CLOSED. No code importer; explicitly retained as a record of the pivot; the undeleted branch is a local-only nit affecting no gate."
+  },
+
+  "attack_ledger": {
+    "classes": ["wrong_context", "existing_node_collision", "reserved_prim_paths", "missing_upstream", "mid_cook_interrupt"],
+    "cells_attackable": 26,
+    "unhandled": 8,
+    "rows": {
+      "scene_template":     { "wrong_context": "UNHANDLED(N3)", "collision": "HELD", "reserved_paths": "UNHANDLED(N5)", "missing_upstream": "HELD", "mid_cook": "HELD" },
+      "component_builder":  { "wrong_context": "UNHANDLED(N3)", "collision": "HELD", "reserved_paths": "UNHANDLED(N5)", "missing_upstream": "HELD", "mid_cook": "HELD" },
+      "import_megascans":   { "wrong_context": "UNHANDLED(N4)", "collision": "UNHANDLED(N4)", "reserved_paths": "n/a - F9 kills it first", "missing_upstream": "n/a", "mid_cook": "n/a" },
+      "create_variants":    { "wrong_context": "UNHANDLED(N2)", "collision": "HELD", "reserved_paths": "HELD", "missing_upstream": "UNHANDLED(N1)", "mid_cook": "HELD" },
+      "set_purpose":        { "wrong_context": "HELD", "collision": "HELD", "reserved_paths": "n/a", "missing_upstream": "HELD", "mid_cook": "HELD" },
+      "tool_audit":         { "all": "NOT ATTACKABLE - no implementation module exists" }
+    },
+    "held_clean_under_composition": "Two scene_templates in one /stage auto-uniquify with zero cross-wiring; display flag stable across all three tools; create_variants x2 byte-stable; no stacked boxes; mid-cook/dirty stage held everywhere."
+  },
+
+  "verifier_integrity": {
+    "all_five_can_go_red": true,
+    "but": "Three structural holes make the greens hollow - N6 (a test pins a false defect), N7 (the static tier never reads the tool), N8 (the live tier grades only the delta, so it is blind to damage done to pre-existing nodes)."
+  },
+
+  "composed_regressions": [
+    "N4 - import_megascans after its own failure, and after component_builder's failure. The only true second-action corruption found: the idempotency guard latches onto wreckage, including another tool's wreckage.",
+    "N8 - the verifiers themselves. PASS in isolation, structurally blind after any other tool touches the network."
+  ],
+
+  "findings": [
+    { "id": "L2.N7", "claim": "The verifiers' STATIC tier never reads the tool. Every EXPECTED_TOPOLOGY is a hand-written literal graded against the catalogue, never against execute(). Proof of live divergence: the declared topology carries 7 nodes including geo_0 sopimport; the tool emits 6 (no sopimport) - and verify_static still returns PASS. A regression in any tool's wiring changes nothing in the static tier. It is a documentation test wearing a verifier's name.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/validation/solaris/verify_scene_template.py:24", "severity": "blocker" },
+    { "id": "L2.N8", "claim": "The LIVE tier grades only the delta of children before/after, so any damage a tool does to PRE-EXISTING nodes is structurally invisible. After scene_template + component_builder + create_variants all ran into one /stage (8 children, 4 terminal LOPs), verify_live returned PASS with an empty failure list.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/validation/solaris/verify_scene_template.py:46", "severity": "blocker" },
+    { "id": "L2.N6", "claim": "The create_variants material verifier asserts a defect that does not exist, and a NEW test pins the lie. FORGE's F4 claimed copyNodesTo drops inputs; live on 22.0.368 it does not - mat_blue and mat_red both carry input ['geo_mv'] with zero errors. The verifier declares them with inputs:[] and a new test asserts that failure forever. The REAL material defect is different: 4 terminal LOPs, a dead-end, not an arity violation.", "truth": "REFUTED-LIVE", "anchor": "tests/test_solaris_wiring_verifiers.py:139", "severity": "blocker" },
+    { "id": "L2.N4", "claim": "COMPOSED, second-action. The idempotency guard latches onto its own wreckage, across tools. import_megascans raises PermissionError on run 0 leaving partial state, then returns status 'already_exists' permanently on every subsequent run - it never imports anything, ever, yet reports success. Cross-tool: component_builder failing at /obj left /obj/component_wc, and the next import_megascans at /obj then returned already_exists for an asset ANOTHER tool half-built.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/mcp/tools/solaris/import_megascans.py:172", "severity": "blocker" },
+    { "id": "L2.N3", "claim": "Failed builds orphan partial networks and the undo group does not clean up. component_builder at /obj raises hou.OperationFailed and leaves /obj/component_wc behind; scene_template into a SOP geo raises hou.InvalidInput after orphaning primitive_wc4 and camera1. hou.undos.group does not roll back.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/mcp/tools/solaris/component_builder.py:227", "severity": "blocker" },
+    { "id": "L2.N1", "claim": "create_variants fabricates variants of nothing and reports created. When no componentgeometry exists, base_geo stays None and the else branch creates FRESH EMPTY componentgeometry nodes. On an empty subnet: status='created', variants_created=['a','b'] - variants of nothing, no error.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/mcp/tools/solaris/create_variants.py:172", "severity": "blocker" },
+    { "id": "L2.N2", "claim": "create_variants pointed at a LOP network pollutes it directly. component_path='/stage' dumps geo_a, geo_b, geo_variants into /stage alongside unrelated networks and returns status='created'. The target node is never type-checked.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/mcp/tools/solaris/create_variants.py:123", "severity": "blocker" },
+    { "id": "L2.F9", "claim": "import_megascans cannot run at all: hou.PermissionError 'Cannot create a node inside a locked asset'. It creates SOPs directly in componentgeometry instead of its sopnet/geo child, and orphans /stage/component_mgA.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/mcp/tools/solaris/import_megascans.py:172", "severity": "blocker" },
+    { "id": "L2.F1", "claim": "The five Solaris tools are absent from the MCP registry - zero matches for their names in _tool_registry.py. They live outside the installable package and are unreachable by any dispatch path.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/mcp/_tool_registry.py", "severity": "blocker" },
+    { "id": "L2.F7", "claim": "set_purpose sets no purpose. No `purpose` parm exists on componentgeometry on 22.0.368; the code always falls through and still returns status='set' with an advisory note. This violates the fidelity-or-stop rule.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/mcp/tools/solaris/set_purpose.py:129", "severity": "blocker" },
+    { "id": "L2.F11", "claim": "Solaris tools are effectively untested: pyproject testpaths=['tests'] so synapse/tests/solaris/ is NEVER collected, and it is mock-only anyway. This is the root cause of F7 and F9 surviving - a mock hou cannot raise PermissionError or report a missing parm.", "truth": "VERIFIED-STATIC", "anchor": "pyproject.toml:102", "severity": "blocker" },
+    { "id": "L2.N10", "claim": "verify_wiring_common's NON_LOP_TYPES exempts four types that ARE real LOPs in the pinned 218-type catalogue (null, xform, matchsize, attribwrangle). The exempt branch skips type-existence, deprecation, input-ref AND arity. Proven: two null nodes where one references ghost_node_does_not_exist returns PASS. The module's own comment that 'unknown-and-unlisted is a failure' is false for 4 of 6 entries.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/validation/solaris/verify_wiring_common.py:54", "severity": "blocker" },
+    { "id": "L2.N9", "claim": "check_live_network early-returns and skips the composition triad. On has_lop fail or tails != 1 it returns before terminal_no_errors / terminal_stage_resolves / stage_prim_count - so precisely the defective networks never get composition asserted.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/validation/solaris/verify_wiring_common.py:296", "severity": "debt" },
+    { "id": "L2.N5", "claim": "Reserved USD names pass validation. scene_name='HoudiniLayerInfo' yields hierarchy_root '/HoudiniLayerInfo'. Both validators correctly reject '/', spaces, leading digits and empty, but have no reserved-name list.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/mcp/tools/solaris/scene_template.py:167", "severity": "debt" },
+    { "id": "L2.N11", "claim": "verify_live reports FAIL on a correct no-op: a second run returns FAIL ['has_lop'] because the tool correctly returned already_exists and emitted nothing. The verifier cannot distinguish 'unchanged' from 'broken'.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/validation/solaris/verify_wiring_common.py:296", "severity": "debt" },
+    { "id": "L2.F3", "claim": "import_megascans creates mtl_ref but never wires it; componentmaterial input 1 stays open and mtl_ref_asset has no consumer.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/mcp/tools/solaris/import_megascans.py:240", "severity": "blocker" },
+    { "id": "L2.F5", "claim": "create_variants' componentgeometryvariants dead-ends with no consumer, leaving 2 terminal LOPs.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/mcp/tools/solaris/create_variants.py:186", "severity": "blocker" },
+    { "id": "L2.F6", "claim": "create_variants uses bare `except Exception: pass` at two sites then unconditionally returns status='created'. Failure never surfaces.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/mcp/tools/solaris/create_variants.py:194", "severity": "debt" },
+    { "id": "L2.F10", "claim": "componentbuilder is absent from the live 218-type LOP catalogue; a try/except hides the native-path failure.", "truth": "VERIFIED-RUNTIME", "anchor": "python/synapse/mcp/tools/solaris/component_builder.py:227", "severity": "debt" },
+    { "id": "L2.F2", "claim": "tool_audit is not a tool. It is a design dict in schema_tool_audit.py with no implementation module - so the relay's 'six Solaris tools' is five.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/mcp/tools/solaris/schema_tool_audit.py", "severity": "cosmetic" },
+    { "id": "L2.F8", "claim": "Parameter name divergence: scene_template reads `parent`, the others read `parent_path`. The mismatch silently builds into /stage instead of erroring.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/mcp/tools/solaris/scene_template.py:167", "severity": "cosmetic" },
+    { "id": "L2.N12", "claim": "terminal_no_errors is order-dependent: errors() is read before stage() cooks, so on an uncooked terminal it returns () and passes vacuously.", "truth": "VERIFIED-STATIC", "anchor": "python/synapse/validation/solaris/verify_wiring_common.py:309", "severity": "debt" }
+  ],
+
+  "for_ruling": [
+    { "id": "L2.R1", "question": "N6 + N7 together: did this leg deliver verification, or documentation? The static tier never reads the tool (a wiring regression changes nothing in it), and one of the 28 new green tests pins a defect that live probing REFUTES. Rule this BEFORE the register-or-quarantine question.", "options": ["Re-derive every EXPECTED_TOPOLOGY from live emission and retire the false min_inputs pin - the verifiers become real", "Accept the verifiers as documentation tests, rename them so they stop claiming to verify", "Revert e4f0b00 entirely"], "recommendation": "Option 1. The verifiers are close to real - they can all go red, and the live tier works. What is missing is that the static tier compares a hand-written literal against the catalogue instead of against execute(). That is a fixable seam, not a design failure. Do NOT revert: the leg's findings are the most valuable output of the whole relay.", "cost_of_delay": "High and compounding. 28 green tests currently certify nothing about Solaris wiring, and the greenness is actively misleading - it is the exact 'isolated-green hides composed regressions' failure the seam-gate exists to prevent.", "unblocks": "tests/test_solaris_wiring_verifiers.py:139" },
+    { "id": "L2.R2", "question": "F1 + F11: five Solaris tools are absent from the MCP registry and their tests are never collected. Is this family alive?", "options": ["Register the tools, move their tests under tests/, repair N1-N9 - treat as an undelivered feature to finish", "Quarantine the tree and strike the Phase-2 'five Solaris tools delivered' claim from the docs", "Leave as-is"], "recommendation": "Decide 1-vs-2 only AFTER L2.R1. Registering tools behind vacuous verifiers is strictly worse than leaving them dead - it would make unreachable-and-broken into reachable-and-broken. If the appetite for the repair work is not there, option 2 is honest and cheap.", "cost_of_delay": "Medium. Nothing is reachable today, so nothing is breaking for users - the cost is a false capability claim in the docs.", "unblocks": "python/synapse/mcp/_tool_registry.py" },
+    { "id": "L2.R3", "question": "N3 + N4: does a failed SYNAPSE build owe the caller a clean network? Today failures orphan partial state, and the idempotency guard then latches onto that wreckage - including another tool's wreckage - and reports success forever.", "options": ["Yes - on exception inside the undo group, destroy the created-node set before re-raising, and make the guard verify completeness not just name-existence", "No - partial state is the artist's to clean up, but the guard must still verify completeness", "Leave"], "recommendation": "Option 1, and note this binds FAR beyond Solaris. It is a family-wide contract question about what 'undo-wrapped' actually promises. SYNAPSE's core guarantee is that every mutation is reversible; N3 shows hou.undos.group does not deliver that on the exception path.", "cost_of_delay": "High. This is the closest thing in the relay to a violation of SYNAPSE's stated core guarantee." },
+    { "id": "L2.R4", "question": "F7 doctrine: set_purpose returns status='set' having set nothing, with an advisory note. Is a success status with an advisory note ever acceptable?", "options": ["No - fidelity-or-stop means a no-op returns a failure or a distinct status", "Yes, if the note is machine-readable and the caller can branch on it", "Case by case"], "recommendation": "Option 1. This is CLAUDE.md 11.6 'Fidelity = 1.0 or stop' applied literally. A success status that means 'I did nothing' is how a tool lies, and it is the same class as N6's false green.", "cost_of_delay": "Medium now, high once the tools are registered and an agent starts believing their return values." },
+    { "id": "L2.R5", "question": "N8: should the LIVE tier grade the whole network rather than only the delta of children before/after?", "options": ["Whole network - that is the difference between a probe and a seam-gate", "Delta only, plus a separate whole-network composition assertion", "Delta only"], "recommendation": "Option 1. Delta-grading is why three tools could run into one /stage leaving 4 terminal LOPs and still return PASS with an empty failure list.", "cost_of_delay": "High - it is the mechanism by which composed regressions stay invisible." },
+    { "id": "L2.R6", "question": "The relay cites '13/13 attacks held' from PR #48; the live runner reports 6/6 probes. Which is the acceptance unit?", "options": ["6 probes - what the runner actually counts", "13 assertions - the PR write-up tally", "Re-express the gate in assertions and make the runner count them"], "recommendation": "Option 3. The mismatch is not a regression, but a gate whose headline number cannot be reproduced by its own runner is a gate nobody can audit.", "cost_of_delay": "Low, but it is the same class of defect as L1's unsourced 18%." }
+  ],
+
+  "resume_token": "L2 COMPLETE and RED. Commit e4f0b00 is on the branch: five verifiers + verify_wiring_common.py + tests, suite 4716 -> 4744 passed / 0 failed (independently re-verified by the orchestrator). Seam-gate re-run GO 6/6 at a66048d. If re-entered: do NOT re-run forge - the verifiers exist. The open work is the RULING on L2.R1 (are the verifiers real), then N1-N12 repair. Nothing was fixed in this leg by gate condition - every Solaris source bug is deposited, not built. Carry forward: 8 unhandled attacks, 2 confirmed composed regressions, and one NEW test at tests/test_solaris_wiring_verifiers.py:139 that pins a live-REFUTED defect and must be corrected before it calcifies."
+}
