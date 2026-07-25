@@ -78,3 +78,51 @@ Reality contradicting `harness/SYNAPSE_CTO_RELAY.md`. Cosmetic ⇒ resume. Struc
 **Reality** `VERIFIED-RUNTIME` — every `hython.exe` invocation was refused by the permission system across L3 and L4 (observed 4× in L3, again throughout L4).
 **Impact** 2 of 5 G3 slices have no baseline and no after-state: the live offscreen build and the v9 invariants. No screenshots were produced. Nothing in the restyle has been seen rendering.
 **Disposition** Resumed with the gap reported honestly rather than papered over. Escalated to §5 as L4.R1 — the cheapest unblock in the relay, being a permission grant rather than engineering work.
+
+---
+
+## D-R10 · L1.F1 REFUTED — the bridge was never down; the probe was pointed at the wrong endpoint
+
+**Leg** L1 (finding F1, severity `blocker`, tier `REFUTED-LIVE`)
+**Claim** *"The live SYNAPSE WS bridge is NOT reachable, despite a fresh sidecar advertising it.
+9/9 WebSocket upgrade attempts returned `InvalidStatus`."*
+**Reality** `VERIFIED-RUNTIME`, 2026-07-25 13:03, Houdini pid 37456, build 22.0.368:
+
+```
+ws://localhost:9999            FAIL   server rejected: HTTP 400
+ws://localhost:9999/synapse    OK     protocol_version 4.0.0, sequence 0
+ws://127.0.0.1:9999            FAIL   server rejected: HTTP 400
+```
+
+The server requires the **`/synapse` path** — as Wire Protocol 4.0.0 specifies.
+`harness/notes/.assayer_scratch/ws_probe.py:7` connects to `ws://localhost:9999` with no path.
+All nine "failures" were HTTP 400 path rejections from a healthy server.
+
+**Impact.** A `blocker`-severity finding in a shipped receipt is false. L1 concluded the transport
+layer was dead and fell back to direct `hou` import; the census it produced is unaffected and
+remains valid. But R11 in the ruling block ranks this defect above the entire relay, and that
+ranking is now wrong.
+
+**Second finding, real, surfaced by the same probe.** The envelope shape is also wrong. The
+server answered:
+
+> `Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'`
+
+The probe sent `params.code` / `code`. So the harness has **never** successfully driven Houdini
+over this transport — the path error masked an envelope error behind it.
+
+**Disposition.** L1.F1 struck. Ruling-block R11 must be re-ranked. `_ws_retest.py` retained at
+`harness/notes/` as the corrected reference probe.
+
+### The lesson, which is not the same as Law 1
+
+Constitution Law 1 says *every check must be able to fail*. This check could fail, did fail, and
+was **wrong** — the exact mirror of the four defects found this morning. Those passed while
+proving nothing; this one failed while testing nothing.
+
+**Law 1 gets you an honest instrument. It does not guarantee you aimed it at the right thing.**
+
+Corollary, adopted: **a `blocker` derived from a negative result requires a positive control
+before it ships.** If the probe cannot demonstrate success against a known-good target, its
+failure is uninterpretable. Nine identical failures are one failure with a sample size, not nine
+pieces of evidence — and the repetition made it read as more certain, not less.
