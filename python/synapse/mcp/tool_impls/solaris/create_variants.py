@@ -179,11 +179,18 @@ def execute(params: Dict) -> Dict:
                         base_mat = child
                         break
 
-                # F4: hou.copyNodesTo does NOT carry connections that originate
-                # outside the copied set, so the duplicates land unwired.
-                # Capture the base node's inputs and re-establish them explicitly.
-                base_inputs = list(base_mat.inputs()) if base_mat else []
-
+                # F4 REFUTED-LIVE (22.0.368, SR1 crucible): the premise
+                # "hou.copyNodesTo does not carry connections originating
+                # outside the copied set" is FALSE on this build. Direct probe:
+                #     hou.copyNodesTo([mat], comp)[0].inputs()
+                #     -> ['/stage/f4probe/c/geo_base']
+                # The copy arrives already wired to the outside source. The
+                # explicit re-`setInput` loop that used to sit here was a no-op
+                # -- deleting it in-tree left the live tier at 22 passed / 0
+                # failed, i.e. its oracle could not fail. Per Law 6 the test was
+                # re-aimed at the ACTUAL host contract
+                # (`test_copy_nodes_to_carries_outside_inputs_live`) before this
+                # dead code was removed. F4 is a non-defect, not a fix.
                 for v in variants:
                     vname = v["name"]
                     # Duplicate componentmaterial
@@ -192,11 +199,6 @@ def execute(params: Dict) -> Dict:
                         new_mat.setName(f"mat_{vname}", unique_name=True)
                     else:
                         new_mat = comp.createNode("componentmaterial", f"mat_{vname}")
-
-                    # F4: re-establish the connections the copy dropped.
-                    for idx, src in enumerate(base_inputs):
-                        if src is not None:
-                            new_mat.setInput(idx, src)
 
                     # Apply material params if provided
                     mat_params = v.get("material", {})

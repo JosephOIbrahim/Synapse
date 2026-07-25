@@ -42,8 +42,50 @@ def _stamp_provenance(node, info: Dict[str, Any]) -> None:
         pass
 
 
+# F8/Ruling 15 (SR1 crucible S2): see component_builder.PARENT_KEYS for the
+# full note. `parent_path` is convergent; `parent` is an accepted alias.
+PARENT_KEYS = ("parent_path", "parent")
+
+KNOWN_PARAMS = frozenset({
+    "asset_name", "usdc_path", "scale_factor", "ground_asset",
+    "rotation_correction", "proxy_reduction", "import_materials",
+    "export_path",
+} | set(PARENT_KEYS))
+
+
+def _resolve_parent_path(params: Dict) -> str:
+    for key in PARENT_KEYS:
+        val = params.get(key)
+        if val:
+            return val
+    return "/stage"
+
+
+def _require_parm(node, names):
+    """First existing parm among ``names``, or a loud error.
+
+    Law 3: `if parm: parm.set(v)` turns a renamed parm into a silent no-op that
+    still reports status="created". A parm this pipeline depends on is either
+    there or the operation failed.
+    """
+    for name in names:
+        parm = node.parm(name)
+        if parm is not None:
+            return parm
+    raise ValidationError(
+        f"{node.type().name()!r} exposes none of {list(names)} on this build "
+        f"({hou.applicationVersionString()}) -- cannot configure {node.path()}"
+    )
+
+
 def validate(params: Dict) -> None:
     """Validate parameters before any mutations."""
+    unknown = sorted(set(params) - KNOWN_PARAMS)
+    if unknown:
+        raise ValidationError(
+            f"unknown parameter(s): {', '.join(unknown)} -- "
+            f"accepted: {', '.join(sorted(KNOWN_PARAMS))}"
+        )
     usdc_path = params.get("usdc_path")
     if not usdc_path:
         raise ValidationError("usdc_path is required")
@@ -137,7 +179,7 @@ def execute(params: Dict) -> Dict:
 
     asset_name = params["asset_name"]
     usdc_path = params["usdc_path"]
-    parent_path = params.get("parent", "/stage")
+    parent_path = _resolve_parent_path(params)
     scale_factor = params.get("scale_factor", 0.01)
     ground_asset = params.get("ground_asset", True)
     rotation_correction = params.get("rotation_correction")
@@ -179,15 +221,26 @@ def execute(params: Dict) -> Dict:
 
             sop_nodes = []
 
-            # USD Import
+            # USD Import.
+            #
+            # SR1 crucible F3/F9 proof-quality: this block was previously
+            # proven only against a ZERO-BYTE .usdc, which hid that it imported
+            # nothing at all. REFUTED-LIVE on 22.0.368 against a real file:
+            #   * `filepath` is a PHANTOM parm on the usdimport SOP -- the real
+            #     one is `filepath1`. Guarded by `if parm:`, the tool silently
+            #     set no file.
+            #   * `unpacktopolygons` is a PHANTOM parm -- the real one is
+            #     `unpack_geomtype` (0=packedprims, 1=polygons).
+            #   * `primpattern` defaults to EMPTY, which imports zero prims
+            #     even with a valid file. It must be set.
+            # Sweep evidence: primpattern '' -> (0 points, 0 prims);
+            # '/rock' or '*' -> (1, 1) under every importtraversal value.
             usd_imp = sop_geo.createNode("usdimport", "import_usdc")
-            filepath_parm = usd_imp.parm("filepath")
-            if filepath_parm:
-                filepath_parm.set(usdc_path)
-            # unpack to polygons — parm name: "unpacktopolygons" or similar
-            unpack_parm = usd_imp.parm("unpacktopolygons")
-            if unpack_parm:
-                unpack_parm.set(1)
+            _require_parm(usd_imp, ("filepath1", "filepath")).set(usdc_path)
+            _require_parm(usd_imp, ("primpattern",)).set("*")
+            unpack_parm = usd_imp.parm("unpack_geomtype")
+            if unpack_parm is not None:
+                unpack_parm.set(1)  # polygons
             sop_nodes.append(usd_imp)
 
             # Transform (scale 0.01)

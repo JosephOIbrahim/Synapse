@@ -275,9 +275,9 @@ def test_set_purpose_last_write_is_the_one_that_composes_live(lopnet):
     node that still carries the authored purpose — not off the configure node
     we just wrote, which would prove nothing about ordering.
 
-    (VERIFIED-RUNTIME 22.0.368: `componentoutput` itself restructures /ASSET
-    and does not carry `purpose` through. Separate finding, recorded not fixed
-    under the SR1 M4 grant; see harness/notes/sr1_seam_probe.py.)
+    (The M4 note here — "`componentoutput` does not carry `purpose` through" —
+    is REFUTED-LIVE; see
+    `test_set_purpose_survives_the_componentoutput_sink_live`.)
     """
     from pxr import UsdGeom
 
@@ -331,26 +331,72 @@ def test_create_variants_rejects_a_non_lop_path_live():
 # import_megascans  (F9, F3)
 # ---------------------------------------------------------------------------
 
-def test_f9_import_megascans_completes_live(lopnet, tmp_path):
-    """F9 CRITICAL: EXPECTED RED — createNode targets a locked componentgeometry HDA.
+@pytest.fixture
+def real_usdc(tmp_path):
+    """A REAL .usdc carrying actual geometry — no Megascans dependency.
 
-    Live: hou.PermissionError. The tool cannot complete under any parameters.
+    SR1 crucible: F9 and F3 were previously proven against a ZERO-BYTE file, so
+    the `usdimport` never ingested anything and "the tool completes" said very
+    little. Authoring a genuine mesh + a material makes the SOP chain and the
+    reference LOP face real content.
     """
-    usdc = tmp_path / "rock.usdc"
-    usdc.write_bytes(b"")
+    from pxr import Usd, UsdGeom, UsdShade, Gf, Vt
+
+    path = tmp_path / "rock.usdc"
+    stage = Usd.Stage.CreateNew(str(path))
+    mesh = UsdGeom.Mesh.Define(stage, "/rock")
+    mesh.CreatePointsAttr(Vt.Vec3fArray([
+        Gf.Vec3f(0, 0, 0), Gf.Vec3f(1, 0, 0), Gf.Vec3f(1, 1, 0), Gf.Vec3f(0, 1, 0),
+    ]))
+    mesh.CreateFaceVertexCountsAttr(Vt.IntArray([4]))
+    mesh.CreateFaceVertexIndicesAttr(Vt.IntArray([0, 1, 2, 3]))
+    mesh.CreateExtentAttr(Vt.Vec3fArray([Gf.Vec3f(0, 0, 0), Gf.Vec3f(1, 1, 0)]))
+    UsdShade.Material.Define(stage, "/materials/rock_mtl")
+    stage.SetDefaultPrim(mesh.GetPrim())
+    stage.GetRootLayer().Save()
+
+    # Negative control on the fixture itself: an empty file would sail past a
+    # merely-structural check, so prove the geometry is really in there.
+    reread = Usd.Stage.Open(str(path))
+    pts = UsdGeom.Mesh(reread.GetPrimAtPath("/rock")).GetPointsAttr().Get()
+    assert pts is not None and len(pts) == 4, "fixture authored no geometry"
+    return path
+
+
+def test_f9_import_megascans_completes_live(lopnet, real_usdc):
+    """F9 CRITICAL: was RED — createNode targeted the locked componentgeometry
+    HDA and raised hou.PermissionError. Now proven against a real .usdc."""
     r = ms_mod.execute({
-        "usdc_path": str(usdc), "asset_name": "f9rock", "parent": lopnet.path(),
+        "usdc_path": str(real_usdc), "asset_name": "f9rock",
+        "parent_path": lopnet.path(),
     })
     assert r["status"] == "created"
 
 
-def test_f3_megascans_material_reference_is_wired_live(lopnet, tmp_path):
-    """F3 HIGH: EXPECTED RED — mtl_ref_<asset> is created but never wired
-    into componentmaterial input 1."""
-    usdc = tmp_path / "rock.usdc"
-    usdc.write_bytes(b"")
+def test_f9_import_megascans_ingests_real_geometry_live(lopnet, real_usdc):
+    """The retargeted SOP chain must actually carry the file's points.
+
+    Cooking the chain is what an empty fixture could never prove.
+    """
     ms_mod.execute({
-        "usdc_path": str(usdc), "asset_name": "f3rock", "parent": lopnet.path(),
+        "usdc_path": str(real_usdc), "asset_name": "f9geo",
+        "parent_path": lopnet.path(),
+    })
+    comp = lopnet.node("component_f9geo")
+    sop = comp.node("geo_f9geo/sopnet/geo/import_usdc")
+    assert sop is not None, "usdimport not built inside sopnet/geo"
+    geo = sop.geometry()
+    assert geo is not None and len(geo.points()) > 0, (
+        "usdimport cooked zero points — the .usdc never reached the chain"
+    )
+
+
+def test_f3_megascans_material_reference_is_wired_live(lopnet, real_usdc):
+    """F3 HIGH: was RED — mtl_ref_<asset> was created but never wired
+    into componentmaterial input 1."""
+    ms_mod.execute({
+        "usdc_path": str(real_usdc), "asset_name": "f3rock",
+        "parent_path": lopnet.path(),
     })
     comp = lopnet.node("component_f3rock")
     assert comp is not None
@@ -373,9 +419,35 @@ def _base_component(lopnet, name):
     return comp
 
 
-def test_f4_material_variants_are_wired_live(lopnet):
-    """F4 HIGH: EXPECTED RED — hou.copyNodesTo does not carry connections
-    outside the copied set, and the tool never calls setInput on the copies."""
+def test_copy_nodes_to_carries_outside_inputs_live(lopnet):
+    """F4 REFUTED-LIVE: the host contract the F4 "fix" was built to work around.
+
+    The M4 claim — "hou.copyNodesTo does NOT carry connections that originate
+    outside the copied set" — is FALSE on 22.0.368. This pins the ACTUAL
+    behaviour, with no tool in the loop: copy a wired node alone, and the copy
+    arrives already connected to the outside source. The day SideFX changes
+    that, this goes red and create_variants needs the rewiring loop back.
+    """
+    comp = _base_component(lopnet, "f4_host")
+    mat = comp.node("mat_base")
+    assert mat.inputs()[0].path() == comp.node("geo_base").path()
+
+    copied = hou.copyNodesTo([mat], comp)[0]
+    assert copied.inputs() and copied.inputs()[0] is not None, (
+        "copyNodesTo dropped the outside input — F4's premise is live again"
+    )
+    assert copied.inputs()[0].path() == comp.node("geo_base").path()
+
+
+def test_material_variants_are_wired_live(lopnet):
+    """Variant copies must reach the component's geometry.
+
+    Formerly `test_f4_material_variants_are_wired_live`. Re-aimed per Law 6:
+    it used to claim it pinned an explicit-rewiring FIX, but that fix was a
+    no-op (deleting it left this test green), so its docstring was a
+    decoration. It is a real end-state check on the tool's output and is kept
+    as one — the guarantee is "wired", not "wired by us".
+    """
     comp = _base_component(lopnet, "f4_comp")
     cv_mod.execute({
         "component_path": comp.path(), "variant_type": "material",
@@ -409,9 +481,66 @@ def test_f6_create_variants_status_is_honest_live(lopnet):
         "variants": [{"name": "x"}, {"name": "y"}],
         "add_explore_node": True,
     })
-    if r["status"] == "created":
-        explore = lopnet.node(f"explore_{comp.name()}")
-        assert explore is not None, (
-            "status='created' but the explorevariants node was swallowed by "
-            "`except Exception: pass`"
-        )
+    # S6: this used to be `if r["status"] == "created":` — a regression that
+    # flipped the status would have made the check silently vacuous instead of
+    # red. Assert the status, then assert what it claims.
+    assert r["status"] == "created", r
+    explore = lopnet.node(f"explore_{comp.name()}")
+    assert explore is not None, (
+        "status='created' but the explorevariants node was swallowed by "
+        "`except Exception: pass`"
+    )
+
+
+# ---------------------------------------------------------------------------
+# S2 — `parent_path` convergence across the family (F8, Ruling 15)
+# ---------------------------------------------------------------------------
+
+def test_f8_component_builder_honours_parent_path_live(lopnet):
+    """S2: component_builder read `parent` only — `parent_path` silently
+    defaulted to /stage, building outside the requested network."""
+    cb_mod.execute({"asset_name": "f8cb", "parent_path": lopnet.path()})
+    assert lopnet.node("component_f8cb") is not None, (
+        "built outside the requested parent — parent_path silently ignored"
+    )
+    assert hou.node("/stage/component_f8cb") is None
+
+
+def test_f8_import_megascans_honours_parent_path_live(lopnet, real_usdc):
+    """S2: same defect in import_megascans."""
+    ms_mod.execute({
+        "usdc_path": str(real_usdc), "asset_name": "f8ms",
+        "parent_path": lopnet.path(),
+    })
+    assert lopnet.node("component_f8ms") is not None, (
+        "built outside the requested parent — parent_path silently ignored"
+    )
+    assert hou.node("/stage/component_f8ms") is None
+
+
+# ---------------------------------------------------------------------------
+# S3 — the componentoutput sink drops the authored purpose (recorded, unfixed)
+# ---------------------------------------------------------------------------
+
+def test_set_purpose_survives_the_componentoutput_sink_live(lopnet):
+    """S3 REFUTED-LIVE: the sink PRESERVES the purpose. status="set" is honest.
+
+    The M4 note claimed `componentoutput` discards non-default purposes, which
+    would have made status="set" describe an authoring the component's own
+    output throws away. Live on 22.0.368 the sink stage reads
+    `/output_spsink Xform purpose=proxy` — it carries through the restructure.
+    Asserted at the SINK, so it goes red if that ever stops holding.
+    """
+    from pxr import UsdGeom
+
+    comp = _purpose_component(lopnet, "spsink")
+    r = sp_mod.execute({"component_path": comp.path(), "purpose": "proxy"})
+    assert r["status"] == "set", r
+
+    sink_stage = comp.node("output_spsink").stage()
+    root = sink_stage.GetPrimAtPath("/output_spsink")
+    assert root and root.IsValid(), "sink authored no /output_spsink prim"
+    assert UsdGeom.Imageable(root).GetPurposeAttr().Get() == "proxy", (
+        "componentoutput dropped the authored purpose — status='set' would be "
+        "describing an authoring the component's own output discards"
+    )

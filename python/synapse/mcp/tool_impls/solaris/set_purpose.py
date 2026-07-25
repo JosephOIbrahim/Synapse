@@ -63,9 +63,41 @@ PURPOSE_USD_TOKEN_MAP = {
 }
 
 
-def _stamp_provenance(node, info: Dict[str, Any]) -> None:
+class IdentityStampError(RuntimeError):
+    """The identity stamp could not be established — see ``_stamp_identity``."""
+
+
+def _stamp_identity(node) -> None:
+    """Write the identity stamp and PROVE it landed. Never swallowed.
+
+    SR1 crucible S5: `_stamped_configures` matches on ``synapse:tool``, so this
+    userData IS this tool's node identity. When the write was best-effort
+    (`except Exception: pass`) a failed stamp silently destroyed identity: the
+    next call found no stamped node, created a second `configureprimitive`, and
+    the BLOCKER-1 stacking defect returned while the status still read "set".
+    A failure to establish identity is a failure of the operation, so it raises.
+
+    The readback is the point — Law 1: `setUserData` returning without throwing
+    proves nothing about what the node now carries.
+    """
     try:
-        node.setUserData("synapse:tool", info.get("tool", _TOOL_NAME))
+        node.setUserData("synapse:tool", _TOOL_NAME)
+        readback = node.userData("synapse:tool")
+    except Exception as exc:  # pragma: no cover - host-dependent
+        raise IdentityStampError(
+            f"could not stamp identity on {node!r}: {exc}"
+        ) from exc
+    if readback != _TOOL_NAME:
+        raise IdentityStampError(
+            f"identity stamp did not land on {node!r}: "
+            f"synapse:tool reads {readback!r}, expected {_TOOL_NAME!r}"
+        )
+
+
+def _stamp_provenance(node, info: Dict[str, Any]) -> None:
+    """Identity is mandatory; the descriptive fields stay best-effort."""
+    _stamp_identity(node)
+    try:
         node.setUserData("synapse:source_pattern", info.get("source_pattern", _SOURCE_PATTERN))
         node.setUserData("synapse:reasoning", info.get("reasoning", ""))
     except Exception:
@@ -156,13 +188,18 @@ def _insert_downstream(comp, cfg, geo_node) -> None:
     one that composed — while the call reported the new value. Anchoring on the
     downstream-most stamped node instead makes the last write the winning one.
 
-    VERIFIED-RUNTIME 22.0.368 — why not simply splice directly above the
-    ``componentoutput`` sink: ``componentoutput`` restructures the asset
-    (``/ASSET`` -> ``/<rootprim>``) and does NOT carry the authored
-    ``purpose`` through, so a node seated there authors into a prim the sink
-    discards. The purpose must be authored upstream of the sink. That the sink
-    drops it at all is a SEPARATE finding, recorded not fixed here — see
-    ``harness/notes/sr1_seam_probe.py``.
+    Why not simply splice directly above the ``componentoutput`` sink:
+    ``componentoutput`` restructures the asset (``/ASSET`` -> ``/<rootprim>``),
+    so a node seated BELOW it would have to target the renamed prim, which the
+    ``/ASSET`` pattern we author does not match. Seating upstream of the sink
+    keeps the pattern valid.
+
+    S3 REFUTED-LIVE (22.0.368, SR1 crucible): the earlier claim that the sink
+    "does NOT carry the authored purpose through" is FALSE. With the purpose
+    authored upstream, the sink stage reads
+    ``/output_<n> Xform purpose=proxy`` — the restructure PRESERVES it.
+    ``test_set_purpose_survives_the_componentoutput_sink_live`` pins that and
+    goes red the day it stops being true.
     """
     others = [n for n in _stamped_configures(comp) if n.path() != cfg.path()]
     if others:
@@ -261,8 +298,21 @@ def execute(params: Dict) -> Dict:
 
     with hou.undos.group(f"SYNAPSE: Set purpose '{purpose}'"):
         existing = _find_stamped_configure(comp, prim_path)
-        cfg = existing if existing is not None else comp.createNode(
-            "configureprimitive", f"purpose_{purpose}")
+        if existing is not None:
+            cfg = existing
+        else:
+            cfg = comp.createNode("configureprimitive", f"purpose_{purpose}")
+            # S5: identity is established at birth or the node does not survive.
+            # Leaving an unstamped configureprimitive behind is exactly how a
+            # second one gets created on the next call.
+            try:
+                _stamp_identity(cfg)
+            except Exception:
+                try:
+                    cfg.destroy()
+                except Exception:
+                    pass
+                raise
         pattern_parm = cfg.parm("primpattern")
         set_parm = cfg.parm("setpurpose")
         value_parm = cfg.parm("purpose")

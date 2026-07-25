@@ -125,6 +125,42 @@ class TestComponentBuilderPlan:
         assert len(geo_ops) == 1
         assert geo_ops[0]["source"] == "/obj/geo1"
 
+class TestParentKeyConvergence:
+    """SR1 crucible S2 / F8 / Ruling 15 — `parent_path` is the convergent key.
+
+    Before this, `execute` read `params.get("parent", "/stage")` only: a caller
+    following Ruling 15 and passing `parent_path` silently built into /stage.
+    """
+
+    def test_parent_path_is_the_convergent_key(self):
+        from synapse.mcp.tool_impls.solaris.component_builder import _resolve_parent_path
+        assert _resolve_parent_path({"parent_path": "/stage/lopnet1"}) == "/stage/lopnet1"
+
+    def test_parent_remains_an_accepted_alias(self):
+        from synapse.mcp.tool_impls.solaris.component_builder import _resolve_parent_path
+        assert _resolve_parent_path({"parent": "/stage/lopnet2"}) == "/stage/lopnet2"
+
+    def test_parent_path_wins_over_the_alias(self):
+        from synapse.mcp.tool_impls.solaris.component_builder import _resolve_parent_path
+        assert _resolve_parent_path({"parent": "/a", "parent_path": "/b"}) == "/b"
+
+    def test_defaults_to_stage_when_absent(self):
+        from synapse.mcp.tool_impls.solaris.component_builder import _resolve_parent_path
+        assert _resolve_parent_path({}) == "/stage"
+
+    def test_unknown_key_raises_instead_of_defaulting(self):
+        with pytest.raises(Exception, match="unknown parameter"):
+            validate({"asset_name": "chair", "parnet_path": "/stage/lopnet1"})
+
+    def test_known_keys_are_accepted(self):
+        validate({
+            "asset_name": "chair", "parent_path": "/stage", "parent": "/stage",
+            "purposes": ["render"], "proxy_reduction": 0.1, "materials": [],
+            "geometry_source": "/obj/geo1", "export_path": "/tmp/x.usd",
+            "generate_thumbnail": False,
+        })
+
+
 # SR1 M3: the mock-`hou` execute tests that stood here are DELETED per
 # Constitution Law 1 / Ruling 12 item 3. Host-behaviour assertions for this
 # tool now live in `tests/solaris/test_live_wiring.py`, gated on a real

@@ -73,8 +73,37 @@ def _has_native_componentbuilder() -> bool:
         return False
 
 
+# F8/Ruling 15 (SR1 crucible S2): `parent_path` is the convergent key across
+# the whole Solaris family; `parent` remains an accepted alias for the existing
+# schema + callers. Ruling 15's stated premise ("two of three already use
+# parent_path") was FALSE against the tree -- component_builder and
+# import_megascans both read `parent` only, so a caller following the ruling
+# silently built into /stage. The ruling's DECISION stands; the premise is
+# recorded here as drift.
+PARENT_KEYS = ("parent_path", "parent")
+
+KNOWN_PARAMS = frozenset({
+    "asset_name", "purposes", "proxy_reduction", "materials",
+    "geometry_source", "export_path", "generate_thumbnail",
+} | set(PARENT_KEYS))
+
+
+def _resolve_parent_path(params: Dict) -> str:
+    for key in PARENT_KEYS:
+        val = params.get(key)
+        if val:
+            return val
+    return "/stage"
+
+
 def validate(params: Dict) -> None:
     """Validate parameters before any mutations."""
+    unknown = sorted(set(params) - KNOWN_PARAMS)
+    if unknown:
+        raise ValidationError(
+            f"unknown parameter(s): {', '.join(unknown)} -- "
+            f"accepted: {', '.join(sorted(KNOWN_PARAMS))}"
+        )
     asset_name = params.get("asset_name")
     if not asset_name:
         raise ValidationError("asset_name is required")
@@ -207,7 +236,7 @@ def execute(params: Dict) -> Dict:
     validate(params)
 
     asset_name = params.get("asset_name")
-    parent_path = params.get("parent", "/stage")
+    parent_path = _resolve_parent_path(params)
     purposes = params.get("purposes", ["render", "proxy"])
     proxy_reduction = params.get("proxy_reduction", 0.05)
     materials = params.get("materials", [])
