@@ -503,3 +503,81 @@ Stripped. `agent-settings.json` was clean; only the file I edited was affected.
 **Ruled:** add to the Law 1 check set — **assert every JSON under `harness/` parses with
 `json.load`.** It fails today if a BOM is reintroduced, which is the test that it is a real check
 and not a decoration. This is the same species as R24: a tool wrote bytes nobody read back.
+
+---
+
+## RULING 27 — Ruling 1a AMENDED. The suite does not survive the shipping interpreter.
+
+**Ruled 1a as originally written:** *"Pin the suite to the host's Python 3.13. This is a CI and
+tooling change, not a fork, and it needs no architecture gate."*
+
+**That was wrong in two ways, both found by executing it rather than reasoning about it.**
+
+### Wrong #1 — right version, wrong launcher
+
+`python313\python.exe` is 3.13.10 and has pytest 9.1.1, but bare `python.exe` lacks Houdini's DLL
+search paths. `tests/test_scene_hash_gate.py` dies on
+`ImportError: DLL load failed while importing _tf` — that is `pxr.Tf`, USD's foundation library.
+
+**`hython3.13.exe` is the correct target**: same interpreter, plus the environment. Under it:
+
+```
+python 3.13.10
+  pxr          OK
+  pytest       OK
+  synapse      OK    VENDOR_ABI_RISK = False   <- vendor tree ACTIVE
+  websockets   MISSING
+  mcp          MISSING
+  pydantic     MISSING as a bare import
+```
+
+The pydantic line is the vendor tree **working**: `synapse` imports because it resolves pydantic
+from `_vendor`; a bare `import pydantic` fails precisely because it is vendored rather than
+installed. That is the design behaving correctly, on the interpreter that ships, for the first
+time in this project's recorded history.
+
+### Wrong #2 — the suite does not survive there
+
+Under `hython3.13`, before any assertion about vendored behaviour can be made:
+
+```
+tests/panel/test_docking.py        F
+tests/panel/test_failure_trail.py  FF
+tests/panel/test_font_scale.py     Windows fatal exception: access violation
+```
+
+**Three failures and a segfault**, in tests that report green on 3.14. The crash is almost
+certainly PySide6 widget construction inside hython's own live Qt context — a known-hostile
+combination — but the cause is `UNVERIFIED` and must be probed, not assumed.
+
+Plus three modules that cannot collect at all: `test_load.py` (`websockets`),
+`test_passthrough_hygiene.py` and `test_port_wave_scene1.py` (`mcp`). Both libraries are
+pip-installed into the system Python and exist nowhere in the shipping environment.
+
+**Ruled, superseding 1a:**
+
+1. `hython3.13` is the shipping-truth interpreter. `harness/run_suite_shipping_python.ps1` runs it.
+2. **Do not "fix" the crash by skipping the panel tests.** That converts a real defect into a
+   silent one and is exactly Commandment 7's failure mode wearing a compatibility excuse. Probe
+   the segfault first; a `skip` is only honest once the reason is known and recorded.
+3. `websockets` and `mcp` are **shipping dependencies that are not shipped**. Either vendor them
+   or declare the transport tests system-Python-only and say so in the receipt. Do not leave the
+   status quo, where they silently pass on an interpreter no artist runs.
+4. **The 4,744-green number keeps its meaning but loses its scope.** It is a valid statement about
+   the *development* environment. It has never been a statement about the shipping one, and no
+   release claim may cite it as such.
+
+### What this does to Gate 0.1b
+
+It sharpens it rather than answering it. The vendor tree demonstrably works under `hython3.13` —
+which is evidence **for** the abi3/vendored path and **against** the sidecar being necessary for
+ABI reasons alone. But a suite that segfaults on that interpreter cannot yet support the claim.
+
+**0.1b stays held.** Not for lack of permission — it now has that — but because the evidence that
+would decide it is one crash away and worth waiting for. Deciding a year-binding fork on a suite
+that cannot complete would be choosing under exactly the conditions the gate exists to prevent.
+
+**Method note.** Everything above came from running the ruling instead of writing it. 1a read as
+the safe, obvious half of a split I was pleased with. It was wrong twice, and both errors were
+invisible from the tree — visible only from execution. Constitution Law 5 says write from the
+tree, not memory. The stronger form, earned here: **the tree is still a document. Run the thing.**
