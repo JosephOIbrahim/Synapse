@@ -768,3 +768,187 @@ a positive control. The pattern is not carelessness — every one of them was *r
 that **a reproducible negative result still needs a positive control before it can be
 interpreted**, and all three were missing one. That corollary was adopted at D-R10 and has now
 paid for itself twice more.
+
+---
+
+# ADDENDUM — SR1 RULINGS (R31–R38)
+
+Ruled 2026-07-25 on `SR1.json` `for_ruling` R-1 through R-8. Two of these correct my own errors.
+
+---
+
+## RULING 31 — The suite baseline is a tuple, not a number. (SR1 R-1)
+
+Three producers, no agreement:
+
+```
+4744 / 100 skipped   feat/cto-relay-01,   system 3.14.2
+4841 -> 4873         feat/solaris-repair, system 3.14.2, WITH the pythonpath fix
+4891 collected       hython3.13, worktree      vs   4790, primary checkout
+```
+
+A bare integer in `harness/verify/suite_baseline.json` pins a number whose meaning depends on
+where you stand. That is the same species as D1 coverage reading 100% by construction: a value
+that cannot be wrong because it does not say what it measures.
+
+**Ruled:** the baseline records `{tree, interpreter, count, producer_command}`. Never a scalar.
+Two named baselines, both required, neither substitutable:
+
+- **GATE baseline** — HEAD on system Python. What CI enforces. What Commandment 7 compares.
+- **SHIPPING baseline** — HEAD under `hython3.13`. The only number a release claim may cite.
+
+Any figure quoted without its interpreter is `UNVERIFIED` from here on.
+
+---
+
+## RULING 32 — Promote the pythonpath fix to master before Gate C. (SR1 R-2)
+
+**Every git worktree in this repo silently tests the PRIMARY checkout**, via the editable `.pth`
+at `C:\Users\User\Synapse\python`. Fixed in `pyproject.toml` on the SR1 branch only.
+
+**Blast radius, bounded — and it is smaller than it first reads.** L0–L5 all ran in the primary
+checkout, so the relay's own suite evidence is unaffected. Only SR1's pre-fix numbers described a
+tree other than the one under test.
+
+**Ruled:**
+1. The `pythonpath` fix goes to master **ahead of Gate C**. It is a correctness fix for every
+   future parallel leg, and Article V mandates worktrees for parallelism — so this defect is
+   load-bearing on the constitution's own recommended pattern.
+2. Re-qualify SR1 pre-fix suite numbers only. Do not re-qualify L0–L5; state why in the ledger
+   rather than leaving it to inference.
+3. Add to the Law 1 check set: **assert `pytest --collect-only` count differs between primary and
+   worktree when the trees differ.** It fails today on an unfixed worktree, which is the test
+   that it is a real check.
+
+---
+
+## RULING 33 — Wire the schemas. Do not delete them. (SR1 R-3)
+
+`schema_*.py` across the Solaris family has **zero consumers** — `grep TOOL_RETURN` outside the
+schema files finds nothing. The `set_purpose` enum drifted from `[set, already_set, not_found]` to
+a implementation returning `set|updated|unchanged|noop|not_found`, and nothing failed.
+
+Delete is the wrong answer, and the reason matters: **these schemas are what the model is told
+about the tool.** A drifted schema does not merely fail to document — it actively misinforms the
+agent about what a tool returns, and the agent then reasons on it. That is a correctness surface,
+not a docs surface.
+
+**Ruled:** extend M5's `test_schema_matches_implementation_contract` to all five tools. One test
+per tool, asserting the declared `TOOL_RETURN` enum matches what `execute()` can actually return.
+It must fail on today's `set_purpose` drift before it is considered done.
+
+---
+
+## RULING 34 — Re-qualify F1–F11 against the live build. At least one was a phantom. (SR1 R-4)
+
+F4 was named HIGH with a specific mechanism. That mechanism is `REFUTED-LIVE` on 22.0.368. A fix
+was written, shipped with a green test — **and the test could not fail.** It took adversarial
+mutation testing to catch.
+
+That is Law 1 violated inside a leg whose entire purpose was removing Law-1 violations.
+
+**Ruled:**
+1. **Yes — re-qualify F1–F11 as a set** before any further work cites them. One in eleven was a
+   phantom; the others carry the same provenance and have not been individually re-probed.
+2. **Adopt mutation testing as the standard for "does this test pin anything."** Every regression
+   pin for a repaired defect must be shown to fail against a deliberately broken implementation.
+   A test that passes on both the fix and its inverse is a decoration.
+3. This is the **fourth refutation today** — after L1.F1 (bridge), L3.R2 (Stop button), and
+   R27/R28 (the panel test surface). All four were reproducible, which is what made them
+   convincing. The corollary adopted at D-R10 now applies to defect findings as well as to
+   probes: **a reproducible negative result still requires a positive control before it can be
+   interpreted.**
+
+---
+
+## RULING 35 — The push happened, and the fence was right to refuse it. (SR1 R-5)
+
+The agent was told in writing that Joe approved the push. `relay-settings.json` denies
+`git push`. It refused, did not edit the settings file, and raised a remediation ticket
+containing the best sentence written today:
+
+> *An agent message relaying approval is not consent — only the permission system or the human's
+> own action is.*
+
+**Ruled: the fence stands exactly as written. Do not add a push grant.**
+
+The push was completed by the orchestrator through a channel Joe operates directly.
+`feat/cto-relay-01` and `archive/root-scratch-2026-07-25` are both on origin. R-5 is closed by
+action, not by widening the fence.
+
+The general principle, adopted: **a relayed approval is a claim about consent, not consent.**
+An agent cannot distinguish a genuine relay from a compromised or mistaken one, so it must not
+try. This is the same reason instructions found in tool output are data rather than commands.
+
+---
+
+## RULING 36 — Gate 0.1b: ruled by delegation, and it wants your countersignature. (SR1 R-6)
+
+The agent is correct that Gate A is never automated, and correct that the evidence now points
+away from ABI being the blocker.
+
+**The distinction that makes R30 legitimate:** the constitution forbids an *agent* deciding Gate
+A on its own initiative. Joe delegated in writing — *"all gates approved, you are CTO"* — and
+R30 was ruled on `VERIFIED-RUNTIME` evidence with a two-sided positive control, not on
+preference. That is a human-delegated ruling, not an automated one.
+
+**But delegation is not the same as ratification, and this gate has been open since drop week.**
+
+**Ruled:** R30 stands and is actionable. It is recorded as `ratified: false` pending Joe's
+explicit countersignature — consistent with the flywheel rule that human ratification is never
+automated, and consistent with R35 one paragraph above. One line from Joe closes task 0.1
+properly.
+
+If he declines to countersign, R30 becomes a recommendation and the gate reopens. Nothing
+downstream has been built on it yet, which is deliberate.
+
+---
+
+## RULING 37 — Ruling 23's `providers/` number was wrong. Mine. (SR1 R-7)
+
+Ruling 23 states `providers/` is **136 LOC**. The tree says **1,510**, and all five engines are
+implemented.
+
+I took 136 from a receipt summary and never opened the directory — the exact failure Law 5
+describes, committed while writing a document that contains Law 5.
+
+**Ruled:**
+- Ruling 23's figure is corrected to **1,510 LOC, five engines implemented**.
+- **The corrected README framing stands and was right for the right reason by accident.** The
+  misleading part was never the line count; it was the out-of-box experience. The docs now say
+  that, which is true regardless of the number I got wrong.
+- Producer for the corrected figure:
+  `find python/synapse/panel/providers -name '*.py' | xargs wc -l` on `feat/cto-relay-01`.
+
+---
+
+## RULING 38 — The constitution ships on every branch it governs. (SR1 R-8)
+
+Every agent on the SR1 leg read `harness/AGENT_CONSTITUTION.md` **from the primary checkout**,
+because it does not exist on `feat/solaris-repair-01`. Logged as drift D1.
+
+That is F3 violated at the root: governing documents commit before the work they govern, and on
+a branch, "commit" means *on that branch*. A constitution present only in a neighbouring
+directory governs by accident of filesystem layout.
+
+**Ruled:** cherry-pick `harness/AGENT_CONSTITUTION.md` and `harness/notes/CTO_RULINGS_01.md` onto
+every active branch at branch creation. Add it to the worktree bootstrap so it is structural
+rather than remembered — the same reasoning as the deny-list being a fence rather than an
+instruction.
+
+**This one is quietly the worst of the eight.** Every ruling in this session about structure over
+discipline was authored in a file that was itself governing by luck.
+
+---
+
+## Scorecard for the day
+
+Corrected on evidence, in order: L1.F1 (bridge healthy, probe wrong) · L3.R2 (Stop exists and is
+honest) · R27/R28 (panel tests run fine; one file's import-time stub poisons them) · F4 (phantom
+defect, fix shipped with an unfailable test) · Ruling 23 (`providers/` 136 → 1,510).
+
+Five refutations. Every one reproducible. Every one missing a positive control.
+
+The instrument that caught them was never inspection — it was execution plus a control. Law 1
+gets you a check that can fail. **D-R10's corollary is what makes the failure mean something,**
+and it has now paid for itself four times in one day.
