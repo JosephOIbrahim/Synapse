@@ -10,6 +10,8 @@ POSITIVE CONTROL, already established - do not re-derive:
   module .../houdini/python3.13libs/hou.py
 hou.Parm.set EXISTS. Therefore a STUB Parm is shadowing the real class. This is Q1's defect class - fake-hou residency - surviving in a different module. tests/solaris/test_live_wiring.py believes it drives live Houdini and does not.
 
+PRIOR RUN, 2026-07-26 09:15-11:47: an earlier dispatch of this leg received a TRUNCATED brief - the prompt was passed as a CLI argument and split at an embedded double quote, so that agent got everything up to "POSITIVE CONTROL ... hython3.13 -c" and nothing after. It never received the WORK steps, the oracle, or the instruction to write a receipt. It nonetheless located the root cause and reported "Mile 1 of ~6 - root cause located". Its transcript is at ~/.claude/projects/C--Users-User-SYNAPSE--claude-worktrees-fake-hou-residency/. Read it FIRST - do not re-derive what it already established. Then complete the leg.
+
 WORK:
 1. Find what installs the stub hou/Parm and when. Import-time sys.modules planting is the prime suspect (Q1's mechanism), but PROVE it rather than assuming - Q1's real diagnosis was restore-by-object vs restore-by-reimport, which looks identical and is not.
 2. Eliminate the residency on the Solaris test path. Q1's pattern in tests/test_hda_panel.py:160-204 is the reference: capture the ORIGINAL module OBJECTS, restore those exact objects. Restore-by-reimport is NOT equivalent.

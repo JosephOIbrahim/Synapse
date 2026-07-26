@@ -54,10 +54,15 @@ function Get-LegState([object]$leg) {
     if ($leg.worktree) {
         $wt = Join-Path $repo $leg.worktree
         if (Test-Path (Join-Path $wt '.claude\settings.local.json')) {
-            # launched and past the trust dialog; running until its receipt lands
+            # settings.local.json is written on the agent's first real
+            # interaction, so its presence means the leg genuinely started.
             return 'running'
         }
-        if (Test-Path $wt) { return 'launched' }
+        # Worktree exists but the agent never really started - died at the trust
+        # dialog, was killed, or the machine went down. This is READY, not
+        # 'launched': treating it as launched strands the leg forever, because
+        # dispatch only fires on 'ready'. The worktree is reused, not recreated.
+        if (Test-Path $wt) { return 'ready' }
     }
     foreach ($d in @($leg.deps)) {
         $dep = $manifest.legs | Where-Object { $_.id -eq $d }
@@ -81,17 +86,22 @@ function Start-Leg([object]$leg) {
     python (Join-Path $repo 'harness\trust_worktrees.py') 2>&1 |
         Select-Object -Last 1 | ForEach-Object { Say "  trust: $_" 'DarkGray' }
 
-    $prompt = Get-Content (Join-Path $repo $leg.prompt) -Raw
+    # Prompt delivery is BY FILE REFERENCE, never by argument.
+    # 2026-07-26: a ~2000-char prompt passed as a positional arg was silently
+    # truncated at the first embedded double quote - the agent received the
+    # brief up to `hython3.13 -c "import` and nothing after, so it never got its
+    # WORK steps, its oracle, or the instruction to write a receipt. It thought
+    # for 2.5 hours and produced nothing. A one-line pointer has no quoting
+    # surface and no length limit.
+    $promptPath = (Join-Path $repo $leg.prompt) -replace '\\','/'
     $script = Join-Path $env:TEMP "orch_$($leg.id).ps1"
     @"
 Set-Location '$wt'
 Write-Host ''
 Write-Host '  LEG $($leg.id) - $($leg.name)   branch $($leg.branch)' -ForegroundColor Cyan
+Write-Host '  brief: $promptPath' -ForegroundColor DarkGray
 Write-Host ''
-`$p = @'
-$prompt
-'@
-claude --settings $($manifest.settings) --effort $($manifest.effort) --permission-mode acceptEdits --verbose `$p
+claude --settings $($manifest.settings) --effort $($manifest.effort) --permission-mode acceptEdits --verbose 'Read the file $promptPath in full and execute it end to end. It is your complete brief. If any part of it appears truncated or unreadable, STOP and say so rather than proceeding on a partial instruction.'
 Write-Host ''
 Write-Host '  LEG $($leg.id) TERMINATED' -ForegroundColor Cyan
 "@ | Set-Content $script -Encoding utf8
@@ -110,22 +120,40 @@ function Backup-Branches {
         $br = (git -C $p rev-parse --abbrev-ref HEAD 2>$null)
         if (-not $br -or $br -eq 'HEAD' -or $br -in @('master','main')) { continue }
         $up = (git -C $p rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>$null)
-        $ahead = if ($up) { (git -C $p rev-list --count '@{u}..HEAD' 2>$null) } else { 'new' }
-        if ($ahead -eq '0') { continue }
+        if (-not $up) {
+            # no upstream yet - push once WITH tracking so subsequent polls can
+            # tell ahead from up-to-date. Without -u, @{u} keeps failing and the
+            # branch is re-pushed every single poll, reported as "(new)" forever.
+            git -C $p push -u origin $br 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) { $pushed += "$br(tracked)" }
+            continue
+        }
+        $ahead = (git -C $p rev-list --count '@{u}..HEAD' 2>$null)
+        if (-not $ahead -or $ahead -eq '0') { continue }
         git -C $p push origin "${br}:${br}" 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 0) { $pushed += "$br($ahead)" }
+        if ($LASTEXITCODE -eq 0) { $pushed += "$br(+$ahead)" }
     }
     return $pushed
 }
 
 function Get-LastProgress {
+    # Measure the AGENTS' work, never our own. The orchestrator writes its log
+    # into harness/notes/ every poll, so scanning the repo made the staleness
+    # detector detect itself - "last write 0m ago" forever, a check that cannot
+    # fail, inside the thing built to detect stalls. Agent transcripts are the
+    # honest signal: they are written by the agent and by nothing else.
     $newest = $null
-    foreach ($root in @($repo, (Join-Path $repo '.claude\worktrees'))) {
-        $f = Get-ChildItem $root -Recurse -File -EA SilentlyContinue |
-             Where-Object { $_.FullName -notmatch '\\\.git\\|__pycache__|pytest_cache|mypy_cache' } |
-             Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        if ($f -and (-not $newest -or $f.LastWriteTime -gt $newest)) { $newest = $f.LastWriteTime }
-    }
+    $proj = Join-Path $env:USERPROFILE '.claude\projects'
+    $f = Get-ChildItem $proj -Recurse -Filter *.jsonl -EA SilentlyContinue |
+         Where-Object { $_.Directory.Name -match 'SYNAPSE' } |
+         Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($f) { $newest = $f.LastWriteTime }
+
+    # plus real file writes in the worktrees, excluding our own notes dir
+    $f2 = Get-ChildItem (Join-Path $repo '.claude\worktrees') -Recurse -File -EA SilentlyContinue |
+          Where-Object { $_.FullName -notmatch '\\\.git\\|__pycache__|pytest_cache|harness\\notes' } |
+          Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($f2 -and (-not $newest -or $f2.LastWriteTime -gt $newest)) { $newest = $f2.LastWriteTime }
     return $newest
 }
 
