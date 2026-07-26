@@ -1,0 +1,281 @@
+{
+ "schema": "receipt/v1",
+ "leg": "H5",
+ "title": "H22 compatibility cross-reference",
+ "harness": "REPAIR-01",
+ "ruling": "R59",
+ "status": "green",
+ "status_note": "Describes what happened (Law 3): the census, doc index, live probe, join and adjudication all completed; the ledger exists; the new check was demonstrated FAILING against karmarenderproperties on the unmodified tree; the suite holds. Nothing was repaired - every defect is a finding, per the brief.",
+ "model": "claude-opus-5[1m]",
+ "settings_profile": "relay-settings.json (orchestrator held the sole repo-write grant and ran pytest; all four subagents were scratchpad-write-only)",
+ "commit_at_run": "0a88f5fbd840f0a2298bbb0f44721f01e2ad87c6",
+ "mode": "A",
+ "agents": [
+  "cartographer (census)",
+  "librarian (doc index + H21 control)",
+  "assayer (live probe + signature drift + category disambiguation)",
+  "h22-adjudicator (quadrant verdicts)"
+ ],
+ "read_only_discipline": {
+  "declared": "read-only except the ledger and one check function",
+  "actual_writes": [
+   "harness/notes/h22_compat_ledger.json (new)",
+   "harness/verify/checks.py (one check + one pure helper + one DISPATCH entry)",
+   "harness/notes/receipts/H5.json (this receipt)"
+  ],
+  "git_status_at_close": "M harness/verify/checks.py ; ?? harness/notes/h22_compat_ledger.json ; ?? harness/notes/receipts/H5.json",
+  "nothing_repaired": true,
+  "never": "no push, no merge, no tag"
+ },
+ "oracle": {
+  "ledger_exists": true,
+  "every_symbol_has_quadrant_anchor_url_tier": "quadrant 3115/3115, file:line 3115/3115, truth_tier 3115/3115. docs_url is NULL-with-reason for symbols the reference does not document - an undocumented symbol has no page, and emitting a mechanically-derived URL would invite a 404 citation. Audited, not assumed.",
+  "docs_base_url_and_version_recorded": "https://www.sidefx.com/docs/houdini22.0/ = 'Houdini 22.0', with positive control (21.0 serves 21.0) and negative control (99.0 -> 404). Build-shipped reference from the 22.0.368 installer is the authority; the URL is the citable mirror.",
+  "check_demonstrated_failing": {
+   "before_any_corpus_change": true,
+   "verbatim": "{\"ok\": false, \"detail\": \"SYNAPSE emits 2 DECAY_CLOCK node type(s) - deprecated on the live build, working today, gone on the release that removes them: karma [VERIFIED-RUNTIME], karmarenderproperties [VERIFIED-RUNTIME]\"}"
+  },
+  "suite": {
+   "before": "4881 passed / 0 failed / 129 skipped",
+   "after": "4881 passed / 0 failed / 129 skipped (95.18s, final run after every change)",
+   "producer": "python -m pytest tests/ -q --no-header -p no:cacheprovider",
+   "floor_required": "4881+ with 0 failed",
+   "met": true,
+   "law6": "test count HOLDS - no test weakened, skipped, xfailed or deleted"
+  }
+ },
+ "summary": {
+  "_what_this_leg_is_for": "DECAY_CLOCK and PRIVATE_API are the two cells no existing instrument in this repo could see. Before H5, `grep -ci deprecat harness/verify/checks.py` was 0 - R59's claim is empirically exact, not rhetorical.",
+  "OK": 796,
+  "DECAY_CLOCK": 19,
+  "PRIVATE_API": 48,
+  "PHANTOM": 40,
+  "MISATTRIBUTED": 28,
+  "VERSION_MISMATCH": 2,
+  "ALREADY_REMOVED": 1,
+  "UNVERIFIABLE": 1267,
+  "OUT_OF_MATRIX_parameter_literals": 914,
+  "total_symbols": 3115,
+  "total_occurrences_censused": 45613,
+  "_reconciles": "matrix sum + out_of_matrix = 3115 = len(symbols). Verified, not assumed.",
+  "_reading_note": "High count != high use. Of 45613 occurrences, 19278 are CITATION and 10355 TEACHING (the RAG corpus); only 10909 are EXECUTION. hou.secure at 139 occurrences is a quarantined phantom appearing mostly in guard and lint lists.",
+  "_two_new_cells": "MISATTRIBUTED (28) and OUT_OF_MATRIX (914) were not in R59's 2x3 matrix. MISATTRIBUTED = the leaf is a REAL member on a different owner, which is a different and more actionable defect than 'does not exist'. OUT_OF_MATRIX = parameter literals, which are not reference symbols at all. Both are schema changes and are escalated (H5-R9)."
+ },
+ "step0_finding": {
+  "question": "Is 'the H22 documentation' cleanly addressable?",
+  "answer": "YES for a version-pinned path, NO for the bare one - and the second half is the finding.",
+  "resolved_authority": "the reference shipped INSIDE the 22.0.368 installer ($HFS/houdini/help/hom.zip + nodes.zip). Build-pinned, which is stronger than any URL - a URL pins the 22.0 MAJOR, this pins the exact build.",
+  "resolved_base_url": "https://www.sidefx.com/docs/houdini22.0/",
+  "resolved_version": "Houdini 22.0",
+  "controls": "positive: /docs/houdini21.0/ serves 'Houdini 21.0'. negative: /docs/houdini99.0/ returns 404. So version pinning genuinely discriminates and does not silently fall through to current.",
+  "the_finding": "The UNPINNED URL is not a stable citation. It served 'Houdini 21.0' for R58 and 'Houdini 22.0' for H5 ON THE SAME DAY (2026-07-26), confirmed by CONTENT rather than breadcrumb (/docs/houdini/hom/hou/CopCable.html renders, and CopCable is H22-only).",
+  "what_is_not_claimed": "H5 cannot distinguish a same-day flip from a cache artifact from a misread, and does not claim to have resolved which. The operational conclusion is identical either way.",
+  "consequence_for_vendor_asks": "Cite the version-pinned URL. R58's caveat is resolved in that a pinned H22 path exists and is reachable; it is NOT resolved in that the bare URL remains unsafe to cite as version evidence.",
+  "bonus": "R58 is corroborated on a genuinely-H22 source: hom/hou/RopNode.txt on 22.0.368 carries exactly the 9 methods R58 listed, and is BYTE-IDENTICAL to the 21.0.773 copy - so H3a-F1 now holds on both majors."
+ },
+ "findings": [
+  {
+   "id": "H5-F1",
+   "claim": "A version-pinned H22 docs URL DOES exist (https://www.sidefx.com/docs/houdini22.0/), but the UNPINNED URL is not a stable citation: it served 'Houdini 21.0' for R58 and 'Houdini 22.0' for H5 on the SAME DAY. Which of flip/cache/misread caused it is NOT determined.",
+   "truth": "VERIFIED-WEB",
+   "anchor": "docs_authority.FINDING_unpinned_url_is_not_a_stable_citation",
+   "severity": "process - governs every vendor ask"
+  },
+  {
+   "id": "H5-F2",
+   "claim": "Node-type deprecation has TWO independent expressions - hand-authored in the shipped .txt, and generated at doc-build time from deprecationInfo(). Their LOP sets are disjoint: runtime {karma, karmarenderproperties} vs authored {karmaocean, karmaprocedural}. Neither oracle alone is complete; the rendered page is the union.",
+   "truth": "VERIFIED-RUNTIME + VERIFIED-WEB",
+   "anchor": "oracles.DEPRECATED_node_types_TWO_MECHANISMS",
+   "severity": "STRUCTURAL - invalidates any single-oracle deprecation gate"
+  },
+  {
+   "id": "H5-F3",
+   "claim": "shared/bridge.py:1718 calls top_node.dirtyAllTasks(remove_files=remove_files). The live 22.0.368 signature is dirtyAllTasks(self, remove_outputs). Keywords ARE accepted but only under the real name, so this raises TypeError on EVERY invocation, is swallowed by `except Exception as _rb_exc`, and `dirtied` stays False. R8's PDG fa",
+   "truth": "VERIFIED-RUNTIME",
+   "anchor": "shared/bridge.py:1718",
+   "severity": "LIVE DEFECT - a documented safety mechanism that is dead on arrival"
+  },
+  {
+   "id": "H5-F4",
+   "claim": "The emission corpus python/synapse/cognitive/tools/data/emitted_node_types.json is STALE (generated_from_commit ab4ac7a2, 174 commits behind HEAD) AND its createNode-literal anchor is structurally blind: karmarenderproperties is not a createNode literal at HEAD, it is a bare string constant (handlers_solaris_assemble.py:109, han",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "scripts/extract_emitted_node_types.py --check",
+   "severity": "HIGH - regenerating the corpus with today's extractor could DROP the headline symbol and turn the new gate green while the defect is untouched. The gate's staleness guard exists because of this."
+  },
+  {
+   "id": "H5-F5",
+   "claim": "The emission corpus records a TEST ALLOW-LIST MEMBERSHIP as an emission: 'duplicate' is listed with source tests/test_setdressing_recipe.py:60, which is an entry in a VERIFIED_NODE_TYPES list the test asserts against, not a createNode call. There is no createNode('duplicate') anywhere in the repo.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "tests/test_setdressing_recipe.py:60",
+   "severity": "corpus integrity - inflates the emission surface with non-emissions"
+  },
+  {
+   "id": "H5-F6",
+   "claim": "hou.expandString is deprecated in favour of hou.text.expandString and SYNAPSE calls it at three live sites. Only one is hasattr-guarded.",
+   "truth": "VERIFIED-STATIC + VERIFIED-WEB",
+   "anchor": "python/synapse/panel/cross_scene.py:106; python/synapse/server/solaris_compose_tools.py:134 (unguarded); :459 (hasattr-guarded)",
+   "severity": "DECAY_CLOCK in shipping code"
+  },
+  {
+   "id": "H5-F7",
+   "claim": "Four hou.TopNode methods SYNAPSE uses are documented-deprecated on 22.0.368, double-sourced (build-shipped .txt AND the pinned 22.0 web page): dirtyAllTasks -> dirtyAllWorkItems, dirtyTasks -> dirtyWorkItems, executeGraph -> cookWorkItems/cookOutputWorkItems, generateStaticItems -> generateStaticWorkItems.",
+   "truth": "VERIFIED-STATIC + VERIFIED-WEB",
+   "anchor": "shared/bridge.py:1604,1718; python/synapse/server/handlers_tops/cook.py:58,114,389; handlers_tops/render_sequence.py:285,495",
+   "severity": "DECAY_CLOCK cluster on the PDG path"
+  },
+  {
+   "id": "H5-F8",
+   "claim": "SYNAPSE emits the deprecated Lop/karma at 5 sites, all live-resolved to the Lop category where deprecated()==True. Vendor reason: 'Replaced by Karma Render Settings and USD Render.' (since 21.0).",
+   "truth": "VERIFIED-RUNTIME",
+   "anchor": "python/synapse/routing/planner.py:703; routing/recipes/pipeline_recipes.py:1003; routing/recipes/render_recipes.py:596,728,904",
+   "severity": "DECAY_CLOCK, 42 execution occurrences"
+  },
+  {
+   "id": "H5-F9",
+   "claim": "hou.CopNode.planes does not exist. planes() is documented on hou.Cop2Node in BOTH 21.0 and 22.0 and on hou.CopNode in NEITHER. SYNAPSE calls node.planes() at two sites, both wrapped in except (AttributeError, Exception). CORRECTS a prior project note recorded as 'hou.CopNode.planes REMOVED' - it was never a CopNode method; the r",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "python/synapse/server/handlers_cops.py:658,953",
+   "severity": "API FACT confirmed; DEFECT PREMISE REFUTED - not a defect"
+  },
+  {
+   "id": "H5-F10",
+   "claim": "Building the doc index surfaced five real grammar variants in the shipped reference, each of which had been silently dropping documented symbols. One was dropping hou.ropRenderEventType.* entirely - directly load-bearing for R8's PDG/ROP event bridge. A sixth issue (inconsistent #internal version qualification between builds) wa",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "scratchpad/h5_docindex.json parse_report",
+   "severity": "method - a doc index is not trustworthy until its parser is pinned"
+  },
+  {
+   "id": "H5-F11",
+   "claim": "Before this leg, `grep -ci deprecat harness/verify/checks.py` was 0. No instrument anywhere in the harness read the deprecation axis. R59's claim that DECAY_CLOCK and PRIVATE_API are cells no existing instrument can see is empirically exact.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "harness/verify/checks.py @ 0a88f5f",
+   "severity": "confirms the leg's premise"
+  },
+  {
+   "id": "H5-F12",
+   "claim": "Self-caught mid-run: the first join pass treated 'absent from the symbol table' as proof for ANY root, but the table enumerates only hou/pdg/pxr. That manufactured false phantoms for every hdefereval.* symbol and for hou.session.* (a runtime user-data namespace). Fixed to UNVERIFIABLE; PHANTOM fell 109 -> 95. Same class as the f",
+   "truth": "VERIFIED-DERIVED",
+   "anchor": "scratchpad/h5_join.py::hom_exists",
+   "severity": "method - membership authority must be scoped to what the oracle actually enumerated"
+  },
+  {
+   "id": "H5-F13",
+   "claim": "37 symbols documented in 21.0.773 are absent from the 22.0.368 reference (29 HOM, 8 node), including lop/instancer, lop/layout, hou.ChannelListPane and all five vop/sensor_* pages. 13 are newly deprecated in H22 vs H21.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "scratchpad/h5_docindex.json control",
+   "severity": "surface delta for the next port wave"
+  },
+  {
+   "id": "H5-F14",
+   "claim": "hou.ApexGraph is a PHANTOM and a SYNAPSE design document plans an implementation against it. It is absent from the shipped H22 HOM corpus (which does ship ApexNode.txt, ApexNodeType.txt, ApexNodeTypeCategory.txt, ApexUniGraphDebugger.txt - a clean positive control that the Apex surface IS documented) and absent from the live 22.",
+   "truth": "VERIFIED-RUNTIME + VERIFIED-STATIC",
+   "anchor": "docs/H22_inside_out_sdk_enhancements.md:49",
+   "severity": "a governing document promising a non-existent API - it would send an implementer down a dead end"
+  }
+ ],
+ "headline_findings": [
+  "H5-F2 STRUCTURAL: node-type deprecation has TWO independent expressions (hand-authored .txt vs generated-from-deprecationInfo) and their LOP sets are DISJOINT - runtime {karma, karmarenderproperties} vs authored {karmaocean, karmaprocedural}. Neither oracle alone is complete. Any single-oracle deprecation gate is half-blind. This is why the ledger unions both and the new check reads the ledger rather than an oracle.",
+  "H5-F3 LIVE DEFECT: shared/bridge.py:1718 passes remove_files= to hou.TopNode.dirtyAllTasks, whose real parameter is remove_outputs. It raises TypeError on EVERY call, is swallowed by except Exception, and R8's PDG failure-recovery rollback has never once run. Invisible to dir() (the method exists), invisible to the phantom guardrail, invisible to tests (failure path only) - precisely H5's charter.",
+  "H5-F4 HIGH: the emission corpus is 174 commits stale AND its createNode-literal extractor cannot see the variable dispatch that karmarenderproperties actually uses. Regenerating it with today's extractor could DROP the headline symbol and turn the new gate green while the defect is untouched."
+ ],
+ "method_notes": {
+  "self_caught_defect_in_our_own_gate": "The corpus-freshness guard initially COMPUTED `stale` and never used it in any return path - decoration, the exact Law 1 disease this leg exists to find, inside the leg's own check. It returned ok=True on a stale corpus. Found only by exercising the branch against real data. The ledger's anti_vacuity block already CLAIMED the guard worked, so shipping unfixed would have made the ledger lie. Fixed; the all-clear now returns ok:None when freshness is unprovable, while positive evidence stays conclusive.",
+  "self_caught_false_phantoms": "The first join treated 'absent from the symbol table' as proof for ANY root, but the table enumerates only hou/pdg/pxr. That manufactured false phantoms for every hdefereval.* symbol and for hou.session.* (a runtime user-data namespace). PHANTOM fell 109 -> 95. Same class as the false-phantom rate Spike 2.5 drove from 0.667 to 0.",
+  "role_separation_held": "cartographer mapped and did not classify; librarian reported what the reference says and asserted no currency; assayer answered existence and deprecation and judged neither; the adjudicator judged. The one deviation - the cartographer adding a 4th symbol kind (hom_method) - was FLAGGED rather than taken silently, and it is what found dirtyAllTasks, a method on a local that no dotted hou.* scan can see.",
+  "corrections_made_mid_run": "Two. (1) My first framing said 'runtime and docs are disjoint'; the rendered page actually DOES mark karmarenderproperties deprecated, so the correct statement is that the OFFLINE .txt corpus carries only the hand-authored half. The librarian's node index was corrected mid-run to say so in the artifact rather than hide it. (2) A prior project note recorded 'hou.CopNode.planes REMOVED'; planes() was never a CopNode method in either major - it is a Cop2Node method present in both, so the risk is class confusion, not removal.",
+  "what_a_docs_only_crossreference_would_have_missed": "karmarenderproperties, if run against the offline .txt corpus - the exact symbol the leg was chartered to catch. And what a runtime-only sweep misses: karmaocean and karmaprocedural.",
+  "self_caught_oracle_defect_found_by_adjudication": "The single most consequential correction of the leg, and it was in MY instrument, not the codebase. The EXISTS oracle expands CLASS children but not MODULE children: hou.OpNode.cook is in the table, hou.undos.group / hou.text.expandString / hou.hipFile.save are not - yet all are real. My join claimed 'absent from the complete (truncated=false) dir() table' as proof, which was FALSE on ~140 rows. It scored SYNAPSE's own constitutional undo anchor as absent, and simultaneously told SYNAPSE to migrate TO hou.text.expandString while marking that target missing. Caught by h22-adjudicator - exactly the independent-check value Article IV's role separation exists for. Fixed at the ROOT (absence is proof only where the table demonstrably enumerated that parent's children, a rule derived from the table itself) and every count RE-DERIVED by the producer rather than hand-patched. VERSION_MISMATCH collapsed 61 -> 2, which is the signature of an instrument artifact rather than a real contradiction.",
+  "doc_oracle_scoped_the_same_way": "The same scope error existed on the OTHER axis and was fixed with the same rule: hom.zip ships no pxr and no pdg reference surface, so 'not in the index' is not 'undocumented' for those roots - it is outside the oracle's authority. That is R59's core distinction operationalised. PRIVATE_API 199 -> 48.",
+  "adjudication_artifact_blocked": "h22-adjudicator could not write its verdict file: its Write tool is blocked from the session scratchpad by a system-path guard on AppData/. It correctly refused to work around the guard and returned rulings in-message. Row-level merge was therefore impossible. Its rulings are recorded verbatim in the ledger's adjudication_record; its independent counts sit BESIDE the producer-derived counts rather than replacing them, and the two converge (MISATTRIBUTED 28 = 28, PHANTOM 40 vs 39, ALREADY_REMOVED 1 = 1, OK 796 vs 792). Where they differ - PRIVATE_API 48 mechanical vs 12 judged - the ledger reports the mechanical count because it has a producer, and says so."
+ },
+ "resume_token": {
+  "skip": [
+   "Step 0 - docs authority is settled with both controls; do not re-derive",
+   "the census, doc index and live probe - artifacts + sha256 recorded in the ledger producers block",
+   "quarantine absence - re-confirmed live with positive controls; confirm quadrant only, never re-litigate"
+  ],
+  "redo_if": "the Houdini build changes (every oracle here is pinned to 22.0.368), or the emission corpus is regenerated (the ledger's DECAY_CLOCK x corpus intersection is what the gate reads).",
+  "next": "H5-R1 through H5-R8 need rulings. The two that gate other work: H5-R2 (who fixes the dead PDG rollback at shared/bridge.py:1718, and does it block the release) and H5-R3 (fix the emission extractor BEFORE regenerating the corpus, or the gate lies). H5-R5 asks whether the producer scripts should be promoted out of the session scratchpad - without that, the ledger's numbers are not reproducible after this session ends."
+ },
+ "for_ruling": [
+  {
+   "id": "H5-R1",
+   "question": "Arm check_no_decay_clock_emission as a cross-cutting guardrail in tasks.json, or leave it registered-but-unarmed?",
+   "recommendation": "Leave unarmed until R7's migration lands, then arm in the SAME commit that cleans the corpus - so the gate's first green is earned, not inherited. Article I: this is a value judgement with a cost either way, so it is not mine.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "H5-R2",
+   "question": "Who owns fixing shared/bridge.py:1718 (H5-F3), and does it block the release?",
+   "recommendation": "One-line fix, but it needs a leg with a real oracle - a live PDG cook that fails and asserts the tasks were actually dirtied. Fixing it blind would replace a known-dead path with an unverified one.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "H5-R3",
+   "question": "Regenerate the emission corpus, and fix its extractor's blindness first?",
+   "recommendation": "Fix the extractor to resolve bare-string constants that flow into createNode BEFORE regenerating. Order matters: regenerate-then-fix leaves a window where the gate lies.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "H5-R4",
+   "question": "Should the decay-clock gate extend to the RAG teaching corpus?",
+   "recommendation": "Yes, but as its own check with its own failure demonstration - not by widening this one.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "H5-R5",
+   "question": "Promote the H5 producer scripts from the session scratchpad into scripts/?",
+   "recommendation": "Promote h5_join.py and h5_census.py at minimum. A ledger whose producer cannot be re-run is a number travelling without its producer - R31's disease, one level up.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "H5-R6",
+   "question": "CLAUDE.md section 1.7 documents dirtyAllTasks(remove_files=...) - behaviour that has never occurred. Correct the doc now, or with the code fix?",
+   "recommendation": "Together, in the H5-R2 fix, or the doc gets ahead of the code again.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "H5-R7",
+   "question": "Accept the census's 4th symbol kind, hom_method?",
+   "recommendation": "Accept. It found four real DECAY_CLOCK methods that no other kind could reach. The precision cost is disclosed per-symbol rather than hidden.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "H5-R8",
+   "question": "Process: the orchestrator wrote harness/verify/checks.py in the same worktree the cartographer was reading, and the cartographer flagged it.",
+   "recommendation": "Either sequence repo writes after the mapping agents return, or state the orchestrator-is-sole-writer exemption explicitly in Article V. The current text does not cover this case.",
+   "source": "orchestrator"
+  },
+  {
+   "id": "H5-R9",
+   "question": "The two new cells (MISATTRIBUTED, OUT_OF_MATRIX) change the ledger schema. Version bump?",
+   "recommendation": null,
+   "source": "h22-adjudicator"
+  },
+  {
+   "id": "H5-R10",
+   "question": "The scout's phantom gate shares the EXISTS oracle whose module-expansion defect this leg found. Regenerate host/introspect_runtime.py to expand module children, or narrow the claim it makes?",
+   "recommendation": null,
+   "source": "h22-adjudicator"
+  },
+  {
+   "id": "H5-R11",
+   "question": "apex::buildfkgraph executes at 4 sites although APEX is outside SYNAPSE's declared authoring scope. Quarantine, exception, or remove?",
+   "recommendation": null,
+   "source": "h22-adjudicator"
+  },
+  {
+   "id": "H5-R12",
+   "question": "Should the doc corpus ingest /docs/houdini22.0/tops/ so pdg.* gets a documented axis at all?",
+   "recommendation": null,
+   "source": "h22-adjudicator"
+  },
+  {
+   "id": "H5-R13",
+   "question": "Matrix semantics: is a doc_only deprecation (authored help says deprecated, runtime does not flag it) a full DECAY_CLOCK member or an advisory sub-cell?",
+   "recommendation": null,
+   "source": "h22-adjudicator"
+  }
+ ],
+ "what_the_leg_proves_about_its_own_premise": "R59 predicted dir() cannot see deprecation. True, and the leg found the shape is worse and more interesting: BOTH oracles are partial, in BOTH directions. Runtime deprecationInfo() misses karmaocean and karmaprocedural; the offline .txt corpus misses karma and karmarenderproperties; the shipped .txt cannot see the generated deprecation banner at all; the dir() table cannot see module members; and the doc index has no authority over pxr or pdg. Every single-oracle answer to 'is this deprecated' is wrong somewhere."
+}
