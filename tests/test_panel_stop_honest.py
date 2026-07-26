@@ -6,18 +6,25 @@ in-flight tool. C8 keeps the busy state, shows 'Stopping — waiting on <tool>�
 and lets the worker's real completion (stream_done/error → _on_done/_on_error)
 reset to idle.
 
-PySide-gated: the panel module imports PySide6/2 at top, so this skips in stock
-CI and runs under hython (offscreen). The logic is exercised by calling the
-unbound _on_stop with a fake self — no full panel construction needed.
+SELF-SUFFICIENT (Q1/D1): previously ``importorskip("PySide6")``, which collected
+ZERO tests alone on stock python and only reported 3 passed inside the full suite
+because an unrelated file had planted a Qt stub. It now supplies its own stub in
+a scoped, self-restoring window (``tests/qt_stub_window``) that plants nothing
+when real PySide6 is present. The logic is exercised by calling the unbound
+_on_stop with a fake self — no full panel construction, no QApplication.
 """
+
+import sys
+from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
-pytest.importorskip("PySide6")  # panel imports PySide6 (PySide2 fallback) at module top
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from qt_stub_window import qt_stub_window  # noqa: E402
 
-from unittest.mock import MagicMock
-
-from synapse.panel.synapse_panel import SynapsePanel
+with qt_stub_window():
+    from synapse.panel.synapse_panel import SynapsePanel  # noqa: E402
 
 
 def test_stop_holds_busy_says_stopping_and_does_not_lie_idle():

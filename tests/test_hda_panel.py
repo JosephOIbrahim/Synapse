@@ -156,6 +156,32 @@ pyside6.QtGui = pyside6_gui
 # Only evict the specific panel modules THIS file reimports — leave
 # other panel modules (chat_panel, message_formatter, etc.) untouched
 # so sibling test files aren't affected.
+#
+# CRITICAL (Q1): capture the ORIGINAL module OBJECTS before eviction and put
+# those exact objects back once our imports are done (see _restore_real_qt
+# below). Shiboken cannot re-initialise in one process: once real PySide6 is
+# deleted from sys.modules, a later ``import PySide6`` yields a NEW but
+# half-initialised module (PySide6.QtWidgets loses QApplication) while the C++
+# QApplication singleton stays alive — any sibling test that then calls
+# app.font() dereferences dead wrapper state and the interpreter takes an
+# access violation. Restore-by-object is the only correct teardown;
+# restore-by-reimport looks identical and is not.
+# Only *file-backed* Qt modules count as real. Sibling test files
+# (test_chat_panel.py, test_panel_preflight.py, …) plant their own in-memory
+# PySide6 stubs and may run before this one; those carry no ``__file__``, are
+# not Shiboken-backed, and must NOT be handed back here — restoring a foreign
+# stub would deprive the tests that rely on this file's richer stub.
+#
+# The ``__file__`` filter is load-bearing, so it lives in exactly ONE place —
+# ``qt_stub_window.capture_real_qt`` — imported here and used by the stub window
+# too, so the two consumers cannot drift. It is unit-pinned below by
+# ``test_capture_real_qt_rejects_file_less_stubs`` and in
+# ``tests/test_qt_stub_window.py``. Inlining it back into the comprehension
+# would put it beyond the reach of those pins.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from qt_stub_window import capture_real_qt as _capture_real_qt  # noqa: E402
+
+_REAL_QT_MODULES = _capture_real_qt(sys.modules)
 for _key in list(sys.modules):
     if _key.startswith(("PySide6", "PySide2")):
         del sys.modules[_key]
@@ -167,12 +193,68 @@ for _key in ("synapse.panel.ws_bridge", "synapse.panel.hda_controller"):
 # repo-tokens pin (#8FB3D9) that test_design_system may have left in
 # sys.modules. We pop only bare ``tokens`` (not synapse.panel.tokens itself) so
 # this file's captured panel-tokens module stays stable for the whole session.
-sys.modules.pop("tokens", None)
+_REAL_BARE_TOKENS = sys.modules.pop("tokens", None)
 
+_QT_STUB_KEYS = ("PySide6", "PySide6.QtCore", "PySide6.QtWidgets", "PySide6.QtGui")
 sys.modules["PySide6"] = pyside6
 sys.modules["PySide6.QtCore"] = pyside6_core
 sys.modules["PySide6.QtWidgets"] = pyside6_widgets
 sys.modules["PySide6.QtGui"] = pyside6_gui
+
+# Status written by _restore_real_qt() below. Read by the regression pins.
+#
+# Law 3: these report what HAPPENED, not that a function was entered.
+#   _QT_RESTORE_STATUS  : None (never called) | "noop-nothing-captured" | "restored"
+#   _TOKENS_RESTORE_STATUS : None (branch not reached)
+#                          | "noop-nothing-captured"
+#                          | "noop-foreign-tokens-present"  (someone else owns it)
+#                          | "restored"
+_QT_RESTORE_STATUS = None
+_TOKENS_RESTORE_STATUS = None
+_QT_RESTORE_STATUSES = (None, "noop-nothing-captured", "restored")
+_TOKENS_RESTORE_STATUSES = (
+    None,
+    "noop-nothing-captured",
+    "noop-foreign-tokens-present",
+    "restored",
+)
+
+
+def _restore_real_qt():
+    """Put the ORIGINAL Qt module objects back into ``sys.modules``.
+
+    Runs immediately after this file's own imports complete, so the stubs are
+    live only for the duration of those imports and never leak into sibling
+    test modules or into the run phase. Removes only the keys this file
+    planted; restores only objects it captured. Never re-imports.
+
+    Scoped deliberately: the crash comes from *evicting* real Qt, so the swap
+    happens only when real Qt was actually captured. On an interpreter with no
+    PySide6 installed there is nothing to evict and nothing to corrupt — the
+    stubs stay planted, which is this file's long-standing behaviour that
+    several sibling panel tests import against.
+    """
+    global _QT_RESTORE_STATUS, _TOKENS_RESTORE_STATUS
+    if not _REAL_QT_MODULES:
+        # Nothing was evicted, so nothing is restored. Law 3: say so.
+        _QT_RESTORE_STATUS = "noop-nothing-captured"
+        return
+    for _k in _QT_STUB_KEYS:
+        if sys.modules.get(_k) in (pyside6, pyside6_core, pyside6_widgets, pyside6_gui):
+            del sys.modules[_k]
+    sys.modules.update(_REAL_QT_MODULES)
+    _QT_RESTORE_STATUS = "restored"
+
+    # Bare ``tokens``: report the outcome instead of letting setdefault hide it.
+    if _REAL_BARE_TOKENS is None:
+        _TOKENS_RESTORE_STATUS = "noop-nothing-captured"
+    elif "tokens" in sys.modules:
+        # Someone else planted a ``tokens`` while our imports ran; theirs wins
+        # and ours is NOT installed. That is a noop, not a restore.
+        _TOKENS_RESTORE_STATUS = "noop-foreign-tokens-present"
+    else:
+        sys.modules["tokens"] = _REAL_BARE_TOKENS
+        _TOKENS_RESTORE_STATUS = "restored"
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +295,118 @@ for mod_name, fpath in [
 from synapse.panel.ws_bridge import SynapseWSBridge, HDA_STAGES
 from synapse.routing.hda_recipes import HDA_RECIPES, list_recipes
 from synapse.panel import tokens as t
+
+# Modules imported lazily *inside* tests below — bind them here, while the Qt
+# stubs are still live, so those in-test imports hit the sys.modules cache
+# instead of re-importing against restored real Qt.
+import synapse.panel.styles  # noqa: F401,E402
+import synapse.panel.hda_controller  # noqa: F401,E402
+
+# Stubs have served their only purpose. Hand the real Qt modules back.
+_restore_real_qt()
+
+
+# ---------------------------------------------------------------------------
+# Q1 regression pin
+# ---------------------------------------------------------------------------
+
+def test_capture_real_qt_rejects_file_less_stubs():
+    """D2 — pins the load-bearing ``__file__`` filter in ``_capture_real_qt``.
+
+    FAILS IF the filter is broken (dropped or inverted), because a Qt-named
+    module with no ``__file__`` would then be captured as "real" and later
+    handed back by ``_restore_real_qt`` as the authoritative Qt — depriving
+    every sibling test that relies on this file's richer stub. Crucible's
+    mutation 3d did exactly that and slipped past the old pins, which only
+    observe the *result* of a capture that is empty on stock CI.
+
+    This pin is interpreter-independent: it drives the filter with a synthetic
+    module map, so it fails under the mutation on BOTH interpreters.
+    """
+    real = types.ModuleType("PySide6.QtCore")
+    real.__file__ = r"C:\fake\PySide6\QtCore.pyd"
+    foreign_stub = types.ModuleType("PySide6.QtWidgets")  # in-memory: no __file__
+    bare_stub = types.ModuleType("PySide6")
+    unrelated = types.ModuleType("json")
+    unrelated.__file__ = "json.py"
+
+    captured = _capture_real_qt(
+        {
+            "PySide6.QtCore": real,
+            "PySide6.QtWidgets": foreign_stub,
+            "PySide6": bare_stub,
+            "json": unrelated,
+        }
+    )
+
+    assert captured == {"PySide6.QtCore": real}, (
+        "the __file__ filter is broken: file-less in-memory Qt stubs were "
+        f"captured as real Qt -> {sorted(captured)}"
+    )
+
+
+def test_restore_status_reports_what_happened_not_what_was_attempted():
+    """D4 — the restore bookkeeping must describe an EFFECT, not an attempt.
+
+    FAILS IF ``_restore_real_qt()`` was never called (status still ``None``),
+    or if it reports a status outside the declared vocabulary, or if it claims
+    ``"restored"`` on an interpreter where nothing was ever captured (the exact
+    Law-3 defect: flag set before the ``if not _REAL_QT_MODULES: return``).
+    """
+    assert _QT_RESTORE_STATUS is not None, "_restore_real_qt() never ran"
+    assert _QT_RESTORE_STATUS in _QT_RESTORE_STATUSES, _QT_RESTORE_STATUS
+    assert _TOKENS_RESTORE_STATUS in _TOKENS_RESTORE_STATUSES, _TOKENS_RESTORE_STATUS
+
+    if _REAL_QT_MODULES:
+        assert _QT_RESTORE_STATUS == "restored"
+        # The tokens branch is only reachable on the restore path.
+        assert _TOKENS_RESTORE_STATUS is not None
+        if _TOKENS_RESTORE_STATUS == "restored":
+            assert sys.modules.get("tokens") is _REAL_BARE_TOKENS
+        elif _TOKENS_RESTORE_STATUS == "noop-foreign-tokens-present":
+            assert sys.modules.get("tokens") is not _REAL_BARE_TOKENS
+    else:
+        assert _QT_RESTORE_STATUS == "noop-nothing-captured", (
+            "claimed a restore on an interpreter where no real Qt was captured"
+        )
+        assert _TOKENS_RESTORE_STATUS is None, (
+            "tokens branch reported an outcome it never reached"
+        )
+
+
+def test_qt_stubs_do_not_leak_past_module_import():
+    """FAILS IF this module's Qt stubs are still installed in ``sys.modules``
+    at run time — i.e. the module-scope plant was left un-restored, which is
+    the exact condition that crashes sibling panel tests with an access
+    violation.
+
+    D3 — on an interpreter with no real PySide6 nothing is ever evicted, so
+    there is no restore to observe and this check has no way to fail. A
+    vacuous pass would be a lie (AGENT_CONSTITUTION Law 1), so it SKIPS with a
+    reason instead. The mutation-detecting halves of this file's coverage on
+    such an interpreter are the two pins above, which are interpreter-
+    independent by construction.
+    """
+    if not _REAL_QT_MODULES:
+        pytest.skip(
+            "no file-backed PySide6/PySide2 on this interpreter: nothing was "
+            "evicted, so the restore assertions cannot fail here (D3 — honest "
+            "skip, not a vacuous pass). Covered instead by "
+            "test_capture_real_qt_rejects_file_less_stubs and "
+            "test_restore_status_reports_what_happened_not_what_was_attempted."
+        )
+    for _k in _QT_STUB_KEYS:
+        assert sys.modules.get(_k) not in (
+            pyside6,
+            pyside6_core,
+            pyside6_widgets,
+            pyside6_gui,
+        ), f"test stub still installed at sys.modules[{_k!r}]"
+    for _k, _real in _REAL_QT_MODULES.items():
+        assert sys.modules.get(_k) is _real, (
+            f"sys.modules[{_k!r}] is not the ORIGINAL module object "
+            "(restored by re-import instead of by reference?)"
+        )
 
 
 # ---------------------------------------------------------------------------
