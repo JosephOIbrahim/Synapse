@@ -41,7 +41,8 @@
       "worktree": ".claude/worktrees/h3a-cancel-probe",
       "prompt": "harness/prompts/h3a.md",
       "deps": [],
-      "note": "R44 split: probe half only. Read-only. Absence of symbols IS the deliverable."
+      "note": "R44 split: probe half only. Read-only. Absence of symbols IS the deliverable.",
+      "readonly": true
     },
     {
       "id": "LEDGER",
@@ -99,7 +100,20 @@
       "worktree": ".claude/worktrees/h5-compat",
       "prompt": "harness/prompts/h5.md",
       "deps": [],
-      "note": "R59. dir() says a symbol EXISTS; it cannot say DEPRECATED. Cross-references every hou.* SYNAPSE touches against the H22 reference and classifies it OK / DECAY_CLOCK / PRIVATE_API / PHANTOM. karmarenderproperties is deprecated and emitted in 11+ places while every live probe reported it healthy. Read-only, disjoint from H1/H2, gated on nothing."
+      "note": "R59. dir() says a symbol EXISTS; it cannot say DEPRECATED. Cross-references every hou.* SYNAPSE touches against the H22 reference and classifies it OK / DECAY_CLOCK / PRIVATE_API / PHANTOM. karmarenderproperties is deprecated and emitted in 11+ places while every live probe reported it healthy. Read-only, disjoint from H1/H2, gated on nothing.",
+      "readonly": true
+    },
+    {
+      "id": "H6",
+      "name": "substrate truth",
+      "state": "ready",
+      "receipt": "H6.json",
+      "branch": "repair/h6-substrate-truth",
+      "worktree": ".claude/worktrees/h6-substrate-truth",
+      "prompt": "harness/prompts/h6.md",
+      "deps": [],
+      "readonly": false,
+      "note": "R64. moneta_available() is one boolean carrying five independent claims: imports / same-module-both-interpreters / schema registered / prims authored typed / round-trips. Only the first is measured. MonetaMemory is concreteTyped and codegen'd, but the brief says prims are still untyped def - expected live state is registered=True in_use=False, the only cell that looks like success. Writes moneta_runtime.py so NOT read-only."
     },
     {
       "id": "F1",
