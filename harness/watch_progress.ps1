@@ -45,6 +45,33 @@ function Get-LastProgress {
     return $newest
 }
 
+# Backup is a property of the watcher, not a step anyone performs.
+# Today proved the distinction: every safety property that held was structural,
+# every one that failed was remembered. Push is additive - it never touches a
+# working tree and cannot disturb a running agent.
+#
+# HARD RULES: feature branches only, never master, never --force.
+# Gate C stays human. This is backup, not integration.
+function Backup-Branches {
+    $pushed = @()
+    foreach ($line in (git -C $repo worktree list)) {
+        $p = ($line -split '\s+')[0]
+        if (-not (Test-Path $p)) { continue }
+        $br = (git -C $p rev-parse --abbrev-ref HEAD 2>$null)
+
+        # never master/main, never a detached HEAD
+        if (-not $br -or $br -eq 'HEAD' -or $br -in @('master', 'main')) { continue }
+
+        $up = (git -C $p rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>$null)
+        $ahead = if ($up) { (git -C $p rev-list --count '@{u}..HEAD' 2>$null) } else { 'new' }
+        if ($ahead -eq '0') { continue }
+
+        git -C $p push origin "${br}:${br}" 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) { $pushed += "$br($ahead)" }
+    }
+    return $pushed
+}
+
 $seen = @{}
 foreach ($k in $stages.Keys) { if (Test-Path (Join-Path $rdir "$k.json")) { $seen[$k] = $true } }
 Write-Host "baseline (not re-announced): $($seen.Keys -join ' ')"
@@ -87,8 +114,11 @@ while ((Get-Date) -lt $deadline) {
         Write-Host ("{0}  progress resumed" -f (Get-Date -Format 'HH:mm:ss'))
     }
 
-    Write-Host ("{0}  {1}/9 receipts | last write {2}m ago" -f `
-        (Get-Date -Format 'HH:mm:ss'), $seen.Count, $mins)
+    $backed = Backup-Branches
+    $bmsg = if ($backed.Count) { " | backed up " + ($backed -join ' ') } else { "" }
+
+    Write-Host ("{0}  {1}/9 receipts | last write {2}m ago{3}" -f `
+        (Get-Date -Format 'HH:mm:ss'), $seen.Count, $mins, $bmsg)
 
     Start-Sleep -Seconds $PollSeconds
 }
