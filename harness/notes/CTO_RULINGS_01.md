@@ -1899,3 +1899,69 @@ The remaining ruling items from both receipts — the corpus/RAG gate extension,
 quarantine, matrix schema versioning, promoting H5's producers into `scripts/`, the `pytest -k
 solaris` interpreter ambiguity — are real and none are blocking. They go to F1's ruling block
 rather than being decided here on a first read.
+
+---
+
+## RULING 72 — The local H22 references. Two sources, two axes, and neither is sufficient alone.
+
+Joe supplied `C:\Users\User\OneDrive\Documents\houdini22.0\config\Help\cache` and pushed back when
+I dismissed it. He was right, and the pushback produced the most useful documentation finding of
+the leg.
+
+### What I got wrong
+
+I tested the cache against `hou.RopNode` and `hou.TopNode`, found neither, counted 101 HOM
+symbols, and concluded "browsing cache, not an oracle." **That conclusion is correct for the HOM
+axis and says nothing about the node axis.** The cache holds **1,588 node docs** — I had looked
+only at `hom/`.
+
+`karmarenderproperties` is a NODE TYPE. It is H5's headline `DECAY_CLOCK` symbol, and `hom.zip`
+cannot adjudicate it at all.
+
+### Two sources, established by control
+
+| Source | Covers | Control result |
+|---|---|---|
+| `<install>\houdini\help\hom.zip` | HOM Python API, 967 `.txt`, 62 mention deprecation | **PASSES both** — `RopNode.txt` has no cancel verb; `TopNode.txt` carries `dirtyAllTasks(self, remove_outputs)` and its deprecation notice verbatim |
+| `<userprefs>\config\Help\cache` | node docs, 1,588 files, 48 LOP, 207 mention deprecation | serves the node axis; **useless for HOM** — 101 symbols, browsed pages only |
+
+**`hom.zip` ships with 22.0.368, so it is version-pinned by construction.** No robots restriction,
+no breadcrumb ambiguity, no URL whose meaning changes underneath a citation. H5-F1's hazard
+disappears because there is no version to get wrong.
+
+### The finding that matters, and it inverts the assumption
+
+Both `nodes/lop/karmarenderproperties.json` (69,921 chars) and `nodes/lop/karma.json` (95,777
+chars) are present, substantial, current — and **neither mentions deprecation.** The runtime flags
+both; that is how H5 found them.
+
+**This is H5-F2 confirmed on its headline instance:** node-type deprecation has two independent
+expressions and they disagree.
+
+I had assumed documentation would supply the authority `dir()` could not. Here the reverse holds —
+**the authored help is less informative than the runtime**, and an artist reading the docs has no
+way to learn these node types are decaying.
+
+**Ruled:**
+
+1. **`hom.zip` is the HOM documentation oracle.** Local, version-pinned, control-passed. It
+   replaces network fetches for HOM symbols entirely.
+2. **The help cache is a SECOND source for the node axis, never the authority.** A node absent
+   from it means "nobody browsed that page" — the same trap that made my first dismissal wrong,
+   pointed the other way.
+3. **Deprecation is the UNION of runtime `deprecationInfo()` and authored help, and disagreement
+   between them is itself a finding.** A doc-only oracle would have reported
+   `karmarenderproperties` clean. A runtime-only oracle misses anything deprecated in prose but
+   not flagged in code. **H5's `DECAY_CLOCK` count of 19 is a floor, not a total.**
+4. **Add a `doc_silent_deprecation` sub-cell** to the compat matrix: runtime says deprecated,
+   authored help does not. It is the most dangerous cell, because every human-facing surface says
+   the symbol is fine.
+
+### Method note
+
+Three times today a two-sided control changed the answer: the WS bridge that was healthy, `--effort
+banana` proving the flag validates, and this. **Each time the first result was plausible and
+wrong.**
+
+And the correction here came from Joe declining to accept a fast dismissal. The scout took one
+run. The dismissal took one run too — the difference was entirely in which axis got tested.
