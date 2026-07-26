@@ -91,7 +91,7 @@ Write-Host ''
 `$p = @'
 $prompt
 '@
-claude --settings $($manifest.settings) --permission-mode acceptEdits --verbose `$p
+claude --settings $($manifest.settings) --effort $($manifest.effort) --permission-mode acceptEdits --verbose `$p
 Write-Host ''
 Write-Host '  LEG $($leg.id) TERMINATED' -ForegroundColor Cyan
 "@ | Set-Content $script -Encoding utf8

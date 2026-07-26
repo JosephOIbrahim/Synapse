@@ -3,6 +3,8 @@
   "_schema": "legs/v1",
   "repo": "C:\\Users\\User\\SYNAPSE",
   "settings": "C:\\Users\\User\\SYNAPSE\\harness\\relay-settings.json",
+  "effort": "ultracode",
+  "_effort_note": "VERIFIED 2026-07-26 by negative control: 'claude --effort banana' warns 'Unknown --effort value, ignoring it' and lists low/medium/high/xhigh/max. 'ultracode' produces NO warning, so it is recognised despite being absent from --help. Acceptance alone would have proved nothing - a silently-ignored flag returns OK exactly like an applied one.",
   "base": "feat/repair-heats-01",
 
   "legs": [
