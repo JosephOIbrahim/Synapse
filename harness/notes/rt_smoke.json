@@ -1,0 +1,17 @@
+{
+  "transitions": [
+    {
+      "where": "<configure>",
+      "from": null,
+      "to": {
+        "kind": "module",
+        "id": "0x7eadd170",
+        "canonical": false,
+        "file": "C:\\PROGRA~1/SIDEEF~1/HOUDIN~1.368/houdini/python3.13libs\\hou.py",
+        "has_Parm": true,
+        "Parm_has_set": true
+      }
+    }
+  ],
+  "count": 1
+}

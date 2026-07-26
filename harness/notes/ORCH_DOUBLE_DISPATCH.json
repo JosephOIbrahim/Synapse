@@ -1,0 +1,140 @@
+{
+  "schema": "receipt/v1",
+  "leg": "H2 (stood down)",
+  "title": "H2 did not run: the orchestrator dispatched it four times into one worktree",
+  "harness": "REPAIR-01",
+  "status": "red",
+  "status_note": "Describes what happened (Law 3). H2's WORK (Parts A/B/C) was NOT performed by this session. It was halted before any probe because four agents are executing the identical brief in one worktree, which makes every measurement unattributable. The finding below is what this session produced instead, and it is a defect in the dispatcher, not in H2.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "worktree-interactive dispatched via harness/relay-settings.json - recorded as-run per R25. This session did NOT run pytest and claims no suite evidence anywhere in this artifact.",
+  "pins": {
+    "worktree": ".claude/worktrees/h2-requalify",
+    "branch": "repair/h2-requalify",
+    "head_at_standdown": "c1d194b",
+    "houdini": "22.0.368 (not exercised by this session)",
+    "date": "2026-07-26"
+  },
+
+  "gate_check_res": {
+    "question": "Brief clause: 'If RES did not actually eliminate the fake-hou residency, STOP and say so.'",
+    "verdict": "NOT TRIGGERED - RES is sound and present on this branch",
+    "tier": "VERIFIED-STATIC",
+    "evidence": [
+      "git range-diff c0cc415~1..0b5806c 70ed8ef..c1d194b -> '1: c0cc415 = 138915e' and '2: 0b5806c = c1d194b'. The RES pair is on this branch, content-identical.",
+      "tests/conftest.py contains HOU_REIMPORT_GUARD (8 references)",
+      "tests/test_hou_reimport_guard.py present, 23093 bytes",
+      "RES.json oracle: AttributeError 17 -> 0; tests/solaris/test_live_wiring.py 27/27; residency transitions 0; evictions_outside_sanctioned []"
+    ],
+    "correction_to_my_own_earlier_claim": "This session first reported RES's fix as ABSENT from the worktree and proposed a cherry-pick. That read was a race, not a fact: a duplicate H2 agent was applying the same commits concurrently. The cherry-pick was unnecessary and produced the add/add collision recorded in ORCH-F2."
+  },
+
+  "findings": [
+    {
+      "id": "ORCH-F1",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "critical",
+      "anchor": "harness/orchestrate.ps1:240 (dispatch guard) with harness/orchestrate.ps1:66-87 (Get-LegState)",
+      "summary": "The anti-double-dispatch memo is written to a variable the dispatch decision never reads. Line 240 is `if ($now -eq 'ready' ...) { Start-Leg $leg; $known[$leg.id] = 'launched' }`. The guard tests $now, which line 219 recomputes from the FILESYSTEM every poll via Get-LegState. 'launched' is not a value Get-LegState can return, so the memo is overwritten before it is ever consulted. Get-LegState returns 'running' only once the agent has written .claude/settings.local.json; until then a live, launched agent reads as 'ready' and is dispatched again.",
+      "mechanism": "Agent cold start (trust, model load, first tool call) took 3m56s: dispatch 14:38:55 -> .claude/settings.local.json mtime 14:42:51. PollSeconds default is 45. That window spans 5 polls, 4 of which fired a dispatch.",
+      "producer": "harness/notes/orchestrator_20260726-143854.log",
+      "evidence_verbatim": [
+        "14:38:55  DISPATCH H2 requalify  ->  repair/h2-requalify",
+        "14:39:50  STATE  H2 requalify  launched -> ready",
+        "14:39:50  DISPATCH H2 requalify  ->  repair/h2-requalify",
+        "14:40:40  STATE  H2 requalify  launched -> ready",
+        "14:40:40  DISPATCH H2 requalify  ->  repair/h2-requalify",
+        "14:41:30  STATE  H2 requalify  launched -> ready",
+        "14:41:30  DISPATCH H2 requalify  ->  repair/h2-requalify"
+      ],
+      "live_process_confirmation": {
+        "producer": "Get-CimInstance Win32_Process, filtered on claude.exe with h1.md/h2.md in CommandLine",
+        "H2": ["58352 @ 2:38:56", "8332 @ 2:39:50", "34280 @ 2:40:40", "25648 @ 2:41:30"],
+        "H1": ["41680 @ 2:38:58", "59148 @ 2:39:50", "19872 @ 2:40:40", "9452 @ 2:41:30"],
+        "note": "All eight alive at 15:12. Two worktrees, four agents each, one brief apiece."
+      },
+      "why_it_is_a_law_1_defect": "The line `$known[$leg.id] = 'launched'` reads as a guard, sits exactly where a guard belongs, and cannot function as one. Stating the condition under which it fails is trivial once asked - it fails whenever agent startup exceeds one poll - and it was never asked. Same species as D1 grounded-coverage and probe_phase3_layout: a check that reports healthy while proving nothing.",
+      "aggravator": "The comment at orchestrate.ps1:76-80 deliberately chose to return 'ready' rather than 'launched' for a started-but-silent leg, to avoid stranding a leg whose agent died at the trust dialog. That choice is defensible alone; it is unsafe only because no launch-time memo the guard actually consults was added alongside it. Any fix must preserve the anti-stranding property.",
+      "blast_radius": "Every leg the orchestrator dispatches, not just H2. RES/H3a/LEDGER escaped by luck of timing: the 11:51:42 dispatch reached 'running' by 11:52:31 (49s), just inside one poll."
+    },
+    {
+      "id": "ORCH-F2",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "structural",
+      "anchor": ".claude/worktrees/h2-requalify (shared by 4 agents)",
+      "summary": "Four agents in one working directory violate Constitution Article V verbatim: 'Two agents in one directory produce interleaved commits, a corrupted suite baseline, and findings that cannot be attributed.' Not theoretical here - Part B of the H2 brief is mutation testing, which deliberately breaks product files and restores them. Any concurrent agent running pytest inside that window measures a deliberately-broken tree and reports a defect that does not exist.",
+      "observed_collisions": [
+        "add/add merge conflict on harness/notes/receipts/RES.json when this session cherry-picked c0cc415 while a duplicate cherry-picked the same commit",
+        "python/synapse/mcp/tool_impls/solaris/import_megascans.py showed modified in git status during another agent's mutation run",
+        "harness/notes/mutation_matrix_h2.py and .mm_h2_tmp/ appeared in this session's working directory, authored by an agent this session cannot identify"
+      ],
+      "live_mutation_evidence": {
+        "producer": "two timestamped samples of .mm_h2_tmp/ taken by this session",
+        "sample_1": "15:00:43 - M1..M8 present, M8 mtime 15:00:31",
+        "sample_2": "15:01:24 - M1..M14 present, M9 mtime 15:00:38",
+        "interpretation": "~6.3s per mutation cycle, advancing in real time while this session held the same directory."
+      },
+      "the_irony_worth_recording": "H2 exists because F4 shipped a green test that could not fail. Running four H2 agents in one tree is the most efficient way to manufacture exactly that defect: agents sampling each other's deliberate breakage produce CONFIRMED verdicts for defects that are only another agent's mutation - each with a real file:line anchor, and no way to tell them apart."
+    },
+    {
+      "id": "ORCH-F3",
+      "tier": "VERIFIED-STATIC",
+      "severity": "minor",
+      "anchor": "harness/legs.json (H2 entry), harness/orchestrate.ps1:66-68",
+      "summary": "legs.json records H2 as state='blocked' with deps=['RES'], but Get-LegState honours only state=='held'. A manifest 'state' of 'blocked' is inert - the dependency check alone decides. Not causal for ORCH-F1; recorded because a reader of legs.json would reasonably believe 'blocked' holds the leg.",
+      "status": "OPEN - note only, no action proposed."
+    }
+  ],
+
+  "what_this_session_did_not_do": {
+    "part_a": "F1-F11 re-qualification: NOT PERFORMED. No finding carries a CONFIRMED/REFUTED/UNVERIFIABLE verdict from this session.",
+    "part_b": "Pin mutation testing: NOT PERFORMED by this session. A duplicate agent was observed performing it.",
+    "part_c": "Q2 bucket-2 tests: NOT PERFORMED. RES.json already reports all 17 resolved (all were in tests/solaris/test_live_wiring.py, now 27/27), so Part C may be satisfied by RES rather than by H2 - that is for a surviving H2 agent to confirm, not for this session to assert.",
+    "receipt": "harness/notes/receipts/H2b.json NOT written by this session, deliberately. Writing it would race a surviving agent's own receipt.",
+    "suite": "No pytest run. No suite number is claimed."
+  },
+
+  "residue_left_by_this_session": {
+    "honest_accounting": "This session touched the shared worktree three times before standing down. All three are recorded rather than tidied away.",
+    "acts": [
+      "git cherry-pick c0cc415 -> conflicted, created no commit",
+      "git cherry-pick --quit -> cleared THIS session's sequencer state only; the duplicate's cherry-picks had already committed (138915e, c1d194b) and were left intact",
+      "git checkout HEAD -- harness/notes/receipts/RES.json -> restored the conflicted file to committed content. If a concurrent agent held uncommitted edits to RES.json, they were lost. RES.json is RES's receipt rather than H2's, so exposure is judged low - stated rather than assumed."
+    ],
+    "head_left_at": "c1d194b - unchanged from where the duplicate agent left it"
+  },
+
+  "for_ruling": [
+    {
+      "id": "ORCH-R1",
+      "question": "Fix the dispatch guard so a launched leg cannot be re-dispatched during agent cold start. Which mechanism?",
+      "why_escalated": "Article I - a value judgement between defensible options with different failure modes, inside the dispatcher that governs every future leg.",
+      "options": [
+        "A launch-time marker file written by Start-Leg itself (e.g. .claude/.dispatched), checked by Get-LegState before the 'ready' fallback. Preserves anti-stranding if the marker carries a timestamp and expires after StaleMinutes.",
+        "Make the guard consult $known: dispatch only if $now -eq 'ready' AND $was -ne 'launched'. One line, but re-strands the dead-at-trust-dialog leg that the 76-80 comment exists to rescue.",
+        "Query the process table for a live claude.exe whose CommandLine names this leg's prompt. Most direct, Windows-specific."
+      ],
+      "recommendation": "The timestamped marker file. It is the only option keeping both properties - idempotent dispatch AND recovery of a silently-dead agent - and it survives an orchestrator restart, which the in-memory option does not. The orchestrator was restarted twice today (PIDs 32960, 62092).",
+      "blocks_h2": true
+    },
+    {
+      "id": "ORCH-R2",
+      "question": "Seven duplicate agents are alive (3 excess H2, 4 excess H1). Kill them, or let them run to completion?",
+      "why_escalated": "Killing an agent mid-mutation can leave a product file deliberately broken with no restore - the matrix breaks and restores in a loop. Letting them run means N receipts per leg plus continued cross-contamination. Neither is safely decidable from the tree.",
+      "recommendation": "Kill the excess by start time, keeping the EARLIEST per leg (H2 58352, H1 41680) as furthest along. Before killing any, check git status in the worktree for a modified product file and restore it - a mutation left applied is the one outcome worse than a duplicate receipt.",
+      "blocks_h2": true
+    },
+    {
+      "id": "ORCH-R3",
+      "question": "Does H2's result stand if produced by an agent sharing its worktree with three others?",
+      "why_escalated": "This is the epistemics question the leg exists to defend. R34 created H2 because a green test could not fail; a CONFIRMED verdict sampled during another agent's mutation has the same defect with better provenance.",
+      "recommendation": "Re-run H2 once, alone, in a clean worktree, after ORCH-R1 lands. Treat any receipt produced today as evidence about the dispatcher rather than about F1-F11. The cost is one leg; the alternative is a re-qualification whose verdicts cannot be attributed - the exact artifact R34 rejected.",
+      "blocks_h2": true
+    }
+  ],
+
+  "resume_token": {
+    "skip": "Do NOT re-derive the RES gate - settled and evidenced above (VERIFIED-STATIC, range-diff + guard presence). Do NOT re-read l2_wiring_findings.md for orientation; F1-F11 are unchanged there.",
+    "next": "Land ORCH-R1, resolve ORCH-R2, then dispatch H2 once into a clean worktree. H2's actual WORK (Parts A/B/C) is entirely unstarted by this session.",
+    "watch": "If a future orchestrator log shows 'STATE <leg> launched -> ready' immediately followed by 'DISPATCH <leg>', ORCH-F1 has regressed. That two-line pair IS the signature."
+  }
+}

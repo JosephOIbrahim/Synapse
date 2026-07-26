@@ -1,0 +1,36 @@
+{
+  "transitions": [
+    {
+      "where": "<configure>",
+      "from": null,
+      "to": {
+        "kind": "module",
+        "id": "0x7eb05260",
+        "canonical": false,
+        "file": "C:\\PROGRA~1/SIDEEF~1/HOUDIN~1.368/houdini/python3.13libs\\hou.py",
+        "has_Parm": true,
+        "Parm_has_set": true
+      }
+    },
+    {
+      "where": "collectstart:tests/test_introspection.py::TestNodeBasic",
+      "from": {
+        "kind": "module",
+        "id": "0x7eb05260",
+        "canonical": false,
+        "file": "C:\\PROGRA~1/SIDEEF~1/HOUDIN~1.368/houdini/python3.13libs\\hou.py",
+        "has_Parm": true,
+        "Parm_has_set": true
+      },
+      "to": {
+        "kind": "module",
+        "id": "0x1749a8d10",
+        "canonical": false,
+        "file": null,
+        "has_Parm": false,
+        "Parm_has_set": false
+      }
+    }
+  ],
+  "count": 2
+}
