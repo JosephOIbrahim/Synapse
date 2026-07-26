@@ -91,6 +91,17 @@
       "note": "R44: HELD by ruling. Human release required - do not auto-dispatch. The safety gap is open."
     },
     {
+      "id": "H5",
+      "name": "h22 compat",
+      "state": "ready",
+      "receipt": "H5.json",
+      "branch": "repair/h5-compat",
+      "worktree": ".claude/worktrees/h5-compat",
+      "prompt": "harness/prompts/h5.md",
+      "deps": [],
+      "note": "R59. dir() says a symbol EXISTS; it cannot say DEPRECATED. Cross-references every hou.* SYNAPSE touches against the H22 reference and classifies it OK / DECAY_CLOCK / PRIVATE_API / PHANTOM. karmarenderproperties is deprecated and emitted in 11+ places while every live probe reported it healthy. Read-only, disjoint from H1/H2, gated on nothing."
+    },
+    {
       "id": "F1",
       "name": "integrate",
       "state": "blocked",

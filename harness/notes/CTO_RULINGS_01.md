@@ -1469,3 +1469,103 @@ evidence at the tier of whoever wrote it, and mine was `UNVERIFIED`.
 - **`shot_layers/` written to repo root by the solaris live tests** (RES-F11). **Redirect to
   `tmp_path`.** Gitignoring it hides a test writing outside its sandbox; the write is the defect,
   not its visibility.
+
+---
+
+## RULING 58 — H3a-F1 CONFIRMED against SideFX's own documentation before the ask ships.
+
+Joe's call, and the right one: **search the vendor's documentation before sending the vendor an
+ask that says "your API does not do X."** A negative claim to a vendor is the highest-stakes kind
+this project makes — checkable by them in minutes, and being wrong costs credibility that took two
+days of probes to build.
+
+**Method:** `sidefx.com/docs/houdini/hom/hou/RopNode.html`, fetched 2026-07-26, full method list
+read rather than keyword-searched. Complete public surface:
+
+```
+addRenderEventCallback  bypass  inputDependencies  isBypassed  isLocked
+setLocked  removeAllRenderEventCallbacks  removeRenderEventCallback  render
+```
+
+No cancel, abort, interrupt, stop or kill — on `RopNode` or inherited from `OpNode`, `Node`,
+`NetworkMovableItem`, `NetworkItem`. `render()` takes no timeout, no handle, and no callback that
+can refuse continuation.
+
+**Two near-misses, both checked and rejected:**
+- `hou.InterruptableOperation` — real, documented for 22.0, but wraps *your own* Python block and
+  polls `updateProgress()`. No reach into a `render()` already blocking in C++. Adjacent, not
+  applicable.
+- `addRenderEventCallback` — delivers `ropRenderEventType` notifications. Observation, not control.
+
+**Verdict: H3a-F1 stands**, now on two independent methods — `VERIFIED-RUNTIME` (live `dir()` on
+22.0.368) and `VERIFIED-WEB` (published reference, read in full).
+
+**Caveat, load-bearing for the vendor conversation:** the fetched page's breadcrumb reads
+**Houdini 21.0** at the current docs URL. The ask must cite the **live probe** as primary evidence
+and the docs as corroboration, never the reverse — otherwise the first response is a version
+objection.
+
+R50 extends to vendor correspondence: **ABSENT requires a positive control, and reading the
+complete method list is that control.** I wrote that rule for probes four hours earlier and had
+not thought to apply it here.
+
+---
+
+## RULING 59 — H5 compat: cross-reference the codebase against the H22 reference. New leg.
+
+**Why this is not redundant with live probing**, which is the whole case for it:
+
+> `dir()` tells you a symbol EXISTS on this build. It cannot tell you the symbol is DEPRECATED.
+
+R7 found SYNAPSE emitting `karma` and `karmarenderproperties` — the build's only two deprecated
+LOPs, `karmarenderproperties` in ≥11 places. Every live probe reported them present and healthy.
+H3a found `dirtyAllTasks` cited in `CLAUDE.md 1.7` and `shared/bridge.py`, also deprecated, also
+invisible to introspection.
+
+**A phantom API breaks loudly. A deprecated one works perfectly until the release that removes it.**
+
+### The instrument — a four-quadrant matrix
+
+Two independent axes: EXISTS (live `dir()`) x DOCUMENTED STATUS (H22 reference).
+
+```
+                   documented current   documented DEPRECATED   undocumented
+    exists         fine                 DECAY CLOCK             PRIVATE API RISK
+    absent         version mismatch     already removed         phantom
+```
+
+Only the top-left is safe. **Today's harness produces exactly one column.** The three interesting
+cells are invisible to it.
+
+- **DECAY CLOCK** — works today, breaks on upgrade, nothing in CI sees it coming.
+- **PRIVATE API RISK** — `dir()` finds it, SideFX never documented it. It can vanish in a point
+  release with no deprecation notice, because it was never promised.
+
+### Three agents, because it is three different jobs
+
+- **`cartographer`** — enumerate every `hou.*` SYNAPSE touches: call sites, emission corpus, RAG
+  corpus, `CLAUDE.md` citations, docstrings. **The RAG corpus matters** — U.6 found 15 phantom
+  light `createNode` sites there, outside the emission gate, re-teaching phantoms via
+  `knowledge_lookup`.
+- **`librarian`** — fetch the H22 reference per symbol. **Read the full method list, never
+  keyword-search** (R58's control).
+- **`h22-adjudicator`** — assign the quadrant. This is where the judgment lives: *"not on the page
+  I read"* and *"not documented"* are different claims.
+
+### The trap it must handle first
+
+The docs URL fetched for R58 served a page whose breadcrumb read **Houdini 21.0**. So "the H22
+documentation" may not be cleanly addressable.
+
+**Establish which docs version is authoritative before classifying anything against it.** If the
+answer is that SideFX serves 21.0 at the current URL, **that is a finding**, not an obstacle to
+route around — it changes what "documented for H22" can mean, and it changes how every vendor ask
+must be worded.
+
+### Output
+
+A ledger keyed by symbol: quadrant, `file:line` call site, docs URL, truth tier. Plus a
+`checks.py` gate that **fails when a deprecated symbol appears in the emission corpus** — which
+would have caught `karmarenderproperties` in eleven places.
+
+**Read-only, disjoint from H1 and H2, gated on nothing.** Runs alongside.
