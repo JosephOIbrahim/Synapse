@@ -1123,3 +1123,113 @@ that is 100% by construction. A probe pointed at the wrong path.
 Five instruments, all reporting clean, none capable of reporting otherwise. **Law 1 is not a
 rule about tests. It is a rule about every instrument, including the ones written to check
 instruments** — and the author most likely to violate it is whoever most recently wrote the law.
+
+---
+
+# ADDENDUM — H2 / H3 RELEASE CONDITIONS (R42–R46)
+
+Both legs held themselves and wrote receipts saying so, with `why_escalated` on every item. That
+is Article I working unsupervised: a sequencing judgement between defensible options is not an
+agent's to take silently. Neither receipt contains a single claim about the work it did not do.
+
+---
+
+## RULING 42 — H2 hold CONFIRMED, release condition NARROWED.
+
+**Proposed:** unblock when the shipping interpreter collects with 0 collection errors AND the
+fake-hou residency question is resolved.
+
+**Ruled: confirm the hold, drop the collection clause, keep the residency clause.**
+
+The 3 collection errors are `ModuleNotFoundError` for `websockets` and `mcp` in
+`test_load.py`, `test_passthrough_hygiene.py`, `test_port_wave_scene1.py` — three files with no
+relationship to F1–F11. Gating a Solaris re-qualification on unrelated transport-test imports
+delays the leg for no epistemic gain. **A release condition should name what would change the
+answer, not everything that is untidy.**
+
+The residency clause is the real one, and R41 has now upgraded it from question to fact:
+`hou.Parm.set` **exists** on 22.0.368, yet `component_builder.py:315` raises
+`AttributeError: 'Parm' object has no attribute 'set'`. A stub `Parm` is shadowing the real class.
+`tests/solaris/test_live_wiring.py` believes it drives live Houdini and does not.
+
+**H2 unblocks when fake-hou residency is eliminated on the Solaris test path** — provable by that
+same `AttributeError` disappearing. Nothing else.
+
+The agent's reasoning for escalating rather than proceeding on the gate interpreter was correct
+and is adopted: F1–F11 are host-behaviour claims, and Law 1 bans asserting those against a mock.
+
+---
+
+## RULING 43 — H2 scope EXPANDS to Q2 bucket 2. Same probe, same defect, marginal cost.
+
+Those ~17 tests are decorations in exactly F4's sense — they pass because a fake `hou` cannot
+disagree with them. They share provenance and mechanism with F1–F11, and R41 proved the mechanism
+live rather than inferring it.
+
+**Ruled: yes.** Re-qualifying F1–F11 while leaving 17 known-decorative tests beside them would
+produce a leg that is correct and useless. **Fake-hou residency goes to the head of H2**, ahead of
+the F1–F11 re-probe, because until it is gone every re-probe result is uninterpretable.
+
+---
+
+## RULING 44 — H3 hold is OVERRIDDEN IN PART. The probe runs now; implementation stays held.
+
+The agent framed this as binary and flagged the cost either way. It is not binary, and its own
+H3-R3 is why.
+
+**The re-probe needs nothing that is currently broken.** Confirming `tops_cancel_cook`,
+render-ROP interrupt and `cancelCook()` by live `dir()` against 22.0.368 depends on Houdini, not
+on the shipping suite, not on collection health, not on H1. It can run today.
+
+**Ruled — H3 splits:**
+- **H3a · probe — RUNS NOW.** `assayer` only. Live confirmation of every symbol the cancel path
+  would need. Read-only, no implementation, no design. If the symbols are absent on 22.0.368,
+  **that absence is the deliverable** and becomes a SideFX ask — do not invent a workaround.
+- **H3b · implementation — REMAINS HELD** pending H3a's result and a green-enough shipping path
+  to certify against.
+
+Holding a probe because the implementation cannot yet be certified is the error in miniature:
+it treats *learning what is true* as though it carried the risk of *changing what is true*.
+
+**The safety gap stays open and this ruling does not close it.** An artist mid-Karma-render still
+has a Stop that will not stop the render.
+
+---
+
+## RULING 45 — H3-R2 is overtaken by events, and that is my fault.
+
+The receipt reasons from *"no tag until H1 and H3 land"* and asks whether holding H3 blocks the
+tag indefinitely.
+
+**A tag already shipped.** `v5.34.0` was cut 2026-07-25 21:15 from `f90946d`. I reversed my own
+no-tag ruling that evening on the grounds that the cook-cancel gap and the schema drift **shipped
+in v5.33.0 and every version before it** — they were pre-existing conditions this release
+documented for the first time, not regressions it introduced.
+
+I never updated the harness. The agent was reasoning correctly from a stale governing document.
+
+**Ruled, restating the condition:** the gate was never really about tagging. It is about **what a
+tag is permitted to claim**.
+
+> No release may claim the cook-cancel gap is closed until H3b lands and is live-certified.
+
+`v5.34.0` satisfies this — its *Known limitations* section states plainly that Stop cannot cancel
+an in-flight cook. **A tag that documents a gap is honest. A tag that omits it is not.** The
+condition constrains claims, not version numbers.
+
+---
+
+## RULING 46 — H3 begins with the re-probe. Recommendation adopted verbatim.
+
+The agent's reasoning: *"Law 5 — every governing claim sourced from a probe held up; every claim
+sourced from recall of a prior chat failed."*
+
+That is this project's evidence record quoted back accurately, and it is the correct call.
+
+**Ruled: yes.** No design work in H3 proceeds on prior-session evidence about the render
+chokepoint or the `hdefereval` marshal. Both are `UNVERIFIED` in this run and are re-probed or
+they are not used.
+
+Worth recording that an agent applied Law 5 to *my* prior sessions before I did. Every correction
+in the last two days has come from an instrument or an agent, never from me re-reading my own
+work.
