@@ -242,3 +242,85 @@ Begin at Q1.
 ```
 
 **Resume:** read the receipts, restart at the first stage with none.
+
+---
+
+## 8 · AMENDMENT A1 — 2026-07-25, Joe-authorized. H4 added.
+
+**Not visible to the running orchestrator.** REPAIR-HEATS-01 read this document at dispatch and
+will not re-read it. H4 is therefore a **follow-on dispatch**, not a stage the current run will
+execute. It commits now because F3 requires governing documents to precede the work they govern,
+and H4 has not run.
+
+### H4 · Panel finish — `feat/repair-panel-finish`
+
+**Trigger** Joe, 2026-07-25: *"the UI is outdated."* Diagnosed rather than assumed.
+
+**What is actually true.** L4 shipped rule 1 — the wordmark is weight 400 at ~4px BRAND tracking,
+with the reasoning recorded in the code (`synapse_panel.py:398-400`). `MUSHROOM` landed as
+`_warm_bias(_TXT["tertiary"])`. Monolinear and atmosphere tokens landed.
+
+**What did not, and why.** The token collision at the head of
+`design/cto_relay_01/L4_COHERE_SPEC.md` was never resolved, and L4 was **right not to paint over
+it**. Measured on HEAD:
+
+```
+t.SIGNAL   (cyan #00D4FF)   11 sites
+_ds.SIGNAL (blue #8FB3D9)   20 sites
+```
+
+Mile 7's de-cyan converted 20 of 31 at the **call sites** rather than at the source — its own
+comment says *"token sources stay untouched (local fix)"*. **The panel therefore ships two
+different accent colours today**, and that is most of what reads as outdated. `CONIFEROUS` never
+landed, so `verified/ok` remains synthetic mint rather than the natural counterweight the palette
+needs.
+
+L4's receipt also records **40% of its gate ungraded** — the hython-offscreen permission was
+granted after that leg had already started.
+
+**Gated on Q1, not merely on the qualifier.** Until the suite runs on the shipping interpreter,
+every panel edit ships unverified. Panel work before Q1 is how 17 ORPHAN and 7 SILENT affordances
+accumulated in the first place. **Do not start H4 before Q1 is green.**
+
+**Work**
+
+1. **Resolve the collision at the source.** Convert the remaining 11 `t.SIGNAL` sites, then make
+   `panel/tokens.py` re-export from `panel/designsystem/tokens.py` rather than redeclare. One
+   authority. Fixing call sites again would produce a third state, not a fix.
+2. Resolve the `SIZE_HERO` branch — `tokens.py:59` sets 44, `tokens.py:83` sets 19. Document which
+   is live.
+3. Land `CONIFEROUS = "#6E8F72"` and migrate the `OK_SOFT` call sites. Two accents per view remains
+   the ceiling; the render is the only chromatic event.
+4. Re-run L4's ungraded 40% now that hython-offscreen is permitted.
+5. Screenshot-diff every view before/after into `design/repair_h4/`.
+
+**Explicitly OUT of scope**
+
+- **The v3 design study** — halt-is-the-mark, two surfaces, the Voronoi cook grid. R29 established
+  that a working, honest Stop already exists in the live rail. Adding a second control blind, into
+  a package with no verification, is precisely the error this harness exists to prevent. It waits
+  for a test surface.
+- Removing ORPHAN affordances. That is its own leg with its own evidence.
+
+**Oracle**
+
+```
+grep -c 't\.SIGNAL' python/synapse/panel/*.py            ->  0
+panel/tokens.py re-exports; declares no colour of its own
+every token name present before is present after   (assert against
+  harness/notes/panel_token_inventory_before.json, per R20 - styles.py defines none)
+pytest -k panel   ->  0 failed
+no import of routing/ or server/ added to panel/
+```
+
+**Receipt** `harness/notes/receipts/H4.json`.
+
+**Dispatch when Q1 is green**
+
+```
+Read harness/AGENT_CONSTITUTION.md, then harness/SYNAPSE_REPAIR_HEATS.md section 8 (H4).
+You are ORCHESTRATOR for the panel-finish heat. Own worktree off master, constitution
+cherry-picked (R38). Dispatch panel-design-warden, then crucible.
+Resolve the token collision at the SOURCE before any palette work. Do not implement the
+v3 design study. Never push, never merge, never tag.
+```
