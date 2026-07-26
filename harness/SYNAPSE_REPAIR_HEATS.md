@@ -324,3 +324,93 @@ cherry-picked (R38). Dispatch panel-design-warden, then crucible.
 Resolve the token collision at the SOURCE before any palette work. Do not implement the
 v3 design study. Never push, never merge, never tag.
 ```
+
+---
+
+## 9 · AMENDMENT A2 — 2026-07-25. Q0 bridge scaffold.
+
+**Runs before Q1 in any future dispatch. In THIS run it may execute in parallel** — Q0 touches
+only `harness/`, and Q1 touches only `tests/`. Disjoint by construction, verified at authoring
+time. It does not need to preempt anything.
+
+### The problem, stated precisely
+
+The MCP bridge died repeatedly on 2026-07-25. Its server processes were **restarted** at 21:47,
+not recovered — each outage was a real process death. No crash log survived; the log directory
+held one unrelated entry from 18:06.
+
+**The outages were not the failure.** The failure was that a timeout could not be distinguished
+from a failure. Five operations returned nothing and each turned out to have *succeeded*: the
+`v5.34.0` tag, the `master` push, the release creation, an L5 commit, a harness commit. Every one
+was reported as uncertain and later found done.
+
+You cannot prevent the bridge dying. **The goal is to make a death indistinguishable from a
+pause.**
+
+The relay already proved the shape at leg granularity — it crashed at L5 having written a 25KB
+ruling block, and lost exactly one file: the receipt. Q0 applies the same discipline one level
+down, at the individual operation.
+
+### Q0 · Work
+
+**1 — Intent log.** Before any mutating command, append intent. After, append outcome.
+
+```jsonl
+{"id":"op-1841","ts":"...","cmd":"git push origin master","expect":"origin/master == f90946d"}
+{"id":"op-1841","ts":"...","outcome":"ok"}
+```
+
+Path: `harness/notes/intent.jsonl` (inside the write fence — `harness/state/**` is deny-listed).
+
+A timeout leaves **intent without outcome**. That is not ambiguity; it is a named state with a
+name.
+
+**2 — The `reconcile` verb.** `python harness/reconcile.py` walks orphaned intents and checks
+`expect` against reality. `git ls-remote` answers *did the push land* definitively, in one call,
+with no memory of what happened.
+
+**`expect` is the load-bearing field.** It must state *the world after*, never *the command
+succeeded*. Those are different questions and only the first is answerable post-crash. An
+`expect` phrased as "push completed" is worthless; `origin/master == <sha>` is checkable by
+anyone, at any later time, with no context.
+
+**3 — Idempotence is a precondition, not a hope.** A mutating step declares itself re-runnable
+or it does not enter the harness. Most already are: `git push`, `merge --ff-only`,
+`gh release create --verify-tag`, `git tag -a` (fails loudly on a duplicate rather than
+corrupting). Anything that is not gets wrapped until it is.
+
+**4 — Watch receipts, not PIDs.** Every watcher died on 2026-07-25 because it tracked process
+IDs that vanished in the crash. A file appearing is durable evidence; a PID is a handle to
+something that can disappear. Rewrite the heartbeat to report **"no new receipt in N minutes"**
+rather than "process gone." The first is a fact about the work; the second is a fact about the
+bridge, and the bridge is the thing that is unreliable.
+
+**5 — Snapshot the logs before a restart wipes them.** Pre-flight copies
+`~/.claude-server-commander-logs` into `harness/notes/bridge/<ts>/`. Tonight's diagnosis stalled
+because whatever explained the deaths was already gone. Five samples would exist today instead
+of zero.
+
+### Oracle
+
+```
+harness/notes/intent.jsonl exists; every mutating harness step writes to it
+python harness/reconcile.py  ->  reports 0 orphans on a clean run
+                             ->  and FAILS LOUDLY on a hand-injected orphan   <- Law 1
+heartbeat reports receipt-staleness, never process liveness
+harness/notes/bridge/<ts>/ populated at dispatch
+```
+
+The reconcile check must be demonstrated against a deliberately injected orphan. A reconciler
+that has never reported one is a decoration (Law 1, R34 mutation standard).
+
+### Why this belongs in the harness rather than the product
+
+Note the parallel. **L1.F1 declared SYNAPSE's own WebSocket bridge dead when the probe was
+pointed at the wrong path** — nine HTTP 400s read as nine transport failures. Same error class,
+different bridge, four hours apart. Both needed a positive control before a negative result
+could be interpreted.
+
+Q0 is not a new principle. It is D-R10's corollary applied to the tooling layer instead of the
+product.
+
+**Receipt** `harness/notes/receipts/Q0.json`.
