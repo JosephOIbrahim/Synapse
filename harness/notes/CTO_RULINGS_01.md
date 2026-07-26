@@ -1023,3 +1023,103 @@ It is a follow-up, not a blocker, and it does not get counted as working until i
 The segfault is gone. Q1's fix — restore the PySide6 module *objects* rather than re-import them —
 holds under the real interpreter, and the suite completes in 96 seconds where it previously took
 an access violation. That was the correct diagnosis and it was not mine.
+
+---
+
+## RULING 40 — Tuple baseline promoted. Q2-F6 dissolved rather than worked around.
+
+`harness/verify/suite_baseline.json` is now `suite_baseline/tuple-v1`, carrying both halves:
+
+```
+gate      system 3.14.2,  vendor INACTIVE   4875 passed    0 failed     0 errors
+shipping  hython3.13,     vendor ACTIVE     4048 passed  110 failed   771 errors
+```
+
+The floor was **599 tests stale** (4275, dated 2026-07-14). Any regression smaller than 599 tests
+passed the ratchet silently.
+
+**Q2-F6 named two shape-coupled readers the agent was correctly forbidden to fix.** Rather than
+break and repair them, the tuple is **backward compatible**: top-level `passed`/`failed`/`skipped`
+remain the GATE numbers, so `leg0_baselines.json`'s `evidence_command` and every other flat reader
+work unchanged. Verified — `json.load(...)['passed'], ['failed'], ['skipped']` returns
+`4875 0 129`.
+
+An extension beats a migration when the migration's only purpose is aesthetic. `h22-relay.js:65`
+carried a hardcoded `4275`; corrected to name both numbers.
+
+**The shipping number is NOT a ratchet floor.** It is a first measurement, not a green line. It
+becomes a floor once the 827-test gap is classified and the environment half closed.
+
+---
+
+## RULING 41 — Q2-F4 attacked. The clause survives. My first attack did not.
+
+**The claim under attack:** of 110 failures + 771 errors on the shipping interpreter, ~60% are
+ENVIRONMENT, ~33% test-harness code, and **zero are shipping-code defects** — with the receipt
+naming its own weak point: *"exactly where a real defect would hide behind a 'test harness'
+label."*
+
+### My first attack was worthless and I nearly filed it as a pass
+
+`harness/notes/attack_f4.py` parsed the log for pytest short-summary lines, found **zero**, and
+printed *"Q2-F4's 'zero shipping-code defects' SURVIVES this attack."*
+
+It survived nothing. The regex matched no lines because `-q` with this config emits no short
+summary. **A check that cannot fail, run against a claim I suspected of being a check that cannot
+fail.** Had I filed it, the strongest finding in the harness would have been certified by an
+instrument measuring nothing — the same defect as Q2-F2's `--ignore` runner, one day later, by
+the same author.
+
+### The real attack
+
+Method: grep every traceback frame under `python/synapse/`. A product frame is not automatically a
+product defect, but its **absence** would settle the claim, and its presence forces the question.
+
+Product frames **do** appear — 16 of them:
+
+```
+component_builder.py:315  in execute   name_parm.set(asset_name)      x5
+scene_template.py:218     in execute   primpath_parm.set(...)         x4
+handlers_hda.py:120       in _handle_hda_create                       x2
+main_thread.py:243        in run_on_main                              x2
+evaluator.py:438          RuntimeWarning: invalid value encountered   x1
+```
+
+Exception at the first two: `AttributeError: 'Parm' object has no attribute 'set'`.
+
+**That is product code calling a method on an object that lacks it.** If `hou.Parm.set` does not
+exist on 22.0.368, it is a shipping defect and F4 is refuted outright.
+
+### The positive control
+
+```
+hython3.13 -c "import hou; print(hou.Parm.set)"
+
+hou build   22.0.368
+hou module  .../houdini/python3.13libs/hou.py      <- the real module
+Parm.set    True
+```
+
+`hou.Parm.set` **exists**. The `AttributeError` therefore comes from a **stub `Parm` shadowing the
+real class** — fake-hou residency, the same mechanism Q1 fixed for PySide6, surviving in a
+different module.
+
+**Ruled:**
+1. **Q2-F4's "zero shipping-code defects" SURVIVES**, now `VERIFIED-RUNTIME` rather than
+   `VERIFIED-DERIVED`, on the strength of a two-sided control.
+2. **Fake-hou residency is a second instance of Q1's defect class**, not a one-off.
+   `tests/solaris/test_live_wiring.py` runs against a stubbed `Parm` while believing it drives
+   real Houdini — a live-wiring test that is not live. It belongs to H2's re-qualification and is
+   promoted to its head.
+3. `evaluator.py:438` — `np.abs(luminance - mean_val) > (std_devs * std_val)` raising
+   `RuntimeWarning: invalid value encountered` is product code producing NaN. Small, real, and
+   the only genuine product smell the attack surfaced. Deposited.
+
+### The pattern, stated once more because it keeps recurring
+
+`--ignore` in the runner. A regex matching nothing. A mock that cannot disagree. A coverage metric
+that is 100% by construction. A probe pointed at the wrong path.
+
+Five instruments, all reporting clean, none capable of reporting otherwise. **Law 1 is not a
+rule about tests. It is a rule about every instrument, including the ones written to check
+instruments** — and the author most likely to violate it is whoever most recently wrote the law.
