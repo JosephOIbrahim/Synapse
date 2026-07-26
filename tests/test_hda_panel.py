@@ -156,6 +156,26 @@ pyside6.QtGui = pyside6_gui
 # Only evict the specific panel modules THIS file reimports — leave
 # other panel modules (chat_panel, message_formatter, etc.) untouched
 # so sibling test files aren't affected.
+#
+# CRITICAL (Q1): capture the ORIGINAL module OBJECTS before eviction and put
+# those exact objects back once our imports are done (see _restore_real_qt
+# below). Shiboken cannot re-initialise in one process: once real PySide6 is
+# deleted from sys.modules, a later ``import PySide6`` yields a NEW but
+# half-initialised module (PySide6.QtWidgets loses QApplication) while the C++
+# QApplication singleton stays alive — any sibling test that then calls
+# app.font() dereferences dead wrapper state and the interpreter takes an
+# access violation. Restore-by-object is the only correct teardown;
+# restore-by-reimport looks identical and is not.
+# Only *file-backed* Qt modules count as real. Sibling test files
+# (test_chat_panel.py, test_panel_preflight.py, …) plant their own in-memory
+# PySide6 stubs and may run before this one; those carry no ``__file__``, are
+# not Shiboken-backed, and must NOT be handed back here — restoring a foreign
+# stub would deprive the tests that rely on this file's richer stub.
+_REAL_QT_MODULES = {
+    _key: _mod
+    for _key, _mod in list(sys.modules.items())
+    if _key.startswith(("PySide6", "PySide2")) and getattr(_mod, "__file__", None)
+}
 for _key in list(sys.modules):
     if _key.startswith(("PySide6", "PySide2")):
         del sys.modules[_key]
@@ -167,12 +187,42 @@ for _key in ("synapse.panel.ws_bridge", "synapse.panel.hda_controller"):
 # repo-tokens pin (#8FB3D9) that test_design_system may have left in
 # sys.modules. We pop only bare ``tokens`` (not synapse.panel.tokens itself) so
 # this file's captured panel-tokens module stays stable for the whole session.
-sys.modules.pop("tokens", None)
+_REAL_BARE_TOKENS = sys.modules.pop("tokens", None)
 
+_QT_STUB_KEYS = ("PySide6", "PySide6.QtCore", "PySide6.QtWidgets", "PySide6.QtGui")
 sys.modules["PySide6"] = pyside6
 sys.modules["PySide6.QtCore"] = pyside6_core
 sys.modules["PySide6.QtWidgets"] = pyside6_widgets
 sys.modules["PySide6.QtGui"] = pyside6_gui
+
+# Set True by _restore_real_qt() below. Read by the regression pin.
+_QT_RESTORE_RAN = False
+
+
+def _restore_real_qt():
+    """Put the ORIGINAL Qt module objects back into ``sys.modules``.
+
+    Runs immediately after this file's own imports complete, so the stubs are
+    live only for the duration of those imports and never leak into sibling
+    test modules or into the run phase. Removes only the keys this file
+    planted; restores only objects it captured. Never re-imports.
+
+    Scoped deliberately: the crash comes from *evicting* real Qt, so the swap
+    happens only when real Qt was actually captured. On an interpreter with no
+    PySide6 installed there is nothing to evict and nothing to corrupt — the
+    stubs stay planted, which is this file's long-standing behaviour that
+    several sibling panel tests import against.
+    """
+    global _QT_RESTORE_RAN
+    _QT_RESTORE_RAN = True
+    if not _REAL_QT_MODULES:
+        return
+    for _k in _QT_STUB_KEYS:
+        if sys.modules.get(_k) in (pyside6, pyside6_core, pyside6_widgets, pyside6_gui):
+            del sys.modules[_k]
+    sys.modules.update(_REAL_QT_MODULES)
+    if _REAL_BARE_TOKENS is not None:
+        sys.modules.setdefault("tokens", _REAL_BARE_TOKENS)
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +263,48 @@ for mod_name, fpath in [
 from synapse.panel.ws_bridge import SynapseWSBridge, HDA_STAGES
 from synapse.routing.hda_recipes import HDA_RECIPES, list_recipes
 from synapse.panel import tokens as t
+
+# Modules imported lazily *inside* tests below — bind them here, while the Qt
+# stubs are still live, so those in-test imports hit the sys.modules cache
+# instead of re-importing against restored real Qt.
+import synapse.panel.styles  # noqa: F401,E402
+import synapse.panel.hda_controller  # noqa: F401,E402
+
+# Stubs have served their only purpose. Hand the real Qt modules back.
+_restore_real_qt()
+
+
+# ---------------------------------------------------------------------------
+# Q1 regression pin
+# ---------------------------------------------------------------------------
+
+def test_qt_stubs_do_not_leak_past_module_import():
+    """FAILS IF this module's Qt stubs are still installed in ``sys.modules``
+    at run time — i.e. the module-scope plant was left un-restored, which is
+    the exact condition that crashes sibling panel tests with an access
+    violation.
+
+    Two-sided: also fails if the restore bookkeeping never ran, so the check
+    still has a way to fail in an environment where no real PySide6 was
+    present to capture.
+    """
+    assert _QT_RESTORE_RAN, "_restore_real_qt() never ran — stubs left planted"
+    if not _REAL_QT_MODULES:
+        # Nothing was evicted on this interpreter, so there is nothing to
+        # restore; the bookkeeping assert above is the live half of the check.
+        return
+    for _k in _QT_STUB_KEYS:
+        assert sys.modules.get(_k) not in (
+            pyside6,
+            pyside6_core,
+            pyside6_widgets,
+            pyside6_gui,
+        ), f"test stub still installed at sys.modules[{_k!r}]"
+    for _k, _real in _REAL_QT_MODULES.items():
+        assert sys.modules.get(_k) is _real, (
+            f"sys.modules[{_k!r}] is not the ORIGINAL module object "
+            "(restored by re-import instead of by reference?)"
+        )
 
 
 # ---------------------------------------------------------------------------
