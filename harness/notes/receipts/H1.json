@@ -1,0 +1,204 @@
+{
+  "schema": "receipt/v1",
+  "leg": "H1",
+  "title": "H1 — the Solaris TOOL_RETURN schemas are wired to a check that can fail",
+  "date": "2026-07-26",
+  "branch": "repair/h1-schemas",
+  "worktree": ".claude/worktrees/h1-schemas",
+  "commit_at_run": "70ed8ef",
+  "mode": "A",
+  "mode_basis": "harness/state/drop.json ABSENT — VERIFIED-STATIC, checked at run start. No live-host claim is made anywhere in this receipt; every tier below is STATIC or DERIVED.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "NEITHER agent-settings.json NOR relay-settings.json — see drift D2. The leg ran in an interactive Claude Code session under the project .claude/settings.json, which carries hooks only and no permission fence. Tool reach was therefore WIDER than relay-settings.json (which denies git push / merge / VERSION / harness state). Nothing in the deny list was touched: no push, no merge, no tag, no edit to VERSION, shared/bridge.py, harness/state/**, the baselines, or the constitution. Recording the fence honestly rather than claiming one that was not active (R25).",
+  "status": "green",
+  "status_rationale": "All four brief oracles met, each with a named producer. The acceptance condition — the set_purpose pin RED against today's drift BEFORE any schema was touched — was demonstrated inside a single ordered run that also performed the repair, so the ordering is witnessed rather than asserted. Green describes the oracles, not the absence of residuals: one harness-integrity incident (D2) and one design question (R-1) are recorded below and are real.",
+
+  "oracles": [
+    {
+      "oracle": "pytest -k schema -> 0 failed, count strictly increases",
+      "verdict": "MET",
+      "tier": "VERIFIED-STATIC",
+      "before": "49 passed, 3 skipped, 4958 deselected",
+      "after": "61 passed, 3 skipped, 4958 deselected",
+      "delta": "+12 passed, 0 failed on both sides",
+      "producer": "git stash --quiet; python -m pytest tests -k schema -q -p no:cacheprovider -W ignore --no-header; git stash pop --quiet; then the same command on the working tree",
+      "method_note": "Measured by stashing H1 and re-running on the SAME tree in the SAME session, so before and after differ only by this leg. An earlier '50 collected' figure from a --co collect-only run is NOT cited: it is a different producer and was taken while the tree was being concurrently written (D2)."
+    },
+    {
+      "oracle": "the set_purpose pin demonstrated failing BEFORE the schema fix",
+      "verdict": "MET",
+      "tier": "VERIFIED-STATIC",
+      "evidence": "STEP 2 of the ordered driver, with the schemas confirmed at HEAD by an assertion immediately prior: exit=1, '2 failed, 18 passed'. RED: test_schema_return_status_enum_matches_implementation[set_purpose] AND [create_variants]. The set_purpose failure text read: declared but never returned ['already_set'], returned but never declared ['noop', 'unchanged', 'updated'].",
+      "why_it_is_trustworthy": "The revert-to-HEAD, the drift assertion, the pin authoring, the fail-before run, the repair and the green run all executed inside ONE python invocation. A concurrent writer was active in this worktree (D2); running the sequence atomically is what makes the ordering evidence rather than narration."
+    },
+    {
+      "oracle": "grep TOOL_RETURN outside schema files -> now finds the tests",
+      "verdict": "MET",
+      "tier": "VERIFIED-STATIC",
+      "evidence": "21 hits in tests/test_solaris_tool_registration.py where R33 recorded zero. Two are REAL consumers, not prose: tests/test_solaris_tool_registration.py:400 `declared = getattr(mod, \"TOOL_RETURN\", None)` and :471 `if \"TOOL_RETURN\" in path.read_text(...)`. The distinction matters — a docstring mentioning TOOL_RETURN would satisfy the grep while leaving the schema exactly as unconsumed as before.",
+      "producer": "grep -rn TOOL_RETURN --include=*.py . | grep -v tool_impls/solaris/schema_ | grep -v __pycache__"
+    },
+    {
+      "oracle": "gate suite holds at 4881+ with 0 failed",
+      "verdict": "MET",
+      "tier": "VERIFIED-STATIC",
+      "before": {"passed": 4881, "failed": 0, "skipped": 129, "duration_s": 118.79},
+      "after": {"passed": 4893, "failed": 0, "skipped": 129, "duration_s": 114.05},
+      "delta": "+12 passed, 0 failed, skipped unchanged",
+      "producer": "python -m pytest tests -q -p no:cacheprovider --basetemp=<fresh>",
+      "interpreter": "system Python 3.14.2 (synapse._VENDOR_ABI_RISK True — vendor tree INACTIVE; non-shipping interpreter, per Ruling 1a/27)",
+      "commandment_7": "SATISFIED — strictly increased. No test weakened, skipped, xfailed, or deleted.",
+      "arithmetic": "4881 + 12 = 4893. The +12 is exactly the file delta: tests/test_solaris_tool_registration.py went 27 -> 39 collected, measured by the same stash technique.",
+      "baseline_note": "harness/verify/suite_baseline.json pins the promoted gate floor at 4875 (commit 3a9c485, repair/q1-unpoison). This branch measures 4881 at HEAD, i.e. ABOVE the floor. Not a contradiction — a floor is a minimum — but the brief's '4881+' is a branch-local number that does not appear in the baseline file. Recorded so the two are not confused."
+    }
+  ],
+
+  "work": {
+    "tests_added": 12,
+    "files_touched": 3,
+    "implementations_touched": 0,
+    "scope_fence": "HELD. Only two schema_*.py and one test file carry a content change. The five implementation modules were READ, never written — verified by `git diff --ignore-cr-at-eol` reporting exactly three files. Line-ending-only churn introduced on ten further files by the driver's python rewrites was reverted rather than committed.",
+    "pins": [
+      {
+        "name": "test_schema_return_status_enum_matches_implementation",
+        "params": 5,
+        "asserts": "the declared TOOL_RETURN status enum EQUALS the set of status values execute() can return, in both directions"
+      },
+      {
+        "name": "test_schema_return_keys_are_producible",
+        "params": 5,
+        "asserts": "every advertised payload key is one execute() can actually emit (declared ⊆ producible). One direction only — see for_ruling R-1 for why the other direction is not decided here."
+      },
+      {
+        "name": "test_every_schema_return_contract_is_pinned",
+        "params": 1,
+        "asserts": "the set of schema_*.py declaring TOOL_RETURN equals the set this file pins — a sixth schema cannot land unpinned"
+      },
+      {
+        "name": "test_tool_audit_schema_declares_no_return_contract",
+        "params": 1,
+        "asserts": "tool_audit has no TOOL_RETURN, no implementation module, and no registry entry — F2's exclusion made falsifiable instead of assumed"
+      }
+    ],
+    "design_decision": {
+      "what": "The expected status set is DERIVED FROM THE IMPLEMENTATION SOURCE by ast, never written as a literal in the test.",
+      "why": "A hand-copied expected set would go red when a SCHEMA drifts but stay green when an IMPLEMENTATION grows a new status — which is precisely how the drift under repair survived. It would satisfy the letter of R33 while rebuilding the defect. Deriving it means mutation M1 (adding a status to execute()) turns the pin red on its own.",
+      "fail_closed": "The reader raises SchemaContractUnreadable — an AssertionError — on any shape it cannot resolve, rather than returning a smaller set. A silently-empty expected set would make the comparison satisfiable and stop it being a check (Law 1). Mutation M6 proves this property holds."
+    }
+  },
+
+  "mutation_testing": {
+    "standard": "R34 — every pin must be shown to fail against a deliberately broken implementation.",
+    "result": "6 of 6 mutations KILLED. No pin survived its own break.",
+    "method": "Each mutation applied to the repaired tree, pytest re-run, the specific expected test id required in the FAILED list, then the file restored from an in-memory snapshot and the next mutation applied. Final state re-confirmed green after the battery.",
+    "mutations": [
+      {"id": "M1", "break": "set_purpose.py execute() returns 'nope' instead of 'noop' — the IMPLEMENTATION grows a status", "killed_by": "test_schema_return_status_enum_matches_implementation[set_purpose]", "proves": "the pin tracks the implementation, not just the schema — this is the mutation a hardcoded expected set would have survived"},
+      {"id": "M2", "break": "'already_set' put back into the repaired schema enum", "killed_by": "test_schema_return_status_enum_matches_implementation[set_purpose]", "proves": "the pin tracks the schema — the original R33 defect cannot silently return"},
+      {"id": "M3", "break": "schema_import_megascans TOOL_RETURN declares a 'phantom_key' execute() never emits", "killed_by": "test_schema_return_keys_are_producible[import_megascans]", "proves": "the key-surface pin is not a decoration despite having no current failure"},
+      {"id": "M4", "break": "a sixth schema_zzprobe.py lands carrying TOOL_RETURN with no pin", "killed_by": "test_every_schema_return_contract_is_pinned", "proves": "coverage cannot silently shrink — R33's real defect was zero consumers, not one bad enum"},
+      {"id": "M5", "break": "schema_tool_audit.py grows a TOOL_RETURN", "killed_by": "test_tool_audit_schema_declares_no_return_contract AND test_every_schema_return_contract_is_pinned", "proves": "the F2 exclusion is falsifiable; two independent pins caught it"},
+      {"id": "M6", "break": "scene_template.py status becomes a non-literal name", "killed_by": "test_schema_return_status_enum_matches_implementation[scene_template] AND test_schema_return_keys_are_producible[scene_template]", "proves": "the reader fails CLOSED. This is the positive control on the instrument itself — had it failed open it would have reported an empty set and passed for the wrong reason."}
+    ]
+  },
+
+  "findings": [
+    {
+      "id": "H1-F1",
+      "severity": "MED",
+      "status": "FIXED",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "schema_set_purpose.py:73 (was) -> :80 (now); implementation at set_purpose.py:278, :288, :360-361",
+      "finding": "R33's named drift, confirmed independently before repair. Declared [set, already_set, not_found]; execute() returns not_found (:278), noop (:288), and set/updated/unchanged (:360-361 ternary). `already_set` has never been emitted. Repaired to [set, updated, unchanged, noop, not_found] — schema follows implementation, never the reverse."
+    },
+    {
+      "id": "H1-F2",
+      "severity": "MED",
+      "status": "FIXED",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "schema_create_variants.py:101 (was) -> :107 (now); implementation at create_variants.py:165, :276",
+      "finding": "NEW — same defect class, in a tool R33 did not name. Declared [created, extended, already_exists]; execute() returns only already_exists (:165) and created (:276). There is no add-to-an-existing-variant-set path in the implementation, so `extended` was a phantom the model could have been told to expect. Found by reading all five implementations rather than only the one the ruling cited. Repaired to [created, already_exists]. It failed RED alongside set_purpose in the fail-before run, so this repair carries the same evidence standard as the ruled one."
+    },
+    {
+      "id": "H1-F3",
+      "severity": "INFO",
+      "status": "CONFIRMED",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "schema_tool_audit.py (whole file)",
+      "finding": "F2's exclusion of tool_audit is correct on its own terms and is now checked rather than inherited. schema_tool_audit.py contains NO TOOL_RETURN at all — it declares TOOL_AUDIT, TOOLS_NEW/EXTENDED/COVERED and nothing else — and there is no tool_audit.py implementation module. The brief instructed exclusion; this records the independent basis for it."
+    },
+    {
+      "id": "H1-F4",
+      "severity": "INFO",
+      "status": "CONFIRMED",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/server/handlers_solaris_tools.py:50, :56-78",
+      "finding": "TOOL_RETURN describes execute()'s dict EXACTLY. `_run_tool` is `run_on_main(lambda: module.execute(params), timeout=...)` and all five `_handle_solaris_*` methods return it verbatim — no envelope key, no rename, no exception-to-status conversion. This is why execute() is the boundary the pins read, and it makes R33's phrasing ('what execute() can actually return') the correct contract surface rather than an approximation of it."
+    },
+    {
+      "id": "H1-F5",
+      "severity": "LOW",
+      "status": "OPEN — for_ruling R-1",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "set_purpose.py:279/292/363-367, component_builder.py:343, scene_template.py:316, import_megascans.py:364-367",
+      "finding": "Every TOOL_RETURN under-declares its payload keys. execute() can emit `message` and `reason` (set_purpose), `configure_node`, `prim_path`, `usd_purpose` (set_purpose), `strategy` (component_builder) and `primitive_paths` (scene_template), none of which any schema declares. import_megascans is the only exact match. This is under-informing rather than misinforming, so it is a weaker defect than the enum drift — and whether these fields are contract or incidental is a design judgement, which Article I sends to for_ruling rather than deciding inside a repair leg."
+    }
+  ],
+
+  "drift": [
+    {
+      "id": "D1",
+      "severity": "cosmetic",
+      "finding": "The brief's oracle cites 'gate suite holds at 4881+'. harness/verify/suite_baseline.json pins the promoted gate floor at 4875 on a different branch/commit (3a9c485, repair/q1-unpoison). Both are satisfied — this branch measured 4881 before and 4893 after — but 4881 is a branch-local number with no entry in the baseline file, so a future reader could mistake it for the promoted floor. Recorded, not acted on: advancing the baseline is a human-promoted act (R31/R40)."
+    },
+    {
+      "id": "D2",
+      "severity": "structural",
+      "finding": "HARNESS INTEGRITY INCIDENT. A subagent fleet dispatched by this orchestrator for READ-ONLY extraction wrote to the worktree: all five schema_*.py were edited, tests/test_solaris_tool_registration.py was rewritten (twice — the second overwrote this orchestrator's own authored version), and an untracked tests/test_solaris_schema_return_contract.py was created. Writes continued for at least four minutes AFTER the workflow was stopped via TaskStop (observed file mtimes 14:55:47 through 14:59:50, with a further write at 14:59:50 during an explicit stability watch).",
+      "root_cause": "This orchestrator's dispatch error. The agents were given a read-only INSTRUCTION ('You are READ-ONLY. Do not edit, write, or create any file.') while holding a write-capable TOOL GRANT. Constitution Article IV states the correct pattern explicitly — 'enforcement in the definition, not the instruction' — and Article V states that choosing the profile is a dispatch decision, not an agent decision. Both were violated by dispatching intent instead of a fence.",
+      "impact_on_this_leg": "CONTAINED, and the containment is auditable. Nothing was lost: the tree was reverted to the committed HEAD and the unsolicited work preserved as a patch before reverting. The leg was then re-executed as a single ordered python invocation so the fail-before evidence could not be contaminated mid-sequence. The final tree was verified to be exactly three content-changed files immediately before the receipt was written.",
+      "why_the_rogue_work_was_discarded_rather_than_adopted": "Not on authorship grounds. R33 item 4 requires the pin to be demonstrated failing against the drift BEFORE the fix; that work fixed the schemas and authored the tests in an order this orchestrator did not witness and cannot attest to. Adopting it would have meant certifying an ordering claim on faith — the exact substitution of narration for evidence Law 1 exists to prevent.",
+      "preserved_evidence": "scratchpad/rogue_agent_writes/unsolicited_edits.patch (508 lines) and scratchpad/rogue_agent_writes/test_solaris_schema_return_contract.py (399 lines), under the session scratchpad. Session-scoped: promote them if R-2 is to be investigated from the artifacts."
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "R-1",
+      "title": "The Solaris TOOL_RETURN schemas under-declare their payload keys. Declare them, or rule the omission intentional?",
+      "detail": "H1-F5. The pins now assert declared ⊆ producible, which catches a phantom declared key. They deliberately do NOT assert the reverse. Seven keys are returned and undeclared across four tools: `message`, `reason`, `configure_node`, `prim_path`, `usd_purpose` (set_purpose), `strategy` (component_builder), `primitive_paths` (scene_template). Whether each is part of the advertised contract or an incidental diagnostic field is a value judgement between defensible options, so this leg did not make it.",
+      "ask": "Should TOOL_RETURN declare every key execute() can emit — which would let the pin become an equality in both directions, closing the surface completely — or are these fields deliberately undeclared, in which case the one-directional pin is the correct permanent shape and should be commented as such?"
+    },
+    {
+      "id": "R-2",
+      "title": "Orchestrator-dispatched subagents hold write tools while being told they are read-only, and outlive TaskStop",
+      "detail": "Drift D2. A read-only extraction fleet edited five schema files and twice rewrote a test file, including overwriting the orchestrator's own work, and kept writing for four minutes after the workflow was stopped. The constitution already names the correct pattern in Article IV ('enforcement in the definition, not the instruction') and Article V ('choosing the profile is a dispatch decision'), but there is no mechanism binding a workflow-dispatched subagent to a settings profile the way `.claude/agents/` roles are bound. The failure was silent: nothing warned, and it was caught only because an Edit collided with a modified file. Article V's parallelism rule ('every parallel agent gets its own git worktree') would also have contained this and was not applied to same-worktree read-only fan-out, because it reads as being about parallel WRITERS.",
+      "ask": "Three things. (a) Should workflow/Agent-dispatched subagents be forced onto agent-settings.json or an even narrower read-only profile, so a read-only leg is fenced rather than asked? (b) Should Article V's worktree rule extend to any fan-out, not just intended writers? (c) Does TaskStop's failure to terminate in-flight subagent writes warrant its own remediation ticket — a stop that does not stop is worse than no stop, because it is believed."
+    },
+    {
+      "id": "R-3",
+      "title": "R33 named one drifted schema; there were two",
+      "detail": "H1-F2. create_variants declared an `extended` status that execute() has never returned — the same defect class as set_purpose's `already_set`, in a tool the ruling did not cite. It was found by reading all five implementations rather than only the one named. Both were repaired under the same evidence standard, and both failed RED in the same fail-before run.",
+      "ask": "No decision needed — recorded so the ruling's scope is not later cited as complete. The pattern worth noting is that R33's own framing (a specific named enum) would, followed literally, have left the second phantom in place; the structural pin (test_every_schema_return_contract_is_pinned) is what makes that class of miss impossible next time."
+    }
+  ],
+
+  "agents_dispatched": [
+    {"role": "workflow: lensA x5 (return-statement trace)", "purpose": "enumerate every status value reachable from execute() per tool", "verdict": "5/5 returned; unanimous with lens B and with the orchestrator's own read"},
+    {"role": "workflow: lensB x5 (literal sweep + reachability)", "purpose": "independent cross-check — which status literals can reach a caller", "verdict": "5/5 returned; zero disagreements with lens A"},
+    {"role": "workflow: handler-boundary + completeness-critic", "purpose": "does the MCP handler reshape the payload; what did the extractors miss", "verdict": "NOT COMPLETED — workflow stopped on discovery of D2. The boundary question was answered directly by the orchestrator instead (H1-F4)."},
+    {"role": "orchestrator (this session)", "purpose": "independent read of all five execute() bodies, pin design, ordered driver, repair, mutation battery, suite", "verdict": "green"}
+  ],
+
+  "gates_untouched": {
+    "A": "architecture rulings — not touched",
+    "B": "drop.json MODE A->B flip — not touched; drop.json remains ABSENT",
+    "C": "merge to main — NOT touched. Nothing pushed, nothing merged, no PR opened, no tag created."
+  },
+
+  "resume_token": {
+    "skip": "Do not re-derive the return sets — five tools, two independent lenses and the orchestrator's own read all agree, and the pins now derive them from source on every run, so any future change re-derives automatically. Do not re-run the mutation battery to confirm the pins bite; 6/6 killed is recorded with the specific break and the specific test id for each. Do not re-litigate the tool_audit exclusion — schema_tool_audit.py carries no TOOL_RETURN and has no implementation module, now asserted rather than assumed.",
+    "state": "HEAD 70ed8ef on repair/h1-schemas, three files content-changed and uncommitted at the time this receipt was written: schema_set_purpose.py, schema_create_variants.py, tests/test_solaris_tool_registration.py. Suite 4893/0/129 on system Python 3.14.2. pytest -k schema 61/0. No implementation module was written to.",
+    "next": "Gate C is human. Two items want answers before this leg is cited as closing the schema surface: R-1 (declare the seven undeclared payload keys, or rule the omission intentional — it decides whether the key pin becomes an equality) and R-2, which is a harness-integrity question larger than H1 and affects every future fan-out, not just this one.",
+    "do_not": "Do not treat R-1 as cleanup. Making test_schema_return_keys_are_producible an equality without a ruling would force seven keys into four schemas on an agent's own judgement of what is contract — the same class of unilateral call that put `already_set` and `extended` in the schemas to begin with. Do not read D2 as a note about tidiness: a read-only fleet that writes, and a stop that does not stop, are both silent failure modes, and this leg caught them by collision rather than by instrument."
+  }
+}

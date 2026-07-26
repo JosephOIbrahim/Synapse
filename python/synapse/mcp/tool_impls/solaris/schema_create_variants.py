@@ -98,7 +98,18 @@ TOOL_RETURN = {
         },
         "status": {
             "type": "string",
-            "enum": ["created", "extended", "already_exists"],
+            # R33, 2026-07-26. Was ["created", "extended", "already_exists"].
+            # `extended` has never been returned: execute() either builds the
+            # variant nodes (created, create_variants.py:276) or finds every
+            # requested name already present (already_exists, :165). There is
+            # no add-to-an-existing-set path. Adding one is a feature, and the
+            # enum should follow the feature rather than precede it.
+            "enum": ["created", "already_exists"],
+            "description": (
+                "'created' = the variant nodes were built. 'already_exists' = "
+                "every requested variant name was already present, so nothing "
+                "was built."
+            ),
         },
     },
 }
