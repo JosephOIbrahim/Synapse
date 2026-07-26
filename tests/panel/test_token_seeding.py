@@ -110,10 +110,14 @@ def _reload_tokens_with(hou_module):
     """Reload the tokens module with `hou_module` installed as `hou` (or removed
     when None). Returns (module, saved) — pass `saved` to `_restore`."""
     saved = {k: sys.modules.get(k) for k in ("hou", _TOKENS)}
-    if hou_module is None:
-        sys.modules.pop("hou", None)
-    else:
-        sys.modules["hou"] = hou_module
+    # Absence is `sys.modules["hou"] = None`, never a pop: CPython raises
+    # ImportError on a None entry without reaching the import machinery, so
+    # `tokens` sees a deterministic absent `hou`. Popping instead lets `hou.py`
+    # RE-EXECUTE under hython — the SWIG type map is re-registered to a
+    # half-built `Parm` class and every later `node.parm(...).set(...)` in the
+    # process raises AttributeError. Restoring the original object does not
+    # undo it. See the HOU_REIMPORT_GUARD note in tests/conftest.py.
+    sys.modules["hou"] = hou_module
     sys.modules.pop(_TOKENS, None)
     mod = importlib.import_module(_TOKENS)
     return mod, saved
@@ -124,7 +128,12 @@ def _restore(saved):
     test never leaks a fake `hou` or a reloaded tokens module to its neighbours
     (the 46-file sys.modules['hou'] residency trap)."""
     for k, v in saved.items():
-        if v is None:
+        if k == "hou":
+            # Always restore `hou` BY OBJECT — never pop. A pop would re-open
+            # the eviction window `_reload_tokens_with` exists to avoid, one
+            # line after closing it.
+            sys.modules["hou"] = v
+        elif v is None:
             sys.modules.pop(k, None)
         else:
             sys.modules[k] = v

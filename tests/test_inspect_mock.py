@@ -706,10 +706,10 @@ class TestExtractionScriptSplitScope:
             with redirect_stdout(buf):
                 exec(compile(script, "<inspect_split_scope>", "exec"), g, l)
         finally:
-            if saved is not None:
-                sys.modules["hou"] = saved
-            else:
-                sys.modules.pop("hou", None)
+            # `= None`, never a pop — an eviction window lets a lazy
+            # `import hou` re-execute hou.py under hython. See
+            # HOU_REIMPORT_GUARD in tests/conftest.py.
+            sys.modules["hou"] = saved
         return json.loads(buf.getvalue().strip())
 
     def test_clean_scene_does_not_crash(self):

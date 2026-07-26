@@ -1,0 +1,1283 @@
+{
+  "rows": [
+    {
+      "file": "tests/conftest.py",
+      "line": 134,
+      "src": "sys.modules[\"hou\"] = _build_canonical_hou()",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/panel/test_theme_source.py",
+      "line": 116,
+      "src": "sys.modules[\"hou\"] = hou_module  # None => deterministic ImportError",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/panel/test_theme_source.py",
+      "line": 124,
+      "src": "sys.modules[\"hou\"] = saved",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/panel/test_theme_source.py",
+      "line": 137,
+      "src": "sys.modules[\"hou\"] = hou_module  # None => deterministic ImportError",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/panel/test_theme_source.py",
+      "line": 149,
+      "src": "sys.modules[\"hou\"] = v",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/panel/test_token_seeding.py",
+      "line": 120,
+      "src": "sys.modules[\"hou\"] = hou_module",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/panel/test_token_seeding.py",
+      "line": 135,
+      "src": "sys.modules[\"hou\"] = v",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_autonomy_live_contract.py",
+      "line": 47,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_capture.py",
+      "line": 24,
+      "src": "sys.modules[\"hou\"] = _mock_hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_chat_panel.py",
+      "line": 34,
+      "src": "sys.modules[\"hou\"] = _mock_hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_chat_panel.py",
+      "line": 1114,
+      "src": "sys.modules[\"hou\"] = _orig_hou",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_cops.py",
+      "line": 40,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_e2e_sprint.py",
+      "line": 41,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_forge_copernicus.py",
+      "line": 40,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_forge_render.py",
+      "line": 43,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_forge_usd.py",
+      "line": 36,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_frame_validator.py",
+      "line": 28,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_guards.py",
+      "line": 44,
+      "src": "sys.modules[\"hou\"] = hou_mock",
+      "module_level": true,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_guards.py",
+      "line": 49,
+      "src": "sys.modules[\"hou\"] = _original_hou",
+      "module_level": true,
+      "deferred": false,
+      "in_finally": true
+    },
+    {
+      "file": "tests/test_guards.py",
+      "line": 781,
+      "src": "sys.modules[\"hou\"] = _original_hou",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_handler_edge.py",
+      "line": 16,
+      "src": "sys.modules[\"hou\"] = mock_hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_hda.py",
+      "line": 33,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_hda_panel.py",
+      "line": 34,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_hou_reimport_guard.py",
+      "line": 227,
+      "src": "sys.modules[\"hou\"] = saved",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": true
+    },
+    {
+      "file": "tests/test_hou_reimport_guard.py",
+      "line": 250,
+      "src": "sys.modules[\"hou\"] = saved",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": true
+    },
+    {
+      "file": "tests/test_inspect_mock.py",
+      "line": 701,
+      "src": "sys.modules[\"hou\"] = mock_hou",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_inspect_mock.py",
+      "line": 712,
+      "src": "sys.modules[\"hou\"] = saved",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": true
+    },
+    {
+      "file": "tests/test_integration_pipeline.py",
+      "line": 49,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_introspection.py",
+      "line": 47,
+      "src": "sys.modules[\"hou\"] = _mock_hou",
+      "module_level": true,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_introspection.py",
+      "line": 52,
+      "src": "sys.modules[\"hou\"] = _original_hou",
+      "module_level": true,
+      "deferred": false,
+      "in_finally": true
+    },
+    {
+      "file": "tests/test_keyframe_aov.py",
+      "line": 13,
+      "src": "sys.modules[\"hou\"] = hou_mock",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_keyframe_aov.py",
+      "line": 128,
+      "src": "sys.modules[\"hou\"] = _original_hou",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_layout_and_matlib.py",
+      "line": 21,
+      "src": "sys.modules[\"hou\"] = _mock_hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_live_metrics.py",
+      "line": 50,
+      "src": "sys.modules[\"hou\"] = _make_hou_stub()",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_live_metrics.py",
+      "line": 313,
+      "src": "sys.modules[\"hou\"] = _original_hou",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_live_metrics.py",
+      "line": 150,
+      "src": "sys.modules[\"hou\"] = None  # type: ignore[assignment]",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_live_metrics.py",
+      "line": 156,
+      "src": "sys.modules[\"hou\"] = saved",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": true
+    },
+    {
+      "file": "tests/test_live_metrics_threadsafe.py",
+      "line": 34,
+      "src": "sys.modules[\"hou\"] = types.ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_live_metrics_threadsafe.py",
+      "line": 68,
+      "src": "sys.modules[\"hou\"] = stub",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_live_metrics_threadsafe.py",
+      "line": 156,
+      "src": "sys.modules[\"hou\"] = None  # type: ignore[assignment]",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_live_metrics_threadsafe.py",
+      "line": 193,
+      "src": "sys.modules[\"hou\"] = _original_hou",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_live_metrics_threadsafe.py",
+      "line": 74,
+      "src": "sys.modules[\"hou\"] = saved",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_live_metrics_threadsafe.py",
+      "line": 163,
+      "src": "sys.modules[\"hou\"] = saved",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": true
+    },
+    {
+      "file": "tests/test_m2_color_preview.py",
+      "line": 41,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_m2_cook_verify.py",
+      "line": 25,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_m2_display_policy.py",
+      "line": 26,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_m2_frame_tokens.py",
+      "line": 24,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_m2_path_policy.py",
+      "line": 36,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_m2_safe_node_name.py",
+      "line": 25,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_m2_show_config.py",
+      "line": 27,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_m3_bounded_autonomy.py",
+      "line": 27,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_m3_logs_doctor.py",
+      "line": 36,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_main_thread.py",
+      "line": 26,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_materials.py",
+      "line": 25,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_mcp_roundtrip.py",
+      "line": 40,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_multi_shot.py",
+      "line": 25,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_network_explain.py",
+      "line": 26,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_pipeline_efficiency.py",
+      "line": 45,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_render.py",
+      "line": 27,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_resilience_fixes.py",
+      "line": 21,
+      "src": "sys.modules[\"hou\"] = types.ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_routing.py",
+      "line": 1584,
+      "src": "sys.modules[\"hou\"] = mock_hou",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_routing.py",
+      "line": 1603,
+      "src": "sys.modules[\"hou\"] = saved_hou",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": true
+    },
+    {
+      "file": "tests/test_sessions.py",
+      "line": 22,
+      "src": "sys.modules[\"hou\"] = MagicMock()",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_set_usd_attribute_alias.py",
+      "line": 34,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_set_usd_primvar.py",
+      "line": 25,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_solaris_compose_tools.py",
+      "line": 17,
+      "src": "sys.modules[\"hou\"] = types.ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_sqlite_store.py",
+      "line": 26,
+      "src": "sys.modules[\"hou\"] = _types.ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_store_resilience.py",
+      "line": 19,
+      "src": "sys.modules[\"hou\"] = types.ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_stress.py",
+      "line": 40,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_studio_integration.py",
+      "line": 20,
+      "src": "sys.modules[\"hou\"] = MagicMock()",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_tops.py",
+      "line": 31,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_tops_assembly.py",
+      "line": 12,
+      "src": "sys.modules[\"hou\"] = hou_mock",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_tops_assembly.py",
+      "line": 575,
+      "src": "sys.modules[\"hou\"] = None",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_undo_redo.py",
+      "line": 54,
+      "src": "sys.modules[\"hou\"] = stub",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_undo_redo.py",
+      "line": 59,
+      "src": "sys.modules[\"hou\"] = original",
+      "module_level": false,
+      "deferred": false,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_usd_relationship_aware.py",
+      "line": 41,
+      "src": "sys.modules[\"hou\"] = ModuleType(\"hou\")",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_v5_features.py",
+      "line": 41,
+      "src": "sys.modules[\"hou\"] = _hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    },
+    {
+      "file": "tests/test_vex_diagnostics.py",
+      "line": 13,
+      "src": "sys.modules[\"hou\"] = _mock_hou",
+      "module_level": true,
+      "deferred": true,
+      "in_finally": false
+    }
+  ],
+  "by_file": {
+    "tests/conftest.py": {
+      "file": "tests/conftest.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        134
+      ],
+      "verdict": "deferred"
+    },
+    "tests/panel/test_theme_source.py": {
+      "file": "tests/panel/test_theme_source.py",
+      "plants": 4,
+      "deferred": 0,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        116,
+        124,
+        137,
+        149
+      ],
+      "verdict": "bare_POISONER"
+    },
+    "tests/panel/test_token_seeding.py": {
+      "file": "tests/panel/test_token_seeding.py",
+      "plants": 2,
+      "deferred": 0,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        120,
+        135
+      ],
+      "verdict": "bare_POISONER"
+    },
+    "tests/test_autonomy_live_contract.py": {
+      "file": "tests/test_autonomy_live_contract.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        47
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_capture.py": {
+      "file": "tests/test_capture.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        24
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_chat_panel.py": {
+      "file": "tests/test_chat_panel.py",
+      "plants": 2,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        34,
+        1114
+      ],
+      "verdict": "bare_POISONER"
+    },
+    "tests/test_cops.py": {
+      "file": "tests/test_cops.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        40
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_e2e_sprint.py": {
+      "file": "tests/test_e2e_sprint.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        41
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_forge_copernicus.py": {
+      "file": "tests/test_forge_copernicus.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        40
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_forge_render.py": {
+      "file": "tests/test_forge_render.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        43
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_forge_usd.py": {
+      "file": "tests/test_forge_usd.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        36
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_frame_validator.py": {
+      "file": "tests/test_frame_validator.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        28
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_guards.py": {
+      "file": "tests/test_guards.py",
+      "plants": 3,
+      "deferred": 0,
+      "restores": 1,
+      "sentinel_restore": true,
+      "lines": [
+        44,
+        49,
+        781
+      ],
+      "verdict": "restore_sentinel_POISONER"
+    },
+    "tests/test_handler_edge.py": {
+      "file": "tests/test_handler_edge.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        16
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_hda.py": {
+      "file": "tests/test_hda.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        33
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_hda_panel.py": {
+      "file": "tests/test_hda_panel.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        34
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_hou_reimport_guard.py": {
+      "file": "tests/test_hou_reimport_guard.py",
+      "plants": 2,
+      "deferred": 0,
+      "restores": 2,
+      "sentinel_restore": true,
+      "lines": [
+        227,
+        250
+      ],
+      "verdict": "restore_sentinel_POISONER"
+    },
+    "tests/test_inspect_mock.py": {
+      "file": "tests/test_inspect_mock.py",
+      "plants": 2,
+      "deferred": 0,
+      "restores": 1,
+      "sentinel_restore": false,
+      "lines": [
+        701,
+        712
+      ],
+      "verdict": "restore_plain"
+    },
+    "tests/test_integration_pipeline.py": {
+      "file": "tests/test_integration_pipeline.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        49
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_introspection.py": {
+      "file": "tests/test_introspection.py",
+      "plants": 2,
+      "deferred": 0,
+      "restores": 1,
+      "sentinel_restore": true,
+      "lines": [
+        47,
+        52
+      ],
+      "verdict": "restore_sentinel_POISONER"
+    },
+    "tests/test_keyframe_aov.py": {
+      "file": "tests/test_keyframe_aov.py",
+      "plants": 2,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        13,
+        128
+      ],
+      "verdict": "bare_POISONER"
+    },
+    "tests/test_layout_and_matlib.py": {
+      "file": "tests/test_layout_and_matlib.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        21
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_live_metrics.py": {
+      "file": "tests/test_live_metrics.py",
+      "plants": 4,
+      "deferred": 1,
+      "restores": 1,
+      "sentinel_restore": false,
+      "lines": [
+        50,
+        313,
+        150,
+        156
+      ],
+      "verdict": "bare_POISONER"
+    },
+    "tests/test_live_metrics_threadsafe.py": {
+      "file": "tests/test_live_metrics_threadsafe.py",
+      "plants": 6,
+      "deferred": 1,
+      "restores": 1,
+      "sentinel_restore": false,
+      "lines": [
+        34,
+        68,
+        156,
+        193,
+        74,
+        163
+      ],
+      "verdict": "bare_POISONER"
+    },
+    "tests/test_m2_color_preview.py": {
+      "file": "tests/test_m2_color_preview.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        41
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_m2_cook_verify.py": {
+      "file": "tests/test_m2_cook_verify.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        25
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_m2_display_policy.py": {
+      "file": "tests/test_m2_display_policy.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        26
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_m2_frame_tokens.py": {
+      "file": "tests/test_m2_frame_tokens.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        24
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_m2_path_policy.py": {
+      "file": "tests/test_m2_path_policy.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        36
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_m2_safe_node_name.py": {
+      "file": "tests/test_m2_safe_node_name.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        25
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_m2_show_config.py": {
+      "file": "tests/test_m2_show_config.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        27
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_m3_bounded_autonomy.py": {
+      "file": "tests/test_m3_bounded_autonomy.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        27
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_m3_logs_doctor.py": {
+      "file": "tests/test_m3_logs_doctor.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        36
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_main_thread.py": {
+      "file": "tests/test_main_thread.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        26
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_materials.py": {
+      "file": "tests/test_materials.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        25
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_mcp_roundtrip.py": {
+      "file": "tests/test_mcp_roundtrip.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        40
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_multi_shot.py": {
+      "file": "tests/test_multi_shot.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        25
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_network_explain.py": {
+      "file": "tests/test_network_explain.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        26
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_pipeline_efficiency.py": {
+      "file": "tests/test_pipeline_efficiency.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        45
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_render.py": {
+      "file": "tests/test_render.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        27
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_resilience_fixes.py": {
+      "file": "tests/test_resilience_fixes.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        21
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_routing.py": {
+      "file": "tests/test_routing.py",
+      "plants": 2,
+      "deferred": 0,
+      "restores": 1,
+      "sentinel_restore": false,
+      "lines": [
+        1584,
+        1603
+      ],
+      "verdict": "restore_plain"
+    },
+    "tests/test_sessions.py": {
+      "file": "tests/test_sessions.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        22
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_set_usd_attribute_alias.py": {
+      "file": "tests/test_set_usd_attribute_alias.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        34
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_set_usd_primvar.py": {
+      "file": "tests/test_set_usd_primvar.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        25
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_solaris_compose_tools.py": {
+      "file": "tests/test_solaris_compose_tools.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        17
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_sqlite_store.py": {
+      "file": "tests/test_sqlite_store.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        26
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_store_resilience.py": {
+      "file": "tests/test_store_resilience.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        19
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_stress.py": {
+      "file": "tests/test_stress.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        40
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_studio_integration.py": {
+      "file": "tests/test_studio_integration.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        20
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_tops.py": {
+      "file": "tests/test_tops.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        31
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_tops_assembly.py": {
+      "file": "tests/test_tops_assembly.py",
+      "plants": 2,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        12,
+        575
+      ],
+      "verdict": "bare_POISONER"
+    },
+    "tests/test_undo_redo.py": {
+      "file": "tests/test_undo_redo.py",
+      "plants": 2,
+      "deferred": 0,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        54,
+        59
+      ],
+      "verdict": "bare_POISONER"
+    },
+    "tests/test_usd_relationship_aware.py": {
+      "file": "tests/test_usd_relationship_aware.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        41
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_v5_features.py": {
+      "file": "tests/test_v5_features.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        41
+      ],
+      "verdict": "deferred"
+    },
+    "tests/test_vex_diagnostics.py": {
+      "file": "tests/test_vex_diagnostics.py",
+      "plants": 1,
+      "deferred": 1,
+      "restores": 0,
+      "sentinel_restore": false,
+      "lines": [
+        13
+      ],
+      "verdict": "deferred"
+    }
+  },
+  "evictions": [
+    {
+      "file": "tests/test_hou_reimport_guard.py",
+      "line": 223,
+      "src": "saved = sys.modules.pop(\"hou\")",
+      "eviction": "pop"
+    },
+    {
+      "file": "tests/test_hou_reimport_guard.py",
+      "line": 246,
+      "src": "saved = sys.modules.pop(\"hou\")",
+      "eviction": "pop"
+    }
+  ],
+  "evictions_outside_sanctioned": []
+}

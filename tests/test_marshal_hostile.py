@@ -358,12 +358,22 @@ class TestMainThreadCallerDoesNotDeadlock:
     def test_executor_stock_python_refuses_rather_than_guessing(self, monkeypatch, vendor):
         """No hou at all → typed refusal pointing at Dispatcher(is_testing=True).
 
-        Deletes the conftest canonical resident for the duration of ONE test;
-        monkeypatch restores it, so the residency guard (which runs at
-        collection_finish) never sees the gap.
+        Marks `hou` ABSENT for the duration of ONE test; monkeypatch restores
+        the prior object afterwards.
+
+        Absence is ``setitem(..., None)``, not ``delitem``. CPython raises
+        ImportError on a None entry without reaching the import machinery, which
+        is exactly what ``detect_runtime_mode`` catches to return RUNTIME_STOCK
+        (main_thread_executor.py:164-167). A genuine deletion instead lets that
+        same lazy ``import hou`` RE-EXECUTE hou.py under hython, re-registering
+        the SWIG type map to a half-built `Parm` class for the rest of the
+        process — and the old note here reasoned that the residency guard
+        "never sees the gap", which was true and was the problem: the damage
+        happens inside the gap, not at collection_finish. See the
+        HOU_REIMPORT_GUARD note in tests/conftest.py.
         """
         import sys
-        monkeypatch.delitem(sys.modules, "hou", raising=False)
+        monkeypatch.setitem(sys.modules, "hou", None)
         assert mte.detect_runtime_mode() == mte.RUNTIME_STOCK
         with pytest.raises(RuntimeError, match="is_testing=True"):
             mte.main_thread_exec(lambda **kw: {}, {})

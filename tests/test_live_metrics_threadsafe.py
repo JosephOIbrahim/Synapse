@@ -68,10 +68,10 @@ def _install_hou(stub):
     sys.modules["hou"] = stub
 
     def restore():
-        if saved is not None:
-            sys.modules["hou"] = saved
-        else:
-            sys.modules.pop("hou", None)
+        # `= None`, never a pop — an eviction window lets a lazy `import hou`
+        # re-execute hou.py under hython. See HOU_REIMPORT_GUARD in
+        # tests/conftest.py.
+        sys.modules["hou"] = saved
 
     return restore
 
@@ -159,10 +159,8 @@ def test_collect_scene_no_hou_returns_empty():
         scene = agg._collect_scene()
         assert scene == SceneMetrics()
     finally:
-        if saved is not None:
-            sys.modules["hou"] = saved
-        else:
-            sys.modules.pop("hou", None)
+        # `= None`, never a pop — see HOU_REIMPORT_GUARD in tests/conftest.py.
+        sys.modules["hou"] = saved
 
 
 def test_collect_scene_callable_failure_yields_empty():
@@ -191,7 +189,5 @@ def test_collect_scene_callable_failure_yields_empty():
 
 
 def teardown_module():
-    if _original_hou is not None:
-        sys.modules["hou"] = _original_hou
-    elif "hou" in sys.modules:
-        del sys.modules["hou"]
+    # `= None`, never `del` — see HOU_REIMPORT_GUARD in tests/conftest.py.
+    sys.modules["hou"] = _original_hou

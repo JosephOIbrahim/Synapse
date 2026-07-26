@@ -53,10 +53,10 @@ def _hou_stub():
     stub = _make_hou_stub()
     sys.modules["hou"] = stub
     yield stub
-    if original is not None:
-        sys.modules["hou"] = original
-    else:
-        sys.modules.pop("hou", None)
+    # `= None`, never a pop — an eviction window lets a lazy `import hou`
+    # re-execute hou.py under hython and half-build the SWIG `Parm` class for
+    # the rest of the process. See HOU_REIMPORT_GUARD in tests/conftest.py.
+    sys.modules["hou"] = original
 
 
 # ---------------------------------------------------------------------------

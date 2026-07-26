@@ -30,14 +30,22 @@ guards_path = os.path.join(
 spec = importlib.util.spec_from_file_location("guards", guards_path)
 guards = importlib.util.module_from_spec(spec)
 # Bind guards' `hou` global to hou_mock (the tests assert on it directly) only
-# for the duration of exec_module, then RESTORE conftest's canonical resident so
-# the collection-time residency guard stays satisfied. Standalone (no conftest):
-# _original_hou is None, so hou_mock stays resident as before.
+# for the duration of exec_module, then RESTORE the prior resident BY OBJECT.
+# Standalone (no conftest): _original_hou is None, so hou_mock stays resident as
+# before.
+#
+# The restore used to be gated on `_original_hou.__synapse_canonical__`. Real
+# Houdini carries no such sentinel, so under hython the restore never ran and
+# this MagicMock stayed resident for the remainder of the process — proven by
+# the residency trace, which recorded the swap at
+# `collectstart:tests/test_guards.py::TestEnsureNode` and no matching restore.
+# A sentinel-guarded restore is not a restore; identity is the only test that
+# holds for both a planted fake and the real host.
 sys.modules["hou"] = hou_mock
 try:
     spec.loader.exec_module(guards)
 finally:
-    if getattr(_original_hou, "__synapse_canonical__", False):
+    if _original_hou is not None:
         sys.modules["hou"] = _original_hou
 
 ensure_node = guards.ensure_node

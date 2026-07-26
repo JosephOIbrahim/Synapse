@@ -1,0 +1,50 @@
+# fake-hou residency — the decisive BEFORE evidence
+# producer: hython3.13 -m pytest tests/ -q --continue-on-collection-errors -p no:cacheprovider -p residency_trace --tb=long -rf
+# full log (4.9M) not committed; this is its load-bearing slice.
+
+## summary line (BEFORE)
+= 117 failed, 4715 passed, 122 skipped, 82 warnings, 13 errors in 121.02s (0:02:01) =
+
+## the 17 failures, all in one file
+FAILED tests/solaris/test_live_wiring.py::test_component_builder_creates_internal_nodes_live
+FAILED tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live
+FAILED tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live
+FAILED tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live
+FAILED tests/solaris/test_live_wiring.py::test_scene_template_creates_full_chain_live
+FAILED tests/solaris/test_live_wiring.py::test_scene_template_is_idempotent_live
+FAILED tests/solaris/test_live_wiring.py::test_scene_template_chains_sop_imports_sequentially_live
+FAILED tests/solaris/test_live_wiring.py::test_f8_scene_template_honours_parent_path_live
+FAILED tests/solaris/test_live_wiring.py::test_f7_set_purpose_authors_a_real_usd_purpose_live
+FAILED tests/solaris/test_live_wiring.py::test_set_purpose_last_write_is_the_one_that_composes_live
+FAILED tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live
+FAILED tests/solaris/test_live_wiring.py::test_f9_import_megascans_completes_live
+FAILED tests/solaris/test_live_wiring.py::test_f9_import_megascans_ingests_real_geometry_live
+FAILED tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live
+FAILED tests/solaris/test_live_wiring.py::test_f8_component_builder_honours_parent_path_live
+FAILED tests/solaris/test_live_wiring.py::test_f8_import_megascans_honours_parent_path_live
+FAILED tests/solaris/test_live_wiring.py::test_set_purpose_survives_the_componentoutput_sink_live
+
+## count of the AttributeError
+17
+
+## one full traceback — note the REAL hou.LopNetwork in the fixture
+lopnet = <hou.LopNetwork of type lopnet at /stage/sr1_m3_11>
+
+    def test_f7_set_purpose_authors_a_real_usd_purpose_live(lopnet):
+        """F7 positive leg: the repair must actually author, not merely stop lying.
+    
+        Mechanism (VERIFIED-RUNTIME 22.0.368): the `configureprimitive` LOP —
+        singular; `configureprimitives` is a PHANTOM type — carries `setpurpose`
+        + `purpose`. Read back off the cooked stage via UsdGeom, not off our own
+        parm (Law 1: asking the parm what we just set it to proves nothing).
+        """
+        from pxr import UsdGeom
+    
+        comp = lopnet.createNode("subnet", "f7_ok")
+        geo = comp.createNode("componentgeometry", "geo_f7ok")
+        out = comp.createNode("componentoutput", "output_f7ok")
+>       out.parm("name").set("f7asset")
+        ^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Parm' object has no attribute 'set'
+
+tests\solaris\test_live_wiring.py:237: AttributeError
