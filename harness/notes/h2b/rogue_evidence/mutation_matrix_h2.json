@@ -1,0 +1,511 @@
+{
+  "schema": "mutation_matrix/h2/v1",
+  "standard": "R34 \u2014 every regression pin must FAIL against a deliberately broken implementation",
+  "interpreter": "3.13.10",
+  "executable": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\bin\\hython.exe",
+  "pin_files": [
+    "tests/solaris/test_live_wiring.py",
+    "tests/test_solaris_wiring_verifiers.py",
+    "tests/test_solaris_tool_registration.py"
+  ],
+  "pins_total": 83,
+  "control": {
+    "green": true,
+    "returncode": 0,
+    "summary_line": "======================== 83 passed, 1 warning in 2.59s ========================",
+    "collected": 83,
+    "passed": 83,
+    "failed": 0,
+    "errors": 0,
+    "failing": []
+  },
+  "mutations_total": 14,
+  "mutations_that_no_pin_noticed": [
+    "M11",
+    "M14"
+  ],
+  "rows": [
+    {
+      "id": "M1",
+      "finding": "F3",
+      "file": "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
+      "intent": "orphan the material Reference LOP again (the original F3 defect)",
+      "expected_red": [
+        "test_f3_megascans_material_reference_is_wired_live"
+      ],
+      "expected_red_that_went_red": [
+        "test_f3_megascans_material_reference_is_wired_live"
+      ],
+      "expected_red_that_STAYED_GREEN": [],
+      "all_newly_red": [
+        "test_f3_megascans_material_reference_is_wired_live"
+      ],
+      "newly_red_count": 1,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 1 failed, 82 passed, 1 warning in 2.92s ===================",
+        "collected": 83,
+        "passed": 82,
+        "failed": 1,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M2",
+      "finding": "F9",
+      "file": "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
+      "intent": "createNode back into the locked componentgeometry HDA (the original F9 defect)",
+      "expected_red": [
+        "test_f9_import_megascans_completes_live",
+        "test_f9_import_megascans_ingests_real_geometry_live"
+      ],
+      "expected_red_that_went_red": [
+        "test_f9_import_megascans_completes_live",
+        "test_f9_import_megascans_ingests_real_geometry_live"
+      ],
+      "expected_red_that_STAYED_GREEN": [],
+      "all_newly_red": [
+        "test_f3_megascans_material_reference_is_wired_live",
+        "test_f8_import_megascans_honours_parent_path_live",
+        "test_f9_import_megascans_completes_live",
+        "test_f9_import_megascans_ingests_real_geometry_live"
+      ],
+      "newly_red_count": 4,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 4 failed, 79 passed, 1 warning in 5.40s ===================",
+        "collected": 83,
+        "passed": 79,
+        "failed": 4,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M3",
+      "finding": "F5",
+      "file": "python/synapse/mcp/tool_impls/solaris/create_variants.py",
+      "intent": "dead-end componentgeometryvariants again -> two terminal LOPs",
+      "expected_red": [
+        "test_f5_geometry_variants_node_reaches_terminal_live"
+      ],
+      "expected_red_that_went_red": [
+        "test_f5_geometry_variants_node_reaches_terminal_live"
+      ],
+      "expected_red_that_STAYED_GREEN": [],
+      "all_newly_red": [
+        "test_f5_geometry_variants_node_reaches_terminal_live"
+      ],
+      "newly_red_count": 1,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 1 failed, 82 passed, 1 warning in 3.25s ===================",
+        "collected": 83,
+        "passed": 82,
+        "failed": 1,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M4",
+      "finding": "F6",
+      "file": "python/synapse/mcp/tool_impls/solaris/create_variants.py",
+      "intent": "reintroduce silent false-success: the node fails to build, status stays 'created'",
+      "expected_red": [
+        "test_f6_create_variants_status_is_honest_live"
+      ],
+      "expected_red_that_went_red": [
+        "test_f6_create_variants_status_is_honest_live"
+      ],
+      "expected_red_that_STAYED_GREEN": [],
+      "all_newly_red": [
+        "test_f6_create_variants_status_is_honest_live"
+      ],
+      "newly_red_count": 1,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 1 failed, 82 passed, 1 warning in 3.21s ===================",
+        "collected": 83,
+        "passed": 82,
+        "failed": 1,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M5",
+      "finding": "F7",
+      "file": "python/synapse/mcp/tool_impls/solaris/set_purpose.py",
+      "intent": "author nothing while still reporting success (the original F7 no-op)",
+      "expected_red": [
+        "test_f7_set_purpose_authors_a_real_usd_purpose_live",
+        "test_set_purpose_last_write_is_the_one_that_composes_live"
+      ],
+      "expected_red_that_went_red": [
+        "test_f7_set_purpose_authors_a_real_usd_purpose_live",
+        "test_set_purpose_last_write_is_the_one_that_composes_live"
+      ],
+      "expected_red_that_STAYED_GREEN": [],
+      "all_newly_red": [
+        "test_f7_set_purpose_authors_a_real_usd_purpose_live",
+        "test_f7_set_purpose_does_not_report_success_when_nothing_set_live",
+        "test_set_purpose_is_idempotent_live",
+        "test_set_purpose_last_write_is_the_one_that_composes_live",
+        "test_set_purpose_survives_the_componentoutput_sink_live"
+      ],
+      "newly_red_count": 5,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 5 failed, 78 passed, 1 warning in 3.22s ===================",
+        "collected": 83,
+        "passed": 78,
+        "failed": 5,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M6",
+      "finding": "F7",
+      "file": "python/synapse/mcp/tool_impls/solaris/set_purpose.py",
+      "intent": "collapse the honest status vocabulary back to an unconditional 'set'",
+      "expected_red": [
+        "test_set_purpose_is_idempotent_live",
+        "test_set_purpose_distinguishes_applied_from_skipped"
+      ],
+      "expected_red_that_went_red": [
+        "test_set_purpose_is_idempotent_live"
+      ],
+      "expected_red_that_STAYED_GREEN": [
+        "test_set_purpose_distinguishes_applied_from_skipped"
+      ],
+      "all_newly_red": [
+        "test_set_purpose_is_idempotent_live"
+      ],
+      "newly_red_count": 1,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 1 failed, 82 passed, 1 warning in 2.97s ===================",
+        "collected": 83,
+        "passed": 82,
+        "failed": 1,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M7",
+      "finding": "F8",
+      "file": "python/synapse/mcp/tool_impls/solaris/scene_template.py",
+      "intent": "scene_template ignores parent_path -> silently builds into /stage",
+      "expected_red": [
+        "test_f8_scene_template_honours_parent_path_live"
+      ],
+      "expected_red_that_went_red": [
+        "test_f8_scene_template_honours_parent_path_live"
+      ],
+      "expected_red_that_STAYED_GREEN": [],
+      "all_newly_red": [
+        "test_converged_parent_key_is_advertised[synapse_solaris_scene_template-scene_template]",
+        "test_f8_scene_template_honours_parent_path_live",
+        "test_schema_matches_implementation_contract[synapse_solaris_scene_template-scene_template]"
+      ],
+      "newly_red_count": 3,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 3 failed, 80 passed, 1 warning in 3.00s ===================",
+        "collected": 83,
+        "passed": 80,
+        "failed": 3,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M8",
+      "finding": "F8",
+      "file": "python/synapse/mcp/tool_impls/solaris/component_builder.py",
+      "intent": "component_builder ignores parent_path",
+      "expected_red": [
+        "test_f8_component_builder_honours_parent_path_live"
+      ],
+      "expected_red_that_went_red": [
+        "test_f8_component_builder_honours_parent_path_live"
+      ],
+      "expected_red_that_STAYED_GREEN": [],
+      "all_newly_red": [
+        "test_converged_parent_key_is_advertised[synapse_solaris_component_builder-component_builder]",
+        "test_f8_component_builder_honours_parent_path_live",
+        "test_schema_matches_implementation_contract[synapse_solaris_component_builder-component_builder]"
+      ],
+      "newly_red_count": 3,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 3 failed, 80 passed, 1 warning in 2.94s ===================",
+        "collected": 83,
+        "passed": 80,
+        "failed": 3,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M9",
+      "finding": "F8",
+      "file": "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
+      "intent": "import_megascans ignores parent_path",
+      "expected_red": [
+        "test_f8_import_megascans_honours_parent_path_live"
+      ],
+      "expected_red_that_went_red": [
+        "test_f8_import_megascans_honours_parent_path_live"
+      ],
+      "expected_red_that_STAYED_GREEN": [],
+      "all_newly_red": [
+        "test_converged_parent_key_is_advertised[synapse_solaris_import_megascans-import_megascans]",
+        "test_f3_megascans_material_reference_is_wired_live",
+        "test_f8_import_megascans_honours_parent_path_live",
+        "test_f9_import_megascans_completes_live",
+        "test_f9_import_megascans_ingests_real_geometry_live",
+        "test_schema_matches_implementation_contract[synapse_solaris_import_megascans-import_megascans]"
+      ],
+      "newly_red_count": 6,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 6 failed, 77 passed, 1 warning in 2.88s ===================",
+        "collected": 83,
+        "passed": 77,
+        "failed": 6,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M10",
+      "finding": "core",
+      "file": "python/synapse/mcp/tool_impls/solaris/component_builder.py",
+      "intent": "leave the component's three internal nodes unwired",
+      "expected_red": [
+        "test_component_builder_wires_geo_to_mat_to_output_live"
+      ],
+      "expected_red_that_went_red": [
+        "test_component_builder_wires_geo_to_mat_to_output_live"
+      ],
+      "expected_red_that_STAYED_GREEN": [],
+      "all_newly_red": [
+        "test_component_builder_wires_geo_to_mat_to_output_live"
+      ],
+      "newly_red_count": 1,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 1 failed, 82 passed, 1 warning in 2.94s ===================",
+        "collected": 83,
+        "passed": 82,
+        "failed": 1,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M11",
+      "finding": "core",
+      "file": "python/synapse/mcp/tool_impls/solaris/scene_template.py",
+      "intent": "detach karmarendersettings from the sequential chain",
+      "expected_red": [
+        "test_scene_template_creates_full_chain_live",
+        "test_scene_template_topology_is_fully_wired"
+      ],
+      "expected_red_that_went_red": [],
+      "expected_red_that_STAYED_GREEN": [
+        "test_scene_template_creates_full_chain_live",
+        "test_scene_template_topology_is_fully_wired"
+      ],
+      "all_newly_red": [],
+      "newly_red_count": 0,
+      "summary": {
+        "returncode": 0,
+        "summary_line": "======================== 83 passed, 1 warning in 2.71s ========================",
+        "collected": 83,
+        "passed": 83,
+        "failed": 0,
+        "errors": 0
+      },
+      "verdict": "NO_PIN_NOTICED"
+    },
+    {
+      "id": "M12",
+      "finding": "core",
+      "file": "python/synapse/mcp/tool_impls/solaris/scene_template.py",
+      "intent": "stop chaining sopimport nodes sequentially",
+      "expected_red": [
+        "test_scene_template_chains_sop_imports_sequentially_live"
+      ],
+      "expected_red_that_went_red": [
+        "test_scene_template_chains_sop_imports_sequentially_live"
+      ],
+      "expected_red_that_STAYED_GREEN": [],
+      "all_newly_red": [
+        "test_scene_template_chains_sop_imports_sequentially_live"
+      ],
+      "newly_red_count": 1,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 1 failed, 82 passed, 1 warning in 3.31s ===================",
+        "collected": 83,
+        "passed": 82,
+        "failed": 1,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M13",
+      "finding": "F1",
+      "file": "python/synapse/mcp/_tool_registry.py",
+      "intent": "unregister one Solaris tool from the MCP registry (the original F1 defect)",
+      "expected_red": [
+        "test_active_tool_is_in_the_registry[synapse_solaris_set_purpose-solaris_set_purpose]"
+      ],
+      "expected_red_that_went_red": [
+        "test_active_tool_is_in_the_registry[synapse_solaris_set_purpose-solaris_set_purpose]"
+      ],
+      "expected_red_that_STAYED_GREEN": [],
+      "all_newly_red": [
+        "test_active_tool_has_a_usable_input_schema[synapse_solaris_set_purpose]",
+        "test_active_tool_is_in_the_registry[synapse_solaris_set_purpose-solaris_set_purpose]",
+        "test_all_five_resolve_through_the_registry",
+        "test_every_tool_the_audit_claims_is_accounted_for"
+      ],
+      "newly_red_count": 4,
+      "summary": {
+        "returncode": 1,
+        "summary_line": "=================== 4 failed, 79 passed, 1 warning in 3.22s ===================",
+        "collected": 83,
+        "passed": 79,
+        "failed": 4,
+        "errors": 0
+      },
+      "verdict": "DETECTED"
+    },
+    {
+      "id": "M14",
+      "finding": "F3",
+      "file": "python/synapse/mcp/tool_impls/solaris/import_megascans.py",
+      "intent": "rename the material reference LOP - breaks any name-coupled static check",
+      "expected_red": [
+        "test_megascans_material_reference_is_orphaned"
+      ],
+      "expected_red_that_went_red": [],
+      "expected_red_that_STAYED_GREEN": [
+        "test_megascans_material_reference_is_orphaned"
+      ],
+      "all_newly_red": [],
+      "newly_red_count": 0,
+      "summary": {
+        "returncode": 0,
+        "summary_line": "======================== 83 passed, 1 warning in 2.79s ========================",
+        "collected": 83,
+        "passed": 83,
+        "failed": 0,
+        "errors": 0
+      },
+      "verdict": "NO_PIN_NOTICED"
+    }
+  ],
+  "classification": {
+    "detects_count": 25,
+    "host_fact_count": 7,
+    "surviving_mutation_count": 51,
+    "detects": [
+      "test_active_tool_has_a_usable_input_schema[synapse_solaris_set_purpose]",
+      "test_active_tool_is_in_the_registry[synapse_solaris_set_purpose-solaris_set_purpose]",
+      "test_all_five_resolve_through_the_registry",
+      "test_component_builder_wires_geo_to_mat_to_output_live",
+      "test_converged_parent_key_is_advertised[synapse_solaris_component_builder-component_builder]",
+      "test_converged_parent_key_is_advertised[synapse_solaris_import_megascans-import_megascans]",
+      "test_converged_parent_key_is_advertised[synapse_solaris_scene_template-scene_template]",
+      "test_every_tool_the_audit_claims_is_accounted_for",
+      "test_f3_megascans_material_reference_is_wired_live",
+      "test_f5_geometry_variants_node_reaches_terminal_live",
+      "test_f6_create_variants_status_is_honest_live",
+      "test_f7_set_purpose_authors_a_real_usd_purpose_live",
+      "test_f7_set_purpose_does_not_report_success_when_nothing_set_live",
+      "test_f8_component_builder_honours_parent_path_live",
+      "test_f8_import_megascans_honours_parent_path_live",
+      "test_f8_scene_template_honours_parent_path_live",
+      "test_f9_import_megascans_completes_live",
+      "test_f9_import_megascans_ingests_real_geometry_live",
+      "test_scene_template_chains_sop_imports_sequentially_live",
+      "test_schema_matches_implementation_contract[synapse_solaris_component_builder-component_builder]",
+      "test_schema_matches_implementation_contract[synapse_solaris_import_megascans-import_megascans]",
+      "test_schema_matches_implementation_contract[synapse_solaris_scene_template-scene_template]",
+      "test_set_purpose_is_idempotent_live",
+      "test_set_purpose_last_write_is_the_one_that_composes_live",
+      "test_set_purpose_survives_the_componentoutput_sink_live"
+    ],
+    "host_fact_unmutatable_by_design": [
+      "test_catalog_is_the_pinned_live_build",
+      "test_componentbuilder_is_absent_from_the_live_catalogue",
+      "test_copy_nodes_to_carries_outside_inputs_live",
+      "test_f10_componentbuilder_type_is_absent_on_this_build",
+      "test_f7_componentgeometry_exposes_no_purpose_parm_live",
+      "test_host_is_the_pinned_build",
+      "test_lop_category_resolves_live"
+    ],
+    "SURVIVING_MUTATION": [
+      "test_active_tool_has_a_handler_and_is_wired[solaris_component_builder]",
+      "test_active_tool_has_a_handler_and_is_wired[solaris_create_variants]",
+      "test_active_tool_has_a_handler_and_is_wired[solaris_import_megascans]",
+      "test_active_tool_has_a_handler_and_is_wired[solaris_scene_template]",
+      "test_active_tool_has_a_handler_and_is_wired[solaris_set_purpose]",
+      "test_active_tool_has_a_usable_input_schema[synapse_solaris_component_builder]",
+      "test_active_tool_has_a_usable_input_schema[synapse_solaris_create_variants]",
+      "test_active_tool_has_a_usable_input_schema[synapse_solaris_import_megascans]",
+      "test_active_tool_has_a_usable_input_schema[synapse_solaris_scene_template]",
+      "test_active_tool_is_in_the_registry[synapse_solaris_component_builder-solaris_component_builder]",
+      "test_active_tool_is_in_the_registry[synapse_solaris_create_variants-solaris_create_variants]",
+      "test_active_tool_is_in_the_registry[synapse_solaris_import_megascans-solaris_import_megascans]",
+      "test_active_tool_is_in_the_registry[synapse_solaris_scene_template-solaris_scene_template]",
+      "test_arity_violation_is_reported_against_the_live_catalogue",
+      "test_check_connected_names_each_dead_end",
+      "test_check_connected_passes_a_clean_chain",
+      "test_component_builder_creates_internal_nodes_live",
+      "test_component_builder_is_idempotent_live",
+      "test_component_builder_stamps_provenance_live",
+      "test_create_variants_rejects_a_non_lop_path_live",
+      "test_every_verifier_honours_the_result_contract[verify_purpose_map]",
+      "test_every_verifier_honours_the_result_contract[verify_registration]",
+      "test_every_verifier_honours_the_result_contract[verify_sop_chain]",
+      "test_every_verifier_honours_the_result_contract[verify_static0]",
+      "test_every_verifier_honours_the_result_contract[verify_static1]",
+      "test_every_verifier_honours_the_result_contract[verify_static2]",
+      "test_every_verifier_honours_the_result_contract[verify_static_explore]",
+      "test_every_verifier_honours_the_result_contract[verify_static_geometry]",
+      "test_every_verifier_honours_the_result_contract[verify_static_material]",
+      "test_every_verifier_honours_the_result_contract[verify_structure]",
+      "test_explore_variants_branch_is_correctly_wired",
+      "test_gate_mechanism_survives_the_promotion",
+      "test_gated_names_never_overlap_active_names",
+      "test_import_megascans_is_dispatchable_and_nothing_is_gated",
+      "test_import_megascans_is_registered",
+      "test_material_variants_are_wired_live",
+      "test_megascans_material_reference_is_orphaned",
+      "test_megascans_sop_chain_is_connected",
+      "test_promoted_handler_no_longer_advertises_itself_as_unreachable",
+      "test_scene_template_creates_full_chain_live",
+      "test_scene_template_emits_no_deprecated_types",
+      "test_scene_template_is_idempotent_live",
+      "test_scene_template_topology_is_fully_wired",
+      "test_set_purpose_distinguishes_applied_from_skipped",
+      "test_set_purpose_host_chain_is_valid",
+      "test_set_purpose_map_matches_the_tool",
+      "test_tool_audit_is_a_document_not_a_tool",
+      "test_tool_modules_live_inside_the_installable_package",
+      "test_unknown_type_fails_but_non_lop_types_are_exempt",
+      "test_variant_materials_are_wired_statically",
+      "test_variant_set_reaches_the_terminal"
+    ]
+  }
+}

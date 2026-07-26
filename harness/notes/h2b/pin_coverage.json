@@ -1,0 +1,83 @@
+{
+ "killed": [
+  "tests/solaris/test_create_variants.py::TestF6HonestStatus::test_execute_swallows_no_exception_silently",
+  "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_defaults_to_stage_when_absent",
+  "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_known_keys_are_accepted",
+  "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_parent_path_is_the_convergent_key",
+  "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_parent_path_wins_over_the_alias",
+  "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_parent_remains_an_accepted_alias",
+  "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_unknown_key_raises_instead_of_defaulting",
+  "tests/solaris/test_live_wiring.py::test_f10_componentbuilder_type_is_absent_on_this_build",
+  "tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live",
+  "tests/solaris/test_live_wiring.py::test_f5_geometry_variants_node_reaches_terminal_live",
+  "tests/solaris/test_live_wiring.py::test_f6_create_variants_status_is_honest_live",
+  "tests/solaris/test_live_wiring.py::test_f7_set_purpose_authors_a_real_usd_purpose_live",
+  "tests/solaris/test_live_wiring.py::test_f7_set_purpose_does_not_report_success_when_nothing_set_live",
+  "tests/solaris/test_live_wiring.py::test_f8_scene_template_honours_parent_path_live",
+  "tests/solaris/test_live_wiring.py::test_f9_import_megascans_completes_live",
+  "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_defaults_to_stage_when_absent",
+  "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_known_keys_are_accepted",
+  "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_parent_path_is_the_convergent_key",
+  "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_parent_path_wins_over_the_alias",
+  "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_parent_remains_an_accepted_alias",
+  "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_unknown_key_raises_instead_of_defaulting",
+  "tests/test_solaris_tool_registration.py::test_tool_modules_live_inside_the_installable_package",
+  "tests/test_solaris_wiring_verifiers.py::test_every_tool_the_audit_claims_is_accounted_for",
+  "tests/test_solaris_wiring_verifiers.py::test_import_megascans_is_dispatchable_and_nothing_is_gated",
+  "tests/test_solaris_wiring_verifiers.py::test_tool_audit_is_a_document_not_a_tool"
+ ],
+ "survived": [
+  "tests/test_solaris_wiring_verifiers.py::test_megascans_material_reference_is_orphaned",
+  "tests/test_solaris_wiring_verifiers.py::test_variant_materials_are_wired_statically",
+  "tests/test_solaris_wiring_verifiers.py::test_variant_set_reaches_the_terminal"
+ ],
+ "host": [
+  "tests/solaris/test_live_wiring.py::test_copy_nodes_to_carries_outside_inputs_live",
+  "tests/solaris/test_live_wiring.py::test_f7_componentgeometry_exposes_no_purpose_parm_live",
+  "tests/test_solaris_wiring_verifiers.py::test_componentbuilder_is_absent_from_the_live_catalogue"
+ ],
+ "uncovered": [
+  {
+   "pin": "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_defaults_to_stage_when_absent",
+   "tags": [
+    "8"
+   ]
+  },
+  {
+   "pin": "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_known_keys_are_accepted",
+   "tags": [
+    "8"
+   ]
+  },
+  {
+   "pin": "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_parent_path_is_the_convergent_key",
+   "tags": [
+    "8"
+   ]
+  },
+  {
+   "pin": "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_parent_path_wins_over_the_alias",
+   "tags": [
+    "8"
+   ]
+  },
+  {
+   "pin": "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_parent_remains_an_accepted_alias",
+   "tags": [
+    "8"
+   ]
+  },
+  {
+   "pin": "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_unknown_key_raises_instead_of_defaulting",
+   "tags": [
+    "8"
+   ]
+  },
+  {
+   "pin": "tests/test_solaris_wiring_verifiers.py::test_set_purpose_distinguishes_applied_from_skipped",
+   "tags": [
+    "7"
+   ]
+  }
+ ]
+}

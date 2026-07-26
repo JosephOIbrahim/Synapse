@@ -1,0 +1,1450 @@
+{
+ "schema": "mutation_matrix/h2b/v1",
+ "standard": "R34 \u2014 a pin that passes on both the fix and its inverse is a decoration",
+ "method_note": "surviving_mutation counts ONLY pins whose OWN targeted mutation left them green. Pins no mutation aimed at are coverage debt, reported separately and never counted as decorations.",
+ "interpreter": "hython3.13 / Houdini 22.0.368",
+ "pin_files": [
+  "tests/solaris/test_live_wiring.py",
+  "tests/test_solaris_wiring_verifiers.py",
+  "tests/test_solaris_tool_registration.py",
+  "tests/solaris/test_component_builder.py",
+  "tests/solaris/test_create_variants.py",
+  "tests/solaris/test_import_megascans.py",
+  "tests/solaris/test_scene_template.py",
+  "tests/solaris/test_set_purpose.py"
+ ],
+ "baseline_control": {
+  "returncode": 0,
+  "summary": "184 passed, 1 warning in 2.28s",
+  "collected": 184,
+  "passed": 184,
+  "failed": 0,
+  "skipped": 0,
+  "errors": 0,
+  "failing": [],
+  "erroring": [],
+  "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 184 items\n\ntests\\solaris\\test_live_wiring.py ...........................            [ 14%]\ntests\\test_solaris_wiring_verifiers.py .............................     [ 30%]\ntests\\test_solaris_tool_registration.py ...........................      [ 45%]\ntests\\solaris\\test_component_builder.py ...........................      [ 59%]\ntests\\solaris\\test_create_variants.py ............                       [ 66%]\ntests\\solaris\\test_import_megascans.py ......................            [ 78%]\ntests\\solaris\\test_scene_template.py .......................             [ 90%]\ntests\\solaris\\test_set_purpose.py .................                      [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================= 184 passed, 1 warning in 2.28s ========================\n"
+ },
+ "mutations_total": 21,
+ "rows": [
+  {
+   "id": "M1",
+   "finding": "F3",
+   "description": "import_megascans no longer wires the material reference LOP into componentmaterial input 1 \u2014 the exact F3 defect, restored.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live",
+    "tests/test_solaris_wiring_verifiers.py::test_megascans_material_reference_is_orphaned"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "2 passed, 1 warning in 0.31s",
+    "collected": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 2 items\n\ntests\\solaris\\test_live_wiring.py .                                      [ 50%]\ntests\\test_solaris_wiring_verifiers.py .                                 [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 2 passed, 1 warning in 0.31s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/import_megascans.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 passed, 1 warning in 0.51s",
+    "collected": 2,
+    "passed": 1,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 2 items\n\ntests\\solaris\\test_live_wiring.py F                                      [ 50%]\ntests\\test_solaris_wiring_verifiers.py .                                 [100%]\n\n================================== FAILURES ===================================\n_____________ test_f3_megascans_material_reference_is_wired_live ______________\ntests\\solaris\\test_live_wiring.py:405: in test_f3_megascans_material_reference_is_wired_live\n    assert len(inputs) > 1 and inputs[1] is not None, \"componentmaterial input 1 left open\"\nE   AssertionError: componentmaterial input 1 left open\nE   assert (1 > 1)\nE    +  where 1 = len((<hou.LopNode of type componentgeometry at /stage/sr1_m3_1/component_f3rock/geo_f3rock>,))\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live\n=================== 1 failed, 1 passed, 1 warning in 0.51s ====================\n"
+   },
+   "full_set_run": {
+    "summary": "1 failed, 183 passed, 1 warning in 2.25s",
+    "passed": 183,
+    "failed": 1,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live": "KILLED",
+    "tests/test_solaris_wiring_verifiers.py::test_megascans_material_reference_is_orphaned": "SURVIVED"
+   },
+   "collateral": [],
+   "verdict": "SOME_TARGETS_SURVIVED"
+  },
+  {
+   "id": "M2",
+   "finding": "F9",
+   "description": "import_megascans retargets the SOP build back onto the LOCKED componentgeometry HDA \u2014 the exact F9 defect, restored.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_f9_import_megascans_completes_live",
+    "tests/solaris/test_live_wiring.py::test_f9_import_megascans_ingests_real_geometry_live"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "2 passed, 1 warning in 0.37s",
+    "collected": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 2 items\n\ntests\\solaris\\test_live_wiring.py ..                                     [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 2 passed, 1 warning in 0.37s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/import_megascans.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "2 failed, 1 warning in 1.41s",
+    "collected": 2,
+    "passed": 0,
+    "failed": 2,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f9_import_megascans_completes_live",
+     "tests/solaris/test_live_wiring.py::test_f9_import_megascans_ingests_real_geometry_live"
+    ],
+    "erroring": [],
+    "log_tail": "is\\test_live_wiring.py FF                                     [100%]\n\n================================== FAILURES ===================================\n___________________ test_f9_import_megascans_completes_live ___________________\ntests\\solaris\\test_live_wiring.py:369: in test_f9_import_megascans_completes_live\n    r = ms_mod.execute({\npython\\synapse\\mcp\\tool_impls\\solaris\\import_megascans.py:244: in execute\n    usd_imp = sop_geo.createNode(\"usdimport\", \"import_usdc\")\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.368\\houdini\\python3.13libs\\hou.py:17302: in createNode\n    return _hou.Node_createNode(self, node_type_name, node_name, run_init_scripts, load_contents, exact_type_name, force_valid_node_name)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   hou.PermissionError: Cannot create a node inside a locked asset\n_____________ test_f9_import_megascans_ingests_real_geometry_live _____________\ntests\\solaris\\test_live_wiring.py:381: in test_f9_import_megascans_ingests_real_geometry_live\n    ms_mod.execute({\npython\\synapse\\mcp\\tool_impls\\solaris\\import_megascans.py:244: in execute\n    usd_imp = sop_geo.createNode(\"usdimport\", \"import_usdc\")\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.368\\houdini\\python3.13libs\\hou.py:17302: in createNode\n    return _hou.Node_createNode(self, node_type_name, node_name, run_init_scripts, load_contents, exact_type_name, force_valid_node_name)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   hou.PermissionError: Cannot create a node inside a locked asset\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_f9_import_megascans_completes_live\nFAILED tests/solaris/test_live_wiring.py::test_f9_import_megascans_ingests_real_geometry_live\n======================== 2 failed, 1 warning in 1.41s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "4 failed, 180 passed, 1 warning in 3.89s",
+    "passed": 180,
+    "failed": 4,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live",
+     "tests/solaris/test_live_wiring.py::test_f8_import_megascans_honours_parent_path_live",
+     "tests/solaris/test_live_wiring.py::test_f9_import_megascans_completes_live",
+     "tests/solaris/test_live_wiring.py::test_f9_import_megascans_ingests_real_geometry_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_f9_import_megascans_completes_live": "KILLED",
+    "tests/solaris/test_live_wiring.py::test_f9_import_megascans_ingests_real_geometry_live": "KILLED"
+   },
+   "collateral": [
+    "tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live",
+    "tests/solaris/test_live_wiring.py::test_f8_import_megascans_honours_parent_path_live"
+   ],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M3",
+   "finding": "F5",
+   "description": "create_variants drops the consumer-steal, so componentgeometryvariants dead-ends again \u2014 the exact F5 defect, restored.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_f5_geometry_variants_node_reaches_terminal_live",
+    "tests/test_solaris_wiring_verifiers.py::test_variant_set_reaches_the_terminal"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "2 passed, 1 warning in 0.28s",
+    "collected": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 2 items\n\ntests\\solaris\\test_live_wiring.py .                                      [ 50%]\ntests\\test_solaris_wiring_verifiers.py .                                 [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 2 passed, 1 warning in 0.28s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/create_variants.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 passed, 1 warning in 0.48s",
+    "collected": 2,
+    "passed": 1,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f5_geometry_variants_node_reaches_terminal_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 2 items\n\ntests\\solaris\\test_live_wiring.py F                                      [ 50%]\ntests\\test_solaris_wiring_verifiers.py .                                 [100%]\n\n================================== FAILURES ===================================\n____________ test_f5_geometry_variants_node_reaches_terminal_live _____________\ntests\\solaris\\test_live_wiring.py:472: in test_f5_geometry_variants_node_reaches_terminal_live\n    assert gv.outputs(), \"componentgeometryvariants is a dead end \u00e2\u20ac\u201d not wired downstream\"\nE   AssertionError: componentgeometryvariants is a dead end \u00e2\u20ac\u201d not wired downstream\nE   assert ()\nE    +  where () = outputs()\nE    +    where outputs = <hou.LopNode of type componentgeometryvariants at /stage/sr1_m3_1/f5_comp/geo_variants>.outputs\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_f5_geometry_variants_node_reaches_terminal_live\n=================== 1 failed, 1 passed, 1 warning in 0.48s ====================\n"
+   },
+   "full_set_run": {
+    "summary": "1 failed, 183 passed, 1 warning in 2.23s",
+    "passed": 183,
+    "failed": 1,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f5_geometry_variants_node_reaches_terminal_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_f5_geometry_variants_node_reaches_terminal_live": "KILLED",
+    "tests/test_solaris_wiring_verifiers.py::test_variant_set_reaches_the_terminal": "SURVIVED"
+   },
+   "collateral": [],
+   "verdict": "SOME_TARGETS_SURVIVED"
+  },
+  {
+   "id": "M4",
+   "finding": "F4",
+   "description": "create_variants explicitly unwires each duplicated variant material, reproducing the state F4 CLAIMED copyNodesTo produces.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_material_variants_are_wired_live",
+    "tests/test_solaris_wiring_verifiers.py::test_variant_materials_are_wired_statically"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "2 passed, 1 warning in 0.27s",
+    "collected": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 2 items\n\ntests\\solaris\\test_live_wiring.py .                                      [ 50%]\ntests\\test_solaris_wiring_verifiers.py .                                 [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 2 passed, 1 warning in 0.27s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/create_variants.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 passed, 1 warning in 0.46s",
+    "collected": 2,
+    "passed": 1,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_material_variants_are_wired_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 2 items\n\ntests\\solaris\\test_live_wiring.py F                                      [ 50%]\ntests\\test_solaris_wiring_verifiers.py .                                 [100%]\n\n================================== FAILURES ===================================\n____________________ test_material_variants_are_wired_live ____________________\ntests\\solaris\\test_live_wiring.py:459: in test_material_variants_are_wired_live\n    assert node.inputs() and node.inputs()[0] is not None, f\"{vn} left unwired\"\nE   AssertionError: mat_red left unwired\nE   assert (())\nE    +  where () = inputs()\nE    +    where inputs = <hou.LopNode of type componentmaterial at /stage/sr1_m3_1/f4_comp/mat_red>.inputs\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_material_variants_are_wired_live\n=================== 1 failed, 1 passed, 1 warning in 0.46s ====================\n"
+   },
+   "full_set_run": {
+    "summary": "1 failed, 183 passed, 1 warning in 2.22s",
+    "passed": 183,
+    "failed": 1,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_material_variants_are_wired_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_material_variants_are_wired_live": "KILLED",
+    "tests/test_solaris_wiring_verifiers.py::test_variant_materials_are_wired_statically": "SURVIVED"
+   },
+   "collateral": [],
+   "verdict": "SOME_TARGETS_SURVIVED"
+  },
+  {
+   "id": "M5",
+   "finding": "F6",
+   "description": "create_variants swallows an explorevariants build failure and still returns status='created' \u2014 the exact F6 defect, restored.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_f6_create_variants_status_is_honest_live",
+    "tests/solaris/test_create_variants.py::TestF6HonestStatus"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "2 passed, 1 warning in 0.28s",
+    "collected": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 2 items\n\ntests\\solaris\\test_live_wiring.py .                                      [ 50%]\ntests\\solaris\\test_create_variants.py .                                  [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 2 passed, 1 warning in 0.28s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/create_variants.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "2 failed, 1 warning in 0.48s",
+    "collected": 2,
+    "passed": 0,
+    "failed": 2,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_create_variants.py::TestF6HonestStatus::test_execute_swallows_no_exception_silently",
+     "tests/solaris/test_live_wiring.py::test_f6_create_variants_status_is_honest_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 2 items\n\ntests\\solaris\\test_live_wiring.py F                                      [ 50%]\ntests\\solaris\\test_create_variants.py F                                  [100%]\n\n================================== FAILURES ===================================\n________________ test_f6_create_variants_status_is_honest_live ________________\ntests\\solaris\\test_live_wiring.py:489: in test_f6_create_variants_status_is_honest_live\n    assert explore is not None, (\nE   AssertionError: status='created' but the explorevariants node was swallowed by `except Exception: pass`\nE   assert None is not None\n_______ TestF6HonestStatus.test_execute_swallows_no_exception_silently ________\ntests\\solaris\\test_create_variants.py:136: in test_execute_swallows_no_exception_silently\n    assert not swallowed, (\nE   AssertionError: bare `except Exception: pass` in create_variants.execute \u00e2\u20ac\u201d a swallowed failure followed by status='created' is a lie (Law 3)\nE   assert not [<ast.ExceptHandler object at 0x0000000174D1F390>]\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_f6_create_variants_status_is_honest_live\nFAILED tests/solaris/test_create_variants.py::TestF6HonestStatus::test_execute_swallows_no_exception_silently\n======================== 2 failed, 1 warning in 0.48s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "2 failed, 182 passed, 1 warning in 2.58s",
+    "passed": 182,
+    "failed": 2,
+    "failing": [
+     "tests/solaris/test_create_variants.py::TestF6HonestStatus::test_execute_swallows_no_exception_silently",
+     "tests/solaris/test_live_wiring.py::test_f6_create_variants_status_is_honest_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_f6_create_variants_status_is_honest_live": "KILLED",
+    "tests/solaris/test_create_variants.py::TestF6HonestStatus": "KILLED"
+   },
+   "collateral": [],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M6",
+   "finding": "F7",
+   "description": "set_purpose never enables the purpose it claims to author: setpurpose=0 while the status still reports set/updated. The exact Ruling-14 lie.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_f7_set_purpose_authors_a_real_usd_purpose_live",
+    "tests/solaris/test_live_wiring.py::test_f7_set_purpose_does_not_report_success_when_nothing_set_live",
+    "tests/solaris/test_live_wiring.py::test_set_purpose_last_write_is_the_one_that_composes_live",
+    "tests/solaris/test_live_wiring.py::test_set_purpose_survives_the_componentoutput_sink_live"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "4 passed, 1 warning in 0.64s",
+    "collected": 4,
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 4 items\n\ntests\\solaris\\test_live_wiring.py ....                                   [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 4 passed, 1 warning in 0.64s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/set_purpose.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "4 failed, 1 warning in 0.88s",
+    "collected": 4,
+    "passed": 0,
+    "failed": 4,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f7_set_purpose_authors_a_real_usd_purpose_live",
+     "tests/solaris/test_live_wiring.py::test_f7_set_purpose_does_not_report_success_when_nothing_set_live",
+     "tests/solaris/test_live_wiring.py::test_set_purpose_last_write_is_the_one_that_composes_live",
+     "tests/solaris/test_live_wiring.py::test_set_purpose_survives_the_componentoutput_sink_live"
+    ],
+    "erroring": [],
+    "log_tail": "t() == \"proxy\"\nE   AssertionError: assert 'default' == 'proxy'\nE     \nE     - proxy\nE     + default\n______ test_f7_set_purpose_does_not_report_success_when_nothing_set_live ______\ntests\\solaris\\test_live_wiring.py:219: in test_f7_set_purpose_does_not_report_success_when_nothing_set_live\n    assert UsdGeom.Imageable(prim).GetPurposeAttr().Get() == \"proxy\", (\nE   AssertionError: claimed success having set nothing: {'status': 'set', 'geometry_path': '/stage/sr1_m3_2/f7_comp/geo_f7', 'configure_node': '/stage/sr1_m3_2/f7_comp/purpose_proxy', 'prim_path': '/ASSET', 'purpose': 'proxy', 'usd_purpose': 'proxy'}\nE   assert 'default' == 'proxy'\nE     \nE     - proxy\nE     + default\n__________ test_set_purpose_last_write_is_the_one_that_composes_live __________\ntests\\solaris\\test_live_wiring.py:293: in test_set_purpose_last_write_is_the_one_that_composes_live\n    assert UsdGeom.Imageable(prim).GetPurposeAttr().Get() == \"render\", (\nE   AssertionError: last write lost \u00e2\u20ac\u201d an earlier purpose composes to the terminal\nE   assert 'default' == 'render'\nE     \nE     - render\nE     + default\n___________ test_set_purpose_survives_the_componentoutput_sink_live ___________\ntests\\solaris\\test_live_wiring.py:543: in test_set_purpose_survives_the_componentoutput_sink_live\n    assert UsdGeom.Imageable(root).GetPurposeAttr().Get() == \"proxy\", (\nE   AssertionError: componentoutput dropped the authored purpose \u00e2\u20ac\u201d status='set' would be describing an authoring the component's own output discards\nE   assert 'default' == 'proxy'\nE     \nE     - proxy\nE     + default\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_f7_set_purpose_authors_a_real_usd_purpose_live\nFAILED tests/solaris/test_live_wiring.py::test_f7_set_purpose_does_not_report_success_when_nothing_set_live\nFAILED tests/solaris/test_live_wiring.py::test_set_purpose_last_write_is_the_one_that_composes_live\nFAILED tests/solaris/test_live_wiring.py::test_set_purpose_survives_the_componentoutput_sink_live\n======================== 4 failed, 1 warning in 0.88s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "5 failed, 179 passed, 1 warning in 2.24s",
+    "passed": 179,
+    "failed": 5,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f7_set_purpose_authors_a_real_usd_purpose_live",
+     "tests/solaris/test_live_wiring.py::test_f7_set_purpose_does_not_report_success_when_nothing_set_live",
+     "tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live",
+     "tests/solaris/test_live_wiring.py::test_set_purpose_last_write_is_the_one_that_composes_live",
+     "tests/solaris/test_live_wiring.py::test_set_purpose_survives_the_componentoutput_sink_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_f7_set_purpose_authors_a_real_usd_purpose_live": "KILLED",
+    "tests/solaris/test_live_wiring.py::test_f7_set_purpose_does_not_report_success_when_nothing_set_live": "KILLED",
+    "tests/solaris/test_live_wiring.py::test_set_purpose_last_write_is_the_one_that_composes_live": "KILLED",
+    "tests/solaris/test_live_wiring.py::test_set_purpose_survives_the_componentoutput_sink_live": "KILLED"
+   },
+   "collateral": [
+    "tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live"
+   ],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M7",
+   "finding": "F8",
+   "description": "component_builder stops honouring parent_path (reads 'parent' only) \u2014 the exact F8 silent-default defect, restored.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_f8_component_builder_honours_parent_path_live",
+    "tests/solaris/test_component_builder.py::TestParentKeyConvergence"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "7 passed, 1 warning in 0.24s",
+    "collected": 7,
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 7 items\n\ntests\\solaris\\test_live_wiring.py .                                      [ 14%]\ntests\\solaris\\test_component_builder.py ......                           [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 7 passed, 1 warning in 0.24s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/component_builder.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "4 failed, 3 passed, 1 warning in 0.31s",
+    "collected": 7,
+    "passed": 3,
+    "failed": 4,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_known_keys_are_accepted",
+     "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_parent_path_is_the_convergent_key",
+     "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_parent_path_wins_over_the_alias",
+     "tests/solaris/test_live_wiring.py::test_f8_component_builder_honours_parent_path_live"
+    ],
+    "erroring": [],
+    "log_tail": "builder.py:236: in execute\n    validate(params)\npython\\synapse\\mcp\\tool_impls\\solaris\\component_builder.py:103: in validate\n    raise ValidationError(\nE   synapse.core.errors.ValidationError: Missing or invalid field 'unknown parameter(s): parent_path -- accepted: asset_name, export_path, generate_thumbnail, geometry_source, materials, parent, proxy_reduction, purposes'\n_______ TestParentKeyConvergence.test_parent_path_is_the_convergent_key _______\ntests\\solaris\\test_component_builder.py:137: in test_parent_path_is_the_convergent_key\n    assert _resolve_parent_path({\"parent_path\": \"/stage/lopnet1\"}) == \"/stage/lopnet1\"\nE   AssertionError: assert '/stage' == '/stage/lopnet1'\nE     \nE     - /stage/lopnet1\nE     + /stage\n________ TestParentKeyConvergence.test_parent_path_wins_over_the_alias ________\ntests\\solaris\\test_component_builder.py:145: in test_parent_path_wins_over_the_alias\n    assert _resolve_parent_path({\"parent\": \"/a\", \"parent_path\": \"/b\"}) == \"/b\"\nE   AssertionError: assert '/a' == '/b'\nE     \nE     - /b\nE     + /a\n____________ TestParentKeyConvergence.test_known_keys_are_accepted ____________\ntests\\solaris\\test_component_builder.py:156: in test_known_keys_are_accepted\n    validate({\npython\\synapse\\mcp\\tool_impls\\solaris\\component_builder.py:103: in validate\n    raise ValidationError(\nE   synapse.core.errors.ValidationError: Missing or invalid field 'unknown parameter(s): parent_path -- accepted: asset_name, export_path, generate_thumbnail, geometry_source, materials, parent, proxy_reduction, purposes'\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_f8_component_builder_honours_parent_path_live\nFAILED tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_parent_path_is_the_convergent_key\nFAILED tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_parent_path_wins_over_the_alias\nFAILED tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_known_keys_are_accepted\n=================== 4 failed, 3 passed, 1 warning in 0.31s ====================\n"
+   },
+   "full_set_run": {
+    "summary": "6 failed, 178 passed, 1 warning in 2.28s",
+    "passed": 178,
+    "failed": 6,
+    "failing": [
+     "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_known_keys_are_accepted",
+     "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_parent_path_is_the_convergent_key",
+     "tests/solaris/test_component_builder.py::TestParentKeyConvergence::test_parent_path_wins_over_the_alias",
+     "tests/solaris/test_live_wiring.py::test_f8_component_builder_honours_parent_path_live",
+     "tests/test_solaris_tool_registration.py::test_converged_parent_key_is_advertised[synapse_solaris_component_builder-component_builder]",
+     "tests/test_solaris_tool_registration.py::test_schema_matches_implementation_contract[synapse_solaris_component_builder-component_builder]"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_f8_component_builder_honours_parent_path_live": "KILLED",
+    "tests/solaris/test_component_builder.py::TestParentKeyConvergence": "KILLED"
+   },
+   "collateral": [
+    "tests/test_solaris_tool_registration.py::test_converged_parent_key_is_advertised[synapse_solaris_component_builder-component_builder]",
+    "tests/test_solaris_tool_registration.py::test_schema_matches_implementation_contract[synapse_solaris_component_builder-component_builder]"
+   ],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M8",
+   "finding": "F8",
+   "description": "import_megascans stops honouring parent_path.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_f8_import_megascans_honours_parent_path_live",
+    "tests/solaris/test_import_megascans.py::TestParentKeyConvergence"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "7 passed, 1 warning in 0.31s",
+    "collected": 7,
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 7 items\n\ntests\\solaris\\test_live_wiring.py .                                      [ 14%]\ntests\\solaris\\test_import_megascans.py ......                            [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 7 passed, 1 warning in 0.31s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/import_megascans.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "4 failed, 3 passed, 1 warning in 0.44s",
+    "collected": 7,
+    "passed": 3,
+    "failed": 4,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_known_keys_are_accepted",
+     "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_parent_path_is_the_convergent_key",
+     "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_parent_path_wins_over_the_alias",
+     "tests/solaris/test_live_wiring.py::test_f8_import_megascans_honours_parent_path_live"
+    ],
+    "erroring": [],
+    "log_tail": "  validate(params)\npython\\synapse\\mcp\\tool_impls\\solaris\\import_megascans.py:85: in validate\n    raise ValidationError(\nE   synapse.core.errors.ValidationError: Missing or invalid field 'unknown parameter(s): parent_path -- accepted: asset_name, export_path, ground_asset, import_materials, parent, proxy_reduction, rotation_correction, scale_factor, usdc_path'\n_______ TestParentKeyConvergence.test_parent_path_is_the_convergent_key _______\ntests\\solaris\\test_import_megascans.py:110: in test_parent_path_is_the_convergent_key\n    assert _resolve_parent_path({\"parent_path\": \"/stage/lopnet1\"}) == \"/stage/lopnet1\"\nE   AssertionError: assert '/stage' == '/stage/lopnet1'\nE     \nE     - /stage/lopnet1\nE     + /stage\n________ TestParentKeyConvergence.test_parent_path_wins_over_the_alias ________\ntests\\solaris\\test_import_megascans.py:118: in test_parent_path_wins_over_the_alias\n    assert _resolve_parent_path({\"parent\": \"/a\", \"parent_path\": \"/b\"}) == \"/b\"\nE   AssertionError: assert '/a' == '/b'\nE     \nE     - /b\nE     + /a\n____________ TestParentKeyConvergence.test_known_keys_are_accepted ____________\ntests\\solaris\\test_import_megascans.py:130: in test_known_keys_are_accepted\n    validate({\npython\\synapse\\mcp\\tool_impls\\solaris\\import_megascans.py:85: in validate\n    raise ValidationError(\nE   synapse.core.errors.ValidationError: Missing or invalid field 'unknown parameter(s): parent_path -- accepted: asset_name, export_path, ground_asset, import_materials, parent, proxy_reduction, rotation_correction, scale_factor, usdc_path'\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_f8_import_megascans_honours_parent_path_live\nFAILED tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_parent_path_is_the_convergent_key\nFAILED tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_parent_path_wins_over_the_alias\nFAILED tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_known_keys_are_accepted\n=================== 4 failed, 3 passed, 1 warning in 0.44s ====================\n"
+   },
+   "full_set_run": {
+    "summary": "9 failed, 175 passed, 1 warning in 2.11s",
+    "passed": 175,
+    "failed": 9,
+    "failing": [
+     "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_known_keys_are_accepted",
+     "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_parent_path_is_the_convergent_key",
+     "tests/solaris/test_import_megascans.py::TestParentKeyConvergence::test_parent_path_wins_over_the_alias",
+     "tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live",
+     "tests/solaris/test_live_wiring.py::test_f8_import_megascans_honours_parent_path_live",
+     "tests/solaris/test_live_wiring.py::test_f9_import_megascans_completes_live",
+     "tests/solaris/test_live_wiring.py::test_f9_import_megascans_ingests_real_geometry_live",
+     "tests/test_solaris_tool_registration.py::test_converged_parent_key_is_advertised[synapse_solaris_import_megascans-import_megascans]",
+     "tests/test_solaris_tool_registration.py::test_schema_matches_implementation_contract[synapse_solaris_import_megascans-import_megascans]"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_f8_import_megascans_honours_parent_path_live": "KILLED",
+    "tests/solaris/test_import_megascans.py::TestParentKeyConvergence": "KILLED"
+   },
+   "collateral": [
+    "tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live",
+    "tests/solaris/test_live_wiring.py::test_f9_import_megascans_completes_live",
+    "tests/solaris/test_live_wiring.py::test_f9_import_megascans_ingests_real_geometry_live",
+    "tests/test_solaris_tool_registration.py::test_converged_parent_key_is_advertised[synapse_solaris_import_megascans-import_megascans]",
+    "tests/test_solaris_tool_registration.py::test_schema_matches_implementation_contract[synapse_solaris_import_megascans-import_megascans]"
+   ],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M9",
+   "finding": "F8",
+   "description": "scene_template stops honouring parent_path \u2014 the original F8 anchor.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_f8_scene_template_honours_parent_path_live",
+    "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "7 passed, 1 warning in 0.26s",
+    "collected": 7,
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 7 items\n\ntests\\solaris\\test_live_wiring.py .                                      [ 14%]\ntests\\solaris\\test_scene_template.py ......                              [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 7 passed, 1 warning in 0.26s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/scene_template.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "4 failed, 3 passed, 1 warning in 0.30s",
+    "collected": 7,
+    "passed": 3,
+    "failed": 4,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f8_scene_template_honours_parent_path_live",
+     "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_known_keys_are_accepted",
+     "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_parent_path_is_the_convergent_key",
+     "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_parent_path_wins_over_the_alias"
+    ],
+    "erroring": [],
+    "log_tail": "ne_name\": \"f8\", \"parent_path\": lopnet.path()})\npython\\synapse\\mcp\\tool_impls\\solaris\\scene_template.py:188: in execute\n    validate(params)\npython\\synapse\\mcp\\tool_impls\\solaris\\scene_template.py:78: in validate\n    raise ValidationError(\nE   synapse.core.errors.ValidationError: Missing or invalid field 'unknown parameter(s): parent_path \u00e2\u20ac\u201d accepted: output_path, parent, render_engine, resolution, scene_name, sop_paths'\n_____ TestF8ParentPathConvergence.test_parent_path_is_the_convergent_key ______\ntests\\solaris\\test_scene_template.py:120: in test_parent_path_is_the_convergent_key\n    assert _resolve_parent_path({\"parent_path\": \"/stage/lopnet1\"}) == \"/stage/lopnet1\"\nE   AssertionError: assert '/stage' == '/stage/lopnet1'\nE     \nE     - /stage/lopnet1\nE     + /stage\n______ TestF8ParentPathConvergence.test_parent_path_wins_over_the_alias _______\ntests\\solaris\\test_scene_template.py:128: in test_parent_path_wins_over_the_alias\n    assert _resolve_parent_path({\"parent\": \"/a\", \"parent_path\": \"/b\"}) == \"/b\"\nE   AssertionError: assert '/a' == '/b'\nE     \nE     - /b\nE     + /a\n__________ TestF8ParentPathConvergence.test_known_keys_are_accepted ___________\ntests\\solaris\\test_scene_template.py:139: in test_known_keys_are_accepted\n    validate({\npython\\synapse\\mcp\\tool_impls\\solaris\\scene_template.py:78: in validate\n    raise ValidationError(\nE   synapse.core.errors.ValidationError: Missing or invalid field 'unknown parameter(s): parent_path \u00e2\u20ac\u201d accepted: output_path, parent, render_engine, resolution, scene_name, sop_paths'\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_f8_scene_template_honours_parent_path_live\nFAILED tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_parent_path_is_the_convergent_key\nFAILED tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_parent_path_wins_over_the_alias\nFAILED tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_known_keys_are_accepted\n=================== 4 failed, 3 passed, 1 warning in 0.30s ====================\n"
+   },
+   "full_set_run": {
+    "summary": "6 failed, 178 passed, 1 warning in 2.20s",
+    "passed": 178,
+    "failed": 6,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f8_scene_template_honours_parent_path_live",
+     "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_known_keys_are_accepted",
+     "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_parent_path_is_the_convergent_key",
+     "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence::test_parent_path_wins_over_the_alias",
+     "tests/test_solaris_tool_registration.py::test_converged_parent_key_is_advertised[synapse_solaris_scene_template-scene_template]",
+     "tests/test_solaris_tool_registration.py::test_schema_matches_implementation_contract[synapse_solaris_scene_template-scene_template]"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_f8_scene_template_honours_parent_path_live": "KILLED",
+    "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence": "KILLED"
+   },
+   "collateral": [
+    "tests/test_solaris_tool_registration.py::test_converged_parent_key_is_advertised[synapse_solaris_scene_template-scene_template]",
+    "tests/test_solaris_tool_registration.py::test_schema_matches_implementation_contract[synapse_solaris_scene_template-scene_template]"
+   ],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M10",
+   "finding": "F10",
+   "description": "component_builder claims the phantom native componentbuilder type exists, re-arming the dead Path A the try/except used to hide.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_f10_componentbuilder_type_is_absent_on_this_build"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "1 passed, 1 warning in 0.09s",
+    "collected": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py .                                      [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 1 passed, 1 warning in 0.09s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/component_builder.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 warning in 0.27s",
+    "collected": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f10_componentbuilder_type_is_absent_on_this_build"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py F                                      [100%]\n\n================================== FAILURES ===================================\n___________ test_f10_componentbuilder_type_is_absent_on_this_build ____________\ntests\\solaris\\test_live_wiring.py:142: in test_f10_componentbuilder_type_is_absent_on_this_build\n    assert cb_mod._has_native_componentbuilder() is False\nE   assert True is False\nE    +  where True = <function _has_native_componentbuilder at 0x000000017470E3E0>()\nE    +    where <function _has_native_componentbuilder at 0x000000017470E3E0> = cb_mod._has_native_componentbuilder\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_f10_componentbuilder_type_is_absent_on_this_build\n======================== 1 failed, 1 warning in 0.27s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "6 failed, 178 passed, 1 warning in 5.28s",
+    "passed": 178,
+    "failed": 6,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_component_builder_creates_internal_nodes_live",
+     "tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live",
+     "tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live",
+     "tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live",
+     "tests/solaris/test_live_wiring.py::test_f10_componentbuilder_type_is_absent_on_this_build",
+     "tests/solaris/test_live_wiring.py::test_f8_component_builder_honours_parent_path_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_f10_componentbuilder_type_is_absent_on_this_build": "KILLED"
+   },
+   "collateral": [
+    "tests/solaris/test_live_wiring.py::test_component_builder_creates_internal_nodes_live",
+    "tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live",
+    "tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live",
+    "tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live",
+    "tests/solaris/test_live_wiring.py::test_f8_component_builder_honours_parent_path_live"
+   ],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M11",
+   "finding": "F1",
+   "description": "the import_megascans tool is dropped from the MCP registry \u2014 F1's 'unreachable from the live registry' defect, restored for one tool.",
+   "targets": [
+    "tests/test_solaris_wiring_verifiers.py::test_import_megascans_is_dispatchable_and_nothing_is_gated",
+    "tests/test_solaris_wiring_verifiers.py::test_every_tool_the_audit_claims_is_accounted_for",
+    "tests/test_solaris_tool_registration.py"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "29 passed, 1 warning in 0.39s",
+    "collected": 29,
+    "passed": 29,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 29 items\n\ntests\\test_solaris_wiring_verifiers.py ..                                [  6%]\ntests\\test_solaris_tool_registration.py ...........................      [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 29 passed, 1 warning in 0.39s ========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/_tool_registry.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "8 failed, 21 passed, 1 warning in 0.59s",
+    "collected": 29,
+    "passed": 21,
+    "failed": 8,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/test_solaris_tool_registration.py::test_active_tool_has_a_usable_input_schema[synapse_solaris_import_megascans]",
+     "tests/test_solaris_tool_registration.py::test_active_tool_is_in_the_registry[synapse_solaris_import_megascans-solaris_import_megascans]",
+     "tests/test_solaris_tool_registration.py::test_all_five_resolve_through_the_registry",
+     "tests/test_solaris_tool_registration.py::test_converged_parent_key_is_advertised[synapse_solaris_import_megascans-import_megascans]",
+     "tests/test_solaris_tool_registration.py::test_import_megascans_is_registered",
+     "tests/test_solaris_tool_registration.py::test_schema_matches_implementation_contract[synapse_solaris_import_megascans-import_megascans]",
+     "tests/test_solaris_wiring_verifiers.py::test_every_tool_the_audit_claims_is_accounted_for",
+     "tests/test_solaris_wiring_verifiers.py::test_import_megascans_is_dispatchable_and_nothing_is_gated"
+    ],
+    "erroring": [],
+    "log_tail": "^^^^^\nE   KeyError: 'synapse_solaris_import_megascans'\n_____________________ test_import_megascans_is_registered _____________________\ntests\\test_solaris_tool_registration.py:170: in test_import_megascans_is_registered\n    assert PROMOTED_TOOL in reg_mod.TOOL_NAMES\nE   AssertionError: assert 'synapse_solaris_import_megascans' in ['cops_analyze_render', 'cops_bake_textures', 'cops_batch_cook', 'cops_composite_aovs', 'cops_connect', 'cops_create_copnet', ...]\nE    +  where ['cops_analyze_render', 'cops_bake_textures', 'cops_batch_cook', 'cops_composite_aovs', 'cops_connect', 'cops_create_copnet', ...] = reg_mod.TOOL_NAMES\n_________________ test_all_five_resolve_through_the_registry __________________\ntests\\test_solaris_tool_registration.py:182: in test_all_five_resolve_through_the_registry\n    assert set(ACTIVE_TOOLS) <= set(reg_mod.TOOL_NAMES)\nE   AssertionError: assert {'synapse_sol..._set_purpose'} <= {'cops_analyz..._copnet', ...}\nE     \nE     Extra items in the left set:\nE     'synapse_solaris_import_megascans'\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/test_solaris_wiring_verifiers.py::test_import_megascans_is_dispatchable_and_nothing_is_gated\nFAILED tests/test_solaris_wiring_verifiers.py::test_every_tool_the_audit_claims_is_accounted_for\nFAILED tests/test_solaris_tool_registration.py::test_active_tool_is_in_the_registry[synapse_solaris_import_megascans-solaris_import_megascans]\nFAILED tests/test_solaris_tool_registration.py::test_active_tool_has_a_usable_input_schema[synapse_solaris_import_megascans]\nFAILED tests/test_solaris_tool_registration.py::test_schema_matches_implementation_contract[synapse_solaris_import_megascans-import_megascans]\nFAILED tests/test_solaris_tool_registration.py::test_converged_parent_key_is_advertised[synapse_solaris_import_megascans-import_megascans]\nFAILED tests/test_solaris_tool_registration.py::test_import_megascans_is_registered\nFAILED tests/test_solaris_tool_registration.py::test_all_five_resolve_through_the_registry\n=================== 8 failed, 21 passed, 1 warning in 0.59s ===================\n"
+   },
+   "full_set_run": {
+    "summary": "8 failed, 176 passed, 1 warning in 2.67s",
+    "passed": 176,
+    "failed": 8,
+    "failing": [
+     "tests/test_solaris_tool_registration.py::test_active_tool_has_a_usable_input_schema[synapse_solaris_import_megascans]",
+     "tests/test_solaris_tool_registration.py::test_active_tool_is_in_the_registry[synapse_solaris_import_megascans-solaris_import_megascans]",
+     "tests/test_solaris_tool_registration.py::test_all_five_resolve_through_the_registry",
+     "tests/test_solaris_tool_registration.py::test_converged_parent_key_is_advertised[synapse_solaris_import_megascans-import_megascans]",
+     "tests/test_solaris_tool_registration.py::test_import_megascans_is_registered",
+     "tests/test_solaris_tool_registration.py::test_schema_matches_implementation_contract[synapse_solaris_import_megascans-import_megascans]",
+     "tests/test_solaris_wiring_verifiers.py::test_every_tool_the_audit_claims_is_accounted_for",
+     "tests/test_solaris_wiring_verifiers.py::test_import_megascans_is_dispatchable_and_nothing_is_gated"
+    ]
+   },
+   "per_target": {
+    "tests/test_solaris_wiring_verifiers.py::test_import_megascans_is_dispatchable_and_nothing_is_gated": "KILLED",
+    "tests/test_solaris_wiring_verifiers.py::test_every_tool_the_audit_claims_is_accounted_for": "KILLED",
+    "tests/test_solaris_tool_registration.py": "KILLED"
+   },
+   "collateral": [],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M12",
+   "finding": "F2",
+   "description": "tool_audit acquires a real implementation module, falsifying 'it is a document, not a tool'.",
+   "targets": [
+    "tests/test_solaris_wiring_verifiers.py::test_tool_audit_is_a_document_not_a_tool"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "1 passed, 1 warning in 0.10s",
+    "collected": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\test_solaris_wiring_verifiers.py .                                 [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 1 passed, 1 warning in 0.10s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/tool_audit.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 warning in 0.30s",
+    "collected": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/test_solaris_wiring_verifiers.py::test_tool_audit_is_a_document_not_a_tool"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\test_solaris_wiring_verifiers.py F                                 [100%]\n\n================================== FAILURES ===================================\n__________________ test_tool_audit_is_a_document_not_a_tool ___________________\ntests\\test_solaris_wiring_verifiers.py:208: in test_tool_audit_is_a_document_not_a_tool\n    assert res[\"status\"] == \"PASS\", res[\"failures\"]\nE   AssertionError: [{'name': 'no_implementation_module', 'ok': False, 'detail': 'tool_audit.py exists=True (pinned False) -- tool_audit is a design document, not a tool (F2)'}]\nE   assert 'FAIL' == 'PASS'\nE     \nE     - PASS\nE     + FAIL\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/test_solaris_wiring_verifiers.py::test_tool_audit_is_a_document_not_a_tool\n======================== 1 failed, 1 warning in 0.30s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "1 failed, 183 passed, 1 warning in 3.16s",
+    "passed": 183,
+    "failed": 1,
+    "failing": [
+     "tests/test_solaris_wiring_verifiers.py::test_tool_audit_is_a_document_not_a_tool"
+    ]
+   },
+   "per_target": {
+    "tests/test_solaris_wiring_verifiers.py::test_tool_audit_is_a_document_not_a_tool": "KILLED"
+   },
+   "collateral": [],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M13",
+   "finding": "F1/bucket2",
+   "description": "component_builder stops wiring geo -> mat -> output inside the subnet.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "1 passed, 1 warning in 0.22s",
+    "collected": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py .                                      [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 1 passed, 1 warning in 0.22s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/component_builder.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 warning in 0.43s",
+    "collected": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py F                                      [100%]\n\n================================== FAILURES ===================================\n___________ test_component_builder_wires_geo_to_mat_to_output_live ____________\ntests\\solaris\\test_live_wiring.py:118: in test_component_builder_wires_geo_to_mat_to_output_live\n    assert mat.inputs() and mat.inputs()[0].path() == by_type[\"componentgeometry\"].path()\nE   assert (())\nE    +  where () = inputs()\nE    +    where inputs = <hou.LopNode of type componentmaterial at /stage/sr1_m3_1/component_cb_wire/mat_cb_wire>.inputs\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live\n======================== 1 failed, 1 warning in 0.43s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "1 failed, 183 passed, 1 warning in 2.27s",
+    "passed": 183,
+    "failed": 1,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live": "KILLED"
+   },
+   "collateral": [],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M14",
+   "finding": "F1/bucket2",
+   "description": "component_builder emits the wrong internal node type (no componentmaterial).",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_component_builder_creates_internal_nodes_live"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "1 passed, 1 warning in 0.22s",
+    "collected": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py .                                      [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 1 passed, 1 warning in 0.22s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/component_builder.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 warning in 0.87s",
+    "collected": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_component_builder_creates_internal_nodes_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py F                                      [100%]\n\n================================== FAILURES ===================================\n_____________ test_component_builder_creates_internal_nodes_live ______________\ntests\\solaris\\test_live_wiring.py:101: in test_component_builder_creates_internal_nodes_live\n    r = cb_mod.execute({\"asset_name\": \"cb_live\", \"parent\": lopnet.path()})\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\npython\\synapse\\mcp\\tool_impls\\solaris\\component_builder.py:300: in execute\n    mat_node.setInput(0, geo_node)\nC:\\PROGRA~1\\SIDEEF~1\\HOUDIN~1.368\\houdini\\python3.13libs\\hou.py:17361: in setInput\n    return _hou.Node_setInput(self, input_index, item_to_become_input, output_index)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   hou.InvalidInput: Invalid input.\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_component_builder_creates_internal_nodes_live\n======================== 1 failed, 1 warning in 0.87s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "5 failed, 179 passed, 1 warning in 4.43s",
+    "passed": 179,
+    "failed": 5,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_component_builder_creates_internal_nodes_live",
+     "tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live",
+     "tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live",
+     "tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live",
+     "tests/solaris/test_live_wiring.py::test_f8_component_builder_honours_parent_path_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_component_builder_creates_internal_nodes_live": "KILLED"
+   },
+   "collateral": [
+    "tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live",
+    "tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live",
+    "tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live",
+    "tests/solaris/test_live_wiring.py::test_f8_component_builder_honours_parent_path_live"
+   ],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M15",
+   "finding": "F1/bucket2",
+   "description": "component_builder loses its idempotency guard and rebuilds on every call.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "1 passed, 1 warning in 0.23s",
+    "collected": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py .                                      [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 1 passed, 1 warning in 0.23s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/component_builder.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 warning in 0.47s",
+    "collected": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py F                                      [100%]\n\n================================== FAILURES ===================================\n__________________ test_component_builder_is_idempotent_live __________________\ntests\\solaris\\test_live_wiring.py:125: in test_component_builder_is_idempotent_live\n    assert r2[\"status\"] == \"already_exists\"\nE   AssertionError: assert 'created' == 'already_exists'\nE     \nE     - already_exists\nE     + created\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live\n======================== 1 failed, 1 warning in 0.47s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "1 failed, 183 passed, 1 warning in 2.75s",
+    "passed": 183,
+    "failed": 1,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live": "KILLED"
+   },
+   "collateral": [],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M16",
+   "finding": "F1/bucket2",
+   "description": "component_builder stamps the wrong tool identity into provenance.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "1 passed, 1 warning in 0.22s",
+    "collected": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py .                                      [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 1 passed, 1 warning in 0.22s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/component_builder.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 warning in 0.40s",
+    "collected": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py F                                      [100%]\n\n================================== FAILURES ===================================\n________________ test_component_builder_stamps_provenance_live ________________\ntests\\solaris\\test_live_wiring.py:131: in test_component_builder_stamps_provenance_live\n    assert comp.userData(\"synapse:tool\") == cb_mod._TOOL_NAME\nE   AssertionError: assert 'H2b-M16-wrong' == 'synapse_sola...onent_builder'\nE     \nE     - synapse_solaris_component_builder\nE     + H2b-M16-wrong\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live\n======================== 1 failed, 1 warning in 0.40s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "1 failed, 183 passed, 1 warning in 2.21s",
+    "passed": 183,
+    "failed": 1,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live": "KILLED"
+   },
+   "collateral": [],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M17",
+   "finding": "F1/bucket2",
+   "description": "scene_template stops chaining SOP imports sequentially (Pattern 1 broken).",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_scene_template_chains_sop_imports_sequentially_live"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "1 passed, 1 warning in 0.23s",
+    "collected": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py .                                      [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 1 passed, 1 warning in 0.23s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/scene_template.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 warning in 0.42s",
+    "collected": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_scene_template_chains_sop_imports_sequentially_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py F                                      [100%]\n\n================================== FAILURES ===================================\n__________ test_scene_template_chains_sop_imports_sequentially_live ___________\ntests\\solaris\\test_live_wiring.py:168: in test_scene_template_chains_sop_imports_sequentially_live\n    assert g1.inputs() and g1.inputs()[0].path() == g0.path()\nE   assert (())\nE    +  where () = inputs()\nE    +    where inputs = <hou.LopNode of type sopimport at /stage/sr1_m3_1/geo_1>.inputs\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_scene_template_chains_sop_imports_sequentially_live\n======================== 1 failed, 1 warning in 0.42s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "1 failed, 183 passed, 1 warning in 2.20s",
+    "passed": 183,
+    "failed": 1,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_scene_template_chains_sop_imports_sequentially_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_scene_template_chains_sop_imports_sequentially_live": "KILLED"
+   },
+   "collateral": [],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M18",
+   "finding": "F1/bucket2",
+   "description": "scene_template loses its idempotency guard.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_scene_template_is_idempotent_live"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "1 passed, 1 warning in 0.22s",
+    "collected": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py .                                      [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 1 passed, 1 warning in 0.22s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/scene_template.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 warning in 0.45s",
+    "collected": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_scene_template_is_idempotent_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py F                                      [100%]\n\n================================== FAILURES ===================================\n___________________ test_scene_template_is_idempotent_live ____________________\ntests\\solaris\\test_live_wiring.py:160: in test_scene_template_is_idempotent_live\n    assert r2[\"status\"] == \"already_exists\"\nE   AssertionError: assert 'created' == 'already_exists'\nE     \nE     - already_exists\nE     + created\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_scene_template_is_idempotent_live\n======================== 1 failed, 1 warning in 0.45s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "1 failed, 183 passed, 1 warning in 2.28s",
+    "passed": 183,
+    "failed": 1,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_scene_template_is_idempotent_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_scene_template_is_idempotent_live": "KILLED"
+   },
+   "collateral": [],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M19",
+   "finding": "F1/bucket2",
+   "description": "scene_template names the hierarchy-root primitive wrongly.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_scene_template_creates_full_chain_live"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "1 passed, 1 warning in 0.23s",
+    "collected": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py .                                      [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 1 passed, 1 warning in 0.23s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/scene_template.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 warning in 0.41s",
+    "collected": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_scene_template_creates_full_chain_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py F                                      [100%]\n\n================================== FAILURES ===================================\n_________________ test_scene_template_creates_full_chain_live _________________\ntests\\solaris\\test_live_wiring.py:154: in test_scene_template_creates_full_chain_live\n    assert lopnet.node(\"primitive_shot\") is not None\nE   AssertionError: assert None is not None\nE    +  where None = node('primitive_shot')\nE    +    where node = <hou.LopNetwork of type lopnet at /stage/sr1_m3_1>.node\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_scene_template_creates_full_chain_live\n======================== 1 failed, 1 warning in 0.41s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "3 failed, 181 passed, 1 warning in 2.27s",
+    "passed": 181,
+    "failed": 3,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_f8_scene_template_honours_parent_path_live",
+     "tests/solaris/test_live_wiring.py::test_scene_template_creates_full_chain_live",
+     "tests/solaris/test_live_wiring.py::test_scene_template_is_idempotent_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_scene_template_creates_full_chain_live": "KILLED"
+   },
+   "collateral": [
+    "tests/solaris/test_live_wiring.py::test_f8_scene_template_honours_parent_path_live",
+    "tests/solaris/test_live_wiring.py::test_scene_template_is_idempotent_live"
+   ],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M20",
+   "finding": "F7/bucket2",
+   "description": "set_purpose never finds its existing configureprimitive, so repeat calls stack nodes.",
+   "targets": [
+    "tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "1 passed, 1 warning in 0.39s",
+    "collected": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py .                                      [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 1 passed, 1 warning in 0.39s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/set_purpose.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 warning in 0.57s",
+    "collected": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\solaris\\test_live_wiring.py F                                      [100%]\n\n================================== FAILURES ===================================\n_____________________ test_set_purpose_is_idempotent_live _____________________\ntests\\solaris\\test_live_wiring.py:309: in test_set_purpose_is_idempotent_live\n    assert len(cfgs) == 1, f\"stacked purpose nodes: {[c.name() for c in cfgs]}\"\nE   AssertionError: stacked purpose nodes: ['purpose_proxy', 'purpose_render', 'purpose_render1']\nE   assert 3 == 1\nE    +  where 3 = len([<hou.LopNode of type configureprimitive at /stage/sr1_m3_1/spidem/purpose_proxy>, <hou.LopNode of type configureprimi...ge/sr1_m3_1/spidem/purpose_render>, <hou.LopNode of type configureprimitive at /stage/sr1_m3_1/spidem/purpose_render1>])\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live\n======================== 1 failed, 1 warning in 0.57s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "1 failed, 183 passed, 1 warning in 2.64s",
+    "passed": 183,
+    "failed": 1,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live"
+    ]
+   },
+   "per_target": {
+    "tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live": "KILLED"
+   },
+   "collateral": [],
+   "verdict": "ALL_TARGETS_KILLED"
+  },
+  {
+   "id": "M21",
+   "finding": "F7",
+   "description": "set_purpose reports the same success string on two distinct return paths again \u2014 the exact ambiguity F7 named (applied and not-applied become indistinguishable to the caller).",
+   "targets": [
+    "tests/test_solaris_wiring_verifiers.py::test_set_purpose_distinguishes_applied_from_skipped"
+   ],
+   "control": {
+    "returncode": 0,
+    "summary": "1 passed, 1 warning in 0.10s",
+    "collected": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\test_solaris_wiring_verifiers.py .                                 [100%]\n\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 1 passed, 1 warning in 0.10s =========================\n"
+   },
+   "control_green": true,
+   "mutation_applied": [
+    "python/synapse/mcp/tool_impls/solaris/set_purpose.py",
+    "python/synapse/mcp/tool_impls/solaris/set_purpose.py"
+   ],
+   "result": {
+    "returncode": 1,
+    "summary": "1 failed, 1 warning in 0.26s",
+    "collected": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "errors": 0,
+    "failing": [
+     "tests/test_solaris_wiring_verifiers.py::test_set_purpose_distinguishes_applied_from_skipped"
+    ],
+    "erroring": [],
+    "log_tail": "============================= test session starts =============================\nplatform win32 -- Python 3.13.10, pytest-9.1.1, pluggy-1.6.0\nrootdir: C:\\Users\\User\\SYNAPSE\\.claude\\worktrees\\h2-requalify\nconfigfile: pyproject.toml\ncollected 1 item\n\ntests\\test_solaris_wiring_verifiers.py F                                 [100%]\n\n================================== FAILURES ===================================\n_____________ test_set_purpose_distinguishes_applied_from_skipped _____________\ntests\\test_solaris_wiring_verifiers.py:200: in test_set_purpose_distinguishes_applied_from_skipped\n    assert check.ok is True, check.detail\nE   AssertionError: execute() returns status=\"set\" on 2 distinct paths (F7: applied and not-applied are indistinguishable)\nE   assert False is True\nE    +  where False = <Check status_unambiguous FAIL: execute() returns status=\"set\" on 2 distinct paths (F7: applied and not-applied are indistinguishable)>.ok\n============================== warnings summary ===============================\n<frozen importlib._bootstrap>:488\n  <frozen importlib._bootstrap>:488: Warning: OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ===========================\nFAILED tests/test_solaris_wiring_verifiers.py::test_set_purpose_distinguishes_applied_from_skipped\n======================== 1 failed, 1 warning in 0.26s =========================\n"
+   },
+   "full_set_run": {
+    "summary": "2 failed, 182 passed, 1 warning in 2.21s",
+    "passed": 182,
+    "failed": 2,
+    "failing": [
+     "tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live",
+     "tests/test_solaris_wiring_verifiers.py::test_set_purpose_distinguishes_applied_from_skipped"
+    ]
+   },
+   "per_target": {
+    "tests/test_solaris_wiring_verifiers.py::test_set_purpose_distinguishes_applied_from_skipped": "KILLED"
+   },
+   "collateral": [
+    "tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live"
+   ],
+   "verdict": "ALL_TARGETS_KILLED"
+  }
+ ],
+ "classification": {
+  "detects_count": 31,
+  "surviving_mutation_count": 3,
+  "host_fact_count": 6,
+  "detects": [
+   {
+    "pin": "tests/solaris/test_component_builder.py::TestParentKeyConvergence",
+    "killed_by": [
+     "M7"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_create_variants.py::TestF6HonestStatus",
+    "killed_by": [
+     "M5"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_import_megascans.py::TestParentKeyConvergence",
+    "killed_by": [
+     "M8"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_component_builder_creates_internal_nodes_live",
+    "killed_by": [
+     "M14"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live",
+    "killed_by": [
+     "M15"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live",
+    "killed_by": [
+     "M16"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live",
+    "killed_by": [
+     "M13"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_f10_componentbuilder_type_is_absent_on_this_build",
+    "killed_by": [
+     "M10"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_f3_megascans_material_reference_is_wired_live",
+    "killed_by": [
+     "M1"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_f5_geometry_variants_node_reaches_terminal_live",
+    "killed_by": [
+     "M3"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_f6_create_variants_status_is_honest_live",
+    "killed_by": [
+     "M5"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_f7_set_purpose_authors_a_real_usd_purpose_live",
+    "killed_by": [
+     "M6"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_f7_set_purpose_does_not_report_success_when_nothing_set_live",
+    "killed_by": [
+     "M6"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_f8_component_builder_honours_parent_path_live",
+    "killed_by": [
+     "M7"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_f8_import_megascans_honours_parent_path_live",
+    "killed_by": [
+     "M8"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_f8_scene_template_honours_parent_path_live",
+    "killed_by": [
+     "M9"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_f9_import_megascans_completes_live",
+    "killed_by": [
+     "M2"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_f9_import_megascans_ingests_real_geometry_live",
+    "killed_by": [
+     "M2"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_material_variants_are_wired_live",
+    "killed_by": [
+     "M4"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_scene_template_chains_sop_imports_sequentially_live",
+    "killed_by": [
+     "M17"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_scene_template_creates_full_chain_live",
+    "killed_by": [
+     "M19"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_scene_template_is_idempotent_live",
+    "killed_by": [
+     "M18"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live",
+    "killed_by": [
+     "M20"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_set_purpose_last_write_is_the_one_that_composes_live",
+    "killed_by": [
+     "M6"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_live_wiring.py::test_set_purpose_survives_the_componentoutput_sink_live",
+    "killed_by": [
+     "M6"
+    ]
+   },
+   {
+    "pin": "tests/solaris/test_scene_template.py::TestF8ParentPathConvergence",
+    "killed_by": [
+     "M9"
+    ]
+   },
+   {
+    "pin": "tests/test_solaris_tool_registration.py",
+    "killed_by": [
+     "M11"
+    ]
+   },
+   {
+    "pin": "tests/test_solaris_wiring_verifiers.py::test_every_tool_the_audit_claims_is_accounted_for",
+    "killed_by": [
+     "M11"
+    ]
+   },
+   {
+    "pin": "tests/test_solaris_wiring_verifiers.py::test_import_megascans_is_dispatchable_and_nothing_is_gated",
+    "killed_by": [
+     "M11"
+    ]
+   },
+   {
+    "pin": "tests/test_solaris_wiring_verifiers.py::test_set_purpose_distinguishes_applied_from_skipped",
+    "killed_by": [
+     "M21"
+    ]
+   },
+   {
+    "pin": "tests/test_solaris_wiring_verifiers.py::test_tool_audit_is_a_document_not_a_tool",
+    "killed_by": [
+     "M12"
+    ]
+   }
+  ],
+  "SURVIVING_MUTATION": [
+   {
+    "pin": "tests/test_solaris_wiring_verifiers.py::test_megascans_material_reference_is_orphaned",
+    "survived": [
+     "M1"
+    ]
+   },
+   {
+    "pin": "tests/test_solaris_wiring_verifiers.py::test_variant_materials_are_wired_statically",
+    "survived": [
+     "M4"
+    ]
+   },
+   {
+    "pin": "tests/test_solaris_wiring_verifiers.py::test_variant_set_reaches_the_terminal",
+    "survived": [
+     "M3"
+    ]
+   }
+  ],
+  "host_fact_unmutatable_by_design": [
+   "tests/solaris/test_live_wiring.py::test_host_is_the_pinned_build",
+   "tests/solaris/test_live_wiring.py::test_lop_category_resolves_live",
+   "tests/solaris/test_live_wiring.py::test_f7_componentgeometry_exposes_no_purpose_parm_live",
+   "tests/solaris/test_live_wiring.py::test_copy_nodes_to_carries_outside_inputs_live",
+   "tests/test_solaris_wiring_verifiers.py::test_catalog_is_the_pinned_live_build",
+   "tests/test_solaris_wiring_verifiers.py::test_componentbuilder_is_absent_from_the_live_catalogue"
+  ]
+ },
+ "pins_targeted": 34
+}

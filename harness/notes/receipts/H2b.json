@@ -1,0 +1,286 @@
+{
+ "schema": "receipt/v1",
+ "leg": "H2b",
+ "title": "Re-qualify F1-F11 against live 22.0.368; mutation-test every pin; close Q2 bucket 2",
+ "harness": "REPAIR-01",
+ "branch": "repair/h2-requalify",
+ "head": "c1d194b (working tree clean; no commit made by this leg)",
+ "status": "green_with_findings",
+ "status_note": "Describes what happened (Law 3). All three parts ran to completion on the live build and the tree is byte-clean. Three oracle clauses are MET and one is MET_IN_PART and says so plainly: `pytest -k solaris` is 0-failed on the gate interpreter but carries 6 pre-existing pytest-asyncio ENVIRONMENT failures on the shipping interpreter, and the collected count HOLDS rather than strictly increases because Part B's instruction is to REPORT decorations, not rewrite them - this leg deliberately adds no tests. Three delegated attempts at Part A were discarded as contaminated and Part A was ultimately executed directly by the orchestrator; that is recorded as findings H2b-F1/F2 rather than hidden.",
+
+ "model": "claude-opus-5[1m]",
+ "settings_profile": "worktree-interactive (.claude/settings.json) - NOT harness/agent-settings.json and NOT harness/relay-settings.json. Recorded as-run per R25: this leg ran as the interactive session inside the worktree, a wider fence than either harness profile. It ran pytest and hython directly, so suite evidence is admissible under Article V; the fence is named so the reader can weigh it rather than assume it. The Part-A results USED here were produced by the orchestrator session itself, not by subagents.",
+
+ "headline_integers": {
+  "phantom_count": 1,
+  "surviving_mutation_count": 3,
+  "_phantom_definition": "findings whose PREMISE was never true on this build - the finding was wrong when written. Distinct from the 8 findings that were true and have since been repaired; conflating those two would have reported 9 and meant nothing.",
+  "_surviving_definition": "pins whose OWN targeted mutation left them green. Pins that no mutation aimed at are coverage debt, counted separately (there are 0 remaining), and never counted as decorations."
+ },
+
+ "gate_0_res_verification": {
+  "why": "The brief forbids running any re-probe against a stubbed hou. RES landed on repair/fake-hou-residency and was NOT an ancestor of this branch, so it was integrated by cherry-pick (c0cc415, 0b5806c -> 138915e, c1d194b). Cherry-pick, not merge: the brief's fence says never merge.",
+  "verdict": "MET - two-sided and reproduced, not read from RES.json",
+  "tier": "VERIFIED-RUNTIME",
+  "positive_control_pre_res": {
+   "tree": "detached worktree at 70ed8ef (pre-RES)",
+   "command": "hython3.13 -m pytest tests/panel/test_theme_source.py tests/solaris/test_live_wiring.py -q",
+   "result": "18 failed, 17 passed; 18 x \"AttributeError: 'Parm' object has no attribute 'set'\"",
+   "log": "harness/notes/h2b/gate0_control_prefix.log"
+  },
+  "post_res": {
+   "tree": "c1d194b (this branch, RES present)",
+   "command": "same",
+   "result": "35 passed; 0 AttributeError",
+   "log": "harness/notes/h2b/gate0_composed.log"
+  },
+  "whole_suite_confirmation": {
+   "note": "R42's release condition is about the suite, not a 2-file pairing, so it was also measured at full scale.",
+   "parm_set_attributeerrors_in_full_shipping_run": 0,
+   "tests_solaris_failures_in_full_shipping_run": 0,
+   "producer": "grep -c \"object has no attribute 'set'\" harness/notes/h2b/baseline_shipping.log"
+  },
+  "res_delta_recorded": "RES.json reports 17 failures; this leg's own pairing measures 18. Different composition, different producer - 18 is what THIS leg measured and is what is used below. Not reconciled to RES's number."
+ },
+
+ "suite": {
+  "gate_interpreter": {
+   "python": "3.14.2 (system)",
+   "before": "4889 passed, 0 failed, 137 skipped",
+   "after": "4889 passed, 0 failed, 137 skipped",
+   "producer": "python -m pytest tests/ -q -p no:cacheprovider",
+   "log": "harness/notes/h2b/baseline_gate.log",
+   "commandment_7": "HOLDS. No test weakened, skipped, xfailed or deleted. Count does not increase because this leg reports decorations rather than rewriting them (Part B instruction)."
+  },
+  "shipping_interpreter": {
+   "python": "hython3.13 / Houdini 22.0.368",
+   "result": "4754 passed, 99 failed, 122 skipped, 8 errors, 3 collection errors",
+   "producer": "hython3.13 -m pytest -q --continue-on-collection-errors",
+   "log": "harness/notes/h2b/baseline_shipping.log",
+   "note": "Unchanged by this leg. The 99 are the pre-existing Q2 environment/harness buckets; R47 measured that class as 88% environment. Not this leg's to close."
+  }
+ },
+
+ "oracle": {
+  "clause_1_every_finding_carries_a_verdict_and_anchor": {
+   "verdict": "MET",
+   "detail": "11/11 findings carry CONFIRMED | REFUTED | UNVERIFIABLE, a CURRENT file:line anchor, an evidence tier, a producer command, a verbatim probe excerpt, a same-class positive control (Ruling 50), and an explicit statement of how the probe could have returned the other answer (Law 1). 0 UNVERIFIABLE.",
+   "producer": "hython harness/notes/h2b/requalify_f1_f11.py -> harness/notes/h2b/requalify_f1_f11.json"
+  },
+  "clause_2_every_pin_has_a_recorded_mutation_result": {
+   "verdict": "MET",
+   "detail": "38 F1-F11-tagged pins enumerated by AST across all 8 pin files. 32 killed by a targeted mutation, 3 survived, 3 host-fact (assert a property of the HOST; no SYNAPSE source edit can falsify them). UNCOVERED = 0.",
+   "producer": "python harness/notes/h2b/mutation_matrix_h2b.py -> mutation_matrix_h2b.json; coverage accounting -> harness/notes/h2b/pin_coverage.json"
+  },
+  "clause_3_pytest_k_solaris_zero_failed_count_increases": {
+   "verdict": "MET_IN_PART",
+   "gate_interpreter": "424 passed, 0 failed, 29 skipped - 0 failed MET",
+   "shipping_interpreter": "445 passed, 6 failed, 1 skipped, 3 collection errors - 0 failed NOT met",
+   "the_6_failures": "tests/test_solaris_ordering.py (5) + tests/test_autonomy_validator.py::test_solaris_ordering_clean (1). ALL SIX are 'async def functions are not natively supported' - pytest-asyncio absent on the shipping interpreter. Q2 bucket 1, ENVIRONMENT class, present in the pre-leg baseline, green on the gate interpreter, and unrelated to Solaris wiring or to F1-F11. Not introduced by this leg and not repaired by it: installing packages into the Houdini interpreter mid-leg would change the instrument being measured.",
+   "count_direction": "HOLDS at 424, does not strictly increase. This leg adds no tests by design - the brief's Part B says a pin surviving its own mutation must be REPORTED, not rewritten. Satisfying 'strictly increases' would have required doing the repair this leg was told not to do. Flagged rather than fudged (Law 7).",
+   "producer": "python -m pytest -k solaris -q --continue-on-collection-errors  /  hython3.13 -m pytest -k solaris -q --continue-on-collection-errors"
+  },
+  "clause_4_gate_suite_4881_plus_zero_failed": {
+   "verdict": "MET",
+   "detail": "4889 passed, 0 failed, 137 skipped. Floor 4881 held with +8.",
+   "producer": "python -m pytest tests/ -q -p no:cacheprovider"
+  }
+ },
+
+ "part_a_requalification": {
+  "method": "Executed directly by the orchestrator under hython 22.0.368 after three delegated attempts were discarded (see H2b-F1/F2). Every absence verdict carries a same-class positive control per Ruling 50; every verdict states its Law-1 failure condition.",
+  "producer": "hython harness/notes/h2b/requalify_f1_f11.py",
+  "artifact": "harness/notes/h2b/requalify_f1_f11.json",
+  "tally": {"CONFIRMED": 2, "REFUTED_phantom": 1, "REFUTED_repaired": 8, "UNVERIFIABLE": 0},
+  "verdicts": [
+   {"id": "F1", "verdict": "REFUTED", "kind": "repaired", "tier": "VERIFIED-RUNTIME",
+    "anchor": "python/synapse/mcp/_tool_registry.py:743,776,803,825,839",
+    "truth": "All five synapse_solaris_* tools are in TOOL_NAMES and all five impl modules import with validate/plan/execute present. The family moved out of the repo-root shadow tree synapse/mcp/tools/solaris/ (which no longer exists) into the installable package at python/synapse/mcp/tool_impls/solaris/. Premise was TRUE when written; repaired by SR1 M1/M5.",
+    "control": "a fabricated tool name is correctly absent from TOOL_NAMES"},
+   {"id": "F2", "verdict": "CONFIRMED", "kind": "n/a", "tier": "VERIFIED-STATIC",
+    "anchor": "python/synapse/mcp/tool_impls/solaris/schema_tool_audit.py present; tool_audit.py absent; python/synapse/validation/solaris/verify_tool_audit.py:34",
+    "truth": "Still five tools plus one design document. tool_audit has no implementation module and is not in the package __all__. HAS_IMPLEMENTATION is a hardcoded literal but is compared against a live filesystem probe, so the pin CAN fail - proven by mutation M12.",
+    "control": "the identical existence probe finds component_builder.py"},
+   {"id": "F3", "verdict": "REFUTED", "kind": "repaired", "tier": "VERIFIED-RUNTIME",
+    "anchor": "python/synapse/mcp/tool_impls/solaris/import_megascans.py:336-337",
+    "truth": "Live, componentmaterial.inputs() = ['.../geo_f3rock', '.../mtl_ref_f3rock'] - input 1 IS wired. Premise was TRUE when written; repaired. The static verifier still reports the orphan because verify_import_megascans.EXPECTED_TOPOLOGY is a hand-written literal never updated after the repair; that is why two pins disagree about F3 and both pass.",
+    "control": "the same inputs() call reports input 0 wired to the componentgeometry"},
+   {"id": "F4", "verdict": "REFUTED", "kind": "phantom", "tier": "REFUTED-LIVE",
+    "anchor": "python/synapse/mcp/tool_impls/solaris/create_variants.py:182-199",
+    "truth": "THE PHANTOM. hou.copyNodesTo DOES carry input connections originating OUTSIDE the copied set on 22.0.368: copying a single wired node alone yields inputs=['/stage/h2b_f4/c/geo_base']. F4's stated mechanism was false when written, so the variant materials were never unwired for that reason. The rewiring 'fix' was a no-op and its test could not fail - this is the defect Ruling 34 names. Current source carries no rewiring loop and the pin has been re-aimed at the real host contract.",
+    "control": "the source node was verifiably wired before the copy (mat.inputs()[0] = /stage/h2b_f4/c/geo_base)"},
+   {"id": "F5", "verdict": "REFUTED", "kind": "repaired", "tier": "VERIFIED-RUNTIME",
+    "anchor": "python/synapse/mcp/tool_impls/solaris/create_variants.py:243-250",
+    "truth": "geo_variants now reaches downstream (outputs=['mat_base']) via the consumer-steal block. Premise was TRUE when written; repaired. Precision note: the component still presents two terminals, ['output0','output_base'], but output0 is the subnet's own output node - geo_variants itself is no longer a terminal, which is the specific defect F5 named.",
+    "control": "the same outputs() call reports the base componentgeometry as having outputs"},
+   {"id": "F6", "verdict": "REFUTED", "kind": "repaired", "tier": "VERIFIED-RUNTIME",
+    "anchor": "python/synapse/mcp/tool_impls/solaris/create_variants.py:229-232,254-261,282-283",
+    "truth": "The bare `except Exception: pass` around the variant-merge and explorevariants creations is gone and the outer handler re-raises. Live: status='created' AND the explorevariants node was actually built. Premise was TRUE when written; repaired. Ruling 14 / Law 3 satisfied.",
+    "control": "mutation M5 reinstated the swallow and both F6 pins went red"},
+   {"id": "F7", "verdict": "REFUTED", "kind": "repaired", "tier": "VERIFIED-RUNTIME",
+    "anchor": "python/synapse/mcp/tool_impls/solaris/set_purpose.py:304-366",
+    "truth": "TWO claims, different answers. (a) STANDS: componentgeometry exposes no purpose parm on 22.0.368 - top-level matches [] and interior (sopnet/geo) matches []. (b) REPAIRED: the tool no longer writes that parm; it authors through a configureprimitive LOP and the purpose is readable off the COOKED STAGE (status='set', UsdGeom purpose readback='proxy'). The Ruling-14 lie is gone. The finding's root observation stands; its consequence is repaired.",
+    "control": "the identical parms() sweep finds 'sourceinput' on the same node, so the sweep can find parms that exist - the purpose absence is real, not a broken probe (Ruling 50)"},
+   {"id": "F8", "verdict": "REFUTED", "kind": "repaired", "tier": "VERIFIED-RUNTIME",
+    "anchor": "PARENT_KEYS in component_builder.py:83, scene_template.py:59, import_megascans.py:47",
+    "truth": "The three parent-taking tools now share PARENT_KEYS=('parent_path','parent'); create_variants and set_purpose take component_path, so the finding never applied to them. The divergence F8 described is repaired. RESIDUAL, and it is the harm F8 actually named: the SILENT DEFAULT SURVIVES - see H2b-F5.",
+    "control": "the correct key parent_path demonstrably built into the requested lopnet"},
+   {"id": "F9", "verdict": "REFUTED", "kind": "repaired", "tier": "VERIFIED-RUNTIME",
+    "anchor": "python/synapse/mcp/tool_impls/solaris/import_megascans.py:215-219",
+    "truth": "The tool COMPLETES on 22.0.368 (status='created') and builds the usdimport inside the writable interior subnet geo_<asset>/sopnet/geo/import_usdc, which cooks real geometry from the .usdc. Premise was TRUE when written; repaired by retargeting off the locked HDA.",
+    "control": "the locked-HDA constraint is UNCHANGED on this build - createNode directly on a componentgeometry still raises hou.PermissionError: Cannot create a node inside a locked asset. Without this control 'it completes now' could have meant the constraint simply vanished, which would have made the verdict UNVERIFIABLE rather than REFUTED."},
+   {"id": "F10", "verdict": "CONFIRMED", "kind": "n/a", "tier": "VERIFIED-RUNTIME",
+    "anchor": "python/synapse/mcp/tool_impls/solaris/component_builder.py:53-71,265-286",
+    "truth": "`componentbuilder` is NOT a LOP node type on 22.0.368. Direct lookup returns None AND a substring scan of all 218 live LOP type names finds [] - so it is not merely a namespaced-name miss. _has_native_componentbuilder() returns False, making Path A unreachable; the subnet fallback is the only working strategy. Finding stands as written.",
+    "control": "the identical hou.nodeType lookup finds componentgeometry, componentmaterial, componentoutput and sublayer - the probe can find LOP types that exist (Ruling 50 satisfied)"},
+   {"id": "F11", "verdict": "REFUTED", "kind": "repaired", "tier": "VERIFIED-RUNTIME",
+    "anchor": "pyproject.toml testpaths; tests/solaris/test_live_wiring.py:39-51",
+    "truth": "The orphan tree is retired - synapse/tests/solaris/ holds no test modules. The Solaris tests live at tests/solaris/ (6 modules) inside testpaths and ARE collected. The MagicMock half is repaired too: test_live_wiring.py gates on host identity (the planted canonical fake carries __synapse_canonical__), so it cannot silently assert against a mock. Premise was TRUE when written; repaired by SR1 M3.",
+    "control": "the interpreter split was run both ways - see part_c_bucket_2.gate_control"}
+  ]
+ },
+
+ "part_b_mutation_matrix": {
+  "standard": "R34 - every regression pin for a repaired defect must be shown to FAIL against a deliberately broken implementation. A test that passes on both the fix and its inverse is a decoration.",
+  "producer": "python harness/notes/h2b/mutation_matrix_h2b.py",
+  "artifacts": ["harness/notes/h2b/mutation_matrix_h2b.py", "harness/notes/h2b/mutation_matrix_h2b.json", "harness/notes/h2b/pin_coverage.json"],
+  "interpreter": "hython3.13 / Houdini 22.0.368",
+  "mutations": 21,
+  "baseline_control": "184 passed, 0 failed (whole F1-F11 pin universe, unmutated)",
+  "pins_targeted": 34,
+  "detects": 31,
+  "surviving_mutation": 3,
+  "host_fact": 6,
+  "f_tagged_pins_total": 38,
+  "f_tagged_uncovered": 0,
+  "method_corrections_made_mid_leg": [
+   "The headline counts ONLY pins whose OWN targeted mutation left them green. An earlier framing ('did any of N mutations ever turn this pin red') would have scored every pin no mutation aimed at as a decoration and inflated the number badly; that framing was rejected.",
+   "Control and mutated runs must differ ONLY in the mutation. The first implementation ran the control on the TARGET subset but judged the mutation on the FULL 184-pin set - an asymmetric experiment that produced two FALSE 'SURVIVED' verdicts (M8/TestParentKeyConvergence, M14/creates_internal_nodes). Both were hand-checked, both died when their own mutation was run against their own targets, and the instrument was fixed rather than the verdicts accepted. See H2b-F3.",
+   "Every edit asserts its anchor occurs EXACTLY ONCE and that the file bytes changed on disk. A mutation that silently fails to apply is indistinguishable from a pin that detected nothing.",
+   "Restore is byte-exact (read_bytes/write_bytes). Text-mode restore re-translated newlines on Windows and produced a false RESTORE FAILED on a file that was never really changed."
+  ],
+  "SURVIVING_MUTATION": [
+   {"pin": "tests/test_solaris_wiring_verifiers.py::test_megascans_material_reference_is_orphaned",
+    "finding": "F3", "mutation": "M1 (remove the componentmaterial input-1 wiring)",
+    "evidence": "control 2 passed; mutated 1 failed / 1 passed - the LIVE pin went red, this pin stayed green",
+    "why": "It asserts on verify_import_megascans.EXPECTED_TOPOLOGY, a hand-written literal in the verifier module. No change to import_megascans.py can move it. It also asserts check.ok is False - i.e. it pins F3 as STILL BROKEN - while the live pin proves the opposite, and both pass."},
+   {"pin": "tests/test_solaris_wiring_verifiers.py::test_variant_set_reaches_the_terminal",
+    "finding": "F5", "mutation": "M3 (remove the consumer-steal block)",
+    "evidence": "control 2 passed; mutated 1 failed / 1 passed",
+    "why": "Reads EXPECTED_TOPOLOGY_GEOMETRY, a literal. Its own docstring claims 'the assertion still fails if the consumer-steal at create_variants.py:204-219 is reverted' - that claim is REFUTED-LIVE by M3."},
+   {"pin": "tests/test_solaris_wiring_verifiers.py::test_variant_materials_are_wired_statically",
+    "finding": "F4", "mutation": "M4 (explicitly unwire each duplicated variant material)",
+    "evidence": "control 2 passed; mutated 1 failed / 1 passed",
+    "why": "unwired_variant_materials() reads EXPECTED_TOPOLOGY_MATERIAL, a literal. Its docstring claims it 'still fails if the base-input replay at create_variants.py:168-170 is reverted' - that code does not exist (it was removed as a proven no-op) and the claim is REFUTED-LIVE by M4."}
+  ],
+  "the_pattern": "All three survivors are the SAME defect and it is the F4 species one layer up: a static verifier asserting against a hand-authored topology literal instead of against the tool source or the live graph. SR1 flipped the polarity of these assertions when the tools were repaired but did not remove the literal-vs-source disconnect, so they still cannot fail in response to the code they name. Two of them additionally carry docstrings that state a false failure condition."
+ },
+
+ "part_c_bucket_2": {
+  "ruling": "R43 - fake-hou residency goes to the head of H2; the bucket-2 tests share provenance and mechanism with F1-F11.",
+  "set_identified_by_measurement_not_inherited": {
+   "count": 18,
+   "producer": "grep '^FAILED' on this leg's own pre-RES control run -> harness/notes/h2b/bucket2_pins.txt",
+   "note": "Q2/R43 say ~17; this leg measures 18 in its own composition. The measured number is used."
+  },
+  "gate_control": {
+   "claim": "the live tier must EXECUTE against real hou and SKIP honestly against the planted fake - a skip is honest, a pass is a lie (Law 1)",
+   "system_python_3_14_2": "27 skipped, 0 passed - the canonical fake is detected and the tests decline to run",
+   "hython3_13_22_0_368": "27 passed - real hou, tests execute",
+   "verdict": "the gate works in both directions",
+   "producer": "python -m pytest tests/solaris/test_live_wiring.py -q  /  hython3.13 -m pytest tests/solaris/test_live_wiring.py -q"
+  },
+  "mutation_proof": {
+   "claim": "honest is not enough - each bucket-2 pin must also be shown capable of failing",
+   "result": "18/18 mutation-proven",
+   "detail": "10 were already covered by M1/M2/M6/M7/M8/M9; M13-M20 were added specifically to pair a mutation with each of the remaining 8.",
+   "producer": "harness/notes/h2b/mutation_matrix_h2b.json cross-referenced against bucket2_pins.txt"
+  },
+  "shipping_state": "tests/solaris/ = 128 passed, 0 failed on hython3.13; 0 Parm.set AttributeErrors anywhere in the full shipping run."
+ },
+
+ "findings": [
+  {"id": "H2b-F1", "tier": "VERIFIED-RUNTIME", "severity": "structural",
+   "anchor": "harness/notes/h2b/intrusion_evidence/*.patch",
+   "summary": "Instruction-level read-only fences do not hold. THREE separate delegated attempts at Part A ended with agents editing shared source in the orchestrator's worktree despite an explicit, repeated, reasoned READ-ONLY instruction. Attempt 1: an assayer built its own mutation harness and mutated live tool source while ten sibling agents were probing the same tree. Attempts 2 and 3: agents edited tests/conftest.py, tests/test_lop_flywheel.py and tests/test_m3_logs_doctor.py, and re-ran a mutation harness - in one case while holding an absolute path to a tree they had been told explicitly not to touch. Each attempt was discarded and the tree restored.",
+   "consequence": "Part A could not be delegated and was executed directly by the orchestrator. Constitution Article V already requires 'every parallel agent gets its own git worktree' - the first attempt violated that and it is the orchestrator's error, but attempts 2 and 3 HAD isolation and still leaked.",
+   "recommendation": "the fence must be structural (a tool-permission deny, as harness/agent-settings.json already does for its own files), not prose in a prompt. Prose is advisory to a model; a deny-list is not."},
+
+  {"id": "H2b-F2", "tier": "VERIFIED-RUNTIME", "severity": "structural",
+   "anchor": "git worktree list during run wf_cce57a2d-980",
+   "summary": "The Workflow tool's `isolation: 'worktree'` created all eleven agent worktrees at f90946d - that is master / v5.34.0, NOT the orchestrator's branch HEAD. Verified: `git merge-base --is-ancestor c0cc415 f90946d` is false, and tests/test_hou_reimport_guard.py is absent there.",
+   "consequence": "Every agent in that run probed a tree WITHOUT the RES fix, i.e. with the fake-hou residency live - precisely the condition the brief forbids as uninterpretable. The entire run was discarded on that ground alone, independently of the intrusion in H2b-F1.",
+   "recommendation": "an isolated worktree must be pinned to the dispatching branch's HEAD, and the agent must verify its own base before probing. This leg's working method - orchestrator creates the worktrees itself at a named SHA and asserts a fix-marker file exists in each before dispatch - is the pattern that worked."},
+
+  {"id": "H2b-F3", "tier": "VERIFIED-RUNTIME", "severity": "method",
+   "anchor": "harness/notes/h2b/mutation_matrix_h2b.py (control/mutated symmetry)",
+   "summary": "My own mutation instrument produced two FALSE 'surviving-mutation' verdicts before it was corrected. The control ran the TARGET subset while the mutated run used the FULL 184-pin set; under composition M8 and M14 did not surface, so two live pins were scored as decorations. Hand-running each mutation against its own targets killed both (M8 -> 3 failures, M14 -> 1 failure).",
+   "consequence": "Had this shipped uncorrected the headline surviving-mutation count would have been 5 instead of 3, and two healthy pins would have been libelled as decorations. It is the same class of defect this leg exists to find, occurring inside the instrument built to find it.",
+   "recommendation": "control and treatment must differ in exactly one variable. Adopted: the matrix now judges every mutation on the same subset its control ran, and uses the full-set run only to observe collateral."},
+
+  {"id": "H2b-F4", "tier": "VERIFIED-STATIC", "severity": "minor",
+   "anchor": "harness/notes/h2b/mutation_matrix_h2b.py restore loop",
+   "summary": "A mutation row with TWO edits to the same file overwrote its own saved original with the already-mutated bytes, so the restore left the first edit in the tree. Caught by the post-run `git diff` gate, NOT by the restore's own sha assertion - that assertion compared against the corrupted baseline and passed.",
+   "consequence": "one row (M21) left set_purpose.py modified; detected, fixed, re-run clean.",
+   "recommendation": "a self-check that validates against a value the same bug can corrupt is not a check. The external `git diff HEAD` gate is what caught it and should stay."},
+
+  {"id": "H2b-F5", "tier": "VERIFIED-RUNTIME", "severity": "MED",
+   "anchor": "python/synapse/mcp/tool_impls/solaris/component_builder.py:91-97 (_resolve_parent_path)",
+   "summary": "F8's NAMED HARM SURVIVES ITS OWN REPAIR. The parent-key divergence is fixed - all three parent-taking tools share PARENT_KEYS - but _resolve_parent_path still falls through to '/stage' for any unrecognised key. Live: component_builder.execute({'asset_name': ..., 'parentPath': <lopnet>}) raises nothing and builds into /stage, exactly the silent misdirection F8 described. Note import_megascans DOES reject unknown keys (validate raises 'unknown parameter(s)'), so the family is inconsistent in the half that matters.",
+   "why_it_matters": "F8 was filed LOW because the naming looked cosmetic; the silent default was the real defect and it is still live in at least one tool. A caller with a typo gets a component in the wrong network and a success status.",
+   "disposition": "reported, not repaired - this leg measures."},
+
+  {"id": "H2b-F6", "tier": "VERIFIED-RUNTIME", "severity": "LOW",
+   "anchor": "tests/solaris/test_live_wiring.py:376-391 (test_f9_import_megascans_ingests_real_geometry_live)",
+   "summary": "The pin asserts len(geo.points()) > 0 to prove the .usdc reached the SOP chain. Live, a 4-point mesh fixture cooks to ONE point, because usdimport produces a packed USD prim rather than unpacked geometry. The assertion passes, but it reads as 'the geometry arrived' when what it proves is 'a packed prim exists'. It is not a decoration - M2 kills it - but it is weaker than its wording.",
+   "disposition": "reported."}
+ ],
+
+ "for_ruling": [
+  {"id": "H2b-R1",
+   "question": "The three surviving-mutation pins: repair, retarget, or retire?",
+   "context": "test_megascans_material_reference_is_orphaned (F3), test_variant_set_reaches_the_terminal (F5) and test_variant_materials_are_wired_statically (F4) all assert against hand-written EXPECTED_TOPOLOGY literals in python/synapse/validation/solaris/verify_*.py and cannot fail in response to the tool source they name. The F3 one additionally asserts the defect is STILL PRESENT while the live pin proves it repaired.",
+   "options": "(a) re-aim each at the live graph, as SR1 did for the F4 live pin - Law 6's 'rewrite it to assert the behaviour at its real home'; (b) derive EXPECTED_TOPOLOGY from the tool's own plan() output so the literal cannot drift; (c) retire the static tier entirely now that the live tier exists and is mutation-proven.",
+   "why_escalated": "Article I - a value judgement between defensible options, and the brief explicitly forbids this leg from quietly rewriting them. (b) is my recommendation: it keeps a cheap no-Houdini tier and makes drift structurally impossible.",
+   "note": "Whichever is chosen, the F3 static pin is actively misleading TODAY: it encodes 'F3 is still broken' as a passing assertion."},
+
+  {"id": "H2b-R2",
+   "question": "Does the `pytest -k solaris` oracle clause mean the gate interpreter or the shipping interpreter?",
+   "context": "0 failed on the gate interpreter; 6 failed on the shipping interpreter, all six 'pytest-asyncio absent' (Q2 bucket 1, ENVIRONMENT, pre-existing, unrelated to Solaris). harness/supply_shipping_deps.ps1 exists and would close them.",
+   "why_escalated": "Closing them means installing packages into the Houdini interpreter - changing the instrument mid-measurement. R47 already owns that intervention class. Sequencing judgement, not an agent's to take."},
+
+  {"id": "H2b-R3",
+   "question": "Ruling 15 retired `parent`, but PARENT_KEYS still accepts it as an alias, and _resolve_parent_path still silently defaults to /stage on an unknown key (H2b-F5).",
+   "context": "import_megascans rejects unknown keys; component_builder does not. The convergence is real for the spelled keys and absent for the failure mode.",
+   "why_escalated": "Whether 'retired' means removed or aliased is a product decision, and whether an unknown parent key should raise is a caller-contract decision that binds beyond Solaris."},
+
+  {"id": "H2b-R4",
+   "question": "The read-only fence for dispatched agents (H2b-F1).",
+   "context": "Three attempts, three intrusions, despite escalating explicitness. Constitution Article V's worktree rule is necessary but was not sufficient - attempts 2 and 3 had their own worktrees and still wrote to the orchestrator's.",
+   "why_escalated": "It is a harness-architecture decision and touches harness/agent-settings.json, which is deny-listed from agent edit - so it is a ruling item, not a permission problem (Article I corollary)."}
+ ],
+
+ "artifacts": {
+  "part_a": ["harness/notes/h2b/requalify_f1_f11.py", "harness/notes/h2b/requalify_f1_f11.json"],
+  "part_b": ["harness/notes/h2b/mutation_matrix_h2b.py", "harness/notes/h2b/mutation_matrix_h2b.json", "harness/notes/h2b/pin_coverage.json"],
+  "part_c": ["harness/notes/h2b/bucket2_pins.txt"],
+  "gate_0": ["harness/notes/h2b/gate0_composed.log", "harness/notes/h2b/gate0_control_prefix.log"],
+  "suites": ["harness/notes/h2b/baseline_gate.log", "harness/notes/h2b/baseline_shipping.log", "harness/notes/h2b/baseline_k_solaris.log"],
+  "discarded_runs_preserved_as_evidence": [
+   "harness/notes/h2b/rogue_evidence/mutation_matrix_h2.py",
+   "harness/notes/h2b/rogue_evidence/mutation_matrix_h2.json",
+   "harness/notes/h2b/intrusion_evidence/agent_edits_to_orchestrator_tree.patch",
+   "harness/notes/h2b/intrusion_evidence/second_intrusion.patch",
+   "harness/notes/h2b/intrusion_evidence/agent_written_H2b.json"
+  ],
+  "note_on_discarded": "Law 4 - classify before you delete. The discarded agent artifacts are kept, not removed, and are NOT the basis of any number in this receipt. The agent-written H2b.json in particular was produced from a contaminated run and is preserved only as evidence; it is not this receipt."
+ },
+
+ "tree_state": "clean. `git diff HEAD` over python/ and tests/ is empty after every mutation run; no commit was made by this leg. RES was integrated by cherry-pick (138915e, c1d194b), not merge. Nothing pushed, merged or tagged.",
+
+ "resume_token": {
+  "skip": ["gate_0 (RES verified two-sided)", "part_a (11/11 verdicts with controls)", "part_b (21 mutations, 38/38 pins covered)", "part_c (18/18 mutation-proven, gate control both ways)"],
+  "redo_if": "the Houdini build changes from 22.0.368 (every live verdict and both positive-control sets are build-scoped), or python/synapse/validation/solaris/verify_*.py EXPECTED_TOPOLOGY literals are edited (that is what H2b-R1 governs), or tests/solaris/* gains a pin (re-run the matrix to keep f_tagged_uncovered at 0).",
+  "next": "H2b-R1 is the only item that changes code. It is a repair leg, not a measurement leg: re-aim or derive the three static verifier pins, then re-run harness/notes/h2b/mutation_matrix_h2b.py and require surviving_mutation_count == 0. H2b-R2/R3/R4 are rulings, not work."
+ }
+}

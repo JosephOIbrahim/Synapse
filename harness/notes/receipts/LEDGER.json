@@ -1,0 +1,279 @@
+{
+  "leg": "LEDGER",
+  "name": "LEDGER-MONETA SEAM",
+  "schema": "receipt/v1",
+  "status": "green",
+  "date": "2026-07-26",
+  "commit_at_run": "b2c2c04",
+  "branch": "repair/ledger-moneta-seam",
+  "worktree": ".claude/worktrees/ledger-moneta-seam",
+  "mode": "repair",
+
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "n/a - ORCHESTRATOR session, not a dispatched agent (pytest + git-read available in-session). The one dispatched agent (CRUCIBLE) ran under its .claude/agents/crucible.md definition.",
+  "agents": ["crucible"],
+
+  "brief": "harness/prompts/ledger.md",
+
+  "suite": {
+    "interpreter": "system python 3.14.2 (the GATE interpreter, per harness/verify/suite_baseline.json)",
+    "producer": "python -m pytest -q -p no:cacheprovider",
+    "before": 4881,
+    "after": 4917,
+    "delta": 36,
+    "failed": 0,
+    "skipped": 129,
+    "floor": 4881,
+    "note": "before/after measured on this worktree at b2c2c04. The committed ratchet floor (suite_baseline.json) is 4875 at merge-base; this branch already carried +6 from b2c2c04."
+  },
+
+  "oracle": {
+    "targeted": {
+      "producer": "python -m pytest -q -p no:cacheprovider -k \"ledger or moneta\"",
+      "before": "98 passed, 0 failed, 2 skipped",
+      "after": "134 passed, 0 failed, 2 skipped",
+      "verdict": "PASS - 0 failed, count strictly increases (+36)"
+    },
+    "mutation_battery": {
+      "producer": "harness/verify/mutate_ledger_moneta_seam.py",
+      "artifact": "harness/notes/mutation_ledger_moneta.json",
+      "result": "25/25 mutations caught, 0 survivors, exit 0, tree restored green",
+      "verdict": "PASS - every new pin demonstrated to FAIL against its mutation (R34)"
+    },
+    "gate_suite": {
+      "result": "4917 passed, 0 failed, 129 skipped",
+      "verdict": "PASS - holds above the 4881 floor with 0 failed"
+    },
+    "pragma_no_cover": {
+      "result": "none on the seam; the only remaining pragma in ledger.py is the pre-existing pxr ImportError guard at ledger.py:54, honestly annotated 'exercised via the no_pxr fixture'",
+      "verdict": "PASS",
+      "pinned_by": "tests/test_ledger_moneta_seam.py::TestSeamIsLive::test_seam_carries_no_coverage_pragma"
+    }
+  },
+
+  "defects_closed": [
+    {
+      "id": "D1",
+      "claim": "ledger._deposit_to_moneta was a hardcoded `return None` stub carrying `# pragma: no cover`, so no ledger record ever reached Moneta and no test could notice. The comment claimed 'default-off' but no flag existed.",
+      "fix": "Live seam gated on $SYNAPSE_MEMORY_BACKEND in (moneta, shadow) AND moneta_runtime.moneta_available(). Deposits a projected Memory into a process-wide MonetaBackedStore rooted at ledger_dir(). Reports outcome under deposit()['moneta'].",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/memory/ledger.py:421",
+      "evidence": "hython3.13 (Houdini 22.0.368) live deposit: ok=true, deposited=true, count=1, file written."
+    },
+    {
+      "id": "D2",
+      "claim": "$MONETA_SRC points at a live git worktree, so the memory substrate was 'whatever branch is checked out'. moneta_provenance() reported version=None (importlib.metadata has no distribution for a path-injected copy) and never the commit.",
+      "fix": "moneta_provenance() resolves the checked-out git SHA by reading git metadata FILES (no subprocess), cached per package root, bounded walk, refuses installed copies. Reported in the deposit metadata AND carried by the Memory as a moneta_rev tag.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/memory/moneta_runtime.py:196",
+      "evidence": "hython3.13: revision=2965e5dc1ce336749fecb38d46a2448ac164f97a, ref=refs/heads/main, source=git-loose-ref - identical to `git -C C:/Users/User/Moneta rev-parse HEAD`."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "LEDGER.F1",
+      "claim": "The two interpreters load DIFFERENT Moneta copies. hython 3.13.10 (the SHIPPING interpreter) has no ambient moneta, so the $MONETA_SRC fallback is the only path and the substrate IS the live C:/Users/User/Moneta/src worktree. System python 3.14.2 (the GATE interpreter) imports a pip copy from C:/Python314/Lib/site-packages/moneta and never consults $MONETA_SRC. The brief's Defect-2 premise is therefore true on the shipping interpreter and false on the gate interpreter.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/memory/moneta_runtime.py:32",
+      "severity": "blocker",
+      "note": "A finding written under the gate interpreter and one written under hython come from different substrates. provenance.revision + provenance.file now record which, honestly, per deposit."
+    },
+    {
+      "id": "LEDGER.F2",
+      "claim": "The revision walk was unbounded, so Moneta resolved from inside ANY enclosing git repo reported that repo's HEAD as the Moneta revision. Fabricated provenance is worse than absent provenance because it is trusted.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/memory/moneta_runtime.py:117",
+      "severity": "blocker",
+      "note": "Found by the mutation battery, not by review. First fix (site-packages guard + MAX_REVISION_WALK=3) was INCOMPLETE - CRUCIBLE showed a vendored copy at <repo>/vendor/moneta-src/moneta still inherited the host HEAD, and the pin covering only the site-packages sub-case made the class READ closed. Bound is now 1, which covers every real layout including the deployed <repo>/src, and revision_repo names the repository that answered."
+    },
+    {
+      "id": "LEDGER.F3",
+      "claim": "'18/18 mutations caught' was a number whose producer had come to disagree with it: the battery anchor `start.split(os.sep)` was hardened to `re.split(r'[\\\\/]', start)` AFTER the battery ran, so a re-run emitted 17/18 + ANCHOR-MISS while the committed artifact still recorded caught:true.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "harness/verify/mutate_ledger_moneta_seam.py:150",
+      "severity": "blocker",
+      "note": "Law 2. Found by CRUCIBLE. Anchors repaired, battery extended to 25 mutations, artifact regenerated from the final tree at 25/25."
+    },
+    {
+      "id": "LEDGER.F4",
+      "claim": "This is NOT the same root as open task 2.5. Task 2.5 ('Provenance proof: both land in agent.usd') is anchored at agent_state.py and concerns the agent.usd provenance writers; this seam is ledger.py -> the Moneta ECS. Fixing _deposit_to_moneta wires nothing in agent_state.py. They are the same SPECIES - 'mechanism built, writer never wired' - not the same root.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "python/synapse/memory/agent_state.py:1",
+      "severity": "note",
+      "answers": "the brief's explicit question"
+    },
+    {
+      "id": "LEDGER.F5",
+      "claim": "The claim 'provenance writers have NO live callers' is stale: 3 of 5 are dormant (log_routing_decision, log_handoff, log_integrity have no non-test callers), but write_verification IS called at handlers.py:1803 and create_task at handlers.py:1902.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "python/synapse/server/handlers.py:1803",
+      "severity": "debt",
+      "note": "Repeated verbatim in CLAUDE.md Phase 4, harness/notes/ledger_truth.json task 2.5, and harness/notes/receipts/L0.json finding L0.F2. See drift."
+    },
+    {
+      "id": "LEDGER.F6",
+      "claim": "The ledger's OWN agent.usd projection is also dormant on the live path. _project_to_usd only runs when the caller passes agent_usd_path, and the only live producer of ledger records - science/deposit.py:85 - calls deposit(rec) with no agent_usd_path. So /SYNAPSE/agent/ledger/ is never authored in production. This is materially relevant to task 2.5's exit criterion.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "python/synapse/science/deposit.py:85",
+      "severity": "blocker",
+      "note": "Deliberately NOT fixed in this leg - resolving where agent.usd lives for a zero-hou module is a separate wiring decision. See for_ruling FR4."
+    },
+    {
+      "id": "LEDGER.F7",
+      "claim": "deposit()'s honest status reached no consumer. science/deposit.py:85 discarded the return value and backfill() returned no substrate counter, so a permanently-failing Moneta leg would have reported a clean 'N deposited' / 'N files written'. A status nobody reads is the same defect as a stub nobody calls.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "python/synapse/science/deposit.py:85",
+      "severity": "blocker",
+      "note": "Found by CRUCIBLE. Both consumers now count and surface moneta_deposited / moneta_failures, each pinned with a positive AND a negative control."
+    },
+    {
+      "id": "LEDGER.F8",
+      "claim": "'deposited: True' did not mean durable. MonetaBackedStore.add() writes to the in-memory ECS; there is no per-deposit save, the snapshot daemon is deliberately not started, and the WAL is inert. A hard exit between deposit and teardown loses the row.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "python/synapse/memory/moneta_store.py:292",
+      "severity": "debt",
+      "note": "Found by CRUCIBLE. Status now carries `durable: False` + `durability` as separate machine-readable fields rather than one field and a footnote. Survivable because the per-record JSON file is the durable source of truth - but nothing re-derives Moneta from it. See for_ruling FR2."
+    },
+    {
+      "id": "LEDGER.F9",
+      "claim": "moneta_provenance() called importlib.metadata.version() on every invocation, i.e. on every ledger deposit. That scans installed-distribution metadata per call; a backfill of N records paid N scans.",
+      "truth": "VERIFIED-STATIC",
+      "anchor": "python/synapse/memory/moneta_runtime.py:60",
+      "severity": "debt",
+      "note": "Self-review finding. Version lookup is now cached per process alongside the revision; both caches clear together so a caller cannot read a spliced provenance."
+    },
+    {
+      "id": "LEDGER.F10",
+      "claim": "Moneta is append-only with no dedup key. Re-depositing the same finding yields ONE record file and TWO substrate rows sharing a Memory.id. backfill() re-run multiplies the substrate.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/memory/moneta_store.py:292",
+      "severity": "debt",
+      "note": "Pinned as KNOWN behaviour (test_redeposit_appends_and_is_not_claimed_as_unique) rather than left to be discovered in production. See for_ruling FR5."
+    },
+    {
+      "id": "LEDGER.F11",
+      "claim": "A docstring claimed the ledger store and the project store 'never contend' for Moneta's single-owner lock. False: point $SYNAPSE_LEDGER_DIR at the project storage dir and the second handle raises MonetaResourceLockedError. The separation is a property of the DEFAULT paths, not a guarantee.",
+      "truth": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/memory/ledger.py:379",
+      "severity": "debt",
+      "note": "Found by CRUCIBLE. Docstring corrected to state the condition. The failure surfaces as a reported error: status and never touches the file write."
+    }
+  ],
+
+  "crucible": {
+    "dispatched": "adversarial pass on the finished seam (Article IV: attacks what it did not build)",
+    "verdict": "2 BLOCKER, 5 REAL, 4 NIT, 3 categories HOLD",
+    "blockers_resolved": ["LEDGER.F2 (vendored-copy inheritance)", "LEDGER.F3 (stale battery anchor)"],
+    "real_resolved": ["LEDGER.F7 (consumers discarded status)", "LEDGER.F8 (durability honesty)", "LEDGER.F11 (false never-contend claim)", "revision cache staleness now stamped via revision_resolved_at", "LEDGER.F10 (duplicates) pinned as known behaviour"],
+    "held": [
+      "CONTRACT: file-first is unconditional. ledger_dir-as-file and an unwritable root both raise at write_report BEFORE the Moneta leg is reached; 2MB strings, CRLF, unicode, NUL, empty kind/ts all deposit; a lone surrogate returns deposited:False with the file written. Nothing delays or conditions step (a).",
+      "STATE LEAK: both test orders green (75 passed each way); 8 threads x 5 deposits = 40 files / 40 memories / 0 failures; mid-process $SYNAPSE_LEDGER_DIR repoint closes the old handle and rebuilds; close() idempotent; no orphaned URI lock reproducible.",
+      "PINS: no vacuous pin found among the 25 then-existing pins."
+    ],
+    "nits_accepted": [
+      "HEAD pointing at an annotated-tag ref would return the tag object SHA, not the commit. git does not normally leave HEAD in that state (detached-at-tag writes the commit SHA). Accepted, unfixed.",
+      "test_findings_resist_the_sleep_pass asserts _is_protected(memory), so it is blind to add()'s unprotected-quota fallback. It pins intent, which is the claim being made.",
+      "8 of 36 pins are @moneta_required and skip where Moneta is absent. A skip is honest (Article III, Law 1); a pass would be a lie."
+    ]
+  },
+
+  "for_ruling": [
+    {
+      "id": "FR1",
+      "decision": "MONETA_SRC packaging: pin Moneta to an installed artifact, or keep the worktree?",
+      "context": "packages/synapse.json:19 sets MONETA_SRC=$SYNAPSE_ROOT/../Moneta/src. That worktree is on branch main at 2965e5dc with 2 untracked files at root (attention_log.py, test_attention_log_gil_guard.py). Checking out a branch there silently changes SYNAPSE's memory behaviour.",
+      "recommendation": "Pin for release, keep the worktree for development - the two are not in tension if the package pins and a documented env override restores the worktree.",
+      "tradeoff": "PIN (wheel/tag): the substrate stops moving under SYNAPSE, provenance becomes exact rather than committed-only, and the shipping interpreter stops depending on a directory that exists only on Joe's machine. COST: Moneta changes need a rebuild+reinstall to reach SYNAPSE, which slows the tight co-development loop that produced Moneta in the first place. KEEP: instant iteration. COST: the substrate backing live memory is whatever is checked out plus uncommitted edits, and the SHA this leg added narrows but cannot close that - REVISION_SCOPE says so explicitly.",
+      "not_taken": "The brief forbids changing MONETA_SRC in this leg. Nothing was changed; this is reported only."
+    },
+    {
+      "id": "FR2",
+      "decision": "Build a Moneta reconciler from the per-record files, or accept the durability gap?",
+      "context": "LEDGER.F8. Moneta rows live in memory until close()/atexit. The per-record JSON files ARE durable and contain everything needed to rebuild, but nothing rebuilds them. A crash loses substrate rows silently while the files survive.",
+      "recommendation": "Build it - it is a short function (walk ledger_dir, deposit each record whose Memory.id is absent) and this repo keeps a crash harness precisely because hard exits happen.",
+      "tradeoff": "Reconciling on startup costs an O(n) scan per session. Not reconciling means recall silently under-reports findings after any crash, with no signal that it is doing so."
+    },
+    {
+      "id": "FR3",
+      "decision": "Wire recall over the ledger's Moneta store, or accept enrichment without a consumer?",
+      "context": "The seam now deposits findings into a store rooted at ledger_dir(). ledger_moneta_store() is public precisely so a reader has a named door. Today nothing reads it - synapse_recall/memory_query read the PROJECT store, a different URI.",
+      "recommendation": "Wire it, or the seam is verified-but-unused - the same shape as the defect this leg closed, one level up.",
+      "tradeoff": "Merging the two stores into one URI would give unified recall but reintroduces the single-owner lock contention this design avoids (LEDGER.F11). A federated read across both is the safer shape."
+    },
+    {
+      "id": "FR4",
+      "decision": "Where does agent_usd_path come from for the live ledger path? (task 2.5)",
+      "context": "LEDGER.F6. ledger.py is deliberately zero-hou, but agent.usd location is scene-scoped ($HIP). The only live producer passes nothing, so the USD projection never runs in production.",
+      "recommendation": "Resolve it the way ledger_dir() already resolves its root - an env var with a repo-relative default - so the zero-hou contract holds.",
+      "tradeoff": "An env-var default may point at a repo-level agent.usd rather than the scene's, which is wrong for per-scene provenance but right for a headless probe run. Picking one is a product call, not a code call."
+    },
+    {
+      "id": "FR5",
+      "decision": "Accept duplicate substrate rows on re-deposit, or dedupe?",
+      "context": "LEDGER.F10. Same finding twice = one file, two rows, same Memory.id.",
+      "recommendation": "Accept for now and dedupe at READ time by Memory.id - a write-time check is an O(n) scan per deposit, which is the wrong cost on the hot path.",
+      "tradeoff": "Read-time dedup keeps writes cheap but lets the substrate grow without bound across repeated backfills; the sleep pass will not prune these because ledger findings are SHOW-tier protected by design."
+    },
+    {
+      "id": "FR6",
+      "decision": "Is the gate interpreter measuring the shipping substrate?",
+      "context": "LEDGER.F1. The 4917-pass gate number was produced on python 3.14.2 against a PIP-installed Moneta. Artists run hython 3.13.10 against the MONETA_SRC worktree. The seam is proven live on both, but the suite number describes only the former.",
+      "recommendation": "Treat this as another instance of the already-open gate-vs-shipping split recorded in suite_baseline.json, not as a new problem - but do not cite the gate number as evidence about the shipping substrate.",
+      "tradeoff": "Adding a hython leg to the seam pins would measure the real substrate at the cost of a Houdini dependency in CI."
+    }
+  ],
+
+  "drift": [
+    {
+      "doc": "CLAUDE.md (Phase 4), harness/notes/ledger_truth.json (task 2.5), harness/notes/receipts/L0.json (L0.F2)",
+      "claim": "'provenance writers have NO live callers'",
+      "reality": "3 of 5 dormant; write_verification (handlers.py:1803) and create_task (handlers.py:1902) have live callers.",
+      "action": "Not corrected in this leg - three governing artifacts repeat it and correcting them is a docsurgeon scope. Recorded per LEDGER.F5.",
+      "structural": false
+    },
+    {
+      "doc": "python/synapse/memory/ledger.py module docstring (D-5), docs/RFC_agent_usd_ledger.md §10",
+      "claim": "'Moneta is optional/off (a no-op hook)'",
+      "reality": "The hook is live and gated. The ledger docstring was corrected in this leg; the RFC row still reads '(optionally) deposit to Moneta', which remains ACCURATE and was left alone.",
+      "structural": false
+    },
+    {
+      "doc": "harness/SYNAPSE_REPAIR_HEATS.md §2",
+      "claim": "'ORCHESTRATOR holds receipts only, never reads source.'",
+      "reality": "This brief (harness/prompts/ledger.md) assigns implementation to the ORCHESTRATOR directly ('Implement _deposit_to_moneta...'). Source was read and written in-session; one agent (CRUCIBLE) was dispatched for the adversarial pass. A harness may narrow this document, and this brief did.",
+      "action": "Recorded, not resolved. If the separation is meant to bind repair legs too, the brief and the heats doc need reconciling.",
+      "structural": true
+    }
+  ],
+
+  "artifacts": [
+    "python/synapse/memory/ledger.py",
+    "python/synapse/memory/moneta_runtime.py",
+    "python/synapse/science/deposit.py",
+    "docs/studio/DEPLOYMENT.md",
+    "tests/test_ledger_moneta_seam.py",
+    "harness/verify/mutate_ledger_moneta_seam.py",
+    "harness/notes/mutation_ledger_moneta.json",
+    "harness/notes/receipts/LEDGER.json"
+  ],
+
+  "commits": [],
+  "gates_touched": [],
+  "pushed": false,
+  "merged": false,
+  "tagged": false,
+
+  "resume_token": {
+    "skip": [
+      "Both defects are closed and proven VERIFIED-RUNTIME on hython 3.13.10 - do not re-litigate whether the seam deposits or whether the revision resolves.",
+      "The mutation battery is current at 25/25 against the final tree; re-run it rather than trusting this number if either source file changes.",
+      "The task-2.5 adjudication (LEDGER.F4) is settled: different root, same species."
+    ],
+    "next": [
+      "The work is UNCOMMITTED on repair/ledger-moneta-seam. Nothing was pushed, merged, or tagged (Gate C untouched).",
+      "for_ruling FR1-FR6 are batched and unanswered; FR2/FR3/FR4 are the ones that decide whether this seam becomes load-bearing or stays verified-but-unread.",
+      "LEDGER.F6 (ledger USD projection dormant) is the live remainder of task 2.5 and was deliberately left open."
+    ]
+  }
+}

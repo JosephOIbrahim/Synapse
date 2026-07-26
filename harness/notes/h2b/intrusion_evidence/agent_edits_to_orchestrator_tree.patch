@@ -1,0 +1,136 @@
+diff --git a/tests/conftest.py b/tests/conftest.py
+index 8280877..6feb09c 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -22,7 +22,39 @@ from unittest.mock import MagicMock
+ # table's stamp, the cp311 vendor .pyd) keep their own literals / the
+ # VENDOR_* constants so they track the artifact, not the env.
+ 
+-HOUDINI_BUILD = os.environ.get("SYNAPSE_TEST_HOUDINI_BUILD", "21.0.671")
++def _running_build() -> str:
++    """Resolve HOUDINI_BUILD to the build actually running (H2 / RES-R1).
++
++    The contract two lines above — "tests that pin against the RUNNING build
++    parametrize on HOUDINI_BUILD" — was violated by a bare literal default. A
++    real `hou` was resident (22.0.368) while this constant said 21.0.671, so
++    four tests asserted H21 facts against an H22 host. They had passed only
++    because a FAKE `hou` resolved back to H21 and agreed with the literal;
++    removing the fake residency (RES) unmasked them (RES-F7), and RES-R1
++    deposited the disposition here because H2 is the leg that can measure it.
++
++    Precedence: explicit override > live host > committed literal.
++    The literal survives for the gate interpreter, which has no `hou` at all —
++    there is no running build to read there, so nothing changes on that leg.
++    """
++    override = os.environ.get("SYNAPSE_TEST_HOUDINI_BUILD")
++    if override:
++        return override
++    try:
++        import hou  # noqa: PLC0415 - deliberately lazy; absent on the gate leg
++        # A fake/canonical `hou` must NOT be believed here: that is the exact
++        # mechanism that produced RES-F7. Only a module that reports a real
++        # version string is trusted.
++        if not getattr(hou, "__synapse_canonical__", False):
++            live = hou.applicationVersionString()
++            if isinstance(live, str) and live.count(".") == 2:
++                return live
++    except Exception:
++        pass
++    return "21.0.671"
++
++
++HOUDINI_BUILD = _running_build()
+ HOUDINI_BUILD_TUPLE = tuple(int(p) for p in HOUDINI_BUILD.split("."))
+ 
+ # Vendored-dependency ABI (python/synapse/_vendor) — tracks the committed
+diff --git a/tests/test_lop_flywheel.py b/tests/test_lop_flywheel.py
+index bafc901..853b72f 100644
+--- a/tests/test_lop_flywheel.py
++++ b/tests/test_lop_flywheel.py
+@@ -137,6 +137,29 @@ def _validate(p):
+     return GraphValidator(_AllExist(), _MockConn()).validate(p)
+ 
+ 
++def _remediation_for(node_type: str) -> str:
++    """The remediation the RESOLVED catalog declares for a known-absent type.
++
++    H2/RES-F7: these pins used to hardcode the H21 wording
++    ("use a cube with sy=0.01"). That passed only while a FAKE `hou` made the
++    loader fall back to the H21 catalog. On live 22.0.368 the loader correctly
++    resolves lop_solaris_knowledge_22.json, whose grid remediation is worded
++    differently ("...grid is a Sop type — use the plane LOP..."), so the pins
++    failed against a validator that was behaving correctly.
++
++    Deriving from the catalog keeps the pin build-agnostic WITHOUT weakening
++    it: it still fails if the validator stops emitting the remediation at all.
++    """
++    cat = load_lop_catalog()
++    assert cat, "no LOP catalog resolved — the pin below would be vacuous"
++    absent = (cat.get("content") or {}).get("known_absent") or {}
++    entry = absent.get(node_type) or {}
++    text = entry.get("remediation") or ""
++    # Law 1: an empty remediation would make `text in message` always true.
++    assert len(text) > 10, f"catalog has no usable remediation for {node_type!r}"
++    return text
++
++
+ _GEO = _node("geo", "sphere", "geo_sphere")
+ _MATLIB = _node("matlib", "materiallibrary", "matlib")
+ _ASSIGN = _node("assign", "assignmaterial", "assign_material")
+@@ -217,7 +240,8 @@ class TestLopOrdering:
+         p = _proposal([_node("g", "grid", "ground")], [])
+         report = _validate(p)
+         assert report.status == ValidationStatus.INVALID
+-        assert any("not a real LOP" in i.message and "cube with sy=0.01" in i.message
++        remediation = _remediation_for("grid")
++        assert any("not a real LOP" in i.message and remediation in i.message
+                    for i in report.errors), [e.message for e in report.errors]
+ 
+     def test_capitalized_grid_still_flagged(self):
+@@ -225,7 +249,8 @@ class TestLopOrdering:
+         # known-absent match is case-insensitive.
+         p = _proposal([_node("g", "Grid", "ground")], [])
+         report = _validate(p)
+-        assert any("not a real LOP" in i.message and "cube with sy=0.01" in i.message
++        remediation = _remediation_for("grid")
++        assert any("not a real LOP" in i.message and remediation in i.message
+                    for i in report.errors), [e.message for e in report.errors]
+ 
+     def test_existing_grid_node_not_flagged(self):
+diff --git a/tests/test_m3_logs_doctor.py b/tests/test_m3_logs_doctor.py
+index 1b76d71..fb59144 100644
+--- a/tests/test_m3_logs_doctor.py
++++ b/tests/test_m3_logs_doctor.py
+@@ -257,7 +257,31 @@ def test_checks_truth_contract(tmp_path, monkeypatch):
+ 
+ def test_symbol_table_check():
+     check = doctor._check_symbol_table()
+-    assert "21.0.671" in check["detail"]         # the committed build stamp
++    # H2/RES-F7: this used to hardcode "21.0.671". The doctor is per-major and
++    # correctly consults h<running major>_symbol_table.json, so under a live
++    # H22 host it reports the H22 stamp and the literal was simply stale — the
++    # pin passed only while a FAKE `hou` kept the running major at 21.
++    # Derive the expected stamp from the SAME table the doctor would pick, so
++    # the pin stays build-agnostic without weakening: it still fails if the
++    # doctor selects the wrong table or the committed stamp drifts.
++    import json as _json
++    import synapse as _synapse
++    from pathlib import Path as _Path
++
++    _data = (_Path(_synapse.__file__).resolve().parent
++             / "cognitive" / "tools" / "data")
++    try:
++        import hou as _hou
++        _major = str(_hou.applicationVersionString()).split(".", 1)[0]
++    except Exception:
++        _major = "21"                            # no host -> the h21 default
++    _table = _data / f"h{_major}_symbol_table.json"
++    if not _table.exists():
++        _table = _data / "h21_symbol_table.json"
++    _stamp = _json.loads(_table.read_text(encoding="utf-8"))["houdini_version"]
++
++    assert _stamp and _stamp.count(".") == 2     # guard: no vacuous substring
++    assert _stamp in check["detail"]             # the committed build stamp
+     assert check["status"] != "fail"             # absent hou is not a failure
+ 
+ 

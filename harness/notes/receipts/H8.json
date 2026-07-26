@@ -1,0 +1,196 @@
+{
+ "schema": "receipt/v1",
+ "leg": "H8",
+ "title": "The ruling audit — 78 rulings, one author, first second reader",
+ "harness": "REPAIR-HEATS-01",
+ "status": "green",
+ "status_note": "Green means the oracle was satisfied, not that the document is healthy. All 78 rulings carry a verdict, the positive control passed on both criteria, and no edit was made to CTO_RULINGS_01.md. What the audit FOUND is in the_headline.",
+
+ "model": "claude-opus-5[1m]",
+ "settings_profile": "harness/readonly-settings.json",
+ "commit_at_run": "a64033d",
+ "mode": "read-only audit; zero tracked files modified",
+
+ "the_headline": {
+  "unenforced_count": 31,
+  "unenforced_count_note": "Primary verdict. 31 of 78 rulings (40%) create an obligation with no mechanism in the tree that could fail if it were violated or left undone. This is the integer the leg exists to produce.",
+  "unenforced_any_basis": 46,
+  "unenforced_any_basis_note": "46 of 78 (59%) are UNENFORCED as primary verdict OR carry it in also_applies OR have enforcement none/unmerged_only. The wider number is the honest one for 'how much of this document is intention'.",
+  "rulings_with_no_mechanism_on_this_branch": 41,
+  "the_sentence": "A document whose most-repeated finding is that structure beats intention enforces 31 of its own 78 rulings with intention.",
+  "producer": "harness/notes/h8/build_ledger.py then assemble_audit.py, over the sweep + adjudication journals. No count hand-entered."
+ },
+
+ "positive_control": {
+  "result": "PASS",
+  "reported_first": true,
+  "sensitivity": "4 of 4 planted known-wrong rulings (R15, R48, R58, R64) flagged by all three lenses independently; 12 of 12 lens-verdicts non-SOUND. No lens was told which rulings were known-wrong or that any were.",
+  "specificity": "PASS — R14, R35, R60, R75 returned SOUND unanimously. A method that flagged all twelve would have 'caught' all four and proved nothing (Law 1 applied to the audit).",
+  "found_beyond_the_control": ["R50", "R70"],
+  "detail": "harness/notes/h8/positive_control.md"
+ },
+
+ "counts": {
+  "SOUND": 22,
+  "EVIDENCE_FAILS": 12,
+  "CONTRADICTED": 0,
+  "SUPERSEDED_UNMARKED": 13,
+  "SCOPE_ERROR": 0,
+  "UNENFORCED": 31,
+  "UNFALSIFIABLE": 0,
+  "total": 78,
+  "note": "Primary-verdict partition, sums to 78. Precedence masks lower verdicts on the same ruling; any-basis counts are SUPERSEDED_UNMARKED 21, EVIDENCE_FAILS 13, CONTRADICTED 4, SCOPE_ERROR 3, UNFALSIFIABLE 1."
+ },
+
+ "agents": [
+  {"role": "crucible x8", "output": "evidence attack, rulings 1-78 in batches of ~10; every cited anchor opened, git history used to establish what it said on 2026-07-25/26"},
+  {"role": "sidefx-cto x2", "output": "outside-CTO lens on all 78; load-bearing vs decoration; the enforcement census"},
+  {"role": "h22-adjudicator x2", "output": "supersession map + contradiction/scope-drift hunt; 105 cross-reference pair rows"},
+  {"role": "crucible x3 (verify)", "output": "adversarial refutation of 30 contested rulings"},
+  {"role": "crucible x3 (final adjudication)", "output": "refuted all three untested cross-lens claims (R2, R12, R31)"},
+  {"role": "crucible x2 + h22-adjudicator x1 (control)", "output": "blind positive control on 12 rulings"}
+ ],
+
+ "findings": [
+  {
+   "id": "H8-F1",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "harness/relay-settings.json:65, harness/readonly-settings.json:46",
+   "severity": "structural",
+   "summary": "Unmarked supersession is structurally guaranteed, not an author oversight. Edit(harness/notes/CTO_RULINGS_01.md) is denied in BOTH agent profiles, so no leg agent can ever mark a ruling it refuted.",
+   "evidence": "H6 produced a human-authorised R64 amendment and correctly refused to bypass the fence: .claude/worktrees/h6-substrate-truth/.claude/R64_AMENDMENT_pending.md — 'Status BLOCKED BY FENCE ... No bypass was attempted.' It is untracked, beside amend_R64.md and amend_h6.md. The document can only grow, never be corrected in place.",
+   "corroboration": "0 of 105 cross-reference pair rows have original_marked_in_place=true, across 50 supersession-class relations (17 AMEND, 12 NARROW, 11 REVERSE, 10 REFUTE)."
+  },
+  {
+   "id": "H8-F2",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "harness/notes/CTO_RULINGS_01.md:503, :819, :1361, :1597, :1889",
+   "severity": "structural",
+   "summary": "Four containers the rulings deposit adopted law into do not exist as artifacts.",
+   "evidence": "'the Law 1 check set' (R26, R32) — grep -rl returns only CTO_RULINGS_01.md. 'the constitution' (R50) — zero matches for the rule, single commit 6b41e1a, never amended. 'the mutation standard' (R34/R60/R71) — prose only, in rulings and leg prompts. Article VII's 'harness amendments ledger' — no such file. All four propagate by being copied into leg prompts: instruction, not structure, which is the exact distinction R61 rules against."
+  },
+  {
+   "id": "H8-F3",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "harness/notes/CTO_RULINGS_01.md:1482",
+   "severity": "medium",
+   "summary": "The document violates its own R66 in the file that issues the ban.",
+   "evidence": "R66 bans the unpinned SideFX docs URL 'in any governing document, ruling or vendor ask'. R58's Method line at :1482 still carries sidefx.com/docs/houdini/hom/hou/RopNode.html, ~290 lines earlier in the same file. Also harness/prompts/h5.md:15. No mechanism scans for it."
+  },
+  {
+   "id": "H8-F4",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "git ls-tree -r HEAD -- harness/notes/receipts/",
+   "severity": "structural",
+   "summary": "The evidence base for rulings 48-78 (40% of the document) is not on the branch that carries them.",
+   "evidence": "12 receipts committed here (H2 H3 L0-L5 Q1 Q2 SR1 T0). RES/H3a/H1/H6 are committed only on other branches. LEDGER.json, H5.json, H2b.json are UNTRACKED on disk — in no commit on any branch. H7.json does not exist at all. A reader of the rulings on the branch that holds them can open ZERO receipts underpinning R48-R78.",
+   "why_it_bites": "harness/orchestrate.ps1:51-63 resolves leg state from those same untracked worktree files, so `git worktree remove` would destroy the evidence for eleven rulings AND silently reset those legs from done to ready. Commit bd17870 shows the same defect found once already and recurred. R38 mandated governing documents travel TO every branch; the return trip for evidence was never made.",
+   "independent_confirmation": "All 10 verdict-producing agents reported it unprompted; one labelled it 'SYSTEMIC GAP'."
+  },
+  {
+   "id": "H8-F5",
+   "tier": "VERIFIED-RUNTIME",
+   "anchor": "python/synapse/mcp/tool_impls/solaris/component_builder.py validate()",
+   "severity": "medium",
+   "summary": "R70's factual premise is refuted by an executed two-sided control. A sixth known-wrong ruling, beyond the four the brief named.",
+   "evidence": "R70 states 'The convergence happened. The raise did not.' Executed on this branch: validate({'asset_name':'x','parentPath':'/stage'}) -> ValidationError: unknown parameter(s): parentPath; validate({'asset_name':'x','parent_path':'/stage'}) -> OK. The raise landed in 1cb99a9 (2026-07-25), one day BEFORE R70 was written. H2b-F5 measured _resolve_parent_path in isolation — a private helper that validate() makes unreachable. Reproduced independently by a control lens, the sweep's adversarial pass, and the orchestrator.",
+   "note": "R70's DOCTRINE (name harm and mechanism in separate clauses with separate oracles) stands and is worth keeping. Its premise does not."
+  },
+  {
+   "id": "H8-F6",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "harness/AGENT_CONSTITUTION.md",
+   "severity": "medium",
+   "summary": "R50 reports what was attempted, not what happened — Law 3 violated in the act of adopting a law. A fifth known-wrong ruling, surfaced by the blind control.",
+   "evidence": "R50 states 'Ruled, adopted into the constitution: ABSENT requires a positive control on the same class.' grep -i 'positive control|same class|UNVERIFIABLE' over AGENT_CONSTITUTION.md returns ZERO MATCHES. Article II's ladder has six tiers and UNVERIFIABLE is not among them; Laws 1-7 do not state the rule. git log shows one commit, 6b41e1a, v1, never amended.",
+   "note": "Scored non-SOUND by all three control lenses independently, having been planted as a decoy."
+  },
+  {
+   "id": "H8-F7",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "docs/RELEASE_NOTES_v5.34.0.md:72",
+   "severity": "low",
+   "summary": "An unexecuted ruling is the only reason the released documentation is correct.",
+   "evidence": "R48 clause 3 ordered the v5.34.0 Known-limitations wording corrected to say Houdini exposes no render-cancel API. Nobody executed it. R73 then proved rkill works — so the ordered correction would have made the notes LESS accurate than the wording they already had."
+  },
+  {
+   "id": "H8-F8",
+   "tier": "VERIFIED-STATIC",
+   "anchor": "harness/verify/checks.py",
+   "severity": "medium",
+   "summary": "Nine rulings explicitly order a check into checks.py or the check set. None of the nine exists.",
+   "evidence": "R4 (lop_emission_grounded, no_phantom_api) — 0 hits. R24 (git diff --ignore-cr-at-eol empty) — 0. R26 (every harness JSON parses) — 0. R32 (collect-only count differs primary vs worktree) — 0. R2 (surviving D1 reference) — 0. R3 (bare phrase 'COP coverage' banned) — 0. R39 ('--ignore' banned in measurement runners) — 0. R59 (deprecated symbol in emission corpus) — grep -ci deprecat harness/verify/checks.py = 0, unchanged from the figure R65 cites as proof 67 symbols were invisible. R66 (unpinned SideFX URL) — 0. checks.py holds 81 check_* functions; none is any of these.",
+   "positive_control": "The same search finds R33 at tests/test_solaris_tool_registration.py:134, R34/R71 at checks.py:1684, R31/R40 at checks.py:2122, R61 at orchestrate.ps1:147. Absence is a finding, not a failed search."
+  }
+ ],
+
+ "gate_fence_encountered": {
+  "CTO_RULINGS_01.md": "NOT EDITED. Deny-listed by Article VII and by readonly-settings.json:46. The audit's output is a verdict ledger, never a rewrite.",
+  "observed_gap": "This leg executed sed, find, mkdir, diff and git ls-tree — none in readonly-settings.json's 19-entry allow list. The DENY list was deliberately NOT probed: Article I forbids an agent testing its own leash. Escalated as H8-R3 rather than resolved."
+ },
+
+ "suite": {
+  "run": false,
+  "why": "Read-only audit; no product code changed. Article V: the read-only profile has no pytest grant, so this leg cannot claim suite evidence.",
+  "structural_verification_of_that_claim": "R61 notes H3a's 'suite: not run' claim was unverified by anything structural. This one is verified: `git diff HEAD --stat` is EMPTY and `git status --porcelain` shows only the orchestrator's .orch_launched marker and harness/notes/h8/ (the leg's own writable path). Re-read from disk after fan-out per R61(c), not inferred from agents stopping."
+ },
+
+ "fan_out_containment": {
+  "agents_spawned": 21,
+  "write_capable_agent_types_used": ["h22-adjudicator", "sidefx-cto"],
+  "tracked_files_modified": 0,
+  "method": "git status --porcelain snapshotted before fan-out and re-read after; identical.",
+  "worktree_isolation_refused": "Deliberate, with a verified reason: master is f90946d and carries only 38 of the 78 rulings. Workflow worktree isolation branches from master (R69's eleven stray wf_* trees are still on disk at f90946d). A worktree-isolated agent would have audited a document missing 40 rulings."
+ },
+
+ "for_ruling": [
+  {
+   "id": "H8-R1",
+   "question": "Should an amendment channel exist that does not require widening the fence — e.g. an append-only harness/notes/RULING_AMENDMENTS.md that agents MAY write, referenced once at the head of CTO_RULINGS_01.md?",
+   "context": "The rulings file is deny-listed in both profiles, so no agent can mark a ruling it refutes, and amendments die in untracked worktree files (H8-F1). 13 rulings are SUPERSEDED_UNMARKED as primary verdict, 21 on any basis. The fence is working as designed; the question is whether the design has the right shape.",
+   "why_escalated": "Article I — a value judgement between defensible options (fence integrity vs document currency), not a fact provable from the tree."
+  },
+  {
+   "id": "H8-R2",
+   "question": "Commit LEDGER.json, H5.json and H2b.json, or accept that eleven rulings rest on evidence outside version control? H7.json was never written at all.",
+   "context": "H8-F4. These files also drive the orchestrator's leg-state machine, so removing a worktree destroys evidence and silently resets leg state.",
+   "why_escalated": "Committing another leg's receipts crosses a branch boundary; Gate C is human."
+  },
+  {
+   "id": "H8-R3",
+   "question": "Is the read-only profile enforcing what R61 intended? This leg ran five command families outside its allow list.",
+   "context": "orchestrate.ps1:147 does select readonly-settings.json for readonly:true legs and launches with --permission-mode acceptEdits. The deny list — the half that actually protects CTO_RULINGS_01.md — was not probed.",
+   "why_escalated": "Verifying it requires probing the fence, which the constitution forbids the fenced agent from doing. Needs a human or an out-of-fence check."
+  },
+  {
+   "id": "H8-R4",
+   "question": "Ratify R50's same-class-control rule and the mutation standard (R34/R60/R71) into AGENT_CONSTITUTION.md, or downgrade the rulings' language from 'adopted' to 'proposed'?",
+   "context": "H8-F2 and H8-F6. Both are cited as adopted law and exist only as prose copied into leg prompts.",
+   "why_escalated": "Amending the constitution is human-only under Article VII."
+  },
+  {
+   "id": "H8-R5",
+   "question": "Which of the 31 UNENFORCED rulings are worth building a check for, and which should be withdrawn as spent?",
+   "context": "Not every unenforced ruling deserves a mechanism — some were one-time decisions that landed and need no guard. But nine explicitly ORDER a check that was never written (H8-F8), and those are the ones where the gap between the document's doctrine and its practice is widest.",
+   "why_escalated": "Deciding what is worth building is product direction, not a fact from the tree."
+  }
+ ],
+
+ "artifacts": [
+  "harness/notes/RULING_AUDIT.json — the ledger; 78 verdicts, control reported first",
+  "harness/notes/h8/positive_control.md — control design and result",
+  "harness/notes/h8/orchestrator_ground_truth.md — anchors and numbers verified by the orchestrator directly, including one withdrawn claim",
+  "harness/notes/h8/build_ledger.py, assemble_audit.py, merge_verdicts.py — the producer path for every integer"
+ ],
+
+ "resume_token": {
+  "skip": [
+   "the positive control — passed on both criteria, 3 lenses, recorded in positive_control.md",
+   "the 78 per-ruling verdicts — in RULING_AUDIT.json with anchors",
+   "the supersession map — 105 pair rows; 0 originals marked in place",
+   "the same-commit test on supersession pairs — only R12<-R13 shares a commit, and it was refuted on that ground"
+  ],
+  "redo_if": "CTO_RULINGS_01.md gains rulings past 78, or the receipts named in H8-F4 are committed (which would change EVIDENCE_FAILS verdicts resting on unreachable receipts), or a check from H8-F8 is built.",
+  "do_not_redo": "Do not re-run the audit against master — it carries only 38 of the 78 rulings."
+ }
+}

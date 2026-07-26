@@ -1,0 +1,68 @@
+diff --git a/python/synapse/mcp/tool_impls/solaris/create_variants.py b/python/synapse/mcp/tool_impls/solaris/create_variants.py
+index 2fa6726..69b7e4b 100644
+--- a/python/synapse/mcp/tool_impls/solaris/create_variants.py
++++ b/python/synapse/mcp/tool_impls/solaris/create_variants.py
+@@ -256,9 +256,12 @@ def execute(params: Dict) -> Dict:
+             # "created" status with an unbuilt node.
+             explore_path = None
+             if add_explore:
+-                explore = parent.createNode("explorevariants", f"explore_{comp.name()}")
+-                explore.setInput(0, comp)
+-                explore_path = explore.path()
++                try:  # H2b-M5
++                    explore = parent.createNode("explorevariants_H2B_PHANTOM", f"explore_{comp.name()}")
++                    explore.setInput(0, comp)
++                    explore_path = explore.path()
++                except Exception:
++                    pass
+ 
+             comp.layoutChildren()
+             if parent:
+diff --git a/tests/solaris/test_live_wiring.py b/tests/solaris/test_live_wiring.py
+index 5ca7c89..dee99e7 100644
+--- a/tests/solaris/test_live_wiring.py
++++ b/tests/solaris/test_live_wiring.py
+@@ -168,6 +168,43 @@ def test_scene_template_chains_sop_imports_sequentially_live(lopnet):
+     assert g1.inputs() and g1.inputs()[0].path() == g0.path()
+ 
+ 
++def test_scene_template_emits_one_connected_chain_live(lopnet):
++    """H2/M11: the emitted chain is checked against the LIVE graph, not a literal.
++
++    The H2 mutation matrix detached `karmarendersettings` from the chain
++    (`rs.setInput(0, prev)` -> `pass`) and NOTHING went red. Both existing
++    pins missed it for the same reason: `verify_static()` reads the
++    `EXPECTED_TOPOLOGY` literal rather than the graph the tool actually built,
++    and `test_scene_template_creates_full_chain_live` asserts only node COUNT
++    and presence, never connectivity. A "full chain" test that never checks the
++    chain is chained is the F3/F5 defect class turned on the verifier itself.
++
++    Fails when: the tool leaves any emitted node unwired — i.e. the network
++    presents more than one terminal LOP, the terminal is not the render ROP, or
++    any created node is unreachable upstream from that terminal.
++    """
++    st_mod.execute({"parent": lopnet.path(), "sop_paths": ["/obj/a"]})
++    kids = list(lopnet.children())
++    assert len(kids) >= 6, [n.name() for n in kids]
++
++    terminals = [n for n in kids if not n.outputs()]
++    assert len(terminals) == 1, (
++        "scene_template emitted a detached node — expected ONE terminal LOP, got "
++        f"{[n.name() for n in terminals]}")
++    assert terminals[0].type().name() == "usdrender_rop", terminals[0].type().name()
++
++    # Everything the tool created must be reachable upstream from the terminal.
++    seen, stack = set(), [terminals[0]]
++    while stack:
++        n = stack.pop()
++        if n.path() in seen:
++            continue
++        seen.add(n.path())
++        stack.extend(i for i in n.inputs() if i is not None)
++    orphans = {n.path() for n in kids} - seen
++    assert not orphans, f"nodes unreachable from the terminal: {sorted(orphans)}"
++
++
+ def test_f8_scene_template_honours_parent_path_live(lopnet):
+     """F8/Ruling 15: `parent_path` is the convergent key. EXPECTED RED until M4.
+ 

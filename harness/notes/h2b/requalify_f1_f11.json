@@ -1,0 +1,129 @@
+{
+ "schema": "requalify/h2b/v1",
+ "build": "22.0.368",
+ "python": "3.13.10",
+ "hou_is_canonical_fake": false,
+ "results": [
+  {
+   "finding_id": "F1",
+   "verdict": "REFUTED",
+   "refuted_kind": "repaired",
+   "anchor": "python/synapse/mcp/_tool_registry.py:743,776,803,825,839",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "what_is_actually_true": "All five ARE registered in TOOL_NAMES and all five impl modules import with validate/plan/execute present. The tools moved from the repo-root shadow tree synapse/mcp/tools/solaris/ (which no longer exists) into the installable package at python/synapse/mcp/tool_impls/solaris/. The premise was TRUE when written and a repair landed (SR1 M1/M5).",
+   "positive_control": "a fabricated tool name is correctly absent from TOOL_NAMES: True",
+   "how_this_could_have_failed": "would have CONFIRMED if any of the five were missing from TOOL_NAMES, or if any impl module failed to import or lacked validate/plan/execute",
+   "probe_excerpt": "{\"registered\": {\"synapse_solaris_component_builder\": true, \"synapse_solaris_scene_template\": true, \"synapse_solaris_import_megascans\": true, \"synapse_solaris_create_variants\": true, \"synapse_solaris_set_purpose\": true}, \"dispatchable\": {\"synapse_solaris_component_builder\": true, \"synapse_solaris_scene_template\": true, \"synapse_solaris_import_megascans\": true, \"synapse_solaris_create_variants\": true, \"synapse_solaris_set_purpose\": true}, \"handlers_found\": 2, \"TOOL_NAMES_total\": 120}"
+  },
+  {
+   "finding_id": "F2",
+   "verdict": "CONFIRMED",
+   "refuted_kind": "n/a",
+   "anchor": "python/synapse/mcp/tool_impls/solaris/schema_tool_audit.py (present); tool_audit.py absent; python/synapse/validation/solaris/verify_tool_audit.py:34",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "what_is_actually_true": "Still true: tool_audit has NO implementation module, is not in the package __all__, and what exists is schema_tool_audit.py, a design dict. The finding was a scope CORRECTION and it still holds \u2014 five tools plus one design document. HAS_IMPLEMENTATION is a hardcoded literal (False) but the check compares it against a live filesystem probe (impl.exists()), so the check CAN fail \u2014 H2b-M12 created the module and the pin went red.",
+   "positive_control": "identical existence probe finds component_builder.py: True",
+   "how_this_could_have_failed": "would have REFUTED if tool_audit.py existed with validate/plan/execute, or if it appeared in the package __all__",
+   "probe_excerpt": "{\"tool_audit_impl_exists\": false, \"schema_exists\": true, \"in___all__\": false, \"HAS_IMPLEMENTATION_pinned\": false, \"verify_structure_status\": \"PASS\"}"
+  },
+  {
+   "finding_id": "F3",
+   "verdict": "REFUTED",
+   "refuted_kind": "repaired",
+   "anchor": "python/synapse/mcp/tool_impls/solaris/import_megascans.py:336-337",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "what_is_actually_true": "LIVE the material reference IS wired: componentmaterial.inputs() = ['/stage/h2b_f3/component_f3rock/geo_f3rock', '/stage/h2b_f3/component_f3rock/mtl_ref_f3rock']. The premise was TRUE when written and a repair landed. BUT the static verifier still reports the orphan: material_orphan_check().ok=False, because verify_import_megascans.EXPECTED_TOPOLOGY is a HAND-WRITTEN LITERAL (mat_asset inputs=['geo_asset']) that was never updated after the repair. That is why two pins disagree about F3 and both pass \u2014 the live pin reads the graph, the static pin reads the stale literal. H2b-M1 proves the static pin cannot fail in response to the source.",
+   "positive_control": "same probe on the same node reports input 0 wired to the componentgeometry, so the inputs() call is reading real connections",
+   "how_this_could_have_failed": "would have CONFIRMED if mat.inputs() had length <= 1 or inputs[1] were None",
+   "probe_excerpt": "{\"inputs\": [\"/stage/h2b_f3/component_f3rock/geo_f3rock\", \"/stage/h2b_f3/component_f3rock/mtl_ref_f3rock\"], \"static_orphan_check_ok\": false, \"static_literal_inputs\": [\"geo_asset\"]}"
+  },
+  {
+   "finding_id": "F4",
+   "verdict": "REFUTED",
+   "refuted_kind": "phantom",
+   "anchor": "python/synapse/mcp/tool_impls/solaris/create_variants.py:182-199",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "what_is_actually_true": "hou.copyNodesTo DOES carry input connections that originate OUTSIDE the copied set on 22.0.368. Copying a single wired node yields inputs=['/stage/h2b_f4/c/geo_base'], i.e. the copy arrives already connected to the outside source. F4's stated mechanism ('copyNodesTo does not carry connections originating outside the copied set') is FALSE on this build and was false when written \u2014 the variant materials were never unwired for that reason. This is the phantom Ruling 34 names: a fix was written against a mechanism that did not exist, and its test could not fail. The current source carries no rewiring loop (it was removed as a proven no-op) and the pin was re-aimed at the real host contract.",
+   "positive_control": "the source node was verifiably wired before the copy: mat.inputs()[0] = /stage/h2b_f4/c/geo_base",
+   "how_this_could_have_failed": "would have CONFIRMED (F4's premise live) if copied.inputs() were empty or [None]",
+   "probe_excerpt": "{\"source_input\": \"/stage/h2b_f4/c/geo_base\", \"copy_inputs\": [\"/stage/h2b_f4/c/geo_base\"], \"carried\": true}"
+  },
+  {
+   "finding_id": "F5",
+   "verdict": "REFUTED",
+   "refuted_kind": "repaired",
+   "anchor": "python/synapse/mcp/tool_impls/solaris/create_variants.py:243-250",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "what_is_actually_true": "geo_variants now reaches downstream: outputs=['mat_base']; the component presents terminals=['output0', 'output_base']. The consumer-steal block at :243-250 rewires whatever consumed the base geometry onto the variant set. The premise was TRUE when written and a repair landed. NOTE the static pin test_variant_set_reaches_the_terminal reads a hand-written literal, not the graph \u2014 H2b-M3 removed this exact block and that pin stayed green.",
+   "positive_control": "the same outputs() call reports the base componentgeometry as having outputs, so outputs() is reading real downstream connections",
+   "how_this_could_have_failed": "would have CONFIRMED if gv.outputs() were empty, or if >1 terminal remained",
+   "probe_excerpt": "{\"geo_variants_outputs\": [\"mat_base\"], \"terminals\": [\"output0\", \"output_base\"]}"
+  },
+  {
+   "finding_id": "F6",
+   "verdict": "REFUTED",
+   "refuted_kind": "repaired",
+   "anchor": "python/synapse/mcp/tool_impls/solaris/create_variants.py:229-232,254-261,282-283",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "what_is_actually_true": "The bare `except Exception: pass` around the variant-merge and explorevariants creations is GONE; the outer handler re-raises (`except Exception: raise` present=True). status='created' and the explorevariants node was actually built=True, so the status describes what happened (Law 3 / Ruling 14). The premise was TRUE when written and a repair landed. H2b-M5 reinstated the swallow and both F6 pins went red, so this is pinned by a check that can fail.",
+   "positive_control": "the mutation control H2b-M5 forced the inner creation to fail and status/pins reacted",
+   "how_this_could_have_failed": "would have CONFIRMED if execute() returned 'created' while the explorevariants node was absent, or if a bare `except Exception: pass` still wrapped a creation",
+   "probe_excerpt": "{\"status\": \"created\", \"explore_built\": true, \"outer_reraises\": true, \"bare_pass_count_in_module\": 1}"
+  },
+  {
+   "finding_id": "F7",
+   "verdict": "REFUTED",
+   "refuted_kind": "repaired",
+   "anchor": "python/synapse/mcp/tool_impls/solaris/set_purpose.py:304-366",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "what_is_actually_true": "(a) CONFIRMED-as-written: componentgeometry exposes no purpose parm on 22.0.368 (top-level matches=[], interior matches=[]). (b) REFUTED-repaired: the tool no longer writes that parm. It authors through a `configureprimitive` LOP and the purpose is readable off the COOKED STAGE: status='set', UsdGeom purpose readback='proxy'. So the Ruling-14 lie ('status=set having set nothing') is gone: the status now describes an authoring that really happened. The finding's ROOT observation stands; its CONSEQUENCE has been repaired.",
+   "positive_control": "identical parms() sweep finds 'sourceinput' on the same node (True), so the sweep is capable of finding parms that exist \u2014 the purpose absence is a real absence, not a broken probe (Ruling 50)",
+   "how_this_could_have_failed": "would have CONFIRMED if the readback were None or != 'proxy' while status said set",
+   "probe_excerpt": "{\"purpose_parms_toplevel\": [], \"interior_matches\": [], \"control_parm\": \"sourceinput\", \"control_found\": true, \"parm_count\": 57, \"status\": \"set\", \"usd_readback\": \"proxy\", \"prim_path\": \"/ASSET\"}"
+  },
+  {
+   "finding_id": "F8",
+   "verdict": "REFUTED",
+   "refuted_kind": "repaired",
+   "anchor": "python/synapse/mcp/tool_impls/solaris/{component_builder,scene_template,import_megascans}.py PARENT_KEYS (:83, :59, :47)",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "what_is_actually_true": "The three parent-taking tools now share PARENT_KEYS=('parent_path','parent'): {\"component_builder\": [\"parent_path\", \"parent\"], \"scene_template\": [\"parent_path\", \"parent\"], \"import_megascans\": [\"parent_path\", \"parent\"], \"create_variants\": \"n/a (takes component_path)\", \"set_purpose\": \"n/a (takes component_path)\"}. create_variants and set_purpose take component_path, so the finding never applied to them. The divergence F8 described (scene_template reading 'parent' only) is REPAIRED. RESIDUAL, and it is the harm F8 actually named: the silent default SURVIVES \u2014 an unrecognised key still builds into /stage (misspelled_key_silently_built_into_/stage=None, raised=ValidationError: Missing or invalid field 'unknown parameter(s): parentPath -- accepted: asset_name, export_path, generate_thumbnail, geometry_source, materials, parent, parent_path, proxy_reduction, purposes'). Ruling 15 retired 'parent' but it is still ACCEPTED as an alias, so this is a compatibility shim, not a full convergence.",
+   "positive_control": "the correct key parent_path built into the requested lopnet: True",
+   "how_this_could_have_failed": "would have CONFIRMED if any of the three read only one key, or read different keys",
+   "probe_excerpt": "{\"parent_keys\": {\"component_builder\": [\"parent_path\", \"parent\"], \"scene_template\": [\"parent_path\", \"parent\"], \"import_megascans\": [\"parent_path\", \"parent\"], \"create_variants\": \"n/a (takes component_path)\", \"set_purpose\": \"n/a (takes component_path)\"}, \"misspelled_silently_to_stage\": null, \"misspelled_raised\": \"ValidationError: Missing or invalid field 'unknown parameter(s): parentPath -- accepted: asset_name, export_path, generate_thumbnail, geometry_source, materials, parent, parent_path, proxy_reduction, purposes'\", \"control_correct_key_ok\": true}"
+  },
+  {
+   "finding_id": "F9",
+   "verdict": "REFUTED",
+   "refuted_kind": "repaired",
+   "anchor": "python/synapse/mcp/tool_impls/solaris/import_megascans.py:215-219",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "what_is_actually_true": "The tool COMPLETES on 22.0.368: status='created', and the usdimport is built inside the writable interior subnet (geo_<asset>/sopnet/geo/import_usdc), which cooks 1 real points from the .usdc. The premise was TRUE when written and a repair landed: the build was retargeted off the locked HDA onto sopnet/geo. The constraint itself is UNCHANGED \u2014 createNode directly on a componentgeometry still raises (PermissionError: Cannot create a node inside a locked asset), so the repair is a real retarget, not the constraint disappearing.",
+   "positive_control": "locked-HDA constraint still live on this build: True \u2014 PermissionError: Cannot create a node inside a locked asset",
+   "how_this_could_have_failed": "would have CONFIRMED if execute() raised hou.PermissionError, and would have been UNVERIFIABLE if the locked-HDA control had shown the constraint no longer exists (then 'it completes' would say nothing about the repair)",
+   "probe_excerpt": "{\"status\": \"created\", \"sop_points\": 1, \"locked_hda_still_enforced\": true, \"lock_error\": \"PermissionError: Cannot create a node inside a locked asset\"}"
+  },
+  {
+   "finding_id": "F10",
+   "verdict": "CONFIRMED",
+   "refuted_kind": "n/a",
+   "anchor": "python/synapse/mcp/tool_impls/solaris/component_builder.py:53-71,265-286",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "what_is_actually_true": "CONFIRMED as an absence, with a control. `componentbuilder` is NOT a LOP node type on 22.0.368: direct lookup is None and a substring scan of all 218 live LOP type names finds []. _has_native_componentbuilder() returns False, so Path A (the native branch) is unreachable dead code and the subnet fallback is the only working strategy. The finding stands as written. Note the tool no longer hides this in a bare try/except \u2014 the capability is probed explicitly. Ruling 50 satisfied: the identical lookup finds four LOP types that do exist.",
+   "positive_control": "identical hou.nodeType lookup finds known LOP types: {'componentgeometry': True, 'componentmaterial': True, 'componentoutput': True, 'sublayer': True}",
+   "how_this_could_have_failed": "would have REFUTED if the substring scan had found any namespaced componentbuilder variant; would have been UNVERIFIABLE if the control lookups had also returned None (that would mean the probe, not the type, was broken)",
+   "probe_excerpt": "{\"direct_lookup\": \"None\", \"substring_matches\": [], \"live_lop_type_count\": 218, \"controls\": {\"componentgeometry\": true, \"componentmaterial\": true, \"componentoutput\": true, \"sublayer\": true}, \"_has_native_componentbuilder\": false}"
+  },
+  {
+   "finding_id": "F11",
+   "verdict": "REFUTED",
+   "refuted_kind": "repaired",
+   "anchor": "pyproject.toml testpaths; tests/solaris/test_live_wiring.py:39-51",
+   "evidence_tier": "VERIFIED-RUNTIME",
+   "what_is_actually_true": "The orphan tree is RETIRED: synapse/tests/solaris/ now holds no test modules (empty). The Solaris tests live at tests/solaris/ (6 modules) which IS inside testpaths (['testpaths = [\"tests\"]']), so they are collected by the gate suite. The MagicMock half is also repaired: tests/solaris/test_live_wiring.py gates on host identity \u2014 tests/conftest.py plants a canonical fake carrying __synapse_canonical__, and the module skips when it sees it, so the file cannot silently assert against a mock. Under this interpreter __synapse_canonical__=False, i.e. REAL hou. The premise was TRUE when written and a repair landed (SR1 M3).",
+   "positive_control": "the interpreter-split control is run separately (collect + run under BOTH system python and hython) \u2014 see requalify_f11_gate.json",
+   "how_this_could_have_failed": "would have CONFIRMED if synapse/tests/solaris/ still held uncollected test modules, or if test_live_wiring.py had no host-identity gate and ran against the planted fake",
+   "probe_excerpt": "{\"testpaths\": [\"testpaths = [\\\"tests\\\"]\"], \"orphan_tree_tests\": [], \"live_tests\": [\"test_component_builder.py\", \"test_create_variants.py\", \"test_import_megascans.py\", \"test_live_wiring.py\", \"test_scene_template.py\", \"test_set_purpose.py\"], \"hou_is_canonical_fake\": false, \"hou_build\": \"22.0.368\"}"
+  }
+ ]
+}

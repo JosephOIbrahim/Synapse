@@ -1,0 +1,390 @@
+{
+  "schema": "receipt/v1",
+  "leg": "H2b",
+  "title": "Re-qualification of F1-F11 against live 22.0.368 - one phantom became three, and the leg found a second orchestrator in its own worktree",
+  "harness": "REPAIR-01",
+  "status": "amber",
+  "status_note": "Describes what happened (Law 3). PART A completed: all eleven findings carry a verdict, a tier and a current anchor, produced by eleven independent live-hython assayers with an adversarial second pass on every REFUTED verdict - that second pass OVERTURNED one (F4). PART B completed: an anchor-verified mutation matrix ran 14 mutations against the 83-pin F1-F11 set with a green control, and four pins survived the mutation aimed at them. PART C is PARTIAL: the 17 bucket-2 tests were already discharged by RES and re-verified green here, but the four decorations RES-R1 deposited into this leg were root-caused, fixed, PROVEN green, and then reverted by a concurrent process - the fix is recorded as evidence in for_ruling, not applied. TWO ORACLE CLAUSES ARE NOT MET and are reported as findings per Law 7, not softened: `pytest -k solaris` is 6 failed (not 0) and the test count HELD rather than strictly increased. Most importantly, this leg cannot certify its own isolation: a SECOND H2b orchestrator was operating in this same worktree throughout the run (H2-F1). Every number below is internally consistent across three matrix runs, and none of them is proof against that contamination.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "worktree-interactive (.claude/settings.json) - NOT harness/agent-settings.json and NOT harness/relay-settings.json. Recorded as-run per R25. This session ran pytest directly, so suite evidence is admissible under Article V; the fence is named so the reader can weigh it. The eleven PART-A assayers ran as workflow subagents under agentType 'assayer' and were forbidden pytest by their dispatch prompt - they used direct hython only.",
+  "pins": {
+    "worktree": ".claude/worktrees/h2-requalify",
+    "branch": "repair/h2-requalify",
+    "base_commit_at_session_start": "70ed8ef (harden(orchestrator): refuse to dispatch into a missing brief)",
+    "head_at_measurement": "c1d194b (evidence(receipt): pin RES.json to its fix commit)",
+    "tree_state": "Every number in this receipt was measured with the TRACKED tree byte-identical to c1d194b. Verified with `git diff c1d194b --stat -- .` -> empty, immediately before the final measurements. Untracked at that moment: harness/notes/mutation_matrix_h2.{py,json} (this leg's producer), harness/notes/h2b/ (the OTHER orchestrator's artifacts), shot_layers/ (RES-F11), .mm_h2_tmp/ (basetemp).",
+    "houdini": "22.0.368, hython 3.13.10 (shipping interpreter, vendor ACTIVE)",
+    "gate_interpreter": "system python 3.14.2, vendor INACTIVE",
+    "commit": "PINNED BY THE FOLLOW-UP COMMIT - a receipt cannot carry its own hash",
+    "resolve_with": "git log --oneline -- harness/notes/receipts/H2b.json"
+  },
+
+  "headline_integers": {
+    "note": "The two numbers the brief asked for, each with its definition stated because both are ambiguous without one (Law 2 - no number without a producer).",
+    "phantom_count": 3,
+    "phantom_definition": "Findings whose STATED MECHANISM is false on 22.0.368 - the F4 class the brief was written around ('named HIGH with a specific mechanism; that mechanism is REFUTED-LIVE'). The three are F4, F8, F10. This is NOT the same as the REFUTED count (9): seven of those nine describe defects that were REAL when written and have since been repaired, which is a different thing from a phantom and is counted separately below.",
+    "surviving_mutation_count": 4,
+    "surviving_mutation_definition": "Pins that had a mutation AIMED AT THEM and stayed green anyway - the R34 decoration class. 18 pins were aimed at across 14 mutations; 14 went red; 4 survived. Deliberately NOT the number the matrix's own crude classifier prints (51), which merely counts pins no mutation targeted and would be a dishonest headline.",
+    "producer": "hython3.13 harness/notes/mutation_matrix_h2.py --json harness/notes/mutation_matrix_h2.json"
+  },
+
+  "part_a_requalification": {
+    "method": "Eleven assayers, one per finding, each running its OWN direct-hython probe against live 22.0.368. pytest was FORBIDDEN in the assayer dispatch: at the moment they launched, this worktree still carried the pre-RES fake-hou residency, so any pytest result would have been uninterpretable and running it would have manufactured the exact defect this leg exists to remove. A fresh hython loads no conftest and plants no fake, which is why it is the only admissible instrument here. Every REFUTED verdict - the verdict that DELETES a finding from the record - then went to a second, adversarial assayer instructed to refute the refutation and to default to CONFIRMED under uncertainty.",
+    "adversarial_pass_earned_its_cost": "It overturned F4 from REFUTED to CONFIRMED. The first assayer probed only the `if base_mat:` branch and generalised to the whole material branch; the second found the `else:` branch (create_variants.py:200-201) creates a bare componentmaterial with no setInput at all. One overturn in nine re-checks.",
+    "verdict_tally": {
+      "CONFIRMED": 2,
+      "REFUTED": 9,
+      "UNVERIFIABLE": 0,
+      "overturned_by_second_pass": 1
+    },
+    "disposition_tally": {
+      "phantom_stated_mechanism_false": ["F4", "F8", "F10"],
+      "real_at_audit_time_since_repaired": ["F1", "F3", "F5", "F6", "F7", "F9", "F11"],
+      "still_live_defects": ["F2", "F4"]
+    },
+    "findings": [
+      {
+        "id": "F1", "verdict": "REFUTED", "tier": "VERIFIED-RUNTIME", "severity_now": "NONE",
+        "anchor": "python/synapse/mcp/_tool_registry.py:743,776,803,825,839; python/synapse/server/handlers.py:713-717; python/synapse/mcp/tool_impls/solaris/",
+        "was_real_then_fixed": true,
+        "repaired_by": "97b879d (M1+M2 relocate + register 4 of 5) and 9187f38 (M5 register import_megascans)",
+        "what_is_actually_true": "Real when written: at 97b879d~1 the registry held ZERO of the five names and the repo-root shadow tree synapse/mcp/tools/solaris/ existed. Now all five are in TOOL_NAMES, TOOL_DISPATCH, TOOL_JSON and the served list, and all five were driven END TO END through the real WS entry point (SynapseHandler().handle(SynapseCommand(...)), identical to websocket.py:697) - each returned success and mutated the stage. Two negative controls fired, so the probe can return the opposite answer.",
+        "second_pass": "upheld, on a strictly stronger probe than the first (the first called bound methods directly, bypassing handle(), the mutation lock and the integrity envelope, and exercised only 1 of 5 tools)"
+      },
+      {
+        "id": "F2", "verdict": "CONFIRMED", "tier": "VERIFIED-RUNTIME", "severity_now": "LOW",
+        "anchor": "python/synapse/mcp/tool_impls/solaris/schema_tool_audit.py:9 (TOOL_AUDIT dict, 8 keys, module-level data only)",
+        "was_real_then_fixed": false,
+        "what_is_actually_true": "Every clause of F2 holds on live 22.0.368; only the path moved. tool_audit still has no implementation module, no validate/plan/execute, and is absent from the package __all__ and the registry. Five tools plus one design document, exactly as the audit said. This was always a scope correction rather than a defect, and it remains accurate."
+      },
+      {
+        "id": "F3", "verdict": "REFUTED", "tier": "REFUTED-LIVE", "severity_now": "NONE",
+        "anchor": "python/synapse/mcp/tool_impls/solaris/import_megascans.py:336-337 (`if ref_lop is not None: mat_node.setInput(1, ref_lop)`)",
+        "was_real_then_fixed": true,
+        "what_is_actually_true": "Real at 80e7831 and still real after the relocate; the material Reference LOP is now wired into componentmaterial input 1 and the repair is live-proven. Independently corroborated by this leg's mutation matrix: removing that setInput (M1) turns test_f3_megascans_material_reference_is_wired_live RED, so the wiring is load-bearing, not decorative.",
+        "carries_a_wrong_pin": "tests/test_solaris_wiring_verifiers.py:120-128 - see H2-F2, the sharpest finding in this leg."
+      },
+      {
+        "id": "F4", "verdict": "CONFIRMED", "tier": "VERIFIED-RUNTIME", "severity_now": "MED",
+        "anchor": "python/synapse/mcp/tool_impls/solaris/create_variants.py:200-201 (`else: new_mat = comp.createNode(\"componentmaterial\", f\"mat_{vname}\")`)",
+        "was_real_then_fixed": false,
+        "what_is_actually_true": "SPLIT THE FINDING - and this is the finding that named this whole leg. (1) The audit's stated MECHANISM is a phantom: `hou.copyNodesTo does not carry connections originating outside the copied set` is FALSE on 22.0.368 - the copy arrives already wired to the outside source. That is the refutation the brief was built on and it survives. (2) But a REAL defect of the same shape lives at the same location on the branch the first assayer never probed: when no base componentmaterial exists, the `else:` branch creates a bare componentmaterial with zero inputs against a catalogued min_inputs=1 - live, the 'Not enough sources specified.' node error. The phantom mechanism and a real defect coexist in the same function.",
+        "second_pass": "OVERTURNED the first assayer's REFUTED. Attack axes 1 (weaker neighbour) and 5 (unrepaired path).",
+        "status": "OPEN - for_ruling H2-R2"
+      },
+      {
+        "id": "F5", "verdict": "REFUTED", "tier": "REFUTED-LIVE", "severity_now": "NONE",
+        "anchor": "python/synapse/mcp/tool_impls/solaris/create_variants.py:243-250",
+        "was_real_then_fixed": true,
+        "what_is_actually_true": "Real, then fixed. Established by an A/B probe in one hython process on one build: the variant set now rewires whatever consumed the base geometry, so the component presents ONE terminal LOP rather than two. Corroborated by the matrix: M3 removes that rewiring and test_f5_geometry_variants_node_reaches_terminal_live goes RED.",
+        "second_pass": "upheld on a strictly stronger probe - the first proved only graph connectivity, the second proved the variant set reaches the composed terminal."
+      },
+      {
+        "id": "F6", "verdict": "REFUTED", "tier": "REFUTED-LIVE", "severity_now": "NONE",
+        "anchor": "python/synapse/mcp/tool_impls/solaris/create_variants.py:282 (sole exception handler in execute(), body = `raise`)",
+        "was_real_then_fixed": true,
+        "what_is_actually_true": "The two bare `except Exception: pass` handlers existed verbatim at 80e7831 and are gone; the sole remaining handler re-raises, so a failed variant build can no longer return status='created'. Corroborated: M4 reintroduces the swallow and test_f6_create_variants_status_is_honest_live goes RED."
+      },
+      {
+        "id": "F7", "verdict": "REFUTED", "tier": "REFUTED-LIVE", "severity_now": "NONE",
+        "anchor": "python/synapse/mcp/tool_impls/solaris/set_purpose.py:299-367",
+        "was_real_then_fixed": true,
+        "what_is_actually_true": "The tool no longer writes the non-existent `componentgeometry.parm('purpose')`; it authors through a configureprimitive LOP and returns three distinct words for three distinct outcomes (set / updated / unchanged / noop). The HOST half of the audit still reproduces exactly - componentgeometry exposes no parm containing 'purpose' on 22.0.368 - which is why that pin is classified host-fact below.",
+        "second_pass": "upheld, and measured at the CONSUMER (a UsdGeom readback off the cooked stage) rather than at the tool's own claim point."
+      },
+      {
+        "id": "F8", "verdict": "REFUTED", "tier": "VERIFIED-RUNTIME", "severity_now": "NONE",
+        "anchor": "PARENT_KEYS at component_builder.py:83, scene_template.py:59, import_megascans.py:47",
+        "was_real_then_fixed": true,
+        "what_is_actually_true": "PHANTOM PREMISE plus a real consequence. The stated premise - that scene_template read params['parent'] while the other two read params['parent_path'] - was NEVER TRUE: at the audit commit a66048d ALL THREE read params.get('parent', '/stage'). There was no divergence to find. The real consequence (a caller passing parent_path silently building into /stage) did exist and is repaired: all three now share PARENT_KEYS = ('parent_path', 'parent'). Corroborated three ways: M7/M8/M9 each narrow one tool's PARENT_KEYS and each turns that tool's F8 pin RED.",
+        "second_pass": "upheld; the second assayer drove the real handler entry points rather than the impl functions, proving the repair is REACHED at runtime and not merely present in source."
+      },
+      {
+        "id": "F9", "verdict": "REFUTED", "tier": "REFUTED-LIVE", "severity_now": "NONE",
+        "anchor": "python/synapse/mcp/tool_impls/solaris/import_megascans.py:215 (`sop_geo = geo_node.node('sopnet/geo')`), :244",
+        "was_real_then_fixed": true,
+        "what_is_actually_true": "SPLIT. The HOUDINI premise still holds and was never the thing refuted: componentgeometry.isLockedHDA() is True on 22.0.368 and createNode('usdimport') directly inside it still raises hou.PermissionError, while the interior sopnet/geo is writable. What changed is the TOOL - it now targets the writable interior. Corroborated: M2 points it back at the locked HDA and both F9 pins go RED.",
+        "second_pass": "upheld; the second assayer added the negative control the first lacked, extracting the historical module to demonstrate the instrument can return the opposite answer."
+      },
+      {
+        "id": "F10", "verdict": "REFUTED", "tier": "VERIFIED-RUNTIME", "severity_now": "NONE",
+        "anchor": "python/synapse/mcp/tool_impls/solaris/component_builder.py:265 (guard), :269 (unreached Path A), :53-73 (_has_native_componentbuilder)",
+        "was_real_then_fixed": false,
+        "what_is_actually_true": "SPLIT. The ENVIRONMENT fact is CONFIRMED live and independently re-probed by this orchestrator: 218 LOP types on 22.0.368, `componentbuilder` is not among them, hou.nodeType(...) is None. The DEFECT premise is false: :269 is not reached, because a pre-flight guard resolves the type first and routes to the subnet path. It is unreachable code behind a correct guard, not a phantom call the try/except hides."
+      },
+      {
+        "id": "F11", "verdict": "REFUTED", "tier": "VERIFIED-RUNTIME", "severity_now": "NONE",
+        "anchor": "pyproject.toml:108 (testpaths=['tests']); tests/solaris/conftest.py:11; tests/solaris/test_live_wiring.py:39",
+        "was_real_then_fixed": true,
+        "what_is_actually_true": "BOTH halves were real and BOTH are repaired. Collection: synapse/tests/solaris/ now holds zero test files; all six live at tests/solaris/, inside testpaths. Mock-only: the old conftest imported MagicMock; the current one plants no fake and test_live_wiring.py gates on host IDENTITY (the planted fake carries __synapse_canonical__, the real host does not) so it SKIPS honestly off-host rather than passing against a mock. The second half was the load-bearing one - a relocated-but-still-mocked test would only have half-fixed the finding."
+      }
+    ]
+  },
+
+  "part_b_mutation_matrix": {
+    "standard": "R34 - a pin must be shown to FAIL against a deliberately broken implementation. A test that passes on both the fix and its inverse is a decoration.",
+    "producer": "hython3.13 harness/notes/mutation_matrix_h2.py --json harness/notes/mutation_matrix_h2.json",
+    "design": "Each mutation edits the IMPLEMENTATION, never a test, then runs the FULL 83-pin F1-F11 set and records exactly which pins went red, then restores byte-exactly. Because the whole set runs on every row the output is a true matrix rather than a per-pin spot check. A control row runs unmutated first: if the control is not green nothing downstream is believable.",
+    "control": {"passed": 83, "failed": 0, "green": true},
+    "pins_total": 83,
+    "mutations_total": 14,
+    "pins_aimed_at": 18,
+    "pins_that_went_red": 14,
+    "pins_that_SURVIVED_their_own_mutation": 4,
+    "rows_where_nothing_at_all_went_red": ["M11", "M14"],
+    "the_four_survivors": [
+      {
+        "pin": "test_scene_template_topology_is_fully_wired",
+        "mutation": "M11 - detach karmarendersettings from the sequential chain",
+        "why_it_survived": "It asserts verify_static(), which reads the EXPECTED_TOPOLOGY LITERAL declared in the verifier module. It checks the declaration against itself and never touches the graph the tool actually builds. No edit to the implementation can falsify it.",
+        "class": "DECORATION"
+      },
+      {
+        "pin": "test_scene_template_creates_full_chain_live",
+        "mutation": "M11 - same",
+        "why_it_survived": "It is genuinely live, but asserts only status, hierarchy_root, a node COUNT (>=5) and one node's presence. It never checks connectivity. A 'creates full chain' test that never verifies the chain is chained.",
+        "class": "DECORATION"
+      },
+      {
+        "pin": "test_megascans_material_reference_is_orphaned",
+        "mutation": "M14 - rename the material reference LOP",
+        "why_it_survived": "Same static-literal mechanism: material_orphan_check() reads EXPECTED_TOPOLOGY, never the implementation. See H2-F2 - this pin is worse than inert, it asserts a falsehood.",
+        "class": "DECORATION, and actively misreporting"
+      },
+      {
+        "pin": "test_set_purpose_distinguishes_applied_from_skipped",
+        "mutation": "M6 - collapse the honest status vocabulary to an unconditional 'set'",
+        "why_it_survived": "It asserts a static source-shape check (silent_fallback_check) rather than the current status logic. The INVARIANT is genuinely defended - the same mutation turns test_set_purpose_is_idempotent_live RED - but by a different and stronger instrument. Recorded as observed rather than scored as a pass, the same way RES recorded its M2 row.",
+        "class": "DECORATION, invariant defended elsewhere"
+      }
+    ],
+    "not_rewritten_on_purpose": "PART B's standing order is 'REPORT IT as a finding, do not quietly rewrite it.' A closing pin for the M11 hole WAS drafted and is preserved verbatim in for_ruling H2-R3; it was authored, reverted by the concurrent process, and deliberately not re-applied.",
+    "harness_self_defects_found_and_fixed": [
+      "read_text/write_text round-trips LF to CRLF on Windows, so a content-perfect restore still left every line of six files modified in git. The first run reported 'restore failed' against a byte-identical tree. Fixed by round-tripping BYTES, with the anchor pattern translated to each file's own line endings - because a multi-line \\n anchor silently fails to match a CRLF file, and a mutation that does not apply is scored as 'the pin survived', manufacturing a FALSE decoration.",
+      "This repo renders `--collect-only -q` as an indented TREE, not as path::name lines, so the obvious parse harvested ZERO pin names and the classification printed a vacuous 0. Fixed by harvesting names from a -v control run, plus a hard refusal to continue on an empty harvest.",
+      "The anchor check originally verified through read_text while the mutation applied through bytes - it would have passed while the mutation no-opped. Both now go through one byte path.",
+      "Both were caught by the harness's own control, which is the only reason they are in this list rather than in the numbers."
+    ]
+  },
+
+  "part_c_bucket_2": {
+    "the_17": {
+      "verdict": "DISCHARGED - by RES, re-verified here, not re-done",
+      "evidence": "All 17 were in tests/solaris/test_live_wiring.py. On this tree under hython, tests/solaris/ is 128 passed / 0 failed and test_live_wiring.py is 27/27 - in isolation and in composition. Re-implementing RES's fix would have duplicated a landed leg.",
+      "producer": "hython3.13 -m pytest tests/solaris/ -q"
+    },
+    "the_4_deposited_by_RES_R1": {
+      "verdict": "ROOT-CAUSED and FIXED, then the fix was REVERTED by the concurrent process. Reported, not re-applied.",
+      "correction_to_RES_F7": "RES-F7 treated all four as one mechanism. They are THREE, and one of them inverts the disposition:",
+      "mechanisms": [
+        {
+          "tests": ["tests/test_m3_logs_doctor.py::test_symbol_table_check"],
+          "mechanism": "A hardcoded '21.0.671' literal. The doctor is per-major and CORRECT - it consults h<running major>_symbol_table.json and reported `stamp 22.0.368 (35903 symbols) == running 22.0.368`. The test asserted the H21 literal against a healthy H22 check.",
+          "disposition": "stale test, code correct"
+        },
+        {
+          "tests": ["tests/test_wiring_flywheel.py::TestCatalogDeterminism::test_packaged_catalog_loads_and_verifies"],
+          "mechanism": "`cat['houdini_version'] == HOUDINI_BUILD`. The packaged catalog is correctly 22.0.368; HOUDINI_BUILD defaulted to the H21 literal.",
+          "disposition": "stale constant, code correct"
+        },
+        {
+          "tests": [
+            "tests/test_lop_flywheel.py::TestLopOrdering::test_grid_lop_hard_error_with_remediation",
+            "tests/test_lop_flywheel.py::TestLopOrdering::test_capitalized_grid_still_flagged"
+          ],
+          "mechanism": "NOT a version literal - hardcoded H21 REMEDIATION WORDING. These pins assert something TRUE (`grid` is genuinely absent from H22's 218 LOP types) and they were briefly suspected of masking a real validator defect. They are not: the H22 catalog exists, lists grid as known-absent, and the validator flags it correctly - but with different prose ('grid is a Sop type - use the plane LOP') than H21's ('use a cube with sy=0.01'). The pin hardcoded H21's wording.",
+          "disposition": "stale wording, code correct",
+          "bonus_probe": "The H22 catalog was checked for the failure class SYNAPSE exists to prevent - a remediation that itself recommends a phantom. It is clean: all six known_absent entries are genuinely absent on 22.0.368, and both recommended alternatives (`plane`, `cube`) are real LOP types."
+        }
+      ],
+      "the_fix_that_was_proven_then_reverted": "HOUDINI_BUILD resolved from the live host when one is resident (explicit override > live host > committed literal), refusing to believe a module carrying __synapse_canonical__ because trusting a fake is the exact mechanism that produced RES-F7; plus the three stale assertions re-aimed at derived values rather than literals. MEASURED RESULT: all four tests green under hython, and the gate interpreter provably unaffected - it has no `hou` to read, so HOUDINI_BUILD stayed 21.0.671 there and the change is a deliberate no-op on that leg. This is the measurement RES-R1 said only a leg that could measure it should make. It is evidence for the ruling, NOT a shipped change - see H2-R1."
+    }
+  },
+
+  "oracle": {
+    "clause_1_every_finding_carries_a_verdict_and_anchor": {
+      "verdict": "MET",
+      "detail": "11 of 11. Each carries CONFIRMED/REFUTED/UNVERIFIABLE, an evidence tier, a CURRENT file:line anchor (every original anchor was stale - the tree moved at 97b879d), and a reproducible probe command. Zero UNVERIFIABLE."
+    },
+    "clause_2_every_pin_has_a_recorded_mutation_result": {
+      "verdict": "PARTIAL - stated plainly rather than rounded up",
+      "detail": "All 83 pins have a recorded outcome for all 14 rows. But only 18 had a mutation AIMED at them. The remaining 65 were never targeted, so 'no mutation turned them red' says nothing about them and is not reported as though it did. Fully discharging this clause needs a mutation per pin - roughly 65 more rows - which is a real gap, not a technicality.",
+      "residual": "for_ruling H2-R6"
+    },
+    "clause_3_pytest_k_solaris_zero_failed_and_count_increases": {
+      "verdict": "NOT MET on both halves - reported as a finding per Law 7, not softened",
+      "failed": 6,
+      "attribution": "All 6 are async tests failing on `Unknown pytest.mark.asyncio`. pytest_asyncio is ABSENT under hython 3.13.10 and PRESENT on the gate interpreter 3.14.2 - Q2-F4's environment bucket and a direct instance of Q2-F5 (the gate and the artist's runtime share almost no dependency surface). ZERO of the six has any relationship to F1-F11: 5 in tests/test_solaris_ordering.py, 1 in tests/test_autonomy_validator.py. The F1-F11 home itself, tests/solaris/, is 128 passed / 0 failed.",
+      "count": "HELD at 83, did not strictly increase. The leg DID author a closing pin for the M11 hole; it was reverted by the concurrent process and, per PART B's standing order against quiet rewrites, was not re-applied. Held is Law-6 legal; increased was the ask, and it did not happen.",
+      "also_note": "`pytest -k solaris` without --continue-on-collection-errors aborts at collection on 3 pre-existing ModuleNotFoundErrors (websockets, mcp) - the exact three R42 removed from this leg's release condition."
+    },
+    "clause_4_gate_suite_holds_at_4881_plus_with_zero_failed": {
+      "verdict": "MET",
+      "before": "4889 passed, 0 failed, 137 skipped (RES's post-fix number)",
+      "after": "4889 passed, 0 failed, 137 skipped, exit 0",
+      "detail": "Measured on this tree, which is byte-identical to c1d194b for all tracked files. 4889 >= 4881 and failed = 0.",
+      "producer": "python -m pytest tests/ -q -p no:cacheprovider (system python 3.14.2)",
+      "caveat": "This interpreter has no `hou`, so tests/solaris all-skips here. It is the no-regression and Commandment-7 check, never the oracle for any host-behaviour claim in this receipt."
+    }
+  },
+
+  "findings": [
+    {
+      "id": "H2-F1",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "harness/notes/h2b/intrusion_evidence/{agent_edits_to_orchestrator_tree,second_intrusion}.patch; harness/notes/h2b/rogue_evidence/mutation_matrix_h2.{py,json}",
+      "severity": "structural",
+      "summary": "A SECOND H2b orchestrator was operating in this same worktree for the entire run. It quarantined this session's producer into a directory named `rogue_evidence/`, recorded this session's edits as `intrusion_evidence/`, and reverted this session's test edits three separate times. This session, symmetrically, observed unexplained mid-run reverts and one contaminated matrix row before identifying the cause. Neither process is malfunctioning; the harness placed two of them in one directory.",
+      "why_it_matters": "This is a textbook violation of AGENT_CONSTITUTION Article V: 'Every parallel agent gets its own git worktree. Two agents in one directory produce interleaved commits, a corrupted suite baseline, and FINDINGS THAT CANNOT BE ATTRIBUTED.' The failure mode named in the constitution is exactly the one that occurred, and it is the reason this receipt is amber rather than green.",
+      "concrete_damage_observed": [
+        "second_intrusion.patch attributes `explorevariants_H2B_PHANTOM` to an intrusion. That string is the OTHER orchestrator's own mutation (its H2b-M5) captured mid-flight - i.e. the intrusion log misattributes the logger's own work.",
+        "One matrix run aborted with 'M4: replacement was a no-op' because create_variants.py was mid-mutation from the other process.",
+        "One matrix run finished with component_builder.py still carrying mutation M10, because the two restore paths raced. Detected by this harness's own post-run cleanliness check and manually restored.",
+        "Three sets of PART C edits were reverted mid-session."
+      ],
+      "what_is_NOT_claimed": "This leg does not claim its numbers are contamination-free. They are internally consistent - the control was green on every run and the M11/M14 nothing-red rows reproduced across three independent runs - but consistency is not isolation, and no measurement taken in a shared worktree can be certified.",
+      "status": "OPEN - for_ruling H2-R5. Not acted on: stopping or altering another orchestrator is outside any agent's authority, and its artifacts were left untouched per Law 4 (classify, never delete)."
+    },
+    {
+      "id": "H2-F2",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_solaris_wiring_verifiers.py:120-128; python/synapse/validation/solaris/verify_import_megascans.py:65-75",
+      "severity": "structural",
+      "summary": "Two pins in the same suite make OPPOSITE claims about F3 and BOTH are green. test_f3_megascans_material_reference_is_wired_live proves live that the material Reference LOP IS wired; test_megascans_material_reference_is_orphaned asserts `check.ok is False` - that it is NOT wired - and passes. The static check reads EXPECTED_TOPOLOGY, a frozen literal in the verifier module captured at audit time, and never touches the implementation.",
+      "why_it_matters": "This pin cannot fail, and it is worse than inert: it actively misreports a repaired defect as still open. Its own assertion message is `'F3 appears fixed -- update this pin and the finding'` - the instruction was written, the repair landed, and nobody followed it. Found independently by two instruments that could not see each other: the F3 assayer flagged it as WRONG PIN, and mutation M14 exposed it by renaming the node without the check noticing.",
+      "generalisation": "The same stale-literal mechanism produces three of this leg's four surviving-mutation pins. The static verifier layer as a whole checks its own declarations rather than the emitted graph.",
+      "status": "OPEN - for_ruling H2-R4"
+    },
+    {
+      "id": "H2-F3",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_solaris_wiring_verifiers.py:105-110; tests/solaris/test_live_wiring.py:149-154; python/synapse/mcp/tool_impls/solaris/scene_template.py:286",
+      "severity": "structural",
+      "summary": "Detaching karmarendersettings from the scene_template chain turns NOTHING red across all 83 pins. The network is left presenting two terminal LOPs - the identical defect shape the audit raised as F5 for create_variants - and the two pins that exist to verify this exact tool both miss it.",
+      "why_it_matters": "F5 was caught for create_variants and pinned. The same class in scene_template is uncovered, and scene_template is the one tool of the five the audit's own live table graded PASS end to end. The coverage gap sits precisely where confidence is highest.",
+      "candidate_fix_drafted_not_applied": "see for_ruling H2-R3",
+      "status": "OPEN - for_ruling H2-R3"
+    },
+    {
+      "id": "H2-F4",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/mcp/tool_impls/solaris/create_variants.py:200-201",
+      "severity": "structural",
+      "summary": "F4's stated mechanism is a phantom AND a real defect of the same shape lives at the same location, on a branch the first re-probe never reached. When no base componentmaterial exists, the `else:` branch creates a bare componentmaterial with zero wired inputs against a catalogued min_inputs=1.",
+      "why_it_matters": "The brief's premise was 'one in eleven was a phantom; the other ten share its provenance.' The re-qualification found the phantom count is three, not one - and that the single finding used to define 'phantom' is itself half-real. A refutation of a mechanism is not a refutation of a defect.",
+      "how_it_was_caught": "Only by the adversarial second pass. The first assayer returned REFUTED on a probe that exercised the `if base_mat:` branch and generalised.",
+      "status": "OPEN - for_ruling H2-R2"
+    },
+    {
+      "id": "H2-F5",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "harness/notes/l2_wiring_findings.md - the F4, F8, F10 entries",
+      "severity": "minor",
+      "summary": "The L2 receipt states three mechanisms that are false on this build and states them in the present tense as REFUTED-LIVE/REFUTED-STATIC 'Truth' blocks. F8's anchor (`scene_template.py:167 vs import_megascans.py:~150`) cites a divergence that did not exist at the audit commit - all three tools read the same key there. Seven further entries describe defects that were real when written and have since been repaired, with no marker distinguishing them from live ones.",
+      "why_it_matters": "R29: a receipt is not the tree. This leg exists because a written-down finding was trusted; the same document is still being read as current. Reported rather than edited - the disposition of a governing receipt is not an agent's call.",
+      "status": "OPEN - for_ruling H2-R7"
+    },
+    {
+      "id": "H2-F6",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "python/synapse/server/rbac.py:116 check_permission; python/synapse/server/websocket.py:590",
+      "severity": "note",
+      "summary": "Surfaced by the F1 adversarial re-check and deliberately kept OUT of F1. Under studio-lan RBAC all five Solaris command types are denied to VIEWER/ARTIST/LEAD and pass only for ADMIN. This is not Solaris-specific - ARTIST resolves only 62 of 120 registry command types and cops_create_network is denied identically - and is_rbac_enabled() is False in the shipped single-user localhost posture, so nothing is gated today. It is a general lag of the RBAC permission table behind the registry.",
+      "why_it_is_here_and_not_in_F1": "Folding it into F1 would have rescued a refuted finding with unrelated evidence. Filed separately, as the assayer recommended.",
+      "status": "OPEN - not for this leg"
+    },
+    {
+      "id": "H2-F7",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_solaris_ordering.py (5 pins); tests/test_autonomy_validator.py::TestPreFlightValidation::test_solaris_ordering_clean",
+      "severity": "minor",
+      "summary": "`pytest -k solaris` is 6 failed under hython purely because pytest_asyncio is absent from the shipping interpreter while present on the gate interpreter. The oracle clause that names this selector therefore cannot be satisfied on the shipping leg by any amount of Solaris work.",
+      "why_it_matters": "An oracle clause that a leg cannot satisfy by doing its job correctly is a mis-specified oracle, not a failure of the leg (Law 7). Recorded so the next leg writing a `-k solaris` clause scopes it to tests/solaris/ or fixes the interpreter's dependency surface.",
+      "status": "OPEN - for_ruling H2-R6"
+    },
+    {
+      "id": "H2-F8",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "harness/notes/mutation_matrix_h2.py - the post-run cleanliness check",
+      "severity": "note",
+      "summary": "This leg's own matrix reports 'tree clean after restore: False' whenever any UNTRACKED path exists, because its dirty filter does not distinguish tracked modifications from untracked files. It fired on shot_layers/ (RES-F11) and on the other orchestrator's h2b/ directory. Cosmetic, but it is a check whose failure signal is not specific to the thing it guards, and it was left in rather than silently tuned.",
+      "status": "OPEN - noted, not fixed"
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "H2-R5",
+      "question": "Two H2b orchestrators ran concurrently in .claude/worktrees/h2-requalify, mutually classifying each other as intruders (H2-F1). Which receipt is authoritative, should either leg be re-run in isolation, and what prevents a repeat?",
+      "why_escalated": "Article I - this is a value judgement about the harness's own dispatch, not something provable from the tree. It is also the item that determines how much weight every other number in this receipt carries, so it is listed first.",
+      "recommendation": "Re-run ONE H2b in a clean, exclusive worktree before trusting either receipt's numbers as final; treat both existing receipts as corroborating evidence rather than authority. Structurally, Article V already requires one worktree per parallel agent - the gap is that nothing ENFORCES it. An exclusive lockfile at the worktree root, taken at leg start and refused if held, would have turned this into a clean refusal instead of two half-contaminated runs. This session did not write to harness/state/** or alter the other process; both are outside its grant.",
+      "blocks_merge": true
+    },
+    {
+      "id": "H2-R1",
+      "question": "RES-R1, inherited. HOUDINI_BUILD defaults to the H21 literal while an H22 host is resident, contradicting its own documented contract ('tests that pin against the RUNNING build parametrize on HOUDINI_BUILD'). The fix is written and measured. Apply it, or keep the literal and re-aim the four tests individually?",
+      "why_escalated": "RES-R1 escalated this as an Article I value judgement and deposited it here because H2 is the leg that could measure it. The measurement is now done, so what remains is purely the judgement. This session applied the fix, proved it, and had it reverted by the concurrent process; it has NOT been re-applied, and re-applying it unilaterally would be exactly the scope expansion RES-R1 was written to avoid.",
+      "measurement_supplied": "Blast radius: 10 files import HOUDINI_BUILD; 81 occurrences of the '21.0.671' literal across 20+ test files. With the fix: all four RES-F7 tests green under hython; gate interpreter provably unaffected (no `hou` to read, so the literal stands and the change is a no-op there). The three stale assertions need re-aiming regardless of this decision, because one of them (test_symbol_table_check) hardcodes the literal directly and is NOT a HOUDINI_BUILD consumer.",
+      "recommendation": "Apply it. The constant's own docstring already specifies the fixed behaviour; the literal default is the bug, and the gate leg is unaffected by construction. The exact diff is preserved at harness/notes/h2b/intrusion_evidence/agent_edits_to_orchestrator_tree.patch.",
+      "blocks_merge": false
+    },
+    {
+      "id": "H2-R2",
+      "question": "F4 is CONFIRMED MED on the `else:` branch of create_variants (H2-F4): a bare componentmaterial with zero inputs against min_inputs=1. Fix in a follow-on, or accept it as unreachable in practice?",
+      "why_escalated": "Whether the no-base-material path is reachable in shipped usage is a product judgement, not a tree fact. The defect is proven; its priority is not an agent's call.",
+      "recommendation": "Fix it - it is one setInput on a branch that already exists, and it is the same defect class as F3/F5 which were both judged worth repairing. Pin it with a mutation-proven test, since the existing static verifier would not catch it.",
+      "blocks_merge": false
+    },
+    {
+      "id": "H2-R3",
+      "question": "The M11 coverage hole (H2-F3): detaching karmarendersettings turns nothing red. Adopt the drafted closing pin, or re-aim the two existing scene_template pins?",
+      "why_escalated": "PART B's standing order is 'REPORT IT as a finding, do not quietly rewrite it', so the pin was deliberately not shipped. Which of the two repairs is right - add a pin, or fix the two that already exist - is a judgement about the verifier layer's intended shape.",
+      "drafted_pin": "test_scene_template_emits_one_connected_chain_live(lopnet): execute the tool, then assert the emitted network has exactly ONE terminal LOP, that it is the usdrender_rop, and that every created node is reachable upstream from it. Fails when the tool leaves any emitted node unwired. Verified to detect M11 during this run before it was reverted; full text at harness/notes/h2b/intrusion_evidence/second_intrusion.patch.",
+      "recommendation": "Adopt the pin AND re-aim the two existing ones. The deeper issue is that verify_static() checks EXPECTED_TOPOLOGY against itself for ALL FIVE tools, not just scene_template - a live cross-check of declaration against emitted graph would close H2-F2 and H2-F3 together.",
+      "blocks_merge": false
+    },
+    {
+      "id": "H2-R4",
+      "question": "test_megascans_material_reference_is_orphaned asserts F3 is still broken when it is repaired, and passes (H2-F2). Flip it to assert the repaired state, or delete it as superseded by the live pin?",
+      "why_escalated": "Law 6 forbids deleting a test to make work pass and requires rewriting it to assert the behaviour at its real home; which home that is - the static verifier or the live tier - is a design judgement.",
+      "recommendation": "Flip it, do not delete. Its sibling live pin already proves the wiring; the static check should assert the same truth so the two layers cannot silently disagree again. Then audit the remaining EXPECTED_TOPOLOGY literals for the same staleness - this pin is unlikely to be the only one.",
+      "blocks_merge": false
+    },
+    {
+      "id": "H2-R6",
+      "question": "Two oracle clauses are unsatisfiable as written: 'every pin has a recorded mutation result' (65 of 83 pins had no mutation aimed at them) and 'pytest -k solaris -> 0 failed' (6 failures are an absent pytest_asyncio, unfixable by Solaris work). Re-scope the oracle, or fund the work to meet it literally?",
+      "why_escalated": "Changing a leg's own oracle is never an agent's call - Law 7 exists precisely to stop an agent softening the instrument that is working.",
+      "recommendation": "Re-scope both: point the selector at tests/solaris/ (which is 128/0), and restate the mutation clause as 'every pin that asserts an implementation behaviour', which is the honest target - host-fact pins are unmutatable by construction and should be enumerated as such rather than counted as gaps. Separately, install pytest_asyncio into the shipping interpreter; Q2-F5 is the larger version of this problem.",
+      "blocks_merge": false
+    },
+    {
+      "id": "H2-R7",
+      "question": "harness/notes/l2_wiring_findings.md now contains three phantom mechanisms and seven repaired-but-present-tense findings (H2-F5). Annotate it in place, supersede it with this receipt, or leave it as a dated historical record?",
+      "why_escalated": "Disposition of a governing receipt is a documentation-authority judgement, and R29's lesson cuts both ways - editing history to match the tree is its own hazard.",
+      "recommendation": "Annotate in place with a dated per-finding status line pointing at this receipt, and do not rewrite the original Truth blocks. The record of what was believed, and why it was wrong, is the asset.",
+      "blocks_merge": false
+    }
+  ],
+
+  "inherited_still_open": [
+    "RES-R2 - check_suite_baseline regex-parses pytest output and ignores the return code, so a guard-aborted run scores as holding. Untouched by this leg; harness/verify/ is the ratchet's own territory.",
+    "RES-R3 - shot_layers/ is written into the repo root by the solaris live tests. Observed again on every hython run in this leg. Classified, not deleted (Law 4)."
+  ],
+
+  "artifacts": {
+    "producers": [
+      "harness/notes/mutation_matrix_h2.py - the R34 matrix: 14 anchor-verified mutations, byte-exact restore, green control, full 83-pin sweep per row, honest three-way classification (detects / host-fact-unmutatable / surviving)"
+    ],
+    "evidence": [
+      "harness/notes/mutation_matrix_h2.json - the full matrix, every row's newly-red set",
+      "the eleven PART-A assayer returns, each with a reproducible hython command and verbatim probe output, in the workflow journal"
+    ],
+    "other_orchestrator_untouched": "harness/notes/h2b/** is the concurrent process's output, including its quarantine of this session's producer. Left exactly as found."
+  },
+
+  "resume_token": {
+    "skip": "Do NOT re-derive the F1-F11 verdicts - all eleven are settled with live anchors, and nine survived an adversarial second pass. Do not re-litigate F4's host contract: copyNodesTo DOES carry outside inputs on 22.0.368, verified twice. Do not re-run the mutation matrix unless an implementation or a pin changes.",
+    "next": "H2-R5 first - decide the concurrency question before trusting any number here as final. Then H2-R1 (the HOUDINI_BUILD fix is written and measured; it needs a decision, not more work) and H2-R3/H2-R4, which are one repair: the static verifier layer checks its own declarations rather than the emitted graph, and that single mechanism produced three of the four surviving-mutation pins.",
+    "watch": "If a future run sees test edits reverting themselves mid-session, or a mutation matrix aborting with 'replacement was a no-op', check for a second orchestrator in the same worktree BEFORE debugging the harness - that is what those symptoms meant here, and it cost this leg roughly an hour."
+  }
+}
