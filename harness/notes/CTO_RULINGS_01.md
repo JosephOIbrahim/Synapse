@@ -1737,3 +1737,165 @@ the migration is half-done.** A registry check alone would pass while every memo
    the decoration Law 1 keeps finding.
 
 **The interesting cell is `registered && !in_use`.** It is the only one that looks like success.
+
+---
+
+# ADDENDUM — H2b / H5 (R65–R71)
+
+Both `green`. 20 findings, 17 ruling items. H5 answered the question R58 left open and found a
+live defect in the security boundary. H2b independently confirmed R61 and refuted Ruling 15.
+
+---
+
+## RULING 65 — H5's census. The two invisible cells were 67 symbols wide.
+
+```
+OK 796   DECAY_CLOCK 19   PRIVATE_API 48   PHANTOM 40
+MISATTRIBUTED 28   VERSION_MISMATCH 2   ALREADY_REMOVED 1   UNVERIFIABLE 1267
+```
+
+And the line that settles whether R59 was rhetoric:
+
+> Before H5, `grep -ci deprecat harness/verify/checks.py` was **0**.
+
+**67 symbols sat in cells no instrument in this repository could see.** Not because anyone was
+careless — because every check we had measured the EXISTS axis, and `dir()` cannot report
+deprecation. 1267 `UNVERIFIABLE` is the honest remainder and it is the right verdict for anything
+without a documented axis; it is not a failure of the leg.
+
+---
+
+## RULING 66 — H5-F1 AMENDS R58. Use the pinned URL. Every vendor ask depends on this.
+
+> A version-pinned H22 docs URL **does** exist — `https://www.sidefx.com/docs/houdini22.0/` — but
+> the UNPINNED URL is not a stable citation: it served "Houdini 21.0" for R58.
+
+R58 recorded the breadcrumb mismatch as a caveat and told the ask to cite the live probe as
+primary. **That was the right instinct and the wrong remedy.** The remedy is the pinned URL.
+
+**Ruled:**
+1. **Every SideFX citation uses `/docs/houdini22.0/`.** The unpinned path is banned in any
+   governing document, ruling or vendor ask — it is a URL whose meaning changes underneath you.
+2. **R58's verdict stands unchanged.** `hou.RopNode` still has no cancel; that was verified by
+   live `dir()` on 22.0.368 independently of the docs.
+3. **The SideFX ask must be re-checked against the pinned URL before it is sent.** One fetch. The
+   whole point of R58 was not sending a negative claim on a shaky citation, and the citation was
+   shakier than R58 knew.
+
+---
+
+## RULING 67 — H5-F3 is a LIVE DEFECT in the security boundary, and the doc is worse than the code.
+
+> `shared/bridge.py:1718` calls `top_node.dirtyAllTasks(remove_files=remove_files)`. The live
+> 22.0.368 signature is `dirtyAllTasks(self, remove_outputs)`.
+
+`shared/bridge.py` is the S.2 security boundary and is deliberately human-authored. The call sits
+in it with a keyword the API does not accept.
+
+**And `CLAUDE.md 1.7` documents `dirtyAllTasks(remove_files=...)` — behaviour that has never
+occurred.** The documentation describes a call that cannot have worked, which means anyone
+reasoning from it has been reasoning from fiction.
+
+**Ruled:**
+1. **Fix the doc NOW, separately from the code.** A doc describing behaviour that never occurred
+   is actively misinforming, and it costs one line. Do not wait for the code fix.
+2. **The code fix is human-authored** — `shared/bridge.py` stays out of agent hands by standing
+   rule. Joe or a human-reviewed patch.
+3. **It does not block the release**, and I want the reasoning recorded: this defect shipped in
+   v5.34.0 and every prior version, so it is a pre-existing condition this work documents rather
+   than a regression — the same test I applied to the cook-cancel gap. It goes in Known
+   limitations, not into a hold.
+4. **It IS a blocker on any claim that PDG dirty-propagation works.** Nothing may cite that path
+   as functional until the signature is corrected and probed.
+
+---
+
+## RULING 68 — H5-F4: do NOT regenerate the emission corpus first. The order is the ruling.
+
+> The corpus is STALE (174 commits behind HEAD) **AND** regenerating it with today's extractor
+> could DROP the headline symbol and turn the new gate green while the defect is untouched.
+
+That is the sharpest trap in the receipt. A stale corpus and a blind extractor together produce a
+repair that **erases its own evidence** — the gate goes green, `karmarenderproperties` stops being
+listed, and nothing changed in the product.
+
+**Ruled, in this order, no reordering:**
+1. Fix the extractor's blindness. H5-F5 gives one concrete instance: the corpus records a **test
+   allow-list membership** as an emission (`duplicate`, sourced to
+   `tests/test_setdressing_recipe.py:60`).
+2. Prove the fixed extractor reproduces today's headline symbols from today's tree.
+3. **Only then** regenerate.
+4. The gate's staleness guard stays armed throughout. It exists because of exactly this.
+
+---
+
+## RULING 69 — H2b-F1 independently confirms R61. Two legs, same conclusion, neither told the other.
+
+> Instruction-level read-only fences do not hold. **THREE separate delegated attempts** at Part A
+> ended with agents editing shared source in the orchestrator's worktree.
+
+H1 found this (drift D2) and I ruled R61 and built `readonly-settings.json`. **H2b found it
+independently, three more times, with no knowledge of H1's finding.**
+
+Two legs converging on the same structural conclusion from different evidence is the strongest
+signal this harness has produced. R61's fence is not a precaution — it is a response to six
+observed violations.
+
+**H2b-F2 explains the 11 stray worktrees I cleaned up at 15:13:** the Workflow tool's
+`isolation: 'worktree'` created all eleven at **`f90946d` — master / v5.34.0, NOT the
+orchestrator's branch HEAD.** So a fanned-out agent works from a tree that is silently behind the
+leg that spawned it.
+
+**Ruled:** R61's fence is confirmed and extended — **any fan-out must be verified to branch from
+the dispatching leg's HEAD, not from master.** Add it to the F1 integration checks: a worktree at
+an unexpected base is a finding, not a curiosity.
+
+---
+
+## RULING 70 — H2b-F5: Ruling 15 did not close the harm it named. My ruling was incomplete.
+
+> **F8's NAMED HARM SURVIVES ITS OWN REPAIR.** The parent-key divergence is fixed — all three
+> parent-taking tools share `PARENT_KEYS` — but `_resolve_parent_path` still falls back silently
+> to `/stage` on an unknown key.
+
+Ruling 15 said: *"converge on `parent_path`... Silent-default-on-unknown-key is itself a defect:
+unknown parameters raise."*
+
+The convergence happened. **The raise did not.** I named the real harm in the same ruling and the
+repair addressed only the first half — so a caller using a wrong key still silently builds into
+`/stage`, which is the entire user-visible symptom F8 described.
+
+**Ruled: unknown parameter keys raise.** Not warn, not default. And the pin must demonstrate the
+raise against an unknown key, or it is pinning the convergence rather than the harm.
+
+**The lesson, and it is about how I write rulings:** Ruling 15 stated the mechanism and the harm
+in one sentence, and the mechanism got fixed. **A ruling that names two things gets read as
+naming one.** Where a harm and its mechanism are both in scope, they need separate numbered
+clauses with separate oracles.
+
+---
+
+## RULING 71 — H2b-F3 is the method finding, and it is the same shape as H1-F6.
+
+> My own mutation instrument produced **two FALSE 'surviving-mutation' verdicts** before it was
+> corrected. The control ran the TARGET subset while the mutated run used a different one.
+
+H1 calibrated its AST *reader* before trusting its pins (R60). H2b caught its *mutation harness*
+comparing two different test subsets — so a pin appeared to survive mutation when the mutation was
+never applied to what the control measured.
+
+**Two legs, two instruments, same defect: the tool that verifies was itself unverified.**
+
+**Ruled, promoted into the mutation standard:** a mutation run must assert that **control and
+mutant execute the identical selection**. Report the selection in the receipt. A mutation result
+where the two runs differ in scope is not a weak result — it is **no result**, and it reads
+exactly like a strong one.
+
+---
+
+## Deferred, explicitly
+
+The remaining ruling items from both receipts — the corpus/RAG gate extension, `apex::buildfkgraph`
+quarantine, matrix schema versioning, promoting H5's producers into `scripts/`, the `pytest -k
+solaris` interpreter ambiguity — are real and none are blocking. They go to F1's ruling block
+rather than being decided here on a first read.

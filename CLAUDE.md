@@ -116,7 +116,7 @@ PDG farm cooks are inherently async (minutes to hours). R8 bridges this to FastM
 
 > **⚠ H21.0.671 phantom:** `pdg.PyEventHandler(fn)` has **no constructor** ("TypeError: No constructor defined"). Register a raw callable with `addEventHandler(fn, EventType)` — it registers the handler AND returns the wrapper object you keep for `removeEventHandler`.
 
-**On failure:** dirties the generated tasks via `dirtyAllTasks(remove_files=remove_files)` so they recook — cache files on disk are **preserved by default** (a blanket `remove_files=True` wipe is non-granular and unsafe on shared farm storage; on-disk removal is opt-in per operation via the `remove_generated_files` kwarg). **Routing:** any `cook_pdg_chain` op auto-routes to `_execute_pdg_deferred` in the async path. See `shared/bridge.py`.
+**On failure:** attempts to dirty the generated tasks so they recook. **This rollback has never executed.** `shared/bridge.py:1718` calls `dirtyAllTasks(remove_files=...)`; the live 22.0.368 signature is `dirtyAllTasks(self, remove_outputs)`, so the call raises TypeError on every invocation and is caught into `rollback_note` at `:1723`. The failure is *recorded*, not *rolled back*. The method is additionally deprecated in favour of `hou.TopNode.dirtyAllWorkItems` (VERIFIED-RUNTIME 2026-07-26, H5-F3 + live inspect.signature). Cache files on disk are preserved by default. **Nothing may cite PDG dirty-propagation as functional until the signature is corrected and probed.**
 
 ### 1.8 Emergency Halt
 
