@@ -2054,3 +2054,125 @@ claim about to go out under his name. The sweep took two runs.
 of a claim**, and it is the same failure wearing different clothes: an oracle that answers a
 narrower question than the one being asked will answer it correctly, and the answer will still be
 wrong.
+
+---
+
+# ADDENDUM — H6 (R74–R78)
+
+`green`. 7 findings, 6 ruling items, suite 4881 → 4915 (+34, 0 failed). **R64 was wrong in both
+directions and the leg proved it rather than inheriting it.**
+
+---
+
+## RULING 74 — R64 AMENDED. Both halves of my predicted state were false.
+
+**R64 predicted:** `registered=True, in_use=False` — "the only cell that looks like success while
+the substrate does nothing typed."
+
+**H6-F1:** prims are authored **TYPED today.** `usd_target.py` sets
+`prim_spec.typeName = 'MonetaMemory'` **unconditionally, in both Moneta copies.** Moneta's own
+`DEEP_THINK_BRIEF_codeless_schema.md:15` — which says prims are untyped `def` and the migration
+is "the next surgery" — **is stale**, and I inherited that staleness straight into a ruling.
+
+**H6-F2:** `schema_registered` is **FALSE on both interpreters** in the default environment.
+
+So the real state is the exact inverse of my prediction: **`registered=False, in_use=True`.**
+Prims carry the type name; USD does not know the type. I had the cells backwards.
+
+**Ruled:**
+1. R64's predicted state is struck. The measured state stands.
+2. `h6.md`'s premise section is corrected — a brief asserting a stale premise teaches the next
+   agent the same wrong thing.
+3. **Moneta's design brief is flagged stale in Moneta**, not silently worked around. Article VII:
+   amendments commit before the work they govern.
+4. **The lesson is the ruling.** R64 cited Moneta's brief as evidence and did not probe it. A
+   design document describes intent at the time of writing; **it is a claim about the future, and
+   it ages into a claim about the present without anyone editing it.** Design briefs are
+   `UNVERIFIED` by default, whatever their provenance.
+
+---
+
+## RULING 75 — H6-F5 is the epistemics finding, and it invalidates the check I asked for.
+
+> `schema_in_use` is NOT evidence of a working substrate on its own. **Sdf authoring is
+> schema-blind: `typeName` is written to disk with or without a registered schema.**
+
+I asked H6 to measure `schema_in_use` as "are prims authored with that type." It measured it, and
+then established that the measurement **cannot mean what I wanted it to mean.**
+
+Writing `typeName = 'MonetaMemory'` through Sdf succeeds whether or not USD has ever heard of
+`MonetaMemory`. The string lands on disk either way. So a prim reporting the type name proves
+authoring happened — and proves **nothing** about registration, validation, or whether the
+attributes conform.
+
+**Ruled:** `schema_in_use` alone is banned as evidence of substrate health. It is only meaningful
+**paired with `schema_registered`**, and the pair `registered=False, in_use=True` — which is
+today's actual state — is precisely the dangerous cell: **prims that look typed and are not
+validated by anything.**
+
+This is R72's `doc_silent_deprecation` in a different subsystem. A single signal standing in for a
+conjunction, reporting healthy because it can only report one thing.
+
+---
+
+## RULING 76 — H6-F4: dead code reporting the inverse of the truth, on the exact seam I pointed at.
+
+> `store.py`'s `except ImportError` arm was **DEAD CODE**, and the surviving arm reported **the
+> exact inverse of the truth.**
+
+I sent H6 to that seam citing `store.py:830` as the good pattern — the one that "distinguishes
+not-installed from installed-but-broken." **It did the opposite of what I praised it for.**
+
+Two failures compounding: an unreachable branch, and a reachable branch whose message was
+backwards. Nothing failed, because a wrong message is not an exception.
+
+**Ruled:** fixed as part of this leg's product change, which it was. And recorded as the fourth
+Law 3 violation found this week — `status` describing what was attempted rather than what
+happened, this time in the diagnostic that exists to report the truth about the substrate.
+
+**I cited it as exemplary without reading it.** That is the same error as R64's stale premise, one
+layer down: I inherited a belief about the code from its docstring.
+
+---
+
+## RULING 77 — H6-F3: conditions 4 and 5 are structurally unreachable, and that is the finding.
+
+> **SYNAPSE authors ZERO USD through Moneta.** Conditions 4 and 5 are not half-migrated — they are
+> structurally unreachable on SYNAPSE's live path.
+
+R64 framed five conditions as a chain where "any link can break." H6 found two links **not
+connected to the chain at all** on SYNAPSE's side. Moneta authors typed USD; SYNAPSE never invokes
+that path.
+
+**Ruled:** this reframes the Moneta integration honestly. `SYNAPSE_MEMORY_BACKEND=moneta` routes
+*memory storage* through Moneta. It does **not** mean SYNAPSE writes USD, and no claim may say or
+imply that it does.
+
+The USD substrate is real, typed, and authored — **by Moneta, on Moneta's own path.** SYNAPSE's
+relationship to it is currently storage, not authoring. That is a smaller claim than the
+architecture documents imply, and it is the true one.
+
+---
+
+## RULING 78 — H6-F7: Article V was violated ON THIS LEG, and my fix was already right.
+
+> TWO independent sessions executed `harness/prompts/h6.md` against this one worktree and branch
+> **concurrently, and both held write tools.**
+
+That is the double-dispatch race I caught at 16:05 and fixed at 16:07 with the `.orch_launched`
+marker — H6 dispatched at 16:05:01 and again at 16:05:56, and I killed the duplicate at 16:06.
+**Both ran for roughly 55 seconds, and H6 observed it from the inside.**
+
+Its ruling question asks whether the orchestrator should refuse to dispatch a leg whose worktree
+already carries a live marker. **That is exactly what the marker now does** — confirmed by an
+independent observer that did not know the fix existed.
+
+**Ruled:**
+1. The marker fix stands, now validated from inside the affected leg.
+2. **Extend it to interactive sessions.** The marker currently guards orchestrator dispatch only.
+   A human opening `claude` in a leg worktree while a leg runs there hits the identical hazard,
+   and the marker is already the right signal — it just needs reading by something other than the
+   dispatcher.
+3. **Any leg that ran concurrently with another session has its receipt flagged.** H6's findings
+   held up, but "two writers, one worktree" is a condition under which a receipt's provenance is
+   not clean, and it should be visible rather than inferred.
