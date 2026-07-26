@@ -173,22 +173,13 @@ pyside6.QtGui = pyside6_gui
 # stub would deprive the tests that rely on this file's richer stub.
 #
 # The ``__file__`` filter is load-bearing, so it lives in exactly ONE place —
-# ``_capture_real_qt`` — and is unit-pinned below by
-# ``test_capture_real_qt_rejects_file_less_stubs``. Inlining it back into the
-# comprehension would put it beyond the reach of that pin.
-def _capture_real_qt(modules):
-    """Return the *file-backed* (Shiboken) Qt modules from a ``sys.modules``-like map.
-
-    In-memory stubs planted by sibling test files carry no ``__file__``; they
-    are NOT real Qt and must never be captured, because anything captured here
-    is later handed back as the authoritative Qt (see ``_restore_real_qt``).
-    """
-    return {
-        _key: _mod
-        for _key, _mod in list(modules.items())
-        if _key.startswith(("PySide6", "PySide2")) and getattr(_mod, "__file__", None)
-    }
-
+# ``qt_stub_window.capture_real_qt`` — imported here and used by the stub window
+# too, so the two consumers cannot drift. It is unit-pinned below by
+# ``test_capture_real_qt_rejects_file_less_stubs`` and in
+# ``tests/test_qt_stub_window.py``. Inlining it back into the comprehension
+# would put it beyond the reach of those pins.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from qt_stub_window import capture_real_qt as _capture_real_qt  # noqa: E402
 
 _REAL_QT_MODULES = _capture_real_qt(sys.modules)
 for _key in list(sys.modules):

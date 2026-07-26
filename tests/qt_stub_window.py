@@ -14,11 +14,22 @@ of its own imports, then removed. This module is that window.
 
 Discipline (identical to ``tests/test_hda_panel.py``)
 -----------------------------------------------------
-* **Never evict real Qt.** If ``PySide6`` is already in ``sys.modules`` — real
-  PySide6 under hython, or a sibling's stub — this window plants NOTHING and
-  yields ``False``. Shiboken cannot re-initialise in one process; deleting a
-  live real PySide6 and putting a rebuilt one back is what crashed sibling
-  panel tests with an access violation.
+* **Never evict real Qt.** "Real" means *file-backed* (Shiboken), not merely
+  *present*. Presence is not evidence: sibling test files plant in-memory
+  ``MagicMock`` PySide6 objects that are far too thin for
+  ``synapse.panel.synapse_panel`` (``SynapsePanel`` then resolves to a Mock and
+  the calling test asserts against a Mock instead of production code). The
+  discriminator is ``capture_real_qt`` — file-backed only — defined HERE and
+  imported by ``tests/test_hda_panel.py`` so the two cannot drift; it is
+  unit-pinned by ``test_capture_real_qt_rejects_file_less_stubs`` there and by
+  ``tests/test_qt_stub_window.py`` here.
+  - real (file-backed) resident Qt -> plant nothing, yield ``False``. Shiboken
+    cannot re-initialise in one process; deleting a live real PySide6 and
+    putting a rebuilt one back is what crashed sibling panel tests with an
+    access violation.
+  - file-LESS resident Qt (a foreign stub) -> shelve it, plant our own adequate
+    stub for the duration, and put the foreign object back BY IDENTITY on exit,
+    leaving ``sys.modules`` exactly as found.
 * **Remove only what it planted, by object identity.** If some other module
   replaced a key while the window was open, that replacement is left alone.
 * The stub is deliberately RICH (QtWidgets/QtGui as well as QtCore) because
@@ -32,6 +43,13 @@ Failure conditions (Law 1)
   errors at collection — loudly, not silently skipped.
 * If the teardown fails to remove the stub, ``tests/test_hda_panel.py``'s
   restore pin and the sibling-composition oracles go red.
+* If ``capture_real_qt`` wrongly calls a file-less stub "real", this window
+  abdicates, ``SynapsePanel`` resolves to a ``Mock``, and
+  ``tests/test_panel_stop_honest.py`` fails with
+  ``AttributeError: Mock object has no attribute '_on_stop'``.
+* If it wrongly calls real hython PySide6 "not real", this window evicts live
+  Shiboken modules and ``tests/panel/`` + ``tests/test_hda_panel.py`` take an
+  access violation under hython.
 """
 
 from __future__ import annotations
@@ -42,6 +60,27 @@ from contextlib import contextmanager
 from unittest.mock import MagicMock
 
 QT_STUB_KEYS = ("PySide6", "PySide6.QtCore", "PySide6.QtWidgets", "PySide6.QtGui")
+
+_QT_PREFIXES = ("PySide6", "PySide2")
+
+
+def capture_real_qt(modules):
+    """Return the *file-backed* (Shiboken) Qt modules from a ``sys.modules``-like map.
+
+    THE single discriminator for "real Qt is present". In-memory stubs planted
+    by sibling test files carry no ``__file__`` (``MagicMock`` raises
+    ``AttributeError`` for dunders, so ``getattr(..., "__file__", None)`` is
+    ``None``); they are NOT real Qt. Anything captured here is treated as
+    authoritative Qt and is never evicted or shadowed.
+
+    ``tests/test_hda_panel.py`` imports this function rather than defining its
+    own copy — one filter, one place, two pins.
+    """
+    return {
+        _key: _mod
+        for _key, _mod in list(modules.items())
+        if _key.startswith(_QT_PREFIXES) and getattr(_mod, "__file__", None)
+    }
 
 
 class _AutoMockModule(types.ModuleType):
@@ -165,12 +204,25 @@ def _build_stub_modules():
 def qt_stub_window():
     """Plant a PySide6 stub for the body, then remove exactly what was planted.
 
-    Yields ``True`` if a stub was planted, ``False`` if PySide6 (real or a
-    sibling's stub) was already present and was therefore left untouched.
+    Yields ``True`` if a stub was planted, ``False`` only when REAL
+    (file-backed) Qt is resident and was therefore left untouched.
+
+    A resident but file-less foreign stub is shelved, replaced for the duration,
+    and restored by object identity on exit.
     """
-    if "PySide6" in sys.modules:
+    if capture_real_qt(sys.modules):
         yield False
         return
+
+    # Nothing file-backed is resident. Anything Qt-named here is a foreign
+    # in-memory stub: shelve it (by object) and take over for the duration.
+    shelved = {
+        key: mod
+        for key, mod in list(sys.modules.items())
+        if key.startswith(_QT_PREFIXES)
+    }
+    for key in shelved:
+        del sys.modules[key]
 
     planted = _build_stub_modules()
     sys.modules.update(planted)
@@ -178,5 +230,8 @@ def qt_stub_window():
         yield True
     finally:
         for key, mod in planted.items():
+            # by identity: a replacement authored inside the window survives
             if sys.modules.get(key) is mod:
                 del sys.modules[key]
+        for key, mod in shelved.items():
+            sys.modules.setdefault(key, mod)
