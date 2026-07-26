@@ -809,17 +809,36 @@ class SynapseMemory:
         """
         backend = os.environ.get("SYNAPSE_MEMORY_BACKEND", "jsonl").strip().lower()
         if backend == "moneta":
+            # H6 / Law 3: ask whether Moneta is importable rather than inferring
+            # it from an exception type. The previous `except ImportError` arm
+            # was UNREACHABLE (VERIFIED-RUNTIME 2026-07-26): moneta_store
+            # imports nothing from moneta at module scope, so
+            # `from .moneta_store import ...` always succeeds, and
+            # from_storage_dir raises RuntimeError -- not ImportError -- when
+            # the package is absent. Every not-installed seat therefore fell
+            # through to the handler below and was told the backend "is
+            # installed but failed to initialize ... not a missing dependency",
+            # the exact inverse of the truth, at ERROR. A status must describe
+            # what happened, and the distinction this branch exists to draw was
+            # the one thing it got backwards.
+            try:
+                from . import moneta_runtime as _mr
+                available, why = _mr.moneta_available(), _mr.import_error()
+            except Exception as exc:  # noqa: BLE001 -- startup must not break
+                available, why = False, f"{type(exc).__name__}: {exc}"
+            if not available:
+                # Intended path: moneta not installed -> quiet jsonl fallback.
+                logger.warning(
+                    "SYNAPSE_MEMORY_BACKEND=moneta but Moneta is not importable "
+                    "(%s); falling back to jsonl. Install the moneta package or "
+                    "set $MONETA_SRC.", why,
+                )
+                return MemoryStore(storage_dir)
             try:
                 from .moneta_store import MonetaBackedStore
                 store = MonetaBackedStore.from_storage_dir(storage_dir)
                 logger.info("Memory backend: moneta (%s)", store.embedder_id)
                 return store
-            except ImportError as exc:
-                # Intended path: moneta not installed -> quiet jsonl fallback.
-                logger.warning(
-                    "SYNAPSE_MEMORY_BACKEND=moneta not installed (%s); "
-                    "falling back to jsonl.", exc,
-                )
             except Exception as exc:
                 # NOT the intended path: moneta IS installed but constructing
                 # the store failed -- an API drift (unpinned, undeclared dep) or
@@ -827,12 +846,26 @@ class SynapseMemory:
                 # "not installed" and silently served jsonl while the operator
                 # believed moneta was active. Name the resolved copy and raise
                 # the level so an upgrade that breaks the adapter is loud.
-                from . import moneta_runtime as _mr
+                # H6: the provenance lookup is itself fenced. This log line is
+                # the LAST thing standing between a broken adapter and a jsonl
+                # fallback, and it runs inside an except handler -- a raise
+                # here escapes _make_store and stops Houdini's panel loading,
+                # which is precisely the failure the docstring contract above
+                # promises can never happen. moneta_provenance() is written to
+                # never raise; this fence means the contract does not depend on
+                # that promise holding.
+                try:
+                    from . import moneta_runtime as _mr
+                    provenance = _mr.moneta_provenance()
+                except Exception as prov_exc:  # noqa: BLE001
+                    provenance = (
+                        f"<unavailable: {type(prov_exc).__name__}: {prov_exc}>"
+                    )
                 logger.error(
                     "SYNAPSE_MEMORY_BACKEND=moneta is installed but failed to "
                     "initialize (%s: %s); provenance=%s. Serving jsonl. This is "
                     "an API-drift or defect, not a missing dependency.",
-                    type(exc).__name__, exc, _mr.moneta_provenance(),
+                    type(exc).__name__, exc, provenance,
                 )
         elif backend == "shadow":
             try:

@@ -274,6 +274,110 @@ def _wrap_memory_key_check(home: Path) -> Dict[str, Any]:
             "detail": detail, "result": res}
 
 
+# -- Moneta substrate truth (H6 / R64) ----------------------------------------
+
+#: The four (schema_registered, schema_in_use) cells, named. R63: a ruling
+#: scoped to its evidence is scoped to whatever was looked at first, so every
+#: combination gets a verdict rather than only the one the brief named.
+#:
+#:   True/True   the substrate is typed AND the runtime understands the type
+#:   True/False  registered, migration not applied -- the cell R64 named: it
+#:               LOOKS like success while nothing typed is authored
+#:   False/True  DEAD BYTES -- typeName is on disk and this runtime cannot
+#:               resolve it. Sdf authoring is schema-blind, so USD writes the
+#:               string with or without a registered schema (VERIFIED-RUNTIME
+#:               2026-07-26: IsA(Usd.Typed) False, prim definition empty)
+#:   False/False nothing typed anywhere
+_MONETA_BACKENDS = ("moneta", "shadow")
+
+_MONETA_REMEDIATION = (
+    "Register the schema by setting PXR_PLUGINPATH_NAME to Moneta's schema/ "
+    "directory before pxr loads (nothing in packages/synapse.json or in "
+    "Moneta itself sets it today). Registration is process-global, so it must "
+    "be in the Houdini package env, not set at runtime."
+)
+
+
+def _check_moneta_substrate() -> Dict[str, Any]:
+    """H6 / R64: report the substrate as its independent conditions.
+
+    ``moneta_available()`` is one boolean carrying five claims and tests only
+    the first. This check reports conditions 3 (schema registered with USD) and
+    4 (prims authored with that type) as the tri-state they are, and refuses to
+    call the pair healthy unless BOTH are demonstrated.
+
+    Statuses: ``skipped`` when the Moneta backend is not selected or the
+    registry could not be queried at all; ``ok`` only for registered AND
+    in-use; ``fail`` for every other known combination, including the two that
+    look like success (registered-but-unused, and unregistered-but-authored).
+    """
+    name = "moneta_substrate"
+    try:
+        backend = os.environ.get("SYNAPSE_MEMORY_BACKEND", "jsonl").strip().lower()
+        if backend not in _MONETA_BACKENDS:
+            return {"name": name, "status": "skipped",
+                    "detail": (f"SYNAPSE_MEMORY_BACKEND={backend!r} — the Moneta "
+                               "backend is not selected on this seat")}
+        from ..memory import moneta_runtime as mr
+        # Hint the store's Moneta dir so a real stage IS found once
+        # from_storage_dir starts passing use_real_usd=True. Today it does not,
+        # so this resolves to nothing and schema_in_use reports UNKNOWN with
+        # that wiring named in its reason.
+        store_dir = _resolve_store_dir()
+        hint = str(store_dir / ".moneta") if store_dir is not None else None
+        prov = mr.moneta_provenance(usd_root=hint)
+        registered = prov.get("schema_registered")
+        in_use = prov.get("schema_in_use")
+        result = {
+            "backend": backend,
+            "available": prov.get("available"),
+            "moneta_file": prov.get("file"),
+            "moneta_version": prov.get("version"),
+            "schema_registered": registered,
+            "schema_registered_reason": prov.get("schema_registered_reason"),
+            "schema_in_use": in_use,
+            "schema_in_use_reason": prov.get("schema_in_use_reason"),
+            "usd_root_inspected": prov.get("usd_root_inspected"),
+        }
+        cell = f"registered={registered}, in_use={in_use}"
+
+        if registered is None:
+            return {"name": name, "status": "skipped", "result": result,
+                    "detail": (f"{cell} — schema registration could not be "
+                               f"checked: {prov.get('schema_registered_reason')}")}
+        if registered and in_use:
+            return {"name": name, "status": "ok", "result": result,
+                    "detail": (f"{cell} — MonetaMemory is registered with this "
+                               "USD runtime and at least one authored prim "
+                               "carries it")}
+        if registered and in_use is False:
+            return {"name": name, "status": "fail", "result": result,
+                    "detail": (f"{cell} — the schema is REGISTERED but no prim "
+                               "is authored with it. This is the cell that "
+                               "looks like success while the substrate does "
+                               "nothing typed. "
+                               f"{prov.get('schema_in_use_reason')}")}
+        if registered and in_use is None:
+            return {"name": name, "status": "fail", "result": result,
+                    "detail": (f"{cell} — the schema is REGISTERED but no typed "
+                               "prim can be demonstrated. "
+                               f"{prov.get('schema_in_use_reason')}")}
+        # registered is False from here.
+        if in_use:
+            return {"name": name, "status": "fail", "result": result,
+                    "detail": (f"{cell} — DEAD BYTES: prims carry "
+                               "typeName='MonetaMemory' and this USD runtime "
+                               "cannot resolve it. Sdf authoring is "
+                               "schema-blind, so the string is written with or "
+                               f"without a registered schema. {_MONETA_REMEDIATION}")}
+        return {"name": name, "status": "fail", "result": result,
+                "detail": (f"{cell} — MonetaMemory is not registered with this "
+                           f"USD runtime. {prov.get('schema_registered_reason')} "
+                           f"{_MONETA_REMEDIATION}")}
+    except Exception as e:
+        return {"name": name, "status": "skipped", "detail": f"probe failed: {e}"}
+
+
 # -----------------------------------------------------------------------------
 
 def _check_symbol_table() -> Dict[str, Any]:
@@ -591,6 +695,7 @@ def run_doctor(payload: Dict, handler=None, home: Optional[Path] = None) -> Dict
         _check_log_file(home),
         _check_telemetry(home),
         _wrap_memory_key_check(home),
+        _check_moneta_substrate(),
         _check_symbol_table(),
         _check_bridge_endpoint(base),
         _check_mcp_coexistence(base),

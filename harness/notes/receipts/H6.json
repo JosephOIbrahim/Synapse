@@ -1,0 +1,350 @@
+{
+  "schema": "receipt/v1",
+  "leg": "H6",
+  "title": "Substrate truth — decompose moneta_available() into its five claims",
+  "harness": "REPAIR-01",
+  "ruling": "R64",
+  "status": "green",
+  "status_note": "Describes what happened (Law 3). All oracle conditions met and measured. The leg ALSO refutes three of its own brief's premises and repairs one live Law-3 defect it found on the seam the brief told it to reuse. Nothing pushed, merged or tagged.",
+
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "relay-settings.json (interactive orchestrator session; pytest available, so suite evidence is admissible per Constitution Article V)",
+  "commit_at_run": "0870c76",
+  "merge_base_master_head": "7268490",
+  "branch": "repair/h6-substrate-truth",
+  "worktree": ".claude/worktrees/h6-substrate-truth",
+  "date": "2026-07-26",
+
+  "oracle": [
+    {
+      "condition": "moneta_provenance() returns all five fields; none raise with pxr absent",
+      "verdict": "MET",
+      "evidence": "available / version / file / schema_registered / schema_in_use all present, each schema field paired with a *_reason. pxr blocked on the meta path in a clean subprocess -> both report None with 'could not check: pxr unavailable', no traceback.",
+      "producer": "tests/test_moneta_substrate_truth.py::test_provenance_reports_all_five_conditions, ::test_schema_checks_degrade_to_none_when_pxr_is_absent"
+    },
+    {
+      "condition": "the pair (gate, shipping) is reported for schema_registered",
+      "verdict": "MET",
+      "evidence": "See five_conditions_measured below. Both interpreters report schema_registered=False in the default environment; the shipping interpreter flips to True under the control arm.",
+      "producer": "moneta_provenance() run under C:/Python314/python.exe and hython3.13.exe (Houdini 22.0.368)"
+    },
+    {
+      "condition": "the positive control DEMONSTRATED: check fires with PXR_PLUGINPATH_NAME unset",
+      "verdict": "MET",
+      "evidence": "Two-sided, subprocess-isolated, on BOTH interpreters. unset -> False; PXR_PLUGINPATH_NAME=<Moneta>/schema -> True. A third pin asserts the two arms DISAGREE, so a check insensitive to the only input that determines the answer cannot pass.",
+      "producer": "::test_registration_check_fires_with_plugin_path_unset, ::test_registration_check_resolves_with_plugin_path_set, ::test_the_two_control_arms_actually_disagree"
+    },
+    {
+      "condition": "no raise path added to _make_store or any import path",
+      "verdict": "MET — and one PRE-EXISTING raise path was CLOSED",
+      "evidence": "moneta_provenance() is fully fenced. store.py's ERROR handler called it UNFENCED from inside its own except block: a raise there escaped _make_store and would stop Houdini's panel loading. Now fenced. Pinned, and the pin fails against removal of the fence (M6).",
+      "producer": "::test_make_store_survives_a_provenance_that_raises, ::test_provenance_never_raises_when_the_registry_probe_explodes, ::test_provenance_never_raises_when_the_stage_probe_explodes"
+    },
+    {
+      "condition": "pytest -k 'moneta or schema or provenance' -> 0 failed, count strictly increases",
+      "verdict": "MET",
+      "evidence": "153 passed / 0 failed / 4 skipped  ->  187 passed / 0 failed / 4 skipped (+34). BEFORE measured on the same tree with the new pin file moved aside; product changes add no tests, so that is a true pristine count, not a subtraction.",
+      "producer": "python -m pytest -q -p no:cacheprovider -k \"moneta or schema or provenance\""
+    },
+    {
+      "condition": "every new pin fails against its mutation (R34), and its READER is calibrated too (R60)",
+      "verdict": "MET — 14 of 14 mutations fired, 0 survivors",
+      "evidence": "See mutation_battery below. Two mutations SURVIVED on the first pass and both exposed real weakness in the pins, not in the product; the pins were strengthened and re-attacked. R60 applied to my own work: the reader controls are M3, M4, M10, M11.",
+      "producer": "scratch harness applying one deliberate defect at a time, running the named pins, restoring; results table below"
+    },
+    {
+      "condition": "gate suite holds at 4881+ with 0 failed",
+      "verdict": "MET",
+      "evidence": "BEFORE 4881 passed / 0 failed / 129 skipped. AFTER 4915 passed / 0 failed / 129 skipped. Delta +34 = exactly the new pins. BEFORE was measured on this worktree with all four files reverted to HEAD, not inherited from any prior report.",
+      "producer": "python -m pytest -q -p no:cacheprovider (95.07s before, 95.68s after)"
+    }
+  ],
+
+  "five_conditions_measured": {
+    "_what": "R64's five claims, each measured independently, per interpreter. VERIFIED-RUNTIME 2026-07-26.",
+    "_producer": "harness scratch probe running SYNAPSE's own moneta_provenance() + a Moneta author/read round-trip, under each interpreter, with PXR_PLUGINPATH_NAME both unset and set",
+    "gate": {
+      "interpreter": "system python 3.14.2 (C:/Python314/python.exe), pxr 0.26.5",
+      "moneta_file": "C:/Python314/Lib/site-packages/moneta/__init__.py",
+      "moneta_version": "1.2.0rc1 (dist-info)",
+      "c1_module_imports": true,
+      "c2_same_module_as_other_interpreter": false,
+      "c3_schema_registered": false,
+      "c3_under_control_arm": true,
+      "c4_prims_authored_typed_by_SYNAPSE": false,
+      "c4_prims_authored_typed_by_MONETA_itself": true,
+      "c5_round_trips_typed_in_SYNAPSE": false
+    },
+    "shipping": {
+      "interpreter": "hython3.13 / Python 3.13.10 (Houdini 22.0.368), pxr 0.26.5",
+      "moneta_file": "C:/Users/User/Moneta/src/moneta/__init__.py",
+      "moneta_version": null,
+      "moneta_git": "2965e5d (v1.2.0-rc2-10-g2965e5d), branch main, 2 untracked files at root",
+      "c1_module_imports": true,
+      "c1_note": "True ONLY with $MONETA_SRC set; the shipping interpreter cannot import moneta without it",
+      "c2_same_module_as_other_interpreter": false,
+      "c3_schema_registered": false,
+      "c3_under_control_arm": true,
+      "c4_prims_authored_typed_by_SYNAPSE": false,
+      "c4_prims_authored_typed_by_MONETA_itself": true,
+      "c5_round_trips_typed_in_SYNAPSE": false
+    },
+    "headline": "moneta_available() returns True on both interpreters while four of the five conditions are false or unreachable."
+  },
+
+  "positive_control": {
+    "_mandated_by": "R64 item 5 / h6.md:41",
+    "_method": "subprocess.run with a fresh interpreter per arm, PXR_PLUGINPATH_NAME the only variable. USD plugin registration is process-global; an in-process set-and-requery does NOT change the answer (observed while writing the pins) and would contaminate every sibling test. Reuses Moneta's own tests/_schema_gate_subprocess.py pattern rather than reinventing it.",
+    "arms": [
+      {"env": "PXR_PLUGINPATH_NAME unset", "gate_py314": false, "shipping_hython313": false, "detail": "FindConcretePrimDefinition('MonetaMemory') -> None"},
+      {"env": "PXR_PLUGINPATH_NAME=<Moneta>/schema", "gate_py314": true, "shipping_hython313": true, "detail": "resolves; props = attendedCount, lastEvaluated, payload, priorState, protectedFloor, utility"}
+    ],
+    "verdict": "DEMONSTRATED on both interpreters. The check discriminates; it is not a decoration.",
+    "corroborating_observation": "Same authored bytes, both arms: with the path unset a prim reports GetTypeName()=='MonetaMemory' while IsA(Usd.Typed) is False and its prim definition is EMPTY. With it set, both flip True. That is the dead-bytes cell, live."
+  },
+
+  "findings": [
+    {
+      "id": "H6-F1",
+      "tier": "VERIFIED-STATIC",
+      "severity": "medium",
+      "claim": "The brief's premise is stale. Memory prims are authored TYPED today, not as untyped `def`. usd_target.py sets prim_spec.typeName = 'MonetaMemory' unconditionally, in BOTH Moneta copies.",
+      "anchor": "C:/Users/User/Moneta/src/moneta/usd_target.py:318 and C:/Python314/Lib/site-packages/moneta/usd_target.py:319",
+      "contradicts": "harness/prompts/h6.md:22 and R64, both citing DEEP_THINK_BRIEF_codeless_schema.md:15. That brief describes v1.1.0, pre-surgery; the migration landed and the brief was never updated.",
+      "note": "The brief anticipated this: 'If prims ARE typed, that is a finding and the brief is stale.'"
+    },
+    {
+      "id": "H6-F2",
+      "tier": "REFUTED-LIVE",
+      "severity": "high",
+      "claim": "R64's predicted live state — registered=True, in_use=False — does not reproduce. schema_registered is FALSE on both interpreters in the default environment.",
+      "anchor": "packages/synapse.json (sets SYNAPSE_ROOT, PYTHONPATH, MONETA_SRC, SYNAPSE_MEMORY_BACKEND — and NOT PXR_PLUGINPATH_NAME); C:/Users/User/Moneta/SURGERY_complete_codeless_schema.md:21 ('The substrate does not register the plugin itself')",
+      "detail": "Nothing in SYNAPSE's Houdini package and nothing in Moneta ever sets PXR_PLUGINPATH_NAME. Registration only happens when an operator sets it by hand. The cell that looks like success on THIS build is therefore the inverse of the one R64 named: !registered && in_use — a typeName on disk the runtime cannot resolve.",
+      "consequence": "Both cells are handled by the shipped doctor check; neither can report ok."
+    },
+    {
+      "id": "H6-F3",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "high",
+      "claim": "SYNAPSE authors ZERO USD through Moneta. Conditions 4 and 5 are not half-migrated — they are structurally unreachable on SYNAPSE's live path.",
+      "anchor": "python/synapse/memory/moneta_store.py:215-227 builds MonetaConfig without use_real_usd; C:/Users/User/Moneta/src/moneta/api.py:136 defaults use_real_usd=False; api.py:255-268 selects MockUsdTarget on that default",
+      "detail": "Live probe: MonetaBackedStore.from_storage_dir(...) -> handle.authoring_target is MockUsdTarget, config.use_real_usd is False, and walking the store dir after a deposit + save finds zero .usd/.usda/.usdc files. Measured on both interpreters.",
+      "consequence": "'Moneta is SYNAPSE's USD substrate' is true of the ECS and false of the USD layer. schema_in_use() reports None (UNKNOWN) with that wiring named in its reason string, rather than False — reporting False would read as 'we looked at the prims and they are untyped', which is not what happened.",
+      "for_ruling": "FR-2"
+    },
+    {
+      "id": "H6-F4",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "high",
+      "claim": "store.py's `except ImportError` arm was DEAD CODE, and the surviving arm reported the exact inverse of the truth. Law 3 violation on the precise seam the brief instructed this leg to reuse.",
+      "anchor": "python/synapse/memory/store.py:817 (pre-fix); python/synapse/memory/moneta_store.py:206-209 raises RuntimeError",
+      "detail": "moneta_store imports nothing from moneta at module scope, so `from .moneta_store import MonetaBackedStore` ALWAYS succeeds; from_storage_dir then raises RuntimeError, never ImportError. Every Moneta-absent seat fell through to the ERROR arm and was told the backend 'is installed but failed to initialize ... This is an API-drift or defect, not a missing dependency' — for a package that was simply not installed.",
+      "proof": "Clean interpreter with moneta blocked on the meta path: import of moneta_store SUCCEEDED, from_storage_dir raised RuntimeError, and _make_store emitted the inverted ERROR. After the fix the same probe emits WARNING 'Moneta is not importable ... falling back to jsonl'.",
+      "status": "REPAIRED in this leg. Both arms are now reachable and both are pinned; M12/M13/M14 fire.",
+      "note": "Found independently by the concurrent session (H6-F7) and re-verified here by my own probe rather than taken on report."
+    },
+    {
+      "id": "H6-F5",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "medium",
+      "claim": "schema_in_use is NOT evidence of a working substrate on its own. Sdf authoring is schema-blind: typeName is written to disk with or without a registered schema.",
+      "anchor": "C:/Users/User/Moneta/tests/_schema_gate_subprocess.py:34-54 (Moneta's own false-positive defense); measured here on both interpreters",
+      "detail": "PXR_PLUGINPATH_NAME unset: GetTypeName()=='MonetaMemory', IsA(Usd.Typed)==False, GetPrimDefinition().GetPropertyNames() empty. Set: both True and the definition is populated.",
+      "consequence": "The registered/in_use PAIR is the unit of truth, not either field. The doctor check refuses ok unless both are demonstrated, and the dead-bytes cell is named explicitly."
+    },
+    {
+      "id": "H6-F6",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "medium",
+      "claim": "Condition 2 confirmed false — with a refinement LEDGER.F1 did not carry. The two interpreters load different COPIES, but the sources are byte-equivalent apart from line endings and one docstring line.",
+      "anchor": "diff of C:/Python314/Lib/site-packages/moneta vs C:/Users/User/Moneta/src/moneta, normalized for CRLF",
+      "detail": "Only two files differ raw: attention_log.py (CRLF only — identical after normalization) and usd_target.py (identical except one removed docstring line referencing docs/patent-evidence/pass5-usd-threadsafety-review.md). Identity/provenance diverge (pip 1.2.0rc1 vs worktree 2965e5d with 2 untracked files, version None); behaviour does not — today.",
+      "why_it_matters": "'Different copies' alone overstates today's behavioural risk and understates the governance risk: nothing keeps them in sync, and the shipping side is a live working directory. The discriminating field is `file`, not `version`.",
+      "adjacent": "MONETA_SRC pinning is LEDGER's lane, not this leg's. Not touched."
+    },
+    {
+      "id": "H6-F7",
+      "tier": "VERIFIED-RUNTIME",
+      "severity": "high",
+      "claim": "Article V was violated on this leg: TWO independent sessions executed harness/prompts/h6.md against this one worktree and branch concurrently, and both held write tools.",
+      "anchor": ".claude/remediation_ticket.md (filed 16:27:07 by the second session); .claude/.orch_launched (16:07:34)",
+      "detail": "For roughly three minutes python/synapse/memory/moneta_runtime.py carried two competing implementations; Python binds the last definition, so one silently shadowed the other. The second session detected it, backed its own block out byte-exactly, preserved it at <its scratchpad>/h6_orchestrator_block.py, wrote no test and no commit, filed the ticket and STOPPED — which is the correct behaviour and is why this leg is recoverable.",
+      "observable_symptom": "This session's first pin run reported 7 failures and the immediately-following identical run reported 3. That was not test flakiness; it was a concurrent writer. Recorded because 'flaky test' was the wrong diagnosis and would have sent the leg down a false trail.",
+      "integrity_check_after": "ast.parse clean on all four touched files; zero duplicate top-level definitions in moneta_runtime.py (398 lines, 10 defs) and doctor.py (713 lines, 20 defs); the surviving implementation is the one whose pins and 14-mutation battery are recorded here. No writes from the other session after 16:27:07.",
+      "disposition": "The other session's recon is preserved verbatim in the ticket and is NOT deleted (Law 4). Its findings were re-derived independently here rather than inherited; F4 is the one it surfaced first, and it was re-proven by probe before being acted on.",
+      "for_ruling": "FR-5"
+    }
+  ],
+
+  "mutation_battery": {
+    "_standard": "R34 (a pin must fail against a deliberately broken implementation) + R60 (the pin's READER needs its own control)",
+    "_method": "apply one defect, run only the pins that should notice, restore. A pin that stays green against its mutation is reported as a survivor, not quietly dropped.",
+    "result": "14 applied, 14 fired, 0 survivors",
+    "mutations": [
+      {"id": "M1", "defect": "pxr-absent reported as False instead of None", "fired": true, "pin": "test_schema_checks_degrade_to_none_when_pxr_is_absent"},
+      {"id": "M2", "defect": "missing stage reported as False instead of None", "fired": true, "pin": "test_could_not_check_is_none_and_says_so_not_false"},
+      {"id": "M3", "defect": "READER blind — root-layer Sdf read instead of composing sublayers", "fired": true, "pin": "test_reader_composes_sublayers_it_does_not_read_the_root_layer", "note": "R60 reader control. Moneta routes memory prims into sublayers; the cheap obvious implementation reports a false negative on a fully typed substrate."},
+      {"id": "M4", "defect": "READER blind — any prim counts as a match", "fired": true, "pin": "test_reader_reports_false_when_prims_exist_but_none_are_typed", "note": "R60 reader control. Without it the True-pin passes vacuously."},
+      {"id": "M5", "defect": "registry check hardcoded True", "fired": true, "pin": "test_registration_check_fires_with_plugin_path_unset + test_the_two_control_arms_actually_disagree"},
+      {"id": "M6", "defect": "store.py fence removed — provenance can escape _make_store", "fired": true, "pin": "test_make_store_survives_a_provenance_that_raises"},
+      {"id": "M7", "defect": "doctor check defined but never wired into run_doctor", "fired": true, "pin": "test_doctor_runs_the_substrate_check", "note": "the 'implemented but never called' shape this repo keeps finding"},
+      {"id": "M8", "defect": "doctor calls registered-but-unused healthy", "fired": true, "pin": "test_doctor_gives_every_cell_a_verdict"},
+      {"id": "M9", "defect": "schema_in_use probe deleted — seed key survives, value never computed", "fired": true, "pin": "test_provenance_reports_all_five_conditions + test_every_verdict_carries_a_reason", "note": "SURVIVED the first, weaker mutation. The payload is seeded with None defaults, so key-presence alone passed vacuously. Pin strengthened to require a *_reason, which only a probe that RAN can produce."},
+      {"id": "M10", "defect": "tri-state collapsed — schema_in_use() coerced to bool", "fired": true, "pin": "test_public_wrappers_preserve_none_they_do_not_coerce_to_bool", "note": "SURVIVED first pass. Every pin read the internal reader; callers read the public wrapper. bool(None) is False and False is in (True, False, None), so membership assertions could not see the collapse. New pin added, identity-based."},
+      {"id": "M11", "defect": "schema_registered() coerced to bool", "fired": true, "pin": "test_public_registration_wrapper_preserves_none"},
+      {"id": "M12", "defect": "F4 reverted — not-installed arm made unreachable again", "fired": true, "pin": "test_not_installed_is_reported_as_not_installed_not_as_broken"},
+      {"id": "M13", "defect": "not-installed escalated to ERROR", "fired": true, "pin": "test_not_installed_is_reported_as_not_installed_not_as_broken"},
+      {"id": "M14", "defect": "installed-but-broken downgraded to a quiet warning", "fired": true, "pin": "test_installed_but_broken_is_still_loud"}
+    ],
+    "self_finding": "Two of my own pins were decorations on the first pass, and both were found by attacking the READER rather than the product — exactly R60's lesson, applied to this leg's own work. Reported rather than quietly fixed."
+  },
+
+  "suite": {
+    "gate": {
+      "interpreter": "system python 3.14.2",
+      "before": {"passed": 4881, "failed": 0, "skipped": 129},
+      "after": {"passed": 4915, "failed": 0, "skipped": 129},
+      "delta_passed": 34,
+      "producer": "python -m pytest -q -p no:cacheprovider",
+      "before_method": "all four touched files reverted to HEAD (git checkout + new pin file moved aside), measured, then restored and md5-verified byte-identical. Not inherited from any prior report.",
+      "floor_required_by_brief": "4881+ with 0 failed — MET"
+    },
+    "selector": {
+      "expr": "-k \"moneta or schema or provenance\"",
+      "before": {"passed": 153, "failed": 0, "skipped": 4},
+      "after": {"passed": 187, "failed": 0, "skipped": 4},
+      "producer": "python -m pytest -q -p no:cacheprovider -k \"moneta or schema or provenance\""
+    },
+    "shipping": {
+      "interpreter": "hython3.13 / Python 3.13.10 (Houdini 22.0.368)",
+      "scope": "the H6 pin file only — the full shipping suite carries 110 pre-existing failures and 3 collection errors (Q2), so a full run there measures that, not this leg",
+      "result": {"passed": 34, "failed": 0},
+      "producer": "hython3.13 -m pytest tests/test_moneta_substrate_truth.py -q -p no:cacheprovider --basetemp=<fresh>",
+      "note": "All 34 pins pass on the interpreter artists actually run, including the positive control's registered=True arm."
+    },
+    "one_transient_failure_found_and_fixed": {
+      "test": "tests/test_m3_env_conformance.py::test_every_source_env_read_is_documented",
+      "cause": "the new $SYNAPSE_MONETA_USD_ROOT read had no row in the DEPLOYMENT.md env table — an existing DOC-1 gate working exactly as designed",
+      "fix": "documented the variable; fixed forward, gate not weakened"
+    }
+  },
+
+  "changes": [
+    {
+      "file": "python/synapse/memory/moneta_runtime.py",
+      "lines": "+286",
+      "what": "schema_registered() and schema_in_use(usd_root=None) as TRI-STATE checks (True/False/None) with paired reason strings; moneta_provenance(usd_root=None) folds both in and is fully fenced. SCHEMA_TYPE_NAME / USD_ROOT_FILENAME / traversal cap are named constants. Module docstring carries the five conditions and the dead-bytes measurement.",
+      "design_notes": [
+        "NOT cached — a cache cannot observe a subprocess that sets PXR_PLUGINPATH_NAME, which is the only honest way to test registration.",
+        "Composes the stage (Usd.Stage.Open) rather than reading the root layer, because Moneta routes memory prims into sublayers.",
+        "Both checks are independent of moneta_available(): registration is a property of the USD runtime, not of whether the Python package imports. Gating on `available` would re-collapse two of the five conditions into one."
+      ]
+    },
+    {
+      "file": "python/synapse/memory/store.py",
+      "lines": "+49/-11",
+      "what": "H6-F4 repair — ask moneta_available() instead of inferring absence from an exception type, so both arms are reachable and neither lies; and fence the provenance lookup inside the ERROR handler so it cannot escape _make_store."
+    },
+    {
+      "file": "python/synapse/server/doctor.py",
+      "lines": "+105",
+      "what": "_check_moneta_substrate — every (registered, in_use) cell gets a verdict; only True/True can report ok; both look-like-success cells fail and say why; skipped when the Moneta backend is not selected on this seat. Wired into run_doctor."
+    },
+    {
+      "file": "docs/studio/DEPLOYMENT.md",
+      "lines": "+1",
+      "what": "$SYNAPSE_MONETA_USD_ROOT row (DOC-1 conformance)."
+    },
+    {
+      "file": "tests/test_moneta_substrate_truth.py",
+      "lines": "+34 tests",
+      "what": "tri-state contract, two-sided subprocess positive control, four reader controls, dead-bytes behaviour, no-raise contract on the startup path, F4 both-arms pins, and an 8-cell doctor table."
+    }
+  ],
+
+  "doctor_impact": {
+    "harness_posture": "SYNAPSE_MEMORY_BACKEND unset -> moneta_substrate reports SKIPPED. harness/verify/checks.py::check_doctor is unaffected by this leg.",
+    "pre_existing_red": "check_doctor was ALREADY red before H6: the `version` check fails (synapse 5.33.0 vs install stamp 5.23.0). Measured on the shipping interpreter, unrelated to this leg, not repaired here.",
+    "deployed_seat": "packages/synapse.json sets SYNAPSE_MEMORY_BACKEND=moneta. On such a seat moneta_substrate reports FAIL (registered=False), taking summary.fail from 1 to 2. The fail is TRUE — the schema genuinely is not registered. Whether a true red should gate future legs is a product call, not a code call.",
+    "for_ruling": "FR-4"
+  },
+
+  "for_ruling": [
+    {
+      "id": "FR-1",
+      "topic": "R64 and harness/prompts/h6.md:24 predict a live state that does not reproduce",
+      "detail": "Both assert `registered=True, in_use=False`. Live is `registered=False` on both interpreters, and for SYNAPSE `in_use` is UNKNOWN because no USD is authored at all. The brief anticipated exactly this contingency and asked for it to be surfaced.",
+      "ask": "Amend R64 and h6.md to the measured state, and mark DEEP_THINK_BRIEF_codeless_schema.md:15 stale in Moneta. Article VII: amendments commit before the work they govern.",
+      "agent_position": "Evidence, not a decision. The measurement is in five_conditions_measured with its producer named."
+    },
+    {
+      "id": "FR-2",
+      "topic": "Should SYNAPSE's Moneta store author real USD? (H6-F3)",
+      "detail": "from_storage_dir builds MonetaConfig without use_real_usd=True, so the live handle is MockUsdTarget-backed and conditions 4 and 5 cannot be true regardless of the schema migration.",
+      "options": [
+        "Leave as-is. Moneta serves as an in-memory ECS with snapshot durability. Cheapest, and today's behaviour. But 'Moneta is SYNAPSE's USD substrate' remains false at the USD layer and should stop being claimed.",
+        "Set use_real_usd=True with usd_target_path under <storage_dir>/.moneta. Makes conditions 4 and 5 reachable and memory legible in usdview. Costs: real disk I/O per sleep pass, a new on-disk layout to version and back up, and a durability surface that has never run under SYNAPSE's load."
+      ],
+      "agent_position": "Out of this leg's scope — it is a product direction call (Article I). The field reports UNKNOWN with the wiring named, so the gap is visible rather than silently false either way."
+    },
+    {
+      "id": "FR-3",
+      "topic": "Should the Houdini package set PXR_PLUGINPATH_NAME? (H6-F2)",
+      "detail": "Registration is process-global and must be in the package env — setting it at runtime provably does not work (observed: setting it after pxr load leaves the registry unchanged). Nothing sets it today, by Moneta's deliberate design.",
+      "options": [
+        "Do not set it. Typed prims stay dead bytes wherever they are authored, and condition 3 stays false. Honest, and now visible in the doctor.",
+        "Add it to packages/synapse.json. Makes condition 3 true and prims legible in usdview. Cost: SYNAPSE injects a USD plugin path into every Houdini session on the seat, which affects global plugin resolution for work unrelated to SYNAPSE."
+      ],
+      "agent_position": "Recommend deciding this together with FR-2 — registering a schema nothing authors buys nothing, and authoring typed prims without registering it produces exactly the dead-bytes cell."
+    },
+    {
+      "id": "FR-4",
+      "topic": "moneta_substrate returns fail on a deployed seat; check_doctor is green only when summary.fail == 0",
+      "detail": "The fail is true. Softening it to keep a gate green would destroy the instrument this leg exists to build (Law 7). But it does mean a deployed-seat doctor run is red until FR-2/FR-3 are decided.",
+      "ask": "Confirm the truthful fail stands, or rule that an un-remediated-by-design condition should report differently.",
+      "agent_position": "Shipped as fail. Not softened. Noting that check_doctor is already red for an unrelated pre-existing reason, so this changes the count, not the colour."
+    },
+    {
+      "id": "FR-5",
+      "topic": "Two sessions ran H6 in one worktree (H6-F7) — Article V, structurally",
+      "detail": "The .claude/.orch_launched marker existed and was not honoured as a lock. Both runs held write tools. Recovery worked only because the second session voluntarily stopped; nothing enforced it. This is the same shape as R61: enforcement in the definition, not the instruction.",
+      "ask": "Should the orchestrator refuse to dispatch a leg whose worktree already carries a live .orch_launched marker, and should an interactive session be given the same interlock?",
+      "agent_position": "Recommend yes and treat it as a harness fix, not a per-leg discipline. Also worth recording: the collision presented as a flaky test (7 failures then 3 on identical consecutive runs). 'Flaky' was the wrong diagnosis and would have wasted the leg."
+    },
+    {
+      "id": "FR-6",
+      "topic": "The shadow backend branch has the same shape as the F4 defect",
+      "detail": "store.py's `shadow` branch catches bare Exception and logs a single WARNING, so not-installed and installed-but-broken are indistinguishable there too.",
+      "ask": "Fold into a follow-on, or leave.",
+      "agent_position": "Not touched — outside this brief's named scope, and it does not currently claim a distinction it fails to make (unlike the moneta branch, which did). Flagged so it is not lost."
+    }
+  ],
+
+  "standing_compliance": {
+    "probes_beat_memory": "Every load-bearing claim here is a probe run this session, including the ones the concurrent session had already reported — F4 was re-proven before it was acted on.",
+    "never_push": "No push.",
+    "never_merge": "No merge.",
+    "never_tag": "No tag.",
+    "gates_untouched": "No architecture ruling made, drop.json not touched, nothing merged to main.",
+    "law_4": "The other session's remediation ticket and preserved implementation were left in place, not deleted."
+  },
+
+  "resume_token": {
+    "skip_on_reentry": [
+      "the five-condition measurement on both interpreters (recorded above with producers)",
+      "the two-sided positive control (demonstrated on both interpreters)",
+      "the 14-mutation battery (0 survivors)",
+      "the gate suite before/after measurement"
+    ],
+    "do_first_on_reentry": [
+      "read .claude/remediation_ticket.md and confirm no second session is live before writing anything",
+      "check FR-1 through FR-5 for rulings — FR-2 and FR-3 are coupled and should be decided together",
+      "if FR-2 lands as 'author real USD', schema_in_use() already resolves <storage_dir>/.moneta via the doctor hint and needs no change"
+    ],
+    "not_done": [
+      "MONETA_SRC pinning (LEDGER's lane, deliberately untouched)",
+      "the shadow-branch variant of F4 (FR-6)",
+      "the pre-existing doctor `version` red (unrelated to H6)"
+    ]
+  }
+}
