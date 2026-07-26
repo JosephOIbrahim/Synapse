@@ -1965,3 +1965,92 @@ wrong.**
 
 And the correction here came from Joe declining to accept a fast dismissal. The scout took one
 run. The dismissal took one run too — the difference was entirely in which axis got tested.
+
+---
+
+## RULING 73 — The SideFX ask was WRONG. Joe caught it. Rewritten, not sent.
+
+**The claim as drafted:**
+
+> Houdini 22.0.368 exposes **NO API** to cancel, abort, interrupt or kill an in-flight
+> `hou.RopNode.render()`.
+
+**Refuted.** A full sweep of the local H22 reference — 966 HOM entries plus the render-adjacent
+node docs — surfaced four candidates the draft did not account for. Runtime settled each:
+
+```
+hou.ActiveRender            ABSENT at runtime      docs say #status: ni  -> ni is accurate
+hou.activeRenders()         ABSENT at runtime      same
+hou.IPRViewer.killRender    PRESENT                real, and not marked ni
+rps    hscript              EXISTS   "Lists background render processes"
+rkill  hscript              EXISTS   "Stop or pause/unpause a render"
+hou.RopNode                 no cancel verb         the NARROW claim still holds
+```
+
+**`rkill` stops a render.** It is an hscript command, reachable from Python through
+`hou.hscript()`, and it has been there the whole time. `hou.ActiveRender` — documented as its HOM
+replacement, `#replaces: /commands/rkill /commands/rps` — is `#status: ni` and genuinely absent,
+which is why the sweep's most promising hit was a false lead and the runtime probe was what
+settled it.
+
+### What I did wrong, precisely
+
+I verified **"`hou.RopNode` has no cancel method"** — twice, by live `dir()` and by the full
+method list in `RopNode.txt`. Both correct.
+
+Then I wrote an ask claiming **"Houdini exposes no way to cancel a render."**
+
+**Those are different claims, and I only tested the narrow one.** R50 — which I wrote this morning
+after H3a caught five of its own wrong-class ABSENT verdicts — says `ABSENT` requires a positive
+control **on the same class**. The class the ask spoke about was the whole render surface. My
+control was one class.
+
+**Third instance of that error today, and the only one addressed to a third party.** SideFX could
+have refuted it with a single search of their own docs, and one wrong item makes the other two
+read as careless.
+
+### A third documentation state
+
+`#status: ni` is neither "documented current" nor "documented deprecated" nor "absent". It is
+**documented-but-unimplemented** — a published API surface that does not exist at runtime.
+
+It is the mirror image of `doc_silent_deprecation` (R72): there, runtime knows something the docs
+do not; here, the docs describe something runtime does not have.
+
+**Ruled: the compat matrix gains `DOC_ONLY_NI`.** H5 and H7 must treat `#status: ni` as its own
+cell. Any symbol read from documentation without a runtime probe can land in it, and a codebase
+written against the reference alone would call it and fail.
+
+### The rewritten ask — narrower, and better
+
+The honest, defensible version:
+
+1. **`hou.RopNode` has no cancel method.** True, twice-verified, and the real friction: a Python
+   integrator holding a `RopNode` has nothing to call.
+2. **`hou.ActiveRender` is `#status: ni`.** The documented HOM replacement for `rkill`/`rps` is
+   absent at runtime. **This is the actual ask** — implement it, or mark the docs so integrators
+   do not build against it.
+3. **`rkill` works and we should use it.** Not an ask at all. It is what SYNAPSE should call, and
+   H3b's scope changes accordingly.
+
+That is a better message than the original: it asks for something specific and achievable, it
+concedes what exists, and every claim survives their own verification.
+
+### R48 is amended
+
+R48 closed the render half as **not-implementable**. That was wrong in the same way. The
+implementable path is `hou.hscript("rkill ...")` — process-level, blunt, and needing care around
+scene state, but real.
+
+**H3b's scope widens:** TOPS cancel *and* an `rkill`-based render stop, with an explicit finding
+on what `rkill` does to a partially-written frame. The safety gap is narrower than I ruled.
+
+### Method note
+
+Joe asked one question — *"the ask wasn't resolved by the documentation?"* — and it exposed a
+claim about to go out under his name. The sweep took two runs.
+
+**Every control I have written this week has been about instruments. This one was about the scope
+of a claim**, and it is the same failure wearing different clothes: an oracle that answers a
+narrower question than the one being asked will answer it correctly, and the answer will still be
+wrong.

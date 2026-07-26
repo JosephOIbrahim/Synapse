@@ -1,99 +1,121 @@
 # SideFX ask — Houdini 22.0.368
 
-**Status: DRAFT. Not sent. Joe sends this, not an agent.**
-**Every claim below is VERIFIED-RUNTIME by live `dir()` / `inspect.signature` against
-22.0.368 on 2026-07-26.** Doc URLs are given as the pinned `/docs/houdini22.0/` path so they are
-checkable, but the primary evidence is the probe — the automated fetch could not read the pinned
-tree (`ROBOTS_DISALLOWED`), and the unpinned `/docs/houdini/` path served a page whose breadcrumb
-read "Houdini 21.0", so it is not a stable citation for a version-specific claim.
+**Status: DRAFT v2. Not sent. Joe sends this, not an agent.**
 
-Context in one line: we run an in-process agent inside Houdini's Python interpreter. It mutates
-live scenes containing an artist's unsaved work, so we need to be able to stop what we started.
+**v1 was wrong and is superseded.** It claimed Houdini exposes no way to cancel an in-flight
+render. A full sweep of the local 22.0.368 reference plus runtime probes found `rkill` — an
+hscript command that stops a render, present and working. The claim below is narrower and every
+part of it survives your own verification.
+
+All claims are `VERIFIED-RUNTIME` on 22.0.368, 2026-07-26, by live `dir()` / `hou.hscript()`,
+cross-checked against the reference shipped with the build (`$HFS/houdini/help/hom.zip`) rather
+than the web docs — the unpinned `/docs/houdini/` path serves 21.0 and the pinned
+`/docs/houdini22.0/` path is robots-disallowed to automated fetch.
+
+Context: we run an in-process agent inside Houdini's Python interpreter. It mutates live scenes
+containing an artist's unsaved work, so we need to stop what we started.
 
 ---
 
-## 1 — There is no way to cancel an in-flight `hou.RopNode.render()`
+## 1 — `hou.ActiveRender` is documented but not implemented
 
-**The ask:** a cancellation surface for a running ROP render, reachable from Python.
+**This is the main ask.**
 
-**What we found.** `hou.RopNode`'s complete public method list on 22.0.368:
+`hom.zip:hou/ActiveRender.txt` documents a full class — `kill()`, `suspend()`, `resume()`,
+`isSuspended()`, `processId()`, `host()`, `frame()`, `command()` — and marks it
+`#replaces: /commands/rkill /commands/rps`. Same for the module-level `hou.activeRenders()`.
+
+Every member carries `#status: ni`, and both are absent at runtime:
+
+```
+hasattr(hou, "ActiveRender")   -> False
+hasattr(hou, "activeRenders")  -> False
+```
+
+**The ask, either is fine:**
+- implement it — it is the documented HOM path to render control and the hscript commands it
+  replaces already work, or
+- mark it clearly enough in the published reference that an integrator reading the docs does not
+  build against it.
+
+**Why it matters to us.** We found this only because we probed runtime after reading the
+reference. A team that trusted the documentation would write `hou.activeRenders()` and get an
+`AttributeError` in production. `#status: ni` is visible in the raw help source but not, as far as
+we can tell, on the rendered page.
+
+---
+
+## 2 — `hou.RopNode` has no cancel method, which forces integrators out to hscript
+
+Complete public method list on 22.0.368:
 
 ```
 addRenderEventCallback   bypass   inputDependencies   isBypassed   isLocked
 setLocked   removeAllRenderEventCallbacks   removeRenderEventCallback   render
 ```
 
-No cancel, abort, interrupt, stop or kill — on `RopNode`, or inherited from `OpNode`, `Node`,
-`NetworkMovableItem`, `NetworkItem`. `render()` itself takes no timeout, no handle, and no
-callback that can refuse continuation.
+Nothing inherited from `OpNode`, `Node`, `NetworkMovableItem` or `NetworkItem` reaches a running
+render. `render()` takes no timeout, no handle, and no callback that can refuse continuation.
 
-**Two things we checked and ruled out** rather than assuming they were the answer:
+**We are not claiming render cancellation is impossible** — `rkill` works, and we will use it.
+The friction is that a Python integrator holding a `RopNode` has nothing to call on it, and has to
+drop to `hou.hscript("rkill ...")` with a process pattern rather than a node reference.
 
-- `hou.InterruptableOperation` — real and documented, but it wraps *our own* Python block and
-  polls `updateProgress()`. It has no reach into a `render()` already blocking inside Houdini.
-- `addRenderEventCallback` — delivers `hou.ropRenderEventType` notifications around frames.
-  Observation, not control; no documented return value that refuses continuation.
+`hou.InterruptableOperation` and `addRenderEventCallback` both look like the answer and are not:
+the first wraps our own Python block, the second observes without controlling.
 
-**Why it matters to us.** An artist mid-Karma-render has a Stop control that cannot stop the
-render. We can abort our own agent loop cooperatively, and we do, but the tool already running is
-beyond reach. Any shape would help — a `cancel()` on the node, an interruptable variant of
-`render()`, or a callback whose return value can halt the sequence.
-
-**Note:** the PDG/TOPS side is complete by comparison — `cancelCook()` and the node-level cancel
-verb are both present and usable. This ask is specifically about ROP renders.
+**The ask:** a `cancel()` on `RopNode`, or a documented pointer from `RopNode.render()` to
+`rkill` / `ActiveRender` so the path is discoverable from where an integrator actually starts.
 
 ---
 
-## 2 — `hdefereval.executeInMainThread` does not exist on 22.0.368
+## 3 — `hdefereval.executeInMainThread` is absent on 22.0.368
 
-**The ask:** confirmation of the supported main-thread marshal for 22.0, and a note in the docs if
-`hdefereval` has moved or been renamed.
+Re-probed and reproduced, not carried forward from an earlier build's notes.
 
-**What we found.** `hdefereval.executeInMainThread` is absent on 22.0.368, re-probed and
-reproduced rather than carried forward from an earlier build's notes.
+**Caveat stated plainly:** the `hdefereval` marshal layer is not fully probeable under headless
+`hython`, so our verdict for the *layer* is "unverifiable headless" rather than "absent". The
+specific symbol is absent; we are not claiming the module is.
 
-**Caveat we want to state plainly:** the `hdefereval` marshal layer is not fully probeable under
-headless `hython`, so our verdict for the *layer* is "unverifiable headless" rather than "absent".
-The specific symbol above is absent; we are not claiming the whole module is.
-
-**Why it matters.** Every `hou.*` call we make marshals to the main thread. Knowing the supported
-entry point for 22.0 — and having it documented — removes a class of guesswork for anyone doing
-in-process work.
+**The ask:** confirmation of the supported main-thread marshal for 22.0, documented.
 
 ---
 
-## 3 — `hou.TopNode.dirtyAllTasks` — deprecated, and the docs and signature disagree with common usage
+## 4 — `hou.TopNode.dirtyAllTasks` — two small documentation corrections
 
-**The ask:** two small documentation corrections.
-
-**What we found**, via `inspect.signature` on 22.0.368:
+`inspect.signature` on 22.0.368:
 
 ```
-SIGNATURE: dirtyAllTasks(self, remove_outputs: bool) -> void
-DOC:       This method is deprecated in favor of hou.TopNode.dirtyAllWorkItems.
+dirtyAllTasks(self, remove_outputs: bool) -> void
+"This method is deprecated in favor of hou.TopNode.dirtyAllWorkItems."
 ```
 
-Two things worth surfacing:
+1. **The keyword is `remove_outputs`.** `remove_files` circulates widely, including in our own
+   code, where it raised `TypeError` on every call — entirely our bug, and found only because we
+   probed the signature rather than reading it.
+2. **The deprecation is only discoverable at runtime**, in the docstring — not flagged anywhere a
+   static reader or the published reference surfaces.
 
-1. **The keyword is `remove_outputs`.** `remove_files` appears widely in circulation, including in
-   our own code, where it raises `TypeError` on every call — a bug that was entirely ours, and
-   found only because we probed the signature rather than reading it.
-2. **The deprecation is only discoverable at runtime.** It is in the docstring, not flagged
-   anywhere a static reader or the published node reference would surface it.
+**Feedback rather than a request:** we cross-referenced every `hou.*` symbol we touch against the
+shipped reference and found 19 we use that are deprecated and 48 present but undocumented. A
+phantom API fails loudly on first call; a deprecated one works perfectly until the release that
+removes it. **A machine-readable deprecation list, or a `deprecated` flag on the reference pages,
+would let integrators catch decay before an upgrade rather than after.** Happy to share our
+census.
 
-**The general point, offered as feedback rather than a request:** we built a cross-reference of
-every `hou.*` symbol we touch against the published reference, and found 19 symbols we use that
-are deprecated and 48 that are undocumented but present. A phantom API fails loudly on first call;
-a deprecated one works perfectly until the release that removes it. **A machine-readable
-deprecation list — or a `deprecated` flag on the node/HOM reference pages — would let integrators
-catch decay before an upgrade rather than after.** We are happy to share our census if useful.
+Two related observations from the same exercise, offered in the same spirit:
+
+- **`karma` and `karmarenderproperties` are flagged deprecated at runtime, and their help pages
+  (~70KB and ~96KB) do not mention it.** An artist reading the documentation has no way to know.
+- **`#status: ni` and runtime-only deprecation are the same problem from opposite directions** —
+  in one the docs describe what does not exist, in the other runtime knows what the docs do not.
 
 ---
 
 ## What we are not asking for
 
 We are not asking for a workaround, and we have not built one. Where a capability is absent we
-have recorded it as absent and stopped, rather than substituting an assumed API — that is how a
-missing verb becomes a phantom in someone's codebase two versions later.
+record it as absent and stop, rather than substituting an assumed API — that is how a missing verb
+becomes a phantom in someone's codebase two versions later.
 
-Happy to provide reproduction scripts for any of the above.
+Reproduction scripts available for any of the above.
