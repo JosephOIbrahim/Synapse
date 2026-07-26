@@ -1,0 +1,943 @@
+{
+  "schema": "h3a_placement/v1",
+  "producer": "harness/notes/h3a_placement.py",
+  "houdini_build": "22.0.368",
+  "ui_available": true,
+  "hou_class_count": 530,
+  "controls_ok": true,
+  "controls": {
+    "positive": {
+      "attr": "children",
+      "expect": "found on hou.Node",
+      "found_on_Node": true,
+      "class_count": 18
+    },
+    "negative": {
+      "attr": "zzz_h3a_placement_control_must_not_exist",
+      "expect": "found on zero classes",
+      "hits": []
+    },
+    "failure_condition": "controls_ok is False if 'children' is not found on hou.Node, or if the synthetic attribute is found on any class. False => UNINTERPRETABLE."
+  },
+  "placement": {
+    "getPDGGraphContext": {
+      "class_count": 1,
+      "on_hou_Node": false,
+      "focus": {
+        "Node": "ABSENT",
+        "OpNode": "ABSENT",
+        "RopNode": "ABSENT",
+        "TopNode": "own",
+        "SopNode": "ABSENT",
+        "LopNode": "ABSENT",
+        "ObjNode": "ABSENT",
+        "CopNode": "ABSENT",
+        "DopNode": "ABSENT",
+        "ChopNode": "ABSENT",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "TopNode"
+      ]
+    },
+    "getPDGNode": {
+      "class_count": 1,
+      "on_hou_Node": false,
+      "focus": {
+        "Node": "ABSENT",
+        "OpNode": "ABSENT",
+        "RopNode": "ABSENT",
+        "TopNode": "own",
+        "SopNode": "ABSENT",
+        "LopNode": "ABSENT",
+        "ObjNode": "ABSENT",
+        "CopNode": "ABSENT",
+        "DopNode": "ABSENT",
+        "ChopNode": "ABSENT",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "TopNode"
+      ]
+    },
+    "cook": {
+      "class_count": 14,
+      "on_hou_Node": false,
+      "focus": {
+        "Node": "ABSENT",
+        "OpNode": "own",
+        "RopNode": "inherited:OpNode",
+        "TopNode": "inherited:OpNode",
+        "SopNode": "inherited:OpNode",
+        "LopNode": "inherited:OpNode",
+        "ObjNode": "inherited:OpNode",
+        "CopNode": "inherited:OpNode",
+        "DopNode": "inherited:OpNode",
+        "ChopNode": "inherited:OpNode",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "ChopNode",
+        "Cop2Node",
+        "CopNode",
+        "DopNode",
+        "LopNetwork",
+        "LopNode",
+        "ObjNode",
+        "OpNode",
+        "RopNode",
+        "ShopNode",
+        "SopNode",
+        "TopNode",
+        "VopNetNode",
+        "VopNode"
+      ]
+    },
+    "needsToCook": {
+      "class_count": 14,
+      "on_hou_Node": false,
+      "focus": {
+        "Node": "ABSENT",
+        "OpNode": "own",
+        "RopNode": "inherited:OpNode",
+        "TopNode": "inherited:OpNode",
+        "SopNode": "inherited:OpNode",
+        "LopNode": "inherited:OpNode",
+        "ObjNode": "inherited:OpNode",
+        "CopNode": "inherited:OpNode",
+        "DopNode": "inherited:OpNode",
+        "ChopNode": "inherited:OpNode",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "ChopNode",
+        "Cop2Node",
+        "CopNode",
+        "DopNode",
+        "LopNetwork",
+        "LopNode",
+        "ObjNode",
+        "OpNode",
+        "RopNode",
+        "ShopNode",
+        "SopNode",
+        "TopNode",
+        "VopNetNode",
+        "VopNode"
+      ]
+    },
+    "cookCount": {
+      "class_count": 14,
+      "on_hou_Node": false,
+      "focus": {
+        "Node": "ABSENT",
+        "OpNode": "own",
+        "RopNode": "inherited:OpNode",
+        "TopNode": "inherited:OpNode",
+        "SopNode": "inherited:OpNode",
+        "LopNode": "inherited:OpNode",
+        "ObjNode": "inherited:OpNode",
+        "CopNode": "inherited:OpNode",
+        "DopNode": "inherited:OpNode",
+        "ChopNode": "inherited:OpNode",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "ChopNode",
+        "Cop2Node",
+        "CopNode",
+        "DopNode",
+        "LopNetwork",
+        "LopNode",
+        "ObjNode",
+        "OpNode",
+        "RopNode",
+        "ShopNode",
+        "SopNode",
+        "TopNode",
+        "VopNetNode",
+        "VopNode"
+      ]
+    },
+    "isTimeDependent": {
+      "class_count": 16,
+      "on_hou_Node": false,
+      "focus": {
+        "Node": "ABSENT",
+        "OpNode": "own",
+        "RopNode": "inherited:OpNode",
+        "TopNode": "inherited:OpNode",
+        "SopNode": "inherited:OpNode",
+        "LopNode": "inherited:OpNode",
+        "ObjNode": "inherited:OpNode",
+        "CopNode": "inherited:OpNode",
+        "DopNode": "inherited:OpNode",
+        "ChopNode": "inherited:OpNode",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "ChopNode",
+        "Cop2Node",
+        "CopNode",
+        "DopNode",
+        "LopNetwork",
+        "LopNode",
+        "ObjNode",
+        "OpNode",
+        "Parm",
+        "ParmTuple",
+        "RopNode",
+        "ShopNode",
+        "SopNode",
+        "TopNode",
+        "VopNetNode",
+        "VopNode"
+      ]
+    },
+    "children": {
+      "class_count": 18,
+      "on_hou_Node": true,
+      "focus": {
+        "Node": "own",
+        "OpNode": "inherited:Node",
+        "RopNode": "inherited:Node",
+        "TopNode": "inherited:Node",
+        "SopNode": "inherited:Node",
+        "LopNode": "inherited:Node",
+        "ObjNode": "inherited:Node",
+        "CopNode": "inherited:Node",
+        "DopNode": "inherited:Node",
+        "ChopNode": "inherited:Node",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "ApexNode",
+        "ChopNode",
+        "Cop2Node",
+        "CopNode",
+        "DopNode",
+        "LopNetwork",
+        "LopNode",
+        "Node",
+        "ObjNode",
+        "OpNode",
+        "RopNode",
+        "ShopNode",
+        "SopNode",
+        "Take",
+        "TopNode",
+        "UniNode",
+        "VopNetNode",
+        "VopNode"
+      ]
+    },
+    "allSubChildren": {
+      "class_count": 17,
+      "on_hou_Node": true,
+      "focus": {
+        "Node": "own",
+        "OpNode": "inherited:Node",
+        "RopNode": "inherited:Node",
+        "TopNode": "inherited:Node",
+        "SopNode": "inherited:Node",
+        "LopNode": "inherited:Node",
+        "ObjNode": "inherited:Node",
+        "CopNode": "inherited:Node",
+        "DopNode": "inherited:Node",
+        "ChopNode": "inherited:Node",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "ApexNode",
+        "ChopNode",
+        "Cop2Node",
+        "CopNode",
+        "DopNode",
+        "LopNetwork",
+        "LopNode",
+        "Node",
+        "ObjNode",
+        "OpNode",
+        "RopNode",
+        "ShopNode",
+        "SopNode",
+        "TopNode",
+        "UniNode",
+        "VopNetNode",
+        "VopNode"
+      ]
+    },
+    "type": {
+      "class_count": 72,
+      "on_hou_Node": true,
+      "focus": {
+        "Node": "own",
+        "OpNode": "inherited:Node",
+        "RopNode": "inherited:Node",
+        "TopNode": "inherited:Node",
+        "SopNode": "inherited:Node",
+        "LopNode": "inherited:Node",
+        "ObjNode": "inherited:Node",
+        "CopNode": "inherited:Node",
+        "DopNode": "inherited:Node",
+        "ChopNode": "inherited:Node",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "Agent",
+        "ApexNode",
+        "AssetBrowser",
+        "Attrib",
+        "ButtonParmTemplate",
+        "CameraPrim",
+        "ChannelEditor",
+        "ChannelListPaneTab",
+        "ChannelPrim",
+        "ChopNode",
+        "CompositorViewer",
+        "ContextViewer",
+        "Cop2Node",
+        "CopNode",
+        "DataParmTemplate",
+        "DataTree",
+        "DetachedAttrib",
+        "DopNode",
+        "Drawable2D",
+        "Face",
+        "FloatParmTemplate",
+        "FolderParmTemplate",
+        "FolderSetParmTemplate",
+        "GadgetDrawable",
+        "GeometryDrawable",
+        "GeometrySpreadsheet",
+        "GeometryViewport",
+        "Handle",
+        "HelpBrowser",
+        "IPRViewer",
+        "IntParmTemplate",
+        "LabelParmTemplate",
+        "LopNetwork",
+        "LopNode",
+        "MenuParmTemplate",
+        "NetworkEditor",
+        "Node",
+        "ObjNode",
+        "OpNode",
+        "PackedFragment",
+        "...(32 more)"
+      ]
+    },
+    "render": {
+      "class_count": 1,
+      "on_hou_Node": false,
+      "focus": {
+        "Node": "ABSENT",
+        "OpNode": "ABSENT",
+        "RopNode": "own",
+        "TopNode": "ABSENT",
+        "SopNode": "ABSENT",
+        "LopNode": "ABSENT",
+        "ObjNode": "ABSENT",
+        "CopNode": "ABSENT",
+        "DopNode": "ABSENT",
+        "ChopNode": "ABSENT",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "RopNode"
+      ]
+    },
+    "dirtyAllTasks": {
+      "class_count": 1,
+      "on_hou_Node": false,
+      "focus": {
+        "Node": "ABSENT",
+        "OpNode": "ABSENT",
+        "RopNode": "ABSENT",
+        "TopNode": "own",
+        "SopNode": "ABSENT",
+        "LopNode": "ABSENT",
+        "ObjNode": "ABSENT",
+        "CopNode": "ABSENT",
+        "DopNode": "ABSENT",
+        "ChopNode": "ABSENT",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "TopNode"
+      ]
+    },
+    "cookWorkItems": {
+      "class_count": 1,
+      "on_hou_Node": false,
+      "focus": {
+        "Node": "ABSENT",
+        "OpNode": "ABSENT",
+        "RopNode": "ABSENT",
+        "TopNode": "own",
+        "SopNode": "ABSENT",
+        "LopNode": "ABSENT",
+        "ObjNode": "ABSENT",
+        "CopNode": "ABSENT",
+        "DopNode": "ABSENT",
+        "ChopNode": "ABSENT",
+        "NetworkMovableItem": "ABSENT"
+      },
+      "all_classes": [
+        "TopNode"
+      ]
+    }
+  },
+  "mro": {
+    "Node": [
+      "Node",
+      "NetworkMovableItem",
+      "NetworkItem",
+      "object"
+    ],
+    "OpNode": [
+      "OpNode",
+      "Node",
+      "NetworkMovableItem",
+      "NetworkItem",
+      "object"
+    ],
+    "RopNode": [
+      "RopNode",
+      "OpNode",
+      "Node",
+      "NetworkMovableItem",
+      "NetworkItem",
+      "object"
+    ],
+    "TopNode": [
+      "TopNode",
+      "OpNode",
+      "Node",
+      "NetworkMovableItem",
+      "NetworkItem",
+      "object"
+    ],
+    "SopNode": [
+      "SopNode",
+      "OpNode",
+      "Node",
+      "NetworkMovableItem",
+      "NetworkItem",
+      "object"
+    ],
+    "LopNode": [
+      "LopNode",
+      "OpNode",
+      "Node",
+      "NetworkMovableItem",
+      "NetworkItem",
+      "object"
+    ],
+    "ObjNode": [
+      "ObjNode",
+      "OpNode",
+      "Node",
+      "NetworkMovableItem",
+      "NetworkItem",
+      "object"
+    ],
+    "CopNode": [
+      "CopNode",
+      "OpNode",
+      "Node",
+      "NetworkMovableItem",
+      "NetworkItem",
+      "object"
+    ],
+    "DopNode": [
+      "DopNode",
+      "OpNode",
+      "Node",
+      "NetworkMovableItem",
+      "NetworkItem",
+      "object"
+    ],
+    "ChopNode": [
+      "ChopNode",
+      "OpNode",
+      "Node",
+      "NetworkMovableItem",
+      "NetworkItem",
+      "object"
+    ],
+    "NetworkMovableItem": [
+      "NetworkMovableItem",
+      "NetworkItem",
+      "object"
+    ]
+  },
+  "pattern_sweep": {
+    "hou.Node": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [],
+      "kill": [],
+      "stop": [],
+      "render": [],
+      "cook": [],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "hou.OpNode": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [
+        "_cookNoInterruptInternal"
+      ],
+      "kill": [],
+      "stop": [],
+      "render": [],
+      "cook": [
+        "_cookNoInterruptInternal",
+        "canGenerateCookCode",
+        "cook",
+        "cookCodeGeneratorNode",
+        "cookCodeLanguage",
+        "cookCount",
+        "cookPathNodes",
+        "lastCookContextOptions",
+        "lastCookTime",
+        "needsToCook",
+        "saveCompiledCookCodeToFile",
+        "saveCookCodeToFile",
+        "supportsMultiCookCodeContexts"
+      ],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "hou.RopNode": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [
+        "_cookNoInterruptInternal"
+      ],
+      "kill": [],
+      "stop": [],
+      "render": [
+        "addRenderEventCallback",
+        "removeAllRenderEventCallbacks",
+        "removeRenderEventCallback",
+        "render"
+      ],
+      "cook": [
+        "_cookNoInterruptInternal",
+        "canGenerateCookCode",
+        "cook",
+        "cookCodeGeneratorNode",
+        "cookCodeLanguage",
+        "cookCount",
+        "cookPathNodes",
+        "lastCookContextOptions",
+        "lastCookTime",
+        "needsToCook",
+        "saveCompiledCookCodeToFile",
+        "saveCookCodeToFile",
+        "supportsMultiCookCodeContexts"
+      ],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "hou.TopNode": {
+      "cancel": [
+        "cancelCook"
+      ],
+      "abort": [],
+      "interrupt": [
+        "_cookNoInterruptInternal"
+      ],
+      "kill": [],
+      "stop": [],
+      "render": [
+        "isRenderFlagSet",
+        "renderNode",
+        "setRenderFlag"
+      ],
+      "cook": [
+        "_cookNoInterruptInternal",
+        "canGenerateCookCode",
+        "cancelCook",
+        "cook",
+        "cookAllOutputWorkItems",
+        "cookCodeGeneratorNode",
+        "cookCodeLanguage",
+        "cookCount",
+        "cookOutputWorkItems",
+        "cookPathNodes",
+        "cookWorkItems",
+        "getCookState",
+        "lastCookContextOptions",
+        "lastCookTime",
+        "needsToCook",
+        "pauseCook",
+        "saveCompiledCookCodeToFile",
+        "saveCookCodeToFile",
+        "supportsMultiCookCodeContexts"
+      ],
+      "background": [],
+      "pdg": [
+        "addPDGFilter",
+        "enablePDGFilter",
+        "getPDGGraphContext",
+        "getPDGGraphContextName",
+        "getPDGNode",
+        "getPDGNodeId",
+        "getPDGNodeName",
+        "isPDGFilter",
+        "removePDGFilter"
+      ],
+      "task": [
+        "dirtyAllTasks",
+        "dirtyTasks",
+        "taskGraphCommands"
+      ]
+    },
+    "hou.SopNode": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [
+        "_cookNoInterruptInternal"
+      ],
+      "kill": [],
+      "stop": [],
+      "render": [
+        "isRenderFlagSet",
+        "renderNode",
+        "setRenderFlag"
+      ],
+      "cook": [
+        "_cookNoInterruptInternal",
+        "canGenerateCookCode",
+        "cook",
+        "cookCodeGeneratorNode",
+        "cookCodeLanguage",
+        "cookCount",
+        "cookPathNodes",
+        "lastCookContextOptions",
+        "lastCookTime",
+        "needsToCook",
+        "saveCompiledCookCodeToFile",
+        "saveCookCodeToFile",
+        "supportsMultiCookCodeContexts"
+      ],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "hou.LopNode": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [
+        "_cookNoInterruptInternal"
+      ],
+      "kill": [],
+      "stop": [],
+      "render": [],
+      "cook": [
+        "_cookNoInterruptInternal",
+        "canGenerateCookCode",
+        "cook",
+        "cookCodeGeneratorNode",
+        "cookCodeLanguage",
+        "cookCount",
+        "cookPathNodes",
+        "lastCookContextOptions",
+        "lastCookTime",
+        "needsToCook",
+        "saveCompiledCookCodeToFile",
+        "saveCookCodeToFile",
+        "supportsMultiCookCodeContexts"
+      ],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "hou.ObjNode": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [
+        "_cookNoInterruptInternal"
+      ],
+      "kill": [],
+      "stop": [],
+      "render": [
+        "renderNode"
+      ],
+      "cook": [
+        "_cookNoInterruptInternal",
+        "canGenerateCookCode",
+        "cook",
+        "cookCodeGeneratorNode",
+        "cookCodeLanguage",
+        "cookCount",
+        "cookPathNodes",
+        "lastCookContextOptions",
+        "lastCookTime",
+        "needsToCook",
+        "saveCompiledCookCodeToFile",
+        "saveCookCodeToFile",
+        "setCookTransform",
+        "supportsMultiCookCodeContexts"
+      ],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "hou.CopNode": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [
+        "_cookNoInterruptInternal"
+      ],
+      "kill": [],
+      "stop": [],
+      "render": [],
+      "cook": [
+        "_cookNoInterruptInternal",
+        "canGenerateCookCode",
+        "cook",
+        "cookCodeGeneratorNode",
+        "cookCodeLanguage",
+        "cookCount",
+        "cookPathNodes",
+        "lastCookContextOptions",
+        "lastCookTime",
+        "needsToCook",
+        "saveCompiledCookCodeToFile",
+        "saveCookCodeToFile",
+        "supportsMultiCookCodeContexts"
+      ],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "hou.DopNode": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [
+        "_cookNoInterruptInternal"
+      ],
+      "kill": [],
+      "stop": [
+        "objectsToProcess"
+      ],
+      "render": [
+        "renderNode"
+      ],
+      "cook": [
+        "_cookNoInterruptInternal",
+        "canGenerateCookCode",
+        "cook",
+        "cookCodeGeneratorNode",
+        "cookCodeLanguage",
+        "cookCount",
+        "cookPathNodes",
+        "lastCookContextOptions",
+        "lastCookTime",
+        "needsToCook",
+        "saveCompiledCookCodeToFile",
+        "saveCookCodeToFile",
+        "supportsMultiCookCodeContexts"
+      ],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "hou.ChopNode": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [
+        "_cookNoInterruptInternal"
+      ],
+      "kill": [],
+      "stop": [],
+      "render": [],
+      "cook": [
+        "_cookNoInterruptInternal",
+        "canGenerateCookCode",
+        "cook",
+        "cookCodeGeneratorNode",
+        "cookCodeLanguage",
+        "cookCount",
+        "cookPathNodes",
+        "lastCookContextOptions",
+        "lastCookTime",
+        "needsToCook",
+        "saveCompiledCookCodeToFile",
+        "saveCookCodeToFile",
+        "supportsMultiCookCodeContexts"
+      ],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "hou.NetworkMovableItem": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [],
+      "kill": [],
+      "stop": [],
+      "render": [],
+      "cook": [],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "hou": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [
+        "InterruptableOperation",
+        "OperationInterrupted",
+        "updateProgressAndCheckForInterrupt"
+      ],
+      "kill": [],
+      "stop": [],
+      "render": [
+        "RenderGallery",
+        "renderMethod",
+        "ropRenderEventType"
+      ],
+      "cook": [
+        "topCookState"
+      ],
+      "background": [
+        "GeometryViewportBackground",
+        "geometryViewportBackgroundImageFitMode"
+      ],
+      "pdg": [],
+      "task": []
+    },
+    "pdg.GraphContext": {
+      "cancel": [
+        "cancelCook",
+        "canceling"
+      ],
+      "abort": [],
+      "interrupt": [],
+      "kill": [],
+      "stop": [],
+      "render": [],
+      "cook": [
+        "_cook",
+        "cancelCook",
+        "cook",
+        "cookItems",
+        "cookOptions",
+        "cookSet",
+        "cooking",
+        "pauseCook"
+      ],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "pdg.Scheduler": {
+      "cancel": [
+        "onWorkItemCanceled"
+      ],
+      "abort": [],
+      "interrupt": [],
+      "kill": [],
+      "stop": [
+        "stopService"
+      ],
+      "render": [],
+      "cook": [
+        "cookError",
+        "cookWarning",
+        "cookWorkItem",
+        "onWorkItemSetCookPercent",
+        "onWorkItemStartCook"
+      ],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "pdg.WorkItem": {
+      "cancel": [
+        "cancel"
+      ],
+      "abort": [],
+      "interrupt": [],
+      "kill": [],
+      "stop": [],
+      "render": [],
+      "cook": [
+        "cookDuration",
+        "cookPercent",
+        "cookSubItem",
+        "cookType",
+        "cookWarning",
+        "hasCookPercent",
+        "isCooked",
+        "isPostCook",
+        "setCookPercent",
+        "setIsPostCook"
+      ],
+      "background": [],
+      "pdg": [],
+      "task": []
+    },
+    "pdg": {
+      "cancel": [],
+      "abort": [],
+      "interrupt": [],
+      "kill": [],
+      "stop": [],
+      "render": [],
+      "cook": [
+        "CookError",
+        "CookOptions",
+        "cookType",
+        "serviceBlockCookType",
+        "staticcook",
+        "workItemCookType"
+      ],
+      "background": [],
+      "pdg": [
+        "_pdg"
+      ],
+      "task": [
+        "DeferredTask",
+        "PyDeferredTask"
+      ]
+    },
+    "hdefereval_full_dir": [
+      "_active_callback",
+      "_condition",
+      "_last_exc_info",
+      "_last_result",
+      "_processDeferred",
+      "_queue",
+      "_queueDeferred",
+      "_queue_add_pending",
+      "_run_main_thread_worker_thread_code",
+      "doWorkInBackgroundThread",
+      "do_work_in_background_thread",
+      "executeDeferred",
+      "executeDeferredAfterWaiting",
+      "executeInMainThreadWithResult",
+      "execute_deferred",
+      "execute_deferred_after_waiting",
+      "execute_in_main_thread_with_result",
+      "functools",
+      "hou",
+      "inSeparateThread",
+      "in_separate_thread",
+      "next",
+      "standard_library",
+      "sys",
+      "threading",
+      "traceback"
+    ]
+  }
+}

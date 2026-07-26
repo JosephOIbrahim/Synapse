@@ -1,0 +1,111 @@
+{
+  "schema": "h3a_probe/v1",
+  "producer": "harness/notes/h3a_probe.py",
+  "group": null,
+  "interpreter": {
+    "executable": "C:\\Python314\\python.exe",
+    "python": "3.14.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "thread_is_main": true,
+    "hfs": null,
+    "houdini_build": null,
+    "hou_import_error": "ModuleNotFoundError: No module named 'hou'"
+  },
+  "controls_ok": false,
+  "controls": {
+    "positive_ok": false,
+    "negative_ok": false,
+    "positive": [
+      {
+        "symbol": "hou.node",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": "hou",
+        "evidence": "import hou failed -> ModuleNotFoundError: No module named 'hou'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.Node.type",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": "hou",
+        "evidence": "import hou failed -> ModuleNotFoundError: No module named 'hou'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.undos.group",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": "hou",
+        "evidence": "import hou failed -> ModuleNotFoundError: No module named 'hou'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      }
+    ],
+    "negative": [
+      {
+        "symbol": "hou.zzz_h3a_control_must_not_exist",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": "hou",
+        "evidence": "import hou failed -> ModuleNotFoundError: No module named 'hou'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.pdg",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": "hou",
+        "evidence": "import hou failed -> ModuleNotFoundError: No module named 'hou'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.secure",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": "hou",
+        "evidence": "import hou failed -> ModuleNotFoundError: No module named 'hou'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.lopNetworks",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": "hou",
+        "evidence": "import hou failed -> ModuleNotFoundError: No module named 'hou'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.updateGraphTick",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": "hou",
+        "evidence": "import hou failed -> ModuleNotFoundError: No module named 'hou'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      }
+    ],
+    "failure_condition": "positive_ok is False if any of ['hou.node', 'hou.Node.type', 'hou.undos.group'] reports != EXISTS; negative_ok is False if any of ['hou.zzz_h3a_control_must_not_exist', 'hou.pdg', 'hou.secure', 'hou.lopNetworks', 'hou.updateGraphTick'] reports != ABSENT. controls_ok False => the whole run is UNINTERPRETABLE."
+  },
+  "counts": {
+    "total": 0,
+    "EXISTS": 0,
+    "ABSENT": 0,
+    "UNVERIFIABLE": 0
+  },
+  "results": []
+}
