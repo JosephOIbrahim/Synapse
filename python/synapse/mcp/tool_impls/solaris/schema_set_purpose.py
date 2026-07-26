@@ -70,7 +70,22 @@ TOOL_RETURN = {
         },
         "status": {
             "type": "string",
-            "enum": ["set", "already_set", "not_found"],
+            # R33, 2026-07-26. Was ["set", "already_set", "not_found"].
+            # `already_set` has never been returned by execute(); the three
+            # authoring outcomes are distinguished as set/updated/unchanged
+            # (Law 3 -- three distinct things happened, three distinct words),
+            # and `noop` is the honest report when no target prim resolves.
+            # Derived from set_purpose.py:278 (not_found), :288 (noop) and
+            # :360-361 (the set/updated/unchanged ternary).
+            "enum": ["set", "updated", "unchanged", "noop", "not_found"],
+            "description": (
+                "'set' = purpose newly authored. 'updated' = this tool's "
+                "existing configureprimitive was retargeted to a new value. "
+                "'unchanged' = it already carried this exact purpose, so "
+                "nothing moved. 'noop' = no target prim could be resolved, so "
+                "nothing was authored. 'not_found' = the component holds no "
+                "componentgeometry node."
+            ),
         },
     },
 }
