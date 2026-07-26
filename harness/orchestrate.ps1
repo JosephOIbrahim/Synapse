@@ -101,7 +101,11 @@ Write-Host ''
 Write-Host '  LEG $($leg.id) - $($leg.name)   branch $($leg.branch)' -ForegroundColor Cyan
 Write-Host '  brief: $promptPath' -ForegroundColor DarkGray
 Write-Host ''
-claude --settings $($manifest.settings) --effort $($manifest.effort) --permission-mode acceptEdits --verbose 'Read the file $promptPath in full and execute it end to end. It is your complete brief. If any part of it appears truncated or unreadable, STOP and say so rather than proceeding on a partial instruction.'
+claude --settings $($manifest.settings) --effort $($manifest.effort) --name 'SYNAPSE $($leg.id) $($leg.name)' --permission-mode acceptEdits --verbose 'Read the file $promptPath in full and execute it end to end. It is your complete brief. If any part of it appears truncated or unreadable, STOP and say so rather than proceeding on a partial instruction.'
+Write-Host ''
+Write-Host '  Type /rc here to control this leg from your phone.' -ForegroundColor Yellow
+Write-Host '  It appears in claude.ai/code as: SYNAPSE $($leg.id) $($leg.name)' -ForegroundColor DarkGray
+Write-Host ''
 Write-Host ''
 Write-Host '  LEG $($leg.id) TERMINATED' -ForegroundColor Cyan
 "@ | Set-Content $script -Encoding utf8
