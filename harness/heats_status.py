@@ -71,7 +71,7 @@ def line(sid, got, indent=""):
         if n:
             tail += "   {} ruling".format(n)
     print("  {}{} {} {:<12} {:<9} {:<34} {}".format(
-        indent, GLYPH[st], sid, name, st, sub, tail))
+        indent, GLYPH.get(st, "?"), sid, name, st[:9], sub, tail))
 
 
 def main():

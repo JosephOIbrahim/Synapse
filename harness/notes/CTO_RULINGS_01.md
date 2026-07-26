@@ -952,3 +952,74 @@ Five refutations. Every one reproducible. Every one missing a positive control.
 The instrument that caught them was never inspection — it was execution plus a control. Law 1
 gets you a check that can fail. **D-R10's corollary is what makes the failure mean something,**
 and it has now paid for itself four times in one day.
+
+---
+
+## RULING 39 — The shipping number exists. It is 4048/110/771, and I am the reason it took two days.
+
+**Measured** 2026-07-26 08:28, `repair/q1-unpoison @ 3a9c485`, `hython3.13` / Python 3.13.10,
+`_VENDOR_ABI_RISK = False` (vendor tree **ACTIVE**), 96.79s, no segfault.
+
+```
+GATE      system 3.14.2, vendor INACTIVE     4875 passed    0 failed      0 errors
+SHIPPING  hython3.13,    vendor ACTIVE       4048 passed  110 failed    771 errors
+```
+
+`producer` — `hython3.13 -m pytest -q --continue-on-collection-errors -p no:cacheprovider`,
+cwd `.claude/worktrees/q1-unpoison`.
+
+### Why it took two days, which is the actual finding
+
+Q2-F2, `VERIFIED-STATIC`, `harness/run_suite_shipping_python.ps1:23`. I wrote that runner on
+2026-07-25 carrying:
+
+```
+--ignore=tests/test_load.py
+--ignore=tests/test_passthrough_hygiene.py
+--ignore=tests/test_port_wave_scene1.py
+```
+
+Those are **exactly** the three files that fail to collect on the shipping interpreter. I added
+them to get past a collection error and never recorded that I had. The receipt states it better
+than I can:
+
+> The runner was authored AROUND the breakage rather than recording it. This is Law 3 at the
+> harness level — an instrument reporting what it attempted, not what happened. It is also why a
+> shipping number never surfaced: **the instrument was built to not see the fault.**
+
+I wrote Law 3 on 2026-07-25 and violated it in a measuring instrument the same day, then spent
+hours attributing the missing number to a segfault, an interpreter mismatch, and an ABI question
+— none of which were the cause.
+
+**Ruled:**
+1. `--ignore` is **banned in any harness measurement runner.** A measurement that excludes its
+   failures is not a measurement. `--continue-on-collection-errors` is the correct instrument:
+   it records the error and proceeds.
+2. Both numbers are canonical, per R31, and **neither substitutes for the other**. A release
+   claim cites SHIPPING. CI enforces GATE. Quoting either without its interpreter is
+   `UNVERIFIED`.
+3. **The 827-test gap is now the project's primary open question**, replacing everything the
+   heats were scoped against. Q2-F4 claims ~60% ENVIRONMENT / ~33% test-harness / **0% shipping
+   code** — and correctly flags its own weak point: *"'zero shipping-code defects' is exactly
+   where a real defect would hide behind a 'test harness' label."* That claim is
+   `VERIFIED-DERIVED` and must not be cited as `VERIFIED-RUNTIME` until attacked.
+
+### Q2-F3 resolved — environment gap, not "does not run as shipped"
+
+Both suspect imports are guarded on the shipping path:
+
+- `mcp` — **zero** occurrences in non-test shipping code. Not a runtime dependency.
+- `websockets` — `server/websocket.py:16` wraps it in `try:`; `panel/ws_bridge.py:191` falls back
+  to QWebSocket when absent.
+
+**SYNAPSE runs on Houdini's 3.13.** The panel degrades to QWebSocket for its bridge.
+
+**Open, and named:** that QWebSocket fallback has never been exercised. A fallback that exists
+and is broken is worse than none — the failure class this repository has now produced five times.
+It is a follow-up, not a blocker, and it does not get counted as working until it is probed.
+
+### Method note
+
+The segfault is gone. Q1's fix — restore the PySide6 module *objects* rather than re-import them —
+holds under the real interpreter, and the suite completes in 96 seconds where it previously took
+an access violation. That was the correct diagnosis and it was not mine.

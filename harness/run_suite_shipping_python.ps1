@@ -20,7 +20,16 @@ Write-Host "  log: $log" -ForegroundColor DarkGray
 Write-Host ""
 
 $env:PYTHONPATH = "C:\Users\User\SYNAPSE\python;C:\Users\User\SYNAPSE"
-& $py -m pytest -q --ignore=tests/test_load.py --ignore=tests/test_passthrough_hygiene.py --ignore=tests/test_port_wave_scene1.py 2>&1 | Tee-Object -FilePath $log | Select-Object -Last 30
+
+# Q2-F2: this line previously carried
+#   --ignore=tests/test_load.py --ignore=tests/test_passthrough_hygiene.py
+#   --ignore=tests/test_port_wave_scene1.py
+# which are exactly the three files that fail to COLLECT on the shipping interpreter.
+# The runner was authored around the breakage rather than recording it - Law 3 at the
+# harness level, an instrument reporting what it attempted rather than what happened.
+# It is why a shipping number never surfaced: the instrument was built not to see the
+# fault. The ignores are removed. Collection errors are the measurement, not noise.
+& $py -m pytest -q --continue-on-collection-errors 2>&1 | Tee-Object -FilePath $log | Select-Object -Last 30
 
 Write-Host ""
 Write-Host "  full log: $log" -ForegroundColor DarkGray
