@@ -66,11 +66,37 @@ TOOL_RETURN = {
         },
         "purpose": {
             "type": "string",
-            "description": "The purpose that was assigned.",
+            # R33 (2026-07-26): was "The purpose that was assigned", which is
+            # false on the `noop` path -- execute() echoes the REQUESTED
+            # purpose there while authoring nothing.
+            "description": (
+                "The purpose that was requested. On every status except "
+                "'noop' this is also what was authored; on 'noop' nothing "
+                "was authored -- read `status`, not this field."
+            ),
         },
         "status": {
             "type": "string",
-            "enum": ["set", "already_set", "not_found"],
+            # R33 (2026-07-26): reconciled against set_purpose.execute().
+            # The prior enum [set, already_set, not_found] declared
+            # `already_set`, which this tool has never returned, and hid
+            # `updated`, `unchanged` and `noop`, which it does return. That is
+            # not stale documentation: it is what the MODEL is told it will
+            # get back, so the model had no branch for three real outcomes and
+            # a branch for one that never arrives. Pinned by
+            # tests/test_solaris_schema_return_contract.py.
+            "enum": ["set", "updated", "unchanged", "noop", "not_found"],
+            "description": (
+                "'set' = a new configureprimitive was created and wired in. "
+                "'updated' = this tool's existing node was re-pointed to a "
+                "different purpose. "
+                "'unchanged' = that node already carried this exact purpose; "
+                "nothing moved. "
+                "'noop' = the target prim path could not be resolved, so NO "
+                "purpose was authored -- pass `prim_path` explicitly. "
+                "'not_found' = no componentgeometry node exists under "
+                "`component_path`."
+            ),
         },
     },
 }

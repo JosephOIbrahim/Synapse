@@ -98,7 +98,22 @@ TOOL_RETURN = {
         },
         "status": {
             "type": "string",
-            "enum": ["created", "extended", "already_exists"],
+            # R33 (2026-07-26): `extended` removed. create_variants.execute()
+            # has never returned it. The idempotency guard is all-or-nothing
+            # (`if all(...)`, create_variants.py:163), so a PARTIAL overlap
+            # falls through, builds the missing variants, and reports
+            # `created` -- not `extended`. Restoring a distinct partial status
+            # is an implementation change and belongs to H2 re-qualification,
+            # not to this schema. Pinned by
+            # tests/test_solaris_schema_return_contract.py.
+            "enum": ["created", "already_exists"],
+            "description": (
+                "'created' = variant nodes were built. This also covers a "
+                "PARTIAL overlap: any variant that was missing is built and "
+                "the call still reports 'created'. "
+                "'already_exists' = every requested variant was already "
+                "present; nothing was built."
+            ),
         },
     },
 }

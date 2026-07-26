@@ -1,0 +1,228 @@
+{
+  "schema": "receipt/v1",
+  "leg": "H1",
+  "title": "Wire the schemas -- TOOL_RETURN gains its first consumer, and two drifted enums are reconciled",
+  "harness": "REPAIR-01",
+  "status": "green",
+  "status_note": "Describes what happened (Law 3). All four oracle conditions in harness/prompts/h1.md met and evidenced below. The set_purpose pin was demonstrated RED against today's drift BEFORE any schema was edited; the transcript of that failure is quoted verbatim in acceptance_condition.",
+
+  "model": "claude-opus-5[1m]",
+  "settings_profile": ".claude/settings.json -- interactive orchestrator session. NOT dispatched behind harness/agent-settings.json or harness/relay-settings.json. Recorded per R25: pytest was available and was run directly, so suite evidence in this receipt is claimable under Constitution Article V. No agent was dispatched by this leg.",
+
+  "ruling": "R33 (CTO_RULINGS_01.md:825) -- 'Wire the schemas. Do not delete them.'",
+  "brief": "harness/prompts/h1.md (26 lines, read in full)",
+
+  "worktree": ".claude/worktrees/h1-schemas-b",
+  "branch": "repair/h1-schemas-b",
+  "commit_before": "70ed8ef",
+  "commit_after": "this leg's single commit -- the receipt ships inside the commit it describes, so its own SHA cannot be self-referenced. commit_before is the anchor.",
+
+  "files_touched": [
+    "tests/test_solaris_schema_return_contract.py (NEW, 34 tests)",
+    "python/synapse/mcp/tool_impls/solaris/schema_set_purpose.py (enum + one false description)",
+    "python/synapse/mcp/tool_impls/solaris/schema_create_variants.py (enum)"
+  ],
+  "scope_fence_held": "true -- no tool implementation was edited. All five implementations were READ to derive ground truth; the only writes were to two schema modules and one new test file. `git diff` touches zero files under tool_impls/solaris/ other than schema_*.py.",
+
+  "tests_before": { "passed": 4881, "failed": 0, "skipped": 129 },
+  "tests_after":  { "passed": 4915, "failed": 0, "skipped": 129 },
+  "test_delta": 34,
+  "commandment_7": "held -- count strictly increased, nothing weakened, skipped or xfailed.",
+  "suite_producer": "python -m pytest -q -p no:cacheprovider --basetemp=<isolated>, cwd=.claude/worktrees/h1-schemas-b, system python 3.14.2 (GATE interpreter per R31). --basetemp added only to keep concurrent runs from contending for pytest-current; it does not affect collection or results.",
+
+  "oracle": {
+    "1_pytest_k_schema": {
+      "required": "0 failed, count strictly increases",
+      "before": "49 passed, 3 skipped, 4958 deselected",
+      "after": "83 passed, 3 skipped, 4958 deselected",
+      "verdict": "PASS -- +34, zero failed",
+      "producer": "python -m pytest -k schema -q -p no:cacheprovider"
+    },
+    "2_set_purpose_red_before_fix": {
+      "required": "the set_purpose pin demonstrated failing BEFORE the schema fix",
+      "verdict": "PASS -- see acceptance_condition below"
+    },
+    "3_grep_tool_return_outside_schema_files": {
+      "required": "now finds the tests",
+      "before": "no hits -- TOOL_RETURN had ZERO consumers, which is the whole defect",
+      "after": "12 hits, all in tests/test_solaris_schema_return_contract.py; the load-bearing one is line 213 `return mod.TOOL_RETURN` inside _tool_return()",
+      "verdict": "PASS",
+      "producer": "grep -rn 'TOOL_RETURN' --include=*.py . | grep -v '/schema_'"
+    },
+    "4_gate_suite": {
+      "required": "holds at 4881+ with 0 failed",
+      "verdict": "PASS -- 4915 passed / 0 failed / 129 skipped"
+    }
+  },
+
+  "acceptance_condition": {
+    "requirement": "brief item 4 -- the set_purpose test MUST FAIL against today's drift before the schema is fixed. A test authored after the fix, that has never seen the defect, is a decoration (Law 1).",
+    "method": "The 34 pins were written and run against the UNMODIFIED schemas. Log: scratchpad/H1_pre_fix_RED.log.",
+    "result": "2 failed, 32 passed",
+    "verbatim_set_purpose": "AssertionError: set_purpose: schema declares ['already_set', 'not_found', 'set'], execute() returns ['noop', 'not_found', 'set', 'unchanged', 'updated'] -- declared-but-never-returned=['already_set'], returned-but-undeclared=['noop', 'unchanged', 'updated']",
+    "verbatim_create_variants": "AssertionError: create_variants: schema declares ['already_exists', 'created', 'extended'], execute() returns ['already_exists', 'created'] -- declared-but-never-returned=['extended'], returned-but-undeclared=[]",
+    "after_schema_fix": "34 passed, 0 failed"
+  },
+
+  "how_the_pin_works": {
+    "principle": "DERIVED, never transcribed. Nothing in the test file hardcodes an expected return set. _status_contract_from_source reads each implementation's execute() with `ast` and reports the status literals it can actually return, so the pin goes red from EITHER side -- implementation drift or schema drift.",
+    "why_ast_not_a_call": "Calling execute() needs a live `hou`. Driving it with a MagicMock `hou` is banned by Law 1 for host-behaviour assertions. The status literal in the source IS the fact under test, so reading the literal is the honest measurement -- the same idiom, for the same reason, as test_solaris_tool_registration._registered_commands.",
+    "refuses_rather_than_guesses": "Any return shape the reader cannot reduce to string literals RAISES (UnreadableStatus) instead of returning a smaller set. A reader that silently skips what it cannot parse measures less and less over time while still reporting green -- that is the D1 '218/218 by construction' defect, and it is the failure mode this file exists to avoid.",
+    "anti_vacuity": "test_schema_declares_a_nonempty_status_enum and test_implementation_emits_a_nonempty_status_set exist because `set() == set()` would otherwise pass while pinning nothing.",
+    "calibration_controls": "11 of the 34 tests check the INSTRUMENT before it is trusted: 2 positive controls (a known status set; the nested ternary) and 9 negative controls (computed status, bare name, ** unpacking, missing status key, bare return, non-dict return, no returns, no execute, non-literal key). This is the paired negative control probe_phase3_layout was faulted for lacking."
+  },
+
+  "mutation_testing_R34": {
+    "standard": "R34.2 -- every regression pin must be shown to fail against a deliberately broken implementation. A test that passes on both the fix and its inverse is a decoration.",
+    "method": "Throwaway harness (scratchpad/mutate.py, NOT committed -- the scope fence is schemas and their tests). Each mutation: back up bytes, break one thing on purpose, run the pin file, assert the NAMED test goes red, restore. Every test family is covered by at least one mutation.",
+    "result": "14 of 14 mutations turned their pin RED. Zero decorations.",
+    "mutations": [
+      "M1 component_builder.py  '\"status\": \"created\"' -> '\"created_MUTANT\"'        -> enum-match[component_builder] RED",
+      "M2 scene_template.py     '\"status\": \"created\"' -> '\"created_MUTANT\"'        -> enum-match[scene_template] RED",
+      "M3 create_variants.py    '\"status\": \"created\"' -> '\"created_MUTANT\"'        -> enum-match[create_variants] RED",
+      "M4 import_megascans.py   '\"already_exists\"'   -> '\"already_exists_MUTANT\"' -> enum-match[import_megascans] RED",
+      "M5 set_purpose.py        '\"status\": \"noop\"'   -> '\"noop_MUTANT\"'           -> enum-match[set_purpose] RED",
+      "M6 set_purpose.py        NESTED TERNARY '\"unchanged\" if already' -> mutant   -> enum-match[set_purpose] RED (proves the IfExp branch is load-bearing, not decorative)",
+      "M7 schema_set_purpose.py re-injected the ORIGINAL R33 drift [set, already_set, not_found] -> enum-match[set_purpose] RED (the defect is reproducible on demand)",
+      "M8 schema_component_builder.py  added a fictional 'ghost_key' property     -> properties-emittable[component_builder] RED",
+      "M9 schema_scene_template.py     enum -> []                                 -> nonempty-enum[scene_template] RED",
+      "M10 TEST: removed the ast.IfExp branch from _string_literals               -> reader-reads-nested-ternaries RED",
+      "M11 TEST: made _status_contract_from_source return set()                   -> nonempty-status-set RED (the vacuous-pass mode is genuinely blocked)",
+      "M12 TEST: made _string_literals return set() instead of raising            -> reader-refuses-what-it-cannot-read RED",
+      "M13 created a real tool_audit.py implementation                            -> tool_audit-is-a-design-document RED (the exclusion expires by itself)",
+      "M14 hid schema_set_purpose.py                                              -> every-pinned-tool-has-both-modules RED"
+    ]
+  },
+
+  "the_drift_reconciled": {
+    "set_purpose": {
+      "was": ["set", "already_set", "not_found"],
+      "now": ["set", "updated", "unchanged", "noop", "not_found"],
+      "anchors": "set_purpose.py:278 not_found | :287 noop | :360-361 nested ternary -> unchanged|updated|set",
+      "tier": "VERIFIED-STATIC at 70ed8ef",
+      "direction": "schema fixed to match the implementation, per brief item 5. The implementation is live and tested; the schema was not."
+    },
+    "create_variants": {
+      "was": ["created", "extended", "already_exists"],
+      "now": ["created", "already_exists"],
+      "anchors": "create_variants.py:165 already_exists | :276 created. `extended` appears nowhere in execute().",
+      "tier": "VERIFIED-STATIC at 70ed8ef",
+      "note": "NOT named in R33 or in the brief. Found by the same pin. See finding H1-F1."
+    },
+    "clean_on_arrival": "component_builder, scene_template, import_megascans -- all three declared exactly {created, already_exists} and returned exactly that. Their pins passed on the first run, before any edit."
+  },
+
+  "findings": [
+    {
+      "id": "H1-F1",
+      "severity": "medium",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/mcp/tool_impls/solaris/schema_create_variants.py:101 (pre-fix)",
+      "summary": "The drift was TWO schemas, not one. R33 and the brief both name only set_purpose. create_variants declared a third status `extended` that execute() has never returned. Same defect class, same blast radius: the model was told to expect an outcome that cannot occur.",
+      "disposition": "Fixed in this leg -- `extended` removed. The pin now prevents its return."
+    },
+    {
+      "id": "H1-F2",
+      "severity": "low-medium",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/mcp/tool_impls/solaris/create_variants.py:163",
+      "summary": "`extended` may have been describing a REAL behavioural gap rather than being invented. The idempotency guard is all-or-nothing: `if all(f'mat_{vn}' in existing_names or f'geo_{vn}' in existing_names for vn in variant_names)`. A PARTIAL overlap therefore falls through, builds only the missing variants, and reports `created` -- indistinguishable from a call that built everything from scratch. Under Law 3 ('status describes what happened') that is arguably imprecise.",
+      "disposition": "NOT fixed here. Changing it is an implementation change and the brief's scope fence (line 23) routes implementation questions to H2 re-qualification. The reasoning is recorded as a comment at the edit site so the next reader meets it. Escalated as H1-R1."
+    },
+    {
+      "id": "H1-F3",
+      "severity": "low",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "all five schema_*.py TOOL_RETURN blocks",
+      "summary": "TOOL_RETURN['properties'] is under-declared in four of five tools. Keys execute() returns but no schema declares: `strategy` (component_builder), `primitive_paths` (scene_template), `message`/`reason`/`configure_node`/`prim_path`/`usd_purpose` (set_purpose). ZERO tools declare a property they never return -- the false direction is clean.",
+      "disposition": "Pinned in ONE direction only, deliberately. JSON Schema `properties` is an open map here (no additionalProperties:false), so an emitted-but-undeclared key leaves the schema TRUE and merely under-documented, whereas a declared-but-never-emitted key makes it FALSE. Only the false direction is a correctness surface; the other is a judgement about how much to advertise. Escalated as H1-R2."
+    },
+    {
+      "id": "H1-F4",
+      "severity": "low",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/mcp/tool_impls/solaris/schema_set_purpose.py:69 (pre-fix)",
+      "summary": "The `purpose` property's description read 'The purpose that was assigned.' That is false on the `noop` path, where execute() echoes the REQUESTED purpose while authoring nothing. Same misinformation class as the enum drift, one level down.",
+      "disposition": "Fixed -- the description now says it is the requested purpose and points the caller at `status`. Not pinned by a test (prose is not mechanically checkable against behaviour); recorded so it is not mistaken for an unforced edit."
+    },
+    {
+      "id": "H1-F5",
+      "severity": "informational",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "python/synapse/mcp/tool_impls/solaris/schema_tool_audit.py",
+      "summary": "Brief item 2's exclusion of tool_audit is independently corroborated: the module exports TOOL_AUDIT / TOOLS_NEW=5 / TOOLS_EXTENDED=2 / TOOLS_COVERED=2 and has no TOOL_NAME, no TOOL_SCHEMA, no TOOL_RETURN; no tool_audit.py implementation exists. Its own TOOLS_NEW=5 names exactly the five tools that were pinned.",
+      "disposition": "Written as a TEST rather than a comment (test_tool_audit_is_a_design_document_not_a_tool) so the exclusion expires on its own the day someone gives tool_audit an implementation. Mutation M13 proves it fires."
+    },
+    {
+      "id": "H1-F6",
+      "severity": "process",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": ".claude/worktrees/h1-schemas (the ORIGINAL H1 worktree)",
+      "summary": "A SECOND writer was executing this identical brief in the identical worktree concurrently. Observed live: tests/test_solaris_tool_registration.py rewritten 209 -> 480+ lines at 14:50:23; tests/test_solaris_schema_return_contract.py created at 14:51:28 and still growing at 14:52:53; all five schema_*.py edited at 14:51:42. My own first baseline suite run died with PermissionError on pytest-current, contending with the other process. This is Constitution Article V's named failure ('two agents in one directory produce interleaved commits, a corrupted suite baseline, and findings that cannot be attributed').",
+      "disposition": "STOPPED before writing anything, escalated to the human, and re-ran the leg in a fresh isolated worktree (.claude/worktrees/h1-schemas-b, branch repair/h1-schemas-b, based on commit 70ed8ef so none of the other writer's uncommitted edits were inherited). The original worktree was reverted to clean at 14:57:44 by the human. Escalated as H1-R3.",
+      "independent_corroboration": "The two runs reached the same two conclusions independently -- set_purpose 3-declared-vs-5-real, and create_variants `extended` unreachable. Two readers agreeing from different starts is evidence for the finding, which is the one useful by-product of the collision."
+    },
+    {
+      "id": "H1-F7",
+      "severity": "process",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "scratchpad/mutate.py (throwaway harness)",
+      "summary": "The mutation harness restored files with pathlib.write_text(), which on Windows re-encodes LF -> CRLF. Seven implementation files that this leg never intended to touch came back byte-different, showing as modified with git warning 'CRLF will be replaced by LF'. Content was identical; only line endings moved. Same species as R24 (a tool wrote bytes nobody read back).",
+      "disposition": "Caught by checking `git status` after the battery rather than trusting the harness's own restore. The seven were restored with `git checkout --`, and schema_set_purpose.py (a real edit that had also been CRLF-damaged by mutation M7's restore) was renormalised to LF. Final tree is exactly 3 files, LF-clean, zero git line-ending warnings. A byte-mode restore (read_bytes/write_bytes) is the correct pattern for any future mutation harness."
+    }
+  ],
+
+  "for_ruling": [
+    {
+      "id": "H1-R1",
+      "question": "create_variants: should `extended` come BACK as a real implementation behaviour, or is collapsing the partial-overlap case into `created` correct?",
+      "context": "Removing it from the schema was forced -- brief item 5 says fix schemas to match reality, and the tool demonstrably never returns it. But that made a real ambiguity invisible: after this leg, nothing distinguishes 'built all four variants' from 'built one, the other three already existed'. Restoring a distinct status is a Law 3 improvement; leaving it is defensible if callers do not care which. Either way the pin will force the schema to follow.",
+      "why_escalated": "Article I -- a value judgement between defensible options. Implementation change, so it belongs to H2 re-qualification (brief line 23), not to H1.",
+      "recommendation": "Fold into H2's re-qualification of the Solaris family rather than opening a separate leg. The marginal cost there is near zero since H2 is already reading these implementations."
+    },
+    {
+      "id": "H1-R2",
+      "question": "Should the return-property contract be pinned in BOTH directions -- i.e. must every key execute() returns also be declared in TOOL_RETURN?",
+      "context": "I pinned only the false direction (a declared property must be emittable) and documented the asymmetry in the test module. The rationale: JSON Schema properties is an open map here, so undeclared extras leave the schema true. The counter-argument is that R33's own logic applies -- the model reasons on what it is told, and seven real return keys it is never told about (H1-F3) are seven affordances it cannot use. Pinning both directions would go red today on four of five tools.",
+      "why_escalated": "Article I -- how strict the advertised contract should be is a product judgement, not something provable from the tree. Deliberately left as a finding rather than silently widened.",
+      "recommendation": "Pin it, but as its own small leg with the schema fills authored deliberately -- not as an unplanned expansion of H1."
+    },
+    {
+      "id": "H1-R3",
+      "question": "Two agents were dispatched onto the same H1 worktree simultaneously. What in the dispatch path allowed that, and should the orchestrator hold a lock?",
+      "context": "H1-F6. Article V mandates a worktree per parallel agent, but nothing enforced it -- the constraint is prose, not a gate. The collision was caught only because I checked `git status` against a file I had already read. A leg that did not happen to re-read a file it had cached would have committed a merge of two agents' work and attributed it to one.",
+      "why_escalated": "Process/gate design -- Article IV says enforcement belongs in the definition, not the instruction. A .lock file in the worktree, or an orchestrator-side registry, is the obvious shape, but which one is a design call.",
+      "recommendation": "Cheapest real fix: the dispatcher writes .claude/worktrees/<leg>/.dispatch-lock naming the leg, model and start time, and refuses to dispatch into a worktree that already has one -- the same shape as commit 70ed8ef's 'refuse to dispatch into a missing brief'."
+    },
+    {
+      "id": "H1-R4",
+      "question": "This leg's branch is repair/h1-schemas-b, not the leg-named repair/h1-schemas. Merge accordingly, or rebase onto the canonical name first?",
+      "context": "The fresh worktree needed its own branch (git will not check out one branch in two worktrees) and repair/h1-schemas was still occupied by the other writer at the time. The work is three files off 70ed8ef with no conflicts; repair/h1-schemas is now clean at that same commit, so a fast-forward or cherry-pick is trivial.",
+      "why_escalated": "Gate C -- merge is never automated. Flagging the naming mismatch so it is not discovered at merge time.",
+      "recommendation": "Cherry-pick the single commit onto repair/h1-schemas and delete repair/h1-schemas-b, so the leg name matches the branch the orchestrator expects."
+    }
+  ],
+
+  "drift": [
+    {
+      "note": "harness/notes/receipts/H3.json states that 'H1 has been re-scoped from wire-the-schemas to diagnose-the-shipping-delta'. That is superseded, not contradictory: the shipping-delta diagnosis was completed and ruled as R47 (commit 9252b17), after which the orchestrator wrote the current briefs (commit 70ed8ef). harness/prompts/h1.md as read at 70ed8ef is the authoritative H1 brief and is the schema-wiring one. No action needed; recorded so the two are not read as conflicting.",
+      "structural": false
+    },
+    {
+      "note": "R32 (worktrees silently test the PRIMARY checkout via an editable .pth) does NOT apply to this leg. Verified at RUNTIME rather than assumed: a transient probe test asserted synapse.__file__ and the schema module's __file__ under pytest, and both resolved to .claude/worktrees/h1-schemas-b. pyproject.toml:107 carries `pythonpath = [\"python\"]` at this commit. The probe file was deleted immediately and `git status` confirmed clean.",
+      "structural": false
+    }
+  ],
+
+  "footprint_disclosure": "In the ORIGINAL h1-schemas worktree, before the collision was detected, I created tests/test_zz_worktree_path_probe.py (a deliberately-failing one-line R32 probe) at approximately 14:49-14:50 and deleted it seconds later. It was never staged and .pytest_cache is gitignored, so no commit surface was touched -- but if the concurrent writer ran a full suite inside that window it would have seen one spurious failure. Recorded so no baseline measured in that window is trusted.",
+
+  "resume_token": {
+    "skip": [
+      "Re-deriving the return sets -- all five are recorded in the_drift_reconciled with file:line anchors, VERIFIED-STATIC at 70ed8ef.",
+      "Re-running the mutation battery -- 14/14 recorded above. Re-run only if the reader (_string_literals / _return_dicts) changes.",
+      "Re-checking R32 in this worktree -- verified at runtime, recorded in drift."
+    ],
+    "redo_if": "Any tool_impls/solaris/*.py execute() gains, loses or renames a status literal; or a sixth Solaris tool is added; or tool_audit gets an implementation (test_tool_audit_is_a_design_document_not_a_tool will say so).",
+    "next": "H1 is complete and green. The open items are H1-R1 through H1-R4, none of which block this leg's merge. H1-R1 (create_variants partial-overlap status) is the one with real behavioural content and should be folded into H2 rather than run separately. Merge per H1-R4."
+  }
+}
