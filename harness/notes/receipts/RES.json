@@ -16,7 +16,8 @@
     "gate_interpreter": "system python 3.14.2, vendor INACTIVE",
     "shipping_interpreter": "hython 3.13.10, vendor ACTIVE",
     "commit_note": "All numbers in this receipt were produced against the tree in the fix commit named by `fix_commit` below. The adjudicator's blocker was that the tree moved under the reviewers; that churn was the mutation matrix mutating and restoring files mid-run, plus two late repairs the gate itself surfaced. The tree is frozen at that commit and every artifact was re-emitted against it.",
-    "resolve_with": "git log --oneline -- harness/notes/receipts/RES.json"
+    "resolve_with": "git log --oneline -- harness/notes/receipts/RES.json",
+    "fix_commit": "c0cc415"
   },
   "agents": [
     {
