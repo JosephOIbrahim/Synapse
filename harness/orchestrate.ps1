@@ -76,6 +76,22 @@ function Start-Leg([object]$leg) {
     Say "DISPATCH $($leg.id) $($leg.name)  ->  $($leg.branch)" 'Cyan'
     if ($DryRun) { Say "  (dry run - not launching)" 'DarkGray'; return }
 
+    # Refuse to dispatch into a missing brief. Found 2026-07-26 minutes before an
+    # unattended afternoon: legs.json referenced h1.md and h2.md, neither of which
+    # existed. Both would have launched into nothing the moment RES landed, and
+    # reported no error. A leg that cannot read its brief must not start.
+    $briefPath = Join-Path $repo $leg.prompt
+    if (-not (Test-Path $briefPath)) {
+        Say "  REFUSED - brief missing: $($leg.prompt)" 'Red'
+        Notify "$($leg.id) NOT dispatched" "Brief missing: $($leg.prompt). Leg is stalled until it exists."
+        return
+    }
+    if ((Get-Item $briefPath).Length -lt 200) {
+        Say "  REFUSED - brief suspiciously short ($((Get-Item $briefPath).Length) bytes)" 'Red'
+        Notify "$($leg.id) NOT dispatched" "Brief is only $((Get-Item $briefPath).Length) bytes - likely truncated."
+        return
+    }
+
     if (-not (Test-Path $wt)) {
         git worktree add -b $leg.branch $wt HEAD 2>&1 | Select-Object -Last 1 | ForEach-Object { Say "  $_" 'DarkGray' }
     }
