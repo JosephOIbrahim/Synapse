@@ -1106,10 +1106,12 @@ class TestNewStyleFunctions:
 # Teardown: restore original hou module
 # ---------------------------------------------------------------------------
 def teardown_module():
-    if _orig_hou is not None:
-        sys.modules["hou"] = _orig_hou
-    else:
-        sys.modules.pop("hou", None)
+    # Absence is `= None`, never a pop — a genuine eviction lets a later lazy
+    # `import hou` re-execute hou.py under hython and half-build the SWIG `Parm`
+    # class for the rest of the process. See HOU_REIMPORT_GUARD in
+    # tests/conftest.py. Dormant here (under hython `_orig_hou` is real hou), and
+    # converted anyway: the guard rescues the idiom, it does not make it correct.
+    sys.modules["hou"] = _orig_hou
     # Do NOT pop hdefereval — other test files depend on the stub persisting.
     # The stub is harmless (just calls fn() directly) and removing it causes
     # cross-test ModuleNotFoundError for any test importing handlers_tops.py.

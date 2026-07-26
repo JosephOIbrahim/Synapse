@@ -1597,10 +1597,10 @@ class TestRouteChatHandler:
                 if mod_name.startswith("synapse.server"):
                     sys.modules.pop(mod_name, None)
             sys.modules.update(_cached)
-            if saved_hou is not None:
-                sys.modules["hou"] = saved_hou
-            else:
-                sys.modules.pop("hou", None)
+            # `= None`, never a pop — an eviction window lets a lazy
+            # `import hou` re-execute hou.py under hython and half-build the
+            # SWIG `Parm` class. See HOU_REIMPORT_GUARD in tests/conftest.py.
+            sys.modules["hou"] = saved_hou
 
     def test_route_chat_create_node_routes_to_command(self):
         """'create a sphere at /obj' should route to Tier 0 regex, not execute_python."""

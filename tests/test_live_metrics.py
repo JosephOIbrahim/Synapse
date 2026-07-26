@@ -307,7 +307,7 @@ class TestSerialization:
 # ---------------------------------------------------------------------------
 
 def teardown_module():
-    if _original_hou is not None:
-        sys.modules["hou"] = _original_hou
-    elif "hou" in sys.modules:
-        del sys.modules["hou"]
+    # `= None`, never `del` — a genuine eviction lets a later lazy `import hou`
+    # re-execute hou.py under hython and half-build the SWIG `Parm` class for
+    # the rest of the process. See HOU_REIMPORT_GUARD in tests/conftest.py.
+    sys.modules["hou"] = _original_hou

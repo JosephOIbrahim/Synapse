@@ -568,5 +568,8 @@ class TestConfigureLightLinking:
 
 
 def teardown_module():
-    if "hou" in sys.modules and sys.modules["hou"] is hou_mock:
-        del sys.modules["hou"]
+    # `= None`, never `del` — a genuine eviction lets a later lazy `import hou`
+    # re-execute hou.py under hython and half-build the SWIG `Parm` class for
+    # the rest of the process. See HOU_REIMPORT_GUARD in tests/conftest.py.
+    if sys.modules.get("hou") is hou_mock:
+        sys.modules["hou"] = None

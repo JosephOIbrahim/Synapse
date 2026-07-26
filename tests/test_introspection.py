@@ -34,13 +34,21 @@ introspection_path = os.path.join(
 spec = importlib.util.spec_from_file_location("introspection", introspection_path)
 introspection = importlib.util.module_from_spec(spec)
 # Bind introspection's `hou` global to _mock_hou (the tests assert on it
-# directly) only for the duration of exec_module, then RESTORE conftest's
-# canonical resident so the collection-time residency guard stays satisfied.
+# directly) only for the duration of exec_module, then RESTORE the prior
+# resident BY OBJECT.
+#
+# The restore used to be gated on `_original_hou.__synapse_canonical__`. Real
+# Houdini carries no such sentinel, so under hython the restore never ran and
+# this stub stayed resident for the remainder of the process — proven by the
+# residency trace, which recorded the swap at
+# `collectstart:tests/test_introspection.py::TestNodeBasic` and no matching
+# restore. A sentinel-guarded restore is not a restore; identity is the only
+# test that holds for both a planted fake and the real host.
 sys.modules["hou"] = _mock_hou
 try:
     spec.loader.exec_module(introspection)
 finally:
-    if getattr(_original_hou, "__synapse_canonical__", False):
+    if _original_hou is not None:
         sys.modules["hou"] = _original_hou
 
 
