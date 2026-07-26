@@ -2119,6 +2119,79 @@ def check_release_readiness_review(ctx):
 # harness sprint the agent has already made its atomic commit, so HEAD is the agent's
 # tip and `git show HEAD:` would let a sprint commit a lowered floor and green its own
 # regression. agent-settings.json also denies Edit of this file (belt + suspenders).
+class BaselineShapeError(ValueError):
+    """The committed baseline is not the R31 two-leg tuple. Never recoverable in-run."""
+
+
+_BASELINE_LEGS = ("gate", "shipping")
+
+
+def parse_tuple_baseline(raw):
+    """Parse the R31 TUPLE-shaped suite baseline, or raise BaselineShapeError.
+
+    STATED FAILURE CONDITIONS (Law 1 — this check can fail, here is exactly how):
+      1. `raw` is not JSON, or not a JSON object                -> raise
+      2. it carries a top-level "passed"/"failed" key, i.e. the OLD FLAT
+         single-interpreter shape                               -> raise, naming R31
+      3. either the "gate" or "shipping" leg is absent           -> raise
+      4. a leg is not an object, or is missing/non-integer on
+         passed / failed / skipped                              -> raise
+      5. a leg does not name its `interpreter` and `producer`    -> raise (Law 2:
+         no number without a producer path beside it)
+
+    A baseline is a TUPLE because SYNAPSE has two interpreters with different
+    truth: the gate interpreter (CI) and the shipping interpreter (Houdini's
+    embedded python, what artists actually receive). One scalar cannot express
+    both, and collapsing them is how a green CI number came to stand in for a
+    shipping suite that could not even collect. This parser accepts ONLY the
+    tuple; the flat shape is a hard error, never a silent fallback, because a
+    reader that quietly accepts both shapes is the defect this exists to remove.
+    """
+    try:
+        base = json.loads(raw)
+    except Exception as e:
+        raise BaselineShapeError(f"baseline is not valid JSON: {type(e).__name__}: {str(e)[:160]}")
+    if not isinstance(base, dict):
+        raise BaselineShapeError(f"baseline root is {type(base).__name__}, expected a JSON object")
+    if "passed" in base or "failed" in base:
+        raise BaselineShapeError(
+            "FLAT baseline shape rejected: harness/verify/suite_baseline.json still carries a "
+            "top-level 'passed'/'failed' (the single-interpreter scalar). R31 requires the "
+            "two-leg tuple {'gate': {...}, 'shipping': {...}}, each leg naming its interpreter "
+            "and producer. A scalar cannot express two interpreters and silently reported the "
+            "gate number as if it covered the shipping build. Promote a tuple baseline "
+            "(proposal: harness/notes/receipts/Q2_PROPOSED_suite_baseline.json) — human-only, "
+            "the file is deny-listed from agent edit.")
+    missing_legs = [k for k in _BASELINE_LEGS if k not in base]
+    if missing_legs:
+        raise BaselineShapeError(
+            f"baseline missing required leg(s): {', '.join(missing_legs)} — R31 tuple shape is "
+            f"{{'gate': {{...}}, 'shipping': {{...}}}}")
+    legs = {}
+    for name in _BASELINE_LEGS:
+        leg = base[name]
+        if not isinstance(leg, dict):
+            raise BaselineShapeError(f"baseline leg '{name}' is {type(leg).__name__}, expected an object")
+        counts = {}
+        for field in ("passed", "failed", "skipped"):
+            if field not in leg:
+                raise BaselineShapeError(f"baseline leg '{name}' missing '{field}'")
+            try:
+                counts[field] = int(leg[field])
+            except Exception:
+                raise BaselineShapeError(
+                    f"baseline leg '{name}' field '{field}' is not an integer: {leg[field]!r}")
+        for field in ("interpreter", "producer"):
+            if not str(leg.get(field, "")).strip():
+                raise BaselineShapeError(
+                    f"baseline leg '{name}' does not name its '{field}' — Law 2: every number "
+                    f"carries a producer path and an interpreter")
+        counts["interpreter"] = str(leg["interpreter"])
+        counts["producer"] = str(leg["producer"])
+        legs[name] = counts
+    return legs
+
+
 def check_suite_baseline(ctx):
     import re
     mb_rc, mb_out, _ = sh(["git", "merge-base", "master", "HEAD"], cwd=ctx["wt"])
@@ -2128,10 +2201,11 @@ def check_suite_baseline(ctx):
         return {"ok": False, "detail": "no committed harness/verify/suite_baseline.json at the ratchet "
                                        "anchor (merge-base master HEAD) — seed it with current green counts"}
     try:
-        base = json.loads(base_raw)
-        passed_base, failed_base = int(base["passed"]), int(base["failed"])
-    except Exception as e:
-        return {"ok": False, "detail": f"baseline unreadable: {type(e).__name__}: {str(e)[:200]}"}
+        legs = parse_tuple_baseline(base_raw)
+    except BaselineShapeError as e:
+        return {"ok": False, "detail": f"BASELINE SHAPE: {str(e)[:460]}"}
+    gate_leg, ship_leg = legs["gate"], legs["shipping"]
+    passed_base, failed_base = gate_leg["passed"], gate_leg["failed"]
     rc, out, err = sh([sys.executable, "-m", "pytest", "tests/", "-q", "-p", "no:cacheprovider"],
                       cwd=ctx["wt"], env=_wt_env(ctx), timeout=1800)
     blob = out + "\n" + err
@@ -2146,8 +2220,16 @@ def check_suite_baseline(ctx):
         return {"ok": False, "detail": f"ZERO tests passed (collection error / all skipped?) rc={rc} — "
                                        f"{(tail[-1] if tail else 'no pytest output')[:280]}"}
     ok = failed_now <= failed_base and passed_now >= passed_base
-    detail = (f"passed {passed_now} (base {passed_base}), failed {failed_now} (base {failed_base}); "
-              f"ratchet {'holds' if ok else 'BROKEN'}")
+    # The SHIPPING leg is recorded and shape-enforced but NOT re-run here: this check runs
+    # every sprint and a second full suite under hython roughly doubles it. Say so out loud
+    # rather than letting a stale recorded number read as a fresh green (Law 3 — status
+    # describes what happened). Whether the shipping leg should also be ratcheted per sprint
+    # is a cost decision, escalated, not decided here.
+    ship_note = (f"; shipping leg RECORDED-NOT-RERUN ({ship_leg['interpreter']}: "
+                 f"{ship_leg['passed']}p/{ship_leg['failed']}f/{ship_leg['skipped']}s)")
+    detail = (f"[gate {gate_leg['interpreter']}] passed {passed_now} (base {passed_base}), "
+              f"failed {failed_now} (base {failed_base}); "
+              f"ratchet {'holds' if ok else 'BROKEN'}{ship_note}")
     if not ok and failed_now > failed_base:
         detail += f" — {failed_now - failed_base} NEW failure(s): collateral regression, protect green"
     elif not ok and passed_now < passed_base:
