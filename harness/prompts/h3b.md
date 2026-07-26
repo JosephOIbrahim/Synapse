@@ -1,46 +1,53 @@
-You are ORCHESTRATOR for H3b — TOPS cancel. Read harness/AGENT_CONSTITUTION.md first; it binds you. Then read rulings R44, R48 and R49 in harness/notes/CTO_RULINGS_01.md.
+You are ORCHESTRATOR for H3b — render and cook cancellation. Read harness/AGENT_CONSTITUTION.md first; it binds you. Then read rulings R44, R48, R49 and **R73** in harness/notes/CTO_RULINGS_01.md. R73 AMENDS R48 and changes this leg's scope — read it before anything else.
 
-THIS LEG WAS HELD BY RULING AND IS RELEASED ONLY BY JOE. If you are reading this, he released it. Its scope is NOT what its original name suggests — read the next section before anything else.
+THIS LEG WAS HELD BY RULING AND IS RELEASED ONLY BY JOE. If you are reading this, he released it.
 
-=== THE SCOPE CHANGED. READ THIS FIRST. ===
+=== SCOPE HISTORY — READ THIS, IT HAS CHANGED TWICE ===
 
-H3b was scoped as "build cook-cancel". H3a's probe made that impossible and the ruling re-scoped it (R48).
+Originally: "build cook-cancel".
+R48 narrowed it to TOPS-only, on the belief that no render-cancel API existed.
+**R73 REFUTED THAT.** An earlier version of this brief told you not to attempt the render half. That instruction is WITHDRAWN.
 
-H3a-F1, VERIFIED-RUNTIME on 22.0.368, confirmed independently against SideFX's own reference:
+What actually holds, VERIFIED-RUNTIME on 22.0.368:
 
-  Houdini 22.0.368 exposes NO API to cancel, abort, interrupt or kill an
-  in-flight hou.RopNode.render().
+  hou.RopNode              no cancel/abort/interrupt/stop method   (true, twice-verified)
+  hou.ActiveRender         ABSENT at runtime, docs say #status: ni  (documented, unimplemented)
+  hou.activeRenders()      ABSENT at runtime, same
+  hou.IPRViewer.killRender PRESENT
+  rps    hscript           EXISTS - "Lists background render processes"
+  rkill  hscript           EXISTS - "Stop or pause/unpause a render"
+  TOPS/PDG cancel surface  COMPLETE, with a node-level verb the tree does not use
 
-The complete public method list is addRenderEventCallback, bypass, inputDependencies, isBypassed, isLocked, setLocked, removeAllRenderEventCallbacks, removeRenderEventCallback, render. Nothing inherited from OpNode/Node/NetworkItem reaches a running render. hou.InterruptableOperation wraps YOUR OWN Python block and cannot reach into a render already blocking in C++. addRenderEventCallback is observation, not control.
+**A render CAN be stopped.** Not from `RopNode`, but `hou.hscript("rkill ...")` does it, and it has been available the whole time. The earlier claim that this was a platform gap was mine and it was wrong.
 
-THE RENDER HALF IS CLOSED AS NOT-IMPLEMENTABLE. It is a SideFX ask (docs/SIDEFX_ASK_H22_DRAFT.md), not deferred work, and it must stop being described as either. DO NOT ATTEMPT IT. Do not invent a workaround — killing a thread, a process, or a subprocess is not a cancel and will corrupt scene state.
+=== WORK — THREE PARTS ===
 
-=== WHAT IS ACHIEVABLE, AND IT IS REAL ===
+**PART A — TOPS cancel.** The verb exists on 22.0.368 and the tree does not use it. Read harness/notes/receipts/H3a.json for the exact symbol list: 68 symbols, two-producer verdict, 0 conflicts. Settled evidence — do not re-probe it (R46 discharged by H3a). Wire it to a control the artist can reach.
 
-H3a-F2: the TOPS/PDG cancel surface IS COMPLETE on 22.0.368 and carries a direct node-level verb the tree does not use. 68 symbols carry a two-producer verdict with 0 conflicts. Read harness/notes/receipts/H3a.json for the exact symbol list — it is settled evidence, do not re-probe it (R46's obligation was discharged by H3a).
+**PART B — rkill-based render stop.** This is the part R48 wrongly closed.
+  1. Probe `rps` first: it lists background render processes and their PIDs. A stop that cannot identify WHAT it is stopping is not a stop.
+  2. `rkill` takes a process_pattern, not a node reference. Establish how a RopNode maps to a killable process — that mapping is the real engineering here, and if it cannot be made reliable, THAT is the finding and the leg reports it rather than shipping something that kills the wrong render.
+  3. **MANDATORY FINDING: what does rkill do to a partially-written frame?** It is process-level and blunt. A half-written EXR, a corrupt .usdc, a lock file left behind — probe it against a real render and report what you find. **Do not ship a stop that silently corrupts output.** If the answer is bad, an honest "stop leaves a partial frame, here is how to detect it" is a better deliverable than a clean-looking button.
+  4. `hou.IPRViewer.killRender` exists and is a DIFFERENT case — interactive preview, not a ROP render. Note whether it is the right tool for IPR and leave it there.
 
-WORK:
+**PART C — emergency halt.** Surface EmergencyProtocol.trigger_emergency_halt as a SECOND, DISTINCT control (R29). Not a rename of Stop, not competing with it in the rail.
 
-1. Wire TOPS cancel through to a control the artist can reach. The verb exists and is unused. This is the entire deliverable.
+=== WHAT NOT TO TOUCH ===
 
-2. Surface EmergencyProtocol.trigger_emergency_halt as a SECOND, DISTINCT control (R29) — not a rename of Stop, not competing with it in the rail. Stop aborts the agent loop cooperatively and is HONEST about it: _on_stop refuses to claim idle and waits for the worker. DO NOT REPLACE IT. It was written before this relay and is better than what would replace it.
-
-3. Do NOT make Stop always-visible. State-gating is correct — a Stop shown when nothing is running is the same lie as a consent gate that does not gate (R18).
-
-4. The panel has a working test surface now (RES fixed the residency; R30 established tests/panel/ runs under hython3.13). Pins are required, they must fail against their mutation (R34), and their READER must be calibrated too (R60).
-
-=== THE HONEST LIMIT TO STATE IN YOUR RECEIPT ===
-
-After this leg, an artist mid-KARMA-RENDER still has a Stop that cannot stop the render. TOPS cancel does not change that. Say so plainly in the receipt and do not let the leg's success obscure it — v5.34.0's Known-limitations wording already needs correcting for exactly this reason (R48 item 3), and that correction is IN SCOPE here.
+`_on_stop` aborts the agent loop cooperatively and is HONEST about it — it refuses to claim idle and waits for the worker. It was written before this relay and is better than what would replace it. **Do not replace it. Do not make Stop always-visible** — state-gating is correct, and a Stop shown when nothing is running is the same lie as a consent gate that does not gate (R18).
 
 === ORACLE ===
 
   TOPS cancel reachable from the panel, demonstrated against a REAL cook
+  rkill path demonstrated against a REAL render, with the RopNode->process mapping shown
+  partial-frame behaviour PROBED and reported, whatever the answer
   emergency halt present as a distinct control, not a renamed Stop
   _on_stop unchanged in behaviour
-  every pin fails against its mutation; readers calibrated
+  every pin fails against its mutation (R34); readers calibrated (R60)
   gate suite green, count strictly increases or holds
-  v5.34.0 known-limitations wording corrected: Houdini exposes no render-cancel
-    API, and TOPS cancel now exists
+  v5.34.0 known-limitations wording corrected: a render CAN be stopped via rkill;
+    what is missing is a RopNode-level verb and a working hou.ActiveRender
 
-Never push, never merge, never tag. Write harness/notes/receipts/H3b.json (receipt/v1, model + settings_profile per R25).
+=== STANDING ===
+Probes beat memory. Never push, never merge, never tag.
+Write harness/notes/receipts/H3b.json (receipt/v1, model + settings_profile per R25).
