@@ -1,0 +1,250 @@
+{
+ "schema": "receipt/v1",
+ "leg": "H7",
+ "title": "Re-adjudicate the H22 compat ledger against LOCAL references",
+ "harness": "repair/h7-compat-readjudicate",
+ "ruling": "R72",
+ "status": "green",
+ "status_note": "Every oracle item is met. Green does not mean the residual is small - 671 of H5's 1,267 remain UNVERIFIABLE and that is reported as the finding, not softened. Four of the leg's own instrument defects were caught by its own controls before emission and are recorded in findings (H7-F12).",
+ "model": "claude-opus-5[1m]",
+ "settings_profile": "harness/readonly-settings.json (READ-ONLY leg per R61; harness/notes/** is the only writable path). No pytest was run and no suite evidence is claimed - the leg touches no product code.",
+ "commit_at_run": "8b18b3b344c7dcb3927bcb2947eef860471e6359",
+ "mode": "A",
+ "agents": [],
+ "agents_note": "No subagents dispatched. This leg is one deterministic data-analysis job whose every number must trace to a single producer script (Law 2); fanning it out would have split the producer path. The adversarial pass was run in-line as 25 named controls, each stating its own failure condition (Law 1), plus line-by-line inspection of every cell before emission.",
+ "read_only_discipline": {
+  "wrote": [
+   "harness/notes/h7_readjudicate.py",
+   "harness/notes/h22_compat_ledger_v2.json",
+   "harness/notes/h7_controls.json",
+   "harness/notes/receipts/H7.json"
+  ],
+  "nothing_else_touched": true,
+  "no_repairs": "Every defect found is a finding. Nothing was fixed, including the two doc-drift items and the census kind defect, all of which live outside harness/notes/**.",
+  "no_network": "Zero fetches. Every oracle shipped inside Houdini 22.0.368 or is a prior leg's artifact. A network call would have reintroduced the version ambiguity R72 removed."
+ },
+
+ "oracle": {
+  "h22_compat_ledger_v2_written_superseding_neither": {
+   "met": true,
+   "evidence": "harness/notes/h22_compat_ledger_v2.json, 1,455,317 bytes. `supersedes: null` with an explicit note: H5 holds the census and the live probes, H7 holds the local-reference re-adjudication. Both kept."
+  },
+  "every_readjudicated_symbol_carries_cell_source_path_tier": {
+   "met": true,
+   "evidence": "all 1,267 rows carry h7_cell + h7_source + h7_local_path + h7_truth_tier. Doc anchors are <zip-entry>:<line>, resolvable offline against the recorded sha256_16."
+  },
+  "reader_control_DEMONSTRATED_against_RopNode_and_TopNode": {
+   "met": true,
+   "evidence": "C1: hou/RopNode.txt indexed (7,035 chars), 9 members - addRenderEventCallback, bypass, inputDependencies, isBypassed, isLocked, removeAllRenderEventCallbacks, removeRenderEventCallback, render, setLocked - and ZERO cancel/abort/interrupt/kill verbs. C2: hou.TopNode.dirtyAllTasks resolves with signature `dirtyAllTasks(self, remove_outputs)` at hou/TopNode.txt:111 and the notice detected verbatim at :113 - 'This method is deprecated in favor of [Hom:hou.TopNode#dirtyAllWorkItems].' Both are R72's stated controls, reproduced by this leg's own reader before it adjudicated anything.",
+   "not_just_positive": "C3/C4 prove the reader says NO: the three quarantined phantoms and a fabricated name all return absent. C5 proves the corpus DISCRIMINATES builds - 22.0.368 sha256[:16] 0b1d74b453327397, 966 .txt entries (967 total zip members, the extra being hou/_groups_en.ini - H5's '967' counts the whole namelist) vs 21.0.773 sha256[:16] 1706e1f56695b7a6, 938 .txt; 29 pages added in 22.0, 1 removed (hou/ChannelListPane.txt). C8 does the same for nodes.zip: cfa30f26619b252e / 5,032 context-scoped node docs vs de421c88f23b0947 / 4,772; 269 added, 9 removed."
+  },
+  "counts_reported_as_integers": {
+   "met": true,
+   "resolved": 596,
+   "still_UNVERIFIABLE": 671,
+   "doc_silent_deprecation": 2,
+   "arithmetic_check": "596 + 671 = 1267, asserted in the ledger as counts.arithmetic_check = true"
+  },
+  "decay_clock_floor_restated_or_corrected_with_evidence": {
+   "met": true,
+   "verdict": "CORRECTED UPWARD, 19 -> 41, with a per-symbol anchor for every member. It remains a floor: the residual buckets contain symbols whose deprecation status no local source can decide."
+  }
+ },
+
+ "summary": {
+  "h5_input": "1,267 UNVERIFIABLE of 3,115 symbols. Ledger sha256[:16] 0c8ad1d37266c8f7, leg H5, commit 0a88f5fbd840, model claude-opus-5[1m] - all four asserted by control C12. Read from the h5-compat worktree, not assumed merged.",
+  "resolved_total": 596,
+  "resolved_by_cell": {
+   "OK": 273,
+   "OK:documented_current_exists_unprobed": 172,
+   "OUT_OF_REFERENCE_SCOPE:third_party": 79,
+   "PRIVATE_API": 33,
+   "PHANTOM": 17,
+   "OUT_OF_MATRIX:no_houdini_referent": 7,
+   "OK:exists_undocumented_shipped_module": 6,
+   "DECAY_CLOCK:doc_only": 5,
+   "MISATTRIBUTED:doc_spelling": 3,
+   "OUT_OF_MATRIX:not_a_symbol": 1
+  },
+  "still_unverifiable_total": 671,
+  "still_unverifiable_by_named_reason": {
+   "UNVERIFIABLE:leaf_unbound_owner": 528,
+   "UNVERIFIABLE:node_absent_from_reference_and_unprobed": 104,
+   "UNVERIFIABLE:ambiguous_owner_deprecation_risk": 14,
+   "UNVERIFIABLE:ambiguous_context_deprecation_risk": 12,
+   "UNVERIFIABLE:undocumented_module_member": 7,
+   "UNVERIFIABLE:runtime_namespace": 6
+  },
+  "the_honest_headline": "47% of H5's largest bucket resolved (596 of 1,267). The brief expected reachability to be the dominant cause; it is not. Indexing the local oracles that existed and were never read - tops.zip, the build's shipped python source, and nodes.zip applied to the unprobed node rows - accounts for the 596. The remaining 671 is dominated by a CENSUS defect: 528 rows are bare method names with no dotted owner, 335 of them OpenUSD names recorded as hom_method. No documentation source can fix an unbound leaf."
+ },
+
+ "findings": [
+  {
+   "id": "H7-F1",
+   "claim": "The local reference set is larger than R72's table recorded. `$HFS/houdini/help/tops.zip` carries the pdg Python reference - 153 `pdg/` pages - and the build ships `hdefereval`, `toolutils` and `husd` as readable source under `python3.13libs`. H5 recorded 'the shipped HOM reference contains no pdg surface, so absence from the index is NOT evidence' on 90 pdg rows and 'outside the table's authority' on 10 more. True of hom.zip; the oracles existed locally and were never indexed.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "C:/Program Files/Side Effects Software/Houdini 22.0.368/houdini/help/tops.zip sha256[:16] recorded in ledger oracles.O3_tops_zip; pdg/EventType.txt; python3.13libs/hdefereval.py:43",
+   "severity": "significant - it is the single largest source of the 595 resolutions, and one new DECAY_CLOCK member was only visible once tops.zip was indexed (H7-F10)"
+  },
+  {
+   "id": "H7-F2",
+   "claim": "R72's headline finding SURVIVES promotion from the browsing cache to the authoritative build-shipped node reference. `lop/karmarenderproperties.txt` (56,325 chars, `#since: 18.0`) and `lop/karma.txt` (2,556 chars) carry NONE of the five deprecation markers this leg detects, while the runtime flags both. doc_silent_deprecation = 2.",
+   "truth": "VERIFIED-STATIC (doc axis) + VERIFIED-DERIVED (runtime axis, producer H5)",
+   "anchor": "nodes.zip lop/karmarenderproperties.txt, lop/karma.txt; runtime evidence 'live deprecationInfo() @22.0.368' carried from H5; control C7",
+   "severity": "confirms R72 on stronger evidence. The cell is the dangerous one exactly as ruled: SYNAPSE emits these 123 and 31 times and every human-facing surface says they are fine."
+  },
+  {
+   "id": "H7-F3",
+   "claim": "H5's DECAY_CLOCK floor of 19 is corrected upward to 41 as the union of runtime deprecationInfo() and authored help. 39 members are doc_only (help deprecates, runtime did not flag): 27 with an explicit owner, 12 bare leaves bound by owner-invariance and therefore conditional.",
+   "truth": "VERIFIED-STATIC / VERIFIED-DERIVED, per-member anchors in ledger decay_clock.doc_only_deprecation.members",
+   "anchor": "harness/notes/h22_compat_ledger_v2.json -> decay_clock",
+   "severity": "significant - a 2.2x correction to a governing number, with the caveat that the 12 conditional rows are leads, not verdicts"
+  },
+  {
+   "id": "H7-F4",
+   "claim": "H5's authored-help reader did not follow the `:include /composite/_old_cops_deprecated:` banner, so the ENTIRE deprecated old-COPs surface read as current: `hou.Cop2Node` and its members, ten `cop2/*` node docs, `hou.cop2NodeTypeCategory` and `manager/cop2net`. 19 H5-vs-H7 authored-help disagreements, 17 of them this one cause.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "hom.zip hou/Cop2Node.txt:14 ':include /composite/_old_cops_deprecated:'; ledger decay_clock.h5_h7_authored_help_disagreements",
+   "severity": "significant - a whole vendor-deprecated subsystem scored OK on the doc axis. Detected by control C17, which requires the banner shape to fire."
+  },
+  {
+   "id": "H7-F5",
+   "claim": "H5 bound the bare leaf `expandString` to the NEW owner `hou.text.expandString` and then took the deprecation notice from the OLD symbol's page, marking the REPLACEMENT deprecated. The shipped reference documents `hou.text.expandString` as current.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "H5 cited 'page_prose @ hom/hou/expandString.txt:11' on the row whose resolved_owner is hou.text.expandString; H7 resolves the owner's own section at hom.zip hou/text.txt:162, no notice",
+   "severity": "moderate - contained inside the UNVERIFIABLE bucket, so it never inflated the 19. It would have sent a migration to the symbol it was migrating away from."
+  },
+  {
+   "id": "H7-F6",
+   "claim": "R72's two help-cache character counts are not reproducible. 69,921 for nodes/lop/karmarenderproperties.json and 95,777 for nodes/lop/karma.json match none of five measures: file bytes 144,360 / 193,387, utf-8 chars identical, json.dumps identical, string-leaf chars 66,676 / 91,547, string-leaf-plus-keys 91,477 / 123,979. The files are unmodified since 2026-07-15 13:32, so drift is not the explanation. The two COUNT claims (1,588 node docs, 207 mentioning deprecation) reproduce to within an explained off-by-one - nodes/index.json is counted as a node doc by R72's walker and not by this one (1,587 / 206).",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "harness/notes/h7_controls.json -> cited_number_audit; producer CacheOracle.cited_number_audit()",
+   "severity": "moderate, and it is a Law 2 finding, not a correction to R72's conclusion - which H7 confirms against a better source (H7-F2). The number travelled without a producer path and cannot be cited forward."
+  },
+  {
+   "id": "H7-F7",
+   "claim": "The largest residual bucket is a CENSUS KIND defect, not a documentation gap. 528 rows are bare method names with no dotted owner; by the leaf's owner roots in the dir() table they are 334 pxr-shaped, 109 pdg-shaped, 85 hou-shaped. The top entries by occurrence - `Set` (328), `GetPrimAtPath` (258), `Get` (249, 135 table owners), `GetAttribute` (197) - are OpenUSD names the census recorded as `hom_method`. 295 of the 528 occur in an execution context.",
+   "truth": "VERIFIED-DERIVED (producer: this leg's script over H5's census output)",
+   "anchor": "ledger residual.largest_residual_bucket",
+   "severity": "significant - it is the highest-yield fix available to the next compat pass, and it is a scripts/ change outside this leg's fence"
+  },
+  {
+   "id": "H7-F8",
+   "claim": "Two live spelling defects with execution-context occurrences: SYNAPSE writes `hou.NodeEventType.InputRewired` and `hou.NodeEventType.ParmTupleChanged`. The build documents AND introspects the lowercase-initial `hou.nodeEventType.*`; neither source carries the capitalised form.",
+   "truth": "VERIFIED-DERIVED (two independent local sources agree in both directions)",
+   "anchor": "hom.zip hou/nodeEventType.txt carries InputRewired and ParmTupleChanged; h22_symbol_table.json contains hou.nodeEventType.InputRewired and does NOT contain hou.NodeEventType.InputRewired",
+   "severity": "significant - wrong-owner is actionable where undecidable was not, and each has one execution-context occurrence"
+  },
+  {
+   "id": "H7-F9",
+   "claim": "The hdefereval phantom set is confirmed STATICALLY against the build's own source, upgrading a runtime-only finding to a source anchor: python3.13libs/hdefereval.py defines executeInMainThreadWithResult (:43) and does NOT define executeInMainThread or executeInMainThreadWithResultAndDelay. SYNAPSE is already remediated - the remaining occurrences are the lint that guards against reintroduction (tests/test_marshal_lint.py:90) and a test double that defines the name on a stub (tests/test_pdg_cook_timeout.py:79). This is NOT an open live defect.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "python3.13libs/hdefereval.py:16,17,21,43,49; tests/test_marshal_lint.py:90; tests/test_pdg_cook_timeout.py:79; control C11 is two-sided on exactly this pair",
+   "severity": "informational on the code - but `docs/sprint_freeze/marshal_map.md:527` still cites `executeInMainThreadWithResultAndDelay`, which does not exist in the build. Doc drift, outside this leg's fence."
+  },
+  {
+   "id": "H7-F10",
+   "claim": "`pdg.EventType.WorkItemResult` is deprecated in the shipped pdg reference - 'This enum entry/event type is deprecated in favor of [Py:pdg.EventType#WorkItemOutputFile].' It was invisible to every prior pass because nobody had indexed tops.zip.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "tops.zip pdg/EventType.txt:131 (section `:: WorkItemResult` at :130)",
+   "severity": "moderate - 2 citation-context occurrences, and it is the concrete payoff of H7-F1"
+  },
+  {
+   "id": "H7-F11",
+   "claim": "The dir() symbol table leaks stdlib modules imported into `hou.webServer`'s namespace: hou.webServer.asyncio.wait, hou.webServer.logging.warning, hou.webServer.types.ModuleType. Any leaf-owner analysis over the table will read `wait`, `warning`, `handle` and `ModuleType` as hou-owned when they are asyncio/logging/types.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "python/synapse/cognitive/tools/data/h22_symbol_table.json; visible in ledger residual.largest_residual_bucket where it inflates the 81 hou_shaped count",
+   "severity": "moderate - it is a new SCOPE_LIMIT for the table, alongside H5's two. It does not change any cell in this ledger; it qualifies one characterisation number."
+  },
+  {
+   "id": "H7-F12",
+   "claim": "This leg's own instrument was wrong four times and its own controls caught all four before emission. (1) A page-wide /deprecat/i detector reported 85 doc-side deprecations; most were deprecated PARAMETERS, MENU OPTIONS, LOCAL VARIABLES, and one member literally NAMED `deprecated`. The worst near-miss was flagging the LOP Reference node - 78 SYNAPSE occurrences - from `(`$IIDX` is deprecated)` at lop/reference.txt:58. (2) The prose marker still had no SUBJECT test, so 'this OPTION is deprecated' (dop/flipsolver.txt:146) and 'this WORKFLOW has been deprecated' (vop/kma_nesteddielectrics.txt:13) read as node deprecations - while five real ones ('This node is deprecated', sop/polyknit.txt:12 and four others) depend on that marker and would have been LOST by removing it. (3) The first adjudication re-derived existence instead of applying H5's SCOPE_LIMIT, so it called five real `hou.<module>.<member>` rows 'no Houdini referent' - the same defect H5's own CORRECTION records, pointed the other way - and classified the FILENAME `hdefereval.py` as a PHANTOM API. (4) The residual-shape characterisation tie-broke on set iteration order and reported 335/112/81 on one run and 338/110/80 on the next; it is now deterministic at 334/109/85 across three PYTHONHASHSEED values. After all four fixes the doc-side count is 39.",
+   "truth": "VERIFIED-STATIC",
+   "anchor": "controls C15, C16, C19, C23 (detector), C21, C22 (scope limit and filename), C24 (determinism), all in harness/notes/h7_controls.json",
+   "severity": "method finding, and the same shape as R60 and R71 - the reader every verdict depends on needed its own two-sided control. A single-sided detector would have shipped 46 false deprecations, one false phantom, five real symbols dismissed as non-Houdini, and a characterisation number that changes between runs. Every one of those was a confident, plausible result."
+  }
+ ],
+
+ "headline_findings": [
+  "R72's doc_silent_deprecation cell holds at 2 members - karma and karmarenderproperties - now confirmed against the AUTHORITATIVE build-shipped node reference rather than a mutable browsing cache (H7-F2).",
+  "The DECAY_CLOCK floor moves 19 -> 41. The correction is almost entirely doc-side, and 17 of the 19 H5-vs-H7 disagreements trace to one unfollowed `:include` banner that hid the whole deprecated old-COPs surface (H7-F3, H7-F4).",
+  "Reachability was NOT the dominant cause of H5's 1,267. 596 resolved; of the 671 that remain, 528 are a census kind defect that no documentation source can fix (H7-F7)."
+ ],
+
+ "method_notes": [
+  "R60 applied literally: the reader was demonstrated against RopNode and TopNode BEFORE adjudicating anything, and the run aborts if any control fails. It did abort once - C10 failed on R72's cache character count, which turned out to be a finding about a cited number rather than a defect in the reader (H7-F6). The control was re-specified to test the reader, and the discrepancy was recorded instead of being absorbed.",
+  "R72's method note held for a third time: each of this leg's first results was plausible and wrong. Page-wide deprecation detection, re-derived existence, and a raw read of `deprecated_runtime` each produced a confident number that inspection destroyed.",
+  "H5's judgments were honoured, not silently overturned. Its category-scope resolutions (`duplicate` deprecated as a Sop, current as the Lop SYNAPSE calls; `cop2net` deprecated only as a Chop) are VERIFIED-RUNTIME findings that H7 has no evidence to outrank. C20 is two-sided on exactly this: it must drop those two AND keep karma, where H5 recorded `emission_category_resolved: Lop`.",
+  "Every residual now carries a NAMED reason. 'UNVERIFIABLE' with no reason is what made H5's 1,267 unreadable; the same total split six ways is actionable."
+ ],
+
+ "resume_token": {
+  "skip": [
+   "the reader controls - 25 of them, all passing, artifact at harness/notes/h7_controls.json. Do not re-derive the marker vocabulary; it is read off the corpus and each marker names the page that exercises it, and four of the controls exist only because this leg's own first answer was wrong.",
+   "the oracle set and its hashes - hom.zip 0b1d74b453327397 / 966 .txt entries, nodes.zip cfa30f26619b252e / 5,032 node docs, tops.zip recorded in the ledger. All pinned to 22.0.368.",
+   "R72's cache character counts - audited and unreproducible (H7-F6). Do not re-measure hoping for a different answer; cite nodes.zip anchors instead.",
+   "the doc axis for pdg - tops.zip settles it. Never record 'no pdg surface' again."
+  ],
+  "redo_if": "the Houdini build changes - every oracle here is pinned to 22.0.368 by construction, so a new major invalidates all of it at once. Also redo if the census is fixed to emit dotted owners, which is the change that would collapse the 528-row residual.",
+  "do_not_attempt_again": "resolving the leaf_unbound_owner bucket from documentation. It is not a documentation question. The owner is missing at the call site, and only the census can supply it."
+ },
+
+ "for_ruling": [
+  {
+   "id": "H7-R1",
+   "question": "Which corpus governs `pxr`? 79 rows are OUT_OF_REFERENCE_SCOPE:third_party - EXISTS is decided by the dir() table, but the H22 reference is not the deprecation authority for OpenUSD and no local OpenUSD reference is pinned. Calling them PRIVATE_API is a false alarm; leaving them UNVERIFIABLE implies a local oracle exists and was not read.",
+   "recommendation": "Accept 'exists + third-party corpus' as a TERMINAL cell for pxr rather than a residual, and pin the OpenUSD version separately if pxr deprecation ever needs to be tracked. Do not let 79 rows sit in a bucket labelled 'unknown' when the only unknown is which vendor's release notes to read.",
+   "source": "H7 adjudication, 79 rows"
+  },
+  {
+   "id": "H7-R2",
+   "question": "The 528-row leaf_unbound_owner bucket is a census defect: bare method names with no dotted owner, 335 of them OpenUSD. Fixing it means changing the census emitter, which lives under scripts/ and is outside a read-only leg's fence.",
+   "recommendation": "Schedule the census fix as the next compat leg's FIRST item. It is the highest-yield change available - it would collapse 78% of the residual and correct the `kind` field so pxr names stop being adjudicated against the HOM reference.",
+   "source": "H7-F7"
+  },
+  {
+   "id": "H7-R3",
+   "question": "12 doc_only DECAY_CLOCK rows are bare leaves bound by owner-invariance - xRes, yRes, depth, saveImage, allPixels, setPixelsOfCookingPlane, Cop2Node, dirtyAllTasks, dirtyTasks, executeGraph, generateStaticItems, setUpdateMode. Every documented owner of each is deprecated, so the verdict does not depend on which owner the census meant - but that does not prove the call site is a HOM object at all.",
+   "recommendation": "Promote to DECAY_CLOCK only after a code read binds the call sites. Until then they are leads. I have deliberately reported the floor as 41 WITH this caveat attached rather than quoting either bound alone: 29 is the owner-explicit total (2 doc_silent + 27 owner-explicit doc_only) and 41 includes the 12 conditional rows. Both are in the ledger; neither is quoted without the other.",
+   "source": "H7-F3"
+  },
+  {
+   "id": "H7-R4",
+   "question": "`cop2net` (60 occurrences): the authored help deprecates manager/cop2net.txt via the old-COPs banner, while H5's runtime category resolution says SYNAPSE's sites are Lop/Driver where deprecationInfo() is silent and only Chop/cop2net is flagged. Same name, two sources, opposite answers - and R72 rule 3 says disagreement is itself a finding.",
+   "recommendation": "Treat as a genuine two-source disagreement, not a resolved OK. The COP2 subsystem is vendor-deprecated in favour of Copernicus; a SYNAPSE surface still naming cop2net is a decay risk regardless of which category the runtime flags. Needs a code read to bind the 60 sites.",
+   "source": "H7-F4, ledger decay_clock.runtime_deprecation_scoped_away"
+  },
+  {
+   "id": "H7-R5",
+   "question": "R72 cites two help-cache character counts that reproduce under no measure (H7-F6). The ruling's conclusion is confirmed; the numbers are not.",
+   "recommendation": "Withdraw the two character counts from citation and replace them with the nodes.zip anchors, which are exact and offline-verifiable: lop/karmarenderproperties.txt 56,325 chars #since 18.0, lop/karma.txt 2,556 chars. Amending a ruling is a human act, so this is a ruling item and not a doc fix I would make.",
+   "source": "H7-F6"
+  },
+  {
+   "id": "H7-R6",
+   "question": "104 node_type rows are absent from the shipped node reference and were never probed live; 172 more are documented-and-current with EXISTS resting on the documented basis rather than a probe. A live node-type existence sweep would decide the first group and confirm the second.",
+   "recommendation": "Schedule it, but not inside a read-only leg and not while a live session holds the licence. The brief scoped H7 to local references and H5's existing runtime verdicts, and I did not run hython for that reason - the absence of a probe is recorded on every affected row via exists_basis, never disguised as one.",
+   "source": "H7 adjudication, 276 rows"
+  },
+  {
+   "id": "H7-R7",
+   "question": "`docs/sprint_freeze/marshal_map.md:527` cites `hdefereval.executeInMainThreadWithResultAndDelay`, which is not defined anywhere in the build's shipped source. A governing note names a nonexistent API.",
+   "recommendation": "One-line doc fix, outside this leg's fence. Low severity - the code is already remediated and lint-guarded (H7-F9) - but it is exactly the shape Law 5 warns about: a claim sourced from recall of a prior design rather than from the tree.",
+   "source": "H7-F9"
+  },
+  {
+   "id": "H7-R8",
+   "question": "Should the new deprecation-marker vocabulary and its two-sided controls be promoted out of harness/notes/ into a reusable checker? It is currently a producer script for one leg, and every future build will need the same five markers and the same four false-positive guards.",
+   "recommendation": "Promote after the census fix (H7-R2), not before - the checker's input contract should be the corrected census, not the current one. Promotion means writing under scripts/, which no read-only leg can do.",
+   "source": "H7-F12"
+  }
+ ],
+
+ "what_the_leg_proves_about_its_own_premise": {
+  "the_brief_said": "H5's UNVERIFIABLE:1267 is partly a REACHABILITY artifact, and the residual after fixing reachability is the real unknown.",
+  "the_leg_found": "Half right, and the half that is wrong matters more. Reachability - in the broader sense of 'local oracles that existed and were never indexed' - accounts for the 595 resolutions. But the robots.txt framing was not the mechanism: hom.zip and nodes.zip were ALREADY H5's declared authority, named in its own docs_authority.paths. What was missing was tops.zip, the build's shipped python source, and the APPLICATION of nodes.zip to the 298 node rows H5's live probe never reached. And the true residual is dominated by something no reference could ever fix - 528 bare method names the census never bound to an owner.",
+  "the_correction_to_R72": "R72's source table lists only the userprefs cache for the node axis and states that hom.zip 'cannot adjudicate karmarenderproperties at all'. Both are true of hom.zip. But the build ships nodes.zip beside it, H5 already cited it, and it settles the node axis authoritatively - which is why R72's headline finding could be re-tested on it and confirmed rather than merely re-asserted.",
+  "what_would_have_gone_wrong_without_controls": "46 false deprecations (including the LOP Reference node, 78 occurrences), one false phantom on a filename, five real hou.* members dismissed as 'not Houdini symbols', a third doc_silent_deprecation member (`duplicate`) that H5 had already proven was a category-scoped false alarm, and a residual characterisation that changed between runs. Every one of those was a confident, plausible number.",
+  "the_ledger_is_1457648_bytes_and_reconciles": "counts.arithmetic_check asserts 596 + 671 == 1267 inside the artifact, so a future edit that breaks the split fails loudly rather than reading as a new finding."
+ }
+}
