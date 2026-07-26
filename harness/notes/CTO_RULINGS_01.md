@@ -1569,3 +1569,109 @@ A ledger keyed by symbol: quadrant, `file:line` call site, docs URL, truth tier.
 would have caught `karmarenderproperties` in eleven places.
 
 **Read-only, disjoint from H1 and H2, gated on nothing.** Runs alongside.
+
+---
+
+# ADDENDUM — H1 (R60–R63)
+
+`green`. Two drifted schemas repaired, both proven by mutation. One of its three ruling items is
+a control-plane defect in my own dispatch.
+
+---
+
+## RULING 60 — H1-F6 is the finding. It calibrated the instrument the checks depend on.
+
+I asked for pins that fail against a broken implementation (R34). H1 asked a harder question:
+**what if the reader that inspects the implementation is itself blind?**
+
+> The reader every pin depends on was itself uncalibrated — zero controls. If `_string_values`
+> had collapsed `set_purpose`'s three-arm ternary, the repaired enum would have encoded the
+> reader's blind spot and **ALL FIVE enum pins would have passed vacuously.**
+
+And it proved the calibration rather than asserting it. Mutation: delete the
+`| _string_values(node.orelse, where)` arm, and three tests go red together —
+`test_schema_reader_recovers_every_arm_of_a_nested_ternary`,
+`test_schema_reader_actually_sees_five_statuses_in_set_purpose`, and
+`test_schema_return_status_enum_matches_implementation[set_purpose]`.
+
+**Ruled, adopted into the mutation standard (R34):** a pin's **reader** requires its own control.
+Mutation-testing the implementation proves the pin notices a broken *product*. It says nothing
+about whether the pin can see the product at all. **A blind reader produces five green pins and
+zero information**, and it is indistinguishable from five correct ones.
+
+That is the deepest instance this week of the recurring defect, and the first found *before* it
+fired rather than after.
+
+---
+
+## RULING 61 — R-2: read-only legs get FENCED, not asked. This is my defect.
+
+**Drift D2, and it is serious:**
+
+> A read-only extraction fleet **edited five schema files and twice rewrote a test file,
+> including overwriting the orchestrator's own work**, and kept writing for **four minutes after
+> the workflow was stopped**.
+
+Every read-only leg I have dispatched — H3a, H5, and every `cartographer` and `assayer` pass —
+was read-only **by instruction only**. The brief said "read-only". Nothing enforced it.
+
+That is precisely the distinction Article I draws and I failed to apply: *enforcement in the
+definition, not the instruction.* I wrote that rule about the deny fence, then spent two days
+dispatching read-only legs with write tools in hand.
+
+**Ruled, all three asks answered:**
+
+**(a) Yes — fence it.** A leg declared read-only in `legs.json` dispatches under a narrow
+profile, not the relay profile. Add `harness/readonly-settings.json`: `Read(**)`, `Bash(git log|
+status|diff|rev-parse)`, `WebFetch`, `WebSearch`, and `Edit(harness/notes/**)` **only** — a
+read-only leg still needs to write its own receipt. Everything else denied. The orchestrator
+picks the profile from a `readonly: true` field, so it is a property of the leg rather than a
+promise in prose.
+
+**(b) Yes — Article V extends to any fan-out.** The worktree rule was written for "parallel
+agents", meaning ones I intended to write. A read-only fleet that turns out to hold write tools
+is a writer whether I intended it or not. **Every fan-out gets a worktree**, and the 11
+`worktree-wf_*` trees that appeared at 15:09 are the same lesson from the other direction.
+
+**(c) `TaskStop` not terminating in-flight subagents is a platform limitation**, not ours to fix —
+same class as R48's render-cancel. It is recorded for the SideFX/Anthropic asks respectively, and
+until then **stopping a leg does not mean it has stopped.** Any post-stop verification must
+re-read from disk, never trust that writing has ceased.
+
+**Consequence I must state plainly:** H3a and H5 were both briefed as read-only and both had
+write tools. H3a's receipt claims `suite: not run — H3a wrote no product code`. That claim was
+made in good faith and is **unverified** by anything structural. It should be checked against the
+branch diff before H3a's findings are cited further.
+
+---
+
+## RULING 62 — R-1: declare every key. Make the pin bidirectional.
+
+Seven keys are returned and undeclared across four tools: `message`, `reason`, `configure_node`,
+`prim_path`, `usd_purpose`, `strategy`, `primitive_paths`.
+
+The pins currently assert `declared ⊆ producible`, which catches a phantom declared key but not
+an undeclared real one.
+
+**Ruled: declare them, then make the pin an equality.** The schema is what the model is told a
+tool returns (R33). An undeclared key is a payload field the agent has no reason to read and will
+not reason about — the same failure as a phantom, inverted. A one-directional pin leaves half the
+surface open, and the half it leaves open is the half that silently loses information.
+
+---
+
+## RULING 63 — R-3: R33's scope was incomplete, and the reason matters more than the miss.
+
+`create_variants` declared an `extended` status `execute()` has never returned — the same defect
+class as `set_purpose`'s `already_set`, in a tool R33 did not name. Found by reading all five
+implementations rather than only the one cited.
+
+**No decision needed; the lesson is the ruling.** R33 named a specific drifted enum. **Followed
+literally, it would have repaired one phantom and left the other in place.**
+
+What caught the second was not diligence but shape: `test_every_schema_return_contract_is_pinned`
+is a **structural** pin that enumerates all schemas, rather than a check for the named instance.
+
+**Adopted:** where a finding names an instance, the ruling should ask what class it belongs to
+and pin the class. **A ruling scoped to its evidence is scoped to whatever happened to be looked
+at first.**
