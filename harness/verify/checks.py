@@ -2384,7 +2384,171 @@ def check_token_baseline_fresh(ctx):
                                   f"- surfaced, not judged"}
 
 
+# ---------- H5 — the decay-clock gate (R59): the cell dir() cannot see ----------
+# `dir()` proves a symbol EXISTS on this build. It CANNOT prove the symbol is DEPRECATED. A
+# phantom API breaks loudly; a deprecated one works perfectly until the release that removes it.
+# Before H5, `grep -ci deprecat harness/verify/checks.py` was 0 — no instrument in this harness
+# read the deprecation axis at all, which is why SYNAPSE shipped `karmarenderproperties` in 11+
+# places while every live probe reported it present and healthy.
+#
+# LAW 1 — the failure condition, stated BEFORE the check was written:
+#   it FAILS when a node type the H5 ledger classifies DECAY_CLOCK appears in the emission corpus.
+# That condition is TRUE TODAY (`karmarenderproperties`), which is how we know this is a check and
+# not a decoration. Remediation is NOT this gate's job — R7 owns it, in L2's slipstream.
+#
+# WHY THE LEDGER AND NOT THE DOCS: H5 found the two deprecation oracles are DISJOINT on 22.0.368.
+# Runtime-deprecated LOPs = {karma, karmarenderproperties}; docs-deprecated LOPs =
+# {karmaocean, karmaprocedural}. Empty intersection. A docs-driven rule would MISS
+# karmarenderproperties — the exact defect this gate exists to catch — so the ledger carries the
+# UNION of both oracles and this check reads the ledger's verdict, never one oracle directly.
+#
+# WHY AMBIGUITY IS NOT SILENTLY RESOLVED: deprecation is per-CATEGORY (`duplicate` is deprecated
+# as a Sop, current as a Lop; `cop2net` is deprecated as a Chop, current in eight other
+# categories), but `emitted_node_types.json` records a provenance tag, not a Houdini category. A
+# bare name therefore cannot always be judged. Rather than guess in either direction, an
+# unresolvable name returns ok:None (gate down — the house idiom from check_phantom_clean), never
+# a quiet pass and never a false block.
+
+_H5_LEDGER_REL = ("harness", "notes", "h22_compat_ledger.json")
+_H5_EMITTED_REL = ("python", "synapse", "cognitive", "tools", "data", "emitted_node_types.json")
+
+
+def _h5_decay_offenders(ledger_doc, emitted_doc):
+    """(unambiguous, ambiguous) lists of (type_name, evidence) for DECAY_CLOCK ledger symbols
+    present in the emission corpus.
+
+    Kept PURE and argument-fed so the caller can drive it with a synthetic known-positive. A
+    matcher that is never exercised against a known offender is the `probe_phase3_layout` defect
+    named in Law 1 — no paired control, so it passes vacuously forever.
+
+    `ambiguous` = the ledger says this name is deprecated in SOME Houdini category but not all,
+    and no emission site category was resolved. Those are undecidable from the corpus alone.
+    """
+    decay = {}
+    for sym in (ledger_doc or {}).get("symbols", []) or []:
+        if (sym.get("quadrant") or "").upper() != "DECAY_CLOCK":
+            continue
+        name = sym.get("symbol")
+        if not name:
+            continue
+        scoped = (sym.get("deprecation_scope") or "").lower() == "category_scoped"
+        resolved = bool(sym.get("emission_category_resolved"))
+        decay[name] = {
+            "evidence": sym.get("deprecation_source") or sym.get("truth_tier") or "?",
+            # scoped-but-resolved is decidable; scoped-and-unresolved is not
+            "ambiguous": scoped and not resolved,
+        }
+    if not decay:
+        return [], []
+    unambiguous, ambiguous = [], []
+    for entry in (emitted_doc or {}).get("entries", []) or []:
+        tn = entry.get("type_name")
+        hit = decay.get(tn)
+        if hit is None:
+            continue
+        (ambiguous if hit["ambiguous"] else unambiguous).append((tn, hit["evidence"]))
+    return unambiguous, ambiguous
+
+
+def check_no_decay_clock_emission(ctx):
+    wt = Path(ctx["wt"])
+    ledger = wt.joinpath(*_H5_LEDGER_REL)
+    emitted = wt.joinpath(*_H5_EMITTED_REL)
+
+    # --- SELF-CONTROL, both directions, BEFORE any real verdict. If the matcher cannot flag a
+    # synthetic known-offender, or flags a synthetic non-offender, then every green below is
+    # meaningless and must not be reported as a pass.
+    pos, _ = _h5_decay_offenders(
+        {"symbols": [{"symbol": "__h5_selftest__", "quadrant": "DECAY_CLOCK",
+                      "deprecation_source": "synthetic"}]},
+        {"entries": [{"type_name": "__h5_selftest__"}]})
+    if len(pos) != 1:
+        return {"ok": False, "detail": "H5 decay-clock detector is BROKEN: it failed to flag a "
+                                       "synthetic known-offender. No green from this check means "
+                                       "anything until the matcher is repaired."}
+    neg_u, neg_a = _h5_decay_offenders(
+        {"symbols": [{"symbol": "__h5_selftest__", "quadrant": "OK"}]},
+        {"entries": [{"type_name": "__h5_selftest__"}]})
+    if neg_u or neg_a:
+        return {"ok": False, "detail": "H5 decay-clock detector is BROKEN: it flags a symbol the "
+                                       "ledger classifies OK. The gate would fire on everything."}
+
+    # --- A missing or malformed input is a FAILURE, never a pass. Otherwise deleting the ledger
+    # silences the gate, which is the cheapest possible way to make a red check green.
+    if not ledger.is_file():
+        return {"ok": False, "detail": f"H5 compat ledger absent ({'/'.join(_H5_LEDGER_REL)}) - the "
+                                       "deprecation axis is unmeasurable. Regenerate it; do not skip it."}
+    if not emitted.is_file():
+        return {"ok": False, "detail": f"emission corpus absent ({'/'.join(_H5_EMITTED_REL)}) - "
+                                       "cannot demonstrate SYNAPSE emits no deprecated node type."}
+    try:
+        ledger_doc = json.loads(ledger.read_text(encoding="utf-8"))
+    except Exception as e:
+        return {"ok": False, "detail": f"H5 compat ledger unreadable: {type(e).__name__}: {str(e)[:180]}"}
+    try:
+        emitted_doc = json.loads(emitted.read_text(encoding="utf-8"))
+    except Exception as e:
+        return {"ok": False, "detail": f"emission corpus unreadable: {type(e).__name__}: {str(e)[:180]}"}
+    if "symbols" not in ledger_doc:
+        return {"ok": False, "detail": "H5 compat ledger has no `symbols` key - malformed or gutted; "
+                                       "a ledger that lists nothing cannot clear anything."}
+
+    unambiguous, ambiguous = _h5_decay_offenders(ledger_doc, emitted_doc)
+    n_decay = sum(1 for s in ledger_doc.get("symbols", [])
+                  if (s.get("quadrant") or "").upper() == "DECAY_CLOCK")
+    n_emitted = len(emitted_doc.get("entries", []) or [])
+
+    # CORPUS FRESHNESS — a clean bill of health from a stale corpus is worthless, and worse than
+    # worthless here: H5's census found the corpus 174 commits behind HEAD, its own producer
+    # reporting DRIFTED (109 scanned vs 97 committed), AND its createNode-literal anchor
+    # structurally blind to the variable-dispatch form that `karmarenderproperties` actually uses
+    # (a bare string constant at handlers_solaris_assemble.py:109 / handlers_render.py:1493).
+    # So REGENERATING the corpus with today's extractor could DROP the headline symbol and turn
+    # this gate green while the defect is untouched — a check that cannot fail, one level up.
+    # Positive evidence stays conclusive (offenders below are reported regardless); only the
+    # ALL-CLEAR is gated on provable freshness.
+    stale = None
+    try:
+        rc, head, _ = sh(["git", "rev-parse", "HEAD"], cwd=str(wt))
+        head = head.strip()
+        gen = (emitted_doc.get("generated_from_commit") or "").strip()
+        if rc == 0 and head and gen and not (head.startswith(gen) or gen.startswith(head)):
+            stale = f"corpus generated at {gen[:8]}, HEAD is {head[:8]}"
+        elif not gen:
+            stale = "corpus records no generated_from_commit"
+    except Exception as e:  # git unavailable — cannot prove freshness, so do not claim it
+        stale = f"freshness unprovable: {type(e).__name__}"
+
+    if unambiguous:
+        names = sorted({n for n, _ in unambiguous})
+        shown = ", ".join(f"{n} [{e}]" for n, e in sorted(set(unambiguous))[:8])
+        tail = (f"; plus {len(sorted({n for n, _ in ambiguous}))} category-scoped name(s) that the "
+                f"corpus cannot resolve") if ambiguous else ""
+        return {"ok": False,
+                "detail": (f"SYNAPSE emits {len(names)} DECAY_CLOCK node type(s) - deprecated on the "
+                           f"live build, working today, gone on the release that removes them: "
+                           f"{shown}{tail}")[:500]}
+    if ambiguous:
+        names = sorted({n for n, _ in ambiguous})
+        return {"ok": None,
+                "detail": (f"undecidable: {len(names)} emitted name(s) are deprecated in SOME Houdini "
+                           f"category but the emission corpus records no category - {', '.join(names[:8])}. "
+                           f"Resolve the category per emission site to decide.")[:500]}
+    if stale:
+        return {"ok": None,
+                "detail": (f"cannot clear: no DECAY_CLOCK symbol among {n_emitted} emitted node "
+                           f"types, but the corpus is not provably current ({stale}) and its "
+                           f"createNode-literal anchor cannot see variable dispatch - so a clean "
+                           f"result here is not evidence of a clean tree. Regenerate via "
+                           f"scripts/extract_emitted_node_types.py.")[:500]}
+    return {"ok": True,
+            "detail": (f"emission corpus clean and provably current: {n_emitted} emitted node "
+                       f"types, none of them among the {n_decay} DECAY_CLOCK symbol(s) in the "
+                       f"H5 ledger")[:500]}
+
+
 DISPATCH = {
+    "no_decay_clock_emission": check_no_decay_clock_emission,
     "import_panel": check_import_panel, "brain_answers": check_brain_answers,
     "doctor": check_doctor, "probe_runs": check_probe_runs, "probe_clean": check_probe_clean,
     "version_single_source": check_version_single_source, "cook_existing": check_cook,
