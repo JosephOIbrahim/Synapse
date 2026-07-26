@@ -499,3 +499,67 @@ def test_tool_audit_schema_declares_no_return_contract():
     )
     assert "synapse_solaris_tool_audit" not in reg_mod.TOOL_NAMES
     assert "synapse_solaris_tool_audit" not in reg_mod.PENDING_TOOL_NAMES
+
+
+# ---------------------------------------------------------------------------
+# H1 addendum — calibrate the reader before trusting what it reads
+#
+# Every pin above depends on `_implemented_return_contract`, and that reader is
+# itself untested code. If `_string_values` collapsed set_purpose's three-arm
+# ternary to one value, the enum "fix" would encode the reader's blind spot and
+# ALL FIVE pins would pass vacuously -- a Law 1 decoration wearing the coat of a
+# regression pin, which is precisely the failure R34 was written for.
+#
+# These are the instrument's positive and negative controls. They fail if the
+# reader ever stops seeing a reachable arm (silent under-report) or starts
+# guessing at a status it cannot resolve (silent over-claim).
+# ---------------------------------------------------------------------------
+
+def _expr(src: str):
+    """The bare expression node of `src`, for feeding the reader directly."""
+    return ast.parse(src, mode="eval").body
+
+
+def test_schema_reader_recovers_every_arm_of_a_nested_ternary():
+    """POSITIVE CONTROL. This is set_purpose's exact status shape; three of its
+    five statuses live in this one expression. A reader that returned {'set'}
+    here would make test_schema_return_status_enum_matches_implementation
+    green against a schema that omits `updated` and `unchanged`."""
+    node = _expr('"unchanged" if a else "updated" if b else "set"')
+    assert _string_values(node, "control") == {"unchanged", "updated", "set"}
+
+
+def test_schema_reader_recovers_a_lone_literal():
+    assert _string_values(_expr('"created"'), "control") == {"created"}
+
+
+def test_schema_reader_refuses_a_status_it_cannot_resolve():
+    """NEGATIVE CONTROL. A computed status must RAISE, not resolve to an empty
+    set -- an empty set silently agrees with whatever the schema declares."""
+    for src in ('some_variable', 'f"{prefix}_done"', 'MAP["key"]', '"a" + "b"'):
+        with pytest.raises(SchemaContractUnreadable):
+            _string_values(_expr(src), "control")
+
+
+def test_schema_reader_ignores_returns_belonging_to_a_nested_callable():
+    """A closure's return never reaches execute()'s caller. Counting it would
+    attribute a status to a contract that never carries it."""
+    fn = ast.parse(
+        'def execute(p):\n'
+        '    def helper():\n'
+        '        return {"status": "NEVER_REACHES_THE_CALLER"}\n'
+        '    return {"status": "set"}\n'
+    ).body[0]
+    values = set()
+    for ret in _own_returns(fn):
+        values |= _string_values(ret.value.values[0], "control")
+    assert values == {"set"}
+
+
+def test_schema_reader_actually_sees_five_statuses_in_set_purpose():
+    """END-TO-END control against the real tree. set_purpose is the tool whose
+    drift R33 was written about; if the reader ever reports fewer than these
+    five, the pin has gone blind and the enum it validates is unreliable."""
+    statuses, keys = _implemented_return_contract("set_purpose")
+    assert statuses == {"set", "updated", "unchanged", "noop", "not_found"}
+    assert "status" in keys
