@@ -1296,3 +1296,176 @@ Two days of treating this gap as unknowable — first as a segfault, then an ABI
 ~60% and a caveat. Changing one variable and re-running gave 88% and no caveat. When a controlled
 intervention is available, an inference from evidence is the weaker instrument — and it is
 usually the one that feels like more work to replace.
+
+---
+
+# ADDENDUM — RES / H3a / LEDGER (R48–R56)
+
+Three legs, all `green`, 30 findings, 12 ruling items. Each corrected something I had asserted.
+
+---
+
+## RULING 48 — The cook-cancel gap is a PLATFORM gap, not an implementation gap. H3b is re-scoped.
+
+**H3a-F1, `user_facing_open`, VERIFIED-RUNTIME on 22.0.368:**
+
+> Houdini 22.0.368 exposes **NO API** to cancel, abort, interrupt or kill an in-flight
+> `hou.RopNode.render()`. This is the SideFX ask.
+
+I have carried "Stop cannot cancel an in-flight cook" since R29 as an implementation gap — deferred
+work, real but ours. **It is not ours.** The verb does not exist on the build. No amount of
+off-UI-thread dispatch produces a cancel that Houdini will not honour.
+
+**H3a-F2** is the other half: the **TOPS/PDG cancel surface is complete** on 22.0.368 and carries a
+direct node-level verb the tree does not use.
+
+**Ruled:**
+1. **H3b proceeds as a TOPS-cancel-only leg.** That half is achievable today with an unused verb
+   already on the build.
+2. **The render half is closed as not-implementable** and becomes a SideFX ask. It is not debt,
+   not deferred work, and must stop being described as either.
+3. **`v5.34.0`'s Known-limitations wording is now wrong** — it implies the gap is ours to close.
+   Correct it to say Houdini exposes no render-cancel API, and that TOPS cancel is coming.
+4. **H3b stays `held`** until Joe releases it. The scope changed; the gate did not.
+
+---
+
+## RULING 49 — The SideFX ask gets sent, and it is Joe's to send.
+
+Three items now belong in it, all live-probed on 22.0.368:
+
+- **No render-cancel API** (H3a-F1). An artist cannot stop a 40-minute Karma render from any
+  first-party surface an agent can reach.
+- **`hdefereval.executeInMainThread` does not exist** (H3a-F3). Re-probed and reproduced, not
+  repeated from memory — R46 satisfied. `CLAUDE.md 1.7` and `shared/bridge.py` cite a deprecated
+  `dirtyAllTasks` alongside it.
+- **Stable integer object-ID render vars** across Karma CPU/XPU — the standing RETINA ask.
+
+**Ruled:** I draft it; Joe sends it. A vendor ask carries the sender's reputation, and every claim
+in it must survive SideFX re-probing it on their own build. All three do.
+
+---
+
+## RULING 50 — H3a-F4 is the most valuable finding in the leg, and it is about method.
+
+> Five ABSENT verdicts in the first pass were artifacts of MY probe asking the wrong class, not
+> absences on the build. Corrected in-run.
+
+A probe that reports ABSENT for a symbol that exists is the same defect as the WS probe that
+reported a dead bridge (L1.F1) and the regex that matched zero lines (R41). **Third instance, and
+the first one caught by its own author mid-run.**
+
+**H3a-F5** generalises it correctly: the `hdefereval` marshal layer is **unprobeable under headless
+hython**, so a headless probe of it must return `UNVERIFIABLE`, never `ABSENT`.
+
+**Ruled, adopted into the constitution:** **`ABSENT` requires a positive control on the same
+class.** Where no control is possible, the verdict is `UNVERIFIABLE`. "I looked and did not find
+it" and "it is not there" are different claims, and only the second licenses a SideFX ask.
+
+---
+
+## RULING 51 — RES found the actual root cause, and it is not what I ruled in R41.
+
+I ruled the `AttributeError: 'Parm' object has no attribute 'set'` was "a stub Parm shadowing the
+real class." **RES-F1 is more precise and more useful:**
+
+> `hou.py` must never execute twice in one process. A second execution re-registers the SWIG type
+> map to a half-built `Parm` class.
+
+Not a stub winning over the real class — **the real class, rebuilt and left half-initialised** by a
+second module execution. That is why `hasattr(hou.Parm,'set')` was True in a fresh interpreter and
+False in the suite.
+
+Four more that each refute a prior assumption, three of them mine:
+- **RES-F2** — the agent's own documentation was wrong: `importlib.reload(hou)` reaches
+  `sys.meta_path`, so the finder is not consulted "only when hou is absent".
+- **RES-F3** — the residency guard **returned early under hython**, the one interpreter where
+  residency matters. A guard that disables itself exactly where it is needed.
+- **RES-F4** — a third evictor no static census had found, caught by the new gate on its first run.
+- **RES-F5** — the census matched `sys.modules['hou'] = X` assignments only, so `pop`, `del` and
+  `monkeypatch.delitem` were invisible to it.
+
+**Ruled:** RES-F1 supersedes R41's mechanism. R41's *conclusion* stands — Q2-F4's "zero
+shipping-code defects" survives, because a half-built SWIG registration is still a test-harness
+defect. The reasoning was wrong; the verdict was right, and I record both.
+
+---
+
+## RULING 52 — LEDGER FR1: pin Moneta for release, keep the worktree for development.
+
+Recommendation adopted as stated. The two are not in tension if the package pins and a documented
+env override restores the worktree.
+
+**LEDGER.F2 is why this is now urgent rather than tidy:** the revision walk was **unbounded**, so
+Moneta resolved from inside any enclosing git repo reported *that repo's* HEAD as the Moneta
+revision. Provenance was not merely absent — it was **confidently wrong**, which is worse.
+
+**Ruled:** pin for release. Development keeps `MONETA_SRC` via a documented override. Not this
+leg — the brief forbade it and the agent correctly reported rather than acted.
+
+## RULING 53 — FR2: build the reconciler. FR3: wire recall.
+
+**FR2** — Moneta rows live in memory until `close()`/`atexit`; the per-record JSON files are
+durable and nothing rebuilds from them. A crash loses substrate rows **silently while the files
+survive**. This repo keeps a crash harness precisely because hard exits happen, and today produced
+one. Build it.
+
+**FR3** — the seam deposits into a store nothing reads. The agent's own framing decides it:
+
+> the seam is verified-but-unused — the same shape as the defect this leg closed, one level up.
+
+**Ruled: wire it, federated read across both stores.** Merging into one URI would reintroduce the
+single-owner lock contention the design avoids (LEDGER.F11).
+
+## RULING 54 — FR4: env var with repo-relative default. FR5: dedupe at read time.
+
+**FR4** — `agent_usd_path` must not import `hou`; `ledger.py` is deliberately zero-hou and that
+contract is worth more than per-scene exactness in the default. Resolve it the way `ledger_dir()`
+already resolves its root. **Where `$HIP` is available the caller passes it explicitly** — that
+keeps per-scene provenance correct in production and headless probes working.
+
+**FR5** — accept duplicates, dedupe by `Memory.id` at read. A write-time check is an O(n) scan on
+the hot path. Unbounded growth is real but bounded by backfill frequency, and SHOW-tier protection
+is a separate decision from write cost.
+
+## RULING 55 — FR6: not a new problem. Do not cite the gate number as substrate evidence.
+
+The 4917-pass gate number was produced on 3.14.2 against a **pip-installed** Moneta. Artists run
+hython 3.13.10 against the `MONETA_SRC` worktree. **LEDGER.F1: the two interpreters load different
+Moneta copies.**
+
+**Ruled:** this is the gate-vs-shipping split already recorded in `suite_baseline.json`, not a new
+finding. Adding a hython leg to the seam pins would measure the real substrate at the cost of a
+Houdini dependency in CI — **not now**, and recorded as the reason.
+
+## RULING 56 — LEDGER.F3 and F4 are both corrections to me, and F4 is the sharper one.
+
+**LEDGER.F3:** *"18/18 mutations caught" was a number whose producer had come to disagree with it.*
+The battery anchor was hardened after the number was recorded, so the figure survived its own
+producer changing underneath it. That is R31's disease — a number whose meaning depends on when it
+was taken — inside the mutation standard I created to prevent exactly this.
+
+**LEDGER.F4 refutes a prediction I made yesterday.** I wrote that the ledger seam "very likely
+shares a root with open task 2.5." It does not:
+
+> Task 2.5 is anchored at `agent_state.py` and concerns USD projection. This is `ledger.py` and
+> concerns substrate deposit. Different anchors, different mechanisms.
+
+And **LEDGER.F5** corrects the finding I built that prediction on: *"provenance writers have NO
+live callers"* is **stale** — 3 of 5 are dormant, not 5 of 5.
+
+**Ruled:** task 2.5 stays open and separate. The agent was briefed with my prediction as context
+and **checked it instead of inheriting it.** That is Article II working — a claim in a brief is
+evidence at the tier of whoever wrote it, and mine was `UNVERIFIED`.
+
+---
+
+## RULING 57 — RES's three, ruled together.
+
+- **4 tests pin H21 constants while running on H22** (unmasked by RES-F7). **Fix in H2**, not here.
+  They are re-qualification work by definition, and H2 is running now with F1–F11 in scope.
+- **`check_suite_baseline` ignores pytest's return code** (RES-F9). **Fix the ratchet.** A guard
+  abort that the ratchet cannot see is Law 1 in the ratchet itself — third instance this week.
+- **`shot_layers/` written to repo root by the solaris live tests** (RES-F11). **Redirect to
+  `tmp_path`.** Gitignoring it hides a test writing outside its sandbox; the write is the defect,
+  not its visibility.

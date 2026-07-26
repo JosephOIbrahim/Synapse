@@ -48,9 +48,24 @@ function Notify([string]$title, [string]$body) {
 
 # --- leg lifecycle -----------------------------------------------------------
 
+function Get-ReceiptPath([object]$leg) {
+    # A leg writes its receipt into ITS OWN worktree, not the main tree.
+    # 2026-07-26: the orchestrator watched only $repo\harness\notes\receipts and
+    # reported three completed legs as 'running' for two hours. It was watching a
+    # directory that could never fill. Check the worktree first, then the main
+    # tree (for legs that ran in-place, like Q1/Q2).
+    if ($leg.worktree) {
+        $wtr = Join-Path (Join-Path $repo $leg.worktree) "harness\notes\receipts\$($leg.receipt)"
+        if (Test-Path $wtr) { return $wtr }
+    }
+    $main = Join-Path $rdir $leg.receipt
+    if (Test-Path $main) { return $main }
+    return $null
+}
+
 function Get-LegState([object]$leg) {
     if ($leg.state -eq 'held') { return 'held' }
-    if ($leg.receipt -and (Test-Path (Join-Path $rdir $leg.receipt))) { return 'done' }
+    if ($leg.receipt -and (Get-ReceiptPath $leg)) { return 'done' }
     if ($leg.worktree) {
         $wt = Join-Path $repo $leg.worktree
         if (Test-Path (Join-Path $wt '.claude\settings.local.json')) {
@@ -66,7 +81,7 @@ function Get-LegState([object]$leg) {
     }
     foreach ($d in @($leg.deps)) {
         $dep = $manifest.legs | Where-Object { $_.id -eq $d }
-        if ($dep -and -not (Test-Path (Join-Path $rdir $dep.receipt))) { return 'blocked' }
+        if ($dep -and -not (Get-ReceiptPath $dep)) { return 'blocked' }
     }
     return 'ready'
 }
@@ -207,7 +222,7 @@ while ((Get-Date) -lt $deadline) {
             Say "STATE  $($leg.id) $($leg.name)  $was -> $now" 'Yellow'
 
             if ($now -eq 'done') {
-                $r = Get-Content (Join-Path $rdir $leg.receipt) -Raw | ConvertFrom-Json
+                $r = Get-Content (Get-ReceiptPath $leg) -Raw | ConvertFrom-Json
                 $status = $r.status; $ruling = @($r.for_ruling).Count
                 $plain = switch -Wildcard ($status) {
                     'green*' { 'clean' } 'amber*' { 'passed, debt logged' }
