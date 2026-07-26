@@ -1,0 +1,341 @@
+[
+  {
+    "id": "control_test_hou_reimport_guard",
+    "kind": "control",
+    "subset": [
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 0,
+    "verdict": "GREEN",
+    "ok": true,
+    "note": "a mutation of a subset whose control is RED proves nothing",
+    "failed_lines": []
+  },
+  {
+    "id": "control_test_theme_source_test_hou_reimport_guard",
+    "kind": "control",
+    "subset": [
+      "tests/panel/test_theme_source.py",
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 0,
+    "verdict": "GREEN",
+    "ok": true,
+    "note": "a mutation of a subset whose control is RED proves nothing",
+    "failed_lines": []
+  },
+  {
+    "id": "control_test_guards_test_hou_reimport_guard",
+    "kind": "control",
+    "subset": [
+      "tests/test_guards.py",
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 0,
+    "verdict": "GREEN",
+    "ok": true,
+    "note": "a mutation of a subset whose control is RED proves nothing",
+    "failed_lines": []
+  },
+  {
+    "id": "control_test_theme_source_test_live_wiring",
+    "kind": "control",
+    "subset": [
+      "tests/panel/test_theme_source.py",
+      "tests/solaris/test_live_wiring.py"
+    ],
+    "exit": 0,
+    "verdict": "GREEN",
+    "ok": true,
+    "note": "a mutation of a subset whose control is RED proves nothing",
+    "failed_lines": []
+  },
+  {
+    "id": "M1",
+    "kind": "mutation",
+    "description": "meta_path guard never installed",
+    "files": [
+      "tests/conftest.py"
+    ],
+    "subset": [
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 1,
+    "expected": "pin_failed",
+    "observed": "pin_failed",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": [
+      "FAILED tests/test_hou_reimport_guard.py::test_guard_is_installed - AssertionE...",
+      "FAILED tests/test_hou_reimport_guard.py::test_guard_returns_the_original_module_object",
+      "FAILED tests/test_hou_reimport_guard.py::test_guard_records_the_offence - Att...",
+      "FAILED tests/test_hou_reimport_guard.py::test_reimport_guard_covers_importlib_reload"
+    ]
+  },
+  {
+    "id": "M1b",
+    "kind": "mutation",
+    "description": "guard not installed, COMPOSED with a real offender \u2014 the release-condition pin itself must go red. M1 alone cannot show this: run in isolation the pin file is its own first offender, so the headline registry pin runs before any corruption exists.",
+    "files": [
+      "tests/conftest.py",
+      "tests/panel/test_theme_source.py"
+    ],
+    "subset": [
+      "tests/panel/test_theme_source.py",
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 1,
+    "expected": "pin_failed",
+    "observed": "pin_failed",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": [
+      "FAILED tests/test_hou_reimport_guard.py::test_swig_parm_registry_is_intact - ...",
+      "FAILED tests/test_hou_reimport_guard.py::test_parm_set_actually_writes - Attr...",
+      "FAILED tests/test_hou_reimport_guard.py::test_guard_is_installed - AssertionE...",
+      "FAILED tests/test_hou_reimport_guard.py::test_guard_returns_the_original_module_object",
+      "FAILED tests/test_hou_reimport_guard.py::test_guard_records_the_offence - Att...",
+      "FAILED tests/test_hou_reimport_guard.py::test_reimport_guard_covers_importlib_reload",
+      "FAILED tests/test_hou_reimport_guard.py::test_no_test_evicts_hou_from_sys_modules"
+    ]
+  },
+  {
+    "id": "M2",
+    "kind": "mutation",
+    "description": "residency guard reverted to sentinel acceptance",
+    "files": [
+      "tests/conftest.py"
+    ],
+    "subset": [
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 4,
+    "expected": "collection_aborted",
+    "observed": "collection_aborted",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": []
+  },
+  {
+    "id": "M2b",
+    "kind": "mutation",
+    "description": "sentinel acceptance ISOLATED \u2014 the pin's own assertion, without the collection abort M2 triggers first. NOTE: this mutates only the wording of an error message, so it demonstrates the pin is a live SOURCE LINT, not that it is behavioural. The behavioural claim is carried by test_no_module_leaves_a_foreign_hou_resident (see M3).",
+    "files": [
+      "tests/conftest.py"
+    ],
+    "subset": [
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 1,
+    "expected": "pin_failed",
+    "observed": "pin_failed",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": [
+      "FAILED tests/test_hou_reimport_guard.py::test_residency_guard_compares_by_object_not_by_sentinel"
+    ]
+  },
+  {
+    "id": "M3",
+    "kind": "mutation",
+    "description": "test_guards.py restore re-gated on the sentinel (Defect A restored)",
+    "files": [
+      "tests/test_guards.py"
+    ],
+    "subset": [
+      "tests/test_guards.py",
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 4,
+    "expected": "collection_aborted",
+    "observed": "collection_aborted",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": []
+  },
+  {
+    "id": "M4",
+    "kind": "mutation",
+    "description": "theme_source reverted to pop-eviction (guard still installed) \u2014 the run-level gate must name the offending TEST",
+    "files": [
+      "tests/panel/test_theme_source.py"
+    ],
+    "subset": [
+      "tests/panel/test_theme_source.py",
+      "tests/solaris/test_live_wiring.py"
+    ],
+    "exit": 4,
+    "expected": "collection_aborted",
+    "observed": "collection_aborted",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": []
+  },
+  {
+    "id": "M5",
+    "kind": "mutation",
+    "description": "allowlist widened to the whole tests tree",
+    "files": [
+      "tests/conftest.py"
+    ],
+    "subset": [
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 1,
+    "expected": "pin_failed",
+    "observed": "pin_failed",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": [
+      "FAILED tests/test_hou_reimport_guard.py::test_gate_rejects_an_unsanctioned_offender",
+      "FAILED tests/test_hou_reimport_guard.py::test_gate_exempts_on_the_guilty_field_not_the_innocent_one",
+      "FAILED tests/test_hou_reimport_guard.py::test_sessionfinish_gate_raises_on_an_unsanctioned_offence"
+    ]
+  },
+  {
+    "id": "M6",
+    "kind": "mutation",
+    "description": "offence filter neutered (always returns clean)",
+    "files": [
+      "tests/conftest.py"
+    ],
+    "subset": [
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 1,
+    "expected": "pin_failed",
+    "observed": "pin_failed",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": [
+      "FAILED tests/test_hou_reimport_guard.py::test_gate_rejects_an_unsanctioned_offender",
+      "FAILED tests/test_hou_reimport_guard.py::test_gate_exempts_on_the_guilty_field_not_the_innocent_one",
+      "FAILED tests/test_hou_reimport_guard.py::test_sessionfinish_gate_raises_on_an_unsanctioned_offence"
+    ]
+  },
+  {
+    "id": "M7",
+    "kind": "mutation",
+    "description": "THE LEG'S ORACLE: guard removed AND theme_source pops -> the original 17-failure defect must return",
+    "files": [
+      "tests/conftest.py",
+      "tests/panel/test_theme_source.py"
+    ],
+    "subset": [
+      "tests/panel/test_theme_source.py",
+      "tests/solaris/test_live_wiring.py"
+    ],
+    "exit": 1,
+    "expected": "pin_failed",
+    "observed": "pin_failed",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": [
+      "FAILED tests/solaris/test_live_wiring.py::test_component_builder_creates_internal_nodes_live",
+      "FAILED tests/solaris/test_live_wiring.py::test_component_builder_wires_geo_to_mat_to_output_live",
+      "FAILED tests/solaris/test_live_wiring.py::test_component_builder_is_idempotent_live",
+      "FAILED tests/solaris/test_live_wiring.py::test_component_builder_stamps_provenance_live",
+      "FAILED tests/solaris/test_live_wiring.py::test_scene_template_creates_full_chain_live",
+      "FAILED tests/solaris/test_live_wiring.py::test_scene_template_is_idempotent_live",
+      "FAILED tests/solaris/test_live_wiring.py::test_scene_template_chains_sop_imports_sequentially_live",
+      "FAILED tests/solaris/test_live_wiring.py::test_f8_scene_template_honours_parent_path_live",
+      "FAILED tests/solaris/test_live_wiring.py::test_f7_set_purpose_does_not_report_success_when_nothing_set_live",
+      "FAILED tests/solaris/test_live_wiring.py::test_f7_set_purpose_authors_a_real_usd_purpose_live",
+      "FAILED tests/solaris/test_live_wiring.py::test_set_purpose_last_write_is_the_one_that_composes_live",
+      "FAILED tests/solaris/test_live_wiring.py::test_set_purpose_is_idempotent_live"
+    ]
+  },
+  {
+    "id": "M8",
+    "kind": "mutation",
+    "description": "the session-finish gate stops raising \u2014 the rescue goes silent (Law 3)",
+    "files": [
+      "tests/conftest.py"
+    ],
+    "subset": [
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 1,
+    "expected": "pin_failed",
+    "observed": "pin_failed",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": [
+      "FAILED tests/test_hou_reimport_guard.py::test_sessionfinish_gate_raises_on_an_unsanctioned_offence"
+    ]
+  },
+  {
+    "id": "M9",
+    "kind": "mutation",
+    "description": "allowlist reverted to matching the INNOCENT field (offender) instead of the guilty one (during)",
+    "files": [
+      "tests/conftest.py"
+    ],
+    "subset": [
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 1,
+    "expected": "pin_failed",
+    "observed": "pin_failed",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": [
+      "FAILED tests/test_hou_reimport_guard.py::test_gate_exempts_on_the_guilty_field_not_the_innocent_one"
+    ]
+  },
+  {
+    "id": "M11",
+    "kind": "mutation",
+    "description": "a test reintroduces the eviction idiom \u2014 the STATIC ban must catch it on any interpreter, which is the only version of this law the merge ratchet (stock python, guard never armed) can run",
+    "files": [
+      "tests/test_guards.py"
+    ],
+    "subset": [
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 1,
+    "expected": "pin_failed",
+    "observed": "pin_failed",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": [
+      "FAILED tests/test_hou_reimport_guard.py::test_no_test_evicts_hou_from_sys_modules"
+    ]
+  },
+  {
+    "id": "M12",
+    "kind": "mutation",
+    "description": "run-phase residency leak \u2014 a swap that collection_finish cannot see because it happens while tests are RUNNING",
+    "files": [
+      "tests/conftest.py"
+    ],
+    "subset": [
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 4,
+    "expected": "collection_aborted",
+    "observed": "collection_aborted",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": []
+  },
+  {
+    "id": "M10",
+    "kind": "mutation",
+    "description": "guard narrowed to 'only when hou is absent' \u2014 the exact narrowing the original (wrong) comment invited; the importlib.reload route reopens",
+    "files": [
+      "tests/conftest.py"
+    ],
+    "subset": [
+      "tests/test_hou_reimport_guard.py"
+    ],
+    "exit": 1,
+    "expected": "pin_failed",
+    "observed": "pin_failed",
+    "ok": true,
+    "reasons": [],
+    "failed_lines": [
+      "FAILED tests/test_hou_reimport_guard.py::test_reimport_guard_covers_importlib_reload"
+    ]
+  }
+]

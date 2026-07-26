@@ -5,6 +5,7 @@ Existing tests that do their own mocking are unaffected -- these
 fixtures only activate when explicitly requested by name.
 """
 
+import importlib.util
 import os
 import pytest
 import sys
@@ -132,6 +133,151 @@ _CANONICAL_HOU_INSTALLED = False
 if "hou" not in sys.modules:
     sys.modules["hou"] = _build_canonical_hou()
     _CANONICAL_HOU_INSTALLED = True
+
+# The resident at conftest-import time, captured BY OBJECT. Under hython this is
+# real Houdini; standalone it is the canonical fake planted just above. Both
+# guards below compare against this exact object — identity, never a sentinel.
+_HOU_AT_IMPORT = sys.modules.get("hou")
+
+# Test in flight, for attribution. A one-element list so the guard (defined
+# before the hooks) reads the live value rather than a stale binding.
+_CURRENT_NODEID = ["<collection>"]
+
+
+# ---------------------------------------------------------------------------
+# HOU_REIMPORT_GUARD — `hou.py` must never execute twice in one process
+# ---------------------------------------------------------------------------
+# VERIFIED-RUNTIME (22.0.368, 2026-07-26): evicting `hou` from sys.modules and
+# letting anything `import hou` again is process-corrupting, and it corrupts in
+# a way that every obvious check reports as healthy.
+#
+#   1. `hou.py` re-executes and re-runs `_hou.Parm_swigregister(Parm)` — the C
+#      extension's type registry now points at a NEW `Parm` class object.
+#   2. `hou.py:123810 __finishImport()` then RAISES (`type object
+#      'PerfMonProfile' has no attribute 'save'` — the deprecation wrappers are
+#      not re-appliable), so the new class is left HALF-BUILT: 166 attributes
+#      against the original's 186, and no `Parm.set`.
+#   3. importlib discards the failed module, leaving `sys.modules['hou']`
+#      ABSENT. The test then restores the original object — correctly, by
+#      object — and only from that moment do `sys.modules['hou']` and
+#      `hou.Parm` look perfect again, with `hou.Parm.set` True. (The restore is
+#      what manufactures the innocent-looking state; without it the resident is
+#      simply gone. VERIFIED-RUNTIME.)
+#   4. But `node.parm("x")` now returns an instance of the ZOMBIE class, and
+#      `node.parm("x").set(v)` raises
+#      `AttributeError: 'Parm' object has no attribute 'set'`.
+#
+# That is the fake-hou residency defect's second form, and it is why the
+# positive control (`hou.Parm.set` -> True) and the failure coexisted: the
+# module is innocent, the C-level type registry is the casualty.
+#
+# Restore-by-OBJECT does not repair it. Nothing does, in-process. The damage is
+# done at the moment of the re-import, so the re-import is what must not happen.
+#
+# TWO ROUTES REACH THIS FINDER, and only one of them involves an eviction:
+#
+#   (a) `hou` ABSENT from sys.modules, then `import hou`. The original module
+#       object survives untouched in whoever still holds a reference; the
+#       casualty is the C type registry.
+#   (b) `importlib.reload(hou)` with `hou` PRESENT. reload consults meta_path
+#       directly, so this finder sees it — and it is the STRICTLY NASTIER route,
+#       because reload re-executes into the SAME module namespace: `hou.Parm`
+#       itself becomes the zombie (VERIFIED-RUNTIME 2026-07-26: after a raised
+#       reload, `hou.Parm is <original>` -> False, `dir()` 166 vs 186, no
+#       `.set`). Nothing in the tree reloads `hou` today; the guard covers it by
+#       construction and `test_reimport_guard_covers_importlib_reload` pins it,
+#       so the coverage is by design rather than by luck.
+#
+# It hands back the original module object instead of re-executing `hou.py`, and
+# RECORDS the offence so the session-finish gate can fail the run naming the
+# test that caused it (Law 3: the rescue is never silent).
+# `sys.modules["hou"] = None` does NOT reach this finder — CPython raises
+# ImportError on a None entry without consulting meta_path (VERIFIED-RUNTIME) —
+# so tests that need a deterministic ABSENT `hou` keep working, and that is the
+# idiom to use instead of a pop.
+class _HouReimportGuard:
+    """Return the original `hou` module rather than let `hou.py` run twice."""
+
+    def __init__(self, real_hou):
+        self._real = real_hou
+        self.interceptions = []  # list[dict]: offender file:line + module name
+
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname != "hou":
+            return None
+        frame = sys._getframe(1)
+        # Walk out of importlib's own frames to the code that asked for `hou`.
+        while frame is not None and "importlib" in (frame.f_code.co_filename or ""):
+            frame = frame.f_back
+        self.interceptions.append(
+            {
+                "offender": f"{frame.f_code.co_filename}:{frame.f_lineno}" if frame else "<unknown>",
+                "function": frame.f_code.co_name if frame else "<unknown>",
+                # The importer is usually product code doing a lazy `import hou`
+                # — the innocent party. The guilty one is whoever left `hou`
+                # ABSENT, and that is the test in flight. Naming it is the
+                # difference between a report and an actionable report.
+                "during": _CURRENT_NODEID[0],
+            }
+        )
+        return importlib.util.spec_from_loader(fullname, _ReturnExistingLoader(self._real))
+
+
+class _ReturnExistingLoader:
+    """Loader that yields an already-initialised module object, unexecuted."""
+
+    def __init__(self, module):
+        self._module = module
+
+    def create_module(self, spec):
+        return self._module
+
+    def exec_module(self, module):  # already executed, exactly once, at startup
+        return None
+
+
+# Only real, file-backed Houdini needs protecting: the canonical fake is a
+# plain ModuleType with no C extension behind it, and re-importing it is a
+# no-op rather than a hazard.
+HOU_REIMPORT_GUARD = None
+if (
+    _HOU_AT_IMPORT is not None
+    and getattr(_HOU_AT_IMPORT, "__file__", None)
+    and not getattr(_HOU_AT_IMPORT, "__synapse_canonical__", False)
+):
+    HOU_REIMPORT_GUARD = _HouReimportGuard(_HOU_AT_IMPORT)
+    sys.meta_path.insert(0, HOU_REIMPORT_GUARD)
+
+
+# The ONE file permitted to evict `hou` and re-import it: the pin that proves
+# the guard works has to trip the guard to prove anything. Every other offender
+# fails the run. Kept as an explicit, readable allowlist of one rather than a
+# silent exemption.
+SANCTIONED_REIMPORTERS = ("tests/test_hou_reimport_guard.py",)
+
+
+def unsanctioned_hou_reimports(interceptions):
+    """Offences from anywhere but the sanctioned exerciser.
+
+    Matched on ``during`` — the test that left `hou` absent — NOT on
+    ``offender``. The offender is whichever module happened to execute the lazy
+    `import hou` inside the window, and it is usually innocent product code:
+    the same eviction was attributed to
+    ``python/synapse/panel/designsystem/theme_source.py:45`` in one run and to
+    ``python/synapse/memory/store.py:29`` in another. Exempting on the offender
+    would therefore exempt a rotating cast of production files while never
+    being able to name the test actually responsible.
+
+    Pure function of its argument so the pin can feed it synthetic data and
+    prove the gate can fail without corrupting a real process.
+    """
+    out = []
+    for rec in interceptions:
+        during = (rec.get("during") or "").replace("\\", "/")
+        if any(ok in during for ok in SANCTIONED_REIMPORTERS):
+            continue
+        out.append(rec)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -526,21 +672,98 @@ def dispatcher():
 # the canonical resident was replaced by a rogue unconditional planter — the
 # collection-order-dependent residency that the guard exists to prevent.
 #
-# No-op under real Houdini (hython): we never planted, so there is nothing to
-# guard — real hou legitimately owns sys.modules['hou'].
+# ARMED IN BOTH MODES. It previously returned early whenever this conftest had
+# not planted — i.e. under hython, the one interpreter where a resident fake is
+# a real defect rather than a tidiness question. That is Law 1 inside the guard
+# that exists to enforce Law 1: a check that could not fail exactly where the
+# failure lives. The guard now compares the resident against `_HOU_AT_IMPORT`
+# BY OBJECT, so real Houdini is a first-class protected resident.
 # ===========================================================================
 def pytest_collection_finish(session):
-    if not _CANONICAL_HOU_INSTALLED:
+    if _HOU_AT_IMPORT is None:
         return
     resident = sys.modules.get("hou")
-    if resident is None:
+    if resident is _HOU_AT_IMPORT:
         return
-    if not getattr(resident, "__synapse_canonical__", False):
+    real_hou = not _CANONICAL_HOU_INSTALLED
+    raise pytest.UsageError(
+        "FAKE_HOU_RESIDENCY_GUARD: sys.modules['hou'] was replaced during "
+        "collection and not restored. Exactly one module may own the resident "
+        "(this conftest under standalone; real Houdini under hython); every "
+        "other module must DEFER to it (`if \"hou\" not in sys.modules`) or "
+        "swap and RESTORE THE ORIGINAL OBJECT around its own import — a "
+        "sentinel-guarded restore is not a restore, because real `hou` carries "
+        "no sentinel.\n"
+        f"  expected resident: {_HOU_AT_IMPORT!r}\n"
+        f"  actual resident:   {resident!r}\n"
+        f"  interpreter:       {'real Houdini (hython)' if real_hou else 'standalone'}\n"
+        "See the fake-hou residency trap note at the top of tests/conftest.py."
+    )
+
+
+# ===========================================================================
+# HOU_REIMPORT_GUARD enforcement — order-independent, run-level.
+# ---------------------------------------------------------------------------
+# The guard RESCUES (hands back the original module) so one bad idiom cannot
+# corrupt the process for every test after it. Rescuing silently would be Law 3
+# exactly — a success status over a thing that went wrong — so the rescue is
+# recorded and this hook turns it into a red run naming the offender's
+# file:line. Its own negative control lives in tests/test_hou_reimport_guard.py.
+# ===========================================================================
+def pytest_runtest_logstart(nodeid, location):
+    _CURRENT_NODEID[0] = nodeid
+
+
+def pytest_runtest_logfinish(nodeid, location):
+    # Reset, so an offence raised during teardown, a later collection, or at
+    # session finish is not attributed to the last test that merely STARTED.
+    # A confident wrong file:line is worse than an honest unknown.
+    _CURRENT_NODEID[0] = f"<after {nodeid}>"
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # (1) RUN-PHASE residency. pytest_collection_finish above is collection
+    # scoped — it cannot see a swap that happens while tests are running, and
+    # rt_full_before.json's transitions 3 and 4 were both run-phase. The only
+    # other identity assertion is a test, which runs at its own alphabetical
+    # slot and therefore cannot observe anything after it. This one is
+    # order-independent, which is what the guard's header claims it is.
+    if _HOU_AT_IMPORT is not None and sys.modules.get("hou") is not _HOU_AT_IMPORT:
         raise pytest.UsageError(
-            "FAKE_HOU_RESIDENCY_GUARD: sys.modules['hou'] was replaced by a "
-            "non-canonical planter during collection. Exactly one module (this "
-            "conftest) may plant hou; every other module must DEFER to it "
-            "(`if \"hou\" not in sys.modules`) or swap-and-RESTORE around its "
-            f"own import. Offending resident: {resident!r}. See the fake-hou "
-            "residency trap note at the top of tests/conftest.py."
+            "FAKE_HOU_RESIDENCY_GUARD (run phase): sys.modules['hou'] was "
+            "replaced during the RUN and never restored. Collection finished "
+            "clean, so the offender is a test body or fixture teardown, not an "
+            "import.\n"
+            f"  expected resident: {_HOU_AT_IMPORT!r}\n"
+            f"  actual resident:   {sys.modules.get('hou')!r}\n"
+            f"  last test boundary: {_CURRENT_NODEID[0]}\n"
+            "Swap and restore THE ORIGINAL OBJECT; express absence as "
+            '`sys.modules["hou"] = None`, never a pop.'
         )
+
+    # (2) Re-import offences.
+    if HOU_REIMPORT_GUARD is None:
+        return
+    offences = unsanctioned_hou_reimports(HOU_REIMPORT_GUARD.interceptions)
+    if not offences:
+        return
+    listed = "\n".join(
+        f"    during {o.get('during', '?')}\n"
+        f"      imported by {o['offender']}  in {o['function']}()"
+        for o in offences
+    )
+    # NOTE ON THE EXIT CODE: raising here ends the run at pytest's
+    # EXIT_USAGEERROR (4), not 1. An earlier draft also set
+    # `session.exitstatus = 1`; the raise overrides it, so the assignment was
+    # dead code that would have misled anyone writing CI logic keyed on
+    # `exit == 1`. Gate on non-zero, or on 4 specifically.
+    raise pytest.UsageError(
+        "HOU_REIMPORT_GUARD: `hou` was evicted from sys.modules and re-imported "
+        f"by {len(offences)} site(s). Under hython that re-executes hou.py, "
+        "re-registers the SWIG type map to a half-built `Parm` class, and makes "
+        "every later `node.parm(...).set(...)` raise AttributeError. The guard "
+        "intercepted it so this run stayed sound, but the idiom must go: express "
+        'absence as `sys.modules["hou"] = None` (deterministic ImportError, no '
+        "re-execution) and restore the prior resident BY OBJECT.\n"
+        f"{listed}"
+    )

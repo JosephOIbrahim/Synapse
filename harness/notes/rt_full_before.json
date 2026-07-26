@@ -1,0 +1,93 @@
+{
+  "transitions": [
+    {
+      "where": "<configure>",
+      "from": null,
+      "to": {
+        "kind": "module",
+        "id": "0x7ead9170",
+        "canonical": false,
+        "file": "C:\\PROGRA~1/SIDEEF~1/HOUDIN~1.368/houdini/python3.13libs\\hou.py",
+        "has_Parm": true,
+        "Parm_has_set": true
+      }
+    },
+    {
+      "where": "collectstart:tests/test_guards.py::TestEnsureNode",
+      "from": {
+        "kind": "module",
+        "id": "0x7ead9170",
+        "canonical": false,
+        "file": "C:\\PROGRA~1/SIDEEF~1/HOUDIN~1.368/houdini/python3.13libs\\hou.py",
+        "has_Parm": true,
+        "Parm_has_set": true
+      },
+      "to": {
+        "kind": "MagicMock",
+        "id": "0x175aba270",
+        "canonical": false,
+        "file": null,
+        "has_Parm": true,
+        "Parm_has_set": true
+      }
+    },
+    {
+      "where": "collectstart:tests/test_introspection.py::TestNodeBasic",
+      "from": {
+        "kind": "MagicMock",
+        "id": "0x175aba270",
+        "canonical": false,
+        "file": null,
+        "has_Parm": true,
+        "Parm_has_set": true
+      },
+      "to": {
+        "kind": "module",
+        "id": "0x175b89120",
+        "canonical": false,
+        "file": null,
+        "has_Parm": false,
+        "Parm_has_set": false
+      }
+    },
+    {
+      "where": "finish:tests/test_chat_panel.py::TestNewStyleFunctions::test_chat_display_stylesheet",
+      "from": {
+        "kind": "module",
+        "id": "0x175b89120",
+        "canonical": false,
+        "file": null,
+        "has_Parm": false,
+        "Parm_has_set": false
+      },
+      "to": {
+        "kind": "module",
+        "id": "0x7ead9170",
+        "canonical": false,
+        "file": "C:\\PROGRA~1/SIDEEF~1/HOUDIN~1.368/houdini/python3.13libs\\hou.py",
+        "has_Parm": true,
+        "Parm_has_set": true
+      }
+    },
+    {
+      "where": "finish:tests/test_keyframe_aov.py::TestRenderSettings::test_node_not_found",
+      "from": {
+        "kind": "module",
+        "id": "0x7ead9170",
+        "canonical": false,
+        "file": "C:\\PROGRA~1/SIDEEF~1/HOUDIN~1.368/houdini/python3.13libs\\hou.py",
+        "has_Parm": true,
+        "Parm_has_set": true
+      },
+      "to": {
+        "kind": "module",
+        "id": "0x175b89120",
+        "canonical": false,
+        "file": null,
+        "has_Parm": false,
+        "Parm_has_set": false
+      }
+    }
+  ],
+  "count": 5
+}

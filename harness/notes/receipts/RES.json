@@ -1,0 +1,363 @@
+{
+  "schema": "receipt/v1",
+  "leg": "RES",
+  "title": "Fake-hou residency - the defect was a re-import, not a stub",
+  "harness": "REPAIR-01",
+  "status": "green",
+  "status_note": "Describes what happened (Law 3). The release condition R42 names is met and was measured, not inferred: the AttributeError at component_builder.py:315 / scene_template.py:218 is gone under hython3.13, tests/solaris/test_live_wiring.py drives real `hou` (27/27), the gate suite holds at 4889 passed / 0 failed (up from 4881, Commandment 7 satisfied), and every regression pin fails against a deliberate break (18/18 mutation matrix, 4 controls green). Two things this receipt does NOT claim: the shipping suite is not green (98 failed, unchanged environment buckets - it was never a ratchet floor per R40), and 4 tests that were green in the pre-fix run are now red. Those 4 are decorations unmasked by removing the residency, not regressions; the evidence is below and the disposition is a ruling item.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "worktree-interactive (.claude/settings.json) - NOT harness/agent-settings.json and NOT harness/relay-settings.json. Recorded as-run per R25: this leg ran as the interactive session in the worktree, a wider fence than either harness profile. It did run pytest, so suite evidence is admissible under Article V; the fence is named so the reader can weigh that rather than assume it.",
+  "pins": {
+    "worktree": ".claude/worktrees/fake-hou-residency",
+    "branch": "repair/fake-hou-residency",
+    "base_commit": "a19b139 (merge(Q1): unpoison the shipping suite)",
+    "commit": "PINNED BY THE FOLLOW-UP COMMIT - a receipt cannot carry its own hash",
+    "houdini": "22.0.368, hython 3.13.10",
+    "gate_interpreter": "system python 3.14.2, vendor INACTIVE",
+    "shipping_interpreter": "hython 3.13.10, vendor ACTIVE",
+    "commit_note": "All numbers in this receipt were produced against the tree in the fix commit named by `fix_commit` below. The adjudicator's blocker was that the tree moved under the reviewers; that churn was the mutation matrix mutating and restoring files mid-run, plus two late repairs the gate itself surfaced. The tree is frozen at that commit and every artifact was re-emitted against it.",
+    "resolve_with": "git log --oneline -- harness/notes/receipts/RES.json",
+    "fix_commit": "c0cc415"
+  },
+  "agents": [
+    {
+      "role": "orchestrator (this session)",
+      "output": "root cause, fix, pins, mutation matrix, receipt"
+    },
+    {
+      "role": "crucible/root-cause (workflow lens)",
+      "output": "root cause NOT refuted, reproduced independently in a fresh hython; found the importlib.reload second route (REFUTED-LIVE against my own comment)"
+    },
+    {
+      "role": "crucible/pin-quality (workflow lens)",
+      "output": "found that no mutation demonstrated the headline pin going red; supplied the missing composition; found the sessionfinish hook unpinned and the M4 fragment satisfiable unmutated"
+    },
+    {
+      "role": "crucible/completeness (workflow lens)",
+      "output": "found the 9 surviving eviction sites, the census's eviction blind spot, the run-phase residency gap, and the hython-only scope of the gate"
+    },
+    {
+      "role": "crucible/adjudicator (workflow)",
+      "output": "blocker: freeze the tree and cite a SHA - adopted; and an env-difference hypothesis for the 4 unmasked tests - REFUTED, see finding RES-F7"
+    }
+  ],
+  "the_headline": {
+    "claim_before": "R41/R42: `hou.Parm.set` exists on 22.0.368, yet component_builder.py:315 raises AttributeError - 'a STUB Parm is shadowing the real class', the same mechanism Q1 fixed for PySide6.",
+    "what_it_actually_was": "No stub was involved. `hou.py` executed a SECOND time in the process. That re-ran `_hou.Parm_swigregister(Parm)`, re-pointing the C extension's type registry at a NEW `Parm` class object; then `hou.py:123810 __finishImport()` RAISED (`type object 'PerfMonProfile' has no attribute 'save'` - the deprecation wrappers are not re-appliable), leaving that class HALF-BUILT at 166 attributes against the original's 186, with no `.set`. importlib discarded the failed module, the test restored the original object correctly BY OBJECT, and from that moment `sys.modules['hou']` and `hou.Parm` looked perfect - `hou.Parm.set` True - while `node.parm('x')` returned instances of the zombie class.",
+    "why_the_positive_control_and_the_failure_coexisted": "R41's control probed the MODULE (`hou.Parm.set` -> True). The casualty was the C-level type registry, which no module-level introspection can see. That gap is the entire finding, and it is why the defect read as a shadowing stub.",
+    "the_deeper_lesson": "Q1's law was 'restore-by-object, not restore-by-reimport'. This leg extends it: for `hou`, restore-by-object is NECESSARY BUT NOT SUFFICIENT. The damage lands at the moment of the re-import, in the C extension, past anything sys.modules can express. The re-import is what must not happen."
+  },
+  "root_cause": {
+    "tier": "VERIFIED-RUNTIME",
+    "build": "22.0.368",
+    "date": "2026-07-26",
+    "producer": "harness/notes/residency_trace.py (pytest plugin) + direct hython probes, both reproduced independently by the workflow's root-cause lens in a fresh hython with no conftest loaded",
+    "reproduction": [
+      "hython3.13 -c \"import sys, hou; n=hou.node('/obj').createNode('geo','g1'); saved=sys.modules.pop('hou'); import hou  # raises; sys.modules['hou']=saved; p=n.parm('ty')\"",
+      "-> reimport RAISES: AttributeError type object 'PerfMonProfile' has no attribute 'save'",
+      "-> sys.modules hou is original: True ; real.Parm has set: True   <- the innocent-looking state",
+      "-> instance class is original Parm: False ; has set: False ; n_attrs 166 vs 186   <- the casualty"
+    ],
+    "two_routes_in": {
+      "a_eviction": "`hou` absent from sys.modules, then `import hou`. Original module object survives untouched; the C type registry is the casualty. This is the route that caused the 17 failures.",
+      "b_reload": "`importlib.reload(hou)` with `hou` PRESENT. Reaches sys.meta_path anyway, and is STRICTLY NASTIER - reload re-executes into the SAME namespace, so `hou.Parm` ITSELF becomes the zombie. VERIFIED-RUNTIME: after a raised reload, `hou.Parm is <original>` -> False, dir() 166 vs 186, no `.set`. Nothing in the tree reloads `hou` today; it is pinned so the coverage is by design rather than by luck."
+    }
+  },
+  "two_distinct_defects": {
+    "note": "Both are real; only one is causal for the 17. Stated separately so the commit narrative cannot be read as claiming the residency trace explained the AttributeError - it did not, and the workflow's root-cause and adjudicator lenses both flagged that risk.",
+    "causal_for_the_17": {
+      "name": "re-import (the eviction window)",
+      "sites_found_and_fixed": [
+        "tests/panel/test_theme_source.py - _install_hou AND _reload_tokens_with AND _restore (three helpers; the second was missed on the first pass and caught by this leg's own gate)",
+        "tests/panel/test_token_seeding.py - _reload_tokens_with, _restore",
+        "tests/test_marshal_hostile.py:366 - monkeypatch.delitem(sys.modules,'hou'); its own docstring reasoned that the residency guard 'never sees the gap', which was true and was the problem - the damage happens INSIDE the gap"
+      ],
+      "how_they_were_found": "The first two by bisecting tests/panel one file at a time against tests/solaris/test_live_wiring.py. The third by the new run-level gate, which fired on the first full shipping run after the fix and named the test in flight."
+    },
+    "real_but_not_causal": {
+      "name": "residency proper (a fake left resident)",
+      "sites": [
+        "tests/test_guards.py - restore gated on `_original_hou.__synapse_canonical__`; real `hou` carries no sentinel, so under hython the restore NEVER ran and a MagicMock stayed resident",
+        "tests/test_introspection.py - same shape, a bare ModuleType stub",
+        "tests/conftest.py pytest_collection_finish - returned early when `_CANONICAL_HOU_INSTALLED` was False, i.e. disarmed under hython, the one interpreter where a resident fake is a real defect. Law 1 inside the guard that exists to enforce Law 1."
+      ],
+      "evidence_it_is_not_causal": "tests/test_introspection.py::TestExecutePythonEnhancements fails identically before and after (3 -> 3) at `undos.group.reset_mock()`, proving its module global was already bound to real Houdini. Confirmed independently by the workflow's root-cause lens."
+    }
+  },
+  "the_fix": [
+    {
+      "id": "1",
+      "file": "tests/conftest.py",
+      "what": "HOU_REIMPORT_GUARD - a sys.meta_path[0] finder that intercepts any `import hou` reaching the import machinery and returns the ORIGINAL module object instead of re-executing hou.py. Records each offence with the importer file:line AND the test in flight."
+    },
+    {
+      "id": "2",
+      "file": "tests/conftest.py",
+      "what": "pytest_sessionfinish gate - fails the run (pytest EXIT_USAGEERROR 4) on any unsanctioned recorded offence, naming the guilty test. The guard RESCUES so one bad idiom cannot corrupt the process; rescuing silently would be Law 3, so the rescue is always reported."
+    },
+    {
+      "id": "3",
+      "file": "tests/conftest.py",
+      "what": "pytest_collection_finish rearmed in BOTH modes - compares the resident to `_HOU_AT_IMPORT` by object identity instead of by a sentinel real `hou` can never carry."
+    },
+    {
+      "id": "4",
+      "files": "tests/panel/test_theme_source.py, tests/panel/test_token_seeding.py, tests/test_marshal_hostile.py",
+      "what": "eviction replaced by `sys.modules['hou'] = None` - deterministic ImportError with no re-execution, the idiom already established in-tree at tests/test_lop_major_resolution.py:81."
+    },
+    {
+      "id": "5",
+      "files": "tests/test_guards.py, tests/test_introspection.py",
+      "what": "sentinel-gated restores made unconditional (restore-by-object)."
+    },
+    {
+      "id": "6",
+      "files": "tests/test_chat_panel.py, tests/test_inspect_mock.py, tests/test_live_metrics.py, tests/test_live_metrics_threadsafe.py (x3), tests/test_routing.py, tests/test_tops_assembly.py, tests/test_undo_redo.py, tests/panel/test_token_seeding.py",
+      "what": "the 9 remaining eviction sites converted. All were dormant under hython (each is a `saved is None` restore branch and the saved resident is always real `hou`), but the guard only rescues the idiom - it does not make it correct, and the new `= None` house idiom makes `sys.modules.get` return None, which is exactly what those branches read as 'no resident'. Census now reports evictions_outside_sanctioned: []."
+    },
+    {
+      "id": "7",
+      "file": "tests/test_hou_reimport_guard.py",
+      "what": "16 pins (NEW FILE). Includes the release-condition pin, a subprocess negative control that reproduces the corruption, the reload-route pin, the sessionfinish hook's own pin, and a STATIC eviction ban that runs on every interpreter."
+    }
+  ],
+  "oracle": {
+    "clause_1_attribute_error_gone": {
+      "verdict": "MET",
+      "tier": "VERIFIED-RUNTIME",
+      "before": "17 occurrences of \"AttributeError: 'Parm' object has no attribute 'set'\"",
+      "after": "0",
+      "producer": "grep -c \"object has no attribute 'set'\" harness/notes/res_full_{before,after}.log"
+    },
+    "clause_2_live_wiring_drives_real_hou": {
+      "verdict": "MET",
+      "tier": "VERIFIED-RUNTIME",
+      "before": "17 of 27 tests FAILED in the full shipping run (27 passed in isolation - the composition was the poison)",
+      "after": "0 failed; 27/27 pass in the full run AND in isolation",
+      "producer": "grep -cE '^FAILED tests/solaris' harness/notes/res_full_{before,after}.log"
+    },
+    "clause_3_gate_suite": {
+      "verdict": "MET",
+      "tier": "VERIFIED-RUNTIME",
+      "before": "4881 passed, 0 failed, 129 skipped",
+      "after": "4889 passed, 0 failed, 137 skipped, exit 0",
+      "delta": "+8 passed, +8 skipped = +16 collected, exactly the 16 new pins (8 run standalone, 8 live-only skip). A skip is honest.",
+      "producer": "python -m pytest tests/ -q -p no:cacheprovider  (system python 3.14.2). BEFORE measured at the same commit with tests/ stashed.",
+      "caveat": "This run CANNOT speak to the defect itself - under stock python the canonical fake carries __synapse_canonical__, HOU_REIMPORT_GUARD is never built, and tests/solaris/test_live_wiring.py all-skips. It is the no-regression and Commandment-7 check, never the oracle for the AttributeError. Flagged by the completeness lens and adopted."
+    },
+    "clause_4_commandment_7": {
+      "verdict": "MET",
+      "detail": "4881 -> 4889 passed on the gate interpreter, 0 failed throughout. Count strictly increases. No test weakened, skipped, xfailed or deleted."
+    }
+  },
+  "suite_numbers": {
+    "gate": {
+      "producer": "python -m pytest tests/ -q -p no:cacheprovider --basetemp=<tmp>",
+      "before": {
+        "passed": 4881,
+        "failed": 0,
+        "skipped": 129,
+        "exit": 0
+      },
+      "after": {
+        "passed": 4889,
+        "failed": 0,
+        "skipped": 137,
+        "exit": 0
+      }
+    },
+    "shipping": {
+      "producer": "hython3.13 -m pytest tests/ -q --continue-on-collection-errors -p no:cacheprovider -p residency_trace --basetemp=<tmp>",
+      "before": {
+        "passed": 4715,
+        "failed": 117,
+        "skipped": 122,
+        "errors": 13
+      },
+      "after": {
+        "passed": 4755,
+        "failed": 98,
+        "skipped": 122,
+        "errors": 8
+      },
+      "not_a_floor": "R40: the shipping number is a first measurement, not a green line. It does not become a ratchet floor here.",
+      "attribution": "23 tests flipped red->green (producer: comm -23 on the sorted FAILED sets): 17 tests/solaris/test_live_wiring.py + 4 tests/test_h22_setdressing_live.py + tests/test_marshal_hostile.py::test_executor_stock_python_refuses_rather_than_guessing + tests/test_residency_guard_fires.py::test_residency_guard_raises_on_rogue_planter. 4 flipped green->red - see RES-F7, they are unmasked decorations, not regressions."
+    },
+    "residency_transitions_in_the_full_shipping_run": {
+      "producer": "harness/notes/residency_trace.py -> rt_full_{before,after}.json",
+      "before": "5 records = 1 baseline + 4 real swaps (real hou -> MagicMock at collectstart:tests/test_guards.py, -> stub at collectstart:tests/test_introspection.py, -> real at finish:tests/test_chat_panel.py, -> stub at finish:tests/test_keyframe_aov.py)",
+      "after": "2 records, BOTH at <configure> (the baseline capture). Zero swaps, zero Parm mutations across the whole run."
+    },
+    "evictions_in_tests": {
+      "producer": "python harness/notes/residency_census.py",
+      "before": "11 outside the sanctioned exerciser, across 8 files",
+      "after": "0. evictions_outside_sanctioned: []"
+    }
+  },
+  "mutation_matrix": {
+    "standard": "R34 - every regression pin must FAIL against a deliberately broken implementation",
+    "producer": "hython3.13 harness/notes/mutation_matrix_res.py --json harness/notes/mutation_matrix_res.json",
+    "result": "18/18 - 4 per-subset controls GREEN, 14 mutations each producing the required RED",
+    "highlights": [
+      "M1b - guard removed AND a real offender composed: the release-condition pin test_swig_parm_registry_is_intact goes red. This row exists because the pin-quality lens proved M1 alone could not demonstrate it: run in isolation the pin file is its own first offender, so the headline pin executes before any corruption exists.",
+      "M7 - guard removed AND theme_source pops: the original defect returns, \"object has no attribute 'set'\" back in the output.",
+      "M10 - guard narrowed to 'only when hou is absent': the importlib.reload route reopens and its pin goes red.",
+      "M11 - a test reintroduces the eviction idiom: the STATIC ban catches it, which is the only version of this law the merge-gating interpreter can run.",
+      "M12 - a run-phase residency swap: the new session-finish identity check aborts the run."
+    ],
+    "honest_notes": [
+      "M2 (sentinel acceptance restored) does NOT make its pin go red - pytest ABORTS at collection because the rearmed guard itself raises, so no test in the file runs. The invariant is defended by a STRONGER instrument than the pin. Recorded as observed; the verdict vocabulary now distinguishes 'pin_failed' from 'collection_aborted' rather than reporting both as success (Law 3, and the pin-quality lens caught the original mislabel).",
+      "M2b isolates the pin's own failure mode but mutates only the wording of an error message - it proves the pin is a live SOURCE LINT, not that it is behavioural. The behavioural claim is carried by test_no_module_leaves_a_foreign_hou_resident.",
+      "The harness itself had two Law-1 defects, both caught by its own controls and both fixed: (1) --basetemp needs its parent to exist or tmp_path tests error for reasons unrelated to any mutation, which made a control go red; (2) an early M4 asserted on the substring 'test_theme_source.py', which pytest prints in its own progress line on every run - satisfiable with no mutation at all. Every subset now has a control and must be green before any mutation of it is believed."
+    ]
+  },
+  "findings": [
+    {
+      "id": "RES-F1",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "hou.py:123810 __finishImport(); tests/conftest.py HOU_REIMPORT_GUARD block",
+      "severity": "structural",
+      "summary": "`hou.py` must never execute twice in one process. A second execution re-registers the SWIG type map to a half-built `Parm` class (166 attrs vs 186, no `.set`) and every later `node.parm(...).set(...)` in the process raises AttributeError, while all module-level introspection stays healthy.",
+      "status": "FIXED - structurally prevented, not merely repaired at the call sites."
+    },
+    {
+      "id": "RES-F2",
+      "tier": "REFUTED-LIVE",
+      "anchor": "tests/conftest.py (the guard's own comment, as first written)",
+      "severity": "structural",
+      "summary": "My own documentation was wrong: the finder is NOT 'consulted ONLY when hou is absent'. `importlib.reload(hou)` reaches sys.meta_path with `hou` PRESENT, and corrupts the module IN PLACE (`hou.Parm` itself becomes the zombie) rather than leaving it pristine. Found by the root-cause lens, then verified independently by me before acting.",
+      "status": "FIXED - comment corrected, and test_reimport_guard_covers_importlib_reload pins the route so the coverage is by design rather than by accident. Mutation M10 proves the pin fails if the guard is narrowed."
+    },
+    {
+      "id": "RES-F3",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/conftest.py pytest_collection_finish (pre-fix)",
+      "severity": "structural",
+      "summary": "The FAKE_HOU_RESIDENCY_GUARD returned early whenever this conftest had not planted - i.e. under hython, the one interpreter where a resident fake is a real defect rather than a tidiness question. A check that could not fail exactly where the failure lives, inside the guard written to enforce Law 1.",
+      "status": "FIXED - armed in both modes, compares by object identity."
+    },
+    {
+      "id": "RES-F4",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_marshal_hostile.py:366 (pre-fix)",
+      "severity": "structural",
+      "summary": "A third evictor that no static census had found, caught by the new gate on its first full run. Its own docstring reasoned that the residency guard 'never sees the gap' - correct, and precisely why the idiom was dangerous: the damage happens inside the gap, not at collection_finish. It also swallowed silently because product code wraps the lazy `import hou` in `except ImportError`.",
+      "status": "FIXED. The gate finding it is the strongest evidence the gate works."
+    },
+    {
+      "id": "RES-F5",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "harness/notes/residency_census.py (as first written)",
+      "severity": "structural",
+      "summary": "The census could not see evictions at all - it matched `sys.modules['hou'] = X` assignments only, so pop/del/monkeypatch.delitem were invisible. An instrument blind to the worse half of the defect it is named for, which is why tests/test_marshal_hostile.py appeared nowhere in it. Found by the completeness lens.",
+      "status": "FIXED - the census now reports evictions, and the same scan is pinned as a test that runs on every interpreter."
+    },
+    {
+      "id": "RES-F6",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "tests/conftest.py unsanctioned_hou_reimports (as first written)",
+      "severity": "minor",
+      "summary": "The allowlist filtered on `offender` (the module that executed `import hou` - rotating, innocent product code: theme_source.py:45 in one run, store.py:29 in another) while the report blamed `during` (the test that left `hou` absent). The field carrying the blame was not the field carrying the exemption. Found independently by two lenses.",
+      "status": "FIXED - filters on `during`. Mutation M9 proves the pin fails if it reverts."
+    },
+    {
+      "id": "RES-F7",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/conftest.py:25 HOUDINI_BUILD default; tests/test_lop_flywheel.py, tests/test_m3_logs_doctor.py, tests/test_wiring_flywheel.py",
+      "severity": "structural",
+      "summary": "FOUR TESTS WERE GREEN ONLY BECAUSE A FAKE `hou` WAS RESIDENT. They are now red. They are decorations in exactly F4's sense - they passed because a fake could not disagree - and removing the residency exposed them. NOT regressions from this fix.",
+      "the_four": [
+        "tests/test_lop_flywheel.py::TestLopOrdering::test_capitalized_grid_still_flagged",
+        "tests/test_lop_flywheel.py::TestLopOrdering::test_grid_lop_hard_error_with_remediation",
+        "tests/test_m3_logs_doctor.py::test_symbol_table_check",
+        "tests/test_wiring_flywheel.py::TestCatalogDeterminism::test_packaged_catalog_loads_and_verifies"
+      ],
+      "proof_not_regression": "Run in isolation under hython they fail IDENTICALLY on the pre-fix tree and the post-fix tree - 4 failed, 1 passed, both trees, same command (producer: git stash push -- tests/ around the same hython pytest invocation). A change cannot be the cause of a failure that predates it.",
+      "mechanism": "conftest.py:25 `HOUDINI_BUILD = os.environ.get('SYNAPSE_TEST_HOUDINI_BUILD', '21.0.671')` defaults to H21. With a fake `hou` resident, version resolution fell back to H21 and matched the constant. With real `hou` resident it correctly resolves H22 and disagrees: `assert '22.0.368' == '21.0.671'`, `assert '21.0.671' in 'stamp 22.0.368 ...'`. Tier for the mechanism: VERIFIED-DERIVED; tier for the isolation control: VERIFIED-RUNTIME.",
+      "refutation_recorded": "The adjudicator proposed instead that the BEFORE run had SYNAPSE_TEST_HOUDINI_BUILD set and the AFTER run did not. REFUTED: the variable is unset in this environment and every run in this leg was launched from one shell with one environment (producer: `env | grep SYNAPSE` -> nothing but PWD/OLDPWD). The isolation control outranks the inference either way.",
+      "status": "OPEN - disposition is for_ruling RES-R1. Not fixed here: it is a different defect class (H21 constants pinned while running H22) and fixing it silently would be scope expansion."
+    },
+    {
+      "id": "RES-F8",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_freeze_chain.py::test_sustained_freeze_opens_breaker_and_halts_via_active_bridge",
+      "severity": "minor",
+      "summary": "Load-sensitive flake, not a regression. Failed in 1 of 3 full shipping samples, passed in the other 2, and passes 3/3 in isolation. Recorded so a future ratchet run that trips it is not misread as collateral damage from this leg. Matches the repo's known threads+sleeps pattern.",
+      "status": "OPEN - noted, not fixed. No action proposed in this leg."
+    },
+    {
+      "id": "RES-F9",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "harness/verify/checks.py check_suite_baseline",
+      "severity": "structural",
+      "summary": "The merge ratchet regex-parses 'N passed' / 'N failed' out of pytest's output and does not consult the return code. A run aborted by either guard exits 4 with the normal 'N passed' summary and zero 'failed' tokens, so the ratchet scores it as holding. Found by the pin-quality lens, confirmed by the adjudicator.",
+      "mitigation_shipped": "The static eviction ban (test_no_test_evicts_hou_from_sys_modules) is an ordinary test failure, which the ratchet DOES count, and it runs on the gate interpreter where the guards never arm. So the defect class this leg closes is enforceable in CI regardless of the rc hole.",
+      "status": "OPEN - for_ruling RES-R2. Not fixed here: it is a guardrail defect wider than this leg, and harness/verify/ is the ratchet's own territory."
+    },
+    {
+      "id": "RES-F10",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "harness/notes/residency_trace.py",
+      "severity": "note",
+      "summary": "The module-swap tracer found the FIRST form of the defect and was structurally incapable of finding the second. A pop -> import -> restore-by-object entirely inside one test body produces no transition at any pytest boundary, so rt_full_before.json contains zero rows for the two evictions that actually caused the 17 failures. Recorded so 'all transitions accounted for' is never read as a completeness claim. The `Parm_mutation` sampling added later is the right instrument and is retained.",
+      "status": "ACKNOWLEDGED - the instrument's limit is documented in the file."
+    },
+    {
+      "id": "RES-F11",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "repo root, shot_layers/{animation,fx}.usd",
+      "severity": "minor",
+      "summary": "The solaris live tests write USD layers into the REPO ROOT (shot_layers/), untracked and not gitignored, so every hython suite run dirties the working tree. Classified, not deleted (Law 4: census output is a hypothesis and deletion is a separate, human-confirmed act).",
+      "status": "OPEN - for_ruling RES-R3."
+    }
+  ],
+  "for_ruling": [
+    {
+      "id": "RES-R1",
+      "question": "The 4 tests unmasked by RES-F7 pin H21 constants while running on H22. Fix in this leg, fix in H2, or re-scope conftest.py:25's HOUDINI_BUILD default?",
+      "why_escalated": "Article I - a value judgement between defensible options, not something provable from the tree. It is a different defect class from fake-hou residency, and R42 narrowed this leg's release condition to the residency clause precisely so unrelated untidiness would not gate it. Fixing it here would be the scope expansion R42 was written to prevent; leaving it silent would be worse.",
+      "recommendation": "Deposit to H2. H2 is the F1-F11 re-qualification and these are exactly the class of claim it exists to re-qualify - tests that agreed with a mock. The cheapest correct fix is probably to resolve HOUDINI_BUILD from the live `hou` when one is resident rather than defaulting to a literal, but that changes what a large number of tests assert and belongs in a leg that can measure it.",
+      "blocks_h2": false
+    },
+    {
+      "id": "RES-R2",
+      "question": "check_suite_baseline ignores pytest's return code (RES-F9). Fix the ratchet, or accept that guard aborts are invisible to it?",
+      "why_escalated": "harness/verify/ is the ratchet's own territory and a change there alters the merge gate's behaviour for every future leg - a value judgement about the guardrail, not a fact about this defect.",
+      "recommendation": "Fix it: treat a non-zero pytest rc as not-green in check_suite_baseline. It is a Law 1 hole in the instrument that enforces Law 6. This leg is insulated from it by the static eviction ban, but the next guard to be added will not be.",
+      "blocks_h2": false
+    },
+    {
+      "id": "RES-R3",
+      "question": "shot_layers/ is written into the repo root by the solaris live tests (RES-F11). Gitignore it, redirect the tests to tmp_path, or leave it?",
+      "why_escalated": "Trivial to fix three different ways; which one is right depends on whether those layers are ever inspected after a run. Not my call, and Law 4 forbids me deleting the files to find out.",
+      "recommendation": "Redirect to tmp_path - a test that writes into the repo root will eventually be committed by accident. Gitignoring hides it rather than fixing it.",
+      "blocks_h2": false
+    }
+  ],
+  "h2_release_condition": {
+    "ruling": "R42 - 'H2 unblocks when fake-hou residency is eliminated on the Solaris test path, provable by that same AttributeError disappearing. Nothing else.'",
+    "verdict": "SATISFIED",
+    "evidence": "0 occurrences of the AttributeError in the full shipping run (was 17); tests/solaris/test_live_wiring.py 27/27 green in composition and in isolation; zero residency transitions across the entire run; zero evictions left in tests/ outside the sanctioned exerciser.",
+    "r43_scope": "R43 expanded scope to Q2 bucket 2, '~17 tests'. Confirmed exactly: all 17 were in tests/solaris/test_live_wiring.py and all 17 now pass. Stated precisely because the numbers differ - 17 is the count of Parm.set AttributeErrors and of that file's pre-fix failures; the file holds 27 tests; 23 tests flipped red->green across the whole suite.",
+    "caveat": "H2 should begin knowing that the shipping suite is at 98 failed, entirely in the pre-existing environment buckets Q2-F4 classified (pytest-asyncio absent, PySide6 present, websockets/mcp absent), plus the 4 unmasked in RES-F7."
+  },
+  "artifacts": {
+    "producers": [
+      "harness/notes/residency_trace.py - pytest plugin, records every sys.modules['hou'] identity transition and every mutation of the real module's Parm class",
+      "harness/notes/residency_census.py - AST census of planters AND evictions",
+      "harness/notes/mutation_matrix_res.py - the R34 matrix, with per-subset controls"
+    ],
+    "evidence": [
+      "harness/notes/rt_full_before.json / rt_full_after.json - 5 records -> 2, zero real transitions after",
+      "harness/notes/residency_census.json - evictions_outside_sanctioned: []",
+      "harness/notes/mutation_matrix_res.json - 18/18",
+      "harness/notes/res_before_evidence.txt - the load-bearing slice of the 4.9M before-log (summary line, the 17 FAILED lines, the AttributeError count, one full traceback showing a REAL hou.LopNetwork in the fixture)"
+    ],
+    "not_committed": "harness/notes/res_full_before.log (4.9M) and res_full_after.log - regenerable from the producer commands recorded above; the load-bearing slice is committed instead."
+  },
+  "resume_token": {
+    "skip": "Root cause is settled - VERIFIED-RUNTIME, reproduced independently by a second agent in a fresh hython. Do NOT re-derive the swigregister/__finishImport mechanism, do NOT re-litigate whether a stub Parm was involved (it was not), and do NOT re-run the mutation matrix unless the guard or the pins change.",
+    "next": "H2 (re-qualify F1-F11 against the live build) is UNBLOCKED. Start it knowing the shipping suite sits at 98 failed for reasons this leg did not touch, and read RES-F7 before interpreting any test that pins a Houdini build number.",
+    "watch": "If a future run goes red at pytest exit 4 with HOU_REIMPORT_GUARD or FAKE_HOU_RESIDENCY_GUARD in the output, the message names the guilty test and the fix is mechanical: express absence as sys.modules['hou'] = None and restore the prior resident by object."
+  }
+}

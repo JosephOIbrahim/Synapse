@@ -99,32 +99,42 @@ def _make_hou(color):
 
 
 def _install_hou(hou_module):
-    """Install (or remove, when None) a fake ``hou`` in sys.modules. Returns the
-    prior value so the caller can restore it and never leak to neighbours (the
-    46-file sys.modules['hou'] residency trap)."""
+    """Install (or mark ABSENT, when None) a fake ``hou`` in sys.modules.
+
+    Returns the prior value so the caller can restore it and never leak to
+    neighbours (the 46-file sys.modules['hou'] residency trap).
+
+    Absence is expressed as ``sys.modules["hou"] = None``, never as a pop.
+    CPython raises ImportError on a None entry WITHOUT consulting the import
+    machinery, so the module under test sees a deterministic absent ``hou``;
+    popping instead lets `hou.py` RE-EXECUTE under hython, which re-registers
+    the SWIG type map to a half-built `Parm` class and leaves every subsequent
+    `node.parm(...).set(...)` in the process raising AttributeError. Restoring
+    the original object afterwards does not undo it — the damage is in the C
+    extension. See the HOU_REIMPORT_GUARD note in tests/conftest.py."""
     saved = sys.modules.get("hou")
-    if hou_module is None:
-        sys.modules.pop("hou", None)
-    else:
-        sys.modules["hou"] = hou_module
+    sys.modules["hou"] = hou_module  # None => deterministic ImportError
     return saved
 
 
 def _restore_hou(saved):
-    if saved is None:
-        sys.modules.pop("hou", None)
-    else:
-        sys.modules["hou"] = saved
+    """Restore the prior resident BY OBJECT (never by re-import — see
+    ``_install_hou``). ``saved is None`` means there was no resident, which we
+    re-express as the deterministic-absent marker rather than a pop."""
+    sys.modules["hou"] = saved
 
 
 def _reload_tokens_with(hou_module):
     """Reload the tokens module with ``hou_module`` installed as ``hou`` (or
-    removed when None). Returns (module, saved) — pass ``saved`` to ``_restore``."""
+    marked ABSENT when None). Returns (module, saved) — pass ``saved`` to
+    ``_restore``.
+
+    Absence is ``sys.modules["hou"] = None``, never a pop — see ``_install_hou``
+    above for why. ``theme_source._hcs_surface_rgb`` does a lazy ``import hou``,
+    so a popped `hou` here re-executes hou.py under hython and half-builds the
+    SWIG `Parm` class for the rest of the process."""
     saved = {k: sys.modules.get(k) for k in ("hou", _TOKENS)}
-    if hou_module is None:
-        sys.modules.pop("hou", None)
-    else:
-        sys.modules["hou"] = hou_module
+    sys.modules["hou"] = hou_module  # None => deterministic ImportError
     sys.modules.pop(_TOKENS, None)
     mod = importlib.import_module(_TOKENS)
     return mod, saved
@@ -132,7 +142,12 @@ def _reload_tokens_with(hou_module):
 
 def _restore(saved):
     for k, v in saved.items():
-        if v is None:
+        if k == "hou":
+            # Always restore `hou` BY OBJECT — never pop. A pop here would
+            # re-open the eviction window that ``_reload_tokens_with`` exists to
+            # avoid, one line after closing it.
+            sys.modules["hou"] = v
+        elif v is None:
             sys.modules.pop(k, None)
         else:
             sys.modules[k] = v
