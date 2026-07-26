@@ -116,15 +116,31 @@
       "note": "R64. moneta_available() is one boolean carrying five independent claims: imports / same-module-both-interpreters / schema registered / prims authored typed / round-trips. Only the first is measured. MonetaMemory is concreteTyped and codegen'd, but the brief says prims are still untyped def - expected live state is registered=True in_use=False, the only cell that looks like success. Writes moneta_runtime.py so NOT read-only."
     },
     {
+      "id": "H7",
+      "name": "compat re-adjudicate",
+      "state": "ready",
+      "receipt": "H7.json",
+      "branch": "repair/h7-compat-readjudicate",
+      "worktree": ".claude/worktrees/h7-compat-readjudicate",
+      "prompt": "harness/prompts/h7.md",
+      "deps": [
+        "H6"
+      ],
+      "readonly": true,
+      "note": "R72. H5 returned UNVERIFIABLE:1267 - partly a REACHABILITY artifact, since the pinned docs tree is ROBOTS_DISALLOWED and the unpinned one serves 21.0. Two local version-pinned sources exist: hom.zip (HOM axis, authoritative, control-passed) and the help cache (node axis, second source only). Adds the doc_silent_deprecation cell: runtime deprecated, authored help silent - karmarenderproperties and karma are its first members. deps H6 so nothing running is interrupted."
+    },
+    {
       "id": "F1",
       "name": "integrate",
       "state": "blocked",
       "receipt": "F1.json",
       "deps": [
         "H1",
-        "H2"
+        "H2",
+        "H6",
+        "H7"
       ],
-      "note": "merge, housekeep, prune worktrees"
+      "note": "merge, housekeep, prune worktrees. Runs LAST - gated on every evidence-producing leg so integration never merges a picture that is still moving."
     }
   ]
 }
