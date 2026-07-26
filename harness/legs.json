@@ -134,6 +134,18 @@
       "note": "R72. H5 returned UNVERIFIABLE:1267 - partly a REACHABILITY artifact, since the pinned docs tree is ROBOTS_DISALLOWED and the unpinned one serves 21.0. Two local version-pinned sources exist: hom.zip (HOM axis, authoritative, control-passed) and the help cache (node axis, second source only). Adds the doc_silent_deprecation cell: runtime deprecated, authored help silent - karmarenderproperties and karma are its first members. deps H6 so nothing running is interrupted."
     },
     {
+      "id": "H8",
+      "name": "ruling audit",
+      "state": "ready",
+      "receipt": "H8.json",
+      "branch": "repair/h8-ruling-audit",
+      "worktree": ".claude/worktrees/h8-ruling-audit",
+      "prompt": "harness/prompts/h8.md",
+      "deps": [],
+      "readonly": true,
+      "note": "78 rulings, one author, no second reader - the only control this repo has systematically failed to apply, and the document's own most-repeated finding is that an instrument checking its own work reports healthy while proving nothing. Applies the document's laws TO the document. POSITIVE CONTROL: R48/R64/R58/R15 are known-wrong; if the method does not independently catch all four it is broken. Read-only, disjoint from H7, runs in parallel."
+    },
+    {
       "id": "F1",
       "name": "integrate",
       "state": "blocked",
@@ -142,7 +154,8 @@
         "H1",
         "H2",
         "H6",
-        "H7"
+        "H7",
+        "H8"
       ],
       "note": "merge, housekeep, prune worktrees. Runs LAST - gated on every evidence-producing leg so integration never merges a picture that is still moving.",
       "prompt": "harness/prompts/f1.md",
