@@ -1,0 +1,84 @@
+{
+  "_comment": "Leg manifest for harness/orchestrate.ps1. Adding a leg is DATA, not a new dispatcher script. The orchestrator owns: dependency gating, worktree creation, trust, launch, receipt monitoring, branch backup, and notification - in ONE window. Supersedes run_relay.ps1, run_solaris_repair.ps1, run_repair_heats.ps1, run_followon.ps1, heartbeat.ps1 and watch_relay.ps1.",
+  "_schema": "legs/v1",
+  "repo": "C:\\Users\\User\\SYNAPSE",
+  "settings": "C:\\Users\\User\\SYNAPSE\\harness\\relay-settings.json",
+  "base": "feat/repair-heats-01",
+
+  "legs": [
+    {
+      "id": "Q1",
+      "name": "unpoison",
+      "state": "done",
+      "receipt": "Q1.json",
+      "note": "merged to the line at a19b139"
+    },
+    {
+      "id": "Q2",
+      "name": "baseline",
+      "state": "done",
+      "receipt": "Q2.json",
+      "note": "tuple promoted R40; shipping measured 4048/110/771"
+    },
+    {
+      "id": "RES",
+      "name": "residency",
+      "state": "running",
+      "receipt": "RES.json",
+      "branch": "repair/fake-hou-residency",
+      "worktree": ".claude/worktrees/fake-hou-residency",
+      "prompt": "harness/prompts/res.md",
+      "deps": [],
+      "note": "H2's release condition (R42). Kill fake-hou; hou.Parm.set exists but a stub shadows it."
+    },
+    {
+      "id": "H3a",
+      "name": "cancel-probe",
+      "state": "running",
+      "receipt": "H3a.json",
+      "branch": "repair/h3a-cancel-probe",
+      "worktree": ".claude/worktrees/h3a-cancel-probe",
+      "prompt": "harness/prompts/h3a.md",
+      "deps": [],
+      "note": "R44 split: probe half only. Read-only. Absence of symbols IS the deliverable."
+    },
+    {
+      "id": "H2",
+      "name": "requalify",
+      "state": "blocked",
+      "receipt": "H2b.json",
+      "branch": "repair/h2-requalify",
+      "worktree": ".claude/worktrees/h2-requalify",
+      "prompt": "harness/prompts/h2.md",
+      "deps": ["RES"],
+      "note": "R42/R43: unblocks when residency is gone. Scope includes the 17 bucket-2 decorations."
+    },
+    {
+      "id": "H1",
+      "name": "schemas",
+      "state": "blocked",
+      "receipt": "H1.json",
+      "branch": "repair/h1-schemas",
+      "worktree": ".claude/worktrees/h1-schemas",
+      "prompt": "harness/prompts/h1.md",
+      "deps": ["RES"],
+      "note": "R33: wire 5 schemas, zero consumers today. Must fail on set_purpose drift."
+    },
+    {
+      "id": "H3b",
+      "name": "cook-cancel",
+      "state": "held",
+      "receipt": "H3b.json",
+      "deps": ["H3a"],
+      "note": "R44: HELD by ruling. Human release required - do not auto-dispatch. The safety gap is open."
+    },
+    {
+      "id": "F1",
+      "name": "integrate",
+      "state": "blocked",
+      "receipt": "F1.json",
+      "deps": ["H1", "H2"],
+      "note": "merge, housekeep, prune worktrees"
+    }
+  ]
+}
