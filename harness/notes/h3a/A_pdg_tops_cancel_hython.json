@@ -1,0 +1,345 @@
+{
+  "schema": "h3a_probe/v1",
+  "producer": "harness/notes/h3a_probe.py",
+  "group": "A_pdg_tops_cancel",
+  "interpreter": {
+    "executable": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\bin\\hython3.13.exe",
+    "python": "3.13.10",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "thread_is_main": true,
+    "hfs": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.368",
+    "houdini_build": "22.0.368",
+    "ui_available": false,
+    "has_hou_ui": false
+  },
+  "controls_ok": true,
+  "controls": {
+    "positive_ok": true,
+    "negative_ok": true,
+    "positive": [
+      {
+        "symbol": "hou.node",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.node",
+        "evidence": "resolved; __doc__[:160]='\\n\\nhou.node\\n\\nGiven a path string, return a Node object. Return None if the path does\\nnot refer to a node.\\n\\nUSAGE\\n  node(path) -> hou.OpNode or None\\n\\nIf the path '",
+        "type": "function",
+        "signature": "(path: 'char const *') -> 'HOM_Node *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.Node.type",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.Node.type",
+        "evidence": "resolved; __doc__[:160]='\\n\\ntype(self) -> hou.NodeType\\n\\n    Return the hou.NodeType object for this node.\\n\\n    For example, all camera node instances share the same node type.\\n\\n\\n'",
+        "type": "function",
+        "signature": "(self) -> 'HOM_NodeType *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.undos.group",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.undos.group",
+        "evidence": "resolved; __doc__[:160]='\\n\\ngroup(label, editor=None) -> hou.UndosGroup\\n\\n    Returns a context manager, within which all changes to Houdini are\\n    recorded as a single action on the und'",
+        "type": "method",
+        "signature": "(label: 'char const *', editor: 'NetworkEditor' = None) -> 'HOM_UndosGroup *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      }
+    ],
+    "negative": [
+      {
+        "symbol": "hou.zzz_h3a_control_must_not_exist",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'zzz_h3a_control_must_not_exist' not in dir(hou) (853 names); nearest existing: none within cutoff 0.5",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": []
+      },
+      {
+        "symbol": "hou.pdg",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'pdg' not in dir(hou) (853 names); nearest existing: ['pwd', 'Edge']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "pwd",
+          "Edge"
+        ]
+      },
+      {
+        "symbol": "hou.secure",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'secure' not in dir(hou) (853 names); nearest existing: ['userName', 'setFrame', 'shaderType', 'encode', 'decode']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "userName",
+          "setFrame",
+          "shaderType",
+          "encode",
+          "decode"
+        ]
+      },
+      {
+        "symbol": "hou.lopNetworks",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'lopNetworks' not in dir(hou) (853 names); nearest existing: ['LopNetwork', 'OpNetworkDot', 'OpNetworkBox', 'NetworkDot', 'NetworkBox']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "LopNetwork",
+          "OpNetworkDot",
+          "OpNetworkBox",
+          "NetworkDot",
+          "NetworkBox"
+        ]
+      },
+      {
+        "symbol": "hou.updateGraphTick",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'updateGraphTick' not in dir(hou) (853 names); nearest existing: ['patternMatch', 'ChannelGraph']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "patternMatch",
+          "ChannelGraph"
+        ]
+      }
+    ],
+    "failure_condition": "positive_ok is False if any of ['hou.node', 'hou.Node.type', 'hou.undos.group'] reports != EXISTS; negative_ok is False if any of ['hou.zzz_h3a_control_must_not_exist', 'hou.pdg', 'hou.secure', 'hou.lopNetworks', 'hou.updateGraphTick'] reports != ABSENT. controls_ok False => the whole run is UNINTERPRETABLE."
+  },
+  "counts": {
+    "total": 20,
+    "EXISTS": 15,
+    "ABSENT": 5,
+    "UNVERIFIABLE": 0
+  },
+  "results": [
+    {
+      "symbol": "pdg",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg",
+      "evidence": "resolved; __doc__[:160]='\\nPython bindings for the PDG library.\\n'",
+      "type": "module",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.getPDGGraphContext",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'getPDGGraphContext' not in dir(hou.Node) (146 names); nearest existing: none within cutoff 0.5",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": []
+    },
+    {
+      "symbol": "pdg.GraphContext",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.GraphContext",
+      "evidence": "resolved; __doc__[:160]='Python binding for PDG Graph Context. Can be constructed in\\nPython to create a new pdg.Graph'",
+      "type": "pybind11_type",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.GraphContext.cancelCook",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.GraphContext.cancelCook",
+      "evidence": "resolved; __doc__[:160]='cancelCook(self: _pdg.GraphContext) -> None\\n\\nCancels cooking\\n'",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.GraphContext.cook",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.GraphContext.cook",
+      "evidence": "resolved; __doc__[:160]='cook(*args, **kwargs)\\nOverloaded function.\\n\\n1. cook(self: _pdg.GraphContext, arg0: _pdg.CookOptions) -> bool\\n\\nCooks the graph using the specified cook options\\n\\n'",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.GraphContext.cookComplete",
+      "verdict": "ABSENT",
+      "resolved_through": "pdg.GraphContext",
+      "evidence": "'cookComplete' not in dir(pdg.GraphContext) (100 names); nearest existing: ['cookSet', 'cookItems', 'cookOptions', 'cook']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 100,
+      "near_misses": [
+        "cookSet",
+        "cookItems",
+        "cookOptions",
+        "cook"
+      ]
+    },
+    {
+      "symbol": "pdg.GraphContext.isCooking",
+      "verdict": "ABSENT",
+      "resolved_through": "pdg.GraphContext",
+      "evidence": "'isCooking' not in dir(pdg.GraphContext) (100 names); nearest existing: ['cooking', 'pauseCook', 'cookOptions']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 100,
+      "near_misses": [
+        "cooking",
+        "pauseCook",
+        "cookOptions"
+      ]
+    },
+    {
+      "symbol": "pdg.GraphContext.cancel",
+      "verdict": "ABSENT",
+      "resolved_through": "pdg.GraphContext",
+      "evidence": "'cancel' not in dir(pdg.GraphContext) (100 names); nearest existing: ['canceling', 'cancelCook']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 100,
+      "near_misses": [
+        "canceling",
+        "cancelCook"
+      ]
+    },
+    {
+      "symbol": "pdg.GraphContext.addEventHandler",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.GraphContext.addEventHandler",
+      "evidence": "resolved; __doc__[:160]='addEventHandler(*args, **kwargs)\\nOverloaded function.\\n\\n1. addEventHandler(self: _pdg.EventEmitter, handler: object, pass_handler: bool = False) -> PYPDG_EventHa'",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.GraphContext.removeEventHandler",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.GraphContext.removeEventHandler",
+      "evidence": "resolved; __doc__[:160]='removeEventHandler(self: _pdg.EventEmitter, arg0: PYPDG_EventHandler) -> None\\n\\nRemoves an event handler from the node\\n'",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.EventType.CookComplete",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.EventType.CookComplete",
+      "evidence": "resolved; __doc__[:160]='PDG event type\\n\\nMembers:\\n\\n  Null\\n\\n  WorkItemAdd\\n\\n  WorkItemAddList\\n\\n  WorkItemRemove\\n\\n  WorkItemRemoveList\\n\\n  WorkItemStateChange\\n\\n  WorkItemCookPercentUpdate\\n\\n'",
+      "type": "EventType",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.EventType.CookError",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.EventType.CookError",
+      "evidence": "resolved; __doc__[:160]='PDG event type\\n\\nMembers:\\n\\n  Null\\n\\n  WorkItemAdd\\n\\n  WorkItemAddList\\n\\n  WorkItemRemove\\n\\n  WorkItemRemoveList\\n\\n  WorkItemStateChange\\n\\n  WorkItemCookPercentUpdate\\n\\n'",
+      "type": "EventType",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.getPDGNode",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'getPDGNode' not in dir(hou.Node) (146 names); nearest existing: ['createNode']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": [
+        "createNode"
+      ]
+    },
+    {
+      "symbol": "pdg.Node.dirty",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.Node.dirty",
+      "evidence": "resolved; __doc__[:160]=\"dirty(self: _pdg.Node, arg0: bool) -> None\\n\\nDeletes the node's workitems\\n\"",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.TopNode",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.TopNode",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.TopNode\\n\\nRepresents a task node.\\n\\n\\n'",
+      "type": "type",
+      "signature": "(*args, **kwargs)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.TopNode.dirtyAllTasks",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.TopNode.dirtyAllTasks",
+      "evidence": "resolved; __doc__[:160]='\\n\\ndirtyAllTasks(self, remove_outputs)\\n\\n    This method is deprecated in favor of hou.TopNode.dirtyAllWorkItems.\\n\\n\\n'",
+      "type": "function",
+      "signature": "(self, remove_outputs: 'bool') -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.TopNode.cookWorkItems",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.TopNode.cookWorkItems",
+      "evidence": "resolved; __doc__[:160]='\\n\\ncookWorkItems(self, block=False, generate_only=False, tops_only=False,\\nsave_prompt=False, nodes=[])\\n\\n    Generates and cook work items in the specified TOP no'",
+      "type": "function",
+      "signature": "(self, *args, **kwargs) -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.Scheduler",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.Scheduler",
+      "evidence": "resolved; __doc__[:160]='Python binding for schedulers created in Python'",
+      "type": "pybind11_type",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.WorkItem",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.WorkItem",
+      "evidence": "resolved; __doc__[:160]='Python bindings for PDG work item base class.'",
+      "type": "pybind11_type",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.WorkItem.cancel",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.WorkItem.cancel",
+      "evidence": "resolved; __doc__[:160]='cancel(self: _pdg.WorkItem) -> None\\n\\nCancels the work item, if it is cooking\\n'",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    }
+  ]
+}

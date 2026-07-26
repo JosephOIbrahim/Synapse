@@ -1,0 +1,102 @@
+{
+  "symbol": "hdefereval.executeInMainThread",
+  "probed_build_bridge": "22.0.368",
+  "probed_build_hython": "22.0.368",
+  "build_mismatch": false,
+  "bridge_endpoint": "ws://localhost:9999/synapse (execute_python, sequential single-line probes)",
+  "hython_interpreter": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\bin\\hython3.13.exe",
+  "hython_outcome": "FAIL: ImportError('hdefereval is only available in a graphical Houdini')",
+  "hython_controls": {
+    "POS_hasattr_hou_node": true,
+    "NEG_hasattr_hou_zzz_indep_control_must_not_exist": false,
+    "NEG_hasattr_hou_lopNetworks": false
+  },
+  "hython_controls_ok": true,
+  "bridge_transcript": [
+    {
+      "label": "BUILD_1",
+      "code": "result = hou.applicationVersionString()",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"22.0.368\"}, \"error\": null, \"id\": \"assayer-BUILD_1-1\", \"protocol_version\": \"4.0.0\", \"sequence\": 1, \"success\": true, \"timestamp\": 1785082041.715082}"
+    },
+    {
+      "label": "BUILD_2",
+      "code": "result = \"appVersion=\" + repr(hou.applicationVersion())",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"appVersion=(22, 0, 368)\"}, \"error\": null, \"id\": \"assayer-BUILD_2-2\", \"protocol_version\": \"4.0.0\", \"sequence\": 2, \"success\": true, \"timestamp\": 1785082041.7181654}"
+    },
+    {
+      "label": "POS_CTRL",
+      "code": "result = \"POS hasattr(hou,node)=\" + str(hasattr(hou, \"node\"))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"POS hasattr(hou,node)=True\"}, \"error\": null, \"id\": \"assayer-POS_CTRL-3\", \"protocol_version\": \"4.0.0\", \"sequence\": 3, \"success\": true, \"timestamp\": 1785082041.721417}"
+    },
+    {
+      "label": "NEG_CTRL1",
+      "code": "result = \"NEG hasattr(hou,zzz_indep_control_must_not_exist)=\" + str(hasattr(hou, \"zzz_indep_control_must_not_exist\"))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"NEG hasattr(hou,zzz_indep_control_must_not_exist)=False\"}, \"error\": null, \"id\": \"assayer-NEG_CTRL1-4\", \"protocol_version\": \"4.0.0\", \"sequence\": 4, \"success\": true, \"timestamp\": 1785082041.7234943}"
+    },
+    {
+      "label": "NEG_CTRL2",
+      "code": "result = \"NEG hasattr(hou,lopNetworks)=\" + str(hasattr(hou, \"lopNetworks\"))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"NEG hasattr(hou,lopNetworks)=False\"}, \"error\": null, \"id\": \"assayer-NEG_CTRL2-5\", \"protocol_version\": \"4.0.0\", \"sequence\": 5, \"success\": true, \"timestamp\": 1785082041.726866}"
+    },
+    {
+      "label": "CTRL_DIR",
+      "code": "result = \"dir-crosscheck node=%s zzz=%s lopNetworks=%s\" % (\"node\" in dir(hou), \"zzz_indep_control_must_not_exist\" in dir(hou), \"lopNetworks\" in dir(hou))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"dir-crosscheck node=True zzz=False lopNetworks=False\"}, \"error\": null, \"id\": \"assayer-CTRL_DIR-6\", \"protocol_version\": \"4.0.0\", \"sequence\": 6, \"success\": true, \"timestamp\": 1785082041.7299922}"
+    },
+    {
+      "label": "IMPORT",
+      "code": "import hdefereval; result = \"hdefereval IMPORT_OK file=\" + str(getattr(hdefereval, \"__file__\", None))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"hdefereval IMPORT_OK file=C:\\\\PROGRA~1/SIDEEF~1/HOUDIN~1.368/houdini/python3.13libs\\\\hdefereval.py\"}, \"error\": null, \"id\": \"assayer-IMPORT-7\", \"protocol_version\": \"4.0.0\", \"sequence\": 7, \"success\": true, \"timestamp\": 1785082041.7333524}"
+    },
+    {
+      "label": "DIR_FULL",
+      "code": "import hdefereval; result = \"DIR=\" + repr(dir(hdefereval))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"DIR=['__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__', '_active_callback', '_condition', '_last_exc_info', '_last_result', '_processDeferred', '_queue', '_queueDeferred', '_queue_add_pending', '_run_main_thread_worker_thread_code', 'doWorkInBackgroundThread', 'do_work_in_background_thread', 'executeDeferred', 'executeDeferredAfterWaiting', 'executeInMainThreadWithResult', 'execute_deferred', 'execute_deferred_after_waiting', 'execute_in_main_thread_with_result', 'functools', 'hou', 'inSeparateThread', 'in_separate_thread', 'next', 'standard_library', 'sys', 'threading', 'traceback']\"}, \"error\": null, \"id\": \"assayer-DIR_FULL-8\", \"protocol_version\": \"4.0.0\", \"sequence\": 8, \"success\": true, \"timestamp\": 1785082041.7363946}"
+    },
+    {
+      "label": "DIR_LEN",
+      "code": "import hdefereval; result = \"DIR_LEN=\" + str(len(dir(hdefereval)))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"DIR_LEN=34\"}, \"error\": null, \"id\": \"assayer-DIR_LEN-9\", \"protocol_version\": \"4.0.0\", \"sequence\": 9, \"success\": true, \"timestamp\": 1785082041.7388496}"
+    },
+    {
+      "label": "T1_executeDeferred",
+      "code": "import hdefereval; result = \"executeDeferred hasattr=%s in_dir=%s\" % (hasattr(hdefereval,\"executeDeferred\"), \"executeDeferred\" in dir(hdefereval))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"executeDeferred hasattr=True in_dir=True\"}, \"error\": null, \"id\": \"assayer-T1_executeDeferred-10\", \"protocol_version\": \"4.0.0\", \"sequence\": 10, \"success\": true, \"timestamp\": 1785082041.742692}"
+    },
+    {
+      "label": "T2_executeInMainThreadWithResult",
+      "code": "import hdefereval; result = \"executeInMainThreadWithResult hasattr=%s in_dir=%s\" % (hasattr(hdefereval,\"executeInMainThreadWithResult\"), \"executeInMainThreadWithResult\" in dir(hdefereval))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"executeInMainThreadWithResult hasattr=True in_dir=True\"}, \"error\": null, \"id\": \"assayer-T2_executeInMainThreadWithResult-11\", \"protocol_version\": \"4.0.0\", \"sequence\": 11, \"success\": true, \"timestamp\": 1785082041.7452977}"
+    },
+    {
+      "label": "T3_executeInMainThread",
+      "code": "import hdefereval; result = \"executeInMainThread hasattr=%s in_dir=%s\" % (hasattr(hdefereval,\"executeInMainThread\"), \"executeInMainThread\" in dir(hdefereval))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"executeInMainThread hasattr=False in_dir=False\"}, \"error\": null, \"id\": \"assayer-T3_executeInMainThread-12\", \"protocol_version\": \"4.0.0\", \"sequence\": 12, \"success\": true, \"timestamp\": 1785082041.7485259}"
+    },
+    {
+      "label": "T4_executeDeferredAfterWaiting",
+      "code": "import hdefereval; result = \"executeDeferredAfterWaiting hasattr=%s in_dir=%s\" % (hasattr(hdefereval,\"executeDeferredAfterWaiting\"), \"executeDeferredAfterWaiting\" in dir(hdefereval))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"executeDeferredAfterWaiting hasattr=True in_dir=True\"}, \"error\": null, \"id\": \"assayer-T4_executeDeferredAfterWaiting-13\", \"protocol_version\": \"4.0.0\", \"sequence\": 13, \"success\": true, \"timestamp\": 1785082041.751836}"
+    },
+    {
+      "label": "T3_REPR",
+      "code": "import hdefereval; result = \"executeInMainThread repr=\" + repr(getattr(hdefereval, \"executeInMainThread\", \"<<NO_SUCH_ATTR>>\"))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"executeInMainThread repr='<<NO_SUCH_ATTR>>'\"}, \"error\": null, \"id\": \"assayer-T3_REPR-14\", \"protocol_version\": \"4.0.0\", \"sequence\": 14, \"success\": true, \"timestamp\": 1785082041.754641}"
+    },
+    {
+      "label": "T2_REPR",
+      "code": "import hdefereval; result = \"executeInMainThreadWithResult repr=\" + repr(getattr(hdefereval, \"executeInMainThreadWithResult\", \"<<NO_SUCH_ATTR>>\"))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"executeInMainThreadWithResult repr=<function executeInMainThreadWithResult at 0x000000017D5F94E0>\"}, \"error\": null, \"id\": \"assayer-T2_REPR-15\", \"protocol_version\": \"4.0.0\", \"sequence\": 15, \"success\": true, \"timestamp\": 1785082041.7580657}"
+    },
+    {
+      "label": "NEG_MOD",
+      "code": "import hdefereval; result = \"NEG hasattr(hdefereval,zzz_indep_control_must_not_exist)=\" + str(hasattr(hdefereval, \"zzz_indep_control_must_not_exist\"))",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"NEG hasattr(hdefereval,zzz_indep_control_must_not_exist)=False\"}, \"error\": null, \"id\": \"assayer-NEG_MOD-16\", \"protocol_version\": \"4.0.0\", \"sequence\": 16, \"success\": true, \"timestamp\": 1785082041.7610738}"
+    },
+    {
+      "label": "T3_GETATTR",
+      "code": "import hdefereval\ntry:\n    hdefereval.executeInMainThread\n    result = \"GETATTR_OK\"\nexcept AttributeError as e:\n    result = \"GETATTR_AttributeError: \" + str(e)",
+      "raw_response": "{\"data\": {\"executed\": true, \"result\": \"GETATTR_AttributeError: module 'hdefereval' has no attribute 'executeInMainThread'\"}, \"error\": null, \"id\": \"assayer-T3_GETATTR-17\", \"protocol_version\": \"4.0.0\", \"sequence\": 17, \"success\": true, \"timestamp\": 1785082041.7636147}"
+    }
+  ]
+}

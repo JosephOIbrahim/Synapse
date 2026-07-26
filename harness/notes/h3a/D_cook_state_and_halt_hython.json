@@ -1,0 +1,268 @@
+{
+  "schema": "h3a_probe/v1",
+  "producer": "harness/notes/h3a_probe.py",
+  "group": "D_cook_state_and_halt",
+  "interpreter": {
+    "executable": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\bin\\hython3.13.exe",
+    "python": "3.13.10",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "thread_is_main": true,
+    "hfs": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.368",
+    "houdini_build": "22.0.368",
+    "ui_available": false,
+    "has_hou_ui": false
+  },
+  "controls_ok": true,
+  "controls": {
+    "positive_ok": true,
+    "negative_ok": true,
+    "positive": [
+      {
+        "symbol": "hou.node",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.node",
+        "evidence": "resolved; __doc__[:160]='\\n\\nhou.node\\n\\nGiven a path string, return a Node object. Return None if the path does\\nnot refer to a node.\\n\\nUSAGE\\n  node(path) -> hou.OpNode or None\\n\\nIf the path '",
+        "type": "function",
+        "signature": "(path: 'char const *') -> 'HOM_Node *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.Node.type",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.Node.type",
+        "evidence": "resolved; __doc__[:160]='\\n\\ntype(self) -> hou.NodeType\\n\\n    Return the hou.NodeType object for this node.\\n\\n    For example, all camera node instances share the same node type.\\n\\n\\n'",
+        "type": "function",
+        "signature": "(self) -> 'HOM_NodeType *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.undos.group",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.undos.group",
+        "evidence": "resolved; __doc__[:160]='\\n\\ngroup(label, editor=None) -> hou.UndosGroup\\n\\n    Returns a context manager, within which all changes to Houdini are\\n    recorded as a single action on the und'",
+        "type": "method",
+        "signature": "(label: 'char const *', editor: 'NetworkEditor' = None) -> 'HOM_UndosGroup *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      }
+    ],
+    "negative": [
+      {
+        "symbol": "hou.zzz_h3a_control_must_not_exist",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'zzz_h3a_control_must_not_exist' not in dir(hou) (853 names); nearest existing: none within cutoff 0.5",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": []
+      },
+      {
+        "symbol": "hou.pdg",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'pdg' not in dir(hou) (853 names); nearest existing: ['pwd', 'Edge']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "pwd",
+          "Edge"
+        ]
+      },
+      {
+        "symbol": "hou.secure",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'secure' not in dir(hou) (853 names); nearest existing: ['userName', 'setFrame', 'shaderType', 'encode', 'decode']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "userName",
+          "setFrame",
+          "shaderType",
+          "encode",
+          "decode"
+        ]
+      },
+      {
+        "symbol": "hou.lopNetworks",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'lopNetworks' not in dir(hou) (853 names); nearest existing: ['LopNetwork', 'OpNetworkDot', 'OpNetworkBox', 'NetworkDot', 'NetworkBox']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "LopNetwork",
+          "OpNetworkDot",
+          "OpNetworkBox",
+          "NetworkDot",
+          "NetworkBox"
+        ]
+      },
+      {
+        "symbol": "hou.updateGraphTick",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'updateGraphTick' not in dir(hou) (853 names); nearest existing: ['patternMatch', 'ChannelGraph']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "patternMatch",
+          "ChannelGraph"
+        ]
+      }
+    ],
+    "failure_condition": "positive_ok is False if any of ['hou.node', 'hou.Node.type', 'hou.undos.group'] reports != EXISTS; negative_ok is False if any of ['hou.zzz_h3a_control_must_not_exist', 'hou.pdg', 'hou.secure', 'hou.lopNetworks', 'hou.updateGraphTick'] reports != ABSENT. controls_ok False => the whole run is UNINTERPRETABLE."
+  },
+  "counts": {
+    "total": 13,
+    "EXISTS": 9,
+    "ABSENT": 4,
+    "UNVERIFIABLE": 0
+  },
+  "results": [
+    {
+      "symbol": "hou.node",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.node",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.node\\n\\nGiven a path string, return a Node object. Return None if the path does\\nnot refer to a node.\\n\\nUSAGE\\n  node(path) -> hou.OpNode or None\\n\\nIf the path '",
+      "type": "function",
+      "signature": "(path: 'char const *') -> 'HOM_Node *'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.allSubChildren",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.Node.allSubChildren",
+      "evidence": "resolved; __doc__[:160]='\\n\\nallSubChildren(self, top_down=True, recurse_in_locked_nodes=True,\\nsync_delayed_definition=False) -> tuple of hou.Node\\n\\n    Recursively return all sub children'",
+      "type": "function",
+      "signature": "(self, top_down: 'bool' = True, recurse_in_locked_nodes: 'bool' = True, sync_delayed_definition: 'bool' = False) -> 'std::vector< HOM_ElemPtr< HOM_Node >,std::allocator< HOM_ElemPtr< HOM_Node > > >'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.children",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.Node.children",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\nchildren(self) -> tuple of hou.Node\\n\\n    Return a list of nodes that are children of this node. Using the\\n    file system analogy, a node's children are like \"",
+      "type": "function",
+      "signature": "(self) -> 'std::vector< HOM_ElemPtr< HOM_Node >,std::allocator< HOM_ElemPtr< HOM_Node > > >'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.type",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.Node.type",
+      "evidence": "resolved; __doc__[:160]='\\n\\ntype(self) -> hou.NodeType\\n\\n    Return the hou.NodeType object for this node.\\n\\n    For example, all camera node instances share the same node type.\\n\\n\\n'",
+      "type": "function",
+      "signature": "(self) -> 'HOM_NodeType *'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.NodeType.category",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.NodeType.category",
+      "evidence": "resolved; __doc__[:160]='\\n\\ncategory(self) -> hou.NodeTypeCategory\\n\\n    Return the node type category for this node type. For example, for\\n    the geometry object, the result is the obje'",
+      "type": "function",
+      "signature": "(self) -> 'HOM_NodeTypeCategory &'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.NodeTypeCategory.name",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.NodeTypeCategory.name",
+      "evidence": "resolved; __doc__[:160]='\\n\\nname(self) -> str\\n\\n    Returns the name of this node type category.\\n\\n\\n'",
+      "type": "function",
+      "signature": "(self) -> 'std::string'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.cook",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'cook' not in dir(hou.Node) (146 names); nearest existing: ['color']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": [
+        "color"
+      ]
+    },
+    {
+      "symbol": "hou.Node.needsToCook",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'needsToCook' not in dir(hou.Node) (146 names); nearest existing: none within cutoff 0.5",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": []
+    },
+    {
+      "symbol": "hou.Node.cookCount",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'cookCount' not in dir(hou.Node) (146 names); nearest existing: ['comment']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": [
+        "comment"
+      ]
+    },
+    {
+      "symbol": "hou.Node.isTimeDependent",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'isTimeDependent' not in dir(hou.Node) (146 names); nearest existing: ['isHidden', 'appendComment']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": [
+        "isHidden",
+        "appendComment"
+      ]
+    },
+    {
+      "symbol": "hou.undos.group",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.undos.group",
+      "evidence": "resolved; __doc__[:160]='\\n\\ngroup(label, editor=None) -> hou.UndosGroup\\n\\n    Returns a context manager, within which all changes to Houdini are\\n    recorded as a single action on the und'",
+      "type": "method",
+      "signature": "(label: 'char const *', editor: 'NetworkEditor' = None) -> 'HOM_UndosGroup *'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.hipFile.path",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.hipFile.path",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\npath() -> str\\n\\n    Return the absolute file path of the current scene file. Remember\\n    that a file may not exist at this path if the current scene hasn't\\n  \"",
+      "type": "method",
+      "signature": "() -> 'std::string'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.applicationVersionString",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.applicationVersionString",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\nhou.applicationVersionString\\n\\nReturns the application's version number as a string.\\n\\nUSAGE\\n  applicationVersionString() -> string\\n\\nThe format of the string is\"",
+      "type": "builtin_function_or_method",
+      "signature": "()",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    }
+  ]
+}

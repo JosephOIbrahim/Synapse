@@ -1,0 +1,889 @@
+{
+  "schema": "h3a_probe/v1",
+  "producer": "harness/notes/h3a_probe.py",
+  "group": "ALL(live-gui)",
+  "interpreter": {
+    "executable": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\bin\\houdini.exe",
+    "python": "3.13.10",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "thread_is_main": true,
+    "hfs": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.368",
+    "houdini_build": "22.0.368",
+    "ui_available": true,
+    "has_hou_ui": true
+  },
+  "controls_ok": true,
+  "controls": {
+    "positive_ok": true,
+    "negative_ok": true,
+    "positive": [
+      {
+        "symbol": "hou.node",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.node",
+        "evidence": "resolved; __doc__[:160]='\\n\\nhou.node\\n\\nGiven a path string, return a Node object. Return None if the path does\\nnot refer to a node.\\n\\nUSAGE\\n  node(path) -> hou.OpNode or None\\n\\nIf the path '",
+        "type": "function",
+        "signature": "(path: 'char const *') -> 'HOM_Node *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.Node.type",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.Node.type",
+        "evidence": "resolved; __doc__[:160]='\\n\\ntype(self) -> hou.NodeType\\n\\n    Return the hou.NodeType object for this node.\\n\\n    For example, all camera node instances share the same node type.\\n\\n\\n'",
+        "type": "function",
+        "signature": "(self) -> 'HOM_NodeType *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.undos.group",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.undos.group",
+        "evidence": "resolved; __doc__[:160]='\\n\\ngroup(label, editor=None) -> hou.UndosGroup\\n\\n    Returns a context manager, within which all changes to Houdini are\\n    recorded as a single action on the und'",
+        "type": "method",
+        "signature": "(label: 'char const *', editor: 'NetworkEditor' = None) -> 'HOM_UndosGroup *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      }
+    ],
+    "negative": [
+      {
+        "symbol": "hou.zzz_h3a_control_must_not_exist",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'zzz_h3a_control_must_not_exist' not in dir(hou) (860 names); nearest existing: none within cutoff 0.5",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 860,
+        "near_misses": []
+      },
+      {
+        "symbol": "hou.pdg",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'pdg' not in dir(hou) (860 names); nearest existing: ['pwd', 'Edge']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 860,
+        "near_misses": [
+          "pwd",
+          "Edge"
+        ]
+      },
+      {
+        "symbol": "hou.secure",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'secure' not in dir(hou) (860 names); nearest existing: ['userName', 'setFrame', 'shaderType', 'encode', 'decode']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 860,
+        "near_misses": [
+          "userName",
+          "setFrame",
+          "shaderType",
+          "encode",
+          "decode"
+        ]
+      },
+      {
+        "symbol": "hou.lopNetworks",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'lopNetworks' not in dir(hou) (860 names); nearest existing: ['LopNetwork', 'OpNetworkDot', 'OpNetworkBox', 'NetworkDot', 'NetworkBox']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 860,
+        "near_misses": [
+          "LopNetwork",
+          "OpNetworkDot",
+          "OpNetworkBox",
+          "NetworkDot",
+          "NetworkBox"
+        ]
+      },
+      {
+        "symbol": "hou.updateGraphTick",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'updateGraphTick' not in dir(hou) (860 names); nearest existing: ['patternMatch', 'ChannelGraph']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 860,
+        "near_misses": [
+          "patternMatch",
+          "ChannelGraph"
+        ]
+      }
+    ],
+    "failure_condition": "positive_ok is False if any of ['hou.node', 'hou.Node.type', 'hou.undos.group'] reports != EXISTS; negative_ok is False if any of ['hou.zzz_h3a_control_must_not_exist', 'hou.pdg', 'hou.secure', 'hou.lopNetworks', 'hou.updateGraphTick'] reports != ABSENT. controls_ok False => the whole run is UNINTERPRETABLE."
+  },
+  "counts": {
+    "total": 68,
+    "EXISTS": 47,
+    "ABSENT": 21,
+    "UNVERIFIABLE": 0
+  },
+  "results": [
+    {
+      "symbol": "pdg",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg",
+      "evidence": "resolved; __doc__[:160]='\\nPython bindings for the PDG library.\\n'",
+      "type": "module",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.getPDGGraphContext",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'getPDGGraphContext' not in dir(hou.Node) (146 names); nearest existing: none within cutoff 0.5",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": []
+    },
+    {
+      "symbol": "pdg.GraphContext",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.GraphContext",
+      "evidence": "resolved; __doc__[:160]='Python binding for PDG Graph Context. Can be constructed in\\nPython to create a new pdg.Graph'",
+      "type": "pybind11_type",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.GraphContext.cancelCook",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.GraphContext.cancelCook",
+      "evidence": "resolved; __doc__[:160]='cancelCook(self: _pdg.GraphContext) -> None\\n\\nCancels cooking\\n'",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.GraphContext.cook",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.GraphContext.cook",
+      "evidence": "resolved; __doc__[:160]='cook(*args, **kwargs)\\nOverloaded function.\\n\\n1. cook(self: _pdg.GraphContext, arg0: _pdg.CookOptions) -> bool\\n\\nCooks the graph using the specified cook options\\n\\n'",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.GraphContext.cookComplete",
+      "verdict": "ABSENT",
+      "resolved_through": "pdg.GraphContext",
+      "evidence": "'cookComplete' not in dir(pdg.GraphContext) (100 names); nearest existing: ['cookSet', 'cookItems', 'cookOptions', 'cook']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 100,
+      "near_misses": [
+        "cookSet",
+        "cookItems",
+        "cookOptions",
+        "cook"
+      ]
+    },
+    {
+      "symbol": "pdg.GraphContext.isCooking",
+      "verdict": "ABSENT",
+      "resolved_through": "pdg.GraphContext",
+      "evidence": "'isCooking' not in dir(pdg.GraphContext) (100 names); nearest existing: ['cooking', 'pauseCook', 'cookOptions']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 100,
+      "near_misses": [
+        "cooking",
+        "pauseCook",
+        "cookOptions"
+      ]
+    },
+    {
+      "symbol": "pdg.GraphContext.cancel",
+      "verdict": "ABSENT",
+      "resolved_through": "pdg.GraphContext",
+      "evidence": "'cancel' not in dir(pdg.GraphContext) (100 names); nearest existing: ['canceling', 'cancelCook']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 100,
+      "near_misses": [
+        "canceling",
+        "cancelCook"
+      ]
+    },
+    {
+      "symbol": "pdg.GraphContext.addEventHandler",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.GraphContext.addEventHandler",
+      "evidence": "resolved; __doc__[:160]='addEventHandler(*args, **kwargs)\\nOverloaded function.\\n\\n1. addEventHandler(self: _pdg.EventEmitter, handler: object, pass_handler: bool = False) -> PYPDG_EventHa'",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.GraphContext.removeEventHandler",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.GraphContext.removeEventHandler",
+      "evidence": "resolved; __doc__[:160]='removeEventHandler(self: _pdg.EventEmitter, arg0: PYPDG_EventHandler) -> None\\n\\nRemoves an event handler from the node\\n'",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.EventType.CookComplete",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.EventType.CookComplete",
+      "evidence": "resolved; __doc__[:160]='PDG event type\\n\\nMembers:\\n\\n  Null\\n\\n  WorkItemAdd\\n\\n  WorkItemAddList\\n\\n  WorkItemRemove\\n\\n  WorkItemRemoveList\\n\\n  WorkItemStateChange\\n\\n  WorkItemCookPercentUpdate\\n\\n'",
+      "type": "EventType",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.EventType.CookError",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.EventType.CookError",
+      "evidence": "resolved; __doc__[:160]='PDG event type\\n\\nMembers:\\n\\n  Null\\n\\n  WorkItemAdd\\n\\n  WorkItemAddList\\n\\n  WorkItemRemove\\n\\n  WorkItemRemoveList\\n\\n  WorkItemStateChange\\n\\n  WorkItemCookPercentUpdate\\n\\n'",
+      "type": "EventType",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.getPDGNode",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'getPDGNode' not in dir(hou.Node) (146 names); nearest existing: ['createNode']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": [
+        "createNode"
+      ]
+    },
+    {
+      "symbol": "pdg.Node.dirty",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.Node.dirty",
+      "evidence": "resolved; __doc__[:160]=\"dirty(self: _pdg.Node, arg0: bool) -> None\\n\\nDeletes the node's workitems\\n\"",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.TopNode",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.TopNode",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.TopNode\\n\\nRepresents a task node.\\n\\n\\n'",
+      "type": "type",
+      "signature": "(*args, **kwargs)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.TopNode.dirtyAllTasks",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.TopNode.dirtyAllTasks",
+      "evidence": "resolved; __doc__[:160]='\\n\\ndirtyAllTasks(self, remove_outputs)\\n\\n    This method is deprecated in favor of hou.TopNode.dirtyAllWorkItems.\\n\\n\\n'",
+      "type": "function",
+      "signature": "(self, remove_outputs: 'bool') -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.TopNode.cookWorkItems",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.TopNode.cookWorkItems",
+      "evidence": "resolved; __doc__[:160]='\\n\\ncookWorkItems(self, block=False, generate_only=False, tops_only=False,\\nsave_prompt=False, nodes=[])\\n\\n    Generates and cook work items in the specified TOP no'",
+      "type": "function",
+      "signature": "(self, *args, **kwargs) -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.Scheduler",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.Scheduler",
+      "evidence": "resolved; __doc__[:160]='Python binding for schedulers created in Python'",
+      "type": "pybind11_type",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.WorkItem",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.WorkItem",
+      "evidence": "resolved; __doc__[:160]='Python bindings for PDG work item base class.'",
+      "type": "pybind11_type",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "pdg.WorkItem.cancel",
+      "verdict": "EXISTS",
+      "resolved_through": "pdg.WorkItem.cancel",
+      "evidence": "resolved; __doc__[:160]='cancel(self: _pdg.WorkItem) -> None\\n\\nCancels the work item, if it is cooking\\n'",
+      "type": "instancemethod",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.RopNode",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.RopNode",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.RopNode\\n\\nRepresents a render output node.\\n\\nRELATED\\n\\n  * render\\n\\n\\n'",
+      "type": "type",
+      "signature": "(*args, **kwargs)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.RopNode.render",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.RopNode.render",
+      "evidence": "resolved; __doc__[:160]='\\n\\nrender(self, frame_range=(), res=(), output_file=None,\\noutput_format=None, to_flipbook=False, quality=2, ignore_inputs=False,\\nmethod=RopByRop, ignore_bypass_f'",
+      "type": "function",
+      "signature": "(self, *args, **kwargs) -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.RopNode.interrupt",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'interrupt' not in dir(hou.RopNode) (318 names); nearest existing: ['input', 'nodeGroup', 'inputs', 'nodeGroups', 'insertInput']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "input",
+        "nodeGroup",
+        "inputs",
+        "nodeGroups",
+        "insertInput"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.abortRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'abortRender' not in dir(hou.RopNode) (318 names); nearest existing: ['render', 'parmsInFolder']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "render",
+        "parmsInFolder"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.cancelRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'cancelRender' not in dir(hou.RopNode) (318 names); nearest existing: ['render', 'cachedUserData']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "render",
+        "cachedUserData"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.killRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'killRender' not in dir(hou.RopNode) (318 names); nearest existing: ['render', 'isFlagReadable', 'fileReferences']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "render",
+        "isFlagReadable",
+        "fileReferences"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.stopRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'stopRender' not in dir(hou.RopNode) (318 names); nearest existing: ['render', 'setGenericFlag', 'setComment', 'isCompiled', 'dependents']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "render",
+        "setGenericFlag",
+        "setComment",
+        "isCompiled",
+        "dependents"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.isRendering",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'isRendering' not in dir(hou.RopNode) (318 names); nearest existing: ['isGenericFlagSet', 'render', 'setGenericFlag', 'setParmsPending', 'isTimeDependent']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "isGenericFlagSet",
+        "render",
+        "setGenericFlag",
+        "setParmsPending",
+        "isTimeDependent"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.renderInBackground",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'renderInBackground' not in dir(hou.RopNode) (318 names); nearest existing: ['render']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "render"
+      ]
+    },
+    {
+      "symbol": "hou.interruptRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'interruptRender' not in dir(hou) (860 names); nearest existing: ['OperationInterrupted', 'InterruptableOperation', '_PointTupleGenerator', 'ContextViewer']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 860,
+      "near_misses": [
+        "OperationInterrupted",
+        "InterruptableOperation",
+        "_PointTupleGenerator",
+        "ContextViewer"
+      ]
+    },
+    {
+      "symbol": "hou.abortRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'abortRender' not in dir(hou) (860 names); nearest existing: ['orboltURLHandler', 'OrboltURLHandler', 'sortedNodes', 'renderMethod', 'RenderGallery']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 860,
+      "near_misses": [
+        "orboltURLHandler",
+        "OrboltURLHandler",
+        "sortedNodes",
+        "renderMethod",
+        "RenderGallery"
+      ]
+    },
+    {
+      "symbol": "hou.killRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'killRender' not in dir(hou) (860 names); nearest existing: ['videoEncoders', 'RenderGallery', 'linear', 'fileReferences', 'encode']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 860,
+      "near_misses": [
+        "videoEncoders",
+        "RenderGallery",
+        "linear",
+        "fileReferences",
+        "encode"
+      ]
+    },
+    {
+      "symbol": "hou.InterruptableOperation",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.InterruptableOperation",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.InterruptableOperation\\n\\nUse this class to turn any Python code block into an interruptable\\noperation.\\n\\nThis class is a context manager which allows the us'",
+      "type": "type",
+      "signature": "(operation_name: 'char const *', long_operation_name: 'char const *' = None, open_interrupt_dialog: 'bool' = False, timeout_ms: 'int' = 0)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.InterruptableOperation.updateProgress",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.InterruptableOperation.updateProgress",
+      "evidence": "resolved; __doc__[:160]='\\n\\nupdateProgress(self, percentage=-1.0)\\n\\n    Update the progress percentage of the operation. At the same time,\\n    check if the operation was interrupted by th'",
+      "type": "function",
+      "signature": "(self, percentage: 'double' = -1.0) -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.InterruptableOperation.updateLongProgress",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.InterruptableOperation.updateLongProgress",
+      "evidence": "resolved; __doc__[:160]='\\n\\nupdateLongProgress(self, percentage=-1.0, long_op_status=None)\\n\\n    Update the progress percentage and status of the long, or high-\\n    level, operation. At t'",
+      "type": "function",
+      "signature": "(self, percentage: 'double' = -1.0, long_op_status: 'char const *' = None) -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.updateProgressAndCheckForInterrupt",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.updateProgressAndCheckForInterrupt",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.updateProgressAndCheckForInterrupt\\n\\nDeprecated: Use InterruptableOperation.\\n\\nCheck if the user pressed Escape to interrupt the current operation, and\\nopti'",
+      "type": "builtin_function_or_method",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.OperationInterrupted",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.OperationInterrupted",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.OperationInterrupted\\n\\n'",
+      "type": "type",
+      "signature": "(*args)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.OperationFailed",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.OperationFailed",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\nhou.OperationFailed\\n\\nGeneric catch-all exception for various errors in Houdini that don't\\nhave their own dedicated exception classes.\\n\\nThere are many ways for\"",
+      "type": "type",
+      "signature": "(*args)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.setUpdateMode",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.setUpdateMode",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\nhou.setUpdateMode\\n\\nReturn Houdini's cook update mode (Auto Update/On Mouse Up/Manual) that\\nis displayed in the status bar.\\n\\nUSAGE\\n  updateModeSetting() -> hou\"",
+      "type": "function",
+      "signature": "(mode: 'EnumValue') -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.updateModeSetting",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.updateModeSetting",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\nhou.updateModeSetting\\n\\nReturn Houdini's cook update mode (Auto Update/On Mouse Up/Manual) that\\nis displayed in the status bar.\\n\\nUSAGE\\n  updateModeSetting() ->\"",
+      "type": "function",
+      "signature": "() -> 'HOM_EnumValue &'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.updateMode",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.updateMode",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.updateMode\\n\\nEnumeration of interface update modes.\\n\\nSee hou.updateModeSetting.\\n\\nVALUES\\n\\n\\n    AutoUpdate\\n    OnMouseUp\\n    Manual\\n\\n\\n'",
+      "type": "type",
+      "signature": "(*args, **kwargs)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval",
+      "verdict": "EXISTS",
+      "resolved_through": "hdefereval",
+      "evidence": "resolved; __doc__[:160]='This module provides functions to perform deferred evaluation of Python\\ncode.  You can call these functions from any thread, and they are executed\\nin the main t'",
+      "type": "module",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval.executeDeferred",
+      "verdict": "EXISTS",
+      "resolved_through": "hdefereval.executeDeferred",
+      "evidence": "resolved; __doc__[:160]='Run the specified Python code in the main thread and do not wait\\nfor it to finish running.\\n\\ncode: Either a string containing a Python expression, a callable obj'",
+      "type": "function",
+      "signature": "(code, *args, **kwargs)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval.executeInMainThreadWithResult",
+      "verdict": "EXISTS",
+      "resolved_through": "hdefereval.executeInMainThreadWithResult",
+      "evidence": "resolved; type=function",
+      "type": "function",
+      "signature": "(code, *args, **kwargs)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval.executeInMainThread",
+      "verdict": "ABSENT",
+      "resolved_through": "hdefereval",
+      "evidence": "'executeInMainThread' not in dir(hdefereval) (34 names); nearest existing: ['executeInMainThreadWithResult', 'execute_in_main_thread_with_result', 'executeDeferred', 'execute_deferred']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 34,
+      "near_misses": [
+        "executeInMainThreadWithResult",
+        "execute_in_main_thread_with_result",
+        "executeDeferred",
+        "execute_deferred"
+      ]
+    },
+    {
+      "symbol": "hdefereval.executeDeferredAfterWaiting",
+      "verdict": "EXISTS",
+      "resolved_through": "hdefereval.executeDeferredAfterWaiting",
+      "evidence": "resolved; __doc__[:160]='This function is like executeDeferred, except it waits for the event\\nloop callback to be triggered the given number of times before running\\nthe callback.\\n\\nUse t'",
+      "type": "function",
+      "signature": "(code, num_waits, *args, **kwargs)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.isUIAvailable",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.isUIAvailable",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.isUIAvailable\\n\\nReturn whether or not the hou.ui module is available.\\n\\nUSAGE\\n  isUIAvailable() -> bool\\n\\nThe hou.ui module is not available in the command-l'",
+      "type": "function",
+      "signature": "() -> 'bool'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.ui",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.ui\\n\\nModule containing user interface related functions.\\n\\n\\n'",
+      "type": "ui",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.addEventLoopCallback",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.ui.addEventLoopCallback",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\naddEventLoopCallback(callback)\\n\\n    Register a Python callback to be called whenever Houdini's event\\n    loop is idle. This callback is called approximately e\"",
+      "type": "method",
+      "signature": "(callback: 'InterpreterObject') -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.removeEventLoopCallback",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.ui.removeEventLoopCallback",
+      "evidence": "resolved; __doc__[:160]='\\n\\nremoveEventLoopCallback(callback)\\n\\n    Remove a Python callback that was previously registered with\\n    hou.ui.addEventLoopCallback. See hou.ui.addEventLoopCa'",
+      "type": "method",
+      "signature": "(callback: 'InterpreterObject') -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.eventLoopCallbacks",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.ui.eventLoopCallbacks",
+      "evidence": "resolved; __doc__[:160]='\\n\\neventLoopCallbacks() -> tuple of callback\\n\\n    Return a tuple of all the Python callbacks that have been registered\\n    with hou.ui.addEventLoopCallback.\\n\\n\\n'",
+      "type": "method",
+      "signature": "() -> 'std::vector< InterpreterObject,std::allocator< InterpreterObject > >'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.postEventCallback",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.ui.postEventCallback",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\npostEventCallback(callback)\\n\\n    Register a Python callback to be called next in Houdini's event\\n    loop. This will be called only once.\\n\\n\\n    callback\\n     \"",
+      "type": "method",
+      "signature": "(callback: 'InterpreterObject') -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.setStatusMessage",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.ui.setStatusMessage",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\nsetStatusMessage(message, severity=hou.severityType.Message)\\n\\n    Display a message in Houdini's status bar.\\n\\n\\n    severity\\n        A hou.severityType enum va\"",
+      "type": "method",
+      "signature": "(*args, **kwargs) -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.interruptDialog",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.ui",
+      "evidence": "'interruptDialog' not in dir(hou.ui) (214 names); nearest existing: ['findDialog', 'createDialog', 'openRenderDialog', 'openTypePropertiesDialog']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 214,
+      "near_misses": [
+        "findDialog",
+        "createDialog",
+        "openRenderDialog",
+        "openTypePropertiesDialog"
+      ]
+    },
+    {
+      "symbol": "hou.ui.curDesktop",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.ui.curDesktop",
+      "evidence": "resolved; __doc__[:160]='\\n\\ncurDesktop() -> hou.Desktop\\n\\n    Return the current desktop.\\n\\n\\n'",
+      "type": "method",
+      "signature": "() -> 'HOM_Desktop *'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.node",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.node",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.node\\n\\nGiven a path string, return a Node object. Return None if the path does\\nnot refer to a node.\\n\\nUSAGE\\n  node(path) -> hou.OpNode or None\\n\\nIf the path '",
+      "type": "function",
+      "signature": "(path: 'char const *') -> 'HOM_Node *'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.allSubChildren",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.Node.allSubChildren",
+      "evidence": "resolved; __doc__[:160]='\\n\\nallSubChildren(self, top_down=True, recurse_in_locked_nodes=True,\\nsync_delayed_definition=False) -> tuple of hou.Node\\n\\n    Recursively return all sub children'",
+      "type": "function",
+      "signature": "(self, top_down: 'bool' = True, recurse_in_locked_nodes: 'bool' = True, sync_delayed_definition: 'bool' = False) -> 'std::vector< HOM_ElemPtr< HOM_Node >,std::allocator< HOM_ElemPtr< HOM_Node > > >'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.children",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.Node.children",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\nchildren(self) -> tuple of hou.Node\\n\\n    Return a list of nodes that are children of this node. Using the\\n    file system analogy, a node's children are like \"",
+      "type": "function",
+      "signature": "(self) -> 'std::vector< HOM_ElemPtr< HOM_Node >,std::allocator< HOM_ElemPtr< HOM_Node > > >'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.type",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.Node.type",
+      "evidence": "resolved; __doc__[:160]='\\n\\ntype(self) -> hou.NodeType\\n\\n    Return the hou.NodeType object for this node.\\n\\n    For example, all camera node instances share the same node type.\\n\\n\\n'",
+      "type": "function",
+      "signature": "(self) -> 'HOM_NodeType *'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.NodeType.category",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.NodeType.category",
+      "evidence": "resolved; __doc__[:160]='\\n\\ncategory(self) -> hou.NodeTypeCategory\\n\\n    Return the node type category for this node type. For example, for\\n    the geometry object, the result is the obje'",
+      "type": "function",
+      "signature": "(self) -> 'HOM_NodeTypeCategory &'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.NodeTypeCategory.name",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.NodeTypeCategory.name",
+      "evidence": "resolved; __doc__[:160]='\\n\\nname(self) -> str\\n\\n    Returns the name of this node type category.\\n\\n\\n'",
+      "type": "function",
+      "signature": "(self) -> 'std::string'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.Node.cook",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'cook' not in dir(hou.Node) (146 names); nearest existing: ['color']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": [
+        "color"
+      ]
+    },
+    {
+      "symbol": "hou.Node.needsToCook",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'needsToCook' not in dir(hou.Node) (146 names); nearest existing: none within cutoff 0.5",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": []
+    },
+    {
+      "symbol": "hou.Node.cookCount",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'cookCount' not in dir(hou.Node) (146 names); nearest existing: ['comment']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": [
+        "comment"
+      ]
+    },
+    {
+      "symbol": "hou.Node.isTimeDependent",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.Node",
+      "evidence": "'isTimeDependent' not in dir(hou.Node) (146 names); nearest existing: ['isHidden', 'appendComment']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 146,
+      "near_misses": [
+        "isHidden",
+        "appendComment"
+      ]
+    },
+    {
+      "symbol": "hou.undos.group",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.undos.group",
+      "evidence": "resolved; __doc__[:160]='\\n\\ngroup(label, editor=None) -> hou.UndosGroup\\n\\n    Returns a context manager, within which all changes to Houdini are\\n    recorded as a single action on the und'",
+      "type": "method",
+      "signature": "(label: 'char const *', editor: 'NetworkEditor' = None) -> 'HOM_UndosGroup *'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.hipFile.path",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.hipFile.path",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\npath() -> str\\n\\n    Return the absolute file path of the current scene file. Remember\\n    that a file may not exist at this path if the current scene hasn't\\n  \"",
+      "type": "method",
+      "signature": "() -> 'std::string'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.applicationVersionString",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.applicationVersionString",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\nhou.applicationVersionString\\n\\nReturns the application's version number as a string.\\n\\nUSAGE\\n  applicationVersionString() -> string\\n\\nThe format of the string is\"",
+      "type": "builtin_function_or_method",
+      "signature": "()",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    }
+  ]
+}

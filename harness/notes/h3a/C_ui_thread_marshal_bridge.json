@@ -1,0 +1,248 @@
+{
+  "schema": "h3a_probe/v1",
+  "producer": "harness/notes/h3a/h3a_bridge_probe.py",
+  "group": "C_ui_thread_marshal",
+  "probe_path": "LIVE_BRIDGE ws://localhost:9999/synapse",
+  "interpreter": {
+    "executable": null,
+    "python": null,
+    "thread_is_main": null,
+    "houdini_build": null,
+    "ui_available": null
+  },
+  "controls_ok": false,
+  "controls": {
+    "positive_ok": false,
+    "negative_ok": false,
+    "positive": [
+      {
+        "symbol": "hou.node",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": null,
+        "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.Node.type",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": null,
+        "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.undos.group",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": null,
+        "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      }
+    ],
+    "negative": [
+      {
+        "symbol": "hou.zzz_h3a_control_must_not_exist",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": null,
+        "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.pdg",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": null,
+        "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.secure",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": null,
+        "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.lopNetworks",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": null,
+        "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.updateGraphTick",
+        "verdict": "UNVERIFIABLE",
+        "resolved_through": null,
+        "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": null,
+        "near_misses": null
+      }
+    ]
+  },
+  "counts": {
+    "UNVERIFIABLE": 14,
+    "total": 14
+  },
+  "results": [
+    {
+      "symbol": "hdefereval",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval.executeDeferred",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval.executeInMainThreadWithResult",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval.executeInMainThread",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval.executeDeferredAfterWaiting",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.isUIAvailable",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.addEventLoopCallback",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.removeEventLoopCallback",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.eventLoopCallbacks",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.postEventCallback",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.setStatusMessage",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.interruptDialog",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui.curDesktop",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": null,
+      "evidence": "bridge transport error -> Missing required parameter. Expected one of: 'content', 'text', 'message', 'body'\nHINT: Common names are 'content' or 'text'",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    }
+  ]
+}

@@ -1,0 +1,240 @@
+{
+  "schema": "receipt/v1",
+  "leg": "H3a",
+  "title": "Cook-cancel — PROBE HALF ONLY (R44 split)",
+  "harness": "REPAIR-01",
+  "status": "green",
+  "status_note": "Describes what happened (Law 3): every symbol a cook-cancel path would need was probed live against Houdini 22.0.368 by two independent producers with positive and negative controls green in both. 68 symbols carry a verdict; 0 conflicts between producers; 0 UNVERIFIABLE on the authoritative path. NO implementation was written, NO design was produced, NO source outside harness/notes/ was touched. H3b remains HELD and was not begun. The user-facing safety gap is UNCHANGED AND OPEN — this leg learned what is true, it did not change what is true.",
+
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "harness/relay-settings.json (governing — the only profile whose allowlist carries Bash(*hython.exe*), which every probe required). RECORDED HONESTLY, NOT CLAIMED: execution was in an interactive Claude Code session whose grant is wider than that file. The four assayer subagents ran under agentType 'assayer' (Read + Bash only).",
+  "commit_at_run": "a19b139",
+  "worktree": ".claude/worktrees/h3a-cancel-probe on branch repair/h3a-cancel-probe",
+  "run_date": "2026-07-26",
+  "mode": "read-only probe",
+
+  "authority": {
+    "brief": "harness/prompts/h3a.md",
+    "rulings": {
+      "R44": "H3 splits. H3a probe RUNS NOW, assayer only, read-only. H3b implementation REMAINS HELD. If symbols are absent, that absence IS the deliverable and becomes a SideFX ask — do not invent a workaround.",
+      "R46": "No design work proceeds on prior-session evidence about the render chokepoint or the hdefereval marshal. Both UNVERIFIED in this run; re-probe or do not use.",
+      "R25": "Receipts record model and settings_profile."
+    },
+    "constitution": "harness/AGENT_CONSTITUTION.md — Article II evidence ladder, Article IV role separation (assayer answers existence only), Law 1 (every check must be able to fail), Law 2 (no number without a producer), Law 5 (write from the tree, not from memory)."
+  },
+
+  "suite": {
+    "before": "not run",
+    "after": "not run",
+    "why": "Law 3 — this states what happened, not what was attempted. H3a wrote no product code and touched nothing under test; all writes are under harness/notes/. A suite number here would be a figure with no relationship to the work and is deliberately absent rather than decorative."
+  },
+
+  "method": {
+    "question_asked": "For each symbol: does it exist on live Houdini 22.0.368? Nothing else. No symbol was judged fit or unfit for use; no absent symbol was given a substitute.",
+    "producers": [
+      {
+        "id": "P1-live-gui",
+        "authority": "AUTHORITATIVE",
+        "what": "The running graphical Houdini 22.0.368 session, reached over the SYNAPSE WS bridge (protocol 4.0.0). hou.applicationVersionString()='22.0.368', Python 3.13.10, hou.isUIAvailable()=True, executing on the main thread.",
+        "why_authoritative": "It is the only interpreter that can answer two whole groups: hou.ui does not exist headless, and hdefereval REFUSES TO IMPORT headless with 'hdefereval is only available in a graphical Houdini'.",
+        "artifacts": ["harness/notes/h3a/live_gui.json", "harness/notes/h3a/live_gui_placement.json", "harness/notes/h3a/live_gui_docs.json", "harness/notes/h3a/live_gui_topnode_cancel.json"]
+      },
+      {
+        "id": "P2-headless-hython",
+        "authority": "CORROBORATING",
+        "what": "hython3.13.exe from Houdini 22.0.368, headless, run by four assayer subagents (one per symbol group) plus four more assayers re-probing the four brief-named symbols by their own hand-written scripts that never import the shared probe.",
+        "blind_spots_declared_before_the_run": "hou.ui absent; hdefereval unimportable. The manifest pre-flagged hou.ui symbols gui_only:true. It did NOT pre-flag the hdefereval group — that gap was caught by an assayer and is recorded as finding H3a-F5.",
+        "artifacts": ["harness/notes/h3a/A_pdg_tops_cancel_hython.json", "harness/notes/h3a/B_render_rop_interrupt_hython.json", "harness/notes/h3a/C_ui_thread_marshal_hython.json", "harness/notes/h3a/D_cook_state_and_halt_hython.json", "harness/notes/h3a/headless_placement.json"]
+      }
+    ],
+    "controls": {
+      "why": "Law 1 + REPAIR-HEATS standing order: a probe that cannot demonstrate success against a known-good target produces uninterpretable failures. Nine identical failures are one failure with a sample size.",
+      "positive": "hou.node, hou.Node.type, hou.undos.group must all resolve. They test module-level, class-level and submodule-level resolution respectively.",
+      "negative": "hou.pdg, hou.secure, hou.lopNetworks, hou.updateGraphTick (the four quarantined phantoms, Article II) plus a synthetic name that cannot exist. All must report ABSENT.",
+      "stated_failure_condition": "controls_ok is false if any positive control reports != EXISTS or any negative control reports != ABSENT. A result file with controls_ok:false is UNINTERPRETABLE and may not be cited.",
+      "result": "controls_ok TRUE in every producer and every assayer run, 12 runs total, zero exceptions.",
+      "mutation_test": {
+        "why": "R34 standing order — a check that has never been shown to fail is a decoration.",
+        "m1": "Ran the probe under an interpreter with no hou at all -> controls_ok False, exit 1, every control UNVERIFIABLE. Artifact: harness/notes/h3a/selftest_nohou.json",
+        "m2": "Injected a fake hou module whose __getattr__ resolves EVERYTHING -> negative_ok False, controls_ok False. The probe catches a resolver that answers yes to everything.",
+        "verdict": "The probe demonstrably CAN fail, in both directions, before any verdict below was trusted."
+      }
+    },
+    "reconciliation_rule": "Stated in harness/notes/h3a_reconcile.py BEFORE the merge so it could not be tuned to the answer: both agree -> that verdict; GUI EXISTS while headless is ABSENT/UNVERIFIABLE AND the symbol is interpreter-scoped (hou.ui.* or hdefereval.*) -> CONFIRMED, divergence EXPLAINED-BY-INTERPRETER; any other disagreement -> CONFLICT, reported rather than resolved by picking a winner.",
+    "reconciliation_result": "68 symbols. 56 AGREE outright. 12 EXPLAINED-BY-INTERPRETER (8 hou.ui + 4 hdefereval). 0 CONFLICT. 0 UNVERIFIABLE on the authoritative producer. Artifact: harness/notes/h3a/reconciled.json"
+  },
+
+  "counts": {
+    "symbols_with_a_verdict": 68,
+    "CONFIRMED": 47,
+    "ABSENT": 21,
+    "UNVERIFIABLE": 0,
+    "producer_conflicts": 0,
+    "assayers_dispatched": 8,
+    "assayer_errors": 0,
+    "producer_path": "harness/notes/h3a_reconcile.py reading harness/notes/h3a/*.json"
+  },
+
+  "headline": {
+    "tops_cancel": "AVAILABLE IN FULL. Every primitive a TOPS/PDG cancel needs exists on 22.0.368, including a direct hou.TopNode.cancelCook the tree does not currently use.",
+    "render_cancel": "ABSENT. There is no HOM API on 22.0.368 to cancel an in-flight hou.RopNode.render(). This absence is the deliverable (R44) and is written up as a SideFX ask at harness/notes/H3a_SIDEFX_ASK.md.",
+    "ui_marshal": "AVAILABLE, with one confirmed phantom. hdefereval.executeInMainThread does NOT exist on 22.0.368; executeDeferred, executeInMainThreadWithResult and executeDeferredAfterWaiting do. hou.ui also offers a separate event-loop marshal family."
+  },
+
+  "findings": [
+    {
+      "id": "H3a-F1",
+      "severity": "user_facing_open",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "Houdini 22.0.368 exposes NO API to cancel, abort, interrupt or kill an in-flight hou.RopNode.render(). This is the SideFX ask.",
+      "anchor": "dir(hou.RopNode) = 318 names; filtering cancel|abort|interrupt|kill|stop|background yields exactly one name, the private inherited _cookNoInterruptInternal. dir(hou) = 853 names; zero matches for abort|kill|cancel|stop. Artifact harness/notes/h3a/live_gui_placement.json -> pattern_sweep['hou.RopNode'] and ['hou'].",
+      "probed_absent_by_name": ["hou.RopNode.interrupt", "hou.RopNode.abortRender", "hou.RopNode.cancelRender", "hou.RopNode.killRender", "hou.RopNode.stopRender", "hou.RopNode.isRendering", "hou.RopNode.renderInBackground", "hou.interruptRender", "hou.abortRender", "hou.killRender"],
+      "also_established": "hou.RopNode.render() takes no cancel-shaped parameter. Its full signature, from the build's own docstring: render(self, frame_range=(), res=(), output_file=None, output_format=None, to_flipbook=False, quality=2, ignore_inputs=False, method=RopByRop, ignore_bypass_flags=False, ignore_lock_flags=False, verbose=False, output_progress=False).",
+      "what_does_exist": "hou.InterruptableOperation (CONFIRMED), hou.InterruptableOperation.updateProgress/updateLongProgress (CONFIRMED), hou.updateProgressAndCheckForInterrupt (CONFIRMED but documented by the build as DEPRECATED), hou.OperationInterrupted (CONFIRMED). All are documented around an Escape keypress by a human at the machine and require the running code to poll. hou.RopNode.addRenderEventCallback / removeRenderEventCallback / removeAllRenderEventCallbacks and hou.ropRenderEventType are CONFIRMED, documented as observation hooks around Pre/Post Frame script callbacks.",
+      "explicitly_not_claimed": "Whether Escape reaches a scripted render, whether raising inside a render event callback aborts it, and whether wrapping render() in hou.InterruptableOperation has any effect are ALL BEHAVIOURAL questions. H3a was read-only and ran no cook. They remain UNVERIFIED and are asserted in neither direction.",
+      "deliverable": "harness/notes/H3a_SIDEFX_ASK.md"
+    },
+    {
+      "id": "H3a-F2",
+      "severity": "capability_available_unused",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The TOPS/PDG cancel surface is complete on 22.0.368 — and carries a direct node-level verb the tree does not use.",
+      "confirmed": {
+        "hou.TopNode.cancelCook": "own attribute of hou.TopNode. Build docstring: 'cancelCook(self) — Cancels the current cook'.",
+        "hou.TopNode.pauseCook": "own. 'Pauses the current cook. This is the same as canceling the cook, except any work items that have already been scheduled are allowed to continue executing.'",
+        "hou.TopNode.getCookState": "own",
+        "hou.TopNode.dirtyAllWorkItems": "own. 'Deletes all work items in the PDG graph owned by the TOP Network.'",
+        "hou.TopNode.dirtyWorkItems": "own",
+        "pdg.GraphContext.cancelCook": "'Cancels cooking'",
+        "pdg.GraphContext.canceling": "'[read only] Set to True when the graph is canceling'",
+        "pdg.GraphContext.cooking": "'[read only] Set to True when the graph is cooking'",
+        "pdg.WorkItem.cancel": "'Cancels the work item, if it is cooking'",
+        "pdg.Node.dirty": "\"Deletes the node's workitems\"",
+        "pdg.GraphContext.addEventHandler / removeEventHandler": "CONFIRMED",
+        "pdg.EventType.CookComplete / CookError": "CONFIRMED"
+      },
+      "anchor": "harness/notes/h3a/live_gui_topnode_cancel.json (controls green, dir(hou.TopNode)=360) and harness/notes/h3a/live_gui.json",
+      "note_for_H3b_not_a_design": "python/synapse/server/handlers_tops/cook.py:244-246 reaches the cancel through node.getPDGGraphContext().cancelCook(). hou.TopNode.cancelCook exists as a direct verb on the node. THIS LEG DOES NOT RECOMMEND EITHER — Article IV forbids the assayer judging, and the orchestrator will not smuggle a design in as a note. Recorded as an existence fact for whoever holds H3b.",
+      "how_it_was_found": "Not from the manifest, which missed it. An independent assayer's related-name sweep of dir(hou.TopNode) surfaced it. The manifest enumerated symbols it could think of; the sweep enumerated the namespace. The sweep was right."
+    },
+    {
+      "id": "H3a-F3",
+      "severity": "phantom_confirmed",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "hdefereval.executeInMainThread does NOT exist on 22.0.368. The prior-session memory claim is now RE-PROBED and reproduced, not repeated on trust — R46 satisfied.",
+      "anchor": "Live GUI bridge, triple-anchored by an independent assayer: hasattr -> False; 'executeInMainThread' not in dir(hdefereval) (34 names); getattr raises AttributeError: module 'hdefereval' has no attribute 'executeInMainThread'. Parent module resolves cleanly from C:/PROGRA~1/SIDEEF~1/HOUDIN~1.368/houdini/python3.13libs/hdefereval.py, so this is a clean segment absence and not an import failure.",
+      "what_exists_instead": "executeDeferred, executeDeferredAfterWaiting, executeInMainThreadWithResult (each with a snake_case alias), doWorkInBackgroundThread / inSeparateThread. Observation, not recommendation: the module carries both spellings for every public entry point, and NEITHER spelling of a bare main-thread marshal is present.",
+      "r46_status": "DISCHARGED for this symbol. The prior-session note is now VERIFIED-RUNTIME this run.",
+      "explicitly_not_claimed": "The prior-session claim that three SYNAPSE marshal sites fail silently on this name is a CALL-SITE claim. H3a probed the symbol, not the call sites. That half remains UNVERIFIED and is not carried forward."
+    },
+    {
+      "id": "H3a-F4",
+      "severity": "probe_defect_caught_in_run",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "Five ABSENT verdicts in the first pass were artifacts of MY probe asking the wrong class, not absences on the build. Corrected in-run before any of them was reported as a fact.",
+      "detail": "hou.Node.getPDGGraphContext, hou.Node.getPDGNode, hou.Node.cook, hou.Node.cookCount, hou.Node.needsToCook and hou.Node.isTimeDependent all report ABSENT on hou.Node — correctly, because HOM splits the node API across a hierarchy. Resolved by pass 2: getPDGGraphContext and getPDGNode are OWN attributes of hou.TopNode; cook, cookCount, needsToCook and isTimeDependent are OWN attributes of hou.OpNode and inherited by 14+ node classes. MRO: RopNode -> OpNode -> Node -> NetworkMovableItem -> NetworkItem -> object.",
+      "consequence_if_unfixed": "The receipt would have reported hou.Node.cookCount ABSENT — manufacturing a phantom against R1's topological hash (CLAUDE.md 1.4), which calls node.cookCount() on real node INSTANCES where it resolves correctly through OpNode. That is SYNAPSE's #1 documented failure class arriving from the direction of the instrument instead of the model.",
+      "anchor": "harness/notes/h3a_placement.py, artifact harness/notes/h3a/live_gui_placement.json. Its own controls: 'children' must be found on hou.Node (it is); a synthetic attribute must be found on zero of the 530 hou classes (it is).",
+      "recorded_because": "Article VI — the drift log is not an apology, it is the record of the instrument being wrong. Hiding a caught probe defect would leave the next leg to rediscover it."
+    },
+    {
+      "id": "H3a-F5",
+      "severity": "harness_method",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "The entire hdefereval marshal layer is UNPROBEABLE under headless hython. Any headless probe of it must return UNVERIFIABLE, never ABSENT.",
+      "anchor": "hython3.13 -> ImportError: hdefereval is only available in a graphical Houdini, raised at .../houdini/python3.13libs/hdefereval.py:241. Reproduced independently by an assayer and by the orchestrator's own headless run (harness/notes/h3a/headless_placement.json -> pattern_sweep.hdefereval_error).",
+      "why_it_matters": "A probe that mapped root-import failure to ABSENT would have declared SYNAPSE's whole marshal layer phantom, with its hou-anchored controls still passing green. The controls are anchored on hou, which imports fine headless — so passing controls would NOT have caught it. This is a real limit of control-based validation and is recorded as such.",
+      "manifest_gap": "harness/notes/h3a_symbols.json flags the 8 hou.ui symbols gui_only:true but flags none of the 5 hdefereval symbols. The flag set was incomplete. Caught by assayer C, not by the manifest author."
+    },
+    {
+      "id": "H3a-F6",
+      "severity": "doc_code_drift",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "hou.TopNode.dirtyAllTasks and hou.TopNode.dirtyTasks are DEPRECATED on 22.0.368 by the build's own docstrings, in favour of dirtyAllWorkItems / dirtyWorkItems.",
+      "anchor": "Live docstring, verbatim: 'dirtyAllTasks(self, remove_outputs) — This method is deprecated in favor of hou.TopNode.dirtyAllWorkItems.' Artifact harness/notes/h3a/live_gui_topnode_cancel.json.",
+      "affects": "CLAUDE.md 1.7 (R8 PDG async cook bridge) documents dirtyAllTasks(remove_files=...) as the on-failure lever, and shared/bridge.py carries the same. Both symbols still EXIST, so nothing is broken today — this is drift, not a defect.",
+      "note": "The live signature is dirtyAllTasks(self, remove_outputs), whereas CLAUDE.md 1.7 names the argument remove_files. Recorded as observed; the argument-name question was not further probed."
+    },
+    {
+      "id": "H3a-F7",
+      "severity": "incidental_tooling",
+      "tier": "VERIFIED-RUNTIME",
+      "claim": "harness/notes/_ws_retest.py sends a stale bridge envelope and returns a false 'Missing required parameter' against a HEALTHY bridge.",
+      "anchor": "Found by the rop-interrupt assayer while building its own bridge client. The live envelope key is 'payload' (python/synapse/core/protocol.py:230, SynapseCommand.from_json); _ws_retest.py sends 'params'. Separately: the WS path is /synapse (python/synapse/server/hwebserver_adapter.py:93); a bare ws://localhost:9999 handshake returns HTTP 400 'No websockets registered on path.'",
+      "why_it_matters": "This is the L1.F1 error class exactly — a probe pointed at the wrong path reading as a transport failure. It cost two assayers time this run and would report a healthy bridge as broken to anyone who trusted it.",
+      "not_repaired": "Out of H3a scope (read-only, no source edits outside harness/notes/). Reported, not fixed. See for_ruling H3a-R3."
+    },
+    {
+      "id": "H3a-F8",
+      "severity": "housekeeping",
+      "tier": "VERIFIED-STATIC",
+      "claim": "harness/notes/h3a/C_ui_thread_marshal_bridge.json is a self-labelled UNINTERPRETABLE artifact left by a failed assayer bridge attempt. It carries controls_ok:false with every symbol UNVERIFIABLE.",
+      "disposition": "LEFT IN PLACE DELIBERATELY. Law 4 — classify before you delete; census output is a hypothesis and deletion is a separate, later, human-confirmed act. It is correctly self-labelled, so the controls rule already disqualifies it from citation. Flagged here so no future reader mistakes it for a live-bridge verdict set."
+    }
+  ],
+
+  "symbol_ledger": {
+    "full": "harness/notes/h3a/reconciled.json — 68 rows, each with symbol, verdict, group, anchor, both producers' verdicts, reconciliation status, dir()-anchored evidence, and signature where the build exposed one.",
+    "absent_21": {
+      "genuinely_absent_on_the_build_16": [
+        "pdg.GraphContext.cookComplete", "pdg.GraphContext.isCooking", "pdg.GraphContext.cancel",
+        "hou.RopNode.interrupt", "hou.RopNode.abortRender", "hou.RopNode.cancelRender",
+        "hou.RopNode.killRender", "hou.RopNode.stopRender", "hou.RopNode.isRendering",
+        "hou.RopNode.renderInBackground", "hou.interruptRender", "hou.abortRender",
+        "hou.killRender", "hdefereval.executeInMainThread", "hou.ui.interruptDialog",
+        "hou.Node.cook"
+      ],
+      "absent_on_the_probed_class_but_present_on_a_subclass_5": {
+        "note": "NOT build absences. See H3a-F4. Listed separately so no reader can quote them as phantoms.",
+        "hou.Node.getPDGGraphContext": "own attribute of hou.TopNode",
+        "hou.Node.getPDGNode": "own attribute of hou.TopNode",
+        "hou.Node.cookCount": "own attribute of hou.OpNode, inherited by 14 classes",
+        "hou.Node.needsToCook": "own attribute of hou.OpNode, inherited by 14 classes",
+        "hou.Node.isTimeDependent": "own attribute of hou.OpNode, inherited by 16 classes"
+      },
+      "correction": "hou.Node.cook appears in the genuinely-absent list ONLY as 'absent on hou.Node'; it is an own attribute of hou.OpNode and resolves on every real node instance. It belongs to the subclass group above. Recorded here rather than silently re-sorted, so the count and the correction are both visible.",
+      "manifest_mis_anchor": "pdg.GraphContext.cookComplete was anchored in the manifest to shared/bridge.py:1680. That line refers to the EVENT pdg.EventType.CookComplete (which is CONFIRMED), not to a GraphContext method. The anchor was wrong; the symbol was effectively a candidate, and it is ABSENT. Corrected here rather than quietly dropped."
+    }
+  },
+
+  "scope_discipline": {
+    "R44_probe_only": "HELD. No implementation written. No design produced. No workaround invented for any absent symbol — H3a-F1's ten absent render-cancel spellings are reported as absent and nothing was substituted for them.",
+    "H3b_not_begun": "CONFIRMED. No worktree for it, no code, no contract, no recommendation between the two TOPS cancel entry points found in H3a-F2.",
+    "writes": "harness/notes/ only — h3a_probe.py, h3a_placement.py, h3a_reconcile.py, h3a_symbols.json, H3a_SIDEFX_ASK.md, receipts/H3a.json, and artifacts under harness/notes/h3a/. Assayers wrote only their own uniquely-named files under harness/notes/h3a/.",
+    "gates": "Never pushed, never merged, never tagged. No commit was made by any agent. Gate A, B and C untouched.",
+    "the_gap": "The user-facing safety gap R29 names is UNCHANGED AND OPEN. An artist mid-Karma-render still has a Stop that will not stop the render. This leg is not to be read as narrowing it — it establishes that the TOPS half is closable today and the render half is not closable with any 22.0.368 API."
+  },
+
+  "for_ruling": [
+    {
+      "id": "H3a-R1",
+      "question": "H3b's achievable scope has changed. Does it proceed as a TOPS-cancel-only leg, with the render half held behind the SideFX ask?",
+      "context": "The probe splits the gap cleanly. The TOPS/PDG half is fully implementable on 22.0.368 today (H3a-F2). The render half has NO API at all (H3a-F1) — an implementation could only be built on behavioural questions this leg deliberately did not answer (does Escape reach a scripted render; can a render event callback abort). Shipping a Stop that cancels TOPS cooks but still cannot stop a Karma render is a partial fix that must be described precisely or it becomes the same dishonest button in a new place.",
+      "why_escalated": "Article I — a value judgement between defensible options with a user-safety cost either way, and it redefines a held leg's charter. Not an agent's to take.",
+      "recommendation": "None offered. The evidence is above; the call is not mine."
+    },
+    {
+      "id": "H3a-R2",
+      "question": "Does the SideFX ask get sent, and by whom?",
+      "context": "harness/notes/H3a_SIDEFX_ASK.md is written and evidence-complete. Sending it is outward-facing contact with the vendor and is not an agent action under any reading of Gate C. It also names SYNAPSE's shipped Stop limitation publicly, which is already in v5.34.0's known-limitations section, so no new disclosure is created — but the decision is still yours.",
+      "why_escalated": "Outward-facing action. Article I, and the harness's standing rule that promotion of anything is human."
+    },
+    {
+      "id": "H3a-R3",
+      "question": "Who repairs harness/notes/_ws_retest.py (H3a-F7), and does the deprecated dirtyAllTasks citation in CLAUDE.md 1.7 + shared/bridge.py get migrated (H3a-F6)?",
+      "context": "Both are real, both are small, both are outside H3a's read-only fence. F7 is a live tripwire — it reports a healthy bridge as broken and cost two assayers time this run. F6 is drift only: both symbols still exist and nothing is broken today, but shared/bridge.py is deny-listed under relay-settings.json, so it cannot be an ordinary agent edit.",
+      "why_escalated": "Assigns work outside this leg's scope, and one target sits behind a deny fence."
+    }
+  ],
+
+  "resume_token": {
+    "skip": [
+      "The whole H3a probe. 68 symbols carry a two-producer verdict with 0 conflicts and green controls. Do not re-probe unless the Houdini build changes.",
+      "R46's re-probe obligation for hdefereval.executeInMainThread — DISCHARGED, see H3a-F3.",
+      "The render-cancel search. It was exhaustive at the namespace level, not merely at the guessed-name level: the complete dir() of hou.RopNode (318) and hou (853) was swept for cancel|abort|interrupt|kill|stop|background. Re-guessing spellings will find nothing new."
+    ],
+    "redo_if": "The Houdini build changes from 22.0.368 (rerun h3a_probe.py + h3a_placement.py against the new build — both are build-agnostic), OR any verdict here is about to be used to justify writing code, in which case confirm controls_ok is still true in the artifact you are citing.",
+    "next": "H3b remains HELD pending H3a-R1. When it is ruled: the TOPS half needs no further probing and can be contracted immediately from H3a-F2. The render half cannot be designed from anything in this receipt — it needs the four behavioural questions in H3a_SIDEFX_ASK.md section 5 answered against a real cook, which is seam-hunter work on a green-enough shipping path, not assayer work.",
+    "artifacts_root": "harness/notes/h3a/"
+  }
+}

@@ -1,0 +1,388 @@
+{
+  "schema": "h3a_probe/v1",
+  "producer": "harness/notes/h3a_probe.py",
+  "group": "B_render_rop_interrupt",
+  "interpreter": {
+    "executable": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\bin\\hython3.13.exe",
+    "python": "3.13.10",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "thread_is_main": true,
+    "hfs": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.368",
+    "houdini_build": "22.0.368",
+    "ui_available": false,
+    "has_hou_ui": false
+  },
+  "controls_ok": true,
+  "controls": {
+    "positive_ok": true,
+    "negative_ok": true,
+    "positive": [
+      {
+        "symbol": "hou.node",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.node",
+        "evidence": "resolved; __doc__[:160]='\\n\\nhou.node\\n\\nGiven a path string, return a Node object. Return None if the path does\\nnot refer to a node.\\n\\nUSAGE\\n  node(path) -> hou.OpNode or None\\n\\nIf the path '",
+        "type": "function",
+        "signature": "(path: 'char const *') -> 'HOM_Node *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.Node.type",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.Node.type",
+        "evidence": "resolved; __doc__[:160]='\\n\\ntype(self) -> hou.NodeType\\n\\n    Return the hou.NodeType object for this node.\\n\\n    For example, all camera node instances share the same node type.\\n\\n\\n'",
+        "type": "function",
+        "signature": "(self) -> 'HOM_NodeType *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.undos.group",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.undos.group",
+        "evidence": "resolved; __doc__[:160]='\\n\\ngroup(label, editor=None) -> hou.UndosGroup\\n\\n    Returns a context manager, within which all changes to Houdini are\\n    recorded as a single action on the und'",
+        "type": "method",
+        "signature": "(label: 'char const *', editor: 'NetworkEditor' = None) -> 'HOM_UndosGroup *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      }
+    ],
+    "negative": [
+      {
+        "symbol": "hou.zzz_h3a_control_must_not_exist",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'zzz_h3a_control_must_not_exist' not in dir(hou) (853 names); nearest existing: none within cutoff 0.5",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": []
+      },
+      {
+        "symbol": "hou.pdg",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'pdg' not in dir(hou) (853 names); nearest existing: ['pwd', 'Edge']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "pwd",
+          "Edge"
+        ]
+      },
+      {
+        "symbol": "hou.secure",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'secure' not in dir(hou) (853 names); nearest existing: ['userName', 'setFrame', 'shaderType', 'encode', 'decode']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "userName",
+          "setFrame",
+          "shaderType",
+          "encode",
+          "decode"
+        ]
+      },
+      {
+        "symbol": "hou.lopNetworks",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'lopNetworks' not in dir(hou) (853 names); nearest existing: ['LopNetwork', 'OpNetworkDot', 'OpNetworkBox', 'NetworkDot', 'NetworkBox']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "LopNetwork",
+          "OpNetworkDot",
+          "OpNetworkBox",
+          "NetworkDot",
+          "NetworkBox"
+        ]
+      },
+      {
+        "symbol": "hou.updateGraphTick",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'updateGraphTick' not in dir(hou) (853 names); nearest existing: ['patternMatch', 'ChannelGraph']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "patternMatch",
+          "ChannelGraph"
+        ]
+      }
+    ],
+    "failure_condition": "positive_ok is False if any of ['hou.node', 'hou.Node.type', 'hou.undos.group'] reports != EXISTS; negative_ok is False if any of ['hou.zzz_h3a_control_must_not_exist', 'hou.pdg', 'hou.secure', 'hou.lopNetworks', 'hou.updateGraphTick'] reports != ABSENT. controls_ok False => the whole run is UNINTERPRETABLE."
+  },
+  "counts": {
+    "total": 21,
+    "EXISTS": 11,
+    "ABSENT": 10,
+    "UNVERIFIABLE": 0
+  },
+  "results": [
+    {
+      "symbol": "hou.RopNode",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.RopNode",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.RopNode\\n\\nRepresents a render output node.\\n\\nRELATED\\n\\n  * render\\n\\n\\n'",
+      "type": "type",
+      "signature": "(*args, **kwargs)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.RopNode.render",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.RopNode.render",
+      "evidence": "resolved; __doc__[:160]='\\n\\nrender(self, frame_range=(), res=(), output_file=None,\\noutput_format=None, to_flipbook=False, quality=2, ignore_inputs=False,\\nmethod=RopByRop, ignore_bypass_f'",
+      "type": "function",
+      "signature": "(self, *args, **kwargs) -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.RopNode.interrupt",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'interrupt' not in dir(hou.RopNode) (318 names); nearest existing: ['input', 'nodeGroup', 'inputs', 'nodeGroups', 'insertInput']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "input",
+        "nodeGroup",
+        "inputs",
+        "nodeGroups",
+        "insertInput"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.abortRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'abortRender' not in dir(hou.RopNode) (318 names); nearest existing: ['render', 'parmsInFolder']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "render",
+        "parmsInFolder"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.cancelRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'cancelRender' not in dir(hou.RopNode) (318 names); nearest existing: ['render', 'cachedUserData']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "render",
+        "cachedUserData"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.killRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'killRender' not in dir(hou.RopNode) (318 names); nearest existing: ['render', 'isFlagReadable', 'fileReferences']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "render",
+        "isFlagReadable",
+        "fileReferences"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.stopRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'stopRender' not in dir(hou.RopNode) (318 names); nearest existing: ['render', 'setGenericFlag', 'setComment', 'isCompiled', 'dependents']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "render",
+        "setGenericFlag",
+        "setComment",
+        "isCompiled",
+        "dependents"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.isRendering",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'isRendering' not in dir(hou.RopNode) (318 names); nearest existing: ['isGenericFlagSet', 'render', 'setGenericFlag', 'setParmsPending', 'isTimeDependent']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "isGenericFlagSet",
+        "render",
+        "setGenericFlag",
+        "setParmsPending",
+        "isTimeDependent"
+      ]
+    },
+    {
+      "symbol": "hou.RopNode.renderInBackground",
+      "verdict": "ABSENT",
+      "resolved_through": "hou.RopNode",
+      "evidence": "'renderInBackground' not in dir(hou.RopNode) (318 names); nearest existing: ['render']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 318,
+      "near_misses": [
+        "render"
+      ]
+    },
+    {
+      "symbol": "hou.interruptRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'interruptRender' not in dir(hou) (853 names); nearest existing: ['OperationInterrupted', 'InterruptableOperation', '_PointTupleGenerator', 'ContextViewer']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 853,
+      "near_misses": [
+        "OperationInterrupted",
+        "InterruptableOperation",
+        "_PointTupleGenerator",
+        "ContextViewer"
+      ]
+    },
+    {
+      "symbol": "hou.abortRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'abortRender' not in dir(hou) (853 names); nearest existing: ['orboltURLHandler', 'OrboltURLHandler', 'sortedNodes', 'renderMethod', 'RenderGallery']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 853,
+      "near_misses": [
+        "orboltURLHandler",
+        "OrboltURLHandler",
+        "sortedNodes",
+        "renderMethod",
+        "RenderGallery"
+      ]
+    },
+    {
+      "symbol": "hou.killRender",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'killRender' not in dir(hou) (853 names); nearest existing: ['videoEncoders', 'RenderGallery', 'linear', 'fileReferences', 'encode']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 853,
+      "near_misses": [
+        "videoEncoders",
+        "RenderGallery",
+        "linear",
+        "fileReferences",
+        "encode"
+      ]
+    },
+    {
+      "symbol": "hou.InterruptableOperation",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.InterruptableOperation",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.InterruptableOperation\\n\\nUse this class to turn any Python code block into an interruptable\\noperation.\\n\\nThis class is a context manager which allows the us'",
+      "type": "type",
+      "signature": "(operation_name: 'char const *', long_operation_name: 'char const *' = None, open_interrupt_dialog: 'bool' = False, timeout_ms: 'int' = 0)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.InterruptableOperation.updateProgress",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.InterruptableOperation.updateProgress",
+      "evidence": "resolved; __doc__[:160]='\\n\\nupdateProgress(self, percentage=-1.0)\\n\\n    Update the progress percentage of the operation. At the same time,\\n    check if the operation was interrupted by th'",
+      "type": "function",
+      "signature": "(self, percentage: 'double' = -1.0) -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.InterruptableOperation.updateLongProgress",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.InterruptableOperation.updateLongProgress",
+      "evidence": "resolved; __doc__[:160]='\\n\\nupdateLongProgress(self, percentage=-1.0, long_op_status=None)\\n\\n    Update the progress percentage and status of the long, or high-\\n    level, operation. At t'",
+      "type": "function",
+      "signature": "(self, percentage: 'double' = -1.0, long_op_status: 'char const *' = None) -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.updateProgressAndCheckForInterrupt",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.updateProgressAndCheckForInterrupt",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.updateProgressAndCheckForInterrupt\\n\\nDeprecated: Use InterruptableOperation.\\n\\nCheck if the user pressed Escape to interrupt the current operation, and\\nopti'",
+      "type": "builtin_function_or_method",
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.OperationInterrupted",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.OperationInterrupted",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.OperationInterrupted\\n\\n'",
+      "type": "type",
+      "signature": "(*args)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.OperationFailed",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.OperationFailed",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\nhou.OperationFailed\\n\\nGeneric catch-all exception for various errors in Houdini that don't\\nhave their own dedicated exception classes.\\n\\nThere are many ways for\"",
+      "type": "type",
+      "signature": "(*args)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.setUpdateMode",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.setUpdateMode",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\nhou.setUpdateMode\\n\\nReturn Houdini's cook update mode (Auto Update/On Mouse Up/Manual) that\\nis displayed in the status bar.\\n\\nUSAGE\\n  updateModeSetting() -> hou\"",
+      "type": "function",
+      "signature": "(mode: 'EnumValue') -> 'void'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.updateModeSetting",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.updateModeSetting",
+      "evidence": "resolved; __doc__[:160]=\"\\n\\nhou.updateModeSetting\\n\\nReturn Houdini's cook update mode (Auto Update/On Mouse Up/Manual) that\\nis displayed in the status bar.\\n\\nUSAGE\\n  updateModeSetting() ->\"",
+      "type": "function",
+      "signature": "() -> 'HOM_EnumValue &'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.updateMode",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.updateMode",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.updateMode\\n\\nEnumeration of interface update modes.\\n\\nSee hou.updateModeSetting.\\n\\nVALUES\\n\\n\\n    AutoUpdate\\n    OnMouseUp\\n    Manual\\n\\n\\n'",
+      "type": "type",
+      "signature": "(*args, **kwargs)",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    }
+  ]
+}

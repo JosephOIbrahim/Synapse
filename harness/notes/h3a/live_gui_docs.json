@@ -1,0 +1,103 @@
+{
+  "schema": "h3a_docs/v1",
+  "producer": "live GUI session via synapse bridge",
+  "houdini_build": "22.0.368",
+  "docs": {
+    "hou.RopNode.render": {
+      "doc": "\n\nrender(self, frame_range=(), res=(), output_file=None,\noutput_format=None, to_flipbook=False, quality=2, ignore_inputs=False,\nmethod=RopByRop, ignore_bypass_flags=False, ignore_lock_flags=False,\nverbose=False, output_progress=False)\n\n    Renders this node and optionally any of its inputs. Inputs are\n    recursively processed (unless ignore_inputs is True), so that all\n    descendants are rendered in the proper order before this node is\n    rendered.\n\n\n    frame_range\n        Sequence of 2 or 3 values, overrides the frame range and frame\n        increment to render. The first two values speci",
+      "signature": "(self, *args, **kwargs) -> 'void'"
+    },
+    "hou.RopNode.addRenderEventCallback": {
+      "doc": "\n\naddRenderEventCallback(self, callback, run_before_script = False)\n\n    Registers a Python callback that Houdini call whenever a render\n    event occurs on this particular node instance. The event callback is\n    run immediately before or after the correspoding script callback on\n    the ROP node, such as the Pre Frame or Post Frame script, depending\n    on the value of run_before_script.\n\n    Callbacks only persist for the current session -- they're not saved\n    to the .hip file. If you want persistent callbacks in every session,\n    you can add them in code in 456.py (runs when the user op",
+      "signature": "(self, callback: 'InterpreterObject', run_before_script: 'bool' = False) -> 'void'"
+    },
+    "hou.RopNode.removeRenderEventCallback": {
+      "doc": "\n\nremoveRenderEventCallback(self, callback)\n\n    Removes a render event callback that was previously added on this\n    node.\n\n    Raises hou.OperationFailed if the callback had not been previously\n    added.\n\n    See hou.RopNode.addRenderEventCallback for more information.\n\n\n",
+      "signature": "(self, callback: 'InterpreterObject') -> 'void'"
+    },
+    "hou.InterruptableOperation": {
+      "doc": "\n\nhou.InterruptableOperation\n\nUse this class to turn any Python code block into an interruptable\noperation.\n\nThis class is a context manager which allows the user to press [Esc] to\ninterrupt a long-running operation, and can also display a progress\npercentage in the status line at the bottom of the main window.\n\nYou should use this in potentially long-running Python nodes (such as\nPython SOP) or shelf scripts. For example if you have code looping over\nevery point in the input geometry, if the geometry has millions of\npoints the operation could take a long time. You should perform the\noperation",
+      "signature": "(operation_name: 'char const *', long_operation_name: 'char const *' = None, open_interrupt_dialog: 'bool' = False, timeout_ms: 'int' = 0)"
+    },
+    "hou.InterruptableOperation.updateProgress": {
+      "doc": "\n\nupdateProgress(self, percentage=-1.0)\n\n    Update the progress percentage of the operation. At the same time,\n    check if the operation was interrupted by the user.\n\n\n    percentage\n        Despite the name, this argument takes a fraction from 0.0 to\n        1.0, not a percentage. If this number is negative, Houdini will\n        not display the progress.\n\n\n",
+      "signature": "(self, percentage: 'double' = -1.0) -> 'void'"
+    },
+    "hou.updateProgressAndCheckForInterrupt": {
+      "doc": "\n\nhou.updateProgressAndCheckForInterrupt\n\nDeprecated: Use InterruptableOperation.\n\nCheck if the user pressed Escape to interrupt the current operation, and\noptionally update the completion progress.\n\nUSAGE\n  updateProgressAndCheckForInterrupt(percentage=-1) -> bool\n\n\nWARNING\n    This is deprecated. Use hou.InterruptableOperation instead.\n\nReturn True if the user pressed Escape and False otherwise.\n\n\npercentage\n    An integer value containing the percentage complete to display in\n    the taskbar. If the percentage is -1, the taskbar will not display\n    the completion percentage.\n\nYou would typ",
+      "signature": null
+    },
+    "hou.OperationInterrupted": {
+      "doc": "\n\nhou.OperationInterrupted\n\n",
+      "signature": "(*args)"
+    },
+    "pdg.GraphContext.cancelCook": {
+      "doc": "cancelCook(self: _pdg.GraphContext) -> None\n\nCancels cooking\n",
+      "signature": null
+    },
+    "pdg.GraphContext.canceling": {
+      "doc": "[read only] Set to True when the graph is canceling",
+      "signature": null
+    },
+    "pdg.GraphContext.cooking": {
+      "doc": "[read only] Set to True when the graph is cooking",
+      "signature": null
+    },
+    "pdg.GraphContext.pauseCook": {
+      "doc": "pauseCook(self: _pdg.GraphContext) -> None\n\nPauses cooking\n",
+      "signature": null
+    },
+    "pdg.WorkItem.cancel": {
+      "doc": "cancel(self: _pdg.WorkItem) -> None\n\nCancels the work item, if it is cooking\n",
+      "signature": null
+    },
+    "hou.TopNode.getPDGGraphContext": {
+      "doc": "",
+      "signature": "(self)"
+    },
+    "hdefereval.executeDeferred": {
+      "doc": "Run the specified Python code in the main thread and do not wait\nfor it to finish running.\n\ncode: Either a string containing a Python expression, a callable object,\n    or a code object.\nargs, kwargs: Only valid for callable objects.\n",
+      "signature": "(code, *args, **kwargs)"
+    },
+    "hdefereval.executeInMainThreadWithResult": {
+      "doc": "",
+      "signature": "(code, *args, **kwargs)"
+    },
+    "hdefereval.doWorkInBackgroundThread": {
+      "doc": "This decorator marks a generator function as alternating its execution\nbetween the main thread and a new thread.  The intial code is run in\nthe current thread until it yields, the next piece of code is run in a\nnew thread until it yields, and the next code is run in the main thread.\nMore pairs of worker thread/main thread blocks may be added at the end.\n\nHere is an example:\n@do_work_in_background_thread\ndef func():\n    print \"initializing in main thread\"\n    yield\n\n    print \"computing result in other thread\"\n    result = 3\n    yield\n\n    print \"processing result in main thread\", result\n",
+      "signature": "(function)"
+    },
+    "hou.ui.addEventLoopCallback": {
+      "doc": "\n\naddEventLoopCallback(callback)\n\n    Register a Python callback to be called whenever Houdini's event\n    loop is idle. This callback is called approximately every 50ms,\n    unless Houdini is busy processing events.\n\n\n    callback\n        Any callable Python object that expects no parameters. It could\n        be a Python function, a bound method, or any object implementing\n        __call__.\n\n  > def checkForAndProcessEvents():\n  >     # Here is where you would check for and process any events.\n  >     pass\n  > \n  > hou.ui.addEventLoopCallback(checkForAndProcessEvents)\n\n    You might use this ",
+      "signature": "(callback: 'InterpreterObject') -> 'void'"
+    },
+    "hou.ui.postEventCallback": {
+      "doc": "\n\npostEventCallback(callback)\n\n    Register a Python callback to be called next in Houdini's event\n    loop. This will be called only once.\n\n\n    callback\n        Any callable Python object that expects no parameters. It could\n        be a Python function, a bound method, or any object implementing\n        __call__.\n\n\n",
+      "signature": "(callback: 'InterpreterObject') -> 'void'"
+    }
+  },
+  "extra": {
+    "ropRenderEventType": true,
+    "RopNodeRenderEventType": false,
+    "renderEventType": false,
+    "hou_names_with_event": [
+      "CompositorViewerEvent",
+      "PerfMonEvent",
+      "UIEvent",
+      "UIEventDevice",
+      "ViewerEvent",
+      "bookmarkEvent",
+      "geometryViewportEvent",
+      "hdaEventType",
+      "hipFileEventType",
+      "nodeEventType",
+      "playbarEvent",
+      "resourceEventMessage",
+      "ropRenderEventType",
+      "sceneViewerEvent",
+      "uiEventReason",
+      "uiEventValueType",
+      "viewportVisualizerEventType"
+    ]
+  }
+}

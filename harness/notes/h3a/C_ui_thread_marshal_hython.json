@@ -1,0 +1,295 @@
+{
+  "schema": "h3a_probe/v1",
+  "producer": "harness/notes/h3a_probe.py",
+  "group": "C_ui_thread_marshal",
+  "interpreter": {
+    "executable": "C:\\Program Files\\Side Effects Software\\Houdini 22.0.368\\bin\\hython3.13.exe",
+    "python": "3.13.10",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "thread_is_main": true,
+    "hfs": "C:/PROGRA~1/SIDEEF~1/HOUDIN~1.368",
+    "houdini_build": "22.0.368",
+    "ui_available": false,
+    "has_hou_ui": false
+  },
+  "controls_ok": true,
+  "controls": {
+    "positive_ok": true,
+    "negative_ok": true,
+    "positive": [
+      {
+        "symbol": "hou.node",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.node",
+        "evidence": "resolved; __doc__[:160]='\\n\\nhou.node\\n\\nGiven a path string, return a Node object. Return None if the path does\\nnot refer to a node.\\n\\nUSAGE\\n  node(path) -> hou.OpNode or None\\n\\nIf the path '",
+        "type": "function",
+        "signature": "(path: 'char const *') -> 'HOM_Node *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.Node.type",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.Node.type",
+        "evidence": "resolved; __doc__[:160]='\\n\\ntype(self) -> hou.NodeType\\n\\n    Return the hou.NodeType object for this node.\\n\\n    For example, all camera node instances share the same node type.\\n\\n\\n'",
+        "type": "function",
+        "signature": "(self) -> 'HOM_NodeType *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      },
+      {
+        "symbol": "hou.undos.group",
+        "verdict": "EXISTS",
+        "resolved_through": "hou.undos.group",
+        "evidence": "resolved; __doc__[:160]='\\n\\ngroup(label, editor=None) -> hou.UndosGroup\\n\\n    Returns a context manager, within which all changes to Houdini are\\n    recorded as a single action on the und'",
+        "type": "method",
+        "signature": "(label: 'char const *', editor: 'NetworkEditor' = None) -> 'HOM_UndosGroup *'",
+        "dir_size_of_parent": null,
+        "near_misses": null
+      }
+    ],
+    "negative": [
+      {
+        "symbol": "hou.zzz_h3a_control_must_not_exist",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'zzz_h3a_control_must_not_exist' not in dir(hou) (853 names); nearest existing: none within cutoff 0.5",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": []
+      },
+      {
+        "symbol": "hou.pdg",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'pdg' not in dir(hou) (853 names); nearest existing: ['pwd', 'Edge']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "pwd",
+          "Edge"
+        ]
+      },
+      {
+        "symbol": "hou.secure",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'secure' not in dir(hou) (853 names); nearest existing: ['userName', 'setFrame', 'shaderType', 'encode', 'decode']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "userName",
+          "setFrame",
+          "shaderType",
+          "encode",
+          "decode"
+        ]
+      },
+      {
+        "symbol": "hou.lopNetworks",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'lopNetworks' not in dir(hou) (853 names); nearest existing: ['LopNetwork', 'OpNetworkDot', 'OpNetworkBox', 'NetworkDot', 'NetworkBox']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "LopNetwork",
+          "OpNetworkDot",
+          "OpNetworkBox",
+          "NetworkDot",
+          "NetworkBox"
+        ]
+      },
+      {
+        "symbol": "hou.updateGraphTick",
+        "verdict": "ABSENT",
+        "resolved_through": "hou",
+        "evidence": "'updateGraphTick' not in dir(hou) (853 names); nearest existing: ['patternMatch', 'ChannelGraph']",
+        "type": null,
+        "signature": null,
+        "dir_size_of_parent": 853,
+        "near_misses": [
+          "patternMatch",
+          "ChannelGraph"
+        ]
+      }
+    ],
+    "failure_condition": "positive_ok is False if any of ['hou.node', 'hou.Node.type', 'hou.undos.group'] reports != EXISTS; negative_ok is False if any of ['hou.zzz_h3a_control_must_not_exist', 'hou.pdg', 'hou.secure', 'hou.lopNetworks', 'hou.updateGraphTick'] reports != ABSENT. controls_ok False => the whole run is UNINTERPRETABLE."
+  },
+  "counts": {
+    "total": 14,
+    "EXISTS": 1,
+    "ABSENT": 8,
+    "UNVERIFIABLE": 5
+  },
+  "results": [
+    {
+      "symbol": "hdefereval",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": "hdefereval",
+      "evidence": "import hdefereval failed -> ImportError: hdefereval is only available in a graphical Houdini",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval.executeDeferred",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": "hdefereval",
+      "evidence": "import hdefereval failed -> ImportError: hdefereval is only available in a graphical Houdini",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval.executeInMainThreadWithResult",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": "hdefereval",
+      "evidence": "import hdefereval failed -> ImportError: hdefereval is only available in a graphical Houdini",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval.executeInMainThread",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": "hdefereval",
+      "evidence": "import hdefereval failed -> ImportError: hdefereval is only available in a graphical Houdini",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hdefereval.executeDeferredAfterWaiting",
+      "verdict": "UNVERIFIABLE",
+      "resolved_through": "hdefereval",
+      "evidence": "import hdefereval failed -> ImportError: hdefereval is only available in a graphical Houdini",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.isUIAvailable",
+      "verdict": "EXISTS",
+      "resolved_through": "hou.isUIAvailable",
+      "evidence": "resolved; __doc__[:160]='\\n\\nhou.isUIAvailable\\n\\nReturn whether or not the hou.ui module is available.\\n\\nUSAGE\\n  isUIAvailable() -> bool\\n\\nThe hou.ui module is not available in the command-l'",
+      "type": "function",
+      "signature": "() -> 'bool'",
+      "dir_size_of_parent": null,
+      "near_misses": null
+    },
+    {
+      "symbol": "hou.ui",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'ui' not in dir(hou) (853 names); nearest existing: ['cubic', 'ik']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 853,
+      "near_misses": [
+        "cubic",
+        "ik"
+      ]
+    },
+    {
+      "symbol": "hou.ui.addEventLoopCallback",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'ui' not in dir(hou) (853 names); nearest existing: ['cubic', 'ik']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 853,
+      "near_misses": [
+        "cubic",
+        "ik"
+      ]
+    },
+    {
+      "symbol": "hou.ui.removeEventLoopCallback",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'ui' not in dir(hou) (853 names); nearest existing: ['cubic', 'ik']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 853,
+      "near_misses": [
+        "cubic",
+        "ik"
+      ]
+    },
+    {
+      "symbol": "hou.ui.eventLoopCallbacks",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'ui' not in dir(hou) (853 names); nearest existing: ['cubic', 'ik']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 853,
+      "near_misses": [
+        "cubic",
+        "ik"
+      ]
+    },
+    {
+      "symbol": "hou.ui.postEventCallback",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'ui' not in dir(hou) (853 names); nearest existing: ['cubic', 'ik']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 853,
+      "near_misses": [
+        "cubic",
+        "ik"
+      ]
+    },
+    {
+      "symbol": "hou.ui.setStatusMessage",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'ui' not in dir(hou) (853 names); nearest existing: ['cubic', 'ik']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 853,
+      "near_misses": [
+        "cubic",
+        "ik"
+      ]
+    },
+    {
+      "symbol": "hou.ui.interruptDialog",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'ui' not in dir(hou) (853 names); nearest existing: ['cubic', 'ik']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 853,
+      "near_misses": [
+        "cubic",
+        "ik"
+      ]
+    },
+    {
+      "symbol": "hou.ui.curDesktop",
+      "verdict": "ABSENT",
+      "resolved_through": "hou",
+      "evidence": "'ui' not in dir(hou) (853 names); nearest existing: ['cubic', 'ik']",
+      "type": null,
+      "signature": null,
+      "dir_size_of_parent": 853,
+      "near_misses": [
+        "cubic",
+        "ik"
+      ]
+    }
+  ]
+}

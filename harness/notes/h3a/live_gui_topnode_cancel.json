@@ -1,0 +1,94 @@
+{
+  "schema": "h3a_topnode_cancel/v1",
+  "producer": "live GUI session via synapse bridge",
+  "houdini_build": "22.0.368",
+  "ui_available": true,
+  "dir_len_hou_TopNode": 360,
+  "controls": {
+    "pos_hou_node": true,
+    "pos_TopNode_type": true,
+    "neg_synthetic": false,
+    "neg_lopNetworks": false,
+    "ok": true
+  },
+  "symbols": {
+    "cancelCook": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "\n\ncancelCook(self)\n\n    Cancels the current cook\n\n\n",
+      "own_or_inherited": "own"
+    },
+    "pauseCook": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "\n\npauseCook(self)\n\n    Pauses the current cook. This is the same as canceling the cook,\n    except any work items that have already been scheduled are allowed\n    to continue executing. No new work items will be run until the next\n    cook is initiated, and work items that have not yet been scheduled\n    will be canceled.\n\n\n",
+      "own_or_inherited": "own"
+    },
+    "getCookState": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "",
+      "own_or_inherited": "own"
+    },
+    "dirtyAllWorkItems": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "\n\ndirtyAllWorkItems(self, remove_outputs)\n\n    Deletes all work items in the PDG graph owned by the TOP Network.\n\n\n    remove_outputs\n        If True, then it will also delete all generated file results\n        from disk.\n\n\n",
+      "own_or_inherited": "own"
+    },
+    "dirtyWorkItems": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "\n\ndirtyWorkItems(self, remove_outputs)\n\n    Deletes all work items in this node.\n\n\n    remove_outputs\n        If True, then it will also delete all generated file results\n        from disk.\n\n\n",
+      "own_or_inherited": "own"
+    },
+    "dirtyAllTasks": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "\n\ndirtyAllTasks(self, remove_outputs)\n\n    This method is deprecated in favor of hou.TopNode.dirtyAllWorkItems.\n\n\n",
+      "own_or_inherited": "own"
+    },
+    "dirtyTasks": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "\n\ndirtyTasks(self, remove_outputs)\n\n    This method is deprecated in favor of hou.TopNode.dirtyWorkItems.\n\n\n",
+      "own_or_inherited": "own"
+    },
+    "cookWorkItems": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "\n\ncookWorkItems(self, block=False, generate_only=False, tops_only=False,\nsave_prompt=False, nodes=[])\n\n    Generates and cook work items in the specified TOP nodes. All of the\n    nodes must be from the same network. If the nodes list is empty,\n    this method will cook the node this TOP node.\n\n\n    block\n        If the block argument is set to True the method will block the\n        caller until t",
+      "own_or_inherited": "own"
+    },
+    "cookAllOutputWorkItems": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "",
+      "own_or_inherited": "own"
+    },
+    "getPDGGraphContext": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "",
+      "own_or_inherited": "own"
+    },
+    "getPDGNode": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "",
+      "own_or_inherited": "own"
+    },
+    "getPDGGraphContextName": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "\n\ngetPDGGraphContextName(self) -> str\n\n    Returns a string containing the name of the graph context owned by\n    the parent network of this node.\n\n    If the TOP node has not been cooked yet by cookWorkItems() (thus\n    generating the underlying PDG), then this method returns None.\n\n\n",
+      "own_or_inherited": "own"
+    },
+    "taskGraphCommands": {
+      "exists_on_hou_TopNode": true,
+      "in_dir": true,
+      "doc": "\n\ntaskGraphCommands(self) -> str\n\n    Returns a string containing python commands require to construct the\n    PDG task graph owned by the parent network of this node.\n\n\n",
+      "own_or_inherited": "own"
+    }
+  }
+}
