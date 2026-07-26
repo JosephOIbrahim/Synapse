@@ -1,0 +1,592 @@
+{
+ "schema": "h7_controls/v1",
+ "all_passed": true,
+ "controls": [
+  {
+   "id": "C1",
+   "what": "hom.zip reader returns the KNOWN answer for RopNode: no cancel verb",
+   "fails_when": "fails if any cancel/abort/interrupt/kill member is found on hou.RopNode",
+   "passed": true,
+   "detail": {
+    "members": [
+     "addRenderEventCallback",
+     "bypass",
+     "inputDependencies",
+     "isBypassed",
+     "isLocked",
+     "removeAllRenderEventCallbacks",
+     "removeRenderEventCallback",
+     "render",
+     "setLocked"
+    ],
+    "cancel_like": [],
+    "entry": "hou/RopNode.txt",
+    "chars": 7035
+   }
+  },
+  {
+   "id": "C2",
+   "what": "hom.zip reader returns the KNOWN answer for TopNode: dirtyAllTasks(self, remove_outputs) + its deprecation notice verbatim",
+   "fails_when": "fails if the signature is absent, the arg name is not remove_outputs, or the deprecation notice is not detected",
+   "passed": true,
+   "detail": {
+    "lookup": {
+     "entry": "hou/TopNode.txt",
+     "line": 113,
+     "deprecated": true,
+     "verbatim": "This method is deprecated in favor of [Hom:hou.TopNode#dirtyAllWorkItems].",
+     "shape": "member"
+    },
+    "signature_lines": [
+     "::`dirtyAllTasks(self, remove_outputs)`:"
+    ]
+   }
+  },
+  {
+   "id": "C3",
+   "what": "hom.zip returns ABSENT for the three quarantined phantoms",
+   "fails_when": "fails if hou.lopNetworks / hou.updateGraphTick / hou.secure resolve in the shipped reference",
+   "passed": true,
+   "detail": {
+    "hou.lopNetworks": null,
+    "hou.updateGraphTick": null,
+    "hou.secure": null
+   }
+  },
+  {
+   "id": "C4",
+   "what": "hom.zip returns ABSENT for a fabricated name",
+   "fails_when": "fails if hou.bananaSplitPane resolves - would mean the reader answers yes to anything",
+   "passed": true,
+   "detail": "hou.bananaSplitPane"
+  },
+  {
+   "id": "C5",
+   "what": "hom.zip DISCRIMINATES builds: 22.0.368 corpus differs from 21.0.773",
+   "fails_when": "fails if the two builds' hom.zip hash or entry set are identical - the corpus would not be build-pinned",
+   "passed": true,
+   "detail": {
+    "sha16_22": "0b1d74b453327397",
+    "sha16_21": "1706e1f56695b7a6",
+    "entries_22": 966,
+    "entries_21": 938,
+    "added_in_22": 29,
+    "removed_in_22": 1,
+    "removed_examples": [
+     "hou/ChannelListPane.txt"
+    ]
+   }
+  },
+  {
+   "id": "C6",
+   "what": "nodes.zip deprecation detector CAN FIRE - it finds real notices when present",
+   "fails_when": "fails if zero node pages carry a deprecation notice, which would make every 'clean' verdict vacuous",
+   "passed": true,
+   "detail": {
+    "pages_with_notice": 193,
+    "of_pages": 5032,
+    "examples": [
+     {
+      "entry": "apex/rig--CurveIK.txt",
+      "line": 9,
+      "verbatim": "#status: deprecated"
+     },
+     {
+      "entry": "chop/extractbonetransforms.txt",
+      "line": 10,
+      "verbatim": "\"\"\"(Deprecated) Extracts the current world or local space bone transforms from a geometry object.\"\"\""
+     },
+     {
+      "entry": "chop/extractposedrivers.txt",
+      "line": 10,
+      "verbatim": "\"\"\"(Deprecated) Creates channels from the specified derived transforms, node parameters and CHOP channels for pose-space deformation.\"\"\""
+     }
+    ]
+   }
+  },
+  {
+   "id": "C7",
+   "what": "R72's headline finding survives promotion to the AUTHORITATIVE node source",
+   "fails_when": "fails if lop/karmarenderproperties.txt or lop/karma.txt is absent from nodes.zip, or if either DOES mention deprecation - either outcome would refute doc_silent_deprecation on its founding members",
+   "passed": true,
+   "detail": {
+    "lop/karmarenderproperties.txt": {
+     "chars": 56325,
+     "since": "18.0",
+     "deprecated": false
+    },
+    "lop/karma.txt": {
+     "chars": 2556,
+     "since": "18.0",
+     "deprecated": false
+    }
+   }
+  },
+  {
+   "id": "C8",
+   "what": "nodes.zip DISCRIMINATES builds: 22.0.368 corpus differs from 21.0.773",
+   "fails_when": "fails if the two builds' nodes.zip hash or entry set are identical",
+   "passed": true,
+   "detail": {
+    "sha16_22": "cfa30f26619b252e",
+    "sha16_21": "de421c88f23b0947",
+    "entries_22": 5032,
+    "entries_21": 4772,
+    "added_in_22": 269,
+    "removed_in_22": 9,
+    "removed_examples": [
+     "dop/gasdissipate-2.0.txt",
+     "lop/instancer.txt",
+     "lop/layout.txt",
+     "sop/_layoutbrush.txt",
+     "vop/sensor_panorama_color.txt"
+    ]
+   }
+  },
+  {
+   "id": "C9",
+   "what": "tops.zip carries the pdg reference and its detector fires",
+   "fails_when": "fails if pdg.EventType does not resolve, or if no pdg page carries a deprecation notice",
+   "passed": true,
+   "detail": {
+    "pdg.EventType": {
+     "entry": "pdg/EventType.txt",
+     "line": 1,
+     "deprecated": false,
+     "verbatim": null,
+     "shape": "page"
+    },
+    "pages": 223,
+    "pages_with_notice": 3,
+    "notice_examples": [
+     "pdg/Mapper.txt",
+     "pilotpdg.txt",
+     "servers.txt"
+    ]
+   }
+  },
+  {
+   "id": "C10a",
+   "what": "help-cache reader corroborates the karma silence as a SECOND source",
+   "fails_when": "fails if either cached karma page is unreadable or DOES mention deprecation - it would contradict nodes.zip and force a re-look",
+   "passed": true,
+   "detail": {
+    "karmarenderproperties": {
+     "path": "nodes\\lop\\karmarenderproperties.json",
+     "chars": 144360,
+     "deprecated": false
+    },
+    "karma": {
+     "path": "nodes\\lop\\karma.json",
+     "chars": 193387,
+     "deprecated": false
+    },
+    "note": "reproducible measure: raw file chars. R72's 69,921/95,777 do not reproduce - see cited_number_audit."
+   }
+  },
+  {
+   "id": "C10b",
+   "what": "help-cache deprecation detector CAN FIRE",
+   "fails_when": "fails if zero cached node docs mention deprecation, which would make C10a vacuous",
+   "passed": true,
+   "detail": {
+    "docs_with_mention": 206,
+    "of_docs": 1587,
+    "r72_claimed": 207,
+    "delta_explained_by": "nodes/index.json is counted as a node doc by R72's walker and not by this one (same +1 offset as 1,588 vs 1,587)"
+   }
+  },
+  {
+   "id": "C10c",
+   "what": "help-cache ABSENCE is proven NOT to be evidence",
+   "fails_when": "fails if every LOP type documented in the shipped nodes.zip is also present in the cache - then absence would carry information and R72 rule 2 would be too strong",
+   "passed": true,
+   "detail": {
+    "lop_types_in_shipped_reference": 198,
+    "of_those_absent_from_cache": 160,
+    "examples": [
+     "additionalrendervars",
+     "addvariant",
+     "apexanimate",
+     "apexsoprigbuilder",
+     "assetreference",
+     "assignmaterial",
+     "assignprototypes",
+     "attribvop"
+    ],
+    "note": "R72 rule 2 demonstrated live: these are documented by the build's own reference and missing from the cache purely because nobody opened the page."
+   }
+  },
+  {
+   "id": "C11",
+   "what": "shipped-source reader is TWO-SIDED on hdefereval",
+   "fails_when": "fails unless executeInMainThreadWithResult is FOUND and executeInMainThread is NOT - a reader that answers the same way to both is uncalibrated",
+   "passed": true,
+   "detail": {
+    "with_result": {
+     "exists": true,
+     "anchor": "hdefereval.py:43",
+     "kind": "def",
+     "deeper": null
+    },
+    "bare": {
+     "exists": false,
+     "anchor": "hdefereval",
+     "kind": null,
+     "basis": "absent from the build's own shipped source for this module"
+    }
+   }
+  },
+  {
+   "id": "C14",
+   "what": "every named deprecation MARKER is exercised by at least one real page",
+   "fails_when": "fails if any marker class matches zero pages - a marker that never fires is dead code being counted as coverage",
+   "passed": true,
+   "detail": {
+    "fired": {
+     "status_header": 21,
+     "summary_prose": 32,
+     "include_banner": 149,
+     "warning_block": 9,
+     "body_notice": 11
+    },
+    "examples": {
+     "status_header": "apex/rig--CurveIK.txt:9",
+     "summary_prose": "chop/extractbonetransforms.txt:10",
+     "include_banner": "cop2/add.txt:11",
+     "warning_block": "dop/pyrosolver.txt:14",
+     "body_notice": "out/opengl.txt:20"
+    },
+    "never_fired": []
+   }
+  },
+  {
+   "id": "C15",
+   "what": "detector does NOT fire on a page that only mentions a deprecated PARAMETER",
+   "fails_when": "fails if sop/edit.txt, lop/addvariant.txt, dop/crowdsolver.txt or lop/copyproperty.txt is called deprecated - each only mentions a deprecated parameter, local variable or menu option",
+   "passed": true,
+   "detail": {
+    "probes": {
+     "sop/edit.txt": {
+      "deprecated": false,
+      "parm_level_only": {
+       "line": 213,
+       "verbatim": "Radius with Connectivity (deprecated):"
+      }
+     },
+     "lop/addvariant.txt": {
+      "deprecated": false,
+      "parm_level_only": {
+       "line": 146,
+       "verbatim": "In the expression you can use the `@input` local variable (`$IIDX` is deprecated) as the index of the current input (numbered from left to right starting at 1 for the multi-inputs)."
+      }
+     },
+     "dop/crowdsolver.txt": {
+      "deprecated": false,
+      "parm_level_only": {
+       "line": 171,
+       "verbatim": "Simple (Deprecated):"
+      }
+     },
+     "lop/copyproperty.txt": {
+      "deprecated": false,
+      "parm_level_only": {
+       "line": 28,
+       "verbatim": "`@numprim` (`$NPRIM` is deprecated):"
+      }
+     },
+     "sop/apex--autorigcomponent.txt": {
+      "deprecated": false,
+      "parm_level_only": {
+       "line": 32,
+       "verbatim": "* If set to __Deprecated__, choose from the list of deprecated components in the drop-down menu that appears beside the __Component Source__ drop-down."
+      }
+     }
+    },
+    "wrongly_deprecated": [],
+    "parm_level_seen": [
+     "sop/edit.txt",
+     "lop/addvariant.txt",
+     "dop/crowdsolver.txt",
+     "lop/copyproperty.txt",
+     "sop/apex--autorigcomponent.txt"
+    ]
+   }
+  },
+  {
+   "id": "C16",
+   "what": "detector does NOT fire on a member merely NAMED 'deprecated'",
+   "fails_when": "fails if hou.ApexNodeType.deprecated is reported deprecated - the accessor describes deprecation, it is not deprecated",
+   "passed": true,
+   "detail": {
+    "entry": "hou/ApexNodeType.txt",
+    "line": 18,
+    "deprecated": false,
+    "verbatim": null,
+    "shape": "member"
+   }
+  },
+  {
+   "id": "C17",
+   "what": "detector DOES fire on both real HOM shapes: include-banner and prose notice",
+   "fails_when": "fails if hou.Cop2Node (old-COPs include banner), hou.ChannelEditorPane (#status header) or hou.expandString (prose notice) is reported current",
+   "passed": true,
+   "detail": {
+    "hou.Cop2Node": {
+     "deprecated": true,
+     "anchor": "hou/Cop2Node.txt:14",
+     "verbatim": ":include /composite/_old_cops_deprecated:"
+    },
+    "hou.ChannelEditorPane": {
+     "deprecated": true,
+     "anchor": "hou/ChannelEditorPane.txt:6",
+     "verbatim": "#status: deprecated"
+    },
+    "hou.expandString": {
+     "deprecated": true,
+     "anchor": "hou/expandString.txt:11",
+     "verbatim": "This method is deprecated in favor of [Hom:hou.text#expandString]."
+    }
+   }
+  },
+  {
+   "id": "C18",
+   "what": "member deprecation is INHERITED from a deprecated owner page",
+   "fails_when": "fails if a method on hou.Cop2Node is reported current while the class page carries the old-COPs deprecation banner",
+   "passed": true,
+   "detail": {
+    "members": 35,
+    "inherited": 35,
+    "examples": [
+     "hou.Cop2Node.allPixels",
+     "hou.Cop2Node.allPixelsAsString",
+     "hou.Cop2Node.bypass",
+     "hou.Cop2Node.components",
+     "hou.Cop2Node.depth"
+    ]
+   }
+  },
+  {
+   "id": "C19",
+   "what": "variable-notice guard: a deprecated LOCAL VARIABLE does not deprecate its node, and the guard does not over-correct",
+   "fails_when": "fails if lop/reference.txt or lop/editproperties.txt is called deprecated (both only note a deprecated $VAR in prose), OR if dop/smokeobject.txt (:warning block) or manager/cop2net.txt (:include banner) is called current",
+   "passed": true,
+   "detail": {
+    "verdicts": {
+     "lop/reference.txt": false,
+     "lop/editproperties.txt": false,
+     "lop/duplicate.txt": false,
+     "dop/smokeobject.txt": true,
+     "manager/cop2net.txt": true,
+     "lop/karmaocean.txt": true
+    },
+    "note": "SYNAPSE has 78 occurrences of the LOP Reference node; a false deprecation here would be the most damaging error in the leg."
+   }
+  },
+  {
+   "id": "C20",
+   "what": "the category-scope guard is TWO-SIDED: it drops the false alarms and keeps the resolved ones",
+   "fails_when": "fails if `duplicate`/`cop2net` are counted as deprecated (H5 proved by live probe that SYNAPSE's sites sit in the NON-deprecated categories), OR if `karma`/`karmarenderproperties` are dropped (H5 recorded emission_category_resolved=Lop, the deprecated one - a guard that also swallows these has removed the finding it was meant to protect)",
+   "passed": true,
+   "detail": {
+    "duplicate": {
+     "raw": true,
+     "honoured": null,
+     "scoped_away": true,
+     "emission_category_resolved": null,
+     "h5_quadrant": "OK"
+    },
+    "cop2net": {
+     "raw": true,
+     "honoured": null,
+     "scoped_away": true,
+     "emission_category_resolved": null,
+     "h5_quadrant": "OK"
+    },
+    "karma": {
+     "raw": true,
+     "honoured": true,
+     "scoped_away": false,
+     "emission_category_resolved": "Lop",
+     "h5_quadrant": "DECAY_CLOCK"
+    },
+    "karmarenderproperties": {
+     "raw": true,
+     "honoured": true,
+     "scoped_away": false,
+     "emission_category_resolved": null,
+     "h5_quadrant": "DECAY_CLOCK"
+    }
+   }
+  },
+  {
+   "id": "C21",
+   "what": "the dir() table's SCOPE LIMIT is applied in BOTH directions",
+   "fails_when": "fails if hou.undos.beginGroup is called PHANTOM or OUT_OF_MATRIX (the table holds zero children of hou.undos, so its silence is not evidence - this is the exact defect H5's own CORRECTION records), OR if pdg.PyEventCallback is NOT called PHANTOM (the table does enumerate pdg's children, so there absence IS proof)",
+   "passed": true,
+   "detail": {
+    "hou.undos.beginGroup": "undecidable",
+    "pdg.PyEventCallback": "absent_proof",
+    "hou.undos.group (real, absent from table - H5's CORRECTION case)": "undecidable"
+   }
+  },
+  {
+   "id": "C22",
+   "what": "a census token that is a FILENAME is not adjudicated as an API",
+   "fails_when": "fails if hdefereval.py is classified PHANTOM - that asserts a nonexistent API where the token is not an API reference at all",
+   "passed": true,
+   "detail": {
+    "hdefereval.py": "filename, not a symbol reference",
+    "...": "not a well-formed dotted symbol",
+    "hou.TopNode.dirtyAllTasks": null
+   }
+  },
+  {
+   "id": "C23",
+   "what": "the node-page PROSE marker is two-sided on the nine pages that depend on it alone",
+   "fails_when": "fails if any of the five real 'This node/operator is deprecated' pages goes clean (dropping the marker would lose them), OR if any of the four subject-mismatch pages stays deprecated - a deprecated OPTION, WORKFLOW or PARAMETER is not a deprecated node",
+   "passed": true,
+   "detail": {
+    "must_be_deprecated": {
+     "sop/polyknit.txt": [
+      true,
+      "body_notice"
+     ],
+     "sop/bakeode.txt": [
+      true,
+      "body_notice"
+     ],
+     "vop/hmtlxcolorcorrect.txt": [
+      true,
+      "body_notice"
+     ],
+     "vop/oglass.txt": [
+      true,
+      "body_notice"
+     ],
+     "out/opengl.txt": [
+      true,
+      "body_notice"
+     ]
+    },
+    "must_be_clean": {
+     "dop/flipsolver.txt": [
+      false,
+      null
+     ],
+     "vop/kma_nesteddielectrics.txt": [
+      false,
+      null
+     ],
+     "obj/common.txt": [
+      false,
+      null
+     ],
+     "dop/standard_constraintnetworkattribs.txt": [
+      false,
+      null
+     ]
+    }
+   }
+  },
+  {
+   "id": "C24",
+   "what": "the residual-shape characterisation is DETERMINISTIC across hash seeds",
+   "fails_when": "fails if the leaf->owner-root tie-break depends on set iteration order. The first version reported 335/112/81 on one run and 338/110/80 on the next; a number that changes between runs has no producer path (Law 2)",
+   "passed": true,
+   "detail": {
+    "probes": {
+     "Get": [
+      "pxr",
+      "pxr",
+      {
+       "pxr": 135
+      }
+     ],
+     "Set": [
+      "pxr",
+      "pxr",
+      {
+       "pxr": 20
+      }
+     ],
+     "handle": [
+      "hou",
+      "hou",
+      {
+       "hou": 3
+      }
+     ],
+     "wait": [
+      "hou",
+      "hou",
+      {
+       "hou": 1,
+       "pdg": 1
+      }
+     ],
+     "cook": [
+      "hou",
+      "hou",
+      {
+       "hou": 14,
+       "pdg": 6
+      }
+     ],
+     "render": [
+      "hou",
+      "hou",
+      {
+       "hou": 1,
+       "pxr": 1
+      }
+     ]
+    },
+    "owner_lists_sorted": true
+   }
+  },
+  {
+   "id": "C12",
+   "what": "the H5 ledger loaded is the artifact H5 actually shipped",
+   "fails_when": "fails if the ledger's recorded commit/model/UNVERIFIABLE count do not match what H5's receipt claims",
+   "passed": true,
+   "detail": {
+    "leg": "H5",
+    "commit": "0a88f5fbd840",
+    "model": "claude-opus-5[1m]",
+    "UNVERIFIABLE": 1267,
+    "sha256_16": "0c8ad1d37266c8f7"
+   }
+  }
+ ],
+ "cited_number_audit": {
+  "karmarenderproperties": {
+   "claim": 69921,
+   "measures": {
+    "file_bytes": 144360,
+    "utf8_chars": 144360,
+    "json_dumps": 144360,
+    "string_leaf_chars": 66676,
+    "string_leaf_chars_plus_keys": 91477
+   },
+   "reproduced_by": [],
+   "closest": "string_leaf_chars",
+   "mtime_utc": null,
+   "mtime_epoch": 1784136747
+  },
+  "karma": {
+   "claim": 95777,
+   "measures": {
+    "file_bytes": 193387,
+    "utf8_chars": 193387,
+    "json_dumps": 193387,
+    "string_leaf_chars": 91547,
+    "string_leaf_chars_plus_keys": 123979
+   },
+   "reproduced_by": [],
+   "closest": "string_leaf_chars",
+   "mtime_utc": null,
+   "mtime_epoch": 1784136747
+  }
+ }
+}
