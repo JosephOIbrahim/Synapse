@@ -141,3 +141,8 @@ docs/nca_* are tracked, so a blanket rule is safe. L0.F12.)
 
 # Release-week demo captures (Leg 1) â€” raw screen recordings, never tracked
 demo/captures/
+
+# R47 measurement instrument - supplies the shipping interpreter's missing deps.
+# Regenerate with harness/supply_shipping_deps.ps1; never a substitute for vendoring.
+.hython_deps/
+.pytest_bt_*/
