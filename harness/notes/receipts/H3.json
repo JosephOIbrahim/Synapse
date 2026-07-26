@@ -1,0 +1,76 @@
+{
+  "schema": "receipt/v1",
+  "leg": "H3",
+  "title": "Cook-cancel",
+  "harness": "REPAIR-01",
+  "status": "held_not_started",
+  "status_note": "Describes what happened (Law 3): H3 was NOT started. No worktree, no agent, no probe, no implementation. The safety gap it targets is REAL and remains OPEN - this hold does not close it and must not be read as closing it.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "n/a - not dispatched",
+
+  "hold_reason": {
+    "authority": "harness/SYNAPSE_REPAIR_HEATS.md:153 - the section-4 branch table",
+    "row_taken": "shipping materially < gate",
+    "instruction": "STOP. The delta is the finding. Re-scope H1 to diagnose it and hold H2/H3.",
+    "orchestrator_reasoning": "H3 is the one leg that would have written NEW production code against the live bridge and then certified it. Its certification step - seam-hunter against a real cook - runs on the shipping interpreter, which cannot currently collect the suite. Building an off-UI-thread cancel path and declaring it safe against an unmeasurable baseline is precisely the class of claim this harness exists to prevent: a repair you cannot verify is a claim, not a fix. Of the three heats, holding this one costs the most and is the most clearly correct."
+  },
+
+  "the_open_safety_gap": {
+    "severity": "user_facing_open",
+    "ruling": "R29",
+    "summary": "_on_stop aborts the agent loop cooperatively and is honest about it, but cannot cancel an in-flight cook - deferred by its own comment: 'must run off the UI thread against a live bridge.' An artist mid-Karma-render has a Stop button that will not stop the render.",
+    "status_after_this_run": "UNCHANGED AND OPEN. Nothing in REPAIR-01 touched it.",
+    "must_appear_in": "docs/RELEASE_NOTES.md as a known-broken item, plainly stated (F2's charter). It is the single most user-visible defect left open by this run."
+  },
+
+  "what_H3_would_have_done": {
+    "agents": ["prospector", "assayer", "h22-forge", "seam-hunter"],
+    "work": [
+      "prospector specifies the cancel contract",
+      "assayer confirms every hou.* symbol LIVE on 22.0.368 - tops_cancel_cook, render-ROP interrupt, cancelCook() on the PDG graph. Confirmed-absent APIs are quarantined, never worked around.",
+      "h22-forge implements off-UI-thread dispatch against the live bridge",
+      "surface EmergencyProtocol.trigger_emergency_halt as a SECOND, DISTINCT control in the rail's overflow - not a rename of Stop, not competing with it (R29)",
+      "seam-hunter certifies against a real cook"
+    ],
+    "stated_acceptable_outcome": "If the live symbols are absent on 22.0.368, THAT is the deliverable - reported as a SideFX ask, with no invented workaround."
+  },
+
+  "relevant_prior_evidence": [
+    {
+      "note": "Memory records a CONFIRMED render-freeze chokepoint: _handle_render -> executeInMainThreadWithResult (no timeout) -> node.render(), with all 6 render tools and the panel funnelling through it, the panel running it INLINE on the main thread. An Indie-path fix exists (foreground_guard + render_session registry + _handle_render_bounded). H3 should start from that, not from scratch.",
+      "tier": "UNVERIFIED in this run - carried from prior sessions, NOT re-probed. Treat as a starting hypothesis requiring its own live confirmation, per Law 5: the surface that remembers and the surface that verifies are different surfaces."
+    },
+    {
+      "note": "H22 hdefereval blocking marshal has no thread check and self-deadlocks when called from the main thread; executeInMainThread is a PHANTOM on H22. Any off-UI-thread cancel design must confirm its marshal primitive live before use.",
+      "tier": "UNVERIFIED in this run - carried from prior sessions."
+    }
+  ],
+
+  "findings": [],
+
+  "for_ruling": [
+    {
+      "id": "H3-R1",
+      "question": "Confirm the hold on the highest-value leg, or override it.",
+      "context": "This is the leg with real user impact. Holding it is defensible and I believe correct, but it is a judgement with a cost and it is not mine to make silently. The counter-argument is legitimate: the cancel path could be built and unit-certified on the gate interpreter, with live certification deferred. I rejected that because a Stop button certified against a mock is worse than a Stop button known not to work - the second is honest.",
+      "why_escalated": "Article I - a value judgement between defensible options, with a user-safety cost either way."
+    },
+    {
+      "id": "H3-R2",
+      "question": "F2's tag condition is 'no tag until H1 and H3 land.' H3 is held. Does the branch taken by section 4 change that condition, or does it stand?",
+      "context": "As written, holding H3 blocks the tag indefinitely. That may be exactly right, or the condition may need restating now that H1 has been re-scoped from 'wire the schemas' to 'diagnose the shipping delta'.",
+      "why_escalated": "Directly governs a release decision. F2 reports on the condition; it does not get to redefine it."
+    },
+    {
+      "id": "H3-R3",
+      "question": "Prior-session evidence about the render chokepoint and the hdefereval marshal is UNVERIFIED in this run. Should H3 begin with a re-probe leg before any design work?",
+      "recommendation": "Yes. Law 5 - every governing claim sourced from a probe held up; every claim sourced from recall of a prior chat failed."
+    }
+  ],
+
+  "resume_token": {
+    "skip": [],
+    "redo_if": "n/a - nothing was done",
+    "next": "Do not start H3 until H3-R1 is ruled. When it starts: git worktree add -b feat/repair-cook-cancel .claude/worktrees/repair-cook-cancel <pinned SHA>, verify AGENT_CONSTITUTION.md and CTO_RULINGS_01.md are present (R38), then prospector -> assayer -> h22-forge -> seam-hunter under harness/relay-settings.json. Begin with the live re-probe of the marshal primitive and the render chokepoint before any design."
+  }
+}

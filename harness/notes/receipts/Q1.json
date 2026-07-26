@@ -1,0 +1,259 @@
+{
+  "schema": "receipt/v1",
+  "leg": "Q1",
+  "title": "Unpoison the suite",
+  "harness": "REPAIR-01",
+  "status": "green_with_findings",
+  "status_note": "Describes what happened (Law 3): the access violation is removed and reproduced-then-repaired; two regression pins fail under their own mutation; the leg's DOCUMENTED positive control (tests/panel/ passes) was never satisfiable because 5 failures pre-exist on master. The control was narrowed to a validated two-sided pair rather than assumed.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "harness/relay-settings.json",
+  "settings_profile_rationale": "AGENT_CONSTITUTION.md:184 - the Q1 oracle requires pytest; agent-settings.json grants no pytest, so an oracle run under it would be theatre. Admission verdict issued by h22-gatewarden: ALLOW_WITH_CONDITIONS.",
+
+  "pins": {
+    "worktree": ".claude/worktrees/q1-unpoison",
+    "branch": "repair/q1-unpoison",
+    "base_commit": "904f5d1",
+    "commits": ["671079f", "f885d24"],
+    "doc_claimed_baseline": "4abf68a",
+    "doc_baseline_status": "STALE - master moved 4abf68a -> f90946d -> 30d41fe DURING this run; a concurrent harness (harness/run_solaris_repair.ps1, PID 52064) is committing in the main working directory. All work was pinned to explicit SHAs, never to the moving master ref."
+  },
+
+  "agents": [
+    {"role": "cartographer", "output": "map of poisoners; found the doc's anchor to be wrong"},
+    {"role": "assayer", "output": "live reproduction + mechanism + narrowed control + master comparison"},
+    {"role": "h22-gatewarden", "output": "ALLOW_WITH_CONDITIONS admission verdict"},
+    {"role": "h22-forge", "output": "671079f restore-by-identity; f885d24 completion pass"},
+    {"role": "crucible", "output": "PASS_WITH_FINDINGS; second certification pass in flight"}
+  ],
+
+  "positive_control": {
+    "required_by": "harness/SYNAPSE_REPAIR_HEATS.md:104",
+    "documented_control": "hython -m pytest tests/panel/ -> passes",
+    "documented_control_result": "RED, and red BEFORE any edit. exit 1, 5 failed / 27 passed.",
+    "pre_existing": true,
+    "pre_existing_evidence": "Identical 5 failures, identical test ids, on master (detached worktree at f90946d) and on the branch. Producer: hython -m pytest tests/panel/ -q, run in both trees.",
+    "action_taken": "Narrowed the control to one that CAN demonstrate success, rather than acting on an uninterpretable failure (standing order, D-R10/R34).",
+    "narrowed_control": {
+      "known_good": "hython -m pytest tests/panel/test_font_scale.py -> exit 0, 8 passed",
+      "known_bad": "hython -m pytest tests/panel/test_font_scale.py tests/test_hda_panel.py -> exit 139, access violation at test_font_scale.py:65 in app.font()",
+      "verdict": "VALID two-sided. Both success and the specific failure are demonstrable."
+    },
+    "clean_subset_7_files": ["test_chat_gate_off_bridge", "test_docking", "test_font_scale", "test_seeded_contrast", "test_theme_source", "test_token_seeding", "test_type_scale_native"]
+  },
+
+  "findings": [
+    {
+      "id": "Q1-F1",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "harness/SYNAPSE_REPAIR_HEATS.md:88-89 vs tests/test_hda_panel.py:159-161,172-175",
+      "severity": "structural",
+      "summary": "The governing document's Q1 anchor is wrong. It cites tests/test_hda_panel.py:20-40 as planting the PySide6 family. It does not - :20-40 plants hou and hdefereval only. PySide6 is EVICTED at :159-161 (setup, not teardown as the doc states) and STUBBED at :172-175, with no teardown anywhere in the 595-line file.",
+      "consequence": "A fix aimed at the documented range would have missed the defect entirely. This is a drift-log entry, not an apology - the document was wrong."
+    },
+    {
+      "id": "Q1-F2",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_hda_panel.py:172-175",
+      "severity": "structural",
+      "summary": "Mechanism, probed live on 22.0.368 / Python 3.13.10: once real PySide6 is deleted from sys.modules, re-importing returns a NEW but HALF-INITIALIZED module - Shiboken cannot re-init in-process. Probe: re-imported PySide6.QtWidgets has NO attribute QApplication; QThread import fails. The C++ QApplication singleton meanwhile stays ALIVE, so app.font() dereferences dead wrapper state -> access violation.",
+      "consequence": "DICTATED THE DESIGN. A teardown that restores by re-importing would not work and would look like it did. The fix captures the original module OBJECTS before eviction and restores those exact objects, checked by identity."
+    },
+    {
+      "id": "Q1-F3",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/panel/test_gate_consent_honesty.py:77, tests/panel/test_failure_trail.py:123,151",
+      "severity": "inherited",
+      "summary": "5 tests/panel/ failures pre-exist on master (3x 'object.__new__(GateWidget) is not safe', 2x real assertions). Q1 inherited them; Q1 did not cause them. They are NOT masked by the fix - tests/panel/ still reports exactly 5 failed / 27 passed after the repair.",
+      "scope_decision": "Excluded from Q1. Whether to repair them is a value judgement between defensible options -> escalated, see for_ruling."
+    },
+    {
+      "id": "Q1-F4",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "R30 minimal repro, restated in harness/SYNAPSE_REPAIR_HEATS.md:91-93",
+      "severity": "law2",
+      "summary": "R30's claim 'tests/panel/ alone -> 27 passed' travelled its PASS count without its FAIL count. The real result is exit 1, 5 failed / 27 passed. The number was correct and the conclusion drawn from it was not.",
+      "consequence": "Law 2 in miniature: a number without its producer and its full result set reads as health."
+    },
+    {
+      "id": "Q1-F5",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "run D: hython -m pytest tests/test_hda_panel.py tests/panel/",
+      "severity": "trap",
+      "summary": "Reversing the order yields exit 0 - and it is a VACUOUS green. 11 panel tests SKIP because test_hda_panel.py is imported first and its stubs are already resident, so the panel tests detect no Qt and opt out. Order-reversal would have 'fixed' the crash while hiding the coupling.",
+      "consequence": "Made zero-skip a load-bearing condition of the Q1 oracle. Reordering was already forbidden; this is why."
+    },
+    {
+      "id": "Q1-F6",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_panel_freeze_beat.py, tests/test_panel_stop_honest.py",
+      "severity": "showstopper_resolved",
+      "summary": "Same defect class one layer deeper, found by crucible: both files collected 0 tests and SKIPPED when run alone under system python (rc=5), passing in the full suite ONLY because an unrelated file leaked a PySide6 stub. 6 tests in the reported 4874 were cross-file-stub-dependent - the count was partly fictional.",
+      "resolution": "Repaired in f885d24 via tests/qt_stub_window.py, a scoped context manager that plants only when PySide6 is absent and removes by object identity. Both files now collect and pass alone (3+3) on BOTH interpreters.",
+      "note": "tests/test_panel_preflight.py was named in the same finding and was REFUTED - it passes 13 alone on both interpreters. Not touched."
+    },
+    {
+      "id": "Q1-F7",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_hda_panel.py:177 (pre-fix)",
+      "severity": "bounded_resolved",
+      "summary": "The __file__ filter distinguishing real file-backed Qt from sibling test files' in-memory stubs was LOAD-BEARING but UNPINNED. Crucible's mutation (break the filter) SLIPPED: the pin passed and both oracle legs stayed green; damage appeared only when a foreign-stub planter ran first (6 failures).",
+      "resolution": "Pinned in f885d24 by test_capture_real_qt_rejects_file_less_stubs (test_hda_panel.py:299), driven by a synthetic module map so it is interpreter-independent and order-independent. Mutation-tested: FAILS on both interpreters."
+    },
+    {
+      "id": "Q1-F8",
+      "tier": "VERIFIED-RUNTIME",
+      "anchor": "tests/test_hda_panel.py:291-306 (pre-fix)",
+      "severity": "bounded_resolved",
+      "summary": "The original pin was VACUOUS on CI. Where PySide6 is absent - which is the interpreter CI actually uses - _REAL_QT_MODULES is empty and the pin returned after one boolean assert, making three of four mutations undetectable there.",
+      "resolution": "Now honestly SKIPS with a stated reason on that interpreter (Law 1: a skip is honest, a vacuous pass is a lie). Mutation coverage on the CI interpreter is carried by the two new interpreter-independent pins."
+    },
+    {
+      "id": "Q1-F9",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "tests/test_hda_panel.py, _QT_RESTORE_RAN (pre-fix)",
+      "severity": "law3_resolved",
+      "summary": "_QT_RESTORE_RAN = True was set BEFORE the 'if not _REAL_QT_MODULES: return' guard - the flag reported 'ran' when nothing was restored. Status describing an attempt, not an effect. sys.modules.setdefault('tokens', ...) likewise no-opped silently when a foreign tokens was planted.",
+      "resolution": "Replaced by _QT_RESTORE_STATUS and _TOKENS_RESTORE_STATUS with an explicit vocabulary (None | noop-nothing-captured | noop-foreign-tokens-present | restored), set AFTER the guard. Pinned by test_restore_status_reports_what_happened_not_what_was_attempted (test_hda_panel.py:335), mutation-tested FAILS."
+    },
+    {
+      "id": "Q1-F10",
+      "tier": "VERIFIED-STATIC",
+      "anchor": ".gitignore:50",
+      "severity": "trap",
+      "summary": "The pattern _*.py silently swallows any new tests/_*.py helper. The Q1 helper was initially named tests/_qt_stub_window.py and would have vanished from the commit with no warning; it was renamed to tests/qt_stub_window.py. tests/_conformance.py survives only because it is already tracked.",
+      "consequence": "The next helper written under that name disappears silently. A scoped negation for tests/ is the fix; not taken, see for_ruling."
+    },
+    {
+      "id": "Q1-F11",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "tests/ census",
+      "severity": "law2",
+      "summary": "The 'roughly 46 files plant sys.modules stubs' figure has no producer and is wrong. Actual: 81 files assign into sys.modules; 165 lines plant hou/hdefereval specifically. tests/conftest.py:43 documents the historical figure as 56. Three different numbers, none with a producer path."
+    },
+    {
+      "id": "Q1-F12",
+      "tier": "VERIFIED-STATIC",
+      "anchor": "harness/SYNAPSE_REPAIR_HEATS.md:99",
+      "severity": "cosmetic",
+      "summary": "'-p no:randomly' is named as a forbidden fix, but pytest-randomly is not installed and no ordering plugin is configured (pyproject.toml:101-110, addopts = '-v --tb=short'). The prohibition targets a plugin that does not exist here.",
+      "note": "Recorded, not acted on. The prohibition was still honoured."
+    }
+  ],
+
+  "mutation_testing": [
+    {
+      "pin": "tests/test_hda_panel.py::test_qt_stubs_do_not_leak_past_module_import",
+      "failure_condition": "Fails if this module's Qt stubs are still in sys.modules at run time, or if any captured real Qt key holds anything other than the ORIGINAL module object (identity, not equality - this is what catches restore-by-reimport).",
+      "mutation": "comment out the _restore_real_qt() call",
+      "verdict": "FAILS_UNDER_MUTATION",
+      "exit_code_under_mutation": 1,
+      "independently_reproduced_by_crucible": true,
+      "extra_mutations_probed_by_crucible": {
+        "restore_by_reimport": "CAUGHT",
+        "partial_restore_QtWidgets_omitted": "CAUGHT",
+        "move_restore_call_earlier": "SLIPPED for the pin (4 other tests caught it)",
+        "break_the___file___filter": "SLIPPED -> became Q1-F7, now pinned"
+      }
+    },
+    {
+      "pin": "tests/test_hda_panel.py::test_capture_real_qt_rejects_file_less_stubs",
+      "failure_condition": "Fails if the __file__ filter is dropped or inverted, on either interpreter, with no dependence on run order.",
+      "mutation": "drop the getattr(_mod,'__file__',None) term from the capture predicate",
+      "verdict": "FAILS_UNDER_MUTATION",
+      "exit_code_under_mutation": 1,
+      "interpreters": ["system python 3.14.2", "hython 3.13.10"]
+    },
+    {
+      "pin": "tests/test_hda_panel.py::test_restore_status_reports_what_happened_not_what_was_attempted",
+      "failure_condition": "Fails if the status is never set, is outside the declared vocabulary, or claims 'restored' where nothing was captured.",
+      "mutation": "move _QT_RESTORE_STATUS = 'restored' above the empty-capture guard",
+      "verdict": "FAILS_UNDER_MUTATION",
+      "exit_code_under_mutation": 1
+    }
+  ],
+
+  "oracle": {
+    "note": "Zero skips is load-bearing (see Q1-F5). The single permitted skip is the explicit honest D3 skip with a stated reason.",
+    "results": [
+      {"leg": "positive control", "cmd": "hython -m pytest tests/panel/test_font_scale.py -q", "before": "exit 0, 8 passed", "after": "exit 0, 8 passed", "skipped": 0},
+      {"leg": "THE FIX", "cmd": "hython -m pytest tests/panel/test_font_scale.py tests/test_hda_panel.py -q", "before": "exit 139, access violation", "after": "exit 0, 40 passed", "skipped": 0},
+      {"leg": "control, not broken by fix", "cmd": "hython -m pytest tests/test_hda_panel.py -q", "before": "exit 0, 29 passed", "after": "exit 0, 32 passed", "skipped": 0},
+      {"leg": "leak-dependent file A", "cmd": "python -m pytest tests/test_panel_freeze_beat.py", "before": "rc=5, 0 collected, 1 skipped", "after": "exit 0, 3 passed", "skipped": 0},
+      {"leg": "leak-dependent file B", "cmd": "python -m pytest tests/test_panel_stop_honest.py", "before": "rc=5, 1 skipped", "after": "exit 0, 3 passed", "skipped": 0},
+      {"leg": "foreign-planter composition", "cmd": "python -m pytest tests/test_chat_panel.py tests/test_hda_panel.py tests/test_panel_preflight.py", "before": "6 failed", "after": "exit 0, 123 passed, 0 failed", "skipped": 18},
+      {"leg": "pre-existing reds NOT masked", "cmd": "hython -m pytest tests/panel/", "before": "exit 1, 5 failed / 27 passed", "after": "exit 1, 5 failed / 27 passed", "unchanged": true},
+      {"leg": "isolation matrix", "cmd": "each of 7 clean panel files x test_hda_panel.py, both orders (18 runs, hython)", "after": "zero crashes, zero skips", "note": "test_docking.py verified specifically - 31 passed forward and reversed"}
+    ]
+  },
+
+  "suite": {
+    "gate_interpreter": "system python 3.14.2 (vendor tree INACTIVE)",
+    "before": {"passed": 4873, "failed": 0, "skipped": 128},
+    "after": {"passed": 4875, "failed": 0, "skipped": 129},
+    "producer": "python -m pytest -q -p no:cacheprovider, cwd = .claude/worktrees/q1-unpoison",
+    "commandment_7": "HELD - strictly increased, 4873 -> 4875. +2 = two new interpreter-independent pins. Nothing weakened, skipped, xfailed or deleted.",
+    "skip_set_audit": {
+      "method": "grep '^SKIPPED' | sort | md5sum, matched invocation, before-tree produced by reverting the changed files",
+      "before_md5": "2f561cd342161d3ddec46e7796005d60",
+      "after_md5": "094980fc40e32aa3f8f2614cbf61b51b",
+      "diff": "exactly ONE line added, none removed: tests/test_hda_panel.py:400 - the explicit honest D3 skip",
+      "verdict": "The +1 skip is accounted for. The set did not silently churn.",
+      "caveat": "The md5 quoted in the dispatch (2fb3ec67...) is invocation-dependent - SKIPPED lines embed the path form pytest was given. Not a durable gate unless the producer command and cwd are pinned exactly."
+    }
+  },
+
+  "forbidden_fixes_audit": {
+    "reordering_tests": "PASS - not done",
+    "-p no:randomly": "PASS - not done (and the plugin is not installed, see Q1-F12)",
+    "skip_or_xfail_panel_tests": "PASS - the one added skip is the honest D3 skip with a stated reason, judged by crucible",
+    "adding_PySide_to_dev_environment": "PASS - not done",
+    "runner_ignores": "PASS - pyproject.toml addopts untouched",
+    "verified_by": "crucible, independently, via git diff grep"
+  },
+
+  "files_changed": [
+    "tests/test_hda_panel.py",
+    "tests/qt_stub_window.py (new)",
+    "tests/test_panel_freeze_beat.py",
+    "tests/test_panel_stop_honest.py"
+  ],
+  "grant_compliance": "Zero edits outside tests/**. No push, no merge, no tag. Worktree created by the dispatcher (git worktree add is ungranted to agents).",
+
+  "for_ruling": [
+    {
+      "id": "Q1-R1",
+      "question": "Do the 5 pre-existing tests/panel/ failures come into scope, and whose?",
+      "context": "3x TypeError 'object.__new__(GateWidget) is not safe' at tests/panel/test_gate_consent_honesty.py:77, plus 2 real assertions at tests/panel/test_failure_trail.py:123,151 (a silent-except in _wire_gate, and a visible dead 'open in render view' verb). Verified identical on master and branch, so they are inherited. They fail ONLY under genuine PySide6 - a mock would pass them, which is why the gate suite has never seen them.",
+      "why_escalated": "Article I - a value judgement between defensible options. Q1's charter was the coupling, not the panel's correctness. But they make the documented Q1 positive control permanently unsatisfiable.",
+      "recommendation": "Take them as a named follow-up leg rather than folding them into Q1. The 'open in render view' dead verb is a user-facing honesty defect and is the one I would rank first."
+    },
+    {
+      "id": "Q1-R2",
+      "question": "Add a scoped negation to .gitignore:50 so tests/*.py helpers cannot vanish silently?",
+      "context": "The pattern _*.py silently excluded the Q1 helper on its first naming. Caught by accident, not by a check.",
+      "why_escalated": "Touches repo-wide config, outside the tests/** grant."
+    },
+    {
+      "id": "Q1-R3",
+      "question": "The governing document's Q1 anchor is wrong (Q1-F1) and its baseline commit is stale (4abf68a vs a master that moved twice mid-run). Amend, or leave as a drift-log record?",
+      "why_escalated": "harness/SYNAPSE_REPAIR_HEATS.md is a governing document; Article VII reserves amendment to a human."
+    },
+    {
+      "id": "Q1-R4",
+      "question": "A concurrent harness (harness/run_solaris_repair.ps1, PID 52064, with harness/watch_relay.ps1 PID 3056 watching PID 45132) is COMMITTING into the main working directory while this harness runs.",
+      "context": "master moved 4abf68a -> f90946d -> 30d41fe during this run; the branch moved 7268490 -> 904f5d1 -> 30d41fe. Article V requires every parallel agent to have its own worktree; two harnesses in one directory violates it at the harness level, not the agent level. Mitigated here by pinning every worktree to an explicit SHA, but F1's 'git add --renormalize on a quiet tree, no agent running' (R24) is IMPOSSIBLE until it stops.",
+      "why_escalated": "Killing another harness is not an agent's call. It was not killed."
+    },
+    {
+      "id": "Q1-R5",
+      "question": "The skip-set md5 is invocation-dependent. If it is to be a durable gate, the producer command and cwd must be pinned exactly.",
+      "why_escalated": "Defines a gate's contract - Law 2 applies to the producer, not just the number."
+    }
+  ],
+
+  "resume_token": {
+    "skip": ["Q1 mechanism probe", "Q1 crash reproduction", "master-vs-branch comparison of the 5 panel reds", "narrowed-control validation"],
+    "redo_if": "the worktree is rebased off 904f5d1/671079f, or a human promotes the tuple baseline",
+    "next": "crucible certification of f885d24 was in flight at receipt time; fold its verdict in before F1 merges anything."
+  }
+}

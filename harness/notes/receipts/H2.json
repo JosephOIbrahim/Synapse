@@ -1,0 +1,63 @@
+{
+  "schema": "receipt/v1",
+  "leg": "H2",
+  "title": "Re-qualify F1-F11",
+  "harness": "REPAIR-01",
+  "status": "held_not_started",
+  "status_note": "Describes what happened (Law 3): H2 was NOT started. No worktree was created, no agent was dispatched, no probe was run. This is a hold, not a partial result, and nothing in this receipt should be read as evidence about F1-F11.",
+  "model": "claude-opus-5[1m]",
+  "settings_profile": "n/a - not dispatched",
+
+  "hold_reason": {
+    "authority": "harness/SYNAPSE_REPAIR_HEATS.md:153 - the section-4 branch table",
+    "row_taken": "shipping materially < gate",
+    "instruction": "STOP. The delta is the finding. Re-scope H1 to diagnose it and hold H2/H3.",
+    "measurement_that_triggered_it": {
+      "gate": "4874 passed / 0 failed (system python 3.14.2)",
+      "shipping": "cannot collect - 3 collection errors, 0 tests run; forced past: 4707 passed / 117 failed (hython 3.13.10)",
+      "commit": "671079f",
+      "producer": "see harness/notes/receipts/Q2.json"
+    },
+    "orchestrator_reasoning": "H2's entire method is re-probing F1-F11 against 22.0.368 and then mutation-testing the existing regression pins. Both halves are measured ON the shipping interpreter. That interpreter cannot currently collect the suite, and roughly 35 of its 117 failures are mock-hou/Qt-stub tests asserting against fakes rather than the host. Running H2 now would re-qualify eleven findings using an instrument that is itself under repair - which is the precise failure this harness was built to stop. Nothing is repaired before it can be measured."
+  },
+
+  "what_H2_would_have_done": {
+    "agents": ["assayer", "seam-hunter"],
+    "work": "assayer re-probes each of F1-F11 against 22.0.368 returning CONFIRMED | REFUTED | UNVERIFIABLE with a file:line anchor; seam-hunter then mutation-tests every existing regression pin, breaking each implementation deliberately and confirming the pin fails.",
+    "premise": "F4's premise is REFUTED-LIVE. One in eleven was a phantom, repaired with a green test that could not fail. The other ten share its provenance and have not been individually re-probed."
+  },
+
+  "carried_forward_evidence": [
+    {
+      "note": "Q1 independently demonstrated the H2 method works and finds real decorations. Three pins were mutation-tested there; one earlier pin was found to survive two of four mutations (the __file__ filter mutation SLIPPED entirely) and was strengthened rather than accepted. That is direct evidence that H2's premise is sound and that it should run - just not against a broken instrument.",
+      "anchor": "harness/notes/receipts/Q1.json findings Q1-F7, Q1-F8"
+    },
+    {
+      "note": "Q2 bucket 2 is an H2-shaped finding surfaced early: a planted fake hou appears to beat the REAL hou inside the shipping interpreter, affecting ~17 tests. If confirmed, every live-Houdini assertion on the shipping path is suspect, which materially expands H2's scope beyond F1-F11.",
+      "anchor": "harness/notes/receipts/Q2.json Q2-F4 bucket 2"
+    }
+  ],
+
+  "findings": [],
+
+  "for_ruling": [
+    {
+      "id": "H2-R1",
+      "question": "Confirm the hold, and confirm the release condition.",
+      "proposed_release_condition": "H2 unblocks when the shipping interpreter can COLLECT the suite (0 collection errors) and the fake-hou residency question from Q2 bucket 2 is resolved. It does NOT require the shipping suite to be fully green - only interpretable.",
+      "why_escalated": "Article I - a sequencing judgement between defensible options. The alternative reading is that H2 is a static re-probe and could proceed on the gate interpreter alone; I rejected that because F1-F11 are host-behaviour claims and Law 1 bans asserting those against a mock. That is a judgement, so it is escalated rather than taken."
+    },
+    {
+      "id": "H2-R2",
+      "question": "Does H2's scope expand to cover the ~17 tests in Q2 bucket 2?",
+      "context": "If a fake hou is winning over a real hou on the shipping path, those tests are decorations in exactly F4's sense, and they are not among F1-F11.",
+      "why_escalated": "Scope change to a defined leg."
+    }
+  ],
+
+  "resume_token": {
+    "skip": [],
+    "redo_if": "n/a - nothing was done",
+    "next": "Do not start H2 until the release condition in H2-R1 is ruled and met. When it starts: git worktree add -b feat/repair-requalify .claude/worktrees/repair-requalify <pinned SHA>, cherry-pick AGENT_CONSTITUTION.md and CTO_RULINGS_01.md (R38 - note both were already present by descent in this run's worktrees, verify rather than assume), dispatch assayer then seam-hunter under harness/relay-settings.json."
+  }
+}
