@@ -89,7 +89,11 @@
       "deps": [
         "H3a"
       ],
-      "note": "R44: HELD by ruling. Human release required - do not auto-dispatch. The safety gap is open."
+      "note": "R44: HELD by ruling. Human release required - do not auto-dispatch. The safety gap is open.",
+      "prompt": "harness/prompts/h3b.md",
+      "branch": "repair/h3b-tops-cancel",
+      "worktree": ".claude/worktrees/h3b-tops-cancel",
+      "readonly": false
     },
     {
       "id": "H5",
@@ -140,7 +144,11 @@
         "H6",
         "H7"
       ],
-      "note": "merge, housekeep, prune worktrees. Runs LAST - gated on every evidence-producing leg so integration never merges a picture that is still moving."
+      "note": "merge, housekeep, prune worktrees. Runs LAST - gated on every evidence-producing leg so integration never merges a picture that is still moving.",
+      "prompt": "harness/prompts/f1.md",
+      "branch": "repair/f1-integrate",
+      "worktree": ".claude/worktrees/f1-integrate",
+      "readonly": false
     }
   ]
 }
