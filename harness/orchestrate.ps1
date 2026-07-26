@@ -154,6 +154,15 @@ function Backup-Branches {
         if (-not (Test-Path $p)) { continue }
         $br = (git -C $p rev-parse --abbrev-ref HEAD 2>$null)
         if (-not $br -or $br -eq 'HEAD' -or $br -in @('master','main')) { continue }
+
+        # Claude Code's --effort ultracode spawns DYNAMIC WORKFLOW worktrees named
+        # worktree-wf_<hash>-<n>. They are agent-internal scratch, not work to
+        # preserve. On 2026-07-26 eleven of them appeared at once and this
+        # function pushed every one to origin - the backup rule was written as
+        # "any branch that is not master", which was too permissive the moment
+        # something other than me started creating branches.
+        # Backup preserves WORK. Ephemeral scratch is not work.
+        if ($br -match '^worktree-wf_') { continue }
         $up = (git -C $p rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>$null)
         if (-not $up) {
             # no upstream yet - push once WITH tracking so subsequent polls can
