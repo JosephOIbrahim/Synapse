@@ -1,0 +1,212 @@
+{
+  "schema": "mutation-battery/v1",
+  "target": "ledger -> moneta seam + moneta revision provenance",
+  "producer": "harness/verify/mutate_ledger_moneta_seam.py",
+  "pins": "tests/test_ledger_moneta_seam.py",
+  "baseline": "======================= 36 passed, 2 warnings in 0.65s ========================",
+  "mutations": 25,
+  "caught": 25,
+  "survived": [],
+  "results": [
+    {
+      "id": "stub-returns-none",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "The shipped defect: the seam returns before depositing anything.",
+      "caught": true,
+      "pins_failed": 15,
+      "pytest": "================== 15 failed, 21 passed, 2 warnings in 0.79s =================="
+    },
+    {
+      "id": "swallow-errors-report-success",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "Law 3: a failed substrate write reported as a success.",
+      "caught": true,
+      "pins_failed": 5,
+      "pytest": "================== 5 failed, 31 passed, 2 warnings in 0.85s ==================="
+    },
+    {
+      "id": "drop-moneta-key-from-result",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "deposit() stops reporting what the substrate leg did.",
+      "caught": true,
+      "pins_failed": 14,
+      "pytest": "================== 14 failed, 22 passed, 2 warnings in 1.13s =================="
+    },
+    {
+      "id": "ignore-backend-flag",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "Gate on availability alone, so `jsonl` still writes to Moneta.",
+      "caught": true,
+      "pins_failed": 2,
+      "pytest": "================== 2 failed, 34 passed, 2 warnings in 0.68s ==================="
+    },
+    {
+      "id": "project-at-conversation-tier",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "Findings lose their protected floor and decay on a sleep pass.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.65s ==================="
+    },
+    {
+      "id": "drop-record-pointer-and-text",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "The memory lands but carries no recallable content.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.74s ==================="
+    },
+    {
+      "id": "drop-revision-tag",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "The revision is reported but not carried BY the memory.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.79s ==================="
+    },
+    {
+      "id": "provenance-only-on-success",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "Provenance is withheld exactly when the deposit fails.",
+      "caught": true,
+      "pins_failed": 2,
+      "pytest": "================== 2 failed, 34 passed, 2 warnings in 0.95s ==================="
+    },
+    {
+      "id": "let-the-substrate-raise",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "A substrate error escapes deposit() and takes the file write with it.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.86s ==================="
+    },
+    {
+      "id": "revision-always-none",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "The shipped defect: provenance never resolves a commit.",
+      "caught": true,
+      "pins_failed": 8,
+      "pytest": "================== 8 failed, 28 passed, 2 warnings in 0.97s ==================="
+    },
+    {
+      "id": "no-packed-refs-fallback",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "Only loose refs are read; a gc'd repo resolves to nothing.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.95s ==================="
+    },
+    {
+      "id": "no-detached-head",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "HEAD is assumed to always be a symbolic ref.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.84s ==================="
+    },
+    {
+      "id": "gitdir-file-unsupported",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "Linked worktrees (a `.git` FILE) are not resolved.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.91s ==================="
+    },
+    {
+      "id": "ignore-commondir",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "A linked worktree looks for refs in its own git dir only.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.74s ==================="
+    },
+    {
+      "id": "no-cache",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "The git metadata is re-read from disk on every call.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.67s ==================="
+    },
+    {
+      "id": "installed-copy-inherits-a-sha",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "A copy under site-packages inherits an enclosing repo's HEAD.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.75s ==================="
+    },
+    {
+      "id": "unbounded-upward-walk",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "The walk reaches an unrelated repo far above the package.",
+      "caught": true,
+      "pins_failed": 2,
+      "pytest": "================== 2 failed, 34 passed, 2 warnings in 0.83s ==================="
+    },
+    {
+      "id": "widen-the-walk-bound",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "MAX_REVISION_WALK back to 3: a vendored copy inherits the host repo's HEAD (the CRUCIBLE blocker the site-packages guard did not cover).",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.78s ==================="
+    },
+    {
+      "id": "drop-resolved-at-stamp",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "The permanent cache stops dating its own read.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.76s ==================="
+    },
+    {
+      "id": "uncached-version-lookup",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "importlib.metadata.version() runs on every provenance call.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.68s ==================="
+    },
+    {
+      "id": "narrow-the-backend-vocabulary",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "`shadow` silently stops enabling the seam.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.73s ==================="
+    },
+    {
+      "id": "claim-durability-on-accept",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "An in-memory accept is reported as durable.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.82s ==================="
+    },
+    {
+      "id": "backfill-discards-substrate-status",
+      "file": "python\\synapse\\memory\\ledger.py",
+      "mutation": "backfill() reports a clean run while every substrate write fails.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.92s ==================="
+    },
+    {
+      "id": "science-sink-discards-substrate-status",
+      "file": "python\\synapse\\science\\deposit.py",
+      "mutation": "The only live producer stops reporting substrate outcomes.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.88s ==================="
+    },
+    {
+      "id": "drop-scope-caveat",
+      "file": "python\\synapse\\memory\\moneta_runtime.py",
+      "mutation": "The SHA is presented as a full pin of the substrate.",
+      "caught": true,
+      "pins_failed": 1,
+      "pytest": "================== 1 failed, 35 passed, 2 warnings in 0.87s ==================="
+    }
+  ]
+}
