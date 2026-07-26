@@ -5,17 +5,24 @@ freeze chain unarmed (C10). The v9 panel now runs a 1s QTimer beating the
 process-wide freeze chain. These pins verify the beat method drives the chain
 and that the timer wiring exists at panel construction.
 
-PySide-gated like the other panel pins (runs under hython / wherever Qt or the
-sibling stubs provide PySide6); the beat-method test needs no QApplication.
+SELF-SUFFICIENT (Q1/D1): this file no longer ``importorskip``s PySide6 and no
+longer depends on another test file having planted a Qt stub first. It supplies
+its own stub inside a scoped, self-restoring window (``tests/qt_stub_window``)
+that plants nothing when real PySide6 is present. It therefore collects and runs
+3 tests on BOTH interpreters, alone. None of these tests need a QApplication.
 """
+
+import sys
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-pytest.importorskip("PySide6")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from qt_stub_window import qt_stub_window  # noqa: E402
 
-from unittest.mock import MagicMock, patch
-
-from synapse.panel.synapse_panel import SynapsePanel
+with qt_stub_window():
+    from synapse.panel.synapse_panel import SynapsePanel  # noqa: E402
 
 
 def test_beat_method_drives_the_freeze_chain():
