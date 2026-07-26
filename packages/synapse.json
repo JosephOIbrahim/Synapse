@@ -17,6 +17,11 @@
         {
             "var": "MONETA_SRC",
             "value": "$SYNAPSE_ROOT/../Moneta/src"
+        },
+        {
+            "var": "SYNAPSE_MEMORY_BACKEND",
+            "comment": "moneta, not the jsonl default. Moneta as the memory substrate is the point of the integration - evolution.py:14 anticipates this becoming the default, and backfill.py exists for the cutover. Safe to set: _make_store falls back to JSONL with a warning if Moneta cannot be imported, so the flag can never break startup, and store.py:830 distinguishes 'not installed' from 'installed but broken' so a drifted adapter is loud rather than silently serving jsonl.",
+            "value": "moneta"
         }
     ],
     "hpath": "$SYNAPSE_ROOT/houdini"
