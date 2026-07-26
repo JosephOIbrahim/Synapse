@@ -11,7 +11,7 @@
 # NEVER: push to master, merge, tag. Gate C is human. A leg in state 'held' is
 # held by RULING and is never auto-dispatched.
 param([int]$PollSeconds = 45, [int]$StaleMinutes = 40, [int]$MaxHours = 12,
-      [switch]$DryRun)
+      [int]$DigestMinutes = 20, [switch]$DryRun)
 
 $ErrorActionPreference = 'SilentlyContinue'
 $repo = 'C:\Users\User\SYNAPSE'
@@ -207,6 +207,8 @@ Write-Host ""
 
 $staleAnnounced = $false
 $deadline = (Get-Date).AddHours($MaxHours)
+$nextDigest = (Get-Date).AddMinutes($DigestMinutes)
+Say "digest every $DigestMinutes min - first at $($nextDigest.ToString('HH:mm'))" 'DarkGray'
 
 while ((Get-Date) -lt $deadline) {
 
@@ -254,6 +256,26 @@ while ((Get-Date) -lt $deadline) {
     }
 
     Say ("board  " + ($summary -join '  ') + "   | last write ${mins}m ago")
+
+    # Periodic digest. The per-poll board line is for the window; this is for the
+    # phone. Counts only - a digest that needs reading is not a digest.
+    if ((Get-Date) -ge $nextDigest) {
+        $nextDigest = (Get-Date).AddMinutes($DigestMinutes)
+        $done    = @($known.Values | Where-Object { $_ -eq 'done' }).Count
+        $running = @($manifest.legs | Where-Object { $known[$_.id] -eq 'running' })
+        $held    = @($known.Values | Where-Object { $_ -eq 'held' }).Count
+        $ruling  = 0
+        foreach ($leg in $manifest.legs) {
+            $rp = Get-ReceiptPath $leg
+            if ($rp) {
+                try { $ruling += @((Get-Content $rp -Raw | ConvertFrom-Json).for_ruling).Count } catch { }
+            }
+        }
+        $runNames = if ($running.Count) { ($running | ForEach-Object { $_.id }) -join ' ' } else { 'none' }
+        Notify "SYNAPSE $done/$($manifest.legs.Count) - running: $runNames" `
+               "$ruling items banked for your ruling. $held held for you. Last write ${mins}m ago. Nothing pushed to master."
+        Say "DIGEST sent  $done done, running $runNames, $ruling ruling, $held held" 'Cyan'
+    }
 
     $live = @($manifest.legs | Where-Object { $known[$_.id] -in @('running','launched','ready','blocked') })
     if ($live.Count -eq 0) {
