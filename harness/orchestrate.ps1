@@ -77,6 +77,20 @@ function Get-LegState([object]$leg) {
         # dialog, was killed, or the machine went down. This is READY, not
         # 'launched': treating it as launched strands the leg forever, because
         # dispatch only fires on 'ready'. The worktree is reused, not recreated.
+        #
+        # BUT: settings.local.json is not written the instant claude starts. On
+        # 2026-07-26 H6 dispatched at 16:05:01 and AGAIN at 16:05:56, because in
+        # the gap the leg read 'ready' a second time. Two agents, one worktree.
+        # A launch marker closes the window: it is written by US at dispatch, so
+        # it exists before the agent has done anything at all.
+        $marker = Join-Path $wt '.claude\.orch_launched'
+        if (Test-Path $marker) {
+            $age = ((Get-Date) - (Get-Item $marker).LastWriteTime).TotalMinutes
+            # Stale marker with no settings.local.json after 10 min = the launch
+            # genuinely failed. Re-dispatch rather than stranding it.
+            if ($age -lt 10) { return 'launched' }
+            Say "  $($leg.id): launch marker is $([int]$age)m old with no session - re-dispatching" 'Yellow'
+        }
         if (Test-Path $wt) { return 'ready' }
     }
     foreach ($d in @($leg.deps)) {
@@ -152,6 +166,13 @@ Write-Host '  LEG $($leg.id) TERMINATED' -ForegroundColor Cyan
 "@ | Set-Content $script -Encoding utf8
 
     Start-Process powershell -ArgumentList '-NoExit','-ExecutionPolicy','Bypass','-File',$script -WindowStyle Normal
+
+    # Written by US, now, before the agent has done anything. Closes the window
+    # between launch and the agent's first write in which the leg would
+    # otherwise read 'ready' again and be dispatched twice.
+    New-Item -ItemType Directory -Force -Path (Join-Path $wt '.claude') | Out-Null
+    Set-Content -Path (Join-Path $wt '.claude\.orch_launched') -Value (Get-Date -Format o)
+
     Say "  launched" 'Green'
 }
 
