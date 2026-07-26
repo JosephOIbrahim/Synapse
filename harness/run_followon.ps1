@@ -54,6 +54,12 @@ Write harness/notes/receipts/RES.json (receipt/v1, model + settings_profile per 
 foreach ($leg in $legs) {
   Write-Host "  --- $($leg.id) ---" -ForegroundColor DarkGray
   git worktree add -b $leg.branch $leg.wt $base 2>&1 | Select-Object -Last 1 | Write-Host
+
+  # A fresh worktree is UNTRUSTED. Claude Code blocks on the trust dialog before
+  # its first token - silent, indefinite, and indistinguishable from slow work
+  # unless you check CPU. Cost us 13 minutes on 2026-07-26. Trust before launch.
+  python C:\Users\User\SYNAPSE\harness\trust_worktrees.py 2>&1 | Select-Object -Last 1 | Write-Host
+
   $script = Join-Path $env:TEMP "run_$($leg.id).ps1"
   @"
 Set-Location '$((Resolve-Path $leg.wt).Path)'
