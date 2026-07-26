@@ -1,4 +1,4 @@
-# Receipt-staleness watcher. Q0 item 4.
+﻿# Receipt-staleness watcher. Q0 item 4.
 #
 # Every watcher on 2026-07-25 died because it tracked a PID that vanished in a crash.
 # A PID is a handle to something that can disappear; a file appearing is durable evidence.
@@ -8,7 +8,7 @@ param([int]$StaleMinutes = 40, [int]$PollSeconds = 60, [int]$MaxHours = 12)
 $ErrorActionPreference = 'SilentlyContinue'
 $repo   = 'C:\Users\User\SYNAPSE'
 $rdir   = Join-Path $repo 'harness\notes\receipts'
-$stages = [ordered]@{ Q0='bridge'; Q1='unpoison'; Q2='baseline'; H1='schemas'
+$stages = [ordered]@{ Q0='bridge'; Q1='unpoison'; Q2='baseline'; H1='schemas'; H3a='cancel-probe'; RES='residency'
                       H2='requalify'; H3='cook-cancel'; H4='panel-finish'
                       F1='integrate'; F2='tag call' }
 
@@ -95,7 +95,7 @@ while ((Get-Date) -lt $deadline) {
                 'green' { 'clean' } 'amber' { 'passed, debt logged' }
                 'red'   { 'ORACLE FAILED - needs you' } default { $status }
             }
-            Notify "$k $($stages[$k]) - $plain  ($($seen.Count)/9)" `
+            Notify "$k $($stages[$k]) - $plain  ($($seen.Count)/11)" `
                    "$ruling items for your ruling. Suite failures: $failed. Nothing pushed."
             Write-Host ("{0}  {1} landed [{2}]" -f (Get-Date -Format 'HH:mm:ss'), $k, $status)
         }
@@ -107,7 +107,7 @@ while ((Get-Date) -lt $deadline) {
     if ($mins -ge $StaleMinutes -and -not $staleAnnounced) {
         $staleAnnounced = $true
         Notify "SYNAPSE - no progress in ${mins}m" `
-               "$($seen.Count)/9 receipts. Nothing written across either tree. Worth a look."
+               "$($seen.Count)/11 receipts. Nothing written across either tree. Worth a look."
         Write-Host ("{0}  STALE - {1}m since last write" -f (Get-Date -Format 'HH:mm:ss'), $mins)
     } elseif ($mins -lt $StaleMinutes -and $staleAnnounced) {
         $staleAnnounced = $false
@@ -117,7 +117,7 @@ while ((Get-Date) -lt $deadline) {
     $backed = Backup-Branches
     $bmsg = if ($backed.Count) { " | backed up " + ($backed -join ' ') } else { "" }
 
-    Write-Host ("{0}  {1}/9 receipts | last write {2}m ago{3}" -f `
+    Write-Host ("{0}  {1}/11 receipts | last write {2}m ago{3}" -f `
         (Get-Date -Format 'HH:mm:ss'), $seen.Count, $mins, $bmsg)
 
     Start-Sleep -Seconds $PollSeconds
